@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content="MOJO Framework v2.0.0 - Phase 1 Example" />
+        <title>MOJO Framework - Phase 1 Example</title>
+
+        <!-- Bootstrap CSS -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+
+        <!-- Font Awesome -->
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        />
+
+        <!-- MOJO Framework Styles -->
+        <style>
+            :root {
+                --mojo-primary-color: #007bff;
+                --mojo-secondary-color: #6c757d;
+                --mojo-success-color: #28a745;
+                --mojo-danger-color: #dc3545;
+                --mojo-warning-color: #ffc107;
+                --mojo-info-color: #17a2b8;
+                --mojo-light-color: #f8f9fa;
+                --mojo-dark-color: #343a40;
+            }
+
+            .mojo-app {
+                min-height: 100vh;
+            }
+
+            .mojo-page {
+                padding: 20px 0;
+            }
+
+            .mojo-header {
+                background: var(--mojo-primary-color);
+                color: white;
+                padding: 20px 0;
+                margin-bottom: 30px;
+            }
+
+            .mojo-footer {
+                background: var(--mojo-dark-color);
+                color: white;
+                padding: 20px 0;
+                margin-top: 50px;
+            }
+
+            .view-hierarchy {
+                background: var(--mojo-light-color);
+                padding: 15px;
+                border-radius: 5px;
+                margin: 20px 0;
+                font-family: monospace;
+                white-space: pre-line;
+            }
+
+            .debug-panel {
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                background: white;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                padding: 10px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                z-index: 1000;
+                max-width: 300px;
+                font-size: 12px;
+            }
+
+            .debug-panel h6 {
+                margin: 0 0 10px 0;
+                color: var(--mojo-primary-color);
+            }
+
+            .debug-panel .stats {
+                margin: 5px 0;
+            }
+
+            .loading-spinner {
+                display: inline-block;
+                width: 1rem;
+                height: 1rem;
+                border: 2px solid currentColor;
+                border-right-color: transparent;
+                border-radius: 50%;
+                animation: spin 0.75s linear infinite;
+            }
+
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            .fade-in {
+                animation: fadeIn 0.5s ease-in-out;
+            }
+
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .btn-group .btn {
+                margin-right: 5px;
+            }
+
+            .card {
+                margin-bottom: 20px;
+            }
+
+            .alert {
+                margin-bottom: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Main Application Container -->
+        <div id="app">
+            <!-- Initial loading state -->
+            <div class="d-flex justify-content-center align-items-center" style="min-height: 100vh">
+                <div class="text-center">
+                    <div class="loading-spinner mb-3"></div>
+                    <h4>Loading MOJO Framework...</h4>
+                    <p class="text-muted">Initializing Phase 1 architecture</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debug Panel (will be shown in debug mode) -->
+        <div id="debug-panel" class="debug-panel" style="display: none">
+            <h6><i class="fas fa-bug"></i> MOJO Debug</h6>
+            <div class="stats">
+                <div><strong>Version:</strong> <span id="debug-version">-</span></div>
+                <div><strong>Views:</strong> <span id="debug-views">0</span></div>
+                <div><strong>Pages:</strong> <span id="debug-pages">0</span></div>
+                <div><strong>Events:</strong> <span id="debug-events">0</span></div>
+            </div>
+            <div class="mt-2">
+                <button class="btn btn-sm btn-outline-primary" onclick="showHierarchy()">
+                    <i class="fas fa-sitemap"></i> Hierarchy
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="showStats()">
+                    <i class="fas fa-chart-bar"></i> Stats
+                </button>
+            </div>
+        </div>
+
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+        <!-- MOJO Complete Demo Application -->
+        <script type="module" src="./app.js"></script>
+
+        <!-- Application Scripts -->
+        <script type="module">
+            // This will be replaced by webpack in build process
+            // For now, we'll have a simple initialization script
+
+            console.log("🔥 Starting MOJO Framework Phase 1 Example");
+
+            // Debug functions for development
+            window.showHierarchy = function () {
+                if (window.MOJODevTools) {
+                    console.log("MOJO View Hierarchy:\n" + window.MOJODevTools.hierarchy());
+                    alert("View hierarchy logged to console");
+                }
+            };
+
+            window.showStats = function () {
+                if (window.MOJODevTools) {
+                    console.log("MOJO Framework Stats:", window.MOJODevTools.stats());
+                    alert("Framework stats logged to console");
+                }
+            };
+
+            // Update debug panel
+            function updateDebugPanel() {
+                if (window.MOJODevTools) {
+                    const stats = window.MOJODevTools.stats();
+                    document.getElementById("debug-version").textContent =
+                        stats.version || "Unknown";
+                    document.getElementById("debug-views").textContent = stats.registeredViews || 0;
+                    document.getElementById("debug-pages").textContent = stats.registeredPages || 0;
+                    document.getElementById("debug-events").textContent =
+                        stats.eventBus?.totalEvents || 0;
+                }
+            }
+
+            // Show debug panel when MOJO is ready
+            document.addEventListener("DOMContentLoaded", function () {
+                // Wait for MOJO to initialize
+                setTimeout(function () {
+                    if (window.MOJO && window.MOJO.config?.debug) {
+                        document.getElementById("debug-panel").style.display = "block";
+                        setInterval(updateDebugPanel, 1000);
+                    }
+                }, 100);
+            });
+
+            // Handle any global errors
+            window.addEventListener("error", function (event) {
+                console.error("Global Error:", event.error);
+            });
+
+            window.addEventListener("unhandledrejection", function (event) {
+                console.error("Unhandled Promise Rejection:", event.reason);
+            });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,515 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john.doe@example.com",
+      "role": "admin",
+      "active": true,
+      "profile": {
+        "avatar": "https://example.com/avatars/john.jpg",
+        "bio": "Senior Software Engineer with 10+ years experience",
+        "location": "San Francisco, CA",
+        "website": "https://johndoe.dev"
+      },
+      "preferences": {
+        "theme": "dark",
+        "notifications": true,
+        "language": "en"
+      },
+      "created_at": "2023-01-15T10:30:00Z",
+      "updated_at": "2024-08-01T14:20:00Z"
+    },
+    {
+      "id": 2,
+      "name": "Jane Smith",
+      "email": "jane.smith@example.com",
+      "role": "user",
+      "active": true,
+      "profile": {
+        "avatar": "https://example.com/avatars/jane.jpg",
+        "bio": "Frontend Developer passionate about UX",
+        "location": "New York, NY",
+        "website": "https://janesmith.portfolio.com"
+      },
+      "preferences": {
+        "theme": "light",
+        "notifications": false,
+        "language": "en"
+      },
+      "created_at": "2023-03-22T09:15:00Z",
+      "updated_at": "2024-07-28T11:45:00Z"
+    },
+    {
+      "id": 3,
+      "name": "Bob Johnson",
+      "email": "bob.johnson@example.com",
+      "role": "user",
+      "active": false,
+      "profile": {
+        "avatar": "https://example.com/avatars/bob.jpg",
+        "bio": "Full-stack developer and tech enthusiast",
+        "location": "Austin, TX",
+        "website": null
+      },
+      "preferences": {
+        "theme": "auto",
+        "notifications": true,
+        "language": "es"
+      },
+      "created_at": "2023-06-10T16:45:00Z",
+      "updated_at": "2024-06-15T08:30:00Z"
+    }
+  ],
+  "posts": [
+    {
+      "id": 1,
+      "title": "Getting Started with MOJO Framework",
+      "slug": "getting-started-mojo-framework",
+      "content": "This is a comprehensive guide to getting started with the MOJO framework...",
+      "excerpt": "Learn the basics of MOJO framework in this introductory post.",
+      "author_id": 1,
+      "status": "published",
+      "tags": ["javascript", "framework", "tutorial"],
+      "metadata": {
+        "read_time": 8,
+        "word_count": 1250,
+        "featured_image": "https://example.com/images/mojo-intro.jpg"
+      },
+      "published_at": "2024-07-15T12:00:00Z",
+      "created_at": "2024-07-10T14:30:00Z",
+      "updated_at": "2024-07-15T12:00:00Z"
+    },
+    {
+      "id": 2,
+      "title": "Advanced View Hierarchies",
+      "slug": "advanced-view-hierarchies",
+      "content": "Deep dive into creating complex view hierarchies with MOJO...",
+      "excerpt": "Explore advanced patterns for organizing views in your MOJO applications.",
+      "author_id": 2,
+      "status": "published",
+      "tags": ["views", "architecture", "advanced"],
+      "metadata": {
+        "read_time": 12,
+        "word_count": 2100,
+        "featured_image": "https://example.com/images/view-hierarchies.jpg"
+      },
+      "published_at": "2024-07-20T10:30:00Z",
+      "created_at": "2024-07-18T09:15:00Z",
+      "updated_at": "2024-07-20T10:30:00Z"
+    },
+    {
+      "id": 3,
+      "title": "Event-Driven Architecture Patterns",
+      "slug": "event-driven-architecture-patterns",
+      "content": "Learn how to leverage MOJO's EventBus for building scalable applications...",
+      "excerpt": "Master event-driven patterns for better component communication.",
+      "author_id": 1,
+      "status": "draft",
+      "tags": ["events", "architecture", "patterns"],
+      "metadata": {
+        "read_time": 15,
+        "word_count": 2800,
+        "featured_image": null
+      },
+      "published_at": null,
+      "created_at": "2024-08-01T11:20:00Z",
+      "updated_at": "2024-08-05T16:45:00Z"
+    }
+  ],
+  "comments": [
+    {
+      "id": 1,
+      "post_id": 1,
+      "author": {
+        "name": "Alice Wilson",
+        "email": "alice@example.com",
+        "avatar": "https://example.com/avatars/alice.jpg"
+      },
+      "content": "Great introduction! Really helped me understand the core concepts.",
+      "status": "approved",
+      "created_at": "2024-07-16T14:20:00Z"
+    },
+    {
+      "id": 2,
+      "post_id": 1,
+      "author": {
+        "name": "Charlie Brown",
+        "email": "charlie@example.com",
+        "avatar": null
+      },
+      "content": "Thanks for this tutorial. Looking forward to more advanced topics!",
+      "status": "approved",
+      "created_at": "2024-07-17T09:30:00Z"
+    },
+    {
+      "id": 3,
+      "post_id": 2,
+      "author": {
+        "name": "Diana Prince",
+        "email": "diana@example.com",
+        "avatar": "https://example.com/avatars/diana.jpg"
+      },
+      "content": "The view hierarchy examples are very clear. Could you add more about performance optimization?",
+      "status": "pending",
+      "created_at": "2024-07-21T16:15:00Z"
+    }
+  ],
+  "pages": [
+    {
+      "id": 1,
+      "title": "Home",
+      "slug": "home",
+      "route": "/",
+      "template": "home.mustache",
+      "content": {
+        "hero": {
+          "title": "Welcome to MOJO Framework",
+          "subtitle": "Build amazing web applications with ease",
+          "cta": {
+            "text": "Get Started",
+            "url": "/docs/getting-started"
+          }
+        },
+        "features": [
+          {
+            "title": "Component-Based",
+            "description": "Build with reusable view components",
+            "icon": "components"
+          },
+          {
+            "title": "Event-Driven",
+            "description": "Powerful EventBus for communication",
+            "icon": "events"
+          },
+          {
+            "title": "Lightweight",
+            "description": "Minimal footprint, maximum performance",
+            "icon": "performance"
+          }
+        ]
+      },
+      "metadata": {
+        "description": "MOJO Framework - A lightweight JavaScript framework for building data-driven web applications",
+        "keywords": ["javascript", "framework", "web", "components"],
+        "og_image": "https://example.com/images/og-home.jpg"
+      },
+      "published": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-07-15T10:00:00Z"
+    },
+    {
+      "id": 2,
+      "title": "About",
+      "slug": "about",
+      "route": "/about",
+      "template": "about.mustache",
+      "content": {
+        "mission": "To provide developers with a simple yet powerful framework for building modern web applications.",
+        "team": [
+          {
+            "name": "MOJO Team Lead",
+            "role": "Framework Architect",
+            "bio": "Passionate about creating developer-friendly tools."
+          }
+        ]
+      },
+      "metadata": {
+        "description": "Learn about the MOJO Framework and our mission",
+        "keywords": ["about", "team", "mission"]
+      },
+      "published": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-06-20T15:30:00Z"
+    }
+  ],
+  "api_responses": {
+    "users_list": {
+      "success": true,
+      "data": [
+        {
+          "id": 1,
+          "name": "John Doe",
+          "email": "john.doe@example.com"
+        },
+        {
+          "id": 2,
+          "name": "Jane Smith",
+          "email": "jane.smith@example.com"
+        }
+      ],
+      "meta": {
+        "total": 25,
+        "page": 1,
+        "per_page": 10,
+        "total_pages": 3
+      }
+    },
+    "user_detail": {
+      "success": true,
+      "data": {
+        "id": 1,
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+        "profile": {
+          "avatar": "https://example.com/avatars/john.jpg",
+          "bio": "Senior Software Engineer"
+        }
+      }
+    },
+    "user_create": {
+      "success": true,
+      "data": {
+        "id": 4,
+        "name": "New User",
+        "email": "new.user@example.com",
+        "created_at": "2024-08-07T12:00:00Z"
+      },
+      "message": "User created successfully"
+    },
+    "error_404": {
+      "success": false,
+      "error": "Not Found",
+      "message": "The requested resource could not be found",
+      "status": 404
+    },
+    "error_validation": {
+      "success": false,
+      "error": "Validation Error",
+      "message": "The provided data is invalid",
+      "errors": {
+        "email": ["Email is required", "Email format is invalid"],
+        "name": ["Name must be at least 2 characters long"]
+      },
+      "status": 422
+    }
+  },
+  "table_data": {
+    "columns": [
+      {
+        "key": "id",
+        "title": "ID",
+        "sortable": true,
+        "type": "number"
+      },
+      {
+        "key": "name",
+        "title": "Name",
+        "sortable": true,
+        "type": "text"
+      },
+      {
+        "key": "email",
+        "title": "Email",
+        "sortable": true,
+        "type": "email"
+      },
+      {
+        "key": "role",
+        "title": "Role",
+        "sortable": true,
+        "type": "badge"
+      },
+      {
+        "key": "active",
+        "title": "Status",
+        "sortable": true,
+        "type": "boolean"
+      },
+      {
+        "key": "created_at",
+        "title": "Created",
+        "sortable": true,
+        "type": "date"
+      }
+    ],
+    "rows": [
+      {
+        "id": 1,
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+        "role": "admin",
+        "active": true,
+        "created_at": "2023-01-15T10:30:00Z"
+      },
+      {
+        "id": 2,
+        "name": "Jane Smith",
+        "email": "jane.smith@example.com",
+        "role": "user",
+        "active": true,
+        "created_at": "2023-03-22T09:15:00Z"
+      },
+      {
+        "id": 3,
+        "name": "Bob Johnson",
+        "email": "bob.johnson@example.com",
+        "role": "user",
+        "active": false,
+        "created_at": "2023-06-10T16:45:00Z"
+      }
+    ]
+  },
+  "form_data": {
+    "user_form": {
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "label": "Full Name",
+          "required": true,
+          "placeholder": "Enter your full name"
+        },
+        {
+          "name": "email",
+          "type": "email",
+          "label": "Email Address",
+          "required": true,
+          "placeholder": "Enter your email"
+        },
+        {
+          "name": "role",
+          "type": "select",
+          "label": "Role",
+          "required": true,
+          "options": [
+            { "value": "user", "label": "User" },
+            { "value": "admin", "label": "Administrator" },
+            { "value": "moderator", "label": "Moderator" }
+          ]
+        },
+        {
+          "name": "bio",
+          "type": "textarea",
+          "label": "Biography",
+          "required": false,
+          "placeholder": "Tell us about yourself",
+          "rows": 4
+        },
+        {
+          "name": "active",
+          "type": "checkbox",
+          "label": "Active User",
+          "required": false
+        }
+      ]
+    },
+    "contact_form": {
+      "fields": [
+        {
+          "name": "subject",
+          "type": "text",
+          "label": "Subject",
+          "required": true
+        },
+        {
+          "name": "message",
+          "type": "textarea",
+          "label": "Message",
+          "required": true,
+          "rows": 6
+        },
+        {
+          "name": "priority",
+          "type": "radio",
+          "label": "Priority",
+          "required": true,
+          "options": [
+            { "value": "low", "label": "Low" },
+            { "value": "medium", "label": "Medium" },
+            { "value": "high", "label": "High" }
+          ]
+        }
+      ]
+    }
+  },
+  "chart_data": {
+    "line_chart": {
+      "labels": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+      "datasets": [
+        {
+          "label": "Users",
+          "data": [120, 190, 300, 500, 200, 300],
+          "borderColor": "rgb(75, 192, 192)",
+          "backgroundColor": "rgba(75, 192, 192, 0.2)"
+        },
+        {
+          "label": "Sessions",
+          "data": [180, 250, 400, 650, 300, 450],
+          "borderColor": "rgb(255, 99, 132)",
+          "backgroundColor": "rgba(255, 99, 132, 0.2)"
+        }
+      ]
+    },
+    "bar_chart": {
+      "labels": ["Q1", "Q2", "Q3", "Q4"],
+      "datasets": [
+        {
+          "label": "Revenue",
+          "data": [15000, 25000, 18000, 32000],
+          "backgroundColor": [
+            "rgba(255, 99, 132, 0.8)",
+            "rgba(54, 162, 235, 0.8)",
+            "rgba(255, 205, 86, 0.8)",
+            "rgba(75, 192, 192, 0.8)"
+          ]
+        }
+      ]
+    }
+  },
+  "navigation": {
+    "main_menu": [
+      {
+        "title": "Dashboard",
+        "url": "/dashboard",
+        "icon": "fas fa-tachometer-alt",
+        "active": true
+      },
+      {
+        "title": "Users",
+        "url": "/users",
+        "icon": "fas fa-users",
+        "badge": "12"
+      },
+      {
+        "title": "Posts",
+        "url": "/posts",
+        "icon": "fas fa-newspaper",
+        "children": [
+          {
+            "title": "All Posts",
+            "url": "/posts"
+          },
+          {
+            "title": "Create Post",
+            "url": "/posts/create"
+          },
+          {
+            "title": "Categories",
+            "url": "/posts/categories"
+          }
+        ]
+      },
+      {
+        "title": "Settings",
+        "url": "/settings",
+        "icon": "fas fa-cog"
+      }
+    ],
+    "breadcrumbs": [
+      {
+        "title": "Home",
+        "url": "/"
+      },
+      {
+        "title": "Users",
+        "url": "/users"
+      },
+      {
+        "title": "John Doe",
+        "url": "/users/1",
+        "active": true
+      }
+    ]
+  }
+}
