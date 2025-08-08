@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOJO Framework v2.0.0 - Phase 2: Data Layer Demo</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Custom Styles -->
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            transition: all 0.2s ease-in-out;
+        }
+
+        .card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .badge {
+            font-size: 0.75em;
+            font-weight: 500;
+        }
+
+        .btn-group-sm > .btn, .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            border-radius: 0.2rem;
+        }
+
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            color: #6c757d;
+        }
+
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        .nav-link.btn {
+            border: none;
+            margin-left: 0.5rem;
+        }
+
+        .nav-link.btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        pre {
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+
+        .response-info .badge {
+            font-size: 0.8em;
+        }
+
+        .phase2-app .container {
+            max-width: 1200px;
+        }
+
+        .users-stats .card {
+            border-left: 4px solid;
+        }
+
+        .users-stats .bg-primary {
+            border-left-color: #007bff;
+        }
+
+        .users-stats .bg-success {
+            border-left-color: #28a745;
+        }
+
+        .users-stats .bg-warning {
+            border-left-color: #ffc107;
+        }
+
+        .users-stats .bg-info {
+            border-left-color: #17a2b8;
+        }
+
+        .modal-header {
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .modal-footer {
+            border-top: 1px solid #e9ecef;
+        }
+
+        .loading-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            text-align: center;
+        }
+
+        .loading-spinner .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+
+        .debug-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            max-width: 300px;
+            z-index: 1000;
+        }
+
+        .debug-panel h6 {
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+
+        .debug-panel small {
+            color: #6c757d;
+        }
+
+        @media (max-width: 768px) {
+            .phase2-app .container {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+
+            .table-responsive {
+                border: none;
+            }
+
+            .btn-group-sm {
+                flex-direction: column;
+            }
+
+            .debug-panel {
+                bottom: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-container">
+        <div class="loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="mt-3">
+                <h5>Loading MOJO Framework</h5>
+                <p class="text-muted">Phase 2: Data Layer</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Container -->
+    <div id="app">
+        <!-- Application content will be rendered here -->
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Mustache.js Template Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/4.2.0/mustache.min.js"></script>
+
+    <!-- MOJO Framework Phase 2 -->
+    <script type="module">
+        import { initPhase2App } from './phase2-app.js';
+
+        // Remove loading screen once app initializes
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loadingScreen = document.getElementById('loading-screen');
+                if (loadingScreen) {
+                    loadingScreen.style.opacity = '0';
+                    loadingScreen.style.transition = 'opacity 0.3s ease-out';
+                    setTimeout(() => {
+                        loadingScreen.remove();
+                    }, 300);
+                }
+            }, 1000);
+        });
+
+        // Global error handling
+        window.addEventListener('error', (event) => {
+            console.error('Global error:', event.error);
+
+            // Show user-friendly error message
+            if (!document.querySelector('.error-notification')) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-danger alert-dismissible error-notification';
+                errorDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+                errorDiv.innerHTML = `
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Application Error:</strong> ${event.error.message || 'An unexpected error occurred'}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.body.appendChild(errorDiv);
+
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    if (errorDiv.parentNode) {
+                        errorDiv.remove();
+                    }
+                }, 5000);
+            }
+        });
+
+        // Unhandled promise rejection handling
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled promise rejection:', event.reason);
+            event.preventDefault(); // Prevent the default handling
+        });
+
+        // Debug information in console
+        console.log('🔥 MOJO Framework v2.0.0 - Phase 2: Data Layer Demo');
+        console.log('📖 Documentation: README-Phase1.md');
+        console.log('🧪 Testing: npm test');
+        console.log('🛠️  Development: npm run dev');
+    </script>
+</body>
+</html>

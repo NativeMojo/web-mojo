@@ -11,7 +11,7 @@ class RestModel {
     this.originalAttributes = { ...data };
     this.errors = {};
     this.loading = false;
-    
+
     // Configuration options
     this.options = {
       idAttribute: 'id',
@@ -25,12 +25,31 @@ class RestModel {
    * @param {string} key - Attribute key
    * @returns {*} Attribute value
    */
-  get(key) {
-    if (key === 'id') {
-      return this.id;
-    }
-    return this.attributes[key];
-  }
+   get(key) {
+     // Check if key exists as an instance field first
+     if (this.hasOwnProperty(key)) {
+       return this[key];
+     }
+
+     // Handle dot notation lookup
+     if (key.includes('.')) {
+       const keys = key.split('.');
+       let current = this.attributes;
+
+       for (const k of keys) {
+         if (current && typeof current === 'object' && k in current) {
+           current = current[k];
+         } else {
+           return undefined;
+         }
+       }
+
+       return current;
+     }
+
+     // Default attribute lookup
+     return this.attributes[key];
+   }
 
   /**
    * Set attribute value(s)
@@ -66,13 +85,13 @@ class RestModel {
 
     const id = options.id || this.id;
     const url = this.buildUrl(id);
-    
+
     this.loading = true;
     this.errors = {};
 
     try {
       const response = await this.constructor.Rest.GET(url, options.params);
-      
+
       if (response.success) {
         this.set(response.data);
         this.originalAttributes = { ...this.attributes };
@@ -98,7 +117,7 @@ class RestModel {
     const isNew = !this.id;
     const method = isNew ? 'POST' : 'PUT';
     const url = isNew ? this.buildUrl() : this.buildUrl(this.id);
-    
+
     this.loading = true;
     this.errors = {};
 
@@ -114,7 +133,7 @@ class RestModel {
 
     try {
       const response = await this.constructor.Rest[method](url, data, options.params);
-      
+
       if (response.success) {
         this.set(response.data);
         this.originalAttributes = { ...this.attributes };
@@ -147,7 +166,7 @@ class RestModel {
 
     try {
       const response = await this.constructor.Rest.DELETE(url, options.params);
-      
+
       if (response.success) {
         // Clear model data
         this.attributes = {};
@@ -180,13 +199,13 @@ class RestModel {
    */
   getChangedAttributes() {
     const changed = {};
-    
+
     for (const [key, value] of Object.entries(this.attributes)) {
       if (this.originalAttributes[key] !== value) {
         changed[key] = value;
       }
     }
-    
+
     return changed;
   }
 
@@ -228,14 +247,14 @@ class RestModel {
    */
   validate() {
     this.errors = {};
-    
+
     // Override in subclasses for custom validation
     if (this.constructor.validations) {
       for (const [field, rules] of Object.entries(this.constructor.validations)) {
         this.validateField(field, rules);
       }
     }
-    
+
     return Object.keys(this.errors).length === 0;
   }
 
@@ -247,7 +266,7 @@ class RestModel {
   validateField(field, rules) {
     const value = this.get(field);
     const rulesArray = Array.isArray(rules) ? rules : [rules];
-    
+
     for (const rule of rulesArray) {
       if (typeof rule === 'function') {
         const result = rule(value, this);

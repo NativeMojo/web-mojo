@@ -114,14 +114,45 @@ Comprehensive demonstration showcasing all Phase 1 features.
 
 **Run:** `complete-demo/index.html`
 
+---
+
+### 5. Phase 2 Basic (`phase2-basic/`)
+**Difficulty: Intermediate** | **Focus: Data Layer Fundamentals**
+
+Master MOJO's Phase 2 data layer with RestModel and DataList components.
+
+**Features Demonstrated:**
+- ✅ RestModel CRUD operations with validation
+- ✅ DataList collection management and querying
+- ✅ Real-time validation with custom rules
+- ✅ Event-driven UI updates and collection events
+- ✅ Search, filtering, and sorting capabilities
+- ✅ Comprehensive error handling and logging
+
+**What You'll Learn:**
+- Creating models with validation rules
+- Managing collections with add/remove/query operations
+- Building reactive UIs with data layer events
+- Implementing search and filter functionality
+- Handling validation errors gracefully
+
+**Run:** `phase2-basic/index.html`
+
 ## 🎯 Learning Path
 
 **Recommended Order for New Users:**
 
+**Phase 1 Foundation:**
 1. **Start with Basic** - Learn core concepts and syntax
 2. **Explore Hierarchy** - Understand component relationships
 3. **Master Events** - Learn the EventBus communication system
 4. **Review Complete Demo** - See everything working together
+
+**Phase 2 Data Layer:**
+5. **Phase 2 Basic** - Master RestModel and DataList fundamentals
+
+**Advanced Learning:**
+6. **Build Your Own** - Combine Phase 1 + Phase 2 concepts
 
 ## 🛠️ Example Structure
 
@@ -287,13 +318,14 @@ MOJODevTools.stats()
 
 After exploring these examples:
 
-1. **Build Your Own** - Create a custom application
-2. **Read Documentation** - Dive deeper with `../README-Phase1.md`
-3. **Explore Source Code** - Study `../src/` directory
-4. **Await Phase 2** - Data Layer coming soon!
+1. **Try Phase 2** - Explore data layer with `phase2-basic/`
+2. **Build Your Own** - Create a custom application combining Phase 1 + 2
+3. **Read Documentation** - Dive deeper with `../README-Phase1.md` and `../PHASE2-COMPLETE.md`
+4. **Explore Source Code** - Study `../src/` directory
+5. **Await Phase 3** - UI Components coming soon!
 
 ---
 
-**MOJO Framework v2.0.0 - Phase 1: Core Architecture & View System**
+**MOJO Framework v2.0.0 - Phase 1: Core Architecture & View System + Phase 2: Data Layer**
 
 Built with ❤️ and modern JavaScript

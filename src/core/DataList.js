@@ -1,21 +1,43 @@
 /**
  * DataList - Collection class for managing arrays of RestModel instances
  * Provides methods for fetching and managing collections of models
+ * 
+ * Usage Examples:
+ * 
+ * // Preloaded Data (no REST fetching)
+ * const collection = new MyCollection({ preloaded: true });
+ * collection.add(new MyModel({...}));
+ * // collection.fetch() will be skipped if data already exists
+ * 
+ * // REST Data (fetch from API)
+ * const collection = new MyCollection({ preloaded: false }); // default
+ * await collection.fetch(); // Will make API call
  */
 
 class DataList {
   constructor(ModelClass, options = {}) {
     this.ModelClass = ModelClass;
-    this.endpoint = options.endpoint || ModelClass.endpoint || '';
     this.models = [];
     this.loading = false;
     this.errors = {};
     this.meta = {};
     
-    // Configuration options
+    // Set up endpoint
+    this.endpoint = options.endpoint || ModelClass.endpoint || '';
+    
+    // Automatic REST detection based on endpoint
+    this.restEnabled = this.endpoint ? true : false;
+    
+    // Allow explicit override
+    if (options.restEnabled !== undefined) {
+      this.restEnabled = options.restEnabled;
+    }
+    
+    // Configuration
     this.options = {
       parse: true,
       reset: true,
+      preloaded: false,
       ...options
     };
   }
@@ -26,6 +48,18 @@ class DataList {
    * @returns {Promise} Promise that resolves with collection data
    */
   async fetch(options = {}) {
+    // Skip fetching if not REST enabled
+    if (!this.restEnabled) {
+      console.info('DataList: REST disabled, skipping fetch');
+      return this;
+    }
+    
+    // Skip fetching if preloaded is true and we already have data
+    if (this.options.preloaded && this.models.length > 0) {
+      console.info('DataList: Using preloaded data, skipping fetch');
+      return this;
+    }
+    
     const url = this.buildUrl();
     
     this.loading = true;

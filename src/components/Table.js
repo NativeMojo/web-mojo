@@ -1,6 +1,24 @@
 /**
  * Table - Advanced data table component for MOJO framework
  * Displays collections with filtering, sorting, pagination, and actions
+ * 
+ * Usage Examples:
+ * 
+ * // Preloaded Data (no REST fetching)
+ * const collection = new MyCollection();
+ * collection.add(new MyModel({...}));
+ * const table = new Table({
+ *   collection: collection,
+ *   options: { preloaded: true },
+ *   // ... other config
+ * });
+ * 
+ * // REST Data (fetch from API)
+ * const table = new Table({
+ *   Collection: MyModelClass,
+ *   options: { preloaded: false }, // default
+ *   // ... other config
+ * });
  */
 
 class Table {
@@ -15,8 +33,10 @@ class Table {
     this.view = options.view || 'table';
     
     // Internal state
-    this.container = null;
-    this.collection = null;
+    this.container = options.container || null;
+    this.collection = options.collection || null;
+    
+
     this.loading = false;
     this.currentPage = 1;
     this.itemsPerPage = 10;
@@ -29,6 +49,7 @@ class Table {
     this.options = {
       selectable: false,
       searchable: true,
+      searchPlacement: 'toolbar', // 'dropdown' or 'toolbar'
       sortable: true,
       filterable: true,
       paginated: true,
@@ -36,8 +57,10 @@ class Table {
       striped: true,
       bordered: false,
       hover: true,
+      preloaded: false,  // Skip REST fetching when true
       ...options
     };
+
     
     // Event listeners
     this.listeners = {};
@@ -47,14 +70,27 @@ class Table {
   }
 
   /**
+   * Cleanup method to clear timeouts and unbind events
+   */
+  destroy() {
+    if (this.searchTimeout) {
+      clearTimeout(this.searchTimeout);
+      this.searchTimeout = null;
+    }
+    this._eventsBound = false;
+  }
+
+  /**
    * Initialize the table component
    */
   init() {
-    if (this.Collection) {
+    // Only create collection if we don't already have one (preserve preloaded collections)
+    if (this.Collection && !this.collection) {
       this.collection = new this.Collection();
       
       // Set up collection event listeners
       this.collection.on('update', () => {
+        console.log('🔍 [DEBUG] Collection update event triggered, calling render()');
         this.render();
       });
       
@@ -69,6 +105,45 @@ class Table {
     
     // Apply default list options
     this.applyListOptions();
+  }
+
+  /**
+   * Initialize table with data
+   * @returns {Promise} Promise that resolves when initialization is complete
+   */
+  async initializeData() {
+    if (!this.collection) return;
+    
+    // Check if we have data already
+    const hasData = this.collection.models && this.collection.models.length > 0;
+    
+    // Only fetch if we don't have data and preloaded is false
+    if (!hasData && !this.options.preloaded) {
+      try {
+        // Only attempt fetch if Rest client is available
+        if (this.collection.constructor.Rest) {
+          const params = {
+            ...this.collection_params,
+            ...this.buildQueryParams()
+          };
+          
+          console.log('🔍 [DEBUG] About to fetch in initializeData():', {
+              hasData,
+              preloaded: this.options.preloaded,
+              params: params
+          });
+          await this.collection.fetch({ params });
+          console.log('🔍 [DEBUG] Fetch completed in initializeData(), new length:', this.collection?.models?.length);
+        } else {
+          console.info('Table: No REST client available, using existing data or empty table');
+        }
+      } catch (fetchError) {
+        console.warn('Table: Initial data fetch failed:', fetchError);
+        throw fetchError; // Re-throw so caller can handle
+      }
+    } else if (this.options.preloaded) {
+      console.info('Table: Using preloaded data, skipping fetch');
+    }
   }
 
   /**
@@ -95,41 +170,132 @@ class Table {
    * @returns {Promise} Promise that resolves when table is rendered
    */
   async render(container = null) {
+    const renderCallStack = new Error().stack.split('\n').slice(1, 4).join('\n');
+    console.log('🔍 [DEBUG] Table.render() called from:', renderCallStack);
+    console.log('🔍 [DEBUG] Collection state:', {
+        hasCollection: !!this.collection,
+        collectionLength: this.collection?.models?.length,
+        collectionEndpoint: this.collection?.endpoint
+    });
+
     if (container) {
       this.container = container;
     }
     
     if (!this.container) {
-      throw new Error('No container specified for table rendering');
+      console.warn('Table: No container specified, creating fallback container');
+      // Create a fallback container and append to body
+      this.container = document.createElement('div');
+      this.container.className = 'mojo-table-fallback-container m-3';
+      this.container.innerHTML = `
+        <div class="alert alert-info mb-2">
+          <small><i class="bi bi-info-circle me-1"></i>Table rendered in fallback container</small>
+        </div>
+      `;
+      // Safely append to body if available
+      if (document.body) {
+        document.body.appendChild(this.container);
+      } else {
+        console.error('Table: Cannot create fallback container - document.body not available');
+        throw new Error('No container available and cannot create fallback');
+      }
+    }
+    
+    // Handle case where container is a selector string
+    if (typeof this.container === 'string') {
+      const element = document.querySelector(this.container);
+      if (!element) {
+        console.warn(`Table: Container "${this.container}" not found, creating fallback`);
+        this.container = document.createElement('div');
+        this.container.className = 'mojo-table-fallback-container m-3';
+        this.container.innerHTML = `
+          <div class="alert alert-warning mb-2">
+            <small><i class="bi bi-exclamation-triangle me-1"></i>Original container "${this.container}" not found</small>
+          </div>
+        `;
+        // Safely append to body if available
+        if (document.body) {
+          document.body.appendChild(this.container);
+        } else {
+          console.error('Table: Cannot create fallback container - document.body not available');
+          throw new Error('No container available and cannot create fallback');
+        }
+      } else {
+        this.container = element;
+        // Add instance identifier to container for debugging
+        this.container.setAttribute('data-table-instance', this._instanceId);
+      }
     }
 
     this.loading = true;
     this.updateLoadingState();
 
+    let hasData = false;
+    let errorMessage = null;
+
     try {
-      // Fetch data if collection exists
-      if (this.collection) {
-        const params = {
-          ...this.collection_params,
-          ...this.buildQueryParams()
-        };
-        
-        await this.collection.fetch({ params });
+      // Create collection if we don't have one but have a Collection class
+      if (!this.collection && this.Collection) {
+        try {
+          this.collection = new this.Collection();
+          // Collection created - data initialization is now explicit via initializeData()
+        } catch (collectionError) {
+          errorMessage = `Failed to create collection: ${collectionError.message}`;
+          console.warn('Table: Collection creation failed:', collectionError);
+        }
       }
 
-      // Render table HTML
-      this.container.innerHTML = this.buildTableHTML();
+      // Check if we have a collection with data
+      if (this.collection && this.collection.models && this.collection.models.length > 0) {
+        hasData = true;
+      }
+
+    } catch (setupError) {
+      errorMessage = `Table setup failed: ${setupError.message}`;
+      console.error('Table: Setup error:', setupError);
+    }
+
+    // Always try to render something, even if there are errors
+    try {
+      // Preserve focus state
+      const focusedElement = this.container.querySelector(':focus');
+      const focusedValue = focusedElement?.value;
+      const focusedSelectionStart = focusedElement?.selectionStart;
+      const focusedSelectionEnd = focusedElement?.selectionEnd;
+      const focusedAction = focusedElement?.getAttribute('data-action');
       
-      // Bind events
+      // Reset event binding flag before rebuilding HTML
+      this._eventsBound = false;
+      
+      this.container.innerHTML = this.buildTableHTML();
+      this._eventsBound = false; // Reset event binding flag
       this.bindEvents();
       
-      this.loading = false;
-      this.updateLoadingState();
+      // Restore focus if it was on search input
+      if (focusedAction === 'search-input') {
+        const newSearchInput = this.container.querySelector('[data-action="search-input"]');
+        if (newSearchInput) {
+          newSearchInput.value = focusedValue;
+          newSearchInput.focus();
+          if (focusedSelectionStart !== undefined) {
+            newSearchInput.setSelectionRange(focusedSelectionStart, focusedSelectionEnd);
+          }
+        }
+      }
       
-    } catch (error) {
-      this.loading = false;
-      this.showError(`Failed to load table data: ${error.message}`);
+      // Show error message if there was one, but still show the table
+      if (errorMessage) {
+        this.showErrorBanner(errorMessage);
+      }
+      
+    } catch (renderError) {
+      console.error('Table: Critical render error:', renderError);
+      // Last resort: render a basic error state
+      this.renderFallbackError(`Critical error: ${renderError.message}`);
     }
+
+    this.loading = false;
+    this.updateLoadingState();
   }
 
   /**
@@ -145,17 +311,23 @@ class Table {
       params.per_page = this.itemsPerPage;
     }
     
-    // Sorting
+    // Sorting - use single sort parameter with prefix format for REST APIs
     if (this.sortBy) {
-      params.sort_by = this.sortBy;
-      params.sort_direction = this.sortDirection;
+      params.sort = this.sortDirection === 'desc' ? `-${this.sortBy}` : this.sortBy;
     }
     
-    // Filters
+    // Filters - use simple fieldname=value format
     Object.entries(this.activeFilters).forEach(([key, value]) => {
       if (value !== null && value !== undefined && value !== '') {
-        params[`filter_${key}`] = value;
+        params[key] = value;
       }
+    });
+    
+    console.log('🔍 [DEBUG] buildQueryParams result:', {
+      sortBy: this.sortBy,
+      sortDirection: this.sortDirection,
+      activeFilters: this.activeFilters,
+      builtParams: params
     });
     
     return params;
@@ -169,7 +341,70 @@ class Table {
     const tableClasses = this.buildTableClasses();
     const data = this.collection ? this.collection.models : [];
     
+    console.log('🔍 [DEBUG] buildTableHTML - Data extraction:', {
+      hasCollection: !!this.collection,
+      collectionModels: this.collection?.models,
+      dataLength: data?.length,
+      firstItem: data?.[0]
+    });
+    
     return `
+      <style>
+        .mojo-select-cell, .mojo-select-all-cell {
+          background-color: #f8f9fa;
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+          text-align: center;
+          vertical-align: middle;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .mojo-select-cell.selected, .mojo-select-all-cell.selected {
+          background-color: var(--bs-primary);
+        }
+        .mojo-select-cell:hover, .mojo-select-all-cell:hover {
+          background-color: var(--bs-primary);
+        }
+        .mojo-checkbox {
+          width: 16px;
+          height: 16px;
+          border: 2px solid #dee2e6;
+          border-radius: 3px;
+          background-color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+        }
+        .mojo-select-cell.selected .mojo-checkbox, .mojo-select-all-cell.selected .mojo-checkbox {
+          border-color: white;
+          background-color: white;
+        }
+        .mojo-select-cell:hover .mojo-checkbox, .mojo-select-all-cell:hover .mojo-checkbox {
+          border-color: white;
+          background-color: white;
+        }
+        .mojo-checkbox i {
+          font-size: 10px;
+          color: var(--bs-primary);
+          opacity: 0;
+          transition: opacity 0.2s ease;
+        }
+        .mojo-select-cell.selected .mojo-checkbox i, .mojo-select-all-cell.selected .mojo-checkbox i {
+          opacity: 1;
+        }
+        .mojo-select-all-cell.indeterminate .mojo-checkbox {
+          border-color: var(--bs-primary);
+          background-color: var(--bs-primary);
+        }
+        .mojo-select-all-cell.indeterminate .mojo-checkbox i {
+          opacity: 1;
+          color: white;
+        }
+      </style>
       <div class="mojo-table-wrapper">
         ${this.buildToolbar()}
         <div class="table-responsive">
@@ -206,13 +441,17 @@ class Table {
     if (!this.options.searchable && !this.options.filterable) {
       return '';
     }
-    
+
     return `
       <div class="mojo-table-toolbar mb-3">
-        <div class="row">
-          ${this.options.searchable ? this.buildSearchBox() : ''}
-          ${this.options.filterable ? this.buildFilters() : ''}
+        <div class="row align-items-center">
+          ${this.options.searchable && this.options.searchPlacement === 'toolbar' ? this.buildToolbarSearch() : ''}
+          ${this.buildFilterDropdown()}
+          <div class="col-auto ms-auto">
+            ${this.buildTableActions()}
+          </div>
         </div>
+        ${this.buildActivePills()}
       </div>
     `;
   }
@@ -221,15 +460,29 @@ class Table {
    * Build search box
    * @returns {string} Search box HTML
    */
-  buildSearchBox() {
+  buildFilterDropdown() {
+    // Show dropdown if we have filters, or if search is in dropdown mode
+    const showDropdown = (this.filters && Object.keys(this.filters).length > 0) || 
+                         (this.options.searchable && this.options.searchPlacement === 'dropdown');
+    
+    if (!showDropdown) {
+      return '';
+    }
+
+    const hasFilters = this.filters && Object.keys(this.filters).length > 0;
+    
     return `
-      <div class="col-md-6">
-        <div class="input-group">
-          <input type="text" class="form-control" placeholder="Search..." 
-                 data-action="search" value="${this.activeFilters.search || ''}">
-          <button class="btn btn-outline-secondary" type="button" data-action="search">
-            <i class="fas fa-search"></i>
+      <div class="col-auto">
+        <div class="dropdown">
+          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                  data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-filter me-1"></i>
+            Add Filter
           </button>
+          <div class="dropdown-menu p-3" style="min-width: 300px;">
+            ${this.options.searchable && this.options.searchPlacement === 'dropdown' ? this.buildSearchInDropdown() : ''}
+            ${hasFilters ? this.buildFiltersInDropdown() : ''}
+          </div>
         </div>
       </div>
     `;
@@ -239,38 +492,56 @@ class Table {
    * Build filter controls
    * @returns {string} Filters HTML
    */
-  buildFilters() {
-    if (!this.filters || Object.keys(this.filters).length === 0) {
-      return '';
-    }
-    
-    const filterControls = Object.entries(this.filters).map(([key, filter]) => {
-      return this.buildFilterControl(key, filter);
-    }).join('');
-    
+  buildSearchInDropdown() {
     return `
-      <div class="col-md-6">
-        <div class="row">
-          ${filterControls}
+      <div class="mb-3">
+        <label class="form-label fw-bold small">Search</label>
+        <div class="input-group input-group-sm">
+          <input type="text" class="form-control" placeholder="Search..." 
+                 data-filter="search" value="${this.activeFilters.search || ''}">
+          <button class="btn btn-primary" type="button" data-action="apply-search">
+            <i class="bi bi-search"></i>
+          </button>
+        </div>
+      </div>
+      ${Object.keys(this.filters || {}).length > 0 ? '<hr class="my-2">' : ''}
+    `;
+  }
+
+  buildToolbarSearch() {
+    return `
+      <div class="col-auto">
+        <div class="input-group input-group-sm" style="width: 250px;">
+          <input type="text" class="form-control" placeholder="Search..." 
+                 data-filter="search" value="${this.activeFilters.search || ''}">
+          <button class="btn btn-outline-secondary" type="button" data-action="apply-search">
+            <i class="bi bi-search"></i>
+          </button>
         </div>
       </div>
     `;
   }
 
-  /**
-   * Build individual filter control
-   * @param {string} key - Filter key
-   * @param {object} filter - Filter configuration
-   * @returns {string} Filter control HTML
-   */
-  buildFilterControl(key, filter) {
+  buildFiltersInDropdown() {
+    if (!this.filters || Object.keys(this.filters).length === 0) {
+      return '';
+    }
+    
+    return Object.entries(this.filters).map(([key, filter]) => {
+      return this.buildFilterInDropdown(key, filter);
+    }).join('');
+  }
+
+  buildFilterInDropdown(key, filter) {
     const value = this.activeFilters[key] || '';
+    const label = filter.label || key.charAt(0).toUpperCase() + key.slice(1);
     
     switch (filter.type) {
       case 'select':
         return `
-          <div class="col-auto">
-            <select class="form-select" data-filter="${key}">
+          <div class="mb-3">
+            <label class="form-label fw-bold small">${label}</label>
+            <select class="form-select form-select-sm" data-filter="${key}" data-action="apply-filter">
               <option value="">${filter.placeholder || 'All'}</option>
               ${filter.options.map(opt => 
                 `<option value="${opt.value}" ${value === opt.value ? 'selected' : ''}>
@@ -283,19 +554,122 @@ class Table {
       
       case 'date':
         return `
-          <div class="col-auto">
-            <input type="date" class="form-control" data-filter="${key}" 
-                   value="${value}" placeholder="${filter.placeholder || ''}">
+          <div class="mb-3">
+            <label class="form-label fw-bold small">${label}</label>
+            <input type="date" class="form-control form-control-sm" data-filter="${key}" 
+                   value="${value}" data-action="apply-filter">
           </div>
         `;
       
       default:
         return `
-          <div class="col-auto">
-            <input type="text" class="form-control" data-filter="${key}" 
-                   value="${value}" placeholder="${filter.placeholder || ''}">
+          <div class="mb-3">
+            <label class="form-label fw-bold small">${label}</label>
+            <div class="input-group input-group-sm">
+              <input type="text" class="form-control" data-filter="${key}" 
+                     value="${value}" placeholder="${filter.placeholder || ''}">
+              <button class="btn btn-primary" type="button" data-action="apply-filter">
+                Apply
+              </button>
+            </div>
           </div>
         `;
+    }
+  }
+
+  buildActivePills() {
+    const activeFilters = Object.entries(this.activeFilters).filter(([key, value]) => 
+      value && value.toString().trim() !== ''
+    );
+    
+    if (activeFilters.length === 0) {
+      return '';
+    }
+    
+    const pills = activeFilters.map(([key, value]) => {
+      const displayValue = this.getFilterDisplayValue(key, value);
+      const label = this.getFilterLabel(key);
+      
+      return `
+        <span class="badge bg-primary me-2 mb-2 fs-6 py-2 px-3">
+          <i class="bi bi-${key === 'search' ? 'search' : 'filter'} me-1"></i>
+          ${label}: ${displayValue}
+          <button type="button" class="btn-close btn-close-white ms-2" 
+                  style="font-size: 0.75em;" data-action="remove-filter" 
+                  data-filter="${key}" aria-label="Remove filter"></button>
+        </span>
+      `;
+    }).join('');
+    
+    const clearAllButton = activeFilters.length > 1 ? `
+      <button class="btn btn-sm btn-outline-secondary mb-2" data-action="clear-all-filters">
+        <i class="bi bi-x-circle me-1"></i>
+        Clear All
+      </button>
+    ` : '';
+    
+    return `
+      <div class="row mt-2">
+        <div class="col-12">
+          <div class="d-flex flex-wrap align-items-center">
+            ${pills}
+            ${clearAllButton}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  getFilterDisplayValue(key, value) {
+    if (key === 'search') {
+      return `"${value}"`;
+    }
+    
+    const filter = this.filters[key];
+    if (filter && filter.type === 'select' && filter.options) {
+      const option = filter.options.find(opt => opt.value === value);
+      return option ? option.label : value;
+    }
+    
+    return value;
+  }
+
+  getFilterLabel(key) {
+    if (key === 'search') {
+      return 'Search';
+    }
+    
+    const filter = this.filters[key];
+    if (filter && filter.label) {
+      return filter.label;
+    }
+    
+    return key.charAt(0).toUpperCase() + key.slice(1);
+  }
+
+  /**
+   * Update search input values across both toolbar and dropdown
+   * @param {string} value - Search value to set
+   */
+  updateSearchInputs(value) {
+    const searchInputs = this.container.querySelectorAll('[data-filter="search"]');
+    searchInputs.forEach(input => {
+      input.value = value || '';
+    });
+  }
+
+  buildTableActions() {
+    // Add any additional toolbar actions here if needed
+    return '';
+  }
+
+  closeFilterDropdown() {
+    const dropdown = this.container.querySelector('.dropdown-toggle[data-bs-toggle="dropdown"]');
+    if (dropdown && window.bootstrap && window.bootstrap.Dropdown) {
+      const dropdownInstance = window.bootstrap.Dropdown.getInstance(dropdown);
+      if (dropdownInstance) {
+        dropdownInstance.hide();
+      }
     }
   }
 
@@ -306,19 +680,51 @@ class Table {
   buildTableHeader() {
     const headerCells = this.columns.map(column => {
       const sortable = this.options.sortable && column.sortable !== false;
-      const sortClass = this.getSortClass(column.key);
+      const currentSort = this.sortBy === column.key ? this.sortDirection : null;
+      const sortIcon = this.getSortIcon(currentSort);
+      
+      const sortDropdown = sortable ? `
+        <div class="dropdown d-inline-block ms-2">
+          <button class="btn btn-sm btn-link p-0 text-decoration-none" type="button" 
+                  data-bs-toggle="dropdown" aria-expanded="false">
+            ${sortIcon}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item ${currentSort === 'asc' ? 'active' : ''}" 
+                   data-action="sort" data-field="${column.key}" data-direction="asc">
+                <i class="bi bi-sort-alpha-down me-2"></i>Sort A-Z
+                </a></li>
+            <li><a class="dropdown-item ${currentSort === 'desc' ? 'active' : ''}" 
+                   data-action="sort" data-field="${column.key}" data-direction="desc">
+                <i class="bi bi-sort-alpha-down-alt me-2"></i>Sort Z-A
+                </a></li>
+            <li><a class="dropdown-item ${currentSort === null ? 'active' : ''}" 
+                   data-action="sort" data-field="${column.key}" data-direction="none">
+                <i class="bi bi-x-circle me-2"></i>No Sort
+                </a></li>
+          </ul>
+        </div>
+      ` : '';
       
       return `
-        <th class="${sortable ? 'sortable' : ''} ${sortClass}"
-            ${sortable ? `data-action="sort" data-field="${column.key}"` : ''}>
-          ${column.title || column.key}
-          ${sortable ? '<i class="fas fa-sort sort-icon"></i>' : ''}
+        <th class="${sortable ? 'sortable' : ''}">
+          <div class="d-flex align-items-center">
+            <span>${column.title || column.key}</span>
+            ${sortDropdown}
+          </div>
         </th>
       `;
     }).join('');
     
     const selectAllCell = this.options.selectable ? 
-      '<th><input type="checkbox" data-action="select-all"></th>' : '';
+      `<th style="width: 40px; padding: 0;">
+        <div class="mojo-select-all-cell ${this.isAllSelected() ? 'selected' : ''}" 
+             data-action="select-all" data-table-instance="${this._instanceId}">
+          <div class="mojo-checkbox">
+            <i class="bi bi-check"></i>
+          </div>
+        </div>
+      </th>` : '';
     
     return `
       <thead>
@@ -332,11 +738,46 @@ class Table {
   }
 
   /**
+   * Get sort icon based on current sort direction
+   * @param {string|null} direction - Current sort direction
+   * @returns {string} Sort icon HTML
+   */
+  getSortIcon(direction) {
+    if (direction === 'asc') {
+      return '<i class="bi bi-sort-alpha-down text-primary"></i>';
+    } else if (direction === 'desc') {
+      return '<i class="bi bi-sort-alpha-down-alt text-primary"></i>';
+    } else {
+      return '<i class="bi bi-three-dots-vertical text-muted"></i>';
+    }
+  }
+
+  /**
    * Build table body
    * @param {array} data - Table data
    * @returns {string} Table body HTML
    */
   buildTableBody(data) {
+    // Get data from collection if not provided
+    if (!data && this.collection) {
+      data = this.collection.models || [];
+    }
+    
+    console.log('🔍 [DEBUG] buildTableBody - Before processData:', {
+      rawDataLength: data?.length,
+      rawData: data,
+      firstItem: data?.[0]
+    });
+    
+    // Apply client-side filtering, sorting, and pagination
+    data = this.processData(data || []);
+    
+    console.log('🔍 [DEBUG] buildTableBody - After processData:', {
+      processedDataLength: data?.length,
+      processedData: data,
+      firstProcessedItem: data?.[0]
+    });
+    
     if (!data || data.length === 0) {
       const colspan = this.columns.length + (this.options.selectable ? 1 : 0) + 1;
       return `
@@ -344,7 +785,7 @@ class Table {
           <tr>
             <td colspan="${colspan}" class="text-center py-4">
               <div class="text-muted">
-                <i class="fas fa-inbox fa-2x mb-2"></i>
+                <i class="bi bi-inbox fa-2x mb-2"></i>
                 <p>No data available</p>
               </div>
             </td>
@@ -359,6 +800,80 @@ class Table {
   }
 
   /**
+   * Process data with filtering, sorting, and pagination
+   * @param {array} data - Raw data
+   * @returns {array} Processed data
+   */
+  processData(data) {
+    let processedData = [...data];
+    
+    // For REST collections, server handles filtering and sorting
+    // For local collections, apply client-side filtering and sorting
+    if (!this.collection?.restEnabled) {
+      // Apply search filter
+      if (this.activeFilters.search) {
+        const searchTerm = this.activeFilters.search.toLowerCase();
+        processedData = processedData.filter(item => {
+          return this.columns.some(column => {
+            const value = this.getCellValue(item, column);
+            return String(value || '').toLowerCase().includes(searchTerm);
+          });
+        });
+      }
+      
+      // Apply other filters
+      Object.entries(this.activeFilters).forEach(([key, value]) => {
+        if (key !== 'search' && value && value !== '') {
+          processedData = processedData.filter(item => {
+            const itemValue = this.getCellValue(item, {key});
+            return itemValue === value;
+          });
+        }
+      });
+      
+      // Apply sorting
+      if (this.sortBy) {
+        processedData.sort((a, b) => {
+          const aValue = this.getCellValue(a, {key: this.sortBy}) || '';
+          const bValue = this.getCellValue(b, {key: this.sortBy}) || '';
+          
+          let comparison = 0;
+          if (aValue < bValue) comparison = -1;
+          if (aValue > bValue) comparison = 1;
+          
+          return this.sortDirection === 'desc' ? -comparison : comparison;
+        });
+      }
+    }
+    
+    // Handle pagination based on collection type
+    if (this.collection?.restEnabled) {
+      // REST collections: Server handles pagination, use metadata total
+      this.totalFilteredItems = this.collection.meta?.total || processedData.length;
+      // Don't slice data - server already sent the right page
+    } else {
+      // Local collections: Apply client-side pagination
+      this.totalFilteredItems = processedData.length;
+      if (this.options.paginated) {
+        const startIndex = ((this.currentPage - 1) * this.itemsPerPage);
+        const endIndex = startIndex + this.itemsPerPage;
+        processedData = processedData.slice(startIndex, endIndex);
+      }
+    }
+    
+    return processedData;
+  }
+
+  /**
+   * Get visible items (current page)
+   * @returns {array} Visible items
+   */
+  getVisibleItems() {
+    const data = this.collection?.models || [];
+    return this.processData(data);
+  }
+
+  /**
    * Build individual table row
    * @param {object} item - Data item
    * @param {number} index - Row index
@@ -369,16 +884,21 @@ class Table {
       return this.buildTableCell(item, column);
     }).join('');
     
+    const itemId = String(this.getCellValue(item, {key: 'id'}));
     const selectCell = this.options.selectable ? 
-      `<td>
-        <input type="checkbox" data-action="select-item" data-id="${item.id}" 
-               ${this.selectedItems.has(item.id) ? 'checked' : ''}>
+      `<td style="padding: 0;">
+        <div class="mojo-select-cell ${this.selectedItems.has(itemId) ? 'selected' : ''}" 
+             data-action="select-item" data-id="${itemId}" data-table-instance="${this._instanceId}">
+          <div class="mojo-checkbox">
+            <i class="bi bi-check"></i>
+          </div>
+        </div>
       </td>` : '';
     
     const actionCell = this.buildActionCell(item);
     
     return `
-      <tr data-id="${item.id}" class="${this.selectedItems.has(item.id) ? 'selected' : ''}">
+      <tr data-id="${itemId}" class="${this.selectedItems.has(itemId) ? 'selected' : ''}" style="cursor: pointer;">
         ${selectCell}
         ${cells}
         ${actionCell}
@@ -426,20 +946,27 @@ class Table {
    * @returns {*} Cell value
    */
   getCellValue(item, column) {
-    if (typeof item.get === 'function') {
-      return item.get(column.key);
+    try {
+      // Handle RestModel instances with get() method
+      if (typeof item.get === 'function') {
+        return item.get(column.key);
+      }
+      
+      // Check if item has a data property (RestModel structure)
+      const dataSource = item.data || item;
+      
+      // Support nested properties
+      const keys = column.key.split('.');
+      let value = dataSource;
+      for (const key of keys) {
+        value = value?.[key];
+      }
+      
+      return value;
+    } catch (error) {
+      console.warn(`Table: Error getting cell value for column ${column.key}:`, error);
+      return `[Error: ${error.message}]`;
     }
-    
-    // Support nested properties
-    const keys = column.key.split('.');
-    let value = item;
-    
-    for (const key of keys) {
-      value = value?.[key];
-      if (value === undefined || value === null) break;
-    }
-    
-    return value;
   }
 
   /**
@@ -504,24 +1031,24 @@ class Table {
     const actionButtons = actions.map(action => {
       switch (action) {
         case 'view':
-          return `<button class="btn btn-sm btn-outline-primary" data-action="item-clicked" data-id="${item.id}">
-            <i class="fas fa-eye"></i>
+          return `<button class="btn btn-sm btn-outline-primary" data-action="item-clicked" data-id="${this.getCellValue(item, {key: 'id'})}">
+            <i class="bi bi-eye"></i>
           </button>`;
         
         case 'edit':
-          return `<button class="btn btn-sm btn-outline-secondary" data-action="item-dlg" data-id="${item.id}" data-mode="edit">
-            <i class="fas fa-edit"></i>
+          return `<button class="btn btn-sm btn-outline-secondary" data-action="item-dlg" data-id="${this.getCellValue(item, {key: 'id'})}" data-mode="edit">
+            <i class="bi bi-pencil"></i>
           </button>`;
         
         case 'delete':
-          return `<button class="btn btn-sm btn-outline-danger" data-action="delete-item" data-id="${item.id}">
-            <i class="fas fa-trash"></i>
+          return `<button class="btn btn-sm btn-outline-danger" data-action="delete-item" data-id="${this.getCellValue(item, {key: 'id'})}">
+            <i class="bi bi-trash"></i>
           </button>`;
         
         default:
           if (typeof action === 'object') {
             return `<button class="btn btn-sm ${action.class || 'btn-outline-primary'}" 
-                      data-action="${action.action}" data-id="${item.id}">
+                      data-action="${action.action}" data-id="${this.getCellValue(item, {key: 'id'})}">
               ${action.icon ? `<i class="${action.icon}"></i>` : ''}
               ${action.label || ''}
             </button>`;
@@ -534,34 +1061,64 @@ class Table {
   }
 
   /**
-   * Build pagination controls
+   * Build pagination controls with page size selection
    * @returns {string} Pagination HTML
    */
   buildPagination() {
-    if (!this.options.paginated || !this.collection?.meta) {
+    if (!this.options.paginated) {
       return '';
     }
     
-    const meta = this.collection.meta;
-    const totalPages = meta.total_pages || 1;
-    const currentPage = meta.page || 1;
+    // Use appropriate total based on collection type
+    const totalItems = this.collection?.restEnabled 
+      ? (this.collection?.meta?.total || 0)
+      : (this.totalFilteredItems || this.collection?.models?.length || 0);
+    const totalPages = Math.ceil(totalItems / this.itemsPerPage);
+    const currentPage = this.currentPage;
     
-    if (totalPages <= 1) {
+    if (totalItems === 0) {
       return '';
     }
+    
+
+    
+    const startItem = ((currentPage - 1) * this.itemsPerPage) + 1;
+    const endItem = Math.min(currentPage * this.itemsPerPage, this.collection?.models?.length || 0);
     
     return `
-      <nav aria-label="Table pagination">
-        <ul class="pagination justify-content-center">
-          <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-            <a class="page-link" href="#" data-action="page" data-page="${currentPage - 1}">Previous</a>
-          </li>
-          ${this.buildPaginationPages(currentPage, totalPages)}
-          <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-            <a class="page-link" href="#" data-action="page" data-page="${currentPage + 1}">Next</a>
-          </li>
-        </ul>
-      </nav>
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="d-flex align-items-center">
+          <span class="text-muted me-3">
+            Showing ${startItem} to ${endItem} of ${totalItems} entries
+          </span>
+          <div class="d-flex align-items-center">
+            <label class="form-label me-2 mb-0">Show:</label>
+            <select class="form-select form-select-sm" style="width: auto;" data-action="page-size">
+              <option value="10" ${this.itemsPerPage === 10 ? 'selected' : ''}>10</option>
+              <option value="25" ${this.itemsPerPage === 25 ? 'selected' : ''}>25</option>
+              <option value="50" ${this.itemsPerPage === 50 ? 'selected' : ''}>50</option>
+              <option value="100" ${this.itemsPerPage === 100 ? 'selected' : ''}>100</option>
+            </select>
+          </div>
+        </div>
+        ${totalPages > 1 ? `
+          <nav aria-label="Table pagination">
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item">
+                <a class="page-link" href="#" data-action="page" data-page="${currentPage - 1}">
+                  <i class="bi bi-chevron-left"></i>
+                </a>
+              </li>
+              ${this.buildPaginationPages(currentPage, totalPages)}
+              <li class="page-item">
+                <a class="page-link" href="#" data-action="page" data-page="${currentPage + 1}">
+                  <i class="bi bi-chevron-right"></i>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        ` : ''}
+      </div>
     `;
   }
 
@@ -610,30 +1167,132 @@ class Table {
    */
   bindEvents() {
     if (!this.container) return;
+
+    // Prevent duplicate event listeners
+    if (this._eventsBound) return;
+    this._eventsBound = true;
     
-    // Item clicked handler
-    this.container.addEventListener('click', (e) => {
-      const target = e.target.closest('[data-action]');
-      if (!target) return;
+    // Store references to bound functions for cleanup
+    if (!this._boundEventHandlers) {
+      this._boundEventHandlers = {};
+    }
+
+    // Remove existing click listener if it exists
+    if (this._boundEventHandlers.click) {
+      this.container.removeEventListener('click', this._boundEventHandlers.click);
+    }
+    
+    // Create bound click handler
+    this._boundEventHandlers.click = (e) => {
+      console.log('🔍 [DEBUG] Click detected:', {
+        target: e.target.tagName,
+        action: e.target.getAttribute('data-action'),
+        dataPage: e.target.getAttribute('data-page'),
+        closest: e.target.closest('[data-action]')?.getAttribute('data-action')
+      });
+
+      const action = e.target.getAttribute('data-action');
+      const closestAction = e.target.closest('[data-action]')?.getAttribute('data-action');
+      const actualAction = action || closestAction;
       
-      e.preventDefault();
-      const action = target.getAttribute('data-action');
+      console.log('🔍 [DEBUG] Actual action determined:', actualAction);
+
+
+
+      // Handle specific actions
+      switch (actualAction) {
+        case 'apply-search':
+          this.handleSearchInput(e);
+          setTimeout(() => this.closeFilterDropdown(), 100);
+          break;
+
+        case 'apply-filter':
+          if (e.target.tagName === 'BUTTON') {
+            this.handleFilterFromDropdown(e);
+            setTimeout(() => this.closeFilterDropdown(), 100);
+          }
+          break;
+
+        case 'remove-filter':
+          this.handleRemoveFilter(e);
+          break;
+
+        case 'clear-all-filters':
+          this.handleClearAllFilters(e);
+          break;
+
+        case 'select-all':
+          e.stopPropagation();
+          const isCurrentlyAllSelected = this.isAllSelected();
+          this.handleSelectAll(!isCurrentlyAllSelected);
+          break;
+
+        case 'select-item':
+          e.stopPropagation();
+          const itemId = e.target.closest('[data-id]')?.getAttribute('data-id');
+          if (itemId) {
+            const isCurrentlySelected = this.selectedItems.has(itemId);
+            this.handleSelectItem(itemId, !isCurrentlySelected);
+          }
+          break;
+
+        default:
+          // Handle other actions (page, sort, delete, etc.)
+          if (actualAction && !['page-size'].includes(actualAction)) {
+            this.handleAction(actualAction, e, e.target.closest('[data-action]') || e.target);
+          }
+          break;
+      }
+
+      // Prevent dropdown from closing for clicks inside dropdown menu
+      // but allow form elements to work normally
+      const dropdownMenu = e.target.closest('.dropdown-menu');
+      if (dropdownMenu) {
+        // Don't prevent default browser behavior for form elements
+        if (!e.target.matches('select, option, input[type="text"], input[type="date"], button')) {
+          e.stopPropagation();
+        }
+      }
+    };
+    
+    // Use event delegation with a single click listener
+    this.container.addEventListener('click', this._boundEventHandlers.click);
+
+    // Remove existing change listener if it exists
+    if (this._boundEventHandlers.change) {
+      this.container.removeEventListener('change', this._boundEventHandlers.change);
+    }
+    
+    // Create bound change handler
+    this._boundEventHandlers.change = async (e) => {
+      const action = e.target.getAttribute('data-action');
       
-      this.handleAction(action, e, target);
-    });
-    
-    // Filter change handlers
-    this.container.addEventListener('input', (e) => {
-      if (e.target.hasAttribute('data-filter')) {
-        this.handleFilterChange(e.target);
+      if (action === 'apply-filter') {
+        this.handleFilterFromDropdown(e);
+      } else if (action === 'page-size') {
+        await this.handlePageSizeChange(parseInt(e.target.value));
       }
-    });
+    };
     
-    this.container.addEventListener('change', (e) => {
-      if (e.target.hasAttribute('data-filter')) {
-        this.handleFilterChange(e.target);
+    // Handle change events for form elements
+    this.container.addEventListener('change', this._boundEventHandlers.change);
+
+    // Remove existing keydown listener if it exists
+    if (this._boundEventHandlers.keydown) {
+      this.container.removeEventListener('keydown', this._boundEventHandlers.keydown);
+    }
+    
+    // Create bound keydown handler
+    this._boundEventHandlers.keydown = (e) => {
+      if (e.key === 'Enter' && e.target.matches('[data-filter="search"]')) {
+        e.preventDefault();
+        this.handleSearchInput(e);
+        setTimeout(() => this.closeFilterDropdown(), 100);
       }
-    });
+    };
+    
+    // Handle Enter key in search inputs
+    this.container.addEventListener('keydown', this._boundEventHandlers.keydown);
   }
 
   /**
@@ -643,6 +1302,17 @@ class Table {
    * @param {HTMLElement} target - Target element
    */
   async handleAction(action, event, target) {
+    console.log('🔍 [DEBUG] handleAction called:', {
+      action,
+      dataPage: target?.getAttribute('data-page'),
+      targetTag: target?.tagName
+    });
+
+    if (!target) {
+      console.warn('handleAction called with no target element');
+      return;
+    }
+    
     const itemId = target.getAttribute('data-id');
     const item = itemId ? this.collection?.get(itemId) : null;
     
@@ -658,26 +1328,22 @@ class Table {
       
       case 'sort':
         const field = target.getAttribute('data-field');
-        this.handleSort(field);
+        const direction = target.getAttribute('data-direction');
+        this.handleSort(field, direction);
         break;
       
       case 'page':
         const page = parseInt(target.getAttribute('data-page'));
-        this.handlePageChange(page);
+        await this.handlePageChange(page);
         break;
-      
-      case 'search':
-        this.handleSearch();
+        
+      case 'page-size':
+        const newSize = parseInt(target.value);
+        await this.handlePageSizeChange(newSize);
         break;
-      
-      case 'select-all':
-        this.handleSelectAll(target.checked);
-        break;
-      
-      case 'select-item':
-        this.handleSelectItem(itemId, target.checked);
-        break;
-      
+        
+
+        
       case 'delete-item':
         if (confirm('Are you sure you want to delete this item?')) {
           await this.handleDeleteItem(item);
@@ -718,91 +1384,336 @@ class Table {
   /**
    * Handle column sorting
    * @param {string} field - Field to sort by
+   * @param {string} direction - Sort direction ('asc', 'desc', 'none')
    */
-  handleSort(field) {
-    if (this.sortBy === field) {
-      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+  handleSort(field, direction) {
+    if (direction === 'none') {
+      this.sortBy = null;
+      this.sortDirection = 'asc';
     } else {
       this.sortBy = field;
-      this.sortDirection = 'asc';
+      this.sortDirection = direction || 'asc';
     }
     
     this.currentPage = 1;
-    this.render();
+    
+    // For REST collections, re-fetch data with new sorting
+    if (this.collection?.restEnabled) {
+      this.fetchWithCurrentFilters();
+    } else {
+      this.render();
+    }
   }
 
   /**
    * Handle page change
    * @param {number} page - Target page number
    */
-  handlePageChange(page) {
-    if (page < 1 || (this.collection?.meta?.total_pages && page > this.collection.meta.total_pages)) {
-      return;
+  async handlePageChange(page) {
+    console.log('🔍 [DEBUG] handlePageChange called with page:', page);
+    console.log('🔍 [DEBUG] Collection state before page change:', {
+      collectionLength: this.collection?.models?.length,
+      metaTotal: this.collection?.meta?.total,
+      currentPage: this.currentPage
+    });
+
+    const totalItems = this.collection?.restEnabled 
+      ? (this.collection?.meta?.total || 0)
+      : (this.totalFilteredItems || this.collection?.models?.length || 0);
+    const totalPages = Math.ceil(totalItems / this.itemsPerPage);
+    
+    console.log('🔍 [DEBUG] Wrap-around pagination check:', {
+      requestedPage: page,
+      totalItems,
+      totalPages,
+      itemsPerPage: this.itemsPerPage,
+      restEnabled: this.collection?.restEnabled,
+      totalFilteredItems: this.totalFilteredItems,
+      collectionLength: this.collection?.models?.length
+    });
+    
+    // Handle wrap-around pagination
+    const originalPage = page;
+    if (page < 1) {
+      page = totalPages; // Wrap to last page
+      console.log('🔄 [DEBUG] Wrapped to last page:', page);
+    } else if (page > totalPages) {
+      page = 1; // Wrap to first page
+      console.log('🔄 [DEBUG] Wrapped to first page:', page);
+    } else {
+      console.log('🔍 [DEBUG] No wrap needed, staying on page:', page);
     }
     
     this.currentPage = page;
+    
+    // Check if this collection uses REST for data fetching
+    if (this.collection?.restEnabled) {
+      // Server-side pagination: fetch new data from API
+      const start = (page - 1) * this.itemsPerPage;
+      
+      try {
+        console.log('🔍 [DEBUG] About to fetch in handlePageChange:', { page, start });
+        
+        // Build sort parameter for API
+        const fetchParams = {
+          page: page,
+          per_page: this.itemsPerPage,
+          size: this.itemsPerPage,
+          start: start
+        };
+        
+        // Add sort parameter if sorting is active
+        if (this.sortBy) {
+          fetchParams.sort = this.sortDirection === 'desc' ? `-${this.sortBy}` : this.sortBy;
+        }
+        
+        // Add current filters
+        Object.entries(this.activeFilters).forEach(([key, value]) => {
+          if (value !== null && value !== undefined && value !== '') {
+            fetchParams[key] = value;
+          }
+        });
+        
+        console.log('🔍 [DEBUG] handlePageChange final fetch params:', fetchParams);
+        await this.collection.fetch({ params: fetchParams });
+        console.log('🔍 [DEBUG] handlePageChange fetch completed, new length:', this.collection?.models?.length);
+      } catch (error) {
+        console.error('Failed to fetch page data:', error);
+      }
+    }
+    
+    // Always re-render after page change (REST gets new data, local re-slices existing data)
     this.render();
   }
 
   /**
-   * Handle search
+   * Handle page size change
+   * @param {number} newSize - New page size
    */
-  handleSearch() {
-    const searchInput = this.container.querySelector('[data-action="search"]');
-    if (searchInput) {
-      this.activeFilters.search = searchInput.value;
-      this.currentPage = 1;
-      this.render();
-    }
-  }
-
-  /**
-   * Handle filter changes
-   * @param {HTMLElement} filterElement - Filter input element
-   */
-  handleFilterChange(filterElement) {
-    const filterKey = filterElement.getAttribute('data-filter');
-    const filterValue = filterElement.value;
-    
-    if (filterValue) {
-      this.activeFilters[filterKey] = filterValue;
-    } else {
-      delete this.activeFilters[filterKey];
-    }
-    
+  async handlePageSizeChange(newSize) {
+    this.itemsPerPage = newSize;
     this.currentPage = 1;
+    
+    // Check if this collection uses REST for data fetching
+    if (this.collection?.restEnabled) {
+      // Server-side pagination: fetch new data from API with new page size
+      
+      try {
+        // Build sort parameter for API
+        const fetchParams = {
+          page: 1,
+          per_page: newSize,
+          size: newSize,
+          start: 0
+        };
+        
+        // Add sort parameter if sorting is active
+        if (this.sortBy) {
+          fetchParams.sort = this.sortDirection === 'desc' ? `-${this.sortBy}` : this.sortBy;
+        }
+        
+        // Add current filters
+        Object.entries(this.activeFilters).forEach(([key, value]) => {
+          if (value !== null && value !== undefined && value !== '') {
+            fetchParams[key] = value;
+          }
+        });
+        
+        console.log('🔍 [DEBUG] handlePageSizeChange final fetch params:', fetchParams);
+        await this.collection.fetch({ params: fetchParams });
+      } catch (error) {
+        console.error('Failed to fetch data with new page size:', error);
+      }
+    }
+    
     this.render();
   }
 
   /**
-   * Handle select all checkbox
-   * @param {boolean} checked - Checkbox state
+   * Handle select all action
+   * @param {boolean} checked - Whether to select all
    */
   handleSelectAll(checked) {
+
+    this.selectedItems.clear();
+    
     if (checked) {
-      this.collection?.models.forEach(item => {
-        this.selectedItems.add(item.id);
+      const visibleItems = this.getVisibleItems();
+
+      visibleItems.forEach(item => {
+        const itemId = String(this.getCellValue(item, {key: 'id'}));
+        this.selectedItems.add(itemId);
       });
-    } else {
-      this.selectedItems.clear();
     }
     
+
     this.updateSelectionDisplay();
+    this.emit('selection-changed', Array.from(this.selectedItems));
   }
 
   /**
    * Handle individual item selection
    * @param {string} itemId - Item ID
-   * @param {boolean} checked - Checkbox state
+   * @param {boolean} checked - Whether to select the item
    */
   handleSelectItem(itemId, checked) {
+
     if (checked) {
       this.selectedItems.add(itemId);
     } else {
       this.selectedItems.delete(itemId);
     }
     
+
     this.updateSelectionDisplay();
+    this.emit('selection-changed', Array.from(this.selectedItems));
+  }
+
+ /**
+  * Check if all visible items are selected
+  * @returns {boolean} True if all visible items are selected
+  */
+ isAllSelected() {
+   if (this.selectedItems.size === 0) return false;
+    
+   const visibleItems = this.getVisibleItems();
+   if (visibleItems.length === 0) return false;
+    
+   return visibleItems.every(item => {
+     const itemId = String(this.getCellValue(item, {key: 'id'}));
+     return this.selectedItems.has(itemId);
+   });
+ }
+
+ /**
+  * Handle filter changes
+  * @param {HTMLElement} filterElement - Filter input element
+  */
+ handleSearchInput(e) {
+   let searchInput;
+   if (e.target.matches('[data-filter="search"]')) {
+     searchInput = e.target;
+   } else {
+     searchInput = e.target.closest('.input-group').querySelector('input[data-filter="search"]');
+   }
+   
+   const searchValue = searchInput.value.trim();
+   
+   if (searchValue) {
+     this.activeFilters.search = searchValue;
+   } else {
+     delete this.activeFilters.search;
+   }
+   
+   // Update all search inputs to keep them in sync
+   this.updateSearchInputs(searchValue);
+   
+   this.currentPage = 1;
+   
+   // For REST collections, re-fetch data with new filters
+   if (this.collection?.restEnabled) {
+     this.fetchWithCurrentFilters();
+   } else {
+     this.render();
+   }
+ }
+
+ handleFilterFromDropdown(e) {
+   const filterElement = e.target.closest('[data-filter]');
+   if (!filterElement) return;
+   
+   const filterKey = filterElement.getAttribute('data-filter');
+   const filterValue = filterElement.value.trim();
+   
+   if (filterValue) {
+     this.activeFilters[filterKey] = filterValue;
+   } else {
+     delete this.activeFilters[filterKey];
+   }
+   
+   this.currentPage = 1;
+   
+   // For REST collections, re-fetch data with updated filters
+   if (this.collection?.restEnabled) {
+     this.fetchWithCurrentFilters();
+   } else {
+     this.render();
+   }
+ }
+
+ handleRemoveFilter(e) {
+   const filterKey = e.target.getAttribute('data-filter');
+   delete this.activeFilters[filterKey];
+   
+   // If removing search filter, clear all search inputs
+   if (filterKey === 'search') {
+     this.updateSearchInputs('');
+   }
+   
+   this.currentPage = 1;
+   
+   // For REST collections, re-fetch data without filters
+   if (this.collection?.restEnabled) {
+     this.fetchWithCurrentFilters();
+   } else {
+     this.render();
+   }
+ }
+
+ handleClearAllFilters(e) {
+   this.activeFilters = {};
+   
+   // Clear all search inputs
+   this.updateSearchInputs('');
+   
+   this.currentPage = 1;
+   
+   // For REST collections, re-fetch data with new search
+   if (this.collection?.restEnabled) {
+     this.fetchWithCurrentFilters();
+   } else {
+     this.render();
+   }
+ }
+
+
+
+  /**
+   * Fetch data with current filters and sorting for REST collections
+   */
+  async fetchWithCurrentFilters() {
+    if (!this.collection?.restEnabled) return;
+    
+    try {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      
+      // Build fetch parameters
+      const fetchParams = {
+        page: this.currentPage,
+        per_page: this.itemsPerPage,
+        size: this.itemsPerPage,
+        start: start
+      };
+      
+      // Add sort parameter with proper formatting
+      if (this.sortBy) {
+        fetchParams.sort = this.sortDirection === 'desc' ? `-${this.sortBy}` : this.sortBy;
+      }
+      
+      // Add current filters directly as parameters
+      Object.entries(this.activeFilters).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== '') {
+          fetchParams[key] = value;
+        }
+      });
+      
+      console.log('🔍 [DEBUG] fetchWithCurrentFilters final fetch params:', fetchParams);
+      await this.collection.fetch({ params: fetchParams });
+    } catch (error) {
+      console.error('Failed to fetch filtered data:', error);
+      // Fallback to render with existing data
+      this.render();
+    }
   }
 
   /**
@@ -848,19 +1759,43 @@ class Table {
    * Update selection display
    */
   updateSelectionDisplay() {
-    // Update checkboxes
-    const checkboxes = this.container.querySelectorAll('[data-action="select-item"]');
-    checkboxes.forEach(checkbox => {
-      const itemId = checkbox.getAttribute('data-id');
-      checkbox.checked = this.selectedItems.has(itemId);
+
+    // Update individual selection cells
+    const selectCells = this.container.querySelectorAll('.mojo-select-cell');
+
+    selectCells.forEach(cell => {
+      const itemId = cell.getAttribute('data-id');
+      const isSelected = this.selectedItems.has(itemId);
+      
+
+      // Update cell class (this controls the checkmark visibility via CSS)
+      cell.classList.toggle('selected', isSelected);
     });
     
-    // Update select all checkbox
-    const selectAllCheckbox = this.container.querySelector('[data-action="select-all"]');
-    if (selectAllCheckbox) {
-      const totalItems = this.collection?.models.length || 0;
-      selectAllCheckbox.checked = totalItems > 0 && this.selectedItems.size === totalItems;
-      selectAllCheckbox.indeterminate = this.selectedItems.size > 0 && this.selectedItems.size < totalItems;
+    // Update select all cell
+    const selectAllCell = this.container.querySelector('.mojo-select-all-cell');
+    if (selectAllCell) {
+      const allSelected = this.isAllSelected();
+      const hasSelected = this.selectedItems.size > 0;
+      const icon = selectAllCell.querySelector('i');
+      
+
+      // Update cell class and icon based on state
+      if (allSelected) {
+        // All selected - show checkmark on blue background
+        selectAllCell.classList.add('selected');
+        selectAllCell.classList.remove('indeterminate');
+        if (icon) icon.className = 'bi bi-check';
+      } else if (hasSelected) {
+        // Some selected - show minus on blue background (indeterminate)
+        selectAllCell.classList.remove('selected');
+        selectAllCell.classList.add('indeterminate');
+        if (icon) icon.className = 'bi bi-dash';
+      } else {
+        // None selected - show empty checkbox on gray background
+        selectAllCell.classList.remove('selected', 'indeterminate');
+        if (icon) icon.className = 'bi bi-check';
+      }
     }
     
     // Update row classes
@@ -877,7 +1812,65 @@ class Table {
    */
   showError(message) {
     console.error('Table error:', message);
-    // Could be enhanced with toast notifications
+    
+    // Display error in container if table failed to render completely
+    this.container.innerHTML = `
+      <div class="alert alert-danger" role="alert">
+        <h6><i class="bi bi-exclamation-triangle me-2"></i>Table Error</h6>
+        <p class="mb-0">${message}</p>
+        <hr>
+        <small class="text-muted">Check the console for more details.</small>
+      </div>
+    `;
+  }
+
+  /**
+   * Show error banner while keeping table visible
+   * @param {string} message - Error message
+   */
+  showErrorBanner(message) {
+    console.warn('Table warning:', message);
+    
+    // Add error banner above the table
+    const existingBanner = this.container.querySelector('.mojo-table-error-banner');
+    if (existingBanner) {
+      existingBanner.remove();
+    }
+
+    const banner = document.createElement('div');
+    banner.className = 'alert alert-warning mojo-table-error-banner mb-2';
+    banner.innerHTML = `
+      <div class="d-flex align-items-center">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <span class="flex-grow-1">${message}</span>
+        <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
+      </div>
+    `;
+    
+    this.container.insertBefore(banner, this.container.firstChild);
+  }
+
+  /**
+   * Render fallback error state when everything fails
+   * @param {string} message - Error message
+   */
+  renderFallbackError(message) {
+    console.error('Table critical error:', message);
+    
+    this.container.innerHTML = `
+      <div class="card border-danger">
+        <div class="card-header bg-danger text-white">
+          <h6 class="mb-0"><i class="bi bi-exclamation-circle me-2"></i>Table Unavailable</h6>
+        </div>
+        <div class="card-body">
+          <p class="card-text">${message}</p>
+          <p class="text-muted small mb-0">
+            The table component encountered a critical error and cannot be displayed. 
+            Please check your data configuration and try again.
+          </p>
+        </div>
+      </div>
+    `;
   }
 
   /**
@@ -957,12 +1950,21 @@ class Table {
    * Destroy table component
    */
   destroy() {
+    // Clear any timeouts
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+    }
+
+    // Clear container
     if (this.container) {
       this.container.innerHTML = '';
     }
-    
+
+    // Reset state
     this.selectedItems.clear();
-    this.listeners = {};
+    this.activeFilters = {};
+    this.eventHandlers = {};
+    this._eventsBound = false;
     this.collection = null;
   }
 }

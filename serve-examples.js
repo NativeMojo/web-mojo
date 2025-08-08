@@ -100,6 +100,7 @@ Available Examples:
 • Hierarchy Example: http://localhost:${PORT}/examples/hierarchy/
 • Events Example: http://localhost:${PORT}/examples/events/
 • Complete Demo: http://localhost:${PORT}/examples/complete-demo/
+• Phase 2 Basic: http://localhost:${PORT}/examples/phase2-basic/
 
 Press Ctrl+C to stop the server
     `);

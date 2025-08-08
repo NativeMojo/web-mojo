@@ -17,10 +17,10 @@ module.exports = (env, argv) => {
       clean: true,
       library: {
         name: 'MOJO',
-        type: 'umd',
+        type: isProduction ? 'umd' : 'var',
         export: 'default'
       },
-      globalObject: 'this'
+      globalObject: isProduction ? 'this' : 'window'
     },
     
     resolve: {
@@ -85,14 +85,40 @@ module.exports = (env, argv) => {
     ],
     
     devServer: {
-      static: {
-        directory: path.join(__dirname, 'dist'),
-      },
+      static: [
+        {
+          directory: path.join(__dirname, 'dist'),
+        },
+        {
+          directory: path.join(__dirname, 'examples'),
+          publicPath: '/examples',
+        },
+        {
+          directory: path.join(__dirname, 'src'),
+          publicPath: '/src',
+        },
+        {
+          directory: path.join(__dirname),
+          publicPath: '/',
+        }
+      ],
       compress: true,
       port: 3000,
-      open: true,
-      hot: true,
-      historyApiFallback: true,
+      open: {
+        target: ['/examples/'],
+      },
+      hot: !isProduction,
+      historyApiFallback: {
+        rewrites: [
+          { from: /^\/examples\/.*/, to: function(context) {
+            return context.parsedUrl.pathname;
+          }},
+          { from: /.*/, to: '/index.html' }
+        ]
+      },
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
       proxy: {
         '/api': {
           target: 'http://localhost:8000',

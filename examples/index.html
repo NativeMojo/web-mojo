@@ -1,258 +1,63 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="MOJO Framework Examples - Explore interactive examples and demonstrations">
-    <title>MOJO Framework - Examples</title>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>MOJO Framework - Examples</title>
 
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        <!-- Bootstrap CSS -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <!-- Bootstrap Icons -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+            rel="stylesheet"
+        />
+    </head>
+    <body class="bg-light">
+        <div class="container-fluid py-2">
+            <!-- Header -->
+            <div class="row mb-2">
+                <div class="col">
+                    <h4 class="mb-1">
+                        <i class="bi bi-code-square me-2"></i>
+                        MOJO Framework Examples
+                    </h4>
+                    <p class="text-muted mb-0 small">
+                        Interactive examples and demonstrations • Version 2.0.0
+                    </p>
+                </div>
+                <div class="col-auto">
+                    <span class="badge bg-success">Vite Ready</span>
+                    <span class="badge bg-info ms-1">Phase 2 Complete</span>
+                </div>
+            </div>
 
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Custom Styles -->
-    <style>
-        :root {
-            --mojo-primary: #007bff;
-            --mojo-success: #28a745;
-            --mojo-info: #17a2b8;
-            --mojo-warning: #ffc107;
-            --mojo-danger: #dc3545;
-            --mojo-dark: #343a40;
-        }
-
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            min-height: 100vh;
-            color: #333;
-        }
-
-        .main-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            margin: 20px auto;
-            max-width: 1200px;
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, var(--mojo-primary), #0056b3);
-            color: white;
-            padding: 40px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 3rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        .header .version {
-            background: rgba(255,255,255,0.2);
-            padding: 5px 15px;
-            border-radius: 20px;
-            display: inline-block;
-            font-size: 0.9rem;
-            margin-bottom: 20px;
-        }
-
-        .content {
-            padding: 40px;
-        }
-
-        .example-card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
-            margin-bottom: 25px;
-            overflow: hidden;
-        }
-
-        .example-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-        }
-
-        .example-header {
-            padding: 20px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .example-header h4 {
-            margin: 0;
-            color: var(--mojo-dark);
-        }
-
-        .example-header .badge {
-            font-size: 0.75rem;
-        }
-
-        .example-body {
-            padding: 20px;
-        }
-
-        .example-features {
-            list-style: none;
-            padding: 0;
-            margin: 15px 0;
-        }
-
-        .example-features li {
-            padding: 3px 0;
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-        .example-features li::before {
-            content: "✓ ";
-            color: var(--mojo-success);
-            font-weight: bold;
-            margin-right: 5px;
-        }
-
-        .btn-demo {
-            background: linear-gradient(135deg, var(--mojo-primary), #0056b3);
-            border: none;
-            border-radius: 25px;
-            padding: 10px 25px;
-            color: white;
-            text-decoration: none;
-            display: inline-block;
-            transition: all 0.3s ease;
-            font-weight: 500;
-        }
-
-        .btn-demo:hover {
-            background: linear-gradient(135deg, #0056b3, var(--mojo-primary));
-            color: white;
-            transform: translateY(-2px);
-            text-decoration: none;
-        }
-
-        .difficulty-badge {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            font-size: 0.7rem;
-            padding: 3px 8px;
-        }
-
-        .stats-section {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 30px;
-            margin: 30px 0;
-            text-align: center;
-        }
-
-        .stat-item {
-            margin: 0 20px;
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--mojo-primary);
-            display: block;
-        }
-
-        .framework-info {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            border-radius: 15px;
-            padding: 30px;
-            margin: 30px 0;
-        }
-
-        .icon-feature {
-            text-align: center;
-            padding: 20px;
-        }
-
-        .icon-feature i {
-            font-size: 2.5rem;
-            color: var(--mojo-primary);
-            margin-bottom: 15px;
-        }
-
-        .footer {
-            background: var(--mojo-dark);
-            color: white;
-            text-align: center;
-            padding: 30px;
-        }
-
-        .footer a {
-            color: #ccc;
-            text-decoration: none;
-        }
-
-        .footer a:hover {
-            color: white;
-        }
-
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 2rem;
-            }
-
-            .main-container {
-                margin: 10px;
-                border-radius: 15px;
-            }
-
-            .content {
-                padding: 20px;
-            }
-
-            .stat-item {
-                margin: 10px 0;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="main-container">
-        <!-- Header -->
-        <div class="header">
-            <h1><i class="fas fa-fire"></i> MOJO Framework</h1>
-            <div class="version">Phase 1: Core Architecture v2.0.0</div>
-            <p class="lead mb-0">Interactive Examples & Demonstrations</p>
-        </div>
-
-        <!-- Content -->
-        <div class="content">
-            <!-- Framework Stats -->
-            <div class="stats-section">
-                <div class="row">
-                    <div class="col-md-3 col-6">
-                        <div class="stat-item">
-                            <span class="stat-number">4</span>
-                            <small class="text-muted">Examples</small>
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-6">
-                        <div class="stat-item">
-                            <span class="stat-number">15+</span>
-                            <small class="text-muted">Features</small>
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-6">
-                        <div class="stat-item">
-                            <span class="stat-number">3K+</span>
-                            <small class="text-muted">Lines of Code</small>
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-6">
-                        <div class="stat-item">
-                            <span class="stat-number">100%</span>
-                            <small class="text-muted">ES6+ Modern</small>
+            <!-- Quick Start -->
+            <div class="row mb-2">
+                <div class="col">
+                    <div class="card">
+                        <div class="card-body p-2">
+                            <h6 class="card-title mb-1">
+                                <i class="bi bi-play-fill me-1"></i>
+                                Quick Start
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small class="text-muted">Development Server:</small>
+                                    <code class="d-block bg-light p-1 rounded small"
+                                        >npm run dev</code
+                                    >
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted">Then visit:</small>
+                                    <code class="d-block bg-light p-1 rounded small"
+                                        >http://localhost:3000/examples/</code
+                                    >
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -260,237 +65,419 @@
 
             <!-- Examples Grid -->
             <div class="row">
-                <!-- Basic Example -->
-                <div class="col-lg-6">
-                    <div class="example-card position-relative">
-                        <div class="difficulty-badge badge bg-success">Beginner</div>
-                        <div class="example-header">
-                            <h4><i class="fas fa-play-circle text-primary"></i> Basic Example</h4>
-                            <span class="badge bg-primary">Core Features</span>
-                        </div>
-                        <div class="example-body">
-                            <p>Learn the fundamentals of MOJO with simple View and Page components. Perfect starting point for new developers.</p>
-                            <ul class="example-features">
-                                <li>Basic View creation and rendering</li>
-                                <li>Page navigation and routing</li>
-                                <li>Template rendering with Mustache.js</li>
-                                <li>Event handling and actions</li>
-                                <li>Component lifecycle management</li>
-                            </ul>
-                            <a href="./basic/index.html" class="btn-demo">
-                                <i class="fas fa-rocket"></i> Launch Basic Example
-                            </a>
-                        </div>
+                <div class="col-xl-8">
+                    <!-- Phase 1 Examples -->
+                    <h6 class="mb-2">
+                        <i class="bi bi-layers me-1"></i>
+                        Phase 1: Core Architecture
+                    </h6>
+
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm table-hover table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 20%">Example</th>
+                                    <th style="width: 15%">Level</th>
+                                    <th style="width: 35%">Features</th>
+                                    <th style="width: 20%">Focus</th>
+                                    <th style="width: 10%">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <strong>Basic</strong><br />
+                                        <small class="text-muted">Foundation</small>
+                                    </td>
+                                    <td><span class="badge bg-success">Beginner</span></td>
+                                    <td>
+                                        <small>
+                                            View creation • Page routing • Templates • Events •
+                                            Lifecycle
+                                        </small>
+                                    </td>
+                                    <td><small class="text-muted">Core Concepts</small></td>
+                                    <td>
+                                        <a href="basic/" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-play"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>Hierarchy</strong><br />
+                                        <small class="text-muted">Relationships</small>
+                                    </td>
+                                    <td><span class="badge bg-warning">Intermediate</span></td>
+                                    <td>
+                                        <small>
+                                            Parent-child views • Communication • Event propagation •
+                                            Lifecycle
+                                        </small>
+                                    </td>
+                                    <td><small class="text-muted">Components</small></td>
+                                    <td>
+                                        <a href="hierarchy/" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-play"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>Events</strong><br />
+                                        <small class="text-muted">EventBus</small>
+                                    </td>
+                                    <td><span class="badge bg-warning">Intermediate</span></td>
+                                    <td>
+                                        <small>
+                                            Global events • Wildcards • Real-time monitoring •
+                                            Statistics
+                                        </small>
+                                    </td>
+                                    <td><small class="text-muted">Communication</small></td>
+                                    <td>
+                                        <a href="events/" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-play"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>Complete Demo</strong><br />
+                                        <small class="text-muted">Full Application</small>
+                                    </td>
+                                    <td><span class="badge bg-danger">Advanced</span></td>
+                                    <td>
+                                        <small>
+                                            Multi-page navigation • Debug panel • Advanced
+                                            hierarchies • Monitoring
+                                        </small>
+                                    </td>
+                                    <td><small class="text-muted">Architecture</small></td>
+                                    <td>
+                                        <a href="complete-demo/" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-play"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>Complete Demo</strong><br />
+                                        <small class="text-muted">Full Application</small>
+                                    </td>
+                                    <td><span class="badge bg-danger">Advanced</span></td>
+                                    <td>
+                                        <small>
+                                            Multi-page navigation • Debug panel • Advanced
+                                            hierarchies • Real-time monitoring
+                                        </small>
+                                    </td>
+                                    <td><small class="text-muted">Full Architecture</small></td>
+                                    <td>
+                                        <a href="complete-demo/" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-play"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Phase 2 Examples -->
+                    <h6 class="mb-2">
+                        <i class="bi bi-database me-1"></i>
+                        Phase 2: Data Layer
+                    </h6>
+
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm table-hover table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 20%">Example</th>
+                                    <th style="width: 15%">Level</th>
+                                    <th style="width: 35%">Features</th>
+                                    <th style="width: 20%">Focus</th>
+                                    <th style="width: 10%">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <strong>Phase 2 Basic</strong><br />
+                                        <small class="text-muted">Data Foundation</small>
+                                    </td>
+                                    <td><span class="badge bg-warning">Intermediate</span></td>
+                                    <td>
+                                        <small>
+                                            RestModel CRUD • DataList collections • Validation •
+                                            Search & filter
+                                        </small>
+                                    </td>
+                                    <td><small class="text-muted">Data Management</small></td>
+                                    <td>
+                                        <a href="phase2-basic/" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-play"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Advanced Components -->
+                    <h6 class="mb-2 mt-3">
+                        <i class="bi bi-gear-wide me-1"></i>
+                        Advanced Components
+                    </h6>
+
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm table-hover table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 20%">Example</th>
+                                    <th style="width: 15%">Level</th>
+                                    <th style="width: 35%">Features</th>
+                                    <th style="width: 20%">Focus</th>
+                                    <th style="width: 10%">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <strong>MOJO Table Component</strong><br />
+                                        <small class="text-muted">Component Power Demo</small>
+                                    </td>
+                                    <td><span class="badge bg-success">Beginner</span></td>
+                                    <td>
+                                        <small>
+                                            900+ lines → 50 lines of config • All advanced features
+                                            built-in • Framework power demonstration
+                                        </small>
+                                    </td>
+                                    <td><small class="text-muted">Component Usage</small></td>
+                                    <td>
+                                        <a href="table-advanced/" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-play"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>Filter System Test</strong><br />
+                                        <small class="text-muted">New Filter Interface Demo</small>
+                                    </td>
+                                    <td><span class="badge bg-info">Intermediate</span></td>
+                                    <td>
+                                        <small>
+                                            Redesigned filter system • Toolbar vs dropdown search •
+                                            Removable filter pills • Enhanced UX
+                                        </small>
+                                    </td>
+                                    <td><small class="text-muted">Filter System</small></td>
+                                    <td>
+                                        <a
+                                            href="filter-system-test/"
+                                            class="btn btn-sm btn-primary"
+                                        >
+                                            <i class="bi bi-play"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>TODO REST Table</strong><br />
+                                        <small class="text-muted">Live REST API Integration</small>
+                                    </td>
+                                    <td><span class="badge bg-info">Intermediate</span></td>
+                                    <td>
+                                        <small>
+                                            Real REST API calls • Live data fetching • Error
+                                            handling • Dynamic table updates • API status tracking
+                                        </small>
+                                    </td>
+                                    <td><small class="text-muted">REST Integration</small></td>
+                                    <td>
+                                        <a href="todo-rest-table/" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-play"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
-                <!-- Hierarchy Example -->
-                <div class="col-lg-6">
-                    <div class="example-card position-relative">
-                        <div class="difficulty-badge badge bg-warning">Intermediate</div>
-                        <div class="example-header">
-                            <h4><i class="fas fa-sitemap text-success"></i> Hierarchy Example</h4>
-                            <span class="badge bg-success">Parent-Child</span>
-                        </div>
-                        <div class="example-body">
-                            <p>Explore parent-child View relationships and component communication patterns.</p>
-                            <ul class="example-features">
-                                <li>Parent-child View relationships</li>
-                                <li>Dynamic child creation and removal</li>
-                                <li>Inter-component communication</li>
-                                <li>Event propagation and broadcasting</li>
-                                <li>Lifecycle management in hierarchies</li>
-                            </ul>
-                            <a href="./hierarchy/index.html" class="btn-demo">
-                                <i class="fas fa-network-wired"></i> Launch Hierarchy Example
-                            </a>
+                <!-- Sidebar -->
+                <div class="col-xl-4">
+                    <!-- Learning Path -->
+                    <div class="card mb-2">
+                        <div class="card-body p-2">
+                            <h6 class="card-title mb-2">
+                                <i class="bi bi-arrow-right-circle me-1"></i>
+                                Recommended Learning Path
+                            </h6>
+                            <ol class="mb-0 small">
+                                <li class="mb-1"><strong>Basic</strong> - Core concepts</li>
+                                <li class="mb-1">
+                                    <strong>Hierarchy</strong> - Component relationships
+                                </li>
+                                <li class="mb-1"><strong>Events</strong> - Communication system</li>
+                                <li class="mb-1">
+                                    <strong>Complete Demo</strong> - Full application
+                                </li>
+                                <li class="mb-1"><strong>Phase 2 Basic</strong> - Data layer</li>
+                                <li class="mb-0">
+                                    <strong>MOJO Table</strong> - Component power demo
+                                </li>
+                            </ol>
                         </div>
                     </div>
-                </div>
 
-                <!-- Events Example -->
-                <div class="col-lg-6">
-                    <div class="example-card position-relative">
-                        <div class="difficulty-badge badge bg-info">Intermediate</div>
-                        <div class="example-header">
-                            <h4><i class="fas fa-broadcast-tower text-info"></i> Events Example</h4>
-                            <span class="badge bg-info">EventBus</span>
-                        </div>
-                        <div class="example-body">
-                            <p>Master the global EventBus system for powerful component communication and event-driven architecture.</p>
-                            <ul class="example-features">
-                                <li>Global event publishing and subscribing</li>
-                                <li>Event namespacing and wildcards</li>
-                                <li>Real-time event monitoring</li>
-                                <li>Event filtering and statistics</li>
-                                <li>Complex event data handling</li>
-                            </ul>
-                            <a href="./events/index.html" class="btn-demo">
-                                <i class="fas fa-satellite-dish"></i> Launch Events Example
-                            </a>
+                    <!-- Framework Status -->
+                    <div class="card mb-2">
+                        <div class="card-body p-2">
+                            <h6 class="card-title mb-2">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Framework Status
+                            </h6>
+                            <div class="row text-center small">
+                                <div class="col-6 mb-1">
+                                    <div class="bg-success text-white py-1 rounded">
+                                        <div><strong>Phase 1</strong></div>
+                                        <div>Complete</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 mb-1">
+                                    <div class="bg-success text-white py-1 rounded">
+                                        <div><strong>Phase 2</strong></div>
+                                        <div>Complete</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="bg-secondary text-white py-1 rounded">
+                                        <div><strong>Phase 3</strong></div>
+                                        <div>Coming Soon</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="bg-light text-dark py-1 rounded border">
+                                        <div><strong>Tests</strong></div>
+                                        <div>1877+ lines</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Complete Demo -->
-                <div class="col-lg-6">
-                    <div class="example-card position-relative">
-                        <div class="difficulty-badge badge bg-danger">Advanced</div>
-                        <div class="example-header">
-                            <h4><i class="fas fa-star text-warning"></i> Complete Demo</h4>
-                            <span class="badge bg-warning">Full Featured</span>
-                        </div>
-                        <div class="example-body">
-                            <p>Comprehensive demonstration showcasing all Phase 1 features in a complete application.</p>
-                            <ul class="example-features">
-                                <li>Multi-page navigation system</li>
-                                <li>Debug panel and developer tools</li>
-                                <li>Advanced view hierarchies</li>
-                                <li>Real-time statistics and monitoring</li>
-                                <li>Production-ready architecture</li>
-                            </ul>
-                            <a href="./complete-demo/index.html" class="btn-demo">
-                                <i class="fas fa-crown"></i> Launch Complete Demo
-                            </a>
+                    <!-- Development Tools -->
+                    <div class="card mb-2">
+                        <div class="card-body p-2">
+                            <h6 class="card-title mb-2">
+                                <i class="bi bi-tools me-1"></i>
+                                Development
+                            </h6>
+                            <div class="d-grid gap-1">
+                                <button
+                                    class="btn btn-sm btn-outline-primary"
+                                    onclick="openDevTools()"
+                                >
+                                    <i class="bi bi-terminal me-1"></i>
+                                    Open Dev Console
+                                </button>
+                                <button
+                                    class="btn btn-sm btn-outline-secondary"
+                                    onclick="viewSource()"
+                                >
+                                    <i class="bi bi-code me-1"></i>
+                                    View Framework Source
+                                </button>
+                                <button class="btn btn-sm btn-outline-info" onclick="runTests()">
+                                    <i class="bi bi-check2-square me-1"></i>
+                                    Run Test Suite
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Framework Features -->
-            <div class="framework-info">
-                <h3 class="text-center mb-4">
-                    <i class="fas fa-cogs"></i> MOJO Framework Features
-                </h3>
-                <div class="row">
-                    <div class="col-md-3 col-6">
-                        <div class="icon-feature">
-                            <i class="fas fa-layer-group"></i>
-                            <h6>Hierarchical Views</h6>
-                            <small class="text-muted">Component tree with parent-child relationships</small>
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-6">
-                        <div class="icon-feature">
-                            <i class="fas fa-route"></i>
-                            <h6>Page Routing</h6>
-                            <small class="text-muted">URL-based navigation with parameters</small>
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-6">
-                        <div class="icon-feature">
-                            <i class="fas fa-sync-alt"></i>
-                            <h6>Lifecycle Management</h6>
-                            <small class="text-muted">Predictable component initialization and cleanup</small>
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-6">
-                        <div class="icon-feature">
-                            <i class="fas fa-bolt"></i>
-                            <h6>Event System</h6>
-                            <small class="text-muted">Global EventBus for component communication</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Getting Started -->
-            <div class="row mt-5">
-                <div class="col-md-8">
-                    <h3><i class="fas fa-rocket"></i> Getting Started</h3>
-                    <p class="lead">Ready to build with MOJO? Start with the Basic Example and progress through the more advanced demonstrations.</p>
-                    <ol>
-                        <li><strong>Basic Example</strong> - Learn core concepts and basic usage</li>
-                        <li><strong>Hierarchy Example</strong> - Understand component relationships</li>
-                        <li><strong>Events Example</strong> - Master the EventBus system</li>
-                        <li><strong>Complete Demo</strong> - See everything working together</li>
-                    </ol>
-                </div>
-                <div class="col-md-4 text-center">
+                    <!-- Browser Requirements -->
                     <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                <i class="fas fa-book"></i> Documentation
-                            </h5>
-                            <p class="card-text">Complete API reference and guides available.</p>
-                            <a href="../README-Phase1.md" class="btn btn-outline-primary btn-sm">
-                                <i class="fas fa-external-link-alt"></i> View Docs
-                            </a>
+                        <div class="card-body p-2">
+                            <h6 class="card-title mb-2">
+                                <i class="bi bi-browser-chrome me-1"></i>
+                                Browser Requirements
+                            </h6>
+                            <div class="small">
+                                <div class="mb-1">
+                                    <i class="bi bi-check-circle text-success me-1"></i>
+                                    ES6 Modules
+                                </div>
+                                <div class="mb-1">
+                                    <i class="bi bi-check-circle text-success me-1"></i>
+                                    Async/Await
+                                </div>
+                                <div class="mb-1">
+                                    <i class="bi bi-check-circle text-success me-1"></i>
+                                    Modern DOM APIs
+                                </div>
+                                <div class="mb-0 text-muted">
+                                    <strong>Supported:</strong> Chrome 60+, Firefox 55+, Safari 11+,
+                                    Edge 79+
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Browser Requirements -->
-            <div class="alert alert-info mt-4">
-                <h6><i class="fas fa-info-circle"></i> Browser Requirements</h6>
-                <p class="mb-0">
-                    MOJO Framework requires a modern browser with ES6+ support.
-                    Chrome 60+, Firefox 55+, Safari 11+, or Edge 79+ recommended.
-                </p>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="footer">
-            <div class="row">
-                <div class="col-md-6">
-                    <p class="mb-0">
-                        <strong>MOJO Framework v2.0.0</strong><br>
-                        Phase 1: Core Architecture & View System
-                    </p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <p class="mb-0">
-                        Built with ❤️ and modern JavaScript<br>
-                        <a href="https://github.com">GitHub</a> |
-                        <a href="../README-Phase1.md">Documentation</a> |
-                        <a href="../mojo_design_doc.md">Design Doc</a>
-                    </p>
+            <!-- Footer -->
+            <div class="row mt-3 pt-2 border-top">
+                <div class="col">
+                    <div class="text-center small text-muted">
+                        <strong>MOJO Framework v2.0.0</strong> • Built with Bootstrap 5 • ES6
+                        Modules • Vite Development Server
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <script>
-        // Add some interactivity to the stats
-        document.addEventListener('DOMContentLoaded', function() {
-            // Animate stat numbers on load
-            const statNumbers = document.querySelectorAll('.stat-number');
-            statNumbers.forEach((stat, index) => {
-                setTimeout(() => {
-                    stat.style.transform = 'scale(1.1)';
-                    setTimeout(() => {
-                        stat.style.transform = 'scale(1)';
-                    }, 200);
-                }, index * 100);
-            });
+        <!-- Page Logic -->
+        <script type="module">
+            // Development tools
+            window.openDevTools = function () {
+                console.log(
+                    "%c🔧 MOJO Framework Development Console",
+                    "font-size: 16px; color: #007bff; font-weight: bold;",
+                );
+                console.log("Framework Examples: http://localhost:3000/examples/");
+                console.log("Available Commands:");
+                console.log("  - openDevTools() : Show this message");
+                console.log("  - viewSource() : Navigate to source code");
+                console.log("  - runTests() : Execute test suite");
 
-            // Add click tracking for examples
-            const demoButtons = document.querySelectorAll('.btn-demo');
-            demoButtons.forEach(button => {
-                button.addEventListener('click', function(e) {
-                    const exampleName = this.textContent.trim();
-                    console.log(`🚀 Launching example: ${exampleName}`);
-                });
-            });
+                // Try to access MOJO if available
+                if (typeof window.MOJO !== "undefined") {
+                    console.log("MOJO Framework loaded:", window.MOJO);
+                } else {
+                    console.log("MOJO Framework not loaded (load an example first)");
+                }
+            };
 
-            console.log(`
-🔥 MOJO Framework Examples
-📚 Phase 1: Core Architecture & View System
+            window.viewSource = function () {
+                window.open("/src/", "_blank");
+            };
 
-Available Examples:
-• Basic Example - Learn the fundamentals
-• Hierarchy Example - Parent-child relationships
-• Events Example - Global EventBus system
-• Complete Demo - Full-featured application
+            window.runTests = function () {
+                console.log("Running MOJO Framework test suite...");
+                console.log("Navigate to test runner: npm run test");
+                alert("Check console for test instructions");
+            };
 
-🎯 Click any "Launch" button to start exploring!
-            `);
-        });
-    </script>
-</body>
+            // Page ready
+            console.log("📚 MOJO Framework Examples Index Ready");
+            console.log("Visit individual examples to see the framework in action");
+        </script>
+    </body>
 </html>

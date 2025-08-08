@@ -7,13 +7,17 @@ import View from './core/View.js';
 import Page from './core/Page.js';
 import Router from './core/Router.js';
 import EventBus from './utils/EventBus.js';
+import Rest from './core/Rest.js';
+import RestModel from './core/RestModel.js';
+import DataList from './core/DataList.js';
+import Table from './components/Table.js';
 
 /**
  * Main MOJO Framework Class
  */
 class MOJO {
   constructor(config = {}) {
-    this.version = '2.0.0-phase1';
+    this.version = '2.0.0-phase2';
     this.config = config;
     
     // Core systems
@@ -23,6 +27,12 @@ class MOJO {
     this.router = this.routerEnabled ? new Router(routerConfig) : null;
     this.views = new Map();
     this.pages = new Map();
+    this.models = new Map();
+    this.collections = new Map();
+    
+    // Data layer setup
+    this.rest = Rest;
+    this.setupDataLayer();
     
     // State
     this.started = false;
@@ -39,6 +49,25 @@ class MOJO {
     
     // Initialize framework
     this.init();
+  }
+
+  /**
+   * Set up the data layer (Phase 2)
+   */
+  setupDataLayer() {
+    // Configure REST client from app config
+    if (this.config.api) {
+      this.rest.configure(this.config.api);
+    }
+    
+    // Inject Rest client into model classes
+    RestModel.Rest = this.rest;
+    DataList.Rest = this.rest;
+    
+    // Set up authentication if configured
+    if (this.config.auth && this.config.auth.token) {
+      this.rest.setAuthToken(this.config.auth.token, this.config.auth.type || 'Bearer');
+    }
   }
 
   /**
@@ -303,7 +332,67 @@ class MOJO {
   }
 
   /**
-   * Render a page (called by router)
+   * Register a model class
+   * @param {string} name - Model name
+   * @param {class} ModelClass - Model class extending RestModel
+   */
+  registerModel(name, ModelClass) {
+    if (typeof ModelClass !== 'function') {
+      throw new Error('Model class must be a constructor function');
+    }
+    
+    this.models.set(name, ModelClass);
+    console.log(`Registered model: ${name}`);
+  }
+
+  /**
+   * Register a collection class  
+   * @param {string} name - Collection name
+   * @param {class} CollectionClass - Collection class extending DataList
+   */
+  registerCollection(name, CollectionClass) {
+    if (typeof CollectionClass !== 'function') {
+      throw new Error('Collection class must be a constructor function');
+    }
+    
+    this.collections.set(name, CollectionClass);
+    console.log(`Registered collection: ${name}`);
+  }
+
+  /**
+   * Create a model instance from a registered model class
+   * @param {string} name - Registered model name
+   * @param {object} data - Initial model data
+   * @param {object} options - Model options
+   * @returns {RestModel} Model instance
+   */
+  createModel(name, data = {}, options = {}) {
+    const ModelClass = this.models.get(name);
+    if (!ModelClass) {
+      throw new Error(`Model '${name}' not registered`);
+    }
+    
+    return new ModelClass(data, options);
+  }
+
+  /**
+   * Create a collection instance from a registered collection class
+   * @param {string} name - Registered collection name
+   * @param {class} ModelClass - Model class for the collection
+   * @param {object} options - Collection options
+   * @returns {DataList} Collection instance
+   */
+  createCollection(name, ModelClass, options = {}) {
+    const CollectionClass = this.collections.get(name);
+    if (!CollectionClass) {
+      throw new Error(`Collection '${name}' not registered`);
+    }
+    
+    return new CollectionClass(ModelClass, options);
+  }
+
+  /**
+   * Render a page to the specified container
    */
   async renderPage(name, options = {}) {
     try {
@@ -352,10 +441,24 @@ class MOJO {
   }
 
   /**
-   * Get a registered page class
+   * Get registered page class
    */
   getPage(name) {
     return this.pages.get(name);
+  }
+
+  /**
+   * Get registered model class
+   */
+  getModel(name) {
+    return this.models.get(name);
+  }
+
+  /**
+   * Get registered collection class
+   */
+  getCollection(name) {
+    return this.collections.get(name);
   }
 
   /**
@@ -385,7 +488,16 @@ class MOJO {
       started: this.started,
       registeredViews: this.views.size,
       registeredPages: this.pages.size,
+      registeredModels: this.models.size,
+      registeredCollections: this.collections.size,
       eventBus: this.eventBus.getStats(),
+      restClient: {
+        baseURL: this.rest.config.baseURL,
+        timeout: this.rest.config.timeout,
+        requestInterceptors: this.rest.interceptors.request.length,
+        responseInterceptors: this.rest.interceptors.response.length,
+        hasAuth: !!this.rest.config.headers['Authorization']
+      },
       rootView: this.rootView ? {
         id: this.rootView.id,
         children: this.rootView.children.size,
@@ -691,7 +803,10 @@ MOJO.View = View;
 MOJO.Page = Page;
 MOJO.Router = Router;
 MOJO.EventBus = EventBus;
+MOJO.RestModel = RestModel;
+MOJO.DataList = DataList;
+MOJO.Rest = Rest;
 
 // Export as both default and named export
-export { View, Page, Router, EventBus };
+export { View, Page, Router, EventBus, RestModel, DataList, Rest, Table };
 export default MOJO;
