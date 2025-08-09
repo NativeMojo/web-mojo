@@ -14,35 +14,7 @@ export default class TemplatesPage extends Page {
     }
 
     async onInit() {
-        // Initialize sample data for template examples
-        this.sampleData = {
-            user: {
-                name: 'John Doe',
-                email: 'john.doe@example.com',
-                isAdmin: true,
-                avatar: 'https://via.placeholder.com/50'
-            },
-            products: [
-                { id: 1, name: 'Laptop', price: 999.99, inStock: true },
-                { id: 2, name: 'Mouse', price: 29.99, inStock: true },
-                { id: 3, name: 'Keyboard', price: 79.99, inStock: false },
-                { id: 4, name: 'Monitor', price: 299.99, inStock: true }
-            ],
-            company: 'MOJO Framework',
-            currentYear: new Date().getFullYear(),
-            messages: [
-                { from: 'Alice', text: 'Hello!', unread: true },
-                { from: 'Bob', text: 'How are you?', unread: false },
-                { from: 'Charlie', text: 'Meeting at 3pm', unread: true }
-            ],
-            settings: {
-                theme: 'dark',
-                notifications: true,
-                language: 'en'
-            }
-        };
-
-        // Template examples
+        // Template examples with specific data for each
         this.templateExamples = {
             basic: {
                 name: 'Basic Variables',
@@ -50,6 +22,14 @@ export default class TemplatesPage extends Page {
 <p>Your email: {{user.email}}</p>
 <p>Company: {{company}}</p>
 <p>Year: {{currentYear}}</p>`,
+                data: {
+                    user: {
+                        name: 'John Doe',
+                        email: 'john.doe@example.com'
+                    },
+                    company: 'MOJO Framework',
+                    currentYear: new Date().getFullYear()
+                },
                 description: 'Simple variable substitution using Mustache syntax'
             },
             conditionals: {
@@ -68,6 +48,14 @@ export default class TemplatesPage extends Page {
 {{#settings.notifications}}
 <p><i class="bi bi-bell-fill"></i> Notifications are enabled</p>
 {{/settings.notifications}}`,
+                data: {
+                    user: {
+                        isAdmin: true
+                    },
+                    settings: {
+                        notifications: true
+                    }
+                },
                 description: 'Conditional rendering with {{#condition}} and {{^condition}}'
             },
             loops: {
@@ -97,6 +85,14 @@ export default class TemplatesPage extends Page {
         {{/products}}
     </tbody>
 </table>`,
+                data: {
+                    products: [
+                        { id: 1, name: 'Laptop', price: 999.99, inStock: true },
+                        { id: 2, name: 'Mouse', price: 29.99, inStock: true },
+                        { id: 3, name: 'Keyboard', price: 79.99, inStock: false },
+                        { id: 4, name: 'Monitor', price: 299.99, inStock: true }
+                    ]
+                },
                 description: 'Iterating over arrays with {{#array}}'
             },
             nested: {
@@ -120,6 +116,18 @@ export default class TemplatesPage extends Page {
         </ul>
     </div>
 </div>`,
+                data: {
+                    user: {
+                        name: 'Jane Smith',
+                        email: 'jane.smith@example.com',
+                        avatar: 'https://via.placeholder.com/50'
+                    },
+                    settings: {
+                        theme: 'dark',
+                        language: 'en',
+                        notifications: true
+                    }
+                },
                 description: 'Accessing nested object properties'
             },
             sections: {
@@ -136,6 +144,13 @@ export default class TemplatesPage extends Page {
     <p class="text-muted">No messages</p>
     {{/messages}}
 </div>`,
+                data: {
+                    messages: [
+                        { from: 'Alice', text: 'Hello!', unread: true },
+                        { from: 'Bob', text: 'How are you?', unread: false },
+                        { from: 'Charlie', text: 'Meeting at 3pm', unread: true }
+                    ]
+                },
                 description: 'Complex template with multiple conditions'
             },
             escaping: {
@@ -148,9 +163,16 @@ export default class TemplatesPage extends Page {
 
 <!-- Triple mustache for raw HTML -->
 <div>{{{rawHtml}}}</div>`,
+                data: {
+                    htmlContent: '<strong>Bold Text</strong>',
+                    rawHtml: '<div class="alert alert-info">This is raw HTML content</div>'
+                },
                 description: 'Control HTML escaping with {{}} vs {{{}}}'
             }
         };
+
+        // Set initial data
+        this.currentData = {};
     }
 
     getTemplate() {
@@ -313,12 +335,11 @@ export default class TemplatesPage extends Page {
     }
 
     async onAfterMount() {
-        // Add HTML content for escaping example
-        this.sampleData.htmlContent = '<strong>Bold Text</strong>';
-        this.sampleData.rawHtml = '<div class="alert alert-info">This is raw HTML content</div>';
-        
-        // Update data editor
-        document.getElementById('data-editor').value = JSON.stringify(this.sampleData, null, 2);
+        // Load the first example by default
+        const firstExample = document.querySelector('[data-action="loadExample"]');
+        if (firstExample) {
+            firstExample.click();
+        }
     }
 
     async onActionLoadExample(event, element) {
@@ -328,6 +349,10 @@ export default class TemplatesPage extends Page {
         if (example) {
             // Update template editor
             document.getElementById('template-editor').value = example.template;
+            
+            // Update data editor with example-specific data
+            this.currentData = example.data || {};
+            document.getElementById('data-editor').value = JSON.stringify(this.currentData, null, 2);
             
             // Update description
             document.getElementById('example-description').textContent = example.description;
@@ -386,7 +411,14 @@ export default class TemplatesPage extends Page {
     }
 
     async onActionClearTemplate() {
+        // Clear template editor
         document.getElementById('template-editor').value = '';
+        
+        // Clear data editor
+        this.currentData = {};
+        document.getElementById('data-editor').value = JSON.stringify(this.currentData, null, 2);
+        
+        // Clear outputs
         document.getElementById('template-output').innerHTML = '<p class="text-muted mb-0">Click "Render Template" to see the output</p>';
         document.getElementById('html-source').innerHTML = '<code>// HTML output will appear here</code>';
         document.getElementById('example-description').textContent = 'Select an example to load';
@@ -409,8 +441,21 @@ export default class TemplatesPage extends Page {
     }
 
     async onActionResetData() {
-        await this.onInit();
-        document.getElementById('data-editor').value = JSON.stringify(this.sampleData, null, 2);
+        // Reset to current example's data
+        const activeExample = document.querySelector('[data-action="loadExample"].active');
+        if (activeExample) {
+            const exampleKey = activeExample.dataset.example;
+            const example = this.templateExamples[exampleKey];
+            if (example) {
+                this.currentData = example.data || {};
+                document.getElementById('data-editor').value = JSON.stringify(this.currentData, null, 2);
+            }
+        } else {
+            // No active example, just reset to empty object
+            this.currentData = {};
+            document.getElementById('data-editor').value = JSON.stringify(this.currentData, null, 2);
+        }
+        
         if (this.mounted) {
             this.renderTemplatePreview();
         }

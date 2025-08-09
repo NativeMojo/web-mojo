@@ -18,7 +18,9 @@ web-mojo/
 ├── src/components/ (TopNav.js, Sidebar.js, MainContent.js, Table.js, FormBuilder.js)
 ├── src/utils/ (EventBus.js, mustache.js)
 ├── docs/ (organized documentation)
-├── examples/ (clean, educational examples)
+├── examples/ (app.js, app.css, index.html)
+     |----pages
+     |----models
 ├── test/ (unit and integration tests)
 └── dist/ (built files)
 
