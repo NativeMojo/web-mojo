@@ -1,0 +1,331 @@
+<div class="table-page-container">
+  <!-- Header Section -->
+  <div class="table-page-header mb-4">
+    {{#title}}
+    <h2 class="page-title mb-2">{{title}}</h2>
+    {{/title}}
+    {{#description}}
+    <p class="page-description text-muted">{{description}}</p>
+    {{/description}}
+  </div>
+
+  <!-- Status Bar Top -->
+  {{#showStatusTop}}
+  <div class="table-status-bar table-status-top mb-3">
+    <div class="row align-items-center">
+      <div class="col-md-6">
+        <div class="status-info d-flex align-items-center gap-3">
+          {{#showRecordCount}}
+          <span class="badge bg-secondary">
+            <i class="bi bi-database me-1"></i>
+            Total Records: <span data-status="record-count">{{recordCount}}</span>
+          </span>
+          {{/showRecordCount}}
+
+          {{#showLastUpdated}}
+          <small class="text-muted">
+            <i class="bi bi-clock-history me-1"></i>
+            Last updated: <span data-status="last-updated">{{lastUpdated}}</span>
+          </small>
+          {{/showLastUpdated}}
+        </div>
+      </div>
+
+      <div class="col-md-6 text-md-end">
+        {{#isLoading}}
+        <span class="loading-indicator">
+          <span class="spinner-border spinner-border-sm text-primary me-2" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </span>
+          <span class="text-muted">{{loadingText}}</span>
+        </span>
+        {{/isLoading}}
+
+        {{#loadError}}
+        <span class="error-indicator text-danger" data-status="error">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          {{loadError}}
+        </span>
+        {{/loadError}}
+      </div>
+    </div>
+  </div>
+  {{/showStatusTop}}
+
+  <!-- Action Buttons Top -->
+  {{#showActionButtonsTop}}
+  <div class="table-action-buttons table-actions-top mb-3">
+    <div class="btn-toolbar" role="toolbar">
+      <!-- Primary Actions -->
+      <div class="btn-group me-2" role="group" aria-label="Primary actions">
+        {{#showRefresh}}
+        <button type="button"
+                class="btn btn-outline-primary btn-refresh"
+                data-action="refresh"
+                {{#isLoading}}disabled{{/isLoading}}
+                title="Refresh table data">
+          <i class="bi {{refreshIcon}} {{#isRefreshing}}bi-spin{{/isRefreshing}}"></i>
+          <span class="d-none d-sm-inline ms-1">{{refreshText}}</span>
+        </button>
+        {{/showRefresh}}
+
+        {{#showAdd}}
+        <button type="button"
+                class="btn btn-success btn-add"
+                data-action="add"
+                title="Add new {{modelName}}">
+          <i class="bi {{addIcon}}"></i>
+          <span class="d-none d-sm-inline ms-1">{{addText}}</span>
+        </button>
+        {{/showAdd}}
+      </div>
+
+      <!-- Data Actions -->
+      {{#hasDataActions}}
+      <div class="btn-group me-2" role="group" aria-label="Data actions">
+        {{#showExport}}
+        <button type="button"
+                class="btn btn-outline-secondary btn-export"
+                data-action="export"
+                title="Export table data"
+                {{#noData}}disabled{{/noData}}>
+          <i class="bi {{exportIcon}}"></i>
+          <span class="d-none d-sm-inline ms-1">{{exportText}}</span>
+        </button>
+        {{/showExport}}
+
+        {{#showImport}}
+        <button type="button"
+                class="btn btn-outline-secondary btn-import"
+                data-action="import"
+                title="Import data">
+          <i class="bi {{importIcon}}"></i>
+          <span class="d-none d-sm-inline ms-1">{{importText}}</span>
+        </button>
+        {{/showImport}}
+      </div>
+      {{/hasDataActions}}
+
+      <!-- Additional Custom Buttons -->
+      {{#hasAdditionalButtons}}
+      <div class="btn-group" role="group" aria-label="Custom actions">
+        {{#additionalButtons}}
+        <button type="button"
+                class="btn btn-{{class}}"
+                data-action="{{action}}"
+                {{#disabled}}disabled{{/disabled}}
+                {{#title}}title="{{title}}"{{/title}}>
+          {{#icon}}<i class="bi {{icon}}"></i>{{/icon}}
+          <span class="{{#hideTextOnMobile}}d-none d-sm-inline{{/hideTextOnMobile}} {{#icon}}ms-1{{/icon}}">{{text}}</span>
+        </button>
+        {{/additionalButtons}}
+      </div>
+      {{/hasAdditionalButtons}}
+
+      <!-- Right-aligned actions -->
+      {{#hasRightActions}}
+      <div class="ms-auto">
+        {{#showViewOptions}}
+        <div class="btn-group" role="group" aria-label="View options">
+          <button type="button"
+                  class="btn btn-outline-secondary btn-sm"
+                  data-action="view-table"
+                  title="Table view">
+            <i class="bi bi-table"></i>
+          </button>
+          <button type="button"
+                  class="btn btn-outline-secondary btn-sm"
+                  data-action="view-cards"
+                  title="Card view">
+            <i class="bi bi-grid-3x2-gap"></i>
+          </button>
+        </div>
+        {{/showViewOptions}}
+      </div>
+      {{/hasRightActions}}
+    </div>
+  </div>
+  {{/showActionButtonsTop}}
+
+  <!-- Table Container -->
+  <div id="{{tableContainerId}}"
+       class="table-container {{#isLoading}}is-loading{{/isLoading}}"
+       data-table-page="{{page_name}}">
+
+    <!-- Loading Overlay -->
+    {{#showLoadingOverlay}}
+    {{#isLoading}}
+    <div class="table-loading-overlay">
+      <div class="loading-content text-center">
+        <div class="spinner-border text-primary mb-3" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <div class="loading-message">{{loadingText}}</div>
+      </div>
+    </div>
+    {{/isLoading}}
+    {{/showLoadingOverlay}}
+
+    <!-- Table will be rendered here by Table component -->
+  </div>
+
+  <!-- Action Buttons Bottom -->
+  {{#showActionButtonsBottom}}
+  <div class="table-action-buttons table-actions-bottom mt-3">
+    <div class="btn-toolbar" role="toolbar">
+      <!-- Same structure as top buttons -->
+      <div class="btn-group me-2" role="group" aria-label="Primary actions">
+        {{#showRefresh}}
+        <button type="button"
+                class="btn btn-outline-primary btn-refresh"
+                data-action="refresh"
+                {{#isLoading}}disabled{{/isLoading}}
+                title="Refresh table data">
+          <i class="bi {{refreshIcon}} {{#isRefreshing}}bi-spin{{/isRefreshing}}"></i>
+          <span class="d-none d-sm-inline ms-1">{{refreshText}}</span>
+        </button>
+        {{/showRefresh}}
+
+        {{#showAdd}}
+        <button type="button"
+                class="btn btn-success btn-add"
+                data-action="add"
+                title="Add new {{modelName}}">
+          <i class="bi {{addIcon}}"></i>
+          <span class="d-none d-sm-inline ms-1">{{addText}}</span>
+        </button>
+        {{/showAdd}}
+      </div>
+    </div>
+  </div>
+  {{/showActionButtonsBottom}}
+
+  <!-- Status Bar Bottom -->
+  {{#showStatusBottom}}
+  <div class="table-status-bar table-status-bottom mt-3">
+    <div class="row align-items-center">
+      <div class="col-md-6">
+        <div class="status-info d-flex align-items-center gap-3">
+          {{#showRecordCount}}
+          <span class="badge bg-secondary">
+            <i class="bi bi-database me-1"></i>
+            Total Records: <span data-status="record-count">{{recordCount}}</span>
+          </span>
+          {{/showRecordCount}}
+
+          {{#showLastUpdated}}
+          <small class="text-muted">
+            <i class="bi bi-clock-history me-1"></i>
+            Last updated: <span data-status="last-updated">{{lastUpdated}}</span>
+          </small>
+          {{/showLastUpdated}}
+        </div>
+      </div>
+    </div>
+  </div>
+  {{/showStatusBottom}}
+</div>
+
+<!-- TablePage Styles -->
+<style>
+  .table-page-container {
+    position: relative;
+  }
+
+  .table-container {
+    position: relative;
+    min-height: 200px;
+  }
+
+  .table-container.is-loading {
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  .table-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .loading-content {
+    padding: 2rem;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .bi-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  .btn-toolbar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .status-info {
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 576px) {
+    .btn-toolbar .btn {
+      padding: 0.375rem 0.75rem;
+    }
+
+    .table-status-bar .row {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .table-status-bar .text-md-end {
+      text-align: left !important;
+    }
+  }
+
+  /* Error state styles */
+  .error-indicator {
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
+  }
+
+  /* Custom button states */
+  .btn[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Table actions spacing */
+  .table-action-buttons {
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 1rem;
+  }
+
+  .table-actions-bottom {
+    border-bottom: none;
+    border-top: 1px solid #dee2e6;
+    padding-top: 1rem;
+    padding-bottom: 0;
+  }
+</style>

@@ -11,16 +11,33 @@ class Page extends View {
     options.tagName = options.tagName || 'main';
     options.className = options.className || 'mojo-page';
     
+    // Set page ID based on page name
+    const pageName = options.page_name || '';
+    if (pageName && !options.id) {
+      options.id = 'page_' + pageName.toLowerCase().replace(/\s+/g, '_');
+    }
+    
     super(options);
     
     // Core page properties from design doc
     this.page_name = options.page_name || this.constructor.page_name || '';
     this.route = options.route || this.constructor.route || '';
     
+    // Set page ID if not already set and we have a page_name from constructor
+    if (!this.id && this.constructor.page_name && !options.page_name) {
+      this.id = 'page_' + this.constructor.page_name.toLowerCase().replace(/\s+/g, '_');
+    }
+    
+    // Page metadata for event system
+    this.pageIcon = options.pageIcon || this.constructor.pageIcon || 'bi bi-file-text';
+    this.displayName = options.displayName || this.constructor.displayName || this.page_name || '';
+    this.pageDescription = options.pageDescription || this.constructor.pageDescription || '';
+    
     // Routing state
     this.params = {};
     this.query = {};
     this.matched = false;
+    this.isActive = false;
     
     // Page-specific options
     this.pageOptions = {
@@ -42,11 +59,6 @@ class Page extends View {
     
     // Call design doc lifecycle method
     this.on_init();
-    
-    // Set page title if provided
-    if (this.pageOptions && this.pageOptions.title && typeof document !== 'undefined') {
-      document.title = this.pageOptions.title;
-    }
   }
 
   /**
@@ -73,6 +85,56 @@ class Page extends View {
       params: this.params,
       query: this.query
     });
+  }
+
+  /**
+   * Called when page becomes active
+   * Override in subclasses for custom activation logic
+   */
+  async onActivate() {
+    this.isActive = true;
+    
+    // Set page title if provided
+    if (this.pageOptions && this.pageOptions.title && typeof document !== 'undefined') {
+      document.title = this.pageOptions.title;
+    }
+    
+    // Emit activation event
+    this.emit('activated', { 
+      page: this.getMetadata() 
+    });
+    
+    console.log(`Page ${this.page_name} activated`);
+  }
+
+  /**
+   * Called when page becomes inactive
+   * Override in subclasses for cleanup logic
+   */
+  async onDeactivate() {
+    this.isActive = false;
+    
+    // Emit deactivation event
+    this.emit('deactivated', { 
+      page: this.getMetadata() 
+    });
+    
+    console.log(`Page ${this.page_name} deactivated`);
+  }
+
+  /**
+   * Get page metadata for display and events
+   * @returns {object} Page metadata
+   */
+  getMetadata() {
+    return {
+      name: this.page_name,
+      displayName: this.displayName || this.page_name,
+      icon: this.pageIcon,
+      description: this.pageDescription,
+      route: this.route,
+      isActive: this.isActive
+    };
   }
 
   /**

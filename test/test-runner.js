@@ -235,6 +235,9 @@ class TestRunner {
             testPromises: []
         };
 
+        let beforeEachCallbacks = [];
+        let afterEachCallbacks = [];
+
         const context = {
             stats,
             
@@ -259,11 +262,22 @@ class TestRunner {
                 // Create a promise for this test and track it
                 const testPromise = (async () => {
                     try {
+                        // Run beforeEach callbacks
+                        for (const callback of beforeEachCallbacks) {
+                            await callback();
+                        }
+                        
                         await fn();
+                        
+                        // Run afterEach callbacks
+                        for (const callback of afterEachCallbacks) {
+                            await callback();
+                        }
+                        
                         console.log(`    ✅ ${name}`);
                         stats.passed++;
                         if (this.options.debug) {
-                            console.log(`    📊 PASSED: ${stats.passed}/${stats.total}`);
+                            console.log(`    📊 PASSED: ${stats.total}`);
                         }
                     } catch (error) {
                         console.log(`    ❌ ${name}`);
@@ -282,6 +296,14 @@ class TestRunner {
                 
                 // Track the test promise so we can wait for it
                 stats.testPromises.push(testPromise);
+            },
+
+            beforeEach: (fn) => {
+                beforeEachCallbacks.push(fn);
+            },
+
+            afterEach: (fn) => {
+                afterEachCallbacks.push(fn);
             },
 
             test: function(name, fn) {

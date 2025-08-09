@@ -968,4 +968,79 @@ class FormBuilder {
           preview.src = e.target.result;
           preview.style.display = 'block';
         };
-        reader.readAsDataURL(
+        reader.readAsDataURL(file);
+      }
+    }
+  }
+
+  /**
+   * Mount the form builder to a container
+   * @param {HTMLElement|string} container - Container element or selector
+   * @returns {Promise}
+   */
+  async mount(container) {
+    if (typeof container === 'string') {
+      container = document.querySelector(container);
+    }
+    return this.render(container);
+  }
+
+  /**
+   * Destroy the form builder
+   */
+  destroy() {
+    if (this.container) {
+      this.container.innerHTML = '';
+      this.container = null;
+    }
+    this.data = {};
+    this.errors = {};
+    this.listeners = {};
+    this.rendered = false;
+  }
+
+  /**
+   * Get form element
+   * @returns {HTMLFormElement}
+   */
+  getFormElement() {
+    return this.container ? this.container.querySelector('form') : null;
+  }
+
+  /**
+   * Trigger custom event
+   * @param {string} event - Event name
+   * @param {object} data - Event data
+   */
+  trigger(event, data) {
+    if (this.listeners[event]) {
+      this.listeners[event].forEach(callback => callback(data));
+    }
+  }
+
+  /**
+   * Listen for custom events
+   * @param {string} event - Event name
+   * @param {Function} callback - Callback function
+   */
+  on(event, callback) {
+    if (!this.listeners[event]) {
+      this.listeners[event] = [];
+    }
+    this.listeners[event].push(callback);
+  }
+
+  /**
+   * Remove event listener
+   * @param {string} event - Event name
+   * @param {Function} callback - Callback function
+   */
+  off(event, callback) {
+    if (this.listeners[event]) {
+      this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+    }
+  }
+}
+
+// Export for use in MOJO framework
+export { FormBuilder };

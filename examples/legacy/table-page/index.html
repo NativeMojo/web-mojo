@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>MOJO TablePage Example</title>
+
+        <!-- Bootstrap 5 CSS -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+            rel="stylesheet"
+        />
+
+        <!-- Custom styles -->
+        <link rel="stylesheet" href="styles.css" />
+    </head>
+    <body>
+        <!-- Top Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#"> <i class="bi bi-table"></i> TablePage Example </a>
+                <span class="navbar-text text-white me-auto">
+                    URL-Synchronized Table with Pagination, Sorting & Filtering
+                </span>
+                <a href="../" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-arrow-left"></i> Back to Examples
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main App Container -->
+        <div id="app" class="py-4">
+            <!-- TablePage will render here -->
+        </div>
+
+        <!-- Status Display -->
+        <div class="container-fluid mt-4">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">
+                                <i class="bi bi-info-circle"></i> Current URL Parameters
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <code id="url-display" class="d-block p-2 bg-light rounded"></code>
+                            <small class="text-muted mt-2 d-block">
+                                Try changing page, sorting, searching, or filtering - watch the URL
+                                update automatically!
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-5 py-3 bg-light">
+            <div class="container-fluid text-center text-muted">
+                <small>MOJO Framework - TablePage Component Example</small>
+            </div>
+        </footer>
+
+        <!-- Bootstrap 5 JS Bundle -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+        <!-- MOJO Framework -->
+        <script type="module" src="app.js"></script>
+
+        <!-- URL Display Helper -->
+        <script>
+            // Update URL display
+            function updateUrlDisplay() {
+                const display = document.getElementById("url-display");
+                if (display) {
+                    const params = new URLSearchParams(window.location.search);
+                    const formatted = [];
+                    for (const [key, value] of params) {
+                        formatted.push(`${key}=${value}`);
+                    }
+                    display.textContent =
+                        formatted.length > 0 ? "?" + formatted.join("&") : "(no parameters)";
+                }
+            }
+
+            // Update on load and when URL changes
+            updateUrlDisplay();
+            window.addEventListener("popstate", updateUrlDisplay);
+
+            // Monitor for pushState changes
+            const originalPushState = history.pushState;
+            history.pushState = function () {
+                originalPushState.apply(history, arguments);
+                setTimeout(updateUrlDisplay, 0);
+            };
+
+            const originalReplaceState = history.replaceState;
+            history.replaceState = function () {
+                originalReplaceState.apply(history, arguments);
+                setTimeout(updateUrlDisplay, 0);
+            };
+        </script>
+    </body>
+</html>

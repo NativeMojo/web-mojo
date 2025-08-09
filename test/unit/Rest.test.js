@@ -4,7 +4,7 @@
  */
 
 module.exports = async function(testContext) {
-    const { describe, it, expect, assert } = testContext;
+    const { describe, it, expect, assert, beforeEach } = testContext;
     const { testHelpers } = require('../utils/test-helpers');
     
     // Import Rest

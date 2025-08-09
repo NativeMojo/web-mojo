@@ -444,12 +444,10 @@ class Table {
 
     return `
       <div class="mojo-table-toolbar mb-3">
-        <div class="row align-items-center">
+        <div class="d-flex align-items-center gap-2">
+          ${this.buildActionButtons()}
           ${this.options.searchable && this.options.searchPlacement === 'toolbar' ? this.buildToolbarSearch() : ''}
           ${this.buildFilterDropdown()}
-          <div class="col-auto ms-auto">
-            ${this.buildTableActions()}
-          </div>
         </div>
         ${this.buildActivePills()}
       </div>
@@ -457,8 +455,58 @@ class Table {
   }
 
   /**
-   * Build search box
-   * @returns {string} Search box HTML
+   * Build action buttons (refresh, add, export) for toolbar
+   * @returns {string} Action buttons HTML
+   */
+  buildActionButtons() {
+    let buttons = [];
+    
+    // Refresh button (always shown if enabled)
+    if (this.options.showRefresh !== false) {
+      buttons.push(`
+        <button class="btn btn-sm btn-outline-secondary" 
+                data-action="refresh" 
+                title="Refresh">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+      `);
+    }
+    
+    // Add button (optional)
+    if (this.options.showAdd) {
+      buttons.push(`
+        <button class="btn btn-sm btn-success" 
+                data-action="add"
+                title="Add ${this.options.modelName || 'Item'}">
+          <i class="bi bi-plus-circle me-1"></i>
+          <span class="d-none d-sm-inline">Add</span>
+        </button>
+      `);
+    }
+    
+    // Export button (optional)
+    if (this.options.showExport) {
+      buttons.push(`
+        <button class="btn btn-sm btn-outline-secondary" 
+                data-action="export"
+                title="Export">
+          <i class="bi bi-download me-1"></i>
+          <span class="d-none d-sm-inline">Export</span>
+        </button>
+      `);
+    }
+    
+    // Add separator if we have buttons and search/filter will follow
+    if (buttons.length > 0 && (this.options.searchable || this.filters)) {
+      buttons.push(`<div class="vr mx-2"></div>`);
+    }
+    
+    return buttons.join('');
+  }
+
+  /**
+   * Build filter dropdown for toolbar
+   * @returns {string} Filter dropdown HTML
    */
   buildFilterDropdown() {
     // Show dropdown if we have filters, or if search is in dropdown mode
@@ -472,21 +520,43 @@ class Table {
     const hasFilters = this.filters && Object.keys(this.filters).length > 0;
     
     return `
-      <div class="col-auto">
-        <div class="dropdown">
-          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
-                  data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="bi bi-filter me-1"></i>
-            Add Filter
-          </button>
-          <div class="dropdown-menu p-3" style="min-width: 300px;">
-            ${this.options.searchable && this.options.searchPlacement === 'dropdown' ? this.buildSearchInDropdown() : ''}
-            ${hasFilters ? this.buildFiltersInDropdown() : ''}
-          </div>
+      <div class="dropdown">
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="bi bi-filter me-1"></i>
+          <span class="d-none d-sm-inline">Add Filter</span>
+        </button>
+        <div class="dropdown-menu p-3" style="min-width: 300px;">
+          ${this.options.searchable && this.options.searchPlacement === 'dropdown' ? this.buildSearchInDropdown() : ''}
+          ${hasFilters ? this.buildFiltersInDropdown() : ''}
         </div>
       </div>
     `;
   }
+
+  /**
+   * Build search box for toolbar
+   * @returns {string} Search box HTML
+   */
+  buildToolbarSearch() {
+    const searchValue = this.activeFilters.search || '';
+    
+   return `
+     <div class="flex-grow-1" style="max-width: 400px;">
+       <div class="input-group input-group-sm">
+         <span class="input-group-text">
+           <i class="bi bi-search"></i>
+         </span>
+         <input type="search" 
+                class="form-control" 
+                placeholder="Search ${this.options.searchPlaceholder || '...'}"
+                data-filter="search"
+                value="${searchValue}"
+                aria-label="Search">
+       </div>
+     </div>
+   `;
+ }
 
   /**
    * Build filter controls
@@ -656,11 +726,6 @@ class Table {
     searchInputs.forEach(input => {
       input.value = value || '';
     });
-  }
-
-  buildTableActions() {
-    // Add any additional toolbar actions here if needed
-    return '';
   }
 
   closeFilterDropdown() {
@@ -1197,7 +1262,11 @@ class Table {
       
       console.log('🔍 [DEBUG] Actual action determined:', actualAction);
 
-
+      // Prevent default action for all data-action elements (especially pagination links)
+      if (actualAction) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
 
       // Handle specific actions
       switch (actualAction) {
@@ -1205,12 +1274,20 @@ class Table {
           this.handleSearchInput(e);
           setTimeout(() => this.closeFilterDropdown(), 100);
           break;
-
         case 'apply-filter':
           if (e.target.tagName === 'BUTTON') {
             this.handleFilterFromDropdown(e);
             setTimeout(() => this.closeFilterDropdown(), 100);
           }
+          break;
+        case 'refresh':
+          this.handleRefresh(e);
+          break;
+        case 'add':
+          this.handleAdd(e);
+          break;
+        case 'export':
+          this.handleExport(e);
           break;
 
         case 'remove-filter':
@@ -1333,6 +1410,11 @@ class Table {
         break;
       
       case 'page':
+        // Ensure we prevent navigation for pagination links
+        if (event) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
         const page = parseInt(target.getAttribute('data-page'));
         await this.handlePageChange(page);
         break;
@@ -1396,6 +1478,15 @@ class Table {
     }
     
     this.currentPage = 1;
+    
+    // Dispatch sort change event
+    if (this.container) {
+      const event = new CustomEvent('sort:change', {
+        bubbles: true,
+        detail: { field: this.sortBy, direction: this.sortDirection }
+      });
+      this.container.dispatchEvent(event);
+    }
     
     // For REST collections, re-fetch data with new sorting
     if (this.collection?.restEnabled) {
@@ -1482,8 +1573,25 @@ class Table {
       }
     }
     
+    // Dispatch page change event
+    if (this.container) {
+      const event = new CustomEvent('page:change', {
+        bubbles: true,
+        detail: { page: this.currentPage }
+      });
+      this.container.dispatchEvent(event);
+    }
+    
     // Always re-render after page change (REST gets new data, local re-slices existing data)
     this.render();
+    
+    // Dispatch page change event for external listeners (e.g., TablePage)
+    if (this.container) {
+      this.container.dispatchEvent(new CustomEvent('page:change', {
+        bubbles: true,
+        detail: { page: this.currentPage }
+      }));
+    }
   }
 
   /**
@@ -1527,6 +1635,14 @@ class Table {
     }
     
     this.render();
+    
+    // Dispatch per page change event for external listeners
+    if (this.container) {
+      this.container.dispatchEvent(new CustomEvent('perpage:change', {
+        bubbles: true,
+        detail: { perPage: this.itemsPerPage }
+      }));
+    }
   }
 
   /**
@@ -1609,12 +1725,96 @@ class Table {
    this.updateSearchInputs(searchValue);
    
    this.currentPage = 1;
-   
-   // For REST collections, re-fetch data with new filters
+    
+   // Dispatch search change event
+   if (this.container) {
+     const event = new CustomEvent('search:change', {
+       bubbles: true,
+       detail: { search: searchValue }
+     });
+     this.container.dispatchEvent(event);
+   }
+    
+   // Fetch new data or re-render
    if (this.collection?.restEnabled) {
      this.fetchWithCurrentFilters();
    } else {
      this.render();
+   }
+ }
+
+ /**
+  * Handle refresh action
+  * @param {Event} e - Click event
+  */
+ handleRefresh(e) {
+   e?.preventDefault();
+   
+   // Emit refresh event
+   if (this.container) {
+     const event = new CustomEvent('table:refresh', {
+       bubbles: true,
+       detail: { table: this }
+     });
+     this.container.dispatchEvent(event);
+   }
+   
+   // If we have a collection with REST enabled, fetch fresh data
+   if (this.collection?.restEnabled) {
+     this.fetchWithCurrentFilters();
+   } else if (this.options.onRefresh) {
+     // Call custom refresh handler if provided
+     this.options.onRefresh();
+   } else {
+     // Just re-render
+     this.render();
+   }
+ }
+
+ /**
+  * Handle add action
+  * @param {Event} e - Click event
+  */
+ handleAdd(e) {
+   e?.preventDefault();
+   
+   // Emit add event
+   if (this.container) {
+     const event = new CustomEvent('table:add', {
+       bubbles: true,
+       detail: { table: this }
+     });
+     this.container.dispatchEvent(event);
+   }
+   
+   // Call custom add handler if provided
+   if (this.options.onAdd) {
+     this.options.onAdd();
+   }
+ }
+
+ /**
+  * Handle export action
+  * @param {Event} e - Click event
+  */
+ handleExport(e) {
+   e?.preventDefault();
+   
+   // Emit export event
+   if (this.container) {
+     const event = new CustomEvent('table:export', {
+       bubbles: true,
+       detail: { 
+         table: this,
+         data: this.collection?.models || []
+       }
+     });
+     this.container.dispatchEvent(event);
+   }
+   
+   // Call custom export handler if provided
+   if (this.options.onExport) {
+     this.options.onExport(this.collection?.models || []);
    }
  }
 
@@ -1630,16 +1830,27 @@ class Table {
    } else {
      delete this.activeFilters[filterKey];
    }
-   
+  
    this.currentPage = 1;
-   
-   // For REST collections, re-fetch data with updated filters
-   if (this.collection?.restEnabled) {
-     this.fetchWithCurrentFilters();
-   } else {
-     this.render();
+  
+   // Dispatch filter change event
+   if (this.container) {
+     const event = new CustomEvent('filter:change', {
+       bubbles: true,
+       detail: { filters: this.activeFilters }
+     });
+     this.container.dispatchEvent(event);
    }
- }
+  
+  // For REST collections, re-fetch data with new filters
+  if (this.collection?.restEnabled) {
+    this.fetchWithCurrentFilters();
+  } else {
+    this.render();
+  }
+  
+
+}
 
  handleRemoveFilter(e) {
    const filterKey = e.target.getAttribute('data-filter');
@@ -1649,10 +1860,19 @@ class Table {
    if (filterKey === 'search') {
      this.updateSearchInputs('');
    }
-   
+    
    this.currentPage = 1;
-   
-   // For REST collections, re-fetch data without filters
+    
+   // Dispatch filter change event
+   if (this.container) {
+     const event = new CustomEvent('filter:change', {
+       bubbles: true,
+       detail: { filters: { ...this.activeFilters } }
+     });
+     this.container.dispatchEvent(event);
+   }
+    
+   // For REST collections, re-fetch data with new filters
    if (this.collection?.restEnabled) {
      this.fetchWithCurrentFilters();
    } else {
@@ -1667,6 +1887,15 @@ class Table {
    this.updateSearchInputs('');
    
    this.currentPage = 1;
+   
+   // Dispatch filter change event
+   if (this.container) {
+     const event = new CustomEvent('filter:change', {
+       bubbles: true,
+       detail: { filters: {} }
+     });
+     this.container.dispatchEvent(event);
+   }
    
    // For REST collections, re-fetch data with new search
    if (this.collection?.restEnabled) {

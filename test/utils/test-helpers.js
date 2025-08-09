@@ -70,6 +70,56 @@ class TestHelpers {
      * Set up MOJO framework mocks
      */
     setupMOJOMocks() {
+        // Mock Jest functionality
+        global.jest = {
+            fn: (implementation) => {
+                const mockFunction = implementation || function() {};
+                mockFunction.mockReturnValue = (value) => {
+                    mockFunction._mockReturnValue = value;
+                    return mockFunction;
+                };
+                mockFunction.mockResolvedValue = (value) => {
+                    mockFunction._mockResolvedValue = value;
+                    return mockFunction;
+                };
+                mockFunction.mockRejectedValue = (value) => {
+                    mockFunction._mockRejectedValue = value;
+                    return mockFunction;
+                };
+                mockFunction.mockImplementation = (impl) => {
+                    mockFunction._mockImplementation = impl;
+                    return mockFunction;
+                };
+                
+                // Override the function to use mocked behavior
+                const originalFn = mockFunction;
+                const mockedFn = function(...args) {
+                    if (mockFunction._mockRejectedValue) {
+                        return Promise.reject(mockFunction._mockRejectedValue);
+                    }
+                    if (mockFunction._mockResolvedValue) {
+                        return Promise.resolve(mockFunction._mockResolvedValue);
+                    }
+                    if (mockFunction._mockReturnValue !== undefined) {
+                        return mockFunction._mockReturnValue;
+                    }
+                    if (mockFunction._mockImplementation) {
+                        return mockFunction._mockImplementation(...args);
+                    }
+                    return originalFn.apply(this, args);
+                };
+                
+                // Copy mock methods to the new function
+                Object.keys(mockFunction).forEach(key => {
+                    if (typeof mockFunction[key] === 'function') {
+                        mockedFn[key] = mockFunction[key];
+                    }
+                });
+                
+                return mockedFn;
+            }
+        };
+
         // Mock Mustache template engine
         global.Mustache = {
             render: (template, data, partials = {}) => {

@@ -82,7 +82,7 @@ module.exports = async function(testContext) {
                 expect(model.options.idAttribute).toBe('id');
                 expect(model.options.timestamps).toBe(true);
             });
-        }
+        });
 
         describe('Attribute Management', () => {
             let model;
@@ -90,7 +90,7 @@ module.exports = async function(testContext) {
             function setupAttributeTest() {
                 setupTest();
                 model = new TestModel({ id: 1, name: 'John', email: 'john@test.com' });
-            });
+            }
 
             it('should get attribute values', () => {
                 setupAttributeTest();
@@ -114,7 +114,7 @@ module.exports = async function(testContext) {
                 
                 expect(model.get('name')).toBe('Jane');
                 expect(model.get('age')).toBe(30);
-            }
+            });
 
             it('should set id attribute specially', () => {
                 setupAttributeTest();
@@ -132,7 +132,7 @@ module.exports = async function(testContext) {
             function setupCrudTest() {
                 setupTest();
                 model = new TestModel({ id: 1, name: 'John' });
-            });
+            }
 
             describe('fetch()', () => {
                 it('should fetch model data successfully', async () => {
@@ -286,7 +286,7 @@ module.exports = async function(testContext) {
                     expect(model.attributes).toEqual({});
                     expect(model.originalAttributes).toEqual({});
                     expect(result).toBe(true);
-                }
+                });
 
                 it('should handle destroy errors', async () => {
                     setupCrudTest();
@@ -366,7 +366,7 @@ module.exports = async function(testContext) {
             function setupValidationTest() {
                 setupTest();
                 model = new TestModel();
-            });
+            }
 
             it('should validate required fields', () => {
                 setupValidationTest();
@@ -386,7 +386,7 @@ module.exports = async function(testContext) {
                 expect(isValid).toBe(false);
                 expect(model.errors).toHaveProperty('name', 'Name must be at least 2 characters');
                 expect(model.errors).toHaveProperty('email', 'Invalid email format');
-            }
+            });
 
             it('should pass validation with valid data', () => {
                 setupValidationTest();
@@ -436,7 +436,7 @@ module.exports = async function(testContext) {
             function setupUrlTest() {
                 setupTest();
                 model = new TestModel();
-            });
+            }
 
             it('should build URL without ID', () => {
                 setupUrlTest();

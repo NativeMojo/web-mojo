@@ -251,8 +251,13 @@ class Writer {
         }
         
         if (openSection) {
-          openSection.push(scanner.pos);
+          // Add closing position if token doesn't have it yet
+          if (openSection.length === 4) {
+            openSection.push(scanner.pos);
+          }
         }
+        // Add closing token for nestSections processing
+        tokens.push([type, value, start, scanner.pos]);
       } else {
         tokens.push([type, value, start, scanner.pos]);
       }
@@ -293,29 +298,26 @@ class Writer {
       switch (token[0]) {
         case '#':
         case '^':
-          // Create new token array to avoid readonly issues
-          const sectionToken = [...token];
-          const childrenArray = [];
-          
-          // Ensure token has enough slots and add children array
-          while (sectionToken.length < 4) {
-            sectionToken.push(undefined);
-          }
-          sectionToken.push(childrenArray);
+          // Create section token with proper structure: [type, name, start, end, children, closing]
+          const sectionToken = [
+            token[0],           // type ('#' or '^')
+            token[1],           // section name
+            token[2],           // start position
+            token[3],           // end position after opening tag
+            [],                 // children array
+            token[4] || null    // closing position (if set during parsing)
+          ];
           
           collector.push(sectionToken);
           sections.push(sectionToken);
-          collector = childrenArray;
+          collector = sectionToken[4]; // children array
           break;
         case '/':
           const section = sections.pop();
           if (section) {
-            // Add closing position to section
-            if (section.length < 6) {
-              section.push(token[2]);
-            } else {
-              section[5] = token[2];
-            }
+            // Set closing position
+            section[5] = token[2];
+            // Return to parent collector
             collector = sections.length > 0 ? sections[sections.length - 1][4] : nestedTokens;
           }
           break;
@@ -345,25 +347,40 @@ class Writer {
           value = context.lookup(token[1]);
           if (!value) continue;
 
+          // Ensure we have child tokens
+          const childTokens = token[4];
+          if (!childTokens || !isArray(childTokens)) {
+            console.warn(`MUSTACHE WARNING - Section ${token[1]} has no child tokens:`, token);
+            continue;
+          }
+
           if (isArray(value)) {
+            // Process each array item
             for (let j = 0; j < value.length; ++j) {
-              buffer += this.renderTokens(token[4], context.push(value[j]), partials, originalTemplate, config);
+              const itemContext = context.push(value[j]);
+              const itemResult = this.renderTokens(childTokens, itemContext, partials, originalTemplate, config);
+              buffer += itemResult;
             }
           } else if (typeof value === 'object' || typeof value === 'string' || typeof value === 'number') {
-            buffer += this.renderTokens(token[4], context.push(value), partials, originalTemplate, config);
+            buffer += this.renderTokens(childTokens, context.push(value), partials, originalTemplate, config);
           } else if (isFunction(value)) {
             const text = originalTemplate == null ? null : originalTemplate.slice(token[3], token[5]);
             value = value.call(context.view, text, (template) => this.render(template, context.view, partials, config));
             if (value != null) buffer += value;
-          } else {
-            buffer += this.renderTokens(token[4], context, partials, originalTemplate, config);
+          } else if (value) {
+            // Handle boolean true and other truthy values
+            buffer += this.renderTokens(childTokens, context, partials, originalTemplate, config);
           }
           break;
 
         case '^':
           value = context.lookup(token[1]);
           if (!value || (isArray(value) && value.length === 0)) {
-            buffer += this.renderTokens(token[4], context, partials, originalTemplate, config);
+            // Ensure we have child tokens for inverted sections too
+            const childTokens = token[4];
+            if (childTokens && isArray(childTokens)) {
+              buffer += this.renderTokens(childTokens, context, partials, originalTemplate, config);
+            }
           }
           break;
 

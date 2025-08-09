@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOJO Mustache Test Runner & Diagnostic Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .status-bar {
+            background: #f8f9fa;
+            padding: 15px 30px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .status-indicator {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .status-ready { background: #d4edda; color: #155724; }
+        .status-running { background: #fff3cd; color: #856404; }
+        .status-complete { background: #d1ecf1; color: #0c5460; }
+        .status-error { background: #f8d7da; color: #721c24; }
+
+        .controls {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #138496;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+
+        .results-container {
+            display: flex;
+            height: 600px;
+        }
+
+        .results-summary {
+            flex: 1;
+            padding: 30px;
+            border-right: 1px solid #dee2e6;
+        }
+
+        .console-output {
+            flex: 2;
+            background: #1a1a1a;
+            color: #f8f9fa;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .console-output::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .console-output::-webkit-scrollbar-track {
+            background: #2a2a2a;
+        }
+
+        .console-output::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+
+        .summary-card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .metric-value {
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .metric-value.success { background: #d4edda; color: #155724; }
+        .metric-value.danger { background: #f8d7da; color: #721c24; }
+        .metric-value.warning { background: #fff3cd; color: #856404; }
+        .metric-value.info { background: #d1ecf1; color: #0c5460; }
+
+        .diagnostic-section {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .diagnostic-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .diagnostic-content {
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .failure-item {
+            background: #fff5f5;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .failure-title {
+            font-weight: 600;
+            color: #dc3545;
+            margin-bottom: 5px;
+        }
+
+        .failure-detail {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #666;
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+
+        .quick-tests {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .quick-tests h3 {
+            color: #1565c0;
+            margin-bottom: 15px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 2s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            text-align: center;
+            border-top: 1px solid #dee2e6;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 MOJO Mustache Test Suite</h1>
+            <p>Comprehensive testing and diagnostic tool for Mustache array loop issues</p>
+        </div>
+
+        <div class="status-bar">
+            <span class="status-indicator status-ready" id="status-indicator">
+                Ready to test
+            </span>
+            <div id="test-progress" style="display: none;">
+                <span class="spinner"></span>
+                Running tests...
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="runFullTestSuite()" id="run-all-btn">
+                    🚀 Run All Tests
+                </button>
+                <button class="btn btn-danger" onclick="runCriticalOnly()" id="run-critical-btn">
+                    🚨 Critical Tests Only
+                </button>
+                <button class="btn btn-info" onclick="runArrayDiagnostic()" id="run-diagnostic-btn">
+                    🔬 Array Diagnostic
+                </button>
+                <button class="btn btn-success" onclick="runQuickTest()" id="run-quick-btn">
+                    ⚡ Quick Test
+                </button>
+                <button class="btn btn-info" onclick="clearResults()">
+                    🗑️ Clear Results
+                </button>
+            </div>
+        </div>
+
+        <div class="results-container">
+            <div class="results-summary">
+                <div class="quick-tests">
+                    <h3>🎯 Quick Tests</h3>
+                    <p>Run these first to quickly identify the core issue:</p>
+                    <div class="button-group" style="margin-top: 10px;">
+                        <button class="btn btn-info" onclick="testSingleArray()">Single Array Item</button>
+                        <button class="btn btn-danger" onclick="testMultipleArray()">Multiple Array Items</button>
+                        <button class="btn btn-success" onclick="testTopNavCase()">TopNav Exact Case</button>
+                    </div>
+                </div>
+
+                <div class="summary-card" id="results-summary" style="display: none;">
+                    <h3>📊 Test Results</h3>
+                    <div class="metric">
+                        <span class="metric-label">Total Tests:</span>
+                        <span class="metric-value info" id="total-tests">0</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Passed:</span>
+                        <span class="metric-value success" id="passed-tests">0</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Failed:</span>
+                        <span class="metric-value danger" id="failed-tests">0</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Critical Failures:</span>
+                        <span class="metric-value warning" id="critical-failures">0</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Success Rate:</span>
+                        <span class="metric-value" id="success-rate">0%</span>
+                    </div>
+                </div>
+
+                <div class="diagnostic-section" id="failures-section" style="display: none;">
+                    <div class="diagnostic-header">🚨 Failed Tests</div>
+                    <div class="diagnostic-content" id="failures-content"></div>
+                </div>
+
+                <div class="diagnostic-section" id="recommendations-section" style="display: none;">
+                    <div class="diagnostic-header">🎯 Recommendations</div>
+                    <div class="diagnostic-content" id="recommendations-content"></div>
+                </div>
+            </div>
+
+            <div class="console-output" id="console-output">
+                Click "Run All Tests" to start testing the Mustache implementation...
+
+🎯 Expected Issues:
+• Array loops ({{#array}}...{{/array}}) may only render first item
+• TopNav component likely showing only first navigation item
+• Complex nested conditionals within arrays may fail
+
+🔧 This tool will:
+• Identify exact failure points in array processing
+• Provide detailed diagnostics for debugging
+• Test critical TopNav use cases
+• Suggest specific fixes for the issues
+
+Ready to begin testing!
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>MOJO Framework • Mustache Template Engine Testing • Array Loop Diagnostics</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { testCases, runMustacheTests, runDeepDiagnostic } from './mustache.test.js';
+
+        // Global variables
+        let currentResults = null;
+        let testInProgress = false;
+
+        // Status management
+        function updateStatus(status, message) {
+            const indicator = document.getElementById('status-indicator');
+            const progress = document.getElementById('test-progress');
+
+            indicator.className = `status-indicator status-${status}`;
+            indicator.textContent = message;
+
+            if (status === 'running') {
+                progress.style.display = 'block';
+            } else {
+                progress.style.display = 'none';
+            }
+        }
+
+        // Console output capture
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        const consoleElement = document.getElementById('console-output');
+
+        function logToConsole(...args) {
+            originalLog.apply(console, args);
+            const message = args.join(' ');
+            consoleElement.textContent += message + '\n';
+            consoleElement.scrollTop = consoleElement.scrollHeight;
+        }
+
+        console.log = logToConsole;
+        console.error = (...args) => {
+            originalError.apply(console, args);
+            logToConsole('ERROR:', ...args);
+        };
+        console.warn = (...args) => {
+            originalWarn.apply(console, args);
+            logToConsole('WARN:', ...args);
+        };
+
+        // Clear results
+        window.clearResults = function() {
+            consoleElement.textContent = 'Console cleared. Ready for new tests...\n';
+            document.getElementById('results-summary').style.display = 'none';
+            document.getElementById('failures-section').style.display = 'none';
+            document.getElementById('recommendations-section').style.display = 'none';
+            updateStatus('ready', 'Ready to test');
+        };
+
+        // Update results display
+        function updateResultsDisplay(results) {
+            const summaryCard = document.getElementById('results-summary');
+            const failuresSection = document.getElementById('failures-section');
+            const recommendationsSection = document.getElementById('recommendations-section');
+
+            // Update summary
+            document.getElementById('total-tests').textContent = results.total;
+            document.getElementById('passed-tests').textContent = results.passed;
+            document.getElementById('failed-tests').textContent = results.failed;
+            document.getElementById('critical-failures').textContent = results.critical_failed;
+
+            const successRate = ((results.passed / results.total) * 100).toFixed(1);
+            const rateElement = document.getElementById('success-rate');
+            rateElement.textContent = `${successRate}%`;
+            rateElement.className = `metric-value ${successRate >= 80 ? 'success' : successRate >= 60 ? 'warning' : 'danger'}`;
+
+            summaryCard.style.display = 'block';
+
+            // Show failures
+            if (results.failures.length > 0) {
+                const failuresContent = document.getElementById('failures-content');
+                failuresContent.innerHTML = '';
+
+                results.failures.forEach(failure => {
+                    const failureDiv = document.createElement('div');
+                    failureDiv.className = 'failure-item';
+
+                    const title = document.createElement('div');
+                    title.className = 'failure-title';
+                    title.textContent = `${failure.test.name} ${failure.critical ? '🚨' : ''}`;
+
+                    const detail = document.createElement('div');
+                    detail.className = 'failure-detail';
+                    if (failure.error) {
+                        detail.textContent = `Error: ${failure.error}`;
+                    } else {
+                        detail.innerHTML = `
+                            Expected: "${failure.expected}"<br>
+                            Got: "${failure.result}"<br>
+                            Length: ${failure.result.length}/${failure.expected.length}
+                        `;
+                    }
+
+                    failureDiv.appendChild(title);
+                    failureDiv.appendChild(detail);
+                    failuresContent.appendChild(failureDiv);
+                });
+
+                failuresSection.style.display = 'block';
+            }
+
+            // Show recommendations
+            if (results.critical_failed > 0) {
+                const recommendationsContent = document.getElementById('recommendations-content');
+                recommendationsContent.innerHTML = `
+                    <div style="color: #dc3545; font-weight: bold; margin-bottom: 15px;">
+                        🚨 ${results.critical_failed} critical issues found!
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <strong>Immediate Actions:</strong>
+                    </div>
+                    <ul style="margin-left: 20px; line-height: 1.6;">
+                        <li>Check renderTokens method array loop logic</li>
+                        <li>Verify Context.push method creates proper contexts</li>
+                        <li>Examine token[4] child token structure for arrays</li>
+                        <li>Test context.lookup resolves correctly in loops</li>
+                        <li>Add debug logging to array processing loop</li>
+                    </ul>
+                    <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 4px; color: #856404;">
+                        <strong>Expected Issue:</strong> Array loops likely terminating after first iteration
+                    </div>
+                `;
+                recommendationsSection.style.display = 'block';
+            } else if (results.failed === 0) {
+                const recommendationsContent = document.getElementById('recommendations-content');
+                recommendationsContent.innerHTML = `
+                    <div style="color: #28a745; font-weight: bold;">
+                        🎉 All tests passed! Mustache implementation is working correctly.
+                    </div>
+                `;
+                recommendationsSection.style.display = 'block';
+            }
+        }
+
+        // Test functions
+        window.runFullTestSuite = async function() {
+            if (testInProgress) return;
+            testInProgress = true;
+
+            updateStatus('running', 'Running full test suite...');
+            clearResults();
+
+            try {
+                const results = runMustacheTests();
+                currentResults = results;
+                updateResultsDisplay(results);
+                updateStatus('complete', `Tests complete: ${results.passed}/${results.total} passed`);
+            } catch (error) {
+                console.error('Test suite error:', error);
+                updateStatus('error', 'Test suite failed');
+            } finally {
+                testInProgress = false;
+            }
+        };
+
+        window.runCriticalOnly = async function() {
+            if (testInProgress) return;
+            testInProgress = true;
+
+            updateStatus('running', 'Running critical tests...');
+            clearResults();
+
+            try {
+                console.log('🚨 Running CRITICAL tests only...\n');
+                const criticalTests = Object.fromEntries(
+                    Object.entries(testCases).filter(([key, test]) => test.critical)
+                );
+
+                // Run critical tests manually
+                const results = { total: 0, passed: 0, failed: 0, critical_failed: 0, failures: [] };
+
+                for (const [key, test] of Object.entries(criticalTests)) {
+                    results.total++;
+                    console.log(`🔍 ${test.name}`);
+
+                    try {
+                        const { default: Mustache } = await import('../../src/utils/mustache.js');
+                        const result = Mustache.render(test.template, test.data);
+
+                        if (result === test.expected) {
+                            console.log('   ✅ PASS');
+                            results.passed++;
+                        } else {
+                            console.log('   ❌ FAIL');
+                            console.log(`   Expected: "${test.expected}"`);
+                            console.log(`   Got: "${result}"`);
+                            results.failed++;
+                            results.critical_failed++;
+                            results.failures.push({ key, test, result, expected: test.expected, critical: true });
+                        }
+                    } catch (error) {
+                        console.log(`   💥 ERROR: ${error.message}`);
+                        results.failed++;
+                        results.critical_failed++;
+                        results.failures.push({ key, test, error: error.message, critical: true });
+                    }
+                }
+
+                currentResults = results;
+                updateResultsDisplay(results);
+                updateStatus('complete', `Critical tests: ${results.passed}/${results.total} passed`);
+            } catch (error) {
+                console.error('Critical test error:', error);
+                updateStatus('error', 'Critical tests failed');
+            } finally {
+                testInProgress = false;
+            }
+        };
+
+        window.runArrayDiagnostic = async function() {
+            if (testInProgress) return;
+            testInProgress = true;
+
+            updateStatus('running', 'Running array diagnostic...');
+            clearResults();
+
+            try {
+                console.log('🔬 Array Loop Deep Diagnostic\n');
+                const diagnostic = runDeepDiagnostic(testCases.array_multiple);
+                console.log('Diagnostic complete:', diagnostic);
+                updateStatus('complete', 'Array diagnostic complete');
+            } catch (error) {
+                console.error('Diagnostic error:', error);
+                updateStatus('error', 'Diagnostic failed');
+            } finally {
+                testInProgress = false;
+            }
+        };
+
+        window.runQuickTest = async function() {
+            if (testInProgress) return;
+            testInProgress = true;
+
+            updateStatus('running', 'Running quick test...');
+            clearResults();
+
+            try {
+                const { default: Mustache } = await import('../../src/utils/mustache.js');
+
+                console.log('⚡ Quick Array Test');
+                console.log('Template: {{#items}}[{{name}}]{{/items}}');
+
+                const testData = { items: [{ name: 'A' }, { name: 'B' }, { name: 'C' }] };
+                const result = Mustache.render('{{#items}}[{{name}}]{{/items}}', testData);
+
+                console.log('Data:', testData);
+                console.log('Expected: [A][B][C]');
+                console.log('Result:', result);
+
+                const success = result === '[A][B][C]';
+                console.log(success ? '✅ PASS - Array loops work!' : '❌ FAIL - Array loop broken!');
+
+                updateStatus(success ? 'complete' : 'error',
+                    success ? 'Quick test passed' : 'Quick test failed');
+            } catch (error) {
+                console.error('Quick test error:', error);
+                updateStatus('error', 'Quick test failed');
+            } finally {
+                testInProgress = false;
+            }
+        };
+
+        // Individual quick tests
+        window.testSingleArray = async function() {
+            console.log('\n🔍 Testing Single Array Item...');
+            const { default: Mustache } = await import('../../src/utils/mustache.js');
+            const result = Mustache.render('{{#items}}{{name}}{{/items}}', { items: [{ name: 'Single' }] });
+            console.log(`Result: "${result}" (Expected: "Single")`);
+            console.log(result === 'Single' ? '✅ PASS' : '❌ FAIL');
+        };
+
+        window.testMultipleArray = async function() {
+            console.log('\n🔍 Testing Multiple Array Items (THE BUG)...');
+            const { default: Mustache } = await import('../../src/utils/mustache.js');
+            const result = Mustache.render('{{#items}}{{name}}{{/items}}',
+                { items: [{ name: 'One' }, { name: 'Two' }, { name: 'Three' }] });
+            console.log(`Result: "${result}" (Expected: "OneTwoThree")`);
+            console.log(result === 'OneTwoThree' ? '✅ PASS' : '❌ FAIL - This is the bug!');
+        };
+
+        window.testTopNavCase = async function() {
+            console.log('\n🔍 Testing TopNav Exact Case...');
+            const { default: Mustache } = await import('../../src/utils/mustache.js');
+            const template = '{{#navItems}}<li>{{text}}</li>{{/navItems}}';
+            const data = { navItems: [{ text: 'Home' }, { text: 'About' }, { text: 'Contact' }] };
+            const result = Mustache.render(template, data);
+            console.log(`Result: "${result}"`);
+            console.log(`Expected: "<li>Home</li><li>About</li><li>Contact</li>"`);
+            console.log(result === '<li>Home</li><li>About</li><li>Contact</li>' ? '✅ PASS' : '❌ FAIL');
+        };
+
+        // Make functions available globally
+        window.testCases = testCases;
+        window.runMustacheTests = runMustacheTests;
+        window.runDeepDiagnostic = runDeepDiagnostic;
+
+        // Initialize
+        updateStatus('ready', 'Ready to test');
+        console.log('🔧 MOJO Mustache Test Suite loaded and ready!');
+        console.log('🎯 Focus: Identify and fix array loop rendering issues');
+        console.log('📊 Available: ' + Object.keys(testCases).length + ' comprehensive tests');
+    </script>
+</body>
+</html>

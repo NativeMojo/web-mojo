@@ -13,7 +13,7 @@ class SimpleModuleLoader {
         this.loadedModules = new Map();
         
         // Module dependency order
-        this.moduleOrder = ['EventBus', 'View', 'Page', 'MOJO'];
+        this.moduleOrder = ['EventBus', 'Router', 'Rest', 'RestModel', 'DataList', 'View', 'Page', 'Table', 'MOJO'];
         
         // Set up global environment
         this.setupGlobals();
@@ -101,6 +101,22 @@ class SimpleModuleLoader {
                 path: path.join(this.sourceRoot, 'utils/EventBus.js'),
                 dependencies: []
             },
+            'Router': {
+                path: path.join(this.sourceRoot, 'core/Router.js'),
+                dependencies: []
+            },
+            'Rest': {
+                path: path.join(this.sourceRoot, 'core/Rest.js'),
+                dependencies: []
+            },
+            'RestModel': {
+                path: path.join(this.sourceRoot, 'core/RestModel.js'),
+                dependencies: ['Rest']
+            },
+            'DataList': {
+                path: path.join(this.sourceRoot, 'core/DataList.js'),
+                dependencies: ['RestModel', 'Rest']
+            },
             'View': {
                 path: path.join(this.sourceRoot, 'core/View.js'),
                 dependencies: []
@@ -109,9 +125,13 @@ class SimpleModuleLoader {
                 path: path.join(this.sourceRoot, 'core/Page.js'),
                 dependencies: ['View']
             },
+            'Table': {
+                path: path.join(this.sourceRoot, 'components/Table.js'),
+                dependencies: ['View']
+            },
             'MOJO': {
                 path: path.join(this.sourceRoot, 'mojo.js'),
-                dependencies: ['View', 'Page', 'EventBus']
+                dependencies: ['View', 'Page', 'Router', 'EventBus', 'Rest', 'RestModel', 'DataList', 'Table']
             }
         };
 

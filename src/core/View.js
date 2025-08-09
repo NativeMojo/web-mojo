@@ -686,6 +686,40 @@ class View {
       this.domListeners.push({ element, event: 'click', handler });
     });
     
+    // Handle navigation - data-page takes precedence over href
+    const navElements = this.element.querySelectorAll('[data-page], a[href]');
+    navElements.forEach(element => {
+      // Skip if it already has data-action (avoid conflicts)
+      if (element.hasAttribute('data-action')) return;
+      
+      const handler = async (event) => {
+        // Allow default browser behavior for special cases
+        if (event.ctrlKey || event.metaKey || event.shiftKey || event.button === 1) {
+          return; // Let browser handle Ctrl+click, middle-click, etc.
+        }
+        
+        // Check for external links before preventing default
+        if (element.tagName === 'A') {
+          const href = element.getAttribute('href');
+          if (this.isExternalLink(href) || element.hasAttribute('data-external')) {
+            return; // Let browser handle external links normally
+          }
+        }
+        
+        event.preventDefault();
+        
+        // data-page takes precedence
+        if (element.hasAttribute('data-page')) {
+          await this.handlePageNavigation(element);
+        } else {
+          await this.handleHrefNavigation(element);
+        }
+      };
+      
+      element.addEventListener('click', handler);
+      this.domListeners.push({ element, event: 'click', handler });
+    });
+    
     // Bind form submissions
     const forms = this.element.querySelectorAll('form[data-action]');
     forms.forEach(form => {
@@ -698,6 +732,117 @@ class View {
       form.addEventListener('submit', handler);
       this.domListeners.push({ element: form, event: 'submit', handler });
     });
+  }
+
+  /**
+   * Handle data-page navigation with optional parameters
+   * @param {HTMLElement} element - Element with data-page attribute
+   */
+  async handlePageNavigation(element) {
+    const pageName = element.getAttribute('data-page');
+    const paramsAttr = element.getAttribute('data-params');
+    
+    let params = {};
+    if (paramsAttr) {
+      try {
+        params = JSON.parse(paramsAttr);
+      } catch (error) {
+        console.warn('Invalid JSON in data-params:', paramsAttr);
+      }
+    }
+    
+    const router = this.findRouter();
+    if (router && typeof router.navigateToPage === 'function') {
+      await router.navigateToPage(pageName, params);
+    } else {
+      console.error(`No router found for page navigation to '${pageName}'`);
+    }
+  }
+
+  /**
+   * Handle href-based navigation  
+   * @param {HTMLElement} element - Anchor element with href
+   */
+  async handleHrefNavigation(element) {
+    const href = element.getAttribute('href');
+    
+    // Skip if it's an external link or has data-external
+    if (this.isExternalLink(href) || element.hasAttribute('data-external')) {
+      return; // Let browser handle normally
+    }
+    
+    const router = this.findRouter();
+    if (router) {
+      // Convert href to route path
+      const routePath = this.hrefToRoutePath(href);
+      
+      // Check if this route exists
+      if (router.routes && router.routes.has(routePath)) {
+        await router.navigate(routePath);
+      } else {
+        console.warn(`Route not found: ${routePath}, allowing default navigation`);
+        // Fallback to default navigation
+        window.location.href = href;
+      }
+    } else {
+      console.warn('No router found for navigation, using default behavior');
+      window.location.href = href;
+    }
+  }
+
+  /**
+   * Check if a link is external (should not be intercepted)
+   * @param {string} href - The href attribute value
+   * @returns {boolean} True if external link
+   */
+  isExternalLink(href) {
+    if (!href) return true;
+    
+    // Skip anchors, external protocols, mailto, tel, etc.
+    return href.startsWith('#') || 
+           href.startsWith('mailto:') || 
+           href.startsWith('tel:') ||
+           href.startsWith('http://') ||
+           href.startsWith('https://') ||
+           href.startsWith('//');
+  }
+
+  /**
+   * Convert href to route path by removing base path
+   * @param {string} href - The href attribute
+   * @returns {string} Route path
+   */
+  hrefToRoutePath(href) {
+    // Handle absolute paths
+    if (href.startsWith('/')) {
+      // Check if it's within our app's base path
+      const router = this.findRouter();
+      if (router && router.options && router.options.base) {
+        const base = router.options.base;
+        if (href.startsWith(base)) {
+          return href.substring(base.length) || '/';
+        }
+      }
+      return href;
+    }
+    
+    // Handle relative paths
+    return href.startsWith('./') ? href.substring(2) : href;
+  }
+
+  /**
+   * Find available router instance
+   * @returns {Object|null} Router instance
+   */
+  findRouter() {
+    const routers = [
+      window.MOJO?.router,
+      window.app?.router,
+      window.navigationApp?.router,
+      window.sidebarApp?.router
+    ];
+    
+    return routers.find(router => router && typeof router.navigate === 'function') || null;
   }
 
   /**

@@ -13,43 +13,21 @@ module.exports = async function(testContext) {
     // Set up test environment
     await testHelpers.setup();
     
-    // Load all MOJO components
+    // Load MOJO components using module loader
     let View, Page, EventBus, MOJO;
     
     try {
-        // Load EventBus
-        const EventBusSource = fs.readFileSync(
-            path.join(process.cwd(), 'src/utils/EventBus.js'), 'utf8'
-        );
-        eval(EventBusSource.replace('export default EventBus;', 'EventBus = EventBus;'));
+        const { setupModules } = require('../utils/simple-module-loader');
+        const modules = setupModules(testContext);
         
-        // Load View
-        const ViewSource = fs.readFileSync(
-            path.join(process.cwd(), 'src/core/View.js'), 'utf8'
-        );
-        eval(ViewSource
-            .replace('import Mustache from \'mustache\';', '// import Mustache')
-            .replace('export default View;', 'View = View;')
-        );
+        View = modules.View;
+        Page = modules.Page;
+        EventBus = modules.EventBus;
+        MOJO = modules.MOJO;
         
-        // Load Page
-        const PageSource = fs.readFileSync(
-            path.join(process.cwd(), 'src/core/Page.js'), 'utf8'
-        );
-        eval(PageSource
-            .replace('import View from \'./View.js\';', '// import View')
-            .replace('export default Page;', 'Page = Page;')
-        );
-        
-        // Load MOJO
-        const MOJOSource = fs.readFileSync(
-            path.join(process.cwd(), 'src/mojo.js'), 'utf8'
-        );
-        eval(MOJOSource
-            .replace(/import.*from.*$/gm, '// $&')
-            .replace('export { View, Page, EventBus };', '')
-            .replace('export default MOJO;', 'MOJO = MOJO;')
-        );
+        if (!View || !Page || !EventBus || !MOJO) {
+            throw new Error('Failed to load required components');
+        }
         
     } catch (error) {
         throw new Error(`Failed to load MOJO components: ${error.message}`);

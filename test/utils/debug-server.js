@@ -222,8 +222,7 @@ if (process.argv.includes('--watch')) {
     
     const watcher = chokidar.watch([
         path.join(SRC_DIR, '**/*.js'),
-        path.join(SRC_DIR, '**/*.html'),
-        path.join(__dirname, 'webpack.config.js')
+        path.join(SRC_DIR, '**/*.html')
     ], {
         ignoreInitial: true
     });

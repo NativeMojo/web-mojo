@@ -11,6 +11,8 @@ import Rest from './core/Rest.js';
 import RestModel from './core/RestModel.js';
 import DataList from './core/DataList.js';
 import Table from './components/Table.js';
+import TablePage from './components/TablePage.js';
+import Dialog from './components/Dialog.js';
 
 /**
  * Main MOJO Framework Class
@@ -22,7 +24,7 @@ class MOJO {
     
     // Core systems
     this.eventBus = new EventBus();
-    const routerConfig = config.router || {};
+    const routerConfig = { mode: 'param', ...config.router || {} };
     this.routerEnabled = routerConfig.enabled !== false; // Default to enabled
     this.router = this.routerEnabled ? new Router(routerConfig) : null;
     this.views = new Map();
@@ -806,7 +808,9 @@ MOJO.EventBus = EventBus;
 MOJO.RestModel = RestModel;
 MOJO.DataList = DataList;
 MOJO.Rest = Rest;
+MOJO.Table = Table;
+MOJO.TablePage = TablePage;
 
 // Export as both default and named export
-export { View, Page, Router, EventBus, RestModel, DataList, Rest, Table };
+export { View, Page, Router, EventBus, RestModel, DataList, Rest, Table, TablePage, Dialog };
 export default MOJO;

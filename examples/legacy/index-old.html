@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>MOJO Framework - Examples</title>
+
+        <!-- Bootstrap CSS -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <!-- Bootstrap Icons -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+            rel="stylesheet"
+        />
+
+        <style>
+            .example-card {
+                transition:
+                    transform 0.2s ease-in-out,
+                    box-shadow 0.2s ease-in-out;
+                height: 100%;
+            }
+            .example-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+            .difficulty-badge {
+                font-size: 0.75rem;
+            }
+            .phase-section {
+                border-left: 4px solid;
+                padding-left: 1rem;
+                margin-bottom: 2rem;
+            }
+            .phase-1 {
+                border-left-color: #28a745;
+            }
+            .phase-2 {
+                border-left-color: #007bff;
+            }
+            .phase-3 {
+                border-left-color: #ffc107;
+            }
+            .complete {
+                border-left-color: #dc3545;
+            }
+        </style>
+    </head>
+    <body class="bg-light">
+        <div class="container-fluid py-3">
+            <!-- Header -->
+            <div class="row mb-4">
+                <div class="col">
+                    <h3 class="mb-1">
+                        <i class="bi bi-code-square text-primary me-2"></i>
+                        MOJO Framework Examples
+                    </h3>
+                    <p class="text-muted mb-0">
+                        Interactive learning path for modern web development • Version 2.0.0
+                    </p>
+                </div>
+                <div class="col-auto">
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-success">Phase 1 & 2 Complete</span>
+                        <span class="badge bg-warning">Phase 3 In Progress</span>
+                        <span class="badge bg-info">Vite Ready</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Start -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-primary">
+                        <div class="card-body p-3">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <h6 class="card-title mb-2">
+                                        <i class="bi bi-rocket-takeoff text-primary me-1"></i>
+                                        Quick Start
+                                    </h6>
+                                    <code class="d-block bg-light p-2 rounded">npm run dev</code>
+                                    <small class="text-muted"
+                                        >Development server with hot reload</small
+                                    >
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="mb-2">
+                                        <i class="bi bi-lightbulb text-warning me-1"></i>
+                                        New to MOJO?
+                                    </h6>
+                                    <div class="d-grid gap-2 d-md-block">
+                                        <a href="01-hello-world/" class="btn btn-success btn-sm">
+                                            <i class="bi bi-play-fill me-1"></i>Start Here
+                                        </a>
+                                        <a href="../docs/" class="btn btn-outline-primary btn-sm">
+                                            <i class="bi bi-book me-1"></i>Documentation
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Learning Path -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h5 class="mb-3">
+                        <i class="bi bi-map text-info me-2"></i>
+                        Learning Path
+                    </h5>
+                </div>
+            </div>
+
+            <!-- Getting Started Section -->
+            <div class="phase-section phase-1">
+                <div class="row mb-3">
+                    <div class="col">
+                        <h6 class="mb-1">
+                            <i class="bi bi-seedling text-success me-1"></i>
+                            Getting Started
+                            <span class="badge bg-success ms-2">New to MOJO</span>
+                        </h6>
+                        <p class="text-muted mb-0 small">
+                            Perfect starting point for beginners. Learn core concepts step by step.
+                        </p>
+                    </div>
+                </div>
+                <div class="row g-3 mb-4">
+                    <!-- Hello World -->
+                    <div class="col-lg-6">
+                        <div class="card example-card border-success">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">
+                                        <i class="bi bi-heart-fill text-danger me-1"></i>
+                                        Hello World
+                                    </h6>
+                                    <div class="d-flex gap-1">
+                                        <span class="badge bg-success difficulty-badge"
+                                            >Beginner</span
+                                        >
+                                        <span class="badge bg-light text-dark difficulty-badge"
+                                            >15 min</span
+                                        >
+                                    </div>
+                                </div>
+                                <p class="card-text small text-muted mb-3">
+                                    Your very first MOJO application. Learn views, templates,
+                                    actions, and lifecycle methods.
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-success">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        Core concepts, Templates, Actions
+                                    </small>
+                                    <a href="01-hello-world/" class="btn btn-success btn-sm">
+                                        <i class="bi bi-play-fill me-1"></i>Start
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Basic Navigation -->
+                    <div class="col-lg-6">
+                        <div class="card example-card border-success">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">
+                                        <i class="bi bi-compass text-primary me-1"></i>
+                                        Basic Navigation
+                                    </h6>
+                                    <div class="d-flex gap-1">
+                                        <span class="badge bg-success difficulty-badge"
+                                            >Beginner</span
+                                        >
+                                        <span class="badge bg-light text-dark difficulty-badge"
+                                            >20 min</span
+                                        >
+                                    </div>
+                                </div>
+                                <p class="card-text small text-muted mb-3">
+                                    Master modern href-based routing with clean URLs and
+                                    SEO-friendly navigation.
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-success">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        Routing, Pages, Bootstrap navbar
+                                    </small>
+                                    <a href="basic-nav/" class="btn btn-primary btn-sm">
+                                        <i class="bi bi-play-fill me-1"></i>Try
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Core Concepts Section -->
+            <div class="phase-section phase-1">
+                <div class="row mb-3">
+                    <div class="col">
+                        <h6 class="mb-1">
+                            <i class="bi bi-building text-primary me-1"></i>
+                            Core Concepts
+                            <span class="badge bg-primary ms-2">Foundation Skills</span>
+                        </h6>
+                        <p class="text-muted mb-0 small">
+                            Essential MOJO patterns that every developer should master.
+                        </p>
+                    </div>
+                </div>
+                <div class="row g-3 mb-4">
+                    <!-- Basic Components -->
+                    <div class="col-lg-4">
+                        <div class="card example-card">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">
+                                        <i class="bi bi-puzzle text-info me-1"></i>
+                                        Basic Components
+                                    </h6>
+                                    <div class="d-flex gap-1">
+                                        <span class="badge bg-primary difficulty-badge"
+                                            >Beginner</span
+                                        >
+                                        <span class="badge bg-light text-dark difficulty-badge"
+                                            >15 min</span
+                                        >
+                                    </div>
+                                </div>
+                                <p class="card-text small text-muted mb-3">
+                                    Foundation concepts: views, templates, lifecycle management.
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-primary">
+                                        <i class="bi bi-gear me-1"></i>
+                                        Views, Lifecycle
+                                    </small>
+                                    <a href="basic/" class="btn btn-primary btn-sm">
+                                        <i class="bi bi-play-fill me-1"></i>Learn
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Component Hierarchy -->
+                    <div class="col-lg-4">
+                        <div class="card example-card">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">
+                                        <i class="bi bi-diagram-3 text-warning me-1"></i>
+                                        Component Hierarchy
+                                    </h6>
+                                    <div class="d-flex gap-1">
+                                        <span class="badge bg-warning difficulty-badge"
+                                            >Intermediate</span
+                                        >
+                                        <span class="badge bg-light text-dark difficulty-badge"
+                                            >25 min</span
+                                        >
+                                    </div>
+                                </div>
+                                <p class="card-text small text-muted mb-3">
+                                    Parent-child relationships and component communication patterns.
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-warning">
+                                        <i class="bi bi-share me-1"></i>
+                                        Relations, Communication
+                                    </small>
+                                    <a href="hierarchy/" class="btn btn-warning btn-sm">
+                                        <i class="bi bi-play-fill me-1"></i>Explore
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Event System -->
+                    <div class="col-lg-4">
+                        <div class="card example-card">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">
+                                        <i class="bi bi-broadcast text-success me-1"></i>
+                                        Event System
+                                    </h6>
+                                    <div class="d-flex gap-1">
+                                        <span class="badge bg-warning difficulty-badge"
+                                            >Intermediate</span
+                                        >
+                                        <span class="badge bg-light text-dark difficulty-badge"
+                                            >30 min</span
+                                        >
+                                    </div>
+                                </div>
+                                <p class="card-text small text-muted mb-3">
+                                    Global EventBus for component communication and coordination.
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-success">
+                                        <i class="bi bi-lightning me-1"></i>
+                                        EventBus, Coordination
+                                    </small>
+                                    <a href="events/" class="btn btn-success btn-sm">
+                                        <i class="bi bi-play-fill me-1"></i>Demo
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar Navigation -->
+                        <div class="card example-card">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">
+                                        <i class="bi bi-layout-sidebar text-primary me-1"></i>
+                                        Sidebar Navigation
+                                    </h6>
+                                    <div class="d-flex gap-1">
+                                        <span class="badge bg-warning difficulty-badge"
+                                            >Intermediate</span
+                                        >
+                                        <span class="badge bg-light text-dark difficulty-badge"
+                                            >35 min</span
+                                        >
+                                    </div>
+                                </div>
+                                <p class="card-text small text-muted mb-3">
+                                    Professional dashboard layout with collapsible sidebar,
+                                    responsive design, and advanced routing patterns.
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-primary">
+                                        <i class="bi bi-phone me-1"></i>
+                                        Responsive, Dashboard, Mobile-friendly
+                                    </small>
+                                    <a href="basic-nav-sidebar/" class="btn btn-primary btn-sm">
+                                        <i class="bi bi-layout-sidebar me-1"></i>View
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Layer Section -->
+            <div class="phase-section phase-2">
+                <div class="row mb-3">
+                    <div class="col">
+                        <h6 class="mb-1">
+                            <i class="bi bi-database text-info me-1"></i>
+                            Data Layer
+                            <span class="badge bg-info ms-2">Phase 2 Features</span>
+                        </h6>
+                        <p class="text-muted mb-0 small">
+                            Master MOJO's powerful data management with RestModel and DataList.
+                        </p>
+                    </div>
+                </div>
+                <div class="row g-3 mb-4">
+                    <!-- Phase 2 Basic -->
+                    <div class="col-lg-6">
+                        <div class="card example-card border-info">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">
+                                        <i class="bi bi-server text-info me-1"></i>
+                                        Phase 2 Fundamentals
+                                    </h6>
+                                    <div class="d-flex gap-1">
+                                        <span class="badge bg-danger difficulty-badge"
+                                            >Advanced</span
+                                        >
+                                        <span class="badge bg-light text-dark difficulty-badge"
+                                            >45 min</span
+                                        >
+                                    </div>
+                                </div>
+                                <p class="card-text small text-muted mb-3">
+                                    Complete data layer tutorial: RestModel, DataList, validation,
+                                    and real-time updates.
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-info">
+                                        <i class="bi bi-shield-check me-1"></i>
+                                        Models, Validation, Collections
+                                    </small>
+                                    <a href="phase2-basic/" class="btn btn-info btn-sm">
+                                        <i class="bi bi-database me-1"></i>Learn
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TODO REST Table -->
+                    <div class="col-lg-6">
+                        <div class="card example-card border-info">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">
+                                        <i class="bi bi-list-task text-success me-1"></i>
+                                        REST API Integration
+                                    </h6>
+                                    <div class="d-flex gap-1">
+                                        <span class="badge bg-danger difficulty-badge"
+                                            >Advanced</span
+                                        >
+                                        <span class="badge bg-light text-dark difficulty-badge"
+                                            >40 min</span
+                                        >
+                                    </div>
+                                </div>
+                                <p class="card-text small text-muted mb-3">
+                                    Live REST API integration with real-time data updates and table
+                                    views.
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-success">
+                                        <i class="bi bi-cloud me-1"></i>
+                                        REST API, Live Data, Tables
+                                    </small>
+                                    <a href="todo-rest-table/" class="btn btn-success btn-sm">
+                                        <i class="bi bi-cloud-arrow-up me-1"></i>Demo
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advanced Components Section -->
+            <div class="phase-section phase-3">
+                <div class="row mb-3">
+                    <div class="col">
+                        <h6 class="mb-1">
+                            <i class="bi bi-gear-wide-connected text-warning me-1"></i>
+                            Advanced Components
+                            <span class="badge bg-warning ms-2">Phase 3 Features</span>
+                        </h6>
+                        <p class="text-muted mb-0 small">
+                            Master complex UI components and professional development patterns.
+                        </p>
+                    </div>
+                </div>
+                <div class="row g-3 mb-4">
+                    <!-- Form Builder -->
+                    <div class="col-lg-6">
+                        <div class="card example-card border-warning">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">
+                                        <i class="bi bi-ui-checks text-primary me-1"></i>
+                                        Form Builder
+                                        <span
+                                            class="badge bg-success ms-1"
+                                            style="font-size: 0.6rem"
+                                            >NEW</span
+                                        >
+                                    </h6>
+                                    <div class="d-flex gap-1">
+                                        <span class="badge bg-danger difficulty-badge"
+                                            >Advanced</span
+                                        >
+                                        <span class="badge bg-light text-dark difficulty-badge"
+                                            >45 min</span
+                                        >
+                                    </div>
+                                </div>
+                                <p class="card-text small text-muted mb-3">
+                                    Dynamic form generation with validation, multiple field types,
+                                    and real-time preview.
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-primary">
+                                        <i class="bi bi-magic me-1"></i>
+                                        Dynamic UI, Validation, Bootstrap
+                                    </small>
+                                    <a href="form-builder/" class="btn btn-primary btn-sm">
+                                        <i class="bi bi-ui-checks me-1"></i>Build
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Table -->
+                    <div class="col-lg-6">
+                        <div class="card example-card border-warning">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">
+                                        <i class="bi bi-table text-success me-1"></i>
+                                        Advanced Table
+                                    </h6>
+                                    <div class="d-flex gap-1">
+                                        <span class="badge bg-danger difficulty-badge"
+                                            >Advanced</span
+                                        >
+                                        <span class="badge bg-light text-dark difficulty-badge"
+                                            >35 min</span
+                                        >
+                                    </div>
+                                </div>
+                                <p class="card-text small text-muted mb-3">
+                                    Feature-rich data tables with sorting, pagination, and advanced
+                                    configuration.
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-success">
+                                        <i class="bi bi-sort-down me-1"></i>
+                                        Sorting, Pagination, Configuration
+                                    </small>
+                                    <a href="table-advanced/" class="btn btn-success btn-sm">
+                                        <i class="bi bi-table me-1"></i>View
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TablePage with URL Sync -->
+                    <div class="col-lg-6">
+                        <div class="card example-card border-warning">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">
+                                        <i class="bi bi-link-45deg text-info me-1"></i>
+                                        TablePage with URL Sync
+                                        <span
+                                            class="badge bg-success ms-1"
+                                            style="font-size: 0.6rem"
+                                            >NEW</span
+                                        >
+                                    </h6>
+                                    <div class="d-flex gap-1">
+                                        <span class="badge bg-danger difficulty-badge"
+                                            >Advanced</span
+                                        >
+                                        <span class="badge bg-light text-dark difficulty-badge"
+                                            >30 min</span
+                                        >
+                                    </div>
+                                </div>
+                                <p class="card-text small text-muted mb-3">
+                                    Tables with automatic URL parameter synchronization for pagination,
+                                    sorting, and filtering. Bookmarkable states and browser navigation.
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-info">
+                                        <i class="bi bi-arrow-left-right me-1"></i>
+                                        URL Sync, State Management
+                                    </small>
+                                    <a href="table-page/" class="btn btn-info btn-sm">
+                                        <i class="bi bi-link me-1"></i>Demo
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filter System -->
+                    <div class="col-lg-12">
+                        <div class="card example-card">
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">
+                                        <i class="bi bi-funnel text-info me-1"></i>
+                                        Advanced Filtering System
+                                    </h6>
+                                    <div class="d-flex gap-1">
+                                        <span class="badge bg-danger difficulty-badge"
+                                            >Advanced</span
+                                        >
+                                        <span class="badge bg-light text-dark difficulty-badge"
+                                            >30 min</span
+                                        >
+                                    </div>
+                                </div>
+                                <p class="card-text small text-muted mb-3">
+                                    Sophisticated filtering interface with multiple criteria,
+                                    search, and real-time results.
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-info">
+                                        <i class="bi bi-search me-1"></i>
+                                        Multi-criteria, Real-time search, Advanced UI
+                                    </small>
+                                    <a href="filter-system-test/" class="btn btn-info btn-sm">
+                                        <i class="bi bi-funnel me-1"></i>Filter
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Complete Applications Section -->
+            <div class="phase-section complete">
+                <div class="row mb-3">
+                    <div class="col">
+                        <h6 class="mb-1">
+                            <i class="bi bi-award text-danger me-1"></i>
+                            Complete Applications
+                            <span class="badge bg-danger ms-2">Full Examples</span>
+                        </h6>
+                        <p class="text-muted mb-0 small">
+                            Full-featured applications demonstrating professional patterns and best
+                            practices.
+                        </p>
+                    </div>
+                </div>
+                <div class="row g-3 mb-4">
+                    <!-- Complete Demo -->
+                    <div class="col-12">
+                        <div class="card example-card border-danger">
+                            <div class="card-body p-4">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <div class="d-flex align-items-start mb-2">
+                                            <div class="me-3">
+                                                <i
+                                                    class="bi bi-trophy-fill text-warning"
+                                                    style="font-size: 2rem"
+                                                ></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="card-title mb-1">
+                                                    Complete Demo Application
+                                                    <span class="badge bg-warning ms-2"
+                                                        >Expert</span
+                                                    >
+                                                    <span class="badge bg-light text-dark ms-1"
+                                                        >60+ min</span
+                                                    >
+                                                </h6>
+                                                <p class="card-text text-muted mb-0">
+                                                    Comprehensive showcase of all MOJO Framework
+                                                    features in a single professional application.
+                                                    Perfect for understanding how everything works
+                                                    together in real-world scenarios.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-md-end">
+                                        <div class="d-grid gap-2">
+                                            <a href="complete-demo/" class="btn btn-danger">
+                                                <i class="bi bi-rocket me-1"></i>
+                                                Launch Complete Demo
+                                            </a>
+                                            <small class="text-muted">
+                                                <i class="bi bi-star me-1"></i>
+                                                All features, Professional patterns, Best practices
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resources Section -->
+            <div class="row mt-5">
+                <div class="col-12">
+                    <h5 class="mb-3">
+                        <i class="bi bi-book text-primary me-2"></i>
+                        Additional Resources
+                    </h5>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <!-- Documentation -->
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body p-3 text-center">
+                            <i class="bi bi-book display-6 text-primary mb-3"></i>
+                            <h6 class="card-title">Documentation</h6>
+                            <p class="card-text small text-muted">
+                                Complete guides, API references, and tutorials
+                            </p>
+                            <a href="../docs/" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-arrow-right me-1"></i>Read Docs
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Source Code -->
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body p-3 text-center">
+                            <i class="bi bi-code-slash display-6 text-success mb-3"></i>
+                            <h6 class="card-title">Source Code</h6>
+                            <p class="card-text small text-muted">
+                                Explore the framework source code and architecture
+                            </p>
+                            <a href="../src/" class="btn btn-outline-success btn-sm">
+                                <i class="bi bi-code me-1"></i>View Source
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Testing -->
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body p-3 text-center">
+                            <i class="bi bi-shield-check display-6 text-info mb-3"></i>
+                            <h6 class="card-title">Testing Suite</h6>
+                            <p class="card-text small text-muted">
+                                Unit and integration tests for all components
+                            </p>
+                            <a href="../test/" class="btn btn-outline-info btn-sm">
+                                <i class="bi bi-check-circle me-1"></i>Run Tests
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="row mt-5">
+                <div class="col-12">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body p-3 text-center">
+                            <h6 class="card-title">
+                                <i class="bi bi-lightbulb me-1"></i>
+                                Ready to Start Building?
+                            </h6>
+                            <p class="card-text mb-3">
+                                MOJO Framework makes modern web development simple, powerful, and
+                                enjoyable. Choose your starting point and begin your journey!
+                            </p>
+                            <div class="d-flex gap-2 justify-content-center flex-wrap">
+                                <a href="01-hello-world/" class="btn btn-light btn-sm">
+                                    <i class="bi bi-heart me-1"></i>Hello World
+                                </a>
+                                <a href="basic-nav/" class="btn btn-outline-light btn-sm">
+                                    <i class="bi bi-compass me-1"></i>Navigation
+                                </a>
+                                <a href="phase2-basic/" class="btn btn-outline-light btn-sm">
+                                    <i class="bi bi-database me-1"></i>Data Layer
+                                </a>
+                                <a href="complete-demo/" class="btn btn-warning btn-sm">
+                                    <i class="bi bi-rocket me-1"></i>Complete Demo
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    </body>
+</html>

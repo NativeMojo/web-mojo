@@ -10,10 +10,18 @@ class Router {
     this.currentParams = {};
     this.currentQuery = {};
     
+    // Page instance tracking for event system
+    this.previousPageInstance = null;
+    this.currentPageInstance = null;
+    
+    // Page name to route mapping for data-page support
+    this.pageRegistry = new Map();
+    
     // Configuration
     this.options = {
-      mode: 'history', // 'history' or 'hash'
+      mode: 'param', // 'history', 'hash', or 'param'
       base: '/',
+      pageParam: 'page', // Parameter name for param mode
       container: '#app',
       ...options
     };
@@ -52,8 +60,10 @@ class Router {
     // Add event listeners based on mode
     if (this.options.mode === 'history') {
       window.addEventListener('popstate', this.onPopState);
-    } else {
+    } else if (this.options.mode === 'hash') {
       window.addEventListener('hashchange', this.onHashChange);
+    } else if (this.options.mode === 'param') {
+      window.addEventListener('popstate', this.onPopState);
     }
     
     // Handle initial route
@@ -105,6 +115,16 @@ class Router {
     if (options.name) {
       this.routes.set(`@${options.name}`, route);
     }
+    
+    // Auto-register page name for data-page support
+    if (handler && handler.prototype) {
+      const pageName = handler.prototype.page_name || handler.prototype.constructor.name.replace('Page', '');
+      if (pageName) {
+        this.registerPageName(pageName, path);
+      }
+    } else if (handler && handler.page_name) {
+      this.registerPageName(handler.page_name, path);
+    }
   }
 
   /**
@@ -118,6 +138,29 @@ class Router {
       if (route.options.name) {
         this.routes.delete(`@${route.options.name}`);
       }
+    }
+  }
+
+  /**
+   * Register a page name with its route for data-page support
+   * @param {string} pageName - Page name (e.g., 'home', 'about')  
+   * @param {string} route - Route path (e.g., '/', '/about')
+   */
+  registerPageName(pageName, route) {
+    this.pageRegistry.set(pageName.toLowerCase(), route);
+  }
+
+  /**
+   * Navigate to a page by name with optional parameters
+   * @param {string} pageName - Page name to navigate to
+   * @param {object} params - Optional parameters to pass to page
+   */
+  async navigateToPage(pageName, params = {}) {
+    const route = this.pageRegistry.get(pageName.toLowerCase());
+    if (route) {
+      await this.navigate(route, { params });
+    } else {
+      console.error(`Page '${pageName}' not found in registry. Available pages:`, Array.from(this.pageRegistry.keys()));
     }
   }
 
@@ -194,6 +237,12 @@ class Router {
    * @param {object} query - Query parameters
    */
   async handleRoute(path, params = {}, query = {}) {
+    // Filter out page parameter from query for param mode
+    if (this.options.mode === 'param') {
+      const filteredQuery = { ...query };
+      delete filteredQuery[this.options.pageParam];
+      query = filteredQuery;
+    }
     const route = this.matchRoute(path);
     
     if (!route) {
@@ -244,6 +293,32 @@ class Router {
   async executeRoute(route, params, query) {
     const { handler } = route;
     
+    // Store previous page before switching
+    this.previousPageInstance = this.currentPageInstance;
+    
+    // Fire before-change event
+    this.firePageEvent('page:before-change', {
+      previousPage: this.getPageInfo(this.previousPageInstance),
+      incomingRoute: route.path,
+      params,
+      query
+    });
+    
+    // Deactivate previous page
+    if (this.previousPageInstance && typeof this.previousPageInstance.onDeactivate === 'function') {
+      await this.previousPageInstance.onDeactivate();
+      this.firePageEvent('page:deactivated', {
+        page: this.getPageInfo(this.previousPageInstance)
+      });
+    }
+    
+    // Reset previous page instance mount state for fresh rendering
+    if (this.currentPageInstance) {
+      this.currentPageInstance.mounted = false;
+    }
+    
+    let newPageInstance = null;
+    
     if (typeof handler === 'function') {
       // Page class constructor
       if (handler.prototype && handler.prototype.render) {
@@ -252,10 +327,14 @@ class Router {
         // Set parameters
         pageInstance.on_params(params, query);
         
+        // Ensure fresh mounting by resetting mount state
+        pageInstance.mounted = false;
+        
         // Render the page
         await pageInstance.render(this.container);
         
         // Store reference for cleanup
+        newPageInstance = pageInstance;
         this.currentPageInstance = pageInstance;
       } else {
         // Regular function handler
@@ -264,11 +343,32 @@ class Router {
     } else if (typeof handler === 'object' && handler.render) {
       // Page instance
       handler.on_params(params, query);
+      
+      // Ensure fresh mounting by resetting mount state
+      handler.mounted = false;
+      
       await handler.render(this.container);
+      newPageInstance = handler;
       this.currentPageInstance = handler;
     } else {
       throw new Error(`Invalid route handler for ${route.path}`);
     }
+    
+    // Activate new page
+    if (newPageInstance && typeof newPageInstance.onActivate === 'function') {
+      await newPageInstance.onActivate();
+      this.firePageEvent('page:activated', {
+        page: this.getPageInfo(newPageInstance)
+      });
+    }
+    
+    // Fire changed event
+    this.firePageEvent('page:changed', {
+      previousPage: this.getPageInfo(this.previousPageInstance),
+      currentPage: this.getPageInfo(this.currentPageInstance),
+      params,
+      query
+    });
   }
 
   /**
@@ -328,7 +428,6 @@ class Router {
    */
   matchRoute(path) {
     const normalizedPath = this.normalizePath(path);
-    
     // Try exact match first
     const exactMatch = this.routes.get(normalizedPath);
     if (exactMatch) {
@@ -422,7 +521,32 @@ class Router {
    */
   getCurrentPath() {
     if (this.options.mode === 'history') {
-      return window.location.pathname.replace(this.options.base, '') || '/';
+      const pathname = window.location.pathname;
+      const base = this.options.base;
+      
+      // Handle exact base match (with or without trailing slash)
+      if (pathname === base || pathname === base + '/') {
+        return '/';
+      }
+      
+      // If pathname starts with base, remove it
+      if (pathname.startsWith(base)) {
+        const remainingPath = pathname.substring(base.length);
+        // Ensure we always return a path starting with /
+        if (remainingPath === '' || remainingPath === '/') {
+          return '/';
+        }
+        return remainingPath.startsWith('/') ? remainingPath : '/' + remainingPath;
+      }
+      
+      return pathname || '/';
+    } else if (this.options.mode === 'param') {
+      const params = new URLSearchParams(window.location.search);
+      const page = params.get(this.options.pageParam);
+      if (!page || page === 'home') {
+        return '/';
+      }
+      return page.startsWith('/') ? page : '/' + page;
     } else {
       return window.location.hash.replace('#', '') || '/';
     }
@@ -435,6 +559,8 @@ class Router {
   getCurrentUrl() {
     if (this.options.mode === 'history') {
       return window.location.pathname + window.location.search;
+    } else if (this.options.mode === 'param') {
+      return window.location.search;
     } else {
       return window.location.hash;
     }
@@ -466,7 +592,17 @@ class Router {
    */
   buildUrl(path) {
     if (this.options.mode === 'history') {
-      return this.options.base + path.replace(/^\//, '');
+      // Ensure path starts with /
+      const normalizedPath = path.startsWith('/') ? path : '/' + path;
+      // Ensure base ends with / if it doesn't already, then combine
+      const base = this.options.base.endsWith('/') ? this.options.base.slice(0, -1) : this.options.base;
+      return base + normalizedPath;
+    } else if (this.options.mode === 'param') {
+      // Create URL with page parameter
+      const url = new URL(window.location.href);
+      const pageName = path === '/' ? 'home' : path.replace(/^\//, '');
+      url.searchParams.set(this.options.pageParam, pageName);
+      return url.toString();
     } else {
       return `#${path}`;
     }
@@ -479,6 +615,8 @@ class Router {
   pushState(url) {
     if (this.options.mode === 'history') {
       window.history.pushState({}, '', url);
+    } else if (this.options.mode === 'param') {
+      window.history.pushState({}, '', url);
     } else {
       window.location.hash = url.replace('#', '');
     }
@@ -490,6 +628,8 @@ class Router {
    */
   replaceState(url) {
     if (this.options.mode === 'history') {
+      window.history.replaceState({}, '', url);
+    } else if (this.options.mode === 'param') {
       window.history.replaceState({}, '', url);
     } else {
       window.location.replace(url);
@@ -536,13 +676,55 @@ class Router {
   }
 
   /**
+   * Fire page event through global event bus
+   * @param {string} eventName - Event name to fire
+   * @param {object} data - Event data
+   */
+  firePageEvent(eventName, data) {
+    // Use global MOJO event bus if available
+    if (typeof window !== 'undefined' && window.MOJO && window.MOJO.eventBus) {
+      window.MOJO.eventBus.emit(eventName, data);
+    }
+    
+    // Also emit on router instance
+    if (this.emit) {
+      this.emit(eventName, data);
+    }
+  }
+
+  /**
+   * Get page info from page instance
+   * @param {object} pageInstance - Page instance
+   * @returns {object|null} Page information
+   */
+  getPageInfo(pageInstance) {
+    if (!pageInstance) return null;
+    
+    return {
+      name: pageInstance.page_name || pageInstance.constructor.name,
+      route: pageInstance.route || '',
+      icon: pageInstance.pageIcon || 'bi bi-file-text',
+      displayName: pageInstance.displayName || pageInstance.page_name || pageInstance.constructor.name,
+      description: pageInstance.pageDescription || '',
+      instance: pageInstance
+    };
+  }
+
+  /**
    * Cleanup current page instance
    */
   cleanup() {
+    // Deactivate current page before cleanup
+    if (this.currentPageInstance && typeof this.currentPageInstance.onDeactivate === 'function') {
+      this.currentPageInstance.onDeactivate();
+    }
+    
     if (this.currentPageInstance && typeof this.currentPageInstance.destroy === 'function') {
       this.currentPageInstance.destroy();
       this.currentPageInstance = null;
     }
+    
+    this.previousPageInstance = null;
   }
 }
 
