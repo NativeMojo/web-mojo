@@ -84,6 +84,15 @@ class Table {
    * Initialize the table component
    */
   init() {
+    // Initialize items per page from options
+    if (this.options.itemsPerPage) {
+      this.itemsPerPage = this.options.itemsPerPage;
+    } else if (this.options.tableOptions?.itemsPerPage) {
+      this.itemsPerPage = this.options.tableOptions.itemsPerPage;
+    } else if (this.options.tableOptions?.defaultPageSize) {
+      this.itemsPerPage = this.options.tableOptions.defaultPageSize;
+    }
+    
     // Only create collection if we don't already have one (preserve preloaded collections)
     if (this.Collection && !this.collection) {
       this.collection = new this.Collection();
@@ -100,6 +109,19 @@ class Table {
       
       this.collection.on('remove', () => {
         this.render();
+      });
+    }
+    
+    // Extract filters from columns if not explicitly provided
+    if (!this.filters || Object.keys(this.filters).length === 0) {
+      this.filters = {};
+      this.columns.forEach(column => {
+        if (column.filter) {
+          this.filters[column.key] = {
+            ...column.filter,
+            label: column.label
+          };
+        }
       });
     }
     
@@ -611,7 +633,7 @@ class Table {
         return `
           <div class="mb-3">
             <label class="form-label fw-bold small">${label}</label>
-            <select class="form-select form-select-sm" data-filter="${key}" data-action="apply-filter">
+            <select class="form-select form-select-sm" data-filter="${key}" data-action="apply-filter" onchange="this.dispatchEvent(new Event('click', {bubbles: true}))">
               <option value="">${filter.placeholder || 'All'}</option>
               ${filter.options.map(opt => 
                 `<option value="${opt.value}" ${value === opt.value ? 'selected' : ''}>
@@ -648,11 +670,16 @@ class Table {
   }
 
   buildActivePills() {
+    console.log('🔍 [DEBUG] buildActivePills called with activeFilters:', this.activeFilters);
+    
     const activeFilters = Object.entries(this.activeFilters).filter(([key, value]) => 
       value && value.toString().trim() !== ''
     );
     
+    console.log('🔍 [DEBUG] Filtered activeFilters for pills:', activeFilters);
+    
     if (activeFilters.length === 0) {
+      console.log('🔍 [DEBUG] No active filters, returning empty string');
       return '';
     }
     
@@ -678,7 +705,7 @@ class Table {
       </button>
     ` : '';
     
-    return `
+    const html = `
       <div class="row mt-2">
         <div class="col-12">
           <div class="d-flex flex-wrap align-items-center">
@@ -688,9 +715,14 @@ class Table {
         </div>
       </div>
     `;
+    
+    console.log('🔍 [DEBUG] buildActivePills returning HTML:', html);
+    return html;
   }
 
   getFilterDisplayValue(key, value) {
+    console.log('🔍 [DEBUG] getFilterDisplayValue called:', { key, value, filters: this.filters });
+    
     if (key === 'search') {
       return `"${value}"`;
     }
@@ -705,6 +737,8 @@ class Table {
   }
 
   getFilterLabel(key) {
+    console.log('🔍 [DEBUG] getFilterLabel called:', { key, filters: this.filters });
+    
     if (key === 'search') {
       return 'Search';
     }
@@ -1346,6 +1380,14 @@ class Table {
       
       if (action === 'apply-filter') {
         this.handleFilterFromDropdown(e);
+        // Close dropdown after applying filter
+        const dropdown = e.target.closest('.dropdown');
+        if (dropdown) {
+          const dropdownInstance = bootstrap.Dropdown.getInstance(dropdown.querySelector('[data-bs-toggle="dropdown"]'));
+          if (dropdownInstance) {
+            dropdownInstance.hide();
+          }
+        }
       } else if (action === 'page-size') {
         await this.handlePageSizeChange(parseInt(e.target.value));
       }
@@ -1553,20 +1595,21 @@ class Table {
           start: start
         };
         
-        // Add sort parameter if sorting is active
+        // Add sort parameter with proper formatting
         if (this.sortBy) {
           fetchParams.sort = this.sortDirection === 'desc' ? `-${this.sortBy}` : this.sortBy;
         }
         
-        // Add current filters
+        // Add current filters - using activeFilters not this.filters
         Object.entries(this.activeFilters).forEach(([key, value]) => {
           if (value !== null && value !== undefined && value !== '') {
             fetchParams[key] = value;
           }
         });
-        
+
         console.log('🔍 [DEBUG] handlePageChange final fetch params:', fetchParams);
-        await this.collection.fetch({ params: fetchParams });
+        // Pass parameters directly, not wrapped in params object
+        await this.collection.fetch(fetchParams);
         console.log('🔍 [DEBUG] handlePageChange fetch completed, new length:', this.collection?.models?.length);
       } catch (error) {
         console.error('Failed to fetch page data:', error);
@@ -1616,6 +1659,7 @@ class Table {
         };
         
         // Add sort parameter if sorting is active
+        // Add sort parameter with proper formatting  
         if (this.sortBy) {
           fetchParams.sort = this.sortDirection === 'desc' ? `-${this.sortBy}` : this.sortBy;
         }
@@ -1627,8 +1671,9 @@ class Table {
           }
         });
         
-        console.log('🔍 [DEBUG] handlePageSizeChange final fetch params:', fetchParams);
-        await this.collection.fetch({ params: fetchParams });
+        console.log('🔍 [DEBUG] Page size change fetch params:', fetchParams);
+        // Pass parameters directly, not wrapped in params object
+        await this.collection.fetch(fetchParams);
       } catch (error) {
         console.error('Failed to fetch data with new page size:', error);
       }
@@ -1823,7 +1868,7 @@ class Table {
    if (!filterElement) return;
    
    const filterKey = filterElement.getAttribute('data-filter');
-   const filterValue = filterElement.value.trim();
+   const filterValue = filterElement.value ? filterElement.value.trim() : '';
    
    if (filterValue) {
      this.activeFilters[filterKey] = filterValue;
@@ -1937,7 +1982,10 @@ class Table {
       });
       
       console.log('🔍 [DEBUG] fetchWithCurrentFilters final fetch params:', fetchParams);
-      await this.collection.fetch({ params: fetchParams });
+      // Pass parameters directly, not wrapped in params object
+      await this.collection.fetch(fetchParams);
+      // Re-render the table with the new data
+      this.render();
     } catch (error) {
       console.error('Failed to fetch filtered data:', error);
       // Fallback to render with existing data

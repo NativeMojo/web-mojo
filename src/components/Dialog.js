@@ -8,22 +8,25 @@ import View from '../core/View.js';
 
 class Dialog extends View {
   constructor(options = {}) {
+    // Generate unique ID if not provided
+    const modalId = options.id || `modal-${Date.now()}`;
+    
     super({
       ...options,
+      id: modalId,  // Pass the ID to parent constructor
       tagName: 'div',
       className: `modal ${options.fade !== false ? 'fade' : ''} ${options.className || ''}`,
       attributes: {
         tabindex: '-1',
         'aria-hidden': 'true',
-        'aria-labelledby': options.labelledBy || `${options.id || 'modal'}-label`,
+        'aria-labelledby': options.labelledBy || `${modalId}-label`,
         'aria-describedby': options.describedBy || null,
         ...options.attributes
       }
     });
     
-    // Generate unique ID if not provided
-    this.modalId = options.id || `modal-${Date.now()}`;
-    this.element.id = this.modalId;
+    // Store modal ID for internal use
+    this.modalId = modalId;
     
     // Dialog configuration
     this.title = options.title || '';
@@ -207,20 +210,118 @@ class Dialog extends View {
     // No footer
     return '';
   }
+  /**
+   * Override render to not require a container for dialogs
+   * Dialogs are rendered standalone and then appended to body
+   */
+  async render(container = null) {
+    // Skip container check for dialogs
+    if (container) {
+      return super.render(container);
+    }
+    
+    // Create element if it doesn't exist
+    if (!this.element) {
+      this.createElement();
+    }
+    
+    // Set rendering flag
+    this.isRendering = true;
+    this.loading = true;
+    
+    try {
+      // Call lifecycle hooks
+      await this.onBeforeRender();
+      
+      // Get template and render
+      const html = await this.renderTemplate();
+      
+      // Set innerHTML
+      this.element.innerHTML = html;
+      
+      // Call after render
+      await this.onAfterRender();
+      
+      this.rendered = true;
+      this.loading = false;
+    } finally {
+      this.isRendering = false;
+    }
+    
+    return this.element;
+  }
   
   /**
-   * After render - mount View instances in body/footer
+   * Override mount to not require a container for dialogs
+   * Dialogs are appended to body directly
+   */
+  async mount() {
+    if (this.mounted || this.destroyed) {
+      return;
+    }
+    
+    // For dialogs, we only need the element, not a container
+    if (!this.element) {
+      throw new Error('Cannot mount dialog without element');
+    }
+    
+    // The element should already be appended to document.body by the caller
+    if (!document.body.contains(this.element)) {
+      console.warn(`Dialog ${this.id}: Element not in document body during mount`);
+    }
+    
+    // Call lifecycle hooks
+    await this.onBeforeMount();
+    
+    // Bind DOM events
+    this.bindEvents();
+    
+    // Mount child views
+    await this.mountChildren();
+    
+    // Set mounted flag
+    this.mounted = true;
+    
+    // Call after mount (this initializes Bootstrap modal)
+    await this.onAfterMount();
+    
+    // Emit mounted event
+    this.emit('mounted', { view: this });
+    
+    return this;
+  }
+  
+  /**
+   * After render - prepare for View instances and apply syntax highlighting
    */
   async onAfterRender() {
     await super.onAfterRender();
     
+    // Apply Prism syntax highlighting if available and there are code blocks
+    if (window.Prism && this.element) {
+      const codeBlocks = this.element.querySelectorAll('pre code');
+      if (codeBlocks.length > 0) {
+        // Use Prism's highlightAllUnder to highlight code within this dialog
+        window.Prism.highlightAllUnder(this.element);
+      }
+    }
+    
+    // Child views will be mounted in onAfterMount when element is in DOM
+  }
+  
+  /**
+   * After mount - initialize Bootstrap modal and mount child views
+   */
+  async onAfterMount() {
+    await super.onAfterMount();
+    
+    // Now that we're mounted and in the DOM, render child views
     // Mount body View if exists
     if (this.bodyView && this.element) {
       const bodyContainer = this.element.querySelector('[data-view-container="body"]');
       if (bodyContainer) {
-        this.bodyView.setContainer(bodyContainer);
-        await this.bodyView.render();
-        await this.bodyView.mount();
+        // Pass container to render - it will handle mounting internally
+        await this.bodyView.render(bodyContainer);
       }
     }
     
@@ -228,18 +329,10 @@ class Dialog extends View {
     if (this.footerView && this.element) {
       const footerContainer = this.element.querySelector('[data-view-container="footer"]');
       if (footerContainer) {
-        this.footerView.setContainer(footerContainer);
-        await this.footerView.render();
-        await this.footerView.mount();
+        // Pass container to render - it will handle mounting internally
+        await this.footerView.render(footerContainer);
       }
     }
-  }
-  
-  /**
-   * After mount - initialize Bootstrap modal
-   */
-  async onAfterMount() {
-    await super.onAfterMount();
     
     if (typeof window !== 'undefined' && window.bootstrap && window.bootstrap.Modal) {
       // Set data attributes if needed
@@ -299,6 +392,12 @@ class Dialog extends View {
     
     // hide.bs.modal
     this.element.addEventListener('hide.bs.modal', (e) => {
+      // Blur any focused element inside the modal to prevent accessibility warning
+      const focusedElement = this.element.querySelector(':focus');
+      if (focusedElement) {
+        focusedElement.blur();
+      }
+      
       if (this.onHide) {
         const result = this.onHide(e);
         if (result === false) {
@@ -311,6 +410,11 @@ class Dialog extends View {
     
     // hidden.bs.modal
     this.element.addEventListener('hidden.bs.modal', (e) => {
+      // Restore focus to the element that had it before modal opened
+      if (this.previousFocus && document.body.contains(this.previousFocus)) {
+        this.previousFocus.focus();
+      }
+      
       if (this.onHidden) this.onHidden(e);
       this.emit('hidden', { dialog: this });
     });
@@ -327,6 +431,9 @@ class Dialog extends View {
    * @param {HTMLElement} relatedTarget - Optional element that triggered the modal
    */
   show(relatedTarget = null) {
+    // Capture the currently focused element for later restoration
+    this.previousFocus = document.activeElement;
+    
     if (this.modal) {
       this.modal.show(relatedTarget);
     }
@@ -336,6 +443,12 @@ class Dialog extends View {
    * Hide the dialog
    */
   hide() {
+    // Blur any focused element inside the modal before hiding
+    const focusedElement = this.element?.querySelector(':focus');
+    if (focusedElement) {
+      focusedElement.blur();
+    }
+    
     if (this.modal) {
       this.modal.hide();
     }
@@ -349,6 +462,33 @@ class Dialog extends View {
     if (this.modal) {
       this.modal.toggle(relatedTarget);
     }
+  }
+  
+  /**
+   * Destroy the dialog and clean up resources
+   */
+  async destroy() {
+    // Hide modal if it's showing
+    if (this.modal) {
+      // Remove focus from any element inside the modal
+      const focusedElement = this.element?.querySelector(':focus');
+      if (focusedElement) {
+        focusedElement.blur();
+      }
+      
+      // Dispose of Bootstrap modal instance
+      this.modal.dispose();
+      this.modal = null;
+    }
+    
+    // Restore previous focus if available
+    if (this.previousFocus && document.body.contains(this.previousFocus)) {
+      this.previousFocus.focus();
+      this.previousFocus = null;
+    }
+    
+    // Call parent destroy
+    await super.destroy();
   }
   
   /**
@@ -380,9 +520,8 @@ class Dialog extends View {
       const bodyEl = this.element?.querySelector('.modal-body');
       if (bodyEl) {
         bodyEl.innerHTML = '';
-        this.bodyView.setContainer(bodyEl);
-        await this.bodyView.render();
-        await this.bodyView.mount();
+        // Pass container to render - it will handle mounting internally
+        await this.bodyView.render(bodyEl);
       }
     } else {
       // String content
@@ -488,6 +627,11 @@ class Dialog extends View {
     document.body.appendChild(dialog.element);
     await dialog.mount();
     
+    // Apply syntax highlighting after mounting
+    if (window.Prism && dialog.element) {
+      window.Prism.highlightAllUnder(dialog.element);
+    }
+    
     // Show the dialog
     dialog.show();
     
@@ -504,22 +648,73 @@ class Dialog extends View {
    * Format code for display with syntax highlighting support
    */
   static formatCode(code, language = 'javascript') {
-    // Escape HTML
-    const escaped = code
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+    let highlightedCode;
     
-    // If Prism.js is available, use it for syntax highlighting
+    // Check if Prism.js is available and has the language
+    if (window.Prism && window.Prism.languages[language]) {
+      // Use Prism to highlight the code
+      highlightedCode = window.Prism.highlight(code, window.Prism.languages[language], language);
+    } else {
+      // Fallback: just escape HTML
+      highlightedCode = code
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+    
+    // Add Prism classes for styling even if highlighting wasn't applied
     const prismClass = window.Prism ? `language-${language}` : '';
     
+    // Modern VS Code-like dark theme styling
+    const codeStyles = `
+      max-height: 60vh;
+      overflow-y: auto;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 1.25rem;
+      border-radius: 0.5rem;
+      margin: 0;
+      font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      border: 1px solid #2d2d30;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    `.replace(/\s+/g, ' ').trim();
+    
     return `
-      <pre class="${prismClass}" style="max-height: 60vh; overflow-y: auto; background: #f8f9fa; padding: 1rem; border-radius: 0.25rem; margin: 0;">
-        <code class="${prismClass}">${escaped}</code>
+      <style>
+        /* Custom Prism theme overrides for Dialog */
+        .dialog-code-block .token.comment { color: #6a9955; }
+        .dialog-code-block .token.string { color: #ce9178; }
+        .dialog-code-block .token.keyword { color: #569cd6; }
+        .dialog-code-block .token.function { color: #dcdcaa; }
+        .dialog-code-block .token.number { color: #b5cea8; }
+        .dialog-code-block .token.operator { color: #d4d4d4; }
+        .dialog-code-block .token.class-name { color: #4ec9b0; }
+        .dialog-code-block .token.punctuation { color: #d4d4d4; }
+        .dialog-code-block .token.boolean { color: #569cd6; }
+        .dialog-code-block .token.property { color: #9cdcfe; }
+        .dialog-code-block .token.tag { color: #569cd6; }
+        .dialog-code-block .token.attr-name { color: #9cdcfe; }
+        .dialog-code-block .token.attr-value { color: #ce9178; }
+        .dialog-code-block ::selection { background: #264f78; }
+      </style>
+      <pre class="${prismClass} dialog-code-block" style="${codeStyles}">
+        <code class="${prismClass}" style="color: inherit; background: transparent; text-shadow: none;">${highlightedCode}</code>
       </pre>
     `;
+  }
+  
+  /**
+   * Trigger Prism highlighting on already rendered code blocks
+   * Call this after inserting code into the DOM if not using formatCode
+   */
+  static highlightCodeBlocks(container = document) {
+    if (window.Prism && window.Prism.highlightAllUnder) {
+      window.Prism.highlightAllUnder(container);
+    }
   }
   
   /**

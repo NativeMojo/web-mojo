@@ -1038,11 +1038,17 @@ class View {
   }
 
   /**
-   * Capitalize first letter of string
-   * @param {string} str - String to capitalize
-   * @returns {string} Capitalized string
+   * Capitalize first letter of string and handle kebab-case
+   * @param {string} str - String to capitalize (supports kebab-case)
+   * @returns {string} Capitalized string (kebab-case becomes PascalCase)
    */
   capitalize(str) {
+    // Handle kebab-case: 'show-modal' becomes 'ShowModal'
+    if (str.includes('-')) {
+      return str.split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join('');
+    }
     return str.charAt(0).toUpperCase() + str.slice(1);
   }
 

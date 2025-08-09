@@ -3,8 +3,8 @@
  * Main application file that sets up routing and layout
  */
 
-import MOJO, { 
-  Router, 
+import MOJO, {
+  Router,
   View,
   Page,
   Dialog,
@@ -20,15 +20,16 @@ import FormsPage from './pages/forms/FormsPage.js';
 import NavigationPage from './pages/navigation/NavigationPage.js';
 import ModelsPage from './pages/models/ModelsPage.js';
 import TemplatesPage from './pages/templates/TemplatesPage.js';
+import TodoTablePage from './pages/todos/TodoTablePage.js';
 
 // Navigation configuration
 const navItems = [
-  { 
-    label: 'Home', 
-    icon: 'bi-house', 
-    page: 'home' 
+  {
+    label: 'Home',
+    icon: 'bi-house',
+    page: 'home'
   },
-  { 
+  {
     label: 'Core Concepts',
     icon: 'bi-box',
     items: [
@@ -44,7 +45,8 @@ const navItems = [
     items: [
       { label: 'Dialogs', page: 'dialogs', icon: 'bi-window-stack' },
       { label: 'Forms', page: 'forms', icon: 'bi-input-cursor-text' },
-      { label: 'Tables', page: 'tables', icon: 'bi-table' }
+      { label: 'Tables', page: 'tables', icon: 'bi-table' },
+      { label: 'Todo Table (REST)', page: 'todotable', icon: 'bi-check2-square' }
     ]
   }
 ];
@@ -59,11 +61,11 @@ class TopNav extends View {
       tagName: 'nav',
       className: 'navbar navbar-expand-lg navbar-dark bg-primary fixed-top'
     });
-    
+
     this.brand = options.brand || 'MOJO Examples';
     this.brandIcon = options.brandIcon || 'bi-lightning-charge';
   }
-  
+
   async getTemplate() {
     return `
       <div class="container-fluid">
@@ -87,7 +89,7 @@ class TopNav extends View {
       </div>
     `;
   }
-  
+
   async onActionToggleSidebar() {
     const sidebar = document.querySelector('.sidebar');
     if (sidebar) {
@@ -106,12 +108,12 @@ class Sidebar extends View {
       tagName: 'aside',
       className: 'sidebar'
     });
-    
+
     this.items = options.items || [];
     this.router = options.router;
     this.currentPage = null;
   }
-  
+
   async getTemplate() {
     return `
       <nav class="nav flex-column p-3">
@@ -119,7 +121,7 @@ class Sidebar extends View {
       </nav>
     `;
   }
-  
+
   renderNavItems(items, isNested = false) {
     return items.map(item => {
       if (item.items) {
@@ -151,10 +153,10 @@ class Sidebar extends View {
       }
     }).join('');
   }
-  
+
   setActivePage(pageName) {
     this.currentPage = pageName;
-    
+
     // Update active state in DOM
     if (this.element) {
       this.element.querySelectorAll('.nav-link').forEach(link => {
@@ -178,7 +180,7 @@ class MainContent extends View {
       className: 'main-content'
     });
   }
-  
+
   async getTemplate() {
     return '<div id="page-container"></div>';
   }
@@ -189,17 +191,17 @@ class MainContent extends View {
  */
 async function initApp() {
   console.log('Initializing MOJO Examples App...');
-  
+
   // Get the app container
   const appContainer = document.getElementById('app');
   if (!appContainer) {
     console.error('App container not found');
     return;
   }
-  
+
   // Clear loading message
   appContainer.innerHTML = '';
-  
+
   // Create layout structure
   const layoutHTML = `
     <div class="app-layout">
@@ -211,7 +213,7 @@ async function initApp() {
     </div>
   `;
   appContainer.innerHTML = layoutHTML;
-  
+
   // Create and mount TopNav
   const topNav = new TopNav({
     brand: 'MOJO Examples',
@@ -220,13 +222,13 @@ async function initApp() {
   topNav.setContainer('#topnav');
   await topNav.render();
   await topNav.mount();
-  
+
   // Create router with param mode (default for MOJO)
   const router = new Router({
     container: '#page-container',
     mode: 'param'
   });
-  
+
   // Create and mount Sidebar
   const sidebar = new Sidebar({
     items: navItems,
@@ -235,13 +237,13 @@ async function initApp() {
   sidebar.setContainer('#sidebar');
   await sidebar.render();
   await sidebar.mount();
-  
+
   // Create and mount MainContent
   const mainContent = new MainContent();
   mainContent.setContainer('#main');
   await mainContent.render();
   await mainContent.mount();
-  
+
   // Ensure MOJO eventBus is available
   if (!window.MOJO) {
     window.MOJO = {};
@@ -249,14 +251,14 @@ async function initApp() {
   if (!window.MOJO.eventBus) {
     window.MOJO.eventBus = new EventBus();
   }
-  
+
   // Listen for route changes to update sidebar
   window.MOJO.eventBus.on('page:changed', (data) => {
     if (data.page && data.page.page_name) {
       sidebar.setActivePage(data.page.page_name.toLowerCase());
     }
   });
-  
+
   // Register routes
   router.addRoute('home', HomePage);
   router.addRoute('components', ComponentsPage);
@@ -266,22 +268,24 @@ async function initApp() {
   router.addRoute('navigation', NavigationPage);
   router.addRoute('models', ModelsPage);
   router.addRoute('templates', TemplatesPage);
-  
+
+  router.addRoute('todotable', TodoTablePage);
+
   // Set default route
   router.addRoute('', HomePage); // Root route
-  
+
   // Start router
   router.start();
-  
+
   // Navigate to home if no page param
   const urlParams = new URLSearchParams(window.location.search);
   if (!urlParams.get('page')) {
     router.navigate('home');
   }
-  
+
   // Make router globally available for navigation
   window.MOJO.router = router;
-  
+
   // Make components globally available for debugging
   window.MOJO_APP = {
     router,
@@ -290,7 +294,7 @@ async function initApp() {
     mainContent,
     Dialog
   };
-  
+
   console.log('Examples app initialized');
 }
 

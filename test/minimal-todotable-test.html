@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal TodoTablePage Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .debug-output {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .debug-error {
+            color: #f00;
+        }
+        .debug-success {
+            color: #0f0;
+        }
+        .debug-info {
+            color: #ff0;
+        }
+        #page-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 400px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-success {
+            background: #28a745;
+        }
+        .status-error {
+            background: #dc3545;
+        }
+        .status-pending {
+            background: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Minimal TodoTablePage Test</h1>
+        <p>This is a minimal test to debug TodoTablePage issues.</p>
+
+        <div class="row mb-3">
+            <div class="col">
+                <button id="step1" class="btn btn-primary">Step 1: Load Modules</button>
+                <button id="step2" class="btn btn-primary" disabled>Step 2: Create Page</button>
+                <button id="step3" class="btn btn-primary" disabled>Step 3: Render Page</button>
+                <button id="step4" class="btn btn-primary" disabled>Step 4: Load Mock Data</button>
+                <button id="clear" class="btn btn-secondary">Clear</button>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4">
+                <h5>Status</h5>
+                <ul class="list-unstyled">
+                    <li><span id="status-modules" class="status-indicator status-pending"></span> Modules</li>
+                    <li><span id="status-page" class="status-indicator status-pending"></span> Page Instance</li>
+                    <li><span id="status-render" class="status-indicator status-pending"></span> Rendered</li>
+                    <li><span id="status-table" class="status-indicator status-pending"></span> Table Created</li>
+                    <li><span id="status-data" class="status-indicator status-pending"></span> Data Loaded</li>
+                </ul>
+            </div>
+            <div class="col-md-8">
+                <h5>Debug Output</h5>
+                <div class="debug-output" id="debug"></div>
+            </div>
+        </div>
+
+        <div id="page-container" class="mt-4">
+            <div class="text-center text-muted">
+                <i class="bi bi-inbox" style="font-size: 48px;"></i>
+                <p>TodoTablePage will render here</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script type="module">
+        // Debug logger
+        const debug = document.getElementById('debug');
+        function log(msg, type = 'info') {
+            const timestamp = new Date().toTimeString().split(' ')[0];
+            const className = `debug-${type}`;
+            debug.innerHTML += `<span class="${className}">[${timestamp}] ${msg}</span>\n`;
+            debug.scrollTop = debug.scrollHeight;
+            console.log(`[${type}] ${msg}`);
+        }
+
+        function setStatus(id, status) {
+            const el = document.getElementById(`status-${id}`);
+            el.className = `status-indicator status-${status}`;
+        }
+
+        // Global references
+        let modules = {};
+        let page = null;
+        let router = null;
+
+        // Step 1: Load Modules
+        document.getElementById('step1').addEventListener('click', async () => {
+            try {
+                log('Loading modules...', 'info');
+
+                // Import all required modules
+                const [
+                    { default: TodoTablePage },
+                    { default: TodoCollection },
+                    { default: Todo },
+                    { default: Router },
+                    { TablePage },
+                    { Rest }
+                ] = await Promise.all([
+                    import('../examples/pages/todos/TodoTablePage.js'),
+                    import('../examples/models/TodoCollection.js'),
+                    import('../examples/models/Todo.js'),
+                    import('../src/core/Router.js'),
+                    import('../src/mojo.js'),
+                    import('../src/mojo.js')
+                ]);
+
+                modules = { TodoTablePage, TodoCollection, Todo, Router, TablePage, Rest };
+
+                log('✓ TodoTablePage loaded', 'success');
+                log('✓ TodoCollection loaded', 'success');
+                log('✓ Todo model loaded', 'success');
+                log('✓ Router loaded', 'success');
+                log('✓ TablePage loaded', 'success');
+                log('✓ Rest loaded', 'success');
+
+                // Check inheritance
+                log(`TodoTablePage extends TablePage: ${Object.getPrototypeOf(modules.TodoTablePage.prototype).constructor.name === 'TablePage'}`, 'info');
+
+                setStatus('modules', 'success');
+                document.getElementById('step2').disabled = false;
+
+            } catch (error) {
+                log(`Failed to load modules: ${error.message}`, 'error');
+                log(error.stack, 'error');
+                setStatus('modules', 'error');
+            }
+        });
+
+        // Step 2: Create Page
+        document.getElementById('step2').addEventListener('click', async () => {
+            try {
+                log('Creating TodoTablePage instance...', 'info');
+
+                const container = document.getElementById('page-container');
+                container.innerHTML = '';
+
+                // Create router (required by MOJO framework)
+                router = new modules.Router({
+                    mode: 'param',
+                    container: container
+                });
+                window.MOJO = { router };
+                log('Router created and set to window.MOJO', 'success');
+
+                // Create page instance
+                page = new modules.TodoTablePage({});
+                log('TodoTablePage instance created', 'success');
+
+                // Check page properties
+                log(`- page_name: ${page.page_name}`, 'info');
+                log(`- title: ${page.title || 'undefined'}`, 'info');
+                log(`- route: ${page.route}`, 'info');
+                log(`- collection type: ${page.collection ? page.collection.constructor.name : 'no collection'}`, 'info');
+                log(`- columns defined: ${page.columns ? page.columns.length : 0}`, 'info');
+
+                // Check methods
+                const methods = ['setLoadingState', 'updateStatusDisplay', 'loadData', 'handleRefresh'];
+                methods.forEach(method => {
+                    const exists = typeof page[method] === 'function';
+                    log(`- ${method}: ${exists ? '✓' : '✗'}`, exists ? 'success' : 'error');
+                });
+
+                setStatus('page', 'success');
+                document.getElementById('step3').disabled = false;
+
+            } catch (error) {
+                log(`Failed to create page: ${error.message}`, 'error');
+                log(error.stack, 'error');
+                setStatus('page', 'error');
+            }
+        });
+
+        // Step 3: Render Page
+        document.getElementById('step3').addEventListener('click', async () => {
+            try {
+                log('Rendering TodoTablePage...', 'info');
+
+                const container = document.getElementById('page-container');
+
+                // Call render with container
+                await page.render(container);
+                log('Page rendered successfully', 'success');
+
+                // Check if table was created
+                if (page.table) {
+                    log('✓ Table instance created', 'success');
+                    log(`- Table collection: ${page.table.collection ? page.table.collection.constructor.name : 'none'}`, 'info');
+                    log(`- Table columns: ${page.table.columns ? page.table.columns.length : 0}`, 'info');
+                    setStatus('table', 'success');
+                } else {
+                    log('✗ Table instance not created', 'error');
+                    setStatus('table', 'error');
+                }
+
+                setStatus('render', 'success');
+                document.getElementById('step4').disabled = false;
+
+            } catch (error) {
+                log(`Failed to render page: ${error.message}`, 'error');
+                log(error.stack, 'error');
+                setStatus('render', 'error');
+            }
+        });
+
+        // Step 4: Load Mock Data
+        document.getElementById('step4').addEventListener('click', async () => {
+            try {
+                log('Loading mock data...', 'info');
+
+                // Mock the REST GET method
+                if (modules.Rest && modules.Rest.GET) {
+                    const originalGET = modules.Rest.GET.bind(modules.Rest);
+
+                    modules.Rest.GET = async (url, params) => {
+                        log(`Mock REST.GET called: ${url}`, 'info');
+
+                        // Return mock data
+                        const mockData = [];
+                        for (let i = 1; i <= 10; i++) {
+                            mockData.push({
+                                id: i,
+                                kind: ['task', 'bug', 'feature'][i % 3],
+                                description: `Test todo item ${i}`,
+                                priority: ['low', 'medium', 'high'][i % 3],
+                                date: new Date().toISOString().split('T')[0],
+                                note: i % 2 === 0 ? `Note for item ${i}` : ''
+                            });
+                        }
+
+                        return {
+                            data: mockData,
+                            total: mockData.length,
+                            page: 1,
+                            per_page: 10
+                        };
+                    };
+
+                    log('REST.GET mocked with test data', 'success');
+                }
+
+                // Try to load data
+                if (page && typeof page.loadData === 'function') {
+                    await page.loadData();
+                    log('loadData() called successfully', 'success');
+
+                    if (page.collection && page.collection.length > 0) {
+                        log(`✓ Collection has ${page.collection.length} items`, 'success');
+                        setStatus('data', 'success');
+                    } else {
+                        log('⚠ Collection is empty or undefined', 'info');
+                    }
+                } else {
+                    log('loadData method not available', 'error');
+                }
+
+            } catch (error) {
+                log(`Failed to load data: ${error.message}`, 'error');
+                log(error.stack, 'error');
+                setStatus('data', 'error');
+            }
+        });
+
+        // Clear button
+        document.getElementById('clear').addEventListener('click', () => {
+            debug.innerHTML = '';
+            document.getElementById('page-container').innerHTML = `
+                <div class="text-center text-muted">
+                    <i class="bi bi-inbox" style="font-size: 48px;"></i>
+                    <p>TodoTablePage will render here</p>
+                </div>
+            `;
+
+            // Reset all status indicators
+            ['modules', 'page', 'render', 'table', 'data'].forEach(id => {
+                setStatus(id, 'pending');
+            });
+
+            // Reset buttons
+            document.getElementById('step2').disabled = true;
+            document.getElementById('step3').disabled = true;
+            document.getElementById('step4').disabled = true;
+
+            // Clear references
+            page = null;
+            router = null;
+            modules = {};
+
+            log('Test reset', 'info');
+        });
+
+        // Initial message
+        log('Minimal TodoTablePage test ready. Click Step 1 to begin.', 'info');
+    </script>
+</body>
+</html>

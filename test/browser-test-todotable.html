@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>TodoTablePage Browser Test</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+            rel="stylesheet"
+        />
+        <style>
+            body {
+                padding: 20px;
+                background: #f8f9fa;
+            }
+            .test-section {
+                background: white;
+                border-radius: 8px;
+                padding: 20px;
+                margin-bottom: 20px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .status-badge {
+                display: inline-block;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 600;
+                margin-left: 10px;
+            }
+            .status-success {
+                background: #d4edda;
+                color: #155724;
+            }
+            .status-error {
+                background: #f8d7da;
+                color: #721c24;
+            }
+            .status-pending {
+                background: #fff3cd;
+                color: #856404;
+            }
+            .test-log {
+                background: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                padding: 10px;
+                margin-top: 10px;
+                font-family: "Courier New", monospace;
+                font-size: 12px;
+                max-height: 200px;
+                overflow-y: auto;
+            }
+            .page-container {
+                min-height: 400px;
+                border: 2px dashed #dee2e6;
+                border-radius: 8px;
+                padding: 20px;
+                background: white;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1 class="mb-4">
+                <i class="bi bi-check2-square"></i>
+                TodoTablePage Browser Test
+            </h1>
+
+            <!-- Test Status Section -->
+            <div class="test-section">
+                <h4>Test Status</h4>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div>
+                            Module Loading
+                            <span id="status-modules" class="status-badge status-pending"
+                                >Pending</span
+                            >
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div>
+                            Page Creation
+                            <span id="status-creation" class="status-badge status-pending"
+                                >Pending</span
+                            >
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div>
+                            Page Rendering
+                            <span id="status-rendering" class="status-badge status-pending"
+                                >Pending</span
+                            >
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div>
+                            Data Loading
+                            <span id="status-data" class="status-badge status-pending"
+                                >Pending</span
+                            >
+                        </div>
+                    </div>
+                </div>
+                <div class="test-log" id="test-log"></div>
+            </div>
+
+            <!-- Control Section -->
+            <div class="test-section">
+                <h4>Test Controls</h4>
+                <div class="btn-group" role="group">
+                    <button id="btn-create" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Create Page
+                    </button>
+                    <button id="btn-render" class="btn btn-success" disabled>
+                        <i class="bi bi-play-fill"></i> Render Page
+                    </button>
+                    <button id="btn-load-data" class="btn btn-info" disabled>
+                        <i class="bi bi-cloud-download"></i> Load Mock Data
+                    </button>
+                    <button id="btn-destroy" class="btn btn-danger" disabled>
+                        <i class="bi bi-trash"></i> Destroy Page
+                    </button>
+                    <button id="btn-clear" class="btn btn-secondary">
+                        <i class="bi bi-arrow-clockwise"></i> Clear All
+                    </button>
+                </div>
+                <div class="mt-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="mock-api-toggle" />
+                        <label class="form-check-label" for="mock-api-toggle">
+                            Use Mock API
+                            <small class="text-muted">(Enable when real API is not running)</small>
+                        </label>
+                    </div>
+                    <small id="mock-api-status" class="text-muted"></small>
+                </div>
+            </div>
+
+            <!-- Page Container -->
+            <div class="test-section">
+                <h4>TodoTablePage Container</h4>
+                <div id="page-container" class="page-container">
+                    <div class="text-center text-muted">
+                        <i class="bi bi-inbox" style="font-size: 48px"></i>
+                        <p>Page will render here</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Section -->
+            <div class="test-section">
+                <h4>Page Information</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <th width="40%">Page Name:</th>
+                                    <td id="info-name">-</td>
+                                </tr>
+                                <tr>
+                                    <th>Title:</th>
+                                    <td id="info-title">-</td>
+                                </tr>
+                                <tr>
+                                    <th>Route:</th>
+                                    <td id="info-route">-</td>
+                                </tr>
+                                <tr>
+                                    <th>Collection Type:</th>
+                                    <td id="info-collection">-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <th width="40%">Table Created:</th>
+                                    <td id="info-table">-</td>
+                                </tr>
+                                <tr>
+                                    <th>Columns:</th>
+                                    <td id="info-columns">-</td>
+                                </tr>
+                                <tr>
+                                    <th>Data Loaded:</th>
+                                    <td id="info-data">-</td>
+                                </tr>
+                                <tr>
+                                    <th>Status:</th>
+                                    <td id="info-status">-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+        <!-- Test Script -->
+        <script type="module">
+            // Import modules
+            import TodoTablePage from "../examples/pages/todos/TodoTablePage.js";
+            import TodoCollection from "../examples/models/TodoCollection.js";
+            import Router from "../src/core/Router.js";
+            import Todo from "../examples/models/Todo.js";
+            import { enableMockAPI, disableMockAPI, getMockStatus } from "../test/mock-todo-api.js";
+
+            // Test state
+            let page = null;
+            let router = null;
+
+            // Helper functions
+            function log(message, type = "info") {
+                const logEl = document.getElementById("test-log");
+                const timestamp = new Date().toLocaleTimeString();
+                const typeClass =
+                    type === "error"
+                        ? "text-danger"
+                        : type === "success"
+                          ? "text-success"
+                          : "text-dark";
+                logEl.innerHTML += `<div class="${typeClass}">[${timestamp}] ${message}</div>`;
+                logEl.scrollTop = logEl.scrollHeight;
+                console.log(`[${type}] ${message}`);
+            }
+
+            function setStatus(id, status) {
+                const el = document.getElementById(id);
+                el.className = "status-badge status-" + status;
+                el.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            }
+
+            function updateInfo() {
+                if (page) {
+                    document.getElementById("info-name").textContent = page.page_name || "-";
+                    document.getElementById("info-title").textContent = page.title || "-";
+                    document.getElementById("info-route").textContent = page.route || "-";
+                    document.getElementById("info-collection").textContent = page.collection
+                        ? page.collection.constructor.name
+                        : "-";
+                    document.getElementById("info-table").textContent = page.table ? "Yes" : "No";
+                    document.getElementById("info-columns").textContent = page.columns
+                        ? page.columns.length
+                        : "-";
+                    document.getElementById("info-data").textContent = page.collection
+                        ? page.collection.length + " items"
+                        : "-";
+                    document.getElementById("info-status").textContent = page.element
+                        ? "Mounted"
+                        : "Not Mounted";
+                } else {
+                    [
+                        "name",
+                        "title",
+                        "route",
+                        "collection",
+                        "table",
+                        "columns",
+                        "data",
+                        "status",
+                    ].forEach((field) => {
+                        document.getElementById("info-" + field).textContent = "-";
+                    });
+                }
+            }
+
+            // Mock data generator
+            function generateMockTodos(count = 10) {
+                const kinds = ["task", "bug", "feature", "ticket"];
+                const priorities = ["low", "medium", "high"];
+                const todos = [];
+
+                for (let i = 1; i <= count; i++) {
+                    const date = new Date();
+                    date.setDate(date.getDate() + Math.floor(Math.random() * 30 - 15));
+
+                    todos.push({
+                        id: i,
+                        kind: kinds[Math.floor(Math.random() * kinds.length)],
+                        description: `Todo item ${i}: ${["Fix bug", "Add feature", "Update docs", "Review PR"][Math.floor(Math.random() * 4)]}`,
+                        priority: priorities[Math.floor(Math.random() * priorities.length)],
+                        date: date.toISOString().split("T")[0],
+                        note: Math.random() > 0.5 ? `Note for item ${i}` : "",
+                    });
+                }
+                return todos;
+            }
+
+            // Test functions
+            async function createPage() {
+                try {
+                    log("Creating TodoTablePage instance...", "info");
+
+                    const container = document.getElementById("page-container");
+                    container.innerHTML = "";
+
+                    // Create router
+                    router = new Router({
+                        mode: "param",
+                        container: container,
+                    });
+                    window.MOJO = { router };
+                    log("Router created and set to window.MOJO", "success");
+
+                    // Create page
+                    page = new TodoTablePage({});
+                    log("TodoTablePage created successfully", "success");
+
+                    setStatus("status-creation", "success");
+                    document.getElementById("btn-render").disabled = false;
+                    document.getElementById("btn-destroy").disabled = false;
+
+                    updateInfo();
+                } catch (error) {
+                    log("Failed to create page: " + error.message, "error");
+                    setStatus("status-creation", "error");
+                }
+            }
+
+            async function renderPage() {
+                if (!page) {
+                    log("No page instance to render", "error");
+                    return;
+                }
+
+                try {
+                    log("Rendering TodoTablePage...", "info");
+                    const container = document.getElementById("page-container");
+                    await page.render(container);
+                    log("Page rendered successfully", "success");
+
+                    setStatus("status-rendering", "success");
+                    document.getElementById("btn-load-data").disabled = false;
+
+                    // If mock API is enabled, try to load data automatically
+                    const mockStatus = getMockStatus();
+                    if (mockStatus.enabled) {
+                        log(
+                            "Mock API is enabled, attempting to load data from mock API...",
+                            "info",
+                        );
+                        setTimeout(async () => {
+                            await page.loadData();
+                            updateInfo();
+                        }, 500);
+                    }
+
+                    updateInfo();
+                } catch (error) {
+                    log("Failed to render page: " + error.message, "error");
+                    setStatus("status-rendering", "error");
+                }
+            }
+
+            async function loadMockData() {
+                if (!page) {
+                    log("No page instance", "error");
+                    return;
+                }
+
+                try {
+                    log("Loading mock data...", "info");
+
+                    // Generate mock todos
+                    const mockTodos = generateMockTodos(15);
+                    log(`Generated ${mockTodos.length} mock todos`, "info");
+
+                    // Clear collection and add mock data
+                    if (page.collection) {
+                        page.collection.reset();
+                        mockTodos.forEach((todoData) => {
+                            const todo = new Todo(todoData);
+                            page.collection.add(todo);
+                        });
+
+                        // Set metadata
+                        page.collection.total = mockTodos.length;
+                        page.collection.page = 1;
+                        page.collection.per_page = 10;
+                    }
+
+                    // Update table if it exists (table shares collection with page)
+                    if (page.table) {
+                        page.table.render();
+                        log("Table data updated", "success");
+                    }
+
+                    // Update status display
+                    if (typeof page.updateStatusDisplay === "function") {
+                        page.lastUpdated = new Date().toLocaleTimeString();
+                        page.updateStatusDisplay();
+                        log("Status display updated", "success");
+                    }
+
+                    setStatus("status-data", "success");
+                    updateInfo();
+                } catch (error) {
+                    log("Failed to load data: " + error.message, "error");
+                    setStatus("status-data", "error");
+                }
+            }
+
+            async function destroyPage() {
+                if (!page) {
+                    log("No page instance to destroy", "error");
+                    return;
+                }
+
+                try {
+                    log("Destroying page...", "info");
+                    if (typeof page.destroy === "function") {
+                        await page.destroy();
+                    }
+                    page = null;
+
+                    document.getElementById("page-container").innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="bi bi-inbox" style="font-size: 48px;"></i>
+                        <p>Page will render here</p>
+                    </div>
+                `;
+
+                    log("Page destroyed", "success");
+
+                    // Reset buttons
+                    document.getElementById("btn-render").disabled = true;
+                    document.getElementById("btn-load-data").disabled = true;
+                    document.getElementById("btn-destroy").disabled = true;
+
+                    // Reset status
+                    ["creation", "rendering", "data"].forEach((id) => {
+                        setStatus("status-" + id, "pending");
+                    });
+
+                    updateInfo();
+                } catch (error) {
+                    log("Failed to destroy page: " + error.message, "error");
+                }
+            }
+
+            function clearAll() {
+                destroyPage();
+                document.getElementById("test-log").innerHTML = "";
+                log("Test cleared", "info");
+            }
+
+            // Mock API toggle handler
+            function updateMockAPIStatus() {
+                const status = getMockStatus();
+                const statusEl = document.getElementById("mock-api-status");
+                if (status.enabled) {
+                    statusEl.innerHTML =
+                        '<i class="bi bi-check-circle text-success"></i> Mock API is active';
+                } else {
+                    statusEl.innerHTML =
+                        '<i class="bi bi-x-circle text-secondary"></i> Mock API is inactive';
+                }
+            }
+
+            document.getElementById("mock-api-toggle").addEventListener("change", (e) => {
+                if (e.target.checked) {
+                    enableMockAPI(30);
+                    log("Mock API enabled with 30 test todos", "success");
+                } else {
+                    disableMockAPI();
+                    log("Mock API disabled", "info");
+                }
+                updateMockAPIStatus();
+            });
+
+            // Event listeners
+            document.getElementById("btn-create").addEventListener("click", createPage);
+            document.getElementById("btn-render").addEventListener("click", renderPage);
+            document.getElementById("btn-load-data").addEventListener("click", loadMockData);
+            document.getElementById("btn-destroy").addEventListener("click", destroyPage);
+            document.getElementById("btn-clear").addEventListener("click", clearAll);
+
+            // Initial setup
+            try {
+                log("Modules loaded successfully", "success");
+                setStatus("status-modules", "success");
+
+                // Check if mock API should be enabled by default
+                updateMockAPIStatus();
+
+                // Try to detect if real API is available
+                fetch("http://0.0.0.0:8881/api/example/todo?size=1")
+                    .then((response) => {
+                        if (response.ok) {
+                            log("Real API detected at http://0.0.0.0:8881", "success");
+                        } else {
+                            throw new Error("API not responding");
+                        }
+                    })
+                    .catch(() => {
+                        log("Real API not available, enabling Mock API", "info");
+                        document.getElementById("mock-api-toggle").checked = true;
+                        enableMockAPI(30);
+                        updateMockAPIStatus();
+                    });
+
+                log('Test ready. Click "Create Page" to begin.', "info");
+            } catch (error) {
+                log("Failed to load modules: " + error.message, "error");
+                setStatus("status-modules", "error");
+            }
+        </script>
+    </body>
+</html>

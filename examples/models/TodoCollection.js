@@ -37,18 +37,24 @@ class TodoCollection extends DataList {
      * @returns {Promise} Promise that resolves with fetched data
      */
     async fetch(options = {}) {
-        console.log('🔍 [TodoCollection] Fetching with options:', options);
-        
         // Transform pagination parameters for the API
         const params = {
             size: options.per_page || 10,
             start: ((options.page || 1) - 1) * (options.per_page || 10)
         };
         
-        // Add any filters
+        // Add any filters - check both nested and direct properties
         if (options.filters) {
             Object.assign(params, options.filters);
         }
+        
+        // Also add any direct filter properties (like kind, priority, etc.)
+        const knownParams = ['page', 'per_page', 'sort', 'order', 'search', 'filters', 'append'];
+        Object.keys(options).forEach(key => {
+            if (!knownParams.includes(key) && options[key] !== null && options[key] !== undefined && options[key] !== '') {
+                params[key] = options[key];
+            }
+        });
         
         // Add search parameter if provided
         if (options.search) {
@@ -62,29 +68,71 @@ class TodoCollection extends DataList {
         }
         
         try {
-            const response = await Rest.get(`${API_BASE}${API_ENDPOINT}`, { params });
+            const response = await Rest.GET(`${API_BASE}${API_ENDPOINT}`, params);
             
             // Handle the response format from the TODO API
-            if (response && response.data) {
+            if (response) {
+                // Check if response has data array
+                let todoData = [];
+                
+                // Handle different response structures
+                if (Array.isArray(response)) {
+                    // Response is directly an array
+                    todoData = response;
+                } else if (response.data && Array.isArray(response.data)) {
+                    // Response has data property that is an array
+                    todoData = response.data;
+                } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+                    // Response has nested data.data property that is an array
+                    todoData = response.data.data;
+                } else if (response.items && Array.isArray(response.items)) {
+                    // Response has items property that is an array
+                    todoData = response.items;
+                } else {
+                    // Try to handle as single item
+                    if (response.data && typeof response.data === 'object') {
+                        todoData = [response.data];
+                    } else if (typeof response === 'object' && response.id) {
+                        todoData = [response];
+                    }
+                }
+                
                 // Clear existing models if not appending
                 if (!options.append) {
                     this.reset();
                 }
                 
                 // Add models from response
-                const todos = response.data.map(item => new Todo(item));
+                const todos = todoData.map(item => new Todo(item));
                 this.add(todos);
                 
-                // Store pagination info
-                this.total = response.total || todos.length;
-                this.page = options.page || 1;
-                this.per_page = options.per_page || 10;
+                // Store pagination info from the actual API response structure
+                // API returns: response.data = { data: [...], count: total, size: pageSize, start: offset }
+                if (response.data && typeof response.data === 'object') {
+                    this.total = response.data.count || response.total || todos.length;
+                    this.per_page = response.data.size || options.per_page || 10;
+                    // Calculate page from start index
+                    const start = response.data.start || 0;
+                    this.page = Math.floor(start / this.per_page) + 1;
+                } else {
+                    this.total = response.total || response.totalCount || todos.length;
+                    this.page = response.page || options.page || 1;
+                    this.per_page = response.per_page || response.pageSize || options.per_page || 10;
+                }
                 
-                console.log(`✅ [TodoCollection] Loaded ${todos.length} TODOs`);
+                // Store pagination metadata in meta property for Table component
+                this.meta = {
+                    total: this.total,
+                    page: this.page,
+                    per_page: this.per_page,
+                    pages: Math.ceil(this.total / this.per_page)
+                };
+                
                 return todos;
+            } else {
+                return [];
             }
         } catch (error) {
-            console.error('❌ [TodoCollection] Fetch error:', error);
             throw error;
         }
     }
@@ -276,7 +324,13 @@ class TodoCollection extends DataList {
             total: this.total || this.models.length,
             page: this.page || 1,
             per_page: this.per_page || 10,
-            data: this.models.map(model => model.attributes)
+            data: this.models.map(model => model.attributes),
+            meta: this.meta || {
+                total: this.total || this.models.length,
+                page: this.page || 1,
+                per_page: this.per_page || 10,
+                pages: Math.ceil((this.total || this.models.length) / (this.per_page || 10))
+            }
         };
     }
     
@@ -293,6 +347,14 @@ class TodoCollection extends DataList {
         this.total = json.total || this.models.length;
         this.page = json.page || 1;
         this.per_page = json.per_page || 10;
+        
+        // Set meta property
+        this.meta = json.meta || {
+            total: this.total,
+            page: this.page,
+            per_page: this.per_page,
+            pages: Math.ceil(this.total / this.per_page)
+        };
     }
 }
 

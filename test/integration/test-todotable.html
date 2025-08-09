@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TodoTablePage Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+        }
+        .test-output {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .test-success {
+            color: green;
+        }
+        .test-error {
+            color: red;
+        }
+        .test-info {
+            color: blue;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TodoTablePage Integration Test</h1>
+        <p>This page tests the TodoTablePage component directly.</p>
+
+        <div class="mb-3">
+            <button id="test-page" class="btn btn-primary">Test TodoTablePage</button>
+            <button id="test-collection" class="btn btn-secondary">Test TodoCollection</button>
+            <button id="clear-output" class="btn btn-outline-secondary">Clear Output</button>
+        </div>
+
+        <div id="page-container"></div>
+
+        <div class="test-output" id="output"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script type="module">
+        import TodoTablePage from '../../examples/pages/todos/TodoTablePage.js';
+        import TodoCollection from '../../examples/models/TodoCollection.js';
+        import { Router } from '../../src/core/Router.js';
+
+        const output = document.getElementById('output');
+        const container = document.getElementById('page-container');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = `test-${type}`;
+            output.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            console.log(message);
+        }
+
+        // Clear output button
+        document.getElementById('clear-output').addEventListener('click', () => {
+            output.innerHTML = '';
+            container.innerHTML = '';
+        });
+
+        // Test TodoTablePage
+        document.getElementById('test-page').addEventListener('click', async () => {
+            log('Starting TodoTablePage test...', 'info');
+
+            try {
+                // Clear container
+                container.innerHTML = '';
+
+                // Create a minimal router instance for the page
+                const router = new Router({
+                    mode: 'param',
+                    container: container
+                });
+                window.MOJO = { router };
+
+                log('Creating TodoTablePage instance...', 'info');
+                const page = new TodoTablePage({
+                    container: container
+                });
+
+                log('Page instance created successfully', 'success');
+                log(`Page name: ${page.page_name}`, 'info');
+                log(`Page title: ${page.title}`, 'info');
+
+                // Check if methods exist
+                const methods = ['setLoadingState', 'updateStatusDisplay', 'loadData'];
+                methods.forEach(method => {
+                    if (typeof page[method] === 'function') {
+                        log(`✓ Method ${method} exists`, 'success');
+                    } else {
+                        log(`✗ Method ${method} is missing`, 'error');
+                    }
+                });
+
+                // Try to render the page
+                log('Attempting to render page...', 'info');
+                await page.render();
+                log('Page rendered successfully', 'success');
+
+                // Check if table was created
+                if (page.table) {
+                    log('✓ Table instance created', 'success');
+                } else {
+                    log('✗ Table instance not created (may be normal if render lifecycle not complete)', 'info');
+                }
+
+                // Check collection
+                if (page.collection) {
+                    log('✓ Collection instance exists', 'success');
+                    log(`Collection type: ${page.collection.constructor.name}`, 'info');
+                } else {
+                    log('✗ Collection instance missing', 'error');
+                }
+
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+                log(`Stack: ${error.stack}`, 'error');
+            }
+        });
+
+        // Test TodoCollection
+        document.getElementById('test-collection').addEventListener('click', async () => {
+            log('Starting TodoCollection test...', 'info');
+
+            try {
+                log('Creating TodoCollection instance...', 'info');
+                const collection = new TodoCollection();
+                log('Collection created successfully', 'success');
+
+                // Test fetch with mock data
+                log('Testing collection methods...', 'info');
+
+                // Check if fetch method exists
+                if (typeof collection.fetch === 'function') {
+                    log('✓ fetch method exists', 'success');
+                } else {
+                    log('✗ fetch method missing', 'error');
+                }
+
+                // Try to fetch data (will likely fail without API)
+                log('Attempting to fetch data from API...', 'info');
+                try {
+                    await collection.fetch({
+                        page: 1,
+                        per_page: 10
+                    });
+                    log(`Fetched ${collection.length} items`, 'success');
+                } catch (fetchError) {
+                    log(`Fetch failed (expected if API not running): ${fetchError.message}`, 'info');
+                }
+
+                // Test other methods
+                const testMethods = ['toJSON', 'getByKind', 'getByPriority', 'search'];
+                testMethods.forEach(method => {
+                    if (typeof collection[method] === 'function') {
+                        log(`✓ Method ${method} exists`, 'success');
+                    } else {
+                        log(`✗ Method ${method} missing`, 'error');
+                    }
+                });
+
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+                log(`Stack: ${error.stack}`, 'error');
+            }
+        });
+
+        // Auto-run test on load
+        window.addEventListener('load', () => {
+            log('Test page loaded. Click buttons to run tests.', 'info');
+        });
+    </script>
+</body>
+</html>
