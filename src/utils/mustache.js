@@ -94,6 +94,11 @@ class Context {
   }
 
   lookup(name) {
+    // Special case: '.' refers to the current context value itself
+    if (name === '.') {
+      return this.view;
+    }
+    
     // Handle dot-prefix to prevent context chain walking
     // If name starts with '.', only look in current context
     if (name && name.startsWith('.')) {
