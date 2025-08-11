@@ -264,7 +264,7 @@ module.exports = async function() {
                 
                 // Create mock page class
                 function TestPage() {}
-                TestPage.prototype.page_name = 'TestPage';
+                TestPage.prototype.pageName = 'TestPage';
                 
                 router.addRoute('/test', TestPage);
                 

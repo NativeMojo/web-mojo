@@ -10,7 +10,7 @@ class DialogsPage extends Page {
   constructor(options = {}) {
     super({
       ...options,
-      page_name: 'dialogs',
+      pageName: 'dialogs',
       title: 'Dialogs - MOJO Examples'
     });
   }

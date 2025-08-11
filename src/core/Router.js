@@ -9,33 +9,33 @@ class Router {
     this.currentRoute = null;
     this.currentParams = {};
     this.currentQuery = {};
-    
+
     // Page instance tracking for event system
     this.previousPageInstance = null;
     this.currentPageInstance = null;
-    
+
     // Page name to route mapping for data-page support
     this.pageRegistry = new Map();
-    
+
     // Configuration
     this.options = {
       mode: 'param', // 'history', 'hash', or 'param'
       base: '/',
-      pageParam: 'page', // Parameter name for param mode
+      pageParam: 'page',
       container: '#app',
       ...options
     };
-    
+
     // Route guards
     this.guards = {
       beforeEach: [],
       afterEach: []
     };
-    
+
     // State
     this.started = false;
-    this.container = null;
-    
+    this.container = this.options.container;
+
     // Bind event handlers
     this.onPopState = this.onPopState.bind(this);
     this.onHashChange = this.onHashChange.bind(this);
@@ -48,15 +48,17 @@ class Router {
     if (this.started) {
       return;
     }
-    
+
     this.started = true;
-    
-    // Find container element
-    this.container = document.querySelector(this.options.container);
-    if (!this.container) {
+
+    // Validate container element exists
+    const containerElement = document.querySelector(this.options.container);
+    if (!containerElement) {
       throw new Error(`Router container not found: ${this.options.container}`);
     }
-    
+    // Keep container as selector string
+    this.container = this.options.container;
+
     // Add event listeners based on mode
     if (this.options.mode === 'history') {
       window.addEventListener('popstate', this.onPopState);
@@ -65,10 +67,10 @@ class Router {
     } else if (this.options.mode === 'param') {
       window.addEventListener('popstate', this.onPopState);
     }
-    
+
     // Handle initial route
     this.handleCurrentLocation();
-    
+
     console.log(`🚀 MOJO Router started in ${this.options.mode} mode`);
   }
 
@@ -79,13 +81,13 @@ class Router {
     if (!this.started) {
       return;
     }
-    
+
     this.started = false;
-    
+
     // Remove event listeners
     window.removeEventListener('popstate', this.onPopState);
     window.removeEventListener('hashchange', this.onHashChange);
-    
+
     console.log('🛑 MOJO Router stopped');
   }
 
@@ -95,41 +97,111 @@ class Router {
    * @param {function|object} handler - Route handler (Page class or function)
    * @param {object} options - Route options
    */
-  addRoute(path, handler, options = {}) {
+  addRoute(pathOrHandler, handlerOrOptions, options = {}) {
+    let path, handler, finalOptions;
+    
+    if (typeof pathOrHandler === 'string') {
+      // Manual path specification
+      path = pathOrHandler;
+      handler = handlerOrOptions;
+      finalOptions = options;
+    } else {
+      // Page class or instance
+      handler = pathOrHandler;
+      finalOptions = handlerOrOptions || {};
+      
+      // If it's a class (constructor function), instantiate it
+      if (typeof handler === 'function' && handler.prototype) {
+        try {
+          handler = new handler();
+          
+          // If the page has an initialization promise, wait for it to complete or fail
+          if (handler._initPromise && typeof handler._initPromise.then === 'function') {
+            handler._initPromise.catch(error => {
+              console.error(`Async initialization failed for page class ${handler.constructor.name}:`, error);
+              console.error('Page may not function correctly');
+            });
+          }
+        } catch (error) {
+          console.error(`Failed to instantiate page class ${handler.name}:`, error);
+          console.error('Route not registered. Continuing...');
+          return this; // Return for chaining, but don't register the route
+        }
+      }
+      
+      // Validate that we have a valid page instance
+      if (!handler || typeof handler !== 'object') {
+        console.error(`Invalid handler provided for route. Expected Page instance or class, got ${typeof handler}`);
+        return this;
+      }
+      
+      // Get path from the instance's route or pageName
+      if (handler.route) {
+        path = handler.route;
+      } else if (handler.pageName) {
+        path = '/' + handler.pageName
+          .replace(/([A-Z])/g, '_$1')
+          .toLowerCase()
+          .replace(/^_/, '');
+      } else {
+        path = '/' + handler.constructor.name
+          .toLowerCase()
+          .replace(/page$/, '');
+      }
+      
+      console.log(`Adding route for ${handler.pageName || handler.constructor.name}: ${path}`);
+    }
+
     const route = {
       path: this.normalizePath(path),
       handler,
       options: {
-        name: options.name || null,
-        middleware: options.middleware || [],
-        meta: options.meta || {},
-        ...options
+        name: finalOptions.name || null,
+        middleware: finalOptions.middleware || [],
+        meta: finalOptions.meta || {},
+        ...finalOptions
       },
       regex: this.pathToRegex(path),
       keys: this.extractKeys(path)
     };
-    
+
     this.routes.set(path, route);
-    
+
     // Also store by name if provided
-    if (options.name) {
-      this.routes.set(`@${options.name}`, route);
+    if (finalOptions.name) {
+      this.routes.set(`@${finalOptions.name}`, route);
     }
-    
+
     // Auto-register page name for data-page support
-    if (handler && handler.prototype) {
-      const pageName = handler.prototype.page_name || handler.prototype.constructor.name.replace('Page', '');
-      if (pageName) {
-        this.registerPageName(pageName, path);
-      }
-    } else if (handler && handler.page_name) {
-      this.registerPageName(handler.page_name, path);
+    if (handler && handler.pageName) {
+      this.registerPageName(handler.pageName, path);
     }
+
+    return this;
+  }
+
+  /**
+   * Add multiple page instances at once
+   * @param {Array<Page>} pages - Array of page instances or classes
+   * @returns {Router} Router instance for chaining
+   */
+  addPages(pages) {
+    pages.forEach((page, index) => {
+      try {
+        this.addRoute(page);
+      } catch (error) {
+        const pageName = page?.name || page?.constructor?.name || `page at index ${index}`;
+        console.error(`Failed to add route for ${pageName}:`, error);
+        console.error('Continuing with remaining pages...');
+      }
+    });
+    return this;
   }
 
   /**
    * Remove a route
-   * @param {string} path - Route path or name
+   * @param {string} path - Route path to remove
+   * @returns {Router} Router instance for chaining
    */
   removeRoute(path) {
     const route = this.routes.get(path);
@@ -143,7 +215,7 @@ class Router {
 
   /**
    * Register a page name with its route for data-page support
-   * @param {string} pageName - Page name (e.g., 'home', 'about')  
+   * @param {string} pageName - Page name (e.g., 'home', 'about')
    * @param {string} route - Route path (e.g., '/', '/about')
    */
   registerPageName(pageName, route) {
@@ -160,7 +232,8 @@ class Router {
     if (route) {
       await this.navigate(route, { params });
     } else {
-      console.error(`Page '${pageName}' not found in registry. Available pages:`, Array.from(this.pageRegistry.keys()));
+      console.warn(`Page '${pageName}' not found in registry. Available pages:`, Array.from(this.pageRegistry.keys()));
+      await this.handleNotFound(`/page/${pageName}`);
     }
   }
 
@@ -172,19 +245,19 @@ class Router {
   async navigate(path, options = {}) {
     const url = this.buildUrl(path);
     const currentUrl = this.getCurrentUrl();
-    
+
     // Don't navigate if already at destination
     if (url === currentUrl && !options.force) {
       return;
     }
-    
+
     // Update browser history
     if (options.replace) {
       this.replaceState(url);
     } else {
       this.pushState(url);
     }
-    
+
     // Handle the route
     await this.handleRoute(path, options.params || {});
   }
@@ -226,7 +299,7 @@ class Router {
   async handleCurrentLocation() {
     const path = this.getCurrentPath();
     const query = this.parseQuery();
-    
+
     await this.handleRoute(path, {}, query);
   }
 
@@ -244,17 +317,17 @@ class Router {
       query = filteredQuery;
     }
     const route = this.matchRoute(path);
-    
+
     if (!route) {
       console.error(`No route found for path: ${path}`);
       await this.handleNotFound(path);
       return;
     }
-    
+
     // Extract parameters from path
     const extractedParams = this.extractParams(route, path);
     const allParams = { ...extractedParams, ...params };
-    
+
     // Run before guards
     for (const guard of this.guards.beforeEach) {
       const result = await guard(route, allParams, query);
@@ -263,21 +336,21 @@ class Router {
         return;
       }
     }
-    
+
     try {
       // Handle the route
       await this.executeRoute(route, allParams, query);
-      
+
       // Update current route info
       this.currentRoute = route;
       this.currentParams = allParams;
       this.currentQuery = query;
-      
+
       // Run after guards
       for (const guard of this.guards.afterEach) {
         await guard(route, allParams, query);
       }
-      
+
     } catch (error) {
       console.error('Route execution error:', error);
       await this.handleError(error, route, allParams, query);
@@ -291,11 +364,49 @@ class Router {
    * @param {object} query - Query parameters
    */
   async executeRoute(route, params, query) {
-    const { handler } = route;
-    
+    let { handler } = route;
+
+    // If handler is a class, instantiate it
+    if (typeof handler === 'function' && handler.prototype && handler.prototype.render) {
+      try {
+        handler = new handler();
+        
+        // Wait for any async initialization to complete
+        if (handler._initPromise && typeof handler._initPromise.then === 'function') {
+          try {
+            await handler._initPromise;
+          } catch (initError) {
+            console.error(`Async initialization failed during navigation for ${handler.constructor.name}:`, initError);
+            await this.handleError(initError, route, params, query);
+            return;
+          }
+        }
+        
+        // Update the route's handler to use the instance for future navigations
+        route.handler = handler;
+      } catch (error) {
+        console.error(`Failed to instantiate page class during navigation:`, error);
+        // Try to recover by showing error page
+        await this.handleError(error, route, params, query);
+        return;
+      }
+    }
+
+    // Handler should be a Page instance or a simple function
+    if (typeof handler === 'function' && !handler.render) {
+      // Simple function handler
+      await handler(params, query, this.container);
+      return;
+    }
+
+    // Ensure we have a Page instance
+    if (!handler || typeof handler.render !== 'function') {
+      throw new Error(`Invalid route handler for ${route.path}`);
+    }
+
     // Store previous page before switching
     this.previousPageInstance = this.currentPageInstance;
-    
+
     // Fire before-change event
     this.firePageEvent('page:before-change', {
       previousPage: this.getPageInfo(this.previousPageInstance),
@@ -303,65 +414,63 @@ class Router {
       params,
       query
     });
-    
-    // Deactivate previous page
-    if (this.previousPageInstance && typeof this.previousPageInstance.onDeactivate === 'function') {
-      await this.previousPageInstance.onDeactivate();
+
+    // Exit previous page
+    if (this.previousPageInstance && this.previousPageInstance !== handler) {
+      // Call onExit with error handling
+      if (typeof this.previousPageInstance.onExit === 'function') {
+        try {
+          await this.previousPageInstance.onExit();
+        } catch (error) {
+          console.error(`Error in onExit for page ${this.previousPageInstance.pageName || 'unknown'}:`, error);
+          // Continue with navigation despite error
+        }
+      }
+      
       this.firePageEvent('page:deactivated', {
         page: this.getPageInfo(this.previousPageInstance)
       });
-    }
-    
-    // Reset previous page instance mount state for fresh rendering
-    if (this.currentPageInstance) {
-      this.currentPageInstance.mounted = false;
-    }
-    
-    let newPageInstance = null;
-    
-    if (typeof handler === 'function') {
-      // Page class constructor
-      if (handler.prototype && handler.prototype.render) {
-        const pageInstance = new handler();
-        
-        // Set parameters
-        pageInstance.on_params(params, query);
-        
-        // Ensure fresh mounting by resetting mount state
-        pageInstance.mounted = false;
-        
-        // Render the page
-        await pageInstance.render(this.container);
-        
-        // Store reference for cleanup
-        newPageInstance = pageInstance;
-        this.currentPageInstance = pageInstance;
-      } else {
-        // Regular function handler
-        await handler(params, query, this.container);
+
+      // Clear the container
+      const container = document.querySelector(this.container);
+      if (container) {
+        container.innerHTML = '';
       }
-    } else if (typeof handler === 'object' && handler.render) {
-      // Page instance
-      handler.on_params(params, query);
-      
-      // Ensure fresh mounting by resetting mount state
-      handler.mounted = false;
-      
+    }
+
+    // Update current page instance
+    this.currentPageInstance = handler;
+
+    // Update params and query
+    handler.onParams(params, query);
+
+    // Enter new page with error handling
+    if (typeof handler.onEnter === 'function') {
+      try {
+        await handler.onEnter();
+      } catch (error) {
+        console.error(`Error in onEnter for page ${handler.pageName || 'unknown'}:`, error);
+        // Continue with render despite error
+      }
+    }
+
+    // Force re-render
+    handler.mounted = false;
+
+    // Render the page with error handling
+    try {
       await handler.render(this.container);
-      newPageInstance = handler;
-      this.currentPageInstance = handler;
-    } else {
-      throw new Error(`Invalid route handler for ${route.path}`);
+    } catch (error) {
+      console.error(`Error rendering page ${handler.pageName || 'unknown'}:`, error);
+      // Try to show error page
+      await this.handleError(error, route, params, query);
+      return;
     }
-    
-    // Activate new page
-    if (newPageInstance && typeof newPageInstance.onActivate === 'function') {
-      await newPageInstance.onActivate();
-      this.firePageEvent('page:activated', {
-        page: this.getPageInfo(newPageInstance)
-      });
-    }
-    
+
+    this.firePageEvent('page:activated', {
+      page: this.getPageInfo(handler)
+    });
+
     // Fire changed event
     this.firePageEvent('page:changed', {
       previousPage: this.getPageInfo(this.previousPageInstance),
@@ -377,12 +486,14 @@ class Router {
    */
   async handleNotFound(path) {
     const notFoundRoute = this.routes.get('*') || this.routes.get('404');
-    
+
     if (notFoundRoute) {
       await this.executeRoute(notFoundRoute, { path }, {});
     } else {
-      this.container.innerHTML = `
-        <div class="container mt-5">
+      const containerElement = document.querySelector(this.container);
+      if (containerElement) {
+        containerElement.innerHTML = `
+          <div class="container mt-5">
           <div class="row">
             <div class="col-12 text-center">
               <h1 class="display-1">404</h1>
@@ -391,8 +502,9 @@ class Router {
               <a href="/" class="btn btn-primary">Go Home</a>
             </div>
           </div>
-        </div>
-      `;
+          </div>
+        `;
+      }
     }
   }
 
@@ -405,20 +517,23 @@ class Router {
    */
   async handleError(error, route, params, query) {
     console.error('Route error:', error);
-    
-    this.container.innerHTML = `
-      <div class="container mt-5">
-        <div class="row">
-          <div class="col-12">
-            <div class="alert alert-danger">
-              <h4>Route Error</h4>
-              <p>An error occurred while loading this page:</p>
-              <code>${error.message}</code>
+
+    const containerElement = document.querySelector(this.container);
+    if (containerElement) {
+      containerElement.innerHTML = `
+        <div class="container mt-5">
+          <div class="row">
+            <div class="col-12">
+              <div class="alert alert-danger">
+                <h4>Route Error</h4>
+                <p>An error occurred while loading this page:</p>
+                <code>${error.message}</code>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    `;
+      `;
+    }
   }
 
   /**
@@ -433,14 +548,14 @@ class Router {
     if (exactMatch) {
       return exactMatch;
     }
-    
+
     // Try regex matching
     for (const [, route] of this.routes) {
       if (route.regex && route.regex.test(normalizedPath)) {
         return route;
       }
     }
-    
+
     return null;
   }
 
@@ -452,7 +567,7 @@ class Router {
    */
   extractParams(route, path) {
     const params = {};
-    
+
     if (route.regex && route.keys) {
       const matches = path.match(route.regex);
       if (matches) {
@@ -461,7 +576,7 @@ class Router {
         });
       }
     }
-    
+
     return params;
   }
 
@@ -471,18 +586,17 @@ class Router {
    * @returns {RegExp} Regex pattern
    */
   pathToRegex(path) {
-    // Simple implementation - can be enhanced
     const normalizedPath = this.normalizePath(path);
-    
+
     if (normalizedPath === '*') {
       return /^.*$/;
     }
-    
+
     // Replace :param with capturing group
     const regexString = normalizedPath
       .replace(/:[^\/]+/g, '([^/]+)')
       .replace(/\*/g, '.*');
-    
+
     return new RegExp(`^${regexString}$`);
   }
 
@@ -494,13 +608,13 @@ class Router {
   extractKeys(path) {
     const keys = [];
     const matches = path.match(/:([^\/]+)/g);
-    
+
     if (matches) {
       matches.forEach(match => {
-        keys.push(match.substring(1)); // Remove the ':'
+        keys.push(match.substring(1));
       });
     }
-    
+
     return keys;
   }
 
@@ -523,12 +637,12 @@ class Router {
     if (this.options.mode === 'history') {
       const pathname = window.location.pathname;
       const base = this.options.base;
-      
+
       // Handle exact base match (with or without trailing slash)
       if (pathname === base || pathname === base + '/') {
         return '/';
       }
-      
+
       // If pathname starts with base, remove it
       if (pathname.startsWith(base)) {
         const remainingPath = pathname.substring(base.length);
@@ -538,7 +652,7 @@ class Router {
         }
         return remainingPath.startsWith('/') ? remainingPath : '/' + remainingPath;
       }
-      
+
       return pathname || '/';
     } else if (this.options.mode === 'param') {
       const params = new URLSearchParams(window.location.search);
@@ -573,7 +687,7 @@ class Router {
   parseQuery() {
     const query = {};
     const queryString = window.location.search.substring(1);
-    
+
     if (queryString) {
       const pairs = queryString.split('&');
       pairs.forEach(pair => {
@@ -581,7 +695,7 @@ class Router {
         query[decodeURIComponent(key)] = decodeURIComponent(value || '');
       });
     }
-    
+
     return query;
   }
 
@@ -645,17 +759,17 @@ class Router {
     if (!path || path === '/') {
       return '/';
     }
-    
+
     // Ensure path starts with /
     if (!path.startsWith('/')) {
       path = '/' + path;
     }
-    
+
     // Remove trailing slash (except for root)
     if (path.length > 1 && path.endsWith('/')) {
       path = path.slice(0, -1);
     }
-    
+
     return path;
   }
 
@@ -685,7 +799,7 @@ class Router {
     if (typeof window !== 'undefined' && window.MOJO && window.MOJO.eventBus) {
       window.MOJO.eventBus.emit(eventName, data);
     }
-    
+
     // Also emit on router instance
     if (this.emit) {
       this.emit(eventName, data);
@@ -699,12 +813,12 @@ class Router {
    */
   getPageInfo(pageInstance) {
     if (!pageInstance) return null;
-    
+
     return {
-      name: pageInstance.page_name || pageInstance.constructor.name,
+      name: pageInstance.pageName || pageInstance.constructor.name,
       route: pageInstance.route || '',
       icon: pageInstance.pageIcon || 'bi bi-file-text',
-      displayName: pageInstance.displayName || pageInstance.page_name || pageInstance.constructor.name,
+      displayName: pageInstance.displayName || pageInstance.pageName || pageInstance.constructor.name,
       description: pageInstance.pageDescription || '',
       instance: pageInstance
     };
@@ -714,16 +828,23 @@ class Router {
    * Cleanup current page instance
    */
   cleanup() {
-    // Deactivate current page before cleanup
-    if (this.currentPageInstance && typeof this.currentPageInstance.onDeactivate === 'function') {
-      this.currentPageInstance.onDeactivate();
+    // Exit current page before cleanup
+    if (this.currentPageInstance) {
+      if (typeof this.currentPageInstance.onExit === 'function') {
+        try {
+          this.currentPageInstance.onExit();
+        } catch (error) {
+          console.error(`Error in cleanup onExit for page ${this.currentPageInstance.pageName || 'unknown'}:`, error);
+          // Continue with cleanup despite error
+        }
+      }
     }
-    
+
     if (this.currentPageInstance && typeof this.currentPageInstance.destroy === 'function') {
       this.currentPageInstance.destroy();
       this.currentPageInstance = null;
     }
-    
+
     this.previousPageInstance = null;
   }
 }

@@ -8,11 +8,16 @@ import Page from './core/Page.js';
 import Router from './core/Router.js';
 import EventBus from './utils/EventBus.js';
 import Rest from './core/Rest.js';
-import RestModel from './core/RestModel.js';
+import Model from './core/Model.js';
 import DataList from './core/DataList.js';
+
+// Alias Model as RestModel for backward compatibility
+const RestModel = Model;
 import Table from './components/Table.js';
 import TablePage from './components/TablePage.js';
 import Dialog from './components/Dialog.js';
+import NotFoundPage from './pages/NotFoundPage.js';
+import ErrorPage from './pages/ErrorPage.js';
 
 /**
  * Main MOJO Framework Class
@@ -63,7 +68,7 @@ class MOJO {
     }
     
     // Inject Rest client into model classes
-    RestModel.Rest = this.rest;
+    Model.Rest = this.rest;
     DataList.Rest = this.rest;
     
     // Set up authentication if configured
@@ -336,7 +341,7 @@ class MOJO {
   /**
    * Register a model class
    * @param {string} name - Model name
-   * @param {class} ModelClass - Model class extending RestModel
+   * @param {class} ModelClass - Model class extending Model
    */
   registerModel(name, ModelClass) {
     if (typeof ModelClass !== 'function') {
@@ -366,7 +371,7 @@ class MOJO {
    * @param {string} name - Registered model name
    * @param {object} data - Initial model data
    * @param {object} options - Model options
-   * @returns {RestModel} Model instance
+   * @returns {Model} Model instance
    */
   createModel(name, data = {}, options = {}) {
     const ModelClass = this.models.get(name);
@@ -423,7 +428,7 @@ class MOJO {
       
       // Call page lifecycle methods
       if (typeof page.on_params === 'function') {
-        page.on_params(page.params, page.query);
+        page.onParams(page.params, page.query);
       }
 
       console.log(`📄 Rendered page: ${name}`);
@@ -805,12 +810,12 @@ MOJO.View = View;
 MOJO.Page = Page;
 MOJO.Router = Router;
 MOJO.EventBus = EventBus;
-MOJO.RestModel = RestModel;
+MOJO.Model = Model;
 MOJO.DataList = DataList;
 MOJO.Rest = Rest;
 MOJO.Table = Table;
 MOJO.TablePage = TablePage;
 
 // Export as both default and named export
-export { View, Page, Router, EventBus, RestModel, DataList, Rest, Table, TablePage, Dialog };
+export { View, Page, Router, EventBus, Model, RestModel, DataList, Rest, Table, TablePage, Dialog, NotFoundPage, ErrorPage };
 export default MOJO;

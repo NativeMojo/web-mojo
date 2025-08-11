@@ -1,9 +1,47 @@
 /**
  * View - Base class for all visual components in MOJO framework
- * Provides children support, lifecycle management, and event handling
+ *
+ * Core Features:
+ * - Parent-child hierarchy with automatic container resolution
+ * - Model binding with automatic re-rendering on changes
+ * - Lifecycle hooks: onInit, onBeforeRender, onAfterRender, onBeforeMount, onAfterMount, onBeforeDestroy
+ * - Event handling with action system
+ * - Template rendering with Mustache.js
+ *
+ * Container Resolution:
+ * - If no parent: searches for element with view's ID in document.body, or uses body as container
+ * - If has parent: searches for element with view's ID in parent's element, or appends to parent
+ *
+ * Model Support:
+ * - setModel(model) binds a model to the view
+ * - Automatically re-renders when model fires 'change' event
+ * - Model data is merged into template data
+ *
+ * Parent-Child Relationships:
+ * - addChild(view) establishes parent-child relationship
+ * - Children have access to parent via this.parent
+ * - Parent renders and mounts children automatically
+ * - Children look for placeholder elements with their ID in parent's DOM
+ *
+ * @example
+ * // Basic view with model
+ * const view = new View({
+ *   id: 'my-view',
+ *   template: '<div>{{name}}</div>'
+ * });
+ * view.setModel(myModel);
+ * view.render(); // Will find #my-view in body or append to body
+ *
+ * @example
+ * // Parent-child views
+ * const parent = new ParentView({ id: 'parent' });
+ * const child = new ChildView({ id: 'child' });
+ * parent.addChild(child);
+ * parent.render(); // Parent renders, then renders and mounts child
  */
 
 import Mustache from '../utils/mustache.js';
+import MOJOUtils from '../utils/MOJOUtils.js';
 
 class View {
   constructor(options = {}) {
@@ -12,27 +50,29 @@ class View {
     this.template = options.template || this.constructor.template || null;
     this.container = null;
     this.element = null;
-    
+
     // Hierarchy
     this.parent = null;
     this.children = new Map();
     this.childOrder = [];
-    
+
     // Data and state
     this.data = options.data || {};
     this.state = options.state || {};
+    this.model = null;
+    this.modelListener = null;
     this.loading = false;
     this.rendered = false;
     this.mounted = false;
     this.destroyed = false;
-    
+
     // Rendering loop protection
     this.isRendering = false;
     this.lastRenderTime = 0;
     this.renderCooldown = 100; // Minimum 100ms between renders
     this.renderCount = 0;
     this.maxRenderCount = 10; // Maximum renders before blocking
-    
+
     // Configuration
     this.options = {
       autoRender: true,
@@ -41,14 +81,14 @@ class View {
       className: '',
       ...options
     };
-    
+
     // Template cache
     this._templateCache = null;
-    
+
     // Event system
     this.listeners = {};
     this.domListeners = [];
-    
+
     // Lifecycle hooks
     this.hooks = {
       beforeInit: options.beforeInit || (() => {}),
@@ -60,7 +100,7 @@ class View {
       beforeDestroy: options.beforeDestroy || (() => {}),
       afterDestroy: options.afterDestroy || (() => {})
     };
-    
+
     // Initialize
     this.init();
   }
@@ -72,16 +112,29 @@ class View {
     if (this.destroyed) {
       throw new Error('Cannot initialize destroyed view');
     }
-    
+
     // Call before init hook
     this.hooks.beforeInit.call(this);
-    
-    // Call overridable init method
-    this.onInit();
-    
+
+    // Call overridable init method - handle async errors
+    try {
+      const result = this.onInit();
+      // If onInit returns a promise, catch any errors
+      if (result && typeof result.then === 'function') {
+        result.catch(error => {
+          console.error(`Error in async onInit for ${this.constructor.name}:`, error);
+          console.error('View initialization continuing despite error');
+        });
+      }
+    } catch (error) {
+      // Handle synchronous errors
+      console.error(`Error in onInit for ${this.constructor.name}:`, error);
+      console.error('View initialization continuing despite error');
+    }
+
     // Call after init hook
     this.hooks.afterInit.call(this);
-    
+
     console.log(`View ${this.id} initialized`);
   }
 
@@ -101,105 +154,122 @@ class View {
     if (this.destroyed) {
       throw new Error('Cannot render destroyed view');
     }
-    
+
     // Rendering loop protection
     const now = Date.now();
     if (this.isRendering) {
       console.warn(`View ${this.id}: Render already in progress, skipping`);
       return this;
     }
-    
+
     if (now - this.lastRenderTime < this.renderCooldown) {
       console.warn(`View ${this.id}: Render called too quickly, cooldown active`);
       return this;
     }
-    
+
     this.renderCount++;
     if (this.renderCount > this.maxRenderCount) {
       console.error(`View ${this.id}: Infinite render loop detected (${this.renderCount} renders), stopping`);
       return this;
     }
-    
+
     this.isRendering = true;
     this.lastRenderTime = now;
-    
+
     if (container) {
       this.setContainer(container);
     }
-    
+
+    // If no container set, try to find one
     if (!this.container) {
-      this.isRendering = false;
-      throw new Error('No container specified for view rendering');
+      if (!this.parent) {
+        // No parent, look for element with this view's id in document body
+        const element = document.querySelector(`#${this.id}`);
+        if (element) {
+          this.setContainer(element.parentElement || document.body);
+        } else {
+          // No element found, use body as container
+          this.setContainer(document.body);
+        }
+      } else {
+        // Has parent, use parent's element as container
+        if (this.parent.element) {
+          this.setContainer(this.parent.element);
+        } else {
+          this.isRendering = false;
+          throw new Error(`Parent view ${this.parent.id} has no element to attach child ${this.id}`);
+        }
+      }
     }
 
     this.loading = true;
-    
+
     try {
       // Call before render hook
       await this.hooks.beforeRender.call(this);
-      
+
       // Call overridable before render method
       await this.onBeforeRender();
-      
-      // Get template and render
-      const html = await this.renderTemplate();
-      console.log(`View ${this.id}: Rendered template HTML length:`, html.length);
-      
-      // Create or update element
+
+      // Create element if it doesn't exist
       if (!this.element) {
         this.createElement();
       }
-      
+
+      // Render template into element FIRST (creates placeholders)
+      const html = await this.renderTemplate();
+      console.log(`View ${this.id}: Rendered template HTML length:`, html.length);
+
       // Set innerHTML
       this.element.innerHTML = html;
-      
+
       // Verify element has content
       if (!this.element.innerHTML.trim()) {
         console.warn(`View ${this.id}: Element has no content after rendering`);
       }
-      
-      // Render children
-      await this.renderChildren();
-      
-      // Mount to container if not already mounted
+
+      // Mount to container so we're in the DOM
       if (!this.mounted) {
         await this.mount();
       }
-      
+
+      // Now render children - they can find their placeholders in our DOM
+      await this.renderChildren();
+
       // Bind events
       this.bindEvents();
-      
+
       // Mark as rendered
       this.rendered = true;
-      
+
       // Verify rendering was successful
       if (this.element && this.container) {
         console.log(`View ${this.id}: Render completed successfully`);
       } else {
         console.error(`View ${this.id}: Render incomplete - element:`, !!this.element, 'container:', !!this.container);
       }
-      
+
       // Call after render hook
       await this.hooks.afterRender.call(this);
-      
+
       // Call overridable after render method
       await this.onAfterRender();
-      
+
       return this;
-      
+
     } catch (error) {
       this.showError(`Failed to render: ${error.message}`);
-      
+
       // Clear loading screen on error
       if (typeof window !== 'undefined' && window.MOJO && window.MOJO.clearLoadingScreen) {
         window.MOJO.clearLoadingScreen();
       }
-      
+
       throw error;
     } finally {
       this.loading = false;
       this.isRendering = false;
-      
+
       // Reset render count after successful render
       if (this.renderCount < this.maxRenderCount) {
         setTimeout(() => {
@@ -217,64 +287,65 @@ class View {
     if (this.destroyed || this.mounted) {
       return this;
     }
-    
+
     if (!this.element || !this.container) {
       throw new Error('Cannot mount without element and container');
     }
-    
+
     // Call before mount hook
     await this.hooks.beforeMount.call(this);
-    
+
     // Call overridable before mount method
     await this.onBeforeMount();
-    
+
     // Verify container still exists and is in DOM
     if (!this.container || !document.body.contains(this.container)) {
       console.error(`View ${this.id}: Container missing or detached during mount`);
       throw new Error('Container is not available for mounting');
     }
-    
+
     // Clear container if this is a page or if explicitly replacing
     if (this.constructor.name.includes('Page') || this.replaceContent) {
       console.log(`View ${this.id}: Clearing container content`);
       this.container.innerHTML = '';
     }
-    
-    // Verify element exists and has content
+
+    // Verify element exists
     if (!this.element) {
       console.error(`View ${this.id}: No element to mount`);
       throw new Error('No element available for mounting');
     }
-    
-    if (!this.element.innerHTML.trim()) {
-      console.warn(`View ${this.id}: Mounting element with no content`);
+
+    // Check if we should look for a placeholder or just append
+    const placeholder = this.container.querySelector(`#${this.id}`);
+    if (placeholder) {
+      // Replace the placeholder with our element
+      placeholder.replaceWith(this.element);
+      console.log(`View ${this.id}: Replaced placeholder in container`);
+    } else {
+      // Append to container
+      this.container.appendChild(this.element);
+      console.log(`View ${this.id}: Appended to container`);
     }
-    
-    // Append to container
-    console.log(`View ${this.id}: Appending element to container`);
-    this.container.appendChild(this.element);
-    
+
     // Verify element was successfully added and is visible
     if (!document.body.contains(this.element)) {
       console.error(`View ${this.id}: Element not found in DOM after mounting`);
     } else {
       console.log(`View ${this.id}: Successfully mounted and visible in DOM`);
     }
-    
+
     // Mark as mounted
     this.mounted = true;
-    
-    // Mount children
-    await this.mountChildren();
-    
+
     // Call after mount hook
     await this.hooks.afterMount.call(this);
-    
+
     // Call overridable after mount method
     await this.onAfterMount();
-    
+
     console.log(`View ${this.id} mounted`);
-    
+
     return this;
   }
 
@@ -286,23 +357,23 @@ class View {
     if (!this.mounted) {
       return this;
     }
-    
+
     // Unmount children first
     await this.unmountChildren();
-    
+
     // Remove from DOM
     if (this.element && this.element.parentNode) {
       this.element.parentNode.removeChild(this.element);
     }
-    
+
     // Unbind events
     this.unbindEvents();
-    
+
     // Mark as unmounted
     this.mounted = false;
-    
+
     console.log(`View ${this.id} unmounted`);
-    
+
     return this;
   }
 
@@ -314,47 +385,56 @@ class View {
     if (this.destroyed) {
       return this;
     }
-    
+
     // Call before destroy hook
     await this.hooks.beforeDestroy.call(this);
-    
+
     // Call overridable before destroy method
     await this.onBeforeDestroy();
-    
+
     // Destroy children first
     await this.destroyChildren();
-    
+
     // Unmount if mounted
     if (this.mounted) {
       await this.unmount();
     }
-    
+
     // Remove from parent
     if (this.parent) {
       this.parent.removeChild(this);
     }
-    
+
+    // Clean up model listener
+    if (this.model && this.modelListener) {
+      if (typeof this.model.off === 'function') {
+        this.model.off('change', this.modelListener);
+      }
+      this.modelListener = null;
+      this.model = null;
+    }
+
     // Clear data
     this.data = {};
     this.state = {};
-    
+
     // Clear template cache
     this._templateCache = null;
-    
+
     // Clear listeners
     this.listeners = {};
-    
+
     // Mark as destroyed
     this.destroyed = true;
-    
+
     // Call after destroy hook
     await this.hooks.afterDestroy.call(this);
-    
+
     // Call overridable after destroy method
     await this.onAfterDestroy();
-    
+
     console.log(`View ${this.id} destroyed`);
-    
+
     return this;
   }
 
@@ -365,17 +445,17 @@ class View {
     if (this.element) {
       return this.element;
     }
-    
+
     this.element = document.createElement(this.options.tagName);
     this.element.id = this.id;
-    
+
     if (this.options.className) {
       this.element.className = this.options.className;
     }
-    
+
     // Store view reference on element
     this.element._mojoView = this;
-    
+
     return this.element;
   }
 
@@ -387,7 +467,7 @@ class View {
     if (typeof container === 'string') {
       this.container = document.querySelector(container);
       if (!this.container) {
-        console.error(`Container not found: ${container}. Available elements:`, 
+        console.error(`Container not found: ${container}. Available elements:`,
           Array.from(document.querySelectorAll('*')).map(el => el.id || el.className).filter(Boolean));
         throw new Error(`Container not found: ${container}`);
       }
@@ -396,13 +476,45 @@ class View {
     } else {
       throw new Error('Invalid container type');
     }
-    
+
     // Verify container is in DOM and visible
     if (!document.body.contains(this.container)) {
       console.warn(`Container ${container} is not attached to the DOM`);
     }
-    
+
     console.log(`View ${this.id}: Container set to`, this.container);
+  }
+
+  /**
+   * Set model for the view
+   * @param {Object} model - Model object with on/off methods for event handling
+   * @returns {View} This view for chaining
+   */
+  setModel(model) {
+    // Remove listener from previous model
+    if (this.model && this.modelListener) {
+      if (typeof this.model.off === 'function') {
+        this.model.off('change', this.modelListener);
+      }
+    }
+
+    this.model = model;
+
+    if (model) {
+      // Create listener that re-renders on model changes
+      this.modelListener = async () => {
+        if (!this.destroyed && this.rendered) {
+          await this.render();
+        }
+      };
+
+      // Register for model changes if model supports events
+      if (typeof model.on === 'function') {
+        model.on('change', this.modelListener);
+      }
+    }
+
+    return this;
   }
 
   /**
@@ -415,25 +527,37 @@ class View {
     if (!(child instanceof View)) {
       throw new Error('Child must be a View instance');
     }
-    
+
     if (child.parent) {
       child.parent.removeChild(child);
     }
-    
+
     const childKey = key || child.id;
-    
+
     // Set parent relationship
     child.parent = this;
-    
+
     // Store child
     this.children.set(childKey, child);
     this.childOrder.push(childKey);
-    
-    // If this view is already rendered, render the child
+
+    // If this view is already rendered, render and mount the child
     if (this.rendered && this.element) {
-      child.render(this.element);
+      // Set the child's container to be within this element
+      const childPlaceholder = this.element.querySelector(`#${child.id}`);
+      if (childPlaceholder) {
+        child.setContainer(childPlaceholder.parentElement || this.element);
+      } else {
+        child.setContainer(this.element);
+      }
+
+      child.render().then(() => {
+        if (this.mounted) {
+          child.mount();
+        }
+      });
     }
-    
+
     return this;
   }
 
@@ -445,7 +569,7 @@ class View {
   removeChild(child) {
     let childKey;
     let childView;
-    
+
     if (typeof child === 'string') {
       childKey = child;
       childView = this.children.get(childKey);
@@ -459,24 +583,24 @@ class View {
         }
       }
     }
-    
+
     if (!childView || !childKey) {
       return this;
     }
-    
+
     // Remove parent relationship
     childView.parent = null;
-    
+
     // Remove from collections
     this.children.delete(childKey);
     const orderIndex = this.childOrder.indexOf(childKey);
     if (orderIndex !== -1) {
       this.childOrder.splice(orderIndex, 1);
     }
-    
+
     // Destroy child
     childView.destroy();
-    
+
     return this;
   }
 
@@ -502,12 +626,12 @@ class View {
    * @returns {Promise} Promise that resolves when all children are rendered
    */
   async renderChildren() {
-    const renderPromises = this.childOrder.map(key => {
+    for (const key of this.childOrder) {
       const child = this.children.get(key);
-      return child.render(this.element);
-    });
-    
-    await Promise.all(renderPromises);
+
+      // Pass our element as the container - child will find its own placeholder
+      await child.render(this.element);
+    }
   }
 
   /**
@@ -519,7 +643,7 @@ class View {
       const child = this.children.get(key);
       return child.mount();
     });
-    
+
     await Promise.all(mountPromises);
   }
 
@@ -532,7 +656,7 @@ class View {
       const child = this.children.get(key);
       return child.unmount();
     });
-    
+
     await Promise.all(unmountPromises);
   }
 
@@ -545,9 +669,9 @@ class View {
       const child = this.children.get(key);
       return child.destroy();
     });
-    
+
     await Promise.all(destroyPromises);
-    
+
     this.children.clear();
     this.childOrder = [];
   }
@@ -558,15 +682,16 @@ class View {
    */
   async renderTemplate() {
     const templateContent = await this.getTemplate();
-    
+
     if (!templateContent) {
       return '';
     }
-    
-    const viewData = await this.getViewData();
+
     const partials = this.getPartials();
-    
-    return Mustache.render(templateContent, viewData, partials);
+
+    // Pass the view itself as context - Mustache will use view.get() for lookups
+    // Pipes are now handled directly by View.get() via MOJOUtils
+    return Mustache.render(templateContent, this, partials);
   }
 
   /**
@@ -610,18 +735,51 @@ class View {
   }
 
   /**
+   * Get value by path from view context
+   * Handles dot notation, model/data namespaces, and function calls
+   * @param {string} path - Path to value (e.g., "model.name", "data.title", "getButtonClass")
+   * @returns {*} The value at the path
+   */
+  get(path) {
+    // Use MOJOUtils for unified data access with pipes and dot notation
+    // This handles:
+    // - Direct properties: "title", "count"
+    // - Methods: "getStatus", "getButtonClass"
+    // - Namespace access: "model.name", "data.title", "state.active"
+    // - Nested paths: "model.user.name", "data.items.0.title"
+    // - Pipe formatting: "model.price|currency", "data.created|date('MMM DD')"
+    // - Combined: "model.user.name|uppercase|truncate(20)"
+
+    // Get the value normally
+    const value = MOJOUtils.getContextData(this, path);
+
+    // If accessing data namespace and result is object/array, wrap it
+    if (path && path.startsWith('data.') && value && typeof value === 'object') {
+      return MOJOUtils.wrapData(value, this);
+    }
+
+    // If accessing model namespace properties (not the model itself) and result is object/array without get(), wrap it
+    // This ensures array items have get() method for pipe support in templates
+    if (path && path.startsWith('model.') && 
+        path !== 'model' && 
+        value && typeof value === 'object' && 
+        typeof value.get !== 'function') {
+      // Pass null as rootContext to avoid circular references
+      return MOJOUtils.wrapData(value, null);
+    }
+
+    return value;
+  }
+
+  /**
    * Get view data for template rendering
+   * @deprecated Use view.get() directly instead
    * @returns {Promise<object>} View data object
    */
   async getViewData() {
-    return {
-      ...this.data,
-      ...this.state,
-      id: this.id,
-      loading: this.loading,
-      rendered: this.rendered,
-      mounted: this.mounted
-    };
+    // Return the view itself as the context
+    // This allows Mustache to call view.get() for all lookups
+    return this;
   }
 
   /**
@@ -640,11 +798,11 @@ class View {
    */
   async updateData(newData, rerender = false) {
     Object.assign(this.data, newData);
-    
+
     if (rerender && this.rendered) {
       await this.render();
     }
-    
+
     return this;
   }
 
@@ -656,11 +814,11 @@ class View {
    */
   async updateState(newState, rerender = true) {
     Object.assign(this.state, newState);
-    
+
     if (rerender && this.rendered) {
       await this.render();
     }
-    
+
     return this;
   }
 
@@ -669,10 +827,10 @@ class View {
    */
   bindEvents() {
     if (!this.element) return;
-    
+
     // Remove existing listeners
     this.unbindEvents();
-    
+
     // Bind click events with data-action
     const actionElements = this.element.querySelectorAll('[data-action]');
     actionElements.forEach(element => {
@@ -681,23 +839,23 @@ class View {
         event.preventDefault();
         this.handleAction(action, event, element);
       };
-      
+
       element.addEventListener('click', handler);
       this.domListeners.push({ element, event: 'click', handler });
     });
-    
+
     // Handle navigation - data-page takes precedence over href
     const navElements = this.element.querySelectorAll('[data-page], a[href]');
     navElements.forEach(element => {
       // Skip if it already has data-action (avoid conflicts)
       if (element.hasAttribute('data-action')) return;
-      
+
       const handler = async (event) => {
         // Allow default browser behavior for special cases
         if (event.ctrlKey || event.metaKey || event.shiftKey || event.button === 1) {
           return; // Let browser handle Ctrl+click, middle-click, etc.
         }
-        
+
         // Check for external links before preventing default
         if (element.tagName === 'A') {
           const href = element.getAttribute('href');
@@ -705,9 +863,9 @@ class View {
             return; // Let browser handle external links normally
           }
         }
-        
+
         event.preventDefault();
-        
+
         // data-page takes precedence
         if (element.hasAttribute('data-page')) {
           await this.handlePageNavigation(element);
@@ -715,11 +873,11 @@ class View {
           await this.handleHrefNavigation(element);
         }
       };
-      
+
       element.addEventListener('click', handler);
       this.domListeners.push({ element, event: 'click', handler });
     });
-    
+
     // Bind form submissions
     const forms = this.element.querySelectorAll('form[data-action]');
     forms.forEach(form => {
@@ -728,7 +886,7 @@ class View {
         event.preventDefault();
         this.handleAction(action, event, form);
       };
-      
+
       form.addEventListener('submit', handler);
       this.domListeners.push({ element: form, event: 'submit', handler });
     });
@@ -741,7 +899,7 @@ class View {
   async handlePageNavigation(element) {
     const pageName = element.getAttribute('data-page');
     const paramsAttr = element.getAttribute('data-params');
-    
+
     let params = {};
     if (paramsAttr) {
       try {
@@ -750,7 +908,7 @@ class View {
         console.warn('Invalid JSON in data-params:', paramsAttr);
       }
     }
-    
+
     const router = this.findRouter();
     if (router && typeof router.navigateToPage === 'function') {
       await router.navigateToPage(pageName, params);
@@ -760,22 +918,22 @@ class View {
   }
 
   /**
-   * Handle href-based navigation  
+   * Handle href-based navigation
    * @param {HTMLElement} element - Anchor element with href
    */
   async handleHrefNavigation(element) {
     const href = element.getAttribute('href');
-    
+
     // Skip if it's an external link or has data-external
     if (this.isExternalLink(href) || element.hasAttribute('data-external')) {
       return; // Let browser handle normally
     }
-    
+
     const router = this.findRouter();
     if (router) {
       // Convert href to route path
       const routePath = this.hrefToRoutePath(href);
-      
+
       // Check if this route exists
       if (router.routes && router.routes.has(routePath)) {
         await router.navigate(routePath);
@@ -797,10 +955,10 @@ class View {
    */
   isExternalLink(href) {
     if (!href) return true;
-    
+
     // Skip anchors, external protocols, mailto, tel, etc.
-    return href.startsWith('#') || 
-           href.startsWith('mailto:') || 
+    return href.startsWith('#') ||
+           href.startsWith('mailto:') ||
            href.startsWith('tel:') ||
            href.startsWith('http://') ||
            href.startsWith('https://') ||
@@ -825,7 +983,7 @@ class View {
       }
       return href;
     }
-    
+
     // Handle relative paths
     return href.startsWith('./') ? href.substring(2) : href;
   }
@@ -841,7 +999,7 @@ class View {
       window.navigationApp?.router,
       window.sidebarApp?.router
     ];
-    
+
     return routers.find(router => router && typeof router.navigate === 'function') || null;
   }
 
@@ -863,7 +1021,7 @@ class View {
    */
   async handleAction(action, event, element) {
     const methodName = `onAction${this.capitalize(action)}`;
-    
+
     if (typeof this[methodName] === 'function') {
       try {
         await this[methodName](event, element);
@@ -895,7 +1053,7 @@ class View {
    */
   showError(message) {
     console.error(`View ${this.id} error:`, message);
-    
+
     // Use MOJO framework dialog if available
     if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showError) {
       window.MOJO.showError(`View Error: ${message}`, {
@@ -911,7 +1069,7 @@ class View {
    */
   showSuccess(message) {
     console.log(`View ${this.id} success:`, message);
-    
+
     // Use MOJO framework dialog if available
     if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showSuccess) {
       window.MOJO.showSuccess(message);
@@ -924,7 +1082,7 @@ class View {
    */
   showInfo(message) {
     console.info(`View ${this.id} info:`, message);
-    
+
     // Use MOJO framework dialog if available
     if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showInfo) {
       window.MOJO.showInfo(message);
@@ -937,7 +1095,7 @@ class View {
    */
   showWarning(message) {
     console.warn(`View ${this.id} warning:`, message);
-    
+
     // Use MOJO framework dialog if available
     if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showWarning) {
       window.MOJO.showWarning(message);
@@ -953,7 +1111,7 @@ class View {
   async onAfterDestroy() {}
 
   // Event system
-  
+
   /**
    * Emit custom event
    * @param {string} event - Event name
@@ -995,12 +1153,12 @@ class View {
     if (!this.listeners[event]) {
       return this;
     }
-    
+
     if (callback) {
       const index = this.listeners[event].indexOf(callback);
       if (index !== -1) {
         this.listeners[event].splice(index, 1);
-        
+
         // Clean up empty arrays
         if (this.listeners[event].length === 0) {
           delete this.listeners[event];
@@ -1009,7 +1167,7 @@ class View {
     } else {
       delete this.listeners[event];
     }
-    
+
     return this;
   }
 
@@ -1028,7 +1186,7 @@ class View {
   }
 
   // Utility methods
-  
+
   /**
    * Generate unique ID
    * @returns {string} Unique ID
@@ -1059,7 +1217,7 @@ class View {
    */
   escapeHtml(str) {
     if (typeof str !== 'string') return str;
-    
+
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
@@ -1074,14 +1232,14 @@ class View {
     if (this.id === id) {
       return this;
     }
-    
+
     for (const child of this.children.values()) {
       const found = child.findById(id);
       if (found) {
         return found;
       }
     }
-    
+
     return null;
   }
 
@@ -1093,11 +1251,11 @@ class View {
   getHierarchy(indent = 0) {
     const spaces = '  '.repeat(indent);
     let result = `${spaces}${this.constructor.name}#${this.id}\n`;
-    
+
     for (const child of this.children.values()) {
       result += child.getHierarchy(indent + 1);
     }
-    
+
     return result;
   }
 

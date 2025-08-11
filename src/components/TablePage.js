@@ -115,9 +115,9 @@ class TablePage extends Page {
       collection: options.collection || null,
       columns: options.columns || [],
       filters: { ...extractedFilters, ...(options.filters || {}) },
-      collection_params: options.collection_params || {},
-      group_filtering: options.group_filtering || false,
-      list_options: options.list_options || {},
+      collectionParams: options.collectionParams || {},
+      groupFiltering: options.groupFiltering || false,
+      listOptions: options.listOptions || {},
       view: options.view || 'table',
       selectable: options.selectable !== undefined ? options.selectable : false,
       searchable: options.searchable !== undefined ? options.searchable : true,
@@ -231,14 +231,53 @@ class TablePage extends Page {
     
     // Flag to prevent circular updates when table triggers URL change
     this._isUpdatingUrl = false;
+    
+    // Store custom toolbar actions
+    this.customToolbarActions = {};
+    
+    // Store bulk actions
+    this.bulkActions = [];
+  }
+
+  /**
+   * Add a custom toolbar action
+   * @param {string} key - Unique identifier for the action
+   * @param {object} options - Action configuration
+   */
+  addToolbarAction(key, options = {}) {
+    this.customToolbarActions[key] = {
+      key,
+      label: options.label || key,
+      icon: options.icon || 'bi-gear',
+      class: options.class || 'btn-outline-secondary',
+      position: options.position || 'right',
+      handler: options.handler || (() => console.log(`Toolbar action: ${key}`)),
+      ...options
+    };
+  }
+
+  /**
+   * Set bulk actions for the table
+   * @param {Array} actions - Array of bulk action configurations
+   */
+  setBulkActions(actions = []) {
+    this.bulkActions = actions.map(action => ({
+      label: action.label || 'Action',
+      icon: action.icon || 'bi-gear',
+      action: action.action || 'bulkAction',
+      class: action.class || 'btn-outline-secondary',
+      confirm: action.confirm || false,
+      handler: action.handler || (() => console.log(`Bulk action: ${action.action}`)),
+      ...action
+    }));
   }
 
   /**
    * Initialize the page
    */
-  on_init() {
-    super.on_init();
-    console.log(`TablePage ${this.page_name} initialized`);
+  onInit() {
+    super.onInit();
+    console.log(`TablePage ${this.pageName} initialized`);
   }
 
   /**
@@ -246,14 +285,11 @@ class TablePage extends Page {
    * @param {object} params - Route parameters
    * @param {object} query - Query string parameters
    */
-  on_params(params = {}, query = {}) {
-    super.on_params(params, query);
-    
-    console.log('🔍 [TablePage] on_params called:', { params, query, _isUpdatingUrl: this._isUpdatingUrl });
+  onParams(params = {}, query = {}) {
+    super.onParams(params, query);
     
     // Extract table state from URL parameters
     this.currentState = this.parseUrlParams(query);
-    console.log('🔍 [TablePage] Parsed state from URL:', this.currentState);
     
     // Don't apply state if we're updating the URL from a table event
     // The table has already updated itself and fetched the data
@@ -303,14 +339,9 @@ class TablePage extends Page {
   applyStateToTable(state) {
     if (!this.table) return;
     
-    console.log('🔍 [TablePage] applyStateToTable called with state:', state);
-    console.log('🔍 [TablePage] Table currentPage before:', this.table.currentPage);
-    
     // Apply pagination
     this.table.currentPage = state.page;
     this.table.itemsPerPage = state.perPage;
-    
-    console.log('🔍 [TablePage] Table currentPage after:', this.table.currentPage);
     
     // Apply sorting
     this.table.sortBy = state.sort;
@@ -330,7 +361,6 @@ class TablePage extends Page {
     
     // Re-render table with new state
     if (this.table.collection?.restEnabled) {
-      console.log('🔍 [TablePage] Calling fetchWithCurrentFilters with currentPage:', this.table.currentPage);
       this.table.fetchWithCurrentFilters();
     } else {
       this.table.render();
@@ -347,13 +377,8 @@ class TablePage extends Page {
     // Set flag to prevent circular updates
     this._isUpdatingUrl = true;
     
-    console.log('🔍 [TablePage] updateUrl called with:', newState);
-    console.log('🔍 [TablePage] Current state before update:', this.currentState);
-    
     // Merge with current state
     this.currentState = { ...this.currentState, ...newState };
-    
-    console.log('🔍 [TablePage] Current state after update:', this.currentState);
     
     // Build query parameters
     const params = new URLSearchParams();
@@ -421,11 +446,6 @@ class TablePage extends Page {
    */
   handleTablePageChange(event) {
     const page = event.detail?.page || this.table.currentPage;
-    console.log('🔍 [TablePage] handleTablePageChange:', { 
-      eventPage: event.detail?.page, 
-      tableCurrentPage: this.table.currentPage, 
-      finalPage: page 
-    });
     this.updateUrl({ page });
   }
 
@@ -682,7 +702,7 @@ class TablePage extends Page {
       }
       
       // Update container loading state
-      const container = this.element.querySelector(`#table-${this.page_name || 'default'}-container`);
+      const container = this.element.querySelector(`#table-${this.pageName || 'default'}-container`);
       if (container) {
         if (isLoading) {
           container.classList.add('is-loading');
@@ -881,10 +901,10 @@ class TablePage extends Page {
     
     return {
       ...baseData,
-      title: this.pageOptions.title || this.page_name,
+      title: this.pageOptions.title || this.pageName,
       description: this.pageOptions.description,
-      tableContainerId: `table-${this.page_name || 'default'}-container`,
-      page_name: this.page_name,
+      tableContainerId: `table-${this.pageName || 'default'}-container`,
+      pageName: this.pageName,
       
       // Simple status data
       showStatus: this.statusConfig.showStatus,
@@ -903,7 +923,7 @@ class TablePage extends Page {
     await super.onAfterRender();
     
     // Find table container
-    const containerId = `table-${this.page_name || 'default'}-container`;
+    const containerId = `table-${this.pageName || 'default'}-container`;
     const container = this.element.querySelector(`#${containerId}`);
     
     if (!container) {
@@ -941,7 +961,6 @@ class TablePage extends Page {
     }
     
     // Apply initial state from URL
-    console.log('🔍 [TablePage] onAfterRender - applying initial state:', this.currentState);
     this.applyStateToTable(this.currentState);
     
     // Bind event listeners

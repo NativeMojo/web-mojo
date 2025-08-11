@@ -1,5 +1,5 @@
 /**
- * DataList - Collection class for managing arrays of RestModel instances
+ * DataList - Collection class for managing arrays of Model instances
  * Provides methods for fetching and managing collections of models
  * 
  * Usage Examples:
@@ -166,7 +166,7 @@ class DataList {
 
   /**
    * Remove model(s) from the collection
-   * @param {RestModel|array|string|number} models - Model(s) to remove or ID(s)
+   * @param {Model|array|string|number} models - Model(s) to remove or ID(s)
    * @param {object} options - Options
    */
   remove(models, options = {}) {
@@ -225,7 +225,7 @@ class DataList {
   /**
    * Get model by ID
    * @param {string|number} id - Model ID
-   * @returns {RestModel|undefined} Model instance or undefined
+   * @returns {Model|undefined} Model instance or undefined
    */
   get(id) {
     return this.models.find(model => model.id == id);
@@ -234,7 +234,7 @@ class DataList {
   /**
    * Get model by index
    * @param {number} index - Model index
-   * @returns {RestModel|undefined} Model instance or undefined
+   * @returns {Model|undefined} Model instance or undefined
    */
   at(index) {
     return this.models[index];
@@ -280,7 +280,7 @@ class DataList {
   /**
    * Find first model matching criteria
    * @param {function|object} criteria - Filter function or object with key-value pairs
-   * @returns {RestModel|undefined} First matching model or undefined
+   * @returns {Model|undefined} First matching model or undefined
    */
   findWhere(criteria) {
     const results = this.where(criteria);

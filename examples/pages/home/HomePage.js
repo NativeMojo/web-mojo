@@ -8,7 +8,7 @@ class HomePage extends Page {
   constructor(options = {}) {
     super({
       ...options,
-      page_name: 'home',
+      pageName: 'home',
       title: 'MOJO Framework Examples'
     });
   }

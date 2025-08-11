@@ -13,7 +13,7 @@ import MainContent from '../../src/components/MainContent.js';
 class HomePage extends Page {
     constructor() {
         super({
-            page_name: 'Home',
+            pageName: 'Home',
             route: '/',
             title: 'MOJO Navigation - Home'
         });
@@ -112,7 +112,7 @@ class HomePage extends Page {
 class AboutPage extends Page {
     constructor() {
         super({
-            page_name: 'About',
+            pageName: 'About',
             route: '/about',
             title: 'MOJO Navigation - About'
         });
@@ -198,7 +198,7 @@ class AboutPage extends Page {
 class ContactPage extends Page {
     constructor() {
         super({
-            page_name: 'Contact',
+            pageName: 'Contact',
             route: '/contact',
             title: 'MOJO Navigation - Contact'
         });
@@ -285,7 +285,7 @@ class ContactPage extends Page {
         `;
     }
 
-    async on_action_send_message() {
+    async onActionSendMessage() {
         this.showSuccess('Message sent successfully! (This is just a demo)');
     }
 }
@@ -294,7 +294,7 @@ class ContactPage extends Page {
 class UsersPage extends Page {
     constructor() {
         super({
-            page_name: 'Users',
+            pageName: 'Users',
             route: '/users/:id?',
             title: 'MOJO Navigation - Users'
         });
@@ -390,7 +390,7 @@ class UsersPage extends Page {
         `;
     }
 
-    async on_action_edit_user(event, element) {
+    async onActionEditUser(event, element) {
         const userId = element.dataset.userId;
         this.showSuccess(`Edit user ${userId} (This is just a demo)`);
     }
@@ -400,7 +400,7 @@ class UsersPage extends Page {
 class SettingsPage extends Page {
     constructor() {
         super({
-            page_name: 'Settings',
+            pageName: 'Settings',
             route: '/settings',
             title: 'MOJO Navigation - Settings'
         });
@@ -495,11 +495,11 @@ class SettingsPage extends Page {
         `;
     }
 
-    async on_action_save_settings() {
+    async onActionSaveSettings() {
         this.showSuccess('Settings saved successfully! (This is just a demo)');
     }
 
-    async on_action_toggle_sidebar(event, element) {
+    async onActionToggleSidebar(event, element) {
         // Get reference to app instance to toggle sidebar
         if (window.sidebarApp && window.sidebarApp.sidebar) {
             window.sidebarApp.sidebar.collapse();
@@ -513,7 +513,7 @@ class SettingsPage extends Page {
 class NotFoundPage extends Page {
     constructor() {
         super({
-            page_name: 'NotFound',
+            pageName: 'NotFound',
             route: '*',
             title: 'MOJO Navigation - Page Not Found'
         });
@@ -614,7 +614,7 @@ class NavigationApp {
         // Register routes
         this.pages.forEach(page => {
             this.router.addRoute(page.route, page);
-            console.log(`Registered route: ${page.route} -> ${page.page_name}`);
+            console.log(`Registered route: ${page.route} -> ${page.pageName}`);
         });
 
         // Set up global navigation handler

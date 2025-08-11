@@ -12,7 +12,7 @@ import TopNav from '../../src/components/TopNav.js';
 class HomePage extends Page {
     constructor() {
         super({
-            page_name: 'Home',
+            pageName: 'Home',
             route: '/',
             title: 'MOJO Navigation - Home'
         });
@@ -83,7 +83,7 @@ class HomePage extends Page {
 class AboutPage extends Page {
     constructor() {
         super({
-            page_name: 'About',
+            pageName: 'About',
             route: '/about',
             title: 'MOJO Navigation - About'
         });
@@ -169,7 +169,7 @@ class AboutPage extends Page {
 class ContactPage extends Page {
     constructor() {
         super({
-            page_name: 'Contact',
+            pageName: 'Contact',
             route: '/contact',
             title: 'MOJO Navigation - Contact'
         });
@@ -256,7 +256,7 @@ class ContactPage extends Page {
         `;
     }
 
-    async on_action_send_message() {
+    async onActionSendMessage() {
         this.showSuccess('Message sent successfully! (This is just a demo)');
     }
 }
@@ -266,7 +266,7 @@ class ContactPage extends Page {
 class UsersListPage extends Page {
     constructor() {
         super({
-            page_name: 'Users',
+            pageName: 'Users',
             route: '/users',
             title: 'MOJO Navigation - Users',
             data: {
@@ -345,7 +345,7 @@ class UsersListPage extends Page {
         `;
     }
 
-    async on_action_edit_user(event, element) {
+    async onActionEditUser(event, element) {
         const userId = element.dataset.userId;
         console.log('Edit user:', userId);
         alert(`Edit user ${userId} - This would open an edit dialog`);
@@ -356,7 +356,7 @@ class UsersListPage extends Page {
 class UserDetailPage extends Page {
     constructor() {
         super({
-            page_name: 'UserDetail',
+            pageName: 'UserDetail',
             route: '/users/:id',
             title: 'MOJO Navigation - User Detail',
             data: {
@@ -372,7 +372,7 @@ class UserDetailPage extends Page {
         });
     }
 
-    on_params(params = {}) {
+    onParams(params = {}) {
         const userId = params.id ? parseInt(params.id) : null;
         const user = this.data.users.find(u => u.id === userId);
         
@@ -489,7 +489,7 @@ class UserDetailPage extends Page {
         `;
     }
 
-    async on_action_edit_user(event, element) {
+    async onActionEditUser(event, element) {
         const userId = element.dataset.userId;
         console.log('Edit user:', userId);
         alert(`Edit user ${userId} - This would open an edit dialog`);
@@ -500,7 +500,7 @@ class UserDetailPage extends Page {
 class NotFoundPage extends Page {
     constructor() {
         super({
-            page_name: 'NotFound',
+            pageName: 'NotFound',
             route: '*',
             title: 'MOJO Navigation - Page Not Found'
         });
@@ -683,7 +683,7 @@ class NavigationApp {
         // Register routes
         this.pages.forEach(page => {
             this.router.addRoute(page.route, page);
-            console.log(`✅ Registered route: ${page.route} -> ${page.page_name}`);
+            console.log(`✅ Registered route: ${page.route} -> ${page.pageName}`);
         });
 
         // Debug registered routes

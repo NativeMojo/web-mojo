@@ -107,23 +107,57 @@ class Context {
       let lookupHit = false;
 
       while (context) {
-        if (name.indexOf('.') > 0) {
-          intermediateValue = context.view;
-          names = name.split('.');
-          index = 0;
-
-          while (intermediateValue != null && index < names.length) {
-            if (index === names.length - 1) {
-              lookupHit = (
-                hasProperty(intermediateValue, names[index]) ||
-                primitiveHasOwnProperty(intermediateValue, names[index])
-              );
+        // Check if view has a get method for unified access
+        if (context.view && typeof context.view.get === 'function') {
+          try {
+            intermediateValue = context.view.get(name);
+            if (intermediateValue !== undefined) {
+              lookupHit = true;
             }
-            intermediateValue = intermediateValue[names[index++]];
+          } catch (e) {
+            // If get throws, fall back to standard lookup
+            lookupHit = false;
           }
-        } else {
-          intermediateValue = context.view[name];
-          lookupHit = hasProperty(context.view, name);
+        }
+        
+        // Fall back to standard property lookup if get method didn't work
+        if (!lookupHit) {
+          if (name.indexOf('.') > 0) {
+            intermediateValue = context.view;
+            names = name.split('.');
+            index = 0;
+
+            while (intermediateValue != null && index < names.length) {
+              // Check if intermediate value has a get method
+              if (intermediateValue && typeof intermediateValue.get === 'function' && index < names.length) {
+                try {
+                  const remainingPath = names.slice(index).join('.');
+                  intermediateValue = intermediateValue.get(remainingPath);
+                  index = names.length; // Skip to end
+                } catch (e) {
+                  // Fall back to property access
+                  if (index === names.length - 1) {
+                    lookupHit = (
+                      hasProperty(intermediateValue, names[index]) ||
+                      primitiveHasOwnProperty(intermediateValue, names[index])
+                    );
+                  }
+                  intermediateValue = intermediateValue[names[index++]];
+                }
+              } else {
+                if (index === names.length - 1) {
+                  lookupHit = (
+                    hasProperty(intermediateValue, names[index]) ||
+                    primitiveHasOwnProperty(intermediateValue, names[index])
+                  );
+                }
+                intermediateValue = intermediateValue[names[index++]];
+              }
+            }
+          } else {
+            intermediateValue = context.view[name];
+            lookupHit = hasProperty(context.view, name);
+          }
         }
 
         if (lookupHit) {
@@ -137,9 +171,7 @@ class Context {
       cache[name] = value;
     }
 
-    if (isFunction(value)) {
-      value = value.call(this.view);
-    }
+    if (isFunction(value)) value = value.call(this.view);
 
     return value;
   }

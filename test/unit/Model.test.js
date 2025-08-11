@@ -1,15 +1,17 @@
 /**
- * RestModel Unit Tests
- * Tests for the RestModel class functionality
+ * Model Unit Tests
+ * Tests for the Model class functionality
  */
 
 module.exports = async function(testContext) {
     const { describe, it, expect, assert } = testContext;
     const { testHelpers } = require('../utils/test-helpers');
+    const Model = require('../../src/core/Model.js').default;
     
-    await testHelpers.setupModules();
+    // Make Model available globally for tests
+    global.Model = Model;
 
-    describe('RestModel Core Functionality', () => {
+    describe('Model Core Functionality', () => {
         let mockRest;
         let TestModel;
 
@@ -25,7 +27,7 @@ module.exports = async function(testContext) {
             };
 
             // Create test model class
-            class TestUser extends RestModel {
+            class TestUser extends Model {
                 static endpoint = '/api/users';
                 static validations = {
                     name: [
@@ -41,7 +43,7 @@ module.exports = async function(testContext) {
 
             TestModel = TestUser;
             TestModel.Rest = mockRest;
-            global.RestModel.Rest = mockRest;
+            Model.Rest = mockRest;
         }
 
         describe('Constructor and Initialization', () => {
@@ -410,7 +412,7 @@ module.exports = async function(testContext) {
 
             it('should handle custom validation functions', () => {
                 setupTest();
-                class CustomModel extends RestModel {
+                class CustomModel extends Model {
                     static validations = {
                         age: [
                             (value) => {

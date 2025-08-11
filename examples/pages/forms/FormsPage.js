@@ -5,7 +5,7 @@ export default class FormsPage extends Page {
     constructor(options = {}) {
         super({
             ...options,
-            page_name: 'forms',
+            pageName: 'forms',
             title: 'Forms'
         });
         this.formBuilder = null;

@@ -84,7 +84,7 @@ async function runDiagnostics() {
 
         // Check properties
         console.log('\n📋 Checking properties:');
-        console.log(`  - page_name: ${page.page_name}`);
+        console.log(`  - pageName: ${page.pageName}`);
         console.log(`  - title: ${page.title}`);
         console.log(`  - route: ${page.route}`);
         console.log(`  - collection exists: ${!!page.collection}`);

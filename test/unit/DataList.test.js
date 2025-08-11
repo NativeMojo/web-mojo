@@ -9,7 +9,7 @@ module.exports = async function(testContext) {
     
     // Import DataList and RestModel
     const DataList = require('../../src/core/DataList.js').default;
-    const RestModel = require('../../src/core/RestModel.js').default;
+    const Model = require('../../src/core/Model.js').default;
     
     await testHelpers.setup();
 
@@ -30,7 +30,7 @@ module.exports = async function(testContext) {
             };
 
             // Create test model class
-            class TestUser extends RestModel {
+            class TestUser extends Model {
                 static endpoint = '/api/users';
             }
 

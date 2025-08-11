@@ -374,7 +374,7 @@ class CardContainerView extends View {
 class HierarchyDemoPage extends Page {
     constructor(options = {}) {
         super({
-            page_name: 'hierarchy-demo',
+            pageName: 'hierarchy-demo',
             route: '/hierarchy',
             template: `
                 <div class="hierarchy-demo-page">
@@ -422,7 +422,7 @@ class HierarchyDemoPage extends Page {
         this.containerView = null;
     }
 
-    on_init() {
+    onInit() {
         console.log('HierarchyDemoPage: Initializing...');
     }
 

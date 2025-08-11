@@ -266,7 +266,7 @@ class TestHelpers {
     createMockPage(options = {}) {
         const mockPage = {
             ...this.createMockView(options),
-            page_name: options.page_name || 'mock-page',
+            pageName: options.pageName || 'mock-page',
             route: options.route || '/mock',
             params: options.params || {},
             query: options.query || {},

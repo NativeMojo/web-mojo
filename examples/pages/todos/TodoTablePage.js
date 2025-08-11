@@ -27,7 +27,7 @@ class TodoTablePage extends TablePage {
                 label: 'Type',
                 width: '100px',
                 sortable: true,
-                formatter: 'formatKind',  // String reference
+                formatter: 'badge',  // Simple string formatter
                 filter: {
                     type: 'select',
                     options: [
@@ -43,14 +43,44 @@ class TodoTablePage extends TablePage {
                 key: 'description',
                 label: 'Description',
                 sortable: true,
-                formatter: 'formatDescription',  // String reference
+                formatter: "truncate(100)|capitalize",  // Pipe syntax
                 class: 'todo-description'
+            },
+            {
+                key: 'priority',
+                label: 'Priority',
+                width: '100px',
+                sortable: true,
+                formatter: 'todoPriority',  // Custom registered formatter
+                filter: {
+                    type: 'select',
+                    options: [
+                        { value: '', label: 'All Priorities' },
+                        { value: 'high', label: 'High' },
+                        { value: 'medium', label: 'Medium' },
+                        { value: 'low', label: 'Low' }
+                    ]
+                }
+            },
+            {
+                key: 'due_date',
+                label: 'Due Date',
+                width: '150px',
+                sortable: true,
+                formatter: "date('MMM DD, YYYY')|default('No due date')"  // Pipe with args
+            },
+            {
+                key: 'created_at',
+                label: 'Created',
+                width: '120px',
+                sortable: true,
+                formatter: 'relative'  // Simple string formatter
             },
             {
                 key: 'note.description',
                 label: 'Notes',
                 width: '150px',
-                formatter: 'formatNote'  // String reference
+                formatter: "truncate(50)|default('-')"  // Clean pipe syntax
             }
         ];
 
@@ -68,7 +98,7 @@ class TodoTablePage extends TablePage {
     // Now call super with all options including columns
     super({
         ...options,
-        page_name: 'todotable',
+        pageName: 'todotable',
         Collection: TodoCollection,
         collection: collection,
         columns: columns,
@@ -136,21 +166,36 @@ class TodoTablePage extends TablePage {
         // Store reference to collection (already passed to parent)
         this.collection = collection;
 
-        // Now bind the formatter functions after super() has been called
-        this.columns = columns.map(column => {
-            if (column.formatter && typeof column.formatter === 'string') {
-                // Replace string reference with bound method
-                return {
-                    ...column,
-                    formatter: this[column.formatter].bind(this)
-                };
-            }
-            return column;
-        });
+        // Register custom formatters for this page
+        this.registerCustomFormatters();
+    }
 
-        // Update the tableConfig columns to use bound formatters
-        if (this.tableConfig) {
-            this.tableConfig.columns = this.columns;
+    /**
+     * Register custom formatters specific to todos
+     */
+    registerCustomFormatters() {
+        // Register a custom priority formatter
+        if (!window.MOJO.dataFormatter.has('todoPriority')) {
+            window.MOJO.dataFormatter.register('todoPriority', (value) => {
+                const priorities = {
+                    'high': { color: 'danger', icon: '🔴' },
+                    'medium': { color: 'warning', icon: '🟡' },
+                    'low': { color: 'success', icon: '🟢' }
+                };
+                const priority = priorities[value?.toLowerCase()] || { color: 'secondary', icon: '⚪' };
+                const label = window.MOJO.dataFormatter.apply('capitalize', value || 'none');
+                return `<span class="badge bg-${priority.color}">${priority.icon} ${label}</span>`;
+            });
+        }
+
+        // Register a custom todo status formatter
+        if (!window.MOJO.dataFormatter.has('todoStatus')) {
+            window.MOJO.dataFormatter.register('todoStatus', (value) => {
+                const icon = value ? '✅' : '⏳';
+                const text = value ? 'Completed' : 'Pending';
+                const color = value ? 'success' : 'warning';
+                return `<span class="text-${color}">${icon} ${text}</span>`;
+            });
         }
     }
 
@@ -328,18 +373,18 @@ class TodoTablePage extends TablePage {
     /**
      * Format actions column
      */
-    formatActions(value, item) {
+    formatActions(value, context) {
         return `
             <div class="btn-group btn-group-sm">
                 <button class="btn btn-outline-primary"
                         data-action="edit-row"
-                        data-id="${item.id}"
+                        data-id="${context.row.id}"
                         title="Edit">
                     <i class="bi bi-pencil"></i>
                 </button>
                 <button class="btn btn-outline-danger"
                         data-action="delete-row"
-                        data-id="${item.id}"
+                        data-id="${context.row.id}"
                         title="Delete">
                     <i class="bi bi-trash"></i>
                 </button>

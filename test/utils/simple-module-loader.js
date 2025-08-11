@@ -13,7 +13,7 @@ class SimpleModuleLoader {
         this.loadedModules = new Map();
         
         // Module dependency order
-        this.moduleOrder = ['EventBus', 'Router', 'Rest', 'RestModel', 'DataList', 'View', 'Page', 'Table', 'MOJO'];
+        this.moduleOrder = ['EventBus', 'Router', 'Rest', 'dataFormatter', 'MOJOUtils', 'Model', 'RestModel', 'DataList', 'View', 'Page', 'Table', 'MOJO'];
         
         // Set up global environment
         this.setupGlobals();
@@ -59,13 +59,22 @@ class SimpleModuleLoader {
     }
 
     /**
-     * Load a specific module
-     * @param {string} moduleName - Name of module to load
+     * Load a module
+     * @param {string} moduleName - Name of the module to load
      * @returns {*} Loaded module
      */
     loadModule(moduleName) {
+        // Check if already loaded
         if (this.loadedModules.has(moduleName)) {
             return this.loadedModules.get(moduleName);
+        }
+
+        // Special handling for RestModel - load Model and alias it
+        if (moduleName === 'RestModel') {
+            const Model = this.loadModule('Model');
+            this.loadedModules.set('RestModel', Model);
+            global.RestModel = Model;
+            return Model;
         }
 
         const moduleInfo = this.getModuleInfo(moduleName);
@@ -75,16 +84,14 @@ class SimpleModuleLoader {
 
         // Load dependencies first
         for (const dep of moduleInfo.dependencies) {
-            if (!this.loadedModules.has(dep)) {
-                this.loadModule(dep);
-            }
+            this.loadModule(dep);
         }
 
         // Load the module
         const module = this.loadModuleFromFile(moduleInfo.path, moduleName);
         this.loadedModules.set(moduleName, module);
         
-        // Make it available globally for other modules
+        // Set as global
         global[moduleName] = module;
         
         return module;
@@ -109,8 +116,20 @@ class SimpleModuleLoader {
                 path: path.join(this.sourceRoot, 'core/Rest.js'),
                 dependencies: []
             },
+            'dataFormatter': {
+                path: path.join(this.sourceRoot, 'utils/DataFormatter.js'),
+                dependencies: []
+            },
+            'MOJOUtils': {
+                path: path.join(this.sourceRoot, 'utils/MOJOUtils.js'),
+                dependencies: ['dataFormatter']
+            },
+            'Model': {
+                path: path.join(this.sourceRoot, 'core/Model.js'),
+                dependencies: ['Rest', 'dataFormatter', 'MOJOUtils']
+            },
             'RestModel': {
-                path: path.join(this.sourceRoot, 'core/RestModel.js'),
+                path: path.join(this.sourceRoot, 'core/Model.js'),
                 dependencies: ['Rest']
             },
             'DataList': {
@@ -119,7 +138,7 @@ class SimpleModuleLoader {
             },
             'View': {
                 path: path.join(this.sourceRoot, 'core/View.js'),
-                dependencies: []
+                dependencies: ['MOJOUtils']
             },
             'Page': {
                 path: path.join(this.sourceRoot, 'core/Page.js'),
@@ -243,6 +262,10 @@ class SimpleModuleLoader {
                 code += '\nreturn Page;';
             } else if (moduleName === 'MOJO') {
                 code += '\nreturn MOJO;';
+            } else if (moduleName === 'dataFormatter') {
+                code += '\nreturn dataFormatter;';
+            } else if (moduleName === 'MOJOUtils') {
+                code += '\nreturn MOJOUtils;';
             }
         }
 

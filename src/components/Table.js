@@ -21,15 +21,17 @@
  * });
  */
 
+import dataFormatter from '../utils/DataFormatter.js';
+
 class Table {
   constructor(options = {}) {
     // Core properties from design doc
     this.Collection = options.Collection || null;
     this.columns = options.columns || [];
     this.filters = options.filters || {};
-    this.collection_params = options.collection_params || {};
-    this.group_filtering = options.group_filtering || false;
-    this.list_options = options.list_options || {};
+    this.collectionParams = options.collectionParams || {};
+    this.groupFiltering = options.groupFiltering || false;
+    this.listOptions = options.listOptions || {};
     this.view = options.view || 'table';
     
     // Internal state
@@ -99,7 +101,6 @@ class Table {
       
       // Set up collection event listeners
       this.collection.on('update', () => {
-        console.log('🔍 [DEBUG] Collection update event triggered, calling render()');
         this.render();
       });
       
@@ -145,17 +146,11 @@ class Table {
         // Only attempt fetch if Rest client is available
         if (this.collection.constructor.Rest) {
           const params = {
-            ...this.collection_params,
+            ...this.collectionParams,
             ...this.buildQueryParams()
           };
           
-          console.log('🔍 [DEBUG] About to fetch in initializeData():', {
-              hasData,
-              preloaded: this.options.preloaded,
-              params: params
-          });
           await this.collection.fetch({ params });
-          console.log('🔍 [DEBUG] Fetch completed in initializeData(), new length:', this.collection?.models?.length);
         } else {
           console.info('Table: No REST client available, using existing data or empty table');
         }
@@ -172,17 +167,17 @@ class Table {
    * Apply list options configuration
    */
   applyListOptions() {
-    if (this.list_options.itemsPerPage) {
-      this.itemsPerPage = this.list_options.itemsPerPage;
+    if (this.listOptions.itemsPerPage) {
+      this.itemsPerPage = this.listOptions.itemsPerPage;
     }
     
-    if (this.list_options.defaultSort) {
-      this.sortBy = this.list_options.defaultSort.field;
-      this.sortDirection = this.list_options.defaultSort.direction || 'asc';
+    if (this.listOptions.defaultSort) {
+      this.sortBy = this.listOptions.defaultSort.field;
+      this.sortDirection = this.listOptions.defaultSort.direction || 'asc';
     }
     
-    if (this.list_options.defaultFilters) {
-      this.activeFilters = { ...this.list_options.defaultFilters };
+    if (this.listOptions.defaultFilters) {
+      this.activeFilters = { ...this.listOptions.defaultFilters };
     }
   }
 
@@ -192,14 +187,6 @@ class Table {
    * @returns {Promise} Promise that resolves when table is rendered
    */
   async render(container = null) {
-    const renderCallStack = new Error().stack.split('\n').slice(1, 4).join('\n');
-    console.log('🔍 [DEBUG] Table.render() called from:', renderCallStack);
-    console.log('🔍 [DEBUG] Collection state:', {
-        hasCollection: !!this.collection,
-        collectionLength: this.collection?.models?.length,
-        collectionEndpoint: this.collection?.endpoint
-    });
-
     if (container) {
       this.container = container;
     }
@@ -345,13 +332,6 @@ class Table {
       }
     });
     
-    console.log('🔍 [DEBUG] buildQueryParams result:', {
-      sortBy: this.sortBy,
-      sortDirection: this.sortDirection,
-      activeFilters: this.activeFilters,
-      builtParams: params
-    });
-    
     return params;
   }
 
@@ -362,13 +342,6 @@ class Table {
   buildTableHTML() {
     const tableClasses = this.buildTableClasses();
     const data = this.collection ? this.collection.models : [];
-    
-    console.log('🔍 [DEBUG] buildTableHTML - Data extraction:', {
-      hasCollection: !!this.collection,
-      collectionModels: this.collection?.models,
-      dataLength: data?.length,
-      firstItem: data?.[0]
-    });
     
     return `
       <style>
@@ -670,16 +643,11 @@ class Table {
   }
 
   buildActivePills() {
-    console.log('🔍 [DEBUG] buildActivePills called with activeFilters:', this.activeFilters);
-    
     const activeFilters = Object.entries(this.activeFilters).filter(([key, value]) => 
       value && value.toString().trim() !== ''
     );
     
-    console.log('🔍 [DEBUG] Filtered activeFilters for pills:', activeFilters);
-    
     if (activeFilters.length === 0) {
-      console.log('🔍 [DEBUG] No active filters, returning empty string');
       return '';
     }
     
@@ -705,7 +673,7 @@ class Table {
       </button>
     ` : '';
     
-    const html = `
+    return `
       <div class="row mt-2">
         <div class="col-12">
           <div class="d-flex flex-wrap align-items-center">
@@ -715,14 +683,9 @@ class Table {
         </div>
       </div>
     `;
-    
-    console.log('🔍 [DEBUG] buildActivePills returning HTML:', html);
-    return html;
   }
 
   getFilterDisplayValue(key, value) {
-    console.log('🔍 [DEBUG] getFilterDisplayValue called:', { key, value, filters: this.filters });
-    
     if (key === 'search') {
       return `"${value}"`;
     }
@@ -737,8 +700,6 @@ class Table {
   }
 
   getFilterLabel(key) {
-    console.log('🔍 [DEBUG] getFilterLabel called:', { key, filters: this.filters });
-    
     if (key === 'search') {
       return 'Search';
     }
@@ -862,20 +823,8 @@ class Table {
       data = this.collection.models || [];
     }
     
-    console.log('🔍 [DEBUG] buildTableBody - Before processData:', {
-      rawDataLength: data?.length,
-      rawData: data,
-      firstItem: data?.[0]
-    });
-    
     // Apply client-side filtering, sorting, and pagination
     data = this.processData(data || []);
-    
-    console.log('🔍 [DEBUG] buildTableBody - After processData:', {
-      processedDataLength: data?.length,
-      processedData: data,
-      firstProcessedItem: data?.[0]
-    });
     
     if (!data || data.length === 0) {
       const colspan = this.columns.length + (this.options.selectable ? 1 : 0) + 1;
@@ -1014,8 +963,12 @@ class Table {
   buildTableCell(item, column) {
     let value = this.getCellValue(item, column);
     
-    // Apply column formatting
-    if (column.format && typeof column.format === 'function') {
+    // Apply column formatter (new DataFormatter support)
+    if (column.formatter) {
+      value = this.applyFormatter(column.formatter, value, item, column);
+    }
+    // Legacy support for column.format
+    else if (column.format && typeof column.format === 'function') {
       value = column.format(value, item);
     } else if (column.type) {
       value = this.formatCellValue(value, column.type, column.options);
@@ -1036,6 +989,65 @@ class Table {
     const classes = column.class || '';
     
     return `<td class="${classes}" data-action="item-clicked" data-id="${item.id}">${value}</td>`;
+  }
+
+  /**
+   * Apply formatter to a cell value
+   * @param {string|function|object} formatter - Formatter configuration
+   * @param {*} value - Cell value
+   * @param {object} row - Row data
+   * @param {object} column - Column configuration
+   * @returns {string} Formatted value
+   */
+  applyFormatter(formatter, value, row, column) {
+    // Function formatter
+    if (typeof formatter === 'function') {
+      const context = {
+        value,
+        row,
+        column,
+        table: this,
+        index: this.collection?.models?.indexOf(row) ?? -1
+      };
+      return formatter(value, context);
+    }
+    
+    // String formatter (could be a formatter key or pipe string)
+    if (typeof formatter === 'string') {
+      // Check if it's a pipe string
+      if (formatter.includes('|') || formatter.includes('(')) {
+        return dataFormatter.pipe(value, formatter);
+      }
+      // Simple formatter key
+      return dataFormatter.apply(formatter, value);
+    }
+    
+    // Object formatter with configuration
+    if (typeof formatter === 'object' && formatter !== null) {
+      if (formatter.formatter) {
+        // Nested formatter with args/options
+        const formatterFn = typeof formatter.formatter === 'string' 
+          ? (v) => dataFormatter.apply(formatter.formatter, v, ...(formatter.args || []))
+          : formatter.formatter;
+        
+        if (typeof formatterFn === 'function') {
+          const context = {
+            value,
+            row,
+            column,
+            table: this,
+            index: this.collection?.models?.indexOf(row) ?? -1,
+            options: formatter.options || {}
+          };
+          return formatterFn(value, context);
+        }
+      } else if (formatter.name) {
+        // Object with name and args
+        return dataFormatter.apply(formatter.name, value, ...(formatter.args || []));
+      }
+    }
+    
+    return value;
   }
 
   /**
@@ -1125,7 +1137,7 @@ class Table {
    * @returns {string} Action cell HTML
    */
   buildActionCell(item) {
-    const actions = this.list_options.actions || ['view', 'edit', 'delete'];
+    const actions = this.listOptions.actions || ['view', 'edit', 'delete'];
     
     const actionButtons = actions.map(action => {
       switch (action) {
@@ -1283,18 +1295,9 @@ class Table {
     
     // Create bound click handler
     this._boundEventHandlers.click = (e) => {
-      console.log('🔍 [DEBUG] Click detected:', {
-        target: e.target.tagName,
-        action: e.target.getAttribute('data-action'),
-        dataPage: e.target.getAttribute('data-page'),
-        closest: e.target.closest('[data-action]')?.getAttribute('data-action')
-      });
-
       const action = e.target.getAttribute('data-action');
       const closestAction = e.target.closest('[data-action]')?.getAttribute('data-action');
       const actualAction = action || closestAction;
-      
-      console.log('🔍 [DEBUG] Actual action determined:', actualAction);
 
       // Prevent default action for all data-action elements (especially pagination links)
       if (actualAction) {
@@ -1421,12 +1424,6 @@ class Table {
    * @param {HTMLElement} target - Target element
    */
   async handleAction(action, event, target) {
-    console.log('🔍 [DEBUG] handleAction called:', {
-      action,
-      dataPage: target?.getAttribute('data-page'),
-      targetTag: target?.tagName
-    });
-
     if (!target) {
       console.warn('handleAction called with no target element');
       return;
@@ -1437,12 +1434,12 @@ class Table {
     
     switch (action) {
       case 'item-clicked':
-        await this.on_item_clicked(item, event, target);
+        await this.onItemClicked(item, event, target);
         break;
       
       case 'item-dlg':
         const mode = target.getAttribute('data-mode') || 'view';
-        await this.on_item_dlg(item, mode, event, target);
+        await this.onItemDialog(item, mode, event, target);
         break;
       
       case 'sort':
@@ -1482,7 +1479,7 @@ class Table {
    * @param {Event} event - DOM event
    * @param {HTMLElement} target - Target element
    */
-  async on_item_clicked(item, event, target) {
+  async onItemClicked(item, event, target) {
     console.log('Item clicked:', item);
     // Default implementation - can be overridden
     
@@ -1497,7 +1494,7 @@ class Table {
    * @param {Event} event - DOM event
    * @param {HTMLElement} target - Target element
    */
-  async on_item_dlg(item, mode = 'view', event, target) {
+  async onItemDialog(item, mode = 'view', event, target) {
     console.log('Item dialog:', item, mode);
     // Default implementation - can be overridden
     
@@ -1543,38 +1540,17 @@ class Table {
    * @param {number} page - Target page number
    */
   async handlePageChange(page) {
-    console.log('🔍 [DEBUG] handlePageChange called with page:', page);
-    console.log('🔍 [DEBUG] Collection state before page change:', {
-      collectionLength: this.collection?.models?.length,
-      metaTotal: this.collection?.meta?.total,
-      currentPage: this.currentPage
-    });
-
-    const totalItems = this.collection?.restEnabled 
+    const totalItems = this.collection?.restEnabled
       ? (this.collection?.meta?.total || 0)
       : (this.totalFilteredItems || this.collection?.models?.length || 0);
     const totalPages = Math.ceil(totalItems / this.itemsPerPage);
-    
-    console.log('🔍 [DEBUG] Wrap-around pagination check:', {
-      requestedPage: page,
-      totalItems,
-      totalPages,
-      itemsPerPage: this.itemsPerPage,
-      restEnabled: this.collection?.restEnabled,
-      totalFilteredItems: this.totalFilteredItems,
-      collectionLength: this.collection?.models?.length
-    });
     
     // Handle wrap-around pagination
     const originalPage = page;
     if (page < 1) {
       page = totalPages; // Wrap to last page
-      console.log('🔄 [DEBUG] Wrapped to last page:', page);
     } else if (page > totalPages) {
       page = 1; // Wrap to first page
-      console.log('🔄 [DEBUG] Wrapped to first page:', page);
-    } else {
-      console.log('🔍 [DEBUG] No wrap needed, staying on page:', page);
     }
     
     this.currentPage = page;
@@ -1585,8 +1561,6 @@ class Table {
       const start = (page - 1) * this.itemsPerPage;
       
       try {
-        console.log('🔍 [DEBUG] About to fetch in handlePageChange:', { page, start });
-        
         // Build sort parameter for API
         const fetchParams = {
           page: page,
@@ -1607,10 +1581,8 @@ class Table {
           }
         });
 
-        console.log('🔍 [DEBUG] handlePageChange final fetch params:', fetchParams);
         // Pass parameters directly, not wrapped in params object
         await this.collection.fetch(fetchParams);
-        console.log('🔍 [DEBUG] handlePageChange fetch completed, new length:', this.collection?.models?.length);
       } catch (error) {
         console.error('Failed to fetch page data:', error);
       }
@@ -1671,7 +1643,6 @@ class Table {
           }
         });
         
-        console.log('🔍 [DEBUG] Page size change fetch params:', fetchParams);
         // Pass parameters directly, not wrapped in params object
         await this.collection.fetch(fetchParams);
       } catch (error) {
@@ -1981,7 +1952,6 @@ class Table {
         }
       });
       
-      console.log('🔍 [DEBUG] fetchWithCurrentFilters final fetch params:', fetchParams);
       // Pass parameters directly, not wrapped in params object
       await this.collection.fetch(fetchParams);
       // Re-render the table with the new data

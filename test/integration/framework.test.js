@@ -101,15 +101,15 @@ module.exports = async function(testContext) {
             class TestPage extends Page {
                 constructor(options = {}) {
                     super({
-                        page_name: 'test-page',
+                        pageName: 'test-page',
                         route: '/test/:id',
                         template: '<div class="page">Page {{params.id}}</div>',
                         ...options
                     });
                 }
                 
-                on_params(params, query) {
-                    super.on_params(params, query);
+                onParams(params, query) {
+                    super.onParams(params, query);
                     this.updateData({ 
                         params: params,
                         query: query 
@@ -125,7 +125,7 @@ module.exports = async function(testContext) {
             expect(match.params.id).toBe('123');
             
             // Test parameter handling
-            page.on_params({ id: '123' }, { filter: 'active' });
+            page.onParams({ id: '123' }, { filter: 'active' });
             expect(page.params.id).toBe('123');
             expect(page.query.filter).toBe('active');
             
@@ -155,12 +155,12 @@ module.exports = async function(testContext) {
             
             // Test component creation
             const view = mojo.createView('testView', { id: 'created-view' });
-            const page = mojo.createPage('testPage', { page_name: 'created-page' });
+            const page = mojo.createPage('testPage', { pageName: 'created-page' });
             
             expect(view instanceof TestView).toBe(true);
             expect(page instanceof TestPage).toBe(true);
             expect(view.id).toBe('created-view');
-            expect(page.page_name).toBe('created-page');
+            expect(page.pageName).toBe('created-page');
         });
 
         it('should integrate template rendering with real DOM', async () => {
@@ -415,13 +415,13 @@ module.exports = async function(testContext) {
             class HomePage extends Page {
                 constructor() {
                     super({
-                        page_name: 'home',
+                        pageName: 'home',
                         route: '/',
                         template: '<div class="home-page">Welcome to {{page_name}}</div>'
                     });
                 }
                 
-                on_action_hello() {
+                onActionHello() {
                     this.updateData({ greeting: 'Hello from home page!' }, true);
                 }
             }
@@ -461,7 +461,7 @@ module.exports = async function(testContext) {
             expect(navigationEvents).toEqual(['home']);
             
             // Test page action
-            await homePage.on_action_hello();
+            await homePage.onActionHello();
             expect(homePage.data.greeting).toBe('Hello from home page!');
             
             // Test framework statistics

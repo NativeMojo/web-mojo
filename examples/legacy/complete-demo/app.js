@@ -133,7 +133,7 @@ class FooterView extends View {
 class HomePage extends Page {
   constructor(options = {}) {
     super({
-      page_name: 'home',
+      pageName: 'home',
       route: '/',
       template: `
         <div class="container">
@@ -259,8 +259,8 @@ class HomePage extends Page {
     }
   }
 
-  async on_action_hello() {
-    super.on_action_hello();
+  async onActionHello() {
+    super.onActionHello();
     
     // Create a temporary child view
     const helloView = new View({
@@ -273,7 +273,7 @@ class HomePage extends Page {
         </div>
       `,
       data: {
-        page_name: this.page_name,
+        pageName: this.pageName,
         timestamp: new Date().toLocaleString()
       }
     });
@@ -312,7 +312,7 @@ class HomePage extends Page {
 class DemoPage extends Page {
   constructor(options = {}) {
     super({
-      page_name: 'demo',
+      pageName: 'demo',
       route: '/demo',
       template: `
         <div class="container">
@@ -494,7 +494,7 @@ class DemoPage extends Page {
 class AboutPage extends Page {
   constructor(options = {}) {
     super({
-      page_name: 'about',
+      pageName: 'about',
       route: '/about',
       template: `
         <div class="container">

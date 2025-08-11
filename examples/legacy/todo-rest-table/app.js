@@ -210,7 +210,7 @@ class TodosTablePage extends TablePage {
   constructor(options = {}) {
     super({
       ...options,
-      page_name: 'todos',
+      pageName: 'todos',
       title: 'TODO Items - REST API Example',
       description: 'Live data from REST API with automatic refresh, export, and URL synchronization',
 

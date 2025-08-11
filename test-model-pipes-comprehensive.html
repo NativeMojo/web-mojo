@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Comprehensive Model Pipes Test</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+        />
+        <style>
+            .test-section {
+                margin-bottom: 30px;
+                padding: 15px;
+                border: 1px solid #dee2e6;
+                border-radius: 5px;
+            }
+            .test-pass {
+                background-color: #d4edda;
+                border-color: #c3e6cb;
+            }
+            .test-fail {
+                background-color: #f8d7da;
+                border-color: #f5c6cb;
+            }
+            .expected-output {
+                background-color: #f8f9fa;
+                padding: 10px;
+                border-radius: 3px;
+                margin: 10px 0;
+            }
+            .actual-output {
+                background-color: #e9ecef;
+                padding: 10px;
+                border-radius: 3px;
+                margin: 10px 0;
+            }
+            .console-log {
+                background-color: #1a1a1a;
+                color: #00ff00;
+                padding: 10px;
+                border-radius: 5px;
+                font-family: monospace;
+                font-size: 12px;
+                height: 200px;
+                overflow-y: auto;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container mt-4">
+            <h1>Comprehensive Model Pipes Test</h1>
+            <p class="lead">
+                Testing all model array pipe scenarios to ensure browser compatibility
+            </p>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <h2>Test Results</h2>
+
+                    <!-- Test 1: Basic Model Array with Pipes -->
+                    <div class="test-section" id="test1-section">
+                        <h4>Test 1: Basic Model Array with Pipes</h4>
+                        <p>Tests model.items with capitalize and currency pipes</p>
+                        <div id="test1-result"></div>
+                        <div class="expected-output">
+                            <strong>Expected:</strong><br />
+                            • Laptop Pro - $1,299.99<br />
+                            • Wireless Mouse - $29.99<br />
+                            • Usb Cable - $9.99
+                        </div>
+                        <div class="actual-output">
+                            <strong>Actual:</strong>
+                            <div id="test1-output"></div>
+                        </div>
+                    </div>
+
+                    <!-- Test 2: Model Array with Date Pipes -->
+                    <div class="test-section" id="test2-section">
+                        <h4>Test 2: Model Array with Date Pipes</h4>
+                        <p>Tests model.transactions with date and currency pipes</p>
+                        <div id="test2-result"></div>
+                        <div class="expected-output">
+                            <strong>Expected:</strong><br />
+                            • 01/01 - $100.50<br />
+                            • 01/15 - $250.75<br />
+                            • 02/01 - $75.25
+                        </div>
+                        <div class="actual-output">
+                            <strong>Actual:</strong>
+                            <div id="test2-output"></div>
+                        </div>
+                    </div>
+
+                    <!-- Test 3: Nested Model Arrays -->
+                    <div class="test-section" id="test3-section">
+                        <h4>Test 3: Nested Model Arrays</h4>
+                        <p>Tests model.categories with nested items array</p>
+                        <div id="test3-result"></div>
+                        <div class="actual-output">
+                            <strong>Actual:</strong>
+                            <div id="test3-output"></div>
+                        </div>
+                    </div>
+
+                    <!-- Test 4: Empty Arrays -->
+                    <div class="test-section" id="test4-section">
+                        <h4>Test 4: Empty Arrays</h4>
+                        <p>Tests inverted sections with empty arrays</p>
+                        <div id="test4-result"></div>
+                        <div class="expected-output">
+                            <strong>Expected:</strong> "No items available"
+                        </div>
+                        <div class="actual-output">
+                            <strong>Actual:</strong>
+                            <div id="test4-output"></div>
+                        </div>
+                    </div>
+
+                    <!-- Test 5: Complex Object Arrays -->
+                    <div class="test-section" id="test5-section">
+                        <h4>Test 5: Complex Object Arrays with Multiple Pipes</h4>
+                        <p>Tests arrays with complex objects and multiple pipe types</p>
+                        <div id="test5-result"></div>
+                        <div class="actual-output">
+                            <strong>Actual:</strong>
+                            <div id="test5-output"></div>
+                        </div>
+                    </div>
+
+                    <!-- Test 6: Array Length and Conditionals -->
+                    <div class="test-section" id="test6-section">
+                        <h4>Test 6: Array Length and Conditionals</h4>
+                        <p>Tests accessing array.length and conditional rendering</p>
+                        <div id="test6-result"></div>
+                        <div class="actual-output">
+                            <strong>Actual:</strong>
+                            <div id="test6-output"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <h3>Console Output</h3>
+                    <div id="console" class="console-log"></div>
+                    <button id="clear-console" class="btn btn-sm btn-secondary mt-2">Clear</button>
+
+                    <div class="mt-4">
+                        <h4>Summary</h4>
+                        <div id="summary">
+                            <p>Tests passed: <span id="passed-count">0</span></p>
+                            <p>Tests failed: <span id="failed-count">0</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script type="module">
+            import View from "./src/core/View.js";
+            import Model from "./src/core/Model.js";
+            window.View = View;
+            window.Model = Model;
+
+            // Console logger
+            const consoleEl = document.getElementById("console");
+            const log = (message, type = "info") => {
+                const timestamp = new Date().toLocaleTimeString();
+                const color =
+                    type === "error" ? "#ff6b6b" : type === "success" ? "#51cf66" : "#00ff00";
+                consoleEl.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+            };
+
+            // Clear console button
+            document.getElementById("clear-console").addEventListener("click", () => {
+                consoleEl.innerHTML = "";
+            });
+
+            let passedTests = 0;
+            let failedTests = 0;
+
+            const runTest = async (testId, testName, testFn) => {
+                log(`Running ${testName}...`);
+                const section = document.getElementById(`${testId}-section`);
+                const resultDiv = document.getElementById(`${testId}-result`);
+
+                try {
+                    const passed = await testFn();
+                    if (passed) {
+                        section.classList.add("test-pass");
+                        resultDiv.innerHTML =
+                            '<span class="text-success"><i class="bi bi-check-circle"></i> PASSED</span>';
+                        passedTests++;
+                        log(`✅ ${testName} passed`, "success");
+                    } else {
+                        section.classList.add("test-fail");
+                        resultDiv.innerHTML =
+                            '<span class="text-danger"><i class="bi bi-x-circle"></i> FAILED</span>';
+                        failedTests++;
+                        log(`❌ ${testName} failed`, "error");
+                    }
+                } catch (error) {
+                    section.classList.add("test-fail");
+                    resultDiv.innerHTML = `<span class="text-danger"><i class="bi bi-x-circle"></i> ERROR: ${error.message}</span>`;
+                    failedTests++;
+                    log(`❌ ${testName} error: ${error.message}`, "error");
+                    console.error(error);
+                }
+
+                document.getElementById("passed-count").textContent = passedTests;
+                document.getElementById("failed-count").textContent = failedTests;
+            };
+
+            // Test 1: Basic Model Array with Pipes
+            await runTest("test1", "Test 1: Basic Model Array", async () => {
+                const model = new Model({
+                    items: [
+                        { name: "laptop pro", price: 1299.99 },
+                        { name: "wireless mouse", price: 29.99 },
+                        { name: "usb cable", price: 9.99 },
+                    ],
+                });
+
+                const view = new View({
+                    id: "test1-view",
+                    template: `
+                        <ul>
+                            {{#model.items}}
+                            <li>{{name|capitalize}} - {{price|currency}}</li>
+                            {{/model.items}}
+                        </ul>
+                    `,
+                });
+
+                view.setModel(model);
+                await view.render();
+
+                document.getElementById("test1-output").innerHTML = view.element.innerHTML;
+
+                const html = view.element.innerHTML;
+                return (
+                    html.includes("Laptop Pro - $1,299.99") &&
+                    html.includes("Wireless Mouse - $29.99") &&
+                    html.includes("Usb Cable - $9.99")
+                );
+            });
+
+            // Test 2: Model Array with Date Pipes
+            await runTest("test2", "Test 2: Date Pipes", async () => {
+                const model = new Model({
+                    transactions: [
+                        { date: new Date(2024, 0, 1), amount: 100.5 }, // January 1, 2024 in local time
+                        { date: new Date(2024, 0, 15), amount: 250.75 }, // January 15, 2024 in local time
+                        { date: new Date(2024, 1, 1), amount: 75.25 }, // February 1, 2024 in local time
+                    ],
+                });
+
+                const view = new View({
+                    id: "test2-view",
+                    template: `
+                        <ul>
+                            {{#model.transactions}}
+                            <li>{{date|date("MM/DD")}} - {{amount|currency}}</li>
+                            {{/model.transactions}}
+                        </ul>
+                    `,
+                });
+
+                view.setModel(model);
+                await view.render();
+
+                document.getElementById("test2-output").innerHTML = view.element.innerHTML;
+
+                const html = view.element.innerHTML;
+                return (
+                    html.includes("01/01 - $100.50") &&
+                    html.includes("01/15 - $250.75") &&
+                    html.includes("02/01 - $75.25")
+                );
+            });
+
+            // Test 3: Nested Model Arrays
+            await runTest("test3", "Test 3: Nested Arrays", async () => {
+                const model = new Model({
+                    categories: [
+                        {
+                            name: "electronics",
+                            items: [
+                                { name: "laptop", price: 999 },
+                                { name: "phone", price: 699 },
+                            ],
+                        },
+                        {
+                            name: "accessories",
+                            items: [
+                                { name: "case", price: 29 },
+                                { name: "charger", price: 49 },
+                            ],
+                        },
+                    ],
+                });
+
+                const view = new View({
+                    id: "test3-view",
+                    template: `
+                        <div>
+                            {{#model.categories}}
+                            <h5>{{name|capitalize}}</h5>
+                            <ul>
+                                {{#items}}
+                                <li>{{name|capitalize}} - {{price|currency}}</li>
+                                {{/items}}
+                            </ul>
+                            {{/model.categories}}
+                        </div>
+                    `,
+                });
+
+                view.setModel(model);
+                await view.render();
+
+                document.getElementById("test3-output").innerHTML = view.element.innerHTML;
+
+                const html = view.element.innerHTML;
+                return (
+                    html.includes("Electronics") &&
+                    html.includes("Laptop - $999.00") &&
+                    html.includes("Accessories") &&
+                    html.includes("Charger - $49.00")
+                );
+            });
+
+            // Test 4: Empty Arrays
+            await runTest("test4", "Test 4: Empty Arrays", async () => {
+                const model = new Model({
+                    items: [],
+                });
+
+                const view = new View({
+                    id: "test4-view",
+                    template: `
+                        <div>
+                            {{#model.items}}
+                            <li>{{name}}</li>
+                            {{/model.items}}
+                            {{^model.items}}
+                            <p>No items available</p>
+                            {{/model.items}}
+                        </div>
+                    `,
+                });
+
+                view.setModel(model);
+                await view.render();
+
+                document.getElementById("test4-output").innerHTML = view.element.innerHTML;
+
+                return view.element.innerHTML.includes("No items available");
+            });
+
+            // Test 5: Complex Object Arrays
+            await runTest("test5", "Test 5: Complex Objects", async () => {
+                const model = new Model({
+                    users: [
+                        {
+                            name: "john doe",
+                            email: "JOHN@EXAMPLE.COM",
+                            registered: new Date(2024, 0, 15), // January 15, 2024 in local time
+                            status: "active",
+                            balance: 1234.56,
+                        },
+                        {
+                            name: "jane smith",
+                            email: "JANE@EXAMPLE.COM",
+                            registered: new Date(2024, 1, 20), // February 20, 2024 in local time
+                            status: "inactive",
+                            balance: 567.89,
+                        },
+                    ],
+                });
+
+                const view = new View({
+                    id: "test5-view",
+                    template: `
+                        <table>
+                            <tbody>
+                                {{#model.users}}
+                                <tr>
+                                    <td>{{name|capitalize}}</td>
+                                    <td>{{email|lowercase}}</td>
+                                    <td>{{registered|date("MMM DD, YYYY")}}</td>
+                                    <td>{{status|uppercase}}</td>
+                                    <td>{{balance|currency}}</td>
+                                </tr>
+                                {{/model.users}}
+                            </tbody>
+                        </table>
+                    `,
+                });
+
+                view.setModel(model);
+                await view.render();
+
+                document.getElementById("test5-output").innerHTML = view.element.innerHTML;
+
+                const html = view.element.innerHTML;
+                return (
+                    html.includes("John Doe") &&
+                    html.includes("john@example.com") &&
+                    html.includes("Jan 15, 2024") &&
+                    html.includes("ACTIVE") &&
+                    html.includes("$1,234.56")
+                );
+            });
+
+            // Test 6: Array Length and Conditionals
+            await runTest("test6", "Test 6: Array Length", async () => {
+                const model = new Model({
+                    products: [{ name: "Product 1" }, { name: "Product 2" }, { name: "Product 3" }],
+                });
+
+                const view = new View({
+                    id: "test6-view",
+                    template: `
+                        <div>
+                            <p>Total products: {{model.products.length}}</p>
+                            {{#model.products}}
+                            <span>{{name|uppercase}}</span>
+                            {{/model.products}}
+                        </div>
+                    `,
+                });
+
+                view.setModel(model);
+                await view.render();
+
+                document.getElementById("test6-output").innerHTML = view.element.innerHTML;
+
+                const html = view.element.innerHTML;
+                return (
+                    html.includes("Total products: 3") &&
+                    html.includes("PRODUCT 1") &&
+                    html.includes("PRODUCT 2") &&
+                    html.includes("PRODUCT 3")
+                );
+            });
+
+            log("All tests completed!", "success");
+        </script>
+    </body>
+</html>

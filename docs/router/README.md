@@ -135,14 +135,14 @@ router.forward();
 class DashboardPage extends Page {
     constructor() {
         super({
-            page_name: 'Dashboard',     // For data-page navigation
+            pageName: 'Dashboard',     // For data-page navigation
             route: '/dashboard',        // URL pattern
             title: 'Dashboard'          // Page title
         });
     }
 
     // Automatic parameter filtering in param mode
-    on_params(params, query) {
+    onParams(params, query) {
         // URL: ?page=dashboard&view=analytics&filter=active
         // query: { view: 'analytics', filter: 'active' }
         // 'page' parameter automatically filtered out
@@ -195,7 +195,7 @@ npm run build
 
 # Deploy to any static host
 # ✅ GitHub Pages
-# ✅ Netlify  
+# ✅ Netlify
 # ✅ Vercel
 # ✅ AWS S3 + CloudFront
 # ✅ Any CDN or static server
@@ -257,7 +257,7 @@ const router = new Router({ mode: 'param' });
 When contributing to router functionality:
 
 1. **Maintain backward compatibility** - all modes must continue working
-2. **Add comprehensive tests** - cover new functionality thoroughly  
+2. **Add comprehensive tests** - cover new functionality thoroughly
 3. **Update documentation** - keep all docs current
 4. **Follow param mode patterns** - it's the recommended default
 

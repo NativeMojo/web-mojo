@@ -190,7 +190,7 @@ class Posts extends DataList {
 class UsersPage extends Page {
   constructor(options = {}) {
     super({
-      page_name: 'users',
+      pageName: 'users',
       route: '/users/:action?/:id?',
       template: `
         <div class="users-page">
@@ -500,7 +500,7 @@ class UsersPage extends Page {
     this.restClient = window.MOJO.rest;
   }
 
-  async on_init() {
+  async onInit() {
     console.log('API Demo page initializing...');
     this.updateStats();
   }

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Router Test - Class vs Instance</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container { margin-top: 50px; }
+        .test-output {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            min-height: 100px;
+        }
+        .nav-link.active {
+            background-color: #007bff !important;
+            color: white !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Router Test: Class vs Instance Registration</h1>
+
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <div class="list-group">
+                    <a href="#" data-route="test1" class="list-group-item list-group-item-action">
+                        Test Page 1 (Class)
+                    </a>
+                    <a href="#" data-route="test2" class="list-group-item list-group-item-action">
+                        Test Page 2 (Instance)
+                    </a>
+                    <a href="#" data-route="test3" class="list-group-item list-group-item-action">
+                        Test Page 3 (Mixed)
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div id="page-container"></div>
+                <div class="test-output">
+                    <h5>Console Output:</h5>
+                    <pre id="console-output"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { Router, Page } from '../src/mojo.js';
+
+        const output = document.getElementById('console-output');
+        function log(message) {
+            output.textContent += message + '\n';
+            console.log(message);
+        }
+
+        // Test Page 1 - Will be passed as a class
+        class TestPage1 extends Page {
+            constructor(options = {}) {
+                super({
+                    ...options,
+                    pageName: 'test1',
+                    route: '/test1'
+                });
+                log('TestPage1 constructor called');
+            }
+
+            async getTemplate() {
+                return `
+                    <div class="alert alert-primary">
+                        <h3>Test Page 1</h3>
+                        <p>This page was registered as a <strong>Class</strong></p>
+                        <p>Router instantiated it automatically</p>
+                        <p>Instance ID: ${Math.random().toString(36).substr(2, 9)}</p>
+                    </div>
+                `;
+            }
+
+            async onEnter() {
+                await super.onEnter();
+                log('TestPage1.onEnter() called');
+            }
+
+            async onExit() {
+                await super.onExit();
+                log('TestPage1.onExit() called');
+            }
+        }
+
+        // Test Page 2 - Will be passed as an instance
+        class TestPage2 extends Page {
+            constructor(options = {}) {
+                super({
+                    ...options,
+                    pageName: 'test2',
+                    route: '/test2'
+                });
+                this.instanceId = Math.random().toString(36).substr(2, 9);
+                log(`TestPage2 constructor called with instance ID: ${this.instanceId}`);
+            }
+
+            async getTemplate() {
+                return `
+                    <div class="alert alert-success">
+                        <h3>Test Page 2</h3>
+                        <p>This page was registered as an <strong>Instance</strong></p>
+                        <p>Created before router registration</p>
+                        <p>Instance ID: ${this.instanceId}</p>
+                        <p>Visit count: ${this.visitCount || 0}</p>
+                    </div>
+                `;
+            }
+
+            async onEnter() {
+                await super.onEnter();
+                this.visitCount = (this.visitCount || 0) + 1;
+                log(`TestPage2.onEnter() called - visit #${this.visitCount}`);
+            }
+
+            async onExit() {
+                await super.onExit();
+                log('TestPage2.onExit() called');
+            }
+        }
+
+        // Test Page 3 - Demonstrates mixed approach
+        class TestPage3 extends Page {
+            constructor(options = {}) {
+                super({
+                    ...options,
+                    pageName: 'test3',
+                    route: '/test3'
+                });
+                this.customData = options.customData || 'default';
+                log(`TestPage3 constructor called with customData: ${this.customData}`);
+            }
+
+            async getTemplate() {
+                return `
+                    <div class="alert alert-warning">
+                        <h3>Test Page 3</h3>
+                        <p>This demonstrates the mixed approach</p>
+                        <p>Custom Data: ${this.customData}</p>
+                    </div>
+                `;
+            }
+
+            async onEnter() {
+                await super.onEnter();
+                log('TestPage3.onEnter() called');
+            }
+
+            async onExit() {
+                await super.onExit();
+                log('TestPage3.onExit() called');
+            }
+        }
+
+        // Initialize router
+        const router = new Router({
+            container: '#page-container',
+            mode: 'hash'
+        });
+
+        log('=== Router Test Started ===\n');
+
+        // Method 1: Register as class (Router will instantiate)
+        log('Registering TestPage1 as CLASS...');
+        router.addRoute(TestPage1);
+
+        // Method 2: Register as instance (pre-instantiated)
+        log('Creating TestPage2 instance...');
+        const page2Instance = new TestPage2();
+        log('Registering TestPage2 as INSTANCE...');
+        router.addRoute(page2Instance);
+
+        // Method 3: Can also use with custom options
+        log('Creating TestPage3 with custom options...');
+        const page3Instance = new TestPage3({ customData: 'custom value!' });
+        log('Registering TestPage3 as INSTANCE with custom data...');
+        router.addRoute(page3Instance);
+
+        // Setup navigation
+        document.querySelectorAll('[data-route]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const route = e.currentTarget.dataset.route;
+
+                // Clear previous active
+                document.querySelectorAll('.list-group-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                e.currentTarget.classList.add('active');
+
+                log(`\n--- Navigating to ${route} ---`);
+                router.navigate(route);
+            });
+        });
+
+        // Start router
+        router.start();
+        log('\nRouter started. Click the links to test navigation.\n');
+
+        // Navigate to first page
+        router.navigate('test1');
+        document.querySelector('[data-route="test1"]').classList.add('active');
+    </script>
+</body>
+</html>

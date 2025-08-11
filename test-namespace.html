@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Namespace & Pipe Test - MOJO Framework</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <style>
+            .test-section {
+                background: #f8f9fa;
+                padding: 15px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+            }
+            .pipe-example {
+                background: white;
+                padding: 10px;
+                border-left: 3px solid #007bff;
+                margin: 5px 0;
+                font-family: monospace;
+            }
+            .result-box {
+                background: #e7f3ff;
+                padding: 8px;
+                border-radius: 4px;
+                margin-top: 5px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container mt-4">
+            <h1>Testing View Namespace & Pipe Pattern</h1>
+            <p class="lead">
+                Demonstrating unified data access with pipe formatting in MOJO Framework
+            </p>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <h3>Test Results</h3>
+                    <div id="test-view"></div>
+
+                    <div class="test-section mt-4">
+                        <h4>Interactive Tests</h4>
+                        <div class="btn-group" role="group">
+                            <button id="update-model" class="btn btn-primary">Update Model</button>
+                            <button id="add-item" class="btn btn-success">Add Item</button>
+                            <button id="toggle-status" class="btn btn-warning">
+                                Toggle Status
+                            </button>
+                            <button id="test-pipes" class="btn btn-info">Test Pipes</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <h3>Console</h3>
+                    <pre
+                        id="console"
+                        class="bg-dark text-light p-3"
+                        style="min-height: 500px; font-size: 11px; overflow-y: auto"
+                    ></pre>
+                    <button id="clear-console" class="btn btn-sm btn-secondary mt-2">
+                        Clear Console
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script type="module">
+            import View from "./src/core/View.js";
+            import Model from "./src/core/Model.js";
+
+            const consoleEl = document.getElementById("console");
+            const log = (msg, type = "info") => {
+                const colors = {
+                    info: "#64b5f6",
+                    success: "#81c784",
+                    error: "#e57373",
+                    warning: "#ffb74d",
+                    pipe: "#ba68c8",
+                };
+                const line = document.createElement("div");
+                line.style.color = colors[type] || colors.info;
+                line.textContent = msg;
+                consoleEl.appendChild(line);
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+            };
+
+            try {
+                // Create a comprehensive test view
+                class TestView extends View {
+                    constructor(options = {}) {
+                        super({
+                            ...options,
+                            template: `
+                            <div class="card mb-3">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0">{{getTitle|uppercase}}</h5>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Basic Namespace Access -->
+                                    <div class="test-section">
+                                        <h6 class="text-primary">Basic Namespace Access</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <p><strong>Data:</strong></p>
+                                                <ul class="list-unstyled">
+                                                    <li>Title: {{data.title}}</li>
+                                                    <li>Count: {{data.count}}</li>
+                                                    <li>Price: {{data.price}}</li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p><strong>Model:</strong></p>
+                                                <ul class="list-unstyled">
+                                                    <li>Name: {{model.name}}</li>
+                                                    <li>Email: {{model.email}}</li>
+                                                    <li>Status: {{model.status}}</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Pipe Formatting -->
+                                    <div class="test-section">
+                                        <h6 class="text-primary">Pipe Formatting</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <p><strong>String Pipes:</strong></p>
+                                                <div class="pipe-example">
+                                                    {{data.title|uppercase}} <span class="text-muted">(uppercase)</span>
+                                                </div>
+                                                <div class="pipe-example">
+                                                    {{model.name|capitalize}} <span class="text-muted">(capitalize)</span>
+                                                </div>
+                                                <div class="pipe-example">
+                                                    {{model.email|lowercase}} <span class="text-muted">(lowercase)</span>
+                                                </div>
+                                                <div class="pipe-example">
+                                                    {{data.longText|truncate(20)}} <span class="text-muted">(truncate)</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p><strong>Number & Date Pipes:</strong></p>
+                                                <div class="pipe-example">
+                                                    {{data.price|currency}} <span class="text-muted">(currency)</span>
+                                                </div>
+                                                <div class="pipe-example">
+                                                    {{model.discount|percent}} <span class="text-muted">(percent)</span>
+                                                </div>
+                                                <div class="pipe-example">
+                                                    {{model.created|date("MMM DD, YYYY")}} <span class="text-muted">(date)</span>
+                                                </div>
+                                                <div class="pipe-example">
+                                                    {{model.created|relative}} <span class="text-muted">(relative)</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Nested Data with Pipes -->
+                                    <div class="test-section">
+                                        <h6 class="text-primary">Nested Data & Arrays</h6>
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Product</th>
+                                                    <th>Price</th>
+                                                    <th>Quantity</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {{#data.items}}
+                                                <tr>
+                                                    <td>{{name|capitalize}}</td>
+                                                    <td>{{price|currency}}</td>
+                                                    <td>{{quantity}}</td>
+                                                    <td>
+                                                        <span class="badge bg-{{status|badge}}">
+                                                            {{status|uppercase}}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                                {{/data.items}}
+                                            </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <th colspan="2">Total:</th>
+                                                    <th colspan="2">{{getTotal|currency}}</th>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+
+                                    <!-- Function Calls with Pipes -->
+                                    <div class="test-section">
+                                        <h6 class="text-primary">Function Calls</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <p>Status: <span class="badge bg-{{getStatusColor}}">{{getStatus|uppercase}}</span></p>
+                                                <p>Button Class: <code>{{getButtonClass}}</code></p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p>Full Name: {{getFullName|capitalize}}</p>
+                                                <p>Summary: {{getSummary|truncate(50)}}</p>
+                                            </div>
+                                        </div>
+                                        <button class="{{getButtonClass}}">
+                                            {{getButtonText|uppercase}}
+                                        </button>
+                                    </div>
+
+                                    <!-- Complex Nested Access -->
+                                    <div class="test-section">
+                                        <h6 class="text-primary">Complex Nested Access</h6>
+                                        <ul class="list-unstyled">
+                                            <li>User City: {{data.user.address.city|uppercase}}</li>
+                                            <li>First Item: {{data.items.0.name|capitalize}}</li>
+                                            <li>Settings Theme: {{model.settings.theme|capitalize}}</li>
+                                            <li>Nested Value: {{model.settings.notifications.email|yesno}}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        `,
+                        });
+                    }
+
+                    getTitle() {
+                        return "Namespace & Pipe Test View";
+                    }
+
+                    getStatus() {
+                        return this.model?.get("status") || "inactive";
+                    }
+
+                    getStatusColor() {
+                        const status = this.getStatus();
+                        return status === "active" ? "success" : "secondary";
+                    }
+
+                    getButtonClass() {
+                        return "btn btn-primary btn-sm mt-2";
+                    }
+
+                    getButtonText() {
+                        return `Click me (Count: ${this.data.count || 0})`;
+                    }
+
+                    getFullName() {
+                        const model = this.model;
+                        if (!model) return "No Name";
+                        return `${model.get("firstName")} ${model.get("lastName")}`;
+                    }
+
+                    getSummary() {
+                        return "This is a comprehensive test of the MOJO Framework namespace and pipe system, demonstrating various formatting options and data access patterns.";
+                    }
+
+                    getTotal() {
+                        if (!this.data.items) return 0;
+                        return this.data.items.reduce(
+                            (sum, item) => sum + item.price * item.quantity,
+                            0,
+                        );
+                    }
+                }
+
+                // Create test data
+                log("Creating test data...", "info");
+
+                const model = new Model({
+                    firstName: "john",
+                    lastName: "doe",
+                    name: "john doe",
+                    email: "JOHN.DOE@EXAMPLE.COM",
+                    status: "active",
+                    discount: 0.15,
+                    created: new Date("2024-01-15T10:30:00Z"),
+                    settings: {
+                        theme: "dark",
+                        notifications: {
+                            email: true,
+                            sms: false,
+                        },
+                    },
+                });
+
+                const view = new TestView({
+                    id: "test-view",
+                    data: {
+                        title: "test dashboard",
+                        count: 42,
+                        price: 199.99,
+                        longText:
+                            "This is a very long text that should be truncated to demonstrate the truncate pipe functionality",
+                        user: {
+                            address: {
+                                city: "new york",
+                                zip: "10001",
+                            },
+                        },
+                        items: [
+                            { name: "product alpha", price: 29.99, quantity: 2, status: "active" },
+                            { name: "product beta", price: 39.99, quantity: 1, status: "pending" },
+                            { name: "product gamma", price: 49.99, quantity: 3, status: "active" },
+                        ],
+                    },
+                });
+
+                log("Setting model on view...", "info");
+                view.setModel(model);
+
+                log("Rendering view...", "info");
+                await view.render();
+
+                // Test direct access with pipes
+                log("\n=== Testing Direct Access with Pipes ===", "success");
+
+                log("Model Tests:", "pipe");
+                log(`  model.get('name'): "${model.get("name")}"`, "info");
+                log(`  model.get('name|uppercase'): "${model.get("name|uppercase")}"`, "pipe");
+                log(`  model.get('email|lowercase'): "${model.get("email|lowercase")}"`, "pipe");
+                log(`  model.get('discount|percent'): "${model.get("discount|percent")}"`, "pipe");
+                log(
+                    `  model.get('created|date("YYYY-MM-DD")'): "${model.get('created|date("YYYY-MM-DD")')}"`,
+                    "pipe",
+                );
+
+                log("\nView Tests:", "pipe");
+                log(`  view.get('data.title'): "${view.get("data.title")}"`, "info");
+                log(
+                    `  view.get('data.title|uppercase'): "${view.get("data.title|uppercase")}"`,
+                    "pipe",
+                );
+                log(
+                    `  view.get('data.price|currency'): "${view.get("data.price|currency")}"`,
+                    "pipe",
+                );
+                log(
+                    `  view.get('model.name|capitalize'): "${view.get("model.name|capitalize")}"`,
+                    "pipe",
+                );
+                log(`  view.get('getStatus'): "${view.get("getStatus")}"`, "info");
+                log(
+                    `  view.get('getStatus|uppercase'): "${view.get("getStatus|uppercase")}"`,
+                    "pipe",
+                );
+
+                log("\nNested Access:", "pipe");
+                log(
+                    `  view.get('data.user.address.city'): "${view.get("data.user.address.city")}"`,
+                    "info",
+                );
+                log(
+                    `  view.get('data.user.address.city|uppercase'): "${view.get("data.user.address.city|uppercase")}"`,
+                    "pipe",
+                );
+                log(`  view.get('data.items.0.name'): "${view.get("data.items.0.name")}"`, "info");
+                log(
+                    `  view.get('data.items.0.name|capitalize'): "${view.get("data.items.0.name|capitalize")}"`,
+                    "pipe",
+                );
+                log(
+                    `  view.get('data.items.0.price|currency'): "${view.get("data.items.0.price|currency")}"`,
+                    "pipe",
+                );
+
+                log("\n=== View Rendered Successfully! ===", "success");
+
+                // Interactive buttons
+                document.getElementById("update-model").addEventListener("click", () => {
+                    log("\n=== Updating Model ===", "warning");
+                    const newName = model.get("name") === "john doe" ? "jane smith" : "john doe";
+                    model.set({
+                        name: newName,
+                        firstName: newName.split(" ")[0],
+                        lastName: newName.split(" ")[1],
+                        created: new Date(),
+                    });
+                    log(`Model name updated to: ${newName}`, "warning");
+                });
+
+                document.getElementById("add-item").addEventListener("click", () => {
+                    log("\n=== Adding Item ===", "warning");
+                    const items = view.data.items;
+                    const newItem = {
+                        name: `product ${String.fromCharCode(97 + items.length)}`,
+                        price: Math.random() * 100,
+                        quantity: Math.floor(Math.random() * 5) + 1,
+                        status: Math.random() > 0.5 ? "active" : "pending",
+                    };
+                    items.push(newItem);
+                    view.updateData({ items: [...items] });
+                    log(`Added item: ${newItem.name} - $${newItem.price.toFixed(2)}`, "warning");
+                });
+
+                document.getElementById("toggle-status").addEventListener("click", () => {
+                    log("\n=== Toggling Status ===", "warning");
+                    const currentStatus = model.get("status");
+                    const newStatus = currentStatus === "active" ? "inactive" : "active";
+                    model.set("status", newStatus);
+                    log(`Status changed from ${currentStatus} to ${newStatus}`, "warning");
+                });
+
+                document.getElementById("test-pipes").addEventListener("click", () => {
+                    log("\n=== Additional Pipe Tests ===", "pipe");
+
+                    // Test various pipes
+                    const testValue = "hello world";
+                    log(`String: "${testValue}"`, "info");
+                    log(`  uppercase: "${view.get("data.title|uppercase")}"`, "pipe");
+                    log(`  capitalize: "${view.get("data.title|capitalize")}"`, "pipe");
+
+                    const price = 123.456;
+                    log(`\nNumber: ${price}`, "info");
+                    log(`  currency: "${model.get("discount|percent")}"`, "pipe");
+                    log(`  number(2): "${view.get("data.count|number(2)")}"`, "pipe");
+
+                    log("\nChained pipes:", "info");
+                    log(
+                        `  'data.longText|uppercase|truncate(15)': "${view.get("data.longText|uppercase|truncate(15)")}"`,
+                        "pipe",
+                    );
+
+                    log("\nBoolean formatters:", "info");
+                    log(
+                        `  'model.settings.notifications.email|yesno': "${view.get("model.settings.notifications.email|yesno")}"`,
+                        "pipe",
+                    );
+                    log(
+                        `  'model.settings.notifications.sms|boolean': "${view.get("model.settings.notifications.sms|boolean")}"`,
+                        "pipe",
+                    );
+                });
+
+                document.getElementById("clear-console").addEventListener("click", () => {
+                    consoleEl.innerHTML = "";
+                    log("Console cleared", "info");
+                });
+            } catch (error) {
+                log(`Error: ${error.message}`, "error");
+                console.error(error);
+            }
+        </script>
+    </body>
+</html>

@@ -32,13 +32,36 @@ NAVIGATION SYSTEM:
 - Router must be globally accessible: window.MOJO.router = router
 - View class handles navigation automatically
 - Never use: href="#" with data-action="navigate"
+- when adding a page to router use the page.name
 
 COMPONENT PATTERNS:
 View class: Base component with lifecycle (onInit, onBeforeRender, onAfterRender, onBeforeMount, onAfterMount, onBeforeDestroy)
+A View has children.  A children should have access to the parent view.
+If a View does not have a parent then it should assume the body in the DOM is its parent.
+A view should have a unique id and this id should be used to find the element on the parent to attach itself to.
+
+Parent View:
+
+class ParentView extends View {
+
+}
+
+class ChildView extends View {
+
+}
+
+let parent = new ParentView({id: 'parent_view'});
+parent.addChild(new ChildView({id: 'child_view'}));
+
+because parent does not have a parent it will look for "#parent_view" in the document body to attach itself to then render all its children.  The parent will look inside its DOM to find the element with the id "child_view" to attach the child view to, if it is not found it will just append the child view to the parent.
+
+A view can have a model via setModel(model) method.  It will register for any changes to the model and update itself accordingly by calling the render().
+
 Page class: Extends View with routing, implements on_params(params, query)
 Action handlers: async onActionActionName(event, element) or async on_action_actionname()
 Templates: Use Mustache.js from src/utils/mustache.js
 Data updates: updateData() method triggers re-render
+code style should follow JS guidelines and use camelCase.
 
 LAYOUT COMPONENTS:
 Always use framework components for layouts:
@@ -81,6 +104,6 @@ CURRENT FOCUS:
 - High test coverage
 - Clean example applications
 
-Remember: we always have the dev server running in the background on localhost:3000.
+Remember: we always have the dev server running in the background on localhost:3000.  DO NOT RUN dev server yourself.
 
 Remember: MOJO prioritizes developer experience, maintainability, and professional business applications with functional interfaces over decoration.

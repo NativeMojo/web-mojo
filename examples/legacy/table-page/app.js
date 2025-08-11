@@ -171,7 +171,7 @@ const filters = {
 class DataTablePage extends TablePage {
     constructor(options = {}) {
         super({
-            page_name: 'DataTable',
+            pageName: 'DataTable',
             route: '/',
             title: 'Data Management',
             description: 'Browse and manage your data with URL-synchronized pagination, sorting, and filtering',

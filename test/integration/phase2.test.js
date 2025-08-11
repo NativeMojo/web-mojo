@@ -9,7 +9,7 @@ module.exports = async function(testContext) {
     
     // Import Phase 2 components
     const MOJO = require('../../src/mojo.js').default;
-    const RestModel = require('../../src/core/RestModel.js').default;
+    const Model = require('../../src/core/Model.js').default;
     const DataList = require('../../src/core/DataList.js').default;
     const Rest = require('../../src/core/Rest.js').default;
     
@@ -72,7 +72,7 @@ module.exports = async function(testContext) {
             });
 
             it('should register and create models', () => {
-                class TestUser extends RestModel {
+                class TestUser extends Model {
                     static endpoint = '/api/users';
                 }
 
@@ -85,7 +85,7 @@ module.exports = async function(testContext) {
             });
 
             it('should register and create collections', () => {
-                class TestUser extends RestModel {
+                class TestUser extends Model {
                     static endpoint = '/api/users';
                 }
 
@@ -105,7 +105,7 @@ module.exports = async function(testContext) {
             });
 
             it('should include Phase 2 stats in framework stats', () => {
-                class TestUser extends RestModel {}
+                class TestUser extends Model {}
                 class TestUsers extends DataList {}
 
                 app.registerModel('User', TestUser);
@@ -129,7 +129,7 @@ module.exports = async function(testContext) {
             let user;
 
             beforeEach(() => {
-                class TestUser extends RestModel {
+                class TestUser extends Model {
                     static endpoint = '/api/users';
                     static validations = {
                         name: [{ required: true, message: 'Name is required' }],
@@ -231,7 +231,7 @@ module.exports = async function(testContext) {
             let collection;
 
             beforeEach(() => {
-                class TestUser extends RestModel {
+                class TestUser extends Model {
                     static endpoint = '/api/users';
                     
                     isActive() {
@@ -374,7 +374,7 @@ module.exports = async function(testContext) {
             it('should use auth token in model requests', async () => {
                 app.rest.setAuthToken('test-token-456');
 
-                class User extends RestModel {
+                class User extends Model {
                     static endpoint = '/api/users';
                 }
 
@@ -403,7 +403,7 @@ module.exports = async function(testContext) {
             let user;
 
             beforeEach(() => {
-                class TestUser extends RestModel {
+                class TestUser extends Model {
                     static endpoint = '/api/users';
                 }
                 User = TestUser;
@@ -465,7 +465,7 @@ module.exports = async function(testContext) {
             let User;
 
             beforeEach(() => {
-                class TestUser extends RestModel {
+                class TestUser extends Model {
                     static endpoint = '/api/users';
                 }
                 User = TestUser;
@@ -524,7 +524,7 @@ module.exports = async function(testContext) {
 
         describe('Data Validation and Transformation', () => {
             it('should validate data across model and collection operations', async () => {
-                class ValidatedUser extends RestModel {
+                class ValidatedUser extends Model {
                     static endpoint = '/api/users';
                     static validations = {
                         name: [{ required: true, message: 'Name is required' }],
@@ -583,7 +583,7 @@ module.exports = async function(testContext) {
 
         describe('Memory Management and Cleanup', () => {
             it('should properly clean up models and collections', async () => {
-                class TestUser extends RestModel {
+                class TestUser extends Model {
                     static endpoint = '/api/users';
                 }
 
@@ -620,7 +620,7 @@ module.exports = async function(testContext) {
 
         describe('Complete CRUD Workflow', () => {
             it('should perform complete CRUD workflow with validation and events', async () => {
-                class User extends RestModel {
+                class User extends Model {
                     static endpoint = '/api/users';
                     static validations = {
                         name: [{ required: true }],

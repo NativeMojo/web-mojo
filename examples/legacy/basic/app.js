@@ -48,7 +48,7 @@ class WelcomeView extends View {
 class HomePage extends Page {
     constructor(options = {}) {
         super({
-            page_name: 'home',
+            pageName: 'home',
             route: '/',
             template: `
                 <div class="home-page">
@@ -86,11 +86,11 @@ class HomePage extends Page {
     }
 
     // Design doc lifecycle methods
-    on_init() {
+    onInit() {
         console.log('HomePage: Initializing...');
     }
 
-    on_params(params, query) {
+    onParams(params, query) {
         console.log('HomePage: Route params:', params, 'Query:', query);
     }
 
@@ -115,7 +115,7 @@ class HomePage extends Page {
 
     async on_action_showInfo() {
         const info = {
-            pageName: this.page_name,
+            pageName: this.pageName,
             route: this.route,
             hasChildren: this.getChildren().length > 0,
             viewCount: this.getChildren().length
@@ -137,7 +137,7 @@ class AboutPage extends Page {
     constructor(options = {}) {
         console.log('📄 AboutPage: Constructor called with options:', options);
         super({
-            page_name: 'about',
+            pageName: 'about',
             route: '/about',
             template: `
                 <div class="about-page">
@@ -195,7 +195,7 @@ class AboutPage extends Page {
         });
     }
 
-    on_init() {
+    onInit() {
         console.log('📄 AboutPage: on_init called - page fully initialized');
     }
 

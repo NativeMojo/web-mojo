@@ -5,7 +5,7 @@ export default class TemplatesPage extends Page {
     constructor(options = {}) {
         super({
             ...options,
-            page_name: 'templates',
+            pageName: 'templates',
             title: 'Templates'
         });
         this.sampleData = {};

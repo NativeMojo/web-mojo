@@ -33,12 +33,15 @@ open http://localhost:3000/examples/
 - [**Development Setup**](development/DEVELOPMENT.md) - Development environment and workflow
 - [**Debug Tools**](development/DEBUG-COMPLETE.md) - Debugging tools and techniques
 - [**Build System**](development/build.md) - Vite build system and processes
+- [**Unified Data Access**](improvements/Unified-Data-Access.md) - Consistent data access with pipe formatting
+- [**Data Formatter Design**](improvements/DataFormatter-Design.md) - Data formatting system architecture
 
 ### 📈 Phase History
 **Complete timeline of framework evolution**
 
 - [**Phase 1 Complete**](phase-history/PHASE1-COMPLETE.md) - Core architecture implementation
 - [**Phase 2 Complete**](phase-history/PHASE2-COMPLETE.md) - Data layer implementation  
+- [**Phase 2.1 Unified Data**](phase-history/PHASE2.1-UNIFIED-DATA.md) - Unified data access with pipes
 - [**Phase 2 Summary**](phase-history/PHASE2-SUMMARY.md) - Quick reference for Phase 2
 - [**Phase 2 Quick Reference**](phase-history/PHASE2-QUICK-REFERENCE.md) - API reference
 
@@ -65,7 +68,7 @@ open http://localhost:3000/examples/
 - [**Sidebar Navigation**](examples/sidebar-nav.md) - Advanced sidebar example
 - [**Examples Cleanup**](examples/EXAMPLES-CLEAN.md) - Example organization
 
-## 🎯 Framework Overview
+### 🎯 Framework Overview
 
 MOJO is designed around these core principles:
 
@@ -75,6 +78,7 @@ MOJO is designed around these core principles:
 - **🔄 Component Lifecycle** - Predictable init → render → mount → destroy
 - **🎨 Template Engine** - Mustache.js for dynamic content
 - **🛣️ Modern Routing** - SEO-friendly navigation with copy-link support
+- **🔧 Unified Data Access** - Consistent data retrieval with pipe formatting everywhere
 
 ## 📋 Current Status
 
@@ -92,6 +96,14 @@ MOJO is designed around these core principles:
 - Validation system
 - Search, filtering, and sorting
 - Real-time data updates
+
+### ✅ Phase 2.1: Unified Data Access (Complete)
+- Universal `get()` method for all data access
+- Pipe formatting everywhere (templates, JavaScript, nested contexts)
+- Automatic data wrapping for plain objects
+- Deep namespace access with dot notation
+- Seamless Mustache template integration
+- DataFormatter enhancements and bug fixes
 
 ### 🚧 Phase 3: Advanced UI Components (Planned)
 - Advanced Table component
@@ -113,9 +125,13 @@ docs/
 │   ├── DEVELOPMENT.md        # Development setup
 │   ├── DEBUG-COMPLETE.md     # Debug tools
 │   └── build.md              # Build system
+├── improvements/             # Framework improvements
+│   ├── Unified-Data-Access.md  # Unified data access pattern
+│   └── DataFormatter-Design.md # Data formatting system
 ├── phase-history/            # Historical documentation
 │   ├── PHASE1-COMPLETE.md    # Phase 1 completion
 │   ├── PHASE2-COMPLETE.md    # Phase 2 completion
+│   ├── PHASE2.1-UNIFIED-DATA.md # Phase 2.1 unified data access
 │   ├── PHASE2-SUMMARY.md     # Phase 2 summary
 │   └── PHASE2-QUICK-REFERENCE.md
 ├── components/               # Component documentation
@@ -178,5 +194,5 @@ npm run serve:examples  # Serve examples directory
 
 ---
 
-**MOJO Framework v2.0.0** - Modern JavaScript UI Framework  
+**MOJO Framework v2.1.0** - Modern JavaScript UI Framework  
 Built with ❤️ and modern web standards

@@ -11,7 +11,7 @@ export default class ModelsPage extends Page {
     constructor(options = {}) {
         super({
             ...options,
-            page_name: 'models',
+            pageName: 'models',
             title: 'Models & Data Management'
         });
         

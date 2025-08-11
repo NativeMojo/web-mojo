@@ -70,7 +70,7 @@ module.exports = async function() {
                 class TestPage extends Page {
                     constructor() {
                         super({
-                            page_name: 'Test',
+                            pageName: 'Test',
                             route: '/test',
                             pageIcon: 'bi bi-test',
                             displayName: 'Test Page'
@@ -100,7 +100,7 @@ module.exports = async function() {
                 class HomePage extends Page {
                     constructor() {
                         super({
-                            page_name: 'Home',
+                            pageName: 'Home',
                             route: '/',
                             pageIcon: 'bi bi-house'
                         });
@@ -110,7 +110,7 @@ module.exports = async function() {
                 class AboutPage extends Page {
                     constructor() {
                         super({
-                            page_name: 'About',
+                            pageName: 'About',
                             route: '/about',
                             pageIcon: 'bi bi-info-circle'
                         });
@@ -143,7 +143,7 @@ module.exports = async function() {
                 
                 class Page1 extends Page {
                     constructor() {
-                        super({ page_name: 'Page1', route: '/page1' });
+                        super({ pageName: 'Page1', route: '/page1' });
                     }
                     async onActivate() {
                         await super.onActivate();
@@ -157,7 +157,7 @@ module.exports = async function() {
                 
                 class Page2 extends Page {
                     constructor() {
-                        super({ page_name: 'Page2', route: '/page2' });
+                        super({ pageName: 'Page2', route: '/page2' });
                     }
                     async onActivate() {
                         await super.onActivate();
@@ -194,7 +194,7 @@ module.exports = async function() {
                 class RichPage extends Page {
                     constructor() {
                         super({
-                            page_name: 'Dashboard',
+                            pageName: 'Dashboard',
                             route: '/dashboard',
                             pageIcon: 'bi bi-speedometer2',
                             displayName: 'Analytics Dashboard',
@@ -221,7 +221,7 @@ module.exports = async function() {
                 class TitledPage extends Page {
                     constructor() {
                         super({
-                            page_name: 'Settings',
+                            pageName: 'Settings',
                             route: '/settings',
                             title: 'Settings - MyApp'
                         });
@@ -250,7 +250,7 @@ module.exports = async function() {
                 class UserPage extends Page {
                     constructor() {
                         super({
-                            page_name: 'User',
+                            pageName: 'User',
                             route: '/users/:id'
                         });
                     }
@@ -278,14 +278,14 @@ module.exports = async function() {
                 
                 class StatePage1 extends Page {
                     constructor() {
-                        super({ page_name: 'State1', route: '/state1' });
+                        super({ pageName: 'State1', route: '/state1' });
                         page1Instance = this;
                     }
                 }
                 
                 class StatePage2 extends Page {
                     constructor() {
-                        super({ page_name: 'State2', route: '/state2' });
+                        super({ pageName: 'State2', route: '/state2' });
                         page2Instance = this;
                     }
                 }

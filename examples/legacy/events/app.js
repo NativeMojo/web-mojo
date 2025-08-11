@@ -709,7 +709,7 @@ class EventStatsView extends View {
 class EventsExamplePage extends Page {
     constructor(options = {}) {
         super({
-            page_name: 'events-example',
+            pageName: 'events-example',
             route: '/events',
             template: `
                 <div class="events-example-page">
@@ -781,7 +781,7 @@ class EventsExamplePage extends Page {
         this.statsView = null;
     }
 
-    on_init() {
+    onInit() {
         console.log('EventsExamplePage: Initializing events example...');
     }
 

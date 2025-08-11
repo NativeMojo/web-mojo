@@ -10,75 +10,66 @@ class Page extends View {
     // Set default tag name for pages
     options.tagName = options.tagName || 'main';
     options.className = options.className || 'mojo-page';
-    
+
     // Set page ID based on page name
-    const pageName = options.page_name || '';
+    const pageName = options.pageName || '';
     if (pageName && !options.id) {
       options.id = 'page_' + pageName.toLowerCase().replace(/\s+/g, '_');
     }
-    
+
     super(options);
-    
+
     // Core page properties from design doc
-    this.page_name = options.page_name || this.constructor.page_name || '';
+    this.pageName = options.pageName || this.constructor.pageName || '';
     this.route = options.route || this.constructor.route || '';
-    
+
     // Set page ID if not already set and we have a page_name from constructor
-    if (!this.id && this.constructor.page_name && !options.page_name) {
-      this.id = 'page_' + this.constructor.page_name.toLowerCase().replace(/\s+/g, '_');
+    if (!this.id && this.constructor.pageName && !options.pageName) {
+      this.id = 'page_' + this.constructor.pageName.toLowerCase().replace(/\s+/g, '_');
     }
-    
+
     // Page metadata for event system
     this.pageIcon = options.pageIcon || this.constructor.pageIcon || 'bi bi-file-text';
-    this.displayName = options.displayName || this.constructor.displayName || this.page_name || '';
+    this.displayName = options.displayName || this.constructor.displayName || this.pageName || '';
     this.pageDescription = options.pageDescription || this.constructor.pageDescription || '';
-    
+
     // Routing state
     this.params = {};
     this.query = {};
     this.matched = false;
     this.isActive = false;
-    
+
     // Page-specific options
     this.pageOptions = {
-      title: options.title || this.page_name || 'Untitled Page',
+      title: options.title || this.pageName || 'Untitled Page',
       description: options.description || '',
       requiresAuth: options.requiresAuth || false,
       ...options.pageOptions
     };
-    
-    console.log(`Page ${this.page_name} constructed with route: ${this.route}`);
+
+    console.log(`Page ${this.pageName} constructed with route: ${this.route}`);
   }
 
   /**
    * Initialize page - called during View construction
-   * Calls the design doc's on_init() method
+   * Calls the design doc's onInit() method
    */
   onInit() {
     super.onInit();
-    
-    // Call design doc lifecycle method
-    this.on_init();
-  }
 
-  /**
-   * Design doc lifecycle method - override in subclasses
-   */
-  on_init() {
-    console.log(`Initializing page: ${this.page_name}`);
   }
 
   /**
    * Handle route parameters - from design doc
    * @param {object} params - Route parameters
-   * @param {object} query - Query string parameters  
+   * @param {object} query - Query string parameters
    */
-  on_params(params = {}, query = {}) {
+  onParams(params = {}, query = {}) {
     this.params = params;
     this.query = query;
-    
-    console.log(`Page ${this.page_name} received params:`, params, 'query:', query);
-    
+
+    console.log(`Page ${this.pageName} received params:`, params, 'query:', query);
+
     // Update page data with params and query
     this.updateData({
       ...this.data,
@@ -88,38 +79,38 @@ class Page extends View {
   }
 
   /**
-   * Called when page becomes active
-   * Override in subclasses for custom activation logic
+   * Called when entering this page (before render)
+   * Override this method for initialization logic
    */
-  async onActivate() {
+  async onEnter() {
     this.isActive = true;
-    
+
     // Set page title if provided
     if (this.pageOptions && this.pageOptions.title && typeof document !== 'undefined') {
       document.title = this.pageOptions.title;
     }
-    
+
     // Emit activation event
-    this.emit('activated', { 
-      page: this.getMetadata() 
+    this.emit('activated', {
+      page: this.getMetadata()
     });
-    
-    console.log(`Page ${this.page_name} activated`);
+
+    console.log(`Page ${this.pageName} entered`);
   }
 
   /**
-   * Called when page becomes inactive
-   * Override in subclasses for cleanup logic
+   * Called when leaving this page (before cleanup)
+   * Override this method for cleanup logic like removing listeners, clearing timers, etc.
    */
-  async onDeactivate() {
+  async onExit() {
     this.isActive = false;
-    
+
     // Emit deactivation event
-    this.emit('deactivated', { 
-      page: this.getMetadata() 
+    this.emit('deactivated', {
+      page: this.getMetadata()
     });
-    
-    console.log(`Page ${this.page_name} deactivated`);
+
+    console.log(`Page ${this.pageName} exiting`);
   }
 
   /**
@@ -128,8 +119,8 @@ class Page extends View {
    */
   getMetadata() {
     return {
-      name: this.page_name,
-      displayName: this.displayName || this.page_name,
+      name: this.pageName,
+      displayName: this.displayName || this.pageName,
       icon: this.pageIcon,
       description: this.pageDescription,
       route: this.route,
@@ -140,16 +131,16 @@ class Page extends View {
   /**
    * Handle hello action - example from design doc
    */
-  async on_action_hello() {
-    console.log(`Hello action triggered on page: ${this.page_name}`);
-    this.showSuccess('Hello from ' + this.page_name);
+  async onActionHello() {
+    console.log(`Hello action triggered on page: ${this.pageName}`);
+    this.showSuccess('Hello from ' + this.pageName);
   }
 
   /**
-   * Handle default action - fallback from design doc  
+   * Handle default action - fallback from design doc
    */
-  async on_action_default() {
-    console.log(`Default action triggered on page: ${this.page_name}`);
+  async onActionDefault() {
+    console.log(`Default action triggered on page: ${this.pageName}`);
   }
 
   /**
@@ -163,10 +154,10 @@ class Page extends View {
     if (typeof window !== 'undefined' && window.MOJO?.router) {
       return window.MOJO.router.navigate(route, { params, ...options });
     }
-    
+
     // Fallback to manual navigation
     const url = this.buildUrl(route, params);
-    
+
     if (options.replace) {
       window.location.replace(url);
     } else {
@@ -182,13 +173,13 @@ class Page extends View {
    */
   buildUrl(route, params = {}) {
     let url = route;
-    
+
     // Replace route parameters like :id with actual values
     Object.entries(params).forEach(([key, value]) => {
       url = url.replace(`:${key}`, encodeURIComponent(value));
       url = url.replace(`{${key}}`, encodeURIComponent(value));
     });
-    
+
     return url;
   }
 
@@ -228,22 +219,22 @@ class Page extends View {
     if (!this.route) {
       return false;
     }
-    
+
     const regex = this.routeToRegex(this.route);
     const matches = path.match(regex);
-    
+
     if (!matches) {
       return false;
     }
-    
+
     // Extract parameters
     const params = {};
     const paramNames = this.extractParamNames(this.route);
-    
+
     paramNames.forEach((name, index) => {
       params[name] = matches[index + 1];
     });
-    
+
     return {
       route: this.route,
       params,
@@ -262,7 +253,7 @@ class Page extends View {
       .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
       .replace(/\\:\w+/g, '([^/]+)')  // :param -> capturing group
       .replace(/\\\{(\w+)\\\}/g, '([^/]+)'); // {param} -> capturing group
-    
+
     return new RegExp(`^${pattern}$`);
   }
 
@@ -273,7 +264,7 @@ class Page extends View {
    */
   extractParamNames(route) {
     const params = [];
-    
+
     // Match :param patterns
     const colonParams = route.match(/:(\w+)/g);
     if (colonParams) {
@@ -281,15 +272,15 @@ class Page extends View {
         params.push(param.substring(1)); // Remove the ':'
       });
     }
-    
-    // Match {param} patterns  
+
+    // Match {param} patterns
     const braceParams = route.match(/\{(\w+)\}/g);
     if (braceParams) {
       braceParams.forEach(param => {
         params.push(param.substring(1, param.length - 1)); // Remove { }
       });
     }
-    
+
     return params;
   }
 
@@ -301,13 +292,13 @@ class Page extends View {
     if (typeof document === 'undefined') {
       return;
     }
-    
+
     // Set title
     if (meta.title) {
       document.title = meta.title;
       this.pageOptions.title = meta.title;
     }
-    
+
     // Set description
     if (meta.description) {
       let descMeta = document.querySelector('meta[name="description"]');
@@ -319,7 +310,7 @@ class Page extends View {
       descMeta.content = meta.description;
       this.pageOptions.description = meta.description;
     }
-    
+
     // Set other meta tags
     Object.entries(meta).forEach(([key, value]) => {
       if (key !== 'title' && key !== 'description') {
@@ -340,10 +331,10 @@ class Page extends View {
    */
   async getViewData() {
     const baseData = await super.getViewData();
-    
+
     return {
       ...baseData,
-      page_name: this.page_name,
+      pageName: this.pageName,
       route: this.route,
       params: this.params,
       query: this.query,
@@ -355,14 +346,14 @@ class Page extends View {
 
   /**
    * Handle action dispatch - extends View's action handling
-   * @param {string} action - Action name  
+   * @param {string} action - Action name
    * @param {Event} event - DOM event
    * @param {HTMLElement} element - Source element
    */
   async handleAction(action, event, element) {
     // First try page-specific action handlers using design doc naming
     const pageMethodName = `on_action_${action}`;
-    
+
     if (typeof this[pageMethodName] === 'function') {
       try {
         await this[pageMethodName](event, element);
@@ -373,7 +364,7 @@ class Page extends View {
         return;
       }
     }
-    
+
     // Fallback to View's action handling
     await super.handleAction(action, event, element);
   }
@@ -384,7 +375,7 @@ class Page extends View {
    */
   showError(message) {
     super.showError(message);
-    
+
     // Page-specific error display can be implemented here
     if (this.element) {
       // Example: Add error to page
@@ -394,10 +385,10 @@ class Page extends View {
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       `;
-      
+
       // Insert at top of page
       this.element.insertBefore(errorDiv, this.element.firstChild);
-      
+
       // Auto-remove after 5 seconds
       setTimeout(() => {
         if (errorDiv.parentNode) {
@@ -413,7 +404,7 @@ class Page extends View {
    */
   showSuccess(message) {
     super.showSuccess(message);
-    
+
     // Page-specific success display
     if (this.element) {
       const successDiv = document.createElement('div');
@@ -422,10 +413,10 @@ class Page extends View {
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       `;
-      
+
       // Insert at top of page
       this.element.insertBefore(successDiv, this.element.firstChild);
-      
+
       // Auto-remove after 3 seconds
       setTimeout(() => {
         if (successDiv.parentNode) {
@@ -440,7 +431,7 @@ class Page extends View {
    */
   async onBeforeRender() {
     await super.onBeforeRender();
-    
+
     // Set page metadata before rendering
     this.setMeta({
       title: this.pageOptions.title,
@@ -453,10 +444,10 @@ class Page extends View {
    */
   async onAfterMount() {
     await super.onAfterMount();
-    
+
     // Add page-specific class to body
-    if (typeof document !== 'undefined' && this.page_name) {
-      document.body.classList.add(`page-${this.page_name.toLowerCase().replace(/\s+/g, '-')}`);
+    if (typeof document !== 'undefined' && this.pageName) {
+      document.body.classList.add(`page-${this.pageName.toLowerCase().replace(/\s+/g, '-')}`);
     }
   }
 
@@ -465,10 +456,10 @@ class Page extends View {
    */
   async onBeforeDestroy() {
     await super.onBeforeDestroy();
-    
+
     // Remove page-specific class from body
-    if (typeof document !== 'undefined' && this.page_name) {
-      document.body.classList.remove(`page-${this.page_name.toLowerCase().replace(/\s+/g, '-')}`);
+    if (typeof document !== 'undefined' && this.pageName) {
+      document.body.classList.remove(`page-${this.pageName.toLowerCase().replace(/\s+/g, '-')}`);
     }
   }
 
@@ -479,12 +470,12 @@ class Page extends View {
    */
   static create(options = {}) {
     const page = new this(options);
-    
+
     // Auto-register with global router if available
     if (typeof window !== 'undefined' && window.MOJO?.router && page.route) {
       window.MOJO.router.addRoute(page.route, page);
     }
-    
+
     return page;
   }
 
@@ -502,12 +493,12 @@ class Page extends View {
         });
       }
     }
-    
+
     // Copy static properties
     DefinedPage.template = definition.template;
-    DefinedPage.page_name = definition.page_name;
+    DefinedPage.pageName = definition.pageName;
     DefinedPage.route = definition.route;
-    
+
     return DefinedPage;
   }
 }

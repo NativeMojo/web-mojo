@@ -4,7 +4,7 @@ export default class NavigationPage extends Page {
     constructor(options = {}) {
         super({
             ...options,
-            page_name: 'navigation',
+            pageName: 'navigation',
             title: 'Navigation'
         });
         this.navigationHistory = [];
@@ -333,7 +333,7 @@ export default class NavigationPage extends Page {
         }
     }
 
-    on_params(params, query) {
+    onParams(params, query) {
         // Handle incoming parameters
         console.log('NavigationPage received params:', params);
         console.log('NavigationPage received query:', query);

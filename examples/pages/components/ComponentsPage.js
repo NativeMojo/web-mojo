@@ -10,7 +10,7 @@ class ComponentsPage extends Page {
   constructor(options = {}) {
     super({
       ...options,
-      page_name: 'components',
+      pageName: 'components',
       title: 'Components - MOJO Examples'
     });
   }

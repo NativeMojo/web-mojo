@@ -220,7 +220,7 @@ class TestConfig {
                         data: { content: 'Test Content' }
                     },
                     page: {
-                        page_name: 'test-page',
+                        pageName: 'test-page',
                         route: '/test',
                         template: '<div class="test-page">Test Page</div>'
                     }

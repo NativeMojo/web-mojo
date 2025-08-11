@@ -1,26 +1,27 @@
 /**
- * TablesPage - Table component examples
+ * TableExamplesPage - Showcase page demonstrating various Table component features
+ * This is NOT a TablePage implementation - it's a demo page with multiple table examples
  */
 
 import Page from '../../../src/core/Page.js';
 import Table from '../../../src/components/Table.js';
 import Dialog from '../../../src/components/Dialog.js';
 
-class TablesPage extends Page {
+class TableExamplesPage extends Page {
   constructor(options = {}) {
     super({
       ...options,
-      page_name: 'tables',
-      title: 'Tables - MOJO Examples'
+      pageName: 'table-examples',
+      title: 'Table Component Examples - MOJO Showcase'
     });
   }
-  
+
   async getTemplate() {
     return `
       <div class="example-page">
         <h1 class="mb-4">Table Component</h1>
         <p class="lead">Create powerful data tables with sorting, filtering, pagination, and more.</p>
-        
+
         <!-- Basic Table Section -->
         <div class="example-section">
           <div class="example-header">
@@ -32,12 +33,12 @@ class TablesPage extends Page {
             </div>
           </div>
           <p>A simple table with static data and basic features.</p>
-          
+
           <div class="example-demo">
             <div id="basic-table"></div>
           </div>
         </div>
-        
+
         <!-- Sortable Table Section -->
         <div class="example-section">
           <div class="example-header">
@@ -49,12 +50,12 @@ class TablesPage extends Page {
             </div>
           </div>
           <p>Click column headers to sort data.</p>
-          
+
           <div class="example-demo">
             <div id="sortable-table"></div>
           </div>
         </div>
-        
+
         <!-- Searchable & Filterable Section -->
         <div class="example-section">
           <div class="example-header">
@@ -66,12 +67,12 @@ class TablesPage extends Page {
             </div>
           </div>
           <p>Table with search and filter capabilities.</p>
-          
+
           <div class="example-demo">
             <div id="filter-table"></div>
           </div>
         </div>
-        
+
         <!-- Paginated Table Section -->
         <div class="example-section">
           <div class="example-header">
@@ -83,12 +84,12 @@ class TablesPage extends Page {
             </div>
           </div>
           <p>Table with pagination controls.</p>
-          
+
           <div class="example-demo">
             <div id="paginated-table"></div>
           </div>
         </div>
-        
+
         <!-- Custom Rendering Section -->
         <div class="example-section">
           <div class="example-header">
@@ -100,7 +101,7 @@ class TablesPage extends Page {
             </div>
           </div>
           <p>Tables with custom cell rendering and formatting.</p>
-          
+
           <div class="example-demo">
             <div id="custom-table"></div>
           </div>
@@ -108,10 +109,10 @@ class TablesPage extends Page {
       </div>
     `;
   }
-  
+
   async onAfterMount() {
     await super.onAfterMount();
-    
+
     // Create all table demos
     this.createBasicTable();
     this.createSortableTable();
@@ -119,10 +120,10 @@ class TablesPage extends Page {
     this.createPaginatedTable();
     this.createCustomTable();
   }
-  
+
   createBasicTable() {
     const container = this.element.querySelector('#basic-table');
-    
+
     const table = new Table({
       container: container,
       columns: [
@@ -138,14 +139,14 @@ class TablesPage extends Page {
         { id: 4, name: 'Alice Brown', email: 'alice@example.com', role: 'User' }
       ]
     });
-    
+
     table.init();
     table.render();
   }
-  
+
   createSortableTable() {
     const container = this.element.querySelector('#sortable-table');
-    
+
     const table = new Table({
       container: container,
       sortable: true,
@@ -163,14 +164,14 @@ class TablesPage extends Page {
         { name: 'Headphones', price: 89, stock: 25, category: 'Audio' }
       ]
     });
-    
+
     table.init();
     table.render();
   }
-  
+
   createFilterTable() {
     const container = this.element.querySelector('#filter-table');
-    
+
     const table = new Table({
       container: container,
       searchable: true,
@@ -178,8 +179,8 @@ class TablesPage extends Page {
       columns: [
         { key: 'name', title: 'Name', searchable: true },
         { key: 'department', title: 'Department', searchable: true },
-        { 
-          key: 'status', 
+        {
+          key: 'status',
           title: 'Status',
           filter: {
             type: 'select',
@@ -202,14 +203,14 @@ class TablesPage extends Page {
         { name: 'Diana Prince', department: 'Marketing', status: 'active', salary: 70000 }
       ]
     });
-    
+
     table.init();
     table.render();
   }
-  
+
   createPaginatedTable() {
     const container = this.element.querySelector('#paginated-table');
-    
+
     // Generate more data for pagination
     const data = [];
     for (let i = 1; i <= 50; i++) {
@@ -220,7 +221,7 @@ class TablesPage extends Page {
         created: new Date(Date.now() - Math.random() * 10000000000).toLocaleDateString()
       });
     }
-    
+
     const table = new Table({
       container: container,
       paginated: true,
@@ -233,39 +234,39 @@ class TablesPage extends Page {
       ],
       data: data
     });
-    
+
     table.init();
     table.render();
   }
-  
+
   createCustomTable() {
     const container = this.element.querySelector('#custom-table');
-    
+
     const table = new Table({
       container: container,
       columns: [
-        { 
-          key: 'name', 
+        {
+          key: 'name',
           title: 'Product',
           render: (item) => `<strong>${item.name}</strong>`
         },
-        { 
-          key: 'price', 
+        {
+          key: 'price',
           title: 'Price',
           render: (item) => `<span class="text-success">$${item.price.toFixed(2)}</span>`
         },
-        { 
-          key: 'inStock', 
+        {
+          key: 'inStock',
           title: 'Availability',
-          render: (item) => item.inStock ? 
-            '<span class="badge bg-success">In Stock</span>' : 
+          render: (item) => item.inStock ?
+            '<span class="badge bg-success">In Stock</span>' :
             '<span class="badge bg-danger">Out of Stock</span>'
         },
-        { 
-          key: 'rating', 
+        {
+          key: 'rating',
           title: 'Rating',
           render: (item) => {
-            const stars = '★'.repeat(Math.floor(item.rating)) + 
+            const stars = '★'.repeat(Math.floor(item.rating)) +
                          '☆'.repeat(5 - Math.floor(item.rating));
             return `<span style="color: gold;">${stars}</span> (${item.rating})`;
           }
@@ -279,11 +280,11 @@ class TablesPage extends Page {
         { name: 'Webcam HD', price: 79.99, inStock: false, rating: 3.5 }
       ]
     });
-    
+
     table.init();
     table.render();
   }
-  
+
   // Source code viewing actions
   async onActionShowBasicSource() {
     const code = `const table = new Table({
@@ -302,14 +303,14 @@ class TablesPage extends Page {
 
 table.init();
 table.render();`;
-    
+
     await Dialog.showCode({
       title: 'Basic Table Source',
       code: code,
       language: 'javascript'
     });
   }
-  
+
   async onActionShowSortableSource() {
     const code = `const table = new Table({
   container: container,
@@ -323,14 +324,14 @@ table.render();`;
 });
 
 // Sorting happens automatically when clicking column headers`;
-    
+
     await Dialog.showCode({
       title: 'Sortable Table Source',
       code: code,
       language: 'javascript'
     });
   }
-  
+
   async onActionShowFilterSource() {
     const code = `const table = new Table({
   container: container,
@@ -338,8 +339,8 @@ table.render();`;
   filterable: true,
   columns: [
     { key: 'name', title: 'Name', searchable: true },
-    { 
-      key: 'status', 
+    {
+      key: 'status',
       title: 'Status',
       filter: {
         type: 'select',
@@ -353,14 +354,14 @@ table.render();`;
   ],
   data: data
 });`;
-    
+
     await Dialog.showCode({
       title: 'Searchable & Filterable Table Source',
       code: code,
       language: 'javascript'
     });
   }
-  
+
   async onActionShowPaginationSource() {
     const code = `const table = new Table({
   container: container,
@@ -371,39 +372,39 @@ table.render();`;
 });
 
 // Pagination controls are automatically added`;
-    
+
     await Dialog.showCode({
       title: 'Paginated Table Source',
       code: code,
       language: 'javascript'
     });
   }
-  
+
   async onActionShowCustomSource() {
     const code = `const table = new Table({
   container: container,
   columns: [
-    { 
-      key: 'name', 
+    {
+      key: 'name',
       title: 'Product',
       render: (item) => \`<strong>\${item.name}</strong>\`
     },
-    { 
-      key: 'price', 
+    {
+      key: 'price',
       title: 'Price',
       render: (item) => \`<span class="text-success">$\${item.price.toFixed(2)}</span>\`
     },
-    { 
-      key: 'inStock', 
+    {
+      key: 'inStock',
       title: 'Availability',
-      render: (item) => item.inStock ? 
-        '<span class="badge bg-success">In Stock</span>' : 
+      render: (item) => item.inStock ?
+        '<span class="badge bg-success">In Stock</span>' :
         '<span class="badge bg-danger">Out of Stock</span>'
     }
   ],
   data: data
 });`;
-    
+
     await Dialog.showCode({
       title: 'Custom Rendering Source',
       code: code,
@@ -412,4 +413,4 @@ table.render();`;
   }
 }
 
-export default TablesPage;
+export default TableExamplesPage;

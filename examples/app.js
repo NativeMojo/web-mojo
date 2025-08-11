@@ -11,16 +11,27 @@ import MOJO, {
   EventBus
 } from '../src/mojo.js';
 
+import dataFormatter from '../src/utils/DataFormatter.js';
+
 // Import example pages
 import HomePage from './pages/home/HomePage.js';
 import ComponentsPage from './pages/components/ComponentsPage.js';
 import DialogsPage from './pages/dialogs/DialogsPage.js';
-import TablesPage from './pages/tables/TablesPage.js';
+import TableExamplesPage from './pages/tables/TableExamplesPage.js';
+import UsersTablePage from './pages/tables/UsersTablePage.js';
+import ProductsTablePage from './pages/tables/ProductsTablePage.js';
 import FormsPage from './pages/forms/FormsPage.js';
 import NavigationPage from './pages/navigation/NavigationPage.js';
 import ModelsPage from './pages/models/ModelsPage.js';
 import TemplatesPage from './pages/templates/TemplatesPage.js';
 import TodoTablePage from './pages/todos/TodoTablePage.js';
+import FormatterShowcasePage from './pages/formatter/FormatterShowcasePage.js';
+import DashboardPage from './pages/dashboard/DashboardPage.js';
+import ViewBasicsPage from './pages/ViewBasicsPage.js';
+
+// Error pages
+import NotFoundPage from '../src/pages/NotFoundPage.js';
+import ErrorPage from '../src/pages/ErrorPage.js';
 
 // Navigation configuration
 const navItems = [
@@ -30,9 +41,15 @@ const navItems = [
     page: 'home'
   },
   {
+    label: 'Dashboard',
+    icon: 'bi-speedometer2',
+    page: 'dashboard'
+  },
+  {
     label: 'Core Concepts',
     icon: 'bi-box',
     items: [
+      { label: 'View Basics', page: 'viewbasics', icon: 'bi-layers' },
       { label: 'Components', page: 'components', icon: 'bi-puzzle' },
       { label: 'Pages & Routing', page: 'navigation', icon: 'bi-signpost-2' },
       { label: 'Templates', page: 'templates', icon: 'bi-file-code' },
@@ -43,9 +60,11 @@ const navItems = [
     label: 'UI Components',
     icon: 'bi-palette',
     items: [
+      { label: 'Data Formatting', page: 'formatter-showcase', icon: 'bi-code-slash' },
       { label: 'Dialogs', page: 'dialogs', icon: 'bi-window-stack' },
       { label: 'Forms', page: 'forms', icon: 'bi-input-cursor-text' },
-      { label: 'Tables', page: 'tables', icon: 'bi-table' },
+      { label: 'Table Examples', page: 'table-examples', icon: 'bi-grid-3x3-gap' },
+      { label: 'Users Table', page: 'users', icon: 'bi-people' },
       { label: 'Todo Table (REST)', page: 'todotable', icon: 'bi-check2-square' }
     ]
   }
@@ -223,10 +242,12 @@ async function initApp() {
   await topNav.render();
   await topNav.mount();
 
-  // Create router with param mode (default for MOJO)
+  // Create router with param mode (default for MOJO) and error handlers
   const router = new Router({
     container: '#page-container',
-    mode: 'param'
+    mode: 'param',
+    notFoundHandler: NotFoundPage,
+    errorHandler: ErrorPage
   });
 
   // Create and mount Sidebar
@@ -251,37 +272,57 @@ async function initApp() {
   if (!window.MOJO.eventBus) {
     window.MOJO.eventBus = new EventBus();
   }
+  if (!window.MOJO.dataFormatter) {
+    window.MOJO.dataFormatter = dataFormatter;
+  }
 
   // Listen for route changes to update sidebar
   window.MOJO.eventBus.on('page:changed', (data) => {
-    if (data.page && data.page.page_name) {
-      sidebar.setActivePage(data.page.page_name.toLowerCase());
+    if (data.page && data.page.pageName) {
+      sidebar.setActivePage(data.page.pageName.toLowerCase());
     }
   });
 
-  // Register routes
-  router.addRoute('home', HomePage);
-  router.addRoute('components', ComponentsPage);
-  router.addRoute('dialogs', DialogsPage);
-  router.addRoute('tables', TablesPage);
-  router.addRoute('forms', FormsPage);
-  router.addRoute('navigation', NavigationPage);
-  router.addRoute('models', ModelsPage);
-  router.addRoute('templates', TemplatesPage);
+  // Register routes - Router supports both classes and instances
+  // Option 1: Pass classes (Router will instantiate them)
+  router.addPages([
+    HomePage,
+    DashboardPage,
+    ViewBasicsPage,
+    ComponentsPage,
+    DialogsPage,
+    TableExamplesPage,
+    UsersTablePage,
+    FormsPage,
+    NavigationPage,
+    ModelsPage,
+    TemplatesPage,
+    TodoTablePage,
+    FormatterShowcasePage,
+    ProductsTablePage
+  ]);
+  
+  // Add root route handler
+  router.addRoute('/', () => {
+    router.navigate('home');
+  });
+  
+  // Option 2: Pass instances (for more control over initialization)
+  // router.addPages([
+  //   new HomePage({ customOption: true }),
+  //   new ComponentsPage({ preloadData: true }),
+  //   new DialogsPage(),
+  //   // ... etc
+  // ]);
 
-  router.addRoute('todotable', TodoTablePage);
-
-  // Set default route
-  router.addRoute('', HomePage); // Root route
-
-  // Start router
-  router.start();
-
-  // Navigate to home if no page param
+  // Navigate to home if no page param (before starting router)
   const urlParams = new URLSearchParams(window.location.search);
   if (!urlParams.get('page')) {
-    router.navigate('home');
+    window.history.replaceState({}, '', '?page=home');
   }
+  
+  // Start router
+  router.start();
 
   // Make router globally available for navigation
   window.MOJO.router = router;

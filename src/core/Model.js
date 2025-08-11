@@ -1,9 +1,12 @@
 /**
- * RestModel - Base class for REST API models
+ * Model - Base class for models with REST API support
  * Provides CRUD operations for API resources
  */
 
-class RestModel {
+import dataFormatter from '../utils/DataFormatter.js';
+import MOJOUtils from '../utils/MOJOUtils.js';
+
+class Model {
   constructor(data = {}, options = {}) {
     this.endpoint = options.endpoint || this.constructor.endpoint || '';
     this.id = data.id || null;
@@ -11,6 +14,9 @@ class RestModel {
     this.originalAttributes = { ...data };
     this.errors = {};
     this.loading = false;
+    
+    // Event system
+    this.listeners = {};
 
     // Configuration options
     this.options = {
@@ -21,54 +27,62 @@ class RestModel {
   }
 
   /**
-   * Get attribute value
-   * @param {string} key - Attribute key
-   * @returns {*} Attribute value
+   * Get attribute value with support for dot notation and pipe formatting
+   * @param {string} key - Attribute key with optional pipes (e.g., "name|uppercase")
+   * @returns {*} Attribute value, possibly formatted
    */
    get(key) {
-     // Check if key exists as an instance field first
-     if (this.hasOwnProperty(key)) {
+     // Check if key exists as an instance field first (for 'id', 'endpoint', etc.)
+     if (!key.includes('.') && !key.includes('|') && this.hasOwnProperty(key)) {
        return this[key];
      }
-
-     // Handle dot notation lookup
-     if (key.includes('.')) {
-       const keys = key.split('.');
-       let current = this.attributes;
-
-       for (const k of keys) {
-         if (current && typeof current === 'object' && k in current) {
-           current = current[k];
-         } else {
-           return undefined;
-         }
-       }
-
-       return current;
-     }
-
-     // Default attribute lookup
-     return this.attributes[key];
+     
+     // Use MOJOUtils for all attribute access with pipes and dot notation
+     return MOJOUtils.getContextData(this.attributes, key);
    }
 
   /**
    * Set attribute value(s)
    * @param {string|object} key - Attribute key or object of key-value pairs
    * @param {*} value - Attribute value (if key is string)
+   * @param {object} options - Options (silent: true to not trigger change event)
    */
-  set(key, value) {
+  set(key, value, options = {}) {
+    const previousAttributes = { ...this.attributes };
+    let hasChanged = false;
+    
     if (typeof key === 'object') {
       // Set multiple attributes
       Object.assign(this.attributes, key);
       if (key.id !== undefined) {
         this.id = key.id;
       }
+      hasChanged = JSON.stringify(previousAttributes) !== JSON.stringify(this.attributes);
     } else {
       // Set single attribute
       if (key === 'id') {
         this.id = value;
+        hasChanged = true;
       } else {
+        const oldValue = this.attributes[key];
         this.attributes[key] = value;
+        hasChanged = oldValue !== value;
+      }
+    }
+    
+    // Trigger change event if data changed and not silent
+    if (hasChanged && !options.silent) {
+      this.trigger('change', this);
+      
+      // Trigger specific attribute change events
+      if (typeof key === 'string') {
+        this.trigger(`change:${key}`, value, this);
+      } else {
+        for (const [attr, val] of Object.entries(key)) {
+          if (previousAttributes[attr] !== val) {
+            this.trigger(`change:${attr}`, val, this);
+          }
+        }
       }
     }
   }
@@ -296,6 +310,82 @@ class RestModel {
   }
 
   /**
+   * Register event listener
+   * @param {string} event - Event name
+   * @param {function} callback - Event handler
+   * @returns {Model} This model for chaining
+   */
+  on(event, callback) {
+    if (!this.listeners[event]) {
+      this.listeners[event] = [];
+    }
+    this.listeners[event].push(callback);
+    return this;
+  }
+
+  /**
+   * Remove event listener
+   * @param {string} event - Event name
+   * @param {function} callback - Event handler to remove (optional, removes all if not provided)
+   * @returns {Model} This model for chaining
+   */
+  off(event, callback) {
+    if (!this.listeners[event]) {
+      return this;
+    }
+    
+    if (!callback) {
+      // Remove all listeners for this event
+      delete this.listeners[event];
+    } else {
+      // Remove specific listener
+      this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+      if (this.listeners[event].length === 0) {
+        delete this.listeners[event];
+      }
+    }
+    
+    return this;
+  }
+
+  /**
+   * Trigger event
+   * @param {string} event - Event name
+   * @param {...*} args - Arguments to pass to event handlers
+   * @returns {Model} This model for chaining
+   */
+  trigger(event, ...args) {
+    if (!this.listeners[event]) {
+      return this;
+    }
+    
+    // Call each listener
+    for (const callback of this.listeners[event]) {
+      try {
+        callback.apply(this, args);
+      } catch (error) {
+        console.error(`Error in event handler for "${event}":`, error);
+      }
+    }
+    
+    return this;
+  }
+
+  /**
+   * Register event listener that fires only once
+   * @param {string} event - Event name
+   * @param {function} callback - Event handler
+   * @returns {Model} This model for chaining
+   */
+  once(event, callback) {
+    const onceWrapper = (...args) => {
+      this.off(event, onceWrapper);
+      callback.apply(this, args);
+    };
+    return this.on(event, onceWrapper);
+  }
+
+  /**
    * Static method to create and fetch a model by ID
    * @param {string|number} id - Model ID
    * @param {object} options - Options
@@ -319,6 +409,6 @@ class RestModel {
 }
 
 // Will be injected by MOJO framework
-RestModel.Rest = null;
+Model.Rest = null;
 
-export default RestModel;
+export default Model;

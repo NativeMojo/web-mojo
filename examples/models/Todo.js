@@ -1,10 +1,10 @@
 /**
  * Todo Model
- * RestModel implementation for TODO items
+ * Model implementation for TODO items
  * Connects to the MOJO example API at /api/example/todo
  */
 
-import { RestModel } from '../../src/mojo.js';
+import { Model } from '../../src/mojo.js';
 
 // API Configuration
 const API_BASE = 'http://0.0.0.0:8881';
@@ -12,9 +12,9 @@ const API_ENDPOINT = '/api/example/todo';
 
 /**
  * Todo Model - represents a single TODO item from the REST API
- * @extends RestModel
+ * @extends Model
  */
-class Todo extends RestModel {
+class Todo extends Model {
     static endpoint = API_ENDPOINT;
     static baseURL = API_BASE;
     
