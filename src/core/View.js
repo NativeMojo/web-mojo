@@ -69,9 +69,9 @@ class View {
     // Rendering loop protection
     this.isRendering = false;
     this.lastRenderTime = 0;
-    this.renderCooldown = 100; // Minimum 100ms between renders
-    this.renderCount = 0;
-    this.maxRenderCount = 10; // Maximum renders before blocking
+    
+    // Debug mode
+    this.debug = options.debug || false;
 
     // Configuration
     this.options = {
@@ -79,6 +79,7 @@ class View {
       cacheTemplate: true,
       tagName: 'div',
       className: '',
+      renderCooldown: 0, // Set to > 0 to enable render throttling (in ms)
       ...options
     };
 
@@ -135,7 +136,9 @@ class View {
     // Call after init hook
     this.hooks.afterInit.call(this);
 
-    console.log(`View ${this.id} initialized`);
+    if (this.debug) {
+      console.log(`View ${this.id} initialized`);
+    }
   }
 
   /**
@@ -162,16 +165,13 @@ class View {
       return this;
     }
 
-    if (now - this.lastRenderTime < this.renderCooldown) {
+    // Optional render throttling
+    if (this.options.renderCooldown > 0 && now - this.lastRenderTime < this.options.renderCooldown) {
       console.warn(`View ${this.id}: Render called too quickly, cooldown active`);
       return this;
     }
 
-    this.renderCount++;
-    if (this.renderCount > this.maxRenderCount) {
-      console.error(`View ${this.id}: Infinite render loop detected (${this.renderCount} renders), stopping`);
-      return this;
-    }
+
 
     this.isRendering = true;
     this.lastRenderTime = now;
@@ -180,26 +180,9 @@ class View {
       this.setContainer(container);
     }
 
-    // If no container set, try to find one
+    // Discover container if not set
     if (!this.container) {
-      if (!this.parent) {
-        // No parent, look for element with this view's id in document body
-        const element = document.querySelector(`#${this.id}`);
-        if (element) {
-          this.setContainer(element.parentElement || document.body);
-        } else {
-          // No element found, use body as container
-          this.setContainer(document.body);
-        }
-      } else {
-        // Has parent, use parent's element as container
-        if (this.parent.element) {
-          this.setContainer(this.parent.element);
-        } else {
-          this.isRendering = false;
-          throw new Error(`Parent view ${this.parent.id} has no element to attach child ${this.id}`);
-        }
-      }
+      this.discoverContainer();
     }
 
     this.loading = true;
@@ -218,15 +201,9 @@ class View {
 
       // Render template into element FIRST (creates placeholders)
       const html = await this.renderTemplate();
-      console.log(`View ${this.id}: Rendered template HTML length:`, html.length);
 
       // Set innerHTML
       this.element.innerHTML = html;
-
-      // Verify element has content
-      if (!this.element.innerHTML.trim()) {
-        console.warn(`View ${this.id}: Element has no content after rendering`);
-      }
 
       // Mount to container so we're in the DOM
       if (!this.mounted) {
@@ -241,13 +218,6 @@ class View {
 
       // Mark as rendered
       this.rendered = true;
-
-      // Verify rendering was successful
-      if (this.element && this.container) {
-        console.log(`View ${this.id}: Render completed successfully`);
-      } else {
-        console.error(`View ${this.id}: Render incomplete - element:`, !!this.element, 'container:', !!this.container);
-      }
 
       // Call after render hook
       await this.hooks.afterRender.call(this);
@@ -269,13 +239,6 @@ class View {
     } finally {
       this.loading = false;
       this.isRendering = false;
-
-      // Reset render count after successful render
-      if (this.renderCount < this.maxRenderCount) {
-        setTimeout(() => {
-          this.renderCount = Math.max(0, this.renderCount - 1);
-        }, 1000);
-      }
     }
   }
 
@@ -306,7 +269,9 @@ class View {
 
     // Clear container if this is a page or if explicitly replacing
     if (this.constructor.name.includes('Page') || this.replaceContent) {
-      console.log(`View ${this.id}: Clearing container content`);
+      if (this.debug) {
+        console.log(`View ${this.id}: Clearing container content`);
+      }
       this.container.innerHTML = '';
     }
 
@@ -321,17 +286,22 @@ class View {
     if (placeholder) {
       // Replace the placeholder with our element
       placeholder.replaceWith(this.element);
-      console.log(`View ${this.id}: Replaced placeholder in container`);
+      if (this.debug) {
+        console.log(`View ${this.id}: Replaced placeholder in container`);
+      }
     } else {
       // Append to container
       this.container.appendChild(this.element);
-      console.log(`View ${this.id}: Appended to container`);
+      if (this.debug) {
+        console.log(`View ${this.id}: Appended to container`);
+      }
     }
 
     // Verify element was successfully added and is visible
+    // Final verification
     if (!document.body.contains(this.element)) {
       console.error(`View ${this.id}: Element not found in DOM after mounting`);
-    } else {
+    } else if (this.debug) {
       console.log(`View ${this.id}: Successfully mounted and visible in DOM`);
     }
 
@@ -344,7 +314,9 @@ class View {
     // Call overridable after mount method
     await this.onAfterMount();
 
-    console.log(`View ${this.id} mounted`);
+    if (this.debug) {
+      console.log(`View ${this.id} mounted`);
+    }
 
     return this;
   }
@@ -372,7 +344,9 @@ class View {
     // Mark as unmounted
     this.mounted = false;
 
-    console.log(`View ${this.id} unmounted`);
+    if (this.debug) {
+      console.log(`View ${this.id} unmounted`);
+    }
 
     return this;
   }
@@ -433,7 +407,9 @@ class View {
     // Call overridable after destroy method
     await this.onAfterDestroy();
 
-    console.log(`View ${this.id} destroyed`);
+    if (this.debug) {
+      console.log(`View ${this.id} destroyed`);
+    }
 
     return this;
   }
@@ -482,7 +458,33 @@ class View {
       console.warn(`Container ${container} is not attached to the DOM`);
     }
 
-    console.log(`View ${this.id}: Container set to`, this.container);
+    if (this.debug) {
+      console.log(`View ${this.id}: Container set to`, this.container);
+    }
+  }
+
+  /**
+   * Discover and set container when not explicitly provided
+   * @throws {Error} If parent has no element to attach to
+   */
+  discoverContainer() {
+    if (!this.parent) {
+      // No parent, look for element with this view's id in document body
+      const element = document.querySelector(`#${this.id}`);
+      if (element) {
+        this.setContainer(element.parentElement || document.body);
+      } else {
+        // No element found, use body as container
+        this.setContainer(document.body);
+      }
+    } else {
+      // Has parent, use parent's element as container
+      if (this.parent.element) {
+        this.setContainer(this.parent.element);
+      } else {
+        throw new Error(`Parent view ${this.parent.id} has no element to attach child ${this.id}`);
+      }
+    }
   }
 
   /**
@@ -1068,7 +1070,9 @@ class View {
    * @param {string} message - Success message
    */
   showSuccess(message) {
-    console.log(`View ${this.id} success:`, message);
+    if (this.debug) {
+      console.log(`View ${this.id} success:`, message);
+    }
 
     // Use MOJO framework dialog if available
     if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showSuccess) {
