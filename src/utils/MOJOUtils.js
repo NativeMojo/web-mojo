@@ -391,14 +391,20 @@ class DataWrapper {
       pipes = key.substring(pipeIndex + 1).trim();
     }
     
-    // First check if we have the wrapped property on this object
-    // This ensures nested arrays stay wrapped
+    // First check if the property exists in the original data
+    // This prevents falling through to parent context properties
     let value;
-    if (field in this && field !== '_data' && field !== '_rootContext') {
-      value = this[field];
+    if (this._data && this._data.hasOwnProperty(field)) {
+      // Get the wrapped version if we have it, otherwise get from _data
+      if (field in this && field !== '_data' && field !== '_rootContext') {
+        value = this[field];
+      } else {
+        value = MOJOUtils.getNestedValue(this._data, field);
+      }
     } else {
-      // Fall back to getting from _data
-      value = MOJOUtils.getNestedValue(this._data, field);
+      // Property doesn't exist in data - return undefined
+      // This prevents Mustache from looking up parent context
+      value = undefined;
     }
     
     // Apply pipes if present

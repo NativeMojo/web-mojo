@@ -1,0 +1,143 @@
+<div class="container-fluid p-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h3 mb-4">
+                <i class="bi bi-code-slash me-2"></i>
+                Mustache Templates Documentation
+            </h1>
+            <p class="text-muted">
+                Interactive documentation and examples for MOJO's Mustache template engine,
+                including enhanced features for better control over template rendering.
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Examples Sidebar -->
+        <div class="col-md-3 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Examples</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    {{#examples}}
+                    <a href="#" class="list-group-item list-group-item-action {{#active}}active{{/active}}"
+                       data-action="loadExample" data-example-id="{{id}}">
+                        <div class="d-flex w-100 justify-content-between">
+                            <span>{{title}}</span>
+                            {{#isNew}}
+                            <span class="badge bg-success">New</span>
+                            {{/isNew}}
+                        </div>
+                        <small class="text-muted">{{description}}</small>
+                    </a>
+                    {{/examples}}
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9">
+            {{#currentExample}}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        {{title}}
+                        {{#isNew}}
+                        <span class="badge bg-success ms-2">New Feature</span>
+                        {{/isNew}}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">{{{explanation}}}</p>
+
+                    {{#notes}}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        {{{notes}}}
+                    </div>
+                    {{/notes}}
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Template Editor -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Template</h6>
+                            <button class="btn btn-sm btn-outline-secondary" data-action="copyTemplate">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <textarea id="template-input" class="form-control font-monospace"
+                                      rows="12" spellcheck="false">{{template}}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Editor -->
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Data (JSON)</h6>
+                            <button class="btn btn-sm btn-outline-secondary" data-action="copyData">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <textarea id="data-input" class="form-control font-monospace"
+                                      rows="12" spellcheck="false">{{dataJson}}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary" data-action="render">
+                            <i class="bi bi-play-fill me-2"></i>Render Template
+                        </button>
+                        <button class="btn btn-outline-secondary" data-action="reset">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Reset Example
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Output -->
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#rendered-output">
+                                Rendered Output
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#html-source">
+                                HTML Source
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="rendered-output">
+                            <div id="output-rendered" class="border rounded p-3 bg-light">
+                                <em class="text-muted">Click "Render Template" to see output</em>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="html-source">
+                            <pre id="output-html" class="mb-0"><code class="text-muted">Click "Render Template" to see HTML source</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {{/currentExample}}
+        </div>
+    </div>
+</div>

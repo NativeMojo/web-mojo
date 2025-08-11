@@ -1,0 +1,227 @@
+<!-- ViewBasicsPage Template -->
+<div class="view-basics-page">
+    <!-- Page Header -->
+    <div class="mb-4">
+        <h1 class="display-6">
+            <i class="bi bi-layers text-primary me-2"></i>
+            View Basics
+        </h1>
+        <p class="lead">
+            Understanding the fundamental concepts of MOJO Views - the building blocks of your application.
+        </p>
+    </div>
+
+    <!-- Key Concepts -->
+    <div class="row g-3 mb-5">
+        {{#concepts}}
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        {{title}}
+                    </h6>
+                    <p class="card-text small text-muted mb-0">{{description}}</p>
+                </div>
+            </div>
+        </div>
+        {{/concepts}}
+    </div>
+
+    <!-- Live Demo Section -->
+    <h3 class="mb-3">
+        <i class="bi bi-play-circle me-2"></i>
+        Live Demo: Counter Component
+    </h3>
+
+    <div class="row mb-5">
+        <div class="col-lg-6">
+            <div id="counter-container">
+                <!-- Counter component will be mounted here -->
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6 class="card-title">About this demo:</h6>
+                    <ul class="small mb-0">
+                        <li>The counter is a custom View component</li>
+                        <li>It maintains its own state (count)</li>
+                        <li>Click events are handled via data-action</li>
+                        <li>The view re-renders when state changes</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lifecycle Methods -->
+    <h3 class="mb-3">
+        <i class="bi bi-arrow-repeat me-2"></i>
+        Lifecycle Methods
+    </h3>
+
+    <div class="card mb-5">
+        <div class="card-body">
+            <p class="card-text">
+                Views have lifecycle methods that are called at different stages:
+            </p>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Method</th>
+                            <th>Status</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#lifecycleMethods}}
+                        <tr data-method="{{name}}">
+                            <td><code>{{name}}()</code></td>
+                            <td>
+                                <span class="badge {{#if (eq status 'Called')}}bg-success{{else}}bg-secondary{{/if}}">
+                                    {{status}}
+                                </span>
+                            </td>
+                            <td class="small text-muted">{{description}}</td>
+                        </tr>
+                        {{/lifecycleMethods}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Demos -->
+    <h3 class="mb-3">
+        <i class="bi bi-lightning-charge me-2"></i>
+        Interactive Examples
+    </h3>
+
+    <div class="row g-3 mb-5">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Re-render View</h6>
+                    <p class="card-text small text-muted">
+                        Trigger a manual re-render of this page
+                    </p>
+                    <button class="btn btn-primary btn-sm" data-action="run-demo" data-demo="render">
+                        <i class="bi bi-arrow-clockwise me-1"></i>
+                        Re-render
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Update Data</h6>
+                    <p class="card-text small text-muted">
+                        Update page data and re-render
+                    </p>
+                    <button class="btn btn-primary btn-sm" data-action="run-demo" data-demo="update-data">
+                        <i class="bi bi-pencil-square me-1"></i>
+                        Update
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Create Child View</h6>
+                    <p class="card-text small text-muted">
+                        Dynamically create a child view
+                    </p>
+                    <button class="btn btn-primary btn-sm" data-action="run-demo" data-demo="create-child">
+                        <i class="bi bi-plus-circle me-1"></i>
+                        Create
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dynamic Container for child views -->
+    <div id="dynamic-container" class="mb-4">
+        <!-- Dynamic child views will be added here -->
+    </div>
+
+    <!-- Code Example -->
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-code-slash me-2"></i>
+                Basic View Example
+            </h5>
+        </div>
+        <div class="card-body">
+            <pre class="bg-light p-3 rounded"><code>import View from 'mojo/core/View.js';
+
+class MyView extends View {
+    constructor(options = {}) {
+        super({
+            ...options,
+            tagName: 'div',
+            className: 'my-view'
+        });
+
+        this.count = 0;
+    }
+
+    async getTemplate() {
+        return `
+            &lt;div class="content"&gt;
+                &lt;h3&gt;Count: {{count}}&lt;/h3&gt;
+                &lt;button data-action="increment"&gt;+&lt;/button&gt;
+            &lt;/div&gt;
+        `;
+    }
+
+    async getViewData() {
+        return { count: this.count };
+    }
+
+    async onActionIncrement() {
+        this.count++;
+        await this.render();
+    }
+}</code></pre>
+        </div>
+    </div>
+
+    <!-- View Source -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-file-code me-2"></i>
+                View Complete Source
+            </h5>
+        </div>
+        <div class="card-body">
+            <p>Explore the complete source code for this page:</p>
+            <div class="btn-group" role="group">
+                <button class="btn btn-outline-dark btn-sm" data-action="view-source" data-file="ViewBasicsPage.js">
+                    <i class="bi bi-file-code me-1"></i>
+                    ViewBasicsPage.js
+                </button>
+                <button class="btn btn-outline-dark btn-sm" data-action="view-source" data-file="view-basics.html">
+                    <i class="bi bi-file-earmark-code me-1"></i>
+                    view-basics.html
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data display (if message is set) -->
+    {{#if message}}
+    <div class="alert alert-info mt-3">
+        <i class="bi bi-info-circle me-2"></i>
+        {{message}}
+    </div>
+    {{/if}}
+</div>

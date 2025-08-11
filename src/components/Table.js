@@ -22,9 +22,17 @@
  */
 
 import dataFormatter from '../utils/DataFormatter.js';
+import View from '../core/View.js';
 
-class Table {
+class Table extends View {
   constructor(options = {}) {
+    // Call parent constructor
+    super({
+      ...options,
+      tagName: 'div',
+      className: 'table-component'
+    });
+
     // Core properties from design doc
     this.Collection = options.Collection || null;
     this.columns = options.columns || [];
@@ -35,7 +43,6 @@ class Table {
     this.view = options.view || 'table';
     
     // Internal state
-    this.container = options.container || null;
     this.collection = options.collection || null;
     
 
@@ -66,68 +73,61 @@ class Table {
     
     // Event listeners
     this.listeners = {};
-    
-    // Initialize
-    this.init();
+    this.rowActions = options.rowActions || [];
   }
 
   /**
-   * Cleanup method to clear timeouts and unbind events
+   * Cleanup method - override View's destroy
    */
-  destroy() {
+  async destroy() {
     if (this.searchTimeout) {
       clearTimeout(this.searchTimeout);
       this.searchTimeout = null;
     }
     this._eventsBound = false;
+    
+    // Call parent destroy
+    await super.destroy();
   }
 
   /**
-   * Initialize the table component
+   * Get the table template
    */
-  init() {
-    // Initialize items per page from options
-    if (this.options.itemsPerPage) {
-      this.itemsPerPage = this.options.itemsPerPage;
-    } else if (this.options.tableOptions?.itemsPerPage) {
-      this.itemsPerPage = this.options.tableOptions.itemsPerPage;
-    } else if (this.options.tableOptions?.defaultPageSize) {
-      this.itemsPerPage = this.options.tableOptions.defaultPageSize;
-    }
+  async getTemplate() {
+    // Load data if needed
+    await this.loadDataIfNeeded();
     
-    // Only create collection if we don't already have one (preserve preloaded collections)
-    if (this.Collection && !this.collection) {
-      this.collection = new this.Collection();
-      
-      // Set up collection event listeners
-      this.collection.on('update', () => {
-        this.render();
-      });
-      
-      this.collection.on('add', () => {
-        this.render();
-      });
-      
-      this.collection.on('remove', () => {
-        this.render();
-      });
-    }
-    
-    // Extract filters from columns if not explicitly provided
-    if (!this.filters || Object.keys(this.filters).length === 0) {
-      this.filters = {};
-      this.columns.forEach(column => {
-        if (column.filter) {
-          this.filters[column.key] = {
-            ...column.filter,
-            label: column.label
-          };
+    // Return the table HTML
+    return this.buildTableHTML();
+  }
+
+  /**
+   * Load data if needed
+   */
+  async loadDataIfNeeded() {
+    let hasData = false;
+    let errorMessage = null;
+
+    // Load data if not preloaded
+    if (!this.options.preloaded) {
+      try {
+        if (this.collection && typeof this.collection.fetch === 'function') {
+          const params = this.buildQueryParams();
+          await this.collection.fetch({ params });
+          hasData = this.collection.length > 0;
         }
-      });
+      } catch (error) {
+        console.error('Table: Error fetching data:', error);
+        errorMessage = `Failed to load data: ${error.message}`;
+        hasData = false;
+      }
+    } else {
+      // For preloaded data, just check if we have any
+      hasData = this.collection && this.collection.length > 0;
     }
     
-    // Apply default list options
-    this.applyListOptions();
+    this.hasData = hasData;
+    this.errorMessage = errorMessage;
   }
 
   /**
@@ -184,127 +184,65 @@ class Table {
   /**
    * Render the table
    * @param {HTMLElement} container - Container element
-   * @returns {Promise} Promise that resolves when table is rendered
+   * Called after initialization
    */
-  async render(container = null) {
-    if (container) {
-      this.container = container;
+  async onInit() {
+    // Initialize items per page from options
+    if (this.options.itemsPerPage) {
+      this.itemsPerPage = this.options.itemsPerPage;
+    } else if (this.options.tableOptions?.itemsPerPage) {
+      this.itemsPerPage = this.options.tableOptions.itemsPerPage;
+    } else if (this.options.tableOptions?.defaultPageSize) {
+      this.itemsPerPage = this.options.tableOptions.defaultPageSize;
     }
     
-    if (!this.container) {
-      console.warn('Table: No container specified, creating fallback container');
-      // Create a fallback container and append to body
-      this.container = document.createElement('div');
-      this.container.className = 'mojo-table-fallback-container m-3';
-      this.container.innerHTML = `
-        <div class="alert alert-info mb-2">
-          <small><i class="bi bi-info-circle me-1"></i>Table rendered in fallback container</small>
-        </div>
-      `;
-      // Safely append to body if available
-      if (document.body) {
-        document.body.appendChild(this.container);
-      } else {
-        console.error('Table: Cannot create fallback container - document.body not available');
-        throw new Error('No container available and cannot create fallback');
-      }
+    // Only create collection if we don't already have one (preserve preloaded collections)
+    if (this.Collection && !this.collection) {
+      this.collection = new this.Collection();
+      
+      // Set up collection event listeners
+      this.collection.on('update', () => {
+        if (this.rendered) this.render();
+      });
+      
+      this.collection.on('add', () => {
+        if (this.rendered) this.render();
+      });
+      
+      this.collection.on('remove', () => {
+        if (this.rendered) this.render();
+      });
     }
     
-    // Handle case where container is a selector string
-    if (typeof this.container === 'string') {
-      const element = document.querySelector(this.container);
-      if (!element) {
-        console.warn(`Table: Container "${this.container}" not found, creating fallback`);
-        this.container = document.createElement('div');
-        this.container.className = 'mojo-table-fallback-container m-3';
-        this.container.innerHTML = `
-          <div class="alert alert-warning mb-2">
-            <small><i class="bi bi-exclamation-triangle me-1"></i>Original container "${this.container}" not found</small>
-          </div>
-        `;
-        // Safely append to body if available
-        if (document.body) {
-          document.body.appendChild(this.container);
-        } else {
-          console.error('Table: Cannot create fallback container - document.body not available');
-          throw new Error('No container available and cannot create fallback');
+    // Extract filters from columns if not explicitly provided
+    if (!this.filters || Object.keys(this.filters).length === 0) {
+      this.filters = {};
+      this.columns.forEach(column => {
+        if (column.filter) {
+          this.filters[column.key] = '';
         }
-      } else {
-        this.container = element;
-        // Add instance identifier to container for debugging
-        this.container.setAttribute('data-table-instance', this._instanceId);
+      });
+    }
+  }
+
+  /**
+   * Called before rendering
+   */
+  async onBeforeRender() {
+    // Preserve focus state for restoration after render
+    if (this.element) {
+      const focusedElement = this.element.querySelector(':focus');
+      if (focusedElement) {
+        this.focusState = {
+          action: focusedElement.getAttribute('data-action'),
+          value: focusedElement.value,
+          selectionStart: focusedElement.selectionStart,
+          selectionEnd: focusedElement.selectionEnd
+        };
       }
     }
-
+    
     this.loading = true;
-    this.updateLoadingState();
-
-    let hasData = false;
-    let errorMessage = null;
-
-    try {
-      // Create collection if we don't have one but have a Collection class
-      if (!this.collection && this.Collection) {
-        try {
-          this.collection = new this.Collection();
-          // Collection created - data initialization is now explicit via initializeData()
-        } catch (collectionError) {
-          errorMessage = `Failed to create collection: ${collectionError.message}`;
-          console.warn('Table: Collection creation failed:', collectionError);
-        }
-      }
-
-      // Check if we have a collection with data
-      if (this.collection && this.collection.models && this.collection.models.length > 0) {
-        hasData = true;
-      }
-
-    } catch (setupError) {
-      errorMessage = `Table setup failed: ${setupError.message}`;
-      console.error('Table: Setup error:', setupError);
-    }
-
-    // Always try to render something, even if there are errors
-    try {
-      // Preserve focus state
-      const focusedElement = this.container.querySelector(':focus');
-      const focusedValue = focusedElement?.value;
-      const focusedSelectionStart = focusedElement?.selectionStart;
-      const focusedSelectionEnd = focusedElement?.selectionEnd;
-      const focusedAction = focusedElement?.getAttribute('data-action');
-      
-      // Reset event binding flag before rebuilding HTML
-      this._eventsBound = false;
-      
-      this.container.innerHTML = this.buildTableHTML();
-      this._eventsBound = false; // Reset event binding flag
-      this.bindEvents();
-      
-      // Restore focus if it was on search input
-      if (focusedAction === 'search-input') {
-        const newSearchInput = this.container.querySelector('[data-action="search-input"]');
-        if (newSearchInput) {
-          newSearchInput.value = focusedValue;
-          newSearchInput.focus();
-          if (focusedSelectionStart !== undefined) {
-            newSearchInput.setSelectionRange(focusedSelectionStart, focusedSelectionEnd);
-          }
-        }
-      }
-      
-      // Show error message if there was one, but still show the table
-      if (errorMessage) {
-        this.showErrorBanner(errorMessage);
-      }
-      
-    } catch (renderError) {
-      console.error('Table: Critical render error:', renderError);
-      // Last resort: render a basic error state
-      this.renderFallbackError(`Critical error: ${renderError.message}`);
-    }
-
-    this.loading = false;
-    this.updateLoadingState();
   }
 
   /**
@@ -717,14 +655,14 @@ class Table {
    * @param {string} value - Search value to set
    */
   updateSearchInputs(value) {
-    const searchInputs = this.container.querySelectorAll('[data-filter="search"]');
+    const searchInputs = this.element.querySelectorAll('[data-filter="search"]');
     searchInputs.forEach(input => {
       input.value = value || '';
     });
   }
 
   closeFilterDropdown() {
-    const dropdown = this.container.querySelector('.dropdown-toggle[data-bs-toggle="dropdown"]');
+    const dropdown = this.element.querySelector('.dropdown-toggle[data-bs-toggle="dropdown"]');
     if (dropdown && window.bootstrap && window.bootstrap.Dropdown) {
       const dropdownInstance = window.bootstrap.Dropdown.getInstance(dropdown);
       if (dropdownInstance) {
@@ -1274,10 +1212,10 @@ class Table {
   }
 
   /**
-   * Bind event listeners
+   * Bind table-specific event listeners
    */
-  bindEvents() {
-    if (!this.container) return;
+  bindTableEvents() {
+    if (!this.element) return;
 
     // Prevent duplicate event listeners
     if (this._eventsBound) return;
@@ -1290,7 +1228,7 @@ class Table {
 
     // Remove existing click listener if it exists
     if (this._boundEventHandlers.click) {
-      this.container.removeEventListener('click', this._boundEventHandlers.click);
+      this.element.removeEventListener('click', this._boundEventHandlers.click);
     }
     
     // Create bound click handler
@@ -1370,14 +1308,14 @@ class Table {
     };
     
     // Use event delegation with a single click listener
-    this.container.addEventListener('click', this._boundEventHandlers.click);
+    this.element.addEventListener('click', this._boundEventHandlers.click);
 
     // Remove existing change listener if it exists
     if (this._boundEventHandlers.change) {
-      this.container.removeEventListener('change', this._boundEventHandlers.change);
+      this.element.removeEventListener('change', this._boundEventHandlers.change);
     }
     
-    // Create bound change handler
+    // Bind change events (for selects, etc.)
     this._boundEventHandlers.change = async (e) => {
       const action = e.target.getAttribute('data-action');
       
@@ -1397,24 +1335,24 @@ class Table {
     };
     
     // Handle change events for form elements
-    this.container.addEventListener('change', this._boundEventHandlers.change);
+    this.element.addEventListener('change', this._boundEventHandlers.change);
 
     // Remove existing keydown listener if it exists
     if (this._boundEventHandlers.keydown) {
-      this.container.removeEventListener('keydown', this._boundEventHandlers.keydown);
+      this.element.removeEventListener('keydown', this._boundEventHandlers.keydown);
     }
     
-    // Create bound keydown handler
+    // Bind keydown events for Enter key in search
     this._boundEventHandlers.keydown = (e) => {
       if (e.key === 'Enter' && e.target.matches('[data-filter="search"]')) {
         e.preventDefault();
         this.handleSearchInput(e);
-        setTimeout(() => this.closeFilterDropdown(), 100);
+        this.closeFilterDropdown();
       }
     };
     
     // Handle Enter key in search inputs
-    this.container.addEventListener('keydown', this._boundEventHandlers.keydown);
+    this.element.addEventListener('keydown', this._boundEventHandlers.keydown);
   }
 
   /**
@@ -1519,12 +1457,12 @@ class Table {
     this.currentPage = 1;
     
     // Dispatch sort change event
-    if (this.container) {
+    if (this.element) {
       const event = new CustomEvent('sort:change', {
         bubbles: true,
         detail: { field: this.sortBy, direction: this.sortDirection }
       });
-      this.container.dispatchEvent(event);
+      this.element.dispatchEvent(event);
     }
     
     // For REST collections, re-fetch data with new sorting
@@ -1589,20 +1527,20 @@ class Table {
     }
     
     // Dispatch page change event
-    if (this.container) {
+    if (this.element) {
       const event = new CustomEvent('page:change', {
         bubbles: true,
         detail: { page: this.currentPage }
       });
-      this.container.dispatchEvent(event);
+      this.element.dispatchEvent(event);
     }
     
     // Always re-render after page change (REST gets new data, local re-slices existing data)
     this.render();
     
     // Dispatch page change event for external listeners (e.g., TablePage)
-    if (this.container) {
-      this.container.dispatchEvent(new CustomEvent('page:change', {
+    if (this.element) {
+      this.element.dispatchEvent(new CustomEvent('page:change', {
         bubbles: true,
         detail: { page: this.currentPage }
       }));
@@ -1653,8 +1591,8 @@ class Table {
     this.render();
     
     // Dispatch per page change event for external listeners
-    if (this.container) {
-      this.container.dispatchEvent(new CustomEvent('perpage:change', {
+    if (this.element) {
+      this.element.dispatchEvent(new CustomEvent('perpage:change', {
         bubbles: true,
         detail: { perPage: this.itemsPerPage }
       }));
@@ -1743,12 +1681,12 @@ class Table {
    this.currentPage = 1;
     
    // Dispatch search change event
-   if (this.container) {
+   if (this.element) {
      const event = new CustomEvent('search:change', {
        bubbles: true,
        detail: { search: searchValue }
      });
-     this.container.dispatchEvent(event);
+     this.element.dispatchEvent(event);
    }
     
    // Fetch new data or re-render
@@ -1767,12 +1705,12 @@ class Table {
    e?.preventDefault();
    
    // Emit refresh event
-   if (this.container) {
+   if (this.element) {
      const event = new CustomEvent('table:refresh', {
        bubbles: true,
        detail: { table: this }
      });
-     this.container.dispatchEvent(event);
+     this.element.dispatchEvent(event);
    }
    
    // If we have a collection with REST enabled, fetch fresh data
@@ -1795,12 +1733,12 @@ class Table {
    e?.preventDefault();
    
    // Emit add event
-   if (this.container) {
+   if (this.element) {
      const event = new CustomEvent('table:add', {
        bubbles: true,
        detail: { table: this }
      });
-     this.container.dispatchEvent(event);
+     this.element.dispatchEvent(event);
    }
    
    // Call custom add handler if provided
@@ -1817,7 +1755,7 @@ class Table {
    e?.preventDefault();
    
    // Emit export event
-   if (this.container) {
+   if (this.element) {
      const event = new CustomEvent('table:export', {
        bubbles: true,
        detail: { 
@@ -1825,7 +1763,7 @@ class Table {
          data: this.collection?.models || []
        }
      });
-     this.container.dispatchEvent(event);
+     this.element.dispatchEvent(event);
    }
    
    // Call custom export handler if provided
@@ -1850,12 +1788,12 @@ class Table {
    this.currentPage = 1;
   
    // Dispatch filter change event
-   if (this.container) {
+   if (this.element) {
      const event = new CustomEvent('filter:change', {
        bubbles: true,
        detail: { filters: this.activeFilters }
      });
-     this.container.dispatchEvent(event);
+     this.element.dispatchEvent(event);
    }
   
   // For REST collections, re-fetch data with new filters
@@ -1880,12 +1818,12 @@ class Table {
    this.currentPage = 1;
     
    // Dispatch filter change event
-   if (this.container) {
+   if (this.element) {
      const event = new CustomEvent('filter:change', {
        bubbles: true,
        detail: { filters: { ...this.activeFilters } }
      });
-     this.container.dispatchEvent(event);
+     this.element.dispatchEvent(event);
    }
     
    // For REST collections, re-fetch data with new filters
@@ -1905,12 +1843,12 @@ class Table {
    this.currentPage = 1;
    
    // Dispatch filter change event
-   if (this.container) {
+   if (this.element) {
      const event = new CustomEvent('filter:change', {
        bubbles: true,
        detail: { filters: {} }
      });
-     this.container.dispatchEvent(event);
+     this.element.dispatchEvent(event);
    }
    
    // For REST collections, re-fetch data with new search
@@ -1978,10 +1916,41 @@ class Table {
   }
 
   /**
-   * Update loading state display
+   * Called after rendering
+   */
+  async onAfterRender() {
+    // Bind table-specific events
+    this.bindTableEvents();
+    
+    // Restore focus if it was on search input
+    if (this.focusState && this.focusState.action === 'search-input') {
+      const newSearchInput = this.element.querySelector('[data-action="search-input"]');
+      if (newSearchInput) {
+        newSearchInput.value = this.focusState.value;
+        newSearchInput.focus();
+        if (this.focusState.selectionStart !== undefined) {
+          newSearchInput.setSelectionRange(this.focusState.selectionStart, this.focusState.selectionEnd);
+        }
+      }
+    }
+    
+    // Clear focus state
+    this.focusState = null;
+    
+    // Show error message if there was one
+    if (this.errorMessage) {
+      this.showErrorBanner(this.errorMessage);
+    }
+    
+    this.loading = false;
+    this.updateLoadingState();
+  }
+
+  /**
+   * Update loading state in UI
    */
   updateLoadingState() {
-    if (!this.container) return;
+    if (!this.element) return;
     
     if (this.loading) {
       const overlay = document.createElement('div');
@@ -1993,9 +1962,9 @@ class Table {
           </div>
         </div>
       `;
-      this.container.appendChild(overlay);
+      this.element.appendChild(overlay);
     } else {
-      const overlay = this.container.querySelector('.mojo-table-loading');
+      const overlay = this.element.querySelector('.mojo-table-loading');
       if (overlay) {
         overlay.remove();
       }
@@ -2008,7 +1977,7 @@ class Table {
   updateSelectionDisplay() {
 
     // Update individual selection cells
-    const selectCells = this.container.querySelectorAll('.mojo-select-cell');
+    const selectCells = this.element.querySelectorAll('.mojo-select-cell');
 
     selectCells.forEach(cell => {
       const itemId = cell.getAttribute('data-id');
@@ -2020,7 +1989,7 @@ class Table {
     });
     
     // Update select all cell
-    const selectAllCell = this.container.querySelector('.mojo-select-all-cell');
+    const selectAllCell = this.element.querySelector('.mojo-select-all-cell');
     if (selectAllCell) {
       const allSelected = this.isAllSelected();
       const hasSelected = this.selectedItems.size > 0;
@@ -2046,7 +2015,7 @@ class Table {
     }
     
     // Update row classes
-    const rows = this.container.querySelectorAll('tbody tr[data-id]');
+    const rows = this.element.querySelectorAll('tbody tr[data-id]');
     rows.forEach(row => {
       const itemId = row.getAttribute('data-id');
       row.classList.toggle('selected', this.selectedItems.has(itemId));
@@ -2060,8 +2029,8 @@ class Table {
   showError(message) {
     console.error('Table error:', message);
     
-    // Display error in container if table failed to render completely
-    this.container.innerHTML = `
+    // Display error in element if table failed to render completely
+    this.element.innerHTML = `
       <div class="alert alert-danger" role="alert">
         <h6><i class="bi bi-exclamation-triangle me-2"></i>Table Error</h6>
         <p class="mb-0">${message}</p>
@@ -2079,7 +2048,7 @@ class Table {
     console.warn('Table warning:', message);
     
     // Add error banner above the table
-    const existingBanner = this.container.querySelector('.mojo-table-error-banner');
+    const existingBanner = this.element.querySelector('.mojo-table-error-banner');
     if (existingBanner) {
       existingBanner.remove();
     }
@@ -2094,7 +2063,7 @@ class Table {
       </div>
     `;
     
-    this.container.insertBefore(banner, this.container.firstChild);
+    this.element.insertBefore(banner, this.element.firstChild);
   }
 
   /**
@@ -2104,7 +2073,7 @@ class Table {
   renderFallbackError(message) {
     console.error('Table critical error:', message);
     
-    this.container.innerHTML = `
+    this.element.innerHTML = `
       <div class="card border-danger">
         <div class="card-header bg-danger text-white">
           <h6 class="mb-0"><i class="bi bi-exclamation-circle me-2"></i>Table Unavailable</h6>

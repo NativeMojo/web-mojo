@@ -10,6 +10,7 @@ class TopNav extends View {
         super({
             tagName: 'nav',
             className: 'navbar navbar-expand-lg navbar-dark bg-primary',
+            style: 'position: relative; z-index: 1030;',
             ...options
         });
 
@@ -23,8 +24,8 @@ class TopNav extends View {
         this.currentPage = null;
         this.previousPage = null;
 
-        // Default configuration
-        this.updateData({
+        // Default configuration - merge with passed data
+        this.data = {
             brandText: 'MOJO App',
             brandRoute: '/',
             brandIcon: 'bi bi-play-circle',
@@ -36,8 +37,8 @@ class TopNav extends View {
             currentPageIcon: '',
             currentPageDescription: '',
             displayMode: this.displayMode,
-            ...this.data
-        });
+            ...this.data  // This will override defaults with passed data
+        };
 
         // Setup page event listeners
         this.setupPageListeners();
@@ -49,61 +50,92 @@ class TopNav extends View {
     async getTemplate() {
         return `
             <div class="container-fluid">
-                {{#showPageInfo}}
+                {{#data.showSidebarToggle}}
+                <button class="btn btn-sm btn-outline-light me-2" data-action="{{data.sidebarToggleAction}}">
+                    <i class="bi bi-list"></i>
+                </button>
+                {{/data.showSidebarToggle}}
+                
+                {{#data.showPageInfo}}
                 <div class="navbar-brand d-flex align-items-center">
-                    {{#currentPageIcon}}<i class="{{currentPageIcon}} me-2"></i>{{/currentPageIcon}}
+                    {{#data.currentPageIcon}}<i class="{{data.currentPageIcon}} me-2"></i>{{/data.currentPageIcon}}
                     <div>
-                        <span>{{currentPageName}}</span>
-                        {{#currentPageDescription}}
-                        <small class="d-block text-white-50" style="font-size: 0.75rem; line-height: 1;">{{currentPageDescription}}</small>
-                        {{/currentPageDescription}}
+                        <span>{{data.currentPageName}}</span>
+                        {{#data.currentPageDescription}}
+                        <small class="d-block text-white-50" style="font-size: 0.75rem; line-height: 1;">{{data.currentPageDescription}}</small>
+                        {{/data.currentPageDescription}}
                     </div>
                 </div>
-                {{/showPageInfo}}
+                {{/data.showPageInfo}}
                 
-                {{^showPageInfo}}
-                <a class="navbar-brand" href="{{brandRoute}}">
-                    {{#brandIcon}}<i class="{{brandIcon}} me-2"></i>{{/brandIcon}}
-                    {{brandText}}
+                {{^data.showPageInfo}}
+                <a class="navbar-brand" href="{{data.brandRoute}}">
+                    {{#data.brandIcon}}<i class="{{data.brandIcon}} me-2"></i>{{/data.brandIcon}}
+                    {{data.brandText}}
                 </a>
-                {{/showPageInfo}}
+                {{/data.showPageInfo}}
 
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#{{navbarId}}">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#{{data.navbarId}}">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
-                <div class="collapse navbar-collapse" id="{{navbarId}}">
-                    {{#showNavItems}}
-                    <ul class="navbar-nav me-auto">
-                        {{#navItems}}
+                <div class="collapse navbar-collapse" id="{{data.navbarId}}">
+                    {{#data.showNavItems}}
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        {{#data.navItems}}
                         <li class="nav-item">
                             <a class="nav-link {{#active}}active{{/active}}" href="{{route}}">
                                 {{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}
                                 {{text}}
                             </a>
                         </li>
-                        {{/navItems}}
+                        {{/data.navItems}}
                     </ul>
-                    {{/showNavItems}}
+                    {{/data.showNavItems}}
 
-                    {{#rightItems}}
-                    <div class="navbar-nav {{^showNavItems}}ms-auto{{/showNavItems}}">
+                    {{#data.rightItems}}
+                    <div class="navbar-nav ms-auto">
                         {{#items}}
+                        {{#isDropdown}}
+                        <div class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                {{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}
+                                {{text}}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                {{#items}}
+                                {{#divider}}
+                                <li><hr class="dropdown-divider"></li>
+                                {{/divider}}
+                                {{^divider}}
+                                <li>
+                                    <a class="dropdown-item" href="{{href}}" {{#action}}data-action="{{action}}"{{/action}}>
+                                        {{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}
+                                        {{text}}
+                                    </a>
+                                </li>
+                                {{/divider}}
+                                {{/items}}
+                            </ul>
+                        </div>
+                        {{/isDropdown}}
+                        {{^isDropdown}}
                         {{#isButton}}
                         <button class="{{buttonClass}}" data-action="{{action}}" {{#data}}{{name}}="{{value}}"{{/data}}>
                             {{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}
-                            {{text}}
+                            {{{text}}}
                         </button>
                         {{/isButton}}
                         {{^isButton}}
                         <a class="nav-link" href="{{href}}" {{#action}}data-action="{{action}}"{{/action}} {{#external}}data-external{{/external}}>
                             {{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}
-                            {{text}}
+                            {{{text}}}
                         </a>
                         {{/isButton}}
+                        {{/isDropdown}}
                         {{/items}}
                     </div>
-                    {{/rightItems}}
+                    {{/data.rightItems}}
                 </div>
             </div>
         `;

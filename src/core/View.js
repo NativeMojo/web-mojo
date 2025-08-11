@@ -41,6 +41,7 @@
  */
 
 import Mustache from '../utils/mustache.js';
+window.Mustache = Mustache;
 import MOJOUtils from '../utils/MOJOUtils.js';
 
 class View {
@@ -69,7 +70,7 @@ class View {
     // Rendering loop protection
     this.isRendering = false;
     this.lastRenderTime = 0;
-    
+
     // Debug mode
     this.debug = options.debug || false;
 
@@ -714,7 +715,23 @@ class View {
       } else {
         // Template file path
         try {
-          const response = await fetch(this.template);
+          let templatePath = this.template;
+
+          // Handle relative paths with WebApp base
+          if (window.APP && window.APP.basePath) {
+            // Check if it's a relative path (not absolute and not a full URL)
+            if (!templatePath.startsWith('/') &&
+                !templatePath.startsWith('http://') &&
+                !templatePath.startsWith('https://')) {
+              // Combine base path with template path
+              const base = window.APP.basePath.endsWith('/')
+                ? window.APP.basePath.slice(0, -1)
+                : window.APP.basePath;
+              templatePath = `${base}/${templatePath}`;
+            }
+          }
+
+          const response = await fetch(templatePath);
           if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
@@ -762,9 +779,9 @@ class View {
 
     // If accessing model namespace properties (not the model itself) and result is object/array without get(), wrap it
     // This ensures array items have get() method for pipe support in templates
-    if (path && path.startsWith('model.') && 
-        path !== 'model' && 
-        value && typeof value === 'object' && 
+    if (path && path.startsWith('model.') &&
+        path !== 'model' &&
+        value && typeof value === 'object' &&
         typeof value.get !== 'function') {
       // Pass null as rootContext to avoid circular references
       return MOJOUtils.wrapData(value, null);

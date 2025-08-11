@@ -1,0 +1,132 @@
+<div class="container-fluid p-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h3 mb-0">Dashboard</h1>
+            <p class="text-muted">Welcome back, {{userName}}</p>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-sm btn-primary" data-action="refresh">
+                <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="text-muted mb-0">Total Revenue</h6>
+                        <i class="bi bi-currency-dollar text-success"></i>
+                    </div>
+                    <h3 class="mb-1">${{data.revenue}}</h3>
+                    <small class="text-success">
+                        <i class="bi bi-arrow-up"></i> {{data.revenueChange}}%
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="text-muted mb-0">New Orders</h6>
+                        <i class="bi bi-cart text-primary"></i>
+                    </div>
+                    <h3 class="mb-1">{{data.orders}}</h3>
+                    <small class="text-primary">
+                        <i class="bi bi-arrow-up"></i> {{data.ordersChange}}%
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="text-muted mb-0">Active Users</h6>
+                        <i class="bi bi-people text-info"></i>
+                    </div>
+                    <h3 class="mb-1">{{data.activeUsers}}</h3>
+                    <small class="text-danger">
+                        <i class="bi bi-arrow-down"></i> {{data.usersChange}}%
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="text-muted mb-0">Conversion Rate</h6>
+                        <i class="bi bi-graph-up text-warning"></i>
+                    </div>
+                    <h3 class="mb-1">{{data.conversionRate}}%</h3>
+                    <small class="text-warning">
+                        <i class="bi bi-arrow-down"></i> {{data.conversionChange}}%
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0">
+                    <h5 class="card-title mb-0">Recent Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {{#data.recentActivity}}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-{{icon}} text-{{color}} fs-5"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">{{title}}</h6>
+                                    <small class="text-muted">{{time}}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {{/data.recentActivity}}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0">
+                    <h5 class="card-title mb-0">Quick Info</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        This is a simple dashboard example using the MOJO Portal layout.
+                    </p>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>Responsive layout
+                            with sidebar and topbar
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>Bootstrap 5
+                            components
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>Real-time data
+                            refresh
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success me-2"></i>Clean, modern
+                            interface
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

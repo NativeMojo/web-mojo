@@ -94,6 +94,63 @@ class Context {
   }
 
   lookup(name) {
+    // Handle dot-prefix to prevent context chain walking
+    // If name starts with '.', only look in current context
+    if (name && name.startsWith('.')) {
+      let actualName = name.substring(1);
+      let shouldIterate = false;
+      
+      // Check for |iter suffix for array iteration
+      if (actualName.endsWith('|iter')) {
+        actualName = actualName.substring(0, actualName.length - 5); // Remove '|iter'
+        shouldIterate = true;
+      }
+      
+      // Only check current view, not parents
+      if (this.view && typeof this.view === 'object') {
+        let value;
+        
+        // Check if view has a get method for unified access
+        if (typeof this.view.get === 'function') {
+          try {
+            value = this.view.get(actualName);
+            if (value !== undefined) {
+              if (isFunction(value)) {
+                value = value.call(this.view);
+              }
+            }
+          } catch (e) {
+            // Fall back to direct property access
+            value = undefined;
+          }
+        }
+        
+        // Direct property access if get didn't work
+        if (value === undefined && actualName in this.view) {
+          value = this.view[actualName];
+          if (isFunction(value)) {
+            value = value.call(this.view);
+          }
+        }
+        
+        // Handle array values based on shouldIterate flag
+        if (isArray(value)) {
+          if (shouldIterate) {
+            // Return array for iteration
+            return value;
+          } else {
+            // Return boolean for existence check
+            return value.length > 0;
+          }
+        }
+        
+        return value;
+      }
+      
+      return undefined; // Don't walk up the chain
+    }
+    
+    // Original lookup logic for non-dot-prefixed names
     const cache = this.cache;
 
     let value;

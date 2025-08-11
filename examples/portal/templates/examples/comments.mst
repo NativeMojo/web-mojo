@@ -1,0 +1,14 @@
+<h1>{{title}}</h1>
+{{! This is a comment and won't appear in the output }}
+
+{{!
+    Multi-line comments
+    are also supported
+}}
+
+<p>{{description}}</p>
+
+{{!--
+    You can also use this syntax
+    for comments that may contain }}
+--}}

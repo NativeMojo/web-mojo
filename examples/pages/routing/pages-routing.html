@@ -1,0 +1,242 @@
+<!-- PagesRoutingPage Template -->
+<div class="pages-routing-page">
+    <!-- Page Header -->
+    <div class="mb-4">
+        <h1 class="display-6">
+            <i class="bi bi-signpost-2 text-primary me-2"></i>
+            Pages & Routing
+        </h1>
+        <p class="lead">
+            Understanding MOJO's routing system and navigation patterns for single-page applications.
+        </p>
+    </div>
+
+    <!-- Current Route Info -->
+    <div class="alert alert-info mb-4">
+        <h6 class="alert-heading">
+            <i class="bi bi-geo-alt me-2"></i>
+            Current Route Information
+        </h6>
+        <div class="row small">
+            <div class="col-md-4">
+                <strong>Page:</strong> <code>{{currentRoute.page}}</code>
+            </div>
+            <div class="col-md-4">
+                <strong>Mode:</strong> <code>{{currentRoute.mode}}</code>
+            </div>
+            <div class="col-md-4">
+                <strong>Params:</strong> <code>{{#if currentRoute.params}}{{currentRoute.params}}{{else}}none{{/if}}</code>
+            </div>
+        </div>
+    </div>
+
+    <!-- Routing Concepts -->
+    <h3 class="mb-3">
+        <i class="bi bi-book me-2"></i>
+        Core Routing Concepts
+    </h3>
+
+    <div class="row g-3 mb-5">
+        {{#routingConcepts}}
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="{{icon}} text-primary fs-1 mb-3"></i>
+                    <h6 class="card-title">{{title}}</h6>
+                    <p class="card-text small text-muted">{{description}}</p>
+                </div>
+            </div>
+        </div>
+        {{/routingConcepts}}
+    </div>
+
+    <!-- Navigation Examples -->
+    <h3 class="mb-3">
+        <i class="bi bi-compass me-2"></i>
+        Navigation Methods
+    </h3>
+
+    <div class="card mb-5">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Code Example</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#navigationExamples}}
+                        <tr>
+                            <td><strong>{{type}}</strong></td>
+                            <td><code>{{code}}</code></td>
+                            <td class="small text-muted">{{description}}</td>
+                        </tr>
+                        {{/navigationExamples}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Navigation Demo -->
+    <h3 class="mb-3">
+        <i class="bi bi-play-circle me-2"></i>
+        Try Navigation
+    </h3>
+
+    <div class="row g-3 mb-5">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Navigate to Home</h6>
+                    <p class="card-text small text-muted">
+                        Uses router.navigate() programmatically
+                    </p>
+                    <button class="btn btn-primary btn-sm" data-action="navigate-demo" data-target="home">
+                        <i class="bi bi-house me-1"></i>
+                        Go to Home
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Navigate to View Basics</h6>
+                    <p class="card-text small text-muted">
+                        Standard link navigation
+                    </p>
+                    <a href="?page=view-basics" class="btn btn-primary btn-sm">
+                        <i class="bi bi-layers me-1"></i>
+                        Go to View Basics
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Show Route Info</h6>
+                    <p class="card-text small text-muted">
+                        Display current router state
+                    </p>
+                    <button class="btn btn-info btn-sm text-white" data-action="show-route-info">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Show Info
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Code Examples -->
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-code-slash me-2"></i>
+                Page Component Example
+            </h5>
+        </div>
+        <div class="card-body">
+            <pre class="bg-light p-3 rounded"><code>import Page from 'mojo/core/Page.js';
+
+export default class MyPage extends Page {
+    constructor(options = {}) {
+        super({
+            ...options,
+            pageName: 'my-page',
+            title: 'My Page',
+            pageIcon: 'bi-star',
+            pageDescription: 'A custom page component'
+        });
+
+        // Use external template
+        this.templateUrl = './pages/my-page/template.html';
+    }
+
+    // Handle route parameters
+    async onParams(params, query) {
+        await super.onParams(params, query);
+        console.log('Received params:', params);
+        console.log('Query string:', query);
+    }
+
+    // Page lifecycle hooks
+    async onEnter() {
+        console.log('Page entered');
+    }
+
+    async onLeave() {
+        console.log('Page leaving');
+        // Return false to prevent navigation
+        return true;
+    }
+}</code></pre>
+        </div>
+    </div>
+
+    <!-- Router Configuration -->
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-gear me-2"></i>
+                Router Configuration
+            </h5>
+        </div>
+        <div class="card-body">
+            <pre class="bg-light p-3 rounded"><code>// Initialize router with configuration
+const router = new Router({
+    container: '#page-container',
+    mode: 'param',  // 'hash', 'history', or 'param'
+    defaultPage: 'home',
+    notFoundHandler: NotFoundPage,
+    errorHandler: ErrorPage
+});
+
+// Register pages
+router.addPages([
+    HomePage,
+    AboutPage,
+    ContactPage
+]);
+
+// Or register individual routes
+router.addRoute('home', HomePage);
+router.addRoute('about', AboutPage);
+
+// Start the router
+router.start();
+
+// Navigate programmatically
+router.navigate('about', { id: 123 });</code></pre>
+        </div>
+    </div>
+
+    <!-- View Source -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-file-code me-2"></i>
+                View Complete Source
+            </h5>
+        </div>
+        <div class="card-body">
+            <p>Explore the complete source code for this page:</p>
+            <div class="btn-group" role="group">
+                <button class="btn btn-outline-dark btn-sm" data-action="view-source" data-file="PagesRoutingPage.js">
+                    <i class="bi bi-file-code me-1"></i>
+                    PagesRoutingPage.js
+                </button>
+                <button class="btn btn-outline-dark btn-sm" data-action="view-source" data-file="pages-routing.html">
+                    <i class="bi bi-file-earmark-code me-1"></i>
+                    pages-routing.html
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

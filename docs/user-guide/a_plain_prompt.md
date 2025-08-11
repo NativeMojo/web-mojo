@@ -86,7 +86,7 @@ DEVELOPMENT:
 - Examples must use separate files (html, css, js)
 
 KEY RULES:
-1. Check existing patterns before creating new features
+1. Check existing logic before creating new logic, to make sure the logic does not already exist.
 2. Keep examples simple - one concept per example
 3. Don't duplicate existing functionality
 4. Use framework components, don't recreate them
@@ -107,3 +107,5 @@ CURRENT FOCUS:
 Remember: we always have the dev server running in the background on localhost:3000.  DO NOT RUN dev server yourself.
 
 Remember: MOJO prioritizes developer experience, maintainability, and professional business applications with functional interfaces over decoration.
+
+When possible have user debug in the browser console.

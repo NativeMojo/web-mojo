@@ -1,0 +1,29 @@
+<!-- Simple array -->
+<h4>Colors:</h4>
+<ul>
+{{#colors}}
+    <li>{{.}}</li>
+{{/colors}}
+</ul>
+
+<!-- Array of objects -->
+<h4>Products:</h4>
+<div class="products">
+{{#products}}
+    <div class="product">
+        <h5>{{name}}</h5>
+        <p>Price: ${{price}}</p>
+        <p>In Stock: {{#inStock}}Yes{{/inStock}}{{^inStock}}No{{/inStock}}</p>
+    </div>
+{{/products}}
+</div>
+
+<!-- Nested arrays -->
+{{#categories}}
+<h4>{{name}}</h4>
+<ul>
+    {{#items}}
+    <li>{{title}} ({{quantity}})</li>
+    {{/items}}
+</ul>
+{{/categories}}

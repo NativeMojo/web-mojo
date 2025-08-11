@@ -1,0 +1,15 @@
+{{#showGreeting}}
+<h2>Welcome!</h2>
+{{/showGreeting}}
+
+{{#user}}
+<p>Name: {{name}}</p>
+<p>Email: {{email}}</p>
+{{/user}}
+
+<h3>Items:</h3>
+<ul>
+{{#items}}
+    <li>{{.}}</li>
+{{/items}}
+</ul>

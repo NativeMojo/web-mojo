@@ -1,0 +1,14 @@
+<div class="user-card">
+    <h3>{{user.name}}</h3>
+    <p>Email: {{user.email}}</p>
+    <p>City: {{user.address.city}}</p>
+    <p>Country: {{user.address.country}}</p>
+
+    <h4>Orders:</h4>
+    {{#user.orders}}
+    <div class="order">
+        <p>Order #{{id}}</p>
+        <p>Total: ${{total}}</p>
+    </div>
+    {{/user.orders}}
+</div>

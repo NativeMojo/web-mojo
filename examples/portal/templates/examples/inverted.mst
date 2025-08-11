@@ -1,0 +1,15 @@
+{{#items}}
+<ul>
+    {{#.}}<li>{{.}}</li>{{/.}}
+</ul>
+{{/items}}
+{{^items}}
+<p>No items to display.</p>
+{{/items}}
+
+{{#loggedIn}}
+<p>Welcome back!</p>
+{{/loggedIn}}
+{{^loggedIn}}
+<p>Please log in.</p>
+{{/loggedIn}}

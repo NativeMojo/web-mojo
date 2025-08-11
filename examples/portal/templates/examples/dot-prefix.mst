@@ -1,0 +1,12 @@
+<!-- Without dot prefix (walks up chain) -->
+{{#items}}
+    <p>Item: {{name}}</p>
+    <p>Parent name visible: {{parentName}}</p>
+{{/items}}
+
+<!-- With dot prefix (current context only) -->
+{{#items}}
+    <p>Item: {{.name}}</p>
+    <p>Parent name NOT visible: {{.parentName}}</p>
+    <p>Has local parentName: {{#.parentName}}Yes{{/.parentName}}{{^.parentName}}No{{/.parentName}}</p>
+{{/items}}

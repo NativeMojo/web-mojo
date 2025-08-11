@@ -1,0 +1,31 @@
+<!-- Boolean check (renders once if array has items) -->
+{{#.items}}
+<div class="has-items">
+    <h3>We have {{items.length}} items!</h3>
+</div>
+{{/.items}}
+{{^.items}}
+<p>No items available.</p>
+{{/.items}}
+
+<!-- Iteration (renders for each item) -->
+<ul>
+{{#.items|iter}}
+    <li>{{name}} - ${{price}}</li>
+{{/.items|iter}}
+</ul>
+
+<!-- Practical example: Collapsible menu -->
+{{#.children}}
+<button type="button" data-bs-toggle="collapse">
+    Has Children <i class="bi bi-chevron-down"></i>
+</button>
+<ul class="collapse">
+    {{#.children|iter}}
+    <li>{{label}}</li>
+    {{/.children|iter}}
+</ul>
+{{/.children}}
+{{^.children}}
+<a href="#">No Children - Direct Link</a>
+{{/.children}}

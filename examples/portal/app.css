@@ -1,0 +1,138 @@
+/**
+ * Portal Example - Minimal Custom Styles
+ * Leverages Bootstrap 5 for most styling
+ */
+
+/* ============================================
+   Portal Layout
+   ============================================ */
+body {
+    font-size: 0.875rem;
+    background-color: #f8f9fa;
+}
+
+/* Ensure full height layout */
+.portal-container {
+    min-height: 100vh;
+}
+
+/* Page container padding */
+#page-container {
+    background-color: transparent;
+}
+
+/* ============================================
+   Sidebar adjustments
+   ============================================ */
+#portal-sidebar {
+    background-color: white;
+    border-right: 1px solid #dee2e6;
+    transition: width 0.3s ease;
+}
+
+/* ============================================
+   Cards - subtle shadows
+   ============================================ */
+.card.border-0 {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* ============================================
+   Small utilities
+   ============================================ */
+.small {
+    font-size: 0.8125rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+/* ============================================
+   Templates Documentation Page
+   ============================================ */
+
+/* Code textareas */
+#template-input,
+#data-input {
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    resize: vertical;
+}
+
+#template-input:focus,
+#data-input:focus {
+    background-color: white;
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Output areas */
+#output-rendered {
+    min-height: 100px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+#output-html {
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
+    font-size: 0.875rem;
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Example list items */
+.list-group-item-action:hover {
+    background-color: #f8f9fa;
+}
+
+.list-group-item-action.active {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* Product cards in examples */
+.products .product {
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    margin-bottom: 1rem;
+    background-color: white;
+}
+
+/* Dashboard example styling */
+.dashboard .item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.dashboard .item:last-child {
+    border-bottom: none;
+}
+
+/* Code highlighting in explanations */
+code {
+    color: #d63384;
+    background-color: #f8f9fa;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+}
+
+/* Tab navigation */
+.nav-tabs .nav-link {
+    color: #495057;
+}
+
+.nav-tabs .nav-link.active {
+    font-weight: 500;
+}

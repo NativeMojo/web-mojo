@@ -10,7 +10,7 @@ class MainContent extends View {
             tagName: 'div',
             className: 'main-content',
             template: `
-                {{#showTopBar}}
+                {{#data.showTopBar}}
                 <nav class="navbar navbar-light bg-white border-bottom px-3 py-2">
                     <button class="btn btn-sm btn-outline-secondary d-md-none" data-action="toggle-sidebar">
                         <i class="bi bi-list"></i>
@@ -18,16 +18,16 @@ class MainContent extends View {
                     <button class="btn btn-sm btn-outline-secondary d-none d-md-block" data-action="collapse-sidebar">
                         <i class="bi bi-layout-sidebar"></i>
                     </button>
-                    {{#topBarContent}}
+                    {{#data.topBarContent}}
                     <span class="navbar-text small text-muted ms-auto">
-                        {{topBarContent}}
+                        {{data.topBarContent}}
                     </span>
-                    {{/topBarContent}}
+                    {{/data.topBarContent}}
                 </nav>
-                {{/showTopBar}}
+                {{/data.showTopBar}}
 
-                <div class="{{contentClass}}" data-id="content">
-                    {{{content}}}
+                <div class="{{data.contentClass}}" data-id="content">
+                    {{{data.content}}}
                 </div>
             `,
             ...options
@@ -79,6 +79,21 @@ class MainContent extends View {
 
     setContent(content) {
         this.updateData({ content });
+    }
+
+    getContentContainer() {
+        if (this.element) {
+            return this.element.querySelector('[data-id="content"]');
+        }
+        return null;
+    }
+
+    clear() {
+        this.updateData({ content: '' });
+        const container = this.getContentContainer();
+        if (container) {
+            container.innerHTML = '';
+        }
     }
 }
 

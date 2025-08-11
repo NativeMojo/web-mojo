@@ -1,0 +1,47 @@
+<div class="dashboard">
+    <h2>{{title}}</h2>
+
+    {{#.notifications}}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i>
+        You have {{notifications.length}} new notifications
+    </div>
+    {{/.notifications}}
+
+    <div class="row">
+        {{#widgets}}
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>{{name}}</h5>
+                    {{#.badge}}
+                    <span class="badge bg-{{badge.color}}">{{badge.text}}</span>
+                    {{/.badge}}
+                </div>
+                <div class="card-body">
+                    {{#.items|iter}}
+                    <div class="item">
+                        <strong>{{label}}:</strong> {{value}}
+                        {{#.trend}}
+                        <span class="text-{{trend.color}}">
+                            <i class="bi bi-arrow-{{trend.direction}}"></i>
+                            {{trend.percent}}%
+                        </span>
+                        {{/.trend}}
+                    </div>
+                    {{/.items|iter}}
+
+                    {{^.items}}
+                    <p class="text-muted">No data available</p>
+                    {{/.items}}
+                </div>
+                {{#.footer}}
+                <div class="card-footer">
+                    {{{footer}}}
+                </div>
+                {{/.footer}}
+            </div>
+        </div>
+        {{/widgets}}
+    </div>
+</div>
