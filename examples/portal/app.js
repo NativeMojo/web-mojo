@@ -9,6 +9,18 @@ import DashboardPage from './pages/DashboardPage.js';
 import TemplatesPage from './pages/TemplatesPage.js';
 import TodosPage from './pages/TodosPage.js';
 
+// Detect page reloads
+if (window.performance && window.performance.navigation.type === 1) {
+    console.warn('⚠️ Page was reloaded!');
+} else {
+    console.log('✅ Initial page load (not a reload)');
+}
+
+// Add beforeunload listener to detect when page is about to reload
+window.addEventListener('beforeunload', () => {
+    console.warn('⚠️ Page is about to reload/navigate away!');
+});
+
 // Create and configure the app
 const app = new WebApp({
     name: 'Portal Example',
@@ -139,20 +151,10 @@ const app = new WebApp({
 });
 
 // Register pages using clean API: registerPage(name, PageClass, options)
-console.log('=== Registering Pages ===');
 app.registerPage('home', HomePage);
 app.registerPage('dashboard', DashboardPage);
 app.registerPage('templates', TemplatesPage);
 app.registerPage('todos', TodosPage);
-
-console.log('Pages registered:', Array.from(app.pageClasses.keys()));
-console.log('Router initialized:', !!app.router);
-if (app.router) {
-    const routes = Array.from(app.router.routes.entries())
-        .filter(([key]) => !key.startsWith('@'))
-        .map(([pattern, info]) => `${pattern} -> ${info.pageName}`);
-    console.log('Routes:', routes);
-}
 
 // Register ReportsPage for all report-related routes
 // Handle portal actions
@@ -176,10 +178,9 @@ app.eventBus.on('portal:action', ({ action }) => {
 
 // Start the application
 app.start().then(() => {
-    console.log('✅ Portal started successfully');
-    console.log('Current page:', app.currentPage?.pageName || 'none');
+    console.log('Portal app started successfully');
 }).catch(error => {
-    console.error('❌ Failed to start portal:', error.message);
+    console.error('Failed to start app:', error);
 });
 
 // Make app globally available for debugging
@@ -209,5 +210,3 @@ window.debugApp = () => {
         currentPage: app.currentPage
     };
 };
-
-console.log('💡 Tip: Run debugApp() in console to inspect app state');

@@ -1013,17 +1013,26 @@ class View {
 
     const router = this.findRouter();
     if (router) {
-      // Convert href to route path
-      const routePath = this.hrefToRoutePath(href);
-
-      // Check if this route exists
-      if (router.routes && router.routes.has(routePath)) {
-        await router.navigate(routePath);
-      } else {
-        console.warn(`Route not found: ${routePath}, allowing default navigation`);
-        // Fallback to default navigation
-        window.location.href = href;
+      // Handle different URL formats based on router mode
+      if (router.options && router.options.mode === 'param' && href.startsWith('?')) {
+        // In param mode with query string URLs, navigate directly
+        // The router expects a path with query like "/?page=name"
+        const fullPath = '/' + href;
+        await router.navigate(fullPath);
+        return;
       }
+      
+      // For hash mode
+      if (router.options && router.options.mode === 'hash' && href.startsWith('#')) {
+        await router.navigate(href);
+        return;
+      }
+
+      // For history mode or regular paths
+      const routePath = this.hrefToRoutePath(href);
+      
+      // Just navigate and let router handle it
+      await router.navigate(routePath);
     } else {
       console.warn('No router found for navigation, using default behavior');
       window.location.href = href;
