@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>TablePage Template Test</title>
+
+        <!-- Bootstrap 5 CSS -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+            rel="stylesheet"
+        />
+
+        <!-- MOJO Framework CSS -->
+        <link href="../src/styles/mojo.css" rel="stylesheet" />
+
+        <style>
+            body {
+                padding: 20px;
+            }
+            .test-info {
+                background: #f8f9fa;
+                padding: 15px;
+                border-radius: 5px;
+                margin-bottom: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="test-info">
+                <h3>TablePage External Template Test</h3>
+                <p>This page tests if TablePage correctly loads its template from <code>/src/components/TablePage.mst</code></p>
+                <p>Check the browser console for any errors.</p>
+            </div>
+
+            <!-- App container -->
+            <div id="app"></div>
+        </div>
+
+        <!-- Bootstrap 5 JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+        <!-- Test Script -->
+        <script type="module">
+            import TablePage from '../src/components/TablePage.js';
+            import Router from '../src/core/Router.js';
+            import Model from '../src/core/Model.js';
+            import DataList from '../src/core/DataList.js';
+
+            // Mock data
+            const mockData = Array.from({ length: 50 }, (_, i) => ({
+                id: i + 1,
+                name: `Item ${i + 1}`,
+                status: ['Active', 'Pending', 'Inactive'][Math.floor(Math.random() * 3)],
+                created: new Date(Date.now() - Math.random() * 10000000000).toLocaleDateString()
+            }));
+
+            // Create a mock model
+            class TestModel extends Model {
+                constructor(data) {
+                    super(data);
+                }
+            }
+
+            // Create a mock collection
+            class TestCollection extends DataList {
+                constructor(data) {
+                    super(TestModel, data);
+                }
+            }
+
+            // Create test TablePage
+            class TestTablePage extends TablePage {
+                constructor(options = {}) {
+                    super({
+                        ...options,
+                        pageName: 'test',
+                        title: 'Test Table Page',
+                        description: 'Testing external template loading',
+
+                        collection: new TestCollection(mockData),
+                        columns: [
+                            { key: 'id', label: 'ID', sortable: true },
+                            { key: 'name', label: 'Name', sortable: true },
+                            {
+                                key: 'status',
+                                label: 'Status',
+                                sortable: true,
+                                render: (value) => {
+                                    const colors = {
+                                        'Active': 'success',
+                                        'Pending': 'warning',
+                                        'Inactive': 'danger'
+                                    };
+                                    return `<span class="badge bg-${colors[value] || 'secondary'}">${value}</span>`;
+                                }
+                            },
+                            { key: 'created', label: 'Created', sortable: true }
+                        ],
+
+                        showStatus: true,
+                        showRecordCount: true,
+                        showLastUpdated: true,
+
+                        searchable: true,
+                        sortable: true,
+                        paginated: true,
+                        perPage: 10
+                    });
+                }
+            }
+
+            // Initialize
+            async function init() {
+                console.log('🧪 Starting TablePage Template Test...');
+
+                try {
+                    // Create router
+                    const router = new Router({
+                        mode: 'param',
+                        container: '#app'
+                    });
+
+                    // Make router globally available
+                    window.MOJO = window.MOJO || {};
+                    window.MOJO.router = router;
+
+                    // Create and register the test page
+                    const testPage = new TestTablePage();
+                    router.addRoute('/', testPage);
+                    router.addRoute('test', testPage);
+
+                    // Register page name
+                    router.registerPage('test', testPage);
+
+                    // Start router
+                    await router.start();
+
+                    console.log('✅ TablePage initialized successfully');
+                    console.log('📝 Template loaded from:', TablePage.template);
+                    console.log('🎨 Styles loaded from: /src/styles/mojo.css');
+
+                    // Check if template loaded
+                    const container = document.querySelector('.table-page-container');
+                    if (container) {
+                        console.log('✅ Template rendered successfully');
+                    } else {
+                        console.error('❌ Template did not render properly');
+                    }
+
+                } catch (error) {
+                    console.error('❌ Error initializing TablePage:', error);
+                    document.getElementById('app').innerHTML = `
+                        <div class="alert alert-danger">
+                            <h4>Error Loading TablePage</h4>
+                            <p>${error.message}</p>
+                            <pre>${error.stack}</pre>
+                        </div>
+                    `;
+                }
+            }
+
+            // Run test when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+        </script>
+    </body>
+</html>

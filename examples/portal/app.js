@@ -7,6 +7,7 @@ import WebApp from '../../src/app/WebApp.js';
 import HomePage from './pages/HomePage.js';
 import DashboardPage from './pages/DashboardPage.js';
 import TemplatesPage from './pages/TemplatesPage.js';
+import TodosPage from './pages/TodosPage.js';
 
 // Create and configure the app
 const app = new WebApp({
@@ -21,7 +22,7 @@ const app = new WebApp({
 
     // API configuration (optional - for demo purposes)
     api: {
-        baseUrl: 'https://jsonplaceholder.typicode.com',
+        baseUrl: 'http://localhost:8881',
         timeout: 30000
     },
 
@@ -75,6 +76,11 @@ const app = new WebApp({
                 text: 'Templates',
                 route: '?page=templates',
                 icon: 'bi-code-slash'
+            },
+            {
+                text: 'Todos',
+                route: '?page=todos',
+                icon: 'bi-check2-square'
             }
         ],
         footer: '<div class="text-center text-muted small">v1.0.0</div>'
@@ -132,10 +138,21 @@ const app = new WebApp({
     defaultRoute: 'home'
 });
 
-// Register pages
-app.addPage(HomePage);
-app.addPage(DashboardPage);
-app.addPage(TemplatesPage);
+// Register pages using clean API: registerPage(name, PageClass, options)
+console.log('=== Registering Pages ===');
+app.registerPage('home', HomePage);
+app.registerPage('dashboard', DashboardPage);
+app.registerPage('templates', TemplatesPage);
+app.registerPage('todos', TodosPage);
+
+console.log('Pages registered:', Array.from(app.pageClasses.keys()));
+console.log('Router initialized:', !!app.router);
+if (app.router) {
+    const routes = Array.from(app.router.routes.entries())
+        .filter(([key]) => !key.startsWith('@'))
+        .map(([pattern, info]) => `${pattern} -> ${info.pageName}`);
+    console.log('Routes:', routes);
+}
 
 // Register ReportsPage for all report-related routes
 // Handle portal actions
@@ -159,10 +176,38 @@ app.eventBus.on('portal:action', ({ action }) => {
 
 // Start the application
 app.start().then(() => {
-    console.log('Portal app started successfully');
+    console.log('✅ Portal started successfully');
+    console.log('Current page:', app.currentPage?.pageName || 'none');
 }).catch(error => {
-    console.error('Failed to start app:', error);
+    console.error('❌ Failed to start portal:', error.message);
 });
 
 // Make app globally available for debugging
 window.app = app;
+
+// Debug helper function
+window.debugApp = () => {
+    console.log('=== App Debug Info ===');
+    console.log('Pages registered:', Array.from(app.pageClasses.keys()));
+    console.log('Pages cached:', Array.from(app.pageCache.keys()));
+    console.log('Current page:', app.currentPage?.pageName || 'none');
+    console.log('Router mode:', app.router?.options?.mode);
+    
+    const routes = Array.from(app.router.routes.entries())
+        .filter(([key]) => !key.startsWith('@'))
+        .map(([pattern, info]) => ({
+            pattern,
+            pageName: info.pageName,
+            regex: info.regex.toString()
+        }));
+    console.table(routes);
+    
+    return {
+        pageClasses: app.pageClasses,
+        pageCache: app.pageCache,
+        router: app.router,
+        currentPage: app.currentPage
+    };
+};
+
+console.log('💡 Tip: Run debugApp() in console to inspect app state');

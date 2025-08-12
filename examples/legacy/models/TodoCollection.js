@@ -1,10 +1,10 @@
 /**
  * TodoCollection
- * DataList implementation for managing multiple TODO items
+ * Collection implementation for managing multiple TODO items
  * Handles fetching, filtering, and managing collections of Todo models
  */
 
-import { DataList, Rest } from '../../src/mojo.js';
+import { Collection, Rest } from '../../src/mojo.js';
 import Todo from './Todo.js';
 
 // API Configuration
@@ -15,7 +15,7 @@ const API_ENDPOINT = '/api/example/todo';
  * TodoCollection - manages multiple TODO items with REST API
  * @extends DataList
  */
-class TodoCollection extends DataList {
+class TodoCollection extends Collection {
     static Rest = Rest;  // Set Rest class for API calls
     
     constructor(models = [], options = {}) {

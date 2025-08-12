@@ -41,7 +41,9 @@
  */
 
 import Mustache from '../utils/mustache.js';
-window.Mustache = Mustache;
+if (typeof window !== 'undefined') {
+  window.Mustache = Mustache;
+}
 import MOJOUtils from '../utils/MOJOUtils.js';
 
 class View {
@@ -103,8 +105,13 @@ class View {
       afterDestroy: options.afterDestroy || (() => {})
     };
 
-    // Initialize
-    this.init();
+    // Flag to track if view has been initialized
+    this._initialized = false;
+
+    // Do basic setup but defer full initialization until render
+    if (!this.id) {
+      this.id = this.generateId();
+    }
   }
 
   /**
@@ -114,6 +121,14 @@ class View {
     if (this.destroyed) {
       throw new Error('Cannot initialize destroyed view');
     }
+
+    // Prevent duplicate initialization
+    if (this._initialized) {
+      return;
+    }
+
+    // Mark as initialized
+    this._initialized = true;
 
     // Call before init hook
     this.hooks.beforeInit.call(this);
@@ -236,7 +251,7 @@ class View {
         window.MOJO.clearLoadingScreen();
       }
 
-      throw error;
+      // throw error;
     } finally {
       this.loading = false;
       this.isRendering = false;
@@ -253,7 +268,9 @@ class View {
     }
 
     if (!this.element || !this.container) {
-      throw new Error('Cannot mount without element and container');
+        console.error('Cannot mount without element and container');
+      // throw new Error('Cannot mount without element and container');
+      return this;
     }
 
     // Call before mount hook
@@ -265,7 +282,8 @@ class View {
     // Verify container still exists and is in DOM
     if (!this.container || !document.body.contains(this.container)) {
       console.error(`View ${this.id}: Container missing or detached during mount`);
-      throw new Error('Container is not available for mounting');
+      // throw new Error('Container is not available for mounting');
+        return this;
     }
 
     // Clear container if this is a page or if explicitly replacing
@@ -279,7 +297,8 @@ class View {
     // Verify element exists
     if (!this.element) {
       console.error(`View ${this.id}: No element to mount`);
-      throw new Error('No element available for mounting');
+      // throw new Error('No element available for mounting');
+        return this;
     }
 
     // Check if we should look for a placeholder or just append
@@ -544,21 +563,40 @@ class View {
     this.children.set(childKey, child);
     this.childOrder.push(childKey);
 
-    // If this view is already rendered, render and mount the child
-    if (this.rendered && this.element) {
-      // Set the child's container to be within this element
+    // If this view is already mounted in the DOM, render and mount the child
+    if (this.mounted && this.element && document.body.contains(this.element)) {
+      // Look for a placeholder element with the child's ID
       const childPlaceholder = this.element.querySelector(`#${child.id}`);
-      if (childPlaceholder) {
-        child.setContainer(childPlaceholder.parentElement || this.element);
-      } else {
-        child.setContainer(this.element);
-      }
 
-      child.render().then(() => {
-        if (this.mounted) {
-          child.mount();
-        }
-      });
+      if (childPlaceholder) {
+        // Create a temporary container for the child
+        const tempContainer = document.createElement('div');
+        child.setContainer(tempContainer);
+
+        // Render the child
+        child.render().then(() => {
+          // Replace the placeholder with the child's element
+          if (child.element && childPlaceholder.parentNode) {
+            childPlaceholder.parentNode.replaceChild(child.element, childPlaceholder);
+            // Update the child's container to reflect its actual parent
+            child.container = child.element.parentNode;
+          }
+
+          // Mark as mounted since it's now in the DOM
+          if (this.mounted && child.element && document.body.contains(child.element)) {
+            child.mounted = true;
+            child.onAfterMount();
+          }
+        });
+      } else {
+        // No placeholder found, append to parent element
+        child.setContainer(this.element);
+        child.render().then(() => {
+          if (this.mounted) {
+            child.mount();
+          }
+        });
+      }
     }
 
     return this;
@@ -632,8 +670,28 @@ class View {
     for (const key of this.childOrder) {
       const child = this.children.get(key);
 
-      // Pass our element as the container - child will find its own placeholder
-      await child.render(this.element);
+      // Look for a placeholder element with the child's ID
+      const childPlaceholder = this.element ? this.element.querySelector(`#${child.id}`) : null;
+
+      if (childPlaceholder) {
+        // Create a temporary container for the child
+        const tempContainer = document.createElement('div');
+        child.setContainer(tempContainer);
+
+        // Render the child
+        await child.render();
+
+        // Replace the placeholder with the child's element
+        if (child.element && childPlaceholder.parentNode) {
+          childPlaceholder.parentNode.replaceChild(child.element, childPlaceholder);
+          // Update the child's container to reflect its actual parent
+          child.container = child.element.parentNode;
+        }
+      } else {
+        // No placeholder found, render with parent element as container
+        child.setContainer(this.element);
+        await child.render();
+      }
     }
   }
 
@@ -644,7 +702,12 @@ class View {
   async mountChildren() {
     const mountPromises = this.childOrder.map(key => {
       const child = this.children.get(key);
-      return child.mount();
+      // Only mount if not already mounted (some children might have been mounted during render)
+      if (!child.mounted && child.element && document.body.contains(child.element)) {
+        child.mounted = true;
+        return child.onAfterMount();
+      }
+      return Promise.resolve();
     });
 
     await Promise.all(mountPromises);
@@ -1124,7 +1187,12 @@ class View {
   }
 
   // Lifecycle hooks - can be overridden in subclasses
-  async onBeforeRender() {}
+  async onBeforeRender() {
+    // Ensure view is initialized before rendering
+    if (!this._initialized) {
+      this.init();
+    }
+  }
   async onAfterRender() {}
   async onBeforeMount() {}
   async onAfterMount() {}

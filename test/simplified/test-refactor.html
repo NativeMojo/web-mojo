@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>MOJO Simplified Architecture Test</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+            rel="stylesheet"
+        />
+        <style>
+            .test-status {
+                padding: 10px;
+                margin: 10px 0;
+                border-radius: 5px;
+            }
+            .test-pass {
+                background: #d4edda;
+                color: #155724;
+            }
+            .test-fail {
+                background: #f8d7da;
+                color: #721c24;
+            }
+            .test-info {
+                background: #d1ecf1;
+                color: #0c5460;
+            }
+            #log {
+                background: #f8f9fa;
+                padding: 15px;
+                border-radius: 5px;
+                max-height: 400px;
+                overflow-y: auto;
+            }
+            .log-entry {
+                font-family: monospace;
+                font-size: 12px;
+                margin: 2px 0;
+            }
+            .log-error {
+                color: #dc3545;
+            }
+            .log-success {
+                color: #28a745;
+            }
+            .log-info {
+                color: #17a2b8;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container mt-4">
+            <h1>MOJO Simplified Architecture Test</h1>
+            <p class="lead">Testing the refactored WebApp + Router + Page architecture</p>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5>Test Controls</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="btn-group mb-3" role="group">
+                                <button class="btn btn-primary" onclick="testPageCaching()">
+                                    Test Page Caching
+                                </button>
+                                <button class="btn btn-primary" onclick="testStatePreservation()">
+                                    Test State Preservation
+                                </button>
+                                <button class="btn btn-primary" onclick="testNavigation()">
+                                    Test Navigation
+                                </button>
+                                <button class="btn btn-warning" onclick="clearLog()">
+                                    Clear Log
+                                </button>
+                            </div>
+
+                            <div id="test-results"></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Page Container</h5>
+                        </div>
+                        <div class="card-body" id="app">
+                            <!-- Pages will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Navigation</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group">
+                                <a
+                                    href="#"
+                                    class="list-group-item list-group-item-action"
+                                    data-page="home"
+                                    >Home</a
+                                >
+                                <a
+                                    href="#"
+                                    class="list-group-item list-group-item-action"
+                                    data-page="about"
+                                    >About</a
+                                >
+                                <a
+                                    href="#"
+                                    class="list-group-item list-group-item-action"
+                                    data-page="contact"
+                                    >Contact</a
+                                >
+                                <a
+                                    href="#"
+                                    class="list-group-item list-group-item-action"
+                                    data-page="form"
+                                    >Form Test</a
+                                >
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h5>Log</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="log"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script type="module">
+            import WebApp from "../../src/app/WebApp.js";
+            import Page from "../../src/core/Page.js";
+
+            // Custom logging
+            const log = (message, type = "info") => {
+                const logEl = document.getElementById("log");
+                const entry = document.createElement("div");
+                entry.className = `log-entry log-${type}`;
+                entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                logEl.appendChild(entry);
+                logEl.scrollTop = logEl.scrollHeight;
+            };
+
+            window.clearLog = () => {
+                document.getElementById("log").innerHTML = "";
+                log("Log cleared", "info");
+            };
+
+            // Define test pages
+            // Home page will use config pattern (see registration below)
+            // This is just for reference/comparison
+            class HomePageClass extends Page {
+                constructor() {
+                    super({
+                        pageName: "home-class",
+                        route: "/home-class",
+                        pageIcon: "bi bi-house",
+                        displayName: "Home Page Class",
+                    });
+                    this.renderCount = 0;
+                }
+
+                async getTemplate() {
+                    return `
+                    <div class="p-4">
+                        <h2>Home Page Class</h2>
+                        <p>This would be the class version. Render count: ${++this.renderCount}</p>
+                        <p>Instance ID: ${this.instanceId || (this.instanceId = Math.random().toString(36).substr(2, 9))}</p>
+                    </div>
+                `;
+                }
+
+                async onEnter() {
+                    await super.onEnter();
+                    log(`HomePageClass.onEnter() - Instance: ${this.instanceId}`, "success");
+                }
+
+                async onExit() {
+                    await super.onExit();
+                    log(`HomePageClass.onExit() - Instance: ${this.instanceId}`, "info");
+                }
+            }
+
+            class AboutPage extends Page {
+                constructor(options = {}) {
+                    super({
+                        ...options,
+                        pageIcon: "bi bi-info-circle",
+                        displayName: "About Page",
+                    });
+                    this.renderCount = 0;
+                }
+
+                async getTemplate() {
+                    return `
+                    <div class="p-4">
+                        <h2>About Page</h2>
+                        <p>Learn more about us. Render count: ${++this.renderCount}</p>
+                        <p>Instance ID: ${this.instanceId || (this.instanceId = Math.random().toString(36).substr(2, 9))}</p>
+                    </div>
+                `;
+                }
+
+                async onEnter() {
+                    await super.onEnter();
+                    log(`AboutPage.onEnter() - Instance: ${this.instanceId}`, "success");
+                }
+
+                async onExit() {
+                    await super.onExit();
+                    log(`AboutPage.onExit() - Instance: ${this.instanceId}`, "info");
+                }
+            }
+
+            class ContactPage extends Page {
+                constructor(options = {}) {
+                    super({
+                        ...options,
+                        pageIcon: "bi bi-envelope",
+                        displayName: "Contact Page",
+                    });
+                    this.renderCount = 0;
+                }
+
+                async getTemplate() {
+                    return `
+                    <div class="p-4">
+                        <h2>Contact Page</h2>
+                        <p>Get in touch. Render count: ${++this.renderCount}</p>
+                        <p>Instance ID: ${this.instanceId || (this.instanceId = Math.random().toString(36).substr(2, 9))}</p>
+                        <p>Scroll down to test state preservation...</p>
+                        ${Array(20)
+                            .fill(0)
+                            .map((_, i) => `<p>Line ${i + 1}</p>`)
+                            .join("")}
+                    </div>
+                `;
+                }
+
+                async onEnter() {
+                    await super.onEnter();
+                    log(`ContactPage.onEnter() - Instance: ${this.instanceId}`, "success");
+                }
+
+                async onExit() {
+                    await super.onExit();
+                    log(`ContactPage.onExit() - Instance: ${this.instanceId}`, "info");
+                }
+            }
+
+            class FormPage extends Page {
+                constructor(options = {}) {
+                    super({
+                        ...options,
+                        pageIcon: "bi bi-card-text",
+                        displayName: "Form Test Page",
+                    });
+                }
+
+                async getTemplate() {
+                    return `
+                    <div class="p-4">
+                        <h2>Form Test Page</h2>
+                        <p>Test state preservation with form inputs</p>
+                        <form>
+                            <div class="mb-3">
+                                <label class="form-label">Name</label>
+                                <input type="text" class="form-control" name="name" placeholder="Enter your name">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="email" placeholder="Enter your email">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Message</label>
+                                <textarea class="form-control" name="message" rows="3"></textarea>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" name="subscribe" id="subscribe">
+                                <label class="form-check-label" for="subscribe">
+                                    Subscribe to newsletter
+                                </label>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Preference</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="preference" value="daily" id="daily">
+                                    <label class="form-check-label" for="daily">Daily</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="preference" value="weekly" id="weekly">
+                                    <label class="form-check-label" for="weekly">Weekly</label>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                `;
+                }
+
+                async onEnter() {
+                    await super.onEnter();
+                    log("FormPage.onEnter() - State restored", "success");
+                }
+
+                async onExit() {
+                    await super.onExit();
+                    log("FormPage.onExit() - State saved", "info");
+                }
+            }
+
+            // Initialize app
+            const app = new WebApp({
+                name: "Test App",
+                container: "#app",
+                routerMode: "param",
+                defaultRoute: "home",
+            });
+
+            // Register pages using clean API: registerPage(name, PageClass, options)
+
+            // Create a simple HomePage class for testing
+            class HomePage extends Page {
+                async getTemplate() {
+                    return `
+                        <div class="p-4">
+                            <h2>Home Page</h2>
+                            <p>Simple home page for testing.</p>
+                            <p>Instance ID: ${Math.random().toString(36).substr(2, 9)}</p>
+                            <p>Created at: ${new Date().toLocaleTimeString()}</p>
+                        </div>
+                    `;
+                }
+
+                async onEnter() {
+                    await super.onEnter();
+                    log("Home page entered", "success");
+                }
+
+                async onExit() {
+                    log("Home page exited", "info");
+                    await super.onExit();
+                }
+            }
+
+            // Register all pages with explicit names
+            app.registerPage("home", HomePage, { route: "/home" });
+            app.registerPage("about", AboutPage, { route: "/about" });
+            app.registerPage("contact", ContactPage, { route: "/contact" });
+            app.registerPage("form", FormPage, {
+                route: "/form",
+                customOption: "test",
+            });
+
+            // Start the app (this will initialize router and handle routes)
+            await app.start();
+
+            // Test functions
+            window.testPageCaching = async () => {
+                const results = document.getElementById("test-results");
+                results.innerHTML =
+                    '<div class="test-status test-info">Running page caching test...</div>';
+
+                try {
+                    // Navigate to home
+                    await app.router.navigate("/home");
+                    const home1 = app.currentPage;
+                    const homeId1 = home1?.instanceId || "config-page";
+
+                    // Navigate to about
+                    await app.router.navigate("/about");
+
+                    // Navigate back to home
+                    await app.router.navigate("/home");
+                    const home2 = app.currentPage;
+                    const homeId2 = home2?.instanceId || "config-page";
+
+                    // Check if same instance
+                    if (home1 === home2 && homeId1 === homeId2) {
+                        results.innerHTML =
+                            '<div class="test-status test-pass">✓ Page caching test PASSED - Same instance reused</div>';
+                        log("Page caching test PASSED", "success");
+                    } else {
+                        results.innerHTML =
+                            '<div class="test-status test-fail">✗ Page caching test FAILED - Different instances</div>';
+                        log("Page caching test FAILED", "error");
+                    }
+                } catch (error) {
+                    results.innerHTML = `<div class="test-status test-fail">✗ Error: ${error.message}</div>`;
+                    log(`Test error: ${error.message}`, "error");
+                }
+            };
+
+            window.testStatePreservation = async () => {
+                const results = document.getElementById("test-results");
+                results.innerHTML =
+                    '<div class="test-status test-info">Running state preservation test...</div>';
+
+                try {
+                    // Navigate to form page
+                    await app.router.navigate("/form");
+
+                    // Fill in form
+                    const nameInput = document.querySelector('input[name="name"]');
+                    const emailInput = document.querySelector('input[name="email"]');
+                    const messageInput = document.querySelector('textarea[name="message"]');
+                    const subscribeCheck = document.querySelector('input[name="subscribe"]');
+                    const weeklyRadio = document.querySelector('input[value="weekly"]');
+
+                    if (nameInput) nameInput.value = "John Doe";
+                    if (emailInput) emailInput.value = "john@example.com";
+                    if (messageInput) messageInput.value = "Test message";
+                    if (subscribeCheck) subscribeCheck.checked = true;
+                    if (weeklyRadio) weeklyRadio.checked = true;
+
+                    // Navigate away
+                    await app.router.navigate("/about");
+
+                    // Navigate back
+                    await app.router.navigate("/form");
+
+                    // Check if form data preserved
+                    const preserved =
+                        document.querySelector('input[name="name"]')?.value === "John Doe" &&
+                        document.querySelector('input[name="email"]')?.value ===
+                            "john@example.com" &&
+                        document.querySelector('textarea[name="message"]')?.value ===
+                            "Test message" &&
+                        document.querySelector('input[name="subscribe"]')?.checked === true &&
+                        document.querySelector('input[value="weekly"]')?.checked === true;
+
+                    if (preserved) {
+                        results.innerHTML =
+                            '<div class="test-status test-pass">✓ State preservation test PASSED</div>';
+                        log("State preservation test PASSED", "success");
+                    } else {
+                        results.innerHTML =
+                            '<div class="test-status test-fail">✗ State preservation test FAILED</div>';
+                        log("State preservation test FAILED", "error");
+                    }
+                } catch (error) {
+                    results.innerHTML = `<div class="test-status test-fail">✗ Error: ${error.message}</div>`;
+                    log(`Test error: ${error.message}`, "error");
+                }
+            };
+
+            window.testNavigation = async () => {
+                const results = document.getElementById("test-results");
+                results.innerHTML =
+                    '<div class="test-status test-info">Running navigation test...</div>';
+
+                try {
+                    // Test navigation sequence
+                    await app.router.navigate("/home");
+                    const isHome = app.currentPage?.pageName === "home";
+
+                    await app.router.navigate("/about");
+                    const isAbout = app.currentPage?.pageName === "about";
+
+                    await app.router.navigate("/contact");
+                    const isContact = app.currentPage?.pageName === "contact";
+
+                    if (isHome && isAbout && isContact) {
+                        results.innerHTML =
+                            '<div class="test-status test-pass">✓ Navigation test PASSED</div>';
+                        log("Navigation test PASSED", "success");
+                    } else {
+                        results.innerHTML =
+                            '<div class="test-status test-fail">✗ Navigation test FAILED</div>';
+                        log("Navigation test FAILED", "error");
+                    }
+                } catch (error) {
+                    results.innerHTML = `<div class="test-status test-fail">✗ Error: ${error.message}</div>`;
+                    log(`Test error: ${error.message}`, "error");
+                }
+            };
+
+            // Setup navigation links
+            document.querySelectorAll("[data-page]").forEach((link) => {
+                link.addEventListener("click", async (e) => {
+                    e.preventDefault();
+                    const pageName = e.currentTarget.dataset.page;
+                    await app.router.navigateToPage(pageName);
+                });
+            });
+
+            // Initial log
+            log("Test app initialized", "success");
+            log("Click test buttons to run tests", "info");
+
+            // Navigate to home initially
+            await app.router.navigate("/home");
+
+            // Make app available globally for debugging
+            window.testApp = app;
+
+            // Debug helpers for browser console
+            console.log("🔧 Debug Helpers:");
+            console.log("  testApp.pageCache - See cached page instances");
+            console.log("  testApp.pageClasses - See registered page classes");
+            console.log("  testApp.currentPage - See current active page");
+            console.log('  testApp.router.navigate("/about") - Navigate to a page');
+            console.log('  testApp.getOrCreatePage("home") - Get page instance');
+        </script>
+    </body>
+</html>

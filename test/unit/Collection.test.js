@@ -1,19 +1,19 @@
 /**
- * DataList Unit Tests
- * Tests for the DataList collection class functionality
+ * Collection Unit Tests
+ * Tests for the Collection class functionality
  */
 
 module.exports = async function(testContext) {
     const { describe, it, expect, assert, beforeEach } = testContext;
     const { testHelpers } = require('../utils/test-helpers');
     
-    // Import DataList and RestModel
-    const DataList = require('../../src/core/DataList.js').default;
+    // Import Collection and RestModel
+    const Collection = require('../../src/core/Collection.js').default;
     const Model = require('../../src/core/Model.js').default;
     
     await testHelpers.setup();
 
-    describe('DataList Core Functionality', () => {
+    describe('Collection Core Functionality', () => {
         let mockRest;
         let TestModel;
         let collection;
@@ -36,15 +36,15 @@ module.exports = async function(testContext) {
 
             TestModel = TestUser;
             TestModel.Rest = mockRest;
-            DataList.Rest = mockRest;
+            Collection.Rest = mockRest;
 
             // Create collection instance
-            collection = new DataList(TestModel, { endpoint: '/api/users' });
+            collection = new Collection(TestModel, { endpoint: '/api/users' });
         });
 
         describe('Constructor and Initialization', () => {
             it('should create empty collection', () => {
-                const col = new DataList(TestModel);
+                const col = new Collection(TestModel);
                 
                 expect(col.ModelClass).toBe(TestModel);
                 expect(col.endpoint).toBe('/api/users');
@@ -55,20 +55,20 @@ module.exports = async function(testContext) {
             });
 
             it('should use custom endpoint', () => {
-                const col = new DataList(TestModel, { endpoint: '/api/custom' });
+                const col = new Collection(TestModel, { endpoint: '/api/custom' });
                 
                 expect(col.endpoint).toBe('/api/custom');
             });
 
             it('should set default options', () => {
-                const col = new DataList(TestModel);
+                const col = new Collection(TestModel);
                 
                 expect(col.options.parse).toBe(true);
                 expect(col.options.reset).toBe(true);
             });
 
             it('should accept custom options', () => {
-                const col = new DataList(TestModel, { 
+                const col = new Collection(TestModel, { 
                     parse: false, 
                     reset: false 
                 });
@@ -585,18 +585,18 @@ module.exports = async function(testContext) {
                     { id: 2, name: 'Jane', email: 'jane@test.com' }
                 ];
 
-                const col = DataList.fromArray(TestModel, data);
+                const col = Collection.fromArray(TestModel, data);
                 
-                expect(col).toBeInstanceOf(DataList);
+                expect(col).toBeInstanceOf(Collection);
                 expect(col.length()).toBe(2);
                 expect(col.models[0]).toBeInstanceOf(TestModel);
                 expect(col.models[0].get('name')).toBe('John');
             });
 
             it('should create empty collection from empty array', () => {
-                const col = DataList.fromArray(TestModel, []);
+                const col = Collection.fromArray(TestModel, []);
                 
-                expect(col).toBeInstanceOf(DataList);
+                expect(col).toBeInstanceOf(Collection);
                 expect(col.length()).toBe(0);
                 expect(col.isEmpty()).toBe(true);
             });
@@ -630,7 +630,7 @@ module.exports = async function(testContext) {
 
         describe('Custom Parse Method', () => {
             it('should use custom parse method', async () => {
-                class CustomCollection extends DataList {
+                class CustomCollection extends Collection {
                     parse(response) {
                         // Custom parsing logic
                         if (response.data && response.data.users) {

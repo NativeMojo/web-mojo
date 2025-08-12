@@ -117,7 +117,7 @@ async function runTests() {
                 const mojoCode = fs.readFileSync(mojoPath, 'utf8');
                 assert(mojoCode.includes('import Rest from'), 'MOJO imports Rest');
                 assert(mojoCode.includes('import RestModel from'), 'MOJO imports RestModel');
-                assert(mojoCode.includes('import DataList from'), 'MOJO imports DataList');
+                assert(mojoCode.includes('import Collection from'), 'MOJO imports Collection');
                 assert(mojoCode.includes('registerModel('), 'MOJO has registerModel method');
                 assert(mojoCode.includes('registerCollection('), 'MOJO has registerCollection method');
 

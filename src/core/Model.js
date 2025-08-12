@@ -3,8 +3,8 @@
  * Provides CRUD operations for API resources
  */
 
-import dataFormatter from '../utils/DataFormatter.js';
 import MOJOUtils from '../utils/MOJOUtils.js';
+import rest from '../core/Rest.js';
 
 class Model {
   constructor(data = {}, options = {}) {
@@ -14,7 +14,7 @@ class Model {
     this.originalAttributes = { ...data };
     this.errors = {};
     this.loading = false;
-    
+
     // Event system
     this.listeners = {};
 
@@ -36,7 +36,7 @@ class Model {
      if (!key.includes('.') && !key.includes('|') && this.hasOwnProperty(key)) {
        return this[key];
      }
-     
+
      // Use MOJOUtils for all attribute access with pipes and dot notation
      return MOJOUtils.getContextData(this.attributes, key);
    }
@@ -50,7 +50,7 @@ class Model {
   set(key, value, options = {}) {
     const previousAttributes = { ...this.attributes };
     let hasChanged = false;
-    
+
     if (typeof key === 'object') {
       // Set multiple attributes
       Object.assign(this.attributes, key);
@@ -69,11 +69,11 @@ class Model {
         hasChanged = oldValue !== value;
       }
     }
-    
+
     // Trigger change event if data changed and not silent
     if (hasChanged && !options.silent) {
       this.trigger('change', this);
-      
+
       // Trigger specific attribute change events
       if (typeof key === 'string') {
         this.trigger(`change:${key}`, value, this);
@@ -104,11 +104,17 @@ class Model {
     this.errors = {};
 
     try {
-      const response = await this.constructor.Rest.GET(url, options.params);
+      const response = await rest.GET(url, options.params);
 
       if (response.success) {
-        this.set(response.data);
-        this.originalAttributes = { ...this.attributes };
+        if (response.data.status) {
+            this.originalAttributes = { ...this.attributes };
+            this.set(response.data.data);
+        } else {
+            this.errors = response.data;
+            throw new Error(response.data.error || 'Failed to fetch model');
+        }
+
         return this;
       } else {
         this.errors = response.errors || {};
@@ -146,11 +152,16 @@ class Model {
     }
 
     try {
-      const response = await this.constructor.Rest[method](url, data, options.params);
+      const response = await rest[method](url, data, options.params);
 
       if (response.success) {
-        this.set(response.data);
-        this.originalAttributes = { ...this.attributes };
+          if (response.data.status) {
+              this.originalAttributes = { ...this.attributes };
+              this.set(response.data.data);
+          } else {
+              this.errors = response.data;
+              throw new Error(response.data.error || 'Failed to fetch model');
+          }
         return this;
       } else {
         this.errors = response.errors || {};
@@ -179,7 +190,7 @@ class Model {
     this.errors = {};
 
     try {
-      const response = await this.constructor.Rest.DELETE(url, options.params);
+      const response = await rest.DELETE(url, options.params);
 
       if (response.success) {
         // Clear model data
@@ -333,7 +344,7 @@ class Model {
     if (!this.listeners[event]) {
       return this;
     }
-    
+
     if (!callback) {
       // Remove all listeners for this event
       delete this.listeners[event];
@@ -344,7 +355,7 @@ class Model {
         delete this.listeners[event];
       }
     }
-    
+
     return this;
   }
 
@@ -358,7 +369,7 @@ class Model {
     if (!this.listeners[event]) {
       return this;
     }
-    
+
     // Call each listener
     for (const callback of this.listeners[event]) {
       try {
@@ -367,7 +378,7 @@ class Model {
         console.error(`Error in event handler for "${event}":`, error);
       }
     }
-    
+
     return this;
   }
 

@@ -1,267 +1,164 @@
 /**
- * Router - Client-side routing for MOJO framework
- * Handles SPA navigation with history API and hash routing
+ * Router - Simplified client-side routing for MOJO framework
+ * Focuses purely on route matching and browser history management
  */
 
 class Router {
-  constructor(options = {}) {
-    this.routes = new Map();
-    this.currentRoute = null;
-    this.currentParams = {};
-    this.currentQuery = {};
-
-    // Page instance tracking for event system
-    this.previousPageInstance = null;
-    this.currentPageInstance = null;
-
-    // Page name to route mapping for data-page support
-    this.pageRegistry = new Map();
-
+  constructor(app, options = {}) {
+    this.app = app; // Reference to WebApp instance
+    this.routes = new Map(); // pattern -> { pageName, pattern, regex, keys }
+    this.currentPath = null;
+    
     // Configuration
     this.options = {
       mode: 'param', // 'history', 'hash', or 'param'
       base: '/',
       pageParam: 'page',
-      container: '#app',
+      defaultPage: 'home',
       ...options
     };
-
-    // Route guards
+    
+    // Guards
     this.guards = {
       beforeEach: [],
       afterEach: []
     };
-
+    
     // State
     this.started = false;
-    this.container = this.options.container;
-
+    
     // Bind event handlers
-    this.onPopState = this.onPopState.bind(this);
-    this.onHashChange = this.onHashChange.bind(this);
+    this.handlePopState = this.handlePopState.bind(this);
+    this.handleHashChange = this.handleHashChange.bind(this);
   }
-
+  
   /**
    * Start the router
    */
   start() {
-    if (this.started) {
-      return;
-    }
-
+    if (this.started) return;
+    
     this.started = true;
-
-    // Validate container element exists
-    const containerElement = document.querySelector(this.options.container);
-    if (!containerElement) {
-      throw new Error(`Router container not found: ${this.options.container}`);
-    }
-    // Keep container as selector string
-    this.container = this.options.container;
-
+    
     // Add event listeners based on mode
     if (this.options.mode === 'history') {
-      window.addEventListener('popstate', this.onPopState);
+      window.addEventListener('popstate', this.handlePopState);
     } else if (this.options.mode === 'hash') {
-      window.addEventListener('hashchange', this.onHashChange);
+      window.addEventListener('hashchange', this.handleHashChange);
     } else if (this.options.mode === 'param') {
-      window.addEventListener('popstate', this.onPopState);
+      window.addEventListener('popstate', this.handlePopState);
     }
-
+    
     // Handle initial route
     this.handleCurrentLocation();
-
-    console.log(`🚀 MOJO Router started in ${this.options.mode} mode`);
+    
+    console.log(`Router started in ${this.options.mode} mode`);
   }
-
+  
   /**
    * Stop the router
    */
   stop() {
-    if (!this.started) {
-      return;
-    }
-
-    this.started = false;
-
-    // Remove event listeners
-    window.removeEventListener('popstate', this.onPopState);
-    window.removeEventListener('hashchange', this.onHashChange);
-
-    console.log('🛑 MOJO Router stopped');
-  }
-
-  /**
-   * Add a route
-   * @param {string} path - Route path pattern
-   * @param {function|object} handler - Route handler (Page class or function)
-   * @param {object} options - Route options
-   */
-  addRoute(pathOrHandler, handlerOrOptions, options = {}) {
-    let path, handler, finalOptions;
+    if (!this.started) return;
     
-    if (typeof pathOrHandler === 'string') {
-      // Manual path specification
-      path = pathOrHandler;
-      handler = handlerOrOptions;
-      finalOptions = options;
-    } else {
-      // Page class or instance
-      handler = pathOrHandler;
-      finalOptions = handlerOrOptions || {};
-      
-      // If it's a class (constructor function), instantiate it
-      if (typeof handler === 'function' && handler.prototype) {
-        try {
-          handler = new handler();
-          
-          // If the page has an initialization promise, wait for it to complete or fail
-          if (handler._initPromise && typeof handler._initPromise.then === 'function') {
-            handler._initPromise.catch(error => {
-              console.error(`Async initialization failed for page class ${handler.constructor.name}:`, error);
-              console.error('Page may not function correctly');
-            });
-          }
-        } catch (error) {
-          console.error(`Failed to instantiate page class ${handler.name}:`, error);
-          console.error('Route not registered. Continuing...');
-          return this; // Return for chaining, but don't register the route
-        }
-      }
-      
-      // Validate that we have a valid page instance
-      if (!handler || typeof handler !== 'object') {
-        console.error(`Invalid handler provided for route. Expected Page instance or class, got ${typeof handler}`);
-        return this;
-      }
-      
-      // Get path from the instance's route or pageName
-      if (handler.route) {
-        path = handler.route;
-      } else if (handler.pageName) {
-        path = '/' + handler.pageName
-          .replace(/([A-Z])/g, '_$1')
-          .toLowerCase()
-          .replace(/^_/, '');
-      } else {
-        path = '/' + handler.constructor.name
-          .toLowerCase()
-          .replace(/page$/, '');
-      }
-      
-      console.log(`Adding route for ${handler.pageName || handler.constructor.name}: ${path}`);
-    }
-
-    const route = {
-      path: this.normalizePath(path),
-      handler,
-      options: {
-        name: finalOptions.name || null,
-        middleware: finalOptions.middleware || [],
-        meta: finalOptions.meta || {},
-        ...finalOptions
-      },
-      regex: this.pathToRegex(path),
-      keys: this.extractKeys(path)
-    };
-
-    this.routes.set(path, route);
-
-    // Also store by name if provided
-    if (finalOptions.name) {
-      this.routes.set(`@${finalOptions.name}`, route);
-    }
-
-    // Auto-register page name for data-page support
-    if (handler && handler.pageName) {
-      this.registerPageName(handler.pageName, path);
-    }
-
-    return this;
+    this.started = false;
+    window.removeEventListener('popstate', this.handlePopState);
+    window.removeEventListener('hashchange', this.handleHashChange);
+    
+    console.log('Router stopped');
   }
-
+  
   /**
-   * Add multiple page instances at once
-   * @param {Array<Page>} pages - Array of page instances or classes
-   * @returns {Router} Router instance for chaining
+   * Register a route with a page name
+   * @param {string} pattern - Route pattern (e.g., '/user/:id')
+   * @param {string} pageName - Name of the page to load
    */
-  addPages(pages) {
-    pages.forEach((page, index) => {
-      try {
-        this.addRoute(page);
-      } catch (error) {
-        const pageName = page?.name || page?.constructor?.name || `page at index ${index}`;
-        console.error(`Failed to add route for ${pageName}:`, error);
-        console.error('Continuing with remaining pages...');
-      }
+  addRoute(pattern, pageName) {
+    const { regex, keys } = this.patternToRegex(pattern);
+    
+    this.routes.set(pattern, {
+      pageName,
+      pattern,
+      regex,
+      keys
     });
+    
+    console.log(`Route registered: ${pattern} -> ${pageName}`);
     return this;
   }
-
+  
   /**
-   * Remove a route
-   * @param {string} path - Route path to remove
-   * @returns {Router} Router instance for chaining
-   */
-  removeRoute(path) {
-    const route = this.routes.get(path);
-    if (route) {
-      this.routes.delete(path);
-      if (route.options.name) {
-        this.routes.delete(`@${route.options.name}`);
-      }
-    }
-  }
-
-  /**
-   * Register a page name with its route for data-page support
-   * @param {string} pageName - Page name (e.g., 'home', 'about')
-   * @param {string} route - Route path (e.g., '/', '/about')
+   * Register a page name for data-page attribute support
+   * @param {string} pageName - Page name
+   * @param {string} route - Associated route
    */
   registerPageName(pageName, route) {
-    this.pageRegistry.set(pageName.toLowerCase(), route);
+    this.routes.set(`@${pageName}`, route);
   }
-
+  
   /**
-   * Navigate to a page by name with optional parameters
-   * @param {string} pageName - Page name to navigate to
-   * @param {object} params - Optional parameters to pass to page
-   */
-  async navigateToPage(pageName, params = {}) {
-    const route = this.pageRegistry.get(pageName.toLowerCase());
-    if (route) {
-      await this.navigate(route, { params });
-    } else {
-      console.warn(`Page '${pageName}' not found in registry. Available pages:`, Array.from(this.pageRegistry.keys()));
-      await this.handleNotFound(`/page/${pageName}`);
-    }
-  }
-
-  /**
-   * Navigate to a route
+   * Core navigation method - simplified to under 30 lines
    * @param {string} path - Path to navigate to
    * @param {object} options - Navigation options
    */
   async navigate(path, options = {}) {
-    const url = this.buildUrl(path);
-    const currentUrl = this.getCurrentUrl();
-
-    // Don't navigate if already at destination
-    if (url === currentUrl && !options.force) {
-      return;
+    // 1. Match route
+    const match = this.matchRoute(path);
+    if (!match) {
+      return this.handleNotFound(path);
     }
-
-    // Update browser history
-    if (options.replace) {
-      this.replaceState(url);
-    } else {
-      this.pushState(url);
+    
+    // 2. Get or create page instance (cached)
+    const page = this.app.getOrCreatePage(match.pageName);
+    if (!page) {
+      return this.handleError(`Page ${match.pageName} not found`);
     }
-
-    // Handle the route
-    await this.handleRoute(path, options.params || {});
+    
+    // 3. Run guards
+    if (!await this.runGuards(match, page)) {
+      return false;
+    }
+    
+    // 4. Transition pages
+    await this.transitionToPage(page, match.params, match.query);
+    
+    // 5. Update browser history
+    if (!options.silent) {
+      this.updateHistory(path, options.replace);
+    }
+    
+    // 6. Run after guards
+    await this.runAfterGuards(match, page);
+    
+    this.currentPath = path;
+    return true;
   }
-
+  
+  /**
+   * Navigate to a page by name (for data-page support)
+   * @param {string} pageName - Page name
+   * @param {object} params - Route parameters
+   * @param {object} options - Navigation options
+   */
+  async navigateToPage(pageName, params = {}, options = {}) {
+    // Find route pattern for this page
+    const route = this.routes.get(`@${pageName}`);
+    if (!route) {
+      // Try to find by iterating routes
+      for (const [pattern, routeInfo] of this.routes) {
+        if (routeInfo.pageName === pageName) {
+          const path = this.buildPath(pattern, params);
+          return this.navigate(path, options);
+        }
+      }
+      console.error(`No route found for page: ${pageName}`);
+      return false;
+    }
+    
+    const path = this.buildPath(route, params);
+    return this.navigate(path, options);
+  }
+  
   /**
    * Replace current route
    * @param {string} path - Path to replace with
@@ -270,582 +167,384 @@ class Router {
   async replace(path, options = {}) {
     return this.navigate(path, { ...options, replace: true });
   }
-
+  
   /**
    * Go back in history
    */
   back() {
     window.history.back();
   }
-
+  
   /**
    * Go forward in history
    */
   forward() {
     window.history.forward();
   }
-
+  
   /**
    * Go to specific history entry
-   * @param {number} delta - Number of steps to go
+   * @param {number} delta - Number of entries to go
    */
   go(delta) {
     window.history.go(delta);
   }
-
+  
   /**
-   * Handle current location
+   * Handle current browser location
    */
   async handleCurrentLocation() {
     const path = this.getCurrentPath();
-    const query = this.parseQuery();
-
-    await this.handleRoute(path, {}, query);
+    await this.navigate(path, { silent: true });
   }
-
+  
   /**
-   * Handle a specific route
-   * @param {string} path - Route path
+   * Clean page transition
+   * @param {Page} newPage - Page instance to transition to
    * @param {object} params - Route parameters
    * @param {object} query - Query parameters
    */
-  async handleRoute(path, params = {}, query = {}) {
-    // Filter out page parameter from query for param mode
-    if (this.options.mode === 'param') {
-      const filteredQuery = { ...query };
-      delete filteredQuery[this.options.pageParam];
-      query = filteredQuery;
-    }
-    const route = this.matchRoute(path);
-
-    if (!route) {
-      console.error(`No route found for path: ${path}`);
-      await this.handleNotFound(path);
-      return;
-    }
-
-    // Extract parameters from path
-    const extractedParams = this.extractParams(route, path);
-    const allParams = { ...extractedParams, ...params };
-
-    // Run before guards
-    for (const guard of this.guards.beforeEach) {
-      const result = await guard(route, allParams, query);
-      if (result === false) {
-        console.log('Navigation cancelled by guard');
-        return;
-      }
-    }
-
-    try {
-      // Handle the route
-      await this.executeRoute(route, allParams, query);
-
-      // Update current route info
-      this.currentRoute = route;
-      this.currentParams = allParams;
-      this.currentQuery = query;
-
-      // Run after guards
-      for (const guard of this.guards.afterEach) {
-        await guard(route, allParams, query);
-      }
-
-    } catch (error) {
-      console.error('Route execution error:', error);
-      await this.handleError(error, route, allParams, query);
-    }
-  }
-
-  /**
-   * Execute a route handler
-   * @param {object} route - Route object
-   * @param {object} params - Route parameters
-   * @param {object} query - Query parameters
-   */
-  async executeRoute(route, params, query) {
-    let { handler } = route;
-
-    // If handler is a class, instantiate it
-    if (typeof handler === 'function' && handler.prototype && handler.prototype.render) {
+  async transitionToPage(newPage, params, query) {
+    const oldPage = this.app.currentPage;
+    
+    // Exit old page
+    if (oldPage && oldPage !== newPage) {
       try {
-        handler = new handler();
-        
-        // Wait for any async initialization to complete
-        if (handler._initPromise && typeof handler._initPromise.then === 'function') {
-          try {
-            await handler._initPromise;
-          } catch (initError) {
-            console.error(`Async initialization failed during navigation for ${handler.constructor.name}:`, initError);
-            await this.handleError(initError, route, params, query);
-            return;
-          }
-        }
-        
-        // Update the route's handler to use the instance for future navigations
-        route.handler = handler;
+        await oldPage.onExit();
       } catch (error) {
-        console.error(`Failed to instantiate page class during navigation:`, error);
-        // Try to recover by showing error page
-        await this.handleError(error, route, params, query);
-        return;
+        console.error(`Error in onExit for page ${oldPage.pageName}:`, error);
       }
     }
-
-    // Handler should be a Page instance or a simple function
-    if (typeof handler === 'function' && !handler.render) {
-      // Simple function handler
-      await handler(params, query, this.container);
-      return;
-    }
-
-    // Ensure we have a Page instance
-    if (!handler || typeof handler.render !== 'function') {
-      throw new Error(`Invalid route handler for ${route.path}`);
-    }
-
-    // Store previous page before switching
-    this.previousPageInstance = this.currentPageInstance;
-
-    // Fire before-change event
-    this.firePageEvent('page:before-change', {
-      previousPage: this.getPageInfo(this.previousPageInstance),
-      incomingRoute: route.path,
-      params,
-      query
-    });
-
-    // Exit previous page
-    if (this.previousPageInstance && this.previousPageInstance !== handler) {
-      // Call onExit with error handling
-      if (typeof this.previousPageInstance.onExit === 'function') {
-        try {
-          await this.previousPageInstance.onExit();
-        } catch (error) {
-          console.error(`Error in onExit for page ${this.previousPageInstance.pageName || 'unknown'}:`, error);
-          // Continue with navigation despite error
-        }
+    
+    // Update params (smart - only re-render if changed)
+    await newPage.onParams(params, query);
+    
+    // Enter new page (only if different)
+    if (oldPage !== newPage) {
+      try {
+        await newPage.onEnter();
+      } catch (error) {
+        console.error(`Error in onEnter for page ${newPage.pageName}:`, error);
       }
       
-      this.firePageEvent('page:deactivated', {
-        page: this.getPageInfo(this.previousPageInstance)
-      });
-
-      // Clear the container
-      const container = document.querySelector(this.container);
-      if (container) {
-        container.innerHTML = '';
-      }
-    }
-
-    // Update current page instance
-    this.currentPageInstance = handler;
-
-    // Update params and query
-    handler.onParams(params, query);
-
-    // Enter new page with error handling
-    if (typeof handler.onEnter === 'function') {
-      try {
-        await handler.onEnter();
-      } catch (error) {
-        console.error(`Error in onEnter for page ${handler.pageName || 'unknown'}:`, error);
-        // Continue with render despite error
-      }
-    }
-
-    // Force re-render
-    handler.mounted = false;
-
-    // Render the page with error handling
-    try {
-      await handler.render(this.container);
-    } catch (error) {
-      console.error(`Error rendering page ${handler.pageName || 'unknown'}:`, error);
-      // Try to show error page
-      await this.handleError(error, route, params, query);
-      return;
-    }
-
-    this.firePageEvent('page:activated', {
-      page: this.getPageInfo(handler)
-    });
-
-    // Fire changed event
-    this.firePageEvent('page:changed', {
-      previousPage: this.getPageInfo(this.previousPageInstance),
-      currentPage: this.getPageInfo(this.currentPageInstance),
-      params,
-      query
-    });
-  }
-
-  /**
-   * Handle 404 - Not Found
-   * @param {string} path - Requested path
-   */
-  async handleNotFound(path) {
-    const notFoundRoute = this.routes.get('*') || this.routes.get('404');
-
-    if (notFoundRoute) {
-      await this.executeRoute(notFoundRoute, { path }, {});
-    } else {
-      const containerElement = document.querySelector(this.container);
-      if (containerElement) {
-        containerElement.innerHTML = `
-          <div class="container mt-5">
-          <div class="row">
-            <div class="col-12 text-center">
-              <h1 class="display-1">404</h1>
-              <h2>Page Not Found</h2>
-              <p class="lead">The requested page "${path}" could not be found.</p>
-              <a href="/" class="btn btn-primary">Go Home</a>
-            </div>
-          </div>
-          </div>
-        `;
-      }
+      // Show page through WebApp
+      await this.app.showPage(newPage);
     }
   }
-
-  /**
-   * Handle route execution errors
-   * @param {Error} error - Error object
-   * @param {object} route - Route object
-   * @param {object} params - Route parameters
-   * @param {object} query - Query parameters
-   */
-  async handleError(error, route, params, query) {
-    console.error('Route error:', error);
-
-    const containerElement = document.querySelector(this.container);
-    if (containerElement) {
-      containerElement.innerHTML = `
-        <div class="container mt-5">
-          <div class="row">
-            <div class="col-12">
-              <div class="alert alert-danger">
-                <h4>Route Error</h4>
-                <p>An error occurred while loading this page:</p>
-                <code>${error.message}</code>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-  }
-
+  
   /**
    * Match a path against registered routes
    * @param {string} path - Path to match
-   * @returns {object|null} Matched route or null
+   * @returns {object|null} Match object with pageName, params, query
    */
   matchRoute(path) {
-    const normalizedPath = this.normalizePath(path);
-    // Try exact match first
-    const exactMatch = this.routes.get(normalizedPath);
-    if (exactMatch) {
-      return exactMatch;
+    // Parse query string
+    const [pathname, queryString] = path.split('?');
+    const query = this.parseQuery(queryString);
+    
+    // In param mode, extract page from query
+    if (this.options.mode === 'param') {
+      const pageName = query[this.options.pageParam] || this.options.defaultPage;
+      delete query[this.options.pageParam];
+      
+      // Find route for this page
+      for (const [_pattern, route] of this.routes) {
+        if (route.pageName === pageName) {
+          return {
+            pageName,
+            params: {},
+            query,
+            pattern: route.pattern
+          };
+        }
+      }
+      
+      return null;
     }
-
-    // Try regex matching
-    for (const [, route] of this.routes) {
-      if (route.regex && route.regex.test(normalizedPath)) {
-        return route;
+    
+    // Standard path matching
+    const normalizedPath = this.normalizePath(pathname);
+    
+    for (const [pattern, route] of this.routes) {
+      if (pattern.startsWith('@')) continue; // Skip page name entries
+      
+      const matches = normalizedPath.match(route.regex);
+      if (matches) {
+        const params = this.extractParams(matches, route.keys);
+        return {
+          pageName: route.pageName,
+          params,
+          query,
+          pattern: route.pattern
+        };
       }
     }
-
+    
     return null;
   }
-
+  
   /**
-   * Extract parameters from path using route pattern
-   * @param {object} route - Route object
-   * @param {string} path - Current path
-   * @returns {object} Extracted parameters
+   * Convert route pattern to regex
+   * @param {string} pattern - Route pattern
+   * @returns {object} Object with regex and parameter keys
    */
-  extractParams(route, path) {
+  patternToRegex(pattern) {
+    const keys = [];
+    
+    // Extract parameter names
+    const regex = new RegExp(
+      '^' + pattern
+        .replace(/:[^\s/]+/g, (match) => {
+          keys.push(match.substring(1));
+          return '([^/]+)';
+        })
+        .replace(/\{([^}]+)\}/g, (match, key) => {
+          keys.push(key);
+          return '([^/]+)';
+        })
+        .replace(/\*/g, '.*') + '$'
+    );
+    
+    return { regex, keys };
+  }
+  
+  /**
+   * Extract parameters from regex matches
+   * @param {Array} matches - Regex matches
+   * @param {Array} keys - Parameter keys
+   * @returns {object} Parameters object
+   */
+  extractParams(matches, keys) {
     const params = {};
-
-    if (route.regex && route.keys) {
-      const matches = path.match(route.regex);
-      if (matches) {
-        route.keys.forEach((key, index) => {
-          params[key] = matches[index + 1];
-        });
-      }
-    }
-
+    keys.forEach((key, index) => {
+      params[key] = decodeURIComponent(matches[index + 1] || '');
+    });
     return params;
   }
-
+  
   /**
-   * Convert path pattern to regex
-   * @param {string} path - Path pattern
-   * @returns {RegExp} Regex pattern
+   * Build path from pattern and parameters
+   * @param {string} pattern - Route pattern
+   * @param {object} params - Parameters
+   * @returns {string} Built path
    */
-  pathToRegex(path) {
-    const normalizedPath = this.normalizePath(path);
-
-    if (normalizedPath === '*') {
-      return /^.*$/;
-    }
-
-    // Replace :param with capturing group
-    const regexString = normalizedPath
-      .replace(/:[^\/]+/g, '([^/]+)')
-      .replace(/\*/g, '.*');
-
-    return new RegExp(`^${regexString}$`);
+  buildPath(pattern, params = {}) {
+    let path = pattern;
+    
+    // Replace parameters
+    Object.entries(params).forEach(([key, value]) => {
+      path = path.replace(`:${key}`, encodeURIComponent(value));
+      path = path.replace(`{${key}}`, encodeURIComponent(value));
+    });
+    
+    return path;
   }
-
+  
   /**
-   * Extract parameter keys from path pattern
-   * @param {string} path - Path pattern
-   * @returns {array} Array of parameter names
+   * Run route guards
+   * @param {object} match - Route match object
+   * @param {Page} page - Page instance
+   * @returns {boolean} Whether to proceed with navigation
    */
-  extractKeys(path) {
-    const keys = [];
-    const matches = path.match(/:([^\/]+)/g);
-
-    if (matches) {
-      matches.forEach(match => {
-        keys.push(match.substring(1));
-      });
+  async runGuards(match, page) {
+    // eslint-disable-next-line no-await-in-loop
+    for (const guard of this.guards.beforeEach) {
+      try {
+        const result = await guard(match, page);
+        if (result === false) {
+          return false;
+        }
+      } catch (error) {
+        console.error('Guard error:', error);
+        return false;
+      }
     }
-
-    return keys;
+    return true;
   }
-
+  
   /**
-   * Add navigation guard
-   * @param {string} type - 'beforeEach' or 'afterEach'
+   * Run after navigation guards
+   * @param {object} match - Route match object
+   * @param {Page} page - Page instance
+   */
+  async runAfterGuards(match, page) {
+    // eslint-disable-next-line no-await-in-loop
+    for (const guard of this.guards.afterEach) {
+      try {
+        await guard(match, page);
+      } catch (error) {
+        console.error('After guard error:', error);
+      }
+    }
+  }
+  
+  /**
+   * Add a before navigation guard
    * @param {function} guard - Guard function
    */
-  addGuard(type, guard) {
-    if (this.guards[type]) {
-      this.guards[type].push(guard);
-    }
+  addGuard(guard) {
+    this.guards.beforeEach.push(guard);
+    return this;
   }
-
+  
   /**
-   * Get current path based on routing mode
+   * Get current path based on router mode
    * @returns {string} Current path
    */
   getCurrentPath() {
-    if (this.options.mode === 'history') {
-      const pathname = window.location.pathname;
-      const base = this.options.base;
-
-      // Handle exact base match (with or without trailing slash)
-      if (pathname === base || pathname === base + '/') {
-        return '/';
+    switch (this.options.mode) {
+      case 'hash':
+        return window.location.hash.slice(1) || '/';
+      
+      case 'param': {
+        const url = new URL(window.location);
+        const pageName = url.searchParams.get(this.options.pageParam) || this.options.defaultPage;
+        return `/?${this.options.pageParam}=${pageName}`;
       }
-
-      // If pathname starts with base, remove it
-      if (pathname.startsWith(base)) {
-        const remainingPath = pathname.substring(base.length);
-        // Ensure we always return a path starting with /
-        if (remainingPath === '' || remainingPath === '/') {
-          return '/';
-        }
-        return remainingPath.startsWith('/') ? remainingPath : '/' + remainingPath;
-      }
-
-      return pathname || '/';
-    } else if (this.options.mode === 'param') {
-      const params = new URLSearchParams(window.location.search);
-      const page = params.get(this.options.pageParam);
-      if (!page || page === 'home') {
-        return '/';
-      }
-      return page.startsWith('/') ? page : '/' + page;
-    } else {
-      return window.location.hash.replace('#', '') || '/';
+      
+      case 'history':
+      default:
+        return window.location.pathname + window.location.search;
     }
   }
-
-  /**
-   * Get current full URL
-   * @returns {string} Current URL
-   */
-  getCurrentUrl() {
-    if (this.options.mode === 'history') {
-      return window.location.pathname + window.location.search;
-    } else if (this.options.mode === 'param') {
-      return window.location.search;
-    } else {
-      return window.location.hash;
-    }
-  }
-
+  
   /**
    * Parse query string
-   * @returns {object} Parsed query parameters
+   * @param {string} queryString - Query string
+   * @returns {object} Parsed query object
    */
-  parseQuery() {
+  parseQuery(queryString = '') {
     const query = {};
-    const queryString = window.location.search.substring(1);
-
-    if (queryString) {
-      const pairs = queryString.split('&');
-      pairs.forEach(pair => {
-        const [key, value] = pair.split('=');
-        query[decodeURIComponent(key)] = decodeURIComponent(value || '');
-      });
+    if (!queryString) return query;
+    
+    const params = new URLSearchParams(queryString);
+    for (const [key, value] of params) {
+      query[key] = value;
     }
-
+    
     return query;
   }
-
+  
   /**
-   * Build URL for navigation
-   * @param {string} path - Target path
-   * @returns {string} Complete URL
+   * Update browser history
+   * @param {string} path - Path to push/replace
+   * @param {boolean} replace - Whether to replace current state
    */
-  buildUrl(path) {
-    if (this.options.mode === 'history') {
-      // Ensure path starts with /
-      const normalizedPath = path.startsWith('/') ? path : '/' + path;
-      // Ensure base ends with / if it doesn't already, then combine
-      const base = this.options.base.endsWith('/') ? this.options.base.slice(0, -1) : this.options.base;
-      return base + normalizedPath;
-    } else if (this.options.mode === 'param') {
-      // Create URL with page parameter
-      const url = new URL(window.location.href);
-      const pageName = path === '/' ? 'home' : path.replace(/^\//, '');
-      url.searchParams.set(this.options.pageParam, pageName);
-      return url.toString();
-    } else {
-      return `#${path}`;
+  updateHistory(path, replace = false) {
+    const method = replace ? 'replaceState' : 'pushState';
+    
+    switch (this.options.mode) {
+      case 'hash':
+        window.location.hash = path;
+        break;
+      
+      case 'param': {
+        const [, queryString] = path.split('?');
+        const query = this.parseQuery(queryString);
+        const pageName = query[this.options.pageParam] || this.options.defaultPage;
+        
+        const url = new URL(window.location);
+        url.searchParams.set(this.options.pageParam, pageName);
+        
+        // Add other query params
+        Object.entries(query).forEach(([key, value]) => {
+          if (key !== this.options.pageParam) {
+            url.searchParams.set(key, value);
+          }
+        });
+        
+        window.history[method](null, '', url.toString());
+        break;
+      }
+      
+      case 'history':
+      default:
+        window.history[method](null, '', path);
+        break;
     }
   }
-
-  /**
-   * Push state to history
-   * @param {string} url - URL to push
-   */
-  pushState(url) {
-    if (this.options.mode === 'history') {
-      window.history.pushState({}, '', url);
-    } else if (this.options.mode === 'param') {
-      window.history.pushState({}, '', url);
-    } else {
-      window.location.hash = url.replace('#', '');
-    }
-  }
-
-  /**
-   * Replace current state
-   * @param {string} url - URL to replace with
-   */
-  replaceState(url) {
-    if (this.options.mode === 'history') {
-      window.history.replaceState({}, '', url);
-    } else if (this.options.mode === 'param') {
-      window.history.replaceState({}, '', url);
-    } else {
-      window.location.replace(url);
-    }
-  }
-
+  
   /**
    * Normalize path
    * @param {string} path - Path to normalize
    * @returns {string} Normalized path
    */
   normalizePath(path) {
-    if (!path || path === '/') {
-      return '/';
+    // Remove trailing slash except for root
+    if (path !== '/' && path.endsWith('/')) {
+      path = path.slice(0, -1);
     }
-
+    
     // Ensure path starts with /
     if (!path.startsWith('/')) {
       path = '/' + path;
     }
-
-    // Remove trailing slash (except for root)
-    if (path.length > 1 && path.endsWith('/')) {
-      path = path.slice(0, -1);
-    }
-
+    
     return path;
   }
-
+  
   /**
-   * Handle popstate event (browser back/forward)
-   * @param {PopStateEvent} event - Popstate event
+   * Handle popstate event
    */
-  onPopState(event) {
+  handlePopState(_event) {
     this.handleCurrentLocation();
   }
-
+  
   /**
    * Handle hashchange event
-   * @param {HashChangeEvent} event - Hashchange event
    */
-  onHashChange(event) {
+  handleHashChange(_event) {
     this.handleCurrentLocation();
   }
-
+  
   /**
-   * Fire page event through global event bus
-   * @param {string} eventName - Event name to fire
-   * @param {object} data - Event data
+   * Handle 404 not found
+   * @param {string} path - Path that wasn't found
    */
-  firePageEvent(eventName, data) {
-    // Use global MOJO event bus if available
-    if (typeof window !== 'undefined' && window.MOJO && window.MOJO.eventBus) {
-      window.MOJO.eventBus.emit(eventName, data);
+  async handleNotFound(path) {
+    console.warn(`Route not found: ${path}`);
+    
+    // Try to load 404 page
+    const notFoundPage = this.app.getOrCreatePage('404');
+    if (notFoundPage) {
+      await this.transitionToPage(notFoundPage, {}, { path });
+    } else {
+      // Show error in app
+      this.app.showError(`Page not found: ${path}`);
     }
-
-    // Also emit on router instance
-    if (this.emit) {
-      this.emit(eventName, data);
-    }
+    
+    return false;
   }
-
+  
   /**
-   * Get page info from page instance
-   * @param {object} pageInstance - Page instance
-   * @returns {object|null} Page information
+   * Handle routing error
+   * @param {string} message - Error message
    */
-  getPageInfo(pageInstance) {
-    if (!pageInstance) return null;
-
-    return {
-      name: pageInstance.pageName || pageInstance.constructor.name,
-      route: pageInstance.route || '',
-      icon: pageInstance.pageIcon || 'bi bi-file-text',
-      displayName: pageInstance.displayName || pageInstance.pageName || pageInstance.constructor.name,
-      description: pageInstance.pageDescription || '',
-      instance: pageInstance
-    };
+  async handleError(message) {
+    console.error(`Router error: ${message}`);
+    
+    // Try to load error page
+    const errorPage = this.app.getOrCreatePage('error');
+    if (errorPage) {
+      await this.transitionToPage(errorPage, {}, { error: message });
+    } else {
+      // Show error in app
+      this.app.showError(message);
+    }
+    
+    return false;
   }
-
+  
   /**
-   * Cleanup current page instance
+   * Clean up router
    */
   cleanup() {
-    // Exit current page before cleanup
-    if (this.currentPageInstance) {
-      if (typeof this.currentPageInstance.onExit === 'function') {
-        try {
-          this.currentPageInstance.onExit();
-        } catch (error) {
-          console.error(`Error in cleanup onExit for page ${this.currentPageInstance.pageName || 'unknown'}:`, error);
-          // Continue with cleanup despite error
-        }
-      }
-    }
-
-    if (this.currentPageInstance && typeof this.currentPageInstance.destroy === 'function') {
-      this.currentPageInstance.destroy();
-      this.currentPageInstance = null;
-    }
-
-    this.previousPageInstance = null;
+    this.stop();
+    this.routes.clear();
+    this.guards.beforeEach = [];
+    this.guards.afterEach = [];
+    this.currentPath = null;
+    console.log('Router cleaned up');
   }
 }
 

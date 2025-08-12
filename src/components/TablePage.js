@@ -6,99 +6,23 @@
 
 import Page from '../core/Page.js';
 import Table from './Table.js';
-// Template for TablePage component
-const tablePageTemplate = `<div class="table-page-container">
-  <!-- Header Section -->
-  <div class="table-page-header mb-3">
-    {{#title}}
-    <h2 class="page-title mb-2">{{title}}</h2>
-    {{/title}}
-    {{#description}}
-    <p class="page-description text-muted">{{description}}</p>
-    {{/description}}
-  </div>
-
-  <!-- Table Container -->
-  <div id="{{tableContainerId}}"
-       class="table-container"
-       data-table-page="{{page_name}}">
-    <!-- Table will be rendered here by Table component with its own toolbar -->
-  </div>
-
-  <!-- Simple Status Bar -->
-  {{#showStatus}}
-  <div class="table-status-bar mt-3">
-    <div class="d-flex align-items-center justify-content-between">
-      <div class="status-info d-flex align-items-center gap-3">
-        {{#showRecordCount}}
-        <small class="text-muted">
-          <i class="bi bi-database me-1"></i>
-          <span data-status="record-count">{{recordCount}}</span> records
-        </small>
-        {{/showRecordCount}}
-
-        {{#showLastUpdated}}
-        <small class="text-muted">
-          <i class="bi bi-clock-history me-1"></i>
-          Updated: <span data-status="last-updated">{{lastUpdated}}</span>
-        </small>
-        {{/showLastUpdated}}
-      </div>
-
-      {{#loadError}}
-      <span class="error-indicator text-danger" data-status="error">
-        <i class="bi bi-exclamation-triangle me-1"></i>
-        {{loadError}}
-      </span>
-      {{/loadError}}
-    </div>
-  </div>
-  {{/showStatus}}
-</div>
-
-<!-- TablePage Styles -->
-<style>
-  .table-page-container {
-    position: relative;
-  }
-
-  .table-container {
-    position: relative;
-    min-height: 200px;
-  }
-
-  .table-status-bar {
-    border-top: 1px solid #dee2e6;
-    padding-top: 0.75rem;
-  }
-
-  .status-info {
-    flex-wrap: wrap;
-  }
-
-  /* Error state styles */
-  .error-indicator {
-    animation: pulse 2s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.6;
-    }
-  }
-</style>`;
 
 class TablePage extends Page {
+  // Static template property pointing to external template file
+  static template = '/src/components/TablePage.mst';
+
   constructor(options = {}) {
+    // Handle both 'name' and 'pageName' properties
+    if (options.name && !options.pageName) {
+      options.pageName = options.name;
+    }
+
     super(options);
-    
+
     // Model configuration
     this.modelName = options.modelName || 'Item';
     this.modelNamePlural = options.modelNamePlural || `${this.modelName}s`;
-    
+
     // Extract filters from columns
     const extractedFilters = {};
     if (options.columns) {
@@ -108,7 +32,7 @@ class TablePage extends Page {
         }
       });
     }
-    
+
     // Table configuration
     this.tableConfig = {
       Collection: options.Collection || null,
@@ -131,51 +55,41 @@ class TablePage extends Page {
       preloaded: options.preloaded !== undefined ? options.preloaded : false,
       ...options.tableOptions
     };
-    
+
     // URL parameter configuration
     this.urlConfig = {
-      pageParam: options.pageParam || 'page',
+      enabled: options.urlParamsEnabled !== undefined ? options.urlParamsEnabled : true,
+      startParam: options.startParam || 'start',
+      sizeParam: options.sizeParam || 'size',
       sortParam: options.sortParam || 'sort',
       searchParam: options.searchParam || 'search',
-      perPageParam: options.perPageParam || 'per_page',
       filterPrefix: options.filterPrefix || 'filter_',
-      updateUrl: options.updateUrl !== undefined ? options.updateUrl : true,
-      replaceState: options.replaceState !== undefined ? options.replaceState : false,
-      debounceDelay: options.debounceDelay || 300,
-      ...options.urlOptions
+      ...options.urlConfig
     };
-    
-    // Action buttons configuration
-    this.actionButtons = {
-      showRefresh: options.showRefresh !== undefined ? options.showRefresh : true,
-      showAdd: options.showAdd !== undefined ? options.showAdd : true,
-      showExport: options.showExport !== undefined ? options.showExport : false,
-      showImport: options.showImport !== undefined ? options.showImport : false,
-      showViewOptions: options.showViewOptions !== undefined ? options.showViewOptions : false,
-      refreshText: options.refreshText || 'Refresh',
-      refreshIcon: options.refreshIcon || 'bi-arrow-clockwise',
-      addText: options.addText || `Add ${this.modelName}`,
-      addIcon: options.addIcon || 'bi-plus-circle',
-      exportText: options.exportText || 'Export',
-      exportIcon: options.exportIcon || 'bi-download',
-      importText: options.importText || 'Import',
-      importIcon: options.importIcon || 'bi-upload',
-      onAdd: options.onAdd || null, // Custom add handler
-      onExport: options.onExport || null, // Custom export handler
-      onImport: options.onImport || null, // Custom import handler
-      additionalButtons: options.additionalButtons || [], // Array of custom buttons
-      position: options.actionButtonPosition || 'top', // 'top', 'bottom', 'both'
-      ...options.actionButtons
+
+    // Refresh configuration
+    this.refreshConfig = {
+      enabled: options.refreshEnabled !== undefined ? options.refreshEnabled : true,
+      interval: options.refreshInterval || null,
+      onRefresh: options.onRefresh || null,
+      ...options.refreshConfig
     };
-    
+
+    // Actions configuration - map directly to Table's actions
+    this.showRefresh = options.showRefresh !== undefined ? options.showRefresh : true;
+    this.showAdd = options.showAdd !== undefined ? options.showAdd : true;
+    this.showExport = options.showExport !== undefined ? options.showExport : true;
+    this.onRefresh = options.onRefresh || this.handleRefresh.bind(this);
+    this.onAdd = options.onAdd || this.handleAdd.bind(this);
+    this.onExport = options.onExport || this.handleExport.bind(this);
+
     // Loading state configuration
     this.loadingConfig = {
-      showSpinner: options.showLoadingSpinner !== undefined ? options.showLoadingSpinner : true,
-      showOverlay: options.showLoadingOverlay !== undefined ? options.showLoadingOverlay : false,
-      loadingText: options.loadingText || 'Loading...',
+      showOverlay: options.showLoadingOverlay !== undefined ? options.showLoadingOverlay : true,
+      loadingText: options.loadingText || 'Loading data...',
       ...options.loadingConfig
     };
-    
+
     // Status display configuration
     this.statusConfig = {
       showStatus: options.showStatus !== undefined ? options.showStatus : true,
@@ -184,59 +98,120 @@ class TablePage extends Page {
       statusPosition: options.statusPosition || 'top', // 'top', 'bottom', 'both'
       ...options.statusConfig
     };
-    
+
     // Template configuration
     this.useCustomTemplate = options.useCustomTemplate || false;
-    
+
     // Set template - use imported template or custom one
-    if (!options.template && !this.useCustomTemplate) {
-      this.template = tablePageTemplate;
-    } else if (options.template) {
+    if (options.template) {
       this.template = options.template;
     }
-    
-    // Table instance
-    this.table = null;
-    
+
     // State tracking
     this.currentState = {
-      page: 1,
+      start: 0,
+      size: options.size || options.defaultPageSize || 10,
       sort: null,
       dir: 'asc',
       search: '',
-      perPage: options.itemsPerPage || 10,
       filters: {}
     };
-    
+
     // Status tracking
     this.lastUpdated = null;
     this.isLoading = false;
     this.loadError = null;
-    
+
     // Debounce timer for search
     this.searchDebounceTimer = null;
-    
+
     // Event handlers bound to this instance
     this.handleTablePageChange = this.handleTablePageChange.bind(this);
     this.handleTableSort = this.handleTableSort.bind(this);
     this.handleTableSearch = this.handleTableSearch.bind(this);
     this.handleTableFilter = this.handleTableFilter.bind(this);
-    this.handleTablePerPageChange = this.handleTablePerPageChange.bind(this);
-    
+    this.handleTableSizeChange = this.handleTableSizeChange.bind(this);
+
     // Action button handlers
     this.handleRefresh = this.handleRefresh.bind(this);
     this.handleAdd = this.handleAdd.bind(this);
     this.handleExport = this.handleExport.bind(this);
     this.handleImport = this.handleImport.bind(this);
-    
+
     // Flag to prevent circular updates when table triggers URL change
     this._isUpdatingUrl = false;
-    
+
     // Store custom toolbar actions
     this.customToolbarActions = {};
-    
+
     // Store bulk actions
     this.bulkActions = [];
+  }
+
+  /**
+   * Initialize page - create Table as child view
+   */
+  onInit() {
+    super.onInit();
+
+    // Ensure pageName is set (from options.name or options.pageName)
+    if (!this.pageName && this.options.name) {
+      this.pageName = this.options.name;
+    }
+
+    // Generate table ID based on page name
+    const tableId = `table-${this.pageName || 'default'}-container`;
+
+    // Create table instance with all configuration
+    this.table = new Table({
+      id: tableId,  // Set the ID so it matches the template placeholder
+      Collection: this.tableConfig.Collection,  // Pass the Collection class
+      collection: this.tableConfig.collection,  // Or existing collection instance
+      columns: this.tableConfig.columns,
+      filters: this.tableConfig.filters,
+      showRefresh: this.showRefresh,
+      showAdd: this.showAdd,
+      showExport: this.showExport,
+      modelName: this.modelName,
+      onRefresh: this.onRefresh,
+      onAdd: this.onAdd,
+      onExport: this.onExport,
+      // Pass other table config options
+      selectable: this.tableConfig.selectable,
+      searchable: this.tableConfig.searchable,
+      sortable: this.tableConfig.sortable,
+      filterable: this.tableConfig.filterable,
+      paginated: this.tableConfig.paginated,
+      responsive: this.tableConfig.responsive,
+      striped: this.tableConfig.striped,
+      bordered: this.tableConfig.bordered,
+      hover: this.tableConfig.hover,
+      pageSizes: this.tableConfig.pageSizes,
+      defaultPageSize: this.tableConfig.defaultPageSize,
+      emptyMessage: this.tableConfig.emptyMessage,
+      emptyIcon: this.tableConfig.emptyIcon
+    });
+
+    // Add table as a child view - framework will handle rendering
+    this.addChild(this.table, 'table');
+
+    // Listen for table events
+    this.table.on('page:change', this.handleTablePageChange);
+    this.table.on('sort:change', this.handleTableSort);
+    this.table.on('search:change', this.handleTableSearch);
+    this.table.on('filter:change', this.handleTableFilter);
+    this.table.on('size:change', this.handleTableSizeChange);
+    this.table.on('data:loaded', () => {
+      this.lastUpdated = new Date().toLocaleTimeString();
+      this.loadError = null;
+      this.updateStatusDisplay();
+    });
+    this.table.on('data:error', (error) => {
+      this.loadError = error?.message || 'Failed to load data';
+      this.updateStatusDisplay();
+    });
+
+    console.log(`TablePage ${this.pageName} initialized with Table as child view`);
   }
 
   /**
@@ -273,24 +248,16 @@ class TablePage extends Page {
   }
 
   /**
-   * Initialize the page
-   */
-  onInit() {
-    super.onInit();
-    console.log(`TablePage ${this.pageName} initialized`);
-  }
-
-  /**
    * Handle URL parameters when page is activated
    * @param {object} params - Route parameters
    * @param {object} query - Query string parameters
    */
   onParams(params = {}, query = {}) {
     super.onParams(params, query);
-    
+
     // Extract table state from URL parameters
     this.currentState = this.parseUrlParams(query);
-    
+
     // Don't apply state if we're updating the URL from a table event
     // The table has already updated itself and fetched the data
     if (this.table && !this._isUpdatingUrl) {
@@ -311,16 +278,16 @@ class TablePage extends Page {
       sort = sort.substring(1);
       dir = 'desc';
     }
-    
+
     const state = {
-      page: parseInt(query[this.urlConfig.pageParam]) || 1,
+      start: parseInt(query[this.urlConfig.startParam]) || 0,
+      size: parseInt(query[this.urlConfig.sizeParam]) || this.currentState.size,
       sort: sort,
       dir: dir,
       search: query[this.urlConfig.searchParam] || '',
-      perPage: parseInt(query[this.urlConfig.perPageParam]) || this.currentState.perPage,
       filters: {}
     };
-    
+
     // Extract filters with prefix
     Object.keys(query).forEach(key => {
       if (key.startsWith(this.urlConfig.filterPrefix)) {
@@ -328,41 +295,51 @@ class TablePage extends Page {
         state.filters[filterName] = query[key];
       }
     });
-    
+
     return state;
   }
 
   /**
-   * Apply state to the table
+   * Apply state from URL to table
    * @param {object} state - Table state
    */
   applyStateToTable(state) {
     if (!this.table) return;
-    
+
     // Apply pagination
-    this.table.currentPage = state.page;
-    this.table.itemsPerPage = state.perPage;
-    
-    // Apply sorting
-    this.table.sortBy = state.sort;
-    this.table.sortDirection = state.dir;
-    
-    // Apply search
-    if (state.search) {
-      this.table.activeFilters.search = state.search;
-    } else {
-      delete this.table.activeFilters.search;
+    if (state.start !== undefined && this.table.start !== state.start) {
+      this.table.start = state.start;
     }
-    
+
+    // Apply sorting
+    if (state.sort) {
+      this.table.sortBy = state.sort;
+      this.table.sortDirection = state.dir;
+    } else {
+      this.table.sortBy = null;
+      this.table.sortDirection = 'asc';
+    }
+
+    // Apply search
+    if (state.search !== undefined && this.table.searchQuery !== state.search) {
+      this.table.searchQuery = state.search;
+    }
+
+    // Apply page size
+    if (state.size && this.table.size !== state.size) {
+      this.table.size = state.size;
+    }
+
     // Apply filters
+    this.table.activeFilters = {};
     Object.keys(state.filters).forEach(key => {
       this.table.activeFilters[key] = state.filters[key];
     });
-    
+
     // Re-render table with new state
     if (this.table.collection?.restEnabled) {
       this.table.fetchWithCurrentFilters();
-    } else {
+    } else if (this.table.rendered) {
       this.table.render();
     }
   }
@@ -371,363 +348,312 @@ class TablePage extends Page {
    * Update URL with current table state
    * @param {object} newState - New state values to merge
    */
-  updateUrl(newState = {}) {
-    if (!this.urlConfig.updateUrl) return;
-    
-    // Set flag to prevent circular updates
-    this._isUpdatingUrl = true;
-    
-    // Merge with current state
-    this.currentState = { ...this.currentState, ...newState };
-    
+  updateUrl(newState = null) {
+    if (!this.urlConfig.enabled) return;
+
+    const state = newState || this.currentState;
+
     // Build query parameters
     const params = new URLSearchParams();
-    
-    // Add pagination
-    if (this.currentState.page > 1) {
-      params.set(this.urlConfig.pageParam, this.currentState.page);
+
+    // Add start parameter
+    if (state.start > 0) {
+      params.set(this.urlConfig.startParam, state.start);
     }
-    
-    // Add sorting using REST API convention:
-    // - Ascending: ?sort=fieldname
-    // - Descending: ?sort=-fieldname (with '-' prefix)
-    if (this.currentState.sort) {
-      const sortValue = this.currentState.dir === 'desc' 
-        ? `-${this.currentState.sort}` 
-        : this.currentState.sort;
+
+    // Add sort parameter (prefix with - for descending)
+    if (state.sort) {
+      const sortValue = state.dir === 'desc' ? `-${state.sort}` : state.sort;
       params.set(this.urlConfig.sortParam, sortValue);
     }
-    
-    // Add search
-    if (this.currentState.search) {
-      params.set(this.urlConfig.searchParam, this.currentState.search);
+
+    // Add search parameter
+    if (state.search) {
+      params.set(this.urlConfig.searchParam, state.search);
     }
-    
-    // Add items per page if not default
-    if (this.currentState.perPage !== 10) {
-      params.set(this.urlConfig.perPageParam, this.currentState.perPage);
+
+    // Add size parameter if not default
+    if (state.size && state.size !== 10) {
+      params.set(this.urlConfig.sizeParam, state.size);
     }
-    
-    // Add filters
-    Object.keys(this.currentState.filters).forEach(key => {
-      const value = this.currentState.filters[key];
-      if (value !== null && value !== undefined && value !== '') {
-        params.set(this.urlConfig.filterPrefix + key, value);
+
+    // Add filter parameters
+    Object.keys(state.filters).forEach(key => {
+      if (state.filters[key]) {
+        params.set(this.urlConfig.filterPrefix + key, state.filters[key]);
       }
     });
-    
-    // Get current URL
-    const url = new URL(window.location.href);
-    
-    // Preserve page parameter for router
-    const currentPage = url.searchParams.get('page');
-    if (currentPage) {
-      params.set('page', currentPage);
+
+    // Get the query string
+    const queryString = params.toString();
+    const newUrl = queryString ? `?${queryString}` : window.location.pathname;
+
+    // Only update if URL has changed
+    if (newUrl !== window.location.search) {
+      // Set flag to prevent circular updates
+      this._isUpdatingUrl = true;
+
+      // Use replace state to avoid creating history entries for each filter/page change
+      window.history.replaceState(
+        { page: this.pageName, state: state },
+        '',
+        newUrl
+      );
+
+      // Reset flag after a small delay
+      setTimeout(() => {
+        this._isUpdatingUrl = false;
+      }, 100);
     }
-    
-    // Update URL
-    const newUrl = params.toString() ? `${url.pathname}?${params.toString()}` : url.pathname;
-    
-    if (this.urlConfig.replaceState) {
-      window.history.replaceState({}, '', newUrl);
-    } else {
-      window.history.pushState({}, '', newUrl);
-    }
-    
-    // Reset flag after a microtask to allow URL update to complete
-    Promise.resolve().then(() => {
-      this._isUpdatingUrl = false;
-    });
   }
 
   /**
    * Handle table page change
-   * @param {Event} event - Event object
+   * @param {object} detail - Event detail with page number
    */
-  handleTablePageChange(event) {
-    const page = event.detail?.page || this.table.currentPage;
-    this.updateUrl({ page });
+  handleTablePageChange(detail) {
+    // Convert page to start index
+    const page = detail.page || 1;
+    this.currentState.start = (page - 1) * this.currentState.size;
+    this.updateUrl(this.currentState);
   }
 
   /**
    * Handle table sort change
-   * @param {Event} event - Event object
+   * @param {object} detail - Event detail with sort field and direction
    */
-  handleTableSort(event) {
-    const sort = event.detail?.field || this.table.sortBy;
-    const dir = event.detail?.direction || this.table.sortDirection;
-    
-    if (!sort || dir === 'none') {
-      this.updateUrl({ sort: null, dir: 'asc', page: 1 });
-    } else {
-      this.updateUrl({ sort, dir, page: 1 });
-    }
+  handleTableSort(detail) {
+    this.currentState.sort = detail.field || null;
+    this.currentState.dir = detail.direction || 'asc';
+    this.currentState.page = 1; // Reset to first page when sorting
+    this.updateUrl(this.currentState);
   }
 
   /**
-   * Handle table search with debouncing
-   * @param {Event} event - Event object
+   * Handle table search change
+   * @param {object} detail - Event detail with search query
    */
-  handleTableSearch(event) {
-    const search = event.detail?.search || this.table.activeFilters.search || '';
-    
-    // Clear existing debounce timer
+  handleTableSearch(detail) {
+    // Clear existing timer
     if (this.searchDebounceTimer) {
       clearTimeout(this.searchDebounceTimer);
     }
-    
-    // Debounce search updates to URL
+
+    // Debounce search updates
     this.searchDebounceTimer = setTimeout(() => {
-      this.updateUrl({ search, page: 1 });
-    }, this.urlConfig.debounceDelay);
+      this.currentState.search = detail.query || '';
+      this.currentState.page = 1; // Reset to first page when searching
+      this.updateUrl(this.currentState);
+    }, 300);
   }
 
   /**
    * Handle table filter change
-   * @param {Event} event - Event object
+   * @param {object} detail - Event detail with filter key and value
    */
-  handleTableFilter(event) {
-    const filters = event.detail?.filters || this.table.activeFilters || {};
-    
-    // Separate search from other filters
-    const { search, ...otherFilters } = filters;
-    
-    this.updateUrl({ 
-      filters: otherFilters, 
-      search: search || '',
-      page: 1 
-    });
-  }
-
-  /**
-   * Handle items per page change
-   * @param {Event} event - Event object
-   */
-  handleTablePerPageChange(event) {
-    const perPage = event.detail?.perPage || this.table.itemsPerPage;
-    this.updateUrl({ perPage, page: 1 });
-  }
-
-  /**
-   * Handle refresh button click - Built-in implementation
-   */
-  async handleRefresh(e) {
-    if (e) {
-      e.preventDefault();
+  handleTableFilter(detail) {
+    if (detail.value) {
+      this.currentState.filters[detail.key] = detail.value;
+    } else {
+      delete this.currentState.filters[detail.key];
     }
-    
-    // Set loading state
+    this.currentState.start = 0; // Reset to beginning when filtering
+    this.updateUrl(this.currentState);
+  }
+
+  /**
+   * Handle table page size change
+   * @param {object} detail - Event detail with size value
+   */
+  handleTableSizeChange(detail) {
+    this.currentState.size = detail.size || 10;
+    this.currentState.start = 0; // Reset to beginning when changing page size
+    this.updateUrl(this.currentState);
+  }
+
+  /**
+   * Handle refresh action
+   */
+  async handleRefresh() {
+    console.log('Refreshing table data...');
     this.setLoadingState(true);
-    
+
     try {
-      // Clear any errors
-      this.loadError = null;
-      
-      // Refresh the table data
-      if (this.table) {
-        if (this.table.collection && this.table.collection.restEnabled) {
-          // For REST-enabled collections, re-fetch with current filters
-          await this.table.fetchWithCurrentFilters();
-        } else if (this.table.collection && typeof this.table.collection.fetch === 'function') {
-          // For collections with fetch method
-          await this.table.collection.fetch();
-          this.table.render();
-        } else {
-          // For static data, just re-render
-          this.table.render();
+      if (this.refreshConfig.onRefresh) {
+        // Custom refresh handler
+        await this.refreshConfig.onRefresh();
+      } else if (this.table) {
+        // Default: refresh table data
+        // Ensure we have the collection reference
+        if (!this.collection && this.table.collection) {
+          this.collection = this.table.collection;
         }
-        
-        // Update last updated time
-        this.lastUpdated = new Date().toLocaleTimeString();
-        
-        // Update status display
-        this.updateStatusDisplay();
-        
-        // Dispatch refresh event
-        if (this.container) {
-          this.container.dispatchEvent(new CustomEvent('tablepage:refresh', {
-            bubbles: true,
-            detail: { 
-              timestamp: this.lastUpdated,
-              recordCount: this.table.collection?.length || 0
-            }
-          }));
+
+        if (this.collection) {
+          // For REST collections, fetch from server
+          if (this.collection.rest?.enabled) {
+            await this.collection.fetch();
+          } else if (typeof this.collection.load === 'function') {
+            // For custom collections with load method
+            await this.collection.load();
+          }
+
+          // Re-render table with updated collection data
+          await this.table.render();
         }
       }
-    } catch (error) {
-      console.error('TablePage: Refresh failed:', error);
-      this.loadError = 'Failed to refresh data';
+
+      this.lastUpdated = new Date().toLocaleTimeString();
+      this.loadError = null;
       this.updateStatusDisplay();
+      this.showSuccess('Data refreshed successfully');
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      this.loadError = error.message || 'Failed to refresh data';
+      this.updateStatusDisplay();
+      this.showError('Failed to refresh data: ' + error.message);
     } finally {
-      // Clear loading state
       this.setLoadingState(false);
     }
   }
 
   /**
-   * Handle add button click - Can be overridden
+   * Handle add action
    */
-  async handleAdd(e) {
-    if (e) {
-      e.preventDefault();
-    }
-    
-    // If custom handler provided, use it
-    if (this.actionButtons.onAdd) {
-      await this.actionButtons.onAdd.call(this);
-    } else {
-      // Default behavior - dispatch event for app to handle
-      if (this.container) {
-        this.container.dispatchEvent(new CustomEvent('tablepage:add', {
-          bubbles: true,
-          detail: { 
-            modelName: this.modelName,
-            collection: this.table?.collection
-          }
-        }));
+  async handleAdd() {
+    console.log('Add new item action triggered');
+
+    // Default implementation - override in subclass
+    this.showInfo(`Add new ${this.modelName} - implement in subclass`);
+
+    // Emit event for custom handling
+    this.emit('table:add', {
+      modelName: this.modelName,
+      collection: this.table?.collection
+    });
+  }
+
+  /**
+   * Handle export action
+   */
+  async handleExport() {
+    console.log('Export table data action triggered');
+
+    try {
+      if (this.table && this.table.collection) {
+        const data = this.table.collection.models.map(model => model.attributes);
+        this.exportToCSV(data);
+        this.showSuccess('Data exported successfully');
+      } else {
+        this.showWarning('No data to export');
       }
-      
-      // Log for development
-      console.log(`TablePage: Add ${this.modelName} - Implement onAdd handler or listen for 'tablepage:add' event`);
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      this.showError('Failed to export data: ' + error.message);
     }
   }
 
   /**
-   * Handle export button click
+   * Handle import action
    */
-  async handleExport(e) {
-    if (e) {
-      e.preventDefault();
-    }
-    
-    if (this.actionButtons.onExport) {
-      await this.actionButtons.onExport.call(this);
-    } else {
-      // Default export to CSV
-      this.exportToCSV();
-    }
+  async handleImport() {
+    console.log('Import data action triggered');
+
+    // Default implementation - override in subclass
+    this.showInfo(`Import ${this.modelNamePlural} - implement in subclass`);
+
+    // Emit event for custom handling
+    this.emit('table:import', {
+      modelName: this.modelName,
+      collection: this.table?.collection
+    });
   }
 
   /**
-   * Handle import button click
+   * Export data to CSV
    */
-  async handleImport(e) {
-    if (e) {
-      e.preventDefault();
-    }
-    
-    if (this.actionButtons.onImport) {
-      await this.actionButtons.onImport.call(this);
-    } else {
-      console.log('TablePage: Import - Implement onImport handler');
-    }
-  }
-
-  /**
-   * Export table data to CSV
-   */
-  exportToCSV() {
-    if (!this.table || !this.table.collection || this.table.collection.length === 0) {
-      console.warn('TablePage: No data to export');
+  exportToCSV(data) {
+    if (!data || data.length === 0) {
+      console.warn('No data to export');
       return;
     }
-    
-    // Get column headers
-    const headers = this.tableConfig.columns
-      .filter(col => !col.hidden)
-      .map(col => col.title || col.key);
-    
-    // Get data rows
-    const rows = this.table.collection.models.map(model => {
-      return this.tableConfig.columns
-        .filter(col => !col.hidden)
-        .map(col => {
-          const value = model.get(col.key);
-          // Handle nested values
-          if (col.key.includes('.')) {
-            const keys = col.key.split('.');
-            let val = model.get(keys[0]);
-            for (let i = 1; i < keys.length; i++) {
-              val = val?.[keys[i]];
-            }
-            return val || '';
-          }
-          // Strip HTML tags if present
-          if (typeof value === 'string' && value.includes('<')) {
-            const tmp = document.createElement('div');
-            tmp.innerHTML = value;
-            return tmp.textContent || tmp.innerText || '';
-          }
-          return value || '';
-        });
+
+    // Get headers from first item or columns config
+    const headers = this.tableConfig.columns.length > 0
+      ? this.tableConfig.columns.map(col => col.label || col.key)
+      : Object.keys(data[0]);
+
+    const keys = this.tableConfig.columns.length > 0
+      ? this.tableConfig.columns.map(col => col.key)
+      : Object.keys(data[0]);
+
+    // Build CSV content
+    let csv = headers.join(',') + '\n';
+
+    data.forEach(item => {
+      const row = keys.map(key => {
+        const value = item[key];
+        // Escape values that contain commas or quotes
+        if (value === null || value === undefined) {
+          return '';
+        }
+        const strValue = String(value);
+        if (strValue.includes(',') || strValue.includes('"') || strValue.includes('\n')) {
+          return `"${strValue.replace(/"/g, '""')}"`;
+        }
+        return strValue;
+      });
+      csv += row.join(',') + '\n';
     });
-    
-    // Convert to CSV
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
-    
-    // Download file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${this.modelNamePlural.toLowerCase()}_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+
+    // Create download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${this.modelNamePlural.toLowerCase()}_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   /**
-   * Set loading state and update UI
+   * Set loading state
    */
   setLoadingState(isLoading) {
     this.isLoading = isLoading;
-    
-    if (this.element) {
-      // Update button states
-      const refreshBtn = this.element.querySelector('[data-action="refresh"]');
-      if (refreshBtn) {
-        refreshBtn.disabled = isLoading;
-        const icon = refreshBtn.querySelector('i');
-        if (icon) {
-          if (isLoading) {
-            icon.classList.add('bi-spin');
-          } else {
-            icon.classList.remove('bi-spin');
+
+    if (!this.element) return;
+
+    const container = this.element.querySelector('.table-container');
+    if (container) {
+      if (isLoading) {
+        container.classList.add('is-loading');
+
+        // Add loading overlay if configured
+        if (this.loadingConfig.showOverlay) {
+          const existingOverlay = container.querySelector('.table-loading-overlay');
+          if (!existingOverlay) {
+            const overlay = document.createElement('div');
+            overlay.className = 'table-loading-overlay';
+            overlay.innerHTML = `
+              <div class="loading-content">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="loading-message">${this.loadingConfig.loadingText}</div>
+              </div>
+            `;
+            container.appendChild(overlay);
           }
         }
-      }
-      
-      // Update container loading state
-      const container = this.element.querySelector(`#table-${this.pageName || 'default'}-container`);
-      if (container) {
-        if (isLoading) {
-          container.classList.add('is-loading');
-        } else {
-          container.classList.remove('is-loading');
-        }
-      }
-      
-      // Show/hide loading overlay if configured
-      if (this.loadingConfig.showOverlay) {
-        let overlay = this.element.querySelector('.table-loading-overlay');
-        if (!overlay && isLoading) {
-          // Create overlay if it doesn't exist
-          overlay = document.createElement('div');
-          overlay.className = 'table-loading-overlay';
-          overlay.innerHTML = `
-            <div class="loading-content text-center">
-              <div class="spinner-border text-primary mb-3" role="status">
-                <span class="visually-hidden">Loading...</span>
-              </div>
-              <div class="loading-message">${this.loadingConfig.loadingText}</div>
-            </div>
-          `;
-          container?.appendChild(overlay);
-        } else if (overlay && !isLoading) {
+      } else {
+        container.classList.remove('is-loading');
+
+        // Remove loading overlay
+        const overlay = container.querySelector('.table-loading-overlay');
+        if (overlay) {
           overlay.remove();
         }
       }
@@ -735,158 +661,105 @@ class TablePage extends Page {
   }
 
   /**
-   * Update status display elements
+   * Update status display
    */
   updateStatusDisplay() {
-    if (!this.element) return;
-    
+    if (!this.element || !this.statusConfig.showStatus) return;
+
     // Update record count
-    const recordCountEls = this.element.querySelectorAll('[data-status="record-count"]');
-    recordCountEls.forEach(el => {
-      if (this.table) {
-        const count = this.table.collection?.meta?.total || this.table.collection?.length || 0;
-        el.textContent = count;
+    if (this.statusConfig.showRecordCount) {
+      const countElement = this.element.querySelector('[data-status="record-count"]');
+      if (countElement) {
+        const count = this.table?.collection?.length || 0;
+        countElement.textContent = count;
       }
-    });
-    
+    }
+
     // Update last updated time
-    const lastUpdatedEls = this.element.querySelectorAll('[data-status="last-updated"]');
-    lastUpdatedEls.forEach(el => {
-      el.textContent = this.lastUpdated || 'Never';
-    });
-    
-    // Update error display
-    const errorEls = this.element.querySelectorAll('[data-status="error"]');
-    errorEls.forEach(el => {
-      if (this.loadError) {
-        el.style.display = 'inline-block';
-        el.innerHTML = `<i class="bi bi-exclamation-triangle me-1"></i>${this.loadError}`;
-      } else {
-        el.style.display = 'none';
+    if (this.statusConfig.showLastUpdated) {
+      const updatedElement = this.element.querySelector('[data-status="last-updated"]');
+      if (updatedElement) {
+        updatedElement.textContent = this.lastUpdated || 'Never';
       }
-    });
+    }
+
+    // Update error display
+    const errorElement = this.element.querySelector('[data-status="error"]');
+    if (errorElement) {
+      if (this.loadError) {
+        errorElement.style.display = '';
+        const textElement = errorElement.querySelector('.error-text');
+        if (textElement) {
+          textElement.textContent = this.loadError;
+        }
+      } else {
+        errorElement.style.display = 'none';
+      }
+    }
   }
 
   /**
-   * Bind table events
-   */
-  bindTableEvents() {
-    if (!this.table || !this.table.container) return;
-    
-    const container = this.table.container;
-    
-    // Bind pagination events
-    container.addEventListener('page:change', this.handleTablePageChange);
-    container.addEventListener('table:page:change', this.handleTablePageChange);
-    
-    // Bind sort events
-    container.addEventListener('sort:change', this.handleTableSort);
-    container.addEventListener('table:sort', this.handleTableSort);
-    
-    // Bind search events
-    container.addEventListener('search:change', this.handleTableSearch);
-    container.addEventListener('table:search', this.handleTableSearch);
-    
-    // Bind filter events
-    container.addEventListener('filter:change', this.handleTableFilter);
-    container.addEventListener('table:filter', this.handleTableFilter);
-    
-    // Bind per page change events
-    container.addEventListener('perpage:change', this.handleTablePerPageChange);
-    container.addEventListener('table:perpage', this.handleTablePerPageChange);
-  }
-
-  /**
-   * Unbind table events
-   */
-  unbindTableEvents() {
-    if (!this.table || !this.table.container) return;
-    
-    const container = this.table.container;
-    
-    container.removeEventListener('page:change', this.handleTablePageChange);
-    container.removeEventListener('table:page:change', this.handleTablePageChange);
-    container.removeEventListener('sort:change', this.handleTableSort);
-    container.removeEventListener('table:sort', this.handleTableSort);
-    container.removeEventListener('search:change', this.handleTableSearch);
-    container.removeEventListener('table:search', this.handleTableSearch);
-    container.removeEventListener('filter:change', this.handleTableFilter);
-    container.removeEventListener('table:filter', this.handleTableFilter);
-    container.removeEventListener('perpage:change', this.handleTablePerPageChange);
-    container.removeEventListener('table:perpage', this.handleTablePerPageChange);
-  }
-
-  /**
-   * Bind action button events
+   * Bind action buttons
    */
   bindActionButtons() {
     if (!this.element) return;
-    
-    // Bind all action buttons
-    this.element.querySelectorAll('[data-action]').forEach(button => {
-      const action = button.getAttribute('data-action');
-      
-      switch (action) {
-        case 'refresh':
-          button.addEventListener('click', this.handleRefresh);
-          break;
-        case 'add':
-          button.addEventListener('click', this.handleAdd);
-          break;
-        case 'export':
-          button.addEventListener('click', this.handleExport);
-          break;
-        case 'import':
-          button.addEventListener('click', this.handleImport);
-          break;
-        default:
-          // Check for custom button handlers
-          if (this.actionButtons.additionalButtons) {
-            const customButton = this.actionButtons.additionalButtons.find(btn => btn.action === action);
-            if (customButton && customButton.handler) {
-              button.addEventListener('click', (e) => customButton.handler.call(this, e));
-            }
-          }
-      }
+
+    // Bind refresh button
+    const refreshBtns = this.element.querySelectorAll('[data-action="refresh"]');
+    refreshBtns.forEach(btn => {
+      btn.addEventListener('click', this.handleRefresh);
+    });
+
+    // Bind add button
+    const addBtns = this.element.querySelectorAll('[data-action="add"]');
+    addBtns.forEach(btn => {
+      btn.addEventListener('click', this.handleAdd);
+    });
+
+    // Bind export button
+    const exportBtns = this.element.querySelectorAll('[data-action="export"]');
+    exportBtns.forEach(btn => {
+      btn.addEventListener('click', this.handleExport);
+    });
+
+    // Bind import button
+    const importBtns = this.element.querySelectorAll('[data-action="import"]');
+    importBtns.forEach(btn => {
+      btn.addEventListener('click', this.handleImport);
+    });
+
+    // Bind custom toolbar actions
+    Object.values(this.customToolbarActions).forEach(action => {
+      const btns = this.element.querySelectorAll(`[data-action="${action.key}"]`);
+      btns.forEach(btn => {
+        btn.addEventListener('click', action.handler);
+      });
     });
   }
 
   /**
-   * Unbind action button events
+   * Unbind action buttons
    */
   unbindActionButtons() {
     if (!this.element) return;
-    
+
     // Unbind all action buttons
-    this.element.querySelectorAll('[data-action]').forEach(button => {
-      const action = button.getAttribute('data-action');
-      
-      switch (action) {
-        case 'refresh':
-          button.removeEventListener('click', this.handleRefresh);
-          break;
-        case 'add':
-          button.removeEventListener('click', this.handleAdd);
-          break;
-        case 'export':
-          button.removeEventListener('click', this.handleExport);
-          break;
-        case 'import':
-          button.removeEventListener('click', this.handleImport);
-          break;
-      }
+    const actionBtns = this.element.querySelectorAll('[data-action]');
+    actionBtns.forEach(btn => {
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
     });
   }
 
   /**
-   * Override getTemplate to provide table container template
+   * Get template - can be disabled for custom rendering
    */
   async getTemplate() {
     // If useCustomTemplate is true, return empty string (no template)
     if (this.useCustomTemplate) {
       return '';
     }
-    
+
     // Otherwise use the parent View's getTemplate which will use this.template
     return super.getTemplate();
   }
@@ -896,16 +769,16 @@ class TablePage extends Page {
    */
   async getViewData() {
     const baseData = await super.getViewData();
-    
+
     const recordCount = this.table?.collection?.length || 0;
-    
+
     return {
       ...baseData,
       title: this.pageOptions.title || this.pageName,
       description: this.pageOptions.description,
       tableContainerId: `table-${this.pageName || 'default'}-container`,
       pageName: this.pageName,
-      
+
       // Simple status data
       showStatus: this.statusConfig.showStatus,
       showRecordCount: this.statusConfig.showRecordCount,
@@ -917,57 +790,32 @@ class TablePage extends Page {
   }
 
   /**
-   * After render hook - create and initialize table
+   * After render hook - bind action buttons
    */
   async onAfterRender() {
     await super.onAfterRender();
-    
-    // Find table container
-    const containerId = `table-${this.pageName || 'default'}-container`;
-    const container = this.element.querySelector(`#${containerId}`);
-    
-    if (!container) {
-      console.error('Table container not found:', containerId);
-      return;
-    }
-    
-    // Create table instance with action buttons config
-    this.table = new Table({
-      ...this.tableConfig,
-      container: container,
-      showRefresh: this.showRefresh,
-      showAdd: this.showAdd,
-      showExport: this.showExport,
-      modelName: this.modelName,
-      onRefresh: this.onRefresh,
-      onAdd: this.onAdd,
-      onExport: this.onExport
-    });
-    
-    // Listen for table events
-    if (this.table.container) {
-      // Listen for data loaded
-      this.table.container.addEventListener('table:data:loaded', () => {
-        this.lastUpdated = new Date().toLocaleTimeString();
-        this.loadError = null;
-        this.updateStatusDisplay();
-      });
-      
-      // Listen for data errors
-      this.table.container.addEventListener('table:data:error', (e) => {
-        this.loadError = e.detail?.message || 'Failed to load data';
-        this.updateStatusDisplay();
-      });
-    }
-    
-    // Apply initial state from URL
-    this.applyStateToTable(this.currentState);
-    
-    // Bind event listeners
-    this.bindTableEvents();
+
+    // Bind action buttons
     this.bindActionButtons();
-    
-    // Update initial status
+  }
+
+  /**
+   * After mount hook - get collection reference and apply state
+   */
+  async onAfterMount() {
+    await super.onAfterMount();
+
+    // Get reference to the collection created by Table
+    if (this.table && this.table.collection) {
+      this.collection = this.table.collection;
+    }
+
+    // Apply initial state from URL if table is ready
+    if (this.table) {
+      this.applyStateToTable(this.currentState);
+    }
+
+    // Update initial status display
     this.updateStatusDisplay();
   }
 
@@ -975,22 +823,26 @@ class TablePage extends Page {
    * Before destroy hook - cleanup
    */
   async onBeforeDestroy() {
-    // Unbind event listeners
-    this.unbindTableEvents();
+    // Unbind action buttons
     this.unbindActionButtons();
-    
+
     // Clear debounce timer
     if (this.searchDebounceTimer) {
       clearTimeout(this.searchDebounceTimer);
     }
-    
-    // Destroy table
-    if (this.table && typeof this.table.destroy === 'function') {
-      this.table.destroy();
+
+    // Remove event listeners from table
+    if (this.table) {
+      this.table.off('page:change', this.handleTablePageChange);
+      this.table.off('sort:change', this.handleTableSort);
+      this.table.off('search:change', this.handleTableSearch);
+      this.table.off('filter:change', this.handleTableFilter);
+      this.table.off('size:change', this.handleTableSizeChange);
+      this.table.off('data:loaded');
+      this.table.off('data:error');
     }
-    
-    this.table = null;
-    
+
+    // Parent class will handle destroying child views (including table)
     await super.onBeforeDestroy();
   }
 
@@ -1057,11 +909,11 @@ class TablePage extends Page {
     this.currentState.filters = otherFilters;
     this.currentState.search = search || '';
     this.currentState.page = 1;
-    
+
     if (this.table) {
       this.applyStateToTable(this.currentState);
     }
-    
+
     this.updateUrl(this.currentState);
   }
 
@@ -1082,21 +934,19 @@ class TablePage extends Page {
     this.currentState.sort = field;
     this.currentState.dir = direction;
     this.currentState.page = 1;
-    
+
     if (this.table) {
       this.applyStateToTable(this.currentState);
     }
-    
+
     this.updateUrl(this.currentState);
   }
 
   /**
-   * Static factory method for easy creation
-   * @param {object} options - Configuration options
-   * @returns {TablePage} New TablePage instance
+   * Static factory method
    */
   static create(options = {}) {
-    return new TablePage(options);
+    return new this(options);
   }
 }
 

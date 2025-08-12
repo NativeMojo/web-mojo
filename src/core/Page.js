@@ -47,6 +47,9 @@ class Page extends View {
       ...options.pageOptions
     };
 
+    // State preservation
+    this.savedState = null;
+
     console.log(`Page ${this.pageName} constructed with route: ${this.route}`);
   }
 
@@ -64,18 +67,18 @@ class Page extends View {
    * @param {object} params - Route parameters
    * @param {object} query - Query string parameters
    */
-  onParams(params = {}, query = {}) {
+  async onParams(params = {}, query = {}) {
+    const paramsChanged = JSON.stringify(params) !== JSON.stringify(this.params);
+    const queryChanged = JSON.stringify(query) !== JSON.stringify(this.query);
+    
     this.params = params;
     this.query = query;
 
-    console.log(`Page ${this.pageName} received params:`, params, 'query:', query);
-
-    // Update page data with params and query
-    this.updateData({
-      ...this.data,
-      params: this.params,
-      query: this.query
-    });
+    // Only re-render if params actually changed and page is active
+    if (this.isActive && (paramsChanged || queryChanged)) {
+      console.log(`Page ${this.pageName} params changed, re-rendering`);
+      await this.render();
+    }
   }
 
   /**
@@ -84,6 +87,12 @@ class Page extends View {
    */
   async onEnter() {
     this.isActive = true;
+
+    // Restore saved state if exists
+    if (this.savedState) {
+      this.restoreState(this.savedState);
+      this.savedState = null;
+    }
 
     // Set page title if provided
     if (this.pageOptions && this.pageOptions.title && typeof document !== 'undefined') {
@@ -103,6 +112,8 @@ class Page extends View {
    * Override this method for cleanup logic like removing listeners, clearing timers, etc.
    */
   async onExit() {
+    // Save state before exit
+    this.savedState = this.captureState();
     this.isActive = false;
 
     // Emit deactivation event
@@ -144,145 +155,97 @@ class Page extends View {
   }
 
   /**
-   * Navigate to another page
-   * @param {string} route - Route to navigate to
-   * @param {object} params - Route parameters
-   * @param {object} options - Navigation options
+   * Capture current page state for preservation
+   * @returns {object|null} Captured state
    */
-  navigate(route, params = {}, options = {}) {
-    // Use global MOJO router if available
-    if (typeof window !== 'undefined' && window.MOJO?.router) {
-      return window.MOJO.router.navigate(route, { params, ...options });
-    }
-
-    // Fallback to manual navigation
-    const url = this.buildUrl(route, params);
-
-    if (options.replace) {
-      window.location.replace(url);
-    } else {
-      window.location.href = url;
-    }
-  }
-
-  /**
-   * Build URL with parameters
-   * @param {string} route - Route pattern
-   * @param {object} params - Parameters
-   * @returns {string} Complete URL
-   */
-  buildUrl(route, params = {}) {
-    let url = route;
-
-    // Replace route parameters like :id with actual values
-    Object.entries(params).forEach(([key, value]) => {
-      url = url.replace(`:${key}`, encodeURIComponent(value));
-      url = url.replace(`{${key}}`, encodeURIComponent(value));
-    });
-
-    return url;
-  }
-
-  /**
-   * Go back in browser history
-   */
-  goBack() {
-    if (typeof window !== 'undefined' && window.history) {
-      window.history.back();
-    }
-  }
-
-  /**
-   * Go forward in browser history
-   */
-  goForward() {
-    if (typeof window !== 'undefined' && window.history) {
-      window.history.forward();
-    }
-  }
-
-  /**
-   * Reload the current page
-   */
-  reload() {
-    if (typeof window !== 'undefined') {
-      window.location.reload();
-    }
-  }
-
-  /**
-   * Check if this page matches a route
-   * @param {string} path - Current path
-   * @returns {boolean|object} False if no match, or match result with params
-   */
-  matchRoute(path) {
-    if (!this.route) {
-      return false;
-    }
-
-    const regex = this.routeToRegex(this.route);
-    const matches = path.match(regex);
-
-    if (!matches) {
-      return false;
-    }
-
-    // Extract parameters
-    const params = {};
-    const paramNames = this.extractParamNames(this.route);
-
-    paramNames.forEach((name, index) => {
-      params[name] = matches[index + 1];
-    });
-
+  captureState() {
+    if (!this.element) return null;
+    
     return {
-      route: this.route,
-      params,
-      page: this
+      scrollTop: this.element.scrollTop,
+      formData: this.captureFormData(),
+      custom: this.captureCustomState()
     };
   }
 
   /**
-   * Convert route pattern to regex
-   * @param {string} route - Route pattern
-   * @returns {RegExp} Regex for matching
+   * Restore saved state
+   * @param {object} state - State to restore
    */
-  routeToRegex(route) {
-    // Escape special regex characters except parameter markers
-    let pattern = route
-      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      .replace(/\\:\w+/g, '([^/]+)')  // :param -> capturing group
-      .replace(/\\\{(\w+)\\\}/g, '([^/]+)'); // {param} -> capturing group
-
-    return new RegExp(`^${pattern}$`);
+  restoreState(state) {
+    if (!state || !this.element) return;
+    
+    this.element.scrollTop = state.scrollTop || 0;
+    this.restoreFormData(state.formData);
+    if (state.custom) {
+      this.restoreCustomState(state.custom);
+    }
   }
 
   /**
-   * Extract parameter names from route
-   * @param {string} route - Route pattern
-   * @returns {Array<string>} Parameter names
+   * Capture form data from page
+   * @returns {object} Form data
    */
-  extractParamNames(route) {
-    const params = [];
-
-    // Match :param patterns
-    const colonParams = route.match(/:(\w+)/g);
-    if (colonParams) {
-      colonParams.forEach(param => {
-        params.push(param.substring(1)); // Remove the ':'
-      });
-    }
-
-    // Match {param} patterns
-    const braceParams = route.match(/\{(\w+)\}/g);
-    if (braceParams) {
-      braceParams.forEach(param => {
-        params.push(param.substring(1, param.length - 1)); // Remove { }
-      });
-    }
-
-    return params;
+  captureFormData() {
+    const data = {};
+    if (!this.element) return data;
+    
+    this.element.querySelectorAll('input, select, textarea').forEach(field => {
+      if (field.name) {
+        if (field.type === 'checkbox') {
+          data[field.name] = field.checked;
+        } else if (field.type === 'radio') {
+          if (field.checked) {
+            data[field.name] = field.value;
+          }
+        } else {
+          data[field.name] = field.value;
+        }
+      }
+    });
+    
+    return data;
   }
+
+  /**
+   * Restore form data to page
+   * @param {object} formData - Form data to restore
+   */
+  restoreFormData(formData) {
+    if (!formData || !this.element) return;
+    
+    Object.entries(formData).forEach(([name, value]) => {
+      const field = this.element.querySelector(`[name="${name}"]`);
+      if (field) {
+        if (field.type === 'checkbox') {
+          field.checked = value;
+        } else if (field.type === 'radio') {
+          const radio = this.element.querySelector(`[name="${name}"][value="${value}"]`);
+          if (radio) radio.checked = true;
+        } else {
+          field.value = value;
+        }
+      }
+    });
+  }
+
+  /**
+   * Capture custom state - override in subclasses
+   * @returns {object} Custom state
+   */
+  captureCustomState() {
+    return {};
+  }
+
+  /**
+   * Restore custom state - override in subclasses
+   * @param {object} state - Custom state to restore
+   */
+  restoreCustomState(state) {
+    // Override in subclasses
+  }
+
+
 
   /**
    * Set page metadata
@@ -339,8 +302,7 @@ class Page extends View {
       params: this.params,
       query: this.query,
       title: this.pageOptions.title,
-      description: this.pageOptions.description,
-      matched: this.matched
+      description: this.pageOptions.description
     };
   }
 
@@ -464,19 +426,23 @@ class Page extends View {
   }
 
   /**
-   * Static method to create page with route registration
-   * @param {object} options - Page options
-   * @returns {Page} New page instance
+   * Navigate to another page using the app's router
+   * @param {string} route - Route to navigate to
+   * @param {object} params - Route parameters
+   * @param {object} options - Navigation options
    */
-  static create(options = {}) {
-    const page = new this(options);
-
-    // Auto-register with global router if available
-    if (typeof window !== 'undefined' && window.MOJO?.router && page.route) {
-      window.MOJO.router.addRoute(page.route, page);
+  navigate(route, params = {}, options = {}) {
+    // Delegate to app's router
+    if (this.app && this.app.router) {
+      return this.app.router.navigate(route, options);
     }
-
-    return page;
+    
+    // Fallback to MOJO global router
+    if (typeof window !== 'undefined' && window.MOJO?.router) {
+      return window.MOJO.router.navigate(route, options);
+    }
+    
+    console.error('No router available for navigation');
   }
 
   /**

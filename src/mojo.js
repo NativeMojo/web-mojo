@@ -9,7 +9,7 @@ import Router from './core/Router.js';
 import EventBus from './utils/EventBus.js';
 import Rest from './core/Rest.js';
 import Model from './core/Model.js';
-import DataList from './core/DataList.js';
+import Collection from './core/Collection.js';
 
 // Alias Model as RestModel for backward compatibility
 const RestModel = Model;
@@ -69,7 +69,7 @@ class MOJO {
     
     // Inject Rest client into model classes
     Model.Rest = this.rest;
-    DataList.Rest = this.rest;
+    Collection.Rest = this.rest;
     
     // Set up authentication if configured
     if (this.config.auth && this.config.auth.token) {
@@ -355,7 +355,7 @@ class MOJO {
   /**
    * Register a collection class  
    * @param {string} name - Collection name
-   * @param {class} CollectionClass - Collection class extending DataList
+   * @param {class} CollectionClass - Collection class extending Collection
    */
   registerCollection(name, CollectionClass) {
     if (typeof CollectionClass !== 'function') {
@@ -387,7 +387,7 @@ class MOJO {
    * @param {string} name - Registered collection name
    * @param {class} ModelClass - Model class for the collection
    * @param {object} options - Collection options
-   * @returns {DataList} Collection instance
+   * @returns {Collection} Collection instance
    */
   createCollection(name, ModelClass, options = {}) {
     const CollectionClass = this.collections.get(name);
@@ -811,11 +811,12 @@ MOJO.Page = Page;
 MOJO.Router = Router;
 MOJO.EventBus = EventBus;
 MOJO.Model = Model;
-MOJO.DataList = DataList;
+MOJO.Collection = Collection;
+MOJO.DataList = Collection; // Alias for backward compatibility
 MOJO.Rest = Rest;
 MOJO.Table = Table;
 MOJO.TablePage = TablePage;
 
 // Export as both default and named export
-export { View, Page, Router, EventBus, Model, RestModel, DataList, Rest, Table, TablePage, Dialog, NotFoundPage, ErrorPage };
+export { View, Page, Router, EventBus, Model, RestModel, Collection, Collection as DataList, Rest, Table, TablePage, Dialog, NotFoundPage, ErrorPage };
 export default MOJO;

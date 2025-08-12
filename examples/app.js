@@ -6,7 +6,7 @@
 import MOJO from '../src/mojo.js';
 
 // Import framework components
-import App from '../src/core/App.js';
+import App from '../src/app/WebApp.js';
 import TopNav from '../src/components/TopNav.js';
 import Sidebar from '../src/components/Sidebar.js';
 import MainContent from '../src/components/MainContent.js';
@@ -47,21 +47,21 @@ async function initApp() {
         label: 'Core Concepts',
         icon: 'bi-box',
         items: [
-          { 
-            label: 'View Basics', 
-            page: 'view-basics', 
+          {
+            label: 'View Basics',
+            page: 'view-basics',
             icon: 'bi-layers',
             description: 'Learn the fundamentals of Views'
           },
-          { 
-            label: 'Components', 
-            page: 'components', 
+          {
+            label: 'Components',
+            page: 'components',
             icon: 'bi-puzzle',
-            description: 'Explore built-in components' 
+            description: 'Explore built-in components'
           },
-          { 
-            label: 'Pages & Routing', 
-            page: 'pages-routing', 
+          {
+            label: 'Pages & Routing',
+            page: 'pages-routing',
             icon: 'bi-signpost-2',
             description: 'Navigation and routing patterns'
           }
@@ -77,7 +77,7 @@ async function initApp() {
       },
       {
         label: 'GitHub',
-        icon: 'bi-github', 
+        icon: 'bi-github',
         href: 'https://github.com/yourusername/mojo',
         external: true
       }

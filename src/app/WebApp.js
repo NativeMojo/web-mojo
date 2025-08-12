@@ -4,6 +4,7 @@
  */
 
 import Router from '../core/Router.js';
+import Page from '../core/Page.js';
 import EventBus from '../utils/EventBus.js';
 import rest from '../core/Rest.js';
 
@@ -15,25 +16,37 @@ class WebApp {
         this.debug = config.debug || false;
         this.container = config.container || '#app';
         this.basePath = config.basePath || '';
-        
+
         // Router configuration
-        this.router = null;
         this.routerMode = config.routerMode || 'param'; // 'param', 'hash', 'history'
         this.basePath = config.basePath || '';
         this.defaultRoute = config.defaultRoute || 'home';
         
+        // Initialize router immediately so it's available for page registration
+        this.router = new Router(this, {
+            mode: this.routerMode,
+            base: this.basePath,
+            defaultPage: this.defaultRoute
+        });
+        
+        // Make router globally accessible
+        if (typeof window !== 'undefined') {
+            window.MOJO = window.MOJO || {};
+            window.MOJO.router = this.router;
+        }
+
         // Layout configuration
         this.layoutType = config.layout || 'portal'; // 'portal', 'single', 'custom', 'none'
         this.layoutConfig = config.layoutConfig || {};
         this.layout = null;
-        
+
         // Navigation configuration - support both old and new structure
         this.navigation = config.navigation || {};
         this.sidebar = config.sidebar || {};
         this.topbar = config.topbar || {};
         this.brand = config.brand;
         this.brandIcon = config.brandIcon;
-        
+
         // REST configuration
         this.rest = rest;
         if (config.api) {
@@ -43,15 +56,17 @@ class WebApp {
                 timeout: config.api?.timeout || 30000
             });
         }
-        
+
         // Global event bus
         this.eventBus = new EventBus();
-        
+
         // Component registries
-        this.pages = new Map();
+        this.pageCache = new Map();     // pageName -> page instance (cached)
+        this.pageClasses = new Map();   // pageName -> Page class
         this.components = new Map();
         this.models = new Map();
-        
+        this.currentPage = null;        // Currently active page instance
+
         // State management
         this.state = {
             currentPage: null,
@@ -60,43 +75,40 @@ class WebApp {
             user: null,
             ...config.initialState
         };
-        
+
         // Make globally accessible (singleton pattern)
         if (typeof window !== 'undefined') {
             window.APP = this;
             window.MOJO = window.MOJO || {};
             window.MOJO.app = this;
         }
-        
+
         // Bind methods
         this.start = this.start.bind(this);
         this.navigate = this.navigate.bind(this);
         this.showError = this.showError.bind(this);
         this.showSuccess = this.showSuccess.bind(this);
     }
-    
+
     /**
      * Initialize and start the application
      */
     async start() {
         try {
             console.log(`Starting ${this.name} v${this.version}`);
-            
+
             // Setup error handling
             this.setupErrorHandling();
-            
+
             // Initialize router
             await this.setupRouter();
-            
+
             // Setup layout
             await this.setupLayout();
-            
-            // Initialize registered pages
-            await this.initializePages();
-            
+
             // Start router
             this.router.start();
-            
+
             // Navigate to default route or current URL
             const currentPath = this.router.getCurrentPath();
             if (!currentPath || currentPath === '/' || currentPath === '') {
@@ -106,51 +118,45 @@ class WebApp {
                 // Try to handle current location
                 await this.router.handleCurrentLocation();
             }
-            
+
             // Emit app ready event
             this.eventBus.emit('app:ready', { app: this });
-            
+
             console.log(`${this.name} started successfully`);
-            
+
         } catch (error) {
             console.error('Failed to start application:', error);
             this.showError('Failed to start application');
             throw error;
         }
     }
-    
+
     /**
      * Setup router with configuration
      */
     async setupRouter() {
-        this.router = new Router({
-            mode: this.routerMode,
-            basePath: this.basePath,
-            caseSensitive: false,
-            container: this.container  // Use app container but we'll intercept rendering
-        });
-        
-        // Make router globally accessible
-        if (window.MOJO) {
-            window.MOJO.router = this.router;
+        // Router is now created in constructor, just setup events
+        if (!this.router) {
+            console.error('Router not initialized');
+            return;
         }
-        
+
         // Setup router events
         this.router.onBeforeRoute = async (route) => {
             this.eventBus.emit('route:before', { route });
             return true;
         };
-        
+
         this.router.onAfterRoute = async (route) => {
             this.eventBus.emit('route:after', { route });
         };
-        
+
         this.router.onError = (error) => {
             console.error('Router error:', error);
             this.showError('Navigation error');
         };
     }
-    
+
     /**
      * Setup layout based on configuration
      */
@@ -159,10 +165,10 @@ class WebApp {
         if (!container) {
             throw new Error(`Container '${this.container}' not found`);
         }
-        
+
         // Clear container
         container.innerHTML = '';
-        
+
         switch (this.layoutType) {
             case 'portal':
                 const Portal = (await import('./Portal.js')).default;
@@ -177,12 +183,12 @@ class WebApp {
                 });
                 await this.layout.render();
                 break;
-                
+
             case 'single':
                 // Simple single page layout
                 container.innerHTML = '<div id="page-container"></div>';
                 break;
-                
+
             case 'custom':
                 // Allow custom layout class
                 if (this.layoutConfig.layoutClass) {
@@ -194,132 +200,147 @@ class WebApp {
                     await this.layout.render();
                 }
                 break;
-                
+
             case 'none':
                 // No layout, pages render directly
                 break;
         }
     }
-    
+
     /**
-     * Initialize all registered pages
+     * Register a page with the app
+     * @param {string} pageName - Name of the page
+     * @param {class} PageClass - Page class constructor
+     * @param {object} options - Optional constructor options
      */
-    async initializePages() {
-        for (const [name, PageClass] of this.pages) {
-            // Create a wrapper handler that renders through the layout
-            const routeHandler = async (params, query) => {
-                const page = new PageClass();
-                page.onParams(params, query);
-                
-                // Call page lifecycle methods
-                if (page.onInit && !page.initialized) {
-                    await page.onInit();
-                    page.initialized = true;
-                }
-                
-                if (page.onEnter) {
-                    await page.onEnter();
-                }
-                
-                // Render through layout if available
-                if (this.layout && this.layout.renderPage) {
-                    await this.layout.renderPage(page);
-                } else {
-                    // Fallback to direct render
-                    const container = this.getPageContainer();
-                    if (container) {
-                        page.setContainer(container);
-                        await page.render();
-                        await page.mount();
-                    }
-                }
-                
-                // Store current page instance
-                this.router.currentPageInstance = page;
-                
-                return page;
-            };
-            
-            // Register the wrapper handler with router
-            const pageName = PageClass.pageName || new PageClass().pageName;
-            if (pageName) {
-                this.router.addRoute(pageName, routeHandler);
-                
-                // Also register root route for default page
-                if (pageName === this.defaultRoute) {
-                    this.router.addRoute('/', routeHandler);
-                }
-            }
-        }
-    }
-    
-    /**
-     * Register a page class
-     */
-    addPage(PageClass) {
-        // Support both class and instance
-        const isClass = typeof PageClass === 'function';
-        const pageName = isClass ? PageClass.pageName : PageClass.pageName;
-        
-        if (!pageName) {
-            console.warn('Page must have a pageName property');
+    registerPage(pageName, PageClass, options = {}) {
+        // Validate inputs
+        if (typeof pageName !== 'string' || !pageName) {
+            console.error('registerPage: pageName must be a non-empty string');
             return this;
         }
         
-        this.pages.set(pageName, PageClass);
-        
-        // If router is already initialized, add route immediately
-        if (this.router && isClass) {
-            const routeHandler = async (params, query) => {
-                const page = new PageClass();
-                page.onParams(params, query);
-                
-                if (page.onInit && !page.initialized) {
-                    await page.onInit();
-                    page.initialized = true;
-                }
-                
-                if (page.onEnter) {
-                    await page.onEnter();
-                }
-                
-                // Render through layout if available
-                if (this.layout && this.layout.renderPage) {
-                    await this.layout.renderPage(page);
-                } else {
-                    const container = this.getPageContainer();
-                    if (container) {
-                        page.setContainer(container);
-                        await page.render();
-                        await page.mount();
-                    }
-                }
-                
-                this.router.currentPageInstance = page;
-                return page;
-            };
-            
-            const pageName = PageClass.pageName || new PageClass().pageName;
-            if (pageName) {
-                this.router.addRoute(pageName, routeHandler);
+        if (typeof PageClass !== 'function') {
+            console.error('registerPage: PageClass must be a constructor function');
+            return this;
+        }
+
+        // Store the page class and options
+        this.pageClasses.set(pageName, {
+            PageClass,
+            constructorOptions: options
+        });
+
+        // If router is initialized, add route
+        if (this.router) {
+            // Get route from options or use default
+            const route = options.route || `/${pageName}`;
+            this.router.addRoute(route, pageName);
+        }
+
+        return this;
+    }
+
+    /**
+     * Get or create a page instance (cached)
+     * @param {string} pageName - Name of the page
+     * @returns {Page|null} Page instance or null if not found
+     */
+    getOrCreatePage(pageName) {
+        // Return cached instance if exists
+        if (this.pageCache.has(pageName)) {
+            return this.pageCache.get(pageName);
+        }
+
+        // Get registered page info
+        const pageInfo = this.pageClasses.get(pageName);
+        if (!pageInfo) {
+            console.warn(`Page class not found for: ${pageName}`);
+            return null;
+        }
+
+        // Extract PageClass and options
+        const { PageClass, constructorOptions = {} } = pageInfo;
+
+        // Create and cache the instance with constructor options
+        const page = new PageClass(constructorOptions);
+        page.app = this; // Give page reference to app
+
+        // Ensure pageName is set
+        if (!page.pageName) {
+            page.pageName = pageName;
+        }
+
+        // Initialize if needed
+        if (page.onInit && !page.initialized) {
+            page.onInit();
+            page.initialized = true;
+        }
+
+        // Cache the instance
+        this.pageCache.set(pageName, page);
+        return page;
+    }
+
+    /**
+     * Show a page with detach/reattach strategy
+     * @param {Page} page - Page instance to show
+     */
+    async showPage(page) {
+        const container = this.getPageContainer();
+        if (!container) {
+            console.error('No page container found');
+            return;
+        }
+
+        // Detach current page if different
+        if (this.currentPage && this.currentPage !== page) {
+            if (this.currentPage.element?.parentNode) {
+                this.currentPage.element.remove();
             }
         }
-        
-        return this;
-    }
-    
-    /**
-     * Register multiple pages at once
-     */
-    addPages(pages) {
-        if (Array.isArray(pages)) {
-            pages.forEach(page => this.addPage(page));
-        } else if (typeof pages === 'object') {
-            Object.values(pages).forEach(page => this.addPage(page));
+
+        // Ensure page has a container set
+        if (!page.container) {
+            page.setContainer(container);
         }
-        return this;
+
+        // Ensure page is rendered and has an element
+        if (!page.element) {
+            try {
+                await page.render();
+            } catch (error) {
+                console.error(`Failed to render page ${page.pageName}:`, error);
+                return;
+            }
+        }
+
+        // Double-check element was created
+        if (!page.element) {
+            console.warn(`Page ${page.pageName} has no element after render, creating manually`);
+            page.createElement();
+        }
+
+        // Attach new page if not already in DOM
+        if (page.element && !page.element.parentNode) {
+            container.appendChild(page.element);
+            // Only mount if not already mounted
+            if (!page.mounted) {
+                await page.mount();
+            }
+        }
+
+        this.currentPage = page;
+
+        // Update state
+        this.setState({
+            currentPage: page.pageName,
+            previousPage: this.state.currentPage
+        });
     }
-    
+
+
+
     /**
      * Navigate to a route
      */
@@ -328,20 +349,25 @@ class WebApp {
             console.error('Router not initialized');
             return;
         }
-        
-        // Update state
+
+        // Update state with route name
         this.state.previousPage = this.state.currentPage;
         this.state.currentPage = route;
-        
+
         // Notify layout of navigation
         if (this.layout && this.layout.setActivePage) {
             this.layout.setActivePage(route);
         }
-        
-        // Perform navigation
-        return this.router.navigate(route, { params, ...options });
+
+        // Perform navigation - router will handle the page instance
+        const result = await this.router.navigate(route, { params, ...options });
+
+        // Store reference to current page instance for convenience
+        this.currentPage = this.router.currentPageInstance;
+
+        return result;
     }
-    
+
     /**
      * Navigate back
      */
@@ -352,7 +378,7 @@ class WebApp {
             window.history.back();
         }
     }
-    
+
     /**
      * Navigate forward
      */
@@ -363,14 +389,15 @@ class WebApp {
             window.history.forward();
         }
     }
-    
+
     /**
      * Get current page
      */
     getCurrentPage() {
-        return this.state.currentPage;
+        // Return the actual page instance from the router
+        return this.router ? this.router.currentPageInstance : null;
     }
-    
+
     /**
      * Get page container element
      */
@@ -379,12 +406,12 @@ class WebApp {
         if (this.layout && this.layout.getPageContainer) {
             return this.layout.getPageContainer();
         }
-        
+
         // Fallback to standard container
-        return document.querySelector('#page-container') || 
+        return document.querySelector('#page-container') ||
                document.querySelector(this.container);
     }
-    
+
 
     /**
      * Show error message
@@ -392,28 +419,28 @@ class WebApp {
     showError(message, duration = 5000) {
         this.showNotification(message, 'error', duration);
     }
-    
+
     /**
      * Show success message
      */
     showSuccess(message, duration = 3000) {
         this.showNotification(message, 'success', duration);
     }
-    
+
     /**
      * Show info message
      */
     showInfo(message, duration = 4000) {
         this.showNotification(message, 'info', duration);
     }
-    
+
     /**
      * Show warning message
      */
     showWarning(message, duration = 4000) {
         this.showNotification(message, 'warning', duration);
     }
-    
+
     /**
      * Show notification
      */
@@ -423,7 +450,7 @@ class WebApp {
             this.layout.showNotification(message, type, duration);
             return;
         }
-        
+
         // Fallback to toast notification
         const alertClass = {
             error: 'alert-danger',
@@ -431,7 +458,7 @@ class WebApp {
             info: 'alert-info',
             warning: 'alert-warning'
         }[type] || 'alert-info';
-        
+
         const toast = document.createElement('div');
         toast.className = `alert ${alertClass} position-fixed top-0 end-0 m-3`;
         toast.style.zIndex = '9999';
@@ -442,9 +469,9 @@ class WebApp {
                 <button type="button" class="btn-close btn-sm ms-2" aria-label="Close"></button>
             </div>
         `;
-        
+
         document.body.appendChild(toast);
-        
+
         // Add close handler
         const closeBtn = toast.querySelector('.btn-close');
         if (closeBtn) {
@@ -452,7 +479,7 @@ class WebApp {
                 toast.remove();
             });
         }
-        
+
         // Auto remove after duration
         if (duration > 0) {
             setTimeout(() => {
@@ -461,22 +488,22 @@ class WebApp {
                 }
             }, duration);
         }
-        
+
         // Emit event
         this.eventBus.emit('notification:shown', { message, type });
     }
-    
+
     /**
      * Show loading indicator
      */
     showLoading(message = 'Loading...') {
         this.state.isLoading = true;
-        
+
         if (this.layout && this.layout.showLoading) {
             this.layout.showLoading(message);
             return;
         }
-        
+
         // Fallback loading indicator
         let loader = document.getElementById('app-loader');
         if (!loader) {
@@ -493,25 +520,25 @@ class WebApp {
             document.body.appendChild(loader);
         }
     }
-    
+
     /**
      * Hide loading indicator
      */
     hideLoading() {
         this.state.isLoading = false;
-        
+
         if (this.layout && this.layout.hideLoading) {
             this.layout.hideLoading();
             return;
         }
-        
+
         // Remove fallback loader
         const loader = document.getElementById('app-loader');
         if (loader) {
             loader.remove();
         }
     }
-    
+
     /**
      * Setup global error handling
      */
@@ -523,7 +550,7 @@ class WebApp {
                 this.showError(`Error: ${event.error.message}`);
             }
         });
-        
+
         // Handle promise rejections
         window.addEventListener('unhandledrejection', (event) => {
             console.error('Unhandled promise rejection:', event.reason);
@@ -532,7 +559,7 @@ class WebApp {
             }
         });
     }
-    
+
     /**
      * Escape HTML to prevent XSS
      */
@@ -541,14 +568,14 @@ class WebApp {
         div.textContent = text;
         return div.innerHTML;
     }
-    
+
     /**
      * Get app state
      */
     getState(key) {
         return key ? this.state[key] : this.state;
     }
-    
+
     /**
      * Set app state
      */
@@ -562,7 +589,7 @@ class WebApp {
             this.eventBus.emit('state:changed', { key, value, oldValue });
         }
     }
-    
+
     /**
      * Register a component
      */
@@ -570,14 +597,14 @@ class WebApp {
         this.components.set(name, component);
         return this;
     }
-    
+
     /**
      * Get a component
      */
     getComponent(name) {
         return this.components.get(name);
     }
-    
+
     /**
      * Register a model
      */
@@ -585,14 +612,14 @@ class WebApp {
         this.models.set(name, model);
         return this;
     }
-    
+
     /**
      * Get a model
      */
     getModel(name) {
         return this.models.get(name);
     }
-    
+
     /**
      * Destroy the application
      */
@@ -601,24 +628,25 @@ class WebApp {
         if (this.router) {
             this.router.stop();
         }
-        
+
         // Destroy layout
         if (this.layout && this.layout.destroy) {
             await this.layout.destroy();
         }
-        
+
         // Clear pages
-        for (const [name, page] of this.pages) {
+        for (const [_name, page] of this.pages) {
             if (page.destroy) {
+                // eslint-disable-next-line no-await-in-loop
                 await page.destroy();
             }
         }
-        
+
         // Clear registries
         this.pages.clear();
         this.components.clear();
         this.models.clear();
-        
+
         // Clear global references
         if (window.APP === this) {
             delete window.APP;
@@ -626,11 +654,11 @@ class WebApp {
         if (window.MOJO && window.MOJO.app === this) {
             delete window.MOJO.app;
         }
-        
+
         // Emit destroy event
         this.eventBus.emit('app:destroyed');
     }
-    
+
     /**
      * Static factory method
      */

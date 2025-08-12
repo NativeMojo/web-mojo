@@ -32,10 +32,10 @@ const app = new WebApp({
     defaultRoute: 'landing'
 });
 
-// Register pages
-app.addPage(LandingPage);
-app.addPage(LoginPage);
-app.addPage(RegisterPage);
+// Register pages using clean API: registerPage(name, PageClass, options)
+app.registerPage('landing', LandingPage);
+app.registerPage('login', LoginPage);
+app.registerPage('register', RegisterPage);
 
 // Handle authentication (example)
 app.eventBus.on('auth:login', (userData) => {

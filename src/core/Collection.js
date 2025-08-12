@@ -1,38 +1,45 @@
 /**
- * DataList - Collection class for managing arrays of Model instances
+ * Collection - Class for managing arrays of Model instances
  * Provides methods for fetching and managing collections of models
- * 
+ *
  * Usage Examples:
- * 
+ *
  * // Preloaded Data (no REST fetching)
  * const collection = new MyCollection({ preloaded: true });
  * collection.add(new MyModel({...}));
  * // collection.fetch() will be skipped if data already exists
- * 
+ *
  * // REST Data (fetch from API)
  * const collection = new MyCollection({ preloaded: false }); // default
  * await collection.fetch(); // Will make API call
  */
 
-class DataList {
+ import rest from '../core/Rest.js';
+
+
+class Collection {
   constructor(ModelClass, options = {}) {
     this.ModelClass = ModelClass;
     this.models = [];
     this.loading = false;
     this.errors = {};
     this.meta = {};
-    
+
     // Set up endpoint
     this.endpoint = options.endpoint || ModelClass.endpoint || '';
-    
+    if (!this.endpoint) {
+        let tmp = new ModelClass();
+        this.endpoint = tmp.endpoint;
+    }
+
     // Automatic REST detection based on endpoint
     this.restEnabled = this.endpoint ? true : false;
-    
+
     // Allow explicit override
     if (options.restEnabled !== undefined) {
       this.restEnabled = options.restEnabled;
     }
-    
+
     // Configuration
     this.options = {
       parse: true,
@@ -50,36 +57,36 @@ class DataList {
   async fetch(options = {}) {
     // Skip fetching if not REST enabled
     if (!this.restEnabled) {
-      console.info('DataList: REST disabled, skipping fetch');
+      console.info('Collection: REST disabled, skipping fetch');
       return this;
     }
-    
+
     // Skip fetching if preloaded is true and we already have data
     if (this.options.preloaded && this.models.length > 0) {
-      console.info('DataList: Using preloaded data, skipping fetch');
+      console.info('Collection: Using preloaded data, skipping fetch');
       return this;
     }
-    
+
     const url = this.buildUrl();
-    
+
     this.loading = true;
     this.errors = {};
 
     try {
-      const response = await this.constructor.Rest.GET(url, options.params);
-      
+      const response = await rest.GET(url, options.params);
+
       if (response.success) {
         // Parse response data
         const data = this.options.parse ? this.parse(response) : response.data;
-        
+
         // Reset or add to existing models
         if (this.options.reset || options.reset !== false) {
           this.reset();
         }
-        
+
         // Add models to collection
         this.add(data, { silent: options.silent });
-        
+
         return this;
       } else {
         this.errors = response.errors || {};
@@ -99,23 +106,24 @@ class DataList {
    * @returns {array} Array of model data objects
    */
   parse(response) {
-    // Handle paginated responses
-    if (response.data && Array.isArray(response.data)) {
+    // Handle standard paginated responses with size/start/count
+    if (response.data && Array.isArray(response.data.data)) {
       this.meta = {
-        total: response.total || response.data.length,
-        page: response.page || 1,
-        per_page: response.per_page || response.data.length,
-        total_pages: response.total_pages || 1,
+        size: response.data.size || 10,
+        start: response.data.start || 0,
+        count: response.data.count || 0,
+        status: response.data.status,
+        graph: response.data.graph,
         ...response.meta
       };
-      return response.data;
+      return response.data.data;
     }
-    
+
     // Handle direct array responses
     if (Array.isArray(response.data)) {
       return response.data;
     }
-    
+
     // Fallback - assume response itself is the data array
     return Array.isArray(response) ? response : [response];
   }
@@ -128,10 +136,10 @@ class DataList {
   add(data, options = {}) {
     const modelsData = Array.isArray(data) ? data : [data];
     const addedModels = [];
-    
+
     for (const modelData of modelsData) {
       let model;
-      
+
       if (modelData instanceof this.ModelClass) {
         model = modelData;
       } else {
@@ -140,7 +148,7 @@ class DataList {
           collection: this
         });
       }
-      
+
       // Check for duplicates
       const existingIndex = this.models.findIndex(m => m.id === model.id);
       if (existingIndex !== -1) {
@@ -154,13 +162,13 @@ class DataList {
         addedModels.push(model);
       }
     }
-    
+
     // Emit events if not silent
     if (!options.silent && addedModels.length > 0) {
       this.trigger('add', { models: addedModels, collection: this });
       this.trigger('update', { collection: this });
     }
-    
+
     return addedModels;
   }
 
@@ -172,10 +180,10 @@ class DataList {
   remove(models, options = {}) {
     const modelsToRemove = Array.isArray(models) ? models : [models];
     const removedModels = [];
-    
+
     for (const model of modelsToRemove) {
       let index = -1;
-      
+
       if (typeof model === 'string' || typeof model === 'number') {
         // Remove by ID
         index = this.models.findIndex(m => m.id == model);
@@ -183,19 +191,19 @@ class DataList {
         // Remove by model instance
         index = this.models.indexOf(model);
       }
-      
+
       if (index !== -1) {
         const removedModel = this.models.splice(index, 1)[0];
         removedModels.push(removedModel);
       }
     }
-    
+
     // Emit events if not silent
     if (!options.silent && removedModels.length > 0) {
       this.trigger('remove', { models: removedModels, collection: this });
       this.trigger('update', { collection: this });
     }
-    
+
     return removedModels;
   }
 
@@ -207,18 +215,18 @@ class DataList {
   reset(models = null, options = {}) {
     const previousModels = [...this.models];
     this.models = [];
-    
+
     if (models) {
       this.add(models, { silent: true, ...options });
     }
-    
+
     if (!options.silent) {
-      this.trigger('reset', { 
-        collection: this, 
-        previousModels 
+      this.trigger('reset', {
+        collection: this,
+        previousModels
       });
     }
-    
+
     return this;
   }
 
@@ -265,7 +273,7 @@ class DataList {
     if (typeof criteria === 'function') {
       return this.models.filter(criteria);
     }
-    
+
     if (typeof criteria === 'object') {
       return this.models.filter(model => {
         return Object.entries(criteria).every(([key, value]) => {
@@ -273,7 +281,7 @@ class DataList {
         });
       });
     }
-    
+
     return [];
   }
 
@@ -303,13 +311,13 @@ class DataList {
         return 0;
       };
     }
-    
+
     this.models.sort(comparator);
-    
+
     if (!options.silent) {
       this.trigger('sort', { collection: this });
     }
-    
+
     return this;
   }
 
@@ -362,7 +370,7 @@ class DataList {
     if (!this.listeners || !this.listeners[event]) {
       return;
     }
-    
+
     if (callback) {
       const index = this.listeners[event].indexOf(callback);
       if (index !== -1) {
@@ -388,7 +396,7 @@ class DataList {
    * @param {function} ModelClass - Model class constructor
    * @param {array} data - Array of model data
    * @param {object} options - Collection options
-   * @returns {DataList} New collection instance
+   * @returns {Collection} New collection instance
    */
   static fromArray(ModelClass, data = [], options = {}) {
     const collection = new this(ModelClass, options);
@@ -397,7 +405,4 @@ class DataList {
   }
 }
 
-// Will be injected by MOJO framework
-DataList.Rest = null;
-
-export default DataList;
+export default Collection;

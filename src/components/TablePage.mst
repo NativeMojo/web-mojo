@@ -1,0 +1,46 @@
+<div class="table-page-container">
+  <!-- Header Section -->
+  {{#title}}
+  <div class="table-page-header mb-3">
+    <h2 class="page-title mb-2">{{title}}</h2>
+    {{#description}}
+    <p class="page-description text-muted">{{description}}</p>
+    {{/description}}
+  </div>
+  {{/title}}
+
+  <!-- Table Container - Child view will render here -->
+  <div id="{{tableContainerId}}" class="table-container" data-table-page="{{pageName}}">
+    <!-- Table child view will be automatically rendered here -->
+  </div>
+
+  <!-- Status Bar -->
+  {{#showStatus}}
+  <div class="table-status-bar mt-3">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div class="status-info d-flex align-items-center gap-3">
+        {{#showRecordCount}}
+        <small class="text-muted">
+          <i class="bi bi-database me-1"></i>
+          <span data-status="record-count">{{recordCount}}</span> records
+        </small>
+        {{/showRecordCount}}
+
+        {{#showLastUpdated}}
+        <small class="text-muted">
+          <i class="bi bi-clock-history me-1"></i>
+          Updated: <span data-status="last-updated">{{lastUpdated}}</span>
+        </small>
+        {{/showLastUpdated}}
+      </div>
+
+      {{#loadError}}
+      <span class="error-indicator text-danger" data-status="error" style="display: none;">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        <span class="error-text">{{loadError}}</span>
+      </span>
+      {{/loadError}}
+    </div>
+  </div>
+  {{/showStatus}}
+</div>

@@ -1,9 +1,9 @@
 /**
  * Table - Advanced data table component for MOJO framework
  * Displays collections with filtering, sorting, pagination, and actions
- * 
+ *
  * Usage Examples:
- * 
+ *
  * // Preloaded Data (no REST fetching)
  * const collection = new MyCollection();
  * collection.add(new MyModel({...}));
@@ -12,7 +12,7 @@
  *   options: { preloaded: true },
  *   // ... other config
  * });
- * 
+ *
  * // REST Data (fetch from API)
  * const table = new Table({
  *   Collection: MyModelClass,
@@ -34,6 +34,7 @@ class Table extends View {
     });
 
     // Core properties from design doc
+    // Initialize with defaults that might be overridden
     this.Collection = options.Collection || null;
     this.columns = options.columns || [];
     this.filters = options.filters || {};
@@ -41,19 +42,23 @@ class Table extends View {
     this.groupFiltering = options.groupFiltering || false;
     this.listOptions = options.listOptions || {};
     this.view = options.view || 'table';
-    
+
     // Internal state
     this.collection = options.collection || null;
-    
+
 
     this.loading = false;
-    this.currentPage = 1;
-    this.itemsPerPage = 10;
+
+    // Standard pagination properties
+    this.start = 0;  // Starting index (0-based)
+    this.size = options.size || options.defaultPageSize || 10;  // Items per page
+    this.count = 0;  // Total items available
+
     this.sortBy = null;
     this.sortDirection = 'asc';
     this.activeFilters = {};
     this.selectedItems = new Set();
-    
+
     // Configuration
     this.options = {
       selectable: false,
@@ -70,10 +75,12 @@ class Table extends View {
       ...options
     };
 
-    
+
     // Event listeners
     this.listeners = {};
     this.rowActions = options.rowActions || [];
+
+    this.initCollection();
   }
 
   /**
@@ -85,7 +92,7 @@ class Table extends View {
       this.searchTimeout = null;
     }
     this._eventsBound = false;
-    
+
     // Call parent destroy
     await super.destroy();
   }
@@ -96,7 +103,7 @@ class Table extends View {
   async getTemplate() {
     // Load data if needed
     await this.loadDataIfNeeded();
-    
+
     // Return the table HTML
     return this.buildTableHTML();
   }
@@ -125,7 +132,7 @@ class Table extends View {
       // For preloaded data, just check if we have any
       hasData = this.collection && this.collection.length > 0;
     }
-    
+
     this.hasData = hasData;
     this.errorMessage = errorMessage;
   }
@@ -136,10 +143,10 @@ class Table extends View {
    */
   async initializeData() {
     if (!this.collection) return;
-    
+
     // Check if we have data already
     const hasData = this.collection.models && this.collection.models.length > 0;
-    
+
     // Only fetch if we don't have data and preloaded is false
     if (!hasData && !this.options.preloaded) {
       try {
@@ -149,7 +156,7 @@ class Table extends View {
             ...this.collectionParams,
             ...this.buildQueryParams()
           };
-          
+
           await this.collection.fetch({ params });
         } else {
           console.info('Table: No REST client available, using existing data or empty table');
@@ -167,15 +174,15 @@ class Table extends View {
    * Apply list options configuration
    */
   applyListOptions() {
-    if (this.listOptions.itemsPerPage) {
-      this.itemsPerPage = this.listOptions.itemsPerPage;
+    if (this.listOptions.size) {
+      this.size = this.listOptions.size;
     }
-    
+
     if (this.listOptions.defaultSort) {
       this.sortBy = this.listOptions.defaultSort.field;
       this.sortDirection = this.listOptions.defaultSort.direction || 'asc';
     }
-    
+
     if (this.listOptions.defaultFilters) {
       this.activeFilters = { ...this.listOptions.defaultFilters };
     }
@@ -187,33 +194,15 @@ class Table extends View {
    * Called after initialization
    */
   async onInit() {
-    // Initialize items per page from options
-    if (this.options.itemsPerPage) {
-      this.itemsPerPage = this.options.itemsPerPage;
-    } else if (this.options.tableOptions?.itemsPerPage) {
-      this.itemsPerPage = this.options.tableOptions.itemsPerPage;
+    // Initialize size from options
+    if (this.options.size) {
+      this.size = this.options.size;
+    } else if (this.options.tableOptions?.size) {
+      this.size = this.options.tableOptions.size;
     } else if (this.options.tableOptions?.defaultPageSize) {
-      this.itemsPerPage = this.options.tableOptions.defaultPageSize;
+      this.size = this.options.tableOptions.defaultPageSize;
     }
-    
-    // Only create collection if we don't already have one (preserve preloaded collections)
-    if (this.Collection && !this.collection) {
-      this.collection = new this.Collection();
-      
-      // Set up collection event listeners
-      this.collection.on('update', () => {
-        if (this.rendered) this.render();
-      });
-      
-      this.collection.on('add', () => {
-        if (this.rendered) this.render();
-      });
-      
-      this.collection.on('remove', () => {
-        if (this.rendered) this.render();
-      });
-    }
-    
+
     // Extract filters from columns if not explicitly provided
     if (!this.filters || Object.keys(this.filters).length === 0) {
       this.filters = {};
@@ -222,6 +211,38 @@ class Table extends View {
           this.filters[column.key] = '';
         }
       });
+    }
+  }
+
+  initTableListeners() {
+    // Set up collection event listeners with render loop protection
+    this.collection.on('update', () => {
+      // Only re-render if we're mounted and not already rendering
+      if (this.rendered && this.mounted && !this.isRendering) {
+        this.render();
+      }
+    });
+
+    this.collection.on('add', () => {
+      // Only re-render if we're mounted and not already rendering
+      // Skip during initial collection load
+      if (this.rendered && this.mounted && !this.isRendering && !this.collection.loading) {
+        this.render();
+      }
+    });
+
+    this.collection.on('remove', () => {
+      // Only re-render if we're mounted and not already rendering
+      if (this.rendered && this.mounted && !this.isRendering) {
+        this.render();
+      }
+    });
+  }
+
+  initCollection() {
+    // Only create collection if we don't already have one (preserve preloaded collections)
+    if (this.Collection && !this.collection) {
+      this.collection = new this.Collection();
     }
   }
 
@@ -241,7 +262,7 @@ class Table extends View {
         };
       }
     }
-    
+
     this.loading = true;
   }
 
@@ -251,25 +272,25 @@ class Table extends View {
    */
   buildQueryParams() {
     const params = {};
-    
-    // Pagination
+
+    // Add pagination using standard terminology
     if (this.options.paginated) {
-      params.page = this.currentPage;
-      params.per_page = this.itemsPerPage;
+      params.start = this.start;
+      params.size = this.size;
     }
-    
+
     // Sorting - use single sort parameter with prefix format for REST APIs
     if (this.sortBy) {
       params.sort = this.sortDirection === 'desc' ? `-${this.sortBy}` : this.sortBy;
     }
-    
+
     // Filters - use simple fieldname=value format
     Object.entries(this.activeFilters).forEach(([key, value]) => {
       if (value !== null && value !== undefined && value !== '') {
         params[key] = value;
       }
     });
-    
+
     return params;
   }
 
@@ -280,64 +301,8 @@ class Table extends View {
   buildTableHTML() {
     const tableClasses = this.buildTableClasses();
     const data = this.collection ? this.collection.models : [];
-    
+
     return `
-      <style>
-        .mojo-select-cell, .mojo-select-all-cell {
-          background-color: #f8f9fa;
-          cursor: pointer;
-          transition: background-color 0.2s ease;
-          text-align: center;
-          vertical-align: middle;
-          width: 40px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .mojo-select-cell.selected, .mojo-select-all-cell.selected {
-          background-color: var(--bs-primary);
-        }
-        .mojo-select-cell:hover, .mojo-select-all-cell:hover {
-          background-color: var(--bs-primary);
-        }
-        .mojo-checkbox {
-          width: 16px;
-          height: 16px;
-          border: 2px solid #dee2e6;
-          border-radius: 3px;
-          background-color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s ease;
-        }
-        .mojo-select-cell.selected .mojo-checkbox, .mojo-select-all-cell.selected .mojo-checkbox {
-          border-color: white;
-          background-color: white;
-        }
-        .mojo-select-cell:hover .mojo-checkbox, .mojo-select-all-cell:hover .mojo-checkbox {
-          border-color: white;
-          background-color: white;
-        }
-        .mojo-checkbox i {
-          font-size: 10px;
-          color: var(--bs-primary);
-          opacity: 0;
-          transition: opacity 0.2s ease;
-        }
-        .mojo-select-cell.selected .mojo-checkbox i, .mojo-select-all-cell.selected .mojo-checkbox i {
-          opacity: 1;
-        }
-        .mojo-select-all-cell.indeterminate .mojo-checkbox {
-          border-color: var(--bs-primary);
-          background-color: var(--bs-primary);
-        }
-        .mojo-select-all-cell.indeterminate .mojo-checkbox i {
-          opacity: 1;
-          color: white;
-        }
-      </style>
       <div class="mojo-table-wrapper">
         ${this.buildToolbar()}
         <div class="table-responsive">
@@ -357,12 +322,12 @@ class Table extends View {
    */
   buildTableClasses() {
     let classes = ['table'];
-    
+
     if (this.options.striped) classes.push('table-striped');
     if (this.options.bordered) classes.push('table-bordered');
     if (this.options.hover) classes.push('table-hover');
     if (this.options.responsive) classes.push('table-responsive');
-    
+
     return classes.join(' ');
   }
 
@@ -393,22 +358,22 @@ class Table extends View {
    */
   buildActionButtons() {
     let buttons = [];
-    
+
     // Refresh button (always shown if enabled)
     if (this.options.showRefresh !== false) {
       buttons.push(`
-        <button class="btn btn-sm btn-outline-secondary" 
-                data-action="refresh" 
+        <button class="btn btn-sm btn-outline-secondary"
+                data-action="refresh"
                 title="Refresh">
           <i class="bi bi-arrow-clockwise"></i>
         </button>
       `);
     }
-    
+
     // Add button (optional)
     if (this.options.showAdd) {
       buttons.push(`
-        <button class="btn btn-sm btn-success" 
+        <button class="btn btn-sm btn-success"
                 data-action="add"
                 title="Add ${this.options.modelName || 'Item'}">
           <i class="bi bi-plus-circle me-1"></i>
@@ -416,11 +381,11 @@ class Table extends View {
         </button>
       `);
     }
-    
+
     // Export button (optional)
     if (this.options.showExport) {
       buttons.push(`
-        <button class="btn btn-sm btn-outline-secondary" 
+        <button class="btn btn-sm btn-outline-secondary"
                 data-action="export"
                 title="Export">
           <i class="bi bi-download me-1"></i>
@@ -428,12 +393,12 @@ class Table extends View {
         </button>
       `);
     }
-    
+
     // Add separator if we have buttons and search/filter will follow
     if (buttons.length > 0 && (this.options.searchable || this.filters)) {
       buttons.push(`<div class="vr mx-2"></div>`);
     }
-    
+
     return buttons.join('');
   }
 
@@ -443,18 +408,18 @@ class Table extends View {
    */
   buildFilterDropdown() {
     // Show dropdown if we have filters, or if search is in dropdown mode
-    const showDropdown = (this.filters && Object.keys(this.filters).length > 0) || 
+    const showDropdown = (this.filters && Object.keys(this.filters).length > 0) ||
                          (this.options.searchable && this.options.searchPlacement === 'dropdown');
-    
+
     if (!showDropdown) {
       return '';
     }
 
     const hasFilters = this.filters && Object.keys(this.filters).length > 0;
-    
+
     return `
       <div class="dropdown">
-        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
                 data-bs-toggle="dropdown" aria-expanded="false">
           <i class="bi bi-filter me-1"></i>
           <span class="d-none d-sm-inline">Add Filter</span>
@@ -473,15 +438,15 @@ class Table extends View {
    */
   buildToolbarSearch() {
     const searchValue = this.activeFilters.search || '';
-    
+
    return `
      <div class="flex-grow-1" style="max-width: 400px;">
        <div class="input-group input-group-sm">
          <span class="input-group-text">
            <i class="bi bi-search"></i>
          </span>
-         <input type="search" 
-                class="form-control" 
+         <input type="search"
+                class="form-control"
                 placeholder="Search ${this.options.searchPlaceholder || '...'}"
                 data-filter="search"
                 value="${searchValue}"
@@ -500,7 +465,7 @@ class Table extends View {
       <div class="mb-3">
         <label class="form-label fw-bold small">Search</label>
         <div class="input-group input-group-sm">
-          <input type="text" class="form-control" placeholder="Search..." 
+          <input type="text" class="form-control" placeholder="Search..."
                  data-filter="search" value="${this.activeFilters.search || ''}">
           <button class="btn btn-primary" type="button" data-action="apply-search">
             <i class="bi bi-search"></i>
@@ -515,7 +480,7 @@ class Table extends View {
     return `
       <div class="col-auto">
         <div class="input-group input-group-sm" style="width: 250px;">
-          <input type="text" class="form-control" placeholder="Search..." 
+          <input type="text" class="form-control" placeholder="Search..."
                  data-filter="search" value="${this.activeFilters.search || ''}">
           <button class="btn btn-outline-secondary" type="button" data-action="apply-search">
             <i class="bi bi-search"></i>
@@ -529,7 +494,7 @@ class Table extends View {
     if (!this.filters || Object.keys(this.filters).length === 0) {
       return '';
     }
-    
+
     return Object.entries(this.filters).map(([key, filter]) => {
       return this.buildFilterInDropdown(key, filter);
     }).join('');
@@ -538,7 +503,7 @@ class Table extends View {
   buildFilterInDropdown(key, filter) {
     const value = this.activeFilters[key] || '';
     const label = filter.label || key.charAt(0).toUpperCase() + key.slice(1);
-    
+
     switch (filter.type) {
       case 'select':
         return `
@@ -546,7 +511,7 @@ class Table extends View {
             <label class="form-label fw-bold small">${label}</label>
             <select class="form-select form-select-sm" data-filter="${key}" data-action="apply-filter" onchange="this.dispatchEvent(new Event('click', {bubbles: true}))">
               <option value="">${filter.placeholder || 'All'}</option>
-              ${filter.options.map(opt => 
+              ${filter.options.map(opt =>
                 `<option value="${opt.value}" ${value === opt.value ? 'selected' : ''}>
                   ${opt.label}
                 </option>`
@@ -554,22 +519,22 @@ class Table extends View {
             </select>
           </div>
         `;
-      
+
       case 'date':
         return `
           <div class="mb-3">
             <label class="form-label fw-bold small">${label}</label>
-            <input type="date" class="form-control form-control-sm" data-filter="${key}" 
+            <input type="date" class="form-control form-control-sm" data-filter="${key}"
                    value="${value}" data-action="apply-filter">
           </div>
         `;
-      
+
       default:
         return `
           <div class="mb-3">
             <label class="form-label fw-bold small">${label}</label>
             <div class="input-group input-group-sm">
-              <input type="text" class="form-control" data-filter="${key}" 
+              <input type="text" class="form-control" data-filter="${key}"
                      value="${value}" placeholder="${filter.placeholder || ''}">
               <button class="btn btn-primary" type="button" data-action="apply-filter">
                 Apply
@@ -581,36 +546,36 @@ class Table extends View {
   }
 
   buildActivePills() {
-    const activeFilters = Object.entries(this.activeFilters).filter(([key, value]) => 
+    const activeFilters = Object.entries(this.activeFilters).filter(([key, value]) =>
       value && value.toString().trim() !== ''
     );
-    
+
     if (activeFilters.length === 0) {
       return '';
     }
-    
+
     const pills = activeFilters.map(([key, value]) => {
       const displayValue = this.getFilterDisplayValue(key, value);
       const label = this.getFilterLabel(key);
-      
+
       return `
         <span class="badge bg-primary me-2 mb-2 fs-6 py-2 px-3">
           <i class="bi bi-${key === 'search' ? 'search' : 'filter'} me-1"></i>
           ${label}: ${displayValue}
-          <button type="button" class="btn-close btn-close-white ms-2" 
-                  style="font-size: 0.75em;" data-action="remove-filter" 
+          <button type="button" class="btn-close btn-close-white ms-2"
+                  style="font-size: 0.75em;" data-action="remove-filter"
                   data-filter="${key}" aria-label="Remove filter"></button>
         </span>
       `;
     }).join('');
-    
+
     const clearAllButton = activeFilters.length > 1 ? `
       <button class="btn btn-sm btn-outline-secondary mb-2" data-action="clear-all-filters">
         <i class="bi bi-x-circle me-1"></i>
         Clear All
       </button>
     ` : '';
-    
+
     return `
       <div class="row mt-2">
         <div class="col-12">
@@ -627,13 +592,13 @@ class Table extends View {
     if (key === 'search') {
       return `"${value}"`;
     }
-    
+
     const filter = this.filters[key];
     if (filter && filter.type === 'select' && filter.options) {
       const option = filter.options.find(opt => opt.value === value);
       return option ? option.label : value;
     }
-    
+
     return value;
   }
 
@@ -641,12 +606,12 @@ class Table extends View {
     if (key === 'search') {
       return 'Search';
     }
-    
+
     const filter = this.filters[key];
     if (filter && filter.label) {
       return filter.label;
     }
-    
+
     return key.charAt(0).toUpperCase() + key.slice(1);
   }
 
@@ -680,30 +645,30 @@ class Table extends View {
       const sortable = this.options.sortable && column.sortable !== false;
       const currentSort = this.sortBy === column.key ? this.sortDirection : null;
       const sortIcon = this.getSortIcon(currentSort);
-      
+
       const sortDropdown = sortable ? `
         <div class="dropdown d-inline-block ms-2">
-          <button class="btn btn-sm btn-link p-0 text-decoration-none" type="button" 
+          <button class="btn btn-sm btn-link p-0 text-decoration-none" type="button"
                   data-bs-toggle="dropdown" aria-expanded="false">
             ${sortIcon}
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
-            <li><a class="dropdown-item ${currentSort === 'asc' ? 'active' : ''}" 
+            <li><a class="dropdown-item ${currentSort === 'asc' ? 'active' : ''}"
                    data-action="sort" data-field="${column.key}" data-direction="asc">
                 <i class="bi bi-sort-alpha-down me-2"></i>Sort A-Z
                 </a></li>
-            <li><a class="dropdown-item ${currentSort === 'desc' ? 'active' : ''}" 
+            <li><a class="dropdown-item ${currentSort === 'desc' ? 'active' : ''}"
                    data-action="sort" data-field="${column.key}" data-direction="desc">
                 <i class="bi bi-sort-alpha-down-alt me-2"></i>Sort Z-A
                 </a></li>
-            <li><a class="dropdown-item ${currentSort === null ? 'active' : ''}" 
+            <li><a class="dropdown-item ${currentSort === null ? 'active' : ''}"
                    data-action="sort" data-field="${column.key}" data-direction="none">
                 <i class="bi bi-x-circle me-2"></i>No Sort
                 </a></li>
           </ul>
         </div>
       ` : '';
-      
+
       return `
         <th class="${sortable ? 'sortable' : ''}">
           <div class="d-flex align-items-center">
@@ -713,17 +678,17 @@ class Table extends View {
         </th>
       `;
     }).join('');
-    
-    const selectAllCell = this.options.selectable ? 
+
+    const selectAllCell = this.options.selectable ?
       `<th style="width: 40px; padding: 0;">
-        <div class="mojo-select-all-cell ${this.isAllSelected() ? 'selected' : ''}" 
+        <div class="mojo-select-all-cell ${this.isAllSelected() ? 'selected' : ''}"
              data-action="select-all" data-table-instance="${this._instanceId}">
           <div class="mojo-checkbox">
             <i class="bi bi-check"></i>
           </div>
         </div>
       </th>` : '';
-    
+
     return `
       <thead>
         <tr>
@@ -760,10 +725,10 @@ class Table extends View {
     if (!data && this.collection) {
       data = this.collection.models || [];
     }
-    
+
     // Apply client-side filtering, sorting, and pagination
     data = this.processData(data || []);
-    
+
     if (!data || data.length === 0) {
       const colspan = this.columns.length + (this.options.selectable ? 1 : 0) + 1;
       return `
@@ -779,9 +744,9 @@ class Table extends View {
         </tbody>
       `;
     }
-    
+
     const rows = data.map((item, index) => this.buildTableRow(item, index)).join('');
-    
+
     return `<tbody>${rows}</tbody>`;
   }
 
@@ -792,7 +757,7 @@ class Table extends View {
    */
   processData(data) {
     let processedData = [...data];
-    
+
     // For REST collections, server handles filtering and sorting
     // For local collections, apply client-side filtering and sorting
     if (!this.collection?.restEnabled) {
@@ -806,7 +771,7 @@ class Table extends View {
           });
         });
       }
-      
+
       // Apply other filters
       Object.entries(this.activeFilters).forEach(([key, value]) => {
         if (key !== 'search' && value && value !== '') {
@@ -816,37 +781,39 @@ class Table extends View {
           });
         }
       });
-      
+
       // Apply sorting
       if (this.sortBy) {
         processedData.sort((a, b) => {
           const aValue = this.getCellValue(a, {key: this.sortBy}) || '';
           const bValue = this.getCellValue(b, {key: this.sortBy}) || '';
-          
+
           let comparison = 0;
           if (aValue < bValue) comparison = -1;
           if (aValue > bValue) comparison = 1;
-          
+
           return this.sortDirection === 'desc' ? -comparison : comparison;
         });
       }
     }
-    
+
     // Handle pagination based on collection type
     if (this.collection?.restEnabled) {
-      // REST collections: Server handles pagination, use metadata total
-      this.totalFilteredItems = this.collection.meta?.total || processedData.length;
+      // REST collections: Server handles pagination, use metadata with standard properties
+      this.count = this.collection.meta?.count || processedData.length;
+      this.size = this.collection.meta?.size || this.size;
+      this.start = this.collection.meta?.start || this.start;
       // Don't slice data - server already sent the right page
     } else {
-      // Local collections: Apply client-side pagination
-      this.totalFilteredItems = processedData.length;
+      // Local collections: Client-side pagination
+      this.count = processedData.length;
+
       if (this.options.paginated) {
-        const startIndex = ((this.currentPage - 1) * this.itemsPerPage);
-        const endIndex = startIndex + this.itemsPerPage;
-        processedData = processedData.slice(startIndex, endIndex);
+        const end = this.start + this.size;
+        processedData = processedData.slice(this.start, end);
       }
     }
-    
+
     return processedData;
   }
 
@@ -869,20 +836,20 @@ class Table extends View {
     const cells = this.columns.map(column => {
       return this.buildTableCell(item, column);
     }).join('');
-    
+
     const itemId = String(this.getCellValue(item, {key: 'id'}));
-    const selectCell = this.options.selectable ? 
+    const selectCell = this.options.selectable ?
       `<td style="padding: 0;">
-        <div class="mojo-select-cell ${this.selectedItems.has(itemId) ? 'selected' : ''}" 
+        <div class="mojo-select-cell ${this.selectedItems.has(itemId) ? 'selected' : ''}"
              data-action="select-item" data-id="${itemId}" data-table-instance="${this._instanceId}">
           <div class="mojo-checkbox">
             <i class="bi bi-check"></i>
           </div>
         </div>
       </td>` : '';
-    
+
     const actionCell = this.buildActionCell(item);
-    
+
     return `
       <tr data-id="${itemId}" class="${this.selectedItems.has(itemId) ? 'selected' : ''}" style="cursor: pointer;">
         ${selectCell}
@@ -900,7 +867,7 @@ class Table extends View {
    */
   buildTableCell(item, column) {
     let value = this.getCellValue(item, column);
-    
+
     // Apply column formatter (new DataFormatter support)
     if (column.formatter) {
       value = this.applyFormatter(column.formatter, value, item, column);
@@ -911,7 +878,7 @@ class Table extends View {
     } else if (column.type) {
       value = this.formatCellValue(value, column.type, column.options);
     }
-    
+
     // Apply column template
     if (column.template) {
       if (typeof column.template === 'function') {
@@ -923,9 +890,9 @@ class Table extends View {
         });
       }
     }
-    
+
     const classes = column.class || '';
-    
+
     return `<td class="${classes}" data-action="item-clicked" data-id="${item.id}">${value}</td>`;
   }
 
@@ -949,7 +916,7 @@ class Table extends View {
       };
       return formatter(value, context);
     }
-    
+
     // String formatter (could be a formatter key or pipe string)
     if (typeof formatter === 'string') {
       // Check if it's a pipe string
@@ -959,15 +926,15 @@ class Table extends View {
       // Simple formatter key
       return dataFormatter.apply(formatter, value);
     }
-    
+
     // Object formatter with configuration
     if (typeof formatter === 'object' && formatter !== null) {
       if (formatter.formatter) {
         // Nested formatter with args/options
-        const formatterFn = typeof formatter.formatter === 'string' 
+        const formatterFn = typeof formatter.formatter === 'string'
           ? (v) => dataFormatter.apply(formatter.formatter, v, ...(formatter.args || []))
           : formatter.formatter;
-        
+
         if (typeof formatterFn === 'function') {
           const context = {
             value,
@@ -984,7 +951,7 @@ class Table extends View {
         return dataFormatter.apply(formatter.name, value, ...(formatter.args || []));
       }
     }
-    
+
     return value;
   }
 
@@ -1000,17 +967,17 @@ class Table extends View {
       if (typeof item.get === 'function') {
         return item.get(column.key);
       }
-      
+
       // Check if item has a data property (RestModel structure)
       const dataSource = item.data || item;
-      
+
       // Support nested properties
       const keys = column.key.split('.');
       let value = dataSource;
       for (const key of keys) {
         value = value?.[key];
       }
-      
+
       return value;
     } catch (error) {
       console.warn(`Table: Error getting cell value for column ${column.key}:`, error);
@@ -1029,41 +996,41 @@ class Table extends View {
     if (value === null || value === undefined) {
       return '';
     }
-    
+
     switch (type) {
       case 'currency':
         return new Intl.NumberFormat('en-US', {
           style: 'currency',
           currency: options.currency || 'USD'
         }).format(value);
-      
+
       case 'date':
         const date = new Date(value);
         return date.toLocaleDateString(options.locale || 'en-US', options.dateFormat);
-      
+
       case 'datetime':
         const datetime = new Date(value);
         return datetime.toLocaleString(options.locale || 'en-US');
-      
+
       case 'number':
         return new Intl.NumberFormat('en-US', options).format(value);
-      
+
       case 'boolean':
-        return value ? 
-          '<i class="fas fa-check text-success"></i>' : 
+        return value ?
+          '<i class="fas fa-check text-success"></i>' :
           '<i class="fas fa-times text-danger"></i>';
-      
+
       case 'badge':
         const badgeClass = options.class || 'bg-primary';
         return `<span class="badge ${badgeClass}">${value}</span>`;
-      
+
       case 'image':
         return `<img src="${value}" alt="" class="img-thumbnail" style="max-width: 50px; max-height: 50px;">`;
-      
+
       case 'link':
         const href = options.href ? options.href.replace('{id}', this.getCellValue(item, {key: 'id'})) : '#';
         return `<a href="${href}" class="${options.class || ''}">${value}</a>`;
-      
+
       default:
         return String(value);
     }
@@ -1076,27 +1043,27 @@ class Table extends View {
    */
   buildActionCell(item) {
     const actions = this.listOptions.actions || ['view', 'edit', 'delete'];
-    
+
     const actionButtons = actions.map(action => {
       switch (action) {
         case 'view':
           return `<button class="btn btn-sm btn-outline-primary" data-action="item-clicked" data-id="${this.getCellValue(item, {key: 'id'})}">
             <i class="bi bi-eye"></i>
           </button>`;
-        
+
         case 'edit':
           return `<button class="btn btn-sm btn-outline-secondary" data-action="item-dlg" data-id="${this.getCellValue(item, {key: 'id'})}" data-mode="edit">
             <i class="bi bi-pencil"></i>
           </button>`;
-        
+
         case 'delete':
           return `<button class="btn btn-sm btn-outline-danger" data-action="delete-item" data-id="${this.getCellValue(item, {key: 'id'})}">
             <i class="bi bi-trash"></i>
           </button>`;
-        
+
         default:
           if (typeof action === 'object') {
-            return `<button class="btn btn-sm ${action.class || 'btn-outline-primary'}" 
+            return `<button class="btn btn-sm ${action.class || 'btn-outline-primary'}"
                       data-action="${action.action}" data-id="${this.getCellValue(item, {key: 'id'})}">
               ${action.icon ? `<i class="${action.icon}"></i>` : ''}
               ${action.label || ''}
@@ -1105,7 +1072,7 @@ class Table extends View {
           return '';
       }
     }).join(' ');
-    
+
     return `<td><div class="btn-group">${actionButtons}</div></td>`;
   }
 
@@ -1117,23 +1084,21 @@ class Table extends View {
     if (!this.options.paginated) {
       return '';
     }
-    
-    // Use appropriate total based on collection type
-    const totalItems = this.collection?.restEnabled 
-      ? (this.collection?.meta?.total || 0)
-      : (this.totalFilteredItems || this.collection?.models?.length || 0);
-    const totalPages = Math.ceil(totalItems / this.itemsPerPage);
-    const currentPage = this.currentPage;
-    
+
+    // Use count for total items (from collection meta or local count)
+    const totalItems = this.collection?.restEnabled
+      ? (this.collection?.meta?.count || 0)
+      : (this.count || this.collection?.models?.length || 0);
+    const totalPages = Math.ceil(totalItems / this.size);
+    const currentPage = Math.floor(this.start / this.size) + 1;
+
     if (totalItems === 0) {
       return '';
     }
-    
 
-    
-    const startItem = ((currentPage - 1) * this.itemsPerPage) + 1;
-    const endItem = Math.min(currentPage * this.itemsPerPage, this.collection?.models?.length || 0);
-    
+    const startItem = this.start + 1;
+    const endItem = Math.min(this.start + this.size, totalItems);
+
     return `
       <div class="d-flex justify-content-between align-items-center mt-3">
         <div class="d-flex align-items-center">
@@ -1143,10 +1108,11 @@ class Table extends View {
           <div class="d-flex align-items-center">
             <label class="form-label me-2 mb-0">Show:</label>
             <select class="form-select form-select-sm" style="width: auto;" data-action="page-size">
-              <option value="10" ${this.itemsPerPage === 10 ? 'selected' : ''}>10</option>
-              <option value="25" ${this.itemsPerPage === 25 ? 'selected' : ''}>25</option>
-              <option value="50" ${this.itemsPerPage === 50 ? 'selected' : ''}>50</option>
-              <option value="100" ${this.itemsPerPage === 100 ? 'selected' : ''}>100</option>
+              <option value="5" ${this.size === 5 ? 'selected' : ''}>5</option>
+              <option value="10" ${this.size === 10 ? 'selected' : ''}>10</option>
+              <option value="25" ${this.size === 25 ? 'selected' : ''}>25</option>
+              <option value="50" ${this.size === 50 ? 'selected' : ''}>50</option>
+              <option value="100" ${this.size === 100 ? 'selected' : ''}>100</option>
             </select>
           </div>
         </div>
@@ -1182,11 +1148,11 @@ class Table extends View {
     const maxVisible = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
     let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-    
+
     if (endPage - startPage < maxVisible - 1) {
       startPage = Math.max(1, endPage - maxVisible + 1);
     }
-    
+
     for (let i = startPage; i <= endPage; i++) {
       pages.push(`
         <li class="page-item ${i === currentPage ? 'active' : ''}">
@@ -1194,7 +1160,7 @@ class Table extends View {
         </li>
       `);
     }
-    
+
     return pages.join('');
   }
 
@@ -1207,7 +1173,7 @@ class Table extends View {
     if (this.sortBy !== field) {
       return '';
     }
-    
+
     return this.sortDirection === 'asc' ? 'sort-asc' : 'sort-desc';
   }
 
@@ -1220,7 +1186,7 @@ class Table extends View {
     // Prevent duplicate event listeners
     if (this._eventsBound) return;
     this._eventsBound = true;
-    
+
     // Store references to bound functions for cleanup
     if (!this._boundEventHandlers) {
       this._boundEventHandlers = {};
@@ -1230,7 +1196,7 @@ class Table extends View {
     if (this._boundEventHandlers.click) {
       this.element.removeEventListener('click', this._boundEventHandlers.click);
     }
-    
+
     // Create bound click handler
     this._boundEventHandlers.click = (e) => {
       const action = e.target.getAttribute('data-action');
@@ -1290,7 +1256,8 @@ class Table extends View {
 
         default:
           // Handle other actions (page, sort, delete, etc.)
-          if (actualAction && !['page-size'].includes(actualAction)) {
+          // Ignore clicks on select elements - they should only trigger on 'change'
+          if (actualAction && !['page-size'].includes(actualAction) && !e.target.matches('select')) {
             this.handleAction(actualAction, e, e.target.closest('[data-action]') || e.target);
           }
           break;
@@ -1305,8 +1272,14 @@ class Table extends View {
           e.stopPropagation();
         }
       }
+
+      // Prevent clicks on select elements from triggering renders
+      if (e.target.matches('select[data-action="page-size"]')) {
+        e.stopPropagation();
+        return;
+      }
     };
-    
+
     // Use event delegation with a single click listener
     this.element.addEventListener('click', this._boundEventHandlers.click);
 
@@ -1314,11 +1287,11 @@ class Table extends View {
     if (this._boundEventHandlers.change) {
       this.element.removeEventListener('change', this._boundEventHandlers.change);
     }
-    
+
     // Bind change events (for selects, etc.)
     this._boundEventHandlers.change = async (e) => {
       const action = e.target.getAttribute('data-action');
-      
+
       if (action === 'apply-filter') {
         this.handleFilterFromDropdown(e);
         // Close dropdown after applying filter
@@ -1333,7 +1306,7 @@ class Table extends View {
         await this.handlePageSizeChange(parseInt(e.target.value));
       }
     };
-    
+
     // Handle change events for form elements
     this.element.addEventListener('change', this._boundEventHandlers.change);
 
@@ -1341,7 +1314,7 @@ class Table extends View {
     if (this._boundEventHandlers.keydown) {
       this.element.removeEventListener('keydown', this._boundEventHandlers.keydown);
     }
-    
+
     // Bind keydown events for Enter key in search
     this._boundEventHandlers.keydown = (e) => {
       if (e.key === 'Enter' && e.target.matches('[data-filter="search"]')) {
@@ -1350,7 +1323,7 @@ class Table extends View {
         this.closeFilterDropdown();
       }
     };
-    
+
     // Handle Enter key in search inputs
     this.element.addEventListener('keydown', this._boundEventHandlers.keydown);
   }
@@ -1366,26 +1339,26 @@ class Table extends View {
       console.warn('handleAction called with no target element');
       return;
     }
-    
+
     const itemId = target.getAttribute('data-id');
     const item = itemId ? this.collection?.get(itemId) : null;
-    
+
     switch (action) {
       case 'item-clicked':
         await this.onItemClicked(item, event, target);
         break;
-      
+
       case 'item-dlg':
         const mode = target.getAttribute('data-mode') || 'view';
         await this.onItemDialog(item, mode, event, target);
         break;
-      
+
       case 'sort':
         const field = target.getAttribute('data-field');
         const direction = target.getAttribute('data-direction');
         this.handleSort(field, direction);
         break;
-      
+
       case 'page':
         // Ensure we prevent navigation for pagination links
         if (event) {
@@ -1395,14 +1368,18 @@ class Table extends View {
         const page = parseInt(target.getAttribute('data-page'));
         await this.handlePageChange(page);
         break;
-        
+
       case 'page-size':
+        // Only handle page-size on 'change' events, not clicks
+        if (event.type === 'click') {
+          break;
+        }
         const newSize = parseInt(target.value);
         await this.handlePageSizeChange(newSize);
         break;
-        
 
-        
+
+
       case 'delete-item':
         if (confirm('Are you sure you want to delete this item?')) {
           await this.handleDeleteItem(item);
@@ -1420,7 +1397,7 @@ class Table extends View {
   async onItemClicked(item, event, target) {
     console.log('Item clicked:', item);
     // Default implementation - can be overridden
-    
+
     // Emit event for external handlers
     this.emit('item-clicked', { item, event, target });
   }
@@ -1435,7 +1412,7 @@ class Table extends View {
   async onItemDialog(item, mode = 'view', event, target) {
     console.log('Item dialog:', item, mode);
     // Default implementation - can be overridden
-    
+
     // Emit event for external handlers
     this.emit('item-dialog', { item, mode, event, target });
   }
@@ -1453,9 +1430,9 @@ class Table extends View {
       this.sortBy = field;
       this.sortDirection = direction || 'asc';
     }
-    
-    this.currentPage = 1;
-    
+
+    this.start = 0;  // Reset to beginning when sorting changes
+
     // Dispatch sort change event
     if (this.element) {
       const event = new CustomEvent('sort:change', {
@@ -1464,7 +1441,7 @@ class Table extends View {
       });
       this.element.dispatchEvent(event);
     }
-    
+
     // For REST collections, re-fetch data with new sorting
     if (this.collection?.restEnabled) {
       this.fetchWithCurrentFilters();
@@ -1479,10 +1456,10 @@ class Table extends View {
    */
   async handlePageChange(page) {
     const totalItems = this.collection?.restEnabled
-      ? (this.collection?.meta?.total || 0)
-      : (this.totalFilteredItems || this.collection?.models?.length || 0);
-    const totalPages = Math.ceil(totalItems / this.itemsPerPage);
-    
+      ? (this.collection?.meta?.count || 0)
+      : (this.count || this.collection?.models?.length || 0);
+    const totalPages = Math.ceil(totalItems / this.size);
+
     // Handle wrap-around pagination
     const originalPage = page;
     if (page < 1) {
@@ -1490,28 +1467,26 @@ class Table extends View {
     } else if (page > totalPages) {
       page = 1; // Wrap to first page
     }
-    
-    this.currentPage = page;
-    
+
+    this.start = (page - 1) * this.size;  // Update start index
+
     // Check if this collection uses REST for data fetching
     if (this.collection?.restEnabled) {
       // Server-side pagination: fetch new data from API
-      const start = (page - 1) * this.itemsPerPage;
-      
+      const start = this.start;
+
       try {
         // Build sort parameter for API
         const fetchParams = {
-          page: page,
-          per_page: this.itemsPerPage,
-          size: this.itemsPerPage,
-          start: start
+          start: start,
+          size: this.size
         };
-        
+
         // Add sort parameter with proper formatting
         if (this.sortBy) {
           fetchParams.sort = this.sortDirection === 'desc' ? `-${this.sortBy}` : this.sortBy;
         }
-        
+
         // Add current filters - using activeFilters not this.filters
         Object.entries(this.activeFilters).forEach(([key, value]) => {
           if (value !== null && value !== undefined && value !== '') {
@@ -1525,24 +1500,26 @@ class Table extends View {
         console.error('Failed to fetch page data:', error);
       }
     }
-    
+
     // Dispatch page change event
     if (this.element) {
+      const currentPage = Math.floor(this.start / this.size) + 1;
       const event = new CustomEvent('page:change', {
         bubbles: true,
-        detail: { page: this.currentPage }
+        detail: { page: currentPage }
       });
       this.element.dispatchEvent(event);
     }
-    
+
     // Always re-render after page change (REST gets new data, local re-slices existing data)
     this.render();
-    
+
     // Dispatch page change event for external listeners (e.g., TablePage)
     if (this.element) {
+      const currentPage = Math.floor(this.start / this.size) + 1;
       this.element.dispatchEvent(new CustomEvent('page:change', {
         bubbles: true,
-        detail: { page: this.currentPage }
+        detail: { page: currentPage }
       }));
     }
   }
@@ -1552,49 +1529,50 @@ class Table extends View {
    * @param {number} newSize - New page size
    */
   async handlePageSizeChange(newSize) {
-    this.itemsPerPage = newSize;
-    this.currentPage = 1;
-    
+    this.size = newSize;
+    this.start = 0;  // Reset to beginning when page size changes
+
     // Check if this collection uses REST for data fetching
     if (this.collection?.restEnabled) {
       // Server-side pagination: fetch new data from API with new page size
-      
+
       try {
         // Build sort parameter for API
         const fetchParams = {
-          page: 1,
-          per_page: newSize,
-          size: newSize,
-          start: 0
+          start: 0,
+          size: this.size
         };
-        
+
         // Add sort parameter if sorting is active
-        // Add sort parameter with proper formatting  
+        // Add sort parameter with proper formatting
         if (this.sortBy) {
           fetchParams.sort = this.sortDirection === 'desc' ? `-${this.sortBy}` : this.sortBy;
         }
-        
+
         // Add current filters
         Object.entries(this.activeFilters).forEach(([key, value]) => {
           if (value !== null && value !== undefined && value !== '') {
             fetchParams[key] = value;
           }
         });
-        
+
         // Pass parameters directly, not wrapped in params object
         await this.collection.fetch(fetchParams);
       } catch (error) {
         console.error('Failed to fetch data with new page size:', error);
       }
     }
-    
+
     this.render();
-    
+
     // Dispatch per page change event for external listeners
+    // Emit event for external listeners
     if (this.element) {
-      this.element.dispatchEvent(new CustomEvent('perpage:change', {
+      this.element.dispatchEvent(new CustomEvent('size:change', {
         bubbles: true,
-        detail: { perPage: this.itemsPerPage }
+        detail: {
+          size: this.size
+        }
       }));
     }
   }
@@ -1606,7 +1584,7 @@ class Table extends View {
   handleSelectAll(checked) {
 
     this.selectedItems.clear();
-    
+
     if (checked) {
       const visibleItems = this.getVisibleItems();
 
@@ -1615,7 +1593,7 @@ class Table extends View {
         this.selectedItems.add(itemId);
       });
     }
-    
+
 
     this.updateSelectionDisplay();
     this.emit('selection-changed', Array.from(this.selectedItems));
@@ -1633,7 +1611,7 @@ class Table extends View {
     } else {
       this.selectedItems.delete(itemId);
     }
-    
+
 
     this.updateSelectionDisplay();
     this.emit('selection-changed', Array.from(this.selectedItems));
@@ -1645,10 +1623,10 @@ class Table extends View {
   */
  isAllSelected() {
    if (this.selectedItems.size === 0) return false;
-    
+
    const visibleItems = this.getVisibleItems();
    if (visibleItems.length === 0) return false;
-    
+
    return visibleItems.every(item => {
      const itemId = String(this.getCellValue(item, {key: 'id'}));
      return this.selectedItems.has(itemId);
@@ -1666,20 +1644,21 @@ class Table extends View {
    } else {
      searchInput = e.target.closest('.input-group').querySelector('input[data-filter="search"]');
    }
-   
+
    const searchValue = searchInput.value.trim();
-   
+
    if (searchValue) {
      this.activeFilters.search = searchValue;
    } else {
-     delete this.activeFilters.search;
+     delete this.activeFilters[key];
    }
-   
+
+   this.start = 0; // Reset to beginning when filtering
    // Update all search inputs to keep them in sync
    this.updateSearchInputs(searchValue);
-   
-   this.currentPage = 1;
-    
+
+   this.start = 0;  // Reset to beginning when search changes
+
    // Dispatch search change event
    if (this.element) {
      const event = new CustomEvent('search:change', {
@@ -1688,7 +1667,7 @@ class Table extends View {
      });
      this.element.dispatchEvent(event);
    }
-    
+
    // Fetch new data or re-render
    if (this.collection?.restEnabled) {
      this.fetchWithCurrentFilters();
@@ -1703,7 +1682,7 @@ class Table extends View {
   */
  handleRefresh(e) {
    e?.preventDefault();
-   
+
    // Emit refresh event
    if (this.element) {
      const event = new CustomEvent('table:refresh', {
@@ -1712,7 +1691,7 @@ class Table extends View {
      });
      this.element.dispatchEvent(event);
    }
-   
+
    // If we have a collection with REST enabled, fetch fresh data
    if (this.collection?.restEnabled) {
      this.fetchWithCurrentFilters();
@@ -1731,7 +1710,7 @@ class Table extends View {
   */
  handleAdd(e) {
    e?.preventDefault();
-   
+
    // Emit add event
    if (this.element) {
      const event = new CustomEvent('table:add', {
@@ -1740,7 +1719,7 @@ class Table extends View {
      });
      this.element.dispatchEvent(event);
    }
-   
+
    // Call custom add handler if provided
    if (this.options.onAdd) {
      this.options.onAdd();
@@ -1753,19 +1732,19 @@ class Table extends View {
   */
  handleExport(e) {
    e?.preventDefault();
-   
+
    // Emit export event
    if (this.element) {
      const event = new CustomEvent('table:export', {
        bubbles: true,
-       detail: { 
+       detail: {
          table: this,
          data: this.collection?.models || []
        }
      });
      this.element.dispatchEvent(event);
    }
-   
+
    // Call custom export handler if provided
    if (this.options.onExport) {
      this.options.onExport(this.collection?.models || []);
@@ -1775,18 +1754,18 @@ class Table extends View {
  handleFilterFromDropdown(e) {
    const filterElement = e.target.closest('[data-filter]');
    if (!filterElement) return;
-   
+
    const filterKey = filterElement.getAttribute('data-filter');
    const filterValue = filterElement.value ? filterElement.value.trim() : '';
-   
+
    if (filterValue) {
      this.activeFilters[filterKey] = filterValue;
    } else {
      delete this.activeFilters[filterKey];
    }
-  
-   this.currentPage = 1;
-  
+
+   this.start = 0;  // Reset to beginning when filter changes
+
    // Dispatch filter change event
    if (this.element) {
      const event = new CustomEvent('filter:change', {
@@ -1795,28 +1774,28 @@ class Table extends View {
      });
      this.element.dispatchEvent(event);
    }
-  
+
   // For REST collections, re-fetch data with new filters
   if (this.collection?.restEnabled) {
     this.fetchWithCurrentFilters();
   } else {
     this.render();
   }
-  
+
 
 }
 
  handleRemoveFilter(e) {
    const filterKey = e.target.getAttribute('data-filter');
    delete this.activeFilters[filterKey];
-   
+
    // If removing search filter, clear all search inputs
    if (filterKey === 'search') {
      this.updateSearchInputs('');
    }
-    
-   this.currentPage = 1;
-    
+
+   this.start = 0;  // Reset to beginning when removing filter
+
    // Dispatch filter change event
    if (this.element) {
      const event = new CustomEvent('filter:change', {
@@ -1825,7 +1804,7 @@ class Table extends View {
      });
      this.element.dispatchEvent(event);
    }
-    
+
    // For REST collections, re-fetch data with new filters
    if (this.collection?.restEnabled) {
      this.fetchWithCurrentFilters();
@@ -1836,12 +1815,12 @@ class Table extends View {
 
  handleClearAllFilters(e) {
    this.activeFilters = {};
-   
+
    // Clear all search inputs
    this.updateSearchInputs('');
-   
-   this.currentPage = 1;
-   
+
+   this.start = 0;  // Reset to beginning when clearing filters
+
    // Dispatch filter change event
    if (this.element) {
      const event = new CustomEvent('filter:change', {
@@ -1850,7 +1829,7 @@ class Table extends View {
      });
      this.element.dispatchEvent(event);
    }
-   
+
    // For REST collections, re-fetch data with new search
    if (this.collection?.restEnabled) {
      this.fetchWithCurrentFilters();
@@ -1866,30 +1845,26 @@ class Table extends View {
    */
   async fetchWithCurrentFilters() {
     if (!this.collection?.restEnabled) return;
-    
+
     try {
-      const start = (this.currentPage - 1) * this.itemsPerPage;
-      
       // Build fetch parameters
       const fetchParams = {
-        page: this.currentPage,
-        per_page: this.itemsPerPage,
-        size: this.itemsPerPage,
-        start: start
+        start: this.start,
+        size: this.size
       };
-      
+
       // Add sort parameter with proper formatting
       if (this.sortBy) {
         fetchParams.sort = this.sortDirection === 'desc' ? `-${this.sortBy}` : this.sortBy;
       }
-      
+
       // Add current filters directly as parameters
       Object.entries(this.activeFilters).forEach(([key, value]) => {
         if (value !== null && value !== undefined && value !== '') {
           fetchParams[key] = value;
         }
       });
-      
+
       // Pass parameters directly, not wrapped in params object
       await this.collection.fetch(fetchParams);
       // Re-render the table with the new data
@@ -1921,7 +1896,7 @@ class Table extends View {
   async onAfterRender() {
     // Bind table-specific events
     this.bindTableEvents();
-    
+
     // Restore focus if it was on search input
     if (this.focusState && this.focusState.action === 'search-input') {
       const newSearchInput = this.element.querySelector('[data-action="search-input"]');
@@ -1933,15 +1908,15 @@ class Table extends View {
         }
       }
     }
-    
+
     // Clear focus state
     this.focusState = null;
-    
+
     // Show error message if there was one
     if (this.errorMessage) {
       this.showErrorBanner(this.errorMessage);
     }
-    
+
     this.loading = false;
     this.updateLoadingState();
   }
@@ -1951,7 +1926,7 @@ class Table extends View {
    */
   updateLoadingState() {
     if (!this.element) return;
-    
+
     if (this.loading) {
       const overlay = document.createElement('div');
       overlay.className = 'mojo-table-loading';
@@ -1982,19 +1957,19 @@ class Table extends View {
     selectCells.forEach(cell => {
       const itemId = cell.getAttribute('data-id');
       const isSelected = this.selectedItems.has(itemId);
-      
+
 
       // Update cell class (this controls the checkmark visibility via CSS)
       cell.classList.toggle('selected', isSelected);
     });
-    
+
     // Update select all cell
     const selectAllCell = this.element.querySelector('.mojo-select-all-cell');
     if (selectAllCell) {
       const allSelected = this.isAllSelected();
       const hasSelected = this.selectedItems.size > 0;
       const icon = selectAllCell.querySelector('i');
-      
+
 
       // Update cell class and icon based on state
       if (allSelected) {
@@ -2013,7 +1988,7 @@ class Table extends View {
         if (icon) icon.className = 'bi bi-check';
       }
     }
-    
+
     // Update row classes
     const rows = this.element.querySelectorAll('tbody tr[data-id]');
     rows.forEach(row => {
@@ -2028,7 +2003,7 @@ class Table extends View {
    */
   showError(message) {
     console.error('Table error:', message);
-    
+
     // Display error in element if table failed to render completely
     this.element.innerHTML = `
       <div class="alert alert-danger" role="alert">
@@ -2046,7 +2021,7 @@ class Table extends View {
    */
   showErrorBanner(message) {
     console.warn('Table warning:', message);
-    
+
     // Add error banner above the table
     const existingBanner = this.element.querySelector('.mojo-table-error-banner');
     if (existingBanner) {
@@ -2062,7 +2037,7 @@ class Table extends View {
         <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
       </div>
     `;
-    
+
     this.element.insertBefore(banner, this.element.firstChild);
   }
 
@@ -2072,7 +2047,7 @@ class Table extends View {
    */
   renderFallbackError(message) {
     console.error('Table critical error:', message);
-    
+
     this.element.innerHTML = `
       <div class="card border-danger">
         <div class="card-header bg-danger text-white">
@@ -2081,7 +2056,7 @@ class Table extends View {
         <div class="card-body">
           <p class="card-text">${message}</p>
           <p class="text-muted small mb-0">
-            The table component encountered a critical error and cannot be displayed. 
+            The table component encountered a critical error and cannot be displayed.
             Please check your data configuration and try again.
           </p>
         </div>
@@ -2141,8 +2116,8 @@ class Table extends View {
    */
   getSelectedItems() {
     if (!this.collection) return [];
-    
-    return this.collection.models.filter(item => 
+
+    return this.collection.models.filter(item =>
       this.selectedItems.has(item.id)
     );
   }
