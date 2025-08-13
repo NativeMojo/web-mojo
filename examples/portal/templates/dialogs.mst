@@ -1,0 +1,166 @@
+<div class="example-page">
+    <h1 class="mb-4">Dialog Component</h1>
+    <p class="lead">Full Bootstrap 5 modal support with all features including sizes, fullscreen, scrollable content, and View instance support.</p>
+
+    <!-- Sizes Section -->
+    <div class="example-section">
+        <div class="example-header">
+        <h2>Dialog Sizes</h2>
+        <div class="source-buttons">
+            <button class="btn btn-sm btn-outline-primary" data-action="show-sizes-source">
+            <i class="bi bi-code-slash me-1"></i>View Source
+            </button>
+        </div>
+        </div>
+        <p>Dialogs support all Bootstrap modal sizes: small, default, large, extra large, and fullscreen.</p>
+
+        <div class="example-demo">
+        <button class="btn btn-primary me-2" data-action="show-small">
+            Small (sm)
+        </button>
+        <button class="btn btn-primary me-2" data-action="show-default">
+            Default
+        </button>
+        <button class="btn btn-primary me-2" data-action="show-large">
+            Large (lg)
+        </button>
+        <button class="btn btn-primary me-2" data-action="show-xl">
+            Extra Large (xl)
+        </button>
+        <button class="btn btn-primary" data-action="show-fullscreen">
+            Fullscreen
+        </button>
+        </div>
+    </div>
+
+    <!-- Responsive Fullscreen Section -->
+    <div class="example-section">
+        <div class="example-header">
+        <h2>Responsive Fullscreen</h2>
+        <div class="source-buttons">
+            <button class="btn btn-sm btn-outline-primary" data-action="show-responsive-source">
+            <i class="bi bi-code-slash me-1"></i>View Source
+            </button>
+        </div>
+        </div>
+        <p>Fullscreen modals that respond to viewport breakpoints.</p>
+
+        <div class="example-demo">
+        <button class="btn btn-info me-2" data-action="show-fullscreen-sm">
+            Fullscreen below sm
+        </button>
+        <button class="btn btn-info me-2" data-action="show-fullscreen-md">
+            Fullscreen below md
+        </button>
+        <button class="btn btn-info me-2" data-action="show-fullscreen-lg">
+            Fullscreen below lg
+        </button>
+        <button class="btn btn-info" data-action="show-fullscreen-xl">
+            Fullscreen below xl
+        </button>
+        </div>
+    </div>
+
+    <!-- Options Section -->
+    <div class="example-section">
+        <div class="example-header">
+        <h2>Dialog Options</h2>
+        <div class="source-buttons">
+            <button class="btn btn-sm btn-outline-primary" data-action="show-options-source">
+            <i class="bi bi-code-slash me-1"></i>View Source
+            </button>
+        </div>
+        </div>
+        <p>Various configuration options for dialogs.</p>
+
+        <div class="example-demo">
+        <button class="btn btn-secondary me-2" data-action="show-centered">
+            Centered Dialog
+        </button>
+        <button class="btn btn-secondary me-2" data-action="show-scrollable">
+            Scrollable Dialog
+        </button>
+        <button class="btn btn-secondary me-2" data-action="show-static">
+            Static Backdrop
+        </button>
+        <button class="btn btn-secondary" data-action="show-no-fade">
+            No Fade Animation
+        </button>
+        </div>
+    </div>
+
+    <!-- View as Body Section -->
+    <div class="example-section">
+        <div class="example-header">
+        <h2>View Instance as Body</h2>
+        <div class="source-buttons">
+            <button class="btn btn-sm btn-outline-primary" data-action="show-view-body-source">
+            <i class="bi bi-code-slash me-1"></i>View Source
+            </button>
+        </div>
+        </div>
+        <p>Dialogs can accept View instances as body content for complex interactive content.</p>
+
+        <div class="example-demo">
+        <button class="btn btn-success me-2" data-action="show-view-dialog">
+            Dialog with View Component
+        </button>
+        <button class="btn btn-success" data-action="show-form-view">
+            Form as View Component
+        </button>
+        </div>
+    </div>
+
+    <!-- Utility Methods Section -->
+    <div class="example-section">
+        <div class="example-header">
+        <h2>Utility Methods</h2>
+        <div class="source-buttons">
+            <button class="btn btn-sm btn-outline-primary" data-action="show-utilities-source">
+            <i class="bi bi-code-slash me-1"></i>View Source
+            </button>
+        </div>
+        </div>
+        <p>Static utility methods for common dialog patterns.</p>
+
+        <div class="example-demo">
+        <button class="btn btn-warning me-2" data-action="show-alert">
+            Alert Dialog
+        </button>
+        <button class="btn btn-warning me-2" data-action="show-confirm">
+            Confirm Dialog
+        </button>
+        <button class="btn btn-warning me-2" data-action="show-prompt">
+            Prompt Dialog
+        </button>
+        <button class="btn btn-warning" data-action="show-code-example">
+            Code Viewer Dialog
+        </button>
+        </div>
+    </div>
+
+    <!-- Advanced Examples Section -->
+    <div class="example-section">
+        <div class="example-header">
+        <h2>Advanced Examples</h2>
+        <div class="source-buttons">
+            <button class="btn btn-sm btn-outline-primary" data-action="show-advanced-source">
+            <i class="bi bi-code-slash me-1"></i>View Source
+            </button>
+        </div>
+        </div>
+        <p>Complex dialog implementations and patterns.</p>
+
+        <div class="example-demo">
+        <button class="btn btn-dark me-2" data-action="show-wizard">
+            Multi-Step Wizard
+        </button>
+        <button class="btn btn-dark me-2" data-action="show-loading">
+            Loading State
+        </button>
+        <button class="btn btn-dark" data-action="show-nested">
+            Dialog Actions
+        </button>
+        </div>
+    </div>
+    </div>

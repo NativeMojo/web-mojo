@@ -9,17 +9,17 @@ class DashboardPage extends Page {
     static title = 'Dashboard - Portal Example';
     static icon = 'bi-speedometer2';
     static route = 'dashboard';
-    
+
     constructor(options = {}) {
         super({
             ...options,
             pageName: DashboardPage.pageName,
             route: DashboardPage.route,
             pageIcon: DashboardPage.icon,
-            template: 'templates/dashboard.html'
+            template: 'templates/dashboard.mst'
         });
     }
-    
+
     async onInit() {
         // Initialize simple dashboard data
         this.data = {
@@ -32,7 +32,7 @@ class DashboardPage extends Page {
             usersChange: -2.1,
             conversionRate: 3.24,
             conversionChange: -0.5,
-            
+
             recentActivity: [
                 {
                     icon: 'person-plus',
@@ -55,24 +55,24 @@ class DashboardPage extends Page {
             ]
         };
     }
-    
+
     async onEnter() {
         await super.onEnter();
         console.log('DashboardPage entered');
-        
+
         // Set page title
         document.title = DashboardPage.title;
     }
-    
+
     async onActionRefresh() {
         if (window.APP) {
             window.APP.showLoading('Refreshing dashboard...');
         }
-        
+
         try {
             // Simulate refreshing data
             await new Promise(resolve => setTimeout(resolve, 1000));
-            
+
             // Update some values to show refresh worked
             this.updateData({
                 ...this.data,
@@ -81,7 +81,7 @@ class DashboardPage extends Page {
                 activeUsers: Math.floor(Math.random() * 500 + 2500),
                 lastUpdated: new Date().toLocaleTimeString()
             });
-            
+
             if (window.APP) {
                 window.APP.hideLoading();
                 window.APP.showSuccess('Dashboard refreshed!');

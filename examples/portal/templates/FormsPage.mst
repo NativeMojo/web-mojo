@@ -1,0 +1,87 @@
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h3 mb-1">{{title}}</h1>
+            <p class="text-muted">{{subtitle}}</p>
+        </div>
+    </div>
+
+    <!-- Basic Form Example -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pencil-square text-primary me-2"></i>
+                        Basic Form
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="basic-form-container"></div>
+                    <div class="mt-3">
+                        <button class="btn btn-sm btn-info" data-action="fillSample">
+                            <i class="bi bi-magic"></i> Fill Sample Data
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary ms-2" data-action="getBasicValues">
+                            <i class="bi bi-code-square"></i> Get Values
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Form Example -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-sliders text-success me-2"></i>
+                        Advanced Controls
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="advanced-form-container"></div>
+                    <div class="mt-3">
+                        <button class="btn btn-sm btn-warning" data-action="getAdvancedValues">
+                            <i class="bi bi-database"></i> Show Values
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Validation Form Example -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-shield-check text-danger me-2"></i>
+                        Form Validation
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="validation-form-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Display -->
+    <div class="row" id="result-row" style="display: none;">
+        <div class="col-lg-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header" id="result-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-terminal me-2"></i>
+                        Result
+                    </h5>
+                </div>
+                <div class="card-body bg-light">
+                    <pre id="result-content" class="mb-0"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

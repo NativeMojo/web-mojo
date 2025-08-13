@@ -1,0 +1,86 @@
+# Development files
+.git
+.gitignore
+.eslintrc*
+.prettierrc*
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# Development directories
+examples/
+docs/
+test/
+tests/
+scripts/
+coverage/
+.nyc_output/
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-*
+*.swp
+*.swo
+*~
+
+# Config files (keep vite.config.lib.js for reference)
+vite.config.js
+serve-*.js
+jest.config.*
+babel.config.*
+rollup.config.*
+webpack.config.*
+tsconfig.json
+
+# Source maps in development (production ones are included)
+*.map.tmp
+*.dev.map
+
+# Build artifacts that shouldn't be published
+dist/*.html
+dist/examples/
+dist/test/
+
+# Documentation source files (keep compiled docs)
+docs/**/*.md
+!docs/API.md
+!docs/GUIDE.md
+
+# Node modules
+node_modules/
+.npm/
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+.temp/
+.tmp/
+
+# Lock files (debatable, but usually excluded)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+azure-pipelines.yml
+
+# Other
+*.tgz
+*.zip
+CONTRIBUTING.md
+TODO.md
+NOTES.md
+.env
+.env.*
+!.env.example

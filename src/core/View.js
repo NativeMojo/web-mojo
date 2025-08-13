@@ -674,21 +674,13 @@ class View {
       const childPlaceholder = this.element ? this.element.querySelector(`#${child.id}`) : null;
 
       if (childPlaceholder) {
-        // Create a temporary container for the child
-        const tempContainer = document.createElement('div');
-        child.setContainer(tempContainer);
-
-        // Render the child
+        // Use the placeholder directly as the container
+        child.setContainer(childPlaceholder);
+        
+        // Render the child into the placeholder
         await child.render();
-
-        // Replace the placeholder with the child's element
-        if (child.element && childPlaceholder.parentNode) {
-          childPlaceholder.parentNode.replaceChild(child.element, childPlaceholder);
-          // Update the child's container to reflect its actual parent
-          child.container = child.element.parentNode;
-        }
       } else {
-        // No placeholder found, render with parent element as container
+        // No placeholder found, append to parent element
         child.setContainer(this.element);
         await child.render();
       }

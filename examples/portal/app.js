@@ -8,6 +8,8 @@ import HomePage from './pages/HomePage.js';
 import DashboardPage from './pages/DashboardPage.js';
 import TemplatesPage from './pages/TemplatesPage.js';
 import TodosPage from './pages/TodosPage.js';
+import FormsPage from './pages/FormsPage.js';
+import DialogsPage from './pages/DialogsPage.js';
 
 // Detect page reloads
 if (window.performance && window.performance.navigation.type === 1) {
@@ -93,6 +95,16 @@ const app = new WebApp({
                 text: 'Todos',
                 route: '?page=todos',
                 icon: 'bi-check2-square'
+            },
+            {
+                text: 'Forms',
+                route: '?page=forms',
+                icon: 'bi-input-cursor-text'
+            },
+            {
+                text: 'Dialogs',
+                route: '?page=dialogs',
+                icon: 'bi-input-cursor-text'
             }
         ],
         footer: '<div class="text-center text-muted small">v1.0.0</div>'
@@ -155,6 +167,8 @@ app.registerPage('home', HomePage);
 app.registerPage('dashboard', DashboardPage);
 app.registerPage('templates', TemplatesPage);
 app.registerPage('todos', TodosPage);
+app.registerPage('forms', FormsPage);
+app.registerPage('dialogs', DialogsPage);
 
 // Register ReportsPage for all report-related routes
 // Handle portal actions
@@ -193,7 +207,7 @@ window.debugApp = () => {
     console.log('Pages cached:', Array.from(app.pageCache.keys()));
     console.log('Current page:', app.currentPage?.pageName || 'none');
     console.log('Router mode:', app.router?.options?.mode);
-    
+
     const routes = Array.from(app.router.routes.entries())
         .filter(([key]) => !key.startsWith('@'))
         .map(([pattern, info]) => ({
@@ -202,7 +216,7 @@ window.debugApp = () => {
             regex: info.regex.toString()
         }));
     console.table(routes);
-    
+
     return {
         pageClasses: app.pageClasses,
         pageCache: app.pageCache,

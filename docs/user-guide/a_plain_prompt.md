@@ -83,7 +83,8 @@ DEVELOPMENT:
 - Build: Vite (npm run build)
 - Testing: Jest (npm test)
 - Router config needs base path for examples
-- Examples must use separate files (html, css, js)
+- Examples must use separate files (.mst, css, js)
+- Templates should use separate files name.mst
 
 KEY RULES:
 1. Check existing logic before creating new logic, to make sure the logic does not already exist.
