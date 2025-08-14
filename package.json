@@ -13,7 +13,30 @@
             "browser": "./dist/web-mojo.umd.js",
             "types": "./dist/web-mojo.d.ts"
         },
-        "./css": "./dist/web-mojo.css",
+        "./css": "./dist/css/web-mojo.css",
+        "./css/*": "./dist/css/*",
+        "./styles": "./dist/css/web-mojo.css",
+        "./styles/*": "./dist/css/*",
+        "./components": {
+            "import": "./dist/components/index.esm.js",
+            "require": "./dist/components/index.cjs.js",
+            "default": "./src/components/index.js"
+        },
+        "./components/*": {
+            "import": "./src/components/*.js",
+            "default": "./src/components/*.js"
+        },
+        "./utils": {
+            "import": "./dist/utils/index.esm.js",
+            "require": "./dist/utils/index.cjs.js",
+            "default": "./src/utils/index.js"
+        },
+        "./utils/*": {
+            "import": "./src/utils/*.js",
+            "default": "./src/utils/*.js"
+        },
+        "./templates": "./dist/templates/index.js",
+        "./templates/*": "./dist/templates/*",
         "./src/*": "./src/*",
         "./package.json": "./package.json"
     },
@@ -22,22 +45,26 @@
         "src",
         "README.md",
         "LICENSE",
-        "CHANGELOG.md"
+        "CHANGELOG.md",
+        "css-manifest.json"
     ],
     "scripts": {
-        "dev": "vite",
+        "dev": "concurrently \"npm run build:templates:watch\" \"vite\"",
         "dev:live": "node serve-dev.js",
         "dev:watch": "vite build --watch",
-        "dev:full": "concurrently \"npm run dev\" \"npm run test:watch\"",
-        "dev:framework": "concurrently \"npm run build:lib:watch\" \"npm run dev\"",
+        "dev:full": "concurrently \"npm run build:templates:watch\" \"npm run dev\" \"npm run test:watch\"",
+        "dev:framework": "concurrently \"npm run build:templates:watch\" \"npm run build:lib:watch\" \"npm run dev\"",
         "dev:link": "npm link && npm run dev:framework",
+        "dev:templates": "npm run build:templates:watch",
         "serve": "node serve-examples.js",
         "examples": "node serve-examples.js",
         "build": "vite build",
-        "build:lib": "vite build --config vite.config.lib.js",
+        "build:templates": "node scripts/build-templates.js",
+        "build:templates:watch": "node scripts/build-templates.js --watch",
+        "build:lib": "npm run build:templates && vite build --config vite.config.lib.js",
         "build:lib:watch": "vite build --config vite.config.lib.js --watch",
-        "build:css": "sass src/styles/main.scss dist/web-mojo.css --style compressed",
-        "build:dist": "npm run clean && npm run build:lib && npm run build:css",
+        "build:css": "cp src/styles/mojo.css dist/web-mojo.css",
+        "build:dist": "npm run clean && npm run build:templates && npm run build:lib && npm run build:css",
         "build:watch": "vite build --watch",
         "clean": "rm -rf dist",
         "preview": "vite preview",

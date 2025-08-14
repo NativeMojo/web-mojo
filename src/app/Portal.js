@@ -5,12 +5,13 @@
 
 import TopNav from '../components/TopNav.js';
 import Sidebar from '../components/Sidebar.js';
+import './portal.css';
 
 class Portal {
     constructor(options = {}) {
         this.app = options.app;
         this.container = options.container || document.body;
-        
+
         // Clean configuration structure
         this.config = {
             showTopbar: options.showTopbar !== false,
@@ -20,11 +21,11 @@ class Portal {
             responsive: options.responsive !== false,
             ...options.config
         };
-        
+
         // Sidebar configuration (all sidebar-related settings in one place)
         const defaultBrand = options.brand || this.app?.name || 'MOJO App';
         const defaultIcon = options.brandIcon || 'bi-lightning-charge';
-        
+
         this.sidebarConfig = {
             brand: defaultBrand,
             brandIcon: defaultIcon,
@@ -34,7 +35,7 @@ class Portal {
             width: 250,
             ...options.sidebar
         };
-        
+
         // Topbar configuration (all topbar-related settings in one place)
         this.topbarConfig = {
             brand: defaultBrand,
@@ -46,16 +47,16 @@ class Portal {
             theme: 'navbar-dark bg-primary',
             ...options.topbar
         };
-        
+
         // Component instances
         this.topNav = null;
         this.sidebar = null;
-        
+
         // State
         this.currentPage = null;
         this.sidebarCollapsed = false;
     }
-    
+
     /**
      * Render the portal layout
      */
@@ -73,22 +74,22 @@ class Portal {
                 <div id="portal-notifications"></div>
             </div>
         `;
-        
+
         // Add portal styles
-        this.addPortalStyles();
-        
+        // this.addPortalStyles();
+
         // Setup components
         await this.setupComponents();
-        
+
         // Setup event listeners
         this.setupEventListeners();
-        
+
         // Handle responsive layout
         this.handleResponsive();
-        
+
         return this;
     }
-    
+
     /**
      * Setup all portal components
      */
@@ -97,22 +98,22 @@ class Portal {
         if (this.config.showSidebar) {
             await this.setupSidebar();
         }
-        
+
         if (this.config.showTopbar) {
             await this.setupTopbar();
         }
-        
+
         // Adjust layout after components are setup
         this.adjustLayout();
     }
-    
+
     /**
      * Setup topbar navigation
      */
     async setupTopbar() {
         const topbarContainer = document.getElementById('portal-topnav');
         if (!topbarContainer) return;
-        
+
         // Prepare left nav items
         const leftNavItems = this.topbarConfig.leftItems.map(item => ({
             text: item.label || item.text,
@@ -120,7 +121,7 @@ class Portal {
             icon: item.icon,
             active: false
         }));
-        
+
         // Process right nav items
         let rightNavItems = null;
         if (this.topbarConfig.rightItems && this.topbarConfig.rightItems.length > 0) {
@@ -170,7 +171,7 @@ class Portal {
                 })
             };
         }
-        
+
         // Create TopNav component
         this.topNav = new TopNav({
             className: `navbar navbar-expand-lg ${this.topbarConfig.theme}`,
@@ -186,20 +187,20 @@ class Portal {
                 sidebarToggleAction: 'toggle-sidebar'
             }
         });
-        
+
         // Set container and render
         this.topNav.setContainer(topbarContainer);
         await this.topNav.render();
         await this.topNav.mount();
     }
-    
+
     /**
      * Setup sidebar navigation
      */
     async setupSidebar() {
         const sidebarContainer = document.getElementById('portal-sidebar');
         if (!sidebarContainer) return;
-        
+
         // Prepare nav items - preserve children structure
         const mapNavItem = (item) => {
             const mapped = {
@@ -207,23 +208,23 @@ class Portal {
                 icon: item.icon,
                 active: false
             };
-            
+
             // Only add route if item doesn't have children
             // Parent items with children are just collapse toggles
             if (!item.children) {
                 mapped.route = item.page ? `?page=${item.page}` : (item.route || item.href || '#');
             }
-            
+
             // Preserve children if they exist
             if (item.children && item.children.length > 0) {
                 mapped.children = item.children.map(mapNavItem);
             }
-            
+
             return mapped;
         };
-        
+
         const navItems = this.sidebarConfig.items.map(mapNavItem);
-        
+
         // Create Sidebar component
         this.sidebar = new Sidebar({
             data: {
@@ -235,12 +236,12 @@ class Portal {
                 layoutMode: 'push'
             }
         });
-        
+
         // Set container and render
         this.sidebar.setContainer(sidebarContainer);
         await this.sidebar.render();
         await this.sidebar.mount();
-        
+
         // Set initial collapsed state
         if (this.config.sidebarDefaultCollapsed) {
             const sidebarContainer = document.getElementById('portal-sidebar');
@@ -250,7 +251,7 @@ class Portal {
             this.sidebarCollapsed = true;
         }
     }
-    
+
     /**
      * Handle sidebar toggle
      */
@@ -258,7 +259,7 @@ class Portal {
         const sidebarContainer = document.getElementById('portal-sidebar');
         if (sidebarContainer && this.sidebar) {
             const isMobile = window.innerWidth < 768;
-            
+
             if (isMobile) {
                 // On mobile, toggle visibility
                 sidebarContainer.classList.toggle('show');
@@ -270,23 +271,23 @@ class Portal {
             }
         }
     }
-    
+
     /**
      * Adjust layout based on sidebar state
      */
     adjustLayout() {
         const content = document.getElementById('portal-content');
         if (!content) return;
-        
+
         const sidebarWidth = this.sidebarConfig.width || 250;
-        
+
         if (this.config.showSidebar && !this.sidebarCollapsed) {
             content.style.marginLeft = `${sidebarWidth}px`;
         } else {
             content.style.marginLeft = '0';
         }
     }
-    
+
     /**
      * Set active page in navigation
      */
@@ -295,25 +296,25 @@ class Portal {
         if (this.sidebar && this.sidebar.updateActiveItem) {
             this.sidebar.updateActiveItem(pageName);
         }
-        
+
         // Update topnav active state
         if (this.topNav && this.topNav.updateActiveItem) {
             this.topNav.updateActiveItem(pageName);
         }
-        
+
         // Emit page change event
         if (this.app) {
             this.app.eventBus.emit('portal:page-changed', { page: pageName });
         }
     }
-    
+
     /**
      * Get the page container element
      */
     getPageContainer() {
         return document.getElementById('portal-content');
     }
-    
+
     /**
      * Render a page in the content area
      */
@@ -323,43 +324,43 @@ class Portal {
             console.error('Portal content container not found');
             return;
         }
-        
+
         try {
             // Clear current content
             container.innerHTML = '';
-            
+
             // Store current page
             this.currentPage = page;
-            
+
             // Set page container
             if (page.setContainer) {
                 page.setContainer(container);
             } else {
                 page.container = container;
             }
-            
+
             // Render and mount page
             await page.render();
             await page.mount();
-            
+
             // Update active navigation
             const pageName = page.pageName || page.name || page.route;
             if (pageName) {
                 this.setActivePage(pageName);
             }
-            
+
         } catch (error) {
             console.error('Failed to render page:', error);
             this.showNotification('Failed to load page', 'error');
         }
     }
-    
+
     /**
      * Show notification message
      */
     showNotification(message, type = 'info', duration = 3000) {
         const container = this.getNotificationContainer();
-        
+
         // Create notification element
         const alertClass = {
             error: 'alert-danger',
@@ -367,16 +368,16 @@ class Portal {
             info: 'alert-info',
             warning: 'alert-warning'
         }[type] || 'alert-info';
-        
+
         const notification = document.createElement('div');
         notification.className = `alert ${alertClass} alert-dismissible fade show`;
         notification.innerHTML = `
             ${this.escapeHtml(message)}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
-        
+
         container.appendChild(notification);
-        
+
         // Auto remove after duration
         if (duration > 0) {
             setTimeout(() => {
@@ -385,14 +386,14 @@ class Portal {
                 }
             }, duration);
         }
-        
+
         // Limit notifications to 5
         const notifications = container.querySelectorAll('.alert');
         if (notifications.length > 5) {
             notifications[0].remove();
         }
     }
-    
+
     /**
      * Get or create notification container
      */
@@ -407,7 +408,7 @@ class Portal {
         }
         return container;
     }
-    
+
     /**
      * Show loading indicator
      */
@@ -420,7 +421,7 @@ class Portal {
             loader.style.zIndex = '9998';
             document.body.appendChild(loader);
         }
-        
+
         loader.innerHTML = `
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">${this.escapeHtml(message)}</span>
@@ -428,7 +429,7 @@ class Portal {
             <div class="mt-2">${this.escapeHtml(message)}</div>
         `;
     }
-    
+
     /**
      * Hide loading indicator
      */
@@ -438,7 +439,7 @@ class Portal {
             loader.remove();
         }
     }
-    
+
     /**
      * Setup event listeners
      */
@@ -447,7 +448,7 @@ class Portal {
         window.addEventListener('resize', () => {
             this.handleResponsive();
         });
-        
+
         // Listen for navigation clicks (delegated)
         document.addEventListener('click', (e) => {
             // Handle data-page navigation
@@ -456,17 +457,17 @@ class Portal {
                 e.preventDefault();
                 const page = navLink.dataset.page;
                 const params = navLink.dataset.params ? JSON.parse(navLink.dataset.params) : {};
-                
+
                 if (this.app) {
                     this.app.navigate(page, params);
                 }
             }
-            
+
             // Handle data-action clicks
             const actionElement = e.target.closest('[data-action]');
             if (actionElement) {
                 const action = actionElement.dataset.action;
-                
+
                 if (action === 'toggle-sidebar') {
                     e.preventDefault();
                     this.handleSidebarToggle();
@@ -481,23 +482,23 @@ class Portal {
                 } else {
                     // Emit action for app to handle
                     if (this.app) {
-                        this.app.eventBus.emit('portal:action', { 
-                            action, 
+                        this.app.eventBus.emit('portal:action', {
+                            action,
                             element: actionElement,
-                            event: e 
+                            event: e
                         });
                     }
                 }
             }
         });
     }
-    
+
     /**
      * Handle responsive layout changes
      */
     handleResponsive() {
         const isMobile = window.innerWidth < 768;
-        
+
         const sidebarContainer = document.getElementById('portal-sidebar');
         if (isMobile && sidebarContainer) {
             // Hide sidebar on mobile by default
@@ -508,56 +509,56 @@ class Portal {
             // Show sidebar on desktop
             sidebarContainer.classList.remove('mobile-hidden');
         }
-        
+
         this.adjustLayout();
     }
-    
+
     /**
      * Add portal styles
      */
     addPortalStyles() {
         const styleId = 'portal-styles';
-        
+
         // Check if styles are already loaded
         if (document.getElementById(styleId)) {
             return;
         }
-        
+
         // Try to load external CSS file
         const link = document.createElement('link');
         link.id = styleId;
         link.rel = 'stylesheet';
         link.type = 'text/css';
-        
+
         // Determine the correct path based on the current location
         const currentPath = window.location.pathname;
         let cssPath = '/src/app/portal.css';
-        
+
         // Adjust path for examples or other locations
         if (currentPath.includes('/examples/')) {
             cssPath = '../../src/app/portal.css';
         } else if (currentPath.includes('/dist/')) {
             cssPath = './portal.css';
         }
-        
+
         link.href = cssPath;
-        
+
         // Add error handling - fallback to inline styles if CSS file fails to load
         link.onerror = () => {
             console.warn('Failed to load portal.css, using inline styles as fallback');
             this.addInlineStyles();
         };
-        
+
         document.head.appendChild(link);
     }
-    
+
     /**
      * Fallback inline styles if external CSS fails to load
      */
     addInlineStyles() {
         const styleId = 'portal-inline-styles';
         if (document.getElementById(styleId)) return;
-        
+
         const style = document.createElement('style');
         style.id = styleId;
         style.textContent = `
@@ -665,7 +666,7 @@ class Portal {
         `;
         document.head.appendChild(style);
     }
-    
+
     /**
      * Escape HTML to prevent XSS
      */
@@ -674,7 +675,7 @@ class Portal {
         div.textContent = text;
         return div.innerHTML;
     }
-    
+
     /**
      * Destroy the portal
      */
@@ -683,19 +684,19 @@ class Portal {
         if (this.topNav && this.topNav.destroy) {
             await this.topNav.destroy();
         }
-        
+
         if (this.sidebar && this.sidebar.destroy) {
             await this.sidebar.destroy();
         }
-        
+
         // Remove event listeners
         window.removeEventListener('resize', this.handleResponsive);
-        
+
         // Clear container
         if (this.container) {
             this.container.innerHTML = '';
         }
-        
+
         // Remove styles
         const styleLink = document.getElementById('portal-styles');
         if (styleLink) {
@@ -705,13 +706,13 @@ class Portal {
         if (inlineStyle) {
             inlineStyle.remove();
         }
-        
+
         // Remove notification container
         const notifications = document.getElementById('portal-notifications');
         if (notifications) {
             notifications.remove();
         }
-        
+
         // Remove loader
         const loader = document.getElementById('portal-loader');
         if (loader) {

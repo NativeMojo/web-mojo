@@ -6,16 +6,17 @@
 
 import Page from '../core/Page.js';
 import Table from './Table.js';
+import { getTemplate, components_TablePage_mst } from '../templates.js';
 
 class TablePage extends Page {
   // Static template property pointing to external template file
-  static template = '/src/components/TablePage.mst';
 
   constructor(options = {}) {
     // Handle both 'name' and 'pageName' properties
     if (options.name && !options.pageName) {
       options.pageName = options.name;
     }
+    options.templates = getTemplate(components_TablePage_mst);
 
     super(options);
 

@@ -81,14 +81,6 @@ class LandingPage extends Page {
         }
     }
 
-    async onActionNavigate(event, element) {
-        event.preventDefault();
-        const page = element.dataset.page;
-        if (page && window.APP) {
-            window.APP.navigate(page);
-        }
-    }
-
     async onActionLogout(event) {
         event.preventDefault();
 

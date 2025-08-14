@@ -46,11 +46,17 @@ if (typeof window !== 'undefined') {
 }
 import MOJOUtils from '../utils/MOJOUtils.js';
 
+/*!
+ * MOJO Framework
+ * Copyright (c) 2024 MOJO Framework Team
+ * Licensed under MIT License
+ */
+
 class View {
   constructor(options = {}) {
     // Core properties
     this.id = options.id || this.generateId();
-    this.template = options.template || this.constructor.template || null;
+    this.template = options.template || options.templateUrl || this.constructor.template || null;
     this.container = null;
     this.element = null;
 
@@ -202,13 +208,39 @@ class View {
     }
 
     this.loading = true;
+    console.log(`View ${this.id}: Rendering`);
+    if (window.MOJO && MOJO.debug) {
+        await this._render()
+        this.loading = false;
+        this.isRendering = false;
+    } else {
+        try {
+          await this._render()
+          return this;
+        } catch (error) {
+          this.showError(`Failed to render: ${error.message}`);
 
-    try {
+          // Clear loading screen on error
+          if (typeof window !== 'undefined' && window.MOJO && window.MOJO.clearLoadingScreen) {
+            window.MOJO.clearLoadingScreen();
+          }
+
+          // throw error;
+        } finally {
+          this.loading = false;
+          this.isRendering = false;
+        }
+    }
+
+
+  }
+
+  async _render() {
       // Call before render hook
       await this.hooks.beforeRender.call(this);
 
       // Call overridable before render method
-      await this.onBeforeRender();
+      await this._onBeforeRender();
 
       // Create element if it doesn't exist
       if (!this.element) {
@@ -241,21 +273,6 @@ class View {
       // Call overridable after render method
       await this.onAfterRender();
 
-      return this;
-
-    } catch (error) {
-      this.showError(`Failed to render: ${error.message}`);
-
-      // Clear loading screen on error
-      if (typeof window !== 'undefined' && window.MOJO && window.MOJO.clearLoadingScreen) {
-        window.MOJO.clearLoadingScreen();
-      }
-
-      // throw error;
-    } finally {
-      this.loading = false;
-      this.isRendering = false;
-    }
   }
 
   /**
@@ -444,6 +461,7 @@ class View {
 
     this.element = document.createElement(this.options.tagName);
     this.element.id = this.id;
+    this.el = this.element;  // for simple access
 
     if (this.options.className) {
       this.element.className = this.options.className;
@@ -676,7 +694,7 @@ class View {
       if (childPlaceholder) {
         // Use the placeholder directly as the container
         child.setContainer(childPlaceholder);
-        
+
         // Render the child into the placeholder
         await child.render();
       } else {
@@ -910,7 +928,6 @@ class View {
     actionElements.forEach(element => {
       const action = element.getAttribute('data-action');
       const handler = (event) => {
-        event.preventDefault();
         this.handleAction(action, event, element);
       };
 
@@ -933,7 +950,7 @@ class View {
         // Check for external links before preventing default
         if (element.tagName === 'A') {
           const href = element.getAttribute('href');
-          if (this.isExternalLink(href) || element.hasAttribute('data-external')) {
+          if (!href.startsWith("#") && (this.isExternalLink(href) || element.hasAttribute('data-external'))) {
             return; // Let browser handle external links normally
           }
         }
@@ -983,6 +1000,11 @@ class View {
       }
     }
 
+    const app = this.getApp();
+    if (app) {
+        app.showPage(pageName, params);
+        return;
+    }
     const router = this.findRouter();
     if (router && typeof router.navigateToPage === 'function') {
       await router.navigateToPage(pageName, params);
@@ -1013,7 +1035,7 @@ class View {
         await router.navigate(fullPath);
         return;
       }
-      
+
       // For hash mode
       if (router.options && router.options.mode === 'hash' && href.startsWith('#')) {
         await router.navigate(href);
@@ -1022,7 +1044,7 @@ class View {
 
       // For history mode or regular paths
       const routePath = this.hrefToRoutePath(href);
-      
+
       // Just navigate and let router handle it
       await router.navigate(routePath);
     } else {
@@ -1078,12 +1100,28 @@ class View {
   findRouter() {
     const routers = [
       window.MOJO?.router,
+      window.APP?.router,
       window.app?.router,
       window.navigationApp?.router,
       window.sidebarApp?.router
     ];
 
     return routers.find(router => router && typeof router.navigate === 'function') || null;
+  }
+
+  /**
+   * Find available router instance
+   * @returns {Object|null} Router instance
+   */
+  getApp() {
+    const apps = [
+      window.APP,
+      window.app,
+      window.WebApp,
+      window.MOJO.app,
+    ];
+
+    return apps.find(app => app && typeof app.showPage === 'function') || null;
   }
 
   /**
@@ -1107,6 +1145,7 @@ class View {
 
     if (typeof this[methodName] === 'function') {
       try {
+        event.preventDefault();
         await this[methodName](event, element);
       } catch (error) {
         console.error(`Error in action ${action}:`, error);
@@ -1116,6 +1155,10 @@ class View {
       // Emit as event
       this.emit(`action:${action}`, { action, event, element });
     }
+  }
+
+  handleActionNavigate(event, element) {
+    console.error("navigate action not supported");
   }
 
   /**
@@ -1134,15 +1177,27 @@ class View {
    * Show error message
    * @param {string} message - Error message
    */
-  showError(message) {
+  async showError(message) {
     console.error(`View ${this.id} error:`, message);
 
-    // Use MOJO framework dialog if available
-    if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showError) {
-      window.MOJO.showError(`View Error: ${message}`, {
-        details: `View ID: ${this.id}`,
-        technical: true
+    // Use Dialog component for better UX
+    try {
+      const Dialog = await import('../components/Dialog.js').then(m => m.default);
+      await Dialog.alert(message, 'Error', {
+        size: 'md',
+        class: 'text-danger'
       });
+    } catch (importError) {
+      // Fallback to MOJO framework dialog if Dialog import fails
+      if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showError) {
+        window.MOJO.showError(`View Error: ${message}`, {
+          details: `View ID: ${this.id}`,
+          technical: true
+        });
+      } else {
+        // Ultimate fallback to browser alert
+        alert(`Error: ${message}`);
+      }
     }
   }
 
@@ -1150,14 +1205,26 @@ class View {
    * Show success message
    * @param {string} message - Success message
    */
-  showSuccess(message) {
+  async showSuccess(message) {
     if (this.debug) {
       console.log(`View ${this.id} success:`, message);
     }
 
-    // Use MOJO framework dialog if available
-    if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showSuccess) {
-      window.MOJO.showSuccess(message);
+    // Use Dialog component for better UX
+    try {
+      const Dialog = await import('../components/Dialog.js').then(m => m.default);
+      await Dialog.alert(message, 'Success', {
+        size: 'md',
+        class: 'text-success'
+      });
+    } catch (importError) {
+      // Fallback to MOJO framework dialog if Dialog import fails
+      if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showSuccess) {
+        window.MOJO.showSuccess(message);
+      } else {
+        // Ultimate fallback to browser alert
+        alert(`Success: ${message}`);
+      }
     }
   }
 
@@ -1165,12 +1232,24 @@ class View {
    * Show info message
    * @param {string} message - Info message
    */
-  showInfo(message) {
+  async showInfo(message) {
     console.info(`View ${this.id} info:`, message);
 
-    // Use MOJO framework dialog if available
-    if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showInfo) {
-      window.MOJO.showInfo(message);
+    // Use Dialog component for better UX
+    try {
+      const Dialog = await import('../components/Dialog.js').then(m => m.default);
+      await Dialog.alert(message, 'Information', {
+        size: 'md',
+        class: 'text-info'
+      });
+    } catch (importError) {
+      // Fallback to MOJO framework dialog if Dialog import fails
+      if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showInfo) {
+        window.MOJO.showInfo(message);
+      } else {
+        // Ultimate fallback to browser alert
+        alert(`Info: ${message}`);
+      }
     }
   }
 
@@ -1178,22 +1257,38 @@ class View {
    * Show warning message
    * @param {string} message - Warning message
    */
-  showWarning(message) {
+  async showWarning(message) {
     console.warn(`View ${this.id} warning:`, message);
 
-    // Use MOJO framework dialog if available
-    if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showWarning) {
-      window.MOJO.showWarning(message);
+    // Use Dialog component for better UX
+    try {
+      const Dialog = await import('../components/Dialog.js').then(m => m.default);
+      await Dialog.alert(message, 'Warning', {
+        size: 'md',
+        class: 'text-warning'
+      });
+    } catch (importError) {
+      // Fallback to MOJO framework dialog if Dialog import fails
+      if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showWarning) {
+        window.MOJO.showWarning(message);
+      } else {
+        // Ultimate fallback to browser alert
+        alert(`Warning: ${message}`);
+      }
     }
   }
 
   // Lifecycle hooks - can be overridden in subclasses
-  async onBeforeRender() {
+  async _onBeforeRender() {
     // Ensure view is initialized before rendering
     if (!this._initialized) {
       this.init();
     }
+
+    await this.onBeforeRender();
   }
+
+  async onBeforeRender() {}
   async onAfterRender() {}
   async onBeforeMount() {}
   async onAfterMount() {}

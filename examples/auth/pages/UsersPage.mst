@@ -1,0 +1,342 @@
+<div class="users-page">
+    <div class="container-fluid p-4">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h1 class="h3 mb-0">
+                        <i class="bi bi-people me-2"></i>Users Management
+                    </h1>
+                    <div>
+                        <button class="btn btn-outline-secondary me-2" data-action="refresh">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                        </button>
+                        <button class="btn btn-outline-info me-2" data-action="exportUsers">
+                            <i class="bi bi-download me-1"></i>Export
+                        </button>
+                        <button class="btn btn-primary" data-action="addUser">
+                            <i class="bi bi-person-plus me-1"></i>Add User
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-lg-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="bg-primary bg-opacity-10 rounded-3 p-2">
+                                    <i class="bi bi-people-fill text-primary fs-5"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="text-muted mb-1 small">Total Users</h6>
+                                <h4 class="mb-0">{{stats.total}}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="bg-success bg-opacity-10 rounded-3 p-2">
+                                    <i class="bi bi-person-check-fill text-success fs-5"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="text-muted mb-1 small">Active</h6>
+                                <h4 class="mb-0">{{stats.active}}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="bg-warning bg-opacity-10 rounded-3 p-2">
+                                    <i class="bi bi-person-x-fill text-warning fs-5"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="text-muted mb-1 small">Inactive</h6>
+                                <h4 class="mb-0">{{stats.inactive}}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="bg-info bg-opacity-10 rounded-3 p-2">
+                                    <i class="bi bi-shield-lock-fill text-info fs-5"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="text-muted mb-1 small">Admins</h6>
+                                <h4 class="mb-0">{{stats.admins}}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text"
+                                   class="form-control border-start-0"
+                                   placeholder="Search users..."
+                                   value="{{searchQuery}}"
+                                   data-action="search">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select"
+                                data-filter="status"
+                                data-action="updateFilter">
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select"
+                                data-filter="role"
+                                data-action="updateFilter">
+                            <option value="all">All Roles</option>
+                            <option value="admin">Admin</option>
+                            <option value="moderator">Moderator</option>
+                            <option value="user">User</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-outline-secondary w-100" onclick="location.reload()">
+                            <i class="bi bi-x-circle me-1"></i>Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-0">
+                {{#isLoading}}
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Loading users...</p>
+                </div>
+                {{/isLoading}}
+
+                {{^isLoading}}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="border-0 ps-4">
+                                    <a href="#" class="text-decoration-none text-dark"
+                                       data-sort="name" data-action="sort">
+                                        User
+                                        {{#sortBy}}{{#name}}
+                                            <i class="bi bi-chevron-{{#sortOrder}}{{#asc}}up{{/asc}}{{#desc}}down{{/desc}}{{/sortOrder}} ms-1"></i>
+                                        {{/name}}{{/sortBy}}
+                                    </a>
+                                </th>
+                                <th class="border-0">
+                                    <a href="#" class="text-decoration-none text-dark"
+                                       data-sort="role" data-action="sort">
+                                        Role
+                                        {{#sortBy}}{{#role}}
+                                            <i class="bi bi-chevron-{{#sortOrder}}{{#asc}}up{{/asc}}{{#desc}}down{{/desc}}{{/sortOrder}} ms-1"></i>
+                                        {{/role}}{{/sortBy}}
+                                    </a>
+                                </th>
+                                <th class="border-0">
+                                    <a href="#" class="text-decoration-none text-dark"
+                                       data-sort="status" data-action="sort">
+                                        Status
+                                        {{#sortBy}}{{#status}}
+                                            <i class="bi bi-chevron-{{#sortOrder}}{{#asc}}up{{/asc}}{{#desc}}down{{/desc}}{{/sortOrder}} ms-1"></i>
+                                        {{/status}}{{/sortBy}}
+                                    </a>
+                                </th>
+                                <th class="border-0">Last Active</th>
+                                <th class="border-0">Joined</th>
+                                <th class="border-0 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{#filteredUsers}}
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle me-3">
+                                            {{#avatar}}
+                                            <img src="{{avatar}}" alt="Avatar" class="rounded-circle" width="40" height="40">
+                                            {{/avatar}}
+                                            {{^avatar}}
+                                            <div class="bg-primary bg-gradient text-white rounded-circle d-flex align-items-center justify-content-center"
+                                                 style="width: 40px; height: 40px;">
+                                                {{name.[0]}}
+                                            </div>
+                                            {{/avatar}}
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">{{name}}</h6>
+                                            <small class="text-muted">{{email}}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="align-middle">
+                                    <span class="badge bg-{{#role}}
+                                        {{#admin}}danger{{/admin}}
+                                        {{#moderator}}warning{{/moderator}}
+                                        {{#user}}secondary{{/user}}
+                                    {{/role}}">{{role}}</span>
+                                </td>
+                                <td class="align-middle">
+                                    <span class="badge bg-{{#status}}
+                                        {{#active}}success{{/active}}
+                                        {{#inactive}}secondary{{/inactive}}
+                                    {{/status}}">{{status}}</span>
+                                </td>
+                                <td class="align-middle text-muted">{{lastActive}}</td>
+                                <td class="align-middle text-muted">{{joinDate}}</td>
+                                <td class="align-middle text-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-primary"
+                                                data-user-id="{{id}}"
+                                                data-action="viewUser"
+                                                data-bs-toggle="tooltip"
+                                                title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-secondary"
+                                                data-user-id="{{id}}"
+                                                data-action="editUser"
+                                                data-bs-toggle="tooltip"
+                                                title="Edit User">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-outline-{{#status}}{{#active}}warning{{/active}}{{#inactive}}success{{/inactive}}{{/status}}"
+                                                data-user-id="{{id}}"
+                                                data-action="toggleStatus"
+                                                data-bs-toggle="tooltip"
+                                                title="{{#status}}{{#active}}Deactivate{{/active}}{{#inactive}}Activate{{/inactive}}{{/status}}">
+                                            <i class="bi bi-{{#status}}{{#active}}pause{{/active}}{{#inactive}}play{{/inactive}}{{/status}}"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger"
+                                                data-user-id="{{id}}"
+                                                data-action="deleteUser"
+                                                data-bs-toggle="tooltip"
+                                                title="Delete User">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {{/filteredUsers}}
+
+                            {{^filteredUsers}}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    No users found
+                                </td>
+                            </tr>
+                            {{/filteredUsers}}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {{#totalPages}}
+                <div class="card-footer bg-white border-top">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-muted">
+                            Showing {{currentPage}} of {{totalPages}} pages
+                        </div>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item {{^currentPage}}disabled{{/currentPage}}">
+                                    <a class="page-link" href="#"
+                                       data-page="{{currentPage}}"
+                                       data-action="changePage">
+                                        Previous
+                                    </a>
+                                </li>
+                                {{#totalPages}}
+                                <li class="page-item {{#active}}active{{/active}}">
+                                    <a class="page-link" href="#"
+                                       data-page="{{.}}"
+                                       data-action="changePage">
+                                        {{.}}
+                                    </a>
+                                </li>
+                                {{/totalPages}}
+                                <li class="page-item">
+                                    <a class="page-link" href="#"
+                                       data-page="{{currentPage}}"
+                                       data-action="changePage">
+                                        Next
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+                {{/totalPages}}
+                {{/isLoading}}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.users-page .card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.users-page .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.users-page .table tbody tr {
+    transition: background-color 0.2s;
+}
+
+.users-page .table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.users-page .btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+.users-page .avatar-circle {
+    position: relative;
+}
+</style>

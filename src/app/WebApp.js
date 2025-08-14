@@ -8,6 +8,12 @@ import Page from '../core/Page.js';
 import EventBus from '../utils/EventBus.js';
 import rest from '../core/Rest.js';
 
+/*!
+ * MOJO Framework
+ * Copyright (c) 2024 MOJO Framework Team
+ * Licensed under MIT License
+ */
+
 class WebApp {
     constructor(config = {}) {
         // Core configuration
@@ -21,14 +27,17 @@ class WebApp {
         this.routerMode = config.routerMode || 'param'; // 'param', 'hash', 'history'
         this.basePath = config.basePath || '';
         this.defaultRoute = config.defaultRoute || 'home';
-        
+
+        // Store session config if provided
+        this.session = config.session || {};
+
         // Initialize router immediately so it's available for page registration
         this.router = new Router(this, {
             mode: this.routerMode,
             base: this.basePath,
             defaultPage: this.defaultRoute
         });
-        
+
         // Make router globally accessible
         if (typeof window !== 'undefined') {
             window.MOJO = window.MOJO || {};
@@ -219,7 +228,7 @@ class WebApp {
             console.error('registerPage: pageName must be a non-empty string');
             return this;
         }
-        
+
         if (typeof PageClass !== 'function') {
             console.error('registerPage: PageClass must be a constructor function');
             return this;
@@ -236,9 +245,21 @@ class WebApp {
             // Get route from options or use default
             const route = options.route || `/${pageName}`;
             this.router.addRoute(route, pageName);
+
+            // Also register page name for data-page navigation
+            this.router.registerPageName(pageName, route);
         }
 
         return this;
+    }
+
+    /**
+     * Get a page if already created (does not instantiate)
+     * @param {string} pageName
+     * @returns {Page|null}
+     */
+    getPage(pageName) {
+      return this.pageCache.has(pageName) ? this.pageCache.get(pageName) : null;
     }
 
     /**
@@ -262,34 +283,74 @@ class WebApp {
         // Extract PageClass and options
         const { PageClass, constructorOptions = {} } = pageInfo;
 
-        // Create and cache the instance with constructor options
-        const page = new PageClass(constructorOptions);
-        page.app = this; // Give page reference to app
-
-        // Ensure pageName is set
-        if (!page.pageName) {
-            page.pageName = pageName;
+        // Defensive: Ensure PageClass is a valid constructor
+        if (typeof PageClass !== 'function') {
+            console.error(`Page class for '${pageName}' is not a valid constructor:`, PageClass);
+            return null;
         }
 
-        // Initialize if needed
-        if (page.onInit && !page.initialized) {
-            page.onInit();
-            page.initialized = true;
-        }
+        let page = null;
 
-        // Cache the instance
-        this.pageCache.set(pageName, page);
-        return page;
+        try {
+            // Create and cache the instance with constructor options
+            page = new PageClass(constructorOptions);
+            page.app = this; // Give page reference to app
+
+            // Ensure pageName is set
+            if (!page.pageName) {
+                page.pageName = pageName;
+            }
+
+            // Initialize if needed
+            if (page.onInit && !page.initialized) {
+                try {
+                    page.onInit();
+                    page.initialized = true;
+                } catch (initError) {
+                    console.error(`Error initializing page '${pageName}':`, initError);
+                    // Continue anyway - page may still be usable
+                    page.initialized = true;
+                }
+            }
+
+            // Cache the instance only if creation was successful
+            this.pageCache.set(pageName, page);
+            return page;
+
+        } catch (error) {
+            console.error(`Error creating page instance for '${pageName}':`, error);
+
+            // If page was partially created, try to clean it up
+            if (page && page.destroy) {
+                try {
+                    page.destroy();
+                } catch (destroyError) {
+                    console.warn(`Error cleaning up failed page '${pageName}':`, destroyError);
+                }
+            }
+
+            return null;
+        }
     }
 
     /**
      * Show a page with detach/reattach strategy
      * @param {Page} page - Page instance to show
      */
-    async showPage(page) {
+    async showPage(page, options = {}) {
         const container = this.getPageContainer();
         if (!container) {
             console.error('No page container found');
+            return;
+        }
+
+        if (typeof(page) === 'string') {
+            page = this.getOrCreatePage(page);
+        }
+
+        // Defensive: If page is invalid/null, do not proceed
+        if (!page) {
+            console.warn("WebApp: Attempted to show a null/undefined page. Operation cancelled.");
             return;
         }
 
@@ -300,6 +361,7 @@ class WebApp {
             }
         }
 
+        console.log(`Showing page: ${page.pageName}`);
         // Ensure page has a container set
         if (!page.container) {
             page.setContainer(container);
@@ -330,6 +392,7 @@ class WebApp {
             }
         }
 
+        console.log(`Current page now: ${page.pageName}`);
         this.currentPage = page;
 
         // Update state
@@ -337,6 +400,24 @@ class WebApp {
             currentPage: page.pageName,
             previousPage: this.state.currentPage
         });
+
+        // Try to keep the route in sync (but not if we're already syncing to prevent loops)
+        if (!options.noRoute && !this._syncingRoute && this.router && page.route) {
+            // Figure out what the correct URL would be for this page
+            let targetRoute = typeof page.route === "function"
+                ? page.route(page) : page.route;
+            // In 'param' mode, synthesize the URL accordingly (optional, based on your param handling logic)
+            if (this.router.options.mode === "param" && targetRoute && !targetRoute.startsWith('?')) {
+                targetRoute = `?page=${page.pageName}`;
+            }
+            // If URL is not current, update (avoid infinite loops)
+            if (targetRoute && window.location.pathname + window.location.search !== targetRoute) {
+                // Set a flag to prevent showPage from syncing routes when called back from router
+                this._syncingRoute = true;
+                this.router.navigate(targetRoute, { replace: true, silent: true });
+                this._syncingRoute = false;
+            }
+        }
     }
 
 
@@ -348,6 +429,14 @@ class WebApp {
         if (!this.router) {
             console.error('Router not initialized');
             return;
+        }
+
+        // Ergonomic patch: If in 'param' mode and route is a bare page name, convert to ?page=pageName
+        if (this.router.options.mode === 'param') {
+            // If route does not start with '?' or '/', treat as a pageName and convert to param style
+            if (typeof route === 'string' && !route.startsWith('?') && !route.startsWith('/')) {
+                route = `?page=${route}`;
+            }
         }
 
         // Update state with route name

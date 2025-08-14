@@ -139,6 +139,28 @@
         </div>
     </div>
 
+    <!-- Promise-based Dialogs Section -->
+    <div class="example-section">
+        <div class="example-header">
+        <h2>Promise-based Dialogs</h2>
+        <div class="source-buttons">
+            <button class="btn btn-sm btn-outline-primary" data-action="show-promise-source">
+            <i class="bi bi-code-slash me-1"></i>View Source
+            </button>
+        </div>
+        </div>
+        <p>Modern promise-based dialog patterns with form integration.</p>
+
+        <div class="example-demo">
+        <button class="btn btn-info me-2" data-action="show-form">
+            Form Dialog
+        </button>
+        <button class="btn btn-info" data-action="show-promise-dialog">
+            Multi-Button Promise Dialog
+        </button>
+        </div>
+    </div>
+
     <!-- Advanced Examples Section -->
     <div class="example-section">
         <div class="example-header">

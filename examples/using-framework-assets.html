@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Using MOJO Framework Assets - CSS, Templates & Components</title>
+
+    <!-- Method 1: Load CSS from CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Method 2: Load local framework CSS (after npm install web-mojo) -->
+    <!-- <link href="node_modules/web-mojo/dist/web-mojo.css" rel="stylesheet"> -->
+    <!-- <link href="node_modules/web-mojo/dist/css/portal.css" rel="stylesheet"> -->
+
+    <!-- For this example, we'll use local development CSS -->
+    <link href="../src/styles/mojo.css" rel="stylesheet">
+
+    <!-- Custom overrides -->
+    <style>
+        /* CSS Variables for theming */
+        :root {
+            --mojo-primary-color: #4a90e2;
+            --mojo-sidebar-width: 280px;
+            --mojo-nav-height: 65px;
+            --mojo-font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        /* Dark theme */
+        :root[data-theme="dark"] {
+            --mojo-bg-color: #1a1a1a;
+            --mojo-text-color: #ffffff;
+            --mojo-border-color: #333333;
+            --bs-body-bg: #1a1a1a;
+            --bs-body-color: #ffffff;
+        }
+
+        /* Light theme (default) */
+        :root[data-theme="light"] {
+            --mojo-bg-color: #ffffff;
+            --mojo-text-color: #333333;
+            --mojo-border-color: #dddddd;
+        }
+
+        /* Custom component styles */
+        .custom-nav {
+            background: linear-gradient(135deg, var(--mojo-primary-color), #6ab7ff);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .custom-sidebar {
+            background-color: #f8f9fa;
+            border-right: 2px solid var(--mojo-border-color);
+        }
+
+        .template-demo {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        .asset-section {
+            margin-bottom: 40px;
+        }
+
+        .code-example {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .theme-switcher {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Loading indicator -->
+        <div class="d-flex justify-content-center align-items-center" style="height: 100vh">
+            <div class="text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h4>Loading MOJO Framework Assets Example...</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Theme Switcher -->
+    <div class="theme-switcher">
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-primary" onclick="setTheme('light')">
+                <i class="bi bi-sun"></i> Light
+            </button>
+            <button type="button" class="btn btn-outline-primary" onclick="setTheme('dark')">
+                <i class="bi bi-moon"></i> Dark
+            </button>
+        </div>
+    </div>
+
+    <!-- Template Examples (hidden, will be used by JavaScript) -->
+    <script type="text/template" id="table-template">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#users}}
+                <tr>
+                    <td>{{id}}</td>
+                    <td>{{name}}</td>
+                    <td>{{email}}</td>
+                    <td><span class="badge bg-{{statusColor}}">{{status}}</span></td>
+                </tr>
+                {{/users}}
+            </tbody>
+        </table>
+    </script>
+
+    <script type="text/template" id="card-template">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">{{title}}</h5>
+            </div>
+            <div class="card-body">
+                <p>{{content}}</p>
+                <div class="d-flex justify-content-between">
+                    <small class="text-muted">{{author}}</small>
+                    <small class="text-muted">{{date}}</small>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <!-- Load MOJO Framework -->
+    <script type="module">
+        import MOJO from '../src/mojo.js';
+        import TopNav from '../src/components/TopNav.js';
+        import Sidebar from '../src/components/Sidebar.js';
+        import MainContent from '../src/components/MainContent.js';
+        import Table from '../src/components/Table.js';
+        import { FormBuilder } from '../src/components/FormBuilder.js';
+        import mustache from '../src/utils/mustache.js';
+
+        // Make theme switcher available globally
+        window.setTheme = function(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+        };
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+
+        // Create the application
+        const app = new MOJO({
+            container: '#app',
+            debug: true
+        });
+
+        // Create custom navigation with framework styles
+        const nav = new TopNav({
+            id: 'main-nav',
+            className: 'custom-nav',
+            data: {
+                brand: {
+                    name: 'MOJO Assets Demo',
+                    icon: 'bi-box-seam',
+                    href: '?page=home'
+                },
+                items: [
+                    { label: 'CSS Examples', icon: 'bi-palette', page: 'css' },
+                    { label: 'Templates', icon: 'bi-file-code', page: 'templates' },
+                    { label: 'Components', icon: 'bi-grid-3x3', page: 'components' }
+                ]
+            }
+        });
+
+        // Create sidebar with custom styling
+        const sidebar = new Sidebar({
+            id: 'main-sidebar',
+            className: 'custom-sidebar',
+            data: {
+                title: 'Asset Categories',
+                items: [
+                    {
+                        text: 'Framework CSS',
+                        icon: 'bi-brush',
+                        items: [
+                            { text: 'Main Styles', route: '#main-css' },
+                            { text: 'Component Styles', route: '#component-css' },
+                            { text: 'Portal Styles', route: '#portal-css' }
+                        ]
+                    },
+                    {
+                        text: 'Templates',
+                        icon: 'bi-file-earmark-code',
+                        items: [
+                            { text: 'Mustache Templates', route: '#mustache' },
+                            { text: 'Component Templates', route: '#comp-templates' },
+                            { text: 'Custom Templates', route: '#custom-templates' }
+                        ]
+                    },
+                    {
+                        text: 'Assets',
+                        icon: 'bi-images',
+                        items: [
+                            { text: 'Icons', route: '#icons' },
+                            { text: 'Fonts', route: '#fonts' },
+                            { text: 'Images', route: '#images' }
+                        ]
+                    }
+                ]
+            }
+        });
+
+        // Create main content area
+        const mainContent = new MainContent({
+            id: 'main-content',
+            data: {
+                sections: []
+            }
+        });
+
+        // Override render to show asset examples
+        mainContent.render = function() {
+            return `
+                <div class="container-fluid">
+                    <h1 class="mb-4">MOJO Framework Assets Demo</h1>
+
+                    <!-- CSS Examples Section -->
+                    <div class="asset-section" id="main-css">
+                        <h2><i class="bi bi-palette"></i> CSS and Styling</h2>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h4>Import Methods</h4>
+                                <div class="code-example">
+// ES6 Import<br>
+import 'web-mojo/css';<br>
+import 'web-mojo/css/portal.css';<br><br>
+// HTML Link<br>
+&lt;link href="node_modules/web-mojo/dist/web-mojo.css" rel="stylesheet"&gt;<br><br>
+// CDN<br>
+&lt;link href="https://unpkg.com/web-mojo/dist/web-mojo.css" rel="stylesheet"&gt;
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h4>CSS Variables</h4>
+                                <div class="code-example">
+:root {<br>
+&nbsp;&nbsp;--mojo-primary-color: #4a90e2;<br>
+&nbsp;&nbsp;--mojo-sidebar-width: 280px;<br>
+&nbsp;&nbsp;--mojo-nav-height: 65px;<br>
+&nbsp;&nbsp;--mojo-font-family: 'Segoe UI';<br>
+}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <h4>Bootstrap Integration</h4>
+                            <p>MOJO is built on Bootstrap 5, so all Bootstrap classes work:</p>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button class="btn btn-primary">Primary</button>
+                                <button class="btn btn-success">Success</button>
+                                <button class="btn btn-danger">Danger</button>
+                                <button class="btn btn-warning">Warning</button>
+                                <button class="btn btn-info">Info</button>
+                                <button class="btn btn-outline-secondary">Outline</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Template Examples Section -->
+                    <div class="asset-section" id="mustache">
+                        <h2><i class="bi bi-file-code"></i> Template System</h2>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h4>Loading Templates</h4>
+                                <div class="code-example">
+// Import at build time<br>
+import template from 'web-mojo/templates/Table.mst?raw';<br><br>
+// Fetch at runtime<br>
+const response = await fetch('/templates/Table.mst');<br>
+const template = await response.text();<br><br>
+// From script tag<br>
+const template = document.getElementById('my-template').innerHTML;
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h4>Using Templates</h4>
+                                <div class="template-demo" id="template-output">
+                                    <!-- Template output will be rendered here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Component Examples Section -->
+                    <div class="asset-section" id="component-css">
+                        <h2><i class="bi bi-grid-3x3"></i> Component Assets</h2>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h4>Table Component with Data</h4>
+                                <div id="table-container"></div>
+                            </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <h4>Form Builder Component</h4>
+                                <div id="form-container"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <h4>Custom Card Component</h4>
+                                <div id="card-container"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Icon Examples Section -->
+                    <div class="asset-section" id="icons">
+                        <h2><i class="bi bi-emoji-smile"></i> Bootstrap Icons</h2>
+                        <p>MOJO includes Bootstrap Icons. Here are some examples:</p>
+                        <div class="d-flex gap-3 flex-wrap">
+                            <div class="text-center">
+                                <i class="bi bi-house fs-1"></i><br>
+                                <small>bi-house</small>
+                            </div>
+                            <div class="text-center">
+                                <i class="bi bi-gear fs-1"></i><br>
+                                <small>bi-gear</small>
+                            </div>
+                            <div class="text-center">
+                                <i class="bi bi-person fs-1"></i><br>
+                                <small>bi-person</small>
+                            </div>
+                            <div class="text-center">
+                                <i class="bi bi-bell fs-1"></i><br>
+                                <small>bi-bell</small>
+                            </div>
+                            <div class="text-center">
+                                <i class="bi bi-envelope fs-1"></i><br>
+                                <small>bi-envelope</small>
+                            </div>
+                            <div class="text-center">
+                                <i class="bi bi-calendar fs-1"></i><br>
+                                <small>bi-calendar</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        // Render template examples
+        function renderTemplateExamples() {
+            // Get the table template and render it
+            const tableTemplate = document.getElementById('table-template').innerHTML;
+            const tableData = {
+                users: [
+                    { id: 1, name: 'John Doe', email: 'john@example.com', status: 'Active', statusColor: 'success' },
+                    { id: 2, name: 'Jane Smith', email: 'jane@example.com', status: 'Pending', statusColor: 'warning' },
+                    { id: 3, name: 'Bob Johnson', email: 'bob@example.com', status: 'Inactive', statusColor: 'secondary' }
+                ]
+            };
+
+            const tableHtml = mustache.render(tableTemplate, tableData);
+            document.getElementById('template-output').innerHTML = tableHtml;
+
+            // Render card template
+            const cardTemplate = document.getElementById('card-template').innerHTML;
+            const cardData = {
+                title: 'Template Example',
+                content: 'This card is rendered using a Mustache template with dynamic data.',
+                author: 'MOJO Framework',
+                date: new Date().toLocaleDateString()
+            };
+
+            const cardHtml = mustache.render(cardTemplate, cardData);
+            document.getElementById('card-container').innerHTML = cardHtml;
+        }
+
+        // Create example components
+        function createComponentExamples() {
+            // Create a Table component
+            const table = new Table({
+                container: document.getElementById('table-container'),
+                data: {
+                    columns: [
+                        { key: 'id', label: 'ID', sortable: true },
+                        { key: 'product', label: 'Product', sortable: true },
+                        { key: 'price', label: 'Price', sortable: true },
+                        { key: 'stock', label: 'Stock', sortable: true }
+                    ],
+                    rows: [
+                        { id: 1, product: 'Laptop', price: '$999', stock: 15 },
+                        { id: 2, product: 'Mouse', price: '$25', stock: 50 },
+                        { id: 3, product: 'Keyboard', price: '$75', stock: 30 },
+                        { id: 4, product: 'Monitor', price: '$350', stock: 10 }
+                    ]
+                }
+            });
+            table.mount();
+
+            // Create a FormBuilder component
+            const form = new FormBuilder({
+                container: document.getElementById('form-container'),
+                fields: [
+                    {
+                        type: 'text',
+                        name: 'username',
+                        label: 'Username',
+                        required: true,
+                        placeholder: 'Enter username'
+                    },
+                    {
+                        type: 'email',
+                        name: 'email',
+                        label: 'Email',
+                        required: true,
+                        placeholder: 'user@example.com'
+                    },
+                    {
+                        type: 'select',
+                        name: 'role',
+                        label: 'Role',
+                        options: [
+                            { value: 'user', label: 'User' },
+                            { value: 'admin', label: 'Admin' },
+                            { value: 'moderator', label: 'Moderator' }
+                        ]
+                    },
+                    {
+                        type: 'checkbox',
+                        name: 'newsletter',
+                        label: 'Subscribe to newsletter'
+                    }
+                ],
+                submitButton: {
+                    text: 'Submit',
+                    className: 'btn btn-primary'
+                }
+            });
+            form.mount();
+        }
+
+        // Initialize the app
+        app.setRootView(nav);
+
+        // Build the layout
+        const appContainer = document.getElementById('app');
+        appContainer.innerHTML = '';
+
+        // Add navigation
+        appContainer.appendChild(nav.element);
+
+        // Create main layout container
+        const layoutContainer = document.createElement('div');
+        layoutContainer.className = 'd-flex';
+        layoutContainer.style.paddingTop = 'var(--mojo-nav-height, 60px)';
+
+        // Add sidebar
+        layoutContainer.appendChild(sidebar.element);
+
+        // Add main content
+        layoutContainer.appendChild(mainContent.element);
+
+        appContainer.appendChild(layoutContainer);
+
+        // Mount all components
+        nav.mount();
+        sidebar.mount();
+        mainContent.mount();
+
+        // Render examples after mounting
+        setTimeout(() => {
+            renderTemplateExamples();
+            createComponentExamples();
+        }, 100);
+
+        // Start the application
+        app.start();
+
+        console.log('MOJO Framework Assets Demo loaded successfully!');
+        console.log('Available components:', { TopNav, Sidebar, MainContent, Table, FormBuilder });
+        console.log('Theme switcher available - try clicking Light/Dark buttons');
+    </script>
+</body>
+</html>

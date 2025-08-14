@@ -4,7 +4,9 @@
  */
 
 import TablePage from '../../../src/components/TablePage.js';
-import { TodoList } from '../models/Todo.js';
+import { TodoList, TodoForms } from '../models/Todo.js';
+import { FormView } from '../../../src/components/FormView.js';
+import Dialog from '../../../src/components/Dialog.js';
 
 class TodosPage extends TablePage {
     // Static page properties for routing
@@ -156,22 +158,13 @@ class TodosPage extends TablePage {
     /**
      * Override handleAdd to create new todos
      */
-    async handleAdd() {
-        const text = prompt('New todo:');
-        if (!text || !text.trim()) return;
-
-        const priority = prompt('Priority (high/medium/low):', 'medium') || 'medium';
-
-        this.collection.add({
-            text: text.trim(),
-            priority: priority.toLowerCase(),
-            completed: false,
-            created_at: new Date().toISOString()
-        });
-
-        await this.refreshTable();
-        this.showSuccess('Todo added');
-    }
+     async handleAdd() {
+         const data = await Dialog.showForm({
+             title: 'Create Todo',
+             formConfig: TodoForms.create,
+         });
+         console.log(data);
+     }
 
     /**
      * Mark selected todos as complete

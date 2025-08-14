@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{pageTitle}} - MOJO Mustache Test</title>
+    <link rel="stylesheet" href="{{cssPath}}">
+</head>
+<body>
+    {{! This is a mustache comment - should be highlighted as comment }}
+
+    <!-- This is an HTML comment - should be highlighted differently -->
+
+    <header class="site-header">
+        <nav class="navbar">
+            <div class="container">
+                <h1>{{siteName}}</h1>
+                {{#isLoggedIn}}
+                <div class="user-menu">
+                    <span>Welcome, {{user.name}}!</span>
+                    <a href="/logout">Logout</a>
+                </div>
+                {{/isLoggedIn}}
+
+                {{^isLoggedIn}}
+                <div class="auth-links">
+                    <a href="/login" class="btn btn-primary">Login</a>
+                    <a href="/register" class="btn btn-secondary">Register</a>
+                </div>
+                {{/isLoggedIn}}
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <section class="hero">
+            <div class="container">
+                <h2>{{heroTitle}}</h2>
+                <p class="lead">{{heroDescription}}</p>
+
+                {{! Unescaped HTML content }}
+                <div class="hero-content">
+                    {{{heroHTML}}}
+                </div>
+
+                {{! Alternative unescaped syntax }}
+                <div class="hero-extra">
+                    {{&additionalHTML}}
+                </div>
+            </div>
+        </section>
+
+        <section class="products">
+            <div class="container">
+                <h2>Our Products</h2>
+
+                {{! Regular section iteration }}
+                {{#products}}
+                <article class="product-card" data-id="{{id}}">
+                    <img src="{{image}}" alt="{{name}}" class="product-image">
+                    <div class="product-info">
+                        <h3>{{name}}</h3>
+                        <p class="price">${{price}}</p>
+                        <p class="description">{{description}}</p>
+
+                        {{! MOJO-specific dot-prefix syntax }}
+                        <div class="product-meta">
+                            <span class="sku">SKU: {{.sku}}</span>
+                            <span class="stock">Stock: {{.stockCount}}</span>
+
+                            {{! Nested property access }}
+                            <div class="category">
+                                Category: {{category.name}}
+                                Parent: {{.category.parent}}
+                            </div>
+                        </div>
+
+                        {{! Product tags }}
+                        {{#tags}}
+                        <span class="tag tag-{{type}}">{{label}}</span>
+                        {{/tags}}
+
+                        {{! MOJO-specific iterator operator }}
+                        <div class="features">
+                            {{#.features|iter}}
+                            <div class="feature">
+                                <strong>{{name}}:</strong> {{value}}
+                            </div>
+                            {{/.features|iter}}
+                        </div>
+
+                        {{! Nested sections with mixed syntax }}
+                        {{#reviews}}
+                        <div class="reviews">
+                            <h4>Reviews ({{count}})</h4>
+                            {{#.items|iter}}
+                            <blockquote class="review">
+                                <p>{{.content}}</p>
+                                <footer>
+                                    — {{.author}},
+                                    <time datetime="{{.date}}">{{displayDate}}</time>
+                                </footer>
+                                <div class="rating">
+                                    {{! Conditional rendering }}
+                                    {{#.isHighRating}}
+                                    <span class="stars gold">★★★★★</span>
+                                    {{/.isHighRating}}
+                                    {{^.isHighRating}}
+                                    <span class="stars">{{.rating}}/5</span>
+                                    {{/.isHighRating}}
+                                </div>
+                            </blockquote>
+                            {{/.items|iter}}
+                        </div>
+                        {{/reviews}}
+                    </div>
+                </article>
+                {{/products}}
+
+                {{! Inverted section for no products }}
+                {{^products}}
+                <div class="no-products">
+                    <p>No products available at the moment.</p>
+                    <a href="/contact" class="btn btn-primary">Contact us for more info</a>
+                </div>
+                {{/products}}
+            </div>
+        </section>
+
+        <section class="categories">
+            <div class="container">
+                <h2>Browse Categories</h2>
+
+                {{! Complex nested structure with MOJO features }}
+                {{#categoryGroups}}
+                <div class="category-group">
+                    <h3>{{.groupName}}</h3>
+
+                    {{#.subcategories|iter}}
+                    <div class="category" data-category="{{.slug}}">
+                        <h4>
+                            <a href="/category/{{.slug}}">{{.displayName}}</a>
+                        </h4>
+                        <p>{{.description}}</p>
+
+                        {{! Product count with conditional styling }}
+                        <span class="product-count {{#.hasProducts}}has-products{{/.hasProducts}}{{^.hasProducts}}no-products{{/.hasProducts}}">
+                            {{.productCount}} products
+                        </span>
+
+                        {{! Nested iterator for subcategory items }}
+                        {{#.items|iter}}
+                        <div class="subcategory-item">
+                            <a href="/product/{{.id}}">{{.title}}</a>
+                            <span class="price">${{.price}}</span>
+                        </div>
+                        {{/.items|iter}}
+                    </div>
+                    {{/.subcategories|iter}}
+                </div>
+                {{/categoryGroups}}
+            </div>
+        </section>
+
+        {{! Partial inclusion }}
+        <section class="newsletter">
+            {{> newsletter-signup}}
+        </section>
+
+        {{! Another partial with different syntax context }}
+        <section class="testimonials">
+            {{> customer-testimonials}}
+        </section>
+    </main>
+
+    <aside class="sidebar">
+        {{! Complex conditional with nested sections }}
+        {{#showSidebar}}
+        <div class="sidebar-content">
+            {{#widgets}}
+            <div class="widget widget-{{type}}">
+                <h3>{{title}}</h3>
+
+                {{! Different widget types }}
+                {{#isListWidget}}
+                <ul>
+                    {{#.data|iter}}
+                    <li>
+                        <a href="{{.url}}">{{.text}}</a>
+                        {{#.badge}}
+                        <span class="badge">{{.text}}</span>
+                        {{/.badge}}
+                    </li>
+                    {{/.data|iter}}
+                </ul>
+                {{/isListWidget}}
+
+                {{#isTextWidget}}
+                <div class="text-content">
+                    {{{.htmlContent}}}
+                </div>
+                {{/isTextWidget}}
+
+                {{#isFormWidget}}
+                <form action="{{.action}}" method="{{.method}}">
+                    {{#.fields|iter}}
+                    <div class="form-group">
+                        <label for="{{.id}}">{{.label}}</label>
+                        <input
+                            type="{{.type}}"
+                            id="{{.id}}"
+                            name="{{.name}}"
+                            {{#.required}}required{{/.required}}
+                            {{#.placeholder}}placeholder="{{.placeholder}}"{{/.placeholder}}
+                        >
+                    </div>
+                    {{/.fields|iter}}
+                    <button type="submit" class="btn btn-primary">{{.submitText}}</button>
+                </form>
+                {{/isFormWidget}}
+            </div>
+            {{/widgets}}
+        </div>
+        {{/showSidebar}}
+    </aside>
+
+    <footer class="site-footer">
+        <div class="container">
+            {{! Footer content with mixed syntax }}
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>{{company.name}}</h4>
+                    <address>
+                        {{company.address.street}}<br>
+                        {{company.address.city}}, {{company.address.state}} {{company.address.zip}}
+                    </address>
+                </div>
+
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        {{#quickLinks}}
+                        <li>
+                            <a href="{{url}}" {{#isExternal}}target="_blank" rel="noopener"{{/isExternal}}>
+                                {{text}}
+                            </a>
+                        </li>
+                        {{/quickLinks}}
+                    </ul>
+                </div>
+
+                <div class="footer-section">
+                    <h4>Social Media</h4>
+                    <div class="social-links">
+                        {{#.socialLinks|iter}}
+                        <a href="{{.url}}" class="social-link social-{{.platform}}"
+                           title="Follow us on {{.platform}}" target="_blank">
+                            <i class="icon-{{.platform}}"></i>
+                            {{.displayName}}
+                        </a>
+                        {{/.socialLinks|iter}}
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; {{currentYear}} {{company.name}}. All rights reserved.</p>
+
+                {{! Conditional copyright notice }}
+                {{#company.hasTrademarks}}
+                <p class="trademark-notice">
+                    {{company.name}} and related marks are trademarks of {{company.legalName}}.
+                </p>
+                {{/company.hasTrademarks}}
+            </div>
+        </div>
+    </footer>
+
+    {{! Script tags with mustache variables }}
+    <script src="{{jsPath}}/main.js"></script>
+    {{#analytics.enabled}}
+    <script>
+        // Analytics configuration
+        window.analytics = {
+            trackingId: '{{analytics.trackingId}}',
+            userId: {{#user.id}}'{{user.id}}'{{/user.id}}{{^user.id}}null{{/user.id}},
+            customDimensions: {
+                {{#.customDimensions|iter}}
+                '{{.key}}': '{{.value}}'{{#.hasMore}},{{/.hasMore}}
+                {{/.customDimensions|iter}}
+            }
+        };
+    </script>
+    {{/analytics.enabled}}
+
+    {{! Inline styles with mustache }}
+    <style>
+        :root {
+            --primary-color: {{theme.primaryColor}};
+            --secondary-color: {{theme.secondaryColor}};
+            --text-color: {{theme.textColor}};
+            --background-color: {{theme.backgroundColor}};
+        }
+
+        {{#theme.customCSS}}
+        {{{theme.customCSS}}}
+        {{/theme.customCSS}}
+    </style>
+</body>
+</html>

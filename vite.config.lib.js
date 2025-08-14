@@ -1,13 +1,48 @@
 import { defineConfig } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
+import mojoTemplatesPlugin from './vite-plugin-templates.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Helper to find all template files
+function findTemplateFiles() {
+  const templateExtensions = ['.mst', '.html', '.htm'];
+  const templates = [];
+  
+  function walkDir(dir, baseDir = '') {
+    const files = fs.readdirSync(dir);
+    files.forEach(file => {
+      const filePath = path.join(dir, file);
+      const stat = fs.statSync(filePath);
+      if (stat.isDirectory()) {
+        walkDir(filePath, path.join(baseDir, file));
+      } else if (templateExtensions.some(ext => file.endsWith(ext))) {
+        templates.push({
+          src: filePath,
+          dest: path.join('templates', baseDir)
+        });
+      }
+    });
+  }
+  
+  // Find templates in various locations
+  const templateDirs = ['src/templates', 'src/components', 'src/pages', 'src/auth'];
+  templateDirs.forEach(dir => {
+    const fullPath = path.resolve(__dirname, dir);
+    if (fs.existsSync(fullPath)) {
+      walkDir(fullPath, path.basename(dir));
+    }
+  });
+  
+  return templates;
+}
 
 export default defineConfig({
   build: {
     lib: {
-      // Entry point for library
+      // Single entry point for the library
       entry: path.resolve(__dirname, 'src/index.js'),
       name: 'MOJO',
       // Generate multiple formats
@@ -26,14 +61,29 @@ export default defineConfig({
         globals: {
           bootstrap: 'bootstrap'
         },
-        // Preserve the module structure for better tree-shaking
-        preserveModules: false,
         // Export everything from index.js
         exports: 'named',
-        // Asset naming
+        // Asset naming for CSS and other assets
         assetFileNames: (assetInfo) => {
-          if (assetInfo.name === 'style.css') return 'web-mojo.css';
-          return assetInfo.name;
+          // Handle CSS files
+          if (assetInfo.name?.endsWith('.css')) {
+            // Main CSS file
+            if (assetInfo.name === 'style.css' || assetInfo.name === 'index.css') {
+              return 'web-mojo.css';
+            }
+            // Other CSS files preserve their names
+            return 'css/[name][extname]';
+          }
+          // Handle fonts
+          if (/\.(woff|woff2|eot|ttf|otf)$/.test(assetInfo.name || '')) {
+            return 'fonts/[name][extname]';
+          }
+          // Handle images
+          if (/\.(png|jpg|jpeg|gif|svg|ico)$/.test(assetInfo.name || '')) {
+            return 'images/[name][extname]';
+          }
+          // Default for other assets
+          return 'assets/[name][extname]';
         },
         // Add banner with version and license info
         banner: `/**
@@ -51,6 +101,8 @@ export default defineConfig({
     emptyOutDir: true,
     // Generate sourcemaps for debugging
     sourcemap: true,
+    // Copy templates and other static assets
+    copyPublicDir: false,
     // Minification settings
     minify: 'terser',
     terserOptions: {
@@ -93,11 +145,100 @@ export default defineConfig({
     __MOJO_BUILD_TIME__: JSON.stringify(new Date().toISOString()),
     __MOJO_PACKAGE_NAME__: JSON.stringify('web-mojo')
   },
-  // CSS handling
-  css: {
-    // Extract CSS to separate file
-    extract: true,
-    // Generate source maps for CSS
-    devSourcemap: true
-  }
+  plugins: [
+    // Custom plugin to copy template files
+    {
+      name: 'copy-templates',
+      writeBundle() {
+        const templates = findTemplateFiles();
+        templates.forEach(({ src, dest }) => {
+          const destDir = path.join(__dirname, 'dist', dest);
+          if (!fs.existsSync(destDir)) {
+            fs.mkdirSync(destDir, { recursive: true });
+          }
+          const destFile = path.join(destDir, path.basename(src));
+          fs.copyFileSync(src, destFile);
+          console.log(`Copied template: ${path.basename(src)} to ${dest}`);
+        });
+        
+        // Create a templates index file
+        const templateIndex = templates.map(t => {
+          const relativePath = path.join(t.dest, path.basename(t.src));
+          const baseName = path.basename(t.src, path.extname(t.src)).replace(/[^a-zA-Z0-9]/g, '_');
+          return `export const ${baseName} = './${relativePath}';`;
+        }).join('\n');
+        
+        if (templateIndex) {
+          fs.writeFileSync(
+            path.join(__dirname, 'dist', 'templates', 'index.js'),
+            `// Auto-generated template exports\n${templateIndex}\n`
+          );
+        }
+      }
+    },
+    // Custom plugin to copy CSS files if they exist
+    {
+      name: 'copy-additional-css',
+      writeBundle() {
+        // Copy any additional CSS files that need to be available separately
+        const cssFilesToCopy = [
+          { src: 'src/styles/mojo.css', dest: 'css/mojo-source.css' },
+          { src: 'src/app/portal.css', dest: 'css/portal.css' }
+        ];
+        
+        cssFilesToCopy.forEach(({ src, dest }) => {
+          const srcPath = path.join(__dirname, src);
+          if (fs.existsSync(srcPath)) {
+            const destPath = path.join(__dirname, 'dist', dest);
+            const destDir = path.dirname(destPath);
+            if (!fs.existsSync(destDir)) {
+              fs.mkdirSync(destDir, { recursive: true });
+            }
+            fs.copyFileSync(srcPath, destPath);
+            console.log(`Copied CSS: ${src} to dist/${dest}`);
+          }
+        });
+        
+        // Create a CSS manifest
+        const distDir = path.join(__dirname, 'dist');
+        const cssFiles = [];
+        
+        function findCssFiles(dir, base = '') {
+          if (!fs.existsSync(dir)) return;
+          const files = fs.readdirSync(dir);
+          files.forEach(file => {
+            const filePath = path.join(dir, file);
+            const stat = fs.statSync(filePath);
+            if (stat.isDirectory() && file !== 'node_modules') {
+              findCssFiles(filePath, path.join(base, file));
+            } else if (file.endsWith('.css')) {
+              cssFiles.push(path.join(base, file));
+            }
+          });
+        }
+        
+        findCssFiles(path.join(distDir, 'css'), 'css');
+        
+        // Create an index of available CSS files
+        const cssIndex = {
+          main: './web-mojo.css',
+          styles: cssFiles.reduce((acc, file) => {
+            const name = path.basename(file, '.css');
+            acc[name] = `./${file}`;
+            return acc;
+          }, {})
+        };
+        
+        fs.writeFileSync(
+          path.join(distDir, 'css-manifest.json'),
+          JSON.stringify(cssIndex, null, 2)
+        );
+        console.log('Created CSS manifest');
+      }
+    },
+    // Auto-compile templates before building
+    mojoTemplatesPlugin({
+      watch: false  // No watching needed for library builds
+    })
+  ]
 });

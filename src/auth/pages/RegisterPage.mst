@@ -1,0 +1,259 @@
+<div class="auth-page register-page min-vh-100 d-flex align-items-center py-4">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-sm-10 col-md-8 col-lg-6 col-xl-5">
+                <div class="card shadow-lg border-0">
+                    <div class="card-body p-4 p-md-5">
+                        <!-- Logo and Header -->
+                        <div class="text-center mb-4">
+                            {{#logoUrl}}
+                            <img src="{{logoUrl}}" alt="{{appName}}" class="mb-3" style="max-height: 60px;">
+                            {{/logoUrl}}
+                            <h2 class="h3 mb-2">{{messages.registerTitle}}</h2>
+                            <p class="text-muted">{{messages.registerSubtitle}}</p>
+                        </div>
+
+                        <!-- Error Alert -->
+                        {{#error}}
+                        <div class="alert alert-danger d-flex align-items-center alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <div>{{error}}</div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {{/error}}
+
+                        <!-- Registration Form -->
+                        <form data-action="register" novalidate>
+                            <!-- Name Field -->
+                            <div class="mb-3">
+                                <label for="registerName" class="form-label">
+                                    <i class="bi bi-person me-1"></i>Full Name
+                                </label>
+                                <input
+                                    type="text"
+                                    class="form-control form-control-lg"
+                                    id="registerName"
+                                    placeholder="John Doe"
+                                    value="{{name}}"
+                                    data-field="name"
+                                    data-action="updateField"
+                                    data-action-keydown="handleKeyPress"
+                                    required
+                                    {{#isLoading}}disabled{{/isLoading}}>
+                            </div>
+
+                            <!-- Email Field -->
+                            <div class="mb-3">
+                                <label for="registerEmail" class="form-label">
+                                    <i class="bi bi-envelope me-1"></i>Email Address
+                                </label>
+                                <input
+                                    type="email"
+                                    class="form-control form-control-lg"
+                                    id="registerEmail"
+                                    placeholder="name@example.com"
+                                    value="{{email}}"
+                                    data-field="email"
+                                    data-action="updateField"
+                                    data-action-keydown="handleKeyPress"
+                                    required
+                                    {{#isLoading}}disabled{{/isLoading}}>
+                            </div>
+
+                            <!-- Password Field -->
+                            <div class="mb-3">
+                                <label for="registerPassword" class="form-label">
+                                    <i class="bi bi-lock me-1"></i>Password
+                                </label>
+                                <div class="input-group">
+                                    <input
+                                        type="{{#showPassword}}text{{/showPassword}}{{^showPassword}}password{{/showPassword}}"
+                                        class="form-control form-control-lg"
+                                        id="registerPassword"
+                                        placeholder="Create a strong password"
+                                        value="{{password}}"
+                                        data-field="password"
+                                        data-action="updateField"
+                                        data-action-keydown="handleKeyPress"
+                                        required
+                                        {{#isLoading}}disabled{{/isLoading}}>
+                                    <button
+                                        class="btn btn-outline-secondary"
+                                        type="button"
+                                        data-password-field="password"
+                                        data-action="togglePassword"
+                                        {{#isLoading}}disabled{{/isLoading}}>
+                                        <i class="bi bi-eye{{#showPassword}}-slash{{/showPassword}}"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Password Strength Indicator -->
+                                {{#passwordStrength}}
+                                <div class="mt-2">
+                                    <div class="progress" style="height: 5px;">
+                                        <div class="progress-bar {{#passwordStrength}}
+                                            {{#weak}}bg-danger{{/weak}}
+                                            {{#fair}}bg-warning{{/fair}}
+                                            {{#good}}bg-info{{/good}}
+                                            {{#strong}}bg-success{{/strong}}
+                                        {{/passwordStrength}}"
+                                        role="progressbar"
+                                        style="width: {{#passwordStrength}}
+                                            {{#weak}}25%{{/weak}}
+                                            {{#fair}}50%{{/fair}}
+                                            {{#good}}75%{{/good}}
+                                            {{#strong}}100%{{/strong}}
+                                        {{/passwordStrength}}">
+                                        </div>
+                                    </div>
+                                    <small class="text-{{#passwordStrength}}
+                                        {{#weak}}danger{{/weak}}
+                                        {{#fair}}warning{{/fair}}
+                                        {{#good}}info{{/good}}
+                                        {{#strong}}success{{/strong}}
+                                    {{/passwordStrength}}">
+                                        Password strength: {{passwordStrength}}
+                                    </small>
+                                </div>
+                                {{/passwordStrength}}
+                            </div>
+
+                            <!-- Confirm Password Field -->
+                            <div class="mb-3">
+                                <label for="registerConfirmPassword" class="form-label">
+                                    <i class="bi bi-lock-fill me-1"></i>Confirm Password
+                                </label>
+                                <div class="input-group">
+                                    <input
+                                        type="{{#showConfirmPassword}}text{{/showConfirmPassword}}{{^showConfirmPassword}}password{{/showConfirmPassword}}"
+                                        class="form-control form-control-lg {{^passwordMatch}}is-invalid{{/passwordMatch}}"
+                                        id="registerConfirmPassword"
+                                        placeholder="Re-enter your password"
+                                        value="{{confirmPassword}}"
+                                        data-field="confirmPassword"
+                                        data-action="updateField"
+                                        data-action-keydown="handleKeyPress"
+                                        required
+                                        {{#isLoading}}disabled{{/isLoading}}>
+                                    <button
+                                        class="btn btn-outline-secondary"
+                                        type="button"
+                                        data-password-field="confirmPassword"
+                                        data-action="togglePassword"
+                                        {{#isLoading}}disabled{{/isLoading}}>
+                                        <i class="bi bi-eye{{#showConfirmPassword}}-slash{{/showConfirmPassword}}"></i>
+                                    </button>
+                                    {{^passwordMatch}}
+                                    <div class="invalid-feedback">
+                                        Passwords do not match
+                                    </div>
+                                    {{/passwordMatch}}
+                                </div>
+                            </div>
+
+                            <!-- Terms and Conditions -->
+                            {{#termsUrl}}
+                            <div class="form-check mb-4">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    id="acceptTerms"
+                                    data-field="acceptTerms"
+                                    data-action="updateField"
+                                    {{#acceptTerms}}checked{{/acceptTerms}}
+                                    required
+                                    {{#isLoading}}disabled{{/isLoading}}>
+                                <label class="form-check-label" for="acceptTerms">
+                                    I agree to the
+                                    <a href="#" class="text-decoration-none" data-url="{{termsUrl}}" data-action="openLink">
+                                        Terms of Service
+                                    </a>
+                                    {{#privacyUrl}}
+                                    and
+                                    <a href="#" class="text-decoration-none" data-url="{{privacyUrl}}" data-action="openLink">
+                                        Privacy Policy
+                                    </a>
+                                    {{/privacyUrl}}
+                                </label>
+                            </div>
+                            {{/termsUrl}}
+
+                            <!-- Register Button -->
+                            <button
+                                type="submit"
+                                class="btn btn-primary btn-lg w-100 mb-3"
+                                {{#isLoading}}disabled{{/isLoading}}
+                                {{#termsUrl}}{{^acceptTerms}}disabled{{/acceptTerms}}{{/termsUrl}}>
+                                {{#isLoading}}
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                Creating account...
+                                {{/isLoading}}
+                                {{^isLoading}}
+                                <i class="bi bi-person-plus me-2"></i>Create Account
+                                {{/isLoading}}
+                            </button>
+                        </form>
+
+                        <!-- Login Link -->
+                        <div class="text-center mt-4">
+                            <p class="mb-0">
+                                Already have an account?
+                                <a href="#" class="text-decoration-none fw-semibold" data-action="login">
+                                    Sign in
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Help Text -->
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        <i class="bi bi-shield-check me-1"></i>Your information is secure and encrypted
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.auth-page {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.auth-page .card {
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 1rem;
+}
+
+.auth-page .form-control:focus,
+.auth-page .form-check-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+}
+
+.auth-page .btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+}
+
+.auth-page .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #5a6fd4 0%, #68428e 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.auth-page a {
+    color: #667eea;
+}
+
+.auth-page a:hover {
+    color: #5a6fd4;
+}
+
+.progress {
+    background-color: #e9ecef;
+}
+</style>

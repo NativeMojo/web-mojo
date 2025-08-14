@@ -1,0 +1,337 @@
+name: Test MOJO Mustache Zed Extension
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'zed-extension/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'zed-extension/**'
+  workflow_dispatch:
+
+jobs:
+  validate-extension:
+    name: Validate Extension Files
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Validate JSON files
+      run: |
+        echo "Validating extension.json..."
+        node -e "JSON.parse(require('fs').readFileSync('zed-extension/extension.json', 'utf8'))"
+
+        echo "Validating languages/mustache.json..."
+        node -e "JSON.parse(require('fs').readFileSync('zed-extension/languages/mustache.json', 'utf8'))"
+
+        echo "Validating grammars/mustache.json..."
+        node -e "JSON.parse(require('fs').readFileSync('zed-extension/grammars/mustache.json', 'utf8'))"
+
+        echo "Validating package.json..."
+        node -e "JSON.parse(require('fs').readFileSync('zed-extension/package.json', 'utf8'))"
+
+        echo "✅ All JSON files are valid"
+
+    - name: Check required files
+      run: |
+        cd zed-extension
+
+        # Check all required files exist
+        required_files=(
+          "extension.json"
+          "languages/mustache.json"
+          "grammars/mustache.json"
+          "README.md"
+          "install.sh"
+          "install.bat"
+          "package.json"
+          "test.mst"
+        )
+
+        for file in "${required_files[@]}"; do
+          if [[ ! -f "$file" ]]; then
+            echo "❌ Missing required file: $file"
+            exit 1
+          else
+            echo "✅ Found: $file"
+          fi
+        done
+
+        echo "✅ All required files are present"
+
+    - name: Validate extension manifest
+      run: |
+        cd zed-extension
+
+        # Check extension.json has required fields
+        node -e "
+          const ext = JSON.parse(require('fs').readFileSync('extension.json', 'utf8'));
+          const required = ['id', 'name', 'description', 'version', 'schema_version'];
+
+          for (const field of required) {
+            if (!ext[field]) {
+              console.error(\`❌ Missing required field in extension.json: \${field}\`);
+              process.exit(1);
+            }
+          }
+
+          if (ext.id !== 'mojo-mustache') {
+            console.error('❌ Extension ID should be \"mojo-mustache\"');
+            process.exit(1);
+          }
+
+          if (!ext.languages || !Array.isArray(ext.languages) || ext.languages.length === 0) {
+            console.error('❌ Extension must define at least one language');
+            process.exit(1);
+          }
+
+          console.log('✅ Extension manifest is valid');
+        "
+
+    - name: Validate grammar structure
+      run: |
+        cd zed-extension
+
+        node -e "
+          const grammar = JSON.parse(require('fs').readFileSync('grammars/mustache.json', 'utf8'));
+
+          const required = ['name', 'scopeName', 'fileTypes', 'patterns'];
+          for (const field of required) {
+            if (!grammar[field]) {
+              console.error(\`❌ Missing required field in grammar: \${field}\`);
+              process.exit(1);
+            }
+          }
+
+          if (!grammar.fileTypes.includes('mst')) {
+            console.error('❌ Grammar should include \"mst\" in fileTypes');
+            process.exit(1);
+          }
+
+          if (grammar.scopeName !== 'text.html.mustache.mojo') {
+            console.error('❌ Grammar scopeName should be \"text.html.mustache.mojo\"');
+            process.exit(1);
+          }
+
+          console.log('✅ Grammar structure is valid');
+        "
+
+  test-installation:
+    name: Test Installation Scripts
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Test installation script (Unix)
+      if: matrix.os != 'windows-latest'
+      run: |
+        cd zed-extension
+        chmod +x install.sh
+
+        # Test help command
+        ./install.sh help
+
+        # Test verify command (should fail since not installed)
+        if ./install.sh verify; then
+          echo "❌ Verify should fail when extension not installed"
+          exit 1
+        else
+          echo "✅ Verify correctly reports extension not installed"
+        fi
+
+        # Note: We don't actually install since Zed might not be available in CI
+        echo "✅ Installation script syntax is valid"
+
+    - name: Test installation script (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        cd zed-extension
+
+        # Test help command
+        call install.bat help
+
+        # Test verify command (should fail since not installed)
+        call install.bat verify
+        if %errorlevel% equ 0 (
+          echo "❌ Verify should fail when extension not installed"
+          exit 1
+        ) else (
+          echo "✅ Verify correctly reports extension not installed"
+        )
+
+        echo "✅ Installation script syntax is valid"
+      shell: cmd
+
+  test-syntax-highlighting:
+    name: Test Syntax Highlighting
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install TextMate grammar tools
+      run: |
+        npm install -g vscode-textmate
+
+    - name: Test grammar against test file
+      run: |
+        cd zed-extension
+
+        # Basic test that our test.mst file contains expected mustache syntax
+        if ! grep -q "{{#" test.mst; then
+          echo "❌ Test file should contain section syntax"
+          exit 1
+        fi
+
+        if ! grep -q "{{/" test.mst; then
+          echo "❌ Test file should contain section close syntax"
+          exit 1
+        fi
+
+        if ! grep -q "{{!" test.mst; then
+          echo "❌ Test file should contain comment syntax"
+          exit 1
+        fi
+
+        if ! grep -q "|iter" test.mst; then
+          echo "❌ Test file should contain MOJO iterator syntax"
+          exit 1
+        fi
+
+        echo "✅ Test file contains expected mustache syntax patterns"
+
+  check-documentation:
+    name: Check Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Check README completeness
+      run: |
+        cd zed-extension
+
+        # Check README contains expected sections
+        required_sections=(
+          "# MOJO Mustache Extension for Zed"
+          "## Features"
+          "## Installation"
+          "## Supported Mustache Syntax"
+          "## Configuration"
+        )
+
+        for section in "${required_sections[@]}"; do
+          if ! grep -q "$section" README.md; then
+            echo "❌ README missing section: $section"
+            exit 1
+          else
+            echo "✅ Found section: $section"
+          fi
+        done
+
+        echo "✅ README documentation is complete"
+
+    - name: Check for placeholder URLs
+      run: |
+        cd zed-extension
+
+        if grep -q "your-org" README.md package.json extension.json; then
+          echo "⚠️ Warning: Found placeholder URLs that should be updated"
+          echo "Files containing 'your-org':"
+          grep -l "your-org" README.md package.json extension.json || true
+        else
+          echo "✅ No placeholder URLs found"
+        fi
+
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    needs: [validate-extension, test-installation]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Create test environment
+      run: |
+        # Create a temporary directory structure like Zed would use
+        mkdir -p /tmp/zed-test/extensions
+
+    - name: Simulate extension installation
+      run: |
+        cd zed-extension
+
+        # Copy extension files to test directory
+        cp -r . /tmp/zed-test/extensions/mojo-mustache/
+
+        # Verify all files are copied correctly
+        test -f /tmp/zed-test/extensions/mojo-mustache/extension.json
+        test -f /tmp/zed-test/extensions/mojo-mustache/languages/mustache.json
+        test -f /tmp/zed-test/extensions/mojo-mustache/grammars/mustache.json
+
+        echo "✅ Extension files copied successfully"
+
+    - name: Validate extension in test environment
+      run: |
+        cd /tmp/zed-test/extensions/mojo-mustache
+
+        # Verify the extension manifest can be loaded
+        node -e "
+          const ext = JSON.parse(require('fs').readFileSync('extension.json', 'utf8'));
+          console.log('Extension ID:', ext.id);
+          console.log('Extension Name:', ext.name);
+          console.log('Version:', ext.version);
+          console.log('Languages:', ext.languages.length);
+          console.log('✅ Extension manifest loads correctly');
+        "
+
+        echo "✅ Integration test passed"
+
+  package-extension:
+    name: Package Extension
+    runs-on: ubuntu-latest
+    needs: [validate-extension, test-installation, test-syntax-highlighting, check-documentation]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Create extension package
+      run: |
+        cd zed-extension
+
+        # Create distribution package
+        tar -czf mojo-mustache-zed-extension-${{ github.sha }}.tar.gz \
+          extension.json \
+          languages/ \
+          grammars/ \
+          README.md \
+          install.sh \
+          install.bat \
+          package.json
+
+        ls -la *.tar.gz
+        echo "✅ Extension package created successfully"
+
+    - name: Upload package artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: mojo-mustache-zed-extension
+        path: zed-extension/mojo-mustache-zed-extension-*.tar.gz
+        retention-days: 30

@@ -5,8 +5,7 @@
 
 import WebApp from '../../src/app/WebApp.js';
 import LandingPage from './pages/LandingPage.js';
-import LoginPage from './pages/LoginPage.js';
-import RegisterPage from './pages/RegisterPage.js';
+import { initAuth } from '../../src/auth/index.js';
 
 // Create and configure the app
 const app = new WebApp({
@@ -14,14 +13,14 @@ const app = new WebApp({
     version: '1.0.0',
     debug: true,
     basePath: '/examples/single',
-    
+
     // Layout configuration - single page mode
     layout: 'single',
     container: '#app',
 
     // API configuration
     api: {
-        baseUrl: 'https://jsonplaceholder.typicode.com',
+        baseUrl: 'http://localhost:8881',
         timeout: 30000
     },
 
@@ -32,31 +31,40 @@ const app = new WebApp({
     defaultRoute: 'landing'
 });
 
-// Register pages using clean API: registerPage(name, PageClass, options)
+// Register landing page
 app.registerPage('landing', LandingPage);
-app.registerPage('login', LoginPage);
-app.registerPage('register', RegisterPage);
 
-// Handle authentication (example)
-app.eventBus.on('auth:login', (userData) => {
-    console.log('User logged in:', userData);
-    app.setState('user', userData);
-    app.navigate('landing');
-    app.showSuccess(`Welcome back, ${userData.name}!`);
+// Initialize auth extension with configuration
+const authManager = initAuth(app, {
+    enablePasskeys: true,
+    enableGoogleAuth: false,
+    enableRememberMe: true,
+    enableForgotPassword: true,
+    termsUrl: 'https://example.com/terms',
+    privacyUrl: 'https://example.com/privacy',
+    logoUrl: '/assets/logo.png',
+    appName: 'MOJO Single Page App',
+    loginRedirect: 'landing',
+    logoutRedirect: 'login',
+    messages: {
+        loginTitle: 'Welcome Back',
+        loginSubtitle: 'Sign in to your MOJO account',
+        registerTitle: 'Join MOJO',
+        registerSubtitle: 'Create your free account',
+        forgotTitle: 'Reset Password',
+        forgotSubtitle: 'We\'ll help you get back in'
+    }
+});
+
+// Custom auth event handlers (optional - auth extension provides defaults)
+app.eventBus.on('auth:login-success', (user) => {
+    console.log('Custom handler: User logged in', user);
+    // Additional custom logic if needed
 });
 
 app.eventBus.on('auth:logout', () => {
-    console.log('User logged out');
-    app.setState('user', null);
-    app.navigate('landing');
-    app.showInfo('You have been logged out');
-});
-
-app.eventBus.on('auth:register', (userData) => {
-    console.log('User registered:', userData);
-    app.setState('user', userData);
-    app.navigate('landing');
-    app.showSuccess('Registration successful! Welcome aboard!');
+    console.log('Custom handler: User logged out');
+    // Additional custom logic if needed
 });
 
 // Start the application

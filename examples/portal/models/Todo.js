@@ -3,6 +3,17 @@ import Model from '../../../src/core/Model.js';
 
 window.Model = Model;
 
+const TodoForms = {
+    create: {
+        title: 'Create Todo',
+        fields: [
+            { name: 'name', type: 'text', label: 'Name' },
+            { name: 'description', type: 'textarea', label: 'Description' },
+            { name: 'kind', type: 'select', label: 'Kind', options: ['task', 'event', 'reminder'] }
+        ]
+    }
+};
+
 // Simple Todo Model
 class Todo extends Model {
     constructor(data = {}) {
@@ -22,6 +33,6 @@ class TodoList extends Collection {
     }
 }
 
-export { Todo, TodoList };
+export { Todo, TodoList, TodoForms };
 window.Todo = Todo;
 window.TodoList = TodoList;

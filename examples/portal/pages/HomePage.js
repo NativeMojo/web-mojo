@@ -9,17 +9,17 @@ class HomePage extends Page {
     static title = 'Home - Portal Example';
     static icon = 'bi-house';
     static route = 'home';
-    
+
     constructor(options = {}) {
         super({
             ...options,
             pageName: HomePage.pageName,
             route: HomePage.route,
             pageIcon: HomePage.icon,
-            template: 'templates/home.html'
+            template: 'templates/home.mst'
         });
     }
-    
+
     async onInit() {
         // Initialize page data
         this.data = {
@@ -33,33 +33,33 @@ class HomePage extends Page {
             }
         };
     }
-    
+
     async onEnter() {
         await super.onEnter();
         console.log('HomePage entered');
-        
+
         // Set page title
         document.title = HomePage.title;
     }
-    
+
     async onActionNavigate(event, element) {
         const page = element.dataset.page;
         if (page && window.APP) {
             window.APP.navigate(page);
         }
     }
-    
+
     async onActionTestApi() {
         if (!window.APP) return;
-        
+
         try {
             window.APP.showLoading('Testing API...');
-            
+
             // Test REST API
             const response = await window.APP.rest.GET('/users', { _limit: 3 });
-            
+
             window.APP.hideLoading();
-            
+
             if (response.data) {
                 window.APP.showSuccess(`Fetched ${response.data.length} users successfully!`);
                 console.log('API Response:', response);

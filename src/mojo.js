@@ -10,6 +10,8 @@ import EventBus from './utils/EventBus.js';
 import Rest from './core/Rest.js';
 import Model from './core/Model.js';
 import Collection from './core/Collection.js';
+import AuthService from './services/AuthService.js';
+import JWTUtils from './utils/JWTUtils.js';
 
 // Alias Model as RestModel for backward compatibility
 const RestModel = Model;
@@ -26,26 +28,31 @@ class MOJO {
   constructor(config = {}) {
     this.version = '2.0.0-phase2';
     this.config = config;
-    
+
     // Core systems
     this.eventBus = new EventBus();
     const routerConfig = { mode: 'param', ...config.router || {} };
     this.routerEnabled = routerConfig.enabled !== false; // Default to enabled
     this.router = this.routerEnabled ? new Router(routerConfig) : null;
+    this.app = config.app || null;
     this.views = new Map();
     this.pages = new Map();
     this.models = new Map();
     this.collections = new Map();
-    
+
     // Data layer setup
     this.rest = Rest;
     this.setupDataLayer();
-    
+
+    // Authentication utilities
+    this.authService = new AuthService(this);
+    this.jwtUtils = new JWTUtils();
+
     // State
     this.started = false;
     this.rootView = null;
     this.currentPage = null;
-    
+
     // Configuration defaults
     this.config = {
       container: '#app',
@@ -53,7 +60,7 @@ class MOJO {
       debug: false,
       ...config
     };
-    
+
     // Initialize framework
     this.init();
   }
@@ -66,11 +73,11 @@ class MOJO {
     if (this.config.api) {
       this.rest.configure(this.config.api);
     }
-    
+
     // Inject Rest client into model classes
     Model.Rest = this.rest;
     Collection.Rest = this.rest;
-    
+
     // Set up authentication if configured
     if (this.config.auth && this.config.auth.token) {
       this.rest.setAuthToken(this.config.auth.token, this.config.auth.type || 'Bearer');
@@ -84,18 +91,18 @@ class MOJO {
     if (this.initialized) {
       return this;
     }
-    
+
     console.log(`🔥 MOJO Framework v${this.version} - Initializing`);
-    
+
     // Set up global configuration
     this.setupGlobals();
-    
+
     // Set up event system
     this.setupEvents();
-    
+
     // Apply configuration
     this.applyConfig();
-    
+
     // Auto-start if configured
     if (this.config.autoStart !== false) {
       if (document.readyState === 'loading') {
@@ -107,10 +114,10 @@ class MOJO {
         this.start();
       }
     }
-    
+
     this.initialized = true;
     console.log('✅ MOJO Framework initialized');
-    
+
     return this;
   }
 
@@ -121,18 +128,18 @@ class MOJO {
     if (this.started) {
       return this;
     }
-    
+
     console.log('🚀 MOJO Framework - Starting application');
-    
+
     // Find container
     this.container = typeof this.config.container === 'string'
       ? document.querySelector(this.config.container)
       : this.config.container;
-    
+
     if (!this.container) {
       throw new Error(`Container not found: ${this.config.container}`);
     }
-    
+
     // Create root view if none exists
     if (!this.rootView) {
       this.rootView = new View({
@@ -141,22 +148,22 @@ class MOJO {
         className: 'mojo-app'
       });
     }
-    
+
     // Mount root view
     this.rootView.render(this.container);
-    
+
     // Start router if enabled
     if (this.routerEnabled && this.router) {
       this.router.start();
     }
-    
+
     this.started = true;
-    
+
     // Emit application started event
     this.eventBus.emit('app:started', { mojo: this });
-    
+
     console.log('✅ MOJO Framework started');
-    
+
     return this;
   }
 
@@ -170,11 +177,11 @@ class MOJO {
       if (this.router) {
         window.MOJO.router = this.router;
       }
-      
+
       // Set up global error handling
       this.setupGlobalErrorHandling();
     }
-    
+
     // Make core classes globally accessible
     if (typeof window !== 'undefined') {
       window.MOJOView = View;
@@ -190,17 +197,17 @@ class MOJO {
     if (this.config.debug) {
       this.eventBus.debug(true);
     }
-    
+
     // Handle errors
     this.eventBus.on('error', (errorData) => {
       console.error('MOJO Event Error:', errorData);
     });
-    
+
     // Handle view lifecycle events
     this.eventBus.on('view:created', (data) => {
       console.log('View created:', data.view.id);
     });
-    
+
     this.eventBus.on('view:destroyed', (data) => {
       console.log('View destroyed:', data.view.id);
     });
@@ -214,7 +221,7 @@ class MOJO {
     if (this.config.theme) {
       this.applyTheme(this.config.theme);
     }
-    
+
     // Set up development tools
     if (this.config.debug) {
       this.setupDevTools();
@@ -228,9 +235,9 @@ class MOJO {
     if (typeof document === 'undefined') {
       return;
     }
-    
+
     const root = document.documentElement;
-    
+
     // Apply CSS custom properties
     Object.entries(theme).forEach(([key, value]) => {
       const cssKey = `--mojo-${key.replace(/[A-Z]/g, '-$&').toLowerCase()}`;
@@ -245,7 +252,7 @@ class MOJO {
     if (typeof window === 'undefined') {
       return;
     }
-    
+
     // Add MOJO dev tools to window
     window.MOJODevTools = {
       version: this.version,
@@ -255,7 +262,7 @@ class MOJO {
       stats: () => this.getStats(),
       hierarchy: () => this.rootView ? this.rootView.getHierarchy() : 'No root view'
     };
-    
+
     console.log('🛠️ MOJO DevTools available at window.MOJODevTools');
   }
 
@@ -266,10 +273,10 @@ class MOJO {
     if (typeof viewClass !== 'function') {
       throw new Error('View class must be a constructor function');
     }
-    
+
     this.views.set(name, viewClass);
     this.eventBus.emit('view:registered', { name, viewClass });
-    
+
     return this;
   }
 
@@ -280,29 +287,29 @@ class MOJO {
     if (typeof pageClass !== 'function') {
       throw new Error('Page class must be a constructor function');
     }
-    
+
     this.pages.set(name, pageClass);
-    
+
     // Register route with router
     try {
       // Create temporary instance to get route
       const tempInstance = new pageClass();
       const route = tempInstance.route || `/${name}`;
-      
+
       // Register route with router if enabled
       if (this.router) {
         this.router.addRoute(route, (params, query) => {
           return this.renderPage(name, { params, query });
         });
       }
-      
+
       console.log(`📝 Registered route: ${route} -> ${name}`);
     } catch (error) {
       console.warn(`Failed to register route for page ${name}:`, error);
     }
-    
+
     this.eventBus.emit('page:registered', { name, pageClass });
-    
+
     return this;
   }
 
@@ -311,14 +318,14 @@ class MOJO {
    */
   createView(name, options = {}) {
     const ViewClass = this.views.get(name);
-    
+
     if (!ViewClass) {
       throw new Error(`View not found: ${name}`);
     }
-    
+
     const view = new ViewClass(options);
     this.eventBus.emit('view:created', { name, view, options });
-    
+
     return view;
   }
 
@@ -327,14 +334,14 @@ class MOJO {
    */
   createPage(name, options = {}) {
     const PageClass = this.pages.get(name);
-    
+
     if (!PageClass) {
       throw new Error(`Page not found: ${name}`);
     }
-    
+
     const page = new PageClass(options);
     this.eventBus.emit('page:created', { name, page, options });
-    
+
     return page;
   }
 
@@ -347,13 +354,13 @@ class MOJO {
     if (typeof ModelClass !== 'function') {
       throw new Error('Model class must be a constructor function');
     }
-    
+
     this.models.set(name, ModelClass);
     console.log(`Registered model: ${name}`);
   }
 
   /**
-   * Register a collection class  
+   * Register a collection class
    * @param {string} name - Collection name
    * @param {class} CollectionClass - Collection class extending Collection
    */
@@ -361,7 +368,7 @@ class MOJO {
     if (typeof CollectionClass !== 'function') {
       throw new Error('Collection class must be a constructor function');
     }
-    
+
     this.collections.set(name, CollectionClass);
     console.log(`Registered collection: ${name}`);
   }
@@ -378,7 +385,7 @@ class MOJO {
     if (!ModelClass) {
       throw new Error(`Model '${name}' not registered`);
     }
-    
+
     return new ModelClass(data, options);
   }
 
@@ -394,7 +401,7 @@ class MOJO {
     if (!CollectionClass) {
       throw new Error(`Collection '${name}' not registered`);
     }
-    
+
     return new CollectionClass(ModelClass, options);
   }
 
@@ -411,7 +418,7 @@ class MOJO {
 
       // Create new page instance
       const page = this.createPage(name, options);
-      
+
       // Set route params
       if (options.params) {
         page.params = options.params;
@@ -422,17 +429,17 @@ class MOJO {
 
       // Render page to main container
       await page.render(this.container);
-      
+
       // Store as current page
       this.currentPage = page;
-      
+
       // Call page lifecycle methods
       if (typeof page.on_params === 'function') {
         page.onParams(page.params, page.query);
       }
 
       console.log(`📄 Rendered page: ${name}`);
-      
+
       return page;
     } catch (error) {
       console.error(`Failed to render page ${name}:`, error);
@@ -475,13 +482,13 @@ class MOJO {
     if (this.rootView) {
       this.rootView.destroy();
     }
-    
+
     this.rootView = view;
-    
+
     if (this.started && this.container) {
       this.rootView.render(this.container);
     }
-    
+
     return this;
   }
 
@@ -519,28 +526,28 @@ class MOJO {
    */
   async shutdown() {
     console.log('🛑 MOJO Framework - Shutting down');
-    
+
     // Destroy root view
     if (this.rootView) {
       await this.rootView.destroy();
       this.rootView = null;
     }
-    
+
     // Clear registrations
     this.views.clear();
     this.pages.clear();
-    
+
     // Clear event bus
     this.eventBus.removeAllListeners();
-    
+
     // Reset state
     this.started = false;
     this.initialized = false;
-    
+
     this.eventBus.emit('app:shutdown', { mojo: this });
-    
+
     console.log('✅ MOJO Framework shut down');
-    
+
     return this;
   }
 
@@ -553,15 +560,15 @@ class MOJO {
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const config = await response.json();
       console.log('📄 Configuration loaded from:', configPath);
-      
+
       return new MOJO(config);
     } catch (error) {
       console.warn('Could not load configuration from:', configPath, error.message);
       console.log('📄 Using default configuration');
-      
+
       return new MOJO();
     }
   }

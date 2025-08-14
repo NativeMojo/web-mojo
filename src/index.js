@@ -4,6 +4,13 @@
  * Package: web-mojo
  */
 
+// Import CSS files so they are included in the build
+import './styles/mojo.css';
+import './app/portal.css';
+
+// Main MOJO import
+import MOJO from './mojo.js';
+
 // Core classes
 export { default as View } from './core/View.js';
 export { default as Page } from './core/Page.js';
@@ -28,16 +35,24 @@ export { default as mustache } from './utils/mustache.js';
 export { default as DataFormatter } from './utils/DataFormatter.js';
 export { default as MustacheFormatter } from './utils/MustacheFormatter.js';
 export { default as MOJOUtils, DataWrapper } from './utils/MOJOUtils.js';
+export { default as JWTUtils } from './utils/JWTUtils.js';
+
+// Services
+export { default as AuthService } from './services/AuthService.js';
+
+// App classes
+export { default as WebApp } from './app/WebApp.js';
+export { default as Portal } from './app/Portal.js';
 
 // Pages
 export { default as NotFoundPage } from './pages/NotFoundPage.js';
 export { default as ErrorPage } from './pages/ErrorPage.js';
 
 // Main MOJO class
-export { default as MOJO } from './mojo.js';
+export { MOJO };  // Now we're exporting the imported MOJO
 
 // Re-export all named exports from mojo.js for backward compatibility
-export { 
+export {
   View as ViewClass,
   Page as PageClass,
   Router as RouterClass,
@@ -54,12 +69,12 @@ export {
 export function createMOJO(config = {}) {
   // Use the statically imported MOJO class
   const mojo = MOJO.create(config);
-  
+
   // Make MOJO globally available if specified (default: true for backward compatibility)
   if (config.global !== false) {
     window.MOJO = mojo;
   }
-  
+
   return mojo;
 }
 

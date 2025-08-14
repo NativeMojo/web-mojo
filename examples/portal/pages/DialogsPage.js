@@ -390,6 +390,101 @@ class DialogsPage extends Page {
     }
   }
 
+  async onActionShowForm() {
+    try {
+      const formData = await Dialog.showForm({
+        title: 'User Registration',
+        size: 'lg',
+        formConfig: {
+          fields: [
+            {
+              name: 'username',
+              label: 'Username',
+              type: 'text',
+              required: true,
+              placeholder: 'Enter username'
+            },
+            {
+              name: 'email',
+              label: 'Email Address',
+              type: 'email',
+              required: true,
+              placeholder: 'user@example.com'
+            },
+            {
+              name: 'password',
+              label: 'Password',
+              type: 'password',
+              required: true,
+              placeholder: 'Enter password'
+            },
+            {
+              name: 'role',
+              label: 'User Role',
+              type: 'select',
+              options: [
+                { value: 'user', label: 'Regular User' },
+                { value: 'admin', label: 'Administrator' },
+                { value: 'moderator', label: 'Moderator' }
+              ]
+            },
+            {
+              name: 'newsletter',
+              label: 'Subscribe to newsletter',
+              type: 'checkbox',
+              value: true
+            }
+          ]
+        },
+        validateBeforeSubmit: true
+      });
+      
+      await Dialog.alert({
+        message: `Form submitted successfully! Data: ${JSON.stringify(formData, null, 2)}`,
+        title: 'Success',
+        type: 'success'
+      });
+    } catch (error) {
+      console.log('Form cancelled or dismissed');
+    }
+  }
+
+  async onActionShowPromiseDialog() {
+    try {
+      const result = await Dialog.showDialog({
+        title: 'Save Changes?',
+        body: '<p>You have unsaved changes. What would you like to do?</p>',
+        size: 'md',
+        buttons: [
+          { text: 'Cancel', class: 'btn-secondary', value: 'cancel' },
+          { text: 'Discard Changes', class: 'btn-warning', value: 'discard' },
+          { text: 'Save', class: 'btn-primary', value: 'save' }
+        ]
+      });
+      
+      let message = '';
+      switch(result) {
+        case 'save':
+          message = 'Changes saved successfully!';
+          break;
+        case 'discard':
+          message = 'Changes discarded.';
+          break;
+        case 'cancel':
+          message = 'Action cancelled.';
+          break;
+      }
+      
+      await Dialog.alert({
+        message: message,
+        title: 'Result',
+        type: result === 'save' ? 'success' : 'info'
+      });
+    } catch (error) {
+      console.log('Dialog dismissed');
+    }
+  }
+
   async onActionShowCodeExample() {
     const exampleCode = `// Example Dialog Creation
 const dialog = new Dialog({

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import path from 'path'
+import mojoTemplatesPlugin from './vite-plugin-templates.js'
 
 export default defineConfig({
   // Root directory - serves from project root
@@ -70,5 +71,13 @@ export default defineConfig({
   define: {
     __MOJO_VERSION__: JSON.stringify('2.0.0'),
     __DEV__: JSON.stringify(process.env.NODE_ENV !== 'production')
-  }
+  },
+  
+  // Plugins
+  plugins: [
+    // Auto-compile templates during development
+    mojoTemplatesPlugin({
+      watch: true  // Enable watching for template changes
+    })
+  ]
 })

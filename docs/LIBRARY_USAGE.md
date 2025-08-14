@@ -8,11 +8,13 @@ MOJO Framework is distributed as `web-mojo` on npm to avoid naming conflicts whi
 
 1. [Installation](#installation)
 2. [Basic Usage](#basic-usage)
-3. [Development Linking](#development-linking)
-4. [Import Methods](#import-methods)
-5. [Development Workflow](#development-workflow)
-6. [API Reference](#api-reference)
-7. [Troubleshooting](#troubleshooting)
+3. [CSS and Styles](#css-and-styles)
+4. [Templates](#templates)
+5. [Development Linking](#development-linking)
+6. [Import Methods](#import-methods)
+7. [Development Workflow](#development-workflow)
+8. [API Reference](#api-reference)
+9. [Troubleshooting](#troubleshooting)
 
 ## Installation
 
@@ -107,6 +109,94 @@ app.start();
 </body>
 </html>
 ```
+
+## CSS and Styles
+
+### Importing Framework Styles
+
+MOJO provides multiple ways to import CSS:
+
+```javascript
+// Import all framework styles (recommended)
+import 'web-mojo/css';
+// or
+import 'web-mojo/styles';
+
+// Import specific style modules
+import 'web-mojo/css/portal.css';
+import 'web-mojo/css/components.css';
+
+// Always include Bootstrap (peer dependency)
+import 'bootstrap/dist/css/bootstrap.min.css';
+```
+
+### Using CDN
+
+```html
+<!-- Bootstrap (required) -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- MOJO Framework styles -->
+<link href="https://unpkg.com/web-mojo/dist/web-mojo.css" rel="stylesheet">
+```
+
+### CSS Variables
+
+Customize the framework appearance with CSS variables:
+
+```css
+:root {
+  --mojo-primary-color: #007bff;
+  --mojo-sidebar-width: 250px;
+  --mojo-nav-height: 60px;
+  --mojo-font-family: system-ui, sans-serif;
+}
+```
+
+## Templates
+
+### Using Framework Templates
+
+MOJO includes pre-built templates for common components:
+
+```javascript
+// Import templates at build time (with Vite/Webpack)
+import loginTemplate from 'web-mojo/templates/auth/LoginPage.mst?raw';
+import tableTemplate from 'web-mojo/templates/components/TablePage.mst?raw';
+
+// Use in your components
+import mustache from 'web-mojo/utils/mustache';
+
+class LoginPage extends Page {
+  render() {
+    return mustache.render(loginTemplate, this.data);
+  }
+}
+```
+
+### Runtime Template Loading
+
+```javascript
+class MyPage extends Page {
+  async loadTemplate() {
+    const response = await fetch('/node_modules/web-mojo/dist/templates/components/TablePage.mst');
+    this.template = await response.text();
+  }
+  
+  render() {
+    return mustache.render(this.template, this.data);
+  }
+}
+```
+
+### Available Templates
+
+- `auth/LoginPage.mst` - Login form template
+- `auth/RegisterPage.mst` - Registration form template
+- `auth/ForgotPasswordPage.mst` - Password reset template
+- `components/TablePage.mst` - Data table template
+
+For detailed information about CSS and templates, see the [Assets and Styles Guide](ASSETS_AND_STYLES.md).
 
 ## Development Linking
 
@@ -531,6 +621,7 @@ window.MOJO_DEBUG = true;
 ## Support and Resources
 
 - **Documentation:** [https://github.com/yourusername/web-mojo/docs](https://github.com/yourusername/web-mojo/docs)
+- **Assets & Styles Guide:** [Assets and Styles Documentation](ASSETS_AND_STYLES.md)
 - **Examples:** [https://github.com/yourusername/web-mojo/examples](https://github.com/yourusername/web-mojo/examples)
 - **Issues:** [https://github.com/yourusername/web-mojo/issues](https://github.com/yourusername/web-mojo/issues)
 - **NPM Package:** [https://www.npmjs.com/package/web-mojo](https://www.npmjs.com/package/web-mojo)

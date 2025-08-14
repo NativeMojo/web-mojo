@@ -70,7 +70,7 @@ class Page extends View {
   async onParams(params = {}, query = {}) {
     const paramsChanged = JSON.stringify(params) !== JSON.stringify(this.params);
     const queryChanged = JSON.stringify(query) !== JSON.stringify(this.query);
-    
+
     this.params = params;
     this.query = query;
 
@@ -140,18 +140,16 @@ class Page extends View {
   }
 
   /**
-   * Handle hello action - example from design doc
-   */
-  async onActionHello() {
-    console.log(`Hello action triggered on page: ${this.pageName}`);
-    this.showSuccess('Hello from ' + this.pageName);
-  }
-
-  /**
    * Handle default action - fallback from design doc
    */
   async onActionDefault() {
     console.log(`Default action triggered on page: ${this.pageName}`);
+  }
+
+  async onActionNavigate(event, element) {
+      event.preventDefault();
+      const page = element.dataset.page;
+      this.getApp().showPage(page);
   }
 
   /**
@@ -160,7 +158,7 @@ class Page extends View {
    */
   captureState() {
     if (!this.element) return null;
-    
+
     return {
       scrollTop: this.element.scrollTop,
       formData: this.captureFormData(),
@@ -174,7 +172,7 @@ class Page extends View {
    */
   restoreState(state) {
     if (!state || !this.element) return;
-    
+
     this.element.scrollTop = state.scrollTop || 0;
     this.restoreFormData(state.formData);
     if (state.custom) {
@@ -189,7 +187,7 @@ class Page extends View {
   captureFormData() {
     const data = {};
     if (!this.element) return data;
-    
+
     this.element.querySelectorAll('input, select, textarea').forEach(field => {
       if (field.name) {
         if (field.type === 'checkbox') {
@@ -203,7 +201,7 @@ class Page extends View {
         }
       }
     });
-    
+
     return data;
   }
 
@@ -213,7 +211,7 @@ class Page extends View {
    */
   restoreFormData(formData) {
     if (!formData || !this.element) return;
-    
+
     Object.entries(formData).forEach(([name, value]) => {
       const field = this.element.querySelector(`[name="${name}"]`);
       if (field) {
@@ -304,31 +302,6 @@ class Page extends View {
       title: this.pageOptions.title,
       description: this.pageOptions.description
     };
-  }
-
-  /**
-   * Handle action dispatch - extends View's action handling
-   * @param {string} action - Action name
-   * @param {Event} event - DOM event
-   * @param {HTMLElement} element - Source element
-   */
-  async handleAction(action, event, element) {
-    // First try page-specific action handlers using design doc naming
-    const pageMethodName = `on_action_${action}`;
-
-    if (typeof this[pageMethodName] === 'function') {
-      try {
-        await this[pageMethodName](event, element);
-        return;
-      } catch (error) {
-        console.error(`Error in page action ${action}:`, error);
-        this.handleActionError(action, error, event, element);
-        return;
-      }
-    }
-
-    // Fallback to View's action handling
-    await super.handleAction(action, event, element);
   }
 
   /**
@@ -436,12 +409,12 @@ class Page extends View {
     if (this.app && this.app.router) {
       return this.app.router.navigate(route, options);
     }
-    
+
     // Fallback to MOJO global router
     if (typeof window !== 'undefined' && window.MOJO?.router) {
       return window.MOJO.router.navigate(route, options);
     }
-    
+
     console.error('No router available for navigation');
   }
 

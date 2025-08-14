@@ -73,9 +73,11 @@
                             </div>
 
                             <div class="d-grid mb-3">
-                                <button type="submit" class="btn btn-primary" {{#isLoading}}disabled{{/isLoading}}>
+                                <button type="submit" class="btn btn-primary"{{#isLoading}} disabled{{/isLoading}}>
                                     {{#isLoading}}
-                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    <span class="spinner-border spinner-border-sm me-2" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </span>
                                     Creating account...
                                     {{/isLoading}}
                                     {{^isLoading}}

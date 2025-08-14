@@ -132,6 +132,7 @@ See [Library Usage Guide](docs/LIBRARY_USAGE.md) for detailed instructions.
 - **🛣️ Modern Navigation** - SEO-friendly href-based routing with copy-link support
 - **🎨 Component System** - Reusable TopNav, Sidebar, Table, and Form components
 - **🔄 Data Layer** - RestModel and Collection for API integration
+- **🔐 Authentication** - Built-in AuthService with JWT utilities and passkey support
 - **📋 Template Engine** - Mustache.js for dynamic content rendering
 - **📦 Multiple Formats** - ESM, CommonJS, and UMD builds
 

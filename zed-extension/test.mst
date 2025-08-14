@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{pageTitle}} - MOJO Test</title>
+</head>
+<body>
+    {{! This is a mustache comment - should be highlighted }}
+
+    <!-- HTML comment for comparison -->
+
+    <div class="container">
+        <h1>{{title}}</h1>
+
+        {{! Variables - different types }}
+        <p>Hello {{name}}!</p>
+        <p>Your email: {{email}}</p>
+        <p>Unescaped HTML: {{&htmlContent}}</p>
+        <p>Triple-brace unescaped: {{{rawHtml}}}</p>
+
+        {{! Section with array iteration }}
+        {{#users}}
+        <div class="user-card">
+            <h3>{{name}}</h3>
+            <p>Email: {{email}}</p>
+            <p>Age: {{age}}</p>
+
+            {{! Nested section }}
+            {{#permissions}}
+            <span class="badge">{{.}}</span>
+            {{/permissions}}
+        </div>
+        {{/users}}
+
+        {{! Inverted section }}
+        {{^users}}
+        <p class="no-data">No users found</p>
+        {{/users}}
+
+        {{! MOJO-specific dot-prefix syntax }}
+        {{#items}}
+        <div class="item">
+            <!-- Without dot prefix (walks up chain) -->
+            <p>Item: {{name}}</p>
+            <p>Parent name visible: {{parentName}}</p>
+
+            <!-- With dot prefix (current context only) -->
+            <p>Item: {{.name}}</p>
+            <p>Parent name NOT visible: {{.parentName}}</p>
+            <p>Has local parentName: {{#.parentName}}Yes{{/.parentName}}{{^.parentName}}No{{/.parentName}}</p>
+        </div>
+        {{/items}}
+
+        {{! MOJO-specific iterator operator }}
+        <ul>
+        {{#.categories|iter}}
+            <li>{{name}} ({{count}} items)</li>
+            {{#.subcategories|iter}}
+                <ul>
+                    <li>{{name}}</li>
+                </ul>
+            {{/.subcategories|iter}}
+        {{/.categories|iter}}
+        </ul>
+
+        {{! Conditional sections }}
+        {{#isLoggedIn}}
+        <div class="user-menu">
+            <p>Welcome back, {{user.name}}!</p>
+            {{> userMenu}}
+        </div>
+        {{/isLoggedIn}}
+
+        {{^isLoggedIn}}
+        <div class="login-form">
+            {{> loginForm}}
+        </div>
+        {{/isLoggedIn}}
+
+        {{! Complex nested example }}
+        {{#dashboard}}
+            <div class="dashboard">
+                <h2>{{title}}</h2>
+
+                {{#widgets}}
+                <div class="widget widget-{{type}}">
+                    <h3>{{title}}</h3>
+
+                    {{#data}}
+                        {{#.items|iter}}
+                        <div class="data-row">
+                            <span class="label">{{.label}}</span>
+                            <span class="value">{{.value}}</span>
+
+                            {{! Deep nesting with mixed contexts }}
+                            {{#.details}}
+                            <div class="details">
+                                <p>{{description}}</p>
+                                <small>Updated: {{lastUpdated}}</small>
+                            </div>
+                            {{/.details}}
+                        </div>
+                        {{/.items|iter}}
+                    {{/data}}
+
+                    {{^data}}
+                    <p class="no-data">No data available</p>
+                    {{/data}}
+                </div>
+                {{/widgets}}
+            </div>
+        {{/dashboard}}
+
+        {{! Partials }}
+        <footer>
+            {{> footer}}
+        </footer>
+    </div>
+
+    {{! Multi-line comment
+        This should all be highlighted as a comment
+        including this line
+        and this one too }}
+</body>
+</html>

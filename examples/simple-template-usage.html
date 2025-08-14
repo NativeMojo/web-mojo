@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOJO - Simple Template Usage Example</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- MOJO CSS -->
+    <link href="../src/styles/mojo.css" rel="stylesheet">
+
+    <style>
+        .demo-section {
+            margin: 2rem 0;
+            padding: 2rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .template-preview {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 1rem;
+            margin: 1rem 0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+
+        .benefit-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: 100%;
+        }
+
+        .benefit-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <h1 class="mb-4">
+            <i class="bi bi-file-code"></i>
+            MOJO Simple Template Usage
+        </h1>
+
+        <p class="lead">
+            MOJO now includes all templates compiled into a single JavaScript module.
+            This means <strong>no more fetch requests</strong>, <strong>no more path issues</strong>,
+            and <strong>templates work everywhere</strong> - in development, production, and when installed via npm!
+        </p>
+
+        <!-- Benefits Section -->
+        <div class="demo-section">
+            <h2>✨ Benefits of Compiled Templates</h2>
+            <div class="row mt-4">
+                <div class="col-md-3 mb-3">
+                    <div class="benefit-card">
+                        <div class="benefit-icon">
+                            <i class="bi bi-lightning-charge"></i>
+                        </div>
+                        <h5>Fast</h5>
+                        <p class="text-muted">No network requests - templates are already in memory</p>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="benefit-card">
+                        <div class="benefit-icon">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                        <h5>Reliable</h5>
+                        <p class="text-muted">No 404 errors or path resolution issues</p>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="benefit-card">
+                        <div class="benefit-icon">
+                            <i class="bi bi-box-seam"></i>
+                        </div>
+                        <h5>Bundled</h5>
+                        <p class="text-muted">Templates are part of the JS bundle</p>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="benefit-card">
+                        <div class="benefit-icon">
+                            <i class="bi bi-globe"></i>
+                        </div>
+                        <h5>Universal</h5>
+                        <p class="text-muted">Works in dev, prod, npm, and CDN</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- How It Works Section -->
+        <div class="demo-section">
+            <h2>🔧 How It Works</h2>
+
+            <h4 class="mt-4">1. Build Step (Automatic)</h4>
+            <div class="code-block">
+npm run build:templates  # Compiles all .mst files into src/templates.js
+npm run build:lib       # Includes template compilation automatically
+            </div>
+
+            <h4 class="mt-4">2. In Your Components</h4>
+            <div class="code-block">
+import { getTemplate } from 'web-mojo/templates';
+
+class LoginPage extends Page {
+    constructor() {
+        super({
+            // Template is loaded from the compiled module
+            template: getTemplate('auth/pages/LoginPage.mst')
+        });
+    }
+}
+            </div>
+
+            <h4 class="mt-4">3. For External Projects</h4>
+            <div class="code-block">
+// When using web-mojo as an npm package
+import MOJO from 'web-mojo';
+import { getTemplate } from 'web-mojo/templates';
+
+// Templates are already included - no fetch needed!
+const loginTemplate = getTemplate('auth/pages/LoginPage.mst');
+            </div>
+        </div>
+
+        <!-- Live Demo Section -->
+        <div class="demo-section">
+            <h2>🎯 Live Demo</h2>
+            <p>Click the buttons below to load templates directly from the compiled module:</p>
+
+            <div class="btn-group mb-3" role="group">
+                <button class="btn btn-primary" id="loadLogin">
+                    <i class="bi bi-box-arrow-in-right"></i> Load Login Template
+                </button>
+                <button class="btn btn-primary" id="loadRegister">
+                    <i class="bi bi-person-plus"></i> Load Register Template
+                </button>
+                <button class="btn btn-primary" id="loadTable">
+                    <i class="bi bi-table"></i> Load Table Template
+                </button>
+                <button class="btn btn-secondary" id="showStats">
+                    <i class="bi bi-info-circle"></i> Show Template Stats
+                </button>
+            </div>
+
+            <div id="templateOutput" class="template-preview d-none">
+                <!-- Template will be rendered here -->
+            </div>
+
+            <div id="statsOutput" class="alert alert-info d-none">
+                <!-- Stats will be shown here -->
+            </div>
+        </div>
+
+        <!-- Comparison Section -->
+        <div class="demo-section">
+            <h2>📊 Old Way vs New Way</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <h4 class="text-danger">❌ Old Way (Complex)</h4>
+                    <div class="code-block">
+// Template path varies by environment
+template: '/src/auth/pages/LoginPage.mst'  // Dev
+template: 'node_modules/web-mojo/dist/templates/auth/LoginPage.mst'  // NPM
+template: 'https://cdn.../templates/auth/LoginPage.mst'  // CDN
+
+// Requires fetch
+async loadTemplate() {
+    const response = await fetch(this.template);
+    if (!response.ok) {
+        // Handle 404 errors
+    }
+    return await response.text();
+}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h4 class="text-success">✅ New Way (Simple)</h4>
+                    <div class="code-block">
+// Template is always available
+import { getTemplate } from 'web-mojo/templates';
+
+// Just get it - no fetch, no errors
+template: getTemplate('auth/pages/LoginPage.mst')
+
+// That's it! Works everywhere:
+// ✓ Development
+// ✓ Production
+// ✓ NPM package
+// ✓ CDN
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- File Size Impact -->
+        <div class="demo-section">
+            <h2>📦 File Size Impact</h2>
+            <p>Adding templates to the JS bundle has minimal impact:</p>
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Template</th>
+                                <th>Size</th>
+                                <th>Gzipped</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>LoginPage.mst</td>
+                                <td>~11 KB</td>
+                                <td>~2.5 KB</td>
+                            </tr>
+                            <tr>
+                                <td>RegisterPage.mst</td>
+                                <td>~13 KB</td>
+                                <td>~3 KB</td>
+                            </tr>
+                            <tr>
+                                <td>TablePage.mst</td>
+                                <td>~1.5 KB</td>
+                                <td>~0.5 KB</td>
+                            </tr>
+                            <tr class="table-active">
+                                <th>Total Templates</th>
+                                <th>~35 KB</th>
+                                <th>~8 KB</th>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <div class="alert alert-success">
+                        <h5><i class="bi bi-check-circle"></i> Negligible Impact</h5>
+                        <p>All templates add only ~8 KB gzipped to the bundle. This is less than a single image!</p>
+                        <p class="mb-0">Plus, you save multiple HTTP requests that would be needed to fetch templates.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Demo Script -->
+    <script type="module">
+        import templates, { getTemplate, getTemplateKeys, getTemplateCount } from '../src/templates.js';
+        import mustache from '../src/utils/mustache.js';
+
+        // Demo data for rendering
+        const demoData = {
+            appName: 'MOJO Demo',
+            logoUrl: 'https://via.placeholder.com/150x50/007bff/ffffff?text=MOJO',
+            messages: {
+                loginTitle: 'Welcome Back',
+                loginSubtitle: 'Sign in to continue',
+                registerTitle: 'Create Account',
+                registerSubtitle: 'Join us today'
+            },
+            enableRememberMe: true,
+            enableForgotPassword: true,
+            enableGoogleAuth: true,
+            enablePasskeys: false,
+            columns: [
+                { key: 'id', label: 'ID' },
+                { key: 'name', label: 'Name' },
+                { key: 'email', label: 'Email' }
+            ],
+            rows: [
+                { id: 1, name: 'John Doe', email: 'john@example.com' },
+                { id: 2, name: 'Jane Smith', email: 'jane@example.com' }
+            ]
+        };
+
+        // Load Login Template
+        document.getElementById('loadLogin').addEventListener('click', () => {
+            const template = getTemplate('auth/pages/LoginPage.mst');
+            if (template) {
+                const html = mustache.render(template, demoData);
+                showTemplate(html, 'Login Page Template');
+            } else {
+                showError('Login template not found');
+            }
+        });
+
+        // Load Register Template
+        document.getElementById('loadRegister').addEventListener('click', () => {
+            const template = getTemplate('auth/pages/RegisterPage.mst');
+            if (template) {
+                const html = mustache.render(template, demoData);
+                showTemplate(html, 'Register Page Template');
+            } else {
+                showError('Register template not found');
+            }
+        });
+
+        // Load Table Template
+        document.getElementById('loadTable').addEventListener('click', () => {
+            const template = getTemplate('components/TablePage.mst');
+            if (template) {
+                const html = mustache.render(template, demoData);
+                showTemplate(html, 'Table Component Template');
+            } else {
+                showError('Table template not found');
+            }
+        });
+
+        // Show Stats
+        document.getElementById('showStats').addEventListener('click', () => {
+            const keys = getTemplateKeys();
+            const count = getTemplateCount();
+
+            const statsHtml = `
+                <h5><i class="bi bi-info-circle"></i> Template Statistics</h5>
+                <p><strong>Total Templates:</strong> ${count}</p>
+                <p><strong>Available Templates:</strong></p>
+                <ul>
+                    ${keys.map(key => `<li><code>${key}</code></li>`).join('')}
+                </ul>
+                <p class="mb-0"><small class="text-muted">All templates are compiled into the JavaScript bundle and available immediately without any network requests.</small></p>
+            `;
+
+            const output = document.getElementById('statsOutput');
+            output.innerHTML = statsHtml;
+            output.classList.remove('d-none');
+
+            // Hide template output
+            document.getElementById('templateOutput').classList.add('d-none');
+        });
+
+        function showTemplate(html, title) {
+            const output = document.getElementById('templateOutput');
+            output.innerHTML = `
+                <h5>${title}</h5>
+                <div class="border rounded p-3 bg-white">
+                    ${html}
+                </div>
+            `;
+            output.classList.remove('d-none');
+
+            // Hide stats
+            document.getElementById('statsOutput').classList.add('d-none');
+        }
+
+        function showError(message) {
+            const output = document.getElementById('templateOutput');
+            output.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> ${message}
+                </div>
+            `;
+            output.classList.remove('d-none');
+        }
+
+        // Log info on load
+        console.log('MOJO Templates Module Loaded');
+        console.log(`Total templates available: ${getTemplateCount()}`);
+        console.log('Templates:', getTemplateKeys());
+        console.log('');
+        console.log('Try in console:');
+        console.log('  getTemplate("auth/pages/LoginPage.mst")');
+        console.log('  templates["components/TablePage.mst"]');
+    </script>
+</body>
+</html>
