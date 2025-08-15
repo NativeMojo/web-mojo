@@ -23,6 +23,8 @@
 
 import dataFormatter from '../utils/DataFormatter.js';
 import View from '../core/View.js';
+import Dialog from './Dialog.js';
+
 
 class Table extends View {
   constructor(options = {}) {
@@ -49,14 +51,8 @@ class Table extends View {
 
     this.loading = false;
 
-    // Standard pagination properties
-    this.start = 0;  // Starting index (0-based)
-    this.size = options.size || options.defaultPageSize || 10;  // Items per page
-    this.count = 0;  // Total items available
-
-    this.sortBy = null;
-    this.sortDirection = 'asc';
-    this.activeFilters = {};
+    // Total items available (kept for local filtering)
+    this.count = 0;
     this.selectedItems = new Set();
 
     // Configuration
@@ -83,6 +79,95 @@ class Table extends View {
     this.initCollection();
   }
 
+  // Getters and setters that proxy to collection.params as single source of truth
+  get start() {
+    return this.collection?.params?.start || 0;
+  }
+
+  set start(value) {
+    if (this.collection) {
+      this.collection.params.start = value;
+    }
+  }
+
+  get size() {
+    return this.collection?.params?.size || this.options.size || 10;
+  }
+
+  set size(value) {
+    if (this.collection) {
+      this.collection.params.size = value;
+    }
+  }
+
+  /**
+   * Set start index with proper event handling and validation
+   * @param {number} value - Start index
+   * @param {boolean} emit - Whether to emit params-changed event (default: true)
+   */
+  setStart(value, emit = true) {
+    if (!this.collection) return;
+
+    const newStart = Math.max(0, parseInt(value) || 0);
+    if (this.collection.params.start !== newStart) {
+      this.collection.params.start = newStart;
+      if (emit) {
+        this.emit('params-changed');
+      }
+    }
+  }
+
+  /**
+   * Set page size with proper event handling and validation
+   * @param {number} value - Page size
+   * @param {boolean} emit - Whether to emit params-changed event (default: true)
+   */
+  setSize(value, emit = true) {
+    if (!this.collection) return;
+
+    const newSize = Math.max(1, parseInt(value) || 10);
+    if (this.collection.params.size !== newSize) {
+      this.collection.params.size = newSize;
+      if (emit) {
+        this.emit('params-changed');
+      }
+    }
+  }
+
+  get sortBy() {
+    const sort = this.collection?.params?.sort;
+    if (!sort) return null;
+    return sort.startsWith('-') ? sort.slice(1) : sort;
+  }
+
+  get sortDirection() {
+    const sort = this.collection?.params?.sort;
+    if (!sort) return 'asc';
+    return sort.startsWith('-') ? 'desc' : 'asc';
+  }
+
+  setSort(field, direction = 'asc') {
+    if (this.collection) {
+      this.collection.params.sort = direction === 'desc' ? `-${field}` : field;
+    }
+  }
+
+  get activeFilters() {
+    if (!this.collection?.params) return {};
+    const { start, size, sort, ...filters } = this.collection.params;
+    return filters;
+  }
+
+  setFilter(key, value) {
+    if (this.collection) {
+      if (value === null || value === undefined || value === '') {
+        delete this.collection.params[key];
+      } else {
+        this.collection.params[key] = value;
+      }
+    }
+  }
+
   /**
    * Cleanup method - override View's destroy
    */
@@ -91,7 +176,6 @@ class Table extends View {
       clearTimeout(this.searchTimeout);
       this.searchTimeout = null;
     }
-    this._eventsBound = false;
 
     // Call parent destroy
     await super.destroy();
@@ -102,7 +186,7 @@ class Table extends View {
    */
   async getTemplate() {
     // Load data if needed
-    await this.loadDataIfNeeded();
+    // await this.loadDataIfNeeded();
 
     // Return the table HTML
     return this.buildTableHTML();
@@ -119,8 +203,7 @@ class Table extends View {
     if (!this.options.preloaded) {
       try {
         if (this.collection && typeof this.collection.fetch === 'function') {
-          const params = this.buildQueryParams();
-          await this.collection.fetch({ params });
+          await this.collection.fetch();
           hasData = this.collection.length > 0;
         }
       } catch (error) {
@@ -152,12 +235,7 @@ class Table extends View {
       try {
         // Only attempt fetch if Rest client is available
         if (this.collection.constructor.Rest) {
-          const params = {
-            ...this.collectionParams,
-            ...this.buildQueryParams()
-          };
-
-          await this.collection.fetch({ params });
+          await this.collection.fetch();
         } else {
           console.info('Table: No REST client available, using existing data or empty table');
         }
@@ -218,18 +296,19 @@ class Table extends View {
     // Set up collection event listeners with render loop protection
     this.collection.on('update', () => {
       // Only re-render if we're mounted and not already rendering
+      console.log("Table:collection:update event");
       if (this.rendered && this.mounted && !this.isRendering) {
         this.render();
       }
     });
 
-    this.collection.on('add', () => {
-      // Only re-render if we're mounted and not already rendering
-      // Skip during initial collection load
-      if (this.rendered && this.mounted && !this.isRendering && !this.collection.loading) {
-        this.render();
-      }
-    });
+    // this.collection.on('add', () => {
+    //   // Only re-render if we're mounted and not already rendering
+    //   // Skip during initial collection load
+    //   if (this.rendered && this.mounted && !this.isRendering && !this.collection.loading) {
+    //     this.render();
+    //   }
+    // });
 
     this.collection.on('remove', () => {
       // Only re-render if we're mounted and not already rendering
@@ -242,7 +321,20 @@ class Table extends View {
   initCollection() {
     // Only create collection if we don't already have one (preserve preloaded collections)
     if (this.Collection && !this.collection) {
-      this.collection = new this.Collection();
+      this.collection = new this.Collection(this.Collection.Model || Object, {
+        size: this.options.size || 10,
+        params: {
+          start: 0,
+          size: this.options.size || 10,
+          ...this.collectionParams
+        },
+        preloaded: this.options.preloaded,
+        restEnabled: !this.options.preloaded
+      });
+    }
+
+    if (this.collection) {
+        this.initTableListeners();
     }
   }
 
@@ -270,29 +362,7 @@ class Table extends View {
    * Build query parameters for API requests
    * @returns {object} Query parameters
    */
-  buildQueryParams() {
-    const params = {};
 
-    // Add pagination using standard terminology
-    if (this.options.paginated) {
-      params.start = this.start;
-      params.size = this.size;
-    }
-
-    // Sorting - use single sort parameter with prefix format for REST APIs
-    if (this.sortBy) {
-      params.sort = this.sortDirection === 'desc' ? `-${this.sortBy}` : this.sortBy;
-    }
-
-    // Filters - use simple fieldname=value format
-    Object.entries(this.activeFilters).forEach(([key, value]) => {
-      if (value !== null && value !== undefined && value !== '') {
-        params[key] = value;
-      }
-    });
-
-    return params;
-  }
 
   /**
    * Build table HTML structure
@@ -449,6 +519,7 @@ class Table extends View {
                 class="form-control"
                 placeholder="Search ${this.options.searchPlaceholder || '...'}"
                 data-filter="search"
+                data-change-action="apply-search"
                 value="${searchValue}"
                 aria-label="Search">
        </div>
@@ -466,7 +537,7 @@ class Table extends View {
         <label class="form-label fw-bold small">Search</label>
         <div class="input-group input-group-sm">
           <input type="text" class="form-control" placeholder="Search..."
-                 data-filter="search" value="${this.activeFilters.search || ''}">
+                 data-filter="search" data-change-action="apply-search" value="${this.activeFilters.search || ''}">
           <button class="btn btn-primary" type="button" data-action="apply-search">
             <i class="bi bi-search"></i>
           </button>
@@ -481,7 +552,7 @@ class Table extends View {
       <div class="col-auto">
         <div class="input-group input-group-sm" style="width: 250px;">
           <input type="text" class="form-control" placeholder="Search..."
-                 data-filter="search" value="${this.activeFilters.search || ''}">
+                 data-filter="search" data-change-action="apply-search" value="${this.activeFilters.search || ''}">
           <button class="btn btn-outline-secondary" type="button" data-action="apply-search">
             <i class="bi bi-search"></i>
           </button>
@@ -509,7 +580,7 @@ class Table extends View {
         return `
           <div class="mb-3">
             <label class="form-label fw-bold small">${label}</label>
-            <select class="form-select form-select-sm" data-filter="${key}" data-action="apply-filter" onchange="this.dispatchEvent(new Event('click', {bubbles: true}))">
+            <select class="form-select form-select-sm" data-filter="${key}" data-change-action="apply-filter">
               <option value="">${filter.placeholder || 'All'}</option>
               ${filter.options.map(opt =>
                 `<option value="${opt.value}" ${value === opt.value ? 'selected' : ''}>
@@ -525,7 +596,7 @@ class Table extends View {
           <div class="mb-3">
             <label class="form-label fw-bold small">${label}</label>
             <input type="date" class="form-control form-control-sm" data-filter="${key}"
-                   value="${value}" data-action="apply-filter">
+                   value="${value}" data-change-action="apply-filter">
           </div>
         `;
 
@@ -1177,156 +1248,7 @@ class Table extends View {
     return this.sortDirection === 'asc' ? 'sort-asc' : 'sort-desc';
   }
 
-  /**
-   * Bind table-specific event listeners
-   */
-  bindTableEvents() {
-    if (!this.element) return;
 
-    // Prevent duplicate event listeners
-    if (this._eventsBound) return;
-    this._eventsBound = true;
-
-    // Store references to bound functions for cleanup
-    if (!this._boundEventHandlers) {
-      this._boundEventHandlers = {};
-    }
-
-    // Remove existing click listener if it exists
-    if (this._boundEventHandlers.click) {
-      this.element.removeEventListener('click', this._boundEventHandlers.click);
-    }
-
-    // Create bound click handler
-    this._boundEventHandlers.click = (e) => {
-      const action = e.target.getAttribute('data-action');
-      const closestAction = e.target.closest('[data-action]')?.getAttribute('data-action');
-      const actualAction = action || closestAction;
-
-      // Prevent default action for all data-action elements (especially pagination links)
-      if (actualAction) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-
-      // Handle specific actions
-      switch (actualAction) {
-        case 'apply-search':
-          this.handleSearchInput(e);
-          setTimeout(() => this.closeFilterDropdown(), 100);
-          break;
-        case 'apply-filter':
-          if (e.target.tagName === 'BUTTON') {
-            this.handleFilterFromDropdown(e);
-            setTimeout(() => this.closeFilterDropdown(), 100);
-          }
-          break;
-        case 'refresh':
-          this.handleRefresh(e);
-          break;
-        case 'add':
-          this.handleAdd(e);
-          break;
-        case 'export':
-          this.handleExport(e);
-          break;
-
-        case 'remove-filter':
-          this.handleRemoveFilter(e);
-          break;
-
-        case 'clear-all-filters':
-          this.handleClearAllFilters(e);
-          break;
-
-        case 'select-all':
-          e.stopPropagation();
-          const isCurrentlyAllSelected = this.isAllSelected();
-          this.handleSelectAll(!isCurrentlyAllSelected);
-          break;
-
-        case 'select-item':
-          e.stopPropagation();
-          const itemId = e.target.closest('[data-id]')?.getAttribute('data-id');
-          if (itemId) {
-            const isCurrentlySelected = this.selectedItems.has(itemId);
-            this.handleSelectItem(itemId, !isCurrentlySelected);
-          }
-          break;
-
-        default:
-          // Handle other actions (page, sort, delete, etc.)
-          // Ignore clicks on select elements - they should only trigger on 'change'
-          if (actualAction && !['page-size'].includes(actualAction) && !e.target.matches('select')) {
-            this.handleAction(actualAction, e, e.target.closest('[data-action]') || e.target);
-          }
-          break;
-      }
-
-      // Prevent dropdown from closing for clicks inside dropdown menu
-      // but allow form elements to work normally
-      const dropdownMenu = e.target.closest('.dropdown-menu');
-      if (dropdownMenu) {
-        // Don't prevent default browser behavior for form elements
-        if (!e.target.matches('select, option, input[type="text"], input[type="date"], button')) {
-          e.stopPropagation();
-        }
-      }
-
-      // Prevent clicks on select elements from triggering renders
-      if (e.target.matches('select[data-action="page-size"]')) {
-        e.stopPropagation();
-        return;
-      }
-    };
-
-    // Use event delegation with a single click listener
-    this.element.addEventListener('click', this._boundEventHandlers.click);
-
-    // Remove existing change listener if it exists
-    if (this._boundEventHandlers.change) {
-      this.element.removeEventListener('change', this._boundEventHandlers.change);
-    }
-
-    // Bind change events (for selects, etc.)
-    this._boundEventHandlers.change = async (e) => {
-      const action = e.target.getAttribute('data-action');
-
-      if (action === 'apply-filter') {
-        this.handleFilterFromDropdown(e);
-        // Close dropdown after applying filter
-        const dropdown = e.target.closest('.dropdown');
-        if (dropdown) {
-          const dropdownInstance = bootstrap.Dropdown.getInstance(dropdown.querySelector('[data-bs-toggle="dropdown"]'));
-          if (dropdownInstance) {
-            dropdownInstance.hide();
-          }
-        }
-      } else if (action === 'page-size') {
-        await this.handlePageSizeChange(parseInt(e.target.value));
-      }
-    };
-
-    // Handle change events for form elements
-    this.element.addEventListener('change', this._boundEventHandlers.change);
-
-    // Remove existing keydown listener if it exists
-    if (this._boundEventHandlers.keydown) {
-      this.element.removeEventListener('keydown', this._boundEventHandlers.keydown);
-    }
-
-    // Bind keydown events for Enter key in search
-    this._boundEventHandlers.keydown = (e) => {
-      if (e.key === 'Enter' && e.target.matches('[data-filter="search"]')) {
-        e.preventDefault();
-        this.handleSearchInput(e);
-        this.closeFilterDropdown();
-      }
-    };
-
-    // Handle Enter key in search inputs
-    this.element.addEventListener('keydown', this._boundEventHandlers.keydown);
-  }
 
   /**
    * Handle action events
@@ -1337,56 +1259,130 @@ class Table extends View {
   async handleAction(action, event, target) {
     if (!target) {
       console.warn('handleAction called with no target element');
-      return;
+      return false;
     }
 
-    const itemId = target.getAttribute('data-id');
-    const item = itemId ? this.collection?.get(itemId) : null;
+    try {
+      // Use the new handleAction method pattern that View expects
+      const methodName = `handleAction${action.charAt(0).toUpperCase() + action.slice(1).replace(/-([a-z])/g, (g) => g[1].toUpperCase())}`;
 
-    switch (action) {
-      case 'item-clicked':
-        await this.onItemClicked(item, event, target);
-        break;
+      if (typeof this[methodName] === 'function') {
+        await this[methodName](event, target);
+        return true;
+      }
 
-      case 'item-dlg':
-        const mode = target.getAttribute('data-mode') || 'view';
-        await this.onItemDialog(item, mode, event, target);
-        break;
-
-      case 'sort':
-        const field = target.getAttribute('data-field');
-        const direction = target.getAttribute('data-direction');
-        this.handleSort(field, direction);
-        break;
-
-      case 'page':
-        // Ensure we prevent navigation for pagination links
-        if (event) {
-          event.preventDefault();
-          event.stopPropagation();
-        }
-        const page = parseInt(target.getAttribute('data-page'));
-        await this.handlePageChange(page);
-        break;
-
-      case 'page-size':
-        // Only handle page-size on 'change' events, not clicks
-        if (event.type === 'click') {
-          break;
-        }
-        const newSize = parseInt(target.value);
-        await this.handlePageSizeChange(newSize);
-        break;
-
-
-
-      case 'delete-item':
-        if (confirm('Are you sure you want to delete this item?')) {
-          await this.handleDeleteItem(item);
-        }
-        break;
+      return false; // Action not handled
+    } catch (error) {
+      console.error(`Error handling action ${action}:`, error);
+      return true; // Handled with error
     }
   }
+
+  // Action handler methods following the new naming convention
+  async handleActionSort(event, element) {
+    const field = element.getAttribute('data-field');
+    const direction = element.getAttribute('data-direction');
+    await this.handleSort(field, direction);
+  }
+
+  async handleActionPage(event, element) {
+      // event.preventDefault();
+    const page = parseInt(element.getAttribute('data-page'));
+    await this.handlePageChange(page);
+  }
+
+  async handleActionPageSize(event, element) {
+    // Only handle on 'change' events, not clicks
+    if (event.type === 'click') return;
+    const newSize = parseInt(element.value);
+    await this.handlePageSizeChange(newSize);
+  }
+
+  async handleActionRefresh(event, element) {
+    await this.handleRefresh(event);
+  }
+
+  async handleActionAdd(event, element) {
+      const data = await Dialog.showForm({
+          title: `Create ${this.modelName}`,
+          formConfig: this.options.formCreate || this.options.formEdit,
+      });
+      if (data) {
+          let model = new this.collection.ModelClass();
+          await model.save(data);
+          await this.collection.fetch();
+      }
+  }
+
+  async handleActionExport(event, element) {
+    this.handleExport(event);
+  }
+
+
+
+  async handleActionApplyFilter(event, element) {
+    await this.handleFilterFromDropdown(event);
+
+    // Only close dropdown for button clicks, not for select/input changes
+    if (element.tagName === 'BUTTON') {
+      setTimeout(() => this.closeFilterDropdown(), 100);
+    }
+  }
+
+  async handleActionApplySearch(event, element) {
+    await this.handleSearchInput(event);
+
+    // Close dropdown for search in dropdown mode
+    if (this.options.searchPlacement === 'dropdown') {
+      setTimeout(() => this.closeFilterDropdown(), 100);
+    }
+  }
+
+  async handleActionRemoveFilter(event, element) {
+    await this.handleRemoveFilter(event);
+  }
+
+  async handleActionClearAllFilters(event, element) {
+    await this.handleClearAllFilters(event);
+  }
+
+  async handleActionSelectAll(event, element) {
+    event.stopPropagation();
+    const isCurrentlyAllSelected = this.isAllSelected();
+    this.handleSelectAll(!isCurrentlyAllSelected);
+  }
+
+  async handleActionSelectItem(event, element) {
+    event.stopPropagation();
+    const itemId = element.closest('[data-id]')?.getAttribute('data-id');
+    if (itemId) {
+      const isCurrentlySelected = this.selectedItems.has(itemId);
+      this.handleSelectItem(itemId, !isCurrentlySelected);
+    }
+  }
+
+  async handleActionItemClicked(event, element) {
+    const itemId = element.getAttribute('data-id');
+    const item = itemId ? this.collection?.get(itemId) : null;
+    await this.onItemClicked(item, event, element);
+  }
+
+  async handleActionItemDlg(event, element) {
+    const itemId = element.getAttribute('data-id');
+    const item = itemId ? this.collection?.get(itemId) : null;
+    const mode = element.getAttribute('data-mode') || 'view';
+    await this.onItemDialog(item, mode, event, element);
+  }
+
+  async handleActionDeleteItem(event, element) {
+    const itemId = element.getAttribute('data-id');
+    const item = itemId ? this.collection?.get(itemId) : null;
+    if (confirm('Are you sure you want to delete this item?')) {
+      await this.handleDeleteItem(item);
+    }
+  }
+
+
 
   /**
    * Handle item clicked - from design doc
@@ -1422,32 +1418,32 @@ class Table extends View {
    * @param {string} field - Field to sort by
    * @param {string} direction - Sort direction ('asc', 'desc', 'none')
    */
-  handleSort(field, direction) {
+  async handleSort(field, direction) {
     if (direction === 'none') {
-      this.sortBy = null;
-      this.sortDirection = 'asc';
+      if (this.collection) {
+        delete this.collection.params.sort;
+      }
     } else {
-      this.sortBy = field;
-      this.sortDirection = direction || 'asc';
+      this.setSort(field, direction || 'asc');
     }
 
-    this.start = 0;  // Reset to beginning when sorting changes
+    this.setStart(0, false);  // Reset to beginning when sorting changes (don't emit - handleSort already does)
 
-    // Dispatch sort change event
-    if (this.element) {
-      const event = new CustomEvent('sort:change', {
-        bubbles: true,
-        detail: { field: this.sortBy, direction: this.sortDirection }
-      });
-      this.element.dispatchEvent(event);
-    }
-
-    // For REST collections, re-fetch data with new sorting
+    // For REST collections, fetch data with new sorting
     if (this.collection?.restEnabled) {
-      this.fetchWithCurrentFilters();
+      try {
+        await this.collection.fetch();
+        this.render();
+      } catch (error) {
+        console.error('Failed to fetch sorted data:', error);
+        this.render(); // Render with existing data
+      }
     } else {
       this.render();
     }
+
+    // Emit params changed event for URL synchronization
+    this.emit('params-changed');
   }
 
   /**
@@ -1468,59 +1464,20 @@ class Table extends View {
       page = 1; // Wrap to first page
     }
 
-    this.start = (page - 1) * this.size;  // Update start index
+    // Update start index with proper event handling
+    this.setStart((page - 1) * this.size);
 
-    // Check if this collection uses REST for data fetching
+    // For REST collections, fetch data with new page
     if (this.collection?.restEnabled) {
-      // Server-side pagination: fetch new data from API
-      const start = this.start;
-
       try {
-        // Build sort parameter for API
-        const fetchParams = {
-          start: start,
-          size: this.size
-        };
-
-        // Add sort parameter with proper formatting
-        if (this.sortBy) {
-          fetchParams.sort = this.sortDirection === 'desc' ? `-${this.sortBy}` : this.sortBy;
-        }
-
-        // Add current filters - using activeFilters not this.filters
-        Object.entries(this.activeFilters).forEach(([key, value]) => {
-          if (value !== null && value !== undefined && value !== '') {
-            fetchParams[key] = value;
-          }
-        });
-
-        // Pass parameters directly, not wrapped in params object
-        await this.collection.fetch(fetchParams);
+        await this.collection.fetch();
+        this.render();
       } catch (error) {
         console.error('Failed to fetch page data:', error);
+        this.render(); // Render with existing data
       }
-    }
-
-    // Dispatch page change event
-    if (this.element) {
-      const currentPage = Math.floor(this.start / this.size) + 1;
-      const event = new CustomEvent('page:change', {
-        bubbles: true,
-        detail: { page: currentPage }
-      });
-      this.element.dispatchEvent(event);
-    }
-
-    // Always re-render after page change (REST gets new data, local re-slices existing data)
-    this.render();
-
-    // Dispatch page change event for external listeners (e.g., TablePage)
-    if (this.element) {
-      const currentPage = Math.floor(this.start / this.size) + 1;
-      this.element.dispatchEvent(new CustomEvent('page:change', {
-        bubbles: true,
-        detail: { page: currentPage }
-      }));
+    } else {
+      this.render();
     }
   }
 
@@ -1529,51 +1486,21 @@ class Table extends View {
    * @param {number} newSize - New page size
    */
   async handlePageSizeChange(newSize) {
-    this.size = newSize;
-    this.start = 0;  // Reset to beginning when page size changes
+    // Update size and reset to beginning with proper event handling
+    this.setSize(newSize, false);  // Don't emit yet
+    this.setStart(0);              // This will emit params-changed
 
-    // Check if this collection uses REST for data fetching
+    // For REST collections, fetch data with new page size
     if (this.collection?.restEnabled) {
-      // Server-side pagination: fetch new data from API with new page size
-
       try {
-        // Build sort parameter for API
-        const fetchParams = {
-          start: 0,
-          size: this.size
-        };
-
-        // Add sort parameter if sorting is active
-        // Add sort parameter with proper formatting
-        if (this.sortBy) {
-          fetchParams.sort = this.sortDirection === 'desc' ? `-${this.sortBy}` : this.sortBy;
-        }
-
-        // Add current filters
-        Object.entries(this.activeFilters).forEach(([key, value]) => {
-          if (value !== null && value !== undefined && value !== '') {
-            fetchParams[key] = value;
-          }
-        });
-
-        // Pass parameters directly, not wrapped in params object
-        await this.collection.fetch(fetchParams);
+        await this.collection.fetch();
+        this.render();
       } catch (error) {
         console.error('Failed to fetch data with new page size:', error);
+        this.render(); // Render with existing data
       }
-    }
-
-    this.render();
-
-    // Dispatch per page change event for external listeners
-    // Emit event for external listeners
-    if (this.element) {
-      this.element.dispatchEvent(new CustomEvent('size:change', {
-        bubbles: true,
-        detail: {
-          size: this.size
-        }
-      }));
+    } else {
+      this.render();
     }
   }
 
@@ -1637,7 +1564,7 @@ class Table extends View {
   * Handle filter changes
   * @param {HTMLElement} filterElement - Filter input element
   */
- handleSearchInput(e) {
+ async handleSearchInput(e) {
    let searchInput;
    if (e.target.matches('[data-filter="search"]')) {
      searchInput = e.target;
@@ -1647,40 +1574,34 @@ class Table extends View {
 
    const searchValue = searchInput.value.trim();
 
-   if (searchValue) {
-     this.activeFilters.search = searchValue;
-   } else {
-     delete this.activeFilters[key];
-   }
+   this.setFilter('search', searchValue);
 
-   this.start = 0; // Reset to beginning when filtering
+   this.setStart(0, false); // Reset to beginning when filtering (don't emit - method already does)
    // Update all search inputs to keep them in sync
    this.updateSearchInputs(searchValue);
 
-   this.start = 0;  // Reset to beginning when search changes
-
-   // Dispatch search change event
-   if (this.element) {
-     const event = new CustomEvent('search:change', {
-       bubbles: true,
-       detail: { search: searchValue }
-     });
-     this.element.dispatchEvent(event);
-   }
-
    // Fetch new data or re-render
    if (this.collection?.restEnabled) {
-     this.fetchWithCurrentFilters();
+     try {
+       await this.collection.fetch();
+       this.render();
+     } catch (error) {
+       console.error('Failed to fetch search results:', error);
+       this.render();
+     }
    } else {
      this.render();
    }
+
+   // Emit params changed event for URL synchronization
+   this.emit('params-changed');
  }
 
  /**
   * Handle refresh action
   * @param {Event} e - Click event
   */
- handleRefresh(e) {
+ async handleRefresh(e) {
    e?.preventDefault();
 
    // Emit refresh event
@@ -1694,35 +1615,19 @@ class Table extends View {
 
    // If we have a collection with REST enabled, fetch fresh data
    if (this.collection?.restEnabled) {
-     this.fetchWithCurrentFilters();
+     try {
+       await this.collection.fetch();
+       this.render();
+     } catch (error) {
+       console.error('Failed to refresh data:', error);
+       this.render();
+     }
    } else if (this.options.onRefresh) {
      // Call custom refresh handler if provided
      this.options.onRefresh();
    } else {
      // Just re-render
      this.render();
-   }
- }
-
- /**
-  * Handle add action
-  * @param {Event} e - Click event
-  */
- handleAdd(e) {
-   e?.preventDefault();
-
-   // Emit add event
-   if (this.element) {
-     const event = new CustomEvent('table:add', {
-       bubbles: true,
-       detail: { table: this }
-     });
-     this.element.dispatchEvent(event);
-   }
-
-   // Call custom add handler if provided
-   if (this.options.onAdd) {
-     this.options.onAdd();
    }
  }
 
@@ -1751,130 +1656,93 @@ class Table extends View {
    }
  }
 
- handleFilterFromDropdown(e) {
+ async handleFilterFromDropdown(e) {
    const filterElement = e.target.closest('[data-filter]');
    if (!filterElement) return;
 
    const filterKey = filterElement.getAttribute('data-filter');
    const filterValue = filterElement.value ? filterElement.value.trim() : '';
 
-   if (filterValue) {
-     this.activeFilters[filterKey] = filterValue;
+   this.setFilter(filterKey, filterValue);
+
+   this.setStart(0, false);  // Reset to beginning when filter changes (don't emit - method already does)
+
+   // For REST collections, fetch data with new filters
+   if (this.collection?.restEnabled) {
+     try {
+       await this.collection.fetch();
+       this.render();
+     } catch (error) {
+       console.error('Failed to fetch filtered data:', error);
+       this.render();
+     }
    } else {
-     delete this.activeFilters[filterKey];
+     this.render();
    }
 
-   this.start = 0;  // Reset to beginning when filter changes
-
-   // Dispatch filter change event
-   if (this.element) {
-     const event = new CustomEvent('filter:change', {
-       bubbles: true,
-       detail: { filters: this.activeFilters }
-     });
-     this.element.dispatchEvent(event);
-   }
-
-  // For REST collections, re-fetch data with new filters
-  if (this.collection?.restEnabled) {
-    this.fetchWithCurrentFilters();
-  } else {
-    this.render();
-  }
+   // Emit params changed event for URL synchronization
+   this.emit('params-changed');
 
 
 }
 
- handleRemoveFilter(e) {
+ async handleRemoveFilter(e) {
    const filterKey = e.target.getAttribute('data-filter');
-   delete this.activeFilters[filterKey];
+     this.setFilter(filterKey, null);
 
-   // If removing search filter, clear all search inputs
-   if (filterKey === 'search') {
-     this.updateSearchInputs('');
-   }
+     // If removing search filter, clear all search inputs
+     if (filterKey === 'search') {
+       this.updateSearchInputs('');
+     }
 
-   this.start = 0;  // Reset to beginning when removing filter
+     this.setStart(0, false);  // Reset to beginning when removing filter (don't emit - method already does)
 
-   // Dispatch filter change event
-   if (this.element) {
-     const event = new CustomEvent('filter:change', {
-       bubbles: true,
-       detail: { filters: { ...this.activeFilters } }
-     });
-     this.element.dispatchEvent(event);
-   }
+     // For REST collections, re-fetch data with new filters
+     if (this.collection?.restEnabled) {
+       try {
+         await this.collection.fetch();
+         this.render();
+       } catch (error) {
+         console.error('Failed to fetch filtered data:', error);
+         this.render();
+       }
+     } else {
+       this.render();
+     }
 
-   // For REST collections, re-fetch data with new filters
-   if (this.collection?.restEnabled) {
-     this.fetchWithCurrentFilters();
-   } else {
-     this.render();
-   }
+     // Emit params changed event for URL synchronization
+     this.emit('params-changed');
  }
 
- handleClearAllFilters(e) {
-   this.activeFilters = {};
+ async handleClearAllFilters(e) {
+   if (this.collection) {
+     // Clear all filters except start, size, and sort
+     const { start, size, sort } = this.collection.params;
+     this.collection.params = { start, size };
+     if (sort) this.collection.params.sort = sort;
+   }
 
    // Clear all search inputs
    this.updateSearchInputs('');
 
-   this.start = 0;  // Reset to beginning when clearing filters
+   this.setStart(0, false);  // Reset to beginning when clearing filters (don't emit - method already does)
 
-   // Dispatch filter change event
-   if (this.element) {
-     const event = new CustomEvent('filter:change', {
-       bubbles: true,
-       detail: { filters: {} }
-     });
-     this.element.dispatchEvent(event);
-   }
-
-   // For REST collections, re-fetch data with new search
+   // For REST collections, re-fetch data with new filters
    if (this.collection?.restEnabled) {
-     this.fetchWithCurrentFilters();
+     try {
+       await this.collection.fetch();
+       this.render();
+     } catch (error) {
+       console.error('Failed to fetch filtered data:', error);
+       this.render();
+     }
    } else {
      this.render();
    }
+
+   // Emit params changed event for URL synchronization
+   this.emit('params-changed');
  }
-
-
-
-  /**
-   * Fetch data with current filters and sorting for REST collections
-   */
-  async fetchWithCurrentFilters() {
-    if (!this.collection?.restEnabled) return;
-
-    try {
-      // Build fetch parameters
-      const fetchParams = {
-        start: this.start,
-        size: this.size
-      };
-
-      // Add sort parameter with proper formatting
-      if (this.sortBy) {
-        fetchParams.sort = this.sortDirection === 'desc' ? `-${this.sortBy}` : this.sortBy;
-      }
-
-      // Add current filters directly as parameters
-      Object.entries(this.activeFilters).forEach(([key, value]) => {
-        if (value !== null && value !== undefined && value !== '') {
-          fetchParams[key] = value;
-        }
-      });
-
-      // Pass parameters directly, not wrapped in params object
-      await this.collection.fetch(fetchParams);
-      // Re-render the table with the new data
-      this.render();
-    } catch (error) {
-      console.error('Failed to fetch filtered data:', error);
-      // Fallback to render with existing data
-      this.render();
-    }
-  }
 
   /**
    * Handle item deletion
@@ -1894,9 +1762,6 @@ class Table extends View {
    * Called after rendering
    */
   async onAfterRender() {
-    // Bind table-specific events
-    this.bindTableEvents();
-
     // Restore focus if it was on search input
     if (this.focusState && this.focusState.action === 'search-input') {
       const newSearchInput = this.element.querySelector('[data-action="search-input"]');
@@ -2153,11 +2018,59 @@ class Table extends View {
 
     // Reset state
     this.selectedItems.clear();
-    this.activeFilters = {};
-    this.eventHandlers = {};
-    this._eventsBound = false;
     this.collection = null;
   }
+
+
+  /**
+   * Export data to CSV
+   */
+  exportToCSV(data) {
+    if (!data || data.length === 0) {
+      console.warn('No data to export');
+      return;
+    }
+
+    // Get headers from first item or columns config
+    const headers = this.tableConfig.columns.length > 0
+      ? this.tableConfig.columns.map(col => col.label || col.key)
+      : Object.keys(data[0]);
+
+    const keys = this.tableConfig.columns.length > 0
+      ? this.tableConfig.columns.map(col => col.key)
+      : Object.keys(data[0]);
+
+    // Build CSV content
+    let csv = headers.join(',') + '\n';
+
+    data.forEach(item => {
+      const row = keys.map(key => {
+        const value = item[key];
+        // Escape values that contain commas or quotes
+        if (value === null || value === undefined) {
+          return '';
+        }
+        const strValue = String(value);
+        if (strValue.includes(',') || strValue.includes('"') || strValue.includes('\n')) {
+          return `"${strValue.replace(/"/g, '""')}"`;
+        }
+        return strValue;
+      });
+      csv += row.join(',') + '\n';
+    });
+
+    // Create download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${this.modelNamePlural.toLowerCase()}_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
 }
 
 export default Table;

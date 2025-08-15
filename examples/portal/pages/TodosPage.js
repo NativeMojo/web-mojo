@@ -97,109 +97,22 @@ class TodosPage extends TablePage {
         super.onInit();
 
         // Set bulk actions
-        this.setBulkActions([
-            {
-                id: 'complete',
-                label: 'Mark Complete',
-                icon: 'bi-check-circle',
-                handler: async () => await this.markComplete()
-            },
-            {
-                id: 'delete',
-                label: 'Delete Selected',
-                icon: 'bi-trash',
-                handler: async () => await this.deleteSelected()
-            }
-        ]);
+        // this.setBulkActions([
+        //     {
+        //         id: 'complete',
+        //         label: 'Mark Complete',
+        //         icon: 'bi-check-circle',
+        //         handler: async () => await this.markComplete()
+        //     },
+        //     {
+        //         id: 'delete',
+        //         label: 'Delete Selected',
+        //         icon: 'bi-trash',
+        //         handler: async () => await this.deleteSelected()
+        //     }
+        // ]);
     }
 
-    /**
-     * Handle toggle todo checkbox
-     */
-    async onActionToggleTodo(event, element) {
-        const todoId = parseInt(element.dataset.todoId);
-        const todo = this.collection.get(todoId);
-
-        if (todo) {
-            this.collection.update(todoId, {
-                completed: element.checked
-            });
-            await this.refreshTable();
-        }
-    }
-
-    /**
-     * Handle edit todo button
-     */
-    async onActionEditTodo(event, element) {
-        const todoId = parseInt(element.dataset.todoId);
-        const todo = this.collection.get(todoId);
-
-        if (todo) {
-            const newText = prompt('Edit todo:', todo.text);
-            if (newText && newText.trim()) {
-                this.collection.update(todoId, {
-                    text: newText.trim()
-                });
-                await this.refreshTable();
-                this.showSuccess('Todo updated');
-            }
-        }
-    }
-
-    /**
-     * Handle delete todo button
-     */
-    async onActionDeleteTodo(event, element) {
-        const todoId = parseInt(element.dataset.todoId);
-
-        if (confirm('Delete this todo?')) {
-            this.collection.remove(todoId);
-            await this.refreshTable();
-            this.showSuccess('Todo deleted');
-        }
-    }
-
-
-    /**
-     * Mark selected todos as complete
-     */
-    async markComplete() {
-        const selected = this.getSelectedItems();
-        if (selected.length === 0) {
-            this.showWarning('No items selected');
-            return;
-        }
-
-        selected.forEach(item => {
-            this.collection.update(item.id, { completed: true });
-        });
-
-        await this.refreshTable();
-        this.clearSelection();
-        this.showSuccess(`${selected.length} todo(s) marked complete`);
-    }
-
-    /**
-     * Delete selected todos
-     */
-    async deleteSelected() {
-        const selected = this.getSelectedItems();
-        if (selected.length === 0) {
-            this.showWarning('No items selected');
-            return;
-        }
-
-        if (confirm(`Delete ${selected.length} todo(s)?`)) {
-            selected.forEach(item => {
-                this.collection.remove(item.id);
-            });
-
-            await this.refreshTable();
-            this.clearSelection();
-            this.showSuccess(`${selected.length} todo(s) deleted`);
-        }
-    }
 }
 
 export default TodosPage;

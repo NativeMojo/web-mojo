@@ -1,6 +1,10 @@
 /**
  * Page - Extends View with routing capabilities for MOJO framework
  * Handles URL routing, parameters, and page-specific actions
+ *
+ * Event Emitter notes:
+ *   - Uses EventEmitter via View base class.
+ *   - Use .emit/.on/.off/.once for all custom events.
  */
 
 import View from './View.js';

@@ -192,9 +192,28 @@ class Rest {
     // Prepare fetch options
     const fetchOptions = {
       method: request.method,
-      headers: request.headers,
-      signal: AbortSignal.timeout(request.options.timeout)
+      headers: request.headers
     };
+
+    // Handle abort signals - combine timeout and external signal if provided
+    const signals = [];
+    
+    // Add timeout signal
+    if (request.options.timeout) {
+      signals.push(AbortSignal.timeout(request.options.timeout));
+    }
+    
+    // Add external signal if provided
+    if (request.options.signal) {
+      signals.push(request.options.signal);
+    }
+    
+    // Combine signals or use single signal
+    if (signals.length > 1) {
+      fetchOptions.signal = AbortSignal.any ? AbortSignal.any(signals) : signals[0];
+    } else if (signals.length === 1) {
+      fetchOptions.signal = signals[0];
+    }
 
     // Add body for methods that support it
     if (request.data && ['POST', 'PUT', 'PATCH'].includes(request.method)) {
@@ -219,6 +238,11 @@ class Rest {
       return responseData;
       
     } catch (error) {
+      // Handle AbortError (cancellation) - re-throw to be handled by caller
+      if (error.name === 'AbortError') {
+        throw error;
+      }
+
       // Handle network and timeout errors
       const errorResponse = {
         success: false,

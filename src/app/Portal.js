@@ -304,7 +304,7 @@ class Portal {
 
         // Emit page change event
         if (this.app) {
-            this.app.eventBus.emit('portal:page-changed', { page: pageName });
+            this.app.events.emit('portal:page-changed', { page: pageName });
         }
     }
 
@@ -482,7 +482,7 @@ class Portal {
                 } else {
                     // Emit action for app to handle
                     if (this.app) {
-                        this.app.eventBus.emit('portal:action', {
+                        this.app.events.emit('portal:action', {
                             action,
                             element: actionElement,
                             event: e

@@ -7,6 +7,18 @@
  * - Lifecycle hooks: onInit, onBeforeRender, onAfterRender, onBeforeMount, onAfterMount, onBeforeDestroy
  * - Event handling with action system
  * - Template rendering with Mustache.js
+ * - Built-in event system via EventEmitter mixin
+ *
+ * Event System:
+ * - Uses EventEmitter mixin for instance-level events (emit, on, off, once)
+ * - Automatically emits lifecycle events during render, mount, unmount, destroy
+ * - Custom events can be emitted for component-specific logic
+ *
+ * Standard Events:
+ * - 'render' - Emitted after view renders
+ * - 'mount' - Emitted after view mounts to DOM
+ * - 'unmount' - Emitted after view unmounts from DOM
+ * - 'destroy' - Emitted when view is destroyed
  *
  * Container Resolution:
  * - If no parent: searches for element with view's ID in document.body, or uses body as container
@@ -38,6 +50,17 @@
  * const child = new ChildView({ id: 'child' });
  * parent.addChild(child);
  * parent.render(); // Parent renders, then renders and mounts child
+ *
+ * @example
+ * // Using view events
+ * const view = new MyView();
+ * view.on('render', (view) => {
+ *   console.log('View rendered');
+ *   initializeWidgets(view.element);
+ * });
+ * view.on('destroy', (view) => {
+ *   cleanup();
+ * });
  */
 
 import Mustache from '../utils/mustache.js';
@@ -136,27 +159,27 @@ class View {
     // Mark as initialized
     this._initialized = true;
 
-    // Call before init hook
-    this.hooks.beforeInit.call(this);
+    // // Call before init hook
+    // this.hooks.beforeInit.call(this);
 
-    // Call overridable init method - handle async errors
-    try {
-      const result = this.onInit();
-      // If onInit returns a promise, catch any errors
-      if (result && typeof result.then === 'function') {
-        result.catch(error => {
-          console.error(`Error in async onInit for ${this.constructor.name}:`, error);
-          console.error('View initialization continuing despite error');
-        });
-      }
-    } catch (error) {
-      // Handle synchronous errors
-      console.error(`Error in onInit for ${this.constructor.name}:`, error);
-      console.error('View initialization continuing despite error');
-    }
+    // // Call overridable init method - handle async errors
+    // try {
+    //   const result = this.onInit();
+    //   // If onInit returns a promise, catch any errors
+    //   if (result && typeof result.then === 'function') {
+    //     result.catch(error => {
+    //       console.error(`Error in async onInit for ${this.constructor.name}:`, error);
+    //       console.error('View initialization continuing despite error');
+    //     });
+    //   }
+    // } catch (error) {
+    //   // Handle synchronous errors
+    //   console.error(`Error in onInit for ${this.constructor.name}:`, error);
+    //   console.error('View initialization continuing despite error');
+    // }
 
-    // Call after init hook
-    this.hooks.afterInit.call(this);
+    // // Call after init hook
+    // this.hooks.afterInit.call(this);
 
     if (this.debug) {
       console.log(`View ${this.id} initialized`);
@@ -915,7 +938,7 @@ class View {
   }
 
   /**
-   * Bind DOM event listeners
+   * Bind DOM event listeners using ownership-based event delegation
    */
   bindEvents() {
     if (!this.element) return;
@@ -923,63 +946,125 @@ class View {
     // Remove existing listeners
     this.unbindEvents();
 
-    // Bind click events with data-action
-    const actionElements = this.element.querySelectorAll('[data-action]');
-    actionElements.forEach(element => {
-      const action = element.getAttribute('data-action');
-      const handler = (event) => {
-        this.handleAction(action, event, element);
-      };
+    // Single delegated click handler for ALL click events
+    const clickHandler = async (event) => {
+      // 1. Handle data-action elements FIRST (highest priority)
+      const actionElement = event.target.closest('[data-action]');
+      if (actionElement && this.shouldHandleElement(actionElement, event)) {
+        const action = actionElement.getAttribute('data-action');
+        const handled = this.handleAction(action, event, actionElement);
 
-      element.addEventListener('click', handler);
-      this.domListeners.push({ element, event: 'click', handler });
-    });
+        if (handled) {
+          event.preventDefault(); // Prevent href="#" navigation
+          event.stopPropagation();
+          event.handledByChild = true;
+          return; // STOP - don't process as navigation
+        }
+      }
 
-    // Handle navigation - data-page takes precedence over href
-    const navElements = this.element.querySelectorAll('[data-page], a[href]');
-    navElements.forEach(element => {
-      // Skip if it already has data-action (avoid conflicts)
-      if (element.hasAttribute('data-action')) return;
-
-      const handler = async (event) => {
+      // 2. Handle navigation elements ONLY if no data-action was handled
+      const navElement = event.target.closest('a[href], [data-page]');
+      if (navElement && !navElement.hasAttribute('data-action') && this.shouldHandleElement(navElement, event)) {
         // Allow default browser behavior for special cases
         if (event.ctrlKey || event.metaKey || event.shiftKey || event.button === 1) {
           return; // Let browser handle Ctrl+click, middle-click, etc.
         }
 
         // Check for external links before preventing default
-        if (element.tagName === 'A') {
-          const href = element.getAttribute('href');
-          if (!href.startsWith("#") && (this.isExternalLink(href) || element.hasAttribute('data-external'))) {
+        if (navElement.tagName === 'A') {
+          const href = navElement.getAttribute('href');
+          if (href && href !== '#' && !href.startsWith('#') && (this.isExternalLink(href) || navElement.hasAttribute('data-external'))) {
             return; // Let browser handle external links normally
           }
         }
 
         event.preventDefault();
+        event.stopPropagation();
+        event.handledByChild = true;
 
-        // data-page takes precedence
-        if (element.hasAttribute('data-page')) {
-          await this.handlePageNavigation(element);
+        // data-page takes precedence over href
+        if (navElement.hasAttribute('data-page')) {
+          await this.handlePageNavigation(navElement);
         } else {
-          await this.handleHrefNavigation(element);
+          await this.handleHrefNavigation(navElement);
         }
-      };
+      }
+    };
 
-      element.addEventListener('click', handler);
-      this.domListeners.push({ element, event: 'click', handler });
+    this.element.addEventListener('click', clickHandler);
+    this.domListeners.push({
+      element: this.element,
+      event: 'click',
+      handler: clickHandler
     });
 
-    // Bind form submissions
-    const forms = this.element.querySelectorAll('form[data-action]');
-    forms.forEach(form => {
-      const action = form.getAttribute('data-action');
-      const handler = (event) => {
-        event.preventDefault();
-        this.handleAction(action, event, form);
-      };
+    // Single delegated change handler
+    const changeHandler = (event) => {
+      const actionElement = event.target.closest('[data-change-action]');
+      if (!actionElement) return;
 
-      form.addEventListener('submit', handler);
-      this.domListeners.push({ element: form, event: 'submit', handler });
+      if (this.shouldHandleElement(actionElement, event)) {
+        const action = actionElement.getAttribute('data-change-action');
+        const handled = this.handleAction(action, event, actionElement);
+
+        if (handled) {
+          event.stopPropagation();
+          event.handledByChild = true;
+        }
+      }
+    };
+
+    this.element.addEventListener('change', changeHandler);
+    this.domListeners.push({
+      element: this.element,
+      event: 'change',
+      handler: changeHandler
+    });
+
+    // Single delegated keydown handler
+    const keydownHandler = (event) => {
+      // Handle Enter key in search inputs
+      if (event.key === 'Enter' && event.target.matches('[data-filter="search"]')) {
+        const actionElement = event.target.closest('[data-change-action]');
+        if (!actionElement) return;
+
+        if (this.shouldHandleElement(actionElement, event)) {
+          event.preventDefault();
+          const action = actionElement.getAttribute('data-change-action');
+          const handled = this.handleAction(action, event, actionElement);
+
+          if (handled) {
+            event.stopPropagation();
+            event.handledByChild = true;
+          }
+        }
+      }
+    };
+
+    this.element.addEventListener('keydown', keydownHandler);
+    this.domListeners.push({
+      element: this.element,
+      event: 'keydown',
+      handler: keydownHandler
+    });
+
+    // Handle form submissions with delegation
+    const submitHandler = (event) => {
+      const form = event.target.closest('form[data-action]');
+      if (!form) return;
+
+      if (this.shouldHandleElement(form, event)) {
+        event.preventDefault();
+        const action = form.getAttribute('data-action');
+        this.handleAction(action, event, form);
+      }
+    };
+
+    this.element.addEventListener('submit', submitHandler);
+    this.domListeners.push({
+      element: this.element,
+      event: 'submit',
+      handler: submitHandler
     });
   }
 
@@ -1024,6 +1109,10 @@ class View {
     if (this.isExternalLink(href) || element.hasAttribute('data-external')) {
       return; // Let browser handle normally
     }
+
+    // if (href === '#' || href === '') {
+    //   return;
+    // }
 
     const router = this.findRouter();
     if (router) {
@@ -1139,22 +1228,52 @@ class View {
    * @param {string} action - Action name
    * @param {Event} event - DOM event
    * @param {HTMLElement} element - Source element
+   * @returns {boolean} True if action was handled, false otherwise
    */
   async handleAction(action, event, element) {
-    const methodName = `onAction${this.capitalize(action)}`;
-
-    if (typeof this[methodName] === 'function') {
+    // Try specific handler method first (handleActionSort, handleActionRefresh, etc.)
+    const handleMethodName = `handleAction${this.capitalize(action)}`;
+    if (typeof this[handleMethodName] === 'function') {
       try {
         event.preventDefault();
-        await this[methodName](event, element);
+        await this[handleMethodName](event, element);
+        return true; // Successfully handled
       } catch (error) {
         console.error(`Error in action ${action}:`, error);
         this.handleActionError(action, error, event, element);
+        return true; // Handled with error
       }
-    } else {
-      // Emit as event
-      this.emit(`action:${action}`, { action, event, element });
     }
+
+    // Try generic onAction method (onActionSort, onActionRefresh, etc.)
+    const onActionMethodName = `onAction${this.capitalize(action)}`;
+    if (typeof this[onActionMethodName] === 'function') {
+      try {
+        event.preventDefault();
+        await this[onActionMethodName](event, element);
+        return true; // Successfully handled
+      } catch (error) {
+        console.error(`Error in action ${action}:`, error);
+        this.handleActionError(action, error, event, element);
+        return true; // Handled with error
+      }
+    }
+
+    // Try fallback handler
+    if (typeof this.onActionDefault === 'function') {
+      try {
+        await this.onActionDefault(action, event, element);
+        return true; // Handled by fallback
+      } catch (error) {
+        console.error(`Error in default action handler for ${action}:`, error);
+        this.handleActionError(action, error, event, element);
+        return true; // Handled with error
+      }
+    }
+
+    // Emit as event (last resort)
+    this.emit(`action:${action}`, { action, event, element });
+    return false; // Not handled - let it bubble
   }
 
   handleActionNavigate(event, element) {
@@ -1297,78 +1416,7 @@ class View {
 
   // Event system
 
-  /**
-   * Emit custom event
-   * @param {string} event - Event name
-   * @param {*} data - Event data
-   */
-  emit(event, data) {
-    if (this.listeners[event]) {
-      this.listeners[event].forEach(callback => {
-        try {
-          callback(data);
-        } catch (error) {
-          console.error(`Error in event listener for ${event}:`, error);
-        }
-      });
-    }
-  }
-
-  /**
-   * Add event listener
-   * @param {string} event - Event name
-   * @param {function} callback - Event callback
-   * @returns {View} This view for chaining
-   */
-  on(event, callback) {
-    if (!this.listeners[event]) {
-      this.listeners[event] = [];
-    }
-    this.listeners[event].push(callback);
-    return this;
-  }
-
-  /**
-   * Remove event listener
-   * @param {string} event - Event name
-   * @param {function} callback - Event callback to remove
-   * @returns {View} This view for chaining
-   */
-  off(event, callback) {
-    if (!this.listeners[event]) {
-      return this;
-    }
-
-    if (callback) {
-      const index = this.listeners[event].indexOf(callback);
-      if (index !== -1) {
-        this.listeners[event].splice(index, 1);
-
-        // Clean up empty arrays
-        if (this.listeners[event].length === 0) {
-          delete this.listeners[event];
-        }
-      }
-    } else {
-      delete this.listeners[event];
-    }
-
-    return this;
-  }
-
-  /**
-   * Add one-time event listener
-   * @param {string} event - Event name
-   * @param {function} callback - Event callback
-   * @returns {View} This view for chaining
-   */
-  once(event, callback) {
-    const onceCallback = (data) => {
-      callback(data);
-      this.off(event, onceCallback);
-    };
-    return this.on(event, onceCallback);
-  }
+  // EventEmitter API: on, off, once, emit (from mixin).
 
   // Utility methods
 
@@ -1449,9 +1497,61 @@ class View {
    * @param {object} options - View options
    * @returns {View} New view instance
    */
+
+  /**
+   * Determine if this view should handle an element based on ownership logic
+   * @param {HTMLElement} element - Element to check
+   * @param {Event} event - Event object (to check handledByChild flag)
+   * @returns {boolean} True if this view should handle the element
+   */
+  shouldHandleElement(element, event) {
+    if (this.ownsActionElement(element)) {
+      return true; // Direct ownership
+    }
+
+    if (this.containsActionElement(element) && !event.handledByChild) {
+      return true; // Fallback handling - no child has handled it
+    }
+
+    return false; // Don't handle
+  }
+
+  /**
+   * Determine if this view directly owns an action element
+   * @param {HTMLElement} actionElement - Element with data-action attribute
+   * @returns {boolean} True if this view directly owns the element
+   */
+  ownsActionElement(actionElement) {
+    // Must be within this view's element
+    if (!this.element.contains(actionElement)) {
+      return false;
+    }
+
+    // Must NOT be within any child view's element
+    for (const child of this.children) {
+      if (child.element && child.element.contains(actionElement)) {
+        return false; // Owned by child view
+      }
+    }
+
+    return true; // Directly owned by this view
+  }
+
+  /**
+   * Check if action element is contained within this view (including child views)
+   * @param {HTMLElement} actionElement - Element with data-action attribute
+   * @returns {boolean} True if element is contained within this view
+   */
+  containsActionElement(actionElement) {
+    return this.element.contains(actionElement);
+  }
+
   static create(options = {}) {
     return new this(options);
   }
 }
+
+import EventEmitter from '../utils/EventEmitter.js';
+Object.assign(View.prototype, EventEmitter);
 
 export default View;

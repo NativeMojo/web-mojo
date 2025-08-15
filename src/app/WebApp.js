@@ -1,6 +1,38 @@
 /**
  * WebApp - Central application container for MOJO framework
- * Handles configuration, routing, pages, REST interface, and layout management
+ * Handles configuration, routing, pages, REST interface, layout management, and global events
+ *
+ * Global Event System:
+ *   Provides a global EventBus at this.events for cross-cutting application concerns
+ *   Emits framework-wide events that any component can subscribe to
+ *   Enables loose coupling between different parts of the application
+ *
+ * Standard Global Events Emitted:
+ *   - 'app:ready' - When application has fully started
+ *   - 'notification' - For all user notifications (error, success, info, warning)
+ *   - 'loading:show' - When loading indicator should be shown
+ *   - 'loading:hide' - When loading indicator should be hidden
+ *   - 'state:changed' - When application state changes
+ *   - Router events are also emitted via this.events (see Router documentation)
+ *
+ * @example
+ * const app = new WebApp({
+ *   name: 'My App',
+ *   debug: true
+ * });
+ * 
+ * // Subscribe to global events
+ * app.events.on('notification', ({ message, type }) => {
+ *   showToast(message, type);
+ * });
+ * 
+ * app.events.on('app:ready', () => {
+ *   console.log('App is ready!');
+ * });
+ * 
+ * // Events are emitted automatically by framework methods
+ * app.showError('Something went wrong'); // Emits 'notification' event
+ * app.showLoading('Please wait...'); // Emits 'loading:show' event
  */
 
 import Router from '../core/Router.js';
@@ -66,8 +98,8 @@ class WebApp {
             });
         }
 
-        // Global event bus
-        this.eventBus = new EventBus();
+        // Global event bus (singleton for the app)
+        this.events = new EventBus();
 
         // Component registries
         this.pageCache = new Map();     // pageName -> page instance (cached)
@@ -129,7 +161,7 @@ class WebApp {
             }
 
             // Emit app ready event
-            this.eventBus.emit('app:ready', { app: this });
+            this.events.emit('app:ready', { app: this });
 
             console.log(`${this.name} started successfully`);
 
@@ -144,26 +176,14 @@ class WebApp {
      * Setup router with configuration
      */
     async setupRouter() {
-        // Router is now created in constructor, just setup events
+        // Router is now created in constructor and emits events directly to app.events
         if (!this.router) {
             console.error('Router not initialized');
             return;
         }
 
-        // Setup router events
-        this.router.onBeforeRoute = async (route) => {
-            this.eventBus.emit('route:before', { route });
-            return true;
-        };
-
-        this.router.onAfterRoute = async (route) => {
-            this.eventBus.emit('route:after', { route });
-        };
-
-        this.router.onError = (error) => {
-            console.error('Router error:', error);
-            this.showError('Navigation error');
-        };
+        // Router now emits events directly - no callback setup needed
+        console.log('Router setup complete - using event-driven navigation');
     }
 
     /**
@@ -506,80 +526,35 @@ class WebApp {
      * Show error message
      */
     showError(message, duration = 5000) {
-        this.showNotification(message, 'error', duration);
+        this.events.emit('notification', { message, type: 'error', duration });
     }
 
     /**
      * Show success message
      */
     showSuccess(message, duration = 3000) {
-        this.showNotification(message, 'success', duration);
+        this.events.emit('notification', { message, type: 'success', duration });
     }
 
     /**
      * Show info message
      */
     showInfo(message, duration = 4000) {
-        this.showNotification(message, 'info', duration);
+        this.events.emit('notification', { message, type: 'info', duration });
     }
 
     /**
      * Show warning message
      */
     showWarning(message, duration = 4000) {
-        this.showNotification(message, 'warning', duration);
+        this.events.emit('notification', { message, type: 'warning', duration });
     }
 
     /**
      * Show notification
      */
     showNotification(message, type = 'info', duration = 3000) {
-        // Check if layout handles notifications
-        if (this.layout && this.layout.showNotification) {
-            this.layout.showNotification(message, type, duration);
-            return;
-        }
-
-        // Fallback to toast notification
-        const alertClass = {
-            error: 'alert-danger',
-            success: 'alert-success',
-            info: 'alert-info',
-            warning: 'alert-warning'
-        }[type] || 'alert-info';
-
-        const toast = document.createElement('div');
-        toast.className = `alert ${alertClass} position-fixed top-0 end-0 m-3`;
-        toast.style.zIndex = '9999';
-        toast.style.maxWidth = '350px';
-        toast.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center">
-                <span>${this.escapeHtml(message)}</span>
-                <button type="button" class="btn-close btn-sm ms-2" aria-label="Close"></button>
-            </div>
-        `;
-
-        document.body.appendChild(toast);
-
-        // Add close handler
-        const closeBtn = toast.querySelector('.btn-close');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
-                toast.remove();
-            });
-        }
-
-        // Auto remove after duration
-        if (duration > 0) {
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.remove();
-                }
-            }, duration);
-        }
-
-        // Emit event
-        this.eventBus.emit('notification:shown', { message, type });
+        this.events.emit('notification', { message, type, duration });
     }
 
     /**
@@ -587,27 +562,7 @@ class WebApp {
      */
     showLoading(message = 'Loading...') {
         this.state.isLoading = true;
-
-        if (this.layout && this.layout.showLoading) {
-            this.layout.showLoading(message);
-            return;
-        }
-
-        // Fallback loading indicator
-        let loader = document.getElementById('app-loader');
-        if (!loader) {
-            loader = document.createElement('div');
-            loader.id = 'app-loader';
-            loader.className = 'position-fixed top-50 start-50 translate-middle text-center';
-            loader.style.zIndex = '9998';
-            loader.innerHTML = `
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">${this.escapeHtml(message)}</span>
-                </div>
-                <div class="mt-2">${this.escapeHtml(message)}</div>
-            `;
-            document.body.appendChild(loader);
-        }
+        this.events.emit('loading:show', { message });
     }
 
     /**
@@ -615,17 +570,7 @@ class WebApp {
      */
     hideLoading() {
         this.state.isLoading = false;
-
-        if (this.layout && this.layout.hideLoading) {
-            this.layout.hideLoading();
-            return;
-        }
-
-        // Remove fallback loader
-        const loader = document.getElementById('app-loader');
-        if (loader) {
-            loader.remove();
-        }
+        this.events.emit('loading:hide');
     }
 
     /**
@@ -671,11 +616,11 @@ class WebApp {
     setState(key, value) {
         if (typeof key === 'object') {
             Object.assign(this.state, key);
-            this.eventBus.emit('state:changed', this.state);
+            this.events.emit('state:changed', this.state);
         } else {
             const oldValue = this.state[key];
             this.state[key] = value;
-            this.eventBus.emit('state:changed', { key, value, oldValue });
+            this.events.emit('state:changed', { key, value, oldValue });
         }
     }
 

@@ -8,6 +8,8 @@ class EventBus {
     this.listeners = {};
     this.onceListeners = {};
     this.maxListeners = 100; // Prevent memory leaks
+    this.debugMode = false; // Debug mode for development
+    this.eventStats = {}; // Track event emission statistics
   }
 
   /**
@@ -103,6 +105,14 @@ class EventBus {
    * @returns {EventBus} This instance for chaining
    */
   emit(event, data) {
+    // Update statistics
+    this.updateEventStats(event);
+
+    // Debug logging
+    if (this.debugMode) {
+      console.log(`[EventBus] Emitting: ${event}`, data);
+    }
+
     const listeners = [];
     
     // Collect regular listeners
@@ -125,6 +135,11 @@ class EventBus {
     if (this.onceListeners['*']) {
       listeners.push(...this.onceListeners['*']);
       delete this.onceListeners['*'];
+    }
+
+    // Debug listener count
+    if (this.debugMode && listeners.length > 0) {
+      console.log(`[EventBus] ${listeners.length} listener(s) for '${event}'`);
     }
 
     // Call all listeners
@@ -341,15 +356,16 @@ class EventBus {
   }
 
   /**
-   * Debug utility to log all events
+   * Enable/disable debug mode for detailed event logging
    * @param {boolean} enable - Whether to enable debug mode
    * @returns {EventBus} This instance for chaining
    */
   debug(enable = true) {
+    this.debugMode = enable;
     if (enable) {
-      this.on('*', (data, event) => {
-        console.log(`[EventBus] ${event}:`, data);
-      });
+      console.log('[EventBus] Debug mode enabled');
+    } else {
+      console.log('[EventBus] Debug mode disabled');
     }
     return this;
   }
@@ -363,7 +379,8 @@ class EventBus {
     const stats = {
       totalEvents: eventNames.length,
       totalListeners: 0,
-      events: {}
+      events: {},
+      emissions: { ...this.eventStats }
     };
 
     eventNames.forEach(event => {
@@ -373,6 +390,109 @@ class EventBus {
     });
 
     return stats;
+  }
+
+  /**
+   * Update event emission statistics
+   * @private
+   * @param {string} event - Event name
+   */
+  updateEventStats(event) {
+    if (!this.eventStats[event]) {
+      this.eventStats[event] = {
+        count: 0,
+        firstEmission: Date.now(),
+        lastEmission: null
+      };
+    }
+    
+    this.eventStats[event].count++;
+    this.eventStats[event].lastEmission = Date.now();
+  }
+
+  /**
+   * Get detailed statistics for a specific event
+   * @param {string} event - Event name
+   * @returns {Object} Event statistics
+   */
+  getEventStats(event) {
+    const stats = this.eventStats[event];
+    if (!stats) {
+      return null;
+    }
+
+    return {
+      ...stats,
+      listenerCount: this.listenerCount(event),
+      avgEmissionsPerMinute: this.calculateEmissionRate(stats)
+    };
+  }
+
+  /**
+   * Calculate emission rate for an event
+   * @private
+   * @param {Object} stats - Event statistics
+   * @returns {number} Emissions per minute
+   */
+  calculateEmissionRate(stats) {
+    if (!stats.firstEmission || !stats.lastEmission) {
+      return 0;
+    }
+    
+    const durationMs = stats.lastEmission - stats.firstEmission;
+    if (durationMs === 0) {
+      return 0;
+    }
+    
+    const durationMinutes = durationMs / (1000 * 60);
+    return Math.round((stats.count / durationMinutes) * 100) / 100;
+  }
+
+  /**
+   * Reset event statistics
+   * @returns {EventBus} This instance for chaining
+   */
+  resetStats() {
+    this.eventStats = {};
+    return this;
+  }
+
+  /**
+   * Get a summary of the most active events
+   * @param {number} limit - Number of events to return (default: 10)
+   * @returns {Array} Array of event statistics sorted by emission count
+   */
+  getTopEvents(limit = 10) {
+    return Object.entries(this.eventStats)
+      .map(([event, stats]) => ({
+        event,
+        count: stats.count,
+        rate: this.calculateEmissionRate(stats),
+        listeners: this.listenerCount(event)
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit);
+  }
+
+  /**
+   * Log comprehensive debug information
+   * @returns {EventBus} This instance for chaining
+   */
+  debugInfo() {
+    console.group('[EventBus] Debug Information');
+    console.log('Debug Mode:', this.debugMode);
+    console.log('Max Listeners:', this.maxListeners);
+    
+    const stats = this.getStats();
+    console.log('Total Events:', stats.totalEvents);
+    console.log('Total Listeners:', stats.totalListeners);
+    
+    if (Object.keys(this.eventStats).length > 0) {
+      console.log('Top Events:', this.getTopEvents(5));
+    }
+    
+    console.groupEnd();
+    return this;
   }
 }
 

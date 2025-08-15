@@ -1,10 +1,38 @@
 /**
  * Model - Base class for models with REST API support
- * Provides CRUD operations for API resources
+ * Provides CRUD operations for API resources with built-in event system
+ *
+ * Event System:
+ *   Uses EventEmitter mixin for instance-level events (emit, on, off, once)
+ *   Automatically emits 'change' events when data is modified via set()
+ *   Emits 'change:attributeName' for specific attribute changes
+ *
+ * Standard Events:
+ *   - 'change' - Emitted when any model data changes
+ *   - 'change:fieldName' - Emitted when specific field changes
+ *
+ * @example
+ * const user = new User({ name: 'John', email: 'john@example.com' });
+ * 
+ * // Listen for any changes
+ * user.on('change', (model) => {
+ *   console.log('User model changed');
+ *   view.render();
+ * });
+ * 
+ * // Listen for specific field changes
+ * user.on('change:name', (newName, model) => {
+ *   console.log('Name changed to:', newName);
+ * });
+ * 
+ * // Trigger events by changing data
+ * user.set('name', 'Jane'); // Emits 'change' and 'change:name'
+ * user.set({ name: 'Bob', email: 'bob@example.com' }); // Emits 'change' and individual field events
  */
 
 import MOJOUtils from '../utils/MOJOUtils.js';
 import rest from '../core/Rest.js';
+import EventEmitter from '../utils/EventEmitter.js';
 
 class Model {
   constructor(data = {}, options = {}) {
@@ -15,8 +43,7 @@ class Model {
     this.errors = {};
     this.loading = false;
 
-    // Event system
-    this.listeners = {};
+    // Event system via EventEmitter mixin (applied to prototype)
 
     // Configuration options
     this.options = {
@@ -72,15 +99,15 @@ class Model {
 
     // Trigger change event if data changed and not silent
     if (hasChanged && !options.silent) {
-      this.trigger('change', this);
+      this.emit('change', this);
 
       // Trigger specific attribute change events
       if (typeof key === 'string') {
-        this.trigger(`change:${key}`, value, this);
+        this.emit(`change:${key}`, value, this);
       } else {
         for (const [attr, val] of Object.entries(key)) {
           if (previousAttributes[attr] !== val) {
-            this.trigger(`change:${attr}`, val, this);
+            this.emit(`change:${attr}`, val, this);
           }
         }
       }
@@ -310,81 +337,7 @@ class Model {
     }
   }
 
-  /**
-   * Register event listener
-   * @param {string} event - Event name
-   * @param {function} callback - Event handler
-   * @returns {Model} This model for chaining
-   */
-  on(event, callback) {
-    if (!this.listeners[event]) {
-      this.listeners[event] = [];
-    }
-    this.listeners[event].push(callback);
-    return this;
-  }
-
-  /**
-   * Remove event listener
-   * @param {string} event - Event name
-   * @param {function} callback - Event handler to remove (optional, removes all if not provided)
-   * @returns {Model} This model for chaining
-   */
-  off(event, callback) {
-    if (!this.listeners[event]) {
-      return this;
-    }
-
-    if (!callback) {
-      // Remove all listeners for this event
-      delete this.listeners[event];
-    } else {
-      // Remove specific listener
-      this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
-      if (this.listeners[event].length === 0) {
-        delete this.listeners[event];
-      }
-    }
-
-    return this;
-  }
-
-  /**
-   * Trigger event
-   * @param {string} event - Event name
-   * @param {...*} args - Arguments to pass to event handlers
-   * @returns {Model} This model for chaining
-   */
-  trigger(event, ...args) {
-    if (!this.listeners[event]) {
-      return this;
-    }
-
-    // Call each listener
-    for (const callback of this.listeners[event]) {
-      try {
-        callback.apply(this, args);
-      } catch (error) {
-        console.error(`Error in event handler for "${event}":`, error);
-      }
-    }
-
-    return this;
-  }
-
-  /**
-   * Register event listener that fires only once
-   * @param {string} event - Event name
-   * @param {function} callback - Event handler
-   * @returns {Model} This model for chaining
-   */
-  once(event, callback) {
-    const onceWrapper = (...args) => {
-      this.off(event, onceWrapper);
-      callback.apply(this, args);
-    };
-    return this.on(event, onceWrapper);
-  }
+  // EventEmitter API: on, off, once, emit (from mixin).
 
   /**
    * Static method to create and fetch a model by ID
@@ -411,5 +364,7 @@ class Model {
 
 // Will be injected by MOJO framework
 Model.Rest = null;
+
+Object.assign(Model.prototype, EventEmitter);
 
 export default Model;

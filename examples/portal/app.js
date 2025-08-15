@@ -172,7 +172,7 @@ app.registerPage('dialogs', DialogsPage);
 
 // Register ReportsPage for all report-related routes
 // Handle portal actions
-app.eventBus.on('portal:action', ({ action }) => {
+app.events.on('portal:action', ({ action }) => {
     switch (action) {
         case 'notifications':
             app.showInfo('You have 3 new notifications');

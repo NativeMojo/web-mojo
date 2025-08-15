@@ -1,6 +1,36 @@
 /**
  * Collection - Class for managing arrays of Model instances
- * Provides methods for fetching and managing collections of models
+ * Provides methods for fetching and managing collections of models with built-in event system
+ *
+ * Event System:
+ *   Uses EventEmitter mixin for instance-level events (emit, on, off, once)
+ *   Automatically emits events when collection is modified
+ *
+ * Standard Events:
+ *   - 'add' - Emitted when models are added to the collection
+ *   - 'remove' - Emitted when models are removed from the collection
+ *   - 'update' - Emitted when collection is modified (after add/remove)
+ *   - 'reset' - Emitted when collection is reset (all models replaced)
+ *
+ * @example
+ * const users = new UserCollection();
+ *
+ * // Listen for collection changes
+ * users.on('add', ({ models, collection }) => {
+ *   console.log('Added', models.length, 'users');
+ *   updateUI();
+ * });
+ *
+ * users.on('remove', ({ models, collection }) => {
+ *   console.log('Removed', models.length, 'users');
+ *   updateUI();
+ * });
+ *
+ * // Add models - triggers 'add' and 'update' events
+ * users.add([
+ *   new User({ name: 'John' }),
+ *   new User({ name: 'Jane' })
+ * ]);
  *
  * Usage Examples:
  *
@@ -17,6 +47,8 @@
  import rest from '../core/Rest.js';
 
 
+import EventEmitter from '../utils/EventEmitter.js';
+
 class Collection {
   constructor(ModelClass, options = {}) {
     this.ModelClass = ModelClass;
@@ -24,6 +56,13 @@ class Collection {
     this.loading = false;
     this.errors = {};
     this.meta = {};
+
+    // Initialize params with defaults - single source of truth for query state
+    this.params = {
+      start: 0,
+      size: options.size || 10,
+      ...options.params
+    };
 
     // Set up endpoint
     this.endpoint = options.endpoint || ModelClass.endpoint || '';
@@ -47,14 +86,40 @@ class Collection {
       preloaded: false,
       ...options
     };
+
+    // Event system via EventEmitter mixin (applied to prototype)
   }
 
   /**
    * Fetch collection data from API
-   * @param {object} options - Request options including params
+   * @param {object} additionalParams - Additional parameters to merge for this fetch only
    * @returns {Promise} Promise that resolves with collection data
    */
-  async fetch(options = {}) {
+  async fetch(additionalParams = {}) {
+    const requestKey = JSON.stringify({ ...this.params, ...additionalParams });
+    
+    // CANCEL PREVIOUS REQUEST if it's different from current request
+    if (this.currentRequest && this.currentRequestKey !== requestKey) {
+      console.info('Collection: Cancelling previous request for new parameters');
+      this.abortController?.abort();
+      this.currentRequest = null;
+    }
+    
+    // REQUEST DEDUPLICATION - Return existing promise if identical request
+    if (this.currentRequest && this.currentRequestKey === requestKey) {
+      console.info('Collection: Duplicate request in progress, returning existing promise');
+      return this.currentRequest;
+    }
+
+    // RATE LIMITING - Prevent requests within 100ms of last request
+    const now = Date.now();
+    const minInterval = 100; // ms
+    
+    if (this.lastFetchTime && (now - this.lastFetchTime) < minInterval) {
+      console.info('Collection: Rate limited, skipping fetch');
+      return this;
+    }
+
     // Skip fetching if not REST enabled
     if (!this.restEnabled) {
       console.info('Collection: REST disabled, skipping fetch');
@@ -68,36 +133,114 @@ class Collection {
     }
 
     const url = this.buildUrl();
-
     this.loading = true;
     this.errors = {};
+    this.lastFetchTime = now;
+    this.currentRequestKey = requestKey;
+    
+    // Create new AbortController for this request
+    this.abortController = new AbortController();
+    
+    // Store the promise for deduplication
+    this.currentRequest = this._performFetch(url, additionalParams, this.abortController);
+    
+    try {
+      const result = await this.currentRequest;
+      return result;
+    } catch (error) {
+      // Don't throw if request was cancelled
+      if (error.name === 'AbortError') {
+        console.info('Collection: Request was cancelled');
+        return this;
+      }
+      throw error;
+    } finally {
+      this.currentRequest = null;
+      this.currentRequestKey = null;
+      this.abortController = null;
+    }
+  }
+
+  /**
+   * Internal method to perform the actual fetch
+   * @param {string} url - API endpoint URL
+   * @param {object} additionalParams - Additional parameters
+   * @param {AbortController} abortController - Controller for request cancellation
+   * @returns {Promise} Promise that resolves with collection data
+   */
+  async _performFetch(url, additionalParams, abortController) {
+    console.log('Fetching collection data from', url);
+    const fetchParams = { ...this.params, ...additionalParams };
 
     try {
-      const response = await rest.GET(url, options.params);
+      const response = await rest.GET(url, fetchParams, {
+        signal: abortController.signal
+      });
 
       if (response.success) {
-        // Parse response data
         const data = this.options.parse ? this.parse(response) : response.data;
 
-        // Reset or add to existing models
-        if (this.options.reset || options.reset !== false) {
+        if (this.options.reset || additionalParams.reset !== false) {
           this.reset();
         }
 
-        // Add models to collection
-        this.add(data, { silent: options.silent });
-
+        this.add(data, { silent: additionalParams.silent });
         return this;
       } else {
         this.errors = response.errors || {};
         throw new Error(response.message || 'Failed to fetch collection');
       }
     } catch (error) {
+      // Handle cancellation gracefully
+      if (error.name === 'AbortError') {
+        console.info('Collection: Fetch was cancelled');
+        throw error;
+      }
+      
       this.errors = { fetch: error.message };
       throw error;
     } finally {
       this.loading = false;
     }
+  }
+
+  /**
+   * Update collection parameters and optionally fetch new data
+   * @param {object} newParams - Parameters to update
+   * @param {boolean} autoFetch - Whether to automatically fetch after updating params
+   * @param {number} debounceMs - Optional debounce delay in milliseconds
+   * @returns {Promise} Promise that resolves with collection
+   */
+  async updateParams(newParams, autoFetch = false, debounceMs = 0) {
+    this.params = { ...this.params, ...newParams };
+
+    if (autoFetch && this.restEnabled) {
+      if (debounceMs > 0) {
+        // Clear existing debounced fetch
+        if (this.debouncedFetchTimeout) {
+          clearTimeout(this.debouncedFetchTimeout);
+        }
+        
+        // Cancel any active request since we're about to start a new one
+        this.cancel();
+        
+        return new Promise((resolve, reject) => {
+          this.debouncedFetchTimeout = setTimeout(async () => {
+            try {
+              const result = await this.fetch();
+              resolve(result);
+            } catch (error) {
+              reject(error);
+            }
+          }, debounceMs);
+        });
+      } else {
+        // For immediate fetches, the fetch method will handle cancellation
+        return this.fetch();
+      }
+    }
+
+    return Promise.resolve(this);
   }
 
   /**
@@ -165,8 +308,8 @@ class Collection {
 
     // Emit events if not silent
     if (!options.silent && addedModels.length > 0) {
-      this.trigger('add', { models: addedModels, collection: this });
-      this.trigger('update', { collection: this });
+      this.emit('add', { models: addedModels, collection: this });
+      this.emit('update', { collection: this });
     }
 
     return addedModels;
@@ -200,8 +343,8 @@ class Collection {
 
     // Emit events if not silent
     if (!options.silent && removedModels.length > 0) {
-      this.trigger('remove', { models: removedModels, collection: this });
-      this.trigger('update', { collection: this });
+      this.emit('remove', { models: removedModels, collection: this });
+      this.emit('update', { collection: this });
     }
 
     return removedModels;
@@ -221,7 +364,7 @@ class Collection {
     }
 
     if (!options.silent) {
-      this.trigger('reset', {
+      this.emit('reset', {
         collection: this,
         previousModels
       });
@@ -330,6 +473,27 @@ class Collection {
   }
 
   /**
+   * Cancel any active fetch request
+   * @returns {boolean} True if a request was cancelled, false if no active request
+   */
+  cancel() {
+    if (this.currentRequest && this.abortController) {
+      console.info('Collection: Manually cancelling active request');
+      this.abortController.abort();
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Check if collection has an active fetch request
+   * @returns {boolean} True if fetch is in progress
+   */
+  isFetching() {
+    return !!this.currentRequest;
+  }
+
+  /**
    * Build URL for collection endpoint
    * @returns {string} Collection API URL
    */
@@ -337,50 +501,7 @@ class Collection {
     return this.endpoint;
   }
 
-  /**
-   * Simple event system for collection changes
-   */
-  trigger(event, data) {
-    if (this.listeners && this.listeners[event]) {
-      this.listeners[event].forEach(callback => callback(data));
-    }
-  }
-
-  /**
-   * Add event listener
-   * @param {string} event - Event name
-   * @param {function} callback - Event callback
-   */
-  on(event, callback) {
-    if (!this.listeners) {
-      this.listeners = {};
-    }
-    if (!this.listeners[event]) {
-      this.listeners[event] = [];
-    }
-    this.listeners[event].push(callback);
-  }
-
-  /**
-   * Remove event listener
-   * @param {string} event - Event name
-   * @param {function} callback - Event callback to remove
-   */
-  off(event, callback) {
-    if (!this.listeners || !this.listeners[event]) {
-      return;
-    }
-
-    if (callback) {
-      const index = this.listeners[event].indexOf(callback);
-      if (index !== -1) {
-        this.listeners[event].splice(index, 1);
-      }
-    } else {
-      // Remove all listeners for event
-      delete this.listeners[event];
-    }
-  }
+  // EventEmitter API: on, off, once, emit (from mixin).
 
   /**
    * Iterator support for for...of loops
@@ -404,5 +525,7 @@ class Collection {
     return collection;
   }
 }
+
+Object.assign(Collection.prototype, EventEmitter);
 
 export default Collection;

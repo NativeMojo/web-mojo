@@ -58,6 +58,9 @@ class Router {
     // Handle initial route
     this.handleCurrentLocation();
 
+    // Emit router started event
+    this.app.events.emit('router:started', { mode: this.options.mode });
+
     console.log(`Router started in ${this.options.mode} mode`);
   }
 
@@ -120,6 +123,9 @@ class Router {
       return this.handleError(`Page ${match.pageName} not found`);
     }
 
+    // Emit route:before event
+    this.app.events.emit('route:before', { path, match, page });
+
     // 3. Run guards
     if (!await this.runGuards(match, page)) {
       return false;
@@ -139,6 +145,11 @@ class Router {
     await this.runAfterGuards(match, page);
 
     this.currentPath = path;
+
+    // Emit successful navigation events
+    this.app.events.emit('route:change', { path, match, page, params: match.params, query: match.query });
+    this.app.events.emit('route:after', { path, match, page });
+
     return true;
   }
 
@@ -201,6 +212,46 @@ class Router {
   }
 
   /**
+   * Update URL without triggering navigation
+   * @param {string|object} pathOrParams - Path string or params object for param mode
+   * @param {object} options - Update options
+   */
+  updateUrl(pathOrParams, options = {}) {
+    if (!this.started) return;
+
+    let path;
+
+    if (this.options.mode === 'param' && typeof pathOrParams === 'object') {
+      // In param mode, accept params object and build URL
+      const params = new URLSearchParams();
+
+      // Always include the page parameter
+      const currentMatch = this.matchRoute(this.getCurrentPath());
+      const pageName = currentMatch?.pageName || this.options.defaultPage;
+      params.set(this.options.pageParam, pageName);
+
+      // Add other parameters
+      Object.entries(pathOrParams).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== '') {
+          params.set(key, value);
+        }
+      });
+
+      path = `?${params.toString()}`;
+    } else {
+      // For history/hash modes or when path is provided as string
+      path = pathOrParams;
+    }
+
+    // Update browser history without triggering navigation
+    const replace = options.replace !== false; // Default to replace
+    this.updateHistory(path, replace);
+
+    // Update internal state
+    this.currentPath = path;
+  }
+
+  /**
    * Handle current browser location
    */
   async handleCurrentLocation() {
@@ -223,6 +274,8 @@ class Router {
       return;
     }
 
+    if (oldPage == newPage) return;
+
     // Update Router state: only set currentPageInstance if newPage is valid
     this.currentPageInstance = newPage;
 
@@ -230,6 +283,8 @@ class Router {
     if (oldPage && oldPage !== newPage) {
       try {
         await oldPage.onExit();
+        // Emit page hide event
+        this.app.events.emit('page:hide', { page: oldPage });
       } catch (error) {
         console.error(`Error in onExit for page ${oldPage.pageName}:`, error);
       }
@@ -242,6 +297,8 @@ class Router {
     if (oldPage !== newPage) {
       try {
         await newPage.onEnter();
+        // Emit page show event
+        this.app.events.emit('page:show', { page: newPage, params, query });
       } catch (error) {
         console.error(`Error in onEnter for page ${newPage.pageName}:`, error);
       }
@@ -414,9 +471,10 @@ class Router {
         return window.location.hash.slice(1) || '/';
 
       case 'param': {
-        const url = new URL(window.location);
-        const pageName = url.searchParams.get(this.options.pageParam) || this.options.defaultPage;
-        return `/?${this.options.pageParam}=${pageName}`;
+        // const url = new URL(window.location);
+        // const pageName = url.searchParams.get(this.options.pageParam) || this.options.defaultPage;
+        // return `/?${this.options.pageParam}=${pageName}`;
+        return window.location.pathname + window.location.search;
       }
 
       case 'history':
@@ -456,22 +514,25 @@ class Router {
         break;
 
       case 'param': {
-        const [, queryString] = path.split('?');
-        const query = this.parseQuery(queryString);
-        const pageName = query[this.options.pageParam] || this.options.defaultPage;
+          const [, queryString] = path.split('?');
+          const query = this.parseQuery(queryString);
+          const pageName = query[this.options.pageParam] || this.options.defaultPage;
 
-        const url = new URL(window.location);
-        url.searchParams.set(this.options.pageParam, pageName);
+          // Create a clean URL instead of inheriting current location
+          const url = new URL(window.location.origin + window.location.pathname);
 
-        // Add other query params
-        Object.entries(query).forEach(([key, value]) => {
-          if (key !== this.options.pageParam) {
-            url.searchParams.set(key, value);
-          }
-        });
+          // Set the page parameter
+          url.searchParams.set(this.options.pageParam, pageName);
 
-        window.history[method](null, '', url.toString());
-        break;
+          // Add ONLY the query params from the new path
+          Object.entries(query).forEach(([key, value]) => {
+            if (key !== this.options.pageParam) {
+              url.searchParams.set(key, value);
+            }
+          });
+
+          window.history[method](null, '', url.toString());
+          break;
       }
 
       case 'history':
@@ -521,6 +582,9 @@ class Router {
   async handleNotFound(path) {
     console.warn(`Route not found: ${path}`);
 
+    // Emit route not found event
+    this.app.events.emit('route:notfound', { path });
+
     // Try to load 404 page
     const notFoundPage = this.app.getOrCreatePage('404');
     if (notFoundPage) {
@@ -541,6 +605,9 @@ class Router {
   async handleError(message) {
     console.error(`Router error: ${message}`);
 
+    // Emit route error event
+    this.app.events.emit('route:error', { message });
+
     // Try to load error page
     const errorPage = this.app.getOrCreatePage('error');
     if (errorPage) {
@@ -559,6 +626,10 @@ class Router {
    */
   cleanup() {
     this.stop();
+
+    // Emit router stopped event
+    this.app.events.emit('router:stopped');
+
     this.routes.clear();
     this.guards.beforeEach = [];
     this.guards.afterEach = [];
