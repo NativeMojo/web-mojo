@@ -21,7 +21,8 @@ class TodosPage extends TablePage {
             name: 'todos',
             title: 'Todo List',
             Collection: TodoList,
-
+            formCreate: TodoForms.create,
+            formEdit: TodoForms.create,
             // Column definitions
             columns: [
                 {
@@ -49,18 +50,22 @@ class TodosPage extends TablePage {
                     }
                 },
                 {
+                    key: 'name',
+                    label: 'Name',
+                },
+                {
                     key: 'description',
                     label: 'Description',
                     sortable: true,
                     formatter: "truncate(100)|capitalize",  // Pipe syntax
                     class: 'todo-description'
                 },
-                {
-                    key: 'note.description',
-                    label: 'Notes',
-                    width: '150px',
-                    formatter: "truncate(50)|default('-')"  // Clean pipe syntax
-                }
+                // {
+                //     key: 'note.description',
+                //     label: 'Notes',
+                //     width: '150px',
+                //     formatter: "truncate(50)|default('-')"  // Clean pipe syntax
+                // }
             ],
 
             // Table features
@@ -155,16 +160,6 @@ class TodosPage extends TablePage {
         }
     }
 
-    /**
-     * Override handleAdd to create new todos
-     */
-     async handleAdd() {
-         const data = await Dialog.showForm({
-             title: 'Create Todo',
-             formConfig: TodoForms.create,
-         });
-         console.log(data);
-     }
 
     /**
      * Mark selected todos as complete

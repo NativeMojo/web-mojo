@@ -133,23 +133,13 @@ class Model {
    * @param {object} options - Request options
    * @returns {Promise} Promise that resolves with saved model data
    */
-  async save(options = {}) {
+  async save(data, options = {}) {
     const isNew = !this.id;
     const method = isNew ? 'POST' : 'PUT';
     const url = isNew ? this.buildUrl() : this.buildUrl(this.id);
 
     this.loading = true;
     this.errors = {};
-
-    // Prepare data for saving
-    const data = this.getChangedAttributes();
-    if (this.options.timestamps) {
-      const now = new Date().toISOString();
-      if (isNew) {
-        data.created_at = now;
-      }
-      data.updated_at = now;
-    }
 
     try {
       const response = await rest[method](url, data, options.params);

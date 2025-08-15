@@ -54,14 +54,14 @@ class Dialog extends View {
     this.body = options.body || options.content || '';
     this.bodyView = null; // Will hold View instance if body is a View
     this.bodyClass = options.bodyClass || '';
-    
+
     // Handle different body types
     this._processBodyContent(this.body);
 
     this.footer = options.footer || null;
     this.footerView = null; // Will hold View instance if footer is a View
     this.footerClass = options.footerClass || '';
-    
+
     // Handle different footer types
     this._processFooterContent(this.footer);
 
@@ -859,7 +859,7 @@ class Dialog extends View {
   /**
    * Show a dialog with promise-based button handling
    * @param {Object} options - Dialog options
-   * @returns {Promise} Resolves with button value or rejects on dismiss
+   * @returns {Promise} Resolves with button value or null on dismiss
    */
   static async showDialog(options = {}) {
     // Handle legacy signature (message, title, options)
@@ -883,9 +883,10 @@ class Dialog extends View {
       buttons = [
         { text: 'OK', class: 'btn-primary', value: true }
       ],
+      rejectOnDismiss = false, // Default to return null on dismissal
       ...dialogOptions
     } = options;
-    
+
     // Create the dialog
     const dialog = new Dialog({
       title,
@@ -900,16 +901,16 @@ class Dialog extends View {
       })),
       ...dialogOptions
     });
-    
+
     // Render and mount
     await dialog.render();
     document.body.appendChild(dialog.element);
     await dialog.mount();
-    
+
     // Return promise that resolves based on button clicks
     return new Promise((resolve, reject) => {
       let resolved = false;
-      
+
       // Handle button clicks
       const buttonElements = dialog.element.querySelectorAll('.modal-footer button');
       buttonElements.forEach((btnElement, index) => {
@@ -919,27 +920,31 @@ class Dialog extends View {
             if (!resolved) {
               resolved = true;
               dialog.hide();
-              
+
               // Resolve with button value or index
-              const value = buttonConfig.value !== undefined 
-                  ? buttonConfig.value 
+              const value = buttonConfig.value !== undefined
+                  ? buttonConfig.value
                   : buttonConfig.action || index;
               resolve(value);
             }
           });
         }
       });
-      
-      // Handle backdrop click or ESC key (rejection)
+
+      // Handle backdrop click or ESC key
       dialog.on('hidden', () => {
         if (!resolved) {
           resolved = true;
           dialog.destroy();
           dialog.element.remove();
-          reject(new Error('Dialog dismissed'));
+          if (rejectOnDismiss) {
+            reject(new Error('Dialog dismissed'));
+          } else {
+            resolve(null);
+          }
         }
       });
-      
+
       // Clean up after resolution
       dialog.on('hidden', () => {
         setTimeout(() => {
@@ -947,7 +952,7 @@ class Dialog extends View {
           dialog.element.remove();
         }, 100);
       });
-      
+
       // Show the dialog
       dialog.show();
     });
@@ -966,14 +971,14 @@ class Dialog extends View {
         title: 'Alert'
       };
     }
-    
+
     const {
       message = '',
       title = 'Alert',
       type = 'info', // info, success, warning, danger
       ...dialogOptions
     } = options;
-    
+
     // Add icon based on type
     let icon = '';
     let titleClass = '';
@@ -995,7 +1000,7 @@ class Dialog extends View {
         icon = '<i class="bi bi-info-circle-fill text-info me-2"></i>';
         titleClass = 'text-info';
     }
-    
+
     return Dialog.showDialog({
       title: `<span class="${titleClass}">${icon}${title}</span>`,
       body: `<p>${message}</p>`,
@@ -1123,7 +1128,7 @@ class Dialog extends View {
   /**
    * Show a form dialog using FormView
    * @param {Object} options - Form dialog options
-   * @returns {Promise<Object>} Resolves with form data or rejects on cancel
+   * @returns {Promise<Object|null>} Resolves with form data or null on cancel
    */
   static async showForm(options = {}) {
     const {
@@ -1179,7 +1184,7 @@ class Dialog extends View {
     // Show the dialog and return promise
     dialog.show();
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       let resolved = false;
 
       // Get button elements
@@ -1208,7 +1213,7 @@ class Dialog extends View {
         if (resolved) return;
         resolved = true;
         dialog.hide();
-        reject(new Error('Form cancelled'));
+        resolve(null);
       };
 
       // Attach event listeners
@@ -1225,7 +1230,7 @@ class Dialog extends View {
       dialog.on('hidden', () => {
         if (!resolved) {
           resolved = true;
-          reject(new Error('Form dismissed'));
+          resolve(null);
         }
         // Clean up
         setTimeout(() => {

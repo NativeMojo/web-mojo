@@ -4,6 +4,7 @@
  * Includes built-in refresh, add, export, and other common table operations
  */
 
+import Dialog from './Dialog.js';
 import Page from '../core/Page.js';
 import Table from './Table.js';
 import { getTemplate, components_TablePage_mst } from '../templates.js';
@@ -507,7 +508,7 @@ class TablePage extends Page {
       this.lastUpdated = new Date().toLocaleTimeString();
       this.loadError = null;
       this.updateStatusDisplay();
-      this.showSuccess('Data refreshed successfully');
+      // this.showSuccess('Data refreshed successfully');
     } catch (error) {
       console.error('Error refreshing data:', error);
       this.loadError = error.message || 'Failed to refresh data';
@@ -524,14 +525,19 @@ class TablePage extends Page {
   async handleAdd() {
     console.log('Add new item action triggered');
 
-    // Default implementation - override in subclass
-    this.showInfo(`Add new ${this.modelName} - implement in subclass`);
+    const data = await Dialog.showForm({
+        title: `Create ${this.modelName}`,
+        formConfig: this.options.formCreate || this.options.formEdit,
+    });
+    let model = new this.collection.ModelClass();
+    await model.save(data);
+    this.refreshTable();
 
     // Emit event for custom handling
-    this.emit('table:add', {
-      modelName: this.modelName,
-      collection: this.table?.collection
-    });
+    // this.emit('table:add', {
+    //   modelName: this.modelName,
+    //   collection: this.table?.collection
+    // });
   }
 
   /**
@@ -797,7 +803,7 @@ class TablePage extends Page {
     await super.onAfterRender();
 
     // Bind action buttons
-    this.bindActionButtons();
+    // this.bindActionButtons();
   }
 
   /**
@@ -825,7 +831,7 @@ class TablePage extends Page {
    */
   async onBeforeDestroy() {
     // Unbind action buttons
-    this.unbindActionButtons();
+    // this.unbindActionButtons();
 
     // Clear debounce timer
     if (this.searchDebounceTimer) {
