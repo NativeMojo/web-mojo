@@ -20,6 +20,7 @@ class TodosPage extends TablePage {
             ...options,
             name: 'todos',
             title: 'Todo List',
+            modelName: 'Todo',
             Collection: TodoList,
             formCreate: TodoForms.create,
             formEdit: TodoForms.create,

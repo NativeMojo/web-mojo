@@ -443,6 +443,10 @@
     background: #555;
 }
 
+.data-view-item .data-view-label {
+    font-size: 0.6rem;
+}
+
 /* Dark mode scrollbar */
 [data-bs-theme="dark"] .table-container::-webkit-scrollbar-track {
     background: #2b2b2b;

@@ -1123,7 +1123,7 @@ class Table extends View {
           </button>`;
 
         case 'edit':
-          return `<button class="btn btn-sm btn-outline-secondary" data-action="item-dlg" data-id="${this.getCellValue(item, {key: 'id'})}" data-mode="edit">
+          return `<button class="btn btn-sm btn-outline-secondary" data-action="item-edit" data-id="${this.getCellValue(item, {key: 'id'})}" data-mode="edit">
             <i class="bi bi-pencil"></i>
           </button>`;
 
@@ -1178,7 +1178,7 @@ class Table extends View {
           </span>
           <div class="d-flex align-items-center">
             <label class="form-label me-2 mb-0">Show:</label>
-            <select class="form-select form-select-sm" style="width: auto;" data-action="page-size">
+            <select class="form-select form-select-sm" style="width: auto;" data-change-action="page-size">
               <option value="5" ${this.size === 5 ? 'selected' : ''}>5</option>
               <option value="10" ${this.size === 10 ? 'selected' : ''}>10</option>
               <option value="25" ${this.size === 25 ? 'selected' : ''}>25</option>
@@ -1303,15 +1303,7 @@ class Table extends View {
   }
 
   async handleActionAdd(event, element) {
-      const data = await Dialog.showForm({
-          title: `Create ${this.modelName}`,
-          formConfig: this.options.formCreate || this.options.formEdit,
-      });
-      if (data) {
-          let model = new this.collection.ModelClass();
-          await model.save(data);
-          await this.collection.fetch();
-      }
+      await this.onItemAdd(event);
   }
 
   async handleActionExport(event, element) {
@@ -1367,22 +1359,20 @@ class Table extends View {
     await this.onItemClicked(item, event, element);
   }
 
-  async handleActionItemDlg(event, element) {
+  async handleActionItemEdit(event, element) {
     const itemId = element.getAttribute('data-id');
     const item = itemId ? this.collection?.get(itemId) : null;
     const mode = element.getAttribute('data-mode') || 'view';
-    await this.onItemDialog(item, mode, event, element);
+    await this.onItemEdit(item, mode, event, element);
   }
 
   async handleActionDeleteItem(event, element) {
     const itemId = element.getAttribute('data-id');
     const item = itemId ? this.collection?.get(itemId) : null;
-    if (confirm('Are you sure you want to delete this item?')) {
-      await this.handleDeleteItem(item);
+    if (item) {
+        this.onItemDelete(item, event);
     }
   }
-
-
 
   /**
    * Handle item clicked - from design doc
@@ -1393,6 +1383,10 @@ class Table extends View {
   async onItemClicked(item, event, target) {
     console.log('Item clicked:', item);
     // Default implementation - can be overridden
+    const dialogPromise = Dialog.showData({
+      title: `#${item.id} ${this.options.modelName}`,
+      model: item
+    });
 
     // Emit event for external handlers
     this.emit('item-clicked', { item, event, target });
@@ -1405,12 +1399,56 @@ class Table extends View {
    * @param {Event} event - DOM event
    * @param {HTMLElement} target - Target element
    */
-  async onItemDialog(item, mode = 'view', event, target) {
+  async onItemEdit(item, mode = 'view', event, target) {
     console.log('Item dialog:', item, mode);
     // Default implementation - can be overridden
-
+    let frmConfig = this.options.formEdit || this.options.formCreate;
+    const data = await Dialog.showForm({
+        title: `EDIT - #${item.id} ${this.options.modelName}`,
+        model: item,
+        formConfig: frmConfig,
+    });
+    if (data) {
+        // let model = new this.collection.ModelClass();
+        await item.save(data);
+        // await this.collection.fetch();
+        this.render();
+    }
     // Emit event for external handlers
     this.emit('item-dialog', { item, mode, event, target });
+  }
+
+  async onItemAdd(event) {
+    console.log('Item add:', event);
+    // Default implementation - can be overridden
+    const data = await Dialog.showForm({
+        title: `Create ${this.options.modelName}`,
+        formConfig: this.options.formCreate || this.options.formEdit,
+    });
+    if (data) {
+        let model = new this.collection.ModelClass();
+        await model.save(data);
+        await this.collection.fetch();
+    }
+    // Emit event for external handlers
+    this.emit('item-add', { event });
+  }
+
+  async onItemDelete(item, event) {
+    console.log('Item delete:', event);
+    // Default implementation - can be overridden
+    const confirmed = await Dialog.confirm(
+      'Are you sure you want to delete this item?',
+      'Confirm Action'
+    );
+
+    if (confirmed) {
+        await item.destroy();
+        await this.collection.fetch();
+        // Emit event for external handlers
+        this.emit('item-delete', { event });
+    }
+
   }
 
   /**
@@ -1489,7 +1527,7 @@ class Table extends View {
     // Update size and reset to beginning with proper event handling
     this.setSize(newSize, false);  // Don't emit yet
     this.setStart(0);              // This will emit params-changed
-
+    this.emit('params-changed');
     // For REST collections, fetch data with new page size
     if (this.collection?.restEnabled) {
       try {

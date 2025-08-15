@@ -834,7 +834,7 @@ class View {
           templateContent = await response.text();
         } catch (error) {
           console.error(`Failed to load template from ${this.template}:`, error);
-          throw error;
+          this.showError(`Failed to load template from ${this.template}: ${error.message}`);
         }
       }
     } else if (typeof this.template === 'function') {
@@ -1308,15 +1308,7 @@ class View {
       });
     } catch (importError) {
       // Fallback to MOJO framework dialog if Dialog import fails
-      if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showError) {
-        window.MOJO.showError(`View Error: ${message}`, {
-          details: `View ID: ${this.id}`,
-          technical: true
-        });
-      } else {
-        // Ultimate fallback to browser alert
-        alert(`Error: ${message}`);
-      }
+      alert(`Error: ${message}`);
     }
   }
 

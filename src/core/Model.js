@@ -13,18 +13,18 @@
  *
  * @example
  * const user = new User({ name: 'John', email: 'john@example.com' });
- * 
+ *
  * // Listen for any changes
  * user.on('change', (model) => {
  *   console.log('User model changed');
  *   view.render();
  * });
- * 
+ *
  * // Listen for specific field changes
  * user.on('change:name', (newName, model) => {
  *   console.log('Name changed to:', newName);
  * });
- * 
+ *
  * // Trigger events by changing data
  * user.set('name', 'Jane'); // Emits 'change' and 'change:name'
  * user.set({ name: 'Bob', email: 'bob@example.com' }); // Emits 'change' and individual field events
@@ -122,6 +122,8 @@ class Model {
   async fetch(options = {}) {
     if (!this.id && !options.id) {
       throw new Error('Cannot fetch model without ID');
+        this.showError('Cannot fetch model without ID');
+        return;
     }
 
     const id = options.id || this.id;
@@ -139,17 +141,20 @@ class Model {
             this.set(response.data.data);
         } else {
             this.errors = response.data;
-            throw new Error(response.data.error || 'Failed to fetch model');
+            // throw new Error(response.data.error || 'Failed to fetch model');
+            this.showError(response.data.error || 'Failed to fetch model');
         }
 
         return this;
       } else {
         this.errors = response.errors || {};
-        throw new Error(response.message || 'Failed to fetch model');
+        //throw new Error(response.message || 'Failed to fetch model');
+        this.showError(response.message || 'Failed to fetch model');
       }
     } catch (error) {
       this.errors = { fetch: error.message };
-      throw error;
+      // throw error;
+      this.showError(error.message);
     } finally {
       this.loading = false;
     }
@@ -177,16 +182,19 @@ class Model {
               this.set(response.data.data);
           } else {
               this.errors = response.data;
-              throw new Error(response.data.error || 'Failed to fetch model');
+              // throw new Error(response.data.error || 'Failed to fetch model');
+              this.showError(response.data.error || 'Failed to fetch model');
           }
         return this;
       } else {
         this.errors = response.errors || {};
-        throw new Error(response.message || 'Failed to save model');
+        // throw new Error(response.message || 'Failed to save model');
+        this.showError(response.message || 'Failed to save model');
       }
     } catch (error) {
       this.errors = { save: error.message };
-      throw error;
+      // throw error;
+      this.showError(error.message || 'Failed to save model');
     } finally {
       this.loading = false;
     }
@@ -217,11 +225,13 @@ class Model {
         return true;
       } else {
         this.errors = response.errors || {};
-        throw new Error(response.message || 'Failed to destroy model');
+        // throw new Error(response.message || 'Failed to destroy model');
+        this.showError(response.message || 'Failed to destroy model');
       }
     } catch (error) {
       this.errors = { destroy: error.message };
-      throw error;
+      this.showError(error.message);
+        return;
     } finally {
       this.loading = false;
     }
@@ -359,6 +369,14 @@ class Model {
    */
   static create(data = {}, options = {}) {
     return new this(data, options);
+  }
+
+  async showError(message) {
+      const Dialog = await import('../components/Dialog.js').then(m => m.default);
+      await Dialog.alert(message, 'Error', {
+        size: 'md',
+        class: 'text-danger'
+      });
   }
 }
 

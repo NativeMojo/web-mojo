@@ -215,6 +215,50 @@ class UsersTablePage extends TablePage {
 }
 ```
 
+#### DataView
+
+Key/value data display component with responsive grid layout and built-in formatting.
+
+```js
+import { DataView } from 'web-mojo';
+
+// Basic usage with raw data
+const userData = {
+  name: 'John Doe',
+  email: 'john@example.com',
+  isActive: true,
+  joinDate: '2024-01-15'
+};
+
+const dataView = new DataView({
+  data: userData,
+  columns: 2  // 2-column responsive layout
+});
+await dataView.render('#user-details');
+
+// Advanced usage with custom fields and formatting
+const profileView = new DataView({
+  model: userModel,  // or data: userData
+  fields: [
+    { name: 'name', label: 'Full Name', colSize: 6 },
+    { name: 'email', label: 'Email', type: 'email', colSize: 6 },
+    { name: 'department', label: 'Department', colSize: 4 },
+    { name: 'joinDate', label: 'Member Since', format: 'date:MMM DD, YYYY', colSize: 8 }
+  ],
+  responsive: true,
+  showEmptyValues: false
+});
+
+// Events and interactions
+dataView.on('field:click', ({ field, fieldName }) => {
+  console.log(`Clicked: ${fieldName}`);
+});
+
+// Dynamic updates
+await dataView.updateData(newData);
+await dataView.updateFields(newFieldsConfig);
+```
+
 #### Dialog
 
 A full-featured modal system with alerts, confirms, custom views, forms, and syntax-highlighted code.
@@ -241,6 +285,27 @@ document.body.appendChild(dialog.element);
 dialog.mount();
 dialog.on('action:delete-user', () => {...});
 dialog.show();
+
+// Quick data display dialog
+const userData = { name: 'John', email: 'john@example.com', active: true };
+await Dialog.showData({
+  title: 'User Details',
+  data: userData,
+  columns: 2
+});
+
+// Advanced data dialog with custom fields and model
+await Dialog.showData({
+  title: 'Profile Information',
+  model: userModel,
+  fields: [
+    { name: 'name', label: 'Full Name', colSize: 6 },
+    { name: 'email', type: 'email', colSize: 6 },
+    { name: 'joinDate', format: 'date:MMM DD, YYYY', colSize: 12 }
+  ],
+  size: 'lg',
+  closeText: 'Done'
+});
 ```
 
 #### FormBuilder & FormView

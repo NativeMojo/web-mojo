@@ -1148,6 +1148,8 @@ class Dialog extends View {
     // Create the FormView
     const formView = new FormView({
       formConfig: {
+        model: options.model,
+        data: options.data,
         ...formConfig,
         // Override submit button to prevent default form submission
         submitButton: false,
@@ -1238,6 +1240,107 @@ class Dialog extends View {
           dialog.destroy();
           dialog.element.remove();
         }, 100);
+      });
+    });
+  }
+
+  /**
+   * Show data in a dialog using DataView component
+   * @param {object} options - Configuration options
+   * @returns {Promise} Promise that resolves when dialog is closed
+   */
+  static async showData(options = {}) {
+    const {
+      title = 'Data View',
+      data = {},
+      model = null,
+      fields = [],
+      columns = 2,
+      responsive = true,
+      showEmptyValues = false,
+      emptyValueText = '—',
+      size = 'lg',
+      centered = true,
+      closeText = 'Close',
+      ...dialogOptions
+    } = options;
+
+    // Import DataView if not already available
+    const DataView = (await import('./DataView.js')).default;
+
+    // Create the DataView
+    const dataView = new DataView({
+      data,
+      model,
+      fields,
+      columns,
+      responsive,
+      showEmptyValues,
+      emptyValueText
+    });
+
+    // Create the dialog with the DataView as body
+    const dialog = new Dialog({
+      title,
+      body: dataView,
+      size,
+      centered,
+      buttons: [
+        {
+          text: closeText,
+          class: 'btn-secondary',
+          value: 'close'
+        }
+      ],
+      ...dialogOptions
+    });
+
+    // Render and mount dialog
+    await dialog.render();
+    document.body.appendChild(dialog.element);
+    await dialog.mount();
+
+    // Show the dialog and return promise
+    dialog.show();
+
+    return new Promise((resolve) => {
+      let resolved = false;
+
+      // Get close button
+      const closeBtn = dialog.element.querySelector('.modal-footer button');
+
+      // Handle close
+      const handleClose = () => {
+        if (resolved) return;
+        resolved = true;
+        dialog.hide();
+        resolve(true);
+      };
+
+      // Attach event listener
+      closeBtn?.addEventListener('click', handleClose);
+
+      // Handle ESC key or backdrop click
+      dialog.on('hidden', () => {
+        if (!resolved) {
+          resolved = true;
+          resolve(true);
+        }
+        // Clean up
+        setTimeout(() => {
+          dataView.destroy();
+          dialog.destroy();
+          dialog.element.remove();
+        }, 100);
+      });
+
+      // Forward DataView events
+      dataView.on('field:click', (data) => {
+        dialog.emit('dataview:field:click', data);
+      });
+
+      dataView.on('error', (data) => {
+        dialog.emit('dataview:error', data);
       });
     });
   }
