@@ -44,6 +44,7 @@ class Table extends View {
     this.groupFiltering = options.groupFiltering || false;
     this.listOptions = options.listOptions || {};
     this.view = options.view || 'table';
+    this.batchActions = options.batchActions || null;
 
     // Internal state
     this.collection = options.collection || null;
@@ -68,6 +69,7 @@ class Table extends View {
       bordered: false,
       hover: true,
       preloaded: false,  // Skip REST fetching when true
+      batchPanelTitle: "Rows",
       ...options
     };
 
@@ -381,6 +383,7 @@ class Table extends View {
             ${this.buildTableBody(data)}
           </table>
         </div>
+        ${this.buildBatchActionsPanel()}
         ${this.buildPagination()}
       </div>
     `;
@@ -750,7 +753,7 @@ class Table extends View {
       `;
     }).join('');
 
-    const selectAllCell = this.options.selectable ?
+    const selectAllCell = (this.batchActions && this.batchActions.length > 0) ?
       `<th style="width: 40px; padding: 0;">
         <div class="mojo-select-all-cell ${this.isAllSelected() ? 'selected' : ''}"
              data-action="select-all" data-table-instance="${this._instanceId}">
@@ -909,12 +912,12 @@ class Table extends View {
     }).join('');
 
     const itemId = String(this.getCellValue(item, {key: 'id'}));
-    const selectCell = this.options.selectable ?
+    const selectCell = (this.batchActions && this.batchActions.length > 0) ?
       `<td style="padding: 0;">
         <div class="mojo-select-cell ${this.selectedItems.has(itemId) ? 'selected' : ''}"
              data-action="select-item" data-id="${itemId}" data-table-instance="${this._instanceId}">
           <div class="mojo-checkbox">
-            <i class="bi bi-check"></i>
+            <i class="bi bi-check fs-3"></i>
           </div>
         </div>
       </td>` : '';
@@ -1547,6 +1550,10 @@ class Table extends View {
    * @param {boolean} checked - Whether to select all
    */
   handleSelectAll(checked) {
+    // Only allow selection if batch actions are enabled
+    if (!this.batchActions || this.batchActions.length === 0) {
+      return;
+    }
 
     this.selectedItems.clear();
 
@@ -1570,6 +1577,10 @@ class Table extends View {
    * @param {boolean} checked - Whether to select the item
    */
   handleSelectItem(itemId, checked) {
+    // Only allow selection if batch actions are enabled
+    if (!this.batchActions || this.batchActions.length === 0) {
+      return;
+    }
 
     if (checked) {
       this.selectedItems.add(itemId);
@@ -1879,12 +1890,12 @@ class Table extends View {
         // All selected - show checkmark on blue background
         selectAllCell.classList.add('selected');
         selectAllCell.classList.remove('indeterminate');
-        if (icon) icon.className = 'bi bi-check';
+        if (icon) icon.className = 'bi bi-check fs-3';
       } else if (hasSelected) {
         // Some selected - show minus on blue background (indeterminate)
         selectAllCell.classList.remove('selected');
         selectAllCell.classList.add('indeterminate');
-        if (icon) icon.className = 'bi bi-dash';
+        if (icon) icon.className = 'bi bi-dash fs-3';
       } else {
         // None selected - show empty checkbox on gray background
         selectAllCell.classList.remove('selected', 'indeterminate');
@@ -1898,6 +1909,22 @@ class Table extends View {
       const itemId = row.getAttribute('data-id');
       row.classList.toggle('selected', this.selectedItems.has(itemId));
     });
+
+    // Update batch actions panel if batch actions are enabled
+    if (this.batchActions && this.batchActions.length > 0) {
+      const batchPanel = this.element.querySelector('.batch-actions-panel');
+      const batchCount = this.element.querySelector('.batch-select-count');
+
+      if (batchPanel && batchCount) {
+        const selectedCount = this.selectedItems.size;
+
+        // Update count display
+        batchCount.textContent = selectedCount;
+
+        // Show/hide panel based on selection
+        batchPanel.style.display = selectedCount > 0 ? 'block' : 'none';
+      }
+    }
   }
 
   /**
@@ -2056,7 +2083,6 @@ class Table extends View {
 
     // Reset state
     this.selectedItems.clear();
-    this.collection = null;
   }
 
 
@@ -2107,6 +2133,49 @@ class Table extends View {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }
+
+  buildBatchActionsPanel() {
+      if (!this.batchActions || this.batchActions.length === 0) {
+          return '';
+      }
+
+      let actionsHTML = '';
+      this.batchActions.forEach(action => {
+          actionsHTML += `
+              <div class="batch-select-action text-center px-2" data-action="${action.action}">
+                  <div class="batch-action-icon fs-3">
+                      <i class="${action.icon}"></i>
+                  </div>
+                  <div class="batch-action-title small">${action.label}</div>
+              </div>
+          `;
+      });
+
+      return `
+          <div class="batch-actions-panel rounded-start rounded-end" style="display: none;">
+              <div class="batch-select-panel rounded-start rounded-end">
+                  <div class="row g-0">
+                      <div class="col-auto">
+                          <div class="batch-select-count rounded-start">0</div>
+                      </div>
+                      <div class="col">
+                          <div class="ps-2 batch-select-title">${this.options.batchPanelTitle}</div>
+                      </div>
+                      <div class="col">
+                          <div class="batch-select-actions d-flex justify-content-end">
+                              ${actionsHTML}
+                          </div>
+                      </div>
+                      <div class="col-auto">
+                          <div class="batch-select-end rounded-end">
+
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      `;
   }
 
 }

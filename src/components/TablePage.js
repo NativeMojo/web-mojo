@@ -144,6 +144,7 @@ class TablePage extends Page {
       collection: this.tableConfig.collection,  // Or existing collection instance
       columns: this.tableConfig.columns,
       filters: this.tableConfig.filters,
+      batchActions: this.tableConfig.batchActions,
       formCreate: TodoForms.create,
       showRefresh: this.showRefresh,
       showAdd: this.showAdd,

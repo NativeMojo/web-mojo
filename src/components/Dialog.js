@@ -728,8 +728,7 @@ class Dialog extends View {
     });
 
     // Mount to body
-    await dialog.render();
-    document.body.appendChild(dialog.element);
+    await dialog.render(false);
     await dialog.mount();
 
     // Apply syntax highlighting after mounting

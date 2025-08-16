@@ -29,6 +29,7 @@ export class View {
     this.isRendering     = false;
     this.lastRenderTime  = 0;
     this.mounted         = false;
+    this.debug           = opts.debug ?? false;
 
     // keep original options
     this.options = { ...opts };
@@ -516,6 +517,104 @@ export class View {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  }
+
+
+  /**
+   * Show error message
+   * @param {string} message - Error message
+   */
+  async showError(message) {
+    console.error(`View ${this.id} error:`, message);
+
+    // Use Dialog component for better UX
+    try {
+      const Dialog = await import('../components/Dialog.js').then(m => m.default);
+      await Dialog.alert(message, 'Error', {
+        size: 'md',
+        class: 'text-danger'
+      });
+    } catch (importError) {
+      // Fallback to MOJO framework dialog if Dialog import fails
+      alert(`Error: ${message}`);
+    }
+  }
+
+  /**
+   * Show success message
+   * @param {string} message - Success message
+   */
+  async showSuccess(message) {
+    if (this.debug) {
+      console.log(`View ${this.id} success:`, message);
+    }
+
+    // Use Dialog component for better UX
+    try {
+      const Dialog = await import('../components/Dialog.js').then(m => m.default);
+      await Dialog.alert(message, 'Success', {
+        size: 'md',
+        class: 'text-success'
+      });
+    } catch (importError) {
+      // Fallback to MOJO framework dialog if Dialog import fails
+      if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showSuccess) {
+        window.MOJO.showSuccess(message);
+      } else {
+        // Ultimate fallback to browser alert
+        alert(`Success: ${message}`);
+      }
+    }
+  }
+
+  /**
+   * Show info message
+   * @param {string} message - Info message
+   */
+  async showInfo(message) {
+    console.info(`View ${this.id} info:`, message);
+
+    // Use Dialog component for better UX
+    try {
+      const Dialog = await import('../components/Dialog.js').then(m => m.default);
+      await Dialog.alert(message, 'Information', {
+        size: 'md',
+        class: 'text-info'
+      });
+    } catch (importError) {
+      // Fallback to MOJO framework dialog if Dialog import fails
+      if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showInfo) {
+        window.MOJO.showInfo(message);
+      } else {
+        // Ultimate fallback to browser alert
+        alert(`Info: ${message}`);
+      }
+    }
+  }
+
+  /**
+   * Show warning message
+   * @param {string} message - Warning message
+   */
+  async showWarning(message) {
+    console.warn(`View ${this.id} warning:`, message);
+
+    // Use Dialog component for better UX
+    try {
+      const Dialog = await import('../components/Dialog.js').then(m => m.default);
+      await Dialog.alert(message, 'Warning', {
+        size: 'md',
+        class: 'text-warning'
+      });
+    } catch (importError) {
+      // Fallback to MOJO framework dialog if Dialog import fails
+      if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showWarning) {
+        window.MOJO.showWarning(message);
+      } else {
+        // Ultimate fallback to browser alert
+        alert(`Warning: ${message}`);
+      }
+    }
   }
 
   static _genId() { return `view_${Math.random().toString(36).substr(2, 9)}`; }

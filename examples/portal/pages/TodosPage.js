@@ -86,7 +86,14 @@ class TodosPage extends TablePage {
                 pageSizes: [5, 10, 25, 50],
                 defaultPageSize: 10,
                 emptyMessage: 'No todos found. Click "Add Todo" to create your first task.',
-                emptyIcon: 'bi-inbox'
+                emptyIcon: 'bi-inbox',
+                batchActions: [
+                  { label: "Delete", icon: "bi bi-trash", action: "batch_delete" },
+                  { label: "Export", icon: "bi bi-download", action: "batch_export" },
+                  { label: "Activate", icon: "bi bi-check-circle", action: "batch_activate" },
+                  { label: "Deactivate", icon: "bi bi-x-circle", action: "batch_deactivate" },
+                  { label: "Move", icon: "bi bi-arrow-right", action: "batch_move" }
+                ],
             }
         });
     }
