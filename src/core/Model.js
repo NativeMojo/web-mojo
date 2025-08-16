@@ -115,46 +115,145 @@ class Model {
   }
 
   /**
-   * Fetch model data from API
+   * Fetch model data from API with request deduplication and cancellation
    * @param {object} options - Request options
+   * @param {number} options.debounceMs - Optional debounce delay in milliseconds
    * @returns {Promise} Promise that resolves with model data
    */
   async fetch(options = {}) {
     if (!this.id && !options.id) {
-      throw new Error('Cannot fetch model without ID');
-        this.showError('Cannot fetch model without ID');
-        return;
+      const error = 'Cannot fetch model without ID';
+      this.showError(error);
+      throw new Error(error);
     }
 
     const id = options.id || this.id;
     const url = this.buildUrl(id);
+    const requestKey = JSON.stringify({ id, url, params: options.params });
+    
+    // Handle debounced fetch
+    if (options.debounceMs && options.debounceMs > 0) {
+      return this._debouncedFetch(requestKey, options);
+    }
+    
+    // CANCEL PREVIOUS REQUEST if it's different from current request
+    if (this.currentRequest && this.currentRequestKey !== requestKey) {
+      console.info('Model: Cancelling previous request for new parameters');
+      this.abortController?.abort();
+      this.currentRequest = null;
+    }
+    
+    // REQUEST DEDUPLICATION - Return existing promise if identical request
+    if (this.currentRequest && this.currentRequestKey === requestKey) {
+      console.info('Model: Duplicate request in progress, returning existing promise');
+      return this.currentRequest;
+    }
+
+    // RATE LIMITING - Prevent requests within 100ms of last request
+    const now = Date.now();
+    const minInterval = 100; // ms
+    
+    if (this.lastFetchTime && (now - this.lastFetchTime) < minInterval) {
+      console.info('Model: Rate limited, skipping fetch');
+      return this;
+    }
 
     this.loading = true;
     this.errors = {};
-
+    this.lastFetchTime = now;
+    this.currentRequestKey = requestKey;
+    
+    // Create new AbortController for this request
+    this.abortController = new AbortController();
+    
+    // Store the promise for deduplication
+    this.currentRequest = this._performFetch(url, options, this.abortController);
+    
     try {
-      const response = await rest.GET(url, options.params);
+      const result = await this.currentRequest;
+      return result;
+    } catch (error) {
+      // Don't throw if request was cancelled
+      if (error.name === 'AbortError') {
+        console.info('Model: Request was cancelled');
+        return this;
+      }
+      throw error;
+    } finally {
+      this.currentRequest = null;
+      this.currentRequestKey = null;
+      this.abortController = null;
+    }
+  }
+
+  /**
+   * Handle debounced fetch requests
+   * @param {string} requestKey - Unique key for this request
+   * @param {object} options - Fetch options
+   * @returns {Promise} Promise that resolves with model data
+   */
+  async _debouncedFetch(requestKey, options) {
+    // Clear existing debounced fetch
+    if (this.debouncedFetchTimeout) {
+      clearTimeout(this.debouncedFetchTimeout);
+    }
+    
+    // Cancel any active request since we're about to start a new one
+    this.cancel();
+    
+    return new Promise((resolve, reject) => {
+      this.debouncedFetchTimeout = setTimeout(async () => {
+        try {
+          const result = await this.fetch({ ...options, debounceMs: 0 });
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      }, options.debounceMs);
+    });
+  }
+
+  /**
+   * Internal method to perform the actual fetch
+   * @param {string} url - API endpoint URL
+   * @param {object} options - Request options
+   * @param {AbortController} abortController - Controller for request cancellation
+   * @returns {Promise} Promise that resolves with model data
+   */
+  async _performFetch(url, options, abortController) {
+    try {
+      const response = await rest.GET(url, options.params, {
+        signal: abortController.signal
+      });
 
       if (response.success) {
         if (response.data.status) {
-            this.originalAttributes = { ...this.attributes };
-            this.set(response.data.data);
+          this.originalAttributes = { ...this.attributes };
+          this.set(response.data.data);
         } else {
-            this.errors = response.data;
-            // throw new Error(response.data.error || 'Failed to fetch model');
-            this.showError(response.data.error || 'Failed to fetch model');
+          this.errors = response.data;
+          const error = response.data.error || 'Failed to fetch model';
+          this.showError(error);
+          throw new Error(error);
         }
 
         return this;
       } else {
         this.errors = response.errors || {};
-        //throw new Error(response.message || 'Failed to fetch model');
-        this.showError(response.message || 'Failed to fetch model');
+        const error = response.message || 'Failed to fetch model';
+        this.showError(error);
+        throw new Error(error);
       }
     } catch (error) {
+      // Handle cancellation gracefully
+      if (error.name === 'AbortError') {
+        console.info('Model: Fetch was cancelled');
+        throw error;
+      }
+      
       this.errors = { fetch: error.message };
-      // throw error;
       this.showError(error.message);
+      throw error;
     } finally {
       this.loading = false;
     }
@@ -369,6 +468,35 @@ class Model {
    */
   static create(data = {}, options = {}) {
     return new this(data, options);
+  }
+
+  /**
+   * Cancel any active fetch request
+   * @returns {boolean} True if a request was cancelled, false if no active request
+   */
+  cancel() {
+    if (this.currentRequest && this.abortController) {
+      console.info('Model: Manually cancelling active request');
+      this.abortController.abort();
+      return true;
+    }
+    
+    // Cancel debounced fetch if exists
+    if (this.debouncedFetchTimeout) {
+      clearTimeout(this.debouncedFetchTimeout);
+      this.debouncedFetchTimeout = null;
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Check if model has an active fetch request
+   * @returns {boolean} True if fetch is in progress
+   */
+  isFetching() {
+    return !!this.currentRequest;
   }
 
   async showError(message) {

@@ -7,41 +7,63 @@ import View from '../core/View.js';
 
 class TopNav extends View {
     constructor(options = {}) {
+        // Handle theme/className from config
+        const navbarClass = options.theme || 'navbar navbar-expand-lg navbar-dark bg-primary';
+
         super({
             tagName: 'nav',
-            className: 'navbar navbar-expand-lg navbar-dark bg-primary',
+            className: navbarClass,
             style: 'position: relative; z-index: 1030;',
             ...options
         });
 
         // Display mode configuration
-        this.displayMode = options.displayMode || 'menu'; // 'menu' | 'page' | 'both'
+        this.displayMode = options.displayMode || 'both'; // 'menu' | 'page' | 'both'
         this.showPageIcon = options.showPageIcon !== false;
         this.showPageDescription = options.showPageDescription || false;
         this.showBreadcrumbs = options.showBreadcrumbs || false;
-        
+
         // Current page tracking
         this.currentPage = null;
         this.previousPage = null;
 
-        // Default configuration - merge with passed data
-        this.data = {
-            brandText: 'MOJO App',
-            brandRoute: '/',
-            brandIcon: 'bi bi-play-circle',
-            navbarId: `navbar-${this.id}`,
-            navItems: [],
-            rightItems: null,
-            showPageInfo: false,
-            currentPageName: '',
-            currentPageIcon: '',
-            currentPageDescription: '',
-            displayMode: this.displayMode,
-            ...this.data  // This will override defaults with passed data
+        // Store raw config for processing in onBeforeRender
+        this.config = {
+            brand: options.brand || 'MOJO App',
+            brandIcon: options.brandIcon || 'bi bi-play-circle',
+            brandRoute: options.brandRoute || '/',
+            navItems: options.navItems || [],
+            rightItems: options.rightItems || [],
+            showSidebarToggle: options.showSidebarToggle || false,
+            sidebarToggleAction: options.sidebarToggleAction || 'toggle-sidebar',
+            ...options
         };
 
         // Setup page event listeners
         this.setupPageListeners();
+    }
+
+    findMenuItem(id) {
+        let item = this.config.navItems.find(item => item.id === id);
+        if (!item) {
+            item = this.config.rightItems.find(item => item.id === id);
+        }
+        return item || null;
+    }
+
+    setUserName(username) {
+        let item = this.findMenuItem('user');
+        if (item) {
+            item.label = username;
+            this.render();
+        }
+    }
+
+    _onModelChange() {
+      this.setUserName(this.model.get("display_name"));
+      if (this.isMounted()) {
+          this.render();
+      }
     }
 
     /**
@@ -51,11 +73,11 @@ class TopNav extends View {
         return `
             <div class="container-fluid">
                 {{#data.showSidebarToggle}}
-                <button class="btn btn-sm btn-outline-light me-2" data-action="{{data.sidebarToggleAction}}">
+                <button class="btn btn-sm me-2 sidebar-toggle" data-action="{{data.sidebarToggleAction}}">
                     <i class="bi bi-list"></i>
                 </button>
                 {{/data.showSidebarToggle}}
-                
+
                 {{#data.showPageInfo}}
                 <div class="navbar-brand d-flex align-items-center">
                     {{#data.currentPageIcon}}<i class="{{data.currentPageIcon}} me-2"></i>{{/data.currentPageIcon}}
@@ -67,11 +89,11 @@ class TopNav extends View {
                     </div>
                 </div>
                 {{/data.showPageInfo}}
-                
+
                 {{^data.showPageInfo}}
                 <a class="navbar-brand" href="{{data.brandRoute}}">
                     {{#data.brandIcon}}<i class="{{data.brandIcon}} me-2"></i>{{/data.brandIcon}}
-                    {{data.brandText}}
+                    {{data.brand}}
                 </a>
                 {{/data.showPageInfo}}
 
@@ -93,14 +115,14 @@ class TopNav extends View {
                     </ul>
                     {{/data.showNavItems}}
 
-                    {{#data.rightItems}}
+                    {{#data.hasRightItems}}
                     <div class="navbar-nav ms-auto">
-                        {{#items}}
+                        {{#data.rightItems}}
                         {{#isDropdown}}
                         <div class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <a class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 {{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}
-                                {{text}}
+                                {{label}}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 {{#items}}
@@ -109,9 +131,9 @@ class TopNav extends View {
                                 {{/divider}}
                                 {{^divider}}
                                 <li>
-                                    <a class="dropdown-item" href="{{href}}" {{#action}}data-action="{{action}}"{{/action}}>
+                                    <a class="dropdown-item" role="button" {{#action}}data-action="{{action}}"{{/action}}>
                                         {{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}
-                                        {{text}}
+                                        {{label}}
                                     </a>
                                 </li>
                                 {{/divider}}
@@ -121,24 +143,108 @@ class TopNav extends View {
                         {{/isDropdown}}
                         {{^isDropdown}}
                         {{#isButton}}
-                        <button class="{{buttonClass}}" data-action="{{action}}" {{#data}}{{name}}="{{value}}"{{/data}}>
+                        <button class="{{buttonClass}}" data-action="{{action}}" data-id="{{id}}">
                             {{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}
-                            {{{text}}}
+                            {{label}}
                         </button>
                         {{/isButton}}
                         {{^isButton}}
-                        <a class="nav-link" href="{{href}}" {{#action}}data-action="{{action}}"{{/action}} {{#external}}data-external{{/external}}>
+                        <a class="nav-link" href="{{href}}" {{#action}}data-action="{{action}}"{{/action}}>
                             {{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}
-                            {{{text}}}
+                            {{label}}
                         </a>
                         {{/isButton}}
                         {{/isDropdown}}
-                        {{/items}}
+                        {{/data.rightItems}}
                     </div>
-                    {{/data.rightItems}}
+                    {{/data.hasRightItems}}
                 </div>
             </div>
         `;
+    }
+
+    /**
+     * Process and normalize data before rendering (like Sidebar)
+     */
+    async onBeforeRender() {
+        await super.onBeforeRender();
+
+        const showPageInfo = this.displayMode === 'page' || this.displayMode === 'both';
+        const showNavItems = this.displayMode === 'menu' || this.displayMode === 'both';
+
+        // Filter navItems based on permissions
+        const navItems = this.filterItemsByPermissions(this.config.navItems || []);
+
+        // Process right items
+        const rightItems = this.processRightItems(this.config.rightItems || []);
+
+        this.data = {
+            // Brand information
+            brand: this.config.brand,
+            brandIcon: this.config.brandIcon,
+            brandRoute: this.config.brandRoute,
+            
+            // Navbar configuration
+            navbarId: `navbar-${this.id}`,
+            
+            // Navigation items
+            navItems: navItems,
+            showNavItems: showNavItems,
+            
+            // Right items
+            rightItems: rightItems,
+            hasRightItems: rightItems.length > 0,
+            
+            // Page display
+            showPageInfo: showPageInfo,
+            currentPageName: this.currentPage?.title || this.currentPage?.name || '',
+            currentPageIcon: this.currentPage?.icon || this.currentPage?.pageIcon || '',
+            currentPageDescription: this.showPageDescription ? this.currentPage?.description : '',
+            
+            // Sidebar toggle
+            showSidebarToggle: this.config.showSidebarToggle,
+            sidebarToggleAction: this.config.sidebarToggleAction,
+            
+            // Display mode
+            displayMode: this.displayMode
+        };
+    }
+
+    /**
+     * Process right items configuration
+     */
+    processRightItems(rightItems) {
+        return this.filterItemsByPermissions(rightItems).map(item => {
+            const processedItem = { ...item };
+            
+            // Filter dropdown items by permissions if they exist
+            if (item.items) {
+                processedItem.items = this.filterItemsByPermissions(item.items);
+            }
+            
+            // Determine item type
+            if (processedItem.items && processedItem.items.length > 0) {
+                // Dropdown menu
+                processedItem.isDropdown = true;
+                processedItem.isButton = false;
+            } else if (item.buttonClass) {
+                // Button
+                processedItem.isButton = true;
+                processedItem.isDropdown = false;
+            } else {
+                // Link
+                processedItem.isButton = false;
+                processedItem.isDropdown = false;
+            }
+            
+            // Store handler if provided
+            if (item.handler) {
+                this.rightItemHandlers = this.rightItemHandlers || new Map();
+                this.rightItemHandlers.set(item.id, item.handler);
+            }
+            
+            return processedItem;
+        });
     }
 
     /**
@@ -146,15 +252,9 @@ class TopNav extends View {
      */
     setupPageListeners() {
         // Use global MOJO event bus if available
-        if (typeof window !== 'undefined' && window.MOJO && window.MOJO.eventBus) {
-            window.MOJO.eventBus.on('page:changed', (data) => {
-                this.onPageChanged(data);
-            });
-
-            window.MOJO.eventBus.on('page:before-change', (data) => {
-                this.onPageBeforeChange(data);
-            });
-        }
+        this.getApp().events.on("route:change", (data) => {
+            this.onPageChanged(data);
+        });
     }
 
     /**
@@ -173,14 +273,14 @@ class TopNav extends View {
      * @param {object} data - Event data with previousPage and currentPage
      */
     onPageChanged(data) {
-        this.previousPage = data.previousPage;
-        this.currentPage = data.currentPage;
-        
+        this.previousPage = this.currentPage;
+        this.currentPage = data.page;
+
         // Update display based on mode
         if (this.displayMode === 'page' || this.displayMode === 'both') {
             this.updatePageDisplay();
         }
-        
+
         // Update active menu items
         if (this.displayMode === 'menu' || this.displayMode === 'both') {
             if (this.currentPage && this.currentPage.route) {
@@ -194,20 +294,8 @@ class TopNav extends View {
      */
     updatePageDisplay() {
         if (!this.currentPage) return;
-        
-        const showPageInfo = this.displayMode === 'page' || this.displayMode === 'both';
-        const showNavItems = this.displayMode === 'menu' || this.displayMode === 'both';
-        
-        this.updateData({
-            ...this.data,
-            showPageInfo: showPageInfo,
-            showNavItems: showNavItems,
-            currentPageName: this.currentPage.displayName || this.currentPage.name || 'Page',
-            currentPageIcon: this.showPageIcon ? this.currentPage.icon : '',
-            currentPageDescription: this.showPageDescription ? this.currentPage.description : ''
-        });
-        
-        // Re-render with new data
+
+        // Just trigger re-render, onBeforeRender will handle the data processing
         if (this.mounted) {
             this.render();
         }
@@ -221,24 +309,24 @@ class TopNav extends View {
         };
 
         const normalizedCurrentRoute = normalizeRoute(currentRoute);
-        
+
         // Update active states with improved matching
         const navItems = this.data.navItems.map(item => {
             const normalizedItemRoute = normalizeRoute(item.route);
-            
+
             // Check for active state
             let isActive = false;
-            
+
             if (normalizedItemRoute === '/' && normalizedCurrentRoute === '/') {
                 // Exact match for home route
                 isActive = true;
             } else if (normalizedItemRoute !== '/' && normalizedCurrentRoute !== '/') {
                 // For non-home routes, check if current route starts with nav item route
                 // This allows /users to be active when on /users/123
-                isActive = normalizedCurrentRoute.startsWith(normalizedItemRoute) || 
+                isActive = normalizedCurrentRoute.startsWith(normalizedItemRoute) ||
                           normalizedCurrentRoute === normalizedItemRoute;
             }
-            
+
             return {
                 ...item,
                 active: isActive
@@ -248,6 +336,103 @@ class TopNav extends View {
         this.updateData({ navItems }, true);
     }
 
+    onPassThruActionProfile() {
+        // Implement profile functionality here
+        this.getApp().events.emit("portal:action", {action: "profile"});
+    }
+
+    onActionSettings() {
+        // Implement settings functionality here
+        this.getApp().events.emit("portal:action", {action: "settings"});
+    }
+
+    onActionLogout() {
+        // Implement logout functionality here
+        this.getApp().events.emit("portal:action", {action: "logout"});
+    }
+
+    /**
+     * Handle dynamic action dispatch for right items
+     */
+    async handleAction(actionName, event, element) {
+        // Check for custom handler first
+        const itemId = element.getAttribute('data-id');
+        if (itemId && this.rightItemHandlers && this.rightItemHandlers.has(itemId)) {
+            const handler = this.rightItemHandlers.get(itemId);
+            if (typeof handler === 'function') {
+                return await handler.call(this, actionName, event, element);
+            }
+        }
+
+        // Fallback to default action methods
+        const methodName = `onAction${actionName.charAt(0).toUpperCase() + actionName.slice(1).replace(/-([a-z])/g, (g) => g[1].toUpperCase())}`;
+        if (typeof this[methodName] === 'function') {
+            return await this[methodName](event, element);
+        }
+
+        // Emit action event if no handler found
+        this.emit('action', {
+            action: actionName,
+            event: event,
+            element: element,
+            topnav: this
+        });
+    }
+
+    /**
+     * Handle default actions by searching through rightItems and navItems
+     */
+    async onActionDefault(action, event, el) {
+        // Check navItems first
+        if (this.config.navItems) {
+            for (const item of this.config.navItems) {
+                if (item.action === action && item.handler) {
+                    await item.handler.call(this, action, event, el);
+                    return true;
+                }
+            }
+        }
+
+        // Check rightItems
+        if (this.config.rightItems) {
+            for (const item of this.config.rightItems) {
+                if (item.action === action && item.handler) {
+                    await item.handler.call(this, action, event, el);
+                    return true;
+                }
+                // Also check dropdown items
+                if (item.items) {
+                    for (const subItem of item.items) {
+                        if (subItem.action === action && subItem.handler) {
+                            await subItem.handler.call(this, action, event, el);
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Filter items by user permissions
+     */
+    filterItemsByPermissions(items) {
+        if (!items) return [];
+        
+        const app = this.getApp();
+        const activeUser = app?.activeUser;
+        
+        return items.filter(item => {
+            // If item has permissions and user exists, check permissions
+            if (item.permissions && activeUser) {
+                return activeUser.hasPermission(item.permissions);
+            }
+            // If no permissions required or no user, show the item
+            return true;
+        });
+    }
 
 }
 

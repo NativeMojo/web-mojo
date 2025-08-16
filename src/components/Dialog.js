@@ -89,7 +89,7 @@ class Dialog extends View {
    * Process body content to detect and handle View instances
    */
   _processBodyContent(body) {
-    if (body instanceof View) {
+    if (body && body.render) {
       this.bodyView = body;
       this.body = ''; // Clear string body
       this.addChild(this.bodyView); // Add as child for proper lifecycle

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOJO Framework Version Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #007bff;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 0.5rem;
+        }
+        h2 {
+            color: #495057;
+            margin-top: 2rem;
+        }
+        .version-info {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            color: #856404;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0.25rem;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 0.5rem 0;
+        }
+        .loading {
+            color: #6c757d;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 MOJO Framework Version Demo</h1>
+        <p>This page demonstrates how to access version information from the MOJO Framework.</p>
+
+        <h2>📦 Version Information</h2>
+        <div id="version-display" class="loading">Loading version information...</div>
+
+        <h2>🔧 Available Version APIs</h2>
+        <div class="code-block">
+<pre>
+// Simple version string
+window.MOJO.version         // "2.0.1"
+window.MOJO.VERSION         // "2.0.1" (alias)
+
+// Detailed version object
+window.MOJO.VERSION_INFO    // Full version object with methods
+
+// Version components
+window.MOJO.VERSION_INFO.major      // 2
+window.MOJO.VERSION_INFO.minor      // 0
+window.MOJO.VERSION_INFO.revision   // 1
+window.MOJO.VERSION_INFO.buildTime  // ISO timestamp
+</pre>
+        </div>
+
+        <h2>⚡ Interactive Tests</h2>
+        <div>
+            <button onclick="testBasicVersion()">Test Basic Version</button>
+            <button onclick="testVersionComparison()">Test Version Comparison</button>
+            <button onclick="testVersionObject()">Test Version Object</button>
+            <button onclick="testAllApis()">Test All APIs</button>
+        </div>
+
+        <div id="test-results"></div>
+
+        <h2>📊 Version Details</h2>
+        <div id="detailed-info" class="loading">Loading detailed information...</div>
+    </div>
+
+    <!-- Load MOJO Framework -->
+    <script type="module">
+        // Import MOJO components to ensure version is loaded
+        import { WebApp, VERSION_INFO } from './src/index.js';
+
+        // Wait for DOM and version to be ready
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(displayVersionInfo, 100);
+        });
+
+        function displayVersionInfo() {
+            const versionDisplay = document.getElementById('version-display');
+            const detailedInfo = document.getElementById('detailed-info');
+
+            try {
+                if (window.MOJO && window.MOJO.version) {
+                    versionDisplay.innerHTML = `
+                        <div class="version-info">
+                            <div class="success">✅ MOJO Framework Version: <span class="highlight">${window.MOJO.version}</span></div>
+                            <div>Build Time: ${window.MOJO.VERSION_INFO?.buildTime || 'Unknown'}</div>
+                        </div>
+                    `;
+
+                    detailedInfo.innerHTML = `
+                        <div class="version-info">
+                            <strong>Full Version Object:</strong><br>
+                            <pre>${JSON.stringify(window.MOJO.VERSION_INFO, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    versionDisplay.innerHTML = '<div class="error">❌ MOJO version not found. Framework may not be loaded.</div>';
+                    detailedInfo.innerHTML = '<div class="error">Version information unavailable.</div>';
+                }
+            } catch (error) {
+                versionDisplay.innerHTML = `<div class="error">❌ Error loading version: ${error.message}</div>`;
+                detailedInfo.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Test functions
+        window.testBasicVersion = function() {
+            const results = document.getElementById('test-results');
+            try {
+                const version = window.MOJO.version;
+                const VERSION = window.MOJO.VERSION;
+
+                results.innerHTML = `
+                    <h3>✅ Basic Version Test Results</h3>
+                    <div class="version-info">
+                        <div>window.MOJO.version: <strong>${version}</strong></div>
+                        <div>window.MOJO.VERSION: <strong>${VERSION}</strong></div>
+                        <div>Match: <strong>${version === VERSION ? '✅ Yes' : '❌ No'}</strong></div>
+                    </div>
+                `;
+            } catch (error) {
+                results.innerHTML = `<div class="error">❌ Test failed: ${error.message}</div>`;
+            }
+        };
+
+        window.testVersionComparison = function() {
+            const results = document.getElementById('test-results');
+            try {
+                const versionInfo = window.MOJO.VERSION_INFO;
+                const comparison1 = versionInfo.compare('1.0.0');
+                const comparison2 = versionInfo.compare('3.0.0');
+                const comparison3 = versionInfo.compare(versionInfo.full);
+
+                results.innerHTML = `
+                    <h3>🔍 Version Comparison Test Results</h3>
+                    <div class="version-info">
+                        <div>Current: <strong>${versionInfo.full}</strong></div>
+                        <div>vs 1.0.0: <strong>${comparison1} ${comparison1 > 0 ? '(newer)' : comparison1 < 0 ? '(older)' : '(same)'}</strong></div>
+                        <div>vs 3.0.0: <strong>${comparison2} ${comparison2 > 0 ? '(newer)' : comparison2 < 0 ? '(older)' : '(same)'}</strong></div>
+                        <div>vs itself: <strong>${comparison3} ${comparison3 === 0 ? '(same)' : '(different)'}</strong></div>
+                    </div>
+                `;
+            } catch (error) {
+                results.innerHTML = `<div class="error">❌ Test failed: ${error.message}</div>`;
+            }
+        };
+
+        window.testVersionObject = function() {
+            const results = document.getElementById('test-results');
+            try {
+                const versionInfo = window.MOJO.VERSION_INFO;
+
+                results.innerHTML = `
+                    <h3>📋 Version Object Test Results</h3>
+                    <div class="version-info">
+                        <div>Full Version: <strong>${versionInfo.full}</strong></div>
+                        <div>Major: <strong>${versionInfo.major}</strong></div>
+                        <div>Minor: <strong>${versionInfo.minor}</strong></div>
+                        <div>Revision: <strong>${versionInfo.revision}</strong></div>
+                        <div>Build Time: <strong>${new Date(versionInfo.buildTime).toLocaleString()}</strong></div>
+                        <div>toString(): <strong>${versionInfo.toString()}</strong></div>
+                    </div>
+                `;
+            } catch (error) {
+                results.innerHTML = `<div class="error">❌ Test failed: ${error.message}</div>`;
+            }
+        };
+
+        window.testAllApis = function() {
+            const results = document.getElementById('test-results');
+            try {
+                const tests = [
+                    { name: 'window.MOJO exists', test: () => typeof window.MOJO === 'object' },
+                    { name: 'window.MOJO.version exists', test: () => typeof window.MOJO.version === 'string' },
+                    { name: 'window.MOJO.VERSION exists', test: () => typeof window.MOJO.VERSION === 'string' },
+                    { name: 'window.MOJO.VERSION_INFO exists', test: () => typeof window.MOJO.VERSION_INFO === 'object' },
+                    { name: 'VERSION_INFO has compare method', test: () => typeof window.MOJO.VERSION_INFO.compare === 'function' },
+                    { name: 'VERSION_INFO has toString method', test: () => typeof window.MOJO.VERSION_INFO.toString === 'function' },
+                    { name: 'Version format is correct', test: () => /^\d+\.\d+\.\d+$/.test(window.MOJO.version) },
+                    { name: 'Build time is valid ISO date', test: () => !isNaN(Date.parse(window.MOJO.VERSION_INFO.buildTime)) }
+                ];
+
+                const testResults = tests.map(test => {
+                    try {
+                        const passed = test.test();
+                        return `<div>${passed ? '✅' : '❌'} ${test.name}</div>`;
+                    } catch (error) {
+                        return `<div>❌ ${test.name} (Error: ${error.message})</div>`;
+                    }
+                }).join('');
+
+                results.innerHTML = `
+                    <h3>🧪 All API Tests Results</h3>
+                    <div class="version-info">${testResults}</div>
+                `;
+            } catch (error) {
+                results.innerHTML = `<div class="error">❌ Test suite failed: ${error.message}</div>`;
+            }
+        };
+
+        // Auto-run basic test after loading
+        setTimeout(() => {
+            if (window.MOJO && window.MOJO.version) {
+                console.log(`🚀 MOJO Framework v${window.MOJO.version} loaded successfully!`);
+                console.log('Version Info:', window.MOJO.VERSION_INFO);
+            }
+        }, 200);
+    </script>
+</body>
+</html>

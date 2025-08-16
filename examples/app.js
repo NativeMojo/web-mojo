@@ -3,8 +3,6 @@
  * A clean, simple demonstration of the MOJO framework
  */
 
-import MOJO from '../src/mojo.js';
-
 // Import framework components
 import App from '../src/app/WebApp.js';
 import TopNav from '../src/components/TopNav.js';

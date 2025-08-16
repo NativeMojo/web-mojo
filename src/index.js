@@ -7,8 +7,8 @@
 // Import CSS files so they are included in the build
 import './styles/mojo.css';
 
-// Main MOJO import
-import MOJO from './mojo.js';
+// Import version information
+import { VERSION_INFO, VERSION, VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, BUILD_TIME } from './version.js';
 
 // Core classes
 export { default as View } from './core/View.js';
@@ -27,7 +27,7 @@ export { default as Sidebar } from './components/Sidebar.js';
 export { default as MainContent } from './components/MainContent.js';
 export { FormBuilder } from './components/FormBuilder.js';
 export { default as FormView } from './components/FormView.js';
-export { DataView } from './DataView.js';
+export { DataView } from './components/DataView.js';
 
 // Utilities
 export { default as EventBus } from './utils/EventBus.js';
@@ -48,42 +48,12 @@ export { default as Portal } from './app/Portal.js';
 export { default as NotFoundPage } from './pages/NotFoundPage.js';
 export { default as ErrorPage } from './pages/ErrorPage.js';
 
-// Main MOJO class
-export { MOJO };  // Now we're exporting the imported MOJO
-
-// Re-export all named exports from mojo.js for backward compatibility
-export {
-  View as ViewClass,
-  Page as PageClass,
-  Router as RouterClass,
-  EventBus as EventBusClass,
-  Model as RestModel,  // Alias for backward compatibility
-  Collection as DataList  // Alias for backward compatibility
-} from './mojo.js';
-
-/**
- * Create and initialize a new MOJO application
- * @param {Object} config - Configuration options
- * @returns {MOJO} Initialized MOJO instance
- */
-export function createMOJO(config = {}) {
-  // Use the statically imported MOJO class
-  const mojo = MOJO.create(config);
-
-  // Make MOJO globally available if specified (default: true for backward compatibility)
-  if (config.global !== false) {
-    window.MOJO = mojo;
-  }
-
-  return mojo;
-}
-
-// Export version
-export const VERSION = '2.0.0';
+export { User, UserList, UserForms} from './models/User.js';
+export { Group, GroupList, GroupForms} from './models/Group.js';
 
 // Export framework metadata
 export const FRAMEWORK_NAME = 'MOJO';
 export const PACKAGE_NAME = 'web-mojo';
 
-// Default export
-export default MOJO;
+// Export version information
+export { VERSION_INFO, VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, BUILD_TIME };

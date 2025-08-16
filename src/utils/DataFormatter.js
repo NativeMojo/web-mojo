@@ -21,7 +21,14 @@ class DataFormatter {
     this.register('relative', this.relative.bind(this));
     this.register('fromNow', this.relative.bind(this)); // Alias
     this.register('iso', this.iso.bind(this));
-    
+    this.register('epoch', (v) => {
+      if (v === null || v === undefined || v === '') return v;
+      const num = parseFloat(v);
+      if (isNaN(num)) return v;
+      // Convert seconds to milliseconds
+      return num * 1000;
+    });
+
     // Number formatters
     this.register('number', this.number.bind(this));
     this.register('currency', this.currency.bind(this));
@@ -29,7 +36,7 @@ class DataFormatter {
     this.register('filesize', this.filesize.bind(this));
     this.register('ordinal', this.ordinal.bind(this));
     this.register('compact', this.compact.bind(this));
-    
+
     // String formatters
     this.register('uppercase', (v) => String(v).toUpperCase());
     this.register('lowercase', (v) => String(v).toLowerCase());
@@ -38,7 +45,7 @@ class DataFormatter {
     this.register('slug', this.slug.bind(this));
     this.register('initials', this.initials.bind(this));
     this.register('mask', this.mask.bind(this));
-    
+
     // HTML/Web formatters
     this.register('email', this.email.bind(this));
     this.register('phone', this.phone.bind(this));
@@ -48,12 +55,15 @@ class DataFormatter {
     this.register('boolean', this.boolean.bind(this));
     this.register('yesno', (v) => this.boolean(v, 'Yes', 'No'));
     this.register('icon', this.icon.bind(this));
-    
+    this.register('avatar', this.avatar.bind(this));
+    this.register('image', this.image.bind(this));
+
     // Utility formatters
     this.register('default', this.default.bind(this));
     this.register('json', this.json.bind(this));
     this.register('raw', (v) => v);
     this.register('custom', (v, fn) => typeof fn === 'function' ? fn(v) : v);
+    this.register('iter', this.iter.bind(this));
   }
 
   /**
@@ -99,10 +109,10 @@ class DataFormatter {
    */
   pipe(value, pipeString) {
     if (!pipeString) return value;
-    
+
     // Split by pipe and process each formatter
     const pipes = this.parsePipeString(pipeString);
-    
+
     return pipes.reduce((currentValue, pipe) => {
       return this.apply(pipe.name, currentValue, ...pipe.args);
     }, value);
@@ -116,14 +126,14 @@ class DataFormatter {
   parsePipeString(pipeString) {
     const pipes = [];
     const tokens = pipeString.split('|').map(s => s.trim());
-    
+
     for (const token of tokens) {
       const parsed = this.parseFormatter(token);
       if (parsed) {
         pipes.push(parsed);
       }
     }
-    
+
     return pipes;
   }
 
@@ -136,10 +146,10 @@ class DataFormatter {
     // Match formatter with optional arguments
     const match = token.match(/^([a-zA-Z_]\w*)\s*(?:\((.*)\))?$/);
     if (!match) return null;
-    
+
     const [, name, argsString] = match;
     const args = argsString ? this.parseArguments(argsString) : [];
-    
+
     return { name, args };
   }
 
@@ -154,10 +164,10 @@ class DataFormatter {
     let inQuotes = false;
     let quoteChar = null;
     let depth = 0;
-    
+
     for (let i = 0; i < argsString.length; i++) {
       const char = argsString[i];
-      
+
       if (!inQuotes && (char === '"' || char === "'")) {
         inQuotes = true;
         quoteChar = char;
@@ -179,11 +189,11 @@ class DataFormatter {
         current += char;
       }
     }
-    
+
     if (current.trim()) {
       args.push(this.parseValue(current.trim()));
     }
-    
+
     return args;
   }
 
@@ -198,18 +208,18 @@ class DataFormatter {
         (value.startsWith("'") && value.endsWith("'"))) {
       return value.slice(1, -1);
     }
-    
+
     // Boolean values
     if (value === 'true') return true;
     if (value === 'false') return false;
     if (value === 'null') return null;
     if (value === 'undefined') return undefined;
-    
+
     // Numbers
     if (!isNaN(value) && value !== '') {
       return Number(value);
     }
-    
+
     // Objects
     if (value.startsWith('{') && value.endsWith('}')) {
       try {
@@ -218,7 +228,7 @@ class DataFormatter {
         // Not valid JSON, return as string
       }
     }
-    
+
     return value;
   }
 
@@ -232,7 +242,7 @@ class DataFormatter {
    */
   date(value, format = 'MM/DD/YYYY') {
     if (!value) return '';
-    
+
     let date;
     if (value instanceof Date) {
       date = value;
@@ -248,9 +258,9 @@ class DataFormatter {
     } else {
       date = new Date(value);
     }
-    
+
     if (isNaN(date.getTime())) return String(value);
-    
+
     // Build replacements with placeholders to avoid corruption
     const tokens = {
       'YYYY': date.getFullYear(),
@@ -264,12 +274,12 @@ class DataFormatter {
       'DD': String(date.getDate()).padStart(2, '0'),
       'D': date.getDate()
     };
-    
+
     // Replace tokens using a single pass with placeholders
     let result = format;
     const tokenPattern = new RegExp(`(${Object.keys(tokens).join('|')})`, 'g');
     result = result.replace(tokenPattern, (match) => tokens[match] || match);
-    
+
     return result;
   }
 
@@ -283,7 +293,7 @@ class DataFormatter {
     if (!value) return '';
     const date = value instanceof Date ? value : new Date(value);
     if (isNaN(date.getTime())) return String(value);
-    
+
     const hours = date.getHours();
     const replacements = {
       'HH': String(hours).padStart(2, '0'),
@@ -297,13 +307,13 @@ class DataFormatter {
       'A': hours >= 12 ? 'PM' : 'AM',
       'a': hours >= 12 ? 'pm' : 'am'
     };
-    
+
     let result = format;
     const sortedKeys = Object.keys(replacements).sort((a, b) => b.length - a.length);
     for (const key of sortedKeys) {
       result = result.replace(new RegExp(key, 'g'), replacements[key]);
     }
-    
+
     return result;
   }
 
@@ -330,14 +340,14 @@ class DataFormatter {
     if (!value) return '';
     const date = value instanceof Date ? value : new Date(value);
     if (isNaN(date.getTime())) return String(value);
-    
+
     const now = new Date();
     const diffMs = now - date;
     const diffSecs = Math.floor(diffMs / 1000);
     const diffMins = Math.floor(diffSecs / 60);
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
-    
+
     if (short) {
       if (diffDays > 365) return Math.floor(diffDays / 365) + 'y';
       if (diffDays > 30) return Math.floor(diffDays / 30) + 'mo';
@@ -347,7 +357,7 @@ class DataFormatter {
       if (diffMins > 0) return diffMins + 'm';
       return 'now';
     }
-    
+
     if (diffDays > 365) {
       const years = Math.floor(diffDays / 365);
       return years + ' year' + (years > 1 ? 's' : '') + ' ago';
@@ -365,7 +375,7 @@ class DataFormatter {
     if (diffHours > 0) return diffHours + ' hour' + (diffHours > 1 ? 's' : '') + ' ago';
     if (diffMins > 0) return diffMins + ' minute' + (diffMins > 1 ? 's' : '') + ' ago';
     if (diffSecs > 30) return diffSecs + ' seconds ago';
-    
+
     return 'just now';
   }
 
@@ -379,7 +389,7 @@ class DataFormatter {
     if (!value) return '';
     const date = value instanceof Date ? value : new Date(value);
     if (isNaN(date.getTime())) return String(value);
-    
+
     if (dateOnly) {
       return date.toISOString().split('T')[0];
     }
@@ -398,7 +408,7 @@ class DataFormatter {
   number(value, decimals = 2, locale = 'en-US') {
     const num = parseFloat(value);
     if (isNaN(num)) return String(value);
-    
+
     return num.toLocaleString(locale, {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals
@@ -415,7 +425,7 @@ class DataFormatter {
   currency(value, symbol = '$', decimals = 2) {
     const num = parseFloat(value);
     if (isNaN(num)) return String(value);
-    
+
     const formatted = this.number(num, decimals);
     return symbol + formatted;
   }
@@ -430,7 +440,7 @@ class DataFormatter {
   percent(value, decimals = 0, multiply = true) {
     const num = parseFloat(value);
     if (isNaN(num)) return String(value);
-    
+
     const percent = multiply ? num * 100 : num;
     return this.number(percent, decimals) + '%';
   }
@@ -445,20 +455,20 @@ class DataFormatter {
   filesize(value, binary = false, decimals = 1) {
     const bytes = parseInt(value);
     if (isNaN(bytes)) return String(value);
-    
-    const units = binary ? 
-      ['B', 'KiB', 'MiB', 'GiB', 'TiB'] : 
+
+    const units = binary ?
+      ['B', 'KiB', 'MiB', 'GiB', 'TiB'] :
       ['B', 'KB', 'MB', 'GB', 'TB'];
     const divisor = binary ? 1024 : 1000;
-    
+
     let size = bytes;
     let unitIndex = 0;
-    
+
     while (size >= divisor && unitIndex < units.length - 1) {
       size /= divisor;
       unitIndex++;
     }
-    
+
     const decimalPlaces = unitIndex === 0 ? 0 : decimals;
     return `${size.toFixed(decimalPlaces)} ${units[unitIndex]}`;
   }
@@ -472,15 +482,15 @@ class DataFormatter {
   ordinal(value, suffixOnly = false) {
     const num = parseInt(value);
     if (isNaN(num)) return String(value);
-    
+
     const j = num % 10;
     const k = num % 100;
-    
+
     let suffix = 'th';
     if (j === 1 && k !== 11) suffix = 'st';
     else if (j === 2 && k !== 12) suffix = 'nd';
     else if (j === 3 && k !== 13) suffix = 'rd';
-    
+
     return suffixOnly ? suffix : num + suffix;
   }
 
@@ -493,10 +503,10 @@ class DataFormatter {
   compact(value, decimals = 1) {
     const num = parseFloat(value);
     if (isNaN(num)) return String(value);
-    
+
     const abs = Math.abs(num);
     const sign = num < 0 ? '-' : '';
-    
+
     if (abs >= 1e9) {
       return sign + (abs / 1e9).toFixed(decimals) + 'B';
     }
@@ -506,7 +516,7 @@ class DataFormatter {
     if (abs >= 1e3) {
       return sign + (abs / 1e3).toFixed(decimals) + 'K';
     }
-    
+
     return String(num);
   }
 
@@ -521,7 +531,7 @@ class DataFormatter {
   capitalize(value, all = true) {
     const str = String(value);
     if (!str) return '';
-    
+
     if (all) {
       return str.replace(/\b\w/g, c => c.toUpperCase());
     }
@@ -582,7 +592,7 @@ class DataFormatter {
   mask(value, char = '*', showLast = 4) {
     const str = String(value);
     if (str.length <= showLast) return str;
-    
+
     const masked = char.repeat(Math.max(0, str.length - showLast));
     const visible = str.slice(-showLast);
     return masked + visible;
@@ -599,15 +609,15 @@ class DataFormatter {
   email(value, options = {}) {
     const email = String(value).trim();
     if (!email) return '';
-    
+
     if (options.link === false) {
       return email;
     }
-    
+
     const subject = options.subject ? `?subject=${encodeURIComponent(options.subject)}` : '';
     const body = options.body ? `&body=${encodeURIComponent(options.body)}` : '';
     const className = options.class ? ` class="${options.class}"` : '';
-    
+
     return `<a href="mailto:${email}${subject}${body}"${className}>${email}</a>`;
   }
 
@@ -620,7 +630,7 @@ class DataFormatter {
    */
   phone(value, format = 'US', link = true) {
     let phone = String(value).replace(/\D/g, '');
-    
+
     let formatted = phone;
     if (format === 'US') {
       if (phone.length === 10) {
@@ -629,11 +639,11 @@ class DataFormatter {
         formatted = `+1 (${phone.slice(1, 4)}) ${phone.slice(4, 7)}-${phone.slice(7)}`;
       }
     }
-    
+
     if (!link) {
       return formatted;
     }
-    
+
     return `<a href="tel:${phone}">${formatted}</a>`;
   }
 
@@ -647,16 +657,16 @@ class DataFormatter {
   url(value, text = null, newWindow = true) {
     let url = String(value).trim();
     if (!url) return '';
-    
+
     // Add protocol if missing
     if (!/^https?:\/\//.test(url)) {
       url = 'https://' + url;
     }
-    
+
     const linkText = text || url;
     const target = newWindow ? ' target="_blank"' : '';
     const rel = newWindow ? ' rel="noopener noreferrer"' : '';
-    
+
     return `<a href="${url}"${target}${rel}>${linkText}</a>`;
   }
 
@@ -670,7 +680,7 @@ class DataFormatter {
     const text = String(value);
     const badgeType = type === 'auto' ? this.inferBadgeType(text) : type;
     const className = badgeType ? `bg-${badgeType}` : 'bg-secondary';
-    
+
     return `<span class="badge ${className}">${text}</span>`;
   }
 
@@ -698,7 +708,7 @@ class DataFormatter {
    */
   status(value, icons = {}, colors = {}) {
     const status = String(value).toLowerCase();
-    
+
     const defaultIcons = {
       'active': '✓',
       'inactive': '✗',
@@ -707,7 +717,7 @@ class DataFormatter {
       'error': '✗',
       'warning': '⚠'
     };
-    
+
     const defaultColors = {
       'active': 'success',
       'inactive': 'secondary',
@@ -716,10 +726,10 @@ class DataFormatter {
       'error': 'danger',
       'warning': 'warning'
     };
-    
+
     const icon = icons[status] || defaultIcons[status] || '';
     const color = colors[status] || defaultColors[status] || 'secondary';
-    
+
     return `<span class="text-${color}">${icon}${icon ? ' ' : ''}${value}</span>`;
   }
 
@@ -744,6 +754,90 @@ class DataFormatter {
     const key = String(value).toLowerCase();
     const icon = mapping[key] || '';
     return icon ? `<i class="${icon}"></i>` : '';
+  }
+
+  /**
+   * Format value as Bootstrap 5 image with optional rendition support
+   * @param {string|object} value - URL string or file object with renditions
+   * @param {string} rendition - Desired rendition (thumbnail, thumbnail_sm, etc.)
+   * @param {string} classes - Additional CSS classes
+   * @param {string} alt - Alt text for the image
+   * @returns {string} Bootstrap image HTML
+   */
+  image(value, rendition = 'thumbnail', classes = 'img-fluid', alt = '') {
+    const url = this._extractImageUrl(value, rendition);
+    if (!url) return '';
+
+    return `<img src="${url}" class="${classes}" alt="${alt}" />`;
+  }
+
+  /**
+   * Format value as Bootstrap 5 avatar (circular image)
+   * @param {string|object} value - URL string or file object with renditions
+   * @param {string} size - Avatar size (xs, sm, md, lg, xl)
+   * @param {string} classes - Additional CSS classes
+   * @param {string} alt - Alt text for the avatar
+   * @returns {string} Bootstrap avatar HTML
+   */
+  avatar(value, size = 'md', classes = '', alt = '') {
+    const url = this._extractImageUrl(value, 'square_sm');
+    if (!url) return '';
+
+    // Bootstrap avatar sizing
+    const sizeClasses = {
+      'xs': 'width: 1.5rem; height: 1.5rem;',
+      'sm': 'width: 2rem; height: 2rem;',
+      'md': 'width: 3rem; height: 3rem;',
+      'lg': 'width: 4rem; height: 4rem;',
+      'xl': 'width: 5rem; height: 5rem;'
+    };
+
+    const sizeStyle = sizeClasses[size] || sizeClasses['md'];
+    const baseClasses = 'rounded-circle object-fit-cover';
+    const allClasses = `${baseClasses} ${classes}`.trim();
+
+    return `<img src="${url}" class="${allClasses}" style="${sizeStyle}" alt="${alt}" />`;
+  }
+
+  /**
+   * Helper method to extract image URL from string or file object
+   * @param {string|object} value - URL string or file object with renditions
+   * @param {string} preferredRendition - Preferred rendition name
+   * @returns {string|null} Image URL or null if not found
+   */
+  _extractImageUrl(value, preferredRendition = 'thumbnail') {
+    // Handle null/undefined
+    if (!value) return null;
+
+    // Handle string URL directly
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    // Handle file object with renditions
+    if (typeof value === 'object') {
+      // Check if it has renditions
+      if (value.renditions && typeof value.renditions === 'object') {
+        // Try to get preferred rendition
+        const rendition = value.renditions[preferredRendition];
+        if (rendition && rendition.url) {
+          return rendition.url;
+        }
+
+        // Fallback to any available rendition
+        const availableRenditions = Object.values(value.renditions);
+        if (availableRenditions.length > 0 && availableRenditions[0].url) {
+          return availableRenditions[0].url;
+        }
+      }
+
+      // Fallback to original file URL
+      if (value.url) {
+        return value.url;
+      }
+    }
+
+    return null;
   }
 
   // ============= Utility Formatters =============
@@ -796,6 +890,28 @@ class DataFormatter {
    */
   list() {
     return Array.from(this.formatters.keys()).sort();
+  }
+
+  iter(v) {
+      if (v === null || v === undefined) {
+        return [];
+      }
+
+      // If it's already an array, return as-is
+      if (Array.isArray(v)) {
+        return v;
+      }
+
+      // If it's an object, convert to key-value pairs
+      if (typeof v === 'object') {
+        return Object.entries(v).map(([key, value]) => ({
+          key: key,
+          value: value
+        }));
+      }
+
+      // For primitive values, wrap in array with single item
+      return [{ key: '0', value: v }];
   }
 }
 

@@ -23,7 +23,7 @@ export class View {
     this.containerId = opts.containerId ?? null;            // container to render into
     this.parent      = opts.parent ?? null;                 // parent view
     this.children    = opts.children ?? {};                 // dict of id -> child view
-    this.template    = opts.template ?? "";                 // string or function(model) -> string
+    this.template    = opts.template || opts.templateUrl || "";                 // string or function(model) -> string
     this.model       = opts.model ?? {};
     this.data        = opts.data ?? {};                    // data for Mustache or basic templating
     this.isRendering     = false;
@@ -45,7 +45,14 @@ export class View {
   // ---------------------------------------------
   // Lifecycle hooks (overridable)
   // ---------------------------------------------
-  onInit() {}
+  async onInit() {
+
+  }
+  async onInitView() {
+      if (this.initialized) return;
+      this.initialized = true;
+      await this.onInit();
+  }
   async onBeforeRender() {}
   async onAfterRender() {}
   async onBeforeMount() {}
@@ -56,7 +63,28 @@ export class View {
   // ---------------------------------------------
   // Public API
   // ---------------------------------------------
-  setModel(model = {}) { this.model = model; return this; }
+  setModel(model = {}) {
+      let isDiff = model !== this.model;
+      if (!isDiff) return this;
+      if (this.model && this.model.off) {
+          this.model.off("change", this._onModelChange, this);
+      }
+      this.model = model;
+      if (this.model && this.model.on) {
+          this.model.on("change", this._onModelChange, this);
+      }
+      if (isDiff ) {
+          this._onModelChange();
+      }
+      return this;
+  }
+
+  _onModelChange() {
+    if (this.isMounted()) {
+        this.render();
+    }
+  }
+
   setTemplate(tpl)     { this.template = tpl ?? ""; return this; }
 
   addChild(childView) {
@@ -65,7 +93,7 @@ export class View {
       childView.parent = this;
       this.children[childView.id] = childView;
     } catch (e) { View._warn("addChild error", e); }
-    return this;
+    return childView;
   }
 
   removeChild(idOrView) {
@@ -96,6 +124,24 @@ export class View {
     return this;
   }
 
+  toggleClass(className, force) {
+    if (force === undefined) {
+      force = !this.element.classList.contains(className);
+    }
+    this.element.classList.toggle(className, force);
+    return this;
+  }
+
+  addClass(className) {
+    this.element.classList.add(className);
+    return this;
+  }
+
+  removeClass(className) {
+    this.element.classList.remove(className);
+    return this;
+  }
+
   // ---------------------------------------------
   // Render flow
   // ---------------------------------------------
@@ -112,10 +158,7 @@ export class View {
     this.lastRenderTime = now;
 
     try {
-      if (!this._initialized) {
-        this._initialized = true;
-        await this.onInit();
-      }
+      if (!this.initialized) await this.onInitView();
       this.events.unbind();
       await this.onBeforeRender();
       // 1) render own HTML (FIX #5: await the async template render)
@@ -183,6 +226,7 @@ export class View {
       }
       const el = document.createElement(this.tagName);
       this.element = el;
+      this.el = el;
       this._syncAttrs();
       return el;
     } catch (e) {
@@ -227,11 +271,13 @@ export class View {
       const parentEl = this.parent?.element || null;
 
       if (this.containerId) {
+        const cleanId = this.containerId.startsWith('#') ? this.containerId.substring(1) : this.containerId;
+
         if (parentEl) {
-          const container = byId(parentEl, this.containerId);
+          const container = byId(parentEl, cleanId);
           return { mode: "into-container-under-parent", container, parentEl };
         } else {
-          const container = inBody(this.containerId);
+          const container = inBody(cleanId);
           return { mode: "into-container-body", container };
         }
       } else {
@@ -357,19 +403,19 @@ export class View {
     if (this._templateCache && this.options.cacheTemplate) {
       return this._templateCache;
     }
-
-    if (!this.template) {
+    const template = this.template || this.templateUrl;
+    if (!template) {
       throw new Error('Template not found');
     }
 
     let templateContent = '';
 
-    if (typeof this.template === 'string') {
-      if (this.template.includes('<') || this.template.includes('{')) {
-        templateContent = this.template;
+    if (typeof template === 'string') {
+      if (template.includes('<') || template.includes('{')) {
+          templateContent = template;
       } else {
         try {
-          let templatePath = this.template;
+          let templatePath = template;
 
           if (window.APP && window.APP.basePath) {
             if (!templatePath.startsWith('/') &&
@@ -388,12 +434,12 @@ export class View {
           }
           templateContent = await response.text();
         } catch (error) {
-          View._warn(`Failed to load template from ${this.template}: ${error}`);
+          View._warn(`Failed to load template from ${template}: ${error}`);
           // NOTE: showError may be provided by host app
-          this.showError?.(`Failed to load template from ${this.template}: ${error.message}`);
+          this.showError?.(`Failed to load template from ${template}: ${error.message}`);
         }
       }
-    } else if (typeof this.template === 'function') {
+    } else if (typeof template === 'function') {
       templateContent = await this.template(this.data, this.state);
     }
 

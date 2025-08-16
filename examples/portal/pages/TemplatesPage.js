@@ -4,6 +4,7 @@
  */
 
 import Page from '../../../src/core/Page.js';
+import MOJOUtils from '../../../src/utils/MOJOUtils.js';
 
 class TemplatesPage extends Page {
     constructor(options = {}) {
@@ -24,12 +25,12 @@ class TemplatesPage extends Page {
         this.examples = this.getExamples();
         // Initialize with the first example
         this.currentExample = this.examples[0];
-        
+
         // Load the initial template
         if (this.currentExample.templateFile) {
             this.currentExample.template = await this.loadTemplate(this.currentExample.templateFile);
         }
-        
+
         // Set initial data for rendering
         this.data = {
             examples: this.examples.map(e => ({
@@ -249,15 +250,15 @@ class TemplatesPage extends Page {
         // Populate the textareas with initial values
         const templateInput = document.getElementById('template-input');
         const dataInput = document.getElementById('data-input');
-        
+
         if (templateInput && this.currentExample && this.currentExample.template) {
             templateInput.value = this.currentExample.template;
         }
-        
+
         if (dataInput && this.currentExample && this.currentExample.data) {
             dataInput.value = JSON.stringify(this.currentExample.data, null, 2);
         }
-        
+
         // Auto-render the first example
         this.renderCurrentExample();
     }
@@ -265,39 +266,39 @@ class TemplatesPage extends Page {
     async onActionLoadExample(event, element) {
         const exampleId = element.dataset.exampleId;
         const example = this.examples.find(e => e.id === exampleId);
-        
+
 if (example) {
     this.currentExample = example;
-            
+
     // Load the template if needed
     if (example.templateFile && !example.template) {
         example.template = await this.loadTemplate(example.templateFile);
     }
-            
+
     // Update both examples list and current example
     const examplesWithState = this.examples.map(e => ({
         ...e,
         active: e.id === example.id
     }));
-            
+
     await this.updateData({
         examples: examplesWithState,
         currentExample: this.formatExample(example)
     });
-            
+
     // Manually update textarea values after DOM updates
     setTimeout(() => {
         const templateInput = document.getElementById('template-input');
         const dataInput = document.getElementById('data-input');
-        
+
         if (templateInput && example.template) {
             templateInput.value = example.template;
         }
-        
+
         if (dataInput && example.data) {
             dataInput.value = JSON.stringify(example.data, null, 2);
         }
-        
+
         this.renderCurrentExample();
     }, 0);
 }
@@ -316,25 +317,25 @@ if (example) {
                 if (originalExample.templateFile && !originalExample.template) {
                     originalExample.template = await this.loadTemplate(originalExample.templateFile);
                 }
-                
+
                 this.currentExample = originalExample;
-                await this.updateData({ 
-                    currentExample: this.formatExample(originalExample) 
+                await this.updateData({
+                    currentExample: this.formatExample(originalExample)
                 });
-                
+
                 // Manually update textarea values after DOM updates
                 setTimeout(() => {
                     const templateInput = document.getElementById('template-input');
                     const dataInput = document.getElementById('data-input');
-                    
+
                     if (templateInput && originalExample.template) {
                         templateInput.value = originalExample.template;
                     }
-                    
+
                     if (dataInput && originalExample.data) {
                         dataInput.value = JSON.stringify(originalExample.data, null, 2);
                     }
-                    
+
                     this.renderCurrentExample();
                 }, 0);
             }
@@ -375,7 +376,8 @@ if (example) {
             const data = JSON.parse(dataInput.value);
 
             // Render using Mustache
-            const rendered = window.Mustache.render(template, data);
+            const wrappedData = MOJOUtils.wrapData(data);
+            const rendered = window.Mustache.render(template, wrappedData);
 
             // Display rendered output
             outputRendered.innerHTML = rendered;

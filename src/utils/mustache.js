@@ -29,7 +29,7 @@ const escapeHtml = function(string) {
     '`': '&#x60;',
     '=': '&#x3D;'
   };
-  
+
   return String(string).replace(/[&<>"'`=\/]/g, function(s) {
     return entityMap[s];
   });
@@ -98,23 +98,23 @@ class Context {
     if (name === '.') {
       return this.view;
     }
-    
+
     // Handle dot-prefix to prevent context chain walking
     // If name starts with '.', only look in current context
     if (name && name.startsWith('.')) {
       let actualName = name.substring(1);
       let shouldIterate = false;
-      
+
       // Check for |iter suffix for array iteration
       if (actualName.endsWith('|iter')) {
         actualName = actualName.substring(0, actualName.length - 5); // Remove '|iter'
         shouldIterate = true;
       }
-      
+
       // Only check current view, not parents
       if (this.view && typeof this.view === 'object') {
         let value;
-        
+
         // Check if view has a get method for unified access
         if (typeof this.view.get === 'function') {
           try {
@@ -129,7 +129,7 @@ class Context {
             value = undefined;
           }
         }
-        
+
         // Direct property access if get didn't work
         if (value === undefined && actualName in this.view) {
           value = this.view[actualName];
@@ -137,7 +137,7 @@ class Context {
             value = value.call(this.view);
           }
         }
-        
+
         // Handle array values based on shouldIterate flag
         if (isArray(value)) {
           if (shouldIterate) {
@@ -148,13 +148,26 @@ class Context {
             return value.length > 0;
           }
         }
-        
+
+        if (isObject(value)) {
+          if (shouldIterate) {
+            // Return array of key-value pairs for iteration
+            return Object.entries(value).map(([key, val]) => ({
+              key: key,
+              value: val
+            }));
+          } else {
+            // Return boolean for existence check
+            return Object.keys(value).length > 0;
+          }
+        }
+
         return value;
       }
-      
+
       return undefined; // Don't walk up the chain
     }
-    
+
     // Original lookup logic for non-dot-prefixed names
     const cache = this.cache;
 
@@ -181,7 +194,7 @@ class Context {
             lookupHit = false;
           }
         }
-        
+
         // Fall back to standard property lookup if get method didn't work
         if (!lookupHit) {
           if (name.indexOf('.') > 0) {
@@ -265,7 +278,7 @@ class Writer {
 
   parse(template, tags) {
     tags = tags || ['{{', '}}'];
-    
+
     const cacheKey = template + ':' + tags.join(':');
     let tokens = this.templateCache.get(cacheKey);
 
@@ -285,7 +298,7 @@ class Writer {
     const scanner = new Scanner(template);
     const tokens = [];
     let start, type, value, chr, token;
-    
+
     const openingTagRe = new RegExp(escapeRegExp(openingTag) + '\\s*');
     const closingTagRe = new RegExp('\\s*' + escapeRegExp(closingTag));
     const closingCurlyRe = new RegExp('\\s*' + escapeRegExp('}' + closingTag));
@@ -299,7 +312,7 @@ class Writer {
       if (value) {
         for (let i = 0; i < value.length; ++i) {
           chr = value.charAt(i);
-          
+
           if (chr === '\n') {
             tokens.push(['text', chr]);
           } else {
@@ -343,7 +356,7 @@ class Writer {
             }
           }
         }
-        
+
         if (openSection) {
           // Add closing position if token doesn't have it yet
           if (openSection.length === 4) {
@@ -401,7 +414,7 @@ class Writer {
             [],                 // children array
             token[4] || null    // closing position (if set during parsing)
           ];
-          
+
           collector.push(sectionToken);
           sections.push(sectionToken);
           collector = sectionToken[4]; // children array

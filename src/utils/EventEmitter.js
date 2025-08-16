@@ -8,24 +8,18 @@
  *   Object.assign(MyClass.prototype, EventEmitter);
  *
  * API:
- *   on(event, callback) - Add event listener
- *   off(event, callback) - Remove event listener
- *   once(event, callback) - Add one-time event listener
+ *   on(event, callback, context) - Add event listener with optional context
+ *   off(event, callback, context) - Remove event listener
+ *   once(event, callback, context) - Add one-time event listener with optional context
  *   emit(event, ...args) - Emit event to all listeners
  *
  * @example
- * // Apply to a class
- * class MyModel {
- *   constructor() {
- *     this.data = {};
- *   }
- * }
- * Object.assign(MyModel.prototype, EventEmitter);
- *
- * // Use events
- * const model = new MyModel();
- * model.on('change', (data) => console.log('Data changed:', data));
- * model.emit('change', { newValue: 'test' });
+ * // Clean context binding
+ * model.on('change', this.handleChange, this);
+ * model.off('change', this.handleChange, this); // Easy cleanup!
+ * 
+ * // Traditional usage still works
+ * model.on('change', (data) => console.log(data));
  */
 
 const EventEmitter = {
@@ -33,17 +27,27 @@ const EventEmitter = {
    * Add an event listener
    * @param {string} event - Event name to listen for
    * @param {Function} callback - Function to call when event is emitted
+   * @param {Object} [context] - Context to bind the callback to (optional)
    * @returns {Object} This instance for method chaining
    *
    * @example
-   * model.on('change', (data) => {
-   *   console.log('Model changed:', data);
-   * });
+   * // With context binding
+   * model.on('change', this.handleChange, this);
+   * 
+   * // Without context (traditional)
+   * model.on('change', (data) => console.log(data));
    */
-  on(event, callback) {
+  on(event, callback, context) {
     if (!this._listeners) this._listeners = {};
     if (!this._listeners[event]) this._listeners[event] = [];
-    this._listeners[event].push(callback);
+    
+    const listener = {
+      callback,
+      context,
+      fn: context ? callback.bind(context) : callback
+    };
+    
+    this._listeners[event].push(listener);
     return this;
   },
 
@@ -51,24 +55,38 @@ const EventEmitter = {
    * Remove an event listener
    * @param {string} event - Event name
    * @param {Function} [callback] - Specific callback to remove. If omitted, removes all listeners for the event
+   * @param {Object} [context] - Context that was used when adding the listener
    * @returns {Object} This instance for method chaining
    *
    * @example
-   * // Remove specific listener
+   * // Remove specific listener with context
+   * model.off('change', this.handleChange, this);
+   *
+   * // Remove specific callback (any context)
    * model.off('change', myHandler);
    *
    * // Remove all listeners for an event
    * model.off('change');
    */
-  off(event, callback) {
+  off(event, callback, context) {
     if (!this._listeners || !this._listeners[event]) return this;
 
     if (!callback) {
       // Remove all listeners for event
       delete this._listeners[event];
     } else {
-      // Remove specific listener
-      this._listeners[event] = this._listeners[event].filter(fn => fn !== callback);
+      // Remove specific listener(s)
+      this._listeners[event] = this._listeners[event].filter(listener => {
+        // Match callback
+        if (listener.callback !== callback) return true;
+        
+        // If context specified, must match context too
+        if (arguments.length === 3 && listener.context !== context) return true;
+        
+        // This listener should be removed
+        return false;
+      });
+      
       if (this._listeners[event].length === 0) {
         delete this._listeners[event];
       }
@@ -80,18 +98,19 @@ const EventEmitter = {
    * Add a one-time event listener that automatically removes itself after being called
    * @param {string} event - Event name to listen for
    * @param {Function} callback - Function to call when event is emitted (called only once)
+   * @param {Object} [context] - Context to bind the callback to (optional)
    * @returns {Object} This instance for method chaining
    *
    * @example
-   * model.once('ready', () => {
-   *   console.log('Model is ready (called only once)');
-   * });
+   * model.once('ready', this.handleReady, this);
    */
-  once(event, callback) {
+  once(event, callback, context) {
     const onceWrapper = (...args) => {
       this.off(event, onceWrapper);
-      callback.apply(this, args);
+      const fn = context ? callback.bind(context) : callback;
+      fn.apply(context || this, args);
     };
+    
     this.on(event, onceWrapper);
     return this;
   },
@@ -114,11 +133,13 @@ const EventEmitter = {
    */
   emit(event, ...args) {
     if (!this._listeners || !this._listeners[event]) return this;
+    
     // Copy the listeners in case one removes itself during emit
     const listeners = this._listeners[event].slice();
-    for (const fn of listeners) {
+    
+    for (const listener of listeners) {
       try {
-        fn.apply(this, args);
+        listener.fn.apply(listener.context || this, args);
       } catch (error) {
         // Don't allow one bad handler to block other listeners
         if (console && console.error) {

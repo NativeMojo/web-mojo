@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOJO Version System Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .version-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .test-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 5px solid #007bff;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            margin: 0.5rem 0;
+        }
+        .badge-version {
+            font-size: 1.2rem;
+            padding: 0.5rem 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <div class="row">
+            <div class="col-12">
+                <!-- Header -->
+                <div class="version-card text-center">
+                    <h1 class="mb-3">🚀 MOJO Version System Test</h1>
+                    <p class="mb-0">Testing automatic version management and global accessibility</p>
+                </div>
+
+                <!-- Version Display -->
+                <div class="test-section">
+                    <h3>📦 Current Version Information</h3>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">Full Version</h5>
+                                    <span id="full-version" class="badge bg-primary badge-version">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">Build Time</h5>
+                                    <small id="build-time" class="text-muted">Loading...</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title">Components</h5>
+                                    <div>
+                                        <span id="major" class="badge bg-success">Major</span>
+                                        <span id="minor" class="badge bg-warning">Minor</span>
+                                        <span id="revision" class="badge bg-info">Revision</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Global Access Tests -->
+                <div class="test-section">
+                    <h3>🌐 Global Access Tests</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>window.MOJO.version</h5>
+                            <div class="code-block" id="global-version">Testing...</div>
+
+                            <h5>window.MOJO.VERSION</h5>
+                            <div class="code-block" id="global-version-alt">Testing...</div>
+
+                            <h5>window.MOJO.VERSION_INFO</h5>
+                            <div class="code-block" id="global-version-info">Testing...</div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Version Comparison Test</h5>
+                            <div id="comparison-test">
+                                <input type="text" class="form-control mb-2" id="compare-version" placeholder="Enter version to compare (e.g., 2.0.0)">
+                                <button class="btn btn-primary" onclick="compareVersions()">Compare</button>
+                                <div id="comparison-result" class="mt-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Framework Detection -->
+                <div class="test-section">
+                    <h3>🔍 Framework Detection Tests</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>MOJO Framework Loaded</h5>
+                            <div id="framework-status" class="mb-3">Checking...</div>
+
+                            <h5>Available Components</h5>
+                            <div id="component-list" class="mb-3">Scanning...</div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Version Methods Test</h5>
+                            <div id="method-tests">Testing...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Tests -->
+                <div class="test-section">
+                    <h3>🎮 Interactive Tests</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button class="btn btn-success me-2" onclick="refreshVersionInfo()">Refresh Version Info</button>
+                            <button class="btn btn-info me-2" onclick="showVersionObject()">Show VERSION_INFO Object</button>
+                            <button class="btn btn-warning" onclick="testVersionMethods()">Test Version Methods</button>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="interactive-results" class="mt-2">
+                                <div class="alert alert-info">
+                                    Click the buttons to run interactive tests!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Results -->
+                <div class="test-section">
+                    <h3>✅ Test Results Summary</h3>
+                    <div id="test-results" class="row">
+                        <!-- Results will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load MOJO Framework -->
+    <script type="module">
+        import { VERSION, VERSION_INFO, VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, BUILD_TIME, FRAMEWORK_NAME } from './src/index.js';
+
+        // Store globally for testing
+        window.MOJO_TEST = {
+            VERSION,
+            VERSION_INFO,
+            VERSION_MAJOR,
+            VERSION_MINOR,
+            VERSION_REVISION,
+            BUILD_TIME,
+            FRAMEWORK_NAME
+        };
+
+        // Initialize tests when DOM is ready
+        document.addEventListener('DOMContentLoaded', initializeTests);
+
+        function initializeTests() {
+            updateVersionDisplay();
+            testGlobalAccess();
+            testFrameworkDetection();
+            runAllTests();
+        }
+
+        function updateVersionDisplay() {
+            document.getElementById('full-version').textContent = VERSION;
+            document.getElementById('build-time').textContent = new Date(BUILD_TIME).toLocaleString();
+            document.getElementById('major').textContent = `Major: ${VERSION_MAJOR}`;
+            document.getElementById('minor').textContent = `Minor: ${VERSION_MINOR}`;
+            document.getElementById('revision').textContent = `Revision: ${VERSION_REVISION}`;
+        }
+
+        function testGlobalAccess() {
+            const tests = [
+                {
+                    id: 'global-version',
+                    test: () => window.MOJO?.version,
+                    expected: VERSION,
+                    name: 'window.MOJO.version'
+                },
+                {
+                    id: 'global-version-alt',
+                    test: () => window.MOJO?.VERSION,
+                    expected: VERSION,
+                    name: 'window.MOJO.VERSION'
+                },
+                {
+                    id: 'global-version-info',
+                    test: () => window.MOJO?.VERSION_INFO ? JSON.stringify(window.MOJO.VERSION_INFO, null, 2) : 'Not available',
+                    expected: null,
+                    name: 'window.MOJO.VERSION_INFO'
+                }
+            ];
+
+            tests.forEach(test => {
+                const result = test.test();
+                const element = document.getElementById(test.id);
+                const success = test.expected ? (result === test.expected) : !!result;
+
+                element.textContent = typeof result === 'object' ? JSON.stringify(result, null, 2) : result;
+                element.className = `code-block ${success ? 'border-success' : 'border-danger'}`;
+            });
+        }
+
+        function testFrameworkDetection() {
+            const frameworkLoaded = typeof window.MOJO !== 'undefined';
+            const statusEl = document.getElementById('framework-status');
+
+            if (frameworkLoaded) {
+                statusEl.innerHTML = '<span class="success">✅ MOJO Framework Loaded Successfully</span>';
+            } else {
+                statusEl.innerHTML = '<span class="error">❌ MOJO Framework Not Detected</span>';
+            }
+
+            // List available components
+            const components = [];
+            if (window.MOJO) {
+                Object.keys(window.MOJO).forEach(key => {
+                    if (typeof window.MOJO[key] !== 'undefined') {
+                        components.push(key);
+                    }
+                });
+            }
+
+            document.getElementById('component-list').innerHTML = components.length > 0
+                ? `<div class="badge bg-secondary me-1 mb-1">${components.join('</div><div class="badge bg-secondary me-1 mb-1">')}</div>`
+                : '<span class="text-muted">No components detected</span>';
+
+            // Test version methods
+            testVersionMethods();
+        }
+
+        function testVersionMethods() {
+            const methodTests = document.getElementById('method-tests');
+            let results = [];
+
+            try {
+                // Test toString method
+                const toStringResult = VERSION_INFO.toString();
+                results.push(`toString(): "${toStringResult}" ${toStringResult === VERSION ? '✅' : '❌'}`);
+
+                // Test compare method
+                const compareResult = VERSION_INFO.compare('2.0.0');
+                results.push(`compare('2.0.0'): ${compareResult} ${typeof compareResult === 'number' ? '✅' : '❌'}`);
+
+            } catch (error) {
+                results.push(`❌ Error testing methods: ${error.message}`);
+            }
+
+            methodTests.innerHTML = `<div class="code-block">${results.join('\n')}</div>`;
+        }
+
+        function runAllTests() {
+            const tests = [
+                { name: 'Version Export', test: () => VERSION === window.MOJO_TEST.VERSION },
+                { name: 'Version Info Export', test: () => VERSION_INFO && typeof VERSION_INFO === 'object' },
+                { name: 'Global MOJO Object', test: () => typeof window.MOJO === 'object' },
+                { name: 'Global Version Access', test: () => window.MOJO?.version === VERSION },
+                { name: 'Version Components', test: () => VERSION_MAJOR && VERSION_MINOR !== undefined && VERSION_REVISION !== undefined },
+                { name: 'Build Time', test: () => BUILD_TIME && new Date(BUILD_TIME).getTime() > 0 }
+            ];
+
+            const resultsEl = document.getElementById('test-results');
+            resultsEl.innerHTML = tests.map(test => {
+                const passed = test.test();
+                return `
+                    <div class="col-md-4 mb-2">
+                        <div class="alert alert-${passed ? 'success' : 'danger'} py-2">
+                            <strong>${passed ? '✅' : '❌'} ${test.name}</strong>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Interactive functions
+        window.compareVersions = function() {
+            const inputVersion = document.getElementById('compare-version').value.trim();
+            const resultEl = document.getElementById('comparison-result');
+
+            if (!inputVersion) {
+                resultEl.innerHTML = '<div class="alert alert-warning">Please enter a version to compare</div>';
+                return;
+            }
+
+            try {
+                const result = VERSION_INFO.compare(inputVersion);
+                let message, color;
+
+                if (result > 0) {
+                    message = `Current version ${VERSION} is newer than ${inputVersion}`;
+                    color = 'success';
+                } else if (result < 0) {
+                    message = `Current version ${VERSION} is older than ${inputVersion}`;
+                    color = 'warning';
+                } else {
+                    message = `Versions are equal: ${VERSION} = ${inputVersion}`;
+                    color = 'info';
+                }
+
+                resultEl.innerHTML = `<div class="alert alert-${color}">Result: ${result}<br>${message}</div>`;
+            } catch (error) {
+                resultEl.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+            }
+        };
+
+        window.refreshVersionInfo = function() {
+            updateVersionDisplay();
+            testGlobalAccess();
+            document.getElementById('interactive-results').innerHTML =
+                '<div class="alert alert-success">Version information refreshed!</div>';
+        };
+
+        window.showVersionObject = function() {
+            const obj = {
+                full: VERSION_INFO.full,
+                major: VERSION_INFO.major,
+                minor: VERSION_INFO.minor,
+                revision: VERSION_INFO.revision,
+                buildTime: VERSION_INFO.buildTime,
+                methods: ['toString()', 'compare(version)']
+            };
+
+            document.getElementById('interactive-results').innerHTML =
+                `<div class="code-block">${JSON.stringify(obj, null, 2)}</div>`;
+        };
+
+    </script>
+</body>
+</html>

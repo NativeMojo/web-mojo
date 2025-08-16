@@ -13,7 +13,7 @@ class Rest {
         'Accept': 'application/json'
       }
     };
-    
+
     this.interceptors = {
       request: [],
       response: []
@@ -55,13 +55,13 @@ class Rest {
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
-    
-    const baseURL = this.config.baseURL.endsWith('/') 
-      ? this.config.baseURL.slice(0, -1) 
+
+    const baseURL = this.config.baseURL.endsWith('/')
+      ? this.config.baseURL.slice(0, -1)
       : this.config.baseURL;
-    
+
     const endpoint = url.startsWith('/') ? url : `/${url}`;
-    
+
     return `${baseURL}${endpoint}`;
   }
 
@@ -72,7 +72,7 @@ class Rest {
    */
   buildQueryString(params = {}) {
     const searchParams = new URLSearchParams();
-    
+
     Object.entries(params).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
         if (Array.isArray(value)) {
@@ -82,7 +82,7 @@ class Rest {
         }
       }
     });
-    
+
     const queryString = searchParams.toString();
     return queryString ? `?${queryString}` : '';
   }
@@ -94,7 +94,7 @@ class Rest {
    */
   async processRequestInterceptors(request) {
     let processedRequest = { ...request };
-    
+
     for (const interceptor of this.interceptors.request) {
       try {
         processedRequest = await interceptor(processedRequest);
@@ -103,7 +103,7 @@ class Rest {
         throw error;
       }
     }
-    
+
     return processedRequest;
   }
 
@@ -127,11 +127,11 @@ class Rest {
     // Parse response body
     try {
       const contentType = response.headers.get('content-type');
-      
+
       if (contentType && contentType.includes('application/json')) {
         const jsonData = await response.json();
         responseData.data = jsonData;
-        
+
         // Handle API error responses
         if (!response.ok) {
           responseData.errors = jsonData.errors || {};
@@ -139,7 +139,7 @@ class Rest {
         }
       } else {
         responseData.data = await response.text();
-        
+
         if (!response.ok) {
           responseData.message = `HTTP ${response.status}: ${response.statusText}`;
         }
@@ -197,17 +197,17 @@ class Rest {
 
     // Handle abort signals - combine timeout and external signal if provided
     const signals = [];
-    
+
     // Add timeout signal
     if (request.options.timeout) {
       signals.push(AbortSignal.timeout(request.options.timeout));
     }
-    
+
     // Add external signal if provided
     if (request.options.signal) {
       signals.push(request.options.signal);
     }
-    
+
     // Combine signals or use single signal
     if (signals.length > 1) {
       fetchOptions.signal = AbortSignal.any ? AbortSignal.any(signals) : signals[0];
@@ -231,12 +231,12 @@ class Rest {
     try {
       // Make the request
       const response = await fetch(request.url, fetchOptions);
-      
+
       // Process response through interceptors
       const responseData = await this.processResponseInterceptors(response, request);
-      
+
       return responseData;
-      
+
     } catch (error) {
       // Handle AbortError (cancellation) - re-throw to be handled by caller
       if (error.name === 'AbortError') {
@@ -251,7 +251,7 @@ class Rest {
         headers: {},
         data: null,
         errors: { network: error.message },
-        message: error.name === 'TimeoutError' 
+        message: error.name === 'TimeoutError'
           ? `Request timeout after ${request.options.timeout}ms`
           : `Network error: ${error.message}`
       };
@@ -332,7 +332,7 @@ class Rest {
    */
   async upload(url, files, additionalData = {}, options = {}) {
     const formData = new FormData();
-    
+
     // Add files to form data
     if (files instanceof FileList) {
       Array.from(files).forEach((file, index) => {
@@ -344,12 +344,12 @@ class Rest {
       // Use provided FormData directly
       return this.POST(url, files, {}, options);
     }
-    
+
     // Add additional data
     Object.entries(additionalData).forEach(([key, value]) => {
       formData.append(key, value);
     });
-    
+
     return this.POST(url, formData, {}, options);
   }
 

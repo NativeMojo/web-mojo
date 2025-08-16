@@ -1,6 +1,6 @@
 {
     "name": "web-mojo",
-    "version": "2.0.0",
+    "version": "2.0.146",
     "description": "MOJO - A lightweight JavaScript framework for building data-driven web applications",
     "type": "module",
     "main": "./dist/web-mojo.cjs.js",
@@ -52,8 +52,9 @@
         "dev": "concurrently \"npm run build:templates:watch\" \"vite\"",
         "dev:live": "node serve-dev.js",
         "dev:watch": "vite build --watch",
-        "dev:full": "concurrently \"npm run build:templates:watch\" \"npm run dev\" \"npm run test:watch\"",
+        "dev:full": "concurrently \"npm run build:templates:watch\" \"npm run version:watch\" \"npm run dev\" \"npm run test:watch\"",
         "dev:framework": "concurrently \"npm run build:templates:watch\" \"npm run build:lib:watch\" \"npm run dev\"",
+        "dev:version": "concurrently \"npm run version:watch\" \"npm run dev\"",
         "dev:link": "npm link && npm run dev:framework",
         "dev:templates": "npm run build:templates:watch",
         "serve": "node serve-examples.js",
@@ -84,7 +85,10 @@
         "test:build": "node test/test-runner.js --suite build",
         "test:watch": "node test/test-runner.js --watch",
         "test:coverage": "node test/test-runner.js --coverage",
-        "test:migrate": "node test/test-runner.js --migrate"
+        "test:migrate": "node test/test-runner.js --migrate",
+        "version:watch": "node scripts/version-manager.js --watch",
+        "version:increment": "node scripts/version-manager.js --increment",
+        "version:init": "node scripts/version-manager.js --init"
     },
     "repository": {
         "type": "git",

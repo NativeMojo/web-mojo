@@ -47,9 +47,7 @@ const app = new WebApp({
 
     // Sidebar configuration with one collapsible menu
     sidebar: {
-        brand: 'Navigation',
-        brandIcon: 'bi-grid-3x3-gap',
-        brandSubtext: 'Main Menu',
+        header: 'Main Menu',
         items: [
             {
                 text: 'Home',

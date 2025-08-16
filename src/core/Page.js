@@ -26,6 +26,7 @@ class Page extends View {
     // Core page properties from design doc
     this.pageName = options.pageName || this.constructor.pageName || '';
     this.route = options.route || this.constructor.route || '';
+    this.title = options.title || this.pageName || '';
 
     // Set page ID if not already set and we have a page_name from constructor
     if (!this.id && this.constructor.pageName && !options.pageName) {
@@ -33,7 +34,7 @@ class Page extends View {
     }
 
     // Page metadata for event system
-    this.pageIcon = options.pageIcon || this.constructor.pageIcon || 'bi bi-file-text';
+    this.pageIcon = options.icon || options.pageIcon || this.constructor.pageIcon || 'bi bi-file-text';
     this.displayName = options.displayName || this.constructor.displayName || this.pageName || '';
     this.pageDescription = options.pageDescription || this.constructor.pageDescription || '';
 

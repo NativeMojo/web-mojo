@@ -39,6 +39,7 @@ import Router from '../core/Router.js';
 import Page from '../core/Page.js';
 import EventBus from '../utils/EventBus.js';
 import rest from '../core/Rest.js';
+import { VERSION_INFO } from '../version.js';
 
 /*!
  * MOJO Framework
@@ -53,7 +54,13 @@ class WebApp {
         this.version = config.version || '1.0.0';
         this.debug = config.debug || false;
         this.container = config.container || '#app';
-        this.pageContainer = config.pageContainer || '#page';
+
+        // Layout configuration
+        this.layoutType = config.layout || 'portal'; // 'portal', 'single', 'custom', 'none'
+        this.layoutConfig = config.layoutConfig || {};
+        this.layout = null;
+
+        this.pageContainer = config.pageContainer || '#page-container';
         this.basePath = config.basePath || '';
 
         // Router configuration
@@ -77,10 +84,7 @@ class WebApp {
             window.MOJO.router = this.router;
         }
 
-        // Layout configuration
-        this.layoutType = config.layout || 'portal'; // 'portal', 'single', 'custom', 'none'
-        this.layoutConfig = config.layoutConfig || {};
-        this.layout = null;
+
 
         // Navigation configuration - support both old and new structure
         this.navigation = config.navigation || {};
@@ -123,6 +127,11 @@ class WebApp {
             window.APP = this;
             window.MOJO = window.MOJO || {};
             window.MOJO.app = this;
+
+            // Expose version information globally
+            window.MOJO.VERSION = VERSION_INFO.full;
+            window.MOJO.VERSION_INFO = VERSION_INFO;
+            window.MOJO.version = VERSION_INFO.full; // Convenience accessor
         }
 
         // Bind methods
@@ -198,7 +207,7 @@ class WebApp {
                 const Portal = (await import('./Portal.js')).default;
                 this.layout = new Portal({
                     app: this,
-                    parentId: this.container,
+                    containerId: this.container,
                     sidebar: this.sidebar,
                     topbar: this.topbar,
                     brand: this.brand,
@@ -213,6 +222,7 @@ class WebApp {
 
             case 'single':
                 // Simple single page layout
+                const container = document.querySelector(this.container);
                 container.innerHTML = '<div id="page-container"></div>';
                 break;
 
@@ -256,6 +266,7 @@ class WebApp {
 
         if (!options.containerId) options.containerId = this.pageContainer;
         // Store the page class and options
+        if(!options.route) options.route = `/${pageName}`;
         this.pageClasses.set(pageName, {
             PageClass,
             constructorOptions: options
@@ -323,15 +334,8 @@ class WebApp {
             }
 
             // Initialize if needed
-            if (page.onInit && !page.initialized) {
-                try {
-                    page.onInit();
-                    page.initialized = true;
-                } catch (initError) {
-                    console.error(`Error initializing page '${pageName}':`, initError);
-                    // Continue anyway - page may still be usable
-                    page.initialized = true;
-                }
+            if (!page.initialized) {
+                page.onInitView();
             }
 
             // Cache the instance only if creation was successful
@@ -413,7 +417,7 @@ class WebApp {
             if (targetRoute && window.location.pathname + window.location.search !== targetRoute) {
                 // Set a flag to prevent showPage from syncing routes when called back from router
                 this._syncingRoute = true;
-                this.router.navigate(targetRoute, { replace: true, silent: true });
+                this.router.navigate(targetRoute, { replace: true, silent: false });
                 this._syncingRoute = false;
             }
         }

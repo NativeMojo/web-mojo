@@ -105,8 +105,14 @@ export class EventDelegate {
       catch (e) { console.error(`Error in action ${action}:`, e); v.handleActionError(action, e, event, el); return true; }
     }
 
+    const passThru = `onPassThruAction${cap(action)}`;
+    if (typeof v[passThru] === 'function') {
+      try { await v[passThru](event, el); return false; }
+      catch (e) { console.error(`Error in action ${action}:`, e); v.handleActionError(action, e, event, el); return true; }
+    }
+
     if (typeof v.onActionDefault === 'function') {
-      try { await v.onActionDefault(action, event, el); return true; }
+      try { return await v.onActionDefault(action, event, el); }
       catch (e) { console.error(`Error in default action handler for ${action}:`, e); v.handleActionError(action, e, event, el); return true; }
     }
 

@@ -22,7 +22,7 @@ class Portal extends View {
         this.config = {
             showTopbar: options.showTopbar !== false,
             showSidebar: options.showSidebar !== false,
-            sidebarCollapsible: options.sidebarCollapsible !== false,
+            hideSidebar: options.hideSidebar !== true,
             sidebarDefaultCollapsed: options.sidebarDefaultCollapsed || false,
             responsive: options.responsive !== false,
             ...options.config
@@ -32,14 +32,7 @@ class Portal extends View {
         const defaultBrand = options.brand || this.app?.name || 'MOJO App';
         const defaultIcon = options.brandIcon || 'bi-lightning-charge';
 
-        this.sidebarConfig = {
-            brand: defaultBrand,
-            brandIcon: defaultIcon,
-            brandSubtext: options.sidebar?.brandSubtext || '',
-            items: options.sidebar?.items || [],
-            footer: options.sidebar?.footer || null,
-            ...options.sidebar
-        };
+        this.sidebarConfig = options.sidebar;
 
         // Topbar configuration from WebApp
         this.topbarConfig = {
@@ -102,63 +95,44 @@ class Portal extends View {
      * Setup topbar as child component
      */
     async setupTopbar() {
-        // Prepare navigation data
-        const leftNavItems = this.topbarConfig.leftItems.map(item => ({
-            text: item.label || item.text,
-            route: item.page ? `?page=${item.page}` : (item.route || item.href || '#'),
-            icon: item.icon,
-            active: false
-        }));
-
-        // Process right nav items
-        let rightNavItems = null;
-        if (this.topbarConfig.rightItems && this.topbarConfig.rightItems.length > 0) {
-            rightNavItems = {
-                items: this.processRightNavItems(this.topbarConfig.rightItems)
-            };
-        }
-
         // Create TopNav component as child
-        this.addChild(new TopNav({
+        this.topnav = this.addChild(new TopNav({
             id: 'portal-topnav',
             className: `navbar navbar-expand-lg ${this.topbarConfig.theme}`,
-            data: {
-                brandText: this.topbarConfig.brand,
-                brandRoute: this.topbarConfig.brandRoute,
-                brandIcon: this.topbarConfig.brandIcon,
-                navItems: leftNavItems,
-                rightItems: rightNavItems,
-                displayMode: 'menu',
-                showNavItems: true,
-                showSidebarToggle: this.topbarConfig.showHamburger,
-                sidebarToggleAction: 'toggle-sidebar'
-            }
+            brandText: this.topbarConfig.brand,
+            brandRoute: this.topbarConfig.brandRoute,
+            brandIcon: this.topbarConfig.brandIcon,
+            navItems: this.topbarConfig.leftItems,
+            rightItems: this.topbarConfig.rightItems,
+            displayMode: this.topbarConfig.displayMode,
+            showNavItems: true,
+            showSidebarToggle: this.topbarConfig.showHamburger,
+            sidebarToggleAction: 'toggle-sidebar'
         }), {
             container: '.portal-topnav'
         });
+
+        if (this.app.activeUser) {
+            this.topnav.setModel(this.app.activeUser);
+        }
     }
 
-    /**
-     * Setup sidebar as child component
-     */
     async setupSidebar() {
-        const navItems = this.sidebarConfig.items.map(this.mapNavItem);
 
-        // Create Sidebar component as child
-        this.addChild(new Sidebar({
-            // containerId: 'portal-sidebar-container',
-            id: 'portal-sidebar',
-            data: {
-                brandText: this.sidebarConfig.brand,
-                brandIcon: this.sidebarConfig.brandIcon,
-                brandSubtext: this.sidebarConfig.brandSubtext,
-                navItems: navItems,
-                footerContent: this.sidebarConfig.footer,
-                layoutMode: 'push'
-            }
-        }), {
-            container: '.portal-sidebar'
+        this.sidebar = new Sidebar({
+            id: 'portal-sidebar'
         });
+
+        if (this.sidebarConfig.items) {
+            // simple the config is just a single Menu
+            this.sidebar.addMenu("default", this.sidebarConfig);
+        } else if (this.sidebarConfig.menus) {
+            for (const menuConfig of this.sidebarConfig.menus) {
+                this.sidebar.addMenu(menuConfig.name, menuConfig);
+            }
+        }
+
+        this.addChild(this.sidebar);
     }
 
     /**
@@ -169,6 +143,7 @@ class Portal extends View {
             // Dropdown menu (like user menu)
             if (item.items) {
                 return {
+                    id: item.id,
                     text: item.label || item.text,
                     icon: item.icon,
                     isDropdown: true,
@@ -238,24 +213,20 @@ class Portal extends View {
     /**
      * Handle portal-specific actions
      */
-    async handleAction(event, element) {
-        const action = element.dataset.action;
-
+    async onActionDefault(action, event, element) {
         switch (action) {
             case 'toggle-sidebar':
                 event.preventDefault();
                 this.handleSidebarToggle();
-                break;
+                return true;
 
             case 'collapse-sidebar':
                 event.preventDefault();
                 this.collapseSidebar();
-                break;
+                return true;
 
-            default:
-                // Let parent handle other actions
-                return await super.handleAction(event, element);
         }
+        return false;
     }
 
     /**
@@ -268,12 +239,14 @@ class Portal extends View {
         const sidebarElement = sidebar.element;
         const isMobile = window.innerWidth < 768;
 
-        if (isMobile) {
+        if (isMobile || this.config.hideSidebar) {
             // On mobile, toggle visibility
-            sidebarElement.classList.toggle('show');
+            this.toggleClass("hide-sidebar");
+            // sidebarElement.classList.toggle('show');
         } else {
             // On desktop, toggle collapse state
-            sidebarElement.classList.toggle('collapsed');
+            this.toggleClass("collapse-sidebar");
+            // sidebarElement.classList.toggle('collapsed');
             this.sidebarCollapsed = !this.sidebarCollapsed;
             this.adjustLayout();
         }
@@ -308,11 +281,11 @@ class Portal extends View {
 
         const sidebarWidth = this.sidebarConfig.width || 250;
 
-        if (this.config.showSidebar && !this.sidebarCollapsed && window.innerWidth >= 768) {
-            content.style.marginLeft = `${sidebarWidth}px`;
-        } else {
-            content.style.marginLeft = '0';
-        }
+        // if (this.config.showSidebar && !this.sidebarCollapsed && window.innerWidth >= 768) {
+        //     content.style.marginLeft = `${sidebarWidth}px`;
+        // } else {
+        //     content.style.marginLeft = '0';
+        // }
 
         this.emit('layout:adjusted', {
             sidebarCollapsed: this.sidebarCollapsed,
