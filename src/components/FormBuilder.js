@@ -7,10 +7,10 @@ class FormBuilder {
   constructor(options = {}) {
     // Core properties from design doc
     this.fields = options.fields || [];
-    
+
     // Model integration
     this.model = options.model || null;
-    
+
     // Internal state
     this.container = null;
     this.data = {};
@@ -18,12 +18,12 @@ class FormBuilder {
     this.validators = {};
     this.loading = false;
     this.rendered = false;
-    
+
     // If a model is provided, populate initial data from it
     if (this.model) {
       this.populateFromModel();
     }
-    
+
     // Configuration
     this.options = {
       formClass: 'mojo-form',
@@ -42,10 +42,10 @@ class FormBuilder {
       defaultColSize: 12,  // Default column size (1-12)
       ...options
     };
-    
+
     // Event listeners
     this.listeners = {};
-    
+
     // Built-in field types
     this.fieldTypes = {
       text: this.renderTextField.bind(this),
@@ -75,7 +75,7 @@ class FormBuilder {
       html: this.renderHtmlField.bind(this),
       group: this.renderFieldGroup.bind(this)
     };
-    
+
     // Built-in validators
     // TODO: Implement these validator methods
     this.validatorTypes = {
@@ -99,16 +99,16 @@ class FormBuilder {
   getFieldId(fieldName) {
     return this.options.idPrefix ? `${this.options.idPrefix}-${fieldName}` : fieldName;
   }
-  
+
   /**
    * Populate form data from Model instance
    */
   populateFromModel() {
     if (!this.model) return;
-    
+
     // Get all model attributes
     const modelData = this.model.toJSON ? this.model.toJSON() : this.model.attributes || this.model;
-    
+
     // Populate data object with model values
     for (const field of this.fields) {
       if (field.name && modelData.hasOwnProperty(field.name)) {
@@ -121,7 +121,7 @@ class FormBuilder {
         }
       }
     }
-    
+
     // Listen to model changes if model supports events
     if (this.model && this.model.on) {
       this.model.on('change', () => {
@@ -132,14 +132,14 @@ class FormBuilder {
       });
     }
   }
-  
+
   /**
    * Sync form data back to Model instance
    * @param {object} data - Form data to sync
    */
   syncToModel(data) {
     if (!this.model) return;
-    
+
     // Update model with form data
     if (this.model.set) {
       // Use model's set method if available
@@ -162,7 +162,7 @@ class FormBuilder {
   async render(container, data = {}) {
     this.container = container;
     this.data = { ...this.data, ...data };
-    
+
     if (!this.container) {
       throw new Error('No container specified for form rendering');
     }
@@ -170,27 +170,38 @@ class FormBuilder {
     try {
       // Build form HTML
       const formHTML = this.buildFormHTML();
-      
+
       // Insert into container
       this.container.innerHTML = formHTML;
-      
+
       // Bind events
       this.bindEvents();
-      
+
       // Populate form with data
       this.populateForm(this.data);
-      
+
       this.rendered = true;
-      
+
       // Call post-render hook
       this.onRendered();
-      
+
       return this;
-      
+
     } catch (error) {
       console.error('Error rendering form:', error);
       throw error;
     }
+  }
+
+ onAfterRender() {
+    // Implement post-render logic here
+    // Bind events
+    this.bindEvents();
+
+    // Populate form with data
+    this.populateForm(this.data);
+
+    this.rendered = true;
   }
 
   /**
@@ -201,7 +212,7 @@ class FormBuilder {
     const formClass = this.options.formClass;
     const fieldsHTML = this.buildFieldsHTML();
     const buttonsHTML = this.buildButtonsHTML();
-    
+
     return `
       <form class="${formClass}" novalidate>
         ${fieldsHTML}
@@ -219,17 +230,17 @@ class FormBuilder {
       // Simple layout without rows
       return this.fields.map(field => this.buildFieldHTML(field)).join('');
     }
-    
+
     // Group fields into rows based on their layout configuration
     const rows = [];
     let currentRow = [];
     let currentRowSize = 0;
-    
+
     this.fields.forEach(field => {
       if (!this.shouldRenderField(field)) {
         return;
       }
-      
+
       // Check if field forces a new row
       if (field.newRow || field.row === 'new') {
         if (currentRow.length > 0) {
@@ -238,27 +249,27 @@ class FormBuilder {
           currentRowSize = 0;
         }
       }
-      
+
       // Get column size (support various property names for flexibility)
-      const colSize = field.col || field.colSize || field.columns || 
+      const colSize = field.col || field.colSize || field.columns ||
                      field.cols || field.width || this.options.defaultColSize || 12;
-      
+
       // Check if adding this field would exceed 12 columns
       if (currentRowSize + colSize > 12 && currentRow.length > 0) {
         rows.push(currentRow);
         currentRow = [];
         currentRowSize = 0;
       }
-      
+
       currentRow.push({ ...field, colSize });
       currentRowSize += colSize;
     });
-    
+
     // Add any remaining fields
     if (currentRow.length > 0) {
       rows.push(currentRow);
     }
-    
+
     // Build HTML for each row
     return rows.map(row => {
       const rowFields = row.map(field => this.buildFieldHTML(field)).join('');
@@ -276,20 +287,20 @@ class FormBuilder {
     if (!this.shouldRenderField(field)) {
       return '';
     }
-    
+
     const fieldType = field.type || 'text';
     const renderer = this.fieldTypes[fieldType];
-    
+
     if (!renderer) {
       console.warn(`Unknown field type: ${fieldType}`);
       return this.wrapFieldInColumn(this.renderTextField(field), field);
     }
-    
+
     // Render the field and wrap in column if using row layout
     const fieldHTML = renderer(field);
     return this.wrapFieldInColumn(fieldHTML, field);
   }
-  
+
   /**
    * Wrap field HTML in Bootstrap column
    * @param {string} fieldHTML - The field HTML
@@ -300,16 +311,16 @@ class FormBuilder {
     if (!this.options.useRowLayout) {
       return fieldHTML;
     }
-    
+
     // Skip column wrapper for hidden fields
     if (field.type === 'hidden') {
       return fieldHTML;
     }
-    
+
     // Get column configuration
-    const colSize = field.col || field.colSize || field.columns || 
+    const colSize = field.col || field.colSize || field.columns ||
                    field.cols || field.width || this.options.defaultColSize || 12;
-    
+
     // Support responsive column sizes
     let colClass = '';
     if (typeof colSize === 'object') {
@@ -326,12 +337,12 @@ class FormBuilder {
       // Number format: 6 -> "col-6"
       colClass = `col-${colSize}`;
     }
-    
+
     // Add any additional column classes
     if (field.colClass) {
       colClass += ` ${field.colClass}`;
     }
-    
+
     return `<div class="${colClass}">${fieldHTML}</div>`;
   }
 
@@ -344,17 +355,17 @@ class FormBuilder {
     if (!field.condition) {
       return true;
     }
-    
+
     const condition = field.condition;
-    
+
     if (typeof condition === 'function') {
       return condition(this.data, field);
     }
-    
+
     if (typeof condition === 'object') {
       const { field: conditionField, value: conditionValue, operator = 'equals' } = condition;
       const fieldValue = this.data[conditionField];
-      
+
       switch (operator) {
         case 'equals':
           return fieldValue == conditionValue;
@@ -368,7 +379,7 @@ class FormBuilder {
           return true;
       }
     }
-    
+
     return true;
   }
 
@@ -457,15 +468,15 @@ class FormBuilder {
       attributes = {},
       help = field.helpText || field.help || ''
     } = field;
-    
+
     const inputClass = `${this.options.inputClass} ${fieldClass}`.trim();
     // Check model data first, then form data, then field default
     const value = this.getFieldValue(name, field.value || '');
     const error = this.errors[name];
-    
+
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${val}"`).join(' ');
     const fieldId = this.getFieldId(name);
-    
+
     return `
       <div class="${this.options.fieldWrapper}">
         ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">
@@ -511,14 +522,14 @@ class FormBuilder {
       attributes = {},
       help = field.helpText || field.help || ''
     } = field;
-    
+
     const textareaClass = `${this.options.inputClass} ${fieldClass}`.trim();
     const value = this.getFieldValue(name, field.value || '');
     const error = this.errors[name];
-    
+
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${val}"`).join(' ');
     const fieldId = this.getFieldId(name);
-    
+
     return `
       <div class="${this.options.fieldWrapper}">
         ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">
@@ -564,26 +575,26 @@ class FormBuilder {
       attributes = {},
       help = field.helpText || field.help || ''
     } = field;
-    
+
     const selectClass = `${this.options.inputClass} ${fieldClass}`.trim();
     const selectedValue = this.getFieldValue(name, field.value || '');
     const error = this.errors[name];
-    
+
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${val}"`).join(' ');
     const fieldId = this.getFieldId(name);
-    
+
     const optionsHTML = options.map(option => {
       const optionValue = typeof option === 'object' ? option.value : option;
       const optionLabel = typeof option === 'object' ? (option.label || option.text) : option;
       const selected = multiple
         ? (Array.isArray(selectedValue) && selectedValue.includes(optionValue))
         : (selectedValue == optionValue);
-      
+
       return `<option value="${this.escapeHtml(optionValue)}" ${selected ? 'selected' : ''}>
         ${this.escapeHtml(optionLabel)}
       </option>`;
     }).join('');
-    
+
     return `
       <div class="${this.options.fieldWrapper}">
         ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">
@@ -623,14 +634,14 @@ class FormBuilder {
       attributes = {},
       help = field.helpText || field.help || ''
     } = field;
-    
+
     const value = this.getFieldValue(name, field.value);
     const error = this.errors[name];
     const checked = value === true || value === 'true' || value === '1';
-    
+
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${val}"`).join(' ');
     const fieldId = this.getFieldId(name);
-    
+
     return `
       <div class="${this.options.fieldWrapper}">
         <div class="form-check">
@@ -670,14 +681,14 @@ class FormBuilder {
       attributes = {},
       help = field.helpText || field.help || ''
     } = field;
-    
+
     const value = this.getFieldValue(name, field.value);
     const error = this.errors[name];
     const checked = value === true || value === 'true' || value === '1';
-    
+
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${val}"`).join(' ');
     const fieldId = this.getFieldId(name);
-    
+
     return `
       <div class="${this.options.fieldWrapper}">
         <div class="form-check form-switch">
@@ -718,18 +729,18 @@ class FormBuilder {
       attributes = {},
       help = field.helpText || field.help || ''
     } = field;
-    
+
     const value = this.getFieldValue(name, field.value || '');
     const error = this.errors[name];
-    
+
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${val}"`).join(' ');
-    
+
     const radiosHTML = options.map((option, index) => {
       const optionValue = typeof option === 'object' ? option.value : option;
       const optionLabel = typeof option === 'object' ? (option.label || option.text) : option;
       const checked = value == optionValue;
       const radioId = this.getFieldId(`${name}_${index}`);
-      
+
       return `
         <div class="form-check">
           <input
@@ -749,7 +760,7 @@ class FormBuilder {
         </div>
       `;
     }).join('');
-    
+
     return `
       <div class="${this.options.fieldWrapper}">
         ${label ? `<fieldset>
@@ -809,13 +820,13 @@ class FormBuilder {
       attributes = {},
       help = field.helpText || field.help || ''
     } = field;
-    
+
     const inputClass = `${this.options.inputClass} ${fieldClass}`.trim();
     const error = this.errors[name];
-    
+
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${val}"`).join(' ');
     const fieldId = this.getFieldId(name);
-    
+
     return `
       <div class="${this.options.fieldWrapper}">
         ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">
@@ -849,9 +860,9 @@ class FormBuilder {
       ...field,
       accept: field.accept || 'image/*'
     });
-    
+
     const previewId = `${field.name}_preview`;
-    
+
     return `
       ${fileField}
       <div class="mt-2">
@@ -886,14 +897,14 @@ class FormBuilder {
       attributes = {},
       help = field.helpText || field.help || ''
     } = field;
-    
+
     const inputClass = `form-range ${fieldClass}`.trim();
     const value = this.getFieldValue(name, field.value || min);
     const error = this.errors[name];
-    
+
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${val}"`).join(' ');
     const fieldId = this.getFieldId(name);
-    
+
     return `
       <div class="${this.options.fieldWrapper}">
         ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">
@@ -926,7 +937,7 @@ class FormBuilder {
   renderHiddenField(field) {
     const { name } = field;
     const value = this.getFieldValue(name, field.value || '');
-    
+
     return `<input type="hidden" name="${name}" value="${this.escapeHtml(value)}">`;
   }
 
@@ -942,9 +953,9 @@ class FormBuilder {
       disabled = false,
       attributes = {}
     } = field;
-    
+
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${val}"`).join(' ');
-    
+
     return `
       <button
         type="submit"
@@ -971,9 +982,9 @@ class FormBuilder {
       disabled = false,
       attributes = {}
     } = field;
-    
+
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${val}"`).join(' ');
-    
+
     return `
       <button
         type="button"
@@ -995,7 +1006,7 @@ class FormBuilder {
    */
   renderDivider(field) {
     const { label = '', class: fieldClass = '' } = field;
-    
+
     return `
       <div class="form-divider ${fieldClass}">
         <hr>
@@ -1011,7 +1022,7 @@ class FormBuilder {
    */
   renderHtmlField(field) {
     const { html = '', class: fieldClass = '' } = field;
-    
+
     return `
       <div class="form-html ${fieldClass}">
         ${html}
@@ -1026,9 +1037,9 @@ class FormBuilder {
    */
   renderFieldGroup(field) {
     const { label = '', fields = [], class: fieldClass = '' } = field;
-    
+
     const groupFieldsHTML = fields.map(groupField => this.buildFieldHTML(groupField)).join('');
-    
+
     return `
       <fieldset class="form-group ${fieldClass}">
         ${label ? `<legend>${label}</legend>` : ''}
@@ -1045,23 +1056,23 @@ class FormBuilder {
     if (!this.options.submitButton && !this.options.resetButton) {
       return '';
     }
-    
+
     let buttonsHTML = '';
-    
+
     if (this.options.submitButton) {
-      const submitLabel = typeof this.options.submitButton === 'string' 
-        ? this.options.submitButton 
+      const submitLabel = typeof this.options.submitButton === 'string'
+        ? this.options.submitButton
         : 'Submit';
       buttonsHTML += `<button type="submit" class="btn btn-primary me-2">${submitLabel}</button>`;
     }
-    
+
     if (this.options.resetButton) {
-      const resetLabel = typeof this.options.resetButton === 'string' 
-        ? this.options.resetButton 
+      const resetLabel = typeof this.options.resetButton === 'string'
+        ? this.options.resetButton
         : 'Reset';
       buttonsHTML += `<button type="reset" class="btn btn-secondary">${resetLabel}</button>`;
     }
-    
+
     return `
       <div class="form-actions mt-3">
         ${buttonsHTML}
@@ -1074,21 +1085,21 @@ class FormBuilder {
    */
   bindEvents() {
     if (!this.container) return;
-    
+
     const form = this.container.querySelector('form');
     if (!form) return;
-    
+
     // Form submission
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       this.handleSubmit(e);
     });
-    
+
     // Form reset
     form.addEventListener('reset', (e) => {
       this.handleReset(e);
     });
-    
+
     // Field validation on blur
     if (this.options.validateOnBlur) {
       const inputs = form.querySelectorAll('input, select, textarea');
@@ -1098,7 +1109,7 @@ class FormBuilder {
         });
       });
     }
-    
+
     // Auto-validation on input
     if (this.options.autoValidate) {
       const inputs = form.querySelectorAll('input, select, textarea');
@@ -1108,7 +1119,7 @@ class FormBuilder {
         });
       });
     }
-    
+
     // File input preview
     const fileInputs = form.querySelectorAll('input[type="file"]');
     fileInputs.forEach(input => {
@@ -1116,7 +1127,7 @@ class FormBuilder {
         this.handleFileChange(e);
       });
     });
-    
+
     // Custom button actions
     const actionButtons = form.querySelectorAll('button[data-action]');
     actionButtons.forEach(button => {
@@ -1133,10 +1144,10 @@ class FormBuilder {
    */
   async handleSubmit(event) {
     event.preventDefault();
-    
+
     // Collect form data
     this.collectFormData();
-    
+
     // Validate if enabled
     if (this.options.validateOnSubmit) {
       const isValid = this.validate();
@@ -1145,12 +1156,12 @@ class FormBuilder {
         return;
       }
     }
-    
+
     // Sync data to model if available
     if (this.model) {
       this.syncToModel(this.data);
     }
-    
+
     // Emit submit event
     this.emit('submit', {
       data: this.data,
@@ -1158,15 +1169,15 @@ class FormBuilder {
       model: this.model,
       event
     });
-    
+
     // Call submit handler if provided
     if (typeof this.options.onSubmit === 'function') {
       try {
         this.loading = true;
         this.updateLoadingState();
-        
+
         await this.options.onSubmit(this.data, this);
-        
+
       } catch (error) {
         console.error('Form submission error:', error);
         this.showError(error.message);
@@ -1185,7 +1196,7 @@ class FormBuilder {
     this.data = {};
     this.errors = {};
     this.clearAllErrors();
-    
+
     this.emit('reset', {
       form: this,
       event
@@ -1199,11 +1210,11 @@ class FormBuilder {
   handleFileChange(event) {
     const input = event.target;
     const file = input.files[0];
-    
+
     if (file && input.accept && input.accept.includes('image/')) {
       const previewId = `${input.name}_preview`;
       const preview = document.getElementById(previewId);
-      
+
       if (preview) {
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -1290,10 +1301,10 @@ class FormBuilder {
   getValues() {
     const form = this.getFormElement();
     if (!form) return {};
-    
+
     const formData = new FormData(form);
     const values = {};
-    
+
     for (let [key, value] of formData.entries()) {
       if (values[key]) {
         // Handle multiple values (like checkboxes or multi-select)
@@ -1305,7 +1316,7 @@ class FormBuilder {
         values[key] = value;
       }
     }
-    
+
     // Handle checkboxes that are unchecked
     const checkboxes = form.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(checkbox => {
@@ -1315,7 +1326,7 @@ class FormBuilder {
         values[checkbox.name] = true;
       }
     });
-    
+
     return values;
   }
 
@@ -1326,10 +1337,16 @@ class FormBuilder {
   setValues(values) {
     const form = this.getFormElement();
     if (!form) return;
-    
+
     Object.keys(values).forEach(key => {
-      const field = form.elements[key];
-      if (field) {
+      let field = form.elements[key];
+
+      // Fallback: try to find by name or id if direct access fails
+      if (!field || typeof field === 'object' && !field.tagName) {
+        field = form.querySelector(`[name="${key}"], #${key}`);
+      }
+
+      if (field && field.tagName) {
         if (field.type === 'checkbox') {
           field.checked = !!values[key];
         } else if (field.type === 'radio') {
@@ -1347,7 +1364,7 @@ class FormBuilder {
         }
       }
     });
-    
+
     this.data = { ...this.data, ...values };
   }
 
@@ -1358,7 +1375,7 @@ class FormBuilder {
     const form = this.getFormElement();
     if (form) {
       form.reset();
-      
+
       // If model is available, reset to model data
       if (this.model) {
         this.populateFromModel();
@@ -1366,7 +1383,7 @@ class FormBuilder {
       } else {
         this.data = {};
       }
-      
+
       this.clearAllErrors();
     }
   }
@@ -1377,16 +1394,16 @@ class FormBuilder {
   clearAllErrors() {
     const form = this.getFormElement();
     if (!form) return;
-    
+
     // Remove was-validated class
     form.classList.remove('was-validated');
-    
+
     // Clear all invalid feedback
     const invalidElements = form.querySelectorAll('.is-invalid');
     invalidElements.forEach(el => {
       el.classList.remove('is-invalid');
     });
-    
+
     const validElements = form.querySelectorAll('.is-valid');
     validElements.forEach(el => {
       el.classList.remove('is-valid');
@@ -1413,7 +1430,7 @@ class FormBuilder {
     div.textContent = String(str);
     return div.innerHTML;
   }
-  
+
   /**
    * Get field value with model support
    * @param {string} name - Field name
@@ -1425,7 +1442,7 @@ class FormBuilder {
     if (this.data.hasOwnProperty(name)) {
       return this.data[name];
     }
-    
+
     // Then check model if available
     if (this.model) {
       if (this.model.get) {
@@ -1439,7 +1456,7 @@ class FormBuilder {
         return this.model[name];
       }
     }
-    
+
     // Return default value
     return defaultValue;
   }
@@ -1450,10 +1467,10 @@ class FormBuilder {
    */
   populateForm(data) {
     if (!data || !this.container) return;
-    
+
     const form = this.getFormElement();
     if (!form) return;
-    
+
     // Use setValues if it exists, otherwise manually set
     if (this.setValues) {
       this.setValues(data);
@@ -1474,10 +1491,10 @@ class FormBuilder {
   collectFormData() {
     const form = this.getFormElement();
     if (!form) return;
-    
+
     const formData = new FormData(form);
     this.data = {};
-    
+
     for (let [key, value] of formData.entries()) {
       if (this.data[key]) {
         // Handle multiple values
@@ -1489,7 +1506,7 @@ class FormBuilder {
         this.data[key] = value;
       }
     }
-    
+
     // Handle unchecked checkboxes
     const checkboxes = form.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(checkbox => {
@@ -1506,15 +1523,15 @@ class FormBuilder {
   validate() {
     const form = this.getFormElement();
     if (!form) return false;
-    
+
     // Use HTML5 validation
     const isValid = form.checkValidity();
-    
+
     if (!isValid) {
       // Add Bootstrap validation classes
       form.classList.add('was-validated');
     }
-    
+
     return isValid;
   }
 
@@ -1526,12 +1543,17 @@ class FormBuilder {
   validateField(fieldName) {
     const form = this.getFormElement();
     if (!form) return false;
-    
-    const field = form.elements[fieldName];
-    if (!field) return false;
-    
+
+    let field = form.elements[fieldName];
+    // Fallback: try to find by name or id if direct access fails
+    if (!field || typeof field === 'object' && !field.tagName) {
+      field = form.querySelector(`[name="${fieldName}"], #${fieldName}`);
+    }
+
+    if (!field || !field.tagName) return false;
+
     const isValid = field.checkValidity();
-    
+
     if (isValid) {
       field.classList.remove('is-invalid');
       field.classList.add('is-valid');
@@ -1539,7 +1561,7 @@ class FormBuilder {
       field.classList.remove('is-valid');
       field.classList.add('is-invalid');
     }
-    
+
     return isValid;
   }
 
@@ -1549,7 +1571,7 @@ class FormBuilder {
   focusFirstError() {
     const form = this.getFormElement();
     if (!form) return;
-    
+
     const firstInvalid = form.querySelector(':invalid');
     if (firstInvalid) {
       firstInvalid.focus();
@@ -1563,18 +1585,25 @@ class FormBuilder {
    */
   clearFieldError(fieldName) {
     if (!fieldName) return;
-    
+
     delete this.errors[fieldName];
-    
+
     const form = this.getFormElement();
     if (!form) return;
-    
-    const field = form.elements[fieldName];
-    if (field) {
+
+    let  field = form.elements[fieldName];
+
+    // Fallback: try to find by name or id if direct access fails
+    if (!field || typeof field === 'object' && !field.tagName) {
+      field = form.querySelector(`[name="${fieldName}"], #${fieldName}`);
+    }
+
+    if (field && field.tagName) {
       field.classList.remove('is-invalid');
-      const errorDiv = field.parentElement.querySelector('.invalid-feedback');
-      if (errorDiv) {
-        errorDiv.textContent = '';
+
+      const errorElement = form.querySelector(`#${fieldName}-error`);
+      if (errorElement) {
+        errorElement.remove();
       }
     }
   }
@@ -1585,10 +1614,10 @@ class FormBuilder {
    */
   showError(message) {
     console.error('Form error:', message);
-    
+
     // Emit error event
     this.emit('error', { message, form: this });
-    
+
     // If container exists, show alert
     if (this.container) {
       const alertDiv = document.createElement('div');
@@ -1598,7 +1627,7 @@ class FormBuilder {
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       `;
       this.container.insertBefore(alertDiv, this.container.firstChild);
-      
+
       // Auto-remove after 5 seconds
       setTimeout(() => {
         if (alertDiv.parentNode) {
@@ -1614,14 +1643,14 @@ class FormBuilder {
   updateLoadingState() {
     const form = this.getFormElement();
     if (!form) return;
-    
+
     const submitBtn = form.querySelector('button[type="submit"]');
     const fields = form.querySelectorAll('input, select, textarea, button');
-    
+
     if (this.loading) {
       // Disable all fields
       fields.forEach(field => field.disabled = true);
-      
+
       // Update submit button
       if (submitBtn) {
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Loading...';
@@ -1629,11 +1658,11 @@ class FormBuilder {
     } else {
       // Enable all fields
       fields.forEach(field => field.disabled = false);
-      
+
       // Restore submit button
       if (submitBtn) {
-        const submitLabel = typeof this.options.submitButton === 'string' 
-          ? this.options.submitButton 
+        const submitLabel = typeof this.options.submitButton === 'string'
+          ? this.options.submitButton
           : 'Submit';
         submitBtn.innerHTML = submitLabel;
       }
@@ -1648,7 +1677,7 @@ class FormBuilder {
   handleAction(action, event) {
     // Emit action event
     this.emit('action', { action, event, form: this });
-    
+
     // Call custom handler if provided
     if (this.options.onAction && typeof this.options.onAction === 'function') {
       this.options.onAction(action, event, this);

@@ -25,6 +25,7 @@ class TablePage extends Page {
     // Model configuration
     this.modelName = options.modelName || 'Item';
     this.modelNamePlural = options.modelNamePlural || `${this.modelName}s`;
+    this.tableContainerId = `table-container-${this.pageName || 'default'}-container`;
 
     // Extract filters from columns
     const extractedFilters = {};
@@ -36,8 +37,16 @@ class TablePage extends Page {
       });
     }
 
+    this.config = {
+        title: this.pageOptions.title || this.pageName,
+        description: this.pageOptions.description,
+
+        pageName: this.pageName,
+    };
+
     // Table configuration
     this.tableConfig = {
+      containerId: this.tableContainerId,
       Collection: options.Collection || null,
       collection: options.collection || null,
       columns: options.columns || [],
@@ -109,6 +118,10 @@ class TablePage extends Page {
     this.bulkActions = [];
   }
 
+  getTemplate() {
+      return components_TablePage_mst;
+  }
+
   /**
    * Initialize page - create Table as child view
    */
@@ -126,6 +139,7 @@ class TablePage extends Page {
     // Create table instance with all configuration
     this.table = new Table({
       id: tableId,  // Set the ID so it matches the template placeholder
+      containerId: this.tableContainerId,
       Collection: this.tableConfig.Collection,  // Pass the Collection class
       collection: this.tableConfig.collection,  // Or existing collection instance
       columns: this.tableConfig.columns,
@@ -295,8 +309,7 @@ class TablePage extends Page {
   /**
    * Get view data for template
    */
-  async getViewData() {
-    const baseData = await super.getViewData();
+  async getViewConfig() {
 
     const recordCount = this.table?.collection?.length || 0;
 

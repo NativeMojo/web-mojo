@@ -216,6 +216,7 @@ class Dialog extends View {
     if (this.bodyView) {
       return `<div class="modal-body ${this.bodyClass}" data-view-container="body">
         <!-- View will be mounted here -->
+        <div id="${this.bodyView.id}"></div>
       </div>`;
     }
 
@@ -272,52 +273,13 @@ class Dialog extends View {
     // No footer
     return '';
   }
-  /**
-   * Override render to not require a container for dialogs
-   * Dialogs are rendered standalone and then appended to body
-   */
-  async render(container = null) {
-    // Skip container check for dialogs
-    if (container) {
-      return super.render(container);
-    }
 
-    // Create element if it doesn't exist
-    if (!this.element) {
-      this.createElement();
-    }
-
-    // Set rendering flag
-    this.isRendering = true;
-    this.loading = true;
-
-    try {
-      // Call lifecycle hooks
-      await this.onBeforeRender();
-
-      // Get template and render
-      const html = await this.renderTemplate();
-
-      // Set innerHTML
-      this.element.innerHTML = html;
-
-      // Call after render
-      await this.onAfterRender();
-
-      this.rendered = true;
-      this.loading = false;
-    } finally {
-      this.isRendering = false;
-    }
-
-    return this.element;
-  }
 
   /**
    * Override mount to not require a container for dialogs
    * Dialogs are appended to body directly
    */
-  async mount() {
+  async mount(container = null) {
     if (this.mounted || this.destroyed) {
       return;
     }
@@ -327,19 +289,14 @@ class Dialog extends View {
       throw new Error('Cannot mount dialog without element');
     }
 
-    // The element should already be appended to document.body by the caller
-    if (!document.body.contains(this.element)) {
-      console.warn(`Dialog ${this.id}: Element not in document body during mount`);
-    }
-
     // Call lifecycle hooks
     await this.onBeforeMount();
 
+    // The element should already be appended to document.body by the caller
+    document.body.appendChild(this.element);
+
     // Bind DOM events
     this.bindEvents();
-
-    // Mount child views
-    await this.mountChildren();
 
     // Set mounted flag
     this.mounted = true;
@@ -376,6 +333,39 @@ class Dialog extends View {
    */
   async onAfterMount() {
     await super.onAfterMount();
+
+    if (typeof window !== 'undefined' && window.bootstrap && window.bootstrap.Modal) {
+      // Set data attributes if needed
+      if (this.backdrop === 'static') {
+        this.element.setAttribute('data-bs-backdrop', 'static');
+      }
+      if (!this.keyboard) {
+        this.element.setAttribute('data-bs-keyboard', 'false');
+      }
+
+      // Initialize Bootstrap modal with options
+      this.modal = new window.bootstrap.Modal(this.element, {
+        backdrop: this.backdrop,
+        keyboard: this.keyboard,
+        focus: this.focus
+      });
+
+      // Bind Bootstrap events
+      this.bindBootstrapEvents();
+
+      // Auto show if requested
+      if (this.autoShow) {
+        this.show(this.relatedTarget);
+      }
+    }
+  }
+
+  /**
+   * After mount - initialize Bootstrap modal and mount child views
+   */
+  async onAfterMount2() {
+    await super.onAfterMount();
+
 
     // Handle async body if present
     if (this.bodyPromise) {
@@ -1179,8 +1169,7 @@ class Dialog extends View {
     });
 
     // Render and mount dialog
-    await dialog.render();
-    document.body.appendChild(dialog.element);
+    await dialog.render(false);
     await dialog.mount();
 
     // Show the dialog and return promise
@@ -1296,8 +1285,7 @@ class Dialog extends View {
     });
 
     // Render and mount dialog
-    await dialog.render();
-    document.body.appendChild(dialog.element);
+    await dialog.render(false);
     await dialog.mount();
 
     // Show the dialog and return promise

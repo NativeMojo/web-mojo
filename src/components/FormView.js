@@ -13,26 +13,31 @@ class FormView extends View {
             formConfig,
             ...viewOptions
         } = options;
-        
+
         // Set default view options
         super({
             tagName: 'div',
             className: 'form-view',
             ...viewOptions
         });
-        
+
         // Store form configuration
         this.formConfig = formConfig || {};
-        
+
         // FormBuilder instance will be created after mount
         this.formBuilder = null;
     }
-    
+
+    async render222(allowMount = true) {
+
+        await this.formBuilder.render(this.element);
+    }
+
     /**
      * Override render to skip template rendering entirely
      * FormBuilder will handle all the content
      */
-    async render(container = null) {
+    async renderOld(container = null) {
         if (this.destroyed) {
             throw new Error('Cannot render destroyed view');
         }
@@ -54,13 +59,25 @@ class FormView extends View {
         this.rendered = true;
         return this;
     }
-    
+
+    async renderTemplate() {
+        if (!this.formBuilder) {
+            this.formBuilder = new FormBuilder(this.formConfig);
+        }
+        return this.formBuilder.buildFormHTML();
+    }
+
+    async onAfterRender() {
+        this.formBuilder.container = this.element;
+        await this.formBuilder.onAfterRender();
+    }
+
     /**
      * Initialize the form after the view is mounted
      */
-    async onAfterMount() {
+    async onAfterMount2() {
         await super.onAfterMount();
-        
+
         // Check if element exists AND is actually in the DOM
         if (this.element && document.body.contains(this.element)) {
             // Now we can safely mount the FormBuilder
@@ -68,10 +85,10 @@ class FormView extends View {
                 try {
                     this.formBuilder = new FormBuilder(this.formConfig);
                     await this.formBuilder.mount(this.element);
-                    
+
                     // Re-emit form events through the view
                     this.setupEventProxies();
-                    
+
                     // Attach any handlers that were added before FormBuilder was created
                     this.attachPendingHandlers();
                 } catch (error) {
@@ -83,13 +100,13 @@ class FormView extends View {
             console.warn(`FormView ${this.id}: Element not in DOM yet, skipping FormBuilder creation`);
         }
     }
-    
+
     /**
      * Setup event proxies to re-emit FormBuilder events through the View
      */
     setupEventProxies() {
         if (!this.formBuilder) return;
-        
+
         // Proxy common form events
         const events = ['submit', 'reset', 'change', 'validate'];
         events.forEach(eventName => {
@@ -99,7 +116,7 @@ class FormView extends View {
             });
         });
     }
-    
+
     /**
      * Get form values
      * @returns {object} Form data
@@ -107,7 +124,7 @@ class FormView extends View {
     getValues() {
         return this.formBuilder ? this.formBuilder.getValues() : {};
     }
-    
+
     /**
      * Set form values
      * @param {object} values - Values to set
@@ -117,7 +134,7 @@ class FormView extends View {
             this.formBuilder.setValues(values);
         }
     }
-    
+
     /**
      * Reset the form
      */
@@ -126,7 +143,7 @@ class FormView extends View {
             this.formBuilder.reset();
         }
     }
-    
+
     /**
      * Validate the form
      * @returns {boolean} True if valid
@@ -140,7 +157,7 @@ class FormView extends View {
         }
         return false;
     }
-    
+
     /**
      * Get the form element
      * @returns {HTMLFormElement|null}
@@ -148,7 +165,7 @@ class FormView extends View {
     getFormElement() {
         return this.formBuilder ? this.formBuilder.getFormElement() : null;
     }
-    
+
     /**
      * Add event listener to FormBuilder
      * @param {string} event - Event name
@@ -165,7 +182,7 @@ class FormView extends View {
         }
         return this;
     }
-    
+
     /**
      * Remove event listener from FormBuilder
      * @param {string} event - Event name
@@ -177,7 +194,7 @@ class FormView extends View {
         }
         return this;
     }
-    
+
     /**
      * Handle pending event handlers after FormBuilder is created
      */
@@ -191,32 +208,32 @@ class FormView extends View {
             this._pendingHandlers = null;
         }
     }
-    
+
     /**
      * Update form configuration and re-render
      * @param {object} config - New configuration
      */
     async updateConfig(config) {
         this.formConfig = { ...this.formConfig, ...config };
-        
+
         if (this.formBuilder && this.element) {
             // Save current values
             const currentValues = this.getValues();
-            
+
             // Destroy and recreate
             this.formBuilder.destroy();
             this.formBuilder = new FormBuilder(this.formConfig);
             await this.formBuilder.mount(this.element);
-            
+
             // Restore values
             this.setValues(currentValues);
-            
+
             // Re-setup event proxies
             this.setupEventProxies();
             this.attachPendingHandlers();
         }
     }
-    
+
     /**
      * Enable/disable the form
      * @param {boolean} enabled - True to enable, false to disable
@@ -230,7 +247,7 @@ class FormView extends View {
             });
         }
     }
-    
+
     /**
      * Show loading state
      * @param {boolean} loading - True to show loading, false to hide
@@ -239,7 +256,7 @@ class FormView extends View {
         if (this.formBuilder) {
             this.formBuilder.loading = loading;
             this.setEnabled(!loading);
-            
+
             // Update submit button if exists
             const form = this.getFormElement();
             if (form) {
@@ -256,7 +273,7 @@ class FormView extends View {
             }
         }
     }
-    
+
     /**
      * Set field error
      * @param {string} fieldName - Field name
@@ -278,7 +295,7 @@ class FormView extends View {
             }
         }
     }
-    
+
     /**
      * Clear field error
      * @param {string} fieldName - Field name
@@ -295,7 +312,7 @@ class FormView extends View {
             }
         }
     }
-    
+
     /**
      * Clear all errors
      */
@@ -304,7 +321,7 @@ class FormView extends View {
             this.formBuilder.clearAllErrors();
         }
     }
-    
+
     /**
      * Focus on first field
      */
@@ -317,7 +334,7 @@ class FormView extends View {
             }
         }
     }
-    
+
     /**
      * Focus on first error field
      */
@@ -330,7 +347,7 @@ class FormView extends View {
             }
         }
     }
-    
+
     /**
      * Clean up before destroying the view
      */
@@ -340,7 +357,7 @@ class FormView extends View {
             this.formBuilder = null;
         }
         this._pendingHandlers = null;
-        
+
         await super.onBeforeDestroy();
     }
 }

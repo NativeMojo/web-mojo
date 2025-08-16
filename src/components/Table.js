@@ -297,7 +297,7 @@ class Table extends View {
     this.collection.on('update', () => {
       // Only re-render if we're mounted and not already rendering
       console.log("Table:collection:update event");
-      if (this.rendered && this.mounted && !this.isRendering) {
+      if (this.isMounted() && !this.isRendering) {
         this.render();
       }
     });

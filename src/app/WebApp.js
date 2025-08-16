@@ -20,16 +20,16 @@
  *   name: 'My App',
  *   debug: true
  * });
- * 
+ *
  * // Subscribe to global events
  * app.events.on('notification', ({ message, type }) => {
  *   showToast(message, type);
  * });
- * 
+ *
  * app.events.on('app:ready', () => {
  *   console.log('App is ready!');
  * });
- * 
+ *
  * // Events are emitted automatically by framework methods
  * app.showError('Something went wrong'); // Emits 'notification' event
  * app.showLoading('Please wait...'); // Emits 'loading:show' event
@@ -53,6 +53,7 @@ class WebApp {
         this.version = config.version || '1.0.0';
         this.debug = config.debug || false;
         this.container = config.container || '#app';
+        this.pageContainer = config.pageContainer || '#page';
         this.basePath = config.basePath || '';
 
         // Router configuration
@@ -190,45 +191,44 @@ class WebApp {
      * Setup layout based on configuration
      */
     async setupLayout() {
-        const container = document.querySelector(this.container);
-        if (!container) {
-            throw new Error(`Container '${this.container}' not found`);
-        }
 
-        // Clear container
-        container.innerHTML = '';
 
         switch (this.layoutType) {
-            case 'portal':
+            case 'portal': {
                 const Portal = (await import('./Portal.js')).default;
                 this.layout = new Portal({
                     app: this,
-                    container: container,
+                    parentId: this.container,
                     sidebar: this.sidebar,
                     topbar: this.topbar,
                     brand: this.brand,
                     brandIcon: this.brandIcon,
                     ...this.layoutConfig
                 });
+                // this.layout.setContainer(container);
                 await this.layout.render();
+                // await this.layout.mount();
                 break;
+            }
 
             case 'single':
                 // Simple single page layout
                 container.innerHTML = '<div id="page-container"></div>';
                 break;
 
-            case 'custom':
+            case 'custom': {
                 // Allow custom layout class
                 if (this.layoutConfig.layoutClass) {
                     this.layout = new this.layoutConfig.layoutClass({
                         app: this,
-                        container: container,
                         ...this.layoutConfig
                     });
+                    this.layout.setContainer(container);
                     await this.layout.render();
+                    await this.layout.mount();
                 }
                 break;
+            }
 
             case 'none':
                 // No layout, pages render directly
@@ -254,6 +254,7 @@ class WebApp {
             return this;
         }
 
+        if (!options.containerId) options.containerId = this.pageContainer;
         // Store the page class and options
         this.pageClasses.set(pageName, {
             PageClass,
@@ -377,40 +378,13 @@ class WebApp {
         // Detach current page if different
         if (this.currentPage && this.currentPage !== page) {
             if (this.currentPage.element?.parentNode) {
-                this.currentPage.element.remove();
+                this.currentPage.destroy();
             }
         }
 
         console.log(`Showing page: ${page.pageName}`);
-        // Ensure page has a container set
-        if (!page.container) {
-            page.setContainer(container);
-        }
 
-        // Ensure page is rendered and has an element
-        if (!page.element) {
-            try {
-                await page.render();
-            } catch (error) {
-                console.error(`Failed to render page ${page.pageName}:`, error);
-                return;
-            }
-        }
-
-        // Double-check element was created
-        if (!page.element) {
-            console.warn(`Page ${page.pageName} has no element after render, creating manually`);
-            page.createElement();
-        }
-
-        // Attach new page if not already in DOM
-        if (page.element && !page.element.parentNode) {
-            container.appendChild(page.element);
-            // Only mount if not already mounted
-            if (!page.mounted) {
-                await page.mount();
-            }
-        }
+        await page.render();
 
         console.log(`Current page now: ${page.pageName}`);
         this.currentPage = page;
@@ -420,6 +394,11 @@ class WebApp {
             currentPage: page.pageName,
             previousPage: this.state.currentPage
         });
+
+        // Notify layout of page change
+        if (this.layout && this.layout.setActivePage) {
+            this.layout.setActivePage(page.pageName);
+        }
 
         // Try to keep the route in sync (but not if we're already syncing to prevent loops)
         if (!options.noRoute && !this._syncingRoute && this.router && page.route) {
@@ -462,11 +441,6 @@ class WebApp {
         // Update state with route name
         this.state.previousPage = this.state.currentPage;
         this.state.currentPage = route;
-
-        // Notify layout of navigation
-        if (this.layout && this.layout.setActivePage) {
-            this.layout.setActivePage(route);
-        }
 
         // Perform navigation - router will handle the page instance
         const result = await this.router.navigate(route, { params, ...options });

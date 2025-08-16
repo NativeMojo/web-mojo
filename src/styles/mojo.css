@@ -4,6 +4,112 @@
  * Version: 2.0.0
  */
 
+/* ========================================================================
+   Portal Layout Component
+   ======================================================================== */
+/* Root variables so you can tweak widths/theme in one place */
+:root {
+    --sidebar-w: 250px;
+    --sidebar-collapsed-w: 64px; /* icon rail */
+    --gap: 0;
+    --bg: #ffffff;
+    --panel: #121620;
+    --border: #202636;
+    --text: #e7ecf3;
+    --muted: #9aa6b2;
+}
+
+/* Layout container */
+.portal-layout {
+    display: flex;
+    min-height: 100dvh; /* full viewport height, handles mobile chrome bars */
+    background: var(--bg);
+    color: var(--text);
+}
+
+/* Sidebar (optional element in your template) */
+#portal-sidebar {
+    flex: 0 0 var(--sidebar-w);
+    max-width: var(--sidebar-w);
+    inline-size: var(--sidebar-w); /* logical width */
+    block-size: 100%;
+    background: var(--panel);
+    border-inline-end: 1px solid var(--border);
+    overflow: hidden; /* hide when collapsed animates */
+    transition:
+        inline-size 200ms ease,
+        max-width 200ms ease,
+        flex-basis 200ms ease;
+    will-change: inline-size;
+}
+
+/* Collapsed state (toggle this on .portal-layout) */
+.portal-layout.is-collapsed #portal-sidebar {
+    inline-size: var(--sidebar-collapsed-w);
+    max-width: var(--sidebar-collapsed-w);
+    flex-basis: var(--sidebar-collapsed-w);
+}
+
+/* Fully hidden variant (optional) */
+.portal-layout.is-hidden #portal-sidebar {
+    inline-size: 0px;
+    max-width: 0px;
+    flex-basis: 0px;
+    border-inline-end: 0;
+}
+
+/* Main body */
+.portal-body {
+    flex: 1 1 auto;
+    min-width: 0; /* allow children to shrink, prevents overflow */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Top nav (optional) */
+#portal-topnav {
+    flex: 0 0 auto;
+    background: var(--panel);
+    border-block-end: 1px solid var(--border);
+}
+
+/* Content area scrolls, fills remaining space */
+.portal-content {
+    flex: 1 1 auto;
+    min-height: 0; /* required for proper flex scroll */
+    overflow: auto;
+    padding: 16px;
+}
+
+/* Nice defaults for text in dark UI */
+.portal-content,
+#portal-topnav,
+#portal-sidebar {
+    color: var(--text);
+}
+.portal-content .muted {
+    color: var(--muted);
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+    #portal-sidebar {
+        transition: none;
+    }
+}
+
+/* Responsive tweak: auto-collapse on narrow screens (optional) */
+@media (max-width: 900px) {
+    .portal-layout:not(.is-hidden) #portal-sidebar {
+        inline-size: var(--sidebar-collapsed-w);
+        max-width: var(--sidebar-collapsed-w);
+        flex-basis: var(--sidebar-collapsed-w);
+    }
+}
+/* ========================================================================
+   MOJO Selection Components
+   ======================================================================== */
+
 .mojo-select-cell,
 .mojo-select-all-cell {
     background-color: #f8f9fa;

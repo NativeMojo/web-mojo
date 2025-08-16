@@ -24,11 +24,6 @@ body {
 /* ============================================
    Sidebar adjustments
    ============================================ */
-#portal-sidebar {
-    background-color: white;
-    border-right: 1px solid #dee2e6;
-    transition: width 0.3s ease;
-}
 
 /* ============================================
    Cards - subtle shadows

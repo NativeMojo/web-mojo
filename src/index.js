@@ -6,7 +6,6 @@
 
 // Import CSS files so they are included in the build
 import './styles/mojo.css';
-import './app/portal.css';
 
 // Main MOJO import
 import MOJO from './mojo.js';

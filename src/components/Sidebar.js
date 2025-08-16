@@ -182,7 +182,7 @@ class Sidebar extends View {
             .sidebar-nav .bi-chevron-down { transition: transform 0.3s; }
             .sidebar-nav .nav-link[aria-expanded="true"] .bi-chevron-down { transform: rotate(180deg); }
 
-            /* Mobile responsive handled by portal.css */
+            /* Mobile responsive handled by mojo.css */
         `;
 
         document.head.appendChild(style);

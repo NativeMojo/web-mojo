@@ -182,8 +182,7 @@ export default defineConfig({
       writeBundle() {
         // Copy any additional CSS files that need to be available separately
         const cssFilesToCopy = [
-          { src: 'src/styles/mojo.css', dest: 'css/mojo-source.css' },
-          { src: 'src/app/portal.css', dest: 'css/portal.css' }
+          { src: 'src/styles/mojo.css', dest: 'css/mojo-source.css' }
         ];
         
         cssFilesToCopy.forEach(({ src, dest }) => {

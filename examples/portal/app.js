@@ -33,6 +33,7 @@ const app = new WebApp({
     // Layout configuration
     layout: 'portal',
     container: '#app',
+    pageContainer: '#page-container',
 
     // API configuration (optional - for demo purposes)
     api: {
