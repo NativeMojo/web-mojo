@@ -123,21 +123,17 @@ const GroupForms = {
     edit: {
         title: 'Edit Group',
         fields: [
-            { name: 'name', type: 'text', label: 'Group Name', required: true },
-            { name: 'description', type: 'textarea', label: 'Description', rows: 3 },
-            { name: 'slug', type: 'text', label: 'URL Slug', readonly: true },
             {
-                name: 'status',
-                type: 'select',
-                label: 'Status',
-                options: [
-                    { value: 'active', label: 'Active' },
-                    { value: 'inactive', label: 'Inactive' },
-                    { value: 'archived', label: 'Archived' }
-                ]
-            },
-            { name: 'email', type: 'email', label: 'Group Email' }
-        ]
+                type: 'collection',
+                name: 'parent',
+                label: 'Parent Group',
+                Collection: GroupList,  // Collection class
+                labelField: 'name',          // Field to display in dropdown
+                valueField: 'id',            // Field to use as value
+                maxItems: 10,                // Max items to show in dropdown
+                placeholder: 'Search groups...',
+                debounceMs: 300,             // Search debounce delay
+            }
     },
 
     search: {
