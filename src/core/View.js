@@ -145,7 +145,7 @@ export class View {
   // ---------------------------------------------
   // Render flow
   // ---------------------------------------------
-  async render(allowMount = true) {
+  async render(allowMount = true, container = null) {
     const now = Date.now();
 
     // Optional render throttling
@@ -166,7 +166,7 @@ export class View {
       this.element.innerHTML = html;
 
       if (allowMount && !this.isMounted()) {
-          await this.mount()
+          await this.mount(container)
       }
 
       // 3) render children
@@ -191,6 +191,26 @@ export class View {
       child.parent = this;
       await Promise.resolve(child.render()).catch(err => View._warn(`Child render error (${id})`, err));
     }
+  }
+
+
+  isMounted() {
+    return this.element?.isConnected;
+  }
+
+  async mount(container =  null) {
+      // 2) place into DOM according to the rules
+      await this.onBeforeMount();
+      if (container == null) {
+          const plan = this._resolvePlacementPlan();
+          this._applyPlacement(plan);
+      } else {
+          if (!this.element.isConnected || this.element.parentNode !== container) {
+              container.appendChild(this.element);
+          }
+      }
+      await this.onAfterMount();
+      this.mounted = true;
   }
 
   // FIX #1: make destroy async (it already awaited hooks)
@@ -358,25 +378,6 @@ export class View {
       View._warn("_applyPlacement error", e);
       try { document.body.appendChild(this.element); } catch (_) {}
     }
-  }
-
-  isMounted() {
-    return this.element?.isConnected;
-  }
-
-  async mount(container =  null) {
-      // 2) place into DOM according to the rules
-      await this.onBeforeMount();
-      if (container == null) {
-          const plan = this._resolvePlacementPlan();
-          this._applyPlacement(plan);
-      } else {
-          if (!this.element.isConnected || this.element.parentNode !== container) {
-              container.appendChild(this.element);
-          }
-      }
-      await this.onAfterMount();
-      this.mounted = true;
   }
 
   bindEvents() {

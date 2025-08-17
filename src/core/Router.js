@@ -144,12 +144,13 @@ class Router {
     // 6. Run after guards
     await this.runAfterGuards(match, page);
 
-    this.currentPath = path;
+    if (path != this.currentPath) {
+        this.currentPath = path;
 
-    // Emit successful navigation events
-    this.app.events.emit('route:change', { path, match, page, params: match.params, query: match.query });
-    this.app.events.emit('route:after', { path, match, page });
-
+        // Emit successful navigation events
+        this.app.events.emit('route:change', { path, match, page, params: match.params, query: match.query });
+        this.app.events.emit('route:after', { path, match, page });
+    }
     return true;
   }
 
@@ -462,7 +463,101 @@ class Router {
   }
 
   /**
-   * Get current path based on router mode
+   * Normalize path to page parameter format
+   * @param {string} path - Path to normalize
+   * @returns {string} Normalized path with page parameter
+   */
+  normalizeToPageParam(path) {
+    if (!path || path === '/') {
+      return `/?${this.options.pageParam}=${this.options.defaultPage || 'home'}`;
+    }
+
+    // If already in page= format, return as is
+    if (path.includes(`${this.options.pageParam}=`)) {
+      return path;
+    }
+
+    // Convert path like "/admin/groups" to "/?page=admin/groups"
+    const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+    
+    // Handle query parameters
+    const [pathPart, queryPart] = cleanPath.split('?');
+    const pagePath = pathPart || this.options.defaultPage || 'home';
+    
+    if (queryPart) {
+      return `/?${this.options.pageParam}=${pagePath}&${queryPart}`;
+    } else {
+      return `/?${this.options.pageParam}=${pagePath}`;
+    }
+  }
+
+  /**
+   * Convert route to the correct format based on router mode
+   * @param {string} route - Route to convert (can be "/admin/groups" or "/?page=admin/groups")
+   * @returns {string} Route in correct format for current mode
+   */
+  convertRoute(route) {
+    if (!route) {
+      return this.options.mode === 'param' ? `/?${this.options.pageParam}=${this.options.defaultPage}` : '/';
+    }
+
+    // Detect current route format
+    const isPageParam = route.includes(`${this.options.pageParam}=`);
+    const isHash = route.startsWith('#');
+    
+    // Extract the page/path part
+    let pagePath = '';
+    let queryParams = '';
+    
+    if (isPageParam) {
+      // Extract from "/?page=admin/groups&other=value" format
+      const url = new URL(route.startsWith('http') ? route : `http://dummy.com${route}`);
+      pagePath = url.searchParams.get(this.options.pageParam) || '';
+      url.searchParams.delete(this.options.pageParam);
+      queryParams = url.search.slice(1); // Remove leading '?'
+    } else if (isHash) {
+      // Extract from "#/admin/groups?other=value" format
+      const hashContent = route.slice(1);
+      const [path, query] = hashContent.split('?');
+      pagePath = path.startsWith('/') ? path.slice(1) : path;
+      queryParams = query || '';
+    } else {
+      // Extract from "/admin/groups?other=value" format
+      const [path, query] = route.split('?');
+      pagePath = path.startsWith('/') ? path.slice(1) : path;
+      queryParams = query || '';
+    }
+
+    // Handle empty path
+    if (!pagePath || pagePath === '/') {
+      pagePath = this.options.defaultPage || 'home';
+    }
+
+    // Convert to target format based on mode
+    switch (this.options.mode) {
+      case 'param':
+        if (queryParams) {
+          return `/?${this.options.pageParam}=${pagePath}&${queryParams}`;
+        }
+        return `/?${this.options.pageParam}=${pagePath}`;
+
+      case 'hash':
+        if (queryParams) {
+          return `#/${pagePath}?${queryParams}`;
+        }
+        return `#/${pagePath}`;
+
+      case 'history':
+      default:
+        if (queryParams) {
+          return `/${pagePath}?${queryParams}`;
+        }
+        return `/${pagePath}`;
+    }
+  }
+
+  /**
+   * Get the current path from the URL
    * @returns {string} Current path
    */
   getCurrentPath() {
@@ -471,10 +566,8 @@ class Router {
         return window.location.hash.slice(1) || '/';
 
       case 'param': {
-        // const url = new URL(window.location);
-        // const pageName = url.searchParams.get(this.options.pageParam) || this.options.defaultPage;
-        // return `/?${this.options.pageParam}=${pageName}`;
-        return window.location.pathname + window.location.search;
+        const currentPath = window.location.pathname + window.location.search;
+        return this.normalizeToPageParam(currentPath);
       }
 
       case 'history':

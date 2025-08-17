@@ -19,11 +19,8 @@ import Model from '../core/Model.js';
 class Group extends Model {
     constructor(data = {}) {
         super(data, {
-            endpoint: '/api/groups'
+            endpoint: '/api/group'
         });
-
-        // Initialize computed properties
-        this.setupComputedProperties();
     }
 }
 
@@ -33,7 +30,7 @@ class Group extends Model {
 class GroupList extends Collection {
     constructor(options = {}) {
         super(Group, {
-            endpoint: '/api/groups',
+            endpoint: '/api/group',
             size: 20,
             ...options
         });
@@ -101,16 +98,16 @@ const GroupForms = {
                 placeholder: 'Describe the purpose of this group'
             },
             {
-                name: 'type',
+                name: 'kind',
                 type: 'select',
-                label: 'Group Type',
+                label: 'Group Kind',
                 required: true,
                 options: [
-                    { value: 'organization', label: 'Organization' },
+                    { value: 'org', label: 'Organization' },
                     { value: 'team', label: 'Team' },
                     { value: 'department', label: 'Department' },
-                    { value: 'project', label: 'Project' },
-                    { value: 'custom', label: 'Custom' }
+                    { value: 'merchant', label: 'Merchant' },
+                    { value: 'iso', label: 'ISO' }
                 ]
             },
             {
@@ -119,12 +116,6 @@ const GroupForms = {
                 label: 'Parent Group',
                 options: [], // Will be populated dynamically
                 nullable: true
-            },
-            {
-                name: 'email',
-                type: 'email',
-                label: 'Group Email',
-                placeholder: 'group@company.com'
             }
         ]
     },

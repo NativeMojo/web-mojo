@@ -3,6 +3,8 @@
  * Creates forms based on field definitions with validation and data binding
  */
 
+import CollectionSelectView from './CollectionSelectView.js';
+
 class FormBuilder {
   constructor(options = {}) {
     // Core properties from design doc
@@ -73,7 +75,9 @@ class FormBuilder {
       button: this.renderButton.bind(this),
       divider: this.renderDivider.bind(this),
       html: this.renderHtmlField.bind(this),
-      group: this.renderFieldGroup.bind(this)
+      group: this.renderFieldGroup.bind(this),
+      header: this.renderHeaderField.bind(this),
+      collection: this.renderCollectionField.bind(this)
     };
 
     // Built-in validators
@@ -111,7 +115,7 @@ class FormBuilder {
 
     // Populate data object with model values
     for (const field of this.fields) {
-      if (field.name && modelData.hasOwnProperty(field.name)) {
+      if (field.name && Object.prototype.hasOwnProperty.call(modelData, field.name)) {
         this.data[field.name] = modelData[field.name];
       } else if (field.name && this.model.get) {
         // Try using model's get method with dot notation support
@@ -200,6 +204,9 @@ class FormBuilder {
 
     // Populate form with data
     this.populateForm(this.data);
+
+    // Initialize collection select fields
+    this.initializeCollectionFields();
 
     this.rendered = true;
   }
@@ -312,8 +319,8 @@ class FormBuilder {
       return fieldHTML;
     }
 
-    // Skip column wrapper for hidden fields
-    if (field.type === 'hidden') {
+    // Skip column wrapper for hidden fields and headers
+    if (field.type === 'hidden' || field.type === 'header') {
       return fieldHTML;
     }
 
@@ -466,7 +473,8 @@ class FormBuilder {
       readonly = false,
       class: fieldClass = '',
       attributes = {},
-      help = field.helpText || field.help || ''
+      help = field.helpText || field.help || '',
+      inputGroup = null
     } = field;
 
     const inputClass = `${this.options.inputClass} ${fieldClass}`.trim();
@@ -477,24 +485,32 @@ class FormBuilder {
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${val}"`).join(' ');
     const fieldId = this.getFieldId(name);
 
+    // Build the input element
+    const inputElement = `
+      <input
+        type="${type}"
+        id="${fieldId}"
+        name="${name}"
+        class="${inputClass} ${error ? 'is-invalid' : ''}"
+        value="${this.escapeHtml(value)}"
+        ${placeholder ? `placeholder="${this.escapeHtml(placeholder)}"` : ''}
+        ${required ? 'required' : ''}
+        ${disabled ? 'disabled' : ''}
+        ${readonly ? 'readonly' : ''}
+        ${attrs}
+      >
+    `;
+
+    // Wrap in input group if specified
+    const wrappedInput = inputGroup ? this.wrapWithInputGroup(inputElement, inputGroup) : inputElement;
+
     return `
       <div class="${this.options.fieldWrapper}">
         ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">
           ${label}
           ${required ? '<span class="text-danger">*</span>' : ''}
         </label>` : ''}
-        <input
-          type="${type}"
-          id="${fieldId}"
-          name="${name}"
-          class="${inputClass} ${error ? 'is-invalid' : ''}"
-          value="${this.escapeHtml(value)}"
-          ${placeholder ? `placeholder="${this.escapeHtml(placeholder)}"` : ''}
-          ${required ? 'required' : ''}
-          ${disabled ? 'disabled' : ''}
-          ${readonly ? 'readonly' : ''}
-          ${attrs}
-        >
+        ${wrappedInput}
         ${help ? `<div class="form-text">${help}</div>` : ''}
         ${error ? `<div class="${this.options.errorClass}">${error}</div>` : ''}
       </div>
@@ -520,7 +536,8 @@ class FormBuilder {
       minLength,
       class: fieldClass = '',
       attributes = {},
-      help = field.helpText || field.help || ''
+      help = field.helpText || field.help || '',
+      inputGroup = null
     } = field;
 
     const textareaClass = `${this.options.inputClass} ${fieldClass}`.trim();
@@ -530,26 +547,34 @@ class FormBuilder {
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${val}"`).join(' ');
     const fieldId = this.getFieldId(name);
 
+    // Build the textarea element
+    const textareaElement = `
+      <textarea
+        id="${fieldId}"
+        name="${name}"
+        class="${textareaClass} ${error ? 'is-invalid' : ''}"
+        rows="${rows}"
+        ${cols ? `cols="${cols}"` : ''}
+        ${maxLength ? `maxlength="${maxLength}"` : ''}
+        ${minLength ? `minlength="${minLength}"` : ''}
+        ${placeholder ? `placeholder="${this.escapeHtml(placeholder)}"` : ''}
+        ${required ? 'required' : ''}
+        ${disabled ? 'disabled' : ''}
+        ${readonly ? 'readonly' : ''}
+        ${attrs}
+      >${this.escapeHtml(value)}</textarea>
+    `;
+
+    // Wrap in input group if specified
+    const wrappedTextarea = inputGroup ? this.wrapWithInputGroup(textareaElement, inputGroup) : textareaElement;
+
     return `
       <div class="${this.options.fieldWrapper}">
         ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">
           ${label}
           ${required ? '<span class="text-danger">*</span>' : ''}
         </label>` : ''}
-        <textarea
-          id="${fieldId}"
-          name="${name}"
-          class="${textareaClass} ${error ? 'is-invalid' : ''}"
-          rows="${rows}"
-          ${cols ? `cols="${cols}"` : ''}
-          ${maxLength ? `maxlength="${maxLength}"` : ''}
-          ${minLength ? `minlength="${minLength}"` : ''}
-          ${placeholder ? `placeholder="${this.escapeHtml(placeholder)}"` : ''}
-          ${required ? 'required' : ''}
-          ${disabled ? 'disabled' : ''}
-          ${readonly ? 'readonly' : ''}
-          ${attrs}
-        >${this.escapeHtml(value)}</textarea>
+        ${wrappedTextarea}
         ${help ? `<div class="form-text">${help}</div>` : ''}
         ${error ? `<div class="${this.options.errorClass}">${error}</div>` : ''}
       </div>
@@ -566,14 +591,14 @@ class FormBuilder {
       name,
       label,
       options = [],
-      placeholder,
       required = false,
       disabled = false,
       multiple = false,
       size,
       class: fieldClass = '',
       attributes = {},
-      help = field.helpText || field.help || ''
+      help = field.helpText || field.help || '',
+      inputGroup = null
     } = field;
 
     const selectClass = `${this.options.inputClass} ${fieldClass}`.trim();
@@ -595,24 +620,32 @@ class FormBuilder {
       </option>`;
     }).join('');
 
+    // Build the select element
+    const selectElement = `
+      <select
+        id="${fieldId}"
+        name="${name}"
+        class="${selectClass} ${error ? 'is-invalid' : ''}"
+        ${required ? 'required' : ''}
+        ${disabled ? 'disabled' : ''}
+        ${multiple ? 'multiple' : ''}
+        ${size ? `size="${size}"` : ''}
+        ${attrs}
+      >
+        ${optionsHTML}
+      </select>
+    `;
+
+    // Wrap in input group if specified
+    const wrappedSelect = inputGroup ? this.wrapWithInputGroup(selectElement, inputGroup) : selectElement;
+
     return `
       <div class="${this.options.fieldWrapper}">
         ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">
           ${label}
           ${required ? '<span class="text-danger">*</span>' : ''}
         </label>` : ''}
-        <select
-          id="${fieldId}"
-          name="${name}"
-          class="${selectClass} ${error ? 'is-invalid' : ''}"
-          ${required ? 'required' : ''}
-          ${disabled ? 'disabled' : ''}
-          ${multiple ? 'multiple' : ''}
-          ${size ? `size="${size}"` : ''}
-          ${attrs}
-        >
-          ${optionsHTML}
-        </select>
+        ${wrappedSelect}
         ${help ? `<div class="form-text">${help}</div>` : ''}
         ${error ? `<div class="${this.options.errorClass}">${error}</div>` : ''}
       </div>
@@ -1049,6 +1082,162 @@ class FormBuilder {
   }
 
   /**
+   * Render header field
+   * @param {object} field - Field configuration
+   * @returns {string} Header HTML
+   */
+  renderHeaderField(field) {
+    const {
+      text = '',
+      level = 3,
+      className = '',
+      id = ''
+    } = field;
+
+    // Validate header level
+    const headerLevel = Math.max(1, Math.min(6, parseInt(level)));
+    const headerId = id ? ` id="${this.escapeHtml(id)}"` : '';
+    const headerClass = className ? ` class="${this.escapeHtml(className)}"` : '';
+
+    return `<h${headerLevel}${headerId}${headerClass}>${this.escapeHtml(text)}</h${headerLevel}>`;
+  }
+
+  /**
+   * Render collection select field
+   * @param {object} field - Field configuration
+   * @returns {string} Collection select field HTML
+   */
+  renderCollectionField(field) {
+    const {
+      name = '',
+      label = '',
+      Collection,
+      collection,
+      labelField = 'name',
+      valueField = 'id',
+      maxItems = 10,
+      placeholder = 'Search...',
+      required = false,
+      className = 'form-group mb-3',
+      helpText = '',
+      value = '',
+      debounceMs = 300,
+      defaultParams = {},
+      emptyFetch = true
+    } = field;
+
+    if (!Collection && !collection) {
+      console.warn('Collection field requires either Collection class or collection instance');
+      return `<div class="alert alert-warning">Collection field configuration error</div>`;
+    }
+
+    // Create unique ID for this field
+    const fieldId = this.getFieldId(name);
+    const containerId = `${fieldId}_container`;
+
+    // Create collection instance if Collection class provided
+    let collectionInstance = collection;
+    if (!collectionInstance && Collection) {
+      collectionInstance = new Collection();
+    }
+
+    // Store field configuration for later use
+    if (!this.collectionFields) {
+      this.collectionFields = {};
+    }
+
+    this.collectionFields[fieldId] = {
+      collection: collectionInstance,
+      labelField,
+      valueField,
+      maxItems,
+      placeholder,
+      name,
+      value,
+      debounceMs,
+      defaultParams,
+      emptyFetch
+    };
+
+    // Build label HTML
+    const labelHtml = label ? `
+      <label for="${fieldId}" class="form-label">
+        ${this.escapeHtml(label)}${required ? ' <span class="text-danger">*</span>' : ''}
+      </label>
+    ` : '';
+
+    // Build help text HTML
+    const helpTextHtml = helpText ? `
+      <div class="form-text">${this.escapeHtml(helpText)}</div>
+    ` : '';
+
+    return `
+      <div class="${className}">
+        ${labelHtml}
+        <div id="${containerId}" data-collection-field="${fieldId}"></div>
+        ${helpTextHtml}
+      </div>
+    `;
+  }
+
+  /**
+   * Wrap input element with Bootstrap input group
+   * @param {string} inputElement - The input HTML element
+   * @param {object|string} inputGroup - Input group configuration
+   * @returns {string} Wrapped input HTML
+   */
+  wrapWithInputGroup(inputElement, inputGroup) {
+    if (!inputGroup) {
+      return inputElement;
+    }
+
+    // Handle string shorthand (just prepend text)
+    if (typeof inputGroup === 'string') {
+      inputGroup = { prepend: inputGroup };
+    }
+
+    const { prepend = null, append = null } = inputGroup;
+
+    let html = '<div class="input-group">';
+
+    // Add prepend
+    if (prepend) {
+      const prependContent = this.renderInputGroupAddon(prepend);
+      html += `<span class="input-group-text">${prependContent}</span>`;
+    }
+
+    // Add the input element
+    html += inputElement;
+
+    // Add append
+    if (append) {
+      const appendContent = this.renderInputGroupAddon(append);
+      html += `<span class="input-group-text">${appendContent}</span>`;
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  /**
+   * Render input group addon content
+   * @param {string|object} addon - Addon configuration
+   * @returns {string} Addon HTML
+   */
+  renderInputGroupAddon(addon) {
+    if (typeof addon === 'string') {
+      // Check if it contains HTML (simple heuristic)
+      if (addon.includes('<') && addon.includes('>')) {
+        return addon; // Raw HTML (like icons)
+      }
+      return this.escapeHtml(addon); // Plain text
+    }
+
+    // Future: Handle complex addon objects (buttons, dropdowns, etc.)
+    return this.escapeHtml(String(addon));
+  }
+
+  /**
    * Build form buttons HTML
    * @returns {string} Buttons HTML
    */
@@ -1139,8 +1328,57 @@ class FormBuilder {
   }
 
   /**
+   * Initialize collection select fields
+   */
+  initializeCollectionFields() {
+    if (!this.collectionFields) return;
+
+    Object.entries(this.collectionFields).forEach(([fieldId, config]) => {
+      const container = this.container.querySelector(`[data-collection-field="${fieldId}"]`);
+      if (!container) return;
+
+      // Apply default params to collection if provided
+      if (config.defaultParams && Object.keys(config.defaultParams).length > 0) {
+        Object.assign(config.collection.params, config.defaultParams);
+      }
+
+      // Create CollectionSelectView instance
+      const collectionView = new CollectionSelectView({
+        collection: config.collection,
+        labelField: config.labelField,
+        valueField: config.valueField,
+        maxItems: config.maxItems,
+        placeholder: config.placeholder,
+        name: config.name,
+        value: config.value,
+        debounceMs: config.debounceMs,
+        emptyFetch: config.emptyFetch
+      });
+
+      // Store reference for cleanup
+      if (!this.collectionViews) {
+        this.collectionViews = {};
+      }
+      this.collectionViews[fieldId] = collectionView;
+
+      // Listen for changes to update form data
+      collectionView.on('change', (data) => {
+        this.data[config.name] = data.value;
+        this.emit('field-change', {
+          field: config.name,
+          value: data.value,
+          label: data.label
+        });
+      });
+
+      // Mount the view
+      collectionView.render(true, container);
+    });
+  }
+
+  /**
    * Handle form submission
-   * @param {Event} event - Submit event
+   * @param {Event} event - Form submit event
    */
   async handleSubmit(event) {
     event.preventDefault();
@@ -1242,6 +1480,14 @@ class FormBuilder {
    * Destroy the form builder
    */
   destroy() {
+    // Clean up collection views
+    if (this.collectionViews) {
+      Object.values(this.collectionViews).forEach(view => {
+        view.destroy();
+      });
+      this.collectionViews = {};
+    }
+
     if (this.container) {
       this.container.innerHTML = '';
       this.container = null;
@@ -1327,6 +1573,16 @@ class FormBuilder {
       }
     });
 
+    // Handle collection select fields
+    if (this.collectionViews) {
+      Object.entries(this.collectionViews).forEach(([fieldId, view]) => {
+        const fieldConfig = this.collectionFields[fieldId];
+        if (fieldConfig && fieldConfig.name) {
+          values[fieldConfig.name] = view.getFormValue();
+        }
+      });
+    }
+
     return values;
   }
 
@@ -1364,6 +1620,16 @@ class FormBuilder {
         }
       }
     });
+
+    // Handle collection select fields
+    if (this.collectionViews) {
+      Object.entries(this.collectionViews).forEach(([fieldId, view]) => {
+        const fieldConfig = this.collectionFields[fieldId];
+        if (fieldConfig && fieldConfig.name && Object.prototype.hasOwnProperty.call(values, fieldConfig.name)) {
+          view.setFormValue(values[fieldConfig.name]);
+        }
+      });
+    }
 
     this.data = { ...this.data, ...values };
   }
@@ -1439,7 +1705,7 @@ class FormBuilder {
    */
   getFieldValue(name, defaultValue = '') {
     // First check if data has the value
-    if (this.data.hasOwnProperty(name)) {
+    if (Object.prototype.hasOwnProperty.call(this.data, name)) {
       return this.data[name];
     }
 
@@ -1450,9 +1716,9 @@ class FormBuilder {
         if (modelValue !== undefined) {
           return modelValue;
         }
-      } else if (this.model.attributes && this.model.attributes.hasOwnProperty(name)) {
+      } else if (this.model.attributes && Object.prototype.hasOwnProperty.call(this.model.attributes, name)) {
         return this.model.attributes[name];
-      } else if (this.model.hasOwnProperty(name)) {
+      } else if (Object.prototype.hasOwnProperty.call(this.model, name)) {
         return this.model[name];
       }
     }
@@ -1514,6 +1780,16 @@ class FormBuilder {
         this.data[checkbox.name] = false;
       }
     });
+
+    // Handle collection select fields
+    if (this.collectionViews) {
+      Object.entries(this.collectionViews).forEach(([fieldId, view]) => {
+        const fieldConfig = this.collectionFields[fieldId];
+        if (fieldConfig && fieldConfig.name) {
+          this.data[fieldConfig.name] = view.getFormValue();
+        }
+      });
+    }
   }
 
   /**

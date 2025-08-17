@@ -1,6 +1,6 @@
 /**
  * Auto-generated template module
- * Generated: 2025-08-16T15:59:23.719Z
+ * Generated: 2025-08-17T00:11:14.868Z
  * Contains all framework templates compiled as JavaScript strings
  */
 
@@ -687,14 +687,14 @@ templates['auth/pages/RegisterPage.mst'] = `<div class="auth-page register-page 
 // Template: components/TablePage.mst
 templates['components/TablePage.mst'] = `<div class="table-page-container">
   <!-- Header Section -->
-  {{#title}}
+  {{#showTitle}}
   <div class="table-page-header mb-3">
     <h2 class="page-title mb-2">{{title}}</h2>
     {{#description}}
     <p class="page-description text-muted">{{description}}</p>
     {{/description}}
   </div>
-  {{/title}}
+  {{/showTitle}}
 
   <!-- Table Container - Child view will render here -->
   <div id="{{tableContainerId}}" class="table-container" data-table-page="{{pageName}}">

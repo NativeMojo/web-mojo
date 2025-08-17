@@ -4,11 +4,9 @@
  * Includes built-in refresh, add, export, and other common table operations
  */
 
-import Dialog from './Dialog.js';
 import Page from '../core/Page.js';
 import Table from './Table.js';
 import { getTemplate, components_TablePage_mst } from '../templates.js';
-import { TodoForms } from '../../examples/portal/models/Todo.js';
 
 class TablePage extends Page {
   // Static template property pointing to external template file
@@ -145,7 +143,8 @@ class TablePage extends Page {
       columns: this.tableConfig.columns,
       filters: this.tableConfig.filters,
       batchActions: this.tableConfig.batchActions,
-      formCreate: TodoForms.create,
+      formCreate: this.options.formCreate,
+      formEdit: this.options.formEdit || this.options.formCreate,
       showRefresh: this.showRefresh,
       showAdd: this.showAdd,
       showExport: this.showExport,

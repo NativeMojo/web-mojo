@@ -401,7 +401,7 @@ class WebApp {
 
         // Notify layout of page change
         if (this.layout && this.layout.setActivePage) {
-            this.layout.setActivePage(page.pageName);
+            this.layout.setActivePage(page);
         }
 
         // Try to keep the route in sync (but not if we're already syncing to prevent loops)

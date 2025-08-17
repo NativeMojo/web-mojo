@@ -5,11 +5,25 @@ window.Model = Model;
 
 const UserForms = {
     create: {
-        title: 'Create Todo',
+        title: 'Create User',
         fields: [
-            { name: 'name', type: 'text', label: 'Name' },
-            { name: 'description', type: 'textarea', label: 'Description' },
-            { name: 'kind', type: 'select', label: 'Kind', options: ['task', 'event', 'reminder'] }
+            { name: 'email', type: 'text', label: 'Email' },
+            { name: 'display_name', type: 'text', label: 'Display Name' }
+        ]
+    },
+    edit: {
+        title: 'Edit User',
+        fields: [
+            { name: 'email', type: 'text', label: 'Email' },
+            { name: 'display_name', type: 'text', label: 'Display Name' },
+            {
+              type: 'header',
+              text: 'Permissions',
+              level: 5,
+              className: 'mt-4'
+            },
+            { name: "permissions.manage_users", type: 'switch', label: 'Manage Users', col: 6},
+            { name: "permissions.manage_groups", type: 'switch', label: 'Manage Groups', col: 6},
         ]
     }
 };
@@ -22,10 +36,14 @@ class User extends Model {
     }
 
     hasPermission(permission) {
-        if (Array.isArray(permission)) {
-            return permission.some(p => this.get("permissions")[p] == true);
+        const permissions = this.get("permissions");
+        if (!permissions) {
+            return false;
         }
-        return this.get("permissions")[permission] == true;
+        if (Array.isArray(permission)) {
+            return permission.some(p => permissions[p] == true);
+        }
+        return permissions[permission] == true;
     }
 
     hasPerm(p) {

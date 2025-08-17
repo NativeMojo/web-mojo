@@ -57,6 +57,174 @@ class Sidebar extends View {
     }
 
     /**
+     * Initialize sidebar and auto-switch to correct menu based on current route
+     */
+    async onInit() {
+        await super.onInit();
+
+        // Get current route from router
+        const app = this.getApp();
+        const router = app?.router;
+
+        if (router) {
+            const currentPath = router.getCurrentPath();
+            if (currentPath) {
+                this.autoSwitchToMenuForRoute(currentPath);
+            }
+        }
+    }
+
+    /**
+     * Find and switch to the menu that contains the given route
+     */
+    autoSwitchToMenuForRoute(route) {
+        // Search through all menus to find one that contains this route
+        for (const [menuName, menuConfig] of this.menus) {
+            if (this.menuContainsRoute(menuConfig, route)) {
+                // Switch to this menu
+                this.activeMenuName = menuName;
+                this.currentRoute = route;
+
+                // Clear all active states and set new active item
+                this.clearAllActiveStates();
+                this.setActiveItemByRoute(route);
+
+                // Re-render to show changes
+                this.render();
+
+                console.log(`Auto-switched to menu '${menuName}' for route '${route}'`);
+
+                // Emit event for any listeners
+                this.emit('menu-auto-switched', {
+                    menuName,
+                    route,
+                    config: menuConfig,
+                    sidebar: this
+                });
+
+                return true;
+            }
+        }
+
+        return false; // No menu found for this route
+    }
+
+    /**
+     * Clear active state from all menu items in all menus
+     */
+    clearAllActiveStates() {
+        for (const [menuName, menuConfig] of this.menus) {
+            for (const item of menuConfig.items || []) {
+                item.active = false;
+                if (item.children) {
+                    for (const child of item.children) {
+                        child.active = false;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Set active state for item matching the given route
+     */
+    setActiveItemByRoute(route) {
+        const normalizeRoute = (r) => {
+            if (!r) return '/';
+            // Decode URL-encoded characters (like %2F -> /)
+            const decoded = decodeURIComponent(r);
+            return decoded.startsWith('/') ? decoded : `/${decoded}`;
+        };
+
+        const targetRoute = normalizeRoute(route);
+
+        // Search through all menus
+        for (const [menuName, menuConfig] of this.menus) {
+            for (const item of menuConfig.items || []) {
+                // Check main item
+                if (item.route) {
+                    const itemRoute = normalizeRoute(item.route);
+                    if (this.routesMatch(targetRoute, itemRoute)) {
+                        item.active = true;
+                        this.activeMenuItem = item;
+                        return true;
+                    }
+                }
+
+                // Check children
+                if (item.children) {
+                    for (const child of item.children) {
+                        if (child.route) {
+                            const childRoute = normalizeRoute(child.route);
+                            if (this.routesMatch(targetRoute, childRoute)) {
+                                child.active = true;
+                                item.active = true; // Parent also active
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if a menu contains a specific route in its items or children
+     */
+    menuContainsRoute(menuConfig, route) {
+        const normalizeRoute = (r) => {
+            if (!r) return '/';
+            // Decode URL-encoded characters (like %2F -> /)
+            const decoded = decodeURIComponent(r);
+            return decoded.startsWith('/') ? decoded : `/${decoded}`;
+        };
+
+        const targetRoute = normalizeRoute(route);
+
+        // Check each item in the menu
+        for (const item of menuConfig.items || []) {
+            // Check main item
+            if (item.route) {
+                const itemRoute = normalizeRoute(item.route);
+                if (this.routesMatch(targetRoute, itemRoute)) {
+                    return true;
+                }
+            }
+
+            // Check children
+            if (item.children) {
+                for (const child of item.children) {
+                    if (child.route) {
+                        const childRoute = normalizeRoute(child.route);
+                        if (this.routesMatch(targetRoute, childRoute)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if two routes match (using same logic as isItemActive)
+     */
+    routesMatch(currentRoute, itemRoute) {
+        if (itemRoute === '/' && currentRoute === '/') {
+            return true;
+        }
+
+        if (itemRoute !== '/' && currentRoute !== '/') {
+            return currentRoute.startsWith(itemRoute) || currentRoute === itemRoute;
+        }
+
+        return false;
+    }
+
+    /**
      * Get template partials for rendering
      */
     getPartials() {
@@ -247,7 +415,7 @@ class Sidebar extends View {
     processNavItems(items) {
         const app = this.getApp();
         const activeUser = app?.activeUser;
-        
+
         return items.map((item, index) => {
             const processedItem = { ...item };
 
@@ -272,21 +440,20 @@ class Sidebar extends View {
                 processedItem.route = processedItem.href; // Store for active matching
             }
 
-            // Set active state based on current route
-            processedItem.active = this.isItemActive(processedItem);
+            // Active state is already set on the item object, no need to calculate
 
             // Process children
             if (processedItem.children) {
                 processedItem.children = processedItem.children.map(child => {
                     const processedChild = { ...child };
-                    
+
                     // Check permissions for child items
                     if (processedChild.permissions && activeUser) {
                         if (!activeUser.hasPermission(processedChild.permissions)) {
                             return null; // Will be filtered out
                         }
                     }
-                    
+
                     // Use route directly as href
                     if (processedChild.route) {
                         processedChild.href = processedChild.route;
@@ -294,18 +461,13 @@ class Sidebar extends View {
                         processedChild.href = processedChild.page.startsWith('/') ? processedChild.page : `/${processedChild.page}`;
                         processedChild.route = processedChild.href;
                     }
-                    
-                    processedChild.active = this.isItemActive(processedChild);
+
+                    // Active state is already set on the child object
                     return processedChild;
                 }).filter(child => child !== null); // Filter out permission-denied children
 
                 // Update hasChildren flag after filtering children
                 processedItem.hasChildren = !!(processedItem.children && processedItem.children.length > 0);
-
-                // Parent is active if any child is active
-                if (!processedItem.active) {
-                    processedItem.active = processedItem.children.some(child => child.active);
-                }
             } else {
                 // Add hasChildren flag for template logic
                 processedItem.hasChildren = false;
@@ -327,7 +489,9 @@ class Sidebar extends View {
 
         const normalizeRoute = (route) => {
             if (!route) return '/';
-            return route.startsWith('/') ? route : `/${route}`;
+            // Decode URL-encoded characters (like %2F -> /)
+            const decoded = decodeURIComponent(route);
+            return decoded.startsWith('/') ? decoded : `/${decoded}`;
         };
 
         const itemRoute = normalizeRoute(item.route);
@@ -349,6 +513,11 @@ class Sidebar extends View {
      */
     async updateActiveItem(route) {
         this.currentRoute = route;
+
+        // Clear all active states and set new active item
+        this.clearAllActiveStates();
+        this.setActiveItemByRoute(route);
+
         await this.render();
         return this;
     }
@@ -434,11 +603,27 @@ class Sidebar extends View {
     }
 
     /**
-     * Handle route changed event
+     * Handle route changed event - auto-switch menu and update active item
      */
     onRouteChanged(data) {
         if (data.page && data.page.route) {
-            this.updateActiveItem(data.page.route);
+            const route = this.getApp().router.convertRoute(data.page.route);
+            if (this.activeMenuItem && this.routesMatch(route, this.activeMenuItem.route)) {
+                return;
+            }
+            // First, try to auto-switch to correct menu for this route
+            const switchedMenu = this.autoSwitchToMenuForRoute(route);
+
+            // If no menu switch happened, still update active item
+            if (!switchedMenu) {
+                this.clearAllActiveStates();
+                this.setActiveItemByRoute(route);
+                this.updateActiveItem(route);
+            }
+
+            if (switchedMenu) {
+                console.log(`Route changed to '${route}', auto-switched menu`);
+            }
         }
     }
 }

@@ -296,21 +296,21 @@ class Portal extends View {
     /**
      * Set active page in navigation - called by WebApp
      */
-    setActivePage(pageName) {
+    setActivePage(page) {
         // Update sidebar active state
         const sidebar = this.getChild('portal-sidebar');
         if (sidebar && sidebar.updateActiveItem) {
-            sidebar.updateActiveItem(pageName);
+            // sidebar.updateActiveItem(page.route);
         }
 
         // Update topnav active state
         const topNav = this.getChild('portal-topnav');
         if (topNav && topNav.updateActiveItem) {
-            topNav.updateActiveItem(pageName);
+            topNav.updateActiveItem(page.route);
         }
 
         // Emit page change event
-        this.emit('page:changed', { page: pageName });
+        this.emit('page:changed', { page: page });
     }
 
     /**
