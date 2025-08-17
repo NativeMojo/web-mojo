@@ -7,7 +7,7 @@
                         <!-- Logo and Header -->
                         <div class="text-center mb-4">
                             {{#logoUrl}}
-                            <img src="{{logoUrl}}" alt="{{appName}}" class="mb-3" style="max-height: 60px;">
+                            <img src="{{logoUrl}}" alt="{{title}}" class="mb-3" style="max-height: 60px;">
                             {{/logoUrl}}
                             <h2 class="h3 mb-2">{{messages.loginTitle}}</h2>
                             <p class="text-muted">{{messages.loginSubtitle}}</p>
@@ -24,21 +24,22 @@
 
                         <!-- Login Form -->
                         <form data-action="login" novalidate>
-                            <!-- Email Field -->
+                            <!-- Username/Email Field -->
                             <div class="mb-3">
-                                <label for="loginEmail" class="form-label">
-                                    <i class="bi bi-envelope me-1"></i>Email Address
+                                <label for="loginUsername" class="form-label">
+                                    <i class="bi bi-person me-1"></i>Username or Email
                                 </label>
                                 <input
-                                    type="email"
+                                    type="text"
                                     class="form-control form-control-lg"
-                                    id="loginEmail"
-                                    placeholder="name@example.com"
-                                    value="{{email}}"
-                                    data-field="email"
-                                    data-action="updateField"
+                                    id="loginUsername"
+                                    placeholder="Enter your username or email"
+                                    value="{{username}}"
+                                    data-field="username"
+                                    data-change-action="updateField"
                                     data-action-keydown="handleKeyPress"
                                     required
+                                    autofocus
                                     {{#isLoading}}disabled{{/isLoading}}>
                             </div>
 
@@ -55,7 +56,7 @@
                                         placeholder="Enter your password"
                                         value="{{password}}"
                                         data-field="password"
-                                        data-action="updateField"
+                                        data-change-action="updateField"
                                         data-action-keydown="handleKeyPress"
                                         required
                                         {{#isLoading}}disabled{{/isLoading}}>
@@ -71,27 +72,28 @@
 
                             <!-- Remember Me & Forgot Password -->
                             <div class="d-flex justify-content-between align-items-center mb-4">
-                                {{#enableRememberMe}}
+                                {{#rememberMe}}
                                 <div class="form-check">
                                     <input
                                         class="form-check-input"
                                         type="checkbox"
                                         id="rememberMe"
                                         data-field="rememberMe"
-                                        data-action="updateField"
+                                        data-change-action="updateField"
                                         {{#rememberMe}}checked{{/rememberMe}}
                                         {{#isLoading}}disabled{{/isLoading}}>
                                     <label class="form-check-label" for="rememberMe">
                                         Remember me
                                     </label>
                                 </div>
-                                {{/enableRememberMe}}
+                                {{/rememberMe}}
+                                {{^rememberMe}}<div></div>{{/rememberMe}}
 
-                                {{#enableForgotPassword}}
+                                {{#forgotPassword}}
                                 <a href="#" class="text-decoration-none" data-action="forgotPassword">
                                     Forgot password?
                                 </a>
-                                {{/enableForgotPassword}}
+                                {{/forgotPassword}}
                             </div>
 
                             <!-- Login Button -->
@@ -125,28 +127,10 @@
                                 <i class="bi bi-fingerprint me-2"></i>Sign in with Passkey
                             </button>
                             {{/passkeySupported}}
-
-                            {{#googleEnabled}}
-                            {{^passkeySupported}}
-                            <div class="position-relative my-3">
-                                <hr class="text-muted">
-                                <span class="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted small">
-                                    OR
-                                </span>
-                            </div>
-                            {{/passkeySupported}}
-
-                            <button
-                                type="button"
-                                class="btn btn-outline-danger btn-lg w-100 mb-2"
-                                data-action="loginWithGoogle"
-                                {{#isLoading}}disabled{{/isLoading}}>
-                                <i class="bi bi-google me-2"></i>Sign in with Google
-                            </button>
-                            {{/googleEnabled}}
                         </form>
 
                         <!-- Register Link -->
+                        {{#registration}}
                         <div class="text-center mt-4">
                             <p class="mb-0">
                                 Don't have an account?
@@ -155,28 +139,11 @@
                                 </a>
                             </p>
                         </div>
-
-                        <!-- Terms and Privacy -->
-                        {{#termsUrl}}
-                        <div class="text-center mt-3">
-                            <small class="text-muted">
-                                By signing in, you agree to our
-                                <a href="#" class="text-decoration-none" data-url="{{termsUrl}}" data-action="openLink">
-                                    Terms of Service
-                                </a>
-                                {{#privacyUrl}}
-                                and
-                                <a href="#" class="text-decoration-none" data-url="{{privacyUrl}}" data-action="openLink">
-                                    Privacy Policy
-                                </a>
-                                {{/privacyUrl}}
-                            </small>
-                        </div>
-                        {{/termsUrl}}
+                        {{/registration}}
                     </div>
                 </div>
 
-                <!-- Additional Help Text -->
+                <!-- Security Notice -->
                 <div class="text-center mt-3">
                     <small class="text-muted">
                         <i class="bi bi-shield-check me-1"></i>Secure Login with 256-bit Encryption
@@ -215,8 +182,7 @@
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
-.auth-page .btn-outline-primary:hover:not(:disabled),
-.auth-page .btn-outline-danger:hover:not(:disabled) {
+.auth-page .btn-outline-primary:hover:not(:disabled) {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }

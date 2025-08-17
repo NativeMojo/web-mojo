@@ -59,13 +59,13 @@ class UsersPage extends Page {
       ...options
     });
   }
-  
+
   async onEnter() {
     // Called when entering this page
     await super.onEnter();
     this.initializeChildViews();
   }
-  
+
   async onParams(params, query) {
     // Handle route parameter changes
     if (params.id) {
@@ -97,19 +97,27 @@ class UserListView extends View {
       ...options
     });
   }
-  
+
+  async onBeforeRender() {
+      this.data = await this.getViewData();
+  }
+
+  async onAfterRender() {
+      // add any logic here for when after the view is mounted and rendered
+  }
+
   async getViewData() {
     return {
       users: this.collection?.toJSON() || []
     };
   }
-  
+
   // Action handlers - automatic event binding
   async handleActionEditUser(event, element) {
     const userId = element.getAttribute('data-id');
     await this.editUser(userId);
   }
-  
+
   async handleActionDeleteUser(event, element) {
     const userId = element.getAttribute('data-id');
     const confirmed = await Dialog.confirm('Delete this user?');
@@ -133,7 +141,7 @@ class User extends Model {
   };
 }
 
-// Collection definition  
+// Collection definition
 class UserCollection extends Collection {
   constructor(options = {}) {
     super(User, {
@@ -163,12 +171,12 @@ class MyView extends View {
   async handleActionSave(event, element) {
     // Button with data-action="save"
   }
-  
+
   // Change events: data-change-action="filter" -> handleActionFilter()
   async handleActionFilter(event, element) {
     // Input with data-change-action="filter"
   }
-  
+
   // Custom events
   async handleActionCustomThing(event, element) {
     // data-action="custom-thing" -> handleActionCustomThing()
@@ -213,19 +221,19 @@ class MyComponent extends View {
   async onInit() {
     // During construction
   }
-  
+
   async onBeforeRender() {
     // Before each render
   }
-  
+
   async onAfterRender() {
     // After each render
   }
-  
+
   async onAfterMount() {
     // After mounting to DOM
   }
-  
+
   async onBeforeDestroy() {
     // Before cleanup
   }
@@ -239,16 +247,16 @@ Automatic lifecycle management for child components:
 class ParentView extends View {
   async onInit() {
     await super.onInit();
-    
+
     // Create child views
     this.listView = new ListComponent({
       container: '[data-container="list"]'
     });
-    
+
     this.formView = new FormComponent({
       container: '[data-container="form"]'
     });
-    
+
     // Add children - automatic lifecycle management
     this.addChild(this.listView);
     this.addChild(this.formView);
@@ -266,7 +274,7 @@ class ResourceManagementView extends View {
     const result = await Dialog.showForm(formView, {
       title: 'Create Resource'
     });
-    
+
     if (result) {
       const resource = new this.ResourceModel(result);
       await resource.save();
@@ -274,26 +282,26 @@ class ResourceManagementView extends View {
       await this.render();
     }
   }
-  
+
   async handleActionEdit(event, element) {
     const id = element.getAttribute('data-id');
     const resource = this.collection.get(id);
-    
+
     const formView = new ResourceFormView({ model: resource });
     const result = await Dialog.showForm(formView, {
       title: 'Edit Resource'
     });
-    
+
     if (result) {
       await resource.save(result);
       await this.render();
     }
   }
-  
+
   async handleActionDelete(event, element) {
     const id = element.getAttribute('data-id');
     const confirmed = await Dialog.confirm('Delete this item?');
-    
+
     if (confirmed) {
       const resource = this.collection.get(id);
       await resource.destroy();
@@ -318,30 +326,30 @@ class MasterDetailPage extends Page {
       ...options
     });
   }
-  
+
   async onInit() {
     this.listView = new ItemListView({
       container: '[data-container="list"]',
       collection: this.collection
     });
-    
+
     this.addChild(this.listView);
-    
+
     this.listView.on('item-selected', (item) => {
       this.showDetail(item);
     });
   }
-  
+
   async showDetail(item) {
     if (this.detailView) {
       this.removeChild(this.detailView);
     }
-    
+
     this.detailView = new ItemDetailView({
       container: '[data-container="detail"]',
       model: item
     });
-    
+
     this.addChild(this.detailView);
   }
 }
@@ -368,20 +376,20 @@ class UserFormView extends View {
       ...options
     });
   }
-  
+
   async getViewData() {
     return this.model?.toJSON() || {};
   }
-  
+
   async handleActionSave(event, element) {
     event.preventDefault();
-    
+
     const formData = this.getFormData();
-    
+
     if (!this.validate(formData)) {
       return;
     }
-    
+
     try {
       await this.model.save(formData);
       this.emit('save-success', this.model);
@@ -389,7 +397,7 @@ class UserFormView extends View {
       this.showError('Save failed: ' + error.message);
     }
   }
-  
+
   getFormData() {
     const form = this.element.querySelector('form');
     return Object.fromEntries(new FormData(form));
@@ -453,10 +461,10 @@ async handleActionSave(event, element) {
   try {
     const app = this.getApp();
     app.showLoading('Saving...');
-    
+
     await this.model.save();
     app.showSuccess('Saved successfully!');
-    
+
   } catch (error) {
     const app = this.getApp();
     app.showError('Save failed: ' + error.message);

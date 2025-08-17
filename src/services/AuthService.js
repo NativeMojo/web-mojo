@@ -1,19 +1,18 @@
 /**
- * Authentication Service
- * Handles all authentication-related API calls for PAYOMI
+ * AuthService - Simplified authentication API service
+ * Handles core authentication API calls: login, register, password reset, etc.
  */
 
 export default class AuthService {
-    constructor(app) {
-        this.app = app;
-        this.baseURL = app.rest?.config?.baseURL || null;
-        this.timeout = app.rest?.config?.timeout || 30000;
+    constructor(config = {}) {
+        this.baseURL = config.baseURL || 'http://localhost:8881';
+        this.timeout = config.timeout || 30000;
     }
 
     /**
-     * Login with email and password
-     * @param {string} username - User username
-     * @param {string} password - User password
+     * Login with username/email and password
+     * @param {string} username - Username or email
+     * @param {string} password - Password
      * @returns {Promise<object>} Response with user, token, and refreshToken
      */
     async login(username, password) {
@@ -59,164 +58,13 @@ export default class AuthService {
     }
 
     /**
-     * Login with passkey
-     * @returns {Promise<object>} Response with user, token, and refreshToken
-     */
-    async loginWithPasskey() {
-        try {
-            // Step 1: Get challenge from server
-            const challengeResponse = await this.makeRequest('/api/passkey/challenge', 'POST');
-
-            if (!challengeResponse.challenge) {
-                throw new Error('No challenge received from server');
-            }
-
-            // Step 2: Create credential request options
-            const credentialRequestOptions = {
-                publicKey: {
-                    challenge: this.base64ToArrayBuffer(challengeResponse.challenge),
-                    timeout: 60000,
-                    userVerification: 'preferred',
-                    rpId: window.location.hostname
-                }
-            };
-
-            // Step 3: Get credential from browser
-            const credential = await navigator.credentials.get(credentialRequestOptions);
-
-            if (!credential) {
-                throw new Error('No credential received from authenticator');
-            }
-
-            // Step 4: Prepare credential data for server
-            const credentialData = {
-                id: credential.id,
-                rawId: this.arrayBufferToBase64(credential.rawId),
-                type: credential.type,
-                response: {
-                    authenticatorData: this.arrayBufferToBase64(credential.response.authenticatorData),
-                    clientDataJSON: this.arrayBufferToBase64(credential.response.clientDataJSON),
-                    signature: this.arrayBufferToBase64(credential.response.signature),
-                    userHandle: credential.response.userHandle ?
-                        this.arrayBufferToBase64(credential.response.userHandle) : null
-                }
-            };
-
-            // Step 5: Send credential to server for verification
-            const response = await this.makeRequest('/api/passkey/login', 'POST', {
-                credential: credentialData,
-                challengeId: challengeResponse.challengeId
-            });
-
-            return {
-                success: true,
-                data: response
-            };
-        } catch (error) {
-            console.error('Passkey login error:', error);
-            return {
-                success: false,
-                message: error.message || 'Passkey authentication failed'
-            };
-        }
-    }
-
-    /**
-     * Setup passkey for current user
-     * @returns {Promise<object>} Response indicating success or failure
-     */
-    async setupPasskey() {
-        try {
-            // Get current user token
-            const token = localStorage.getItem('payomi_token') ||
-                         sessionStorage.getItem('payomi_token');
-
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
-
-            // Step 1: Get registration options from server
-            const optionsResponse = await this.makeRequest('/api/passkey/register-options', 'POST', null, {
-                'Authorization': `Bearer ${token}`
-            });
-
-            if (!optionsResponse.options) {
-                throw new Error('No registration options received from server');
-            }
-
-            // Step 2: Create credential creation options
-            const credentialCreationOptions = {
-                publicKey: {
-                    challenge: this.base64ToArrayBuffer(optionsResponse.options.challenge),
-                    rp: {
-                        name: 'PAYOMI',
-                        id: window.location.hostname
-                    },
-                    user: {
-                        id: this.base64ToArrayBuffer(optionsResponse.options.userId),
-                        name: optionsResponse.options.userName,
-                        displayName: optionsResponse.options.userDisplayName
-                    },
-                    pubKeyCredParams: [
-                        { alg: -7, type: 'public-key' },  // ES256
-                        { alg: -257, type: 'public-key' }  // RS256
-                    ],
-                    authenticatorSelection: {
-                        authenticatorAttachment: 'platform',
-                        userVerification: 'preferred'
-                    },
-                    timeout: 60000,
-                    attestation: 'none'
-                }
-            };
-
-            // Step 3: Create credential
-            const credential = await navigator.credentials.create(credentialCreationOptions);
-
-            if (!credential) {
-                throw new Error('Failed to create credential');
-            }
-
-            // Step 4: Prepare credential data for server
-            const credentialData = {
-                id: credential.id,
-                rawId: this.arrayBufferToBase64(credential.rawId),
-                type: credential.type,
-                response: {
-                    attestationObject: this.arrayBufferToBase64(credential.response.attestationObject),
-                    clientDataJSON: this.arrayBufferToBase64(credential.response.clientDataJSON)
-                }
-            };
-
-            // Step 5: Register credential with server
-            const response = await this.makeRequest('/api/passkey/register', 'POST', {
-                credential: credentialData,
-                optionsId: optionsResponse.optionsId
-            }, {
-                'Authorization': `Bearer ${token}`
-            });
-
-            return {
-                success: true,
-                data: response
-            };
-        } catch (error) {
-            console.error('Passkey setup error:', error);
-            return {
-                success: false,
-                message: error.message || 'Failed to setup passkey'
-            };
-        }
-    }
-
-    /**
      * Request password reset
      * @param {string} email - User email
      * @returns {Promise<object>} Response indicating success or failure
      */
     async forgotPassword(email) {
         try {
-            const response = await this.makeRequest('/api/auth/forgot', 'POST', {
+            const response = await this.makeRequest('/api/auth/forgot-password', 'POST', {
                 email
             });
 
@@ -241,7 +89,7 @@ export default class AuthService {
      */
     async resetPassword(token, password) {
         try {
-            const response = await this.makeRequest('/auth/reset-password', 'POST', {
+            const response = await this.makeRequest('/api/auth/reset-password', 'POST', {
                 token,
                 password
             });
@@ -260,37 +108,13 @@ export default class AuthService {
     }
 
     /**
-     * Verify email with token
-     * @param {string} token - Verification token
-     * @returns {Promise<object>} Response indicating success or failure
-     */
-    async verifyEmail(token) {
-        try {
-            const response = await this.makeRequest('/auth/verify-email', 'POST', {
-                token
-            });
-
-            return {
-                success: true,
-                data: response
-            };
-        } catch (error) {
-            console.error('Email verification error:', error);
-            return {
-                success: false,
-                message: error.message || 'Failed to verify email'
-            };
-        }
-    }
-
-    /**
      * Refresh access token
      * @param {string} refreshToken - Refresh token
      * @returns {Promise<object>} Response with new tokens
      */
     async refreshToken(refreshToken) {
         try {
-            const response = await this.makeRequest('/auth/refresh', 'POST', {
+            const response = await this.makeRequest('/api/auth/refresh', 'POST', {
                 refreshToken
             });
 
@@ -314,7 +138,7 @@ export default class AuthService {
      */
     async logout(token) {
         try {
-            const response = await this.makeRequest('/auth/logout', 'POST', null, {
+            const response = await this.makeRequest('/api/auth/logout', 'POST', null, {
                 'Authorization': `Bearer ${token}`
             });
 
@@ -333,14 +157,14 @@ export default class AuthService {
     }
 
     /**
-     * Check if email exists
-     * @param {string} email - Email to check
+     * Check if email/username exists
+     * @param {string} identifier - Email or username to check
      * @returns {Promise<object>} Response with exists boolean
      */
-    async checkEmailExists(email) {
+    async checkIdentifierExists(identifier) {
         try {
-            const response = await this.makeRequest('/auth/check-email', 'POST', {
-                email
+            const response = await this.makeRequest('/api/auth/check-identifier', 'POST', {
+                identifier
             });
 
             return {
@@ -348,16 +172,40 @@ export default class AuthService {
                 exists: response.exists
             };
         } catch (error) {
-            console.error('Email check error:', error);
+            console.error('Identifier check error:', error);
             return {
                 success: false,
-                message: error.message || 'Failed to check email'
+                message: error.message || 'Failed to check identifier'
             };
         }
     }
 
     /**
-     * Make HTTP request
+     * Get current user profile
+     * @param {string} token - Access token
+     * @returns {Promise<object>} User profile data
+     */
+    async getUserProfile(token) {
+        try {
+            const response = await this.makeRequest('/api/user/profile', 'GET', null, {
+                'Authorization': `Bearer ${token}`
+            });
+
+            return {
+                success: true,
+                data: response
+            };
+        } catch (error) {
+            console.error('Get user profile error:', error);
+            return {
+                success: false,
+                message: error.message || 'Failed to get user profile'
+            };
+        }
+    }
+
+    /**
+     * Make HTTP request with error handling and timeout
      * @param {string} endpoint - API endpoint
      * @param {string} method - HTTP method
      * @param {object} data - Request body data
@@ -371,7 +219,6 @@ export default class AuthService {
             method,
             headers: {
                 'Content-Type': 'application/json',
-                ...this.app.api?.headers,
                 ...headers
             }
         };
@@ -393,7 +240,9 @@ export default class AuthService {
             ]);
 
             if (!response.ok) {
-                const error = await response.json().catch(() => ({ message: response.statusText }));
+                const error = await response.json().catch(() => ({ 
+                    message: response.statusText 
+                }));
                 throw new Error(error.message || `HTTP ${response.status}: ${response.statusText}`);
             }
 
@@ -405,33 +254,5 @@ export default class AuthService {
             }
             throw error;
         }
-    }
-
-    /**
-     * Convert base64 string to ArrayBuffer
-     * @param {string} base64 - Base64 string
-     * @returns {ArrayBuffer} ArrayBuffer
-     */
-    base64ToArrayBuffer(base64) {
-        const binaryString = atob(base64);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-        return bytes.buffer;
-    }
-
-    /**
-     * Convert ArrayBuffer to base64 string
-     * @param {ArrayBuffer} buffer - ArrayBuffer
-     * @returns {string} Base64 string
-     */
-    arrayBufferToBase64(buffer) {
-        const bytes = new Uint8Array(buffer);
-        let binary = '';
-        for (let i = 0; i < bytes.byteLength; i++) {
-            binary += String.fromCharCode(bytes[i]);
-        }
-        return btoa(binary);
     }
 }

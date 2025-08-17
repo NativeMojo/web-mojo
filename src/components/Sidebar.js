@@ -230,6 +230,13 @@ class Sidebar extends View {
     getPartials() {
         return {
             'nav-item': `
+                {{#isDivider}}
+                {{>nav-divider}}
+                {{/isDivider}}
+                {{#isSpacer}}
+                {{>nav-spacer}}
+                {{/isSpacer}}
+                {{^isDivider}}{{^isSpacer}}
                 <li class="nav-item">
                     {{#hasChildren}}
                     <!-- Item with submenu -->
@@ -277,6 +284,15 @@ class Sidebar extends View {
                     </a>
                     {{/hasChildren}}
                 </li>
+                {{/isDivider}}{{/isSpacer}}
+            `,
+            'nav-divider': `
+                <li class="nav-divider-item">
+                    <hr class="nav-divider-line">
+                </li>
+            `,
+            'nav-spacer': `
+                <li class="nav-spacer-item"></li>
             `
         };
     }
@@ -427,6 +443,22 @@ class Sidebar extends View {
         const activeUser = app?.activeUser;
 
         return items.map((item, index) => {
+            // Handle divider items
+            if (item === "" || (typeof item === 'object' && item.divider)) {
+                return {
+                    isDivider: true,
+                    id: `divider-${index}`
+                };
+            }
+
+            // Handle spacer items
+            if (typeof item === 'object' && item.spacer) {
+                return {
+                    isSpacer: true,
+                    id: `spacer-${index}`
+                };
+            }
+
             const processedItem = { ...item };
 
             // Check permissions - skip item if user doesn't have required permissions

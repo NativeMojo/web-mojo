@@ -1,64 +1,37 @@
 /**
- * AuthManager - Main authentication orchestrator for MOJO Framework
- * Manages authentication flow, token handling, and auth state
+ * AuthManager - Simplified authentication state management for MOJO Framework
+ * Handles auth state, integrates with AuthService and TokenManager, supports plugins
  */
 
 import AuthService from '../services/AuthService.js';
-import JWTUtils from '../utils/JWTUtils.js';
+import TokenManager from './TokenManager.js';
 
 export default class AuthManager {
     constructor(app, config = {}) {
         this.app = app;
         this.config = {
-            // Default configuration
-            enablePasskeys: false,
-            enableGoogleAuth: false,
-            enableRememberMe: true,
-            enableForgotPassword: true,
-            termsUrl: null,
-            privacyUrl: null,
-            logoUrl: '/assets/logo.png',
-            appName: app.name || 'MOJO App',
-            loginRedirect: '/',
-            logoutRedirect: '/login',
-            tokenRefreshThreshold: 5 * 60 * 1000, // 5 minutes before expiry
-            autoRefreshTokens: true,
-            persistSession: true,
-            customStyles: {},
-            messages: {
-                loginTitle: 'Welcome Back',
-                loginSubtitle: 'Sign in to your account',
-                registerTitle: 'Create Account',
-                registerSubtitle: 'Join us today',
-                forgotTitle: 'Reset Password',
-                forgotSubtitle: 'We\'ll send you reset instructions',
-                resetTitle: 'Set New Password',
-                resetSubtitle: 'Choose a strong password'
-            },
+            baseURL: 'http://localhost:8881',
+            autoRefresh: true,
+            refreshThreshold: 5, // minutes before expiry
+            plugins: {},
             ...config
         };
 
-        // Initialize services
-        this.authService = new AuthService(app);
-        this.jwtUtils = new JWTUtils();
-        
+        // Core services
+        this.authService = new AuthService({
+            baseURL: this.config.baseURL
+        });
+        this.tokenManager = new TokenManager();
+
         // Auth state
-        this.currentUser = null;
         this.isAuthenticated = false;
+        this.user = null;
         this.refreshTimer = null;
 
-        // Bind methods
-        this.login = this.login.bind(this);
-        this.logout = this.logout.bind(this);
-        this.register = this.register.bind(this);
-        this.forgotPassword = this.forgotPassword.bind(this);
-        this.resetPassword = this.resetPassword.bind(this);
-        this.loginWithPasskey = this.loginWithPasskey.bind(this);
-        this.loginWithGoogle = this.loginWithGoogle.bind(this);
-        this.refreshToken = this.refreshToken.bind(this);
-        this.checkAuth = this.checkAuth.bind(this);
+        // Plugin registry
+        this.plugins = new Map();
 
-        // Initialize on app start
+        // Initialize
         this.initialize();
     }
 
@@ -66,528 +39,290 @@ export default class AuthManager {
      * Initialize auth manager
      */
     initialize() {
-        // Check for existing session
-        this.checkAuth();
+        // Check for existing valid session
+        this.checkAuthState();
 
-        // Set up token refresh if enabled
-        if (this.config.autoRefreshTokens) {
-            this.setupTokenRefresh();
+        // Set up auto-refresh if enabled
+        if (this.config.autoRefresh) {
+            this.scheduleTokenRefresh();
         }
 
-        // Listen for auth events
-        this.setupEventListeners();
-
-        // Make auth manager globally available
+        // Make auth manager available to app
         if (this.app) {
             this.app.auth = this;
         }
     }
 
     /**
-     * Set up event listeners
+     * Check current authentication state from stored tokens
      */
-    setupEventListeners() {
-        if (!this.app?.eventBus) return;
-
-        // Listen for auth required events
-        this.app.eventBus.on('auth:required', () => {
-            this.redirectToLogin();
-        });
-
-        // Listen for token expired events
-        this.app.eventBus.on('auth:token-expired', () => {
-            this.handleTokenExpired();
-        });
-    }
-
-    /**
-     * Check current authentication status
-     * @returns {boolean} True if authenticated
-     */
-    checkAuth() {
-        const token = this.jwtUtils.getToken();
+    checkAuthState() {
+        if (this.tokenManager.isValid()) {
+            const userInfo = this.tokenManager.getUserInfo();
+            if (userInfo) {
+                this.setAuthState(userInfo);
+                return true;
+            }
+        }
         
-        if (!token) {
-            this.clearAuth();
-            return false;
-        }
-
-        // Check if token is valid and not expired
-        if (!this.jwtUtils.isValidStructure(token) || this.jwtUtils.isExpired(token)) {
-            this.clearAuth();
-            return false;
-        }
-
-        // Extract user info from token
-        const userInfo = this.jwtUtils.getUserInfo(token);
-        if (userInfo) {
-            this.setAuth(userInfo, token);
-            return true;
-        }
-
-        this.clearAuth();
+        this.clearAuthState();
         return false;
     }
 
     /**
-     * Login with email and password
-     * @param {string} email - User email
-     * @param {string} password - User password
-     * @param {boolean} rememberMe - Whether to persist session
+     * Login with username/email and password
+     * @param {string} username - Username or email
+     * @param {string} password - Password
+     * @param {boolean} rememberMe - Persist session
      * @returns {Promise<object>} Login result
      */
-    async login(email, password, rememberMe = false) {
+    async login(username, password, rememberMe = false) {
         try {
-            // Call auth service
-            const response = await this.authService.login(email, password);
-
-            if (!response.success) {
-                throw new Error(response.message || 'Login failed');
+            const response = await this.authService.login(username, password);
+            
+            if (response.success) {
+                const { token, refreshToken, user } = response.data;
+                
+                // Store tokens
+                this.tokenManager.setTokens(token, refreshToken, rememberMe);
+                
+                // Set auth state
+                const userInfo = this.tokenManager.getUserInfo();
+                this.setAuthState({ ...user, ...userInfo });
+                
+                // Schedule refresh
+                if (this.config.autoRefresh) {
+                    this.scheduleTokenRefresh();
+                }
+                
+                this.emit('login', this.user);
+                return { success: true, user: this.user };
             }
-
-            const { token, refreshToken, user } = response.data;
-
-            // Store tokens
-            this.jwtUtils.storeTokens(token, refreshToken, rememberMe);
-
-            // Set auth state
-            const userInfo = this.jwtUtils.getUserInfo(token);
-            this.setAuth({ ...user, ...userInfo }, token, refreshToken);
-
-            // Emit success event
-            this.app?.eventBus?.emit('auth:login-success', this.currentUser);
-
-            return {
-                success: true,
-                user: this.currentUser
-            };
+            
+            throw new Error(response.message);
         } catch (error) {
-            console.error('Login error:', error);
-            this.app?.eventBus?.emit('auth:login-failed', error);
+            this.emit('loginError', error);
             throw error;
         }
     }
 
     /**
      * Register new user
-     * @param {object} userData - User registration data
+     * @param {object} userData - Registration data
      * @returns {Promise<object>} Registration result
      */
     async register(userData) {
         try {
-            // Call auth service (assuming it has a register method)
             const response = await this.authService.register(userData);
-
-            if (!response.success) {
-                throw new Error(response.message || 'Registration failed');
+            
+            if (response.success) {
+                const { token, refreshToken, user } = response.data;
+                
+                // Store tokens
+                this.tokenManager.setTokens(token, refreshToken, true);
+                
+                // Set auth state
+                const userInfo = this.tokenManager.getUserInfo();
+                this.setAuthState({ ...user, ...userInfo });
+                
+                // Schedule refresh
+                if (this.config.autoRefresh) {
+                    this.scheduleTokenRefresh();
+                }
+                
+                this.emit('register', this.user);
+                return { success: true, user: this.user };
             }
-
-            const { token, refreshToken, user } = response.data;
-
-            // Store tokens
-            this.jwtUtils.storeTokens(token, refreshToken, userData.rememberMe);
-
-            // Set auth state
-            const userInfo = this.jwtUtils.getUserInfo(token);
-            this.setAuth({ ...user, ...userInfo }, token, refreshToken);
-
-            // Emit success event
-            this.app?.eventBus?.emit('auth:register-success', this.currentUser);
-
-            return {
-                success: true,
-                user: this.currentUser
-            };
+            
+            throw new Error(response.message);
         } catch (error) {
-            console.error('Registration error:', error);
-            this.app?.eventBus?.emit('auth:register-failed', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Login with passkey
-     * @returns {Promise<object>} Login result
-     */
-    async loginWithPasskey() {
-        if (!this.config.enablePasskeys) {
-            throw new Error('Passkey authentication is not enabled');
-        }
-
-        try {
-            const response = await this.authService.loginWithPasskey();
-
-            if (!response.success) {
-                throw new Error(response.message || 'Passkey authentication failed');
-            }
-
-            const { token, refreshToken, user } = response.data;
-
-            // Store tokens (passkey login usually remembers)
-            this.jwtUtils.storeTokens(token, refreshToken, true);
-
-            // Set auth state
-            const userInfo = this.jwtUtils.getUserInfo(token);
-            this.setAuth({ ...user, ...userInfo }, token, refreshToken);
-
-            // Emit success event
-            this.app?.eventBus?.emit('auth:passkey-success', this.currentUser);
-
-            return {
-                success: true,
-                user: this.currentUser
-            };
-        } catch (error) {
-            console.error('Passkey login error:', error);
-            this.app?.eventBus?.emit('auth:passkey-failed', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Setup passkey for current user
-     * @returns {Promise<object>} Setup result
-     */
-    async setupPasskey() {
-        if (!this.config.enablePasskeys) {
-            throw new Error('Passkey authentication is not enabled');
-        }
-
-        if (!this.isAuthenticated) {
-            throw new Error('User must be authenticated to setup passkey');
-        }
-
-        try {
-            const response = await this.authService.setupPasskey();
-
-            if (!response.success) {
-                throw new Error(response.message || 'Passkey setup failed');
-            }
-
-            // Emit success event
-            this.app?.eventBus?.emit('auth:passkey-setup-success', response.data);
-
-            return {
-                success: true,
-                data: response.data
-            };
-        } catch (error) {
-            console.error('Passkey setup error:', error);
-            this.app?.eventBus?.emit('auth:passkey-setup-failed', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Login with Google OAuth
-     * @returns {Promise<object>} Login result
-     */
-    async loginWithGoogle() {
-        if (!this.config.enableGoogleAuth) {
-            throw new Error('Google authentication is not enabled');
-        }
-
-        try {
-            // This would typically involve redirecting to Google OAuth
-            // For now, we'll throw a not implemented error
-            throw new Error('Google OAuth not yet implemented');
-        } catch (error) {
-            console.error('Google login error:', error);
-            this.app?.eventBus?.emit('auth:google-failed', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Request password reset
-     * @param {string} email - User email
-     * @returns {Promise<object>} Request result
-     */
-    async forgotPassword(email) {
-        try {
-            const response = await this.authService.forgotPassword(email);
-
-            if (!response.success) {
-                throw new Error(response.message || 'Failed to process request');
-            }
-
-            // Emit success event
-            this.app?.eventBus?.emit('auth:forgot-success', email);
-
-            return {
-                success: true,
-                message: 'Password reset instructions sent to your email'
-            };
-        } catch (error) {
-            console.error('Forgot password error:', error);
-            this.app?.eventBus?.emit('auth:forgot-failed', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Reset password with token
-     * @param {string} token - Reset token
-     * @param {string} newPassword - New password
-     * @returns {Promise<object>} Reset result
-     */
-    async resetPassword(token, newPassword) {
-        try {
-            const response = await this.authService.resetPassword(token, newPassword);
-
-            if (!response.success) {
-                throw new Error(response.message || 'Failed to reset password');
-            }
-
-            // Emit success event
-            this.app?.eventBus?.emit('auth:reset-success');
-
-            return {
-                success: true,
-                message: 'Password reset successful'
-            };
-        } catch (error) {
-            console.error('Reset password error:', error);
-            this.app?.eventBus?.emit('auth:reset-failed', error);
+            this.emit('registerError', error);
             throw error;
         }
     }
 
     /**
      * Logout current user
-     * @returns {Promise<void>}
      */
     async logout() {
         try {
-            const token = this.jwtUtils.getToken();
-            
-            // Call logout API if token exists
+            const token = this.tokenManager.getToken();
             if (token) {
-                await this.authService.logout(token);
+                // Call logout API (don't throw on failure)
+                await this.authService.logout(token).catch(console.warn);
             }
-        } catch (error) {
-            console.error('Logout API error:', error);
-            // Continue with local logout even if API fails
-        }
-
-        // Clear local auth state
-        this.clearAuth();
-
-        // Emit logout event
-        this.app?.eventBus?.emit('auth:logout');
-
-        // Redirect to login if configured
-        if (this.config.logoutRedirect && this.app?.navigate) {
-            this.app.navigate(this.config.logoutRedirect);
+        } finally {
+            this.clearAuthState();
+            this.emit('logout');
         }
     }
 
     /**
      * Refresh access token
-     * @returns {Promise<object>} Refresh result
+     * @returns {Promise<boolean>} Success status
      */
     async refreshToken() {
-        const refreshToken = this.jwtUtils.getRefreshToken();
-        
-        if (!refreshToken) {
-            throw new Error('No refresh token available');
-        }
-
         try {
+            const refreshToken = this.tokenManager.getRefreshToken();
+            if (!refreshToken) {
+                throw new Error('No refresh token available');
+            }
+
             const response = await this.authService.refreshToken(refreshToken);
-
-            if (!response.success) {
-                throw new Error(response.message || 'Token refresh failed');
-            }
-
-            const { token: newToken, refreshToken: newRefreshToken } = response.data;
-
-            // Determine if we should persist
-            const isPersistent = !!localStorage.getItem(this.jwtUtils.tokenKey);
-
-            // Store new tokens
-            this.jwtUtils.storeTokens(newToken, newRefreshToken, isPersistent);
-
-            // Update auth state
-            const userInfo = this.jwtUtils.getUserInfo(newToken);
-            this.setAuth({ ...this.currentUser, ...userInfo }, newToken, newRefreshToken);
-
-            // Emit refresh event
-            this.app?.eventBus?.emit('auth:token-refreshed');
-
-            return {
-                success: true,
-                token: newToken
-            };
-        } catch (error) {
-            console.error('Token refresh error:', error);
-            this.app?.eventBus?.emit('auth:refresh-failed', error);
             
-            // Clear auth on refresh failure
-            this.clearAuth();
-            throw error;
-        }
-    }
-
-    /**
-     * Set up automatic token refresh
-     */
-    setupTokenRefresh() {
-        // Clear any existing timer
-        if (this.refreshTimer) {
-            clearTimeout(this.refreshTimer);
-        }
-
-        const token = this.jwtUtils.getToken();
-        if (!token) return;
-
-        const timeUntilExpiry = this.jwtUtils.getTimeUntilExpiry(token);
-        if (timeUntilExpiry <= 0) return;
-
-        // Schedule refresh before token expires
-        const refreshTime = Math.max(
-            timeUntilExpiry - this.config.tokenRefreshThreshold,
-            10000 // Minimum 10 seconds
-        );
-
-        this.refreshTimer = setTimeout(async () => {
-            try {
-                await this.refreshToken();
-                // Set up next refresh
-                this.setupTokenRefresh();
-            } catch (error) {
-                console.error('Auto token refresh failed:', error);
-                this.handleTokenExpired();
+            if (response.success) {
+                const { token, refreshToken: newRefreshToken } = response.data;
+                
+                // Determine persistence from current storage
+                const isPersistent = !!localStorage.getItem(this.tokenManager.tokenKey);
+                
+                // Store new tokens
+                this.tokenManager.setTokens(token, newRefreshToken, isPersistent);
+                
+                // Update user info
+                const userInfo = this.tokenManager.getUserInfo();
+                if (userInfo) {
+                    this.user = { ...this.user, ...userInfo };
+                }
+                
+                // Schedule next refresh
+                this.scheduleTokenRefresh();
+                
+                this.emit('tokenRefreshed');
+                return true;
             }
-        }, refreshTime);
-    }
-
-    /**
-     * Handle token expiration
-     */
-    handleTokenExpired() {
-        this.clearAuth();
-        
-        // Show notification
-        if (this.app?.showWarning) {
-            this.app.showWarning('Your session has expired. Please login again.');
-        }
-
-        // Redirect to login
-        this.redirectToLogin();
-    }
-
-    /**
-     * Redirect to login page
-     */
-    redirectToLogin() {
-        if (this.app?.navigate) {
-            // Store current path for redirect after login
-            const currentPath = window.location.pathname;
-            if (currentPath && currentPath !== this.config.logoutRedirect) {
-                sessionStorage.setItem('auth_redirect', currentPath);
-            }
-
-            this.app.navigate(this.config.logoutRedirect);
+            
+            throw new Error(response.message);
+        } catch (error) {
+            console.error('Token refresh failed:', error);
+            this.clearAuthState();
+            this.emit('tokenExpired');
+            return false;
         }
     }
 
     /**
      * Set authentication state
      * @param {object} user - User data
-     * @param {string} token - Access token
-     * @param {string} refreshToken - Refresh token
      */
-    setAuth(user, token, refreshToken = null) {
-        this.currentUser = user;
+    setAuthState(user) {
         this.isAuthenticated = true;
-
-        // Update app state
+        this.user = user;
+        
         if (this.app?.setState) {
-            this.app.setState('user', user);
-            this.app.setState('isAuthenticated', true);
-        }
-
-        // Set up token refresh if configured
-        if (this.config.autoRefreshTokens && token) {
-            this.setupTokenRefresh();
+            this.app.setState('auth', {
+                isAuthenticated: true,
+                user: user
+            });
         }
     }
 
     /**
      * Clear authentication state
      */
-    clearAuth() {
-        this.currentUser = null;
+    clearAuthState() {
         this.isAuthenticated = false;
-
-        // Clear tokens
-        this.jwtUtils.clearTokens();
-
-        // Clear refresh timer
+        this.user = null;
+        this.tokenManager.clearTokens();
+        
         if (this.refreshTimer) {
             clearTimeout(this.refreshTimer);
             this.refreshTimer = null;
         }
-
-        // Update app state
+        
         if (this.app?.setState) {
-            this.app.setState('user', null);
-            this.app.setState('isAuthenticated', false);
+            this.app.setState('auth', {
+                isAuthenticated: false,
+                user: null
+            });
         }
     }
 
     /**
-     * Check if user has a specific role
-     * @param {string} role - Role to check
-     * @returns {boolean} True if user has role
+     * Schedule automatic token refresh
      */
-    hasRole(role) {
-        const token = this.jwtUtils.getToken();
-        return token ? this.jwtUtils.hasRole(token, role) : false;
+    scheduleTokenRefresh() {
+        if (this.refreshTimer) {
+            clearTimeout(this.refreshTimer);
+        }
+
+        if (!this.tokenManager.isValid()) {
+            return;
+        }
+
+        if (this.tokenManager.isExpiringSoon(this.config.refreshThreshold)) {
+            // Token expires soon, refresh immediately
+            this.refreshToken();
+            return;
+        }
+
+        // Schedule refresh before expiry
+        const token = this.tokenManager.getToken();
+        const payload = this.tokenManager.decode(token);
+        if (payload?.exp) {
+            const now = Math.floor(Date.now() / 1000);
+            const timeUntilRefresh = (payload.exp - now - (this.config.refreshThreshold * 60)) * 1000;
+            
+            if (timeUntilRefresh > 0) {
+                this.refreshTimer = setTimeout(() => {
+                    this.refreshToken();
+                }, timeUntilRefresh);
+            }
+        }
     }
 
     /**
-     * Check if user has a specific permission
-     * @param {string} permission - Permission to check
-     * @returns {boolean} True if user has permission
+     * Register a plugin
+     * @param {string} name - Plugin name
+     * @param {object} plugin - Plugin instance
      */
-    hasPermission(permission) {
-        const token = this.jwtUtils.getToken();
-        return token ? this.jwtUtils.hasPermission(token, permission) : false;
+    registerPlugin(name, plugin) {
+        this.plugins.set(name, plugin);
+        plugin.initialize(this, this.app);
     }
 
     /**
-     * Get current user
-     * @returns {object|null} Current user or null
+     * Get a plugin by name
+     * @param {string} name - Plugin name
+     * @returns {object|null} Plugin instance
      */
-    getUser() {
-        return this.currentUser;
+    getPlugin(name) {
+        return this.plugins.get(name) || null;
     }
 
     /**
-     * Get authentication header
-     * @returns {string|null} Bearer token or null
+     * Get authorization header for API requests
+     * @returns {string|null} Authorization header
      */
     getAuthHeader() {
-        return this.jwtUtils.getAuthHeader();
+        return this.tokenManager.getAuthHeader();
     }
 
     /**
-     * Check if passkeys are supported
-     * @returns {boolean} True if passkeys are supported
+     * Emit event to app
+     * @param {string} event - Event name
+     * @param {*} data - Event data
      */
-    isPasskeySupported() {
-        return this.config.enablePasskeys && 
-               window.PublicKeyCredential !== undefined &&
-               navigator.credentials !== undefined;
+    emit(event, data) {
+        if (this.app?.events?.emit) {
+            this.app.events.emit(`auth:${event}`, data);
+        }
     }
 
     /**
-     * Check if Google auth is enabled
-     * @returns {boolean} True if Google auth is enabled
+     * Cleanup auth manager
      */
-    isGoogleAuthEnabled() {
-        return this.config.enableGoogleAuth;
+    destroy() {
+        if (this.refreshTimer) {
+            clearTimeout(this.refreshTimer);
+        }
+        
+        this.plugins.forEach(plugin => {
+            if (plugin.destroy) {
+                plugin.destroy();
+            }
+        });
+        
+        this.plugins.clear();
     }
 }
