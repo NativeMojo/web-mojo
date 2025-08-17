@@ -1,5 +1,0 @@
-{{! Test file for debugging }}
-<h1>{{title}}</h1>
-{{#items}}
-  <li>{{.name}}</li>
-{{/items}}

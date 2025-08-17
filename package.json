@@ -1,6 +1,6 @@
 {
     "name": "web-mojo",
-    "version": "2.0.327",
+    "version": "2.0.368",
     "description": "MOJO - A lightweight JavaScript framework for building data-driven web applications",
     "type": "module",
     "main": "./dist/web-mojo.cjs.js",
@@ -13,10 +13,21 @@
             "browser": "./dist/web-mojo.umd.js",
             "types": "./dist/web-mojo.d.ts"
         },
-        "./css": "./dist/css/web-mojo.css",
-        "./css/*": "./dist/css/*",
-        "./styles": "./dist/css/web-mojo.css",
-        "./styles/*": "./dist/css/*",
+        "./auth": {
+            "import": "./src/auth.js",
+            "require": "./dist/auth.cjs.js",
+            "default": "./src/auth.js"
+        },
+        "./css/core": "./dist/core.css",
+        "./css/portal": "./dist/portal.css",
+        "./css/table": "./dist/table.css",
+        "./css/auth": "./dist/auth.css",
+        "./css/*": "./dist/*",
+        "./styles/core": "./dist/core.css",
+        "./styles/portal": "./dist/portal.css",
+        "./styles/table": "./dist/table.css",
+        "./styles/auth": "./dist/auth.css",
+        "./styles/*": "./dist/*",
         "./components": {
             "import": "./dist/components/index.esm.js",
             "require": "./dist/components/index.cjs.js",
@@ -64,7 +75,7 @@
         "build:templates:watch": "node scripts/build-templates.js --watch",
         "build:lib": "npm run build:templates && vite build --config vite.config.lib.js",
         "build:lib:watch": "vite build --config vite.config.lib.js --watch",
-        "build:css": "cp src/styles/mojo.css dist/web-mojo.css",
+        "build:css": "cp src/css/core.css dist/core.css && cp src/css/portal.css dist/portal.css && cp src/css/table.css dist/table.css && cp src/css/auth.css dist/auth.css",
         "build:dist": "npm run clean && npm run build:templates && npm run build:lib && npm run build:css",
         "build:watch": "vite build --watch",
         "clean": "rm -rf dist",
@@ -114,7 +125,7 @@
         "component-based"
     ],
     "author": "MOJO Framework Team",
-    "license": "MIT",
+    "license": "Apache-2.0",
     "homepage": "https://github.com/yourusername/web-mojo#readme",
     "bugs": {
         "url": "https://github.com/yourusername/web-mojo/issues"

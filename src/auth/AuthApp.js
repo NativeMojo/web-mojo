@@ -7,6 +7,11 @@ import AuthManager from './AuthManager.js';
 import LoginPage from './pages/LoginPage.js';
 import RegisterPage from './pages/RegisterPage.js';
 import ForgotPasswordPage from './pages/ForgotPasswordPage.js';
+import ResetPasswordPage from './pages/ResetPasswordPage.js';
+import {
+    auth_pages_ForgotPasswordPage_mst,
+    auth_pages_LoginPage_mst,
+    auth_pages_RegisterPage_mst } from '../templates.js';
 
 export default class AuthApp {
     constructor(app, config = {}) {
@@ -14,25 +19,26 @@ export default class AuthApp {
         this.config = {
             // API Configuration
             baseURL: 'http://localhost:8881',
-            
+
             // Page Routes
             routes: {
                 login: '/login',
                 register: '/register',
-                forgot: '/forgot-password'
+                forgot: '/forgot-password',
+                reset: '/reset-password'
             },
-            
+
             // Navigation
             loginRedirect: '/',
             logoutRedirect: '/login',
-            
+
             // Features (for future plugins)
             features: {
                 forgotPassword: true,
                 registration: true,
                 rememberMe: true
             },
-            
+
             // UI Configuration
             ui: {
                 title: app.title || 'My App',
@@ -46,10 +52,10 @@ export default class AuthApp {
                     forgotSubtitle: 'We\'ll send you reset instructions'
                 }
             },
-            
+
             // Plugin system
             plugins: [],
-            
+
             ...config
         };
 
@@ -87,7 +93,7 @@ export default class AuthApp {
         this.app.auth = this.authManager;
 
         this.initialized = true;
-        
+
         console.log('AuthApp initialized successfully');
     }
 
@@ -95,34 +101,68 @@ export default class AuthApp {
      * Register authentication pages with WebApp
      */
     registerAuthPages() {
-        // Configure pages with app context and config
-        const pageConfig = {
-            app: this.app,
-            authConfig: this.config
-        };
+        const authConfig = this.config;
 
-        // Register login page
-        this.app.registerPage('login', LoginPage, {
+        // Register login page with config
+        this.app.registerPage('login', class extends LoginPage {
+            constructor(options = {}) {
+                super({
+                    route: authConfig.routes.login,
+                    authConfig: authConfig,
+                    template: auth_pages_LoginPage_mst,
+                    ...options
+                });
+            }
+        }, {
             route: this.config.routes.login,
-            title: 'Login',
-            ...pageConfig
+            title: 'Login'
         });
 
         // Register registration page if enabled
         if (this.config.features.registration) {
-            this.app.registerPage('register', RegisterPage, {
+            this.app.registerPage('register', class extends RegisterPage {
+                constructor(options = {}) {
+                    super({
+                        route: authConfig.routes.register,
+                        authConfig: authConfig,
+                        template: auth_pages_RegisterPage_mst,
+                        ...options
+                    });
+                }
+            }, {
                 route: this.config.routes.register,
-                title: 'Register',
-                ...pageConfig
+                title: 'Register'
             });
         }
 
         // Register forgot password page if enabled
         if (this.config.features.forgotPassword) {
-            this.app.registerPage('forgot-password', ForgotPasswordPage, {
+            this.app.registerPage('forgot-password', class extends ForgotPasswordPage {
+                constructor(options = {}) {
+                    super({
+                        route: authConfig.routes.forgot,
+                        authConfig: authConfig,
+                        template: auth_pages_ForgotPasswordPage_mst,
+                        ...options
+                    });
+                }
+            }, {
                 route: this.config.routes.forgot,
-                title: 'Reset Password',
-                ...pageConfig
+                title: 'Reset Password'
+            });
+
+            // Register reset password completion page
+            this.app.registerPage('reset-password', class extends ResetPasswordPage {
+                constructor(options = {}) {
+                    super({
+                        route: authConfig.routes.reset,
+                        authConfig: authConfig,
+                        ...options
+                    });
+                }
+            }, {
+                route: this.config.routes.reset,
+                title: 'Set New Password'
             });
         }
     }
@@ -195,16 +235,16 @@ export default class AuthApp {
         // Listen for route changes from WebApp's router
         this.app.events?.on('route:changed', ({ pageName, path }) => {
             const PageClass = this.app.getPage(pageName);
-            
+
             // Check if page requires authentication
             if (PageClass?.requiresAuth && !this.isAuthenticated()) {
                 // Store intended destination
                 sessionStorage.setItem('auth_redirect', path);
-                
+
                 // Redirect to login
                 this.app.navigate(this.config.routes.login);
                 this.app.showWarning('Please login to access this page');
-                
+
                 return;
             }
 

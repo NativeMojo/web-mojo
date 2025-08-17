@@ -21,6 +21,13 @@ export class View {
     this.style       = opts.style ?? null;                  // inline css text
     this.id          = opts.id ?? View._genId();            // element id
     this.containerId = opts.containerId ?? null;            // container to render into
+    this.container   = opts.container ?? null;              // container element
+
+    // If container is a string, treat it as containerId and set container to null
+    if (typeof this.container === 'string') {
+      this.containerId = this.container;
+      this.container = null;
+    }
     this.parent      = opts.parent ?? null;                 // parent view
     this.children    = opts.children ?? {};                 // dict of id -> child view
     this.template    = opts.template || opts.templateUrl || "";                 // string or function(model) -> string
@@ -208,6 +215,9 @@ export class View {
   async mount(container =  null) {
       // 2) place into DOM according to the rules
       await this.onBeforeMount();
+      if (!container && this.container) {
+          container = this.container;
+      }
       if (container == null) {
           const plan = this._resolvePlacementPlan();
           this._applyPlacement(plan);

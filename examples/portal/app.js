@@ -3,7 +3,7 @@
  * Demonstrates WebApp with Portal layout (sidebar + topnav)
  */
 
-import WebApp from '../../src/app/WebApp.js';
+import PortalApp from '../../src/app/PortalApp.js';
 import HomePage from './pages/HomePage.js';
 import DashboardPage from './pages/DashboardPage.js';
 import TemplatesPage from './pages/TemplatesPage.js';
@@ -25,7 +25,7 @@ window.addEventListener('beforeunload', () => {
 });
 
 // Create and configure the app
-const app = new WebApp({
+const app = new PortalApp({
     name: 'Portal Example',
     version: '1.0.0',
     debug: true,

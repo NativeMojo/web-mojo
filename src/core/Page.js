@@ -151,6 +151,10 @@ class Page extends View {
     console.log(`Default action triggered on page: ${this.pageName}`);
   }
 
+  async makeActive() {
+      this.getApp().showPage(this);
+  }
+
   async onActionNavigate(event, element) {
       event.preventDefault();
       const page = element.dataset.page;

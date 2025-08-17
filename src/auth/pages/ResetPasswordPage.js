@@ -1,23 +1,23 @@
 /**
- * RegisterPage - Simplified registration page for MOJO Auth
- * Handles user registration with name, email/username, password, and optional terms acceptance
+ * ResetPasswordPage - Password reset completion page for MOJO Auth
+ * Handles password reset when user clicks email link with reset token
  */
 
 import Page from '../../core/Page.js';
 
-export default class RegisterPage extends Page {
-    static pageName = 'auth-register';
-    static title = 'Register';
-    static icon = 'bi-person-plus';
-    static route = 'register';
+export default class ResetPasswordPage extends Page {
+    static pageName = 'auth-reset-password';
+    static title = 'Reset Password';
+    static icon = 'bi-key-fill';
+    static route = 'reset-password';
 
     constructor(options = {}) {
         super({
             ...options,
-            pageName: RegisterPage.pageName,
-            route: options.route || RegisterPage.route,
-            pageIcon: RegisterPage.icon,
-            template: options.template
+            pageName: ResetPasswordPage.pageName,
+            route: options.route || ResetPasswordPage.route,
+            pageIcon: ResetPasswordPage.icon,
+            template: 'auth/pages/ResetPasswordPage.mst'
         });
 
         // Get auth config from options (passed from AuthApp)
@@ -26,14 +26,17 @@ export default class RegisterPage extends Page {
                 title: 'My App',
                 logoUrl: '/assets/logo.png',
                 messages: {
-                    registerTitle: 'Create Account',
-                    registerSubtitle: 'Join us today'
+                    resetTitle: 'Set New Password',
+                    resetSubtitle: 'Choose a strong password'
                 }
             },
             features: {
                 registration: true
             }
         };
+
+        // Extract reset token from URL
+        this.resetToken = null;
     }
 
     async onInit() {
@@ -46,21 +49,22 @@ export default class RegisterPage extends Page {
             ...this.authConfig.features,
 
             // Form fields
-            name: '',
-            email: '',
             password: '',
             confirmPassword: '',
-            acceptTerms: false,
+            resetToken: '',
 
             // UI state
             isLoading: false,
             error: null,
+            success: false,
+            successMessage: null,
             showPassword: false,
             showConfirmPassword: false,
 
             // Validation state
             passwordStrength: null,
-            passwordMatch: true
+            passwordMatch: true,
+            tokenValid: false
         };
     }
 
@@ -68,36 +72,39 @@ export default class RegisterPage extends Page {
         await super.onEnter();
 
         // Set page title
-        document.title = `${RegisterPage.title} - ${this.authConfig.ui.title}`;
+        document.title = `${ResetPasswordPage.title} - ${this.authConfig.ui.title}`;
 
-        // Check if already authenticated
-        const auth = this.getApp().auth;
-        if (auth?.isAuthenticated) {
-            this.getApp().navigate('/');
+        // Extract reset token from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        this.resetToken = urlParams.get('token') || '';
+
+        if (!this.resetToken) {
+            // No token provided, show error
+            this.updateData({
+                error: 'Invalid or missing reset token. Please request a new password reset.',
+                tokenValid: false
+            });
             return;
         }
 
-        // Clear form and errors
+        // Token exists, mark as valid for UI
         this.updateData({
-            name: '',
-            email: '',
-            password: '',
-            confirmPassword: '',
-            acceptTerms: false,
+            resetToken: this.resetToken,
+            tokenValid: true,
             error: null,
-            isLoading: false,
-            passwordStrength: null,
-            passwordMatch: true
+            success: false
         });
     }
 
     async onAfterRender() {
         await super.onAfterRender();
 
-        // Focus on name input
-        const nameInput = this.element.querySelector('#registerName');
-        if (nameInput) {
-            nameInput.focus();
+        // Focus on password input if token is valid
+        if (this.data.tokenValid) {
+            const passwordInput = this.element.querySelector('#resetPassword');
+            if (passwordInput) {
+                passwordInput.focus();
+            }
         }
     }
 
@@ -106,9 +113,12 @@ export default class RegisterPage extends Page {
      */
     async onActionUpdateField(event, element) {
         const field = element.dataset.field;
-        const value = element.type === 'checkbox' ? element.checked : element.value;
+        const value = element.value;
 
-        this.updateData({ [field]: value });
+        this.updateData({ 
+            [field]: value,
+            error: null // Clear error on input change
+        });
 
         // Check password strength when password changes
         if (field === 'password') {
@@ -118,11 +128,6 @@ export default class RegisterPage extends Page {
         // Check password match when either password field changes
         if (field === 'password' || field === 'confirmPassword') {
             this.checkPasswordMatch();
-        }
-
-        // Clear error on input change
-        if (this.data.error) {
-            this.updateData({ error: null });
         }
     }
 
@@ -167,13 +172,13 @@ export default class RegisterPage extends Page {
 
         if (field === 'password') {
             this.updateData({ showPassword: !this.data.showPassword });
-            const input = this.element.querySelector('#registerPassword');
+            const input = this.element.querySelector('#resetPassword');
             if (input) {
                 input.type = this.data.showPassword ? 'text' : 'password';
             }
         } else if (field === 'confirmPassword') {
             this.updateData({ showConfirmPassword: !this.data.showConfirmPassword });
-            const input = this.element.querySelector('#registerConfirmPassword');
+            const input = this.element.querySelector('#resetConfirmPassword');
             if (input) {
                 input.type = this.data.showConfirmPassword ? 'text' : 'password';
             }
@@ -181,9 +186,9 @@ export default class RegisterPage extends Page {
     }
 
     /**
-     * Handle registration form submission
+     * Handle password reset submission
      */
-    async onActionRegister(event) {
+    async onActionResetPassword(event) {
         event.preventDefault();
 
         // Clear previous errors and show loading
@@ -191,19 +196,8 @@ export default class RegisterPage extends Page {
 
         try {
             // Basic validation
-            if (!this.data.name || !this.data.email || !this.data.password || !this.data.confirmPassword) {
-                throw new Error('Please fill in all required fields');
-            }
-
-            // Validate name
-            if (this.data.name.trim().length < 2) {
-                throw new Error('Name must be at least 2 characters long');
-            }
-
-            // Validate email format
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(this.data.email)) {
-                throw new Error('Please enter a valid email address');
+            if (!this.data.password || !this.data.confirmPassword) {
+                throw new Error('Please enter and confirm your new password');
             }
 
             // Validate password length
@@ -222,41 +216,64 @@ export default class RegisterPage extends Page {
                 throw new Error('Authentication system not available');
             }
 
-            // Prepare registration data
-            const registrationData = {
-                name: this.data.name.trim(),
-                email: this.data.email.toLowerCase().trim(),
-                password: this.data.password,
-                acceptedTerms: this.data.acceptTerms
-            };
+            // Submit password reset
+            const response = await auth.resetPassword(this.resetToken, this.data.password);
 
-            // Attempt registration
-            const result = await auth.register(registrationData);
+            if (response.success) {
+                // Show success state
+                this.updateData({
+                    success: true,
+                    successMessage: response.message || 'Password reset successful! You can now log in with your new password.',
+                    isLoading: false
+                });
 
-            if (result.success) {
-                // Success is handled by AuthApp's event handlers
-                // which will redirect and show success message
-                console.log('Registration successful');
+                // Redirect to login after delay
+                setTimeout(() => {
+                    this.getApp().showSuccess('Password reset complete. Please log in.');
+                    this.getApp().navigate('/login');
+                }, 3000);
+            } else {
+                throw new Error(response.message || 'Failed to reset password');
             }
 
         } catch (error) {
-            console.error('Registration error:', error);
+            console.error('Password reset error:', error);
             this.updateData({
-                error: error.message || 'Registration failed. Please try again.',
+                error: error.message || 'Password reset failed. Please try again.',
                 isLoading: false
             });
 
-            // Scroll to top to show error
-            this.element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Focus on password field for retry
+            const passwordInput = this.element.querySelector('#resetPassword');
+            if (passwordInput) {
+                passwordInput.focus();
+                passwordInput.select();
+            }
         }
     }
 
     /**
      * Navigate to login page
      */
-    async onActionLogin(event) {
+    async onActionBackToLogin(event) {
         event.preventDefault();
         this.getApp().navigate('/login');
+    }
+
+    /**
+     * Navigate to registration page
+     */
+    async onActionRegister(event) {
+        event.preventDefault();
+        this.getApp().navigate('/register');
+    }
+
+    /**
+     * Request new reset email
+     */
+    async onActionRequestNew(event) {
+        event.preventDefault();
+        this.getApp().navigate('/forgot-password');
     }
 
     /**
@@ -267,7 +284,7 @@ export default class RegisterPage extends Page {
             event.preventDefault();
 
             // Navigate through fields on Enter
-            const fieldOrder = ['registerName', 'registerEmail', 'registerPassword', 'registerConfirmPassword'];
+            const fieldOrder = ['resetPassword', 'resetConfirmPassword'];
             const currentIndex = fieldOrder.indexOf(element.id);
 
             if (currentIndex >= 0 && currentIndex < fieldOrder.length - 1) {
@@ -278,7 +295,7 @@ export default class RegisterPage extends Page {
                 }
             } else if (currentIndex === fieldOrder.length - 1) {
                 // Last field - submit form
-                await this.onActionRegister(event);
+                await this.onActionResetPassword(event);
             }
         }
     }

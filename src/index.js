@@ -5,7 +5,9 @@
  */
 
 // Import CSS files so they are included in the build
-import './styles/mojo.css';
+import './css/core.css';
+import './css/portal.css';
+import './css/table.css';
 
 // Import version information
 import { VERSION_INFO, VERSION, VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, BUILD_TIME } from './version.js';
@@ -35,14 +37,11 @@ export { default as mustache } from './utils/mustache.js';
 export { default as DataFormatter } from './utils/DataFormatter.js';
 export { default as MustacheFormatter } from './utils/MustacheFormatter.js';
 export { default as MOJOUtils, DataWrapper } from './utils/MOJOUtils.js';
-export { default as JWTUtils } from './utils/JWTUtils.js';
 
-// Services
-export { default as AuthService } from './services/AuthService.js';
 
 // App classes
 export { default as WebApp } from './app/WebApp.js';
-export { default as Portal } from './app/Portal.js';
+export { default as PortalApp } from './app/PortalApp.js';
 
 // Pages
 export { default as NotFoundPage } from './pages/NotFoundPage.js';

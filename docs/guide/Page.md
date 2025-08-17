@@ -22,29 +22,50 @@ Page extends View to provide route-level components with built-in navigation cap
 import Page from './core/Page.js';
 
 class HomePage extends Page {
+  static pageName = 'home';
+  static title = 'Home - My App';
+  static icon = 'bi-house';
+  static route = 'home';
+
   constructor(options = {}) {
     super({
-      pageName: 'Home',
-      route: '/',
+      ...options,
+      pageName: HomePage.pageName,
+      route: HomePage.route,
+      pageIcon: HomePage.icon,
       template: `
         <div class="home-page">
           <h1>Welcome to {{title}}</h1>
           <p>{{description}}</p>
           <nav>
-            <a data-page="about">About</a>
-            <a data-page="contact">Contact</a>
+            <a data-action="navigate" data-page="about">About</a>
+            <a data-action="navigate" data-page="contact">Contact</a>
           </nav>
         </div>
-      `,
-      ...options
+      `
     });
   }
-  
-  async getViewData() {
-    return {
+
+  async onInit() {
+    // Initialize page data
+    this.data = {
       title: 'My Application',
       description: 'Welcome to our amazing app!'
     };
+  }
+  
+  async getViewData() {
+    return this.data || {
+      title: 'My Application',
+      description: 'Welcome to our amazing app!'
+    };
+  }
+
+  async handleActionNavigate(event, element) {
+    const page = element.dataset.page;
+    if (page && this.getApp()) {
+      await this.getApp().navigate(`?page=${page}`);
+    }
   }
 }
 ```
@@ -53,36 +74,62 @@ class HomePage extends Page {
 
 ```javascript
 class UserDetailPage extends Page {
+  static pageName = 'user-detail';
+  static title = 'User Details';
+  static icon = 'bi-person';
+  static route = '/users/:id';
+
   constructor(options = {}) {
     super({
-      pageName: 'UserDetail',
-      route: '/users/:id',
+      ...options,
+      pageName: UserDetailPage.pageName,
+      route: UserDetailPage.route,
+      pageIcon: UserDetailPage.icon,
       template: `
         <div class="user-detail">
           <h1>{{user.name}}</h1>
           <p>Email: {{user.email}}</p>
           <div class="actions">
-            <button data-action="edit-user">Edit</button>
-            <button data-action="delete-user">Delete</button>
+            <button data-action="edit-user" class="btn btn-primary">Edit</button>
+            <button data-action="delete-user" class="btn btn-danger">Delete</button>
           </div>
         </div>
-      `,
-      ...options
+      `
     });
+  }
+
+  async onEnter() {
+    await super.onEnter();
+    // Set page title
+    document.title = UserDetailPage.title;
+  }
+  
+  async onParams(params, query) {
+    await super.onParams(params, query);
+    if (params.id) {
+      await this.loadUser(params.id);
+    }
+  }
+
+  async loadUser(userId) {
+    try {
+      this.user = await User.find(userId);
+      await this.render();
+    } catch (error) {
+      this.getApp().showError('Failed to load user');
+      console.error('Load user error:', error);
+    }
   }
   
   async getViewData() {
-    const userId = this.params.id;
-    const user = await User.find(userId);
-    
     return {
-      user: user?.toJSON() || null
+      user: this.user?.toJSON() || null
     };
   }
   
   async handleActionEditUser(event, element) {
     const userId = this.params.id;
-    await this.navigate(`/users/${userId}/edit`);
+    await this.getApp().navigate(`?page=user-edit&id=${userId}`);
   }
 }
 ```
@@ -101,7 +148,7 @@ const page = new Page({
   // Page Metadata
   title: 'My Page Title',          // Browser title
   description: 'Page description', // Meta description
-  pageIcon: 'bi bi-house',         // Icon for navigation
+  pageIcon: 'bi-house',            // Icon for navigation (note: bi-house not bi bi-house)
   
   // Page Options
   requiresAuth: true,              // Requires authentication
@@ -110,8 +157,12 @@ const page = new Page({
     theme: 'dark'
   },
   
+  // Template Options
+  template: '<div>{{content}}</div>',  // Inline template
+  // OR
+  template: 'templates/my-page.mst',   // External template file
+  
   // All View options are also available
-  template: '<div>{{content}}</div>',
   className: 'my-page',
   // ... other View options
 });
@@ -651,18 +702,17 @@ class UserCreatePage extends Page { /* ... */ }
 ### 2. Route Organization
 
 ```javascript
-// Group related routes
-const routes = {
-  // User management
-  'user-list': { route: '/users', page: UserListPage },
-  'user-detail': { route: '/users/:id', page: UserDetailPage },
-  'user-edit': { route: '/users/:id/edit', page: UserEditPage },
-  'user-create': { route: '/users/new', page: UserCreatePage },
-  
-  // Admin routes
-  'admin-dashboard': { route: '/admin', page: AdminDashboardPage },
-  'admin-settings': { route: '/admin/settings', page: AdminSettingsPage }
-};
+// Register pages with the app (current MOJO pattern)
+app.registerPage('user-list', UserListPage);
+app.registerPage('user-detail', UserDetailPage);
+app.registerPage('user-edit', UserEditPage);
+app.registerPage('user-create', UserCreatePage);
+
+app.registerPage('admin-dashboard', AdminDashboardPage);
+app.registerPage('admin-settings', AdminSettingsPage);
+
+// Routes are defined in the Page classes via static route property
+// or in the constructor options
 ```
 
 ### 3. State Management

@@ -1,58 +1,81 @@
 /**
- * Auth Demo Application
- * Demonstrates the simplified MOJO authentication system
- * Focuses on authentication pages: login, register, forgot password
+ * Production Auth Portal
+ * Simple authentication gateway that redirects to external portal after login
+ *
+ * Usage:
+ * https://auth.yourcompany.com/?portal=https://app.yourcompany.com&company=Acme%20Corp&api=https://api.yourcompany.com
  */
 
-import WebApp from '../../src/app/WebApp.js';
-import AuthApp from '../../src/auth/AuthApp.js';
-import PasskeyPlugin from '../../src/auth/plugins/PasskeyPlugin.js';
+import { WebApp } from '../../src/index.js';
+import { AuthApp } from '../../src/auth.js';
 
-/**
- * Main application initialization
- */
-async function initApp() {
-    console.log('Initializing Auth Demo App...');
+// Configuration from URL params or environment variables
+const config = {
+    apiURL: new URLSearchParams(window.location.search).get('api') ||
+            window.AUTH_API_URL ||
+            'http://localhost:8881',
 
+    portalURL: new URLSearchParams(window.location.search).get('portal') ||
+               window.PORTAL_URL ||
+               'http://localhost:3000/examples/portal/',
+
+    companyName: new URLSearchParams(window.location.search).get('company') ||
+                 window.COMPANY_NAME ||
+                 'Your Company',
+
+    logoURL: new URLSearchParams(window.location.search).get('logo') ||
+             window.LOGO_URL ||
+             null
+
+};
+
+async function initAuthPortal() {
     try {
-        // 1. Create the main WebApp instance
+        console.log('Initializing Auth Portal...', {
+            api: config.apiURL,
+            portal: config.portalURL,
+            company: config.companyName
+        });
+
+        // Create WebApp with page-container
         const app = WebApp.create({
             container: '#app',
-            title: 'Auth Demo App',
+            layout: 'custom',
+            title: `${config.companyName} - Sign In`,
             basePath: '/'
         });
 
-        // 2. Set up authentication with AuthApp
+        // Setup Authentication
         const authApp = await AuthApp.create(app, {
-            // API Configuration
-            baseURL: 'http://localhost:8881',
-            
-            // Page Routes
+            baseURL: config.apiURL,
+
+            // Routes
             routes: {
                 login: '/login',
-                register: '/register', 
+                register: '/register',
                 forgot: '/forgot-password'
             },
-            
+
             // Navigation
             loginRedirect: '/',
             logoutRedirect: '/login',
-            
+
             // UI Configuration
             ui: {
-                title: 'Auth Demo App',
-                logoUrl: '/assets/demo-logo.png',
+                title: config.companyName,
+                logoUrl: config.logoURL,
+                loginIcon: 'bi bi-lightning-charge-fill',
                 messages: {
-                    loginTitle: 'Welcome Back',
-                    loginSubtitle: 'Sign in to your demo account',
-                    registerTitle: 'Join the Demo',
-                    registerSubtitle: 'Create your demo account today',
+                    loginTitle: `Welcome to ${config.companyName}`,
+                    loginSubtitle: 'Sign in to continue to your account',
+                    registerTitle: 'Create Account',
+                    registerSubtitle: 'Join us to get started',
                     forgotTitle: 'Reset Password',
-                    forgotSubtitle: 'We\'ll help you get back in'
+                    forgotSubtitle: 'We\'ll send you reset instructions'
                 }
             },
 
-            // Features
+            // Features - enable all login page features
             features: {
                 registration: true,
                 forgotPassword: true,
@@ -60,240 +83,161 @@ async function initApp() {
             }
         });
 
-        // 3. Add passkey plugin for advanced authentication
-        const passkeyPlugin = new PasskeyPlugin({
-            rpName: 'Auth Demo App',
-            rpId: window.location.hostname,
-            authenticatorAttachment: 'platform' // Use platform authenticators
+        // Handle successful authentication - redirect to portal
+        app.events.on('auth:login', (user) => {
+            console.log('User authenticated:', user?.email);
+
+            // Show brief success message
+            app.showSuccess(`Welcome back, ${user?.name || user?.email}!`);
+
+            // Redirect to external portal with token
+            setTimeout(() => {
+                redirectToPortal(user, app.auth.tokenManager.getToken());
+            }, 1500);
         });
 
-        authApp.addPlugin(passkeyPlugin);
+        // Handle registration success - also redirect to portal
+        app.events.on('auth:register', (user) => {
+            console.log('User registered:', user?.email);
 
-        // 4. Set up navigation and status display
-        setupNavigation(app);
-        setupAuthStatusDisplay(app);
+            app.showSuccess(`Account created! Welcome, ${user?.name || user?.email}!`);
 
-        // 5. Start the application
+            setTimeout(() => {
+                redirectToPortal(user, app.auth.tokenManager.getToken(), true);
+            }, 1500);
+        });
+
+        // Handle auth errors
+        app.events.on('auth:loginError', (error) => {
+            console.error('Login failed:', error.message);
+        });
+
+        app.events.on('auth:registerError', (error) => {
+            console.error('Registration failed:', error.message);
+        });
+
+        // Start the application
         await app.start();
 
-        console.log('Auth Demo App initialized successfully!');
-        
+        // Store app reference for demo navigation
+        window.mojoApp = app;
+
+        // Hide initial loader
+        if (window.hideInitialLoader) {
+            window.hideInitialLoader();
+        }
+
+        // Update demo bar info
+        if (window.updateDemoInfo) {
+            window.updateDemoInfo(config);
+        }
+
         // Show login page by default
         await app.navigate('/login');
 
-        // Hide loading overlay
-        if (window.hideLoading) {
-            window.hideLoading();
-        }
+        console.log('Auth Portal ready');
 
     } catch (error) {
-        console.error('Failed to initialize app:', error);
-        
-        // Show error in app container
-        const appContainer = document.querySelector('#app');
-        if (appContainer) {
-            appContainer.innerHTML = `
-                <div class="alert alert-danger m-4">
-                    <h4 class="alert-heading">Initialization Error</h4>
-                    <p>Failed to initialize the authentication demo app.</p>
-                    <hr>
-                    <p class="mb-0"><strong>Error:</strong> ${error.message}</p>
-                </div>
-            `;
+        console.error('Auth Portal initialization failed:', error);
+
+        // Hide loader and show error
+        if (window.hideInitialLoader) {
+            window.hideInitialLoader();
         }
-        
-        if (window.hideLoading) {
-            window.hideLoading();
-        }
+
+        // Show error in page-container
+        setTimeout(() => {
+            showErrorPage(error);
+        }, 500);
     }
 }
 
 /**
- * Set up navigation helpers and UI updates
+ * Redirect user to external portal with authentication token
  */
-function setupNavigation(app) {
-    // Update navigation based on auth state
-    app.events.on('auth:login', (user) => {
-        updateNavigation(app, true);
-        updateAuthStatus(app);
-        console.log('User logged in:', user);
-    });
-
-    app.events.on('auth:logout', () => {
-        updateNavigation(app, false);
-        updateAuthStatus(app);
-        console.log('User logged out');
-    });
-
-    app.events.on('auth:register', (user) => {
-        updateNavigation(app, true);
-        updateAuthStatus(app);
-        console.log('User registered:', user);
-    });
-
-    // Initial navigation setup
-    setTimeout(() => {
-        updateNavigation(app, app.auth?.isAuthenticated || false);
-        updateAuthStatus(app);
-    }, 100);
-}
-
-/**
- * Update navigation menu based on auth state
- */
-function updateNavigation(app, isAuthenticated) {
-    const nav = document.querySelector('.app-nav');
-    if (!nav) return;
-
-    if (isAuthenticated) {
-        nav.innerHTML = `
-            <div class="alert alert-success text-center mb-0">
-                <strong>✅ Authentication Demo Complete!</strong><br>
-                <small>You are now logged in. In a real app, you would see protected content.</small>
-            </div>
-            <div class="d-flex justify-content-center mt-3 flex-wrap gap-2">
-                <button class="btn btn-outline-primary" data-action="logout">
-                    <i class="bi bi-box-arrow-right"></i> Logout
-                </button>
-                <button class="btn btn-outline-secondary" data-action="setup-passkey">
-                    <i class="bi bi-fingerprint"></i> Setup Passkey
-                </button>
-            </div>
-        `;
-    } else {
-        nav.innerHTML = `
-            <div class="alert alert-info text-center mb-0">
-                <strong>🔐 Authentication Demo</strong><br>
-                <small>Try the authentication features below</small>
-            </div>
-            <div class="d-flex justify-content-center mt-3 flex-wrap gap-2">
-                <button class="btn btn-primary" data-page="login">
-                    <i class="bi bi-box-arrow-in-right"></i> Login
-                </button>
-                <button class="btn btn-outline-primary" data-page="register">
-                    <i class="bi bi-person-plus"></i> Register
-                </button>
-                <button class="btn btn-outline-secondary" data-page="forgot-password">
-                    <i class="bi bi-key"></i> Reset Password
-                </button>
-            </div>
-        `;
-    }
-
-    // Add click handlers
-    nav.addEventListener('click', async (event) => {
-        event.preventDefault();
-        const target = event.target.closest('[data-page], [data-action]');
-        if (!target) return;
-
-        try {
-            if (target.dataset.page) {
-                await app.showPage(target.dataset.page);
-            } else if (target.dataset.action === 'logout') {
-                await app.auth.logout();
-            } else if (target.dataset.action === 'setup-passkey') {
-                await setupPasskeyDemo(app);
-            }
-        } catch (error) {
-            console.error('Navigation error:', error);
-            app.showError('Navigation failed: ' + error.message);
-        }
-    });
-}
-
-/**
- * Set up real-time auth status display
- */
-function setupAuthStatusDisplay(app) {
-    updateAuthStatus(app);
-    
-    // Update every 30 seconds to show token expiry info
-    setInterval(() => updateAuthStatus(app), 30000);
-}
-
-/**
- * Update auth status display
- */
-function updateAuthStatus(app) {
-    const statusContainer = document.querySelector('.auth-status');
-    if (!statusContainer) return;
-
-    const auth = app.auth;
-    
-    if (auth?.isAuthenticated) {
-        const user = auth.getUser();
-        const token = auth.tokenManager.getToken();
-        const payload = auth.tokenManager.decode(token);
-        
-        let expiryInfo = '';
-        if (payload?.exp) {
-            const expiryDate = new Date(payload.exp * 1000);
-            const now = new Date();
-            const minutesLeft = Math.floor((expiryDate - now) / (1000 * 60));
-            
-            if (minutesLeft > 0) {
-                expiryInfo = `<small class="text-muted d-block">Token expires in ${minutesLeft} minutes</small>`;
-            } else {
-                expiryInfo = `<small class="text-danger d-block">Token expired</small>`;
-            }
-        }
-        
-        statusContainer.innerHTML = `
-            <div class="alert alert-success mb-0">
-                <i class="bi bi-person-check-fill me-2"></i>
-                <strong>Authenticated:</strong> ${user?.name || user?.email || 'Demo User'}
-                <br>
-                <small class="text-muted">User ID: ${user?.uid || 'N/A'}</small>
-                ${expiryInfo}
-            </div>
-        `;
-    } else {
-        statusContainer.innerHTML = `
-            <div class="alert alert-warning mb-0">
-                <i class="bi bi-person-x-fill me-2"></i>
-                <strong>Not authenticated</strong> - Try the login demo above
-            </div>
-        `;
-    }
-}
-
-/**
- * Demo passkey setup
- */
-async function setupPasskeyDemo(app) {
-    if (!app.auth.isAuthenticated) {
-        app.showWarning('Please log in first to set up passkey');
-        return;
-    }
-    
-    if (!app.auth.isPasskeySupported?.()) {
-        app.showError('Passkey authentication is not supported in this browser');
-        return;
-    }
-    
+function redirectToPortal(user, token, isNewUser = false) {
     try {
-        app.showLoading('Setting up passkey...');
-        await app.auth.setupPasskey();
-        app.showSuccess('Passkey set up successfully! You can now use it to log in.');
+        const portalUrl = new URL(config.portalURL);
+        portalUrl.searchParams.set('token', token);
+        portalUrl.searchParams.set('user', user?.uid || '');
+
+        if (isNewUser) {
+            portalUrl.searchParams.set('new_user', '1');
+        }
+
+        console.log('Redirecting to portal:', portalUrl.origin);
+        window.location.href = portalUrl.toString();
+
     } catch (error) {
-        console.error('Passkey setup error:', error);
-        app.showError('Failed to set up passkey: ' + error.message);
-    } finally {
-        app.hideLoading();
+        console.error('Failed to redirect to portal:', error);
+        alert('Authentication successful, but failed to redirect to application. Please contact support.');
     }
 }
 
-// Initialize the application when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initApp);
-} else {
-    initApp();
+/**
+ * Show error page when initialization fails
+ */
+function showErrorPage(error) {
+    const container = document.querySelector('#page-container');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="min-vh-100 d-flex align-items-center justify-content-center p-4">
+            <div class="card shadow-lg" style="max-width: 500px; width: 100%;">
+                <div class="card-body p-4 text-center">
+                    <div class="text-danger mb-3">
+                        <i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i>
+                    </div>
+                    <h4 class="card-title text-danger">Service Unavailable</h4>
+                    <p class="card-text text-muted mb-3">
+                        Unable to connect to the authentication service. Please try again later.
+                    </p>
+                    <div class="alert alert-light text-start">
+                        <small>
+                            <strong>Error:</strong> ${error.message}<br>
+                            <strong>API Endpoint:</strong> ${config.apiURL}<br>
+                            <strong>Company:</strong> ${config.companyName}
+                        </small>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" onclick="window.location.reload()">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Retry
+                        </button>
+                        <a href="mailto:support@${new URL(config.portalURL).hostname}"
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-envelope me-1"></i> Contact Support
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
-// Export for debugging
-window.AuthDemo = {
-    initApp,
-    updateNavigation,
-    updateAuthStatus,
-    setupPasskeyDemo
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAuthPortal);
+} else {
+    initAuthPortal();
+}
+
+/**
+ * Navigate to register page (called from demo bar)
+ */
+function navigateToRegister() {
+    // Get the current app instance and navigate
+    const pageContainer = document.querySelector('#page-container');
+    if (pageContainer && window.mojoApp) {
+        window.mojoApp.navigate('/register').catch(console.error);
+    } else {
+        console.warn('Cannot navigate to register - app not ready');
+    }
+}
+
+// Export for debugging and demo bar integration
+window.AuthPortal = {
+    config,
+    initAuthPortal,
+    redirectToPortal,
+    navigateToRegister
 };

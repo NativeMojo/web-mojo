@@ -1,0 +1,787 @@
+/**
+ * MOJO Authentication System CSS
+ * Complete styling for MOJO Framework authentication pages
+ *
+ * @version 2.0.0
+ * @license MIT
+ * @repository https://github.com/your-org/mojo-framework
+ *
+ * Usage in external projects:
+ * <link rel="stylesheet" href="node_modules/mojo-framework/src/css/auth.css">
+ *
+ * Or via CDN:
+ * <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mojo-framework/css/auth.css">
+ *
+ * Or import in CSS:
+ * @import url('path/to/mojo/src/css/auth.css');
+ */
+
+/* ==========================================================================
+   CSS Custom Properties - Easy Theming for External Projects
+   ========================================================================== */
+
+:root {
+    /* Primary brand colors - override these in your project */
+    --mojo-auth-primary: #667eea;
+    --mojo-auth-primary-dark: #5a6fd4;
+    --mojo-auth-secondary: #764ba2;
+
+    /* Status colors */
+    --mojo-auth-success: #198754;
+    --mojo-auth-danger: #dc3545;
+    --mojo-auth-warning: #ffc107;
+    --mojo-auth-info: #0dcaf0;
+
+    /* Layout variables */
+    --mojo-auth-border-radius: 1rem;
+    --mojo-auth-card-padding: 2rem;
+    --mojo-auth-transition: all 0.2s ease;
+    --mojo-auth-box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    --mojo-auth-card-bg: rgba(255, 255, 255, 0.98);
+    --mojo-auth-background: linear-gradient(135deg, var(--mojo-auth-primary) 0%, #ffffff 100%);
+}
+
+/* ==========================================================================
+   Auth Page Foundation
+   ========================================================================== */
+
+.auth-page {
+    background: var(--mojo-auth-background);
+    min-height: 100vh;
+    font-family:
+        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    /* Apply custom properties */
+    --auth-primary-color: var(--mojo-auth-primary);
+    --auth-primary-dark: var(--mojo-auth-primary-dark);
+    --auth-secondary-color: var(--mojo-auth-secondary);
+    --auth-success-color: var(--mojo-auth-success);
+    --auth-danger-color: var(--mojo-auth-danger);
+    --auth-warning-color: var(--mojo-auth-warning);
+    --auth-info-color: var(--mojo-auth-info);
+    --auth-border-radius: var(--mojo-auth-border-radius);
+    --auth-transition: var(--mojo-auth-transition);
+}
+
+/* Override any parent background for auth pages */
+/*.auth-page,
+.auth-page * {
+    background: transparent !important;
+}*/
+
+/* Reset the background for the auth-page root */
+.auth-page {
+    background: var(--mojo-auth-background) !important;
+}
+
+/* ==========================================================================
+   External Project Integration Helpers
+   ========================================================================== */
+
+/**
+ * Full-screen auth container
+ * Use this class on your auth page container for full-screen auth experience
+ */
+.mojo-auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 0;
+}
+
+/**
+ * Auth page wrapper with consistent spacing
+ * Use this to wrap your auth page content
+ */
+.mojo-auth-wrapper {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/**
+ * Custom logo positioning
+ * Add this class to customize logo appearance
+ */
+.mojo-auth-logo {
+    max-height: 80px;
+    max-width: 200px;
+    object-fit: contain;
+    margin-bottom: 2rem;
+}
+
+/**
+ * Compact layout for embedded auth
+ * Use when embedding auth in existing layouts
+ */
+.mojo-auth-compact .auth-page {
+    background: transparent;
+    min-height: auto;
+    padding: 1rem 0;
+}
+
+.mojo-auth-compact .auth-page .card {
+    margin: 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+/**
+ * No-background variant
+ * Use when you want to handle the background yourself
+ */
+.mojo-auth-no-bg .auth-page {
+    background: transparent;
+    min-height: auto;
+}
+
+/* ==========================================================================
+   Card Container
+   ========================================================================== */
+
+.auth-page .card {
+    backdrop-filter: blur(10px);
+    background: var(--mojo-auth-card-bg) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--auth-border-radius);
+    box-shadow: var(--mojo-auth-box-shadow);
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.auth-page .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.auth-page .card-body {
+    position: relative;
+    padding: var(--mojo-auth-card-padding);
+}
+
+/* ==========================================================================
+   Form Controls
+   ========================================================================== */
+
+.auth-page .form-control:focus,
+.auth-page .form-check-input:focus {
+    border-color: var(--auth-primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+    outline: none;
+}
+
+.auth-page .form-control {
+    border-radius: 0.5rem;
+    border: 1px solid #dee2e6;
+    transition: var(--auth-transition);
+}
+
+.auth-page .form-control:hover:not(:focus) {
+    border-color: #adb5bd;
+}
+
+.auth-page .form-control.is-invalid {
+    border-color: var(--auth-danger-color);
+    box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+}
+
+.auth-page .form-control.is-valid {
+    border-color: var(--auth-success-color);
+    box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+}
+
+/* Input Groups */
+.auth-page .input-group .form-control:focus {
+    z-index: 5;
+}
+
+.auth-page .input-group .btn {
+    border-left: none;
+}
+
+.auth-page .input-group .btn:hover {
+    background-color: #f8f9fa;
+    border-color: var(--auth-primary-color);
+    color: var(--auth-primary-color);
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.auth-page .btn-primary {
+    background: linear-gradient(
+        135deg,
+        var(--auth-primary-color) 0%,
+        var(--auth-secondary-color) 100%
+    );
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: var(--auth-transition);
+}
+
+.auth-page .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(
+        135deg,
+        var(--auth-primary-dark) 0%,
+        var(--auth-secondary-color) 100%
+    );
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.auth-page .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.auth-page .btn-outline-primary:hover:not(:disabled),
+.auth-page .btn-outline-secondary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.auth-page .btn-outline-primary {
+    border-color: var(--auth-primary-color);
+    color: var(--auth-primary-color);
+}
+
+.auth-page .btn-outline-primary:hover:not(:disabled) {
+    background-color: var(--auth-primary-color);
+    border-color: var(--auth-primary-color);
+    color: white;
+}
+
+/* Button Loading States */
+.auth-page .btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.auth-page .spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* ==========================================================================
+   Form Elements
+   ========================================================================== */
+
+/* Form Labels */
+.auth-page .form-label {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.auth-page .form-label i {
+    color: var(--auth-primary-color);
+}
+
+/* Form Check */
+.auth-page .form-check-input:checked {
+    background-color: var(--auth-primary-color);
+    border-color: var(--auth-primary-color);
+}
+
+.auth-page .form-check-input:focus {
+    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+}
+
+.auth-page .form-check-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+/* Form Text */
+.auth-page .form-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+/* Invalid Feedback */
+.auth-page .invalid-feedback {
+    font-size: 0.875rem;
+    color: var(--auth-danger-color);
+    margin-top: 0.25rem;
+}
+
+/* ==========================================================================
+   Password Strength Indicator
+   ========================================================================== */
+
+.auth-page .progress {
+    background-color: #e9ecef;
+    border-radius: 2px;
+    height: 4px;
+    overflow: hidden;
+}
+
+.auth-page .progress-bar {
+    transition: width 0.3s ease;
+}
+
+.auth-page .progress-bar.bg-danger {
+    background-color: var(--auth-danger-color) !important;
+}
+
+.auth-page .progress-bar.bg-warning {
+    background-color: var(--auth-warning-color) !important;
+}
+
+.auth-page .progress-bar.bg-info {
+    background-color: var(--auth-info-color) !important;
+}
+
+.auth-page .progress-bar.bg-success {
+    background-color: var(--auth-success-color) !important;
+}
+
+/* ==========================================================================
+   Alerts
+   ========================================================================== */
+
+.auth-page .alert {
+    border-radius: 0.5rem;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.auth-page .alert-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #842029;
+    border-left: 4px solid var(--auth-danger-color);
+}
+
+.auth-page .alert-success {
+    background-color: rgba(25, 135, 84, 0.1);
+    color: #0a3622;
+    border-left: 4px solid var(--auth-success-color);
+}
+
+.auth-page .alert-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: #664d03;
+    border-left: 4px solid var(--auth-warning-color);
+}
+
+.auth-page .alert-info {
+    background-color: rgba(13, 202, 240, 0.1);
+    color: #055160;
+    border-left: 4px solid var(--auth-info-color);
+}
+
+.auth-page .alert .bi {
+    font-size: 1.1em;
+    vertical-align: baseline;
+}
+
+/* ==========================================================================
+   Links
+   ========================================================================== */
+
+.auth-page a {
+    color: var(--auth-primary-color);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.auth-page a:hover {
+    color: var(--auth-primary-dark);
+    text-decoration: underline;
+}
+
+.auth-page a:focus {
+    color: var(--auth-primary-dark);
+    outline: none;
+    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+    border-radius: 0.25rem;
+}
+
+/* ==========================================================================
+   Dividers
+   ========================================================================== */
+
+.auth-page .position-relative hr {
+    border-color: #dee2e6;
+    opacity: 0.5;
+}
+
+.auth-page .position-relative .position-absolute {
+    background: white;
+    padding: 0 1rem;
+    color: #6c757d;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* ==========================================================================
+   Success States
+   ========================================================================== */
+
+.auth-page .text-success {
+    color: var(--auth-success-color) !important;
+}
+
+.auth-page .text-danger {
+    color: var(--auth-danger-color) !important;
+}
+
+.auth-page .text-warning {
+    color: var(--auth-warning-color) !important;
+}
+
+.auth-page .text-info {
+    color: var(--auth-info-color) !important;
+}
+
+.auth-page .text-muted {
+    color: #6c757d !important;
+}
+
+/* ==========================================================================
+   Loading States
+   ========================================================================== */
+
+.auth-page .spinner-border {
+    color: var(--auth-primary-color);
+}
+
+.auth-page .spinner-border-primary {
+    color: var(--auth-primary-color);
+}
+
+/* ==========================================================================
+   Framework Integration Helpers
+   ========================================================================== */
+
+/**
+ * Bootstrap integration
+ * Ensures compatibility with Bootstrap themes
+ */
+.bootstrap-theme .auth-page .btn-primary {
+    background: var(--bs-primary, var(--auth-primary-color));
+    border-color: var(--bs-primary, var(--auth-primary-color));
+}
+
+.bootstrap-theme .auth-page .form-control:focus {
+    border-color: var(--bs-primary, var(--auth-primary-color));
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb, 102, 126, 234), 0.25);
+}
+
+/**
+ * Tailwind CSS integration
+ * Helper classes for Tailwind projects
+ */
+.tailwind-theme .auth-page {
+    font-family:
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        "Helvetica Neue",
+        Arial,
+        "Noto Sans",
+        sans-serif;
+}
+
+/* ==========================================================================
+   Dark Theme Support
+   ========================================================================== */
+
+/**
+ * Automatic dark mode detection
+ */
+@media (prefers-color-scheme: dark) {
+    .mojo-auth-auto .auth-page {
+        background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+    }
+
+    .mojo-auth-auto .auth-page .card {
+        background: rgba(45, 55, 72, 0.95) !important;
+        border-color: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+
+    .mojo-auth-auto .auth-page .form-control {
+        background-color: rgba(45, 55, 72, 0.8);
+        border-color: rgba(255, 255, 255, 0.2);
+        color: white;
+    }
+
+    .mojo-auth-auto .auth-page .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    .mojo-auth-auto .auth-page .text-muted {
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
+}
+
+/**
+ * Manual dark theme
+ * Add mojo-auth-dark class to enable
+ */
+.mojo-auth-dark .auth-page {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+}
+
+.mojo-auth-dark .auth-page .card {
+    background: rgba(26, 32, 44, 0.95) !important;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.mojo-auth-dark .auth-page .form-control {
+    background-color: rgba(26, 32, 44, 0.8);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.mojo-auth-dark .auth-page .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.mojo-auth-dark .auth-page .text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.mojo-auth-dark .auth-page .form-label {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.mojo-auth-dark .auth-page .alert-danger {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: #f8d7da;
+}
+
+.mojo-auth-dark .auth-page .alert-success {
+    background-color: rgba(25, 135, 84, 0.2);
+    color: #d1e7dd;
+}
+
+/* ==========================================================================
+   Responsive Design
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    .auth-page {
+        padding: 1rem 0;
+    }
+
+    .auth-page .card {
+        margin: 0 1rem;
+        border-radius: 0.75rem;
+    }
+
+    .auth-page .card-body {
+        padding: 2rem 1.5rem;
+    }
+
+    .auth-page .btn-lg {
+        padding: 0.75rem 1.25rem;
+        font-size: 1rem;
+    }
+
+    .auth-page .form-control-lg {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+    }
+
+    .auth-page h2 {
+        font-size: 1.5rem;
+    }
+
+    .mojo-auth-wrapper {
+        padding: 0 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-page .card-body {
+        padding: 1.5rem 1rem;
+    }
+
+    .auth-page .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .auth-page .form-check {
+        text-align: center;
+    }
+}
+
+/**
+ * Mobile full-screen option
+ */
+@media (max-width: 575.98px) {
+    .mojo-auth-mobile-full .auth-page .card {
+        border-radius: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+}
+
+/**
+ * Desktop sidebar layout
+ */
+@media (min-width: 992px) {
+    .mojo-auth-desktop-sidebar .mojo-auth-wrapper {
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: 3rem;
+    }
+}
+
+/* ==========================================================================
+   Animation & Transitions
+   ========================================================================== */
+
+.auth-page .fade-in {
+    animation: mojoAuthFadeIn 0.3s ease-in-out;
+}
+
+@keyframes mojoAuthFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.auth-page .slide-up {
+    animation: mojoAuthSlideUp 0.4s ease-out;
+}
+
+@keyframes mojoAuthSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ==========================================================================
+   Accessibility
+   ========================================================================== */
+
+.auth-page *:focus {
+    outline: none;
+}
+
+.auth-page .btn:focus,
+.auth-page .form-control:focus,
+.auth-page .form-check-input:focus,
+.auth-page a:focus {
+    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+}
+
+/* Focus-visible support for better keyboard navigation */
+@supports selector(:focus-visible) {
+    .auth-page *:focus:not(:focus-visible) {
+        box-shadow: none;
+        outline: none;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .auth-page .btn-primary {
+        background: #000;
+        border: 2px solid #000;
+    }
+
+    .auth-page .form-control:focus {
+        border-width: 2px;
+    }
+
+    .auth-page .btn {
+        border-width: 2px;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .auth-page *,
+    .auth-page *::before,
+    .auth-page *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ==========================================================================
+   Print Styles
+   ========================================================================== */
+
+@media print {
+    .auth-page,
+    .mojo-auth-container,
+    .mojo-auth-wrapper {
+        background: white !important;
+        color: black !important;
+    }
+
+    .auth-page .card {
+        background: white !important;
+        box-shadow: none !important;
+        border: 1px solid #000 !important;
+    }
+
+    .auth-page .btn {
+        border: 1px solid #000 !important;
+        background: white !important;
+        color: black !important;
+    }
+
+    .mojo-auth-logo {
+        max-height: 60px;
+    }
+}
+
+/* ==========================================================================
+   External Project Customization Examples
+
+   Copy these examples to your project CSS to customize the auth system:
+   ========================================================================== */
+
+/*
+Example 1: Custom Brand Colors
+:root {
+    --mojo-auth-primary: #ff6b35;
+    --mojo-auth-secondary: #004e7c;
+}
+
+Example 2: Square Design
+:root {
+    --mojo-auth-border-radius: 0.25rem;
+}
+
+Example 3: Custom Background
+.auth-page {
+    background: url('your-background.jpg') center/cover !important;
+}
+
+Example 4: Compact Integration
+.your-app .mojo-auth-compact .auth-page {
+    background: transparent;
+    min-height: auto;
+}
+*/

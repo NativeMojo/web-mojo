@@ -64,7 +64,7 @@ export default class AuthManager {
                 return true;
             }
         }
-        
+
         this.clearAuthState();
         return false;
     }
@@ -79,26 +79,26 @@ export default class AuthManager {
     async login(username, password, rememberMe = false) {
         try {
             const response = await this.authService.login(username, password);
-            
+
             if (response.success) {
-                const { token, refreshToken, user } = response.data;
-                
+                const { access_token, refresh_token, user } = response.data.data;
+
                 // Store tokens
-                this.tokenManager.setTokens(token, refreshToken, rememberMe);
-                
+                this.tokenManager.setTokens(access_token, refresh_token, rememberMe);
+
                 // Set auth state
                 const userInfo = this.tokenManager.getUserInfo();
                 this.setAuthState({ ...user, ...userInfo });
-                
+
                 // Schedule refresh
                 if (this.config.autoRefresh) {
                     this.scheduleTokenRefresh();
                 }
-                
+
                 this.emit('login', this.user);
                 return { success: true, user: this.user };
             }
-            
+
             throw new Error(response.message);
         } catch (error) {
             this.emit('loginError', error);
@@ -114,26 +114,26 @@ export default class AuthManager {
     async register(userData) {
         try {
             const response = await this.authService.register(userData);
-            
+
             if (response.success) {
                 const { token, refreshToken, user } = response.data;
-                
+
                 // Store tokens
                 this.tokenManager.setTokens(token, refreshToken, true);
-                
+
                 // Set auth state
                 const userInfo = this.tokenManager.getUserInfo();
                 this.setAuthState({ ...user, ...userInfo });
-                
+
                 // Schedule refresh
                 if (this.config.autoRefresh) {
                     this.scheduleTokenRefresh();
                 }
-                
+
                 this.emit('register', this.user);
                 return { success: true, user: this.user };
             }
-            
+
             throw new Error(response.message);
         } catch (error) {
             this.emit('registerError', error);
@@ -169,29 +169,29 @@ export default class AuthManager {
             }
 
             const response = await this.authService.refreshToken(refreshToken);
-            
+
             if (response.success) {
                 const { token, refreshToken: newRefreshToken } = response.data;
-                
+
                 // Determine persistence from current storage
                 const isPersistent = !!localStorage.getItem(this.tokenManager.tokenKey);
-                
+
                 // Store new tokens
                 this.tokenManager.setTokens(token, newRefreshToken, isPersistent);
-                
+
                 // Update user info
                 const userInfo = this.tokenManager.getUserInfo();
                 if (userInfo) {
                     this.user = { ...this.user, ...userInfo };
                 }
-                
+
                 // Schedule next refresh
                 this.scheduleTokenRefresh();
-                
+
                 this.emit('tokenRefreshed');
                 return true;
             }
-            
+
             throw new Error(response.message);
         } catch (error) {
             console.error('Token refresh failed:', error);
@@ -208,7 +208,7 @@ export default class AuthManager {
     setAuthState(user) {
         this.isAuthenticated = true;
         this.user = user;
-        
+
         if (this.app?.setState) {
             this.app.setState('auth', {
                 isAuthenticated: true,
@@ -224,12 +224,12 @@ export default class AuthManager {
         this.isAuthenticated = false;
         this.user = null;
         this.tokenManager.clearTokens();
-        
+
         if (this.refreshTimer) {
             clearTimeout(this.refreshTimer);
             this.refreshTimer = null;
         }
-        
+
         if (this.app?.setState) {
             this.app.setState('auth', {
                 isAuthenticated: false,
@@ -262,7 +262,7 @@ export default class AuthManager {
         if (payload?.exp) {
             const now = Math.floor(Date.now() / 1000);
             const timeUntilRefresh = (payload.exp - now - (this.config.refreshThreshold * 60)) * 1000;
-            
+
             if (timeUntilRefresh > 0) {
                 this.refreshTimer = setTimeout(() => {
                     this.refreshToken();
@@ -291,6 +291,49 @@ export default class AuthManager {
     }
 
     /**
+     * Request password reset
+     * @param {string} email - User email
+     * @returns {Promise<object>} Request result
+     */
+    async forgotPassword(email) {
+        try {
+            const response = await this.authService.forgotPassword(email);
+
+            if (response.success) {
+                this.emit('forgotPasswordSuccess', email);
+                return response;
+            }
+
+            throw new Error(response.message);
+        } catch (error) {
+            this.emit('forgotPasswordError', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Reset password with token
+     * @param {string} token - Reset token
+     * @param {string} newPassword - New password
+     * @returns {Promise<object>} Reset result
+     */
+    async resetPassword(token, newPassword) {
+        try {
+            const response = await this.authService.resetPassword(token, newPassword);
+
+            if (response.success) {
+                this.emit('resetPasswordSuccess');
+                return response;
+            }
+
+            throw new Error(response.message);
+        } catch (error) {
+            this.emit('resetPasswordError', error);
+            throw error;
+        }
+    }
+
+    /**
      * Get authorization header for API requests
      * @returns {string|null} Authorization header
      */
@@ -316,13 +359,13 @@ export default class AuthManager {
         if (this.refreshTimer) {
             clearTimeout(this.refreshTimer);
         }
-        
+
         this.plugins.forEach(plugin => {
             if (plugin.destroy) {
                 plugin.destroy();
             }
         });
-        
+
         this.plugins.clear();
     }
 }

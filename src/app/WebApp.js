@@ -19,7 +19,7 @@
 import Router from '../core/Router.js';
 import EventBus from '../utils/EventBus.js';
 import rest from '../core/Rest.js';
-import Portal from './Portal.js';
+
 
 class WebApp {
     constructor(config = {}) {
@@ -140,9 +140,8 @@ class WebApp {
 
             // Setup global REST configuration
             // this.setupRest();
-            // Setup layout
-            console.log('Setting up layout...');
-            await this.setupLayout();
+            // Setup page container
+            this.setupPageContainer();
 
             // Setup router
             console.log('Setting up router...');
@@ -180,48 +179,17 @@ class WebApp {
     /**
      * Setup layout based on configuration
      */
-    async setupLayout() {
-        // Dynamic layout loading based on type
-        switch (this.layoutType) {
-            case 'portal': {
-                // const { Portal } = await import('./Portal.js');
-                this.layout = new Portal({
-                    app: this,
-                    ...this.layoutConfig
-                });
-                await this.layout.render();
-                break;
-            }
-
-            case 'single': {
-                // Single page layout - minimal container
-                const container = typeof this.container === 'string'
-                    ? document.querySelector(this.container)
-                    : this.container;
-                if (container) {
-                    container.innerHTML = '<div id="page-container"></div>';
-                    this.pageContainer = '#page-container';
-                }
-                break;
-            }
-
-            case 'custom': {
-                // Custom layout - user provides their own
-                if (this.layoutConfig.layoutClass) {
-                    this.layout = new this.layoutConfig.layoutClass({
-                        container: this.container,
-                        config: this.layoutConfig,
-                        app: this
-                    });
-                    await this.layout.init();
-                }
-                break;
-            }
-
-            case 'none':
-                // No layout, pages render directly
-                break;
+    setupPageContainer() {
+        // Simple page container setup - no complex layouts
+        const container = typeof this.container === 'string'
+            ? document.querySelector(this.container)
+            : this.container;
+            
+        if (container && !container.querySelector('#page-container')) {
+            container.innerHTML = '<div id="page-container"></div>';
         }
+        
+        this.pageContainer = '#page-container';
     }
 
 
@@ -330,19 +298,24 @@ class WebApp {
      * Show a page
      */
     async showPage(page, options = {}) {
+        // If page is a string, get the actual page instance
+        if (typeof page === 'string') {
+            page = this.getOrCreatePage(page);
+            if (!page) {
+                console.error(`Cannot create page: ${page}`);
+                return;
+            }
+        }
+
         if (!page) {
             console.error('Cannot show null/undefined page');
             return;
         }
 
         try {
+
             // Set current page reference
             this.currentPage = page;
-
-            // Mount page if needed
-            if (!page.isMounted) {
-                await page.mount();
-            }
 
             // Render page
             await page.render();

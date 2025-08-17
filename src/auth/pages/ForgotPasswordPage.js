@@ -1,6 +1,6 @@
 /**
- * ForgotPasswordPage - Password reset request page for MOJO Auth Extension
- * Allows users to request a password reset link via email
+ * ForgotPasswordPage - Simplified password reset page for MOJO Auth
+ * Handles password reset request via email
  */
 
 import Page from '../../core/Page.js';
@@ -15,30 +15,36 @@ export default class ForgotPasswordPage extends Page {
         super({
             ...options,
             pageName: ForgotPasswordPage.pageName,
-            route: ForgotPasswordPage.route,
+            route: options.route || ForgotPasswordPage.route,
             pageIcon: ForgotPasswordPage.icon,
-            template: 'src/auth/pages/ForgotPasswordPage.mst'
+            template: options.template
         });
 
-        // Get auth manager from app
-        this.authManager = this.app?.auth;
-
-        // Get config from auth manager or use defaults
-        this.authConfig = this.authManager?.config || {
-            logoUrl: '/assets/logo.png',
-            appName: 'MOJO App',
-            messages: {
-                forgotTitle: 'Reset Password',
-                forgotSubtitle: 'We\'ll send you reset instructions'
+        // Get auth config from options (passed from AuthApp)
+        this.authConfig = options.authConfig || {
+            ui: {
+                title: 'My App',
+                logoUrl: '/assets/logo.png',
+                messages: {
+                    forgotTitle: 'Reset Password',
+                    forgotSubtitle: 'We\'ll send you reset instructions'
+                }
+            },
+            features: {
+                forgotPassword: true,
+                registration: true
             }
         };
     }
 
     async onInit() {
-        // Initialize page data
+        await super.onInit();
+
+        // Initialize form data
         this.data = {
-            // Config
-            ...this.authConfig,
+            // Config data for template
+            ...this.authConfig.ui,
+            ...this.authConfig.features,
 
             // Form fields
             email: '',
@@ -55,9 +61,9 @@ export default class ForgotPasswordPage extends Page {
         await super.onEnter();
 
         // Set page title
-        document.title = `${ForgotPasswordPage.title} - ${this.authConfig.appName}`;
+        document.title = `${ForgotPasswordPage.title} - ${this.authConfig.ui.title}`;
 
-        // Clear form
+        // Clear form and reset state
         this.updateData({
             email: '',
             error: null,
@@ -84,12 +90,10 @@ export default class ForgotPasswordPage extends Page {
         const field = element.dataset.field;
         const value = element.value;
 
-        this.updateData({ [field]: value });
-
-        // Clear any previous errors when user starts typing
-        if (this.data.error) {
-            this.updateData({ error: null });
-        }
+        this.updateData({
+            [field]: value,
+            error: null // Clear error on input change
+        });
     }
 
     /**
@@ -98,7 +102,7 @@ export default class ForgotPasswordPage extends Page {
     async onActionResetPassword(event) {
         event.preventDefault();
 
-        // Clear previous messages
+        // Clear previous messages and show loading
         this.updateData({
             error: null,
             success: false,
@@ -107,7 +111,7 @@ export default class ForgotPasswordPage extends Page {
         });
 
         try {
-            // Validate email
+            // Basic validation
             if (!this.data.email) {
                 throw new Error('Please enter your email address');
             }
@@ -118,46 +122,32 @@ export default class ForgotPasswordPage extends Page {
                 throw new Error('Please enter a valid email address');
             }
 
+            // Get auth manager
+            const auth = this.getApp().auth;
+            if (!auth) {
+                throw new Error('Authentication system not available');
+            }
+
             // Send reset request
-            if (!this.authManager) {
-                // If no auth manager, use auth service directly
-                const authService = new (await import('../../services/AuthService.js')).default(this.app);
-                const response = await authService.forgotPassword(this.data.email);
+            const response = await auth.forgotPassword(this.data.email);
 
-                if (!response.success) {
-                    throw new Error(response.message || 'Failed to process request');
-                }
-
-                // Show success message
+            if (response.success) {
+                // Show success state
                 this.updateData({
                     success: true,
                     successMessage: response.message || 'Password reset instructions have been sent to your email',
-                    isLoading: false
+                    isLoading: false,
+                    email: '' // Clear email field
                 });
+
+                // Optional: Redirect to login after delay
+                setTimeout(() => {
+                    this.getApp().showInfo('Check your email for reset instructions');
+                    this.getApp().navigate('/login');
+                }, 5000);
             } else {
-                // Use auth manager
-                const result = await this.authManager.forgotPassword(this.data.email);
-
-                if (result.success) {
-                    // Show success message
-                    this.updateData({
-                        success: true,
-                        successMessage: result.message || 'Password reset instructions have been sent to your email',
-                        isLoading: false
-                    });
-                }
+                throw new Error(response.message || 'Failed to process request');
             }
-
-            // Clear email field on success
-            this.updateData({ email: '' });
-
-            // Optional: Redirect to login after a delay
-            setTimeout(() => {
-                if (this.app?.showInfo) {
-                    this.app.showInfo('Check your email for reset instructions');
-                }
-                this.app.navigate('login');
-            }, 5000);
 
         } catch (error) {
             console.error('Forgot password error:', error);
@@ -176,19 +166,19 @@ export default class ForgotPasswordPage extends Page {
     }
 
     /**
-     * Navigate back to login
+     * Navigate back to login page
      */
     async onActionBackToLogin(event) {
         event.preventDefault();
-        this.app.navigate('login');
+        this.getApp().navigate('/login');
     }
 
     /**
-     * Navigate to registration
+     * Navigate to registration page
      */
     async onActionRegister(event) {
         event.preventDefault();
-        this.app.navigate('register');
+        this.getApp().navigate('/register');
     }
 
     /**
@@ -219,5 +209,14 @@ export default class ForgotPasswordPage extends Page {
         if (emailInput) {
             emailInput.focus();
         }
+    }
+
+    /**
+     * Get view data for template rendering
+     */
+    async getViewData() {
+        return {
+            ...this.data
+        };
     }
 }

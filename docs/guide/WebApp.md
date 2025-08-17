@@ -50,7 +50,7 @@ await app.start();
     <div id="app">
         <!-- WebApp will render content here -->
     </div>
-    
+
     <script type="module">
         import WebApp from './src/app/WebApp.js';
         // ... application setup
@@ -65,12 +65,51 @@ await app.start();
 
 ```javascript
 const app = new WebApp({
-  container: '#app',           // Container selector or element
-  title: 'My App',            // Application title
-  basePath: '/',              // Base path for routing
-  layout: 'default',          // Layout template name
-  errorContainer: '#errors',  // Error display container
-  loadingContainer: '#loading' // Loading indicator container
+  // Core Configuration
+  name: 'My MOJO App',           // Application name
+  version: '1.0.0',             // Application version
+  debug: true,                  // Enable debug mode
+  container: '#app',            // Main container selector
+  
+  // Layout Configuration
+  layout: 'portal',             // Layout type: 'portal', 'single', 'custom', 'none'
+  pageContainer: '#page-container', // Page content container
+  basePath: '/',                // Base path for routing
+  
+  // Router Configuration
+  routerMode: 'params',         // 'params', 'history'
+  defaultRoute: 'home',         // Default route
+  
+  // API Configuration
+  api: {
+    baseUrl: 'https://api.example.com',
+    timeout: 30000
+  },
+  
+  // Portal Layout Configuration (when layout: 'portal')
+  sidebar: {
+    className: 'sidebar sidebar-light',
+    header: '<div class="brand">My App</div>',
+    items: [
+      {
+        text: 'Home',
+        route: '?page=home',
+        icon: 'bi-house'
+      },
+      {
+        text: 'Users',
+        route: '?page=users',
+        icon: 'bi-people'
+      }
+    ]
+  },
+  
+  // Topbar Configuration (when layout: 'portal')
+  topbar: {
+    brand: 'My App',
+    brandIcon: 'bi-lightning-charge',
+    theme: 'navbar-dark bg-primary'
+  }
 });
 ```
 
@@ -133,7 +172,7 @@ await app.showPage('user-detail', { id: '123' });
 await app.showPage('users', {}, { search: 'john', page: '2' });
 
 // With options
-await app.showPage('dashboard', {}, {}, { 
+await app.showPage('dashboard', {}, {}, {
   replace: true,    // Replace history instead of push
   force: true       // Force re-render even if same page
 });
@@ -149,7 +188,7 @@ Navigate to a URL programmatically.
 await app.navigate('/users/123');
 
 // With options
-await app.navigate('/dashboard', { 
+await app.navigate('/dashboard', {
   replace: true,
   trigger: false  // Don't trigger route handler
 });
@@ -295,25 +334,79 @@ const user = new User({ name: 'John Doe' });
 
 ## Advanced Usage
 
-### 1. Custom Layout
+### 1. Portal Layout (Sidebar + Topbar)
 
 ```javascript
 const app = new WebApp({
   container: '#app',
-  layout: `
-    <div class="app-layout">
-      <nav class="app-nav">
-        <a data-page="home">Home</a>
-        <a data-page="users">Users</a>
-      </nav>
-      <main class="app-content">
-        <!-- Pages render here -->
-      </main>
-      <footer class="app-footer">
-        © 2024 My App
-      </footer>
-    </div>
-  `
+  layout: 'portal',
+  pageContainer: '#page-container',
+  
+  // Sidebar configuration
+  sidebar: {
+    className: 'sidebar sidebar-light',
+    header: '<div class="fs-5 fw-bold text-center pt-3">Main Menu</div>',
+    items: [
+      {
+        text: 'Home',
+        route: '?page=home',
+        icon: 'bi-house'
+      },
+      {
+        text: 'Dashboard',
+        route: '?page=dashboard',
+        icon: 'bi-speedometer2'
+      },
+      {
+        text: 'Reports',
+        icon: 'bi-graph-up',
+        children: [
+          {
+            text: 'Sales Report',
+            route: '?page=sales',
+            icon: 'bi-currency-dollar'
+          },
+          {
+            text: 'Analytics',
+            route: '?page=analytics',
+            icon: 'bi-bar-chart'
+          }
+        ]
+      }
+    ],
+    footer: '<div class="text-center text-muted small">v1.0.0</div>'
+  },
+  
+  // Topbar configuration
+  topbar: {
+    brand: 'MOJO Portal',
+    brandIcon: 'bi-lightning-charge',
+    brandRoute: '?page=home',
+    theme: 'navbar-dark bg-primary',
+    rightItems: [
+      {
+        icon: 'bi-bell',
+        action: 'notifications',
+        buttonClass: 'btn btn-link text-white'
+      },
+      {
+        label: 'User',
+        icon: 'bi-person-circle',
+        items: [
+          {
+            label: 'Profile',
+            icon: 'bi-person',
+            action: 'profile'
+          },
+          {
+            label: 'Logout',
+            icon: 'bi-box-arrow-right',
+            action: 'logout'
+          }
+        ]
+      }
+    ]
+  }
 });
 ```
 
@@ -328,23 +421,23 @@ class SecureWebApp extends WebApp {
       await this.showPage('login');
       return;
     }
-    
+
     // Set current user in state
     const user = await this.validateToken(token);
     this.setState('currentUser', user);
-    
+
     await super.start();
   }
-  
+
   async showPage(name, params, query, options) {
     const PageClass = this.getPage(name);
-    
+
     // Check if page requires authentication
     if (PageClass.requiresAuth && !this.getState('currentUser')) {
       await super.showPage('login');
       return;
     }
-    
+
     await super.showPage(name, params, query, options);
   }
 }
@@ -358,35 +451,53 @@ const app = new WebApp({
   onError: (error, context) => {
     // Custom error handling
     console.error('App error:', error, context);
-    
+
     // Log to external service
     analytics.track('app_error', {
       message: error.message,
       stack: error.stack,
       context: context
     });
-    
+
     // Show user-friendly message
     app.showError('Something went wrong. Please try again.');
   }
 });
 ```
 
-### 4. Progressive Loading
+### 4. Single Page Layout
 
 ```javascript
-class MyWebApp extends WebApp {
-  async getOrCreatePage(name, params, query) {
-    this.showLoading(`Loading ${name}...`);
-    
-    try {
-      const page = await super.getOrCreatePage(name, params, query);
-      return page;
-    } finally {
-      this.hideLoading();
-    }
+const app = new WebApp({
+  container: '#app',
+  layout: 'single',  // No sidebar or topbar
+  pageContainer: '#page-container'
+});
+```
+
+### 5. Custom Layout
+
+```javascript
+const app = new WebApp({
+  container: '#app',
+  layout: 'custom',
+  layoutConfig: {
+    template: `
+      <div class="app-layout">
+        <nav class="app-nav">
+          <a data-action="navigate" data-page="home">Home</a>
+          <a data-action="navigate" data-page="users">Users</a>
+        </nav>
+        <main id="page-container">
+          <!-- Pages render here -->
+        </main>
+        <footer class="app-footer">
+          © 2024 My App
+        </footer>
+      </div>
+    `
   }
-}
+});
 ```
 
 ## Events
@@ -394,19 +505,41 @@ class MyWebApp extends WebApp {
 WebApp emits events during its lifecycle:
 
 ```javascript
-// Listen for page changes
-app.on('page:changed', ({ from, to, params }) => {
-  console.log(`Navigated from ${from} to ${to}`);
-  analytics.track('page_view', { page: to, params });
+// Listen for route changes
+app.events.on('route:changed', (routeInfo) => {
+  console.log('Route changed:', routeInfo.path);
+  console.log('Page:', routeInfo.pageName);
+  console.log('Params:', routeInfo.params);
 });
 
-// Listen for errors
-app.on('error', ({ error, context }) => {
-  errorReporting.log(error, context);
+// Listen for page transitions
+app.events.on('page:show', ({ page, pageName, params }) => {
+  console.log(`Showing page: ${pageName}`);
+  analytics.track('page_view', { page: pageName, params });
+});
+
+// Listen for app ready
+app.events.on('app:ready', () => {
+  console.log('Application started successfully');
+});
+
+// Listen for portal actions (when using portal layout)
+app.events.on('portal:action', ({ action }) => {
+  switch (action) {
+    case 'notifications':
+      app.showInfo('You have 3 new notifications');
+      break;
+    case 'profile':
+      app.navigate('/profile');
+      break;
+    case 'logout':
+      handleLogout();
+      break;
+  }
 });
 
 // Listen for state changes
-app.on('state:changed', ({ key, value, previous }) => {
+app.events.on('state:changed', ({ key, value, previous }) => {
   if (key === 'currentUser') {
     updateUserInterface(value);
   }
@@ -419,9 +552,18 @@ app.on('state:changed', ({ key, value, previous }) => {
 Create only one WebApp instance per application:
 
 ```javascript
-// Good
-const app = WebApp.create({ container: '#app' });
+// Good - using create factory method
+const app = WebApp.create({ 
+  container: '#app',
+  layout: 'portal' 
+});
 export default app;
+
+// Also good - direct instantiation
+const app = new WebApp({ 
+  container: '#app',
+  layout: 'portal' 
+});
 
 // Bad - multiple instances
 const app1 = new WebApp({ container: '#app1' });
@@ -493,7 +635,7 @@ class MyPage extends Page {
     const app = this.getApp();
     app.showLoading('Loading page...');
   }
-  
+
   async onExit() {
     const app = this.getApp();
     app.hideLoading();
@@ -506,7 +648,7 @@ class MyPage extends Page {
 class MyView extends View {
   async handleActionSave(event, element) {
     const app = this.getApp();
-    
+
     try {
       app.showLoading('Saving...');
       await this.model.save();
@@ -516,6 +658,12 @@ class MyView extends View {
     } finally {
       app.hideLoading();
     }
+  }
+
+  async handleActionNavigate(event, element) {
+    const page = element.getAttribute('data-page');
+    const app = this.getApp();
+    await app.navigate(`?page=${page}`);
   }
 }
 ```

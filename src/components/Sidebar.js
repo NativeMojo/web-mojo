@@ -10,7 +10,7 @@ class Sidebar extends View {
         super({
             tagName: 'nav',
             className: 'sidebar',
-            id: options.id || 'sidebar',
+            id: 'sidebar',
             template: `
                 <div class="sidebar-container">
                     {{#data.currentMenu}}
@@ -51,6 +51,15 @@ class Sidebar extends View {
         this.menus = new Map();
         this.activeMenuName = null;
         this.currentRoute = null;
+
+        if (options.menus) {
+            for (const menu in options.menus) {
+                this.addMenu(menu.name, menu);
+            }
+        } else if (options.menu) {
+            options.menu.name = options.menu.name || "default";
+            this.addMenu(options.menu.name, options.menu);
+        }
 
         // Setup route change listeners like TopNav
         this.setupRouteListeners();

@@ -1,9 +1,0 @@
-id = "mojo-mustache"
-name = "MOJO Mustache"
-version = "1.0.0"
-schema_version = 1
-description = "Language support for MOJO Mustache (.mst) templates"
-repository = "https://github.com/your-org/web-mojo"
-authors = ["MOJO Team"]
-
-languages = ["languages/mojo-mustache"]

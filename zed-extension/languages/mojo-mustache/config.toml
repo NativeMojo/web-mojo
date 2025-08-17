@@ -1,6 +1,0 @@
-name = "MOJO Mustache"
-grammar = "html"
-path_suffixes = ["mst"]
-line_comments = ["{{! ", " }}"]
-tab_size = 2
-hard_tabs = false

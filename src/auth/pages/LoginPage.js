@@ -17,7 +17,7 @@ export default class LoginPage extends Page {
             pageName: LoginPage.pageName,
             route: options.route || LoginPage.route,
             pageIcon: LoginPage.icon,
-            template: 'auth/pages/LoginPage.mst'
+            template: options.template
         });
 
         // Get auth config from options (passed from AuthApp)
@@ -43,22 +43,22 @@ export default class LoginPage extends Page {
 
         // Initialize form data
         this.data = {
-            // Config data for template
-            ...this.authConfig.ui,
-            ...this.authConfig.features,
 
             // Form fields
             username: '',
             password: '',
             rememberMe: false,
-
+            loginIcon: this.options.pageIcon,
             // UI state
             isLoading: false,
             error: null,
             showPassword: false,
-
             // Feature availability
-            passkeySupported: this.getApp().auth?.isPasskeySupported?.() || false
+            passkeySupported: this.getApp().auth?.isPasskeySupported?.() || false,
+            // Config data for template
+            ...this.authConfig.ui,
+            ...this.authConfig.features,
+
         };
     }
 
@@ -188,7 +188,7 @@ export default class LoginPage extends Page {
 
         try {
             const result = await auth.loginWithPasskey();
-            
+
             if (result.success) {
                 // Success handled by AuthApp event handlers
                 console.log('Passkey login successful');
