@@ -25,6 +25,7 @@ class Rest {
    * @param {object} config - Configuration object
    */
   configure(config) {
+    if (config.baseUrl) config.baseURL = config.baseUrl;
     this.config = {
       ...this.config,
       ...config,
@@ -33,6 +34,7 @@ class Rest {
         ...config.headers
       }
     };
+
   }
 
   /**
@@ -55,6 +57,7 @@ class Rest {
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;
     }
+
 
     const baseURL = this.config.baseURL.endsWith('/')
       ? this.config.baseURL.slice(0, -1)

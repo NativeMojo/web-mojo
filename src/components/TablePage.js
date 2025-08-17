@@ -97,8 +97,6 @@ class TablePage extends Page {
       this.template = options.template;
     }
 
-
-
     // Status tracking
     this.lastUpdated = null;
     this.isLoading = false;
@@ -124,6 +122,7 @@ class TablePage extends Page {
    * Initialize page - create Table as child view
    */
   onInit() {
+    if (this.initialized) return;
     super.onInit();
 
     // Ensure pageName is set (from options.name or options.pageName)
@@ -143,6 +142,7 @@ class TablePage extends Page {
       columns: this.tableConfig.columns,
       filters: this.tableConfig.filters,
       batchActions: this.tableConfig.batchActions,
+      actions: this.tableConfig.actions,
       formCreate: this.options.formCreate,
       formEdit: this.options.formEdit || this.options.formCreate,
       showRefresh: this.showRefresh,
@@ -184,7 +184,7 @@ class TablePage extends Page {
       this.updateStatusDisplay();
       this.showError('Failed to load data: ' + error.message);
     });
-
+    this.initialized = true;
     console.log(`TablePage ${this.pageName} initialized with Table as child view`);
   }
 
@@ -206,6 +206,7 @@ class TablePage extends Page {
    * @param {object} query - Query string parameters
    */
   onParams(params = {}, query = {}) {
+    if (!this.initialized) this.onInit();
     super.onParams(params, query);
 
     // Apply URL parameters to collection if not currently updating URL

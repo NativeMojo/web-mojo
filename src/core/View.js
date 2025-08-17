@@ -30,6 +30,7 @@ export class View {
     this.lastRenderTime  = 0;
     this.mounted         = false;
     this.debug           = opts.debug ?? false;
+    this.app           = opts.app ?? null;
 
     // keep original options
     this.options = { ...opts };
@@ -91,6 +92,7 @@ export class View {
     try {
       if (!childView || typeof childView !== "object") return this;
       childView.parent = this;
+      if (this.getApp()) childView.app = this.app;
       this.children[childView.id] = childView;
     } catch (e) { View._warn("addChild error", e); }
     return childView;
@@ -134,6 +136,11 @@ export class View {
 
   addClass(className) {
     this.element.classList.add(className);
+    return this;
+  }
+
+  setClass(className) {
+    this.element.className = className;
     return this;
   }
 
@@ -417,14 +424,14 @@ export class View {
       } else {
         try {
           let templatePath = template;
-
-          if (window.APP && window.APP.basePath) {
+          if (!this.app) this.app = this.getApp();
+          if (this.app && this.app.basePath) {
             if (!templatePath.startsWith('/') &&
                 !templatePath.startsWith('http://') &&
                 !templatePath.startsWith('https://')) {
-              const base = window.APP.basePath.endsWith('/')
-                ? window.APP.basePath.slice(0, -1)
-                : window.APP.basePath;
+              const base = this.app.basePath.endsWith('/')
+                  ? this.app.basePath.slice(0, -1)
+                  : this.app.basePath;
               templatePath = `${base}/${templatePath}`;
             }
           }
@@ -530,24 +537,22 @@ export class View {
   }
 
   findRouter() {
-    const routers = [
-      window.MOJO?.router,
-      window.APP?.router,
-      window.app?.router,
-      window.navigationApp?.router,
-      window.sidebarApp?.router
-    ];
-    return routers.find(r => r && typeof r.navigate === 'function') || null;
+    this.getApp();
+    return this.app?.router || null;
   }
 
   getApp() {
+    if (this.app) return this.app;
     const apps = [
+      window.__app__,
+      window.matchUUID ? window[window.matchUUID]() : window[window.matchUUID],
+      window.MOJO?.app,
       window.APP,
       window.app,
-      window.WebApp,
-      window.MOJO?.app,
+      window.WebApp
     ];
-    return apps.find(app => app && typeof app.showPage === 'function') || null;
+    this.app = apps.find(app => app && typeof app.showPage === 'function') || null;
+    return this.app;
   }
 
   // ---------------------------------------------

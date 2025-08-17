@@ -512,16 +512,28 @@ class CollectionSelectView extends View {
   }
 
   setFormValue(value) {
-    if (value !== this.selectedValue) {
-      this.selectedValue = value;
-      this.selectedLabel = '';
-      this.searchValue = '';
-      this.hasSearched = false;
-      this.showDropdown = false;
-      this.hasError = false;
-      this.loadSelectedItem();
+    if (value && value[this.valueField]) {
+        if (value[this.valueField] == this.selectedValue) return;
+        this.selectedValue = value[this.valueField];
+        this.selectedLabel = value[this.labelField];
+        this.searchValue = value[this.labelField];
+        this.hasSearched = false;
+        this.showDropdown = false;
+        this.hasError = false;
+        this.loadSelectedItem();
+        this.setValue(this.selectedValue, this.selectedLabel);
+    } else if (value !== this.selectedValue) {
+        this.selectedValue = value;
+        this.selectedLabel = `${this.collection.getModelName()} #${value}`;
+        this.searchValue = `${this.collection.getModelName()} #${value}`;
+        this.hasSearched = false;
+        this.showDropdown = false;
+        this.hasError = false;
+        this.loadSelectedItem();
+        this.setValue(this.selectedValue, this.selectedLabel);
     }
   }
+
 }
 
 export default CollectionSelectView;

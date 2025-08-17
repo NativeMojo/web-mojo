@@ -31,8 +31,8 @@
  */
 
 import MOJOUtils from '../utils/MOJOUtils.js';
-import rest from '../core/Rest.js';
 import EventEmitter from '../utils/EventEmitter.js';
+import rest from '../core/Rest.js';
 
 class Model {
   constructor(data = {}, options = {}) {
@@ -42,6 +42,7 @@ class Model {
     this.originalAttributes = { ...data };
     this.errors = {};
     this.loading = false;
+    this.rest = rest;
 
     // Event system via EventEmitter mixin (applied to prototype)
 
@@ -130,19 +131,19 @@ class Model {
     const id = options.id || this.id;
     const url = this.buildUrl(id);
     const requestKey = JSON.stringify({ id, url, params: options.params });
-    
+
     // Handle debounced fetch
     if (options.debounceMs && options.debounceMs > 0) {
       return this._debouncedFetch(requestKey, options);
     }
-    
+
     // CANCEL PREVIOUS REQUEST if it's different from current request
     if (this.currentRequest && this.currentRequestKey !== requestKey) {
       console.info('Model: Cancelling previous request for new parameters');
       this.abortController?.abort();
       this.currentRequest = null;
     }
-    
+
     // REQUEST DEDUPLICATION - Return existing promise if identical request
     if (this.currentRequest && this.currentRequestKey === requestKey) {
       console.info('Model: Duplicate request in progress, returning existing promise');
@@ -152,7 +153,7 @@ class Model {
     // RATE LIMITING - Prevent requests within 100ms of last request
     const now = Date.now();
     const minInterval = 100; // ms
-    
+
     if (this.lastFetchTime && (now - this.lastFetchTime) < minInterval) {
       console.info('Model: Rate limited, skipping fetch');
       return this;
@@ -162,13 +163,13 @@ class Model {
     this.errors = {};
     this.lastFetchTime = now;
     this.currentRequestKey = requestKey;
-    
+
     // Create new AbortController for this request
     this.abortController = new AbortController();
-    
+
     // Store the promise for deduplication
     this.currentRequest = this._performFetch(url, options, this.abortController);
-    
+
     try {
       const result = await this.currentRequest;
       return result;
@@ -197,10 +198,10 @@ class Model {
     if (this.debouncedFetchTimeout) {
       clearTimeout(this.debouncedFetchTimeout);
     }
-    
+
     // Cancel any active request since we're about to start a new one
     this.cancel();
-    
+
     return new Promise((resolve, reject) => {
       this.debouncedFetchTimeout = setTimeout(async () => {
         try {
@@ -222,7 +223,7 @@ class Model {
    */
   async _performFetch(url, options, abortController) {
     try {
-      const response = await rest.GET(url, options.params, {
+      const response = await this.rest.GET(url, options.params, {
         signal: abortController.signal
       });
 
@@ -250,7 +251,7 @@ class Model {
         console.info('Model: Fetch was cancelled');
         throw error;
       }
-      
+
       this.errors = { fetch: error.message };
       this.showError(error.message);
       throw error;
@@ -273,7 +274,7 @@ class Model {
     this.errors = {};
 
     try {
-      const response = await rest[method](url, data, options.params);
+      const response = await this.rest[method](url, data, options.params);
 
       if (response.success) {
           if (response.data.status) {
@@ -314,7 +315,7 @@ class Model {
     this.errors = {};
 
     try {
-      const response = await rest.DELETE(url, options.params);
+      const response = await this.rest.DELETE(url, options.params);
 
       if (response.success) {
         // Clear model data
@@ -480,14 +481,14 @@ class Model {
       this.abortController.abort();
       return true;
     }
-    
+
     // Cancel debounced fetch if exists
     if (this.debouncedFetchTimeout) {
       clearTimeout(this.debouncedFetchTimeout);
       this.debouncedFetchTimeout = null;
       return true;
     }
-    
+
     return false;
   }
 
@@ -507,9 +508,6 @@ class Model {
       });
   }
 }
-
-// Will be injected by MOJO framework
-Model.Rest = null;
 
 Object.assign(Model.prototype, EventEmitter);
 

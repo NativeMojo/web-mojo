@@ -202,11 +202,11 @@ class FormBuilder {
     // Bind events
     this.bindEvents();
 
-    // Populate form with data
-    this.populateForm(this.data);
-
     // Initialize collection select fields
     this.initializeCollectionFields();
+
+    // Populate form with data
+    this.populateForm(this.data);
 
     this.rendered = true;
   }

@@ -82,7 +82,7 @@ class Sidebar extends View {
         for (const [menuName, menuConfig] of this.menus) {
             if (this.menuContainsRoute(menuConfig, route)) {
                 // Switch to this menu
-                this.activeMenuName = menuName;
+                this._setActiveMenu(menuName);
                 this.currentRoute = route;
 
                 // Clear all active states and set new active item
@@ -290,15 +290,26 @@ class Sidebar extends View {
             header: config.header || null,
             footer: config.footer || null,
             items: config.items || [],
-            data: config.data || {}
+            data: config.data || {},
+            className: config.className || "sidebar sidebar-dark"
         });
 
         // Set as active if it's the first menu
         if (!this.activeMenuName) {
-            this.activeMenuName = name;
+            this._setActiveMenu(name);
         }
 
         return this;
+    }
+
+    _setActiveMenu(name) {
+        this.activeMenuName = name;
+        const config = this.getCurrentMenuConfig();
+        if (config.className) {
+            this.setClass(config.className);
+        } else {
+            this.setClass('sidebar');
+        }
     }
 
     /**
@@ -310,13 +321,12 @@ class Sidebar extends View {
             return this;
         }
 
-        this.activeMenuName = name;
+        this._setActiveMenu(name);
         await this.render();
-
         // Emit event
         this.emit('menu-changed', {
             menuName: name,
-            config: this.menus.get(name),
+            config: this.getCurrentMenuConfig(),
             sidebar: this
         });
 

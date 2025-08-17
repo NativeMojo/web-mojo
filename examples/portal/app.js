@@ -11,6 +11,7 @@ import TodosPage from './pages/TodosPage.js';
 import FormsPage from './pages/FormsPage.js';
 import DialogsPage from './pages/DialogsPage.js';
 
+
 // Detect page reloads
 if (window.performance && window.performance.navigation.type === 1) {
     console.warn('⚠️ Page was reloaded!');
@@ -47,7 +48,8 @@ const app = new WebApp({
 
     // Sidebar configuration with one collapsible menu
     sidebar: {
-        header: 'Main Menu',
+        className: 'sidebar sidebar-light',
+        header: '<div class="fs-5 fw-bold text-center pt-3">Main Menu</div>',
         items: [
             {
                 text: 'Home',
@@ -115,19 +117,20 @@ const app = new WebApp({
         brandIcon: 'bi-lightning-charge',
         brandRoute: '?page=home',
         theme: 'navbar-dark bg-primary',
+        displayMode: 'both',
         // Left navigation items
-        leftItems: [
-            {
-                label: 'Projects',
-                page: 'projects',
-                icon: 'bi-folder'
-            },
-            {
-                label: 'Team',
-                page: 'team',
-                icon: 'bi-people'
-            }
-        ],
+        // leftItems: [
+        //     {
+        //         label: 'Projects',
+        //         page: 'projects',
+        //         icon: 'bi-folder'
+        //     },
+        //     {
+        //         label: 'Team',
+        //         page: 'team',
+        //         icon: 'bi-people'
+        //     }
+        // ],
         // Right items (user menu, notifications, etc)
         rightItems: [
             {

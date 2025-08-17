@@ -34,46 +34,7 @@ class GroupList extends Collection {
             size: 20,
             ...options
         });
-
-        // Enhanced search parameters
-        this.searchFilters = {
-            query: '',
-            type: '',
-            status: 'active',
-            parent_id: null,
-            member_id: null,
-            sort: 'name',
-            order: 'asc'
-        };
     }
-
-    /**
-     * Search groups with advanced filtering
-     */
-    async search(query, filters = {}) {
-        const searchParams = {
-            q: query,
-            ...this.searchFilters,
-            ...filters,
-            start: 0 // Reset to first page for new search
-        };
-
-        return await this.updateParams(searchParams, true, 300); // 300ms debounce
-    }
-
-    /**
-     * Filter groups by search criteria
-     */
-    filterBySearch(searchTerm) {
-        if (!searchTerm) return this.models;
-
-        const term = searchTerm.toLowerCase();
-        return this.models.filter(group => {
-            const searchData = group.toSearchIndex();
-            return searchData.searchText.includes(term);
-        });
-    }
-
 }
 
 /**
@@ -91,11 +52,43 @@ const GroupForms = {
                 placeholder: 'Enter group name'
             },
             {
-                name: 'description',
-                type: 'textarea',
-                label: 'Description',
-                rows: 3,
-                placeholder: 'Describe the purpose of this group'
+                name: 'kind',
+                type: 'select',
+                label: 'Group Kind',
+                required: true,
+                options: [
+                    { value: 'org', label: 'Organization' },
+                    { value: 'team', label: 'Team' },
+                    { value: 'department', label: 'Department' },
+                    { value: 'merchant', label: 'Merchant' },
+                    { value: 'iso', label: 'ISO' },
+                    { value: 'group', label: 'Group' }
+                ]
+            },
+            {
+                type: 'collection',
+                name: 'parent',
+                label: 'Parent Group',
+                Collection: GroupList,  // Collection class
+                labelField: 'name',          // Field to display in dropdown
+                valueField: 'id',            // Field to use as value
+                maxItems: 10,                // Max items to show in dropdown
+                placeholder: 'Search groups...',
+                emptyFetch: false,
+                debounceMs: 300,             // Search debounce delay
+            }
+        ]
+    },
+
+    edit: {
+        title: 'Edit Group',
+        fields: [
+            {
+                name: 'name',
+                type: 'text',
+                label: 'Group Name',
+                required: true,
+                placeholder: 'Enter group name',
             },
             {
                 name: 'kind',
@@ -107,22 +100,10 @@ const GroupForms = {
                     { value: 'team', label: 'Team' },
                     { value: 'department', label: 'Department' },
                     { value: 'merchant', label: 'Merchant' },
-                    { value: 'iso', label: 'ISO' }
+                    { value: 'iso', label: 'ISO' },
+                    { value: 'group', label: 'Group' }
                 ]
             },
-            {
-                name: 'parent_id',
-                type: 'select',
-                label: 'Parent Group',
-                options: [], // Will be populated dynamically
-                nullable: true
-            }
-        ]
-    },
-
-    edit: {
-        title: 'Edit Group',
-        fields: [
             {
                 type: 'collection',
                 name: 'parent',
@@ -132,37 +113,15 @@ const GroupForms = {
                 valueField: 'id',            // Field to use as value
                 maxItems: 10,                // Max items to show in dropdown
                 placeholder: 'Search groups...',
+                emptyFetch: false,
                 debounceMs: 300,             // Search debounce delay
-            }
-    },
-
-    search: {
-        title: 'Search Groups',
-        fields: [
-            { name: 'q', type: 'text', label: 'Search', placeholder: 'Search groups...' },
-            {
-                name: 'type',
-                type: 'select',
-                label: 'Type',
-                options: [
-                    { value: '', label: 'All Types' },
-                    { value: 'organization', label: 'Organizations' },
-                    { value: 'team', label: 'Teams' },
-                    { value: 'department', label: 'Departments' },
-                    { value: 'project', label: 'Projects' }
-                ]
             },
             {
-                name: 'status',
-                type: 'select',
-                label: 'Status',
-                options: [
-                    { value: 'active', label: 'Active Only' },
-                    { value: 'all', label: 'All Statuses' },
-                    { value: 'inactive', label: 'Inactive Only' },
-                    { value: 'archived', label: 'Archived Only' }
-                ]
-            }
+                name: 'is_active',
+                type: 'switch',
+                label: 'Is Active',
+                cols: 4
+            },
         ]
     }
 };

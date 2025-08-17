@@ -45,6 +45,8 @@ class Table extends View {
     this.listOptions = options.listOptions || {};
     this.view = options.view || 'table';
     this.batchActions = options.batchActions || null;
+    if (options.actions === undefined) options.actions = ['view', 'edit', 'delete'];
+    this.actions = options.actions || null;
 
     // Internal state
     this.collection = options.collection || null;
@@ -430,10 +432,11 @@ class Table extends View {
    * @returns {string} Action buttons HTML
    */
   buildActionButtons() {
+
     let buttons = [];
 
     // Refresh button (always shown if enabled)
-    if (this.options.showRefresh !== false) {
+    if ((this.options.showRefresh !== false)) {
       buttons.push(`
         <button class="btn btn-sm btn-outline-secondary"
                 data-action="refresh"
@@ -715,6 +718,11 @@ class Table extends View {
    * @returns {string} Table header HTML
    */
   buildTableHeader() {
+    let actionHeaderCell = '';
+    if (this.options.actions) {
+      actionHeaderCell = '<th>Actions</th>';
+    }
+
     const headerCells = this.columns.map(column => {
       const sortable = this.options.sortable && column.sortable !== false;
       const currentSort = this.sortBy === column.key ? this.sortDirection : null;
@@ -768,7 +776,7 @@ class Table extends View {
         <tr>
           ${selectAllCell}
           ${headerCells}
-          <th>Actions</th>
+          ${actionHeaderCell}
         </tr>
       </thead>
     `;
@@ -1116,7 +1124,8 @@ class Table extends View {
    * @returns {string} Action cell HTML
    */
   buildActionCell(item) {
-    const actions = this.listOptions.actions || ['view', 'edit', 'delete'];
+    if (!this.actions) return '';
+    const actions = this.actions;
 
     const actionButtons = actions.map(action => {
       switch (action) {

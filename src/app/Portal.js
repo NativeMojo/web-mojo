@@ -25,14 +25,13 @@ class Portal extends View {
             hideSidebar: options.hideSidebar !== true,
             sidebarDefaultCollapsed: options.sidebarDefaultCollapsed || false,
             responsive: options.responsive !== false,
-            ...options.config
         };
 
         // Sidebar configuration from WebApp
         const defaultBrand = options.brand || this.app?.name || 'MOJO App';
         const defaultIcon = options.brandIcon || 'bi-lightning-charge';
 
-        this.sidebarConfig = options.sidebar;
+        this.sidebarConfig = options.sidebarConfig;
 
         // Topbar configuration from WebApp
         this.topbarConfig = {
@@ -43,7 +42,7 @@ class Portal extends View {
             rightItems: options.topbar?.rightItems || [],
             showHamburger: this.config.showSidebar && (options.topbar?.showHamburger !== false),
             theme: options.topbar?.theme || 'navbar-dark bg-primary',
-            ...options.topbar
+            ...options.topbarConfig
         };
 
         // State
@@ -133,81 +132,6 @@ class Portal extends View {
         }
 
         this.addChild(this.sidebar);
-    }
-
-    /**
-     * Process right navigation items
-     */
-    processRightNavItems(items) {
-        return items.map(item => {
-            // Dropdown menu (like user menu)
-            if (item.items) {
-                return {
-                    id: item.id,
-                    text: item.label || item.text,
-                    icon: item.icon,
-                    isDropdown: true,
-                    items: item.items.map(subItem => {
-                        if (subItem.divider) {
-                            return { divider: true };
-                        }
-                        return {
-                            text: subItem.label || subItem.text,
-                            icon: subItem.icon,
-                            action: subItem.action,
-                            href: subItem.href || '#'
-                        };
-                    })
-                };
-            }
-
-            // Icon button or regular link
-            if (item.action && !item.items) {
-                const isIconOnly = !item.label || item.label === '';
-                return {
-                    text: isIconOnly ? '' : (item.label || item.text),
-                    icon: item.icon,
-                    isButton: true,
-                    buttonClass: item.buttonClass || (isIconOnly ? 'btn btn-link nav-link' : 'btn btn-sm btn-outline-light ms-2'),
-                    action: item.action,
-                    href: item.href || '#',
-                    external: item.external
-                };
-            }
-
-            // Regular link
-            return {
-                text: item.label || item.text,
-                icon: item.icon,
-                isButton: false,
-                action: item.action,
-                href: item.href || '#',
-                external: item.external
-            };
-        });
-    }
-
-    /**
-     * Map navigation item structure
-     */
-    mapNavItem = (item) => {
-        const mapped = {
-            text: item.label || item.text,
-            icon: item.icon,
-            active: false
-        };
-
-        // Only add route if item doesn't have children
-        if (!item.children) {
-            mapped.route = item.page ? `?page=${item.page}` : (item.route || item.href || '#');
-        }
-
-        // Preserve children if they exist
-        if (item.children && item.children.length > 0) {
-            mapped.children = item.children.map(this.mapNavItem);
-        }
-
-        return mapped;
     }
 
     /**

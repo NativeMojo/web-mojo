@@ -44,10 +44,8 @@
  * await collection.fetch(); // Will make API call
  */
 
- import rest from '../core/Rest.js';
-
-
 import EventEmitter from '../utils/EventEmitter.js';
+import rest from '../core/Rest.js';
 
 class Collection {
   constructor(ModelClass, options = {}) {
@@ -56,6 +54,7 @@ class Collection {
     this.loading = false;
     this.errors = {};
     this.meta = {};
+    this.rest = rest;
 
     // Initialize params with defaults - single source of truth for query state
     this.params = {
@@ -90,6 +89,10 @@ class Collection {
     // Event system via EventEmitter mixin (applied to prototype)
   }
 
+  getModelName() {
+    return this.ModelClass.name;
+  }
+
   /**
    * Fetch collection data from API
    * @param {object} additionalParams - Additional parameters to merge for this fetch only
@@ -97,14 +100,14 @@ class Collection {
    */
   async fetch(additionalParams = {}) {
     const requestKey = JSON.stringify({ ...this.params, ...additionalParams });
-    
+
     // CANCEL PREVIOUS REQUEST if it's different from current request
     if (this.currentRequest && this.currentRequestKey !== requestKey) {
       console.info('Collection: Cancelling previous request for new parameters');
       this.abortController?.abort();
       this.currentRequest = null;
     }
-    
+
     // REQUEST DEDUPLICATION - Return existing promise if identical request
     if (this.currentRequest && this.currentRequestKey === requestKey) {
       console.info('Collection: Duplicate request in progress, returning existing promise');
@@ -114,7 +117,7 @@ class Collection {
     // RATE LIMITING - Prevent requests within 100ms of last request
     const now = Date.now();
     const minInterval = 100; // ms
-    
+
     if (this.lastFetchTime && (now - this.lastFetchTime) < minInterval) {
       console.info('Collection: Rate limited, skipping fetch');
       return this;
@@ -137,13 +140,13 @@ class Collection {
     this.errors = {};
     this.lastFetchTime = now;
     this.currentRequestKey = requestKey;
-    
+
     // Create new AbortController for this request
     this.abortController = new AbortController();
-    
+
     // Store the promise for deduplication
     this.currentRequest = this._performFetch(url, additionalParams, this.abortController);
-    
+
     try {
       const result = await this.currentRequest;
       return result;
@@ -173,7 +176,7 @@ class Collection {
     const fetchParams = { ...this.params, ...additionalParams };
 
     try {
-      const response = await rest.GET(url, fetchParams, {
+      const response = await this.rest.GET(url, fetchParams, {
         signal: abortController.signal
       });
 
@@ -196,7 +199,7 @@ class Collection {
         console.info('Collection: Fetch was cancelled');
         throw error;
       }
-      
+
       this.errors = { fetch: error.message };
       throw error;
     } finally {
@@ -220,10 +223,10 @@ class Collection {
         if (this.debouncedFetchTimeout) {
           clearTimeout(this.debouncedFetchTimeout);
         }
-        
+
         // Cancel any active request since we're about to start a new one
         this.cancel();
-        
+
         return new Promise((resolve, reject) => {
           this.debouncedFetchTimeout = setTimeout(async () => {
             try {

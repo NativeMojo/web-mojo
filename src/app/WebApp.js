@@ -14,38 +14,12 @@
  *   - 'loading:hide' - When loading indicator should be hidden
  *   - 'state:changed' - When application state changes
  *   - Router events are also emitted via this.events (see Router documentation)
- *
- * @example
- * const app = new WebApp({
- *   name: 'My App',
- *   debug: true
- * });
- *
- * // Subscribe to global events
- * app.events.on('notification', ({ message, type }) => {
- *   showToast(message, type);
- * });
- *
- * app.events.on('app:ready', () => {
- *   console.log('App is ready!');
- * });
- *
- * // Events are emitted automatically by framework methods
- * app.showError('Something went wrong'); // Emits 'notification' event
- * app.showLoading('Please wait...'); // Emits 'loading:show' event
  */
 
 import Router from '../core/Router.js';
-import Page from '../core/Page.js';
 import EventBus from '../utils/EventBus.js';
 import rest from '../core/Rest.js';
-import { VERSION_INFO } from '../version.js';
-
-/*!
- * MOJO Framework
- * Copyright (c) 2024 MOJO Framework Team
- * Licensed under MIT License
- */
+import Portal from './Portal.js';
 
 class WebApp {
     constructor(config = {}) {
@@ -58,24 +32,70 @@ class WebApp {
         // Layout configuration
         this.layoutType = config.layout || 'portal'; // 'portal', 'single', 'custom', 'none'
         this.layoutConfig = config.layoutConfig || {};
+        if (config.sidebar) {
+            this.layoutConfig.sidebarConfig = config.sidebar;
+        }
+        if (config.topbar) {
+            this.layoutConfig.topbarConfig = config.topbar;
+        }
         this.layout = null;
 
+        this.layoutConfig.containerId = this.container || this.containerId || '#app';
         this.pageContainer = config.pageContainer || '#page-container';
         this.basePath = config.basePath || '';
 
         // Router configuration
-        this.routerMode = config.routerMode || 'param'; // 'param', 'hash', 'history'
-        this.basePath = config.basePath || '';
+        this.routerMode = config.routerMode || config.router?.mode || 'param'; // 'param', 'hash', 'history'
+        this.basePath = config.basePath || config.router?.base || '';
         this.defaultRoute = config.defaultRoute || 'home';
 
         // Store session config if provided
         this.session = config.session || {};
 
-        // Initialize router immediately so it's available for page registration
-        this.router = new Router(this, {
-            mode: this.routerMode,
-            base: this.basePath,
-            defaultPage: this.defaultRoute
+        // Initialize router placeholder
+        this.router = null;
+
+        // Navigation configuration - support both old and new structure
+        this.navigation = config.navigation || {};
+
+        // State management
+        this.state = {
+            currentPage: null,
+            previousPage: null,
+            loading: false
+        };
+
+        // Global event bus (singleton for the app)
+        this.events = new EventBus();
+        this.rest = rest;
+        if (config.api) {
+            this.rest.configure(config.api);
+        }
+
+        // Initialize router with event integration after EventBus is ready
+        this.router = new Router({
+            mode: this.routerMode === 'param' ? 'params' : this.routerMode,
+            basePath: this.basePath,
+            defaultRoute: this.defaultRoute,
+            eventEmitter: this.events
+        });
+
+        // Listen for route changes to update pages
+        this.events.on('route:changed', async (routeInfo) => {
+            await this.handleRouteChange(routeInfo);
+        });
+
+        this.events.on('route:notfound', async (info) => {
+            console.warn(`Route not found: ${info.path}`);
+
+            // Try to navigate to default route instead of showing error
+            if (info.path !== `/${this.defaultRoute}`) {
+                console.log(`🔄 Redirecting to default route: ${this.defaultRoute}`);
+                await this.navigateToDefault({ replace: true });
+            } else {
+                // If default route also not found, show error
+                this.showError(`Page not found: ${info.path}`);
+            }
         });
 
         // Make router globally accessible
@@ -84,99 +104,60 @@ class WebApp {
             window.MOJO.router = this.router;
         }
 
-
-
-        // Navigation configuration - support both old and new structure
-        this.navigation = config.navigation || {};
-        this.sidebar = config.sidebar || {};
-        this.topbar = config.topbar || {};
-        this.brand = config.brand;
-        this.brandIcon = config.brandIcon;
-
-        // REST configuration
-        this.rest = rest;
-        if (config.api) {
-            this.rest.configure({
-                baseURL: config.api?.baseUrl || '/api',
-                headers: config.api?.headers || {},
-                timeout: config.api?.timeout || 30000
-            });
-        }
-
-        // Global event bus (singleton for the app)
-        this.events = new EventBus();
-
         // Component registries
         this.pageCache = new Map();     // pageName -> page instance (cached)
-        this.pageClasses = new Map();   // pageName -> Page class
-        this.components = new Map();
-        this.models = new Map();
-        this.currentPage = null;        // Currently active page instance
+        this.pageClasses = new Map();   // pageName -> {PageClass, constructorOptions}
+        this.componentClasses = new Map(); // componentName -> ComponentClass
+        this.modelClasses = new Map();  // modelName -> ModelClass
 
-        // State management
-        this.state = {
-            currentPage: null,
-            previousPage: null,
-            isLoading: false,
-            user: null,
-            ...config.initialState
-        };
+        // Current page reference
+        this.currentPage = null;
 
-        // Make globally accessible (singleton pattern)
-        if (typeof window !== 'undefined') {
-            window.APP = this;
-            window.MOJO = window.MOJO || {};
+        // Runtime flags
+        this.isStarted = false;
+
+        if (window.matchUUID) {
+            window[window.matchUUID] = this;
+        } else if (window.MOJO) {
             window.MOJO.app = this;
-
-            // Expose version information globally
-            window.MOJO.VERSION = VERSION_INFO.full;
-            window.MOJO.VERSION_INFO = VERSION_INFO;
-            window.MOJO.version = VERSION_INFO.full; // Convenience accessor
+        } else {
+            window.__app__ = this;
         }
-
-        // Bind methods
-        this.start = this.start.bind(this);
-        this.navigate = this.navigate.bind(this);
-        this.showError = this.showError.bind(this);
-        this.showSuccess = this.showSuccess.bind(this);
+        console.log(`WebApp initialized: ${this.name} v${this.version}`);
     }
 
     /**
-     * Initialize and start the application
+     * Start the application
      */
     async start() {
+        if (this.isStarted) {
+            console.warn('WebApp already started');
+            return;
+        }
+
         try {
-            console.log(`Starting ${this.name} v${this.version}`);
+            console.log(`Starting ${this.name}...`);
 
-            // Setup error handling
-            this.setupErrorHandling();
-
-            // Initialize router
-            await this.setupRouter();
-
+            // Setup global REST configuration
+            // this.setupRest();
             // Setup layout
+            console.log('Setting up layout...');
             await this.setupLayout();
 
-            // Start router
-            this.router.start();
+            // Setup router
+            console.log('Setting up router...');
+            await this.setupRouter();
 
-            // Navigate to default route or current URL
-            const currentPath = this.router.getCurrentPath();
-            if (!currentPath || currentPath === '/' || currentPath === '') {
-                // Navigate to default route when on root
-                await this.navigate(this.defaultRoute);
-            } else {
-                // Try to handle current location
-                await this.router.handleCurrentLocation();
-            }
+
+            // Mark as started
+            this.isStarted = true;
 
             // Emit app ready event
             this.events.emit('app:ready', { app: this });
 
-            console.log(`${this.name} started successfully`);
-
+            console.log(`✅ ${this.name} started successfully`);
         } catch (error) {
-            console.error('Failed to start application:', error);
+            console.error(`Failed to start ${this.name}:`, error);
             this.showError('Failed to start application');
             throw error;
         }
@@ -186,56 +167,53 @@ class WebApp {
      * Setup router with configuration
      */
     async setupRouter() {
-        // Router is now created in constructor and emits events directly to app.events
         if (!this.router) {
             console.error('Router not initialized');
             return;
         }
 
-        // Router now emits events directly - no callback setup needed
-        console.log('Router setup complete - using event-driven navigation');
+        // Start the router to begin handling routes
+        this.router.start();
+        console.log(`Router started in ${this.routerMode} mode`);
     }
 
     /**
      * Setup layout based on configuration
      */
     async setupLayout() {
-
-
+        // Dynamic layout loading based on type
         switch (this.layoutType) {
             case 'portal': {
-                const Portal = (await import('./Portal.js')).default;
+                // const { Portal } = await import('./Portal.js');
                 this.layout = new Portal({
                     app: this,
-                    containerId: this.container,
-                    sidebar: this.sidebar,
-                    topbar: this.topbar,
-                    brand: this.brand,
-                    brandIcon: this.brandIcon,
                     ...this.layoutConfig
                 });
-                // this.layout.setContainer(container);
                 await this.layout.render();
-                // await this.layout.mount();
                 break;
             }
 
-            case 'single':
-                // Simple single page layout
-                const container = document.querySelector(this.container);
-                container.innerHTML = '<div id="page-container"></div>';
+            case 'single': {
+                // Single page layout - minimal container
+                const container = typeof this.container === 'string'
+                    ? document.querySelector(this.container)
+                    : this.container;
+                if (container) {
+                    container.innerHTML = '<div id="page-container"></div>';
+                    this.pageContainer = '#page-container';
+                }
                 break;
+            }
 
             case 'custom': {
-                // Allow custom layout class
+                // Custom layout - user provides their own
                 if (this.layoutConfig.layoutClass) {
                     this.layout = new this.layoutConfig.layoutClass({
-                        app: this,
-                        ...this.layoutConfig
+                        container: this.container,
+                        config: this.layoutConfig,
+                        app: this
                     });
-                    this.layout.setContainer(container);
-                    await this.layout.render();
-                    await this.layout.mount();
+                    await this.layout.init();
                 }
                 break;
             }
@@ -246,11 +224,9 @@ class WebApp {
         }
     }
 
+
     /**
      * Register a page with the app
-     * @param {string} pageName - Name of the page
-     * @param {class} PageClass - Page class constructor
-     * @param {object} options - Optional constructor options
      */
     registerPage(pageName, PageClass, options = {}) {
         // Validate inputs
@@ -275,184 +251,255 @@ class WebApp {
         // If router is initialized, add route
         if (this.router) {
             // Get route from options or use default
-            const route = options.route || `/${pageName}`;
+            let route = options.route || `/${pageName}`;
+
+            // Normalize route based on router mode
+            if (this.router.mode === 'params') {
+                // In params mode, ensure route starts with / for consistent pattern matching
+                route = route.startsWith('/') ? route : `/${route}`;
+            } else {
+                // In history mode, ensure route starts with /
+                route = route.startsWith('/') ? route : `/${route}`;
+            }
+
+            // Store the route back in options so page instances can access it
+            options.route = route;
+
+            // Register route with router
             this.router.addRoute(route, pageName);
 
-            // Also register page name for data-page navigation
-            this.router.registerPageName(pageName, route);
+            console.log(`📝 Registered route: "${route}" -> ${pageName} (${this.router.mode} mode)`);
         }
 
         return this;
     }
 
     /**
-     * Get a page if already created (does not instantiate)
-     * @param {string} pageName
-     * @returns {Page|null}
+     * Get page instance (cached)
      */
     getPage(pageName) {
-      return this.pageCache.has(pageName) ? this.pageCache.get(pageName) : null;
+        return this.pageCache.get(pageName);
     }
 
     /**
-     * Get or create a page instance (cached)
-     * @param {string} pageName - Name of the page
-     * @returns {Page|null} Page instance or null if not found
+     * Get or create page instance (with caching)
      */
     getOrCreatePage(pageName) {
-        // Return cached instance if exists
+        // Check cache first
         if (this.pageCache.has(pageName)) {
             return this.pageCache.get(pageName);
         }
 
-        // Get registered page info
+        // Check if page class is registered
         const pageInfo = this.pageClasses.get(pageName);
         if (!pageInfo) {
-            console.warn(`Page class not found for: ${pageName}`);
+            console.error(`Page not registered: ${pageName}`);
             return null;
         }
 
-        // Extract PageClass and options
-        const { PageClass, constructorOptions = {} } = pageInfo;
-
-        // Defensive: Ensure PageClass is a valid constructor
-        if (typeof PageClass !== 'function') {
-            console.error(`Page class for '${pageName}' is not a valid constructor:`, PageClass);
-            return null;
-        }
-
-        let page = null;
+        const { PageClass, constructorOptions } = pageInfo;
 
         try {
-            // Create and cache the instance with constructor options
-            page = new PageClass(constructorOptions);
-            page.app = this; // Give page reference to app
+            // Create page instance with merged options
+            const pageOptions = {
+                pageName,
+                ...constructorOptions,
+                app: this
+            };
 
-            // Ensure pageName is set
-            if (!page.pageName) {
-                page.pageName = pageName;
+            const page = new PageClass(pageOptions);
+
+            // Store route information on page instance for easy access
+            if (constructorOptions.route) {
+                page.route = constructorOptions.route;
             }
 
-            // Initialize if needed
-            if (!page.initialized) {
-                page.onInitView();
-            }
-
-            // Cache the instance only if creation was successful
+            // Cache the instance
             this.pageCache.set(pageName, page);
+
+            console.log(`Created page: ${pageName} with route: ${page.route}`);
             return page;
 
         } catch (error) {
-            console.error(`Error creating page instance for '${pageName}':`, error);
-
-            // If page was partially created, try to clean it up
-            if (page && page.destroy) {
-                try {
-                    page.destroy();
-                } catch (destroyError) {
-                    console.warn(`Error cleaning up failed page '${pageName}':`, destroyError);
-                }
-            }
-
+            console.error(`Failed to create page ${pageName}:`, error);
             return null;
         }
     }
 
     /**
-     * Show a page with detach/reattach strategy
-     * @param {Page} page - Page instance to show
+     * Show a page
      */
     async showPage(page, options = {}) {
-        const container = this.getPageContainer();
-        if (!container) {
-            console.error('No page container found');
-            return;
-        }
-
-        if (typeof(page) === 'string') {
-            page = this.getOrCreatePage(page);
-        }
-
-        // Defensive: If page is invalid/null, do not proceed
         if (!page) {
-            console.warn("WebApp: Attempted to show a null/undefined page. Operation cancelled.");
+            console.error('Cannot show null/undefined page');
             return;
         }
 
-        // Detach current page if different
-        if (this.currentPage && this.currentPage !== page) {
-            if (this.currentPage.element?.parentNode) {
-                this.currentPage.destroy();
+        try {
+            // Set current page reference
+            this.currentPage = page;
+
+            // Mount page if needed
+            if (!page.isMounted) {
+                await page.mount();
             }
-        }
 
-        console.log(`Showing page: ${page.pageName}`);
+            // Render page
+            await page.render();
 
-        await page.render();
-
-        console.log(`Current page now: ${page.pageName}`);
-        this.currentPage = page;
-
-        // Update state
-        this.setState({
-            currentPage: page.pageName,
-            previousPage: this.state.currentPage
-        });
-
-        // Notify layout of page change
-        if (this.layout && this.layout.setActivePage) {
-            this.layout.setActivePage(page);
-        }
-
-        // Try to keep the route in sync (but not if we're already syncing to prevent loops)
-        if (!options.noRoute && !this._syncingRoute && this.router && page.route) {
-            // Figure out what the correct URL would be for this page
-            let targetRoute = typeof page.route === "function"
-                ? page.route(page) : page.route;
-            // In 'param' mode, synthesize the URL accordingly (optional, based on your param handling logic)
-            if (this.router.options.mode === "param" && targetRoute && !targetRoute.startsWith('?')) {
-                targetRoute = `?page=${page.pageName}`;
+            // Show page content
+            if (page.element) {
+                page.element.style.display = 'block';
             }
-            // If URL is not current, update (avoid infinite loops)
-            if (targetRoute && window.location.pathname + window.location.search !== targetRoute) {
-                // Set a flag to prevent showPage from syncing routes when called back from router
-                this._syncingRoute = true;
-                this.router.navigate(targetRoute, { replace: true, silent: false });
-                this._syncingRoute = false;
+
+            // Sync with router if needed
+            if (!options.noRoute && this.router && page.route && !this._syncingRoute) {
+                // Get current path to check if we need to sync
+                const currentPath = this.router.getCurrentPath();
+                const targetRoute = this.router.convertRoute(page.route);
+
+                if (currentPath !== targetRoute) {
+                    // Set a flag to prevent showPage from syncing routes when called back from router
+                    this._syncingRoute = true;
+                    this.router.navigate(targetRoute, { replace: true, silent: false });
+                    this._syncingRoute = false;
+                }
             }
+
+        } catch (error) {
+            console.error('Error showing page:', error);
+            throw error;
         }
     }
-
-
 
     /**
      * Navigate to a route
      */
     async navigate(route, params = {}, options = {}) {
+        // Debug navigation to track URL generation issues
+        console.log('🧭 WebApp.navigate called:');
+        console.log('  - Route:', route);
+        console.log('  - Params:', params);
+        console.log('  - Options:', options);
+        console.log('  - Router mode:', this.router?.mode);
+
         if (!this.router) {
             console.error('Router not initialized');
             return;
         }
 
-        // Ergonomic patch: If in 'param' mode and route is a bare page name, convert to ?page=pageName
-        if (this.router.options.mode === 'param') {
-            // If route does not start with '?' or '/', treat as a pageName and convert to param style
-            if (typeof route === 'string' && !route.startsWith('?') && !route.startsWith('/')) {
-                route = `?page=${route}`;
-            }
+        // Build path with parameters if needed
+        let path = route;
+        if (params && Object.keys(params).length > 0) {
+            // Replace :param patterns in route
+            Object.keys(params).forEach(key => {
+                path = path.replace(`:${key}`, params[key]);
+            });
         }
 
-        // Update state with route name
+        console.log('  - Final path being sent to router:', path);
+
+        // Update state
         this.state.previousPage = this.state.currentPage;
         this.state.currentPage = route;
 
-        // Perform navigation - router will handle the page instance
-        const result = await this.router.navigate(route, { params, ...options });
+        // Navigate using simplified router
+        return await this.router.navigate(path, options);
+    }
 
-        // Store reference to current page instance for convenience
-        this.currentPage = this.router.currentPageInstance;
+    /**
+     * Navigate to the default route
+     */
+    async navigateToDefault(options = {}) {
+        if (!this.router) {
+            console.error('Router not initialized');
+            return;
+        }
 
-        return result;
+        console.log(`🏠 Navigating to default route: ${this.defaultRoute}`);
+        return await this.navigate(`/${this.defaultRoute}`, {}, options);
+    }
+
+    /**
+     * Handle route changes from the router
+     */
+    async handleRouteChange(routeInfo) {
+        const { pageName, params, query, path } = routeInfo;
+
+        try {
+            // Get or create page instance
+            const page = this.getOrCreatePage(pageName);
+            if (!page) {
+                console.error(`Page not found: ${pageName}`);
+                return;
+            }
+
+            // Transition to the page
+            await this.transitionToPage(page, params, query);
+
+            // Update current page reference
+            this.currentPage = page;
+
+            // Emit page show event for Sidebar and other listeners
+            this.events.emit('page:show', {
+                page,
+                pageName,
+                params,
+                query,
+                path
+            });
+
+            // Emit route:change event for Sidebar compatibility
+            this.events.emit('route:change', {
+                path,
+                params,
+                query,
+                page,
+                match: {
+                    pageName,
+                    params,
+                    query
+                }
+            });
+
+        } catch (error) {
+            console.error('Error handling route change:', error);
+            this.showError('Failed to load page');
+        }
+    }
+
+    /**
+     * Transition between pages
+     */
+    async transitionToPage(newPage, params = {}, query = {}) {
+        const oldPage = this.currentPage;
+
+        // Exit old page
+        if (oldPage && oldPage !== newPage) {
+            try {
+                await oldPage.onExit();
+                this.events.emit('page:hide', { page: oldPage });
+            } catch (error) {
+                console.error(`Error in onExit for page ${oldPage.pageName}:`, error);
+            }
+        }
+
+        // Update params for new page
+        if (newPage.onParams) {
+            await newPage.onParams(params, query);
+        }
+
+        // Enter new page
+        if (oldPage !== newPage) {
+            try {
+                await newPage.onEnter();
+            } catch (error) {
+                console.error(`Error in onEnter for page ${newPage.pageName}:`, error);
+            }
+
+            // Show page in the UI
+            await this.showPage(newPage, { noRoute: true });
+        }
     }
 
     /**
@@ -462,7 +509,7 @@ class WebApp {
         if (this.router) {
             this.router.back();
         } else {
-            window.history.back();
+            console.warn('Router not initialized');
         }
     }
 
@@ -473,7 +520,7 @@ class WebApp {
         if (this.router) {
             this.router.forward();
         } else {
-            window.history.forward();
+            console.warn('Router not initialized');
         }
     }
 
@@ -481,8 +528,7 @@ class WebApp {
      * Get current page
      */
     getCurrentPage() {
-        // Return the actual page instance from the router
-        return this.router ? this.router.currentPageInstance : null;
+        return this.currentPage;
     }
 
     /**
@@ -494,52 +540,54 @@ class WebApp {
             return this.layout.getPageContainer();
         }
 
-        // Fallback to standard container
-        return document.querySelector('#page-container') ||
-               document.querySelector(this.container);
-    }
+        // Fallback to configured container
+        const container = typeof this.pageContainer === 'string'
+            ? document.querySelector(this.pageContainer)
+            : this.pageContainer;
 
-
-    /**
-     * Show error message
-     */
-    showError(message, duration = 5000) {
-        this.events.emit('notification', { message, type: 'error', duration });
+        return container;
     }
 
     /**
-     * Show success message
+     * Show error notification
      */
-    showSuccess(message, duration = 3000) {
-        this.events.emit('notification', { message, type: 'success', duration });
+    showError(message) {
+        this.events.emit('notification', { message, type: 'error' });
     }
 
     /**
-     * Show info message
+     * Show success notification
      */
-    showInfo(message, duration = 4000) {
-        this.events.emit('notification', { message, type: 'info', duration });
+    showSuccess(message) {
+        this.events.emit('notification', { message, type: 'success' });
     }
 
     /**
-     * Show warning message
+     * Show info notification
      */
-    showWarning(message, duration = 4000) {
-        this.events.emit('notification', { message, type: 'warning', duration });
+    showInfo(message) {
+        this.events.emit('notification', { message, type: 'info' });
     }
 
     /**
-     * Show notification
+     * Show warning notification
      */
-    showNotification(message, type = 'info', duration = 3000) {
-        this.events.emit('notification', { message, type, duration });
+    showWarning(message) {
+        this.events.emit('notification', { message, type: 'warning' });
+    }
+
+    /**
+     * Show generic notification
+     */
+    showNotification(message, type = 'info') {
+        this.events.emit('notification', { message, type });
     }
 
     /**
      * Show loading indicator
      */
     showLoading(message = 'Loading...') {
-        this.state.isLoading = true;
+        this.state.loading = true;
         this.events.emit('loading:show', { message });
     }
 
@@ -547,7 +595,7 @@ class WebApp {
      * Hide loading indicator
      */
     hideLoading() {
-        this.state.isLoading = false;
+        this.state.loading = false;
         this.events.emit('loading:hide');
     }
 
@@ -555,19 +603,17 @@ class WebApp {
      * Setup global error handling
      */
     setupErrorHandling() {
-        // Handle uncaught errors
         window.addEventListener('error', (event) => {
-            console.error('Uncaught error:', event.error);
+            console.error('Global error:', event.error);
             if (this.debug) {
-                this.showError(`Error: ${event.error.message}`);
+                this.showError(`Error: ${event.error?.message || 'Unknown error'}`);
             }
         });
 
-        // Handle promise rejections
         window.addEventListener('unhandledrejection', (event) => {
             console.error('Unhandled promise rejection:', event.reason);
             if (this.debug) {
-                this.showError(`Unhandled promise rejection`);
+                this.showError(`Promise rejected: ${event.reason?.message || 'Unknown error'}`);
             }
         });
     }
@@ -575,100 +621,120 @@ class WebApp {
     /**
      * Escape HTML to prevent XSS
      */
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+    escapeHtml(unsafe) {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 
     /**
-     * Get app state
+     * Get application state
      */
     getState(key) {
         return key ? this.state[key] : this.state;
     }
 
     /**
-     * Set app state
+     * Set application state
      */
-    setState(key, value) {
-        if (typeof key === 'object') {
-            Object.assign(this.state, key);
-            this.events.emit('state:changed', this.state);
-        } else {
-            const oldValue = this.state[key];
-            this.state[key] = value;
-            this.events.emit('state:changed', { key, value, oldValue });
-        }
+    setState(updates) {
+        const oldState = { ...this.state };
+        Object.assign(this.state, updates);
+
+        // Emit state change event
+        this.events.emit('state:changed', {
+            oldState,
+            newState: this.state,
+            updates
+        });
     }
 
     /**
-     * Register a component
+     * Register component class
      */
-    registerComponent(name, component) {
-        this.components.set(name, component);
-        return this;
+    registerComponent(name, ComponentClass) {
+        this.componentClasses.set(name, ComponentClass);
     }
 
     /**
-     * Get a component
+     * Get component class
      */
     getComponent(name) {
-        return this.components.get(name);
+        return this.componentClasses.get(name);
     }
 
     /**
-     * Register a model
+     * Register model class
      */
-    registerModel(name, model) {
-        this.models.set(name, model);
-        return this;
+    registerModel(name, ModelClass) {
+        this.modelClasses.set(name, ModelClass);
     }
 
     /**
-     * Get a model
+     * Get model class
      */
     getModel(name) {
-        return this.models.get(name);
+        return this.modelClasses.get(name);
+    }
+
+    /**
+     * Setup REST configuration
+     */
+    setupRest() {
+        this.rest = rest;
+        rest.configure(this.api);
     }
 
     /**
      * Destroy the application
      */
     async destroy() {
+        console.log('Destroying WebApp...');
+
         // Stop router
         if (this.router) {
             this.router.stop();
         }
 
+        // Destroy all cached pages
+        const pages = Array.from(this.pageCache.values());
+        await Promise.allSettled(
+            pages.map(async (page) => {
+                try {
+                    if (page.destroy) {
+                        await page.destroy();
+                    }
+                } catch (error) {
+                    console.error('Error destroying page:', error);
+                }
+            })
+        );
+
         // Destroy layout
         if (this.layout && this.layout.destroy) {
-            await this.layout.destroy();
-        }
-
-        // Clear pages
-        for (const [_name, page] of this.pages) {
-            if (page.destroy) {
-                // eslint-disable-next-line no-await-in-loop
-                await page.destroy();
+            try {
+                await this.layout.destroy();
+            } catch (error) {
+                console.error('Error destroying layout:', error);
             }
         }
 
-        // Clear registries
-        this.pages.clear();
-        this.components.clear();
-        this.models.clear();
+        // Clear all registries
+        this.pageCache.clear();
+        this.pageClasses.clear();
+        this.componentClasses.clear();
+        this.modelClasses.clear();
 
-        // Clear global references
-        if (window.APP === this) {
-            delete window.APP;
-        }
-        if (window.MOJO && window.MOJO.app === this) {
-            delete window.MOJO.app;
+        // Remove global references
+        if (typeof window !== 'undefined' && window.MOJO) {
+            delete window.MOJO.router;
         }
 
-        // Emit destroy event
-        this.eventBus.emit('app:destroyed');
+        this.isStarted = false;
+        console.log('WebApp destroyed');
     }
 
     /**
