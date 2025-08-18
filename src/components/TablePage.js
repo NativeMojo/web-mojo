@@ -244,29 +244,38 @@ class TablePage extends Page {
   /**
    * Sync URL with current table state
    */
-  syncUrlWithTable() {
-    if (!this.urlSyncEnabled || !this.table.collection || !this.app?.router || this._isUpdatingUrl) return;
+   syncUrlWithTable() {
+     if (!this.urlSyncEnabled || !this.table.collection || !this.app?.router || this._isUpdatingUrl) return;
 
-    // Check if URL params would actually change to prevent unnecessary updates
-    const currentUrl = new URL(window.location);
-    const currentParams = Object.fromEntries(currentUrl.searchParams);
+     // Check if URL params would actually change to prevent unnecessary updates
+     const currentUrl = new URL(window.location);
+     const currentParams = {};
+     for (const [key, value] of currentUrl.searchParams) {
+       if (key !== 'page') {
+         currentParams[key] = value;
+       }
+     }
 
-    // Compare current URL params with collection params (excluding page param)
-    const { page, ...urlParamsToSet } = this.table.collection.params;
-    const hasChanges = Object.keys(urlParamsToSet).some(key =>
-      String(currentParams[key] || '') !== String(urlParamsToSet[key] || '')
-    ) || Object.keys(currentParams).some(key =>
-      key !== 'page' && String(currentParams[key] || '') !== String(urlParamsToSet[key] || '')
-    );
+     // Get desired params from table collection
+     const desiredParams = { ...this.table.collection.params };
 
-    if (!hasChanges) return;
+     // Check if there are any changes needed (Router will clear unused params automatically)
+     const hasChanges = 
+       Object.keys(desiredParams).some(key =>
+         String(currentParams[key] || '') !== String(desiredParams[key] || '')
+       ) ||
+       Object.keys(currentParams).some(key =>
+         !(key in desiredParams)
+       );
 
-    // Use Router's updateUrl method instead of direct history manipulation
-    // This respects the Router's mode and prevents navigation conflicts
-    this._isUpdatingUrl = true;
-    this.app.router.updateUrl(this.table.collection.params, { replace: true });
-    setTimeout(() => { this._isUpdatingUrl = false; }, 100);
-  }
+     if (!hasChanges) return;
+
+     // Router will clear all existing params and only keep the ones we pass
+     this._isUpdatingUrl = true;
+     this.app.router.updateUrl(desiredParams, { replace: true });
+     setTimeout(() => { this._isUpdatingUrl = false; }, 100);
+   }
+
 
 
   /**

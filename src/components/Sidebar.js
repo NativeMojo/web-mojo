@@ -18,6 +18,13 @@ class Sidebar extends View {
                     {{#header}}
                     <div class="sidebar-header">
                         {{{header}}}
+                        {{#showToggle}}
+                        <button class="sidebar-toggle" data-action="toggle-sidebar"
+                                aria-label="Toggle Sidebar">
+                            <i class="bi bi-chevron-left toggle-icon"></i>
+                            <i class="bi bi-chevron-right toggle-icon"></i>
+                        </button>
+                        {{/showToggle}}
                     </div>
                     {{/header}}
 
@@ -51,18 +58,25 @@ class Sidebar extends View {
         this.menus = new Map();
         this.activeMenuName = null;
         this.currentRoute = null;
+        this.showToggle = options.showToggle; // Default to true
+        this.isCollapsed = false;
+        this.sidebarTheme = options.theme || 'sidebar-light';
 
-        if (options.menus) {
-            for (const menu in options.menus) {
-                this.addMenu(menu.name, menu);
-            }
-        } else if (options.menu) {
-            options.menu.name = options.menu.name || "default";
-            this.addMenu(options.menu.name, options.menu);
+        // Apply sidebar theme
+        if (this.sidebarTheme) {
+            this.addClass(this.sidebarTheme);
         }
+
+        // Initialize menus
+        this.initializeMenus(options);
 
         // Setup route change listeners like TopNav
         this.setupRouteListeners();
+
+        // Auto-collapse on mobile if specified
+        if (options.autoCollapseMobile !== false) {
+            this.setupResponsiveBehavior();
+        }
     }
 
     /**
@@ -81,6 +95,9 @@ class Sidebar extends View {
                 this.autoSwitchToMenuForRoute(currentPath);
             }
         }
+
+        // Initialize tooltips for nav items
+        this.initializeTooltips();
     }
 
     /**
@@ -425,9 +442,15 @@ class Sidebar extends View {
                 header: this.processTemplate(currentMenu.header, currentMenu.data),
                 footer: this.processTemplate(currentMenu.footer, currentMenu.data),
                 items: this.processNavItems(currentMenu.items),
-                data: currentMenu.data
+                data: currentMenu.data,
+                showToggle: this.showToggle
             }
         };
+    }
+
+    async onAfterRender() {
+        // Re-initialize tooltips after state change
+        this.initializeTooltips();
     }
 
     /**
@@ -583,6 +606,13 @@ class Sidebar extends View {
         }
     }
 
+    /**
+     * Action handler: Toggle sidebar collapsed/expanded state
+     */
+    async handleActionToggleSidebar(event, element) {
+        this.toggleSidebar();
+    }
+
     async onActionDefault(action, event, el) {
         const config = this.getCurrentMenuConfig();
         if (!config) return;
@@ -677,6 +707,264 @@ class Sidebar extends View {
             }
         }
     }
+
+    /**
+     * Toggle sidebar between collapsed and expanded states
+     */
+        toggleSidebar() {
+            const portalContainer = document.querySelector('.portal-container');
+            if (!portalContainer) return;
+
+            const isCurrentlyCollapsed = portalContainer.classList.contains('collapse-sidebar');
+            const isCurrentlyHidden = portalContainer.classList.contains('hide-sidebar');
+
+            if (isCurrentlyHidden) {
+                // Hidden -> Normal
+                portalContainer.classList.remove('hide-sidebar');
+                this.isCollapsed = false;
+            } else if (isCurrentlyCollapsed) {
+                // Collapsed -> Normal
+                portalContainer.classList.remove('collapse-sidebar');
+                this.isCollapsed = false;
+            } else {
+                // Normal -> Collapsed
+                portalContainer.classList.add('collapse-sidebar');
+                this.isCollapsed = true;
+            }
+
+            return this;
+        }
+
+        /**
+         * Set sidebar state programmatically
+         */
+        setSidebarState(state) {
+            const portalContainer = document.querySelector('.portal-container');
+            if (!portalContainer) return this;
+
+            // Remove all state classes first
+            portalContainer.classList.remove('collapse-sidebar', 'hide-sidebar');
+
+            switch (state) {
+                case 'collapsed':
+                    portalContainer.classList.add('collapse-sidebar');
+                    this.isCollapsed = true;
+                    break;
+                case 'hidden':
+                    portalContainer.classList.add('hide-sidebar');
+                    this.isCollapsed = false;
+                    break;
+                case 'normal':
+                default:
+                    this.isCollapsed = false;
+                    break;
+            }
+
+            return this;
+        }
+
+        /**
+         * Initialize tooltips for nav items when sidebar is collapsed
+         */
+        initializeTooltips() {
+            // Auto-generate tooltips from nav-text content
+            const navLinks = this.element.querySelectorAll('.sidebar-nav .nav-link');
+
+            navLinks.forEach((link) => {
+                const navText = link.querySelector('.nav-text');
+
+                if (navText && !link.hasAttribute('data-tooltip')) {
+                    const tooltipText = navText.textContent.trim();
+                    if (tooltipText) {
+                        link.setAttribute('data-tooltip', tooltipText);
+                    }
+                }
+            });
+
+            return this;
+        }
+
+        /**
+         * Get current sidebar state
+         */
+        getSidebarState() {
+            const portalContainer = document.querySelector('.portal-container');
+            if (!portalContainer) return 'normal';
+
+            if (portalContainer.classList.contains('hide-sidebar')) {
+                return 'hidden';
+            } else if (portalContainer.classList.contains('collapse-sidebar')) {
+                return 'collapsed';
+            } else {
+                return 'normal';
+            }
+        }
+
+        /**
+         * Check if sidebar is collapsed
+         */
+        isCollapsedState() {
+            return this.getSidebarState() === 'collapsed';
+        }
+
+        /**
+         * Enable/disable toggle button
+         */
+        setToggleEnabled(enabled) {
+            this.showToggle = enabled;
+            this.render();
+            return this;
+        }
+
+    /**
+     * Initialize menus from options
+     */
+    initializeMenus(options) {
+        if (options.menus) {
+            for (const menu in options.menus) {
+                this.addMenu(menu.name, menu);
+            }
+        } else if (options.menu) {
+            options.menu.name = options.menu.name || "default";
+            this.addMenu(options.menu.name, options.menu);
+        }
+    }
+
+    /**
+     * Setup responsive behavior for mobile
+     */
+    setupResponsiveBehavior() {
+        const checkMobile = () => {
+            const isMobile = window.innerWidth <= 768;
+            const portalContainer = document.querySelector('.portal-container');
+
+            if (portalContainer) {
+                if (isMobile) {
+                    portalContainer.classList.add('sidebar-mobile');
+                } else {
+                    portalContainer.classList.remove('sidebar-mobile', 'sidebar-open');
+                }
+            }
+        };
+
+        // Check on load and resize
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+    }
+
+    /**
+     * Static method to create a sidebar with common configuration
+     */
+    static createDefault(options = {}) {
+        return new Sidebar({
+            theme: 'sidebar-clean',
+            showToggle: true,
+            autoCollapseMobile: true,
+            ...options
+        });
+    }
+
+    /**
+     * Static method to create a minimal sidebar
+     */
+    static createMinimal(options = {}) {
+        return new Sidebar({
+            theme: 'sidebar-clean',
+            showToggle: false,
+            autoCollapseMobile: false,
+            ...options
+        });
+    }
+
+    /**
+     * Set sidebar theme
+     */
+    setSidebarTheme(theme) {
+        // Remove existing theme classes
+        this.removeClass('sidebar-light sidebar-dark sidebar-clean');
+
+        // Add new theme
+        this.sidebarTheme = theme;
+        this.addClass(theme);
+
+        return this;
+    }
+
+    /**
+     * Quick method to show/hide the sidebar
+     */
+    show() {
+        return this.setSidebarState('normal');
+    }
+
+    hide() {
+        return this.setSidebarState('hidden');
+    }
+
+    collapse() {
+        return this.setSidebarState('collapsed');
+    }
+
+    expand() {
+        return this.setSidebarState('normal');
+    }
+
+    /**
+     * Add pulse effect to toggle button
+     */
+    pulseToggle() {
+        const toggleButton = this.element.querySelector('.sidebar-toggle');
+        if (toggleButton) {
+            toggleButton.classList.add('pulse');
+
+            // Remove pulse after 3 seconds or first click
+            const removePulse = () => {
+                toggleButton.classList.remove('pulse');
+                toggleButton.removeEventListener('click', removePulse);
+            };
+
+            toggleButton.addEventListener('click', removePulse, { once: true });
+            setTimeout(removePulse, 3000);
+        }
+        return this;
+    }
+
+    /**
+     * Utility method to quickly add a simple menu item
+     */
+    addSimpleMenuItem(menuName, text, route, icon = 'bi-circle') {
+        const menu = this.menus.get(menuName);
+        if (menu) {
+            menu.items = menu.items || [];
+            menu.items.push({
+                text: text,
+                route: route,
+                icon: icon
+            });
+
+            if (this.activeMenuName === menuName) {
+                this.render();
+            }
+        }
+        return this;
+    }
+
+    /**
+     * Utility method to quickly create and set a simple menu
+     */
+    setSimpleMenu(name, header, items) {
+        const menu = {
+            name: name,
+            header: header,
+            items: items
+        };
+
+        this.addMenu(name, menu);
+        this.setActiveMenu(name);
+
+        return this;
+    }
+
 }
 
 export default Sidebar;

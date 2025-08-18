@@ -10,6 +10,7 @@ import TemplatesPage from './pages/TemplatesPage.js';
 import TodosPage from './pages/TodosPage.js';
 import FormsPage from './pages/FormsPage.js';
 import DialogsPage from './pages/DialogsPage.js';
+import Page from '/src/core/Page.js';
 
 
 // Detect page reloads
@@ -49,7 +50,7 @@ const app = new PortalApp({
     // Sidebar configuration with one collapsible menu
     sidebar: {
         className: 'sidebar sidebar-light',
-        header: '<div class="fs-5 fw-bold text-center pt-3">Main Menu</div>',
+        header: '<div class="fs-5 fw-bold text-center pt-3 sidebar-collapse-hide">Main Menu</div>',
         items: [
             {
                 text: 'Home',
@@ -106,6 +107,11 @@ const app = new PortalApp({
                 text: 'Dialogs',
                 route: '?page=dialogs',
                 icon: 'bi-input-cursor-text'
+            },
+            {
+                text: 'Simple',
+                route: '?page=simple',
+                icon: 'bi-input-cursor-text'
             }
         ],
         footer: '<div class="text-center text-muted small">v1.0.0</div>'
@@ -118,6 +124,7 @@ const app = new PortalApp({
         brandRoute: '?page=home',
         theme: 'navbar-dark bg-primary',
         displayMode: 'both',
+        showSidebarToggle: true,
         // Left navigation items
         // leftItems: [
         //     {
@@ -171,6 +178,11 @@ app.registerPage('templates', TemplatesPage);
 app.registerPage('todos', TodosPage);
 app.registerPage('forms', FormsPage);
 app.registerPage('dialogs', DialogsPage);
+app.registerPage('simple', Page, {
+    id: 'simple',
+    title: "Simple",
+    template: '<div class="fs-5 mt-4 text-center">Simple page</div>'
+});
 
 // Register ReportsPage for all report-related routes
 // Handle portal actions

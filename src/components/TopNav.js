@@ -73,8 +73,8 @@ class TopNav extends View {
         return `
             <div class="container-fluid">
                 {{#data.showSidebarToggle}}
-                <button class="btn btn-sm me-2 sidebar-toggle" data-action="{{data.sidebarToggleAction}}">
-                    <i class="bi bi-list"></i>
+                <button class="topnav-sidebar-toggle me-2" data-action="{{data.sidebarToggleAction}}" aria-label="Toggle Sidebar">
+                    <i class="bi bi-chevron-right toggle-chevron"></i>
                 </button>
                 {{/data.showSidebarToggle}}
 
@@ -183,28 +183,28 @@ class TopNav extends View {
             brand: this.config.brand,
             brandIcon: this.config.brandIcon,
             brandRoute: this.config.brandRoute,
-            
+
             // Navbar configuration
             navbarId: `navbar-${this.id}`,
-            
+
             // Navigation items
             navItems: navItems,
             showNavItems: showNavItems,
-            
+
             // Right items
             rightItems: rightItems,
             hasRightItems: rightItems.length > 0,
-            
+
             // Page display
             showPageInfo: showPageInfo,
             currentPageName: this.currentPage?.title || this.currentPage?.name || '',
             currentPageIcon: this.currentPage?.icon || this.currentPage?.pageIcon || '',
             currentPageDescription: this.showPageDescription ? this.currentPage?.description : '',
-            
+
             // Sidebar toggle
             showSidebarToggle: this.config.showSidebarToggle,
             sidebarToggleAction: this.config.sidebarToggleAction,
-            
+
             // Display mode
             displayMode: this.displayMode
         };
@@ -216,12 +216,12 @@ class TopNav extends View {
     processRightItems(rightItems) {
         return this.filterItemsByPermissions(rightItems).map(item => {
             const processedItem = { ...item };
-            
+
             // Filter dropdown items by permissions if they exist
             if (item.items) {
                 processedItem.items = this.filterItemsByPermissions(item.items);
             }
-            
+
             // Determine item type
             if (processedItem.items && processedItem.items.length > 0) {
                 // Dropdown menu
@@ -236,13 +236,13 @@ class TopNav extends View {
                 processedItem.isButton = false;
                 processedItem.isDropdown = false;
             }
-            
+
             // Store handler if provided
             if (item.handler) {
                 this.rightItemHandlers = this.rightItemHandlers || new Map();
                 this.rightItemHandlers.set(item.id, item.handler);
             }
-            
+
             return processedItem;
         });
     }
@@ -420,10 +420,10 @@ class TopNav extends View {
      */
     filterItemsByPermissions(items) {
         if (!items) return [];
-        
+
         const app = this.getApp();
         const activeUser = app?.activeUser;
-        
+
         return items.filter(item => {
             // If item has permissions and user exists, check permissions
             if (item.permissions && activeUser) {

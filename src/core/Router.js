@@ -278,12 +278,17 @@ class Router {
       const currentPage = currentUrl.searchParams.get('page') || this.defaultRoute;
       currentUrl.searchParams.set('page', currentPage);
       
-      // Update other parameters
+      // Clear all parameters except page
+      const pageParam = currentUrl.searchParams.get('page');
+      currentUrl.search = '';
+      if (pageParam) {
+        currentUrl.searchParams.set('page', pageParam);
+      }
+    
+      // Add only the passed-in parameters
       Object.entries(params).forEach(([key, value]) => {
         if (key !== 'page' && value !== null && value !== undefined && value !== '') {
           currentUrl.searchParams.set(key, String(value));
-        } else if (key !== 'page') {
-          currentUrl.searchParams.delete(key);
         }
       });
       
@@ -297,11 +302,13 @@ class Router {
       // In history mode, update query parameters on current path
       const currentUrl = new URL(window.location);
       
+      // Clear all existing parameters
+      currentUrl.search = '';
+    
+      // Add only the passed-in parameters
       Object.entries(params).forEach(([key, value]) => {
         if (value !== null && value !== undefined && value !== '') {
           currentUrl.searchParams.set(key, String(value));
-        } else {
-          currentUrl.searchParams.delete(key);
         }
       });
       

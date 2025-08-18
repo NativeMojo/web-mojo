@@ -115,7 +115,7 @@
 /* MOJO Custom Table Container */
 .table-container {
     position: relative;
-    margin: 1rem;
+    /*margin: 1rem;*/
     transition: opacity 0.3s ease;
 }
 

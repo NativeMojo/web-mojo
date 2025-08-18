@@ -1,11 +1,5 @@
-<div class="container-fluid p-4">
+<div class="container-fluid">
     <!-- Header -->
-    <div class="row mb-4">
-        <div class="col">
-            <h1 class="display-5 fw-bold">{{title}}</h1>
-            <p class="lead text-muted">{{subtitle}}</p>
-        </div>
-    </div>
 
     <!-- Stats Cards -->
     <div class="row g-3 mb-4">

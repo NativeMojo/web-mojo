@@ -66,7 +66,7 @@
 
 :root {
     --mojo-sidebar-width: 250px;
-    --mojo-sidebar-collapsed-width: 64px;
+    --mojo-sidebar-collapsed-width: 40px;
     --mojo-portal-gap: 0;
     --mojo-portal-bg: #ffffff;
     --mojo-portal-panel: #121620;
@@ -86,7 +86,8 @@
     max-width: var(--mojo-sidebar-width);
     inline-size: var(--mojo-sidebar-width);
     height: 100%;
-    overflow: hidden;
+    overflow-y: hidden;
+    z-index: 1;
     transition:
         inline-size 300ms cubic-bezier(0.4, 0, 0.2, 1),
         max-width 300ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -138,35 +139,6 @@
 @media (prefers-reduced-motion: reduce) {
     #portal-sidebar {
         transition: none;
-    }
-}
-
-/* Auto-collapse on medium screens */
-@media (max-width: 1200px) and (min-width: 769px) {
-    .portal-container:not(.sidebar-force-open) #portal-sidebar {
-        inline-size: var(--mojo-sidebar-collapsed-width);
-        max-width: var(--mojo-sidebar-collapsed-width);
-        flex-basis: var(--mojo-sidebar-collapsed-width);
-    }
-
-    .portal-container:not(.sidebar-force-open) .nav-text {
-        opacity: 0;
-        width: 0;
-        overflow: hidden;
-    }
-
-    .portal-container:not(.sidebar-force-open) .nav-arrow {
-        opacity: 0;
-    }
-
-    .portal-container:not(.sidebar-force-open) .sidebar-nav .nav-link {
-        justify-content: center;
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
-    }
-
-    .portal-container:not(.sidebar-force-open) .nav-submenu {
-        display: none !important;
     }
 }
 
@@ -255,6 +227,246 @@
 
 .sidebar-brand.clickable:hover {
     background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ========================================================================
+   Sidebar Toggle Button
+   ======================================================================== */
+
+.sidebar-toggle {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    font-size: 0.875rem;
+    border: none;
+    background: none;
+    top: 0.75rem;
+    right: 5px;
+    border: none;
+    border-radius: 0.5rem;
+    color: var(--bs-body-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+        all 300ms cubic-bezier(0.4, 0, 0.2, 1),
+        transform 150ms ease-out;
+    backdrop-filter: blur(4px);
+    z-index: 10;
+}
+
+.sidebar-toggle:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-toggle:active {
+    transform: scale(0.95);
+    transition-duration: 100ms;
+}
+
+/* Toggle button icons */
+.sidebar-toggle .toggle-icon {
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-toggle .bi-chevron-left {
+    display: block;
+}
+
+.sidebar-toggle .bi-chevron-right {
+    display: none;
+}
+
+/* Collapsed state - swap icons */
+.portal-container.collapse-sidebar .sidebar-toggle .bi-chevron-left {
+    display: none;
+}
+
+.portal-container.collapse-sidebar .sidebar-toggle .bi-chevron-right {
+    display: block;
+}
+
+/* Hidden state - show expand icon */
+.portal-container.hide-sidebar .sidebar-toggle {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Theme-specific toggle button styles */
+.sidebar-dark .sidebar-toggle {
+    background: rgba(255, 255, 255, 0.1);
+    color: #adb5bd;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-dark .sidebar-toggle:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+.sidebar-light .sidebar-toggle {
+    background: rgba(0, 0, 0, 0.05);
+    color: #495057;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-light .sidebar-toggle:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: #212529;
+}
+
+.sidebar-clean .sidebar-toggle {
+    background: var(--bs-light);
+    color: var(--bs-primary);
+    border-color: rgba(var(--bs-primary-rgb), 0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-clean .sidebar-toggle:hover {
+    background: var(--bs-primary);
+    color: white;
+    box-shadow: 0 4px 12px rgba(var(--bs-primary-rgb), 0.3);
+}
+
+/* Toggle button animation when sidebar state changes */
+.sidebar-toggle .toggle-icon {
+    transform: rotate(0deg);
+}
+
+/*.portal-container.collapse-sidebar .sidebar-toggle .toggle-icon {
+    transform: rotate(180deg);
+}*/
+
+.portal-container #portal-sidebar {
+    overflow: visible !important;
+}
+
+.portal-container .sidebar-body {
+    overflow: visible !important;
+}
+
+/* ========================================================================
+   TopNav Sidebar Toggle Button
+   ======================================================================== */
+
+.topnav-sidebar-toggle {
+    background: none !important;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.9);
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.topnav-sidebar-toggle:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: white;
+    transform: scale(1.1);
+}
+
+.topnav-sidebar-toggle:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.topnav-sidebar-toggle .toggle-chevron {
+    font-size: 1.1rem;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: rotate(180deg); /* Default: points left (expanded state) */
+}
+
+/* Collapsed/Hidden state - chevron points right */
+.portal-container.collapse-sidebar .topnav-sidebar-toggle .toggle-chevron,
+.portal-container.hide-sidebar .topnav-sidebar-toggle .toggle-chevron {
+    transform: rotate(0deg);
+}
+
+/* Theme-specific styles */
+.navbar-dark .topnav-sidebar-toggle {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.navbar-dark .topnav-sidebar-toggle:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.navbar-light .topnav-sidebar-toggle {
+    color: rgba(0, 0, 0, 0.7);
+}
+
+.navbar-light .topnav-sidebar-toggle:hover {
+    color: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Pulse animation for better discoverability */
+@keyframes sidebar-toggle-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(var(--bs-primary-rgb), 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgba(var(--bs-primary-rgb), 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(var(--bs-primary-rgb), 0);
+    }
+}
+
+/* Show pulse animation on first load or when sidebar is collapsed for a while */
+.sidebar-toggle.pulse {
+    animation: sidebar-toggle-pulse 2s infinite;
+}
+
+/* Toggle button focus states */
+.sidebar-toggle:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+.sidebar-toggle:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
+/* Collapsed sidebar toggle positioning */
+/*.portal-container.collapse-sidebar .sidebar-toggle {
+    right: 0.5rem;
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.875rem;
+}*/
+
+/* Dark theme toggle button */
+[data-bs-theme="dark"] .sidebar-toggle {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--bs-light);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+[data-bs-theme="dark"] .sidebar-toggle:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--bs-white);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
+
+[data-bs-theme="dark"] .sidebar-clean .sidebar-toggle {
+    background: var(--bs-primary);
+    color: white;
+    border-color: var(--bs-primary);
+}
+
+[data-bs-theme="dark"] .sidebar-clean .sidebar-toggle:hover {
+    background: var(--bs-primary);
+    filter: brightness(1.1);
 }
 
 .brand-content {
@@ -397,7 +609,8 @@
 }
 
 /* Collapsed sidebar behavior */
-.portal-container.collapse-sidebar .nav-text {
+.portal-container.collapse-sidebar .nav-text,
+.portal-container.collapse-sidebar .sidebar-collapse-hide {
     opacity: 0;
     width: 0;
     margin-right: 0;
@@ -414,6 +627,10 @@
     padding-left: 0.5rem;
     padding-right: 0.5rem;
     transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.portal-container.collapse-sidebar .sidebar-nav .nav-link i {
+    margin-right: 0 !important;
 }
 
 .portal-container.collapse-sidebar .nav-submenu {
@@ -441,33 +658,231 @@
     transform: scale(0.8) translateY(5px);
 }
 
-/* Tooltip-like behavior for collapsed sidebar items */
-.portal-container.collapse-sidebar .nav-link {
+/* ========================================================================
+   Enhanced Tooltip System for Collapsed Sidebar
+   ======================================================================== */
+
+.portal-container.collapse-sidebar .sidebar .nav-link {
     position: relative;
+    overflow: visible;
+    width: var(--mojo-sidebar-collapsed-width, 48px);
 }
 
-.portal-container.collapse-sidebar .nav-link:hover::after {
+/* Primary tooltip using data-tooltip attribute */
+.portal-container.collapse-sidebar .sidebar .nav-link[data-tooltip]:hover::after {
     content: attr(data-tooltip);
     position: absolute;
-    left: 100%;
+    left: calc(100% + 12px);
     top: 50%;
-    transform: translateY(-50%);
-    background: var(--mojo-dark);
-    color: var(--mojo-light);
-    padding: 0.5rem 0.75rem;
-    border-radius: var(--mojo-border-radius);
+    transform: translateY(-50%) translateX(-5px);
+    background: var(--bs-dark);
+    color: var(--bs-white);
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
     white-space: nowrap;
     font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.2;
     z-index: var(--mojo-zindex-tooltip);
-    margin-left: 0.5rem;
-    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.15),
+        0 2px 4px rgba(0, 0, 0, 0.1);
     opacity: 0;
-    animation: mojo-fadeIn 0.2s ease-in-out forwards;
+    visibility: hidden;
+    transition:
+        opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
+        visibility 200ms cubic-bezier(0.4, 0, 0.2, 1),
+        transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    animation: tooltip-slide-in 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation-delay: 1600ms;
     pointer-events: none;
 }
 
+/* Tooltip arrow */
+.portal-container.collapse-sidebar .sidebar .nav-link[data-tooltip]:hover::before {
+    content: "";
+    position: absolute;
+    left: calc(100% + 6px);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 6px 6px 6px 0;
+    border-color: transparent var(--bs-dark) transparent transparent;
+    z-index: calc(var(--mojo-zindex-tooltip) + 1);
+    opacity: 0;
+    animation: tooltip-arrow-slide-in 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation-delay: 300ms;
+}
+
+/* Auto-tooltip using nav-text content (fallback when no data-tooltip) */
+.portal-container.collapse-sidebar .sidebar .nav-link:not([data-tooltip]):hover::after {
+    content: attr(data-nav-text);
+    position: absolute;
+    left: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%) translateX(-5px);
+    background: var(--bs-dark);
+    color: var(--bs-white);
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    white-space: nowrap;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.2;
+    z-index: var(--mojo-zindex-tooltip);
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.15),
+        0 2px 4px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    visibility: hidden;
+    animation: tooltip-slide-in 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation-delay: 300ms;
+    pointer-events: none;
+}
+
+.portal-container.collapse-sidebar .sidebar .nav-link:not([data-tooltip]):hover::before {
+    content: "";
+    position: absolute;
+    left: calc(100% + 6px);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 6px 6px 6px 0;
+    border-color: transparent var(--bs-dark) transparent transparent;
+    z-index: calc(var(--mojo-zindex-tooltip) + 1);
+    opacity: 0;
+    animation: tooltip-arrow-slide-in 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation-delay: 300ms;
+}
+
+/* Theme-specific tooltips */
+.portal-container.collapse-sidebar .sidebar-light .nav-link:hover::after {
+    background: #2c3e50;
+    color: white;
+}
+
+.portal-container.collapse-sidebar .sidebar-light .nav-link:hover::before {
+    border-right-color: #2c3e50;
+}
+
+.portal-container.collapse-sidebar .sidebar-dark .nav-link:hover::after {
+    background: #34495e;
+    color: #ecf0f1;
+}
+
+.portal-container.collapse-sidebar .sidebar-dark .nav-link:hover::before {
+    border-right-color: #34495e;
+}
+
+.portal-container.collapse-sidebar .sidebar-clean .nav-link:hover::after {
+    background: var(--bs-primary);
+    color: white;
+    box-shadow:
+        0 4px 12px rgba(var(--bs-primary-rgb), 0.3),
+        0 2px 4px rgba(var(--bs-primary-rgb), 0.2);
+}
+
+.portal-container.collapse-sidebar .sidebar-clean .nav-link:hover::before {
+    border-right-color: var(--bs-primary);
+}
+
+/* Tooltip animations */
+@keyframes tooltip-slide-in {
+    0% {
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-50%) translateX(-10px) scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(-50%) translateX(0) scale(1);
+    }
+}
+
+@keyframes tooltip-arrow-slide-in {
+    0% {
+        opacity: 0;
+        transform: translateY(-50%) translateX(-3px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(-50%) translateX(0);
+    }
+}
+
+/* Dark theme tooltips */
+[data-bs-theme="dark"] .portal-container.collapse-sidebar .sidebar .nav-link:hover::after {
+    background: var(--bs-light);
+    color: var(--bs-dark);
+}
+
+[data-bs-theme="dark"] .portal-container.collapse-sidebar .sidebar .nav-link:hover::before {
+    border-right-color: var(--bs-light);
+}
+
+/* Mobile layout: hide tooltips */
+.portal-container.mobile-layout .nav-link:hover::after,
+.portal-container.mobile-layout .nav-link:hover::before {
+    display: none !important;
+}
+
+/* ========================================================================
+   TOOLTIP USAGE GUIDE
+   ========================================================================
+
+   Option 1: Manual Tooltips (Recommended)
+   Add data-tooltip attributes to your nav links:
+
+   <a class="nav-link" data-tooltip="Dashboard">
+       <i class="bi-speedometer2 me-2"></i>
+       <span class="nav-text">Dashboard</span>
+   </a>
+
+   Option 2: Auto-Tooltips with JavaScript
+   Use this script to automatically generate tooltips from nav-text:
+
+   // Auto-generate tooltips from nav-text content
+   document.querySelectorAll('.sidebar-nav .nav-link').forEach(link => {
+       const navText = link.querySelector('.nav-text');
+       if (navText && !link.hasAttribute('data-tooltip')) {
+           link.setAttribute('data-nav-text', navText.textContent.trim());
+       }
+   });
+
+   // Or set data-tooltip directly for better control
+   document.querySelectorAll('.sidebar-nav .nav-link').forEach(link => {
+       const navText = link.querySelector('.nav-text');
+       if (navText && !link.hasAttribute('data-tooltip')) {
+           link.setAttribute('data-tooltip', navText.textContent.trim());
+       }
+   });
+
+   SIDEBAR TOGGLE BUTTON USAGE:
+   Add the toggle button to your sidebar header:
+
+   <div class="sidebar-header">
+       <div class="fs-5 fw-bold text-center pt-3">Main Menu</div>
+       <button class="sidebar-toggle" data-action="toggle-sidebar"
+               aria-label="Toggle Sidebar">
+           <i class="bi bi-chevron-left toggle-icon"></i>
+           <i class="bi bi-chevron-right toggle-icon"></i>
+       </button>
+   </div>
+
+   JavaScript to handle toggle:
+   document.querySelector('.sidebar-toggle').addEventListener('click', () => {
+       document.querySelector('.portal-container').classList.toggle('collapse-sidebar');
+   });
+
+   ======================================================================== */
+
 /* Enhanced visual feedback for collapsed sidebar */
-.portal-container.collapse-sidebar .nav-link:hover {
+.portal-container.collapse-sidebar .sidebar .nav-link:hover {
     background-color: rgba(var(--bs-primary-rgb), 0.1);
     border-radius: var(--mojo-border-radius);
     transform: translateX(0) scale(1.05);
@@ -1019,109 +1434,111 @@
    Responsive Design
    ======================================================================== */
 
-@media (max-width: 768px) {
-    /* Mobile: sidebar becomes overlay */
-    #portal-sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        height: 100vh;
-        width: var(--mojo-sidebar-width);
-        z-index: var(--mojo-zindex-modal);
-        transform: translateX(-100%);
-        transition: transform 350ms cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0);
-    }
+/* ========================================================================
+   Mobile Layout Handling (Class-Based)
+   ======================================================================== */
 
-    #portal-sidebar .sidebar {
-        height: 100vh;
-        width: 100%;
-    }
+/* Mobile layout: Sidebar fullscreen by default */
+.portal-container.mobile-layout #portal-sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: var(--mojo-zindex-modal);
+    transform: translateX(0); /* Show by default */
+    transition: transform 350ms cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+}
 
-    #portal-sidebar .sidebar-container {
-        height: 100%;
-    }
+.portal-container.mobile-layout #portal-sidebar .sidebar {
+    height: 100vh;
+    width: 100%;
+}
 
-    .portal-container.sidebar-open #portal-sidebar {
-        transform: translateX(0);
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-    }
+.portal-container.mobile-layout #portal-sidebar .sidebar-container {
+    height: 100%;
+}
 
-    /* Force full sidebar width on mobile - override all collapse states */
-    .portal-container #portal-sidebar,
-    .portal-container.collapse-sidebar #portal-sidebar,
-    .portal-container.hide-sidebar #portal-sidebar {
-        inline-size: var(--mojo-sidebar-width);
-        max-width: var(--mojo-sidebar-width);
-        flex-basis: var(--mojo-sidebar-width);
-    }
+/* Hide sidebar when hide-sidebar class is present */
+.portal-container.mobile-layout.hide-sidebar #portal-sidebar {
+    transform: translateX(-100%);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0);
+}
 
-    /* Show all text and arrows on mobile */
-    .portal-container .nav-text,
-    .portal-container.collapse-sidebar .nav-text {
-        opacity: 1;
-        width: auto;
-        overflow: visible;
-    }
+/* Force full sidebar width on mobile - override collapse states */
+.portal-container.mobile-layout #portal-sidebar,
+.portal-container.mobile-layout.collapse-sidebar #portal-sidebar {
+    inline-size: 100vw !important;
+    max-width: 100vw !important;
+    flex-basis: 100vw !important;
+}
 
-    .portal-container .nav-arrow,
-    .portal-container.collapse-sidebar .nav-arrow {
-        opacity: 1;
-    }
+/* Show all text and arrows on mobile - override collapsed state */
+.portal-container.mobile-layout .nav-text,
+.portal-container.mobile-layout.collapse-sidebar .nav-text {
+    opacity: 1 !important;
+    width: auto !important;
+    overflow: visible !important;
+}
 
-    .portal-container .sidebar-nav .nav-link,
-    .portal-container.collapse-sidebar .sidebar-nav .nav-link {
-        justify-content: flex-start;
-        padding: 0.75rem 1rem;
-    }
+.portal-container.mobile-layout .nav-arrow,
+.portal-container.mobile-layout.collapse-sidebar .nav-arrow {
+    opacity: 1 !important;
+}
 
-    .portal-container .nav-submenu,
-    .portal-container.collapse-sidebar .nav-submenu {
-        display: block !important;
-    }
+.portal-container.mobile-layout .sidebar-nav .nav-link,
+.portal-container.mobile-layout.collapse-sidebar .sidebar-nav .nav-link {
+    justify-content: flex-start !important;
+    padding: 1rem !important;
+    font-size: 1rem;
+}
 
-    .group-selector-container {
-        padding: 0.5rem;
-    }
+.portal-container.mobile-layout .nav-submenu,
+.portal-container.mobile-layout.collapse-sidebar .nav-submenu {
+    display: block !important;
+}
 
-    .config-menu {
-        padding: 0.5rem;
-    }
+/* Mobile: Hide sidebar toggle - use topnav toggle instead */
+.portal-container.mobile-layout .sidebar-toggle {
+    display: none;
+}
 
-    .sidebar-nav .nav-link {
-        padding: 1rem;
-        font-size: 1rem;
-    }
+/* Mobile: Adjust other sidebar elements */
+.portal-container.mobile-layout .group-selector-container {
+    padding: 0.5rem;
+}
 
-    .sidebar-clean .nav-submenu .nav-link {
-        margin-left: 0.5rem;
-    }
+.portal-container.mobile-layout .config-menu {
+    padding: 0.5rem;
+}
 
-    .group-dropdown {
-        max-height: 300px;
-        left: -5px;
-        right: -5px;
-        border-radius: 0.5rem;
-        border: 1px solid #495057;
-        box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.3);
-    }
+.portal-container.mobile-layout .selected-group-card {
+    padding: 1rem;
+}
 
-    .group-content {
-        padding: 1rem 0.75rem;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.5rem;
-    }
+.portal-container.mobile-layout .group-dropdown {
+    max-height: 300px;
+    left: -5px;
+    right: -5px;
+    border-radius: 0.5rem;
+    border: 1px solid #495057;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.3);
+}
 
-    .group-meta {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-    }
+.portal-container.mobile-layout .group-content {
+    padding: 1rem 0.75rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+}
 
-    .selected-group-card {
-        padding: 1rem;
-    }
+.portal-container.mobile-layout .group-meta {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
 }
 
 /* Mobile sidebar backdrop */
@@ -1142,7 +1559,8 @@
     backdrop-filter: blur(0px);
 }
 
-.portal-container.sidebar-open .portal-sidebar-backdrop {
+/* Show backdrop when mobile sidebar is visible (not hidden) */
+.portal-container.mobile-layout:not(.hide-sidebar) .portal-sidebar-backdrop {
     opacity: 1;
     visibility: visible;
     backdrop-filter: blur(4px);
@@ -1294,7 +1712,7 @@
     }
 
     .sidebar-nav .nav-link:hover,
-    .portal-container.collapse-sidebar .nav-link:hover {
+    .portal-container.collapse-sidebar .sidebar .nav-link:hover {
         transform: none !important;
         box-shadow: none !important;
     }
@@ -1322,6 +1740,28 @@
 
     .nav-link[aria-expanded="true"] .bi-chevron-down {
         transform: rotate(180deg) !important;
+    }
+
+    /* Accessibility: Respect reduced motion for tooltips */
+    .portal-container.collapse-sidebar .sidebar .nav-link:hover::after,
+    [data-bs-theme="dark"] .portal-container.collapse-sidebar .sidebar .nav-link:hover::after,
+    .portal-container.collapse-sidebar .sidebar .nav-link:hover::before {
+        animation: none !important;
+        transition: none !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: translateY(-50%) translateX(0) !important;
+    }
+
+    /* Disable toggle button animations */
+    .sidebar-toggle,
+    .sidebar-toggle .toggle-icon {
+        transition: none !important;
+        animation: none !important;
+    }
+
+    .sidebar-toggle:hover {
+        transform: none !important;
     }
 }
 </text>
@@ -1482,7 +1922,8 @@
     padding: var(--mojo-spacer-lg);
 }
 
-.mojo-portal-content-flush .portal-content {
+.mojo-portal-content-flush .portal-content,
+.mobile-layout .portal-content {
     padding: 0;
 }
 
@@ -1551,17 +1992,11 @@
     top: 6px;
 }
 
-/* Mobile-specific portal utilities */
-@media (max-width: 768px) {
-    .portal-container.sidebar-open {
-        overflow: hidden;
-    }
+/* Mobile body behavior when sidebar is showing */
+.portal-container.mobile-layout:not(.hide-sidebar) {
+    overflow: hidden;
+}
 
-    .portal-container.sidebar-open .portal-body {
-        pointer-events: none;
-    }
-
-    .portal-container.sidebar-open .portal-sidebar-backdrop {
-        display: block;
-    }
+.portal-container.mobile-layout:not(.hide-sidebar) .portal-body {
+    pointer-events: none;
 }

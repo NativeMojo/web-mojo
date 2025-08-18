@@ -35,8 +35,13 @@ export default class PortalApp extends WebApp {
         this.topbar = null;
         this.topnav = null; // Legacy reference
 
-        // Portal state
-        this.sidebarCollapsed = this.sidebarConfig.defaultCollapsed || false;
+        // Portal state - Load from localStorage first, then fallback to config
+        if (!this.isMobile()) {
+            this.sidebarCollapsed = this.loadSidebarState() ??
+                (this.sidebarConfig.defaultCollapsed || false);
+        } else {
+            this.sidebarCollapsed = this.sidebarConfig.defaultCollapsed || false;
+        }
     }
 
     /**
@@ -69,7 +74,7 @@ export default class PortalApp extends WebApp {
         const showTopbar = this.topbarConfig && Object.keys(this.topbarConfig).length > 0;
 
         container.innerHTML = `
-            <div class="portal-layout">
+            <div class="portal-layout hide-sidebar">
                 ${showSidebar ? '<div id="portal-sidebar"></div>' : ''}
                 <div class="portal-body">
                     ${showTopbar ? '<div id="portal-topnav"></div>' : ''}
@@ -83,11 +88,11 @@ export default class PortalApp extends WebApp {
         // Set page container for WebApp
         this.pageContainer = '#page-container';
 
-        // Add portal CSS classes
+        // Add portal CSS classes and apply saved state
         container.classList.add('portal-container');
-        if (this.sidebarCollapsed) {
-            container.classList.add('collapse-sidebar');
-        }
+
+        // Apply the saved sidebar state
+        this.applySidebarState(container);
     }
 
     /**
@@ -129,7 +134,7 @@ export default class PortalApp extends WebApp {
             navItems: this.topbarConfig.leftItems || [],
             rightItems: this.topbarConfig.rightItems || [],
             displayMode: this.topbarConfig.displayMode || 'both',
-            showSidebarToggle: !!this.sidebar
+            showSidebarToggle: this.topbarConfig.showSidebarToggle || false
         });
 
         await this.topbar.render();
@@ -174,13 +179,16 @@ export default class PortalApp extends WebApp {
         if (!this.sidebar) return;
 
         const container = document.querySelector('.portal-container');
-        const isMobile = window.innerWidth < 768;
+        const isMobile = this.isMobile();
 
         if (isMobile) {
             container.classList.toggle('hide-sidebar');
         } else {
             container.classList.toggle('collapse-sidebar');
             this.sidebarCollapsed = !this.sidebarCollapsed;
+
+            // Save the new state
+            this.saveSidebarState(this.sidebarCollapsed);
         }
 
         this.events.emit('sidebar:toggled', {
@@ -195,8 +203,7 @@ export default class PortalApp extends WebApp {
     handleResponsive() {
         const container = document.querySelector('.portal-container');
         if (!container) return;
-
-        const isMobile = window.innerWidth < 768;
+        const isMobile = this.isMobile();
 
         if (isMobile) {
             container.classList.add('mobile-layout');
@@ -210,11 +217,27 @@ export default class PortalApp extends WebApp {
         this.events.emit('responsive:changed', { mobile: isMobile });
     }
 
+    getPortalContainer() {
+        return document.querySelector('.portal-container');
+    }
+
+    isMobile() {
+        return window.innerWidth < 768;
+    }
+
+    hasMobileLayout() {
+        return this.getPortalContainer().classList.contains('mobile-layout');
+    }
+
     /**
      * Override showPage to update navigation
      */
     async showPage(pageName, options = {}) {
         const result = await super.showPage(pageName, options);
+
+        if (this.hasMobileLayout()) {
+            this.getPortalContainer().classList.add('hide-sidebar');
+        }
 
         if (result && this.currentPageInstance) {
             this.updateNavigation(this.currentPageInstance);
@@ -251,6 +274,70 @@ export default class PortalApp extends WebApp {
         }
 
         this.events.emit('portal:user-changed', { user });
+    }
+
+    /**
+     * Save sidebar state to localStorage
+     */
+    saveSidebarState(collapsed) {
+        try {
+            const key = this.getSidebarStorageKey();
+            localStorage.setItem(key, JSON.stringify(collapsed));
+        } catch (error) {
+            console.warn('Failed to save sidebar state:', error);
+        }
+    }
+
+    /**
+     * Load sidebar state from localStorage
+     */
+    loadSidebarState() {
+        try {
+            const key = this.getSidebarStorageKey();
+            const saved = localStorage.getItem(key);
+            return saved !== null ? JSON.parse(saved) : null;
+        } catch (error) {
+            console.warn('Failed to load sidebar state:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Get storage key for sidebar state (allows multiple apps on same domain)
+     */
+    getSidebarStorageKey() {
+        // Use app title/name to create unique key
+        const appKey = this.title ? this.title.replace(/\s+/g, '_').toLowerCase() : 'portal_app';
+        return `${appKey}_sidebar_collapsed`;
+    }
+
+    /**
+     * Apply saved sidebar state to the UI
+     */
+    applySidebarState(container = null) {
+        if (!container) {
+            container = document.querySelector('.portal-container');
+        }
+
+        if (!container) return;
+
+        if (this.sidebarCollapsed) {
+            container.classList.add('collapse-sidebar');
+        } else {
+            container.classList.remove('collapse-sidebar');
+        }
+    }
+
+    /**
+     * Clear saved sidebar state
+     */
+    clearSidebarState() {
+        try {
+            const key = this.getSidebarStorageKey();
+            localStorage.removeItem(key);
+        } catch (error) {
+            console.warn('Failed to clear sidebar state:', error);
+        }
     }
 
     /**
