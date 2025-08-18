@@ -1,7 +1,3 @@
-/**
- * Group Model - Enhanced for Phase 2 Organization/Group Management
- * Provides comprehensive group/organization data management with search and hierarchy support
- */
 
 import Collection from '../core/Collection.js';
 import Model from '../core/Model.js';

@@ -1,8 +1,6 @@
 import Collection from '../core/Collection.js';
 import Model from '../core/Model.js';
 
-window.Model = Model;
-
 const UserForms = {
     create: {
         title: 'Create User',

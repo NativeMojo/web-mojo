@@ -38,7 +38,9 @@ class TopNav extends View {
             sidebarToggleAction: options.sidebarToggleAction || 'toggle-sidebar',
             ...options
         };
-
+        this.userMenu = options.userMenu || this.findMenuItem('user');
+        if (this.userMenu) this.userMenu.id = "user";
+        this.loginMenu = options.loginMenu || this.findMenuItem('login');
         // Setup page event listeners
         this.setupPageListeners();
     }
@@ -51,16 +53,38 @@ class TopNav extends View {
         return item || null;
     }
 
-    setUserName(username) {
-        let item = this.findMenuItem('user');
-        if (item) {
-            item.label = username;
-            this.render();
+    replaceMenuItem(id, new_menu) {
+        // Find and replace in navItems
+        const navIndex = this.config.navItems.findIndex(item => item.id === id);
+        if (navIndex !== -1) {
+            this.config.navItems[navIndex] = new_menu;
+            return true;
         }
+
+        // Find and replace in rightItems
+        const rightIndex = this.config.rightItems.findIndex(item => item.id === id);
+        if (rightIndex !== -1) {
+            this.config.rightItems[rightIndex] = new_menu;
+            return true;
+        }
+
+        return false;
+    }
+
+    setUser(user) {
+        if (!user) {
+            this.replaceMenuItem('user', this.loginMenu);
+        } else {
+            this.userMenu.label = user.get("display_name");
+            this.replaceMenuItem('login', this.userMenu);
+        }
+        this.setModel(user);
     }
 
     _onModelChange() {
-      this.setUserName(this.model.get("display_name"));
+      if (this.model) {
+        this.userMenu.label = this.model.get("display_name");
+      }
       if (this.isMounted()) {
           this.render();
       }
@@ -348,7 +372,7 @@ class TopNav extends View {
 
     onActionLogout() {
         // Implement logout functionality here
-        this.getApp().events.emit("portal:action", {action: "logout"});
+        this.getApp().events.emit("auth:logout", {action: "logout"});
     }
 
     /**

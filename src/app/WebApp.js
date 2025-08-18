@@ -184,11 +184,11 @@ class WebApp {
         const container = typeof this.container === 'string'
             ? document.querySelector(this.container)
             : this.container;
-            
+
         if (container && !container.querySelector('#page-container')) {
             container.innerHTML = '<div id="page-container"></div>';
         }
-        
+
         this.pageContainer = '#page-container';
     }
 
@@ -309,6 +309,14 @@ class WebApp {
 
         if (!page) {
             console.error('Cannot show null/undefined page');
+            return;
+        }
+
+        if (!page.canEnter()) {
+            // show access denied page or message
+            const denied = this.getOrCreatePage("denied");
+            denied.onParams({page})
+            denied.render();
             return;
         }
 
@@ -455,6 +463,14 @@ class WebApp {
             } catch (error) {
                 console.error(`Error in onExit for page ${oldPage.pageName}:`, error);
             }
+        }
+
+        if (!newPage.canEnter()) {
+            // show access denied page or message
+            const denied = this.getOrCreatePage("denied");
+            denied.onParams({page:newPage})
+            denied.render();
+            return;
         }
 
         // Update params for new page

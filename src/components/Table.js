@@ -306,6 +306,29 @@ class Table extends View {
       }
     });
 
+    this.collection.on('fetch:start', () => {
+      this.loading = true;
+      if (this.isMounted() && !this.isRendering) {
+        this.updateLoadingState();
+      }
+    });
+
+    this.collection.on('fetch:error', (evt) => {
+      this.loading = false;
+      this.error = evt;
+      if (this.isMounted() && !this.isRendering) {
+        this.updateLoadingState();
+      }
+    });
+
+    this.collection.on('fetch:success', () => {
+      this.loading = false;
+      this.error = null;
+      if (this.isMounted() && !this.isRendering) {
+        this.updateLoadingState();
+      }
+    });
+
     // this.collection.on('add', () => {
     //   // Only re-render if we're mounted and not already rendering
     //   // Skip during initial collection load
@@ -358,8 +381,6 @@ class Table extends View {
         };
       }
     }
-
-    this.loading = true;
   }
 
   /**
@@ -808,11 +829,26 @@ class Table extends View {
       data = this.collection.models || [];
     }
 
+    const colspan = this.columns.length + (this.options.selectable ? 1 : 0) + 1;
+    if (this.error) {
+        return `
+          <tbody>
+            <tr>
+              <td colspan="${colspan}" class="text-center py-4">
+                <div class="text-danger">
+                  <i class="bi bi-exclamation-triangle-fill fa-2x mb-2"></i>
+                  <p>${this.error.message}</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        `;
+    }
+
     // Apply client-side filtering, sorting, and pagination
     data = this.processData(data || []);
 
     if (!data || data.length === 0) {
-      const colspan = this.columns.length + (this.options.selectable ? 1 : 0) + 1;
       return `
         <tbody>
           <tr>
@@ -1840,7 +1876,6 @@ class Table extends View {
       this.showErrorBanner(this.errorMessage);
     }
 
-    this.loading = false;
     this.updateLoadingState();
   }
 

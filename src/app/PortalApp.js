@@ -7,6 +7,9 @@
 import WebApp from './WebApp.js';
 import TopNav from '../components/TopNav.js';
 import Sidebar from '../components/Sidebar.js';
+import DeniedPage from '../components/DeniedPage.js';
+import TokenManager from '../auth/TokenManager.js';
+import {User} from '../models/User.js';
 
 export default class PortalApp extends WebApp {
     constructor(config = {}) {
@@ -34,7 +37,7 @@ export default class PortalApp extends WebApp {
         this.sidebar = null;
         this.topbar = null;
         this.topnav = null; // Legacy reference
-
+        this.tokenManager = new TokenManager();
         // Portal state - Load from localStorage first, then fallback to config
         if (!this.isMobile()) {
             this.sidebarCollapsed = this.loadSidebarState() ??
@@ -42,6 +45,9 @@ export default class PortalApp extends WebApp {
         } else {
             this.sidebarCollapsed = this.sidebarConfig.defaultCollapsed || false;
         }
+        this.setupPageContainer();
+
+        this.registerPage("denied", DeniedPage);
     }
 
     /**
@@ -49,12 +55,52 @@ export default class PortalApp extends WebApp {
      */
     async start() {
         // Call parent start (handles router, error handling, etc.)
-        await super.start();
+        // Setup router
+        await this.checkAuthStatus();
 
-        // Setup portal components after WebApp is ready
-        await this.setupPortalComponents();
+        this.events.on('auth:unauthorized', () => {
+            this.showError("You have been logged out");
+            this.setActiveUser(null);
+            return;
+        });
+
+        this.events.on('auth:logout', () => {
+            this.showError("You have been logged out");
+            this.tokenManager.clearTokens();
+            this.setActiveUser(null);
+            return;
+        });
+
+        console.log('Setting up router...');
+        await this.setupRouter();
+
+        // Mark as started
+        this.isStarted = true;
+
+        // Emit app ready event
+        this.events.emit('app:ready', { app: this });
 
         console.log(`${this.title} portal ready`);
+    }
+
+    async checkAuthStatus() {
+        const token = this.tokenManager.getTokenInstance();
+        if (!token || !token.isValid()) {
+            this.events.emit('auth:unauthorized', { app: this });
+            return;
+        }
+        if (token.isExpired()) {
+            this.events.emit('auth:expired', { app: this });
+            return;
+        }
+        if (token.isExpiringSoon()) {
+            this.events.emit('auth:expiring', { app: this });
+        }
+        this.tokenManager.startAutoRefresh(this);
+        this.rest.setAuthToken(token.token);
+        const user = new User({ id: token.getUserId() });
+        await user.fetch();
+        this.setActiveUser(user);
     }
 
     /**
@@ -90,6 +136,9 @@ export default class PortalApp extends WebApp {
 
         // Add portal CSS classes and apply saved state
         container.classList.add('portal-container');
+
+        // Setup page container
+        this.setupPortalComponents();
 
         // Apply the saved sidebar state
         this.applySidebarState(container);
@@ -134,7 +183,8 @@ export default class PortalApp extends WebApp {
             navItems: this.topbarConfig.leftItems || [],
             rightItems: this.topbarConfig.rightItems || [],
             displayMode: this.topbarConfig.displayMode || 'both',
-            showSidebarToggle: this.topbarConfig.showSidebarToggle || false
+            showSidebarToggle: this.topbarConfig.showSidebarToggle || false,
+            ...this.topbarConfig
         });
 
         await this.topbar.render();
@@ -269,8 +319,8 @@ export default class PortalApp extends WebApp {
     setActiveUser(user) {
         this.activeUser = user;
 
-        if (this.topbar && this.topbar.setModel) {
-            this.topbar.setModel(user);
+        if (this.topbar) {
+            this.topbar.setUser(user);
         }
 
         this.events.emit('portal:user-changed', { user });

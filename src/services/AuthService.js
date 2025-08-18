@@ -114,7 +114,7 @@ export default class AuthService {
      */
     async refreshToken(refreshToken) {
         try {
-            const response = await this.makeRequest('/api/auth/refresh', 'POST', {
+            const response = await this.makeRequest('/api/auth/token/refresh', 'POST', {
                 refreshToken
             });
 
@@ -240,8 +240,8 @@ export default class AuthService {
             ]);
 
             if (!response.ok) {
-                const error = await response.json().catch(() => ({ 
-                    message: response.statusText 
+                const error = await response.json().catch(() => ({
+                    message: response.statusText
                 }));
                 throw new Error(error.message || `HTTP ${response.status}: ${response.statusText}`);
             }

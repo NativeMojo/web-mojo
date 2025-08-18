@@ -494,8 +494,8 @@ class Sidebar extends View {
             const processedItem = { ...item };
 
             // Check permissions - skip item if user doesn't have required permissions
-            if (processedItem.permissions && activeUser) {
-                if (!activeUser.hasPermission(processedItem.permissions)) {
+            if (processedItem.permissions) {
+                if (!activeUser || !activeUser.hasPermission(processedItem.permissions)) {
                     return null; // Will be filtered out
                 }
             }
@@ -821,7 +821,7 @@ class Sidebar extends View {
      */
     initializeMenus(options) {
         if (options.menus) {
-            for (const menu in options.menus) {
+            for (const menu of options.menus) {
                 this.addMenu(menu.name, menu);
             }
         } else if (options.menu) {

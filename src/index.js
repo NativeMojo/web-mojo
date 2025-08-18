@@ -37,6 +37,7 @@ export { default as mustache } from './utils/mustache.js';
 export { default as DataFormatter } from './utils/DataFormatter.js';
 export { default as MustacheFormatter } from './utils/MustacheFormatter.js';
 export { default as MOJOUtils, DataWrapper } from './utils/MOJOUtils.js';
+export { default as TokenManager } from './auth/TokenManager.js';
 
 
 // App classes
@@ -46,10 +47,6 @@ export { default as PortalApp } from './app/PortalApp.js';
 // Pages
 export { default as NotFoundPage } from './pages/NotFoundPage.js';
 export { default as ErrorPage } from './pages/ErrorPage.js';
-
-export { User, UserList, UserForms} from './models/User.js';
-export { Group, GroupList, GroupForms} from './models/Group.js';
-
 
 // Export framework metadata
 export const FRAMEWORK_NAME = 'MOJO';

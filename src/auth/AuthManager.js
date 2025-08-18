@@ -76,7 +76,7 @@ export default class AuthManager {
      * @param {boolean} rememberMe - Persist session
      * @returns {Promise<object>} Login result
      */
-    async login(username, password, rememberMe = false) {
+    async login(username, password, rememberMe = true) {
         try {
             const response = await this.authService.login(username, password);
 

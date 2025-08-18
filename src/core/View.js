@@ -531,6 +531,10 @@ export class View {
 
   isExternalLink(href) {
     if (!href) return true;
+    if (href.startsWith("/") && this.getApp()) {
+        if (href.startsWith(this.findRouter().basePath)) return false;
+        return true;
+    }
     return href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('http://') || href.startsWith('https://') || href.startsWith('//');
   }
 

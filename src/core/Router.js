@@ -6,7 +6,7 @@ class Router {
     this.routes = [];
     this.currentRoute = null;
     this.eventEmitter = options.eventEmitter || null; // WebApp.events
-    
+
     this.boundHandlePopState = this.handlePopState.bind(this);
   }
 
@@ -75,26 +75,26 @@ class Router {
     if (this.mode === 'params') {
       const params = new URLSearchParams(window.location.search);
       let page = params.get('page');
-      
+
       // Use defaultRoute if no page parameter
       if (!page) {
         page = this.defaultRoute;
       }
-      
+
       // Ensure page starts with / to match route patterns
       if (page !== '/' && !page.startsWith('/')) {
         page = `/${page}`;
       }
-      
+
       return page;
     } else {
       let path = window.location.pathname.replace(new RegExp(`^${this.basePath}`), '') || '/';
-      
+
       // Use defaultRoute if we're at root
       if (path === '/') {
         path = `/${this.defaultRoute}`;
       }
-      
+
       return path;
     }
   }
@@ -111,22 +111,29 @@ class Router {
 
   async handleRouteChange(path) {
     let route = this.matchRoute(path);
-    
+
+    if (!route && !location.pathname.startsWith(this.basePath)) {
+        // Handle external links or other non-routable paths
+        window.location.href = path;
+        return;
+    }
     // If no route matched and we're not already on default route, try default route
     if (!route && path !== `/${this.defaultRoute}`) {
+      console.log('No route matched, trying default route');
+      // ADD 404 LOGIC HERE
       const defaultPath = `/${this.defaultRoute}`;
       route = this.matchRoute(defaultPath);
-      
+
       if (route) {
         // Navigate to default route
         this.updateHistory(defaultPath, true, null);
         path = defaultPath;
       }
     }
-    
+
     if (route) {
       this.currentRoute = route;
-      
+
       // Emit route change event for Sidebar and other listeners
       if (this.eventEmitter) {
         this.eventEmitter.emit('route:changed', {
@@ -137,7 +144,7 @@ class Router {
           route: route
         });
       }
-      
+
       // Return route info for WebApp to handle
       return route;
     } else {
@@ -145,7 +152,7 @@ class Router {
       if (this.eventEmitter) {
         this.eventEmitter.emit('route:notfound', { path });
       }
-      
+
       return null;
     }
   }
@@ -269,29 +276,29 @@ class Router {
    */
   updateUrl(params = {}, options = {}) {
     const { replace = false } = options;
-    
+
     if (this.mode === 'params') {
       // In params mode, update query parameters
       const currentUrl = new URL(window.location);
-      
+
       // Keep existing page parameter
       const currentPage = currentUrl.searchParams.get('page') || this.defaultRoute;
       currentUrl.searchParams.set('page', currentPage);
-      
+
       // Clear all parameters except page
       const pageParam = currentUrl.searchParams.get('page');
       currentUrl.search = '';
       if (pageParam) {
         currentUrl.searchParams.set('page', pageParam);
       }
-    
+
       // Add only the passed-in parameters
       Object.entries(params).forEach(([key, value]) => {
         if (key !== 'page' && value !== null && value !== undefined && value !== '') {
           currentUrl.searchParams.set(key, String(value));
         }
       });
-      
+
       const url = currentUrl.toString();
       if (replace) {
         window.history.replaceState(null, '', url);
@@ -301,17 +308,17 @@ class Router {
     } else {
       // In history mode, update query parameters on current path
       const currentUrl = new URL(window.location);
-      
+
       // Clear all existing parameters
       currentUrl.search = '';
-    
+
       // Add only the passed-in parameters
       Object.entries(params).forEach(([key, value]) => {
         if (value !== null && value !== undefined && value !== '') {
           currentUrl.searchParams.set(key, String(value));
         }
       });
-      
+
       const url = currentUrl.toString();
       if (replace) {
         window.history.replaceState(null, '', url);
@@ -326,12 +333,12 @@ class Router {
     if (!route) {
       return this.mode === 'params' ? `?page=${this.defaultRoute}` : `/${this.defaultRoute}`;
     }
-    
+
     let cleanPath = '';
-    
+
     // Parse input route to extract the actual path
     if (route.includes('?page=')) {
-      // Input: "?page=admin" or "/?page=admin" 
+      // Input: "?page=admin" or "/?page=admin"
       const match = route.match(/\?page=([^&]+)/);
       if (match) {
         cleanPath = '/' + decodeURIComponent(match[1]);
@@ -352,12 +359,12 @@ class Router {
       // Input: "/admin" or "admin"
       cleanPath = route.startsWith('/') ? route : `/${route}`;
     }
-    
+
     // Normalize path
     if (cleanPath !== '/' && cleanPath.endsWith('/')) {
       cleanPath = cleanPath.slice(0, -1);
     }
-    
+
     // Convert to current mode format
     if (this.mode === 'params') {
       // Return ?page=path format for params mode

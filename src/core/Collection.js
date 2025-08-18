@@ -176,11 +176,12 @@ class Collection {
     const fetchParams = { ...this.params, ...additionalParams };
 
     try {
+      this.emit("fetch:start");
       const response = await this.rest.GET(url, fetchParams, {
         signal: abortController.signal
       });
 
-      if (response.success) {
+      if (response.success && response.data.status) {
         const data = this.options.parse ? this.parse(response) : response.data;
 
         if (this.options.reset || additionalParams.reset !== false) {
@@ -188,22 +189,31 @@ class Collection {
         }
 
         this.add(data, { silent: additionalParams.silent });
+        this.emit("fetch:success");
         return this;
       } else {
-        this.errors = response.errors || {};
-        throw new Error(response.message || 'Failed to fetch collection');
+        if (response.data && response.data.error) {
+            this.emit("fetch:error", { message: response.data.error, error: response.data });
+        } else {
+          this.errors = response.errors || {};
+          this.emit("fetch:error", { error: response.errors });
+        }
+
       }
     } catch (error) {
       // Handle cancellation gracefully
       if (error.name === 'AbortError') {
         console.info('Collection: Fetch was cancelled');
-        throw error;
+        // throw error;
+          return;
       }
 
       this.errors = { fetch: error.message };
-      throw error;
+      this.emit("fetch:error", { message: error.message, error: error });
+      // throw error;
     } finally {
       this.loading = false;
+      this.emit("fetch:end");
     }
   }
 

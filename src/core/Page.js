@@ -73,17 +73,27 @@ class Page extends View {
    * @param {object} query - Query string parameters
    */
   async onParams(params = {}, query = {}) {
-    const paramsChanged = JSON.stringify(params) !== JSON.stringify(this.params);
-    const queryChanged = JSON.stringify(query) !== JSON.stringify(this.query);
+    // const paramsChanged = JSON.stringify(params) !== JSON.stringify(this.params);
+    // const queryChanged = JSON.stringify(query) !== JSON.stringify(this.query);
 
     this.params = params;
     this.query = query;
 
     // Only re-render if params actually changed and page is active
-    if (this.isActive && (paramsChanged || queryChanged)) {
-      console.log(`Page ${this.pageName} params changed, re-rendering`);
-      await this.render();
+    // if (this.isActive && (paramsChanged || queryChanged)) {
+    //   console.log(`Page ${this.pageName} params changed, re-rendering`);
+    //   await this.render();
+    // }
+  }
+
+  canEnter() {
+    if (this.options.permissions) {
+      const user = this.getApp().activeUser;
+      if (!user || !user.hasPermission(this.options.permissions)) {
+        return false;
+      }
     }
+    return true;
   }
 
   /**

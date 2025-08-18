@@ -47,7 +47,7 @@ export default class LoginPage extends Page {
             // Form fields
             username: '',
             password: '',
-            rememberMe: false,
+            rememberMe: true,
             loginIcon: this.options.pageIcon,
             // UI state
             isLoading: false,
@@ -79,7 +79,7 @@ export default class LoginPage extends Page {
         this.updateData({
             username: '',
             password: '',
-            rememberMe: false,
+            rememberMe: true,
             error: null,
             isLoading: false
         });

@@ -11,7 +11,8 @@ import TodosPage from './pages/TodosPage.js';
 import FormsPage from './pages/FormsPage.js';
 import DialogsPage from './pages/DialogsPage.js';
 import Page from '/src/core/Page.js';
-
+import { registerAdminPages } from '/src/admin.js';
+import { VERSION_INFO } from '/src/version.js';
 
 // Detect page reloads
 if (window.performance && window.performance.navigation.type === 1) {
@@ -49,72 +50,99 @@ const app = new PortalApp({
 
     // Sidebar configuration with one collapsible menu
     sidebar: {
-        className: 'sidebar sidebar-light',
-        header: '<div class="fs-5 fw-bold text-center pt-3 sidebar-collapse-hide">Main Menu</div>',
-        items: [
-            {
-                text: 'Home',
-                route: '?page=home',
-                icon: 'bi-house'
-            },
-            {
-                text: 'Dashboard',
-                route: '?page=dashboard',
-                icon: 'bi-speedometer2'
-            },
-            {
-                text: 'Reports',
-                icon: 'bi-graph-up',
-                children: [
-                    {
-                        text: 'Sales Report',
-                        route: '?page=sales',
-                        icon: 'bi-currency-dollar'
-                    },
-                    {
-                        text: 'Analytics',
-                        route: '?page=analytics',
-                        icon: 'bi-bar-chart'
-                    },
-                    {
-                        text: 'Performance',
-                        route: '?page=performance',
-                        icon: 'bi-speedometer'
-                    }
-                ]
-            },
-            {
-                text: 'Settings',
-                route: '?page=settings',
-                icon: 'bi-gear'
-            },
-            {
-                text: 'Templates',
-                route: '?page=templates',
-                icon: 'bi-code-slash'
-            },
-            {
-                text: 'Todos',
-                route: '?page=todos',
-                icon: 'bi-check2-square'
-            },
-            {
-                text: 'Forms',
-                route: '?page=forms',
-                icon: 'bi-input-cursor-text'
-            },
-            {
-                text: 'Dialogs',
-                route: '?page=dialogs',
-                icon: 'bi-input-cursor-text'
-            },
-            {
-                text: 'Simple',
-                route: '?page=simple',
-                icon: 'bi-input-cursor-text'
-            }
-        ],
-        footer: '<div class="text-center text-muted small">v1.0.0</div>'
+        menus: [{
+            name: "default",
+            className: 'sidebar sidebar-light',
+            header: '<div class="fs-5 fw-bold text-center pt-3 sidebar-collapse-hide">Main Menu</div>',
+            items: [
+                {
+                    text: 'Home',
+                    route: '?page=home',
+                    icon: 'bi-house'
+                },
+                {
+                    text: 'Dashboard',
+                    route: '?page=dashboard',
+                    icon: 'bi-speedometer2'
+                },
+                {
+                    text: 'Reports',
+                    icon: 'bi-graph-up',
+                    children: [
+                        {
+                            text: 'Sales Report',
+                            route: '?page=sales',
+                            icon: 'bi-currency-dollar'
+                        },
+                        {
+                            text: 'Analytics',
+                            route: '?page=analytics',
+                            icon: 'bi-bar-chart'
+                        },
+                        {
+                            text: 'Performance',
+                            route: '?page=performance',
+                            icon: 'bi-speedometer'
+                        }
+                    ]
+                },
+                {
+                    text: 'Settings',
+                    route: '?page=settings',
+                    icon: 'bi-gear'
+                },
+                {
+                    text: 'Templates',
+                    route: '?page=templates',
+                    icon: 'bi-code-slash'
+                },
+                {
+                    text: 'Todos',
+                    route: '?page=todos',
+                    icon: 'bi-check2-square'
+                },
+                {
+                    text: 'Forms',
+                    route: '?page=forms',
+                    icon: 'bi-input-cursor-text'
+                },
+                {
+                    text: 'Dialogs',
+                    route: '?page=dialogs',
+                    icon: 'bi-input-cursor-text'
+                },
+                {
+                    text: 'Simple',
+                    route: '?page=simple',
+                    icon: 'bi-input-cursor-text'
+                }
+            ],
+            footer: '<div class="text-center text-muted small">v1.0.0</div>'
+        },
+        {
+           name: "admin",
+           header: "<div class='pt-3 text-center fs-5'><i class='bi bi-wrench pe-2'></i> Admin</div>",
+           items: [
+               {
+                   spacer: true
+               },
+               {
+                   text: 'Exit Admin',
+                   action: 'exit_admin',
+                   icon: 'bi-arrow-bar-left',
+                   handler: async (action, event, el) => {
+                       console.log("EXIT CLICKED");
+                       app.sidebar.setActiveMenu("default");
+                   }
+               }
+           ],
+           footer: `
+               <div class="text-center text-light small p-2" style="height: 56px;">
+                   <div class="mt-1">v${VERSION_INFO.full}</div>
+                   <div class="text-muted" style="font-size: 0.75em;">${VERSION_INFO.buildTime.split('T')[0]}</div>
+               </div>
+           `
+        }]
     },
 
     // Topbar configuration
@@ -146,25 +174,42 @@ const app = new PortalApp({
                 buttonClass: 'btn btn-link text-white'
             },
             {
-                label: 'User',
-                icon: 'bi-person-circle',
-                items: [
-                    {
-                        label: 'Profile',
-                        icon: 'bi-person',
-                        action: 'profile'
-                    },
-                    {
-                        divider: true
-                    },
-                    {
-                        label: 'Logout',
-                        icon: 'bi-box-arrow-right',
-                        action: 'logout'
-                    }
-                ]
+                id: "admin",
+                icon: 'bi-wrench',
+                action: 'admin-menu',
+                buttonClass: 'btn btn-link text-white',
+                permissions: "view_admin",
+                handler: async (action, event, el) => {
+                    console.log("ADMIN CLICKED");
+                    app.sidebar.setActiveMenu("admin");
+                }
+            },
+            {
+                id: "login",
+                icon: 'bi-box-arrow-in-right',
+                href: '/examples/auth/',
+                label: 'Login'
             }
-        ]
+        ],
+        userMenu: {
+            label: 'User',
+            icon: 'bi-person-circle',
+            items: [
+                {
+                    label: 'Profile',
+                    icon: 'bi-person',
+                    action: 'profile'
+                },
+                {
+                    divider: true
+                },
+                {
+                    label: 'Logout',
+                    icon: 'bi-box-arrow-right',
+                    action: 'logout'
+                }
+            ]
+        }
     },
 
     // Default route
@@ -204,6 +249,7 @@ app.events.on('portal:action', ({ action }) => {
     }
 });
 
+registerAdminPages(app, true);
 // Start the application
 app.start().then(() => {
     console.log('Portal app started successfully');
