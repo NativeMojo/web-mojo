@@ -21,24 +21,30 @@
    ========================================================================== */
 
 :root {
-    /* Primary brand colors - override these in your project */
-    --mojo-auth-primary: #667eea;
-    --mojo-auth-primary-dark: #5a6fd4;
-    --mojo-auth-secondary: #764ba2;
+    /* Primary brand colors - use Bootstrap variables as defaults */
+    --mojo-auth-primary: var(--bs-primary, #667eea);
+    --mojo-auth-primary-dark: var(--bs-primary-dark, #5a6fd4);
+    --mojo-auth-secondary: var(--bs-secondary, #764ba2);
 
-    /* Status colors */
-    --mojo-auth-success: #198754;
-    --mojo-auth-danger: #dc3545;
-    --mojo-auth-warning: #ffc107;
-    --mojo-auth-info: #0dcaf0;
+    /* Status colors - use Bootstrap semantic colors */
+    --mojo-auth-success: var(--bs-success);
+    --mojo-auth-danger: var(--bs-danger);
+    --mojo-auth-warning: var(--bs-warning);
+    --mojo-auth-info: var(--bs-info);
 
-    /* Layout variables */
-    --mojo-auth-border-radius: 1rem;
-    --mojo-auth-card-padding: 2rem;
+    /* Layout variables - use Bootstrap spacing and borders */
+    --mojo-auth-border-radius: var(--bs-border-radius-lg, 1rem);
+    --mojo-auth-card-padding: var(--bs-spacer, 2rem);
     --mojo-auth-transition: all 0.2s ease;
-    --mojo-auth-box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    --mojo-auth-card-bg: rgba(255, 255, 255, 0.98);
-    --mojo-auth-background: linear-gradient(135deg, var(--mojo-auth-primary) 0%, #ffffff 100%);
+    --mojo-auth-box-shadow: var(--bs-box-shadow-lg, 0 8px 32px rgba(0, 0, 0, 0.1));
+    --mojo-auth-card-bg: var(--bs-body-bg, rgba(255, 255, 255, 0.98));
+    --mojo-auth-text-color: var(--bs-body-color);
+    --mojo-auth-border-color: var(--bs-border-color);
+    --mojo-auth-background: linear-gradient(
+        135deg,
+        var(--mojo-auth-primary) 0%,
+        var(--bs-body-bg, #ffffff) 100%
+    );
 }
 
 /* ==========================================================================
@@ -48,8 +54,16 @@
 .auth-page {
     background: var(--mojo-auth-background);
     min-height: 100vh;
-    font-family:
-        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: var(
+        --bs-font-sans-serif,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        "Helvetica Neue",
+        Arial,
+        sans-serif
+    );
 
     /* Apply custom properties */
     --auth-primary-color: var(--mojo-auth-primary);
@@ -61,6 +75,8 @@
     --auth-info-color: var(--mojo-auth-info);
     --auth-border-radius: var(--mojo-auth-border-radius);
     --auth-transition: var(--mojo-auth-transition);
+    --auth-text-color: var(--mojo-auth-text-color);
+    --auth-border-color: var(--mojo-auth-border-color);
 }
 
 /* Override any parent background for auth pages */
@@ -173,13 +189,13 @@
 }
 
 .auth-page .form-control {
-    border-radius: 0.5rem;
-    border: 1px solid #dee2e6;
+    border-radius: var(--bs-border-radius, 0.5rem);
+    border: 1px solid var(--auth-border-color);
     transition: var(--auth-transition);
 }
 
 .auth-page .form-control:hover:not(:focus) {
-    border-color: #adb5bd;
+    border-color: var(--bs-border-color-translucent, #adb5bd);
 }
 
 .auth-page .form-control.is-invalid {
@@ -218,7 +234,7 @@
         var(--auth-secondary-color) 100%
     );
     border: none;
-    border-radius: 0.5rem;
+    border-radius: var(--bs-border-radius, 0.5rem);
     font-weight: 500;
     transition: var(--auth-transition);
 }
@@ -275,7 +291,7 @@
 /* Form Labels */
 .auth-page .form-label {
     font-weight: 500;
-    color: #495057;
+    color: var(--auth-text-color);
     margin-bottom: 0.5rem;
 }
 
@@ -295,13 +311,13 @@
 
 .auth-page .form-check-label {
     font-size: 0.9rem;
-    color: #6c757d;
+    color: var(--bs-secondary-color, #6c757d);
 }
 
 /* Form Text */
 .auth-page .form-text {
     font-size: 0.875rem;
-    color: #6c757d;
+    color: var(--bs-secondary-color, #6c757d);
 }
 
 /* Invalid Feedback */
@@ -347,32 +363,32 @@
    ========================================================================== */
 
 .auth-page .alert {
-    border-radius: 0.5rem;
+    border-radius: var(--bs-border-radius, 0.5rem);
     border: none;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--bs-box-shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 .auth-page .alert-danger {
-    background-color: rgba(220, 53, 69, 0.1);
-    color: #842029;
+    background-color: var(--bs-danger-bg-subtle);
+    color: var(--bs-danger-text-emphasis);
     border-left: 4px solid var(--auth-danger-color);
 }
 
 .auth-page .alert-success {
-    background-color: rgba(25, 135, 84, 0.1);
-    color: #0a3622;
+    background-color: var(--bs-success-bg-subtle);
+    color: var(--bs-success-text-emphasis);
     border-left: 4px solid var(--auth-success-color);
 }
 
 .auth-page .alert-warning {
-    background-color: rgba(255, 193, 7, 0.1);
-    color: #664d03;
+    background-color: var(--bs-warning-bg-subtle);
+    color: var(--bs-warning-text-emphasis);
     border-left: 4px solid var(--auth-warning-color);
 }
 
 .auth-page .alert-info {
-    background-color: rgba(13, 202, 240, 0.1);
-    color: #055160;
+    background-color: var(--bs-info-bg-subtle);
+    color: var(--bs-info-text-emphasis);
     border-left: 4px solid var(--auth-info-color);
 }
 
@@ -407,15 +423,16 @@
    Dividers
    ========================================================================== */
 
+/* Dividers */
 .auth-page .position-relative hr {
-    border-color: #dee2e6;
+    border-color: var(--auth-border-color);
     opacity: 0.5;
 }
 
 .auth-page .position-relative .position-absolute {
-    background: white;
+    background: var(--bs-body-bg, white);
     padding: 0 1rem;
-    color: #6c757d;
+    color: var(--bs-secondary-color, #6c757d);
     font-size: 0.875rem;
     font-weight: 500;
 }
@@ -441,7 +458,7 @@
 }
 
 .auth-page .text-muted {
-    color: #6c757d !important;
+    color: var(--bs-secondary-color, #6c757d) !important;
 }
 
 /* ==========================================================================

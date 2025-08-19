@@ -10,6 +10,8 @@ import Sidebar from '../components/Sidebar.js';
 import DeniedPage from '../components/DeniedPage.js';
 import TokenManager from '../auth/TokenManager.js';
 import {User} from '../models/User.js';
+import NotFoundPage from '../components/NotFoundPage.js';
+import ToastService from '../services/ToastService.js';
 
 export default class PortalApp extends WebApp {
     constructor(config = {}) {
@@ -47,7 +49,10 @@ export default class PortalApp extends WebApp {
         }
         this.setupPageContainer();
 
+        this.toast = new ToastService();
+
         this.registerPage("denied", DeniedPage);
+        this.registerPage("404", NotFoundPage);
     }
 
     /**
@@ -176,7 +181,7 @@ export default class PortalApp extends WebApp {
         // Map config to TopNav format
         this.topbar = new TopNav({
             containerId: "portal-topnav",
-            className: `navbar navbar-expand-lg ${this.topbarConfig.theme || 'navbar-dark bg-primary'}`,
+            className: this.topbarConfig.className || 'navbar navbar-expand-lg navbar-dark',
             brandText: this.topbarConfig.brand || this.brand || this.title,
             brandRoute: this.topbarConfig.brandRoute || '/',
             brandIcon: this.topbarConfig.brandIcon || this.brandIcon,

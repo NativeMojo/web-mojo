@@ -1,0 +1,794 @@
+/**
+ * DOJO THEME - Dual Mode Portal Transformation
+ * A modern martial arts-inspired theme with light/dark modes
+ * Color: Dark Emerald Green accent system
+ *
+ * Import this file to completely transform your portal's appearance.
+ * No additional classes needed - overrides all existing styles.
+ *
+ * Modes:
+ * - Light Mode (default): Cool subtle gradient background with emerald accents
+ * - Dark Mode: Deep surfaces with emerald highlights
+ * - Auto-detection via prefers-color-scheme
+ * - Manual override with .dojo-light or .dojo-dark classes
+ *
+ * @version 2.0.0
+ * @license MIT
+ */
+
+/* ========================================================================
+   DOJO COLOR SYSTEM - Light Mode (Default)
+   ======================================================================== */
+
+:root {
+    /* Emerald Palette */
+    --dojo-emerald: #064e3b; /* Dark emerald green */
+    --dojo-emerald-light: #065f46; /* Medium emerald */
+    --dojo-emerald-bright: #059669; /* Bright emerald */
+    --dojo-emerald-soft: #10b981; /* Soft emerald */
+    --dojo-sage: #6b7280; /* Neutral sage */
+    --dojo-crimson: #dc2626; /* Alert red */
+    --dojo-amber: #f59e0b; /* Warning amber */
+
+    /* Light Mode Base Colors */
+    --dojo-bg-primary: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+    --dojo-bg-secondary: #ffffff;
+    --dojo-bg-tertiary: #f8fafc;
+    --dojo-surface: #ffffff;
+    --dojo-surface-elevated: #ffffff;
+
+    /* Light Mode Text */
+    --dojo-text-primary: #1e293b;
+    --dojo-text-secondary: #475569;
+    --dojo-text-muted: #64748b;
+    --dojo-text-inverse: #ffffff;
+
+    /* Light Mode Borders & Shadows */
+    --dojo-border: #e2e8f0;
+    --dojo-border-strong: #cbd5e1;
+    --dojo-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --dojo-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+    --dojo-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    --dojo-glow-emerald: 0 0 20px rgba(6, 78, 59, 0.2);
+    --dojo-glow-crimson: 0 0 20px rgba(220, 38, 38, 0.2);
+
+    /* Override Bootstrap Variables */
+    --bs-primary: var(--dojo-emerald);
+    --bs-primary-rgb: 6, 78, 59;
+    --bs-secondary: var(--dojo-sage);
+    --bs-secondary-rgb: 107, 114, 128;
+    --bs-success: var(--dojo-emerald-bright);
+    --bs-success-rgb: 5, 150, 105;
+    --bs-info: var(--dojo-emerald-soft);
+    --bs-info-rgb: 16, 185, 129;
+    --bs-warning: var(--dojo-amber);
+    --bs-warning-rgb: 245, 158, 11;
+    --bs-danger: var(--dojo-crimson);
+    --bs-danger-rgb: 220, 38, 38;
+    --bs-light: #f8fafc;
+    --bs-light-rgb: 248, 250, 252;
+    --bs-dark: var(--dojo-text-primary);
+    --bs-dark-rgb: 30, 41, 59;
+
+    /* Light Mode Body */
+    --bs-body-color: var(--dojo-text-primary);
+    --bs-body-color-rgb: 30, 41, 59;
+    --bs-body-bg: #f8fafc;
+    --bs-body-bg-rgb: 248, 250, 252;
+    --bs-border-color: var(--dojo-border);
+    --bs-border-color-rgb: 226, 232, 240;
+    --bs-secondary-bg: var(--dojo-bg-tertiary);
+    --bs-secondary-bg-rgb: 248, 250, 252;
+    --bs-tertiary-bg: #f1f5f9;
+    --bs-tertiary-bg-rgb: 241, 245, 249;
+
+    /* Typography */
+    --bs-body-font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --bs-headings-color: var(--dojo-text-primary);
+
+    /* Dojo-specific Variables */
+    --dojo-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --dojo-border-radius: 8px;
+}
+
+/* ========================================================================
+   DARK MODE COLORS
+   ======================================================================== */
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* Dark Mode Base Colors */
+        --dojo-bg-primary: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+        --dojo-bg-secondary: #1e293b;
+        --dojo-bg-tertiary: #0f172a;
+        --dojo-surface: #1e293b;
+        --dojo-surface-elevated: #334155;
+
+        /* Dark Mode Text */
+        --dojo-text-primary: #f1f5f9;
+        --dojo-text-secondary: #cbd5e1;
+        --dojo-text-muted: #94a3b8;
+        --dojo-text-inverse: #0f172a;
+
+        /* Dark Mode Borders & Shadows */
+        --dojo-border: #334155;
+        --dojo-border-strong: #475569;
+        --dojo-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+        --dojo-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+        --dojo-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.6);
+        --dojo-glow-emerald: 0 0 20px rgba(16, 185, 129, 0.3);
+        --dojo-glow-crimson: 0 0 20px rgba(220, 38, 38, 0.3);
+
+        /* Dark Mode Body */
+        --bs-body-color: var(--dojo-text-primary);
+        --bs-body-color-rgb: 241, 245, 249;
+        --bs-body-bg: #0f172a;
+        --bs-body-bg-rgb: 15, 23, 42;
+        --bs-border-color: var(--dojo-border);
+        --bs-border-color-rgb: 51, 65, 85;
+        --bs-secondary-bg: var(--dojo-bg-tertiary);
+        --bs-secondary-bg-rgb: 15, 23, 42;
+        --bs-tertiary-bg: #1e293b;
+        --bs-tertiary-bg-rgb: 30, 41, 59;
+
+        --bs-headings-color: var(--dojo-text-primary);
+    }
+}
+
+/* Manual Dark Mode Override */
+.dojo-dark,
+[data-theme="dark"] {
+    /* Dark Mode Base Colors */
+    --dojo-bg-primary: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    --dojo-bg-secondary: #1e293b;
+    --dojo-bg-tertiary: #0f172a;
+    --dojo-surface: #1e293b;
+    --dojo-surface-elevated: #334155;
+
+    /* Dark Mode Text */
+    --dojo-text-primary: #f1f5f9;
+    --dojo-text-secondary: #cbd5e1;
+    --dojo-text-muted: #94a3b8;
+    --dojo-text-inverse: #0f172a;
+
+    /* Dark Mode Borders & Shadows */
+    --dojo-border: #334155;
+    --dojo-border-strong: #475569;
+    --dojo-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --dojo-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+    --dojo-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.6);
+    --dojo-glow-emerald: 0 0 20px rgba(16, 185, 129, 0.3);
+    --dojo-glow-crimson: 0 0 20px rgba(220, 38, 38, 0.3);
+
+    /* Dark Mode Body */
+    --bs-body-color: var(--dojo-text-primary);
+    --bs-body-color-rgb: 241, 245, 249;
+    --bs-body-bg: #0f172a;
+    --bs-body-bg-rgb: 15, 23, 42;
+    --bs-border-color: var(--dojo-border);
+    --bs-border-color-rgb: 51, 65, 85;
+    --bs-secondary-bg: var(--dojo-bg-tertiary);
+    --bs-secondary-bg-rgb: 15, 23, 42;
+    --bs-tertiary-bg: #1e293b;
+    --bs-tertiary-bg-rgb: 30, 41, 59;
+
+    --bs-headings-color: var(--dojo-text-primary);
+}
+
+/* Manual Light Mode Override */
+.dojo-light,
+[data-theme="light"] {
+    /* Light Mode Base Colors */
+    --dojo-bg-primary: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+    --dojo-bg-secondary: #ffffff;
+    --dojo-bg-tertiary: #f8fafc;
+    --dojo-surface: #ffffff;
+    --dojo-surface-elevated: #ffffff;
+
+    /* Light Mode Text */
+    --dojo-text-primary: #1e293b;
+    --dojo-text-secondary: #475569;
+    --dojo-text-muted: #64748b;
+    --dojo-text-inverse: #ffffff;
+
+    /* Light Mode Borders & Shadows */
+    --dojo-border: #e2e8f0;
+    --dojo-border-strong: #cbd5e1;
+    --dojo-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --dojo-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+    --dojo-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    --dojo-glow-emerald: 0 0 20px rgba(6, 78, 59, 0.2);
+    --dojo-glow-crimson: 0 0 20px rgba(220, 38, 38, 0.2);
+
+    /* Light Mode Body */
+    --bs-body-color: var(--dojo-text-primary);
+    --bs-body-color-rgb: 30, 41, 59;
+    --bs-body-bg: #f8fafc;
+    --bs-body-bg-rgb: 248, 250, 252;
+    --bs-border-color: var(--dojo-border);
+    --bs-border-color-rgb: 226, 232, 240;
+    --bs-secondary-bg: var(--dojo-bg-tertiary);
+    --bs-secondary-bg-rgb: 248, 250, 252;
+    --bs-tertiary-bg: #f1f5f9;
+    --bs-tertiary-bg-rgb: 241, 245, 249;
+
+    --bs-headings-color: var(--dojo-text-primary);
+}
+
+/* ========================================================================
+   FOUNDATION STYLES
+   ======================================================================== */
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--dojo-emerald) var(--dojo-bg-tertiary);
+}
+
+*::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+    background: var(--dojo-bg-tertiary);
+    border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: var(--dojo-emerald);
+    border-radius: 3px;
+    transition: var(--dojo-transition);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--dojo-emerald-bright);
+}
+
+body {
+    background: var(--dojo-bg-primary);
+    color: var(--dojo-text-primary);
+    font-family: var(--bs-body-font-family);
+    font-weight: 400;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========================================================================
+   TYPOGRAPHY
+   ======================================================================== */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6 {
+    color: var(--dojo-text-primary);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.display-1,
+.display-2,
+.display-3,
+.display-4,
+.display-5,
+.display-6 {
+    color: var(--dojo-text-primary);
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--dojo-emerald) 0%, var(--dojo-emerald-bright) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.text-muted {
+    color: var(--dojo-text-muted) !important;
+}
+
+.text-primary {
+    color: var(--dojo-emerald) !important;
+}
+
+.text-secondary {
+    color: var(--dojo-sage) !important;
+}
+
+code {
+    background: var(--dojo-bg-tertiary);
+    color: var(--dojo-emerald);
+    border: 1px solid var(--dojo-border);
+    border-radius: 4px;
+    font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+}
+
+/* ========================================================================
+   PORTAL LAYOUT TRANSFORMATION
+   ======================================================================== */
+
+.portal-container,
+.portal-layout {
+    background: var(--dojo-bg-primary);
+}
+
+/* Dojo Sidebar */
+#portal-sidebar {
+    background: var(--dojo-surface);
+    border-right: 2px solid var(--dojo-border-strong);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.sidebar {
+    background: transparent;
+    border-right: none;
+}
+
+.sidebar-dark,
+.sidebar-light,
+.sidebar-clean {
+    background: transparent !important;
+    border-right: none !important;
+    box-shadow: none !important;
+}
+
+/* Sidebar Brand */
+.sidebar-brand {
+    background: var(--dojo-surface-elevated);
+    border-bottom: 2px solid var(--dojo-emerald);
+    color: var(--dojo-text-primary);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    position: relative;
+    overflow: hidden;
+    transition: var(--dojo-transition);
+}
+
+.sidebar-brand::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(6, 78, 59, 0.1), transparent);
+    transition: left 0.6s ease;
+}
+
+.sidebar-brand:hover::before {
+    left: 100%;
+}
+
+.sidebar-brand:hover {
+    background: var(--dojo-emerald);
+    color: var(--dojo-text-inverse);
+    transform: translateY(-1px);
+}
+
+/* Sidebar Navigation */
+.sidebar-nav .nav-link {
+    color: var(--dojo-text-secondary);
+    border-radius: var(--dojo-border-radius);
+    margin: 2px 8px;
+    transition: var(--dojo-transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.sidebar-nav .nav-link::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 3px;
+    background: var(--dojo-emerald);
+    transform: scaleY(0);
+    transition: var(--dojo-transition);
+    transform-origin: bottom;
+}
+
+.sidebar-nav .nav-link:hover {
+    background: var(--dojo-bg-tertiary);
+    color: var(--dojo-emerald);
+    transform: translateX(4px);
+    box-shadow: var(--dojo-glow-emerald);
+}
+
+.sidebar-nav .nav-link:hover::before {
+    transform: scaleY(1);
+}
+
+.sidebar-nav .nav-link.active {
+    background: linear-gradient(135deg, var(--dojo-emerald) 0%, var(--dojo-emerald-light) 100%);
+    color: var(--dojo-text-inverse);
+    font-weight: 600;
+    box-shadow: var(--dojo-glow-emerald);
+}
+
+.sidebar-nav .nav-link.active::before {
+    display: none;
+}
+
+.sidebar-nav .nav-link i {
+    color: inherit;
+    transition: var(--dojo-transition);
+}
+
+.sidebar-nav .nav-link:hover i {
+    transform: scale(1.1);
+}
+
+/* Navigation Sections */
+.nav-section-header {
+    color: var(--dojo-emerald);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.75rem;
+    border-bottom: 1px solid var(--dojo-border);
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.nav-divider-line {
+    border-color: var(--dojo-border);
+    opacity: 1;
+    margin: 1rem;
+}
+
+/* Submenu */
+.nav-submenu {
+    background: var(--dojo-bg-tertiary);
+    border-radius: var(--dojo-border-radius);
+    margin: 4px 12px;
+    padding: 4px 0;
+    border-left: 2px solid var(--dojo-emerald);
+}
+
+.nav-submenu .nav-link {
+    margin: 1px 4px;
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+}
+
+/* Sidebar Footer */
+.sidebar-footer {
+    background: var(--dojo-surface-elevated);
+    border-top: 2px solid var(--dojo-border);
+    color: var(--dojo-text-muted);
+}
+
+/* ========================================================================
+   TOPNAV TRANSFORMATION
+   ======================================================================== */
+
+#portal-topnav {
+    background: var(--dojo-surface);
+    border-bottom: 2px solid var(--dojo-emerald);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--dojo-shadow);
+}
+
+.navbar {
+    --bs-navbar-brand-color: var(--dojo-text-primary);
+    --bs-navbar-brand-hover-color: var(--dojo-emerald);
+    --bs-navbar-nav-link-color: var(--dojo-text-secondary);
+    --bs-navbar-nav-link-hover-color: var(--dojo-emerald);
+    --bs-navbar-active-color: var(--dojo-emerald);
+    --bs-navbar-toggler-border-color: var(--dojo-border);
+}
+
+.navbar-brand {
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.navbar-nav .nav-link {
+    transition: var(--dojo-transition);
+    border-radius: 6px;
+    margin: 0 4px;
+    position: relative;
+}
+
+.navbar-nav .nav-link:hover {
+    background: rgba(6, 78, 59, 0.1);
+    transform: translateY(-1px);
+}
+
+.navbar-nav .nav-link.active {
+    background: var(--dojo-emerald);
+    color: var(--dojo-text-inverse);
+    font-weight: 600;
+}
+
+/* Topnav Toggle Button */
+.topnav-sidebar-toggle {
+    background: var(--dojo-surface-elevated) !important;
+    border: 2px solid var(--dojo-emerald) !important;
+    color: var(--dojo-emerald) !important;
+    border-radius: var(--dojo-border-radius) !important;
+    transition: var(--dojo-transition) !important;
+}
+
+.topnav-sidebar-toggle:hover {
+    background: var(--dojo-emerald) !important;
+    color: var(--dojo-text-inverse) !important;
+    box-shadow: var(--dojo-glow-emerald) !important;
+    transform: scale(1.05) !important;
+}
+
+/* ========================================================================
+   CONTENT AREA
+   ======================================================================== */
+
+.portal-content {
+    background: var(--dojo-bg-primary);
+    color: var(--dojo-text-primary);
+}
+
+/* ========================================================================
+   BUTTONS TRANSFORMATION
+   ======================================================================== */
+
+.btn {
+    border-radius: var(--dojo-border-radius);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: var(--dojo-transition);
+    border-width: 2px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.6s ease;
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--dojo-emerald) 0%, var(--dojo-emerald-light) 100%);
+    border-color: var(--dojo-emerald);
+    color: var(--dojo-text-inverse);
+    box-shadow: var(--dojo-shadow-sm);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(
+        135deg,
+        var(--dojo-emerald-light) 0%,
+        var(--dojo-emerald-bright) 100%
+    );
+    border-color: var(--dojo-emerald-light);
+    color: var(--dojo-text-inverse);
+    box-shadow: var(--dojo-glow-emerald);
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background: var(--dojo-surface);
+    border-color: var(--dojo-border-strong);
+    color: var(--dojo-text-primary);
+}
+
+.btn-secondary:hover {
+    background: var(--dojo-bg-tertiary);
+    border-color: var(--dojo-emerald);
+    color: var(--dojo-emerald);
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, var(--dojo-crimson) 0%, #ef4444 100%);
+    border-color: var(--dojo-crimson);
+    color: var(--dojo-text-inverse);
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+    border-color: #ef4444;
+    color: var(--dojo-text-inverse);
+    box-shadow: var(--dojo-glow-crimson);
+    transform: translateY(-2px);
+}
+
+.btn-outline-primary {
+    border-color: var(--dojo-emerald);
+    color: var(--dojo-emerald);
+    background: transparent;
+}
+
+.btn-outline-primary:hover {
+    background: var(--dojo-emerald);
+    border-color: var(--dojo-emerald);
+    color: var(--dojo-text-inverse);
+    box-shadow: var(--dojo-glow-emerald);
+}
+
+/* ========================================================================
+   FORMS TRANSFORMATION
+   ======================================================================== */
+
+.form-control {
+    background: var(--dojo-surface);
+    border: 2px solid var(--dojo-border);
+    color: var(--dojo-text-primary);
+    border-radius: var(--dojo-border-radius);
+    transition: var(--dojo-transition);
+}
+
+.form-control::placeholder {
+    color: var(--dojo-text-muted);
+}
+
+.form-control:focus {
+    background: var(--dojo-surface-elevated);
+    border-color: var(--dojo-emerald);
+    color: var(--dojo-text-primary);
+    box-shadow:
+        0 0 0 0.25rem rgba(6, 78, 59, 0.25),
+        var(--dojo-glow-emerald);
+}
+
+.form-control:disabled {
+    background: var(--dojo-bg-tertiary);
+    border-color: var(--dojo-border);
+    color: var(--dojo-text-muted);
+    opacity: 0.7;
+}
+
+.form-label {
+    color: var(--dojo-text-primary);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.875rem;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+}
+
+.form-check-input {
+    background-color: var(--dojo-surface);
+    border: 2px solid var(--dojo-border);
+    transition: var(--dojo-transition);
+}
+
+.form-check-input:checked {
+    background-color: var(--dojo-emerald);
+    border-color: var(--dojo-emerald);
+}
+
+.form-check-input:focus {
+    border-color: var(--dojo-emerald);
+    box-shadow: 0 0 0 0.25rem rgba(6, 78, 59, 0.25);
+}
+
+.form-check-label {
+    color: var(--dojo-text-secondary);
+}
+
+.input-group-text {
+    background: var(--dojo-surface-elevated);
+    border: 2px solid var(--dojo-border);
+    color: var(--dojo-text-primary);
+    border-radius: var(--dojo-border-radius);
+}
+
+.form-select {
+    background: var(--dojo-surface);
+    border: 2px solid var(--dojo-border);
+    color: var(--dojo-text-primary);
+    border-radius: var(--dojo-border-radius);
+}
+
+.form-select:focus {
+    border-color: var(--dojo-emerald);
+    box-shadow: 0 0 0 0.25rem rgba(6, 78, 59, 0.25);
+}
+
+/* ========================================================================
+   CARDS TRANSFORMATION
+   ======================================================================== */
+
+.card {
+    background: var(--dojo-surface);
+    border: 2px solid var(--dojo-border);
+    border-radius: 12px;
+    box-shadow: var(--dojo-shadow);
+    transition: var(--dojo-transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(
+        90deg,
+        var(--dojo-emerald) 0%,
+        var(--dojo-emerald-bright) 50%,
+        var(--dojo-emerald) 100%
+    );
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--dojo-shadow-lg), var(--dojo-glow-emerald);
+    border-color: var(--dojo-emerald);
+}
+
+.card-header {
+    background: var(--dojo-surface-elevated);
+    border-bottom: 2px solid var(--dojo-emerald);
+    color: var(--dojo-text-primary);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.card-body {
+    color: var(--dojo-text-primary);
+}
+
+.card-footer {
+    background: var(--dojo-surface-elevated);
+    border-top: 1px solid var(--dojo-border);
+    color: var(--dojo-text-secondary);
+}
+
+/* ========================================================================
+   ALERTS TRANSFORMATION
+   ======================================================================== */
+
+.alert {
+    border-radius: 12px;
+    border: 2px solid;
+    position: relative;
+    overflow: hidden;
+    font-weight: 500;
+}
+
+.alert::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: currentColor;
+}
+
+.alert-success {
+    background: rgba(5, 150, 105, 0.1);
+    border-color: var(--dojo-emerald-bright);
+    color: var(--dojo-text-primary);
+}
+
+.alert-danger {
+    background: rgba(220, 38, 38, 0.1);
+    border-color: var(--dojo-crimson);
+    color: var(--dojo-text-primary);
+}

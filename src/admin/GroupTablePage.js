@@ -37,6 +37,7 @@ class GroupTablePage extends TablePage {
                 {
                     key: 'created',
                     label: 'Created',
+                    className: 'text-muted fs-8',
                     formatter: "epoch|datetime"
                 }
             ],

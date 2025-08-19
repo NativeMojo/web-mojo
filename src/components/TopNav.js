@@ -8,7 +8,7 @@ import View from '../core/View.js';
 class TopNav extends View {
     constructor(options = {}) {
         // Handle theme/className from config
-        const navbarClass = options.theme || 'navbar navbar-expand-lg navbar-dark bg-primary';
+        const navbarClass = options.theme || 'navbar navbar-expand-lg';
 
         super({
             tagName: 'nav',
@@ -276,7 +276,7 @@ class TopNav extends View {
      */
     setupPageListeners() {
         // Use global MOJO event bus if available
-        this.getApp().events.on("route:change", (data) => {
+        this.getApp().events.on("page:show", (data) => {
             this.onPageChanged(data);
         });
     }

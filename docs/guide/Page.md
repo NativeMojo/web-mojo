@@ -19,7 +19,7 @@ Page extends View to provide route-level components with built-in navigation cap
 ### 1. Simple Page
 
 ```javascript
-import Page from './core/Page.js';
+import { Page } from 'web-mojo';
 
 class HomePage extends Page {
   static pageName = 'home';

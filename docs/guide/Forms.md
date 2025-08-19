@@ -20,7 +20,7 @@ The FormBuilder is a powerful, Bootstrap 5-integrated component for dynamically 
 ### Creating a Form
 
 ```javascript
-import { FormBuilder } from '../components/FormBuilder.js';
+import { FormBuilder } from 'web-mojo';
 
 const formConfig = {
   fields: [
@@ -46,7 +46,7 @@ await formBuilder.mount(document.getElementById('form-container'));
 ### Using with FormView
 
 ```javascript
-import FormView from '../components/FormView.js';
+import { FormView } from 'web-mojo';
 
 class UserFormView extends FormView {
   constructor(options = {}) {
@@ -531,7 +531,7 @@ const formConfig = {
 ### Binding to Models
 
 ```javascript
-import User from '../models/User.js';
+import { User } from 'web-mojo/models';
 
 const user = new User({ name: 'John Doe', email: 'john@example.com' });
 

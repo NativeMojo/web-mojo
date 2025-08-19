@@ -19,7 +19,7 @@ WebApp is the main application class that serves as the container and orchestrat
 ### 1. Create and Start Application
 
 ```javascript
-import WebApp from './app/WebApp.js';
+import { WebApp } from 'web-mojo';
 import HomePage from './pages/HomePage.js';
 import UsersPage from './pages/UsersPage.js';
 
@@ -52,7 +52,7 @@ await app.start();
     </div>
 
     <script type="module">
-        import WebApp from './src/app/WebApp.js';
+        import { WebApp } from 'web-mojo';
         // ... application setup
     </script>
 </body>
@@ -319,7 +319,7 @@ const table = new TableClass({ data: myData });
 Register a model class globally.
 
 ```javascript
-import User from './models/User.js';
+import { User } from 'web-mojo/models';
 
 app.registerModel('User', User);
 ```
@@ -580,6 +580,7 @@ export { default as UsersPage } from './UsersPage.js';
 export { default as SettingsPage } from './SettingsPage.js';
 
 // app.js
+import { WebApp } from 'web-mojo';
 import * as Pages from './pages/index.js';
 
 const app = WebApp.create();

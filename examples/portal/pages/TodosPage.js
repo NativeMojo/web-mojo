@@ -81,6 +81,24 @@ class TodosPage extends TablePage {
             showAdd: true,
             showExport: true,
 
+            contextMenu: [
+              {
+                icon: 'bi-eye',
+                action: 'item-view',
+                label: "View"
+              },
+              {
+                icon: 'bi-pencil',
+                action: 'item-edit',
+                label: "Edit"
+              },
+              {
+                icon: 'bi-trash',
+                action: 'item-delete',
+                label: "Delete"
+              }
+            ],
+
             // Table options
             tableOptions: {
                 pageSizes: [5, 10, 25, 50],

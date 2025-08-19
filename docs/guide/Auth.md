@@ -15,8 +15,8 @@ The MOJO Auth system is designed with simplicity and developer experience in min
 ## Quick Start
 
 ```javascript
-import WebApp from './app/WebApp.js';
-import AuthApp from './auth/AuthApp.js';
+import { WebApp } from 'web-mojo';
+import { initAuth } from 'web-mojo/auth';
 
 // 1. Create your MOJO app
 const app = WebApp.create({
@@ -25,7 +25,7 @@ const app = WebApp.create({
 });
 
 // 2. Add authentication (one line!)
-const authApp = await AuthApp.create(app, {
+const authManager = initAuth(app, {
     baseURL: 'http://localhost:8881'
 });
 
@@ -41,7 +41,7 @@ That's it! You now have login, registration, and password reset pages automatica
 Factory class that sets up authentication with your WebApp. Handles page registration, event wiring, and plugin integration.
 
 ```javascript
-const authApp = await AuthApp.create(app, {
+const authManager = initAuth(app, {
     baseURL: 'http://localhost:8881',
     routes: {
         login: '/login',
@@ -64,7 +64,7 @@ const authApp = await AuthApp.create(app, {
 Core authentication state management. Handles login/logout, token refresh, and coordinates with AuthService.
 
 ```javascript
-// Access via app.auth after AuthApp.create()
+// Access via app.auth after initAuth()
 const isLoggedIn = app.auth.isAuthenticated;
 const user = app.auth.getUser();
 
@@ -77,6 +77,8 @@ await app.auth.logout();
 Simplified JWT token handling. Focuses on essential operations:
 
 ```javascript
+import { TokenManager } from 'web-mojo';
+
 const tokenManager = new TokenManager();
 
 // Store tokens
@@ -92,6 +94,8 @@ const authHeader = tokenManager.getAuthHeader();
 Clean API communication layer. Handles HTTP requests to your authentication endpoints:
 
 ```javascript
+import { AuthService } from 'web-mojo/auth';
+
 const authService = new AuthService({ baseURL: 'http://localhost:8881' });
 
 const result = await authService.login('username', 'password');
@@ -109,7 +113,7 @@ All authentication pages have been refactored to use the new simplified architec
 - **WebApp Integration**: Proper integration with app state and navigation
 
 ```javascript
-// Configuration passed from AuthApp
+// Configuration passed from initAuth
 authConfig: {
     ui: {
         title: 'My App',
@@ -234,14 +238,14 @@ Add advanced features via plugins. Plugins initialize with the AuthManager and e
 WebAuthn passkey authentication:
 
 ```javascript
-import PasskeyPlugin from './auth/plugins/PasskeyPlugin.js';
+import { PasskeyPlugin } from 'web-mojo/auth';
 
 const passkeyPlugin = new PasskeyPlugin({
     rpName: 'My App',
     rpId: window.location.hostname
 });
 
-authApp.addPlugin(passkeyPlugin);
+authManager.addPlugin(passkeyPlugin);
 
 // Now available on auth manager
 if (app.auth.isPasskeySupported()) {
@@ -303,14 +307,15 @@ The JWT token should include a `uid` field identifying the user.
 Protect pages that require authentication:
 
 ```javascript
-import { requireAuth } from './auth/AuthApp.js';
+import { createAuthGuards } from 'web-mojo/auth';
 
-// Protect a page class
-const ProtectedPage = requireAuth(MyPage);
+// Protect routes with auth guards
+createAuthGuards(app, ['dashboard']);
 
-app.registerPage('dashboard', ProtectedPage, {
+app.registerPage('dashboard', MyPage, {
     route: '/dashboard',
-    title: 'Dashboard'  
+    title: 'Dashboard',
+    requiresAuth: true
 });
 ```
 
@@ -343,7 +348,7 @@ app.events.on('auth:tokenExpired', () => {
 
 ## Configuration Options
 
-### AuthApp Config
+### initAuth Config
 ```javascript
 {
     // Required
@@ -403,7 +408,7 @@ Make sure your API server is running on `http://localhost:8881`.
 ```
 src/
 ├── auth/                        # Authentication system
-│   ├── AuthApp.js               # Main factory & setup
+│   ├── index.js                 # Main exports & setup
 │   ├── AuthManager.js           # Core auth state management  
 │   ├── TokenManager.js          # JWT token handling
 │   ├── pages/                   # Auth UI pages
@@ -440,13 +445,13 @@ The new simplified auth system:
 - ✅ **Framework integration** with MOJO WebApp patterns
 - ✅ **Developer friendly** with sensible defaults
 - ✅ **Refactored pages** with consistent patterns and external templates
-- ✅ **Simplified configuration** passed cleanly from AuthApp to pages
+- ✅ **Simplified configuration** passed cleanly from initAuth to pages
 - ✅ **Consolidated CSS** - All styles in one organized file
 - ✅ **External project ready** - Easy CSS import and customization
 
 ### What Was Removed:
 - Over-complex JWTUtils (300+ lines) → Simple TokenManager (171 lines)
-- Complex page configuration objects → Clean config passed from AuthApp
+- Complex page configuration objects → Clean config passed from initAuth
 - Duplicate validation logic across pages → Unified patterns
 - Mixed concerns throughout components → Clear separation
 - Feature bloat in core system → Plugin architecture
@@ -476,9 +481,9 @@ npm install mojo-auth-system
 
 ```javascript
 // In your JavaScript
-import { AuthApp } from 'mojo-auth-system';
+import { initAuth } from 'web-mojo/auth';
 
-const authApp = await AuthApp.create(app, {
+const authManager = initAuth(app, {
     baseURL: 'https://your-api.com'
 });
 ```

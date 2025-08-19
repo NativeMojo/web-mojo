@@ -150,7 +150,7 @@ const app = new PortalApp({
         brand: 'MOJO Portal',
         brandIcon: 'bi-lightning-charge',
         brandRoute: '?page=home',
-        theme: 'navbar-dark bg-primary',
+        // theme: 'navbar-dark bg-primary',
         displayMode: 'both',
         showSidebarToggle: true,
         // Left navigation items

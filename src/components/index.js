@@ -21,6 +21,7 @@ export { default as Dialog } from './Dialog.js';
 
 // Page Components
 export { default as DeniedPage } from './DeniedPage.js';
+export { default as NotFoundPage } from './NotFoundPage.js';
 
 // Re-export everything as a namespace for convenience
 import TopNav from './TopNav.js';
@@ -32,6 +33,7 @@ import { FormBuilder } from './FormBuilder.js';
 import FormView from './FormView.js';
 import Dialog from './Dialog.js';
 import DeniedPage from './DeniedPage.js';
+import NotFoundPage from './NotFoundPage.js';
 
 export const Components = {
   TopNav,
@@ -42,7 +44,8 @@ export const Components = {
   FormBuilder,
   FormView,
   Dialog,
-  DeniedPage
+  DeniedPage,
+  NotFoundPage
 };
 
 // Default export for convenience

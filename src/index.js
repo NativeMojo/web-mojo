@@ -8,6 +8,7 @@
 import './css/core.css';
 import './css/portal.css';
 import './css/table.css';
+import './css/toast.css';
 
 // Import version information
 import { VERSION_INFO, VERSION, VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, BUILD_TIME } from './version.js';

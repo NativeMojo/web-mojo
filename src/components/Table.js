@@ -45,8 +45,9 @@ class Table extends View {
     this.listOptions = options.listOptions || {};
     this.view = options.view || 'table';
     this.batchActions = options.batchActions || null;
-    if (options.actions === undefined) options.actions = ['view', 'edit', 'delete'];
+    // if (options.actions === undefined) options.actions = ['view', 'edit', 'delete'];
     this.actions = options.actions || null;
+    this.contextMenu = options.contextMenu || null;
 
     // Internal state
     this.collection = options.collection || null;
@@ -740,8 +741,10 @@ class Table extends View {
    */
   buildTableHeader() {
     let actionHeaderCell = '';
-    if (this.options.actions) {
+    if (this.actions) {
       actionHeaderCell = '<th>Actions</th>';
+    } else if (this.contextMenu) {
+      actionHeaderCell = '<th style="width: 1px;"></th>';
     }
 
     const headerCells = this.columns.map(column => {
@@ -1009,7 +1012,7 @@ class Table extends View {
       }
     }
 
-    const classes = column.class || '';
+    const classes = column.class || column.className || '';
 
     return `<td class="${classes}" data-action="item-clicked" data-id="${item.id}">${value}</td>`;
   }
@@ -1160,6 +1163,11 @@ class Table extends View {
    * @returns {string} Action cell HTML
    */
   buildActionCell(item) {
+    // If context menu is provided, use that instead of action buttons
+    if (this.contextMenu) {
+      return this.buildContextMenuCell(item);
+    }
+
     if (!this.actions) return '';
     const actions = this.actions;
 
@@ -1876,6 +1884,14 @@ class Table extends View {
       this.showErrorBanner(this.errorMessage);
     }
 
+    // Initialize Bootstrap dropdowns for context menus
+    if (this.contextMenu && typeof bootstrap !== 'undefined') {
+      const dropdownElements = this.element.querySelectorAll('[data-bs-toggle="dropdown"]');
+      dropdownElements.forEach(element => {
+        new bootstrap.Dropdown(element);
+      });
+    }
+
     this.updateLoadingState();
   }
 
@@ -2220,6 +2236,157 @@ class Table extends View {
               </div>
           </div>
       `;
+  }
+
+  buildContextMenuCell(item) {
+    if (!this.contextMenu || this.contextMenu.length === 0) return '';
+
+    const itemId = this.getCellValue(item, {key: 'id'});
+    const dropdownId = `context-menu-${itemId}`;
+
+    const menuItems = this.contextMenu.map(menuItem => {
+      // Handle separators
+      if (menuItem.separator) {
+        return '<li><hr class="dropdown-divider"></li>';
+      }
+
+      // Check permissions if specified
+      if (menuItem.permissions && !this.checkPermission(menuItem.permissions)) {
+        return '';
+      }
+
+      // Determine item class for styling (e.g., danger for delete actions)
+      let itemClass = 'dropdown-item';
+      if (menuItem.action === 'item-delete' || menuItem.action === 'delete' || menuItem.danger) {
+        itemClass += ' text-danger';
+      }
+      if (menuItem.disabled) {
+        itemClass += ' disabled';
+      }
+
+      return `
+        <li>
+          <a class="${itemClass}" href="#"
+             data-action="context-menu-item"
+             data-menu-action="${menuItem.action}"
+             data-id="${itemId}"
+             ${menuItem.disabled ? 'aria-disabled="true" tabindex="-1"' : ''}>
+            ${menuItem.icon ? `<i class="${menuItem.icon} me-2" style="width: 1rem;"></i>` : '<span class="me-2" style="width: 1rem; display: inline-block;"></span>'}
+            ${menuItem.label}
+          </a>
+        </li>
+      `;
+    }).filter(item => item).join('');
+
+    return `
+      <td class="text-end" style="width: 1px;">
+        <div class="dropdown">
+          <button class="btn btn-sm btn-link border-0"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  data-action="toggle-context-menu"
+                  data-id="${itemId}"
+                  style="color: #6c757d;">
+            <i class="bi bi-three-dots-vertical"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm" id="${dropdownId}">
+            ${menuItems}
+          </ul>
+        </div>
+      </td>
+    `;
+  }
+
+  checkPermission(permission) {
+    // Default implementation - override this method to implement actual permission checking
+    // You can access the app via this.getApp() and check user permissions
+    const app = this.getApp();
+    if (app && app.user && app.user.hasPermission) {
+      return app.user.hasPermission(permission);
+    }
+    // If no permission system is available, allow access
+    return true;
+  }
+
+  async handleActionContextMenuItem(event, element) {
+    event.preventDefault();
+    
+    // Close the dropdown
+    const dropdownMenu = element.closest('.dropdown-menu');
+    if (dropdownMenu && typeof bootstrap !== 'undefined') {
+      const dropdownToggle = dropdownMenu.previousElementSibling;
+      if (dropdownToggle && dropdownToggle.hasAttribute('data-bs-toggle')) {
+        const dropdownInstance = bootstrap.Dropdown.getInstance(dropdownToggle);
+        if (dropdownInstance) {
+          dropdownInstance.hide();
+        }
+      }
+    }
+    
+    // Check if the item is disabled
+    if (element.classList.contains('disabled') || element.getAttribute('aria-disabled') === 'true') {
+      return;
+    }
+
+    const itemId = element.getAttribute('data-id');
+    const menuAction = element.getAttribute('data-menu-action');
+
+    try {
+      const item = this.collection?.get(itemId) || this.collection?.find(i => String(this.getCellValue(i, {key: 'id'})) === String(itemId));
+
+      if (!item) {
+        console.warn('Table context menu: Item not found for ID:', itemId);
+        return;
+      }
+
+      // Find the menu item configuration
+      const menuItem = this.contextMenu.find(m => m.action === menuAction);
+      if (!menuItem) {
+        console.warn('Table context menu: Menu item configuration not found for action:', menuAction);
+        return;
+      }
+
+      // Check permissions again at runtime
+      if (menuItem.permissions && !this.checkPermission(menuItem.permissions)) {
+        console.warn('Table context menu: Permission denied for action:', menuAction, 'permission:', menuItem.permissions);
+        return;
+      }
+
+      // Check if there's a custom handler
+      if (menuItem.handler && typeof menuItem.handler === 'function') {
+        await menuItem.handler(item, event, element);
+        return;
+      }
+
+      // Default handlers for common actions
+      switch (menuAction) {
+        case 'item-view':
+          await this.onItemClicked(item, event);
+          break;
+        case 'item-edit':
+          await this.onItemEdit(item, event);
+          break;
+        case 'item-delete':
+          await this.onItemDelete(item, event);
+          break;
+        default:
+          // Emit a custom event with the action
+          this.emit(menuAction, item, event, element);
+          break;
+      }
+    } catch (error) {
+      console.error('Table context menu error:', error);
+      const app = this.getApp();
+      if (app && app.showError) {
+        app.showError('Action failed: ' + error.message);
+      }
+    }
+  }
+
+  async handleActionToggleContextMenu(event, element) {
+    // This is handled by Bootstrap's dropdown functionality
+    // We can add custom logic here if needed
   }
 
 }

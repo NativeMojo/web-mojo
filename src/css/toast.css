@@ -1,0 +1,181 @@
+/**
+ * Toast Service CSS - Bootstrap 5 Toast Styling
+ * Provides custom styling for different toast types
+ */
+
+/* Toast Type Styling */
+.toast-service-success {
+    --bs-toast-bg: rgba(248, 249, 250, 0.98);
+    --bs-toast-border-color: rgba(25, 135, 84, 0.3);
+    color: var(--bs-body-color);
+    border-left: 4px solid rgba(25, 135, 84, 0.8);
+}
+
+.toast-service-error {
+    --bs-toast-bg: rgba(248, 249, 250, 0.98);
+    --bs-toast-border-color: rgba(220, 53, 69, 0.3);
+    color: var(--bs-body-color);
+    border-left: 4px solid rgba(220, 53, 69, 0.8);
+}
+
+.toast-service-warning {
+    --bs-toast-bg: rgba(248, 249, 250, 0.98);
+    --bs-toast-border-color: rgba(255, 193, 7, 0.3);
+    color: var(--bs-body-color);
+    border-left: 4px solid rgba(255, 193, 7, 0.9);
+}
+
+.toast-service-info {
+    --bs-toast-bg: rgba(248, 249, 250, 0.98);
+    --bs-toast-border-color: rgba(13, 110, 253, 0.3);
+    color: var(--bs-body-color);
+    border-left: 4px solid rgba(13, 110, 253, 0.8);
+}
+
+.toast-service-plain {
+    --bs-toast-bg: rgba(248, 249, 250, 0.98);
+    --bs-toast-border-color: rgba(0, 0, 0, 0.08);
+    color: var(--bs-body-color);
+}
+
+/* Toast Icon Styling */
+.toast-service-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+/* Toast Icon Colors */
+.toast-service-success .toast-service-icon {
+    color: rgba(25, 135, 84, 0.9);
+}
+
+.toast-service-error .toast-service-icon {
+    color: rgba(220, 53, 69, 0.9);
+}
+
+.toast-service-warning .toast-service-icon {
+    color: rgba(255, 193, 7, 1);
+}
+
+.toast-service-info .toast-service-icon {
+    color: rgba(13, 110, 253, 0.9);
+}
+
+.toast-service-plain .toast-service-icon {
+    color: rgba(108, 117, 125, 0.8);
+}
+
+/* Close Button Styling */
+.toast-service-close {
+    filter: none;
+    opacity: 0.6;
+}
+
+.toast-service-close:hover {
+    opacity: 1;
+}
+
+/* Toast Container Enhancements */
+.toast-container {
+    max-width: 400px;
+}
+
+/* Toast Animation Enhancements */
+.toast {
+    transition: all 0.3s ease-in-out;
+}
+
+.toast.showing {
+    opacity: 0;
+    transform: translateX(100%);
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.toast.hide {
+    opacity: 0;
+    transform: translateX(100%);
+}
+
+/* Responsive Toast Styling */
+@media (max-width: 576px) {
+    .toast-container {
+        max-width: calc(100vw - 20px);
+        left: 10px !important;
+        right: 10px !important;
+        transform: none !important;
+    }
+
+    .toast-container.position-fixed.top-0.start-50.translate-middle-x,
+    .toast-container.position-fixed.bottom-0.start-50.translate-middle-x {
+        left: 10px !important;
+        right: 10px !important;
+        transform: none !important;
+        width: calc(100% - 20px);
+    }
+}
+
+/* Toast Header Enhancements */
+.toast-header {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.toast-service-success .toast-header,
+.toast-service-error .toast-header,
+.toast-service-info .toast-header,
+.toast-service-warning .toast-header {
+    border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
+/* Toast Body Enhancements */
+.toast-body {
+    padding: 0.75rem;
+    word-wrap: break-word;
+}
+
+/* Multi-line Toast Support */
+.toast-body .toast-message {
+    line-height: 1.4;
+}
+
+/* Toast Stacking */
+.toast-container .toast + .toast {
+    margin-top: 0.5rem;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .toast-service-plain {
+        --bs-toast-bg: rgba(33, 37, 41, 0.95);
+        --bs-toast-border-color: rgba(255, 255, 255, 0.1);
+        color: var(--bs-body-color);
+    }
+}
+
+/* Toast Progress Bar (for future use) */
+.toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 0 0 0.375rem 0.375rem;
+    transition: width linear;
+}
+
+/* Toast Action Buttons (for future use) */
+.toast-actions {
+    padding: 0.25rem 0.75rem 0.75rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.toast-actions .btn {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.75rem;
+}

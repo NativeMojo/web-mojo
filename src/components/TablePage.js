@@ -48,6 +48,8 @@ class TablePage extends Page {
       Collection: options.Collection || null,
       collection: options.collection || null,
       columns: options.columns || [],
+      contextMenu: options.contextMenu || null,
+      actions: options.actions || null,
       filters: { ...extractedFilters, ...(options.filters || {}) },
       collectionParams: options.collectionParams || {},
       groupFiltering: options.groupFiltering || false,
@@ -137,12 +139,6 @@ class TablePage extends Page {
     this.table = new Table({
       id: tableId,  // Set the ID so it matches the template placeholder
       containerId: this.tableContainerId,
-      Collection: this.tableConfig.Collection,  // Pass the Collection class
-      collection: this.tableConfig.collection,  // Or existing collection instance
-      columns: this.tableConfig.columns,
-      filters: this.tableConfig.filters,
-      batchActions: this.tableConfig.batchActions,
-      actions: this.tableConfig.actions,
       formCreate: this.options.formCreate,
       formEdit: this.options.formEdit || this.options.formCreate,
       showRefresh: this.showRefresh,
@@ -152,20 +148,7 @@ class TablePage extends Page {
       onRefresh: this.onRefresh,
       onAdd: this.onAdd,
       onExport: this.onExport,
-      // Pass other table config options
-      selectable: this.tableConfig.selectable,
-      searchable: this.tableConfig.searchable,
-      sortable: this.tableConfig.sortable,
-      filterable: this.tableConfig.filterable,
-      paginated: this.tableConfig.paginated,
-      responsive: this.tableConfig.responsive,
-      striped: this.tableConfig.striped,
-      bordered: this.tableConfig.bordered,
-      hover: this.tableConfig.hover,
-      pageSizes: this.tableConfig.pageSizes,
-      defaultPageSize: this.tableConfig.defaultPageSize,
-      emptyMessage: this.tableConfig.emptyMessage,
-      emptyIcon: this.tableConfig.emptyIcon
+      ...this.tableConfig
     });
 
     // Add table as a child view - framework will handle rendering
@@ -260,7 +243,7 @@ class TablePage extends Page {
      const desiredParams = { ...this.table.collection.params };
 
      // Check if there are any changes needed (Router will clear unused params automatically)
-     const hasChanges = 
+     const hasChanges =
        Object.keys(desiredParams).some(key =>
          String(currentParams[key] || '') !== String(desiredParams[key] || '')
        ) ||

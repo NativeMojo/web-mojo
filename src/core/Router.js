@@ -117,44 +117,31 @@ class Router {
         window.location.href = path;
         return;
     }
-    // If no route matched and we're not already on default route, try default route
-    if (!route && path !== `/${this.defaultRoute}`) {
-      console.log('No route matched, trying default route');
-      // ADD 404 LOGIC HERE
-      const defaultPath = `/${this.defaultRoute}`;
-      route = this.matchRoute(defaultPath);
-
-      if (route) {
-        // Navigate to default route
-        this.updateHistory(defaultPath, true, null);
-        path = defaultPath;
-      }
-    }
-
-    if (route) {
-      this.currentRoute = route;
-
-      // Emit route change event for Sidebar and other listeners
-      if (this.eventEmitter) {
-        this.eventEmitter.emit('route:changed', {
-          path,
-          pageName: route.pageName,
-          params: route.params,
-          query: route.query,
-          route: route
-        });
-      }
-
-      // Return route info for WebApp to handle
-      return route;
-    } else {
-      // Emit not found event
+    // If no route matched, emit 404 immediately - don't redirect to default
+    if (!route) {
+      console.log('No route matched for path:', path);
       if (this.eventEmitter) {
         this.eventEmitter.emit('route:notfound', { path });
       }
-
       return null;
     }
+
+    // Route was found, process it
+    this.currentRoute = route;
+
+    // Emit route change event for Sidebar and other listeners
+    if (this.eventEmitter) {
+      this.eventEmitter.emit('route:changed', {
+        path,
+        pageName: route.pageName,
+        params: route.params,
+        query: route.query,
+        route: route
+      });
+    }
+
+    // Return route info for WebApp to handle
+    return route;
   }
 
   matchRoute(path) {
@@ -192,12 +179,31 @@ class Router {
         }
       }
 
-      // Remove leading slash for page parameter (keep it for pattern matching)
-      const pageValue = cleanPath.startsWith('/') ? cleanPath.substring(1) : cleanPath;
+      // Separate path and query parameters
+      let pagePath = cleanPath;
+      let pathQuery = '';
+      
+      if (cleanPath.includes('?')) {
+        const [pathPart, queryPart] = cleanPath.split('?', 2);
+        pagePath = pathPart;
+        pathQuery = queryPart;
+      }
 
-      // Build URL with page parameter
+      // Remove leading slash for page parameter (keep it for pattern matching)
+      const pageValue = pagePath.startsWith('/') ? pagePath.substring(1) : pagePath;
+
+      // Build URL with page parameter and preserve query parameters
       const currentUrl = new URL(window.location.origin + window.location.pathname);
       currentUrl.searchParams.set('page', pageValue);
+      
+      // Add query parameters from the path
+      if (pathQuery) {
+        const queryParams = new URLSearchParams(pathQuery);
+        for (const [key, value] of queryParams) {
+          currentUrl.searchParams.set(key, value);
+        }
+      }
+      
       url = currentUrl.toString();
     } else {
       // History mode - use full path

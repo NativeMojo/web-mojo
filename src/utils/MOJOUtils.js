@@ -264,6 +264,223 @@ class MOJOUtils {
   }
 
   /**
+   * Check password strength and provide detailed feedback
+   * @param {string} password - Password to check
+   * @returns {object} Password strength analysis
+   */
+  static checkPasswordStrength(password) {
+    if (!password || typeof password !== 'string') {
+      return {
+        score: 0,
+        strength: 'invalid',
+        feedback: ['Password must be a non-empty string'],
+        details: {
+          length: 0,
+          hasLowercase: false,
+          hasUppercase: false,
+          hasNumbers: false,
+          hasSpecialChars: false,
+          hasCommonPatterns: false,
+          isCommonPassword: false
+        }
+      };
+    }
+
+    const feedback = [];
+    const details = {
+      length: password.length,
+      hasLowercase: /[a-z]/.test(password),
+      hasUppercase: /[A-Z]/.test(password),
+      hasNumbers: /[0-9]/.test(password),
+      hasSpecialChars: /[^a-zA-Z0-9]/.test(password),
+      hasCommonPatterns: false,
+      isCommonPassword: false
+    };
+
+    let score = 0;
+
+    // Length scoring
+    if (password.length < 6) {
+      feedback.push('Password should be at least 6 characters long');
+    } else if (password.length < 8) {
+      score += 1;
+      feedback.push('Consider using at least 8 characters for better security');
+    } else if (password.length < 12) {
+      score += 2;
+    } else {
+      score += 3;
+    }
+
+    // Character variety scoring
+    if (details.hasLowercase) score += 1;
+    else feedback.push('Include lowercase letters');
+
+    if (details.hasUppercase) score += 1;
+    else feedback.push('Include uppercase letters');
+
+    if (details.hasNumbers) score += 1;
+    else feedback.push('Include numbers');
+
+    if (details.hasSpecialChars) score += 2;
+    else feedback.push('Include special characters (!@#$%^&* etc.)');
+
+    // Check for common patterns
+    const commonPatterns = [
+      /123/,          // Sequential numbers
+      /abc/i,         // Sequential letters
+      /qwerty/i,      // Keyboard patterns
+      /asdf/i,        // Keyboard patterns
+      /(.)\1{2,}/,    // Repeated characters (aaa, 111)
+      /password/i,    // Contains "password"
+      /admin/i,       // Contains "admin"
+      /user/i,        // Contains "user"
+      /login/i        // Contains "login"
+    ];
+
+    for (const pattern of commonPatterns) {
+      if (pattern.test(password)) {
+        details.hasCommonPatterns = true;
+        score -= 1;
+        feedback.push('Avoid common patterns and dictionary words');
+        break;
+      }
+    }
+
+    // Check against very common passwords
+    const commonPasswords = [
+      '123456', 'password', '123456789', '12345678', '12345',
+      '1234567', '1234567890', 'qwerty', 'abc123', '111111',
+      '123123', 'admin', 'letmein', 'welcome', 'monkey',
+      'password123', '123qwe', 'qwerty123', '000000', 'dragon',
+      'sunshine', 'princess', 'azerty', '1234', 'iloveyou',
+      'trustno1', 'superman', 'shadow', 'master', 'jennifer'
+    ];
+
+    if (commonPasswords.includes(password.toLowerCase())) {
+      details.isCommonPassword = true;
+      score = Math.max(0, score - 3);
+      feedback.push('This password is too common and easily guessed');
+    }
+
+    // Calculate final strength
+    let strength;
+    if (score < 2) {
+      strength = 'very-weak';
+    } else if (score < 4) {
+      strength = 'weak';
+    } else if (score < 6) {
+      strength = 'fair';
+    } else if (score < 8) {
+      strength = 'good';
+    } else {
+      strength = 'strong';
+    }
+
+    // Add positive feedback for strong passwords
+    if (score >= 7 && feedback.length === 0) {
+      feedback.push('Strong password! Consider using a password manager.');
+    } else if (score >= 5 && feedback.length <= 1) {
+      feedback.push('Good password strength. Consider adding more variety.');
+    }
+
+    return {
+      score: Math.max(0, score),
+      strength,
+      feedback,
+      details
+    };
+  }
+
+  /**
+   * Generate a secure password with customizable options
+   * @param {object} options - Password generation options
+   * @param {number} options.length - Password length (default: 12)
+   * @param {boolean} options.includeLowercase - Include lowercase letters (default: true)
+   * @param {boolean} options.includeUppercase - Include uppercase letters (default: true)
+   * @param {boolean} options.includeNumbers - Include numbers (default: true)
+   * @param {boolean} options.includeSpecialChars - Include special characters (default: true)
+   * @param {string} options.customChars - Custom character set to use
+   * @param {boolean} options.excludeAmbiguous - Exclude ambiguous characters like 0, O, l, I (default: false)
+   * @returns {string} Generated password
+   */
+  static generatePassword(options = {}) {
+    const defaults = {
+      length: 12,
+      includeLowercase: true,
+      includeUppercase: true,
+      includeNumbers: true,
+      includeSpecialChars: true,
+      customChars: '',
+      excludeAmbiguous: false
+    };
+
+    const config = { ...defaults, ...options };
+
+    if (config.length < 4) {
+      throw new Error('Password length must be at least 4 characters');
+    }
+
+    // Build character sets
+    let lowercase = 'abcdefghijklmnopqrstuvwxyz';
+    let uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let numbers = '0123456789';
+    let specialChars = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+
+    // Remove ambiguous characters if requested
+    if (config.excludeAmbiguous) {
+      lowercase = lowercase.replace(/[il]/g, '');
+      uppercase = uppercase.replace(/[IOL]/g, '');
+      numbers = numbers.replace(/[01]/g, '');
+      specialChars = specialChars.replace(/[|]/g, '');
+    }
+
+    // Build character pool
+    let charPool = '';
+    const requiredChars = [];
+
+    if (config.customChars) {
+      charPool = config.customChars;
+    } else {
+      if (config.includeLowercase) {
+        charPool += lowercase;
+        requiredChars.push(lowercase[Math.floor(Math.random() * lowercase.length)]);
+      }
+      if (config.includeUppercase) {
+        charPool += uppercase;
+        requiredChars.push(uppercase[Math.floor(Math.random() * uppercase.length)]);
+      }
+      if (config.includeNumbers) {
+        charPool += numbers;
+        requiredChars.push(numbers[Math.floor(Math.random() * numbers.length)]);
+      }
+      if (config.includeSpecialChars) {
+        charPool += specialChars;
+        requiredChars.push(specialChars[Math.floor(Math.random() * specialChars.length)]);
+      }
+    }
+
+    if (!charPool) {
+      throw new Error('No character types selected for password generation');
+    }
+
+    // Generate password
+    let password = '';
+    
+    // Add required characters first to ensure variety
+    for (const char of requiredChars) {
+      password += char;
+    }
+
+    // Fill remaining length with random characters
+    for (let i = password.length; i < config.length; i++) {
+      password += charPool[Math.floor(Math.random() * charPool.length)];
+    }
+
+    // Shuffle the password to avoid predictable patterns
+    return password.split('').sort(() => Math.random() - 0.5).join('');
+  }
+
+  /**
    * Parse query string into object
    * @param {string} queryString - Query string to parse
    * @returns {object} Parsed query parameters

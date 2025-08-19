@@ -18,7 +18,7 @@ Dialog is a powerful modal component built on Bootstrap 5 that provides rich int
 ### 1. Simple Dialog
 
 ```javascript
-import Dialog from './components/Dialog.js';
+import { Dialog } from 'web-mojo';
 
 // Create a basic dialog
 const dialog = new Dialog({
@@ -38,7 +38,7 @@ dialog.show();
 ### 2. Dialog with View Content
 
 ```javascript
-import UserFormView from './views/UserFormView.js';
+import { UserFormView } from '../views/UserFormView.js';
 
 const formView = new UserFormView({ model: user });
 
@@ -273,6 +273,8 @@ await Dialog.showCode(jsCode, 'javascript', {
 ### 1. Async Content Loading
 
 ```javascript
+import { Dialog } from 'web-mojo';
+
 const dialog = new Dialog({
   title: 'Loading...',
   body: async () => {
@@ -529,6 +531,9 @@ const dialog = new Dialog({
 
 ### With Views
 ```javascript
+import { View, Dialog } from 'web-mojo';
+import { User } from 'web-mojo/models';
+
 class EditUserView extends View {
   async handleActionEdit(event, element) {
     const userId = element.getAttribute('data-id');
@@ -549,6 +554,8 @@ class EditUserView extends View {
 
 ### With Tables
 ```javascript
+import { Table, Dialog } from 'web-mojo';
+
 class UsersTable extends Table {
   async handleActionDelete(event, element) {
     const itemId = element.getAttribute('data-id');
@@ -572,6 +579,8 @@ class UsersTable extends Table {
 
 ### With Forms
 ```javascript
+import { View, Dialog } from 'web-mojo';
+
 class UserFormView extends View {
   async handleActionSave(event, element) {
     if (!this.validate()) {

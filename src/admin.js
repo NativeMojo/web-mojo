@@ -38,11 +38,11 @@ export function registerAdminPages(app, addToMenu = true) {
     app.registerPage('admin/users', UserTablePage, {permissions: ["manage_users"]});
     app.registerPage('admin/groups', GroupTablePage, {permissions: ["manage_groups"]});
     app.registerPage('admin/members', MemberTablePage, {permissions: ["manage_members"]});
-    app.registerPage('admin/s3buckets', S3BucketTablePage, {permissions: ["manage_s3buckets"]});
-    app.registerPage('admin/filemanagers', FileManagerTablePage, {permissions: ["manage_filemanagers"]});
+    app.registerPage('admin/s3buckets', S3BucketTablePage, {permissions: ["manage_aws"]});
+    app.registerPage('admin/filemanagers', FileManagerTablePage, {permissions: ["manage_files"]});
     app.registerPage('admin/files', FileTablePage, {permissions: ["manage_files"]});
-    app.registerPage('admin/incidents', IncidentTablePage, {permissions: ["manage_incidents"]});
-    app.registerPage('admin/logs', LogTablePage, {permissions: ["manage_logs"]});
+    app.registerPage('admin/incidents', IncidentTablePage, {permissions: ["view_incidents"]});
+    app.registerPage('admin/logs', LogTablePage, {permissions: ["view_logs"]});
 
     // Check if sidebar exists and has an admin menu config
     if (addToMenu &&app.sidebar && app.sidebar.getMenuConfig) {

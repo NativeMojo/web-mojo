@@ -677,7 +677,7 @@ class Sidebar extends View {
     setupRouteListeners() {
         const app = this.getApp();
         if (app && app.events) {
-            app.events.on("route:change", (data) => {
+            app.events.on("page:show", (data) => {
                 this.onRouteChanged(data);
             });
         }

@@ -1139,6 +1139,7 @@ class Dialog extends View {
       formConfig: {
         model: options.model,
         data: options.data,
+        fields: formConfig.fields || options.fields,
         ...formConfig,
         // Override submit button to prevent default form submission
         submitButton: false,

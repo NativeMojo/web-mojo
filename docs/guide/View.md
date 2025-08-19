@@ -19,7 +19,7 @@ View is the foundational component of the MOJO framework. Every visual element i
 ### 1. Simple View
 
 ```javascript
-import View from './core/View.js';
+import { View } from 'web-mojo';
 
 class GreetingView extends View {
   constructor(options = {}) {

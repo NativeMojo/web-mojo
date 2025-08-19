@@ -13,7 +13,7 @@
 
 .mojo-select-cell,
 .mojo-select-all-cell {
-    background-color: #f8f9fa;
+    background-color: var(--bs-light);
     cursor: pointer;
     transition: background-color 0.2s ease;
     text-align: center;
@@ -38,9 +38,9 @@
 .mojo-checkbox {
     width: 16px;
     height: 16px;
-    border: 2px solid #dee2e6;
-    border-radius: 3px;
-    background-color: white;
+    border: 2px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius-sm);
+    background-color: var(--bs-body-bg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -49,14 +49,14 @@
 
 .mojo-select-cell.selected .mojo-checkbox,
 .mojo-select-all-cell.selected .mojo-checkbox {
-    border-color: white;
-    background-color: white;
+    border-color: var(--bs-white);
+    background-color: var(--bs-white);
 }
 
 .mojo-select-cell:hover .mojo-checkbox,
 .mojo-select-all-cell:hover .mojo-checkbox {
-    border-color: white;
-    background-color: white;
+    border-color: var(--bs-white);
+    background-color: var(--bs-white);
 }
 
 .mojo-checkbox i {
@@ -98,7 +98,8 @@
     top: 0;
     left: 0;
     right: 0;
-    background-color: #ffffffc4;
+    background-color: var(--bs-body-bg);
+    opacity: 0.8;
     height: 100%;
 }
 
@@ -111,7 +112,7 @@
 .page-title {
     font-size: 1.75rem;
     font-weight: 600;
-    color: var(--bs-body-color);
+    color: var(--bs-emphasis-color);
     margin-bottom: 0.5rem;
 }
 
@@ -161,7 +162,8 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(255, 255, 255, 0.9);
+    background: var(--bs-body-bg);
+    opacity: 0.9;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -223,7 +225,7 @@
 div.batch-select-count {
     font-size: 1.5rem !important;
     background-color: var(--bs-primary);
-    color: white;
+    color: var(--bs-white);
     min-width: 50px;
     text-align: center;
     height: 60px;
@@ -238,7 +240,7 @@ div.batch-select-title {
 
 div.batch-select-action {
     cursor: pointer;
-    color: #8ab9ff;
+    color: var(--bs-primary-text-emphasis);
     transition: color 0.2s ease;
 }
 
@@ -302,12 +304,12 @@ div.batch-select-end {
 
 .collection-select-view .dropdown-menu::-webkit-scrollbar-track {
     background: var(--bs-secondary-bg);
-    border-radius: 3px;
+    border-radius: var(--bs-border-radius-sm);
 }
 
 .collection-select-view .dropdown-menu::-webkit-scrollbar-thumb {
     background: var(--bs-border-color);
-    border-radius: 3px;
+    border-radius: var(--bs-border-radius-sm);
 }
 
 .collection-select-view .dropdown-menu::-webkit-scrollbar-thumb:hover {
@@ -338,12 +340,12 @@ div.batch-select-end {
 
 .table-container::-webkit-scrollbar-track {
     background: var(--bs-secondary-bg);
-    border-radius: 4px;
+    border-radius: var(--bs-border-radius-sm);
 }
 
 .table-container::-webkit-scrollbar-thumb {
     background: var(--bs-border-color);
-    border-radius: 4px;
+    border-radius: var(--bs-border-radius-sm);
 }
 
 .table-container::-webkit-scrollbar-thumb:hover {
@@ -440,7 +442,8 @@ div.batch-select-end {
    ======================================================================== */
 
 [data-bs-theme="dark"] .table-loading-overlay {
-    background: rgba(0, 0, 0, 0.9);
+    background: var(--bs-dark);
+    opacity: 0.9;
 }
 
 [data-bs-theme="dark"] .batch-actions-panel {
@@ -448,27 +451,27 @@ div.batch-select-end {
 }
 
 [data-bs-theme="dark"] .collection-select-view .dropdown-menu::-webkit-scrollbar-track {
-    background: var(--bs-dark);
+    background: var(--bs-secondary-bg);
 }
 
 [data-bs-theme="dark"] .collection-select-view .dropdown-menu::-webkit-scrollbar-thumb {
-    background: var(--bs-secondary);
+    background: var(--bs-border-color);
 }
 
 [data-bs-theme="dark"] .collection-select-view .dropdown-menu::-webkit-scrollbar-thumb:hover {
-    background: var(--bs-light);
+    background: var(--bs-secondary-color);
 }
 
 [data-bs-theme="dark"] .table-container::-webkit-scrollbar-track {
-    background: var(--bs-dark);
+    background: var(--bs-secondary-bg);
 }
 
 [data-bs-theme="dark"] .table-container::-webkit-scrollbar-thumb {
-    background: var(--bs-secondary);
+    background: var(--bs-border-color);
 }
 
 [data-bs-theme="dark"] .table-container::-webkit-scrollbar-thumb:hover {
-    background: var(--bs-light);
+    background: var(--bs-secondary-color);
 }
 
 /* ========================================================================
@@ -477,8 +480,8 @@ div.batch-select-end {
 
 @media (prefers-contrast: high) {
     .collection-select-view .dropdown-item.active {
-        background-color: #000;
-        color: #fff;
+        background-color: var(--bs-emphasis-color);
+        color: var(--bs-body-bg);
     }
 
     .mojo-checkbox {

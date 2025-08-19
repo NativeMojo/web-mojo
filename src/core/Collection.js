@@ -96,7 +96,7 @@ class Collection {
   /**
    * Fetch collection data from API
    * @param {object} additionalParams - Additional parameters to merge for this fetch only
-   * @returns {Promise} Promise that resolves with collection data
+   * @returns {Promise} Promise that resolves with REST response
    */
   async fetch(additionalParams = {}) {
     const requestKey = JSON.stringify({ ...this.params, ...additionalParams });
@@ -120,19 +120,19 @@ class Collection {
 
     if (this.lastFetchTime && (now - this.lastFetchTime) < minInterval) {
       console.info('Collection: Rate limited, skipping fetch');
-      return this;
+      return { success: true, message: 'Rate limited, skipping fetch', data: { data: this.toJSON() } };
     }
 
     // Skip fetching if not REST enabled
     if (!this.restEnabled) {
       console.info('Collection: REST disabled, skipping fetch');
-      return this;
+      return { success: true, message: 'REST disabled, skipping fetch', data: { data: this.toJSON() } };
     }
 
     // Skip fetching if preloaded is true and we already have data
     if (this.options.preloaded && this.models.length > 0) {
       console.info('Collection: Using preloaded data, skipping fetch');
-      return this;
+      return { success: true, message: 'Using preloaded data, skipping fetch', data: { data: this.toJSON() } };
     }
 
     const url = this.buildUrl();
@@ -154,9 +154,13 @@ class Collection {
       // Don't throw if request was cancelled
       if (error.name === 'AbortError') {
         console.info('Collection: Request was cancelled');
-        return this;
+        return { success: false, error: 'Request cancelled', status: 0 };
       }
-      throw error;
+      return {
+        success: false,
+        error: error.message,
+        status: error.status || 500
+      };
     } finally {
       this.currentRequest = null;
       this.currentRequestKey = null;
@@ -169,7 +173,7 @@ class Collection {
    * @param {string} url - API endpoint URL
    * @param {object} additionalParams - Additional parameters
    * @param {AbortController} abortController - Controller for request cancellation
-   * @returns {Promise} Promise that resolves with collection data
+   * @returns {Promise} Promise that resolves with REST response
    */
   async _performFetch(url, additionalParams, abortController) {
     console.log('Fetching collection data from', url);
@@ -189,28 +193,34 @@ class Collection {
         }
 
         this.add(data, { silent: additionalParams.silent });
+        this.errors = {};
         this.emit("fetch:success");
-        return this;
       } else {
         if (response.data && response.data.error) {
-            this.emit("fetch:error", { message: response.data.error, error: response.data });
+          this.errors = response.data;
+          this.emit("fetch:error", { message: response.data.error, error: response.data });
         } else {
           this.errors = response.errors || {};
           this.emit("fetch:error", { error: response.errors });
         }
-
       }
+
+      return response;
     } catch (error) {
       // Handle cancellation gracefully
       if (error.name === 'AbortError') {
         console.info('Collection: Fetch was cancelled');
-        // throw error;
-          return;
+        return { success: false, error: 'Request cancelled', status: 0 };
       }
 
       this.errors = { fetch: error.message };
       this.emit("fetch:error", { message: error.message, error: error });
-      // throw error;
+      
+      return {
+        success: false,
+        error: error.message,
+        status: error.status || 500
+      };
     } finally {
       this.loading = false;
       this.emit("fetch:end");
@@ -222,7 +232,7 @@ class Collection {
    * @param {object} newParams - Parameters to update
    * @param {boolean} autoFetch - Whether to automatically fetch after updating params
    * @param {number} debounceMs - Optional debounce delay in milliseconds
-   * @returns {Promise} Promise that resolves with collection
+   * @returns {Promise} Promise that resolves with REST response if autoFetch=true, or collection if autoFetch=false
    */
   async updateParams(newParams, autoFetch = false, debounceMs = 0) {
     this.params = { ...this.params, ...newParams };

@@ -27,11 +27,11 @@ All classes support both async/await patterns and event-driven programming.
 ### Basic Model Definition
 
 ```javascript
-import Model from '../core/Model.js';
+import { Model } from 'web-mojo';
 
 class User extends Model {
   static endpoint = '/api/users';
-  
+
   static validations = {
     name: { required: true, minLength: 2 },
     email: { required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ }
@@ -50,26 +50,41 @@ const user = new User({
   email: 'john@example.com'
 });
 
-// Save to API (POST /api/users)
-try {
-  await user.save({
-    name: 'John Doe',
-    email: 'john@example.com'
-  });
-  console.log('User created:', user.toJSON());
-} catch (error) {
-  console.error('Save failed:', user.errors);
+// Save to API (POST /api/users) - returns REST response
+const response = await user.save({
+  name: 'John Doe',
+  email: 'john@example.com'
+});
+
+// Handle different response types
+if (response.success) {
+  console.log('User created successfully:', user.toJSON());
+} else if (response.status === 422) {
+  // Handle validation errors
+  console.log('Validation errors:', response.errors);
+} else if (response.status === 403) {
+  // Handle permission errors
+  console.log('Permission denied:', response.message);
+} else {
+  // Handle other errors
+  console.log('Save failed:', response.error || response.message);
 }
 ```
 
 #### Fetching Existing Models
 
 ```javascript
-// Fetch user by ID (GET /api/users/123)
+// Fetch user by ID (GET /api/users/123) - returns REST response
 const user = new User({ id: 123 });
-await user.fetch();
+const response = await user.fetch();
 
-// Or use static method
+if (response.success) {
+  console.log('User data:', user.toJSON());
+} else {
+  console.log('Fetch failed:', response.error);
+}
+
+// Or use static method (still returns model for convenience)
 const user = await User.find(123);
 ```
 
@@ -80,8 +95,14 @@ const user = await User.find(123);
 user.set('name', 'Jane Doe');
 user.set({ email: 'jane@example.com', age: 30 });
 
-// Save changes (PUT /api/users/123)
-await user.save(user.getChangedAttributes());
+// Save changes (PUT /api/users/123) - returns REST response
+const response = await user.save(user.getChangedAttributes());
+
+if (response.success) {
+  console.log('User updated successfully');
+} else {
+  console.log('Update failed:', response.error);
+}
 
 // Check if model has unsaved changes
 if (user.isDirty()) {
@@ -92,12 +113,16 @@ if (user.isDirty()) {
 #### Deleting Models
 
 ```javascript
-// Delete user (DELETE /api/users/123)
-try {
-  await user.destroy();
-  console.log('User deleted');
-} catch (error) {
-  console.error('Delete failed:', user.errors);
+// Delete user (DELETE /api/users/123) - returns REST response
+const response = await user.destroy();
+
+if (response.success) {
+  console.log('User deleted successfully');
+  // Model data is automatically cleared on successful delete
+} else if (response.status === 409) {
+  console.log('Cannot delete: user has dependencies');
+} else {
+  console.log('Delete failed:', response.error);
 }
 ```
 
@@ -129,7 +154,7 @@ When you're not in an async method, you can handle `model.fetch()` completion us
 ```javascript
 function loadUser(userId) {
   const user = new User({ id: userId });
-  
+
   user.fetch()
     .then(() => {
       console.log('User loaded:', user.toJSON());
@@ -139,7 +164,7 @@ function loadUser(userId) {
       console.error('Load failed:', user.errors);
       showError('Failed to load user');
     });
-    
+
   return user; // Return immediately, data loads asynchronously
 }
 ```
@@ -148,13 +173,13 @@ function loadUser(userId) {
 ```javascript
 function loadUserWithEvents(userId) {
   const user = new User({ id: userId });
-  
+
   // Set up completion handlers before calling fetch
   user.once('change', () => {
     console.log('User data loaded');
     updateUI(user);
   });
-  
+
   // Handle loading state
   const originalLoading = user.loading;
   const checkLoadingComplete = () => {
@@ -167,7 +192,7 @@ function loadUserWithEvents(userId) {
       }
     }
   };
-  
+
   // Monitor loading state changes
   const loadingInterval = setInterval(() => {
     checkLoadingComplete();
@@ -175,10 +200,10 @@ function loadUserWithEvents(userId) {
       clearInterval(loadingInterval);
     }
   }, 50);
-  
+
   // Start the fetch
   user.fetch();
-  
+
   return user;
 }
 ```
@@ -187,7 +212,7 @@ function loadUserWithEvents(userId) {
 ```javascript
 function loadUserWithCallback(userId, onComplete, onError) {
   const user = new User({ id: userId });
-  
+
   user.fetch()
     .then(() => {
       if (onComplete) onComplete(user);
@@ -195,12 +220,12 @@ function loadUserWithCallback(userId, onComplete, onError) {
     .catch((error) => {
       if (onError) onError(user.errors, user);
     });
-    
+
   return user;
 }
 
 // Usage
-loadUserWithCallback(123, 
+loadUserWithCallback(123,
   (user) => {
     console.log('Success:', user.get('name'));
     updateUI(user);
@@ -216,15 +241,15 @@ loadUserWithCallback(123,
 ```javascript
 function setupUserAndLoad(userId) {
   const user = new User({ id: userId });
-  
+
   // Set up permanent event listeners
   user.on('change', () => {
     updateUserDisplay(user);
   });
-  
+
   // Just trigger the fetch - events will handle completion
   user.fetch(); // No await, no .then() needed
-  
+
   return user;
 }
 ```
@@ -234,7 +259,7 @@ function setupUserAndLoad(userId) {
 // Extend Model to emit custom events
 class User extends Model {
   static endpoint = '/api/users';
-  
+
   async fetch(options = {}) {
     try {
       const result = await super.fetch(options);
@@ -250,17 +275,17 @@ class User extends Model {
 // Usage without async
 function loadUser(userId) {
   const user = new User({ id: userId });
-  
+
   user.on('fetch:success', (user) => {
     console.log('Fetch completed:', user.toJSON());
     updateUI(user);
   });
-  
+
   user.on('fetch:error', (error, user) => {
     console.error('Fetch failed:', error);
     showError('Failed to load user');
   });
-  
+
   user.fetch(); // No await needed
   return user;
 }
@@ -295,8 +320,8 @@ console.log(user.get('created_at|date:short')); // Formatted date
 ### Basic Collection Definition
 
 ```javascript
-import Collection from '../core/Collection.js';
-import User from './User.js';
+import { Collection } from 'web-mojo';
+import { User } from 'web-mojo/models';
 
 class UserCollection extends Collection {
   constructor(options = {}) {
@@ -316,29 +341,59 @@ class UserCollection extends Collection {
 ```javascript
 const users = new UserCollection();
 
-// Fetch first page (GET /api/users?start=0&size=20)
-await users.fetch();
+// Fetch first page (GET /api/users?start=0&size=20) - returns REST response
+const response = await users.fetch();
 
-console.log('Users loaded:', users.length());
-console.log('Total count:', users.meta.count);
+if (response.success) {
+  console.log('Users loaded:', users.length());
+  console.log('Total count:', users.meta.count);
+} else {
+  console.log('Fetch failed:', response.error);
+}
 
 // Fetch with custom parameters
-await users.fetch({ search: 'john', status: 'active' });
+const searchResponse = await users.fetch({ search: 'john', status: 'active' });
+
+if (searchResponse.success) {
+  console.log('Search results:', users.toJSON());
+} else if (searchResponse.status === 404) {
+  console.log('No users found matching criteria');
+} else {
+  console.log('Search failed:', searchResponse.error);
+}
 ```
 
 #### Pagination
 
 ```javascript
-// Update pagination parameters and fetch
-await users.updateParams({ 
-  start: 20, 
-  size: 10 
+// Update pagination parameters and fetch - returns REST response when autoFetch=true
+const paginationResponse = await users.updateParams({
+  start: 20,
+  size: 10
 }, true); // auto-fetch
 
-// Debounced fetching for search
-await users.updateParams({ 
-  search: searchTerm 
+if (paginationResponse.success) {
+  console.log('Next page loaded:', users.length());
+} else {
+  console.log('Pagination failed:', paginationResponse.error);
+}
+
+// Debounced fetching for search - returns REST response
+const searchResponse = await users.updateParams({
+  search: searchTerm
 }, true, 300); // 300ms debounce
+
+if (searchResponse.success) {
+  console.log('Search completed:', users.length(), 'results');
+} else {
+  console.log('Search failed:', searchResponse.error);
+}
+
+// Update params without fetching - returns collection instance
+const updatedCollection = await users.updateParams({
+  status: 'active'
+}, false); // no auto-fetch
+console.log('Params updated, collection ready for manual fetch');
 ```
 
 #### Adding and Removing Models
@@ -429,7 +484,7 @@ await localUsers.fetch(); // No API call made
 ### Configuration
 
 ```javascript
-import rest from '../core/Rest.js';
+import { Rest } from 'web-mojo';
 
 // Configure base settings
 rest.configure({
@@ -450,9 +505,9 @@ rest.setAuthToken('jwt-token', 'Bearer');
 
 ```javascript
 // GET request
-const response = await rest.GET('/users', { 
-  page: 1, 
-  limit: 10 
+const response = await rest.GET('/users', {
+  page: 1,
+  limit: 10
 });
 
 if (response.success) {
@@ -576,25 +631,40 @@ users.on('update', () => {
 ```javascript
 const user = new User();
 
-try {
-  await user.save(invalidData);
-} catch (error) {
-  // Check validation errors
-  if (Object.keys(user.errors).length > 0) {
-    console.log('Validation errors:', user.errors);
+// Save with response-based error handling
+const response = await user.save(invalidData);
+
+if (response.success) {
+  console.log('User saved successfully');
+} else {
+  console.log('Save failed:', response.error || response.message);
+  
+  // Handle specific error types
+  if (response.status === 422) {
+    console.log('Validation errors:', response.errors);
     
     // Display field-specific errors
-    for (const [field, message] of Object.entries(user.errors)) {
+    for (const [field, message] of Object.entries(response.errors || {})) {
       showFieldError(field, message);
     }
+  } else if (response.status === 403) {
+    console.log('Permission denied');
+  } else if (response.status >= 500) {
+    console.log('Server error occurred');
+  }
+  
+  // Model.errors is also populated for convenience
+  if (Object.keys(user.errors).length > 0) {
+    console.log('Model errors:', user.errors);
   }
 }
 
-// Validation before saving
+// Validation before saving (still works the same)
 if (user.validate()) {
-  await user.save();
+  const response = await user.save();
+  // Handle response...
 } else {
-  console.log('Validation failed:', user.errors);
+  console.log('Client-side validation failed:', user.errors);
 }
 ```
 
@@ -603,15 +673,38 @@ if (user.validate()) {
 ```javascript
 const users = new UserCollection();
 
-try {
-  await users.fetch();
-} catch (error) {
+// Collection fetch with response handling
+const response = await users.fetch();
+
+if (response.success) {
+  console.log(`Loaded ${users.length} users`);
+} else {
+  console.error('Fetch failed:', response.error || response.message);
+  
+  if (response.status === 404) {
+    console.log('No users found');
+  } else if (response.status === 403) {
+    console.log('Access denied to user list');
+  }
+  
+  // Collection.errors is also populated for convenience
   if (users.errors.fetch) {
-    console.error('Fetch error:', users.errors.fetch);
+    console.error('Collection fetch error:', users.errors.fetch);
   }
 }
 
-// Cancel requests
+// Pagination with response handling
+const nextPageResponse = await users.updateParams({ start: 20 }, true);
+
+if (nextPageResponse.success) {
+  console.log('Next page loaded successfully');
+} else if (nextPageResponse.status === 404) {
+  console.log('No more pages available');
+} else {
+  console.log('Pagination failed:', nextPageResponse.error);
+}
+
+// Cancel requests (still works the same)
 users.cancel(); // Cancel active fetch request
 ```
 
@@ -620,7 +713,7 @@ users.cancel(); // Cancel active fetch request
 ```javascript
 try {
   const response = await rest.GET('/api/users');
-  
+
   if (!response.success) {
     console.error('API Error:', response.message);
     console.error('Details:', response.errors);
@@ -641,7 +734,7 @@ try {
 ```javascript
 class User extends Model {
   static endpoint = '/api/users';
-  
+
   // Define validation rules
   static validations = {
     email: [
@@ -650,12 +743,12 @@ class User extends Model {
     ],
     name: { required: true, minLength: 2 }
   };
-  
+
   // Custom methods
   get displayName() {
     return this.get('first_name') + ' ' + this.get('last_name');
   }
-  
+
   async activate() {
     return this.save({ status: 'active' });
   }
@@ -674,12 +767,12 @@ class UserCollection extends Collection {
       ...options
     });
   }
-  
+
   // Custom methods
   async fetchActive() {
     return this.fetch({ status: 'active' });
   }
-  
+
   getAdmins() {
     return this.where({ role: 'admin' });
   }
@@ -694,7 +787,7 @@ rest.addInterceptor('response', async (response) => {
   if (!response.success) {
     // Log errors
     console.error('API Error:', response.message);
-    
+
     // Show user-friendly notifications
     if (response.status >= 500) {
       showNotification('Server error. Please try again later.', 'error');
@@ -714,12 +807,14 @@ rest.addInterceptor('response', async (response) => {
 // - Error handling
 // - Sequential operations
 async function updateUser(id, data) {
-  try {
-    const user = await User.find(id);
-    await user.save(data);
-    return user;
-  } catch (error) {
-    handleError(error);
+  const user = await User.find(id); // Still returns model for convenience
+  const response = await user.save(data); // Returns REST response
+  
+  if (response.success) {
+    return user; // Model updated automatically on success
+  } else {
+    console.error('Update failed:', response.error);
+    throw new Error(response.error || 'Failed to update user');
   }
 }
 
@@ -754,4 +849,92 @@ if (users.isFetching()) {
 await users.fetch(newParams);
 ```
 
-This guide covers the essential patterns for using MOJO's REST framework. The combination of async operations and event-driven programming provides flexibility for both simple CRUD operations and complex reactive applications.
+## Consistent Response Pattern
+
+### Overview
+
+All CRUD operations in MOJO's REST framework now return consistent REST response objects instead of mixed return types. This provides better error handling, access to response metadata, and a predictable API.
+
+### Response Structure
+
+All REST operations return a response object with this structure:
+
+```javascript
+{
+  success: boolean,       // True if operation succeeded
+  data: object,          // Response data (varies by endpoint)
+  error: string,         // Error message (if success = false)
+  errors: object,        // Detailed errors (e.g., validation errors)
+  status: number,        // HTTP status code
+  message: string,       // Server message
+  // ... additional response metadata
+}
+```
+
+### Model Operations
+
+```javascript
+const user = new User();
+
+// All operations return REST responses
+const fetchResponse = await user.fetch();
+const saveResponse = await user.save(data);
+const destroyResponse = await user.destroy();
+
+// Consistent error checking across all operations
+if (fetchResponse.success) {
+  // Model is automatically updated on successful fetch
+  console.log('User data:', user.toJSON());
+} else {
+  console.log('Fetch failed:', fetchResponse.error);
+}
+```
+
+### Collection Operations
+
+```javascript
+const users = new UserCollection();
+
+// Collections also return REST responses
+const fetchResponse = await users.fetch();
+const paginationResponse = await users.updateParams({ page: 2 }, true);
+
+// Same error handling pattern
+if (fetchResponse.success) {
+  // Collection is automatically populated on successful fetch
+  console.log('Loaded users:', users.length());
+} else {
+  console.log('Collection fetch failed:', fetchResponse.error);
+}
+```
+
+### Benefits
+
+1. **Consistent API**: All operations work the same way
+2. **Better Error Handling**: Access to status codes, detailed errors, server messages
+3. **Response Metadata**: Headers, timing, server information
+4. **Predictable**: No more mixed return types or undefined on errors
+
+### Migration Notes
+
+**Before (inconsistent returns):**
+```javascript
+const result = await model.save(data); // Could return model or undefined
+if (result) {
+  // Success
+} else {
+  // Check model.errors
+}
+```
+
+**After (consistent responses):**
+```javascript
+const response = await model.save(data); // Always returns response object
+if (response.success) {
+  // Model automatically updated, use model.toJSON()
+} else {
+  // Full error information in response.error, response.errors, etc.
+}
+```
+
+This guide covers the essential patterns for using MOJO's REST framework. The combination of async operations, event-driven programming, and consistent response handling provides flexibility for both simple CRUD operations and complex reactive applications.

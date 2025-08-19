@@ -39,6 +39,7 @@ class Model {
     this.endpoint = options.endpoint || this.constructor.endpoint || '';
     this.id = data.id || null;
     this.attributes = { ...data };
+    this._ = this.attributes;
     this.originalAttributes = { ...data };
     this.errors = {};
     this.loading = false;
@@ -119,7 +120,7 @@ class Model {
    * Fetch model data from API with request deduplication and cancellation
    * @param {object} options - Request options
    * @param {number} options.debounceMs - Optional debounce delay in milliseconds
-   * @returns {Promise} Promise that resolves with model data
+   * @returns {Promise} Promise that resolves with REST response
    */
   async fetch(options = {}) {
     if (!this.id && !options.id) {
@@ -191,7 +192,7 @@ class Model {
    * Handle debounced fetch requests
    * @param {string} requestKey - Unique key for this request
    * @param {object} options - Fetch options
-   * @returns {Promise} Promise that resolves with model data
+   * @returns {Promise} Promise that resolves with REST response
    */
   async _debouncedFetch(requestKey, options) {
     // Clear existing debounced fetch
@@ -219,7 +220,7 @@ class Model {
    * @param {string} url - API endpoint URL
    * @param {object} options - Request options
    * @param {AbortController} abortController - Controller for request cancellation
-   * @returns {Promise} Promise that resolves with model data
+   * @returns {Promise} Promise that resolves with REST response
    */
   async _performFetch(url, options, abortController) {
     try {
@@ -231,20 +232,15 @@ class Model {
         if (response.data.status) {
           this.originalAttributes = { ...this.attributes };
           this.set(response.data.data);
+          this.errors = {};
         } else {
           this.errors = response.data;
-          const error = response.data.error || 'Failed to fetch model';
-          this.showError(error);
-          throw new Error(error);
         }
-
-        return this;
       } else {
         this.errors = response.errors || {};
-        const error = response.message || 'Failed to fetch model';
-        this.showError(error);
-        throw new Error(error);
       }
+
+      return response;
     } catch (error) {
       // Handle cancellation gracefully
       if (error.name === 'AbortError') {
@@ -253,8 +249,13 @@ class Model {
       }
 
       this.errors = { fetch: error.message };
-      this.showError(error.message);
-      throw error;
+      
+      // Return error response for network/other errors
+      return {
+        success: false,
+        error: error.message,
+        status: error.status || 500
+      };
     } finally {
       this.loading = false;
     }
@@ -262,52 +263,62 @@ class Model {
 
   /**
    * Save model to API (create or update)
+   * @param {object} data - Data to save to the model
    * @param {object} options - Request options
-   * @returns {Promise} Promise that resolves with saved model data
+   * @returns {Promise} Promise that resolves with REST response
    */
-  async save(data, options = {}) {
-    const isNew = !this.id;
-    const method = isNew ? 'POST' : 'PUT';
-    const url = isNew ? this.buildUrl() : this.buildUrl(this.id);
+   async save(data, options = {}) {
+     const isNew = !this.id;
+     const method = isNew ? 'POST' : 'PUT';
+     const url = isNew ? this.buildUrl() : this.buildUrl(this.id);
 
-    this.loading = true;
-    this.errors = {};
+     this.loading = true;
+     this.errors = {};
 
-    try {
-      const response = await this.rest[method](url, data, options.params);
+     try {
+       const response = await this.rest[method](url, data, options.params);
 
-      if (response.success) {
-          if (response.data.status) {
-              this.originalAttributes = { ...this.attributes };
-              this.set(response.data.data);
-          } else {
-              this.errors = response.data;
-              // throw new Error(response.data.error || 'Failed to fetch model');
-              this.showError(response.data.error || 'Failed to fetch model');
-          }
-        return this;
-      } else {
-        this.errors = response.errors || {};
-        // throw new Error(response.message || 'Failed to save model');
-        this.showError(response.message || 'Failed to save model');
-      }
-    } catch (error) {
-      this.errors = { save: error.message };
-      // throw error;
-      this.showError(error.message || 'Failed to save model');
-    } finally {
-      this.loading = false;
-    }
-  }
+       if (response.success) {
+         if (response.data.status) {
+           // Update model on success
+           this.originalAttributes = { ...this.attributes };
+           this.set(response.data.data);
+           this.errors = {};
+         } else {
+           this.errors = response.data;
+         }
+       } else {
+         this.errors = response.errors || {};
+       }
+
+       return response; // Always return the full response
+
+     } catch (error) {
+       // Return error response for network/other errors
+       return {
+         success: false,
+         error: error.message,
+         status: error.status || 500
+       };
+     } finally {
+       this.loading = false;
+     }
+   }
+
 
   /**
    * Delete model from API
    * @param {object} options - Request options
-   * @returns {Promise} Promise that resolves when model is deleted
+   * @returns {Promise} Promise that resolves with REST response
    */
   async destroy(options = {}) {
     if (!this.id) {
-      throw new Error('Cannot destroy model without ID');
+      this.errors = { destroy: 'Cannot destroy model without ID' };
+      return {
+        success: false,
+        error: 'Cannot destroy model without ID',
+        status: 400
+      };
     }
 
     const url = this.buildUrl(this.id);
@@ -318,20 +329,26 @@ class Model {
       const response = await this.rest.DELETE(url, options.params);
 
       if (response.success) {
-        // Clear model data
+        // Clear model data on success
         this.attributes = {};
         this.originalAttributes = {};
         this.id = null;
-        return true;
+        this.errors = {};
       } else {
         this.errors = response.errors || {};
-        // throw new Error(response.message || 'Failed to destroy model');
-        this.showError(response.message || 'Failed to destroy model');
       }
+
+      return response;
+      
     } catch (error) {
       this.errors = { destroy: error.message };
-      this.showError(error.message);
-        return;
+      
+      // Return error response for network/other errors
+      return {
+        success: false,
+        error: error.message,
+        status: error.status || 500
+      };
     } finally {
       this.loading = false;
     }
@@ -366,6 +383,7 @@ class Model {
    */
   reset() {
     this.attributes = { ...this.originalAttributes };
+    this._ = this.attributes;
     this.errors = {};
   }
 

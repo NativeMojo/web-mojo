@@ -12,43 +12,256 @@
    ======================================================================== */
 
 :root {
-    /* MOJO Framework Colors */
-    --mojo-primary: var(--bs-primary, #0d6efd);
-    --mojo-secondary: var(--bs-secondary, #6c757d);
-    --mojo-success: var(--bs-success, #198754);
-    --mojo-info: var(--bs-info, #0dcaf0);
-    --mojo-warning: var(--bs-warning, #ffc107);
-    --mojo-danger: var(--bs-danger, #dc3545);
-    --mojo-light: var(--bs-light, #f8f9fa);
-    --mojo-dark: var(--bs-dark, #212529);
+    /* MOJO Framework Colors - Inherit from Bootstrap */
+    --mojo-primary: var(--bs-primary);
+    --mojo-primary-rgb: var(--bs-primary-rgb);
+    --mojo-secondary: var(--bs-secondary);
+    --mojo-secondary-rgb: var(--bs-secondary-rgb);
+    --mojo-success: var(--bs-success);
+    --mojo-success-rgb: var(--bs-success-rgb);
+    --mojo-info: var(--bs-info);
+    --mojo-info-rgb: var(--bs-info-rgb);
+    --mojo-warning: var(--bs-warning);
+    --mojo-warning-rgb: var(--bs-warning-rgb);
+    --mojo-danger: var(--bs-danger);
+    --mojo-danger-rgb: var(--bs-danger-rgb);
+    --mojo-light: var(--bs-light);
+    --mojo-light-rgb: var(--bs-light-rgb);
+    --mojo-dark: var(--bs-dark);
+    --mojo-dark-rgb: var(--bs-dark-rgb);
+
+    /* MOJO Semantic Colors - Use Bootstrap's color system */
+    --mojo-body-bg: var(--bs-body-bg);
+    --mojo-body-color: var(--bs-body-color);
+    --mojo-emphasis-color: var(--bs-emphasis-color);
+    --mojo-secondary-color: var(--bs-secondary-color);
+    --mojo-tertiary-color: var(--bs-tertiary-color);
+
+    /* MOJO Background System */
+    --mojo-bg-primary: var(--bs-body-bg);
+    --mojo-bg-secondary: var(--bs-secondary-bg);
+    --mojo-bg-tertiary: var(--bs-tertiary-bg);
+
+    /* MOJO Border System */
+    --mojo-border-color: var(--bs-border-color);
+    --mojo-border-color-translucent: var(--bs-border-color-translucent);
+
+    /* MOJO Interactive States */
+    --mojo-hover-bg: var(--bs-secondary-bg);
+    --mojo-active-bg: var(--bs-primary);
+    --mojo-focus-color: var(--bs-primary);
+    --mojo-focus-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
 
     /* MOJO Transition defaults */
     --mojo-transition-fast: 0.15s ease-in-out;
     --mojo-transition-base: 0.2s ease-in-out;
     --mojo-transition-slow: 0.3s ease-in-out;
 
-    /* MOJO Border radius */
-    --mojo-border-radius-sm: 0.25rem;
-    --mojo-border-radius: 0.375rem;
-    --mojo-border-radius-lg: 0.5rem;
-    --mojo-border-radius-xl: 1rem;
+    /* MOJO Border radius - Use Bootstrap system */
+    --mojo-border-radius-sm: var(--bs-border-radius-sm);
+    --mojo-border-radius: var(--bs-border-radius);
+    --mojo-border-radius-lg: var(--bs-border-radius-lg);
+    --mojo-border-radius-xl: var(--bs-border-radius-xl);
 
-    /* MOJO Spacing */
-    --mojo-spacer-xs: 0.25rem;
-    --mojo-spacer-sm: 0.5rem;
-    --mojo-spacer: 1rem;
-    --mojo-spacer-lg: 1.5rem;
-    --mojo-spacer-xl: 3rem;
+    /* MOJO Spacing - Use Bootstrap spacing system */
+    --mojo-spacer-xs: calc(var(--bs-spacer) * 0.25);
+    --mojo-spacer-sm: calc(var(--bs-spacer) * 0.5);
+    --mojo-spacer: var(--bs-spacer);
+    --mojo-spacer-lg: calc(var(--bs-spacer) * 1.5);
+    --mojo-spacer-xl: calc(var(--bs-spacer) * 3);
 
-    /* MOJO Z-index layers */
-    --mojo-zindex-dropdown: 1000;
-    --mojo-zindex-sticky: 1020;
-    --mojo-zindex-fixed: 1030;
-    --mojo-zindex-modal-backdrop: 1040;
-    --mojo-zindex-offcanvas: 1045;
-    --mojo-zindex-modal: 1050;
-    --mojo-zindex-popover: 1070;
-    --mojo-zindex-tooltip: 1080;
+    /* MOJO Typography - Use Bootstrap font system */
+    --mojo-font-sans-serif: var(--bs-font-sans-serif);
+    --mojo-font-monospace: var(--bs-font-monospace);
+
+    /* MOJO Box Shadows - Use Bootstrap shadow system */
+    --mojo-box-shadow-sm: var(--bs-box-shadow-sm);
+    --mojo-box-shadow: var(--bs-box-shadow);
+    --mojo-box-shadow-lg: var(--bs-box-shadow-lg);
+
+    /* MOJO Z-index layers - Use Bootstrap z-index system */
+    --mojo-zindex-dropdown: var(--bs-zindex-dropdown, 1000);
+    --mojo-zindex-sticky: var(--bs-zindex-sticky, 1020);
+    --mojo-zindex-fixed: var(--bs-zindex-fixed, 1030);
+    --mojo-zindex-modal-backdrop: var(--bs-zindex-modal-backdrop, 1040);
+    --mojo-zindex-offcanvas: var(--bs-zindex-offcanvas, 1045);
+    --mojo-zindex-modal: var(--bs-zindex-modal, 1050);
+    --mojo-zindex-popover: var(--bs-zindex-popover, 1070);
+    --mojo-zindex-tooltip: var(--bs-zindex-tooltip, 1080);
+}
+
+/* =========================================================
+   Primary-driven components (Bootstrap 5.3+)
+   Put this AFTER bootstrap.css. Do not scope it.
+   Switching themes = only change --bs-primary (and optional subtle vars).
+   ========================================================= */
+
+/* Buttons (solid) */
+/* =========================================================
+   Buttons tied to theme tokens (Bootstrap 5.3+)
+   Put AFTER bootstrap.css
+   ========================================================= */
+
+/* Primary */
+.btn-primary {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--bs-primary);
+    --bs-btn-border-color: var(--bs-primary);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: color-mix(in srgb, var(--bs-primary) 88%, #000 12%);
+    --bs-btn-hover-border-color: color-mix(in srgb, var(--bs-primary) 82%, #000 18%);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: color-mix(in srgb, var(--bs-primary) 75%, #000 25%);
+    --bs-btn-active-border-color: color-mix(in srgb, var(--bs-primary) 72%, #000 28%);
+    --bs-btn-focus-shadow-rgb: var(--bs-primary-rgb, 13, 110, 253);
+}
+
+/* Success */
+.btn-success {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--bs-success);
+    --bs-btn-border-color: var(--bs-success);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: color-mix(in srgb, var(--bs-success) 88%, #000 12%);
+    --bs-btn-hover-border-color: color-mix(in srgb, var(--bs-success) 82%, #000 18%);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: color-mix(in srgb, var(--bs-success) 75%, #000 25%);
+    --bs-btn-active-border-color: color-mix(in srgb, var(--bs-success) 72%, #000 28%);
+    --bs-btn-focus-shadow-rgb: var(--bs-success-rgb, 25, 135, 84);
+}
+
+/* Danger */
+.btn-danger {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--bs-danger);
+    --bs-btn-border-color: var(--bs-danger);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: color-mix(in srgb, var(--bs-danger) 88%, #000 12%);
+    --bs-btn-hover-border-color: color-mix(in srgb, var(--bs-danger) 82%, #000 18%);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: color-mix(in srgb, var(--bs-danger) 75%, #000 25%);
+    --bs-btn-active-border-color: color-mix(in srgb, var(--bs-danger) 72%, #000 28%);
+    --bs-btn-focus-shadow-rgb: var(--bs-danger-rgb, 220, 53, 69);
+}
+
+/* Warning */
+.btn-warning {
+    --bs-btn-color: #000;
+    --bs-btn-bg: var(--bs-warning);
+    --bs-btn-border-color: var(--bs-warning);
+    --bs-btn-hover-color: #000;
+    --bs-btn-hover-bg: color-mix(in srgb, var(--bs-warning) 88%, #000 12%);
+    --bs-btn-hover-border-color: color-mix(in srgb, var(--bs-warning) 82%, #000 18%);
+    --bs-btn-active-color: #000;
+    --bs-btn-active-bg: color-mix(in srgb, var(--bs-warning) 75%, #000 25%);
+    --bs-btn-active-border-color: color-mix(in srgb, var(--bs-warning) 72%, #000 28%);
+    --bs-btn-focus-shadow-rgb: var(--bs-warning-rgb, 255, 193, 7);
+}
+
+/* Info */
+.btn-info {
+    --bs-btn-color: #000;
+    --bs-btn-bg: var(--bs-info);
+    --bs-btn-border-color: var(--bs-info);
+    --bs-btn-hover-color: #000;
+    --bs-btn-hover-bg: color-mix(in srgb, var(--bs-info) 88%, #000 12%);
+    --bs-btn-hover-border-color: color-mix(in srgb, var(--bs-info) 82%, #000 18%);
+    --bs-btn-active-color: #000;
+    --bs-btn-active-bg: color-mix(in srgb, var(--bs-info) 75%, #000 25%);
+    --bs-btn-active-border-color: color-mix(in srgb, var(--bs-info) 72%, #000 28%);
+    --bs-btn-focus-shadow-rgb: var(--bs-info-rgb, 13, 202, 240);
+}
+
+/* Secondary */
+.btn-secondary {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--bs-secondary);
+    --bs-btn-border-color: var(--bs-secondary);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: color-mix(in srgb, var(--bs-secondary) 88%, #000 12%);
+    --bs-btn-hover-border-color: color-mix(in srgb, var(--bs-secondary) 82%, #000 18%);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: color-mix(in srgb, var(--bs-secondary) 75%, #000 25%);
+    --bs-btn-active-border-color: color-mix(in srgb, var(--bs-secondary) 72%, #000 28%);
+    --bs-btn-focus-shadow-rgb: var(--bs-secondary-rgb, 108, 117, 125);
+}
+
+/* Buttons (outline) */
+.btn-outline-primary {
+    --bs-btn-color: var(--bs-primary);
+    --bs-btn-border-color: var(--bs-primary);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--bs-primary);
+    --bs-btn-hover-border-color: var(--bs-primary);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: color-mix(in srgb, var(--bs-primary) 75%, #000 25%);
+    --bs-btn-active-border-color: color-mix(in srgb, var(--bs-primary) 75%, #000 25%);
+    --bs-btn-focus-shadow-rgb: var(--bs-primary-rgb, 13, 110, 253);
+}
+
+/* Optional: make the plain .btn use primary by default (comment out if you don't want this) */
+/*
+.btn {
+  --bs-btn-color:              #fff;
+  --bs-btn-bg:                 var(--bs-primary);
+  --bs-btn-border-color:       var(--bs-primary);
+  --bs-btn-hover-color:        #fff;
+  --bs-btn-hover-bg:           color-mix(in srgb, var(--bs-primary) 88%, #000 12%);
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--bs-primary) 82%, #000 18%);
+  --bs-btn-active-color:       #fff;
+  --bs-btn-active-bg:          color-mix(in srgb, var(--bs-primary) 75%, #000 25%);
+  --bs-btn-active-border-color:color-mix(in srgb, var(--bs-primary) 72%, #000 28%);
+  --bs-btn-focus-shadow-rgb:   var(--bs-primary-rgb, 13,110,253);
+}
+*/
+
+/* Pagination */
+.pagination {
+    --bs-pagination-color: var(--bs-primary);
+    --bs-pagination-hover-color: color-mix(in srgb, var(--bs-primary) 85%, #000 15%);
+    --bs-pagination-focus-color: var(--bs-primary);
+    --bs-pagination-focus-box-shadow: 0 0 0 0.25rem
+        color-mix(in srgb, var(--bs-primary) 25%, transparent);
+    --bs-pagination-active-color: #fff;
+    --bs-pagination-active-bg: var(--bs-primary);
+    --bs-pagination-active-border-color: var(--bs-primary);
+    --bs-pagination-disabled-color: var(--bs-secondary, #6c757d);
+}
+
+/* Badges that use bg-primary */
+.badge.bg-primary {
+    --bs-badge-color: #fff;
+    --bs-badge-bg: var(--bs-primary);
+}
+
+/* Nav pills & tabs */
+.nav-pills {
+    --bs-nav-pills-link-active-bg: var(--bs-primary);
+    --bs-nav-pills-link-active-color: #fff;
+}
+.nav-tabs {
+    --bs-nav-tabs-link-hover-border-color: color-mix(in srgb, var(--bs-primary) 35%, transparent);
+    --bs-nav-tabs-link-active-color: var(--bs-primary);
+    --bs-nav-tabs-link-active-border-color: var(--bs-primary);
+}
+
+/* Alerts (optional, stays tied to primary) */
+.alert-primary {
+    --bs-alert-color: var(
+        --bs-primary-text-emphasis,
+        color-mix(in srgb, var(--bs-primary) 35%, #000)
+    );
+    --bs-alert-bg: var(--bs-primary-bg-subtle, color-mix(in srgb, var(--bs-primary) 10%, #fff));
+    --bs-alert-border-color: var(
+        --bs-primary-border-subtle,
+        color-mix(in srgb, var(--bs-primary) 25%, #fff)
+    );
+}
+
+/* Links (so the whole site “feels” primary) */
+:root {
+    --bs-link-color: var(--bs-primary);
+    --bs-link-hover-color: color-mix(in srgb, var(--bs-primary) 85%, #000 15%);
 }
 
 /* ========================================================================
@@ -87,7 +300,8 @@
 }
 
 @keyframes mojo-pulse {
-    0%, 100% {
+    0%,
+    100% {
         opacity: 1;
     }
     50% {
@@ -96,7 +310,8 @@
 }
 
 @keyframes mojo-bounce {
-    0%, 100% {
+    0%,
+    100% {
         transform: translateY(0);
     }
     50% {
@@ -223,7 +438,7 @@
 }
 
 .mojo-loading::after {
-    content: '';
+    content: "";
     position: absolute;
     top: 50%;
     left: 50%;
@@ -243,12 +458,26 @@
 
 .mojo-focus-ring:focus {
     outline: none;
-    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+    box-shadow: var(--mojo-focus-shadow);
 }
 
 .mojo-focus-ring:focus-visible {
-    outline: 2px solid var(--mojo-primary);
+    outline: 2px solid var(--mojo-focus-color);
     outline-offset: 2px;
+}
+
+/* Extend Bootstrap font sizes smaller than fs-6 */
+.fs-7 {
+    font-size: 0.75rem !important; /* ~12px */
+}
+.fs-8 {
+    font-size: 0.6875rem !important; /* ~11px */
+}
+.fs-9 {
+    font-size: 0.625rem !important; /* ~10px */
+}
+.fs-10 {
+    font-size: 0.5625rem !important; /* ~9px */
 }
 
 /* ========================================================================
@@ -296,8 +525,8 @@
     position: absolute;
     top: -40px;
     left: 6px;
-    background: var(--mojo-dark);
-    color: var(--mojo-light);
+    background: var(--mojo-emphasis-color);
+    color: var(--mojo-body-bg);
     padding: 8px;
     text-decoration: none;
     z-index: var(--mojo-zindex-tooltip);
@@ -339,16 +568,16 @@
 
 @media (prefers-contrast: high) {
     .mojo-glass {
-        background: var(--bs-body-bg);
-        border: 2px solid var(--bs-border-color);
+        background: var(--mojo-body-bg);
+        border: 2px solid var(--mojo-border-color);
         backdrop-filter: none;
     }
 
     .mojo-focus-ring:focus,
     .mojo-focus-ring:focus-visible {
-        outline: 3px solid var(--mojo-primary);
+        outline: 3px solid var(--mojo-focus-color);
         outline-offset: 2px;
-        box-shadow: 0 0 0 0.5rem rgba(var(--bs-primary-rgb), 0.5);
+        box-shadow: 0 0 0 0.5rem rgba(var(--mojo-primary-rgb), 0.5);
     }
 }
 
@@ -359,7 +588,9 @@
 /* Ensure MOJO framework is ready */
 .mojo-app {
     min-height: 100vh;
-    font-family: var(--bs-body-font-family);
+    font-family: var(--mojo-font-sans-serif);
+    background-color: var(--mojo-body-bg);
+    color: var(--mojo-body-color);
 }
 
 .mojo-app.mojo-loading {

@@ -20,7 +20,6 @@ import Router from '../core/Router.js';
 import EventBus from '../utils/EventBus.js';
 import rest from '../core/Rest.js';
 
-
 class WebApp {
     constructor(config = {}) {
         // Core configuration
@@ -80,23 +79,12 @@ class WebApp {
             eventEmitter: this.events
         });
 
-        // Listen for route changes to update pages
+        // Listen for route changes - router already resolved everything
         this.events.on('route:changed', async (routeInfo) => {
-            await this.handleRouteChange(routeInfo);
+            const { pageName, params, query } = routeInfo;
+            await this.showPage(pageName, query, params, { fromRouter: true });
         });
 
-        this.events.on('route:notfound', async (info) => {
-            console.warn(`Route not found: ${info.path}`);
-
-            // Try to navigate to default route instead of showing error
-            if (info.path !== `/${this.defaultRoute}`) {
-                console.log(`🔄 Redirecting to default route: ${this.defaultRoute}`);
-                await this.navigateToDefault({ replace: true });
-            } else {
-                // If default route also not found, show error
-                this.showError(`Page not found: ${info.path}`);
-            }
-        });
 
         // Make router globally accessible
         if (typeof window !== 'undefined') {
@@ -143,6 +131,9 @@ class WebApp {
             // Setup page container
             this.setupPageContainer();
 
+            // Validate default route before starting router
+            this.validateDefaultRoute();
+
             // Setup router
             console.log('Setting up router...');
             await this.setupRouter();
@@ -170,6 +161,16 @@ class WebApp {
             console.error('Router not initialized');
             return;
         }
+
+        this.events.on('route:notfound', async (info) => {
+            console.warn(`Route not found: ${info.path}`);
+            // RENDER 404 PAGE IN PLACE: Just render, don't navigate
+            const notPage = this.getOrCreatePage('404');
+            if (notPage) {
+                notPage.setInfo({ path: info.path });
+                await notPage.render(); // Render over current page
+            }
+        });
 
         // Start the router to begin handling routes
         this.router.start();
@@ -297,199 +298,142 @@ class WebApp {
     /**
      * Show a page
      */
-    async showPage(page, options = {}) {
-        // If page is a string, get the actual page instance
-        if (typeof page === 'string') {
-            page = this.getOrCreatePage(page);
-            if (!page) {
-                console.error(`Cannot create page: ${page}`);
-                return;
-            }
-        }
-
-        if (!page) {
-            console.error('Cannot show null/undefined page');
-            return;
-        }
-
-        if (!page.canEnter()) {
-            // show access denied page or message
-            const denied = this.getOrCreatePage("denied");
-            denied.onParams({page})
-            denied.render();
-            return;
-        }
+    /**
+     * SIMPLIFIED UNIFIED PAGE SHOWING METHOD
+     * @param {string|object} page - Page name or page instance
+     * @param {object} query - URL query parameters (URL-safe)
+     * @param {object} params - Any data to pass to page (can include objects)
+     * @param {object} options - Options { fromRouter, replace, force }
+     */
+    async showPage(page, query = {}, params = {}, options = {}) {
+        const { fromRouter = false, replace = false, force = false } = options;
 
         try {
-
-            // Set current page reference
-            this.currentPage = page;
-
-            // Render page
-            await page.render();
-
-            // Show page content
-            if (page.element) {
-                page.element.style.display = 'block';
+            // 1. RESOLVE PAGE INSTANCE
+            let pageInstance, pageName;
+            if (typeof page === 'string') {
+                pageName = page;
+                pageInstance = this.getOrCreatePage(page);
+            } else if (page && typeof page === 'object') {
+                pageInstance = page;
+                pageName = page.pageName;
             }
 
-            // Sync with router if needed
-            if (!options.noRoute && this.router && page.route && !this._syncingRoute) {
-                // Get current path to check if we need to sync
-                const currentPath = this.router.getCurrentPath();
-                const targetRoute = this.router.convertRoute(page.route);
+            if (!pageInstance) {
+                console.error(`Cannot resolve page: ${page}`);
 
-                if (currentPath !== targetRoute) {
-                    // Set a flag to prevent showPage from syncing routes when called back from router
-                    this._syncingRoute = true;
-                    this.router.navigate(targetRoute, { replace: true, silent: false });
-                    this._syncingRoute = false;
+                // RENDER 404 PAGE IN PLACE: Just render, don't navigate
+                const notPage = this.getOrCreatePage('404');
+                if (notPage) {
+                    notPage.setInfo({ path: pageName });
+                    await notPage.render(); // Render over current page
+                }
+
+                return; // Keep current URL, don't update router/history
+            }
+
+            // 2. PERMISSION CHECK
+            if (!pageInstance.canEnter()) {
+                console.warn(`Access denied to page: ${pageInstance.pageName}`);
+
+                // DENIED PAGE: Just render in place, don't navigate
+                const deniedPage = this.getOrCreatePage('denied');
+                if (deniedPage.setDeniedPage) {
+                    deniedPage.setDeniedPage(pageInstance);
+                }
+                await deniedPage.render(); // Render over current page
+                return; // Keep current URL, don't update router/history
+            }
+
+            // 3. EXIT CURRENT PAGE
+            const oldPage = this.currentPage;
+            if (oldPage && oldPage !== pageInstance) {
+                try {
+                    await oldPage.onExit();
+                    this.events.emit('page:hide', { page: oldPage });
+                } catch (error) {
+                    console.error(`Error exiting page ${oldPage.pageName}:`, error);
                 }
             }
 
+            // 4. UPDATE PAGE DATA
+            await pageInstance.onParams(params, query);
+
+            // 5. ENTER NEW PAGE
+            if (oldPage !== pageInstance) {
+                await pageInstance.onEnter();
+            }
+
+            // 6. RENDER PAGE (automatically replaces DOM content)
+            await pageInstance.render();
+            this.currentPage = pageInstance;
+
+            // 7. SYNC WITH ROUTER (only if not from router)
+            if (!fromRouter && pageInstance.route && this.router) {
+                const targetPath = this.buildPagePath(pageInstance, params, query);
+                await this.router.navigate(targetPath, {
+                    replace,
+                    trigger: false  // Don't trigger route change event
+                });
+            }
+
+            // 8. EMIT SUCCESS EVENT
+            this.events.emit('page:show', {
+                page: pageInstance,
+                pageName: pageInstance.pageName,
+                params,
+                query,
+                fromRouter
+            });
+
+            console.log(`✅ Showing page: ${pageInstance.pageName}`, { query, params });
+
         } catch (error) {
-            console.error('Error showing page:', error);
-            throw error;
+            console.error('Error in showPage:', error);
+            this.showError(`Failed to load page: ${error.message}`);
+
+            // Fallback to error page
+            if (page !== 'error') {
+                await this.showPage('error', {}, { error, originalPage: page }, { fromRouter });
+            }
         }
     }
 
     /**
-     * Navigate to a route
+     * SIMPLIFIED NAVIGATION - delegates to router
+     * @param {string} route - Route like "/users" or "/users/123"
+     * @param {object} query - Query string params { filter: 'active' }
+     * @param {object} options - Navigation options { replace, force }
      */
-    async navigate(route, params = {}, options = {}) {
-        // Debug navigation to track URL generation issues
-        console.log('🧭 WebApp.navigate called:');
-        console.log('  - Route:', route);
-        console.log('  - Params:', params);
-        console.log('  - Options:', options);
-        console.log('  - Router mode:', this.router?.mode);
-
+    async navigate(route, query = {}, options = {}) {
         if (!this.router) {
             console.error('Router not initialized');
             return;
         }
 
-        // Build path with parameters if needed
-        let path = route;
-        if (params && Object.keys(params).length > 0) {
-            // Replace :param patterns in route
-            Object.keys(params).forEach(key => {
-                path = path.replace(`:${key}`, params[key]);
-            });
+        console.log('🧭 WebApp.navigate:', { route, query, options });
+
+        // Build full path with query parameters
+        let fullPath = route;
+        if (Object.keys(query).length > 0) {
+            const queryString = new URLSearchParams(query).toString();
+            fullPath += (route.includes('?') ? '&' : '?') + queryString;
         }
 
-        console.log('  - Final path being sent to router:', path);
-
-        // Update state
-        this.state.previousPage = this.state.currentPage;
-        this.state.currentPage = route;
-
-        // Navigate using simplified router
-        return await this.router.navigate(path, options);
+        // Let router handle everything - it will emit route:changed back to us
+        return await this.router.navigate(fullPath, options);
     }
 
     /**
      * Navigate to the default route
      */
     async navigateToDefault(options = {}) {
-        if (!this.router) {
-            console.error('Router not initialized');
-            return;
-        }
-
-        console.log(`🏠 Navigating to default route: ${this.defaultRoute}`);
-        return await this.navigate(`/${this.defaultRoute}`, {}, options);
+        return await this.showPage(this.defaultRoute, {}, {}, options);
     }
 
-    /**
-     * Handle route changes from the router
-     */
-    async handleRouteChange(routeInfo) {
-        const { pageName, params, query, path } = routeInfo;
 
-        try {
-            // Get or create page instance
-            const page = this.getOrCreatePage(pageName);
-            if (!page) {
-                console.error(`Page not found: ${pageName}`);
-                return;
-            }
 
-            // Transition to the page
-            await this.transitionToPage(page, params, query);
 
-            // Update current page reference
-            this.currentPage = page;
-
-            // Emit page show event for Sidebar and other listeners
-            this.events.emit('page:show', {
-                page,
-                pageName,
-                params,
-                query,
-                path
-            });
-
-            // Emit route:change event for Sidebar compatibility
-            this.events.emit('route:change', {
-                path,
-                params,
-                query,
-                page,
-                match: {
-                    pageName,
-                    params,
-                    query
-                }
-            });
-
-        } catch (error) {
-            console.error('Error handling route change:', error);
-            this.showError('Failed to load page');
-        }
-    }
-
-    /**
-     * Transition between pages
-     */
-    async transitionToPage(newPage, params = {}, query = {}) {
-        const oldPage = this.currentPage;
-
-        // Exit old page
-        if (oldPage && oldPage !== newPage) {
-            try {
-                await oldPage.onExit();
-                this.events.emit('page:hide', { page: oldPage });
-            } catch (error) {
-                console.error(`Error in onExit for page ${oldPage.pageName}:`, error);
-            }
-        }
-
-        if (!newPage.canEnter()) {
-            // show access denied page or message
-            const denied = this.getOrCreatePage("denied");
-            denied.onParams({page:newPage})
-            denied.render();
-            return;
-        }
-
-        // Update params for new page
-        if (newPage.onParams) {
-            await newPage.onParams(params, query);
-        }
-
-        // Enter new page
-        if (oldPage !== newPage) {
-            try {
-                await newPage.onEnter();
-            } catch (error) {
-                console.error(`Error in onEnter for page ${newPage.pageName}:`, error);
-            }
-
-            // Show page in the UI
-            await this.showPage(newPage, { noRoute: true });
-        }
-    }
 
     /**
      * Navigate back
@@ -723,13 +667,64 @@ class WebApp {
         }
 
         this.isStarted = false;
-        console.log('WebApp destroyed');
+        console.log(`✨ ${this.name} destroyed`);
+    }
+
+    /**
+     * Build page path with params and query
+     */
+    buildPagePath(page, params, query) {
+        let path = page.route || `/${page.pageName.toLowerCase()}`;
+
+        // Replace :param tokens with actual values
+        Object.keys(params).forEach(key => {
+            if (typeof params[key] === 'string' || typeof params[key] === 'number') {
+                path = path.replace(`:${key}`, params[key]);
+            }
+        });
+
+        // Add query parameters
+        if (query && Object.keys(query).length > 0) {
+            const queryString = new URLSearchParams(query).toString();
+            path += (path.includes('?') ? '&' : '?') + queryString;
+        }
+
+        return path;
     }
 
     /**
      * Static factory method
      */
-    static create(config) {
+    /**
+     * Validate that default route has a registered page
+     */
+    validateDefaultRoute() {
+        if (!this.pageClasses.has(this.defaultRoute)) {
+            console.warn(`⚠️  Default route '${this.defaultRoute}' is not registered!`);
+            console.warn(`   Please register a page: app.registerPage('${this.defaultRoute}', YourPageClass);`);
+            console.warn(`   Or change default route: new WebApp({ defaultRoute: 'your-page' });`);
+        } else {
+            console.log(`✅ Default route '${this.defaultRoute}' is registered`);
+        }
+    }
+
+    /**
+     * Find any registered page to use as emergency fallback
+     */
+    findFallbackPage() {
+        // Skip system pages
+        const systemPages = ['404', 'error', 'denied'];
+
+        for (const [pageName] of this.pageClasses.entries()) {
+            if (!systemPages.includes(pageName)) {
+                return pageName;
+            }
+        }
+
+        return null; // No pages available
+    }
+
+    static create(config = {}) {
         return new WebApp(config);
     }
 }
