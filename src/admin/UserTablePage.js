@@ -90,29 +90,56 @@ class UserTablePage extends TablePage {
             title: `Change Password for "${item._.username}"`,
             fields: [
                 {
+                    type: 'text', // Change from 'hidden' to 'text'
+                    name: 'username',
+                    value: item.get('email') || item.get('username'),
+                    attributes: {
+                        autocomplete: 'username',
+                        readonly: 'readonly',
+                        tabindex: '-1',
+                        style: 'position: absolute; left: -9999px; opacity: 0; height: 0; width: 0;'
+                    }
+                },
+                {
                     name: 'new_password',
-                    label: 'Password',
+                    label: 'New Password',
                     type: 'password',
-                    required: true
+                    required: true,
+                    showToggle: true,
+                    attributes: {
+                        autocomplete: 'new-password'  // Make sure this isn't being overridden
+                    }
                 }
             ]
         });
+
         if (data && data.new_password) {
             // Basic password validation
             const result = MOJOUtils.checkPasswordStrength(data.new_password);
             if (result.score < 5) {
-                this.toast.error('Password must be at least 6 characters long and contain at least 2 of the following: uppercase letter, lowercase letter, or number');
+                this.getApp().toast.error('Password must be at least 6 characters long and contain at least 2 of the following: uppercase letter, lowercase letter, or number');
+                await this.handleActionChangePassword(item);
                 return;
             }
-            const resp = await item.save(data);
-            if (resp.success) {
-                this.toast.success('Password changed successfully');
-            } else {
-                this.toast.error('Failed to change password');
+            const resp = await item.save({new_password: data.new_password});
+            if (!this.onPasswordChange(resp)) {
+                await this.handleActionChangePassword(item);
             }
-
         }
-        console.log(data, item);
+    }
+
+    onPasswordChange(resp) {
+        if (resp.success) {
+            this.getApp().toast.success('Password changed successfully');
+            return true;
+        } else {
+            if (resp.data && resp.data.error) {
+                this.getApp().toast.error(resp.data.error);
+            } else {
+                this.getApp().toast.error('Failed to change password');
+            }
+        }
+        return false;
     }
 
 }

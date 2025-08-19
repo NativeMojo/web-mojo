@@ -76,10 +76,6 @@ class CollectionDropdownView extends View {
     };
   }
 
-  async onBeforeRender() {
-      this.data = await this.getViewData();
-  }
-
   async handleActionSelectItem(event, element) {
     event.preventDefault();
     const value = element.getAttribute('data-value');
@@ -121,21 +117,31 @@ class CollectionSelectView extends View {
       className: 'collection-select-view',
       template: `
         <div class="position-relative">
-          <input type="text"
-                 class="form-control {{#hasError}}is-invalid{{/hasError}}"
-                 placeholder="{{placeholder}}"
-                 value="{{displayValue}}"
+          <input type="text" 
+                 class="form-control {{#data.hasError}}is-invalid{{/data.hasError}} {{#data.showClear}}pe-5{{/data.showClear}}" 
+                 placeholder="{{data.placeholder}}"
+                 value="{{data.displayValue}}"
                  autocomplete="off" />
-
-          <input type="hidden"
-                 name="{{name}}"
-                 value="{{selectedValue}}" />
-
+          
+          <input type="hidden" 
+                 name="{{data.name}}" 
+                 value="{{data.selectedValue}}" />
+          
+          {{#data.showClear}}
+            <button type="button" 
+                    class="btn btn-link position-absolute top-50 end-0 translate-middle-y me-2 p-0 border-0" 
+                    style="z-index: 10; color: #6c757d;"
+                    data-action="clear-selection"
+                    title="Clear selection">
+              <i class="bi bi-x-circle"></i>
+            </button>
+          {{/data.showClear}}
+          
           <div class="dropdown-container"></div>
-
-          {{#hasError}}
-            <div class="invalid-feedback">{{errorMessage}}</div>
-          {{/hasError}}
+          
+          {{#data.hasError}}
+            <div class="invalid-feedback">{{data.errorMessage}}</div>
+          {{/data.hasError}}
         </div>
       `,
       ...options
@@ -214,15 +220,13 @@ class CollectionSelectView extends View {
       const selectedModel = this.collection?.get(this.selectedValue);
       if (selectedModel) {
         this.selectedLabel = selectedModel.get(this.labelField);
+        this.render();
         return;
       }
 
-      if (this.collection?.isEmpty()) {
-        await this.collection.fetch();
-        const selectedModel = this.collection.get(this.selectedValue);
-        if (selectedModel) {
-          this.selectedLabel = selectedModel.get(this.labelField);
-        }
+      let model = await this.collection.fetchOne(this.selectedValue);
+      if (model) {
+        this.selectedLabel = model.get(this.labelField);
       }
     } catch (error) {
       console.error('Error loading selected item:', error);
@@ -242,6 +246,7 @@ class CollectionSelectView extends View {
       placeholder: this.placeholder,
       displayValue: displayValue,
       selectedValue: this.selectedValue,
+      showClear: !!(this.selectedValue && this.selectedLabel),
       hasError: this.hasError,
       errorMessage: this.errorMessage
     };
@@ -336,6 +341,40 @@ class CollectionSelectView extends View {
 
       this.updateDropdown();
     }
+  }
+
+  async handleActionClearSelection(event, _element) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    this.clearSelection();
+  }
+
+  clearSelection() {
+    this.selectedValue = '';
+    this.selectedLabel = '';
+    this.searchValue = '';
+    this.showDropdown = false;
+    this.hasError = false;
+    this.focusedIndex = -1;
+    this.hasSearched = false;
+    
+    // Update input display
+    const input = this.getInput();
+    if (input) {
+      input.value = '';
+      input.focus(); // Focus back on input after clearing
+    }
+    
+    // Update hidden input
+    const hiddenInput = this.getHiddenInput();
+    if (hiddenInput) {
+      hiddenInput.value = '';
+    }
+    
+    this.updateDropdown();
+    this.render(); // Re-render to hide clear button
+    this.emit('change', { value: '', label: '' });
   }
 
   async performSearch() {
@@ -529,7 +568,7 @@ class CollectionSelectView extends View {
         this.hasSearched = false;
         this.showDropdown = false;
         this.hasError = false;
-        this.loadSelectedItem();
+        if (this.selectedValue) this.loadSelectedItem();
         this.setValue(this.selectedValue, this.selectedLabel);
     }
   }

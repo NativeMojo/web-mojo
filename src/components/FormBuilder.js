@@ -417,7 +417,26 @@ class FormBuilder {
     const passwordField = { ...field };
     // Add autocomplete for password fields
     if (!passwordField.attributes) passwordField.attributes = {};
-    passwordField.attributes.autocomplete = field.autocomplete || 'current-password';
+    if (!passwordField.attributes.autocomplete) passwordField.attributes.autocomplete = field.autocomplete || 'current-password';
+    
+    // Check if showToggle is enabled
+    if (field.showToggle) {
+      // Add input group configuration to field
+      passwordField.inputGroup = {
+        append: {
+          type: 'button',
+          content: '<i class="bi bi-eye"></i>',
+          class: 'btn btn-outline-secondary password-toggle',
+          attributes: {
+            type: 'button',
+            'data-action': 'toggle-password',
+            'data-target': field.name,
+            'aria-label': 'Toggle password visibility'
+          }
+        }
+      };
+    }
+    
     return this.renderInputField(passwordField, 'password');
   }
 
@@ -1212,7 +1231,12 @@ class FormBuilder {
     // Add append
     if (append) {
       const appendContent = this.renderInputGroupAddon(append);
-      html += `<span class="input-group-text">${appendContent}</span>`;
+      // Don't wrap buttons in input-group-text span
+      if (typeof append === 'object' && append.type === 'button') {
+        html += appendContent;
+      } else {
+        html += `<span class="input-group-text">${appendContent}</span>`;
+      }
     }
 
     html += '</div>';
@@ -1233,7 +1257,27 @@ class FormBuilder {
       return this.escapeHtml(addon); // Plain text
     }
 
-    // Future: Handle complex addon objects (buttons, dropdowns, etc.)
+    // Handle button objects
+    if (typeof addon === 'object' && addon.type === 'button') {
+      let buttonHtml = `<button`;
+      
+      // Add class
+      if (addon.class) {
+        buttonHtml += ` class="${addon.class}"`;
+      }
+      
+      // Add attributes
+      if (addon.attributes) {
+        Object.entries(addon.attributes).forEach(([key, value]) => {
+          buttonHtml += ` ${key}="${this.escapeHtml(value)}"`;
+        });
+      }
+      
+      buttonHtml += `>${addon.content || ''}</button>`;
+      return buttonHtml;
+    }
+
+    // Fallback for other object types
     return this.escapeHtml(String(addon));
   }
 
@@ -1323,6 +1367,29 @@ class FormBuilder {
       button.addEventListener('click', (e) => {
         const action = e.target.getAttribute('data-action');
         this.handleAction(action, e);
+      });
+    });
+
+    // Password toggle functionality
+    const passwordToggles = form.querySelectorAll('[data-action="toggle-password"]');
+    passwordToggles.forEach(toggle => {
+      toggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetName = toggle.getAttribute('data-target');
+        const input = form.querySelector(`input[name="${targetName}"]`);
+        const icon = toggle.querySelector('i');
+        
+        if (input && icon) {
+          if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'bi bi-eye-slash';
+            toggle.setAttribute('aria-label', 'Hide password');
+          } else {
+            input.type = 'password';
+            icon.className = 'bi bi-eye';
+            toggle.setAttribute('aria-label', 'Show password');
+          }
+        }
       });
     });
   }

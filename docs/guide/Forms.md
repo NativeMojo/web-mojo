@@ -100,8 +100,20 @@ class UserFormView extends FormView {
   type: 'password',
   name: 'password',
   label: 'Password',
-  minLength: 8,
-  required: true
+  required: true,
+  minLength: 8
+}
+
+// Password field with show/hide toggle
+{
+  type: 'password',
+  name: 'password',
+  label: 'Password',
+  required: true,
+  showToggle: true,
+  attributes: {
+    autocomplete: 'new-password'
+  }
 }
 
 // Number field
@@ -125,7 +137,22 @@ class UserFormView extends FormView {
 {
   type: 'url',
   name: 'website',
-  label: 'Website'
+  label: 'Website',
+  placeholder: 'https://example.com'
+}
+
+// Password field with custom toggle styling
+{
+  type: 'password',
+  name: 'secure_password',
+  label: 'Secure Password',
+  required: true,
+  showToggle: true,
+  help: 'Password must be at least 8 characters',
+  attributes: {
+    autocomplete: 'current-password',
+    minlength: '8'
+  }
 }
 
 // Search field

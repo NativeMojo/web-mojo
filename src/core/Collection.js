@@ -215,7 +215,7 @@ class Collection {
 
       this.errors = { fetch: error.message };
       this.emit("fetch:error", { message: error.message, error: error });
-      
+
       return {
         success: false,
         error: error.message,
@@ -264,6 +264,54 @@ class Collection {
     }
 
     return Promise.resolve(this);
+  }
+
+  /**
+   * Fetch a single model by ID
+   * @param {string|number} id - Model ID to fetch
+   * @param {object} options - Additional fetch options
+   * @returns {Promise<Model|null>} Promise that resolves with model instance or null if not found
+   */
+  async fetchOne(id, options = {}) {
+    if (!id) {
+      console.warn('Collection: fetchOne requires an ID');
+      return null;
+    }
+
+    if (!this.restEnabled) {
+      console.info('Collection: REST disabled, cannot fetch single item');
+      return null;
+    }
+
+    try {
+      // Create model instance with the ID and use its fetch method
+      const model = new this.ModelClass({ id }, {
+        endpoint: this.endpoint,
+        collection: this
+      });
+
+      const response = await model.fetch(options);
+
+      if (response.success) {
+        // Optionally add to collection if not already present
+        if (options.addToCollection === true) {
+          const existingModel = this.get(model.id);
+          if (!existingModel) {
+            this.add(model, { silent: options.silent });
+          } else if (options.merge !== false) {
+            existingModel.set(model.attributes);
+          }
+        }
+
+        return model;
+      } else {
+        console.warn('Collection: fetchOne failed -', response.error || 'Unknown error');
+        return null;
+      }
+    } catch (error) {
+      console.error('Collection: fetchOne error -', error.message);
+      return null;
+    }
   }
 
   /**

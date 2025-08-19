@@ -313,9 +313,43 @@ div.batch-select-end {
 }
 
 .collection-select-view .dropdown-menu::-webkit-scrollbar-thumb:hover {
-    background: var(--bs-secondary-color);
+    background: var(--bs-secondary);
 }
 
+/* Collection select clear button */
+.collection-select-view .btn[data-action="clear-selection"] {
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--bs-secondary);
+    transition: color 0.15s ease-in-out;
+}
+
+.collection-select-view .btn[data-action="clear-selection"]:hover {
+    color: var(--bs-danger);
+}
+
+.collection-select-view .btn[data-action="clear-selection"]:focus {
+    box-shadow: none;
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
+.collection-select-view .btn[data-action="clear-selection"] i {
+    font-size: 1rem;
+}
+
+/* Adjust input padding when clear button is present */
+.collection-select-view .form-control.pe-5 {
+    padding-right: 2.5rem !important;
+}
+
+/* Dark theme styles for collection select */
 /* ========================================================================
    MOJO Table Utilities
    ======================================================================== */
@@ -460,6 +494,19 @@ div.batch-select-end {
 
 [data-bs-theme="dark"] .collection-select-view .dropdown-menu::-webkit-scrollbar-thumb:hover {
     background: var(--bs-secondary-color);
+}
+
+/* Dark theme clear button */
+[data-bs-theme="dark"] .collection-select-view .btn[data-action="clear-selection"] {
+    color: var(--bs-secondary);
+}
+
+[data-bs-theme="dark"] .collection-select-view .btn[data-action="clear-selection"]:hover {
+    color: var(--bs-danger);
+}
+
+[data-bs-theme="dark"] .collection-select-view .btn[data-action="clear-selection"]:focus {
+    outline-color: var(--bs-primary);
 }
 
 [data-bs-theme="dark"] .table-container::-webkit-scrollbar-track {

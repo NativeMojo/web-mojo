@@ -310,10 +310,8 @@ class Page extends View {
    * @returns {Promise<object>} View data object
    */
   async getViewData() {
-    const baseData = await super.getViewData();
 
     return {
-      ...baseData,
       pageName: this.pageName,
       route: this.route,
       params: this.params,

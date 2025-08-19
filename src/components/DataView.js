@@ -1,6 +1,55 @@
 /**
  * DataView - Key/Value data display component for MOJO framework
- * Extends View to display object data in a responsive grid layout with formatting support
+ * Extends View to display object data in a responsive grid layout with intelligent formatting support
+ *
+ * Features:
+ * - Automatic field generation from data with intelligent type inference
+ * - Smart DataFormatter pipe chains (e.g., "date('MMM D, YYYY')|capitalize")
+ * - Contextual formatting based on field names and values
+ * - Support for complex pipe chains like "truncate(100)|capitalize|badge"
+ * - Nested DataView support with type="dataview" for complex objects
+ * - Custom format overrides with fluent API
+ * - No format collision: custom field.format completely overrides DataView formatting
+ *
+ * Format Behavior:
+ * - No field.format: DataView applies type-based HTML formatting (badges, links, etc.)
+ * - With field.format: DataFormatter handles ALL formatting, DataView only escapes HTML
+ *
+ * Example Usage:
+ * ```javascript
+ * const dataView = new DataView({
+ *   data: {
+ *     name: 'john doe',
+ *     email: 'john@example.com',
+ *     createdAt: '2024-01-15T10:30:00Z',
+ *     price: 99.99,
+ *     description: 'A very long description that should be truncated...',
+ *     isActive: true
+ *   }
+ * });
+ *
+ * // Auto-inferred formats (DataView adds HTML styling):
+ * // name: "truncate(50)|capitalize"
+ * // email: no format → DataView creates mailto: link
+ * // createdAt: "date('MMM D, YYYY')"
+ * // price: "currency"
+ * // description: "truncate(200)"
+ * // isActive: no format → DataView creates badge styling
+ *
+ * // Custom format overrides (DataFormatter handles ALL formatting):
+ * dataView
+ *   .setFieldFormat('name', 'uppercase|truncate(20)')      // No DataView HTML styling
+ *   .setFieldFormat('email', 'email|uppercase')           // No mailto: link
+ *   .setFieldFormat('isActive', 'boolean|uppercase')      // No badge styling
+ *   .setFieldFormats({
+ *     description: 'truncate(50)|capitalize',
+ *     createdAt: 'relative'
+ *   });
+ *
+ * // Nested DataView for complex objects:
+ * dataView.setFieldFormat('permissions', null); // Clear auto-format
+ * // Then configure field: { name: 'permissions', type: 'dataview', label: 'User Permissions' }
+ * ```
  */
 
 import View from '../core/View.js';
@@ -30,8 +79,6 @@ class DataView extends View {
     // Core properties
     this.data = data || {};
     this.fields = fields || [];
-
-    // Model integration
     this.model = model || null;
 
     // If a model is provided, use it as data source
@@ -50,25 +97,52 @@ class DataView extends View {
       labelClass: 'data-view-label fw-semibold text-muted small text-uppercase',
       valueClass: 'data-view-value'
     };
+  }
+
+  /**
+   * Lifecycle hook - prepare data and fields before rendering
+   */
+  async onBeforeRender() {
 
     // Auto-generate fields from data if none provided
-    if (this.fields.length === 0 && this.data) {
+    if (this.fields.length === 0 && this.getData()) {
       this.generateFieldsFromData();
     }
   }
 
   /**
-   * Auto-generate field definitions from data object
+   * Override renderTemplate to generate HTML directly
+   * @returns {string} Complete HTML string
+   */
+  async renderTemplate() {
+    const items = this.buildItemsHTML();
+
+    return `
+      <div class="${this.dataViewOptions.rowClass}">
+        ${items}
+      </div>
+    `;
+  }
+
+  /**
+   * Auto-generate field definitions from data object with intelligent type inference
    */
   generateFieldsFromData() {
     const dataObj = this.getData();
 
     if (dataObj && typeof dataObj === 'object') {
-      this.fields = Object.keys(dataObj).map(key => ({
-        name: key,
-        label: this.formatLabel(key),
-        type: this.inferFieldType(dataObj[key])
-      }));
+      this.fields = Object.keys(dataObj).map(key => {
+        const value = dataObj[key];
+        const fieldType = this.inferFieldType(value, key);
+        const formatter = this.inferFormatter(value, key, fieldType);
+
+        return {
+          name: key,
+          label: this.formatLabel(key),
+          type: fieldType,
+          format: formatter
+        };
+      });
     }
   }
 
@@ -86,26 +160,278 @@ class DataView extends View {
   }
 
   /**
-   * Infer field type from value
+   * Infer field type from value and key with improved intelligence
    * @param {*} value - Field value
+   * @param {string} key - Field key
    * @returns {string} Field type
    */
-  inferFieldType(value) {
+  inferFieldType(value, key = '') {
     if (value === null || value === undefined) return 'text';
 
+    const keyLower = key.toLowerCase();
     const type = typeof value;
 
+    // Date/time patterns
+    if (keyLower.includes('date') || keyLower.includes('time') ||
+        keyLower.includes('created') || keyLower.includes('updated') ||
+        keyLower.includes('modified') || keyLower.includes('last_login') ||
+        keyLower.includes('expires') || keyLower.includes('last_activity')) {
+      return 'datetime';
+    }
+
+    // Email patterns
+    if (keyLower.includes('email') || keyLower.includes('mail')) {
+      return 'email';
+    }
+
+    // URL patterns
+    if (keyLower.includes('url') || keyLower.includes('link') ||
+        keyLower.includes('website') || keyLower.includes('homepage')) {
+      return 'url';
+    }
+
+    // Phone patterns
+    if (keyLower.includes('phone') || keyLower.includes('tel') ||
+        keyLower.includes('mobile') || keyLower.includes('cell')) {
+      return 'phone';
+    }
+
+    // Currency/price patterns
+    if (keyLower.includes('price') || keyLower.includes('cost') ||
+        keyLower.includes('amount') || keyLower.includes('fee') ||
+        keyLower.includes('salary') || keyLower.includes('revenue')) {
+      return 'currency';
+    }
+
+    // File size patterns
+    if (keyLower.includes('size') || keyLower.includes('bytes')) {
+      return 'filesize';
+    }
+
+    // Percentage patterns
+    if (keyLower.includes('percent') || keyLower.includes('rate') ||
+        keyLower.includes('ratio') && type === 'number') {
+      return 'percent';
+    }
+
+    // Type-based inference
     if (type === 'boolean') return 'boolean';
     if (type === 'number') return 'number';
-    if (type === 'object') return 'json';
+
+    if (type === 'object') {
+      if (Array.isArray(value)) return 'array';
+      if (value && value.renditions) return 'file';
+
+      // Check if object should be displayed as nested DataView
+      if (this.shouldUseDataView(value, keyLower)) {
+        return 'dataview';
+      }
+
+      return 'object';
+    }
+
     if (type === 'string') {
-      // Check for common patterns
-      if (value.includes('@')) return 'email';
+      // Pattern matching for strings
+      if (value.includes('@') && value.includes('.')) return 'email';
       if (value.match(/^\d{4}-\d{2}-\d{2}/)) return 'date';
       if (value.match(/^https?:\/\//)) return 'url';
+      if (value.match(/^\+?[\d\s\-\(\)]+$/)) return 'phone';
     }
 
     return 'text';
+  }
+
+  /**
+   * Infer appropriate formatter based on type and context
+   * @param {*} value - Field value
+   * @param {string} key - Field key
+   * @param {string} fieldType - Inferred field type
+   * @returns {string|null} Formatter pipe string
+   */
+  inferFormatter(value, key, fieldType) {
+    const keyLower = key.toLowerCase();
+    const formatters = [];
+
+    switch (fieldType) {
+      case 'datetime':
+        if (keyLower.includes('time') && !keyLower.includes('date')) {
+          formatters.push('time');
+        } else if (keyLower.includes('relative') || keyLower.includes('ago') || keyLower.includes('last_')) {
+          formatters.push('relative');
+        } else if (keyLower.includes('created') || keyLower.includes('updated') || keyLower.includes('modified')) {
+          formatters.push('date("MMM D, YYYY")');
+        } else {
+          formatters.push('date("MMMM D, YYYY")');
+        }
+        break;
+
+      case 'date':
+        if (keyLower.includes('birth') || keyLower.includes('dob')) {
+          formatters.push('date("MMMM D, YYYY")');
+        } else {
+          formatters.push('date("MMM D, YYYY")');
+        }
+        break;
+
+      case 'email':
+        // Don't apply email formatter - DataView handles mailto: links automatically
+        break;
+
+      case 'url':
+        // Don't apply url formatter - DataView handles clickable links automatically
+        break;
+
+      case 'phone':
+        formatters.push('phone');
+        break;
+
+      case 'currency':
+        formatters.push('currency');
+        // Add currency symbol detection if needed
+        if (keyLower.includes('eur') || keyLower.includes('euro')) {
+          formatters[formatters.length - 1] = 'currency("EUR")';
+        } else if (keyLower.includes('gbp') || keyLower.includes('pound')) {
+          formatters[formatters.length - 1] = 'currency("GBP")';
+        }
+        break;
+
+      case 'filesize':
+        formatters.push('filesize');
+        break;
+
+      case 'percent':
+        formatters.push('percent');
+        break;
+
+      case 'number':
+        // Smart number formatting with pipe chains
+        if (typeof value === 'number') {
+          if (keyLower.includes('count') || keyLower.includes('total') || keyLower.includes('followers') || keyLower.includes('views')) {
+            if (value >= 1000) {
+              formatters.push('compact');
+            } else {
+              formatters.push('number');
+            }
+          } else if (keyLower.includes('score') || keyLower.includes('rating')) {
+            formatters.push('number');
+            // Add decimal places for scores
+            if (value % 1 !== 0) {
+              formatters[formatters.length - 1] = 'number(1)';
+            }
+          } else if (keyLower.includes('version') || keyLower.includes('id')) {
+            // Don't format IDs and versions
+            return null;
+          } else {
+            formatters.push('number');
+          }
+        }
+        break;
+
+      case 'boolean':
+        // Don't apply boolean formatter - DataView handles badge styling automatically
+        break;
+
+      case 'text':
+        // Smart text formatting with contextual pipe chains
+        if (typeof value === 'string') {
+          // Handle different text contexts
+          if (keyLower.includes('description') || keyLower.includes('content') || keyLower.includes('body')) {
+            if (value.length > 200) {
+              formatters.push('truncate(200)');
+            } else if (value.length > 100) {
+              formatters.push('truncate(100)');
+            }
+          } else if (keyLower.includes('summary') || keyLower.includes('excerpt')) {
+            if (value.length > 150) {
+              formatters.push('truncate(150)');
+            }
+          } else if (keyLower.includes('name') || keyLower.includes('title') || keyLower.includes('label')) {
+            formatters.push('capitalize');
+            if (value.length > 50) {
+              formatters.unshift('truncate(50)'); // Truncate first, then capitalize
+            }
+          } else if (keyLower.includes('slug') || keyLower.includes('handle') || keyLower.includes('username')) {
+            formatters.push('slug');
+          } else if (keyLower.includes('code') || keyLower.includes('token') || keyLower.includes('key')) {
+            // Show codes/tokens with masking if long
+            if (value.length > 20) {
+              formatters.push('mask');
+            }
+          } else {
+            // Generic text handling
+            if (value.length > 100) {
+              formatters.push('truncate(100)');
+            }
+          }
+        }
+        break;
+
+      case 'array':
+      case 'object':
+        // Don't apply json formatter - DataView handles JSON display automatically
+        break;
+
+      case 'dataview':
+        // Don't apply any formatter - nested DataView handles its own formatting
+        break;
+
+      default:
+        // Handle any missed cases with basic text formatting
+        if (typeof value === 'string' && value.length > 100) {
+          formatters.push('truncate(100)');
+        }
+        break;
+    }
+
+    return formatters.length > 0 ? formatters.join('|') : null;
+  }
+
+  /**
+   * Determine if an object should be displayed as nested DataView vs JSON
+   * @param {object} value - Object value to check
+   * @param {string} keyLower - Lowercase field key
+   * @returns {boolean} True if should use DataView
+   */
+  shouldUseDataView(value, keyLower) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return false;
+    }
+
+    // Check for common patterns that benefit from DataView display
+    const dataViewPatterns = [
+      'permissions', 'perms', 'access', 'rights',
+      'settings', 'config', 'configuration', 'options',
+      'profile', 'info', 'details', 'data',
+      'metadata', 'meta', 'attributes', 'props',
+      'preferences', 'prefs', 'user_data',
+      'contact', 'address', 'location',
+      'stats', 'statistics', 'metrics', 'counts'
+    ];
+
+    // Check if key matches common patterns
+    const matchesPattern = dataViewPatterns.some(pattern => keyLower.includes(pattern));
+
+    if (matchesPattern) {
+      // Additional checks to ensure it's suitable for DataView
+      const keys = Object.keys(value);
+
+      // Good candidates: objects with multiple simple key-value pairs
+      if (keys.length >= 2 && keys.length <= 20) {
+        const hasComplexNesting = keys.some(k =>
+          typeof value[k] === 'object' &&
+          value[k] !== null &&
+          !Array.isArray(value[k]) &&
+          Object.keys(value[k]).length > 3
+        );
+
+        // Use DataView if not too deeply nested
+        if (!hasComplexNesting) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -113,8 +439,8 @@ class DataView extends View {
    * @returns {object} Data object
    */
   getData() {
-    if (this.model && typeof this.model.toJSON === 'function') {
-      return this.model.toJSON();
+    if (this.model && this.model.attributes) {
+      return { ...this.model.attributes };
     }
     return this.data || {};
   }
@@ -127,19 +453,19 @@ class DataView extends View {
   getFieldValue(field) {
     let value;
 
-    // Get value from data source
+    // Get raw value from data source
     if (this.model && typeof this.model.get === 'function') {
-      // Use pipe formatting if specified
-      const key = field.format ? `${field.name}|${field.format}` : field.name;
-      value = this.model.get(key);
+      // For models, get raw value first, then apply formatting separately
+      // This ensures we don't break pipe chains by concatenating strings
+      value = this.model.get(field.name);
     } else {
       // Plain object access
       value = this.getData()[field.name];
+    }
 
-      // Apply formatting if specified
-      if (field.format && value != null) {
-        value = dataFormatter.pipe(value, field.format);
-      }
+    // Apply formatting using DataFormatter pipe system if specified
+    if (field.format && value != null) {
+      value = dataFormatter.pipe(value, field.format);
     }
 
     // Handle empty values
@@ -156,7 +482,12 @@ class DataView extends View {
    * @returns {string} CSS classes
    */
   getColumnClasses(field) {
-    const colSize = field.colSize || Math.floor(12 / this.dataViewOptions.columns);
+    // JSON objects and nested DataViews always use full width for better display
+    if (field.type === 'array' || field.type === 'object' || field.type === 'dataview') {
+      return 'col-12';
+    }
+
+    const colSize = field.colSize || field.cols || Math.floor(12 / this.dataViewOptions.columns);
 
     if (this.dataViewOptions.responsive) {
       // Responsive breakpoints: 1 column on small, configured on larger screens
@@ -164,28 +495,6 @@ class DataView extends View {
     }
 
     return `col-${colSize}`;
-  }
-
-  /**
-   * Override getTemplate to provide inline template
-   * @returns {Promise<string>} Template string
-   */
-  async getTemplate() {
-    return this.buildDataViewHTML();
-  }
-
-  /**
-   * Build the complete DataView HTML template
-   * @returns {string} Complete HTML string
-   */
-  buildDataViewHTML() {
-    const items = this.buildItemsHTML();
-
-    return `
-      <div class="${this.dataViewOptions.rowClass}">
-        ${items}
-      </div>
-    `;
   }
 
   /**
@@ -233,7 +542,6 @@ class DataView extends View {
    */
   buildLabelHTML(label, field) {
     const labelClass = field.labelClass || this.dataViewOptions.labelClass;
-
     return `<div class="${labelClass}">${this.escapeHtml(label)}:</div>`;
   }
 
@@ -246,47 +554,68 @@ class DataView extends View {
   buildValueHTML(value, field) {
     const valueClass = field.valueClass || this.dataViewOptions.valueClass;
     const displayValue = this.formatDisplayValue(value, field);
-
     return `<div class="${valueClass}">${displayValue}</div>`;
   }
 
   /**
-   * Format value for display with type-specific handling
-   * @param {*} value - Raw value
+   * Format value for display with enhanced type handling
+   * @param {*} value - Formatted value from DataFormatter (or raw if no format)
    * @param {object} field - Field definition
-   * @returns {string} Formatted display value
+   * @returns {string} Formatted display value with HTML markup
    */
   formatDisplayValue(value, field) {
     if (value === null || value === undefined) {
       return this.dataViewOptions.emptyValueText;
     }
 
-    // Handle different field types
+    // If user specified a custom format, respect it completely
+    // Only apply DataView's special HTML formatting when NO custom format is provided
+    if (field.format) {
+      // Custom format was applied - trust DataFormatter completely
+      // Just escape and return the formatted value
+      return this.escapeHtml(String(value));
+    }
+
+    // No custom format - apply DataView's default type-specific HTML formatting
+    // Get original raw value for special cases
+    const rawValue = this.getData()[field.name];
+
+    // Handle types that need special HTML presentation (only when no custom format)
     switch (field.type) {
       case 'boolean':
-        return value ?
+        // Use standard boolean badges (no custom format was applied)
+        return rawValue ?
           '<span class="badge bg-success">Yes</span>' :
           '<span class="badge bg-secondary">No</span>';
 
       case 'email':
-        return `<a href="mailto:${this.escapeHtml(value)}" class="text-decoration-none">${this.escapeHtml(value)}</a>`;
+        // Create clickable email links (no custom format was applied)
+        const emailStr = String(value);
+        return `<a href="mailto:${this.escapeHtml(emailStr)}" class="text-decoration-none">${this.escapeHtml(emailStr)}</a>`;
 
       case 'url':
-        return `<a href="${this.escapeHtml(value)}" target="_blank" rel="noopener" class="text-decoration-none">${this.escapeHtml(value)} <i class="fas fa-external-link-alt fa-sm"></i></a>`;
+        // Create clickable URL links (no custom format was applied)
+        const urlStr = String(value);
+        return `<a href="${this.escapeHtml(urlStr)}" target="_blank" rel="noopener" class="text-decoration-none">${this.escapeHtml(urlStr)} <i class="bi bi-box-arrow-up-right"></i></a>`;
 
-      case 'number':
-        return typeof value === 'number' ? value.toLocaleString() : this.escapeHtml(value);
-
-      case 'json':
+      case 'array':
       case 'object':
-        return this.formatAsJson(value);
+        // Display as JSON with special HTML formatting (no custom format was applied)
+        return this.formatAsJson(rawValue);
+
+      case 'dataview':
+        // Create nested DataView for complex objects
+        return this.formatAsDataView(rawValue, field);
+
+      case 'phone':
+        // Create tel: links for phone numbers (no custom format was applied)
+        const phoneStr = String(value);
+        const telHref = phoneStr.replace(/[^\d\+]/g, ''); // Clean for tel: link
+        return `<a href="tel:${telHref}" class="text-decoration-none">${this.escapeHtml(phoneStr)}</a>`;
 
       default:
-        // Auto-detect objects and arrays for JSON display
-        if (typeof value === 'object' && value !== null) {
-          return this.formatAsJson(value);
-        }
-        return this.escapeHtml(value);
+        // For all other types with no custom format, just escape and return
+        return this.escapeHtml(String(value));
     }
   }
 
@@ -314,10 +643,10 @@ class DataView extends View {
               <small class="text-muted">${Array.isArray(value) ? 'Array' : 'Object'} (${lines} lines)</small>
               <div class="btn-group btn-group-sm" role="group">
                 <button type="button" class="btn btn-outline-secondary btn-sm json-toggle" data-bs-toggle="collapse" data-bs-target="#${uniqueId}" aria-expanded="false">
-                  <i class="fas fa-eye"></i> Show
+                  <i class="bi bi-eye"></i> Show
                 </button>
                 <button type="button" class="btn btn-outline-secondary btn-sm json-copy" data-json='${this.escapeHtml(jsonString)}' title="Copy JSON">
-                  <i class="fas fa-copy"></i>
+                  <i class="bi bi-clipboard"></i>
                 </button>
               </div>
             </div>
@@ -325,7 +654,7 @@ class DataView extends View {
               <code class="text-muted">${escapedPreview}</code>
             </div>
             <div class="collapse mt-2" id="${uniqueId}">
-              <pre class="json-display bg-dark text-light p-3 rounded small mb-0" style="max-height: 400px; overflow-y: auto; white-space: pre-wrap; font-family: 'Courier New', monospace;"><code>${this.syntaxHighlightJson(escapedJson)}</code></pre>
+              <pre class="json-display p-3 rounded small mb-0" style="max-height: 400px; overflow-y: auto; white-space: pre-wrap; font-family: 'Courier New', monospace;"><code>${this.syntaxHighlightJson(escapedJson)}</code></pre>
             </div>
           </div>
         `;
@@ -336,7 +665,7 @@ class DataView extends View {
             <div class="d-flex align-items-center justify-content-between mb-1">
               <small class="text-muted">${Array.isArray(value) ? 'Array' : 'Object'}</small>
               <button type="button" class="btn btn-outline-secondary btn-sm json-copy" data-json='${this.escapeHtml(jsonString)}' title="Copy JSON">
-                <i class="fas fa-copy"></i>
+                <i class="bi bi-clipboard"></i>
               </button>
             </div>
             <pre class="json-display bg-light p-2 rounded small mb-0 border" style="white-space: pre-wrap; font-family: 'Courier New', monospace;"><code>${this.syntaxHighlightJson(escapedJson)}</code></pre>
@@ -364,7 +693,7 @@ class DataView extends View {
   }
 
   /**
-   * Override bindEvents to add DataView-specific event handling
+   * Bind events including JSON interaction handlers
    */
   bindEvents() {
     super.bindEvents();
@@ -434,11 +763,11 @@ class DataView extends View {
     // Update button text and icon
     setTimeout(() => {
       if (isExpanded) {
-        icon.className = 'fas fa-eye-slash';
-        button.innerHTML = '<i class="fas fa-eye-slash"></i> Hide';
+        icon.className = 'bi bi-eye-slash';
+        button.innerHTML = '<i class="bi bi-eye-slash"></i> Hide';
       } else {
-        icon.className = 'fas fa-eye';
-        button.innerHTML = '<i class="fas fa-eye"></i> Show';
+        icon.className = 'bi bi-eye';
+        button.innerHTML = '<i class="bi bi-eye"></i> Show';
       }
     }, 10);
   }
@@ -452,7 +781,7 @@ class DataView extends View {
     const icon = button.querySelector('i');
 
     // Show success state
-    icon.className = 'fas fa-check text-success';
+    icon.className = 'bi bi-check text-success';
     button.classList.add('btn-success');
     button.classList.remove('btn-outline-secondary');
 
@@ -462,6 +791,52 @@ class DataView extends View {
       button.classList.remove('btn-success');
       button.classList.add('btn-outline-secondary');
     }, 1000);
+  }
+
+  /**
+   * Format complex objects as nested DataView
+   * @param {object} value - Object value to display as DataView
+   * @param {object} field - Field definition
+   * @returns {string} Formatted DataView HTML
+   */
+  formatAsDataView(value, field) {
+    if (!value || typeof value !== 'object') {
+      return `<span class="text-muted fst-italic">No data available</span>`;
+    }
+
+    try {
+      // Create nested DataView instance
+      const nestedView = new (this.constructor)({
+        data: value,
+        columns: field.dataViewColumns || 2,
+        showEmptyValues: field.showEmptyValues ?? true,
+        emptyValueText: field.emptyValueText || 'Not set',
+        // Pass any other dataView-specific options from field config
+        ...(field.dataViewOptions || {})
+      });
+
+        nestedView.onInit();
+        nestedView.generateFieldsFromData();
+      // Generate the nested DataView HTML
+      const nestedHtml = nestedView.buildItemsHTML();
+
+      // Wrap in a styled container with optional label
+      const labelHtml = field.label ?
+        `<h6 class="fw-semibold text-muted mb-3 border-bottom pb-2">${this.escapeHtml(field.label)}</h6>` :
+        '';
+
+      return `
+        <div class="nested-dataview border rounded p-3 bg-light">
+          ${labelHtml}
+          <div class="${nestedView.dataViewOptions.rowClass}">
+            ${nestedHtml}
+          </div>
+        </div>
+      `;
+    } catch (error) {
+      console.error('Error creating nested DataView:', error);
+      return `<span class="text-danger">Error displaying nested data</span>`;
+    }
   }
 
   /**
@@ -477,11 +852,12 @@ class DataView extends View {
       this.model.set(newData);
     }
 
-    // Re-render if already rendered
-    if (this.rendered) {
-      await this.render();
+    // Clear fields to trigger regeneration on next render
+    if (this.fields.length > 0 && !this.options.fields) {
+      this.fields = [];
     }
 
+    await this.render();
     this.emit('data:updated', { data: newData });
     return this;
   }
@@ -493,12 +869,7 @@ class DataView extends View {
    */
   async updateFields(newFields) {
     this.fields = newFields;
-
-    // Re-render if already rendered
-    if (this.rendered) {
-      await this.render();
-    }
-
+    await this.render();
     this.emit('fields:updated', { fields: newFields });
     return this;
   }
@@ -510,12 +881,7 @@ class DataView extends View {
    */
   async updateConfig(newOptions) {
     this.dataViewOptions = { ...this.dataViewOptions, ...newOptions };
-
-    // Re-render if already rendered
-    if (this.rendered) {
-      await this.render();
-    }
-
+    await this.render();
     this.emit('config:updated', { options: this.dataViewOptions });
     return this;
   }
@@ -528,7 +894,6 @@ class DataView extends View {
     if (this.model && typeof this.model.fetch === 'function') {
       try {
         await this.model.fetch();
-        // Model change events should trigger re-render automatically
         this.emit('data:refreshed', { model: this.model });
       } catch (error) {
         this.emit('error', { error, message: 'Failed to refresh data' });
@@ -556,6 +921,105 @@ class DataView extends View {
   }
 
   /**
+   * Set custom format for a specific field
+   * @param {string} fieldName - Name of the field
+   * @param {string} format - Pipe format string (e.g., "currency|uppercase")
+   * @returns {DataView} This instance for chaining
+   */
+  setFieldFormat(fieldName, format) {
+    const field = this.getField(fieldName);
+    if (field) {
+      field.format = format;
+    } else {
+      // Create new field if it doesn't exist
+      this.fields.push({
+        name: fieldName,
+        label: this.formatLabel(fieldName),
+        type: this.inferFieldType(this.getData()[fieldName], fieldName),
+        format: format
+      });
+    }
+    return this;
+  }
+
+  /**
+   * Add additional formatter to existing field format pipe chain
+   * @param {string} fieldName - Name of the field
+   * @param {string} formatter - Formatter to add (e.g., "uppercase", "truncate(50)")
+   * @returns {DataView} This instance for chaining
+   */
+  addFormatPipe(fieldName, formatter) {
+    const field = this.getField(fieldName);
+    if (field) {
+      if (field.format) {
+        field.format += `|${formatter}`;
+      } else {
+        field.format = formatter;
+      }
+    }
+    return this;
+  }
+
+  /**
+   * Clear custom format for a field (revert to auto-inferred format)
+   * @param {string} fieldName - Name of the field
+   * @returns {DataView} This instance for chaining
+   */
+  clearFieldFormat(fieldName) {
+    const field = this.getField(fieldName);
+    if (field) {
+      const data = this.getData();
+      field.format = this.inferFormatter(data[fieldName], fieldName, field.type);
+    }
+    return this;
+  }
+
+  /**
+   * Get formatted value for a specific field without rendering
+   * @param {string} fieldName - Name of the field
+   * @param {*} value - Optional value to format (uses current data if not provided)
+   * @returns {*} Formatted value
+   */
+  getFormattedValue(fieldName, value = null) {
+    const field = this.getField(fieldName);
+    if (!field) return null;
+
+    const targetValue = value !== null ? value : this.getData()[fieldName];
+
+    if (field.format && targetValue != null) {
+      return dataFormatter.pipe(targetValue, field.format);
+    }
+
+    return targetValue;
+  }
+
+  /**
+   * Set multiple field formats at once
+   * @param {object} formats - Object mapping field names to format strings
+   * @returns {DataView} This instance for chaining
+   */
+  setFieldFormats(formats) {
+    Object.entries(formats).forEach(([fieldName, format]) => {
+      this.setFieldFormat(fieldName, format);
+    });
+    return this;
+  }
+
+  /**
+   * Get all current field formats as an object
+   * @returns {object} Object mapping field names to their current formats
+   */
+  getFieldFormats() {
+    const formats = {};
+    this.fields.forEach(field => {
+      if (field.format) {
+        formats[field.name] = field.format;
+      }
+    });
+    return formats;
+  }
+
+  /**
    * Set up model event listeners if model is provided
    */
   onInit() {
@@ -564,9 +1028,7 @@ class DataView extends View {
     // Listen for model changes
     if (this.model && typeof this.model.on === 'function') {
       this.model.on('change', () => {
-        if (this.rendered) {
-          this.render();
-        }
+        this.render();
       });
     }
   }
@@ -581,6 +1043,4 @@ class DataView extends View {
   }
 }
 
-// Export for use in MOJO framework
 export default DataView;
-export { DataView };

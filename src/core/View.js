@@ -175,6 +175,9 @@ export class View {
       if (!this.initialized) await this.onInitView();
       this.events.unbind();
       await this.onBeforeRender();
+      if (this.getViewData) {
+          this.data = await this.getViewData();
+      }
       // 1) render own HTML (FIX #5: await the async template render)
       const html = await this.renderTemplate();
       this.element.innerHTML = html;

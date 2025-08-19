@@ -31,6 +31,7 @@ export { default as MainContent } from './components/MainContent.js';
 export { FormBuilder } from './components/FormBuilder.js';
 export { default as FormView } from './components/FormView.js';
 export { DataView } from './components/DataView.js';
+export { TabView } from './components/TabView.js';
 
 // Utilities
 export { default as EventBus } from './utils/EventBus.js';

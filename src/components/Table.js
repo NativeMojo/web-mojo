@@ -1439,7 +1439,10 @@ class Table extends View {
   async onItemClicked(item, event, target) {
     console.log('Item clicked:', item);
     // Default implementation - can be overridden
+    let dlgOpts = {};
+      if (item.constructor.VIEW) dlgOpts = item.constructor.VIEW;
     const dialogPromise = Dialog.showData({
+      ...dlgOpts,
       title: `#${item.id} ${this.options.modelName}`,
       model: item
     });
@@ -2311,7 +2314,7 @@ class Table extends View {
 
   async handleActionContextMenuItem(event, element) {
     event.preventDefault();
-    
+
     // Close the dropdown
     const dropdownMenu = element.closest('.dropdown-menu');
     if (dropdownMenu && typeof bootstrap !== 'undefined') {
@@ -2323,7 +2326,7 @@ class Table extends View {
         }
       }
     }
-    
+
     // Check if the item is disabled
     if (element.classList.contains('disabled') || element.getAttribute('aria-disabled') === 'true') {
       return;

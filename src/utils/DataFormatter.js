@@ -242,7 +242,7 @@ class DataFormatter {
    */
   date(value, format = 'MM/DD/YYYY') {
     if (!value) return '';
-
+    value = this.normalizeEpoch(value);
     let date;
     if (value instanceof Date) {
       date = value;
@@ -291,6 +291,7 @@ class DataFormatter {
    */
   time(value, format = 'HH:mm:ss') {
     if (!value) return '';
+    value = this.normalizeEpoch(value);
     const date = value instanceof Date ? value : new Date(value);
     if (isNaN(date.getTime())) return String(value);
 
@@ -325,9 +326,23 @@ class DataFormatter {
    * @returns {string} Formatted datetime
    */
   datetime(value, dateFormat = 'MM/DD/YYYY', timeFormat = 'HH:mm') {
+    value = this.normalizeEpoch(value);
     const dateStr = this.date(value, dateFormat);
     const timeStr = this.time(value, timeFormat);
     return dateStr && timeStr ? `${dateStr} ${timeStr}` : '';
+  }
+
+  normalizeEpoch(value) {
+    if (typeof value !== "number") value = Number(value);
+
+    // treat anything smaller than year 2000 in ms as seconds
+    if (value < 1e11) {   // less than ~Sat Mar 03 1973 09:46:40 GMT
+      return value * 1000; // seconds → ms
+    } else if (value > 1e12 && value < 1e13) {
+      return value; // already ms
+    } else {
+      throw new Error("Value doesn't look like epoch seconds or ms");
+    }
   }
 
   /**
@@ -338,6 +353,7 @@ class DataFormatter {
    */
   relative(value, short = false) {
     if (!value) return '';
+    value = this.normalizeEpoch(value);
     const date = value instanceof Date ? value : new Date(value);
     if (isNaN(date.getTime())) return String(value);
 
@@ -387,6 +403,7 @@ class DataFormatter {
    */
   iso(value, dateOnly = false) {
     if (!value) return '';
+    value = this.normalizeEpoch(value);
     const date = value instanceof Date ? value : new Date(value);
     if (isNaN(date.getTime())) return String(value);
 
