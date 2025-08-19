@@ -118,7 +118,7 @@ class Collection {
     const now = Date.now();
     const minInterval = 100; // ms
 
-    if (this.lastFetchTime && (now - this.lastFetchTime) < minInterval) {
+    if (this.options.rateLimiting && this.lastFetchTime && (now - this.lastFetchTime) < minInterval) {
       console.info('Collection: Rate limited, skipping fetch');
       return { success: true, message: 'Rate limited, skipping fetch', data: { data: this.toJSON() } };
     }
@@ -235,8 +235,11 @@ class Collection {
    * @returns {Promise} Promise that resolves with REST response if autoFetch=true, or collection if autoFetch=false
    */
   async updateParams(newParams, autoFetch = false, debounceMs = 0) {
-    this.params = { ...this.params, ...newParams };
+    return await this.setParams({ ...this.params, ...newParams }, autoFetch, debounceMs);
+  }
 
+  async setParams(newParams, autoFetch = false, debounceMs = 0) {
+    this.params = newParams;
     if (autoFetch && this.restEnabled) {
       if (debounceMs > 0) {
         // Clear existing debounced fetch

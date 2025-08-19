@@ -156,16 +156,34 @@ export class View {
     return this;
   }
 
+  canRender() {
+      // Optional render throttling
+      if (this.options.renderCooldown > 0 && now - this.lastRenderTime < this.options.renderCooldown) {
+        View._warn(`View ${this.id}: Render called too quickly, cooldown active`);
+        return false;
+      }
+      if (this.options.noAppend) {
+        if (this.parent) {
+          if (!this.parent.contains(this.containerId || this.container)) {
+              return false;
+          } else if (this.containerId && !document.getElementById(this.containerId)) {
+              return false;
+          } else if (this.container && !document.contains(this.container)) {
+              return false;
+          }
+        }
+      }
+      return true;
+  }
+
   // ---------------------------------------------
   // Render flow
   // ---------------------------------------------
   async render(allowMount = true, container = null) {
     const now = Date.now();
 
-    // Optional render throttling
-    if (this.options.renderCooldown > 0 && now - this.lastRenderTime < this.options.renderCooldown) {
-      View._warn(`View ${this.id}: Render called too quickly, cooldown active`);
-      return this;
+    if (!this.canRender()) {
+        return this;
     }
 
     this.isRendering = true;
@@ -174,6 +192,7 @@ export class View {
     try {
       if (!this.initialized) await this.onInitView();
       this.events.unbind();
+
       await this.onBeforeRender();
       if (this.getViewData) {
           this.data = await this.getViewData();
@@ -224,7 +243,7 @@ export class View {
       if (container == null) {
           const plan = this._resolvePlacementPlan();
           this._applyPlacement(plan);
-      } else {
+      } else if (!this.options.noAppend) {
           if (!this.element.isConnected || this.element.parentNode !== container) {
               container.appendChild(this.element);
           }
@@ -588,6 +607,14 @@ export class View {
     return div.innerHTML;
   }
 
+  contains(el) {
+      if (typeof el === 'string') {
+        if (!this.element) return false; // no parent element yet
+        el = document.getElementById(el);
+      }
+      if (!el) return false; // no element with that id
+      return this.element.contains(el);
+  }
 
   /**
    * Show error message

@@ -64,6 +64,24 @@ class DashboardPage extends Page {
         document.title = DashboardPage.title;
     }
 
+    async getViewData() {
+
+      return {
+        pageName: this.pageName,
+        route: this.route,
+        params: this.params,
+        query: this.query,
+        title: this.pageOptions.title,
+        description: this.pageOptions.description,
+        ...this.data
+      };
+    }
+
+    async updateData(data) {
+        this.data = data;
+        await this.render();
+    }
+
     async onActionRefresh() {
         if (window.APP) {
             window.APP.showLoading('Refreshing dashboard...');

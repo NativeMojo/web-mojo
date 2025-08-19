@@ -3,7 +3,11 @@
 - [ ] User Change Password Flow
 - [ ] Admin Change Password Flow
 - [ ] User Reset Password Flow
-- [ ] 
+- [ ] Group Selection Flow
+  - [x] Sidebar Group Selection
+  - [ ] Sidebar meny by activeGroup.kind
+  - [ ] edit admin menu needs to tell sidebar to exit menu instead of changing menu
+    logic should check activeGroup and show appropriate menu
 - [x] Wire up the proper Refresh Token
 - [x] Handle TopNav showing "Login" vs Current User
 - [x] Bug: Table is not showing loading

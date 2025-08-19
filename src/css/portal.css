@@ -48,6 +48,11 @@
    - .hide-sidebar: Completely hidden (0px)
    - .sidebar-open: Mobile overlay state
 
+   Group Selection:
+   - .group-selection-sidebar: Full sidebar dedicated to group selection
+   - .group-item: Individual group selection items
+   - .group-header: Current active group display in menus
+
    Themes:
    - .sidebar-light: Light theme
    - .sidebar-dark: Dark theme
@@ -700,7 +705,7 @@
         visibility 200ms cubic-bezier(0.4, 0, 0.2, 1),
         transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
     animation: tooltip-slide-in 250ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    animation-delay: 1600ms;
+    animation-delay: 800ms;
     pointer-events: none;
 }
 
@@ -2005,4 +2010,179 @@
 
 .portal-container.mobile-layout:not(.hide-sidebar) .portal-body {
     pointer-events: none;
+}
+
+/* ========================================================================
+   GROUP SELECTION INTERFACE
+   ======================================================================== */
+
+.group-selection-sidebar {
+    background: white;
+    border-right: 1px solid var(--bs-border-color);
+}
+
+.group-selection-sidebar .form-control-sm {
+    font-size: 0.875rem;
+}
+
+.group-item {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    position: relative;
+}
+
+.group-item:last-child {
+    border-bottom: none;
+}
+
+.group-item:hover {
+    background-color: #f8f9fa !important;
+    border-left: 3px solid var(--bs-primary);
+}
+
+.group-item:active {
+    background-color: #e9ecef !important;
+    transform: translateX(1px);
+}
+
+.group-item .bi-chevron-right {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.group-item:hover .bi-chevron-right {
+    opacity: 1;
+}
+
+/* Group header in menus */
+.group-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.group-header .cursor-pointer {
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+.group-header .cursor-pointer:hover {
+    background-color: #f8f9fa !important;
+}
+
+.group-header .bi-chevron-down {
+    transition: transform 0.2s ease;
+}
+
+.group-header .cursor-pointer:hover .bi-chevron-down {
+    transform: rotate(180deg);
+}
+
+/* Dark theme adjustments */
+.sidebar-dark .group-selection-sidebar {
+    background: #2c3e50;
+    border-right-color: #34495e;
+}
+
+.sidebar-dark .group-item {
+    border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-dark .group-item:hover {
+    background-color: #34495e !important;
+}
+
+.sidebar-dark .group-item:active {
+    background-color: #3d566e !important;
+}
+
+.sidebar-dark .group-header {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-dark .group-header .cursor-pointer:hover {
+    background-color: #34495e !important;
+}
+
+/* Loading states */
+.group-selection-sidebar .spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+.group-selection-sidebar .text-center {
+    color: var(--bs-secondary);
+}
+
+/* Search input focus */
+.group-selection-sidebar .form-control:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Empty state styling */
+.group-selection-sidebar .bi-inbox,
+.group-selection-sidebar .bi-search {
+    color: var(--bs-secondary);
+}
+
+/* Help section */
+.group-selection-sidebar .bg-light {
+    background-color: rgba(0, 0, 0, 0.02) !important;
+}
+
+.sidebar-dark .group-selection-sidebar .bg-light {
+    background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+.group-selection-sidebar .text-decoration-none:hover {
+    color: var(--bs-primary) !important;
+}
+
+.simple-search-view {
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    border-right: 1px solid var(--bs-border-color);
+    box-shadow: var(--bs-box-shadow);
+}
+
+.collapse-sidebar .simple-search-view {
+    background-color: var(--mojo-topnav-bg) !important;
+}
+
+.collapse-sidebar .simple-search-view > * {
+    display: none !important;
+}
+
+.simple-search-item {
+    cursor: pointer;
+    transition:
+        background-color 0.15s ease-in-out,
+        transform 0.15s ease-in-out;
+    border-radius: 0.25rem;
+}
+
+.simple-search-item:hover {
+    background-color: rgba(0, 0, 50, 0.05);
+    transform: translateY(-1px);
+}
+
+[data-bs-theme="dark"] .simple-search-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* SimpleSearchView Buttons */
+.simple-search-exit-btn {
+    width: 20px;
+    height: 20px;
+    margin-top: -5px;
+}
+
+.simple-search-clear-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
 }

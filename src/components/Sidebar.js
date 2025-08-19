@@ -4,6 +4,9 @@
  */
 
 import View from '../core/View.js';
+import SimpleSearchView from './SimpleSearchView.js';
+import {GroupList} from '../models/Group.js';
+
 
 class Sidebar extends View {
     constructor(options = {}) {
@@ -11,47 +14,6 @@ class Sidebar extends View {
             tagName: 'nav',
             className: 'sidebar',
             id: 'sidebar',
-            template: `
-                <div class="sidebar-container">
-                    {{#data.currentMenu}}
-                    <!-- Header -->
-                    {{#header}}
-                    <div class="sidebar-header">
-                        {{{header}}}
-                        {{#showToggle}}
-                        <button class="sidebar-toggle" data-action="toggle-sidebar"
-                                aria-label="Toggle Sidebar">
-                            <i class="bi bi-chevron-left toggle-icon"></i>
-                            <i class="bi bi-chevron-right toggle-icon"></i>
-                        </button>
-                        {{/showToggle}}
-                    </div>
-                    {{/header}}
-
-                    <!-- Navigation Items -->
-                    <div class="sidebar-body">
-                        <ul class="nav nav-pills flex-column sidebar-nav">
-                            {{#items}}
-                            {{>nav-item}}
-                            {{/items}}
-                        </ul>
-                    </div>
-
-                    <!-- Footer -->
-                    {{#footer}}
-                    <div class="sidebar-footer">
-                        {{{footer}}}
-                    </div>
-                    {{/footer}}
-                    {{/data.currentMenu}}
-
-                    {{^data.currentMenu}}
-                    <div class="sidebar-empty">
-                        <p class="text-danger text-center">No menu configured</p>
-                    </div>
-                    {{/data.currentMenu}}
-                </div>
-            `,
             ...options
         });
 
@@ -98,6 +60,22 @@ class Sidebar extends View {
 
         // Initialize tooltips for nav items
         this.initializeTooltips();
+
+        this.searchView = new SimpleSearchView({
+            noAppend: true,
+            showExitButton: true,
+            headerText: "Select Group",
+            containerId: "sidebar-search-container",
+            Collection: GroupList,
+        });
+        this.addChild(this.searchView);
+
+    }
+
+    showGroupSearch() {
+        this.setClass('sidebar');
+        this.showSearch = true;
+        this.render();
     }
 
     /**
@@ -250,6 +228,62 @@ class Sidebar extends View {
         return false;
     }
 
+    getTemplate() {
+        if (this.showSearch) return this.getSearchTemplate();
+        return this.getMenuTemplate();
+    }
+
+    getSearchTemplate() {
+        return `
+            <div class="sidebar-container" id="sidebar-search-container">
+            </div>
+        `;
+    }
+
+    getMenuTemplate() {
+        return `
+            <div class="sidebar-container">
+                {{#data.currentMenu}}
+                <!-- Header -->
+                {{#header}}
+                <div class="sidebar-header">
+                    {{{header}}}
+                    {{#showToggle}}
+                    <button class="sidebar-toggle" data-action="toggle-sidebar"
+                            aria-label="Toggle Sidebar">
+                        <i class="bi bi-chevron-left toggle-icon"></i>
+                        <i class="bi bi-chevron-right toggle-icon"></i>
+                    </button>
+                    {{/showToggle}}
+                </div>
+                {{/header}}
+
+                <!-- Navigation Items -->
+                <div class="sidebar-body">
+                    <ul class="nav nav-pills flex-column sidebar-nav">
+                        {{#items}}
+                        {{>nav-item}}
+                        {{/items}}
+                    </ul>
+                </div>
+
+                <!-- Footer -->
+                {{#footer}}
+                <div class="sidebar-footer">
+                    {{{footer}}}
+                </div>
+                {{/footer}}
+                {{/data.currentMenu}}
+
+                {{^data.currentMenu}}
+                <div class="sidebar-empty">
+                    <p class="text-danger text-center">No menu configured</p>
+                </div>
+                {{/data.currentMenu}}
+            </div>
+        `;
+    }
+
     /**
      * Get template partials for rendering
      */
@@ -345,6 +379,7 @@ class Sidebar extends View {
     }
 
     _setActiveMenu(name) {
+        this.showSearch = false;
         this.activeMenuName = name;
         const config = this.getCurrentMenuConfig();
         if (config.className) {

@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ActiveGroup Demo - MOJO Framework</title>
+
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- MOJO Portal CSS -->
+    <link href="../src/css/portal.css" rel="stylesheet">
+    <link href="../src/css/core.css" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .demo-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .demo-info {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-header">
+        <div class="container">
+            <h1 class="mb-3">
+                <i class="bi bi-collection me-2"></i>
+                ActiveGroup Demo
+            </h1>
+            <p class="lead mb-0">
+                Demonstrates dynamic group selection and context-aware sidebar menus
+            </p>
+        </div>
+    </div>
+
+    <div class="container mb-4">
+        <div class="demo-info">
+            <h5><i class="bi bi-info-circle me-2"></i>How this demo works:</h5>
+            <ol class="mb-0">
+                <li><strong>No Active Group:</strong> Sidebar shows group selection interface</li>
+                <li><strong>Select Group:</strong> Choose from available groups to set context</li>
+                <li><strong>Dynamic Menus:</strong> Sidebar shows menus specific to selected group type</li>
+                <li><strong>Switch Groups:</strong> Click group header to change active group</li>
+                <li><strong>Persistent State:</strong> Selected group is saved across browser sessions</li>
+            </ol>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Available Groups</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            <li><i class="bi bi-building me-2 text-primary"></i>Acme Corporation <small class="text-muted">(org)</small></li>
+                            <li><i class="bi bi-people me-2 text-success"></i>Engineering Team <small class="text-muted">(team)</small></li>
+                            <li><i class="bi bi-shop me-2 text-warning"></i>Main Store <small class="text-muted">(merchant)</small></li>
+                            <li><i class="bi bi-diagram-3 me-2 text-info"></i>Sales Department <small class="text-muted">(department)</small></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Context-Aware Menus</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Organization:</strong> Admin tools, user management, global settings</p>
+                        <p><strong>Team:</strong> Project tools, collaboration features, team metrics</p>
+                        <p><strong>Merchant:</strong> Store management, orders, inventory, payments</p>
+                        <p><strong>Department:</strong> Department-specific reports and workflows</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Portal Application Container -->
+    <div id="app" class="portal-demo-container"></div>
+
+    <!-- Bootstrap 5.3 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script type="module">
+        import { PortalApp } from '../src/app/PortalApp.js';
+        import { Group, GroupList } from '../src/models/Group.js';
+        import Page from '../src/core/Page.js';
+
+        // Demo Pages
+        class DashboardPage extends Page {
+            constructor(options = {}) {
+                super({
+                    pageName: 'Dashboard',
+                    route: '/dashboard',
+                    title: 'Dashboard',
+                    template: `
+                        <div class="container-fluid">
+                            <h2>Dashboard</h2>
+                            <div class="alert alert-info">
+                                <strong>Active Group:</strong> {{data.groupName}} ({{data.groupKind}})
+                            </div>
+                            <p>This dashboard adapts based on your active group context.</p>
+                        </div>
+                    `,
+                    ...options
+                });
+            }
+
+            async getViewData() {
+                const baseData = await super.getViewData();
+                const app = this.getApp();
+                const activeGroup = app?.getActiveGroup();
+
+                return {
+                    ...baseData,
+                    groupName: activeGroup ? activeGroup.get('name') : 'None',
+                    groupKind: activeGroup ? activeGroup.get('kind') : 'N/A'
+                };
+            }
+        }
+
+        class UsersPage extends Page {
+            constructor(options = {}) {
+                super({
+                    pageName: 'Users',
+                    route: '/users',
+                    title: 'User Management',
+                    template: `
+                        <div class="container-fluid">
+                            <h2>User Management</h2>
+                            <p>Manage users for your organization.</p>
+                        </div>
+                    `,
+                    ...options
+                });
+            }
+        }
+
+        class ProjectsPage extends Page {
+            constructor(options = {}) {
+                super({
+                    pageName: 'Projects',
+                    route: '/projects',
+                    title: 'Projects',
+                    template: `
+                        <div class="container-fluid">
+                            <h2>Projects</h2>
+                            <p>Team project management and collaboration.</p>
+                        </div>
+                    `,
+                    ...options
+                });
+            }
+        }
+
+        class OrdersPage extends Page {
+            constructor(options = {}) {
+                super({
+                    pageName: 'Orders',
+                    route: '/orders',
+                    title: 'Orders',
+                    template: `
+                        <div class="container-fluid">
+                            <h2>Order Management</h2>
+                            <p>Manage your store orders and inventory.</p>
+                        </div>
+                    `,
+                    ...options
+                });
+            }
+        }
+
+        class ReportsPage extends Page {
+            constructor(options = {}) {
+                super({
+                    pageName: 'Reports',
+                    route: '/reports',
+                    title: 'Reports',
+                    template: `
+                        <div class="container-fluid">
+                            <h2>Department Reports</h2>
+                            <p>View department-specific analytics and reports.</p>
+                        </div>
+                    `,
+                    ...options
+                });
+            }
+        }
+
+        // Mock some groups for demo
+        const mockGroups = [
+            { id: 1, name: 'Acme Corporation', kind: 'org' },
+            { id: 2, name: 'Engineering Team', kind: 'team' },
+            { id: 3, name: 'Main Store', kind: 'merchant' },
+            { id: 4, name: 'Sales Department', kind: 'department' }
+        ];
+
+        // Override GroupList to use mock data
+        class MockGroupList extends GroupList {
+            async fetch() {
+                this.clear();
+                mockGroups.forEach(groupData => {
+                    const group = new Group(groupData);
+                    this.add(group);
+                });
+                this.emit('update');
+                return this;
+            }
+
+            async fetchOne(id) {
+                const groupData = mockGroups.find(g => g.id == id);
+                return groupData ? new Group(groupData) : null;
+            }
+        }
+
+        // Override Group to use mock data
+        class MockGroup extends Group {
+            async fetch() {
+                const groupData = mockGroups.find(g => g.id == this.get('id'));
+                if (groupData) {
+                    this.set(groupData);
+                }
+                return this;
+            }
+        }
+
+        // Replace original classes for demo
+        window.MockGroup = MockGroup;
+        window.MockGroupList = MockGroupList;
+
+        // Create Portal App with activeGroup functionality
+        const app = new PortalApp({
+            container: '#app',
+            title: 'ActiveGroup Demo Portal',
+
+            // Topbar configuration
+            topbar: {
+                brand: 'Demo Portal',
+                brandIcon: 'bi bi-lightning-charge',
+                className: 'navbar navbar-expand-lg navbar-dark bg-primary',
+                showSidebarToggle: true
+            },
+
+            // Sidebar with group-specific menus
+            sidebar: {
+                menus: {
+                    // Default menu (no groupKind)
+                    default: {
+                        header: '<div class="p-3 text-center"><h6>Select a Group</h6></div>',
+                        items: [
+                            {
+                                text: 'Dashboard',
+                                route: '/dashboard',
+                                icon: 'bi bi-speedometer2'
+                            }
+                        ]
+                    },
+
+                    // Organization menu
+                    orgMenu: {
+                        groupKind: 'org',
+                        items: [
+                            {
+                                text: 'Dashboard',
+                                route: '/dashboard',
+                                icon: 'bi bi-speedometer2'
+                            },
+                            {
+                                text: 'User Management',
+                                route: '/users',
+                                icon: 'bi bi-people'
+                            },
+                            '',
+                            {
+                                text: 'Settings',
+                                icon: 'bi bi-gear',
+                                children: [
+                                    {
+                                        text: 'Company Settings',
+                                        route: '/settings/company',
+                                        icon: 'bi bi-building'
+                                    },
+                                    {
+                                        text: 'Security',
+                                        route: '/settings/security',
+                                        icon: 'bi bi-shield'
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+
+                    // Team menu
+                    teamMenu: {
+                        groupKind: 'team',
+                        items: [
+                            {
+                                text: 'Dashboard',
+                                route: '/dashboard',
+                                icon: 'bi bi-speedometer2'
+                            },
+                            {
+                                text: 'Projects',
+                                route: '/projects',
+                                icon: 'bi bi-kanban'
+                            },
+                            {
+                                text: 'Team Chat',
+                                route: '/chat',
+                                icon: 'bi bi-chat-dots'
+                            },
+                            '',
+                            {
+                                text: 'Collaboration',
+                                icon: 'bi bi-people',
+                                children: [
+                                    {
+                                        text: 'Shared Files',
+                                        route: '/files',
+                                        icon: 'bi bi-folder'
+                                    },
+                                    {
+                                        text: 'Calendar',
+                                        route: '/calendar',
+                                        icon: 'bi bi-calendar'
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+
+                    // Merchant menu
+                    merchantMenu: {
+                        groupKind: 'merchant',
+                        items: [
+                            {
+                                text: 'Dashboard',
+                                route: '/dashboard',
+                                icon: 'bi bi-speedometer2'
+                            },
+                            {
+                                text: 'Orders',
+                                route: '/orders',
+                                icon: 'bi bi-bag-check'
+                            },
+                            {
+                                text: 'Inventory',
+                                route: '/inventory',
+                                icon: 'bi bi-boxes'
+                            },
+                            '',
+                            {
+                                text: 'Store Management',
+                                icon: 'bi bi-shop',
+                                children: [
+                                    {
+                                        text: 'Products',
+                                        route: '/products',
+                                        icon: 'bi bi-grid'
+                                    },
+                                    {
+                                        text: 'Payments',
+                                        route: '/payments',
+                                        icon: 'bi bi-credit-card'
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+
+                    // Department menu
+                    departmentMenu: {
+                        groupKind: 'department',
+                        items: [
+                            {
+                                text: 'Dashboard',
+                                route: '/dashboard',
+                                icon: 'bi bi-speedometer2'
+                            },
+                            {
+                                text: 'Reports',
+                                route: '/reports',
+                                icon: 'bi bi-graph-up'
+                            },
+                            {
+                                text: 'Analytics',
+                                route: '/analytics',
+                                icon: 'bi bi-bar-chart'
+                            },
+                            '',
+                            {
+                                text: 'Department Tools',
+                                icon: 'bi bi-tools',
+                                children: [
+                                    {
+                                        text: 'Workflows',
+                                        route: '/workflows',
+                                        icon: 'bi bi-diagram-3'
+                                    },
+                                    {
+                                        text: 'Resources',
+                                        route: '/resources',
+                                        icon: 'bi bi-collection'
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            }
+        });
+
+        // Override Group and GroupList for demo
+        app.models = app.models || {};
+        app.models.Group = MockGroup;
+        app.models.GroupList = MockGroupList;
+
+        // Register pages
+        app.registerPage('dashboard', DashboardPage);
+        app.registerPage('users', UsersPage);
+        app.registerPage('projects', ProjectsPage);
+        app.registerPage('orders', OrdersPage);
+        app.registerPage('reports', ReportsPage);
+
+        // Set default route
+        app.setDefaultRoute('/dashboard');
+
+        // Mock authentication for demo
+        app.activeUser = {
+            id: 1,
+            name: 'Demo User',
+            email: 'demo@example.com',
+            hasPermission: () => true
+        };
+
+        // Override Group import in sidebar for demo
+        const originalSidebar = app.sidebar;
+        if (originalSidebar && originalSidebar.handleActionChangeGroup) {
+            const originalChangeGroup = originalSidebar.handleActionChangeGroup;
+            originalSidebar.handleActionChangeGroup = async function(event, element) {
+                // Replace GroupList import with our mock
+                const { Dialog } = await import('../src/components/Dialog.js');
+
+                try {
+                    const groups = new MockGroupList();
+                    await groups.fetch();
+
+                    const result = await Dialog.showForm({
+                        title: 'Change Group',
+                        size: 'md',
+                        fields: [
+                            {
+                                name: 'group',
+                                label: 'Select Group',
+                                type: 'select',
+                                options: groups.toJSON().map(g => ({
+                                    value: g.id,
+                                    label: `${g.name} (${g.kind})`
+                                })),
+                                required: true,
+                                value: this.activeGroup?.get('id')
+                            }
+                        ]
+                    });
+
+                    if (result && result.group) {
+                        const selectedGroup = groups.get(result.group);
+                        if (selectedGroup) {
+                            app.showLoading('Switching group...');
+                            await app.setActiveGroup(selectedGroup);
+                            app.showSuccess(`Switched to ${selectedGroup.get('name')}`);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error changing group:', error);
+                    app.showError('Failed to change group. Please try again.');
+                } finally {
+                    app.hideLoading();
+                }
+            };
+        }
+
+        // Start the application
+        app.start().then(() => {
+            console.log('ActiveGroup Demo Portal started successfully!');
+
+            // Show welcome message
+            app.showInfo('Welcome! This demo shows how activeGroup drives sidebar menus. Try selecting different groups to see menu changes.', {
+                duration: 8000
+            });
+        }).catch(error => {
+            console.error('Failed to start demo:', error);
+            document.getElementById('app').innerHTML = `
+                <div class="container mt-5">
+                    <div class="alert alert-danger">
+                        <h4>Demo Failed to Load</h4>
+                        <p>Error: ${error.message}</p>
+                        <p>Please check the browser console for more details.</p>
+                    </div>
+                </div>
+            `;
+        });
+
+        // Expose app globally for debugging
+        window.demoApp = app;
+    </script>
+</body>
+</html>

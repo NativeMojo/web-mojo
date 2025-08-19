@@ -10,6 +10,7 @@ import Sidebar from '../components/Sidebar.js';
 import DeniedPage from '../components/DeniedPage.js';
 import TokenManager from '../auth/TokenManager.js';
 import {User} from '../models/User.js';
+import {Group} from '../models/Group.js';
 import NotFoundPage from '../components/NotFoundPage.js';
 import ToastService from '../services/ToastService.js';
 
@@ -40,6 +41,9 @@ export default class PortalApp extends WebApp {
         this.topbar = null;
         this.topnav = null; // Legacy reference
         this.tokenManager = new TokenManager();
+
+        // Active group management
+        this.activeGroup = null;
         // Portal state - Load from localStorage first, then fallback to config
         if (!this.isMobile()) {
             this.sidebarCollapsed = this.loadSidebarState() ??
@@ -76,6 +80,9 @@ export default class PortalApp extends WebApp {
             return;
         });
 
+        // Check and load active group after auth
+        await this.checkActiveGroup();
+
         console.log('Setting up router...');
         await this.setupRouter();
 
@@ -106,6 +113,122 @@ export default class PortalApp extends WebApp {
         const user = new User({ id: token.getUserId() });
         await user.fetch();
         this.setActiveUser(user);
+    }
+
+    /**
+     * Check and load active group from storage
+     */
+    async checkActiveGroup() {
+        const savedGroupId = this.loadActiveGroupId();
+        if (savedGroupId) {
+            try {
+                const group = new Group({ id: savedGroupId });
+                await group.fetch();
+                this.activeGroup = group;
+                console.log('Loaded active group:', group.get('name'));
+            } catch (error) {
+                console.warn('Failed to load saved active group:', error);
+                this.clearActiveGroupId();
+            }
+        }
+    }
+
+    /**
+     * Set the active group
+     */
+    async setActiveGroup(group) {
+        const previousGroup = this.activeGroup;
+        this.activeGroup = group;
+
+        // Save to storage
+        if (group && group.get('id')) {
+            this.saveActiveGroupId(group.get('id'));
+        } else {
+            this.clearActiveGroupId();
+        }
+
+        // Emit event
+        this.events.emit('group:changed', {
+            group,
+            previousGroup,
+            app: this
+        });
+
+        console.log('Active group set to:', group ? group.get('name') : 'none');
+        return this;
+    }
+
+    /**
+     * Get the active group
+     */
+    getActiveGroup() {
+        return this.activeGroup;
+    }
+
+    /**
+     * Clear the active group
+     */
+    async clearActiveGroup() {
+        const previousGroup = this.activeGroup;
+        this.activeGroup = null;
+        this.clearActiveGroupId();
+        // Emit event
+        this.events.emit('group:cleared', {
+            previousGroup,
+            app: this
+        });
+        return this;
+    }
+
+    /**
+     * Save active group ID to localStorage
+     */
+    saveActiveGroupId(groupId) {
+        try {
+            const key = this.getActiveGroupStorageKey();
+            localStorage.setItem(key, groupId.toString());
+        } catch (error) {
+            console.warn('Failed to save active group ID:', error);
+        }
+    }
+
+    /**
+     * Load active group ID from localStorage
+     */
+    loadActiveGroupId() {
+        try {
+            const key = this.getActiveGroupStorageKey();
+            return localStorage.getItem(key);
+        } catch (error) {
+            console.warn('Failed to load active group ID:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Clear active group ID from localStorage
+     */
+    clearActiveGroupId() {
+        try {
+            const key = this.getActiveGroupStorageKey();
+            localStorage.removeItem(key);
+        } catch (error) {
+            console.warn('Failed to clear active group ID:', error);
+        }
+    }
+
+    /**
+     * Get storage key for active group ID
+     */
+    getActiveGroupStorageKey() {
+        return `mojo_active_group_id`;
+    }
+
+    /**
+     * Check if user needs to select a group
+     */
+    needsGroupSelection() {
+        return !this.activeGroup;
     }
 
     /**
@@ -332,6 +455,13 @@ export default class PortalApp extends WebApp {
     }
 
     /**
+     * Get the active user (for backward compatibility)
+     */
+    getActiveUser() {
+        return this.activeUser;
+    }
+
+    /**
      * Save sidebar state to localStorage
      */
     saveSidebarState(collapsed) {
@@ -400,6 +530,10 @@ export default class PortalApp extends WebApp {
      */
     async destroy() {
         // Clean up event listeners
+        // Clear active group
+        this.activeGroup = null;
+
+        // Clean up portal resources
         if (this._resizeObserver) {
             this._resizeObserver.disconnect();
         }

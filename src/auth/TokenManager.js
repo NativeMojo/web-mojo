@@ -191,7 +191,7 @@ export default class TokenManager {
      */
     setTokens(token, refreshToken = null, persistent = true) {
         const storage = persistent ? localStorage : sessionStorage;
-
+        this.tokenInstance = new Token(token);
         if (token) {
             storage.setItem(this.tokenKey, token);
         }

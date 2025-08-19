@@ -11,7 +11,7 @@ class MOJOUtils {
    * - Dot notation (e.g., "user.name")
    * - Pipe formatting (e.g., "name|uppercase")
    * - Combined (e.g., "user.name|uppercase|truncate(10)")
-   * 
+   *
    * @param {object} context - The data context to search in
    * @param {string} key - The key path with optional pipes
    * @returns {*} The value, possibly formatted
@@ -24,11 +24,11 @@ class MOJOUtils {
     // Check for pipe syntax - split on first pipe outside of parentheses
     let field = key;
     let pipes = '';
-    
+
     // Find the first pipe that's not inside parentheses
     let parenDepth = 0;
     let pipeIndex = -1;
-    
+
     for (let i = 0; i < key.length; i++) {
       const char = key[i];
       if (char === '(') parenDepth++;
@@ -38,20 +38,20 @@ class MOJOUtils {
         break;
       }
     }
-    
+
     if (pipeIndex > -1) {
       field = key.substring(0, pipeIndex).trim();
       pipes = key.substring(pipeIndex + 1).trim();
     }
-    
+
     // Get the raw value
     const value = this.getNestedValue(context, field);
-    
+
     // Apply pipes if present
     if (pipes) {
       return dataFormatter.pipe(value, pipes);
     }
-    
+
     return value;
   }
 
@@ -59,7 +59,7 @@ class MOJOUtils {
    * Get nested value from object using dot notation
    * IMPORTANT: Never calls get() on the top-level context to avoid recursion
    * But DOES call get() on nested objects if they have that method
-   * 
+   *
    * @param {object} context - The object to search in
    * @param {string} path - Dot notation path
    * @returns {*} The value at the path
@@ -81,21 +81,21 @@ class MOJOUtils {
         }
         return value;
       }
-      
+
       return undefined;
     }
 
     // Handle dot notation
     const keys = path.split('.');
     let current = context;
-    
+
     for (let i = 0; i < keys.length; i++) {
       const key = keys[i];
-      
+
       if (current == null) {
         return undefined;
       }
-      
+
       // For the first key, never use get() (it's the top-level context)
       if (i === 0) {
         // Direct property access
@@ -117,7 +117,7 @@ class MOJOUtils {
           const remainingPath = keys.slice(i).join('.');
           return current.get(remainingPath);
         }
-        
+
         // Standard property access
         if (Array.isArray(current) && !isNaN(key)) {
           // Array index access
@@ -131,7 +131,7 @@ class MOJOUtils {
         }
       }
     }
-    
+
     return current;
   }
 
@@ -259,7 +259,7 @@ class MOJOUtils {
       '`': '&#x60;',
       '=': '&#x3D;'
     };
-    
+
     return String(str).replace(/[&<>"'`=\/]/g, s => entityMap[s]);
   }
 
@@ -465,7 +465,7 @@ class MOJOUtils {
 
     // Generate password
     let password = '';
-    
+
     // Add required characters first to ensure variety
     for (const char of requiredChars) {
       password += char;
@@ -502,7 +502,7 @@ class MOJOUtils {
   static toQueryString(params) {
     return new URLSearchParams(params).toString();
   }
-  
+
   /**
    * Wrap data objects to provide get() method support
    * This ensures pipe formatting works in all contexts
@@ -514,22 +514,22 @@ class MOJOUtils {
     if (!data || typeof data !== 'object') {
       return data;
     }
-    
+
     // Don't wrap built-in types (Date, RegExp, etc.)
     if (data instanceof Date || data instanceof RegExp || data instanceof Error) {
       return data;
     }
-    
+
     // Stop wrapping at max depth to prevent infinite recursion
     if (depth <= 0) {
       return data;
     }
-    
+
     // Don't wrap if already has get method
     if (typeof data.get === 'function') {
       return data;
     }
-    
+
     // Handle arrays specially - wrap each element but keep as array
     if (Array.isArray(data)) {
       return data.map(item => {
@@ -539,7 +539,7 @@ class MOJOUtils {
         return item;
       });
     }
-    
+
     // Use DataWrapper for objects
     return new DataWrapper(data, rootContext);
   }
@@ -558,14 +558,14 @@ class DataWrapper {
       enumerable: false,
       configurable: false
     });
-    
+
     Object.defineProperty(this, '_rootContext', {
       value: rootContext,
       writable: false,
       enumerable: false,
       configurable: false
     });
-    
+
     // Copy all properties from data to this wrapper
     // This allows direct property access
     if (data && typeof data === 'object') {
@@ -578,7 +578,7 @@ class DataWrapper {
       }
     }
   }
-  
+
   /**
    * Get value with pipe support
    * @param {string} key - Key with optional pipes
@@ -588,11 +588,11 @@ class DataWrapper {
     // Check if key has pipes
     let field = key;
     let pipes = '';
-    
+
     // Find the first pipe that's not inside parentheses
     let parenDepth = 0;
     let pipeIndex = -1;
-    
+
     for (let i = 0; i < key.length; i++) {
       const char = key[i];
       if (char === '(') parenDepth++;
@@ -602,12 +602,12 @@ class DataWrapper {
         break;
       }
     }
-    
+
     if (pipeIndex > -1) {
       field = key.substring(0, pipeIndex).trim();
       pipes = key.substring(pipeIndex + 1).trim();
     }
-    
+
     // First check if the property exists in the original data
     // This prevents falling through to parent context properties
     let value;
@@ -623,15 +623,15 @@ class DataWrapper {
       // This prevents Mustache from looking up parent context
       value = undefined;
     }
-    
+
     // Apply pipes if present
     if (pipes && value !== undefined) {
       return dataFormatter.pipe(value, pipes);
     }
-    
+
     return value;
   }
-  
+
   /**
    * Check if wrapper has a property
    * @param {string} key - Property key
@@ -640,7 +640,7 @@ class DataWrapper {
   has(key) {
     return this._data && this._data.hasOwnProperty(key);
   }
-  
+
   /**
    * Get the raw wrapped data
    * @returns {object} The original data object
@@ -659,7 +659,8 @@ export { MOJOUtils, DataWrapper };
 
 // Also attach to window for global access if needed
 if (typeof window !== 'undefined') {
-  window.MOJO = window.MOJO || {};
-  window.MOJO.Utils = MOJOUtils;
-  window.MOJO.DataWrapper = DataWrapper;
+  // window.MOJO = window.MOJO || {};
+  // window.MOJO.Utils = MOJOUtils;
+  // window.MOJO.DataWrapper = DataWrapper;
+  window.utils = MOJOUtils;
 }

@@ -3,6 +3,7 @@ export class EventDelegate {
   constructor(view) {
     this.view = view;
     this.domListeners = [];
+    this.debounceTimers = new Map();
   }
 
   bind(rootEl) {
@@ -49,7 +50,37 @@ export class EventDelegate {
       });
     };
 
-    const onKeydown = (event) => {
+    const onInput = (event) => {
+      const el = event.target.closest('[data-change-action]');
+      if (!el || !this.shouldHandle(el, event)) return;
+      
+      const liveSearch = event.target.matches('[data-filter="live-search"]');
+      if (!liveSearch) return;
+
+      const action = el.getAttribute('data-change-action');
+      const debounceMs = parseInt(el.getAttribute('data-filter-debounce')) || 300;
+      const timerId = `${action}-${el.getAttribute('data-container') || 'default'}`;
+
+      // Clear existing timer
+      if (this.debounceTimers.has(timerId)) {
+        clearTimeout(this.debounceTimers.get(timerId));
+      }
+
+      // Set new debounced timer
+      const timer = setTimeout(() => {
+        this.debounceTimers.delete(timerId);
+        this.dispatchChange(action, event, el).then((handled) => {
+          if (handled) {
+            event.stopPropagation();
+            event.handledByChild = true;
+          }
+        });
+      }, debounceMs);
+
+      this.debounceTimers.set(timerId, timer);
+    };
+
+    const onEnterKey = (event) => {
       if (event.key !== 'Enter' || !event.target.matches('[data-filter="search"]')) return;
       const el = event.target.closest('[data-change-action]');
       if (!el || !this.shouldHandle(el, event)) return;
@@ -73,13 +104,15 @@ export class EventDelegate {
 
     rootEl.addEventListener('click', onClick);
     rootEl.addEventListener('change', onChange);
-    rootEl.addEventListener('keydown', onKeydown);
+    rootEl.addEventListener('input', onInput);
+    rootEl.addEventListener('keydown', onEnterKey);
     rootEl.addEventListener('submit', onSubmit);
 
     this.domListeners.push(
       { el: rootEl, type: 'click', fn: onClick },
       { el: rootEl, type: 'change', fn: onChange },
-      { el: rootEl, type: 'keydown', fn: onKeydown },
+      { el: rootEl, type: 'input', fn: onInput },
+      { el: rootEl, type: 'keydown', fn: onEnterKey },
       { el: rootEl, type: 'submit', fn: onSubmit },
     );
   }
@@ -87,6 +120,12 @@ export class EventDelegate {
   unbind() {
     for (const { el, type, fn } of this.domListeners) el.removeEventListener(type, fn);
     this.domListeners = [];
+
+    // Clear any pending debounce timers
+    for (const timer of this.debounceTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.debounceTimers.clear();
   }
 
   async dispatch(action, event, el) {
@@ -118,6 +157,27 @@ export class EventDelegate {
 
     v.emit?.(`action:${action}`, { action, event, element: el });
     return false;
+  }
+
+  async dispatchChange(action, event, el) {
+    const v = this.view;
+    const cap = (s) => (s.includes('-') ? s.split('-').map(w => w[0].toUpperCase()+w.slice(1)).join('') : s[0].toUpperCase()+s.slice(1));
+
+    const changeHandler = `onChange${cap(action)}`;
+    if (typeof v[changeHandler] === 'function') {
+      try {
+        await v[changeHandler](event, el);
+        return true;
+      }
+      catch (e) {
+        console.error(`Error in onChange ${action}:`, e);
+        v.handleActionError?.(action, e, event, el);
+        return true;
+      }
+    }
+
+    // Fall back to regular dispatch if no onChange handler exists
+    return await this.dispatch(action, event, el);
   }
 
   shouldHandle(el, event) {

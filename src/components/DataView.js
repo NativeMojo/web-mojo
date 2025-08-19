@@ -408,6 +408,10 @@ class DataView extends View {
       'stats', 'statistics', 'metrics', 'counts'
     ];
 
+    if (window.utils && window.utils.isObject(value) && value.id) {
+        return true;
+    }
+
     // Check if key matches common patterns
     const matchesPattern = dataViewPatterns.some(pattern => keyLower.includes(pattern));
 
@@ -821,13 +825,12 @@ class DataView extends View {
       const nestedHtml = nestedView.buildItemsHTML();
 
       // Wrap in a styled container with optional label
-      const labelHtml = field.label ?
-        `<h6 class="fw-semibold text-muted mb-3 border-bottom pb-2">${this.escapeHtml(field.label)}</h6>` :
-        '';
+      // const labelHtml = field.label ?
+      //   `<h6 class="fw-semibold text-muted mb-3 border-bottom pb-2">${this.escapeHtml(field.label)}</h6>` :
+      //   '';
 
       return `
         <div class="nested-dataview border rounded p-3 bg-light">
-          ${labelHtml}
           <div class="${nestedView.dataViewOptions.rowClass}">
             ${nestedHtml}
           </div>
