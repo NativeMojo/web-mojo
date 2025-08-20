@@ -190,6 +190,7 @@ export default class PortalApp extends WebApp {
             app: this
         });
 
+        this.router.updateUrl({group:group.id}, { replace: true });
         console.log('Active group set to:', group ? group.get('name') : 'none');
         return this;
     }
@@ -487,6 +488,7 @@ export default class PortalApp extends WebApp {
             this.topbar.setUser(user);
         }
 
+        console.log("Active user set:", user);
         this.events.emit('portal:user-changed', { user });
     }
 

@@ -211,7 +211,6 @@ class WebApp {
 
         if (!options.containerId) options.containerId = this.pageContainer;
         // Store the page class and options
-        if(!options.route) options.route = `/${pageName}`;
         this.pageClasses.set(pageName, {
             PageClass,
             constructorOptions: options
@@ -219,25 +218,21 @@ class WebApp {
 
         // If router is initialized, add route
         if (this.router) {
-            // Get route from options or use default
+            // Get route pattern from options or use default (/pageName)
             let route = options.route || `/${pageName}`;
 
-            // Normalize route based on router mode
-            if (this.router.mode === 'params') {
-                // In params mode, ensure route starts with / for consistent pattern matching
-                route = route.startsWith('/') ? route : `/${route}`;
-            } else {
-                // In history mode, ensure route starts with /
-                route = route.startsWith('/') ? route : `/${route}`;
+            // Ensure route starts with / for pattern matching
+            if (!route.startsWith('/')) {
+                route = `/${route}`;
             }
 
-            // Store the route back in options so page instances can access it
+            // Store the route pattern in options so page instances can access it
             options.route = route;
 
             // Register route with router
             this.router.addRoute(route, pageName);
 
-            console.log(`📝 Registered route: "${route}" -> ${pageName} (${this.router.mode} mode)`);
+            console.log(`📝 Registered route: "${route}" -> ${pageName}`);
         }
 
         return this;

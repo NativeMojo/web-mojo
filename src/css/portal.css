@@ -496,6 +496,17 @@
     font-size: 0.75rem;
 }
 
+.sidebar-group-header {
+    cursor: pointer;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-group-header:hover {
+    cursor: pointer;
+    color: var(--mojo-primary);
+    background-color: rgba(20, 20, 100, 0.1);
+}
+
 /* Custom Navigation Styles */
 .sidebar-nav {
     display: flex;

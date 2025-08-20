@@ -67,6 +67,12 @@ class Sidebar extends View {
             headerText: "Select Group",
             containerId: "sidebar-search-container",
             Collection: GroupList,
+            itemTemplate: `
+            <div class="p-3 border-bottom">
+                <div class="fw-semibold text-dark">{{name}}</div>
+                <small class="text-muted">#{{id}}  {{kind}}</small>
+            </div>
+            `
         });
         this.addChild(this.searchView);
         this.searchView.on("item:selected", (evt) => {
@@ -91,8 +97,8 @@ class Sidebar extends View {
         this.render();
     }
 
-    onActionShowGroupMenu() {
-        this.setActiveMenu("group_default")
+    onActionShowGroupSearch() {
+        this.showGroupSearch();
     }
 
     /**
@@ -238,15 +244,7 @@ class Sidebar extends View {
      * Check if two routes match (using same logic as isItemActive)
      */
     routesMatch(currentRoute, itemRoute) {
-        if (itemRoute === '/' && currentRoute === '/') {
-            return true;
-        }
-
-        if (itemRoute !== '/' && currentRoute !== '/') {
-            return currentRoute.startsWith(itemRoute) || currentRoute === itemRoute;
-        }
-
-        return false;
+        return this.getApp().router.doRoutesMatch(currentRoute, itemRoute);
     }
 
     getTemplate() {
@@ -379,7 +377,13 @@ class Sidebar extends View {
     }
 
     getGroupHeader() {
-        return "<div class='py-3 text-center fs-5'>{{group.name}}</div>"
+        return `
+        <div class="sidebar-group-header py-3" data-action="show-group-search">
+        <div class='text-center text-muted fs-7'>active group</div>
+            <div class='text-center fs-5 px-3'>{{group.name}}</div>
+            <div class='text-center fs-6'>kind: {{group.kind}}</div>
+        </div>
+        `;
     }
 
     /**
@@ -459,19 +463,20 @@ class Sidebar extends View {
         }
         // Find menu by group.kind
         let targetMenu = this.lastGroupMenu;
-
-        if (group.kind) {
+        let anyGroupMenu = null;
+        if (group._.kind) {
             for (const [menuName, menuConfig] of this.menus) {
-                if (menuConfig.groupKind === group.kind) {
+                if (menuConfig.groupKind === group._.kind) {
                     targetMenu = menuConfig;
                     break;
+                } else if (menuConfig.groupKind === 'any') {
+                    anyGroupMenu = menuConfig;
                 }
             }
         }
 
         if (!targetMenu) {
-            console.warn(`No menu found for group kind: ${group.kind}`);
-            return null;
+            return anyGroupMenu;
         }
         return targetMenu;
     }
@@ -742,6 +747,12 @@ class Sidebar extends View {
         this.toggleSidebar();
     }
 
+    onActionShowGroupMenu(action, event, el) {
+        this.setActiveMenu("group_default");
+
+        return false;
+    }
+
     async onActionDefault(action, event, el) {
         const config = this.getCurrentMenuConfig();
         if (!config) return;
@@ -812,6 +823,9 @@ class Sidebar extends View {
             app.events.on("group:changed", (data) => {
                 this.showMenuForGroup(data.group);
             });
+            app.events.on("portal:user-changed", (data) => {
+                this.render();
+            });
         }
     }
 
@@ -820,7 +834,7 @@ class Sidebar extends View {
      */
     onRouteChanged(data) {
         if (data.page && data.page.route) {
-            const route = this.getApp().router.convertRoute(data.page.route);
+            const route = data.page.route;
             if (this.activeMenuItem && this.routesMatch(route, this.activeMenuItem.route)) {
                 return;
             }
