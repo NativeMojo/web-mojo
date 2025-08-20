@@ -87,9 +87,14 @@ const app = new PortalApp({
                     ]
                 },
                 {
-                    text: 'Settings',
+                    text: 'Not Found',
                     route: '?page=settings',
-                    icon: 'bi-gear'
+                    icon: 'bi-question-circle'
+                },
+                {
+                    text: 'Need Permissions',
+                    route: '?page=noperms',
+                    icon: 'bi-shield'
                 },
                 {
                     text: 'Templates',
@@ -115,9 +120,44 @@ const app = new PortalApp({
                     text: 'Simple',
                     route: '?page=simple',
                     icon: 'bi-input-cursor-text'
+                },
+                {
+                    text: 'Show Group Menu',
+                    action: 'show-group-menu',
+                    icon: 'bi-menu-down'
                 }
             ],
             footer: '<div class="text-center text-muted small">v1.0.0</div>'
+        },
+        {
+           name: "group_default",
+           groupKind: "any",
+           className: 'sidebar sidebar-light',
+           items: [
+               {
+                   text: 'Dashboard',
+                   route: '?page=group_simple',
+                   icon: 'bi-input-cursor-text'
+               },
+               {
+                   spacer: true
+               },
+               {
+                   text: 'Exit Menu',
+                   action: 'exit_menu',
+                   icon: 'bi-arrow-bar-left',
+                   handler: async (action, event, el) => {
+                       console.log("EXIT CLICKED");
+                       app.sidebar.setActiveMenu("default");
+                   }
+               }
+           ],
+           footer: `
+               <div class="text-center text-light small p-2" style="height: 56px;">
+                   <div class="mt-1">v${VERSION_INFO.full}</div>
+                   <div class="text-muted" style="font-size: 0.75em;">${VERSION_INFO.buildTime.split('T')[0]}</div>
+               </div>
+           `
         },
         {
            name: "admin",
@@ -226,6 +266,18 @@ app.registerPage('dialogs', DialogsPage);
 app.registerPage('simple', Page, {
     id: 'simple',
     title: "Simple",
+    template: '<div class="fs-5 mt-4 text-center">Simple page</div>'
+});
+app.registerPage('group_simple', Page, {
+    id: 'group_simple',
+    title: "Group Simple",
+    requiresGroup: true,
+    template: '<div class="fs-5 mt-4 text-center">Group Simple page</div>'
+});
+app.registerPage('noperms', Page, {
+    id: 'noperms',
+    title: "Simple",
+    permissions: ['not_real_permission'],
     template: '<div class="fs-5 mt-4 text-center">Simple page</div>'
 });
 

@@ -69,7 +69,14 @@ class Sidebar extends View {
             Collection: GroupList,
         });
         this.addChild(this.searchView);
-
+        this.searchView.on("item:selected", (evt) => {
+            console.log(evt);
+            this.getApp().setActiveGroup(evt.model);
+        });
+        this.searchView.on("exit", (item) => {
+            console.log(item);
+            this.hideGroupSearch();
+        });
     }
 
     showGroupSearch() {
@@ -78,12 +85,24 @@ class Sidebar extends View {
         this.render();
     }
 
+    hideGroupSearch() {
+        this.setClass('sidebar');
+        this.showSearch = false;
+        this.render();
+    }
+
+    onActionShowGroupMenu() {
+        this.setActiveMenu("group_default")
+    }
+
     /**
      * Find and switch to the menu that contains the given route
      */
     autoSwitchToMenuForRoute(route) {
         // Search through all menus to find one that contains this route
         for (const [menuName, menuConfig] of this.menus) {
+            if (menuConfig.groupKind && !this.getApp().activeGroup)
+                continue;
             if (this.menuContainsRoute(menuConfig, route)) {
                 // Switch to this menu
                 this._setActiveMenu(menuName);
@@ -144,6 +163,8 @@ class Sidebar extends View {
 
         // Search through all menus
         for (const [menuName, menuConfig] of this.menus) {
+            if (menuConfig.groupKind && !this.getApp().activeGroup)
+                continue;
             for (const item of menuConfig.items || []) {
                 // Check main item
                 if (item.route) {
@@ -357,18 +378,28 @@ class Sidebar extends View {
         };
     }
 
+    getGroupHeader() {
+        return "<div class='py-3 text-center fs-5'>{{group.name}}</div>"
+    }
+
     /**
      * Add a menu configuration
      */
     addMenu(name, config) {
+        if (config.groupKind && !config.header) {
+            config.header = this.getGroupHeader();
+        }
+
         this.menus.set(name, {
             name,
+            groupKind: config.groupKind || null,
             header: config.header || null,
             footer: config.footer || null,
             items: config.items || [],
             data: config.data || {},
             className: config.className || "sidebar sidebar-dark"
         });
+
 
         // Set as active if it's the first menu
         if (!this.activeMenuName) {
@@ -398,15 +429,73 @@ class Sidebar extends View {
             return this;
         }
 
+        const menuConfig = this.menus.get(name);
+
+        if (menuConfig.groupKind) {
+            this.lastGroupMenu = menuConfig;
+            // Handle group kind logic here
+            if (!this.getApp().activeGroup) {
+                this.showGroupSearch();
+                return;
+            }
+        }
+
         this._setActiveMenu(name);
         await this.render();
         // Emit event
         this.emit('menu-changed', {
             menuName: name,
-            config: this.getCurrentMenuConfig(),
+            config: menuConfig,
             sidebar: this
         });
 
+        return this;
+    }
+
+    getGroupMenu(group) {
+        if (!group) {
+            console.warn('No group provided');
+            return null;
+        }
+        // Find menu by group.kind
+        let targetMenu = this.lastGroupMenu;
+
+        if (group.kind) {
+            for (const [menuName, menuConfig] of this.menus) {
+                if (menuConfig.groupKind === group.kind) {
+                    targetMenu = menuConfig;
+                    break;
+                }
+            }
+        }
+
+        if (!targetMenu) {
+            console.warn(`No menu found for group kind: ${group.kind}`);
+            return null;
+        }
+        return targetMenu;
+    }
+
+    showMenuForGroup(group) {
+        if (!group) {
+            console.warn('No group provided');
+            return;
+        }
+        // Find menu by group.kind
+        let targetMenu = this.getGroupMenu(group);
+
+        if (!targetMenu) {
+            console.warn(`No menu found for group kind: ${group.kind}`);
+            return;
+        }
+        this._setActiveMenu(targetMenu.name);
+        this.render();
+        // Emit event
+        this.emit('menu-changed', {
+            menuName: targetMenu.name,
+            config: targetMenu,
+            sidebar: this
+        });
         return this;
     }
 
@@ -471,15 +560,21 @@ class Sidebar extends View {
             return { currentMenu: null };
         }
 
+        let subData = {
+            version: this.getApp().version || null,
+            group: this.getApp().activeGroup || null,
+            user: this.getApp.activeUser || null
+        };
         // Process menu data through template if it contains handlebars
         this.data = {
             currentMenu: {
-                header: this.processTemplate(currentMenu.header, currentMenu.data),
-                footer: this.processTemplate(currentMenu.footer, currentMenu.data),
-                items: this.processNavItems(currentMenu.items),
+                header: this.renderTemplateString(currentMenu.header, subData),
+                footer: this.renderTemplateString(currentMenu.footer, subData),
+                items: this.processNavItems(currentMenu.items, currentMenu.groupKind),
                 data: currentMenu.data,
                 showToggle: this.showToggle
             }
+
         };
     }
 
@@ -489,102 +584,101 @@ class Sidebar extends View {
     }
 
     /**
-     * Process template strings with data
-     */
-    processTemplate(template, data) {
-        if (!template || typeof template !== 'string') {
-            return template;
-        }
-
-        // Simple template processing for {{data.property}} syntax
-        return template.replace(/\{\{data\.(\w+)\}\}/g, (match, prop) => {
-            return data[prop] || '';
-        });
-    }
-
-    /**
      * Process navigation items - add IDs, active states, and proper hrefs
      */
-    processNavItems(items) {
-        const app = this.getApp();
-        const activeUser = app?.activeUser;
+     processNavItems(items, groupKind) {
+         const app = this.getApp();
+         const activeUser = app?.activeUser;
+         const activeGroup = app?.activeGroup;
 
-        return items.map((item, index) => {
-            // Handle divider items
-            if (item === "" || (typeof item === 'object' && item.divider)) {
-                return {
-                    isDivider: true,
-                    id: `divider-${index}`
-                };
-            }
+         // Helper function to update route with group parameter
+         const updateRouteWithGroup = (route) => {
+             if (groupKind && activeGroup && activeGroup.id) {
+                 const separator = route.includes('?') ? '&' : '?';
+                 return `${route}${separator}group=${activeGroup.id}`;
+             }
+             return route;
+         };
 
-            // Handle spacer items
-            if (typeof item === 'object' && item.spacer) {
-                return {
-                    isSpacer: true,
-                    id: `spacer-${index}`
-                };
-            }
+         return items.map((item, index) => {
+             // Handle divider items
+             if (item === "" || (typeof item === 'object' && item.divider)) {
+                 return {
+                     isDivider: true,
+                     id: `divider-${index}`
+                 };
+             }
 
-            const processedItem = { ...item };
+             // Handle spacer items
+             if (typeof item === 'object' && item.spacer) {
+                 return {
+                     isSpacer: true,
+                     id: `spacer-${index}`
+                 };
+             }
 
-            // Check permissions - skip item if user doesn't have required permissions
-            if (processedItem.permissions) {
-                if (!activeUser || !activeUser.hasPermission(processedItem.permissions)) {
-                    return null; // Will be filtered out
-                }
-            }
+             const processedItem = { ...item };
 
-            // Generate ID if not provided
-            if (!processedItem.id) {
-                processedItem.id = `nav-${index}`;
-            }
+             // Check permissions - skip item if user doesn't have required permissions
+             if (processedItem.permissions) {
+                 if (!activeUser || !activeUser.hasPermission(processedItem.permissions)) {
+                     return null; // Will be filtered out
+                 }
+             }
 
-            // Use route directly as href (like TopNav does)
-            if (processedItem.route) {
-                processedItem.href = processedItem.route;
-            } else if (processedItem.page) {
-                // If only page is provided, convert to route format
-                processedItem.href = processedItem.page.startsWith('/') ? processedItem.page : `/${processedItem.page}`;
-                processedItem.route = processedItem.href; // Store for active matching
-            }
+             // Generate ID if not provided
+             if (!processedItem.id) {
+                 processedItem.id = `nav-${index}`;
+             }
 
-            // Active state is already set on the item object, no need to calculate
+             // Use route directly as href (like TopNav does)
+             if (processedItem.route) {
+                 processedItem.href = updateRouteWithGroup(processedItem.route);
+             } else if (processedItem.page) {
+                 // If only page is provided, convert to route format
+                 const baseRoute = processedItem.page.startsWith('/') ? processedItem.page : `/${processedItem.page}`;
+                 processedItem.href = updateRouteWithGroup(baseRoute);
+                 processedItem.route = processedItem.href; // Store for active matching
+             }
 
-            // Process children
-            if (processedItem.children) {
-                processedItem.children = processedItem.children.map(child => {
-                    const processedChild = { ...child };
+             // Active state is already set on the item object, no need to calculate
 
-                    // Check permissions for child items
-                    if (processedChild.permissions && activeUser) {
-                        if (!activeUser.hasPermission(processedChild.permissions)) {
-                            return null; // Will be filtered out
-                        }
-                    }
+             // Process children
+             if (processedItem.children) {
+                 processedItem.children = processedItem.children.map(child => {
+                     const processedChild = { ...child };
 
-                    // Use route directly as href
-                    if (processedChild.route) {
-                        processedChild.href = processedChild.route;
-                    } else if (processedChild.page) {
-                        processedChild.href = processedChild.page.startsWith('/') ? processedChild.page : `/${processedChild.page}`;
-                        processedChild.route = processedChild.href;
-                    }
+                     // Check permissions for child items
+                     if (processedChild.permissions && activeUser) {
+                         if (!activeUser.hasPermission(processedChild.permissions)) {
+                             return null; // Will be filtered out
+                         }
+                     }
 
-                    // Active state is already set on the child object
-                    return processedChild;
-                }).filter(child => child !== null); // Filter out permission-denied children
+                     // Use route directly as href
+                     if (processedChild.route) {
+                         processedChild.href = updateRouteWithGroup(processedChild.route);
+                     } else if (processedChild.page) {
+                         const baseRoute = processedChild.page.startsWith('/') ? processedChild.page : `/${processedChild.page}`;
+                         processedChild.href = updateRouteWithGroup(baseRoute);
+                         processedChild.route = processedChild.href;
+                     }
 
-                // Update hasChildren flag after filtering children
-                processedItem.hasChildren = !!(processedItem.children && processedItem.children.length > 0);
-            } else {
-                // Add hasChildren flag for template logic
-                processedItem.hasChildren = false;
-            }
+                     // Active state is already set on the child object
+                     return processedChild;
+                 }).filter(child => child !== null); // Filter out permission-denied children
 
-            return processedItem;
-        }).filter(item => item !== null); // Filter out permission-denied items
-    }
+                 // Update hasChildren flag after filtering children
+                 processedItem.hasChildren = !!(processedItem.children && processedItem.children.length > 0);
+             } else {
+                 // Add hasChildren flag for template logic
+                 processedItem.hasChildren = false;
+             }
+
+             return processedItem;
+         }).filter(item => item !== null); // Filter out permission-denied items
+     }
+
 
 
 
@@ -714,6 +808,9 @@ class Sidebar extends View {
         if (app && app.events) {
             app.events.on("page:show", (data) => {
                 this.onRouteChanged(data);
+            });
+            app.events.on("group:changed", (data) => {
+                this.showMenuForGroup(data.group);
             });
         }
     }

@@ -93,6 +93,9 @@ class Page extends View {
         return false;
       }
     }
+    if (this.options.requiresGroup && !this.getApp().activeGroup) {
+      return false;
+    }
     return true;
   }
 

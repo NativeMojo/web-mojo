@@ -119,19 +119,55 @@ export default class PortalApp extends WebApp {
      * Check and load active group from storage
      */
     async checkActiveGroup() {
-        const savedGroupId = this.loadActiveGroupId();
-        if (savedGroupId) {
+        // First check URL search params for group parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlGroupId = urlParams.get('group');
+
+        // Determine which group ID to use: URL param takes priority
+        const groupId = urlGroupId || this.loadActiveGroupId();
+
+        if (groupId) {
             try {
-                const group = new Group({ id: savedGroupId });
-                await group.fetch();
+                const group = new Group({ id: groupId });
+                const resp = await group.fetch();
+                if (!resp.success || !resp.data.status) {
+                    this.clearActiveGroup();
+                    console.warn('Failed to load active group:', resp.statusText);
+                    return;
+                }
+
                 this.activeGroup = group;
+                // If we got the group from URL, save it as the new active group
+                if (urlGroupId) {
+                    this.saveActiveGroupId(groupId);
+                }
+
                 console.log('Loaded active group:', group.get('name'));
             } catch (error) {
-                console.warn('Failed to load saved active group:', error);
-                this.clearActiveGroupId();
+                console.warn('Failed to load active group:', error);
+                // If URL group failed, try to clear it and fall back to stored group
+                if (urlGroupId && !this.loadActiveGroupId()) {
+                    // URL group failed and no stored group, clear everything
+                    this.clearActiveGroupId();
+                } else if (urlGroupId) {
+                    // URL group failed but we have a stored group, try that instead
+                    const storedGroupId = this.loadActiveGroupId();
+                    if (storedGroupId && storedGroupId !== urlGroupId) {
+                        try {
+                            const fallbackGroup = new Group({ id: storedGroupId });
+                            await fallbackGroup.fetch();
+                            this.activeGroup = fallbackGroup;
+                            console.log('Fell back to stored active group:', fallbackGroup.get('name'));
+                        } catch (fallbackError) {
+                            console.warn('Fallback to stored group also failed:', fallbackError);
+                            this.clearActiveGroupId();
+                        }
+                    }
+                }
             }
         }
     }
+
 
     /**
      * Set the active group

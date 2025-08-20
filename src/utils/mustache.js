@@ -209,6 +209,9 @@ class Context {
                   const remainingPath = names.slice(index).join('.');
                   intermediateValue = intermediateValue.get(remainingPath);
                   index = names.length; // Skip to end
+                  if (intermediateValue !== undefined) {
+                    lookupHit = true;
+                  }
                 } catch (e) {
                   // Fall back to property access
                   if (index === names.length - 1) {

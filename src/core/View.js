@@ -437,6 +437,10 @@ export class View {
     return Mustache.render(templateContent, this, partials);
   }
 
+  renderTemplateString(template, context, partials) {
+    return Mustache.render(template, context, partials);
+  }
+
   getPartials() { return {}; }
 
   async getTemplate() {
