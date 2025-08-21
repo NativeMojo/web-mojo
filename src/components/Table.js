@@ -964,7 +964,7 @@ class Table extends View {
         <div class="mojo-select-cell ${this.selectedItems.has(itemId) ? 'selected' : ''}"
              data-action="select-item" data-id="${itemId}" data-table-instance="${this._instanceId}">
           <div class="mojo-checkbox">
-            <i class="bi bi-check fs-3"></i>
+            <i class="bi bi-check"></i>
           </div>
         </div>
       </td>` : '';
@@ -1953,12 +1953,12 @@ class Table extends View {
         // All selected - show checkmark on blue background
         selectAllCell.classList.add('selected');
         selectAllCell.classList.remove('indeterminate');
-        if (icon) icon.className = 'bi bi-check fs-3';
+        if (icon) icon.className = 'bi bi-check';
       } else if (hasSelected) {
         // Some selected - show minus on blue background (indeterminate)
         selectAllCell.classList.remove('selected');
         selectAllCell.classList.add('indeterminate');
-        if (icon) icon.className = 'bi bi-dash fs-3';
+        if (icon) icon.className = 'bi bi-dash';
       } else {
         // None selected - show empty checkbox on gray background
         selectAllCell.classList.remove('selected', 'indeterminate');

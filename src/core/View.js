@@ -38,6 +38,7 @@ export class View {
     this.mounted         = false;
     this.debug           = opts.debug ?? false;
     this.app           = opts.app ?? null;
+    this.cacheTemplate = opts.cacheTemplate ?? true;
 
     // keep original options
     this.options = { ...opts };
@@ -444,7 +445,7 @@ export class View {
   getPartials() { return {}; }
 
   async getTemplate() {
-    if (this._templateCache && this.options.cacheTemplate) {
+    if (this._templateCache && this.cacheTemplate) {
       return this._templateCache;
     }
     const template = this.template || this.templateUrl;
@@ -487,7 +488,7 @@ export class View {
       templateContent = await this.template(this.data, this.state);
     }
 
-    if (this.options.cacheTemplate && templateContent) {
+    if (this.cacheTemplate && templateContent) {
       this._templateCache = templateContent;
     }
 
