@@ -153,7 +153,8 @@
                                 const lineChart = new SeriesChart({<br />
                                 &nbsp;&nbsp;title: 'Sales Trend',<br />
                                 &nbsp;&nbsp;chartType: 'line',<br />
-                                &nbsp;&nbsp;data: salesData<br />
+                                &nbsp;&nbsp;data: salesData,<br />
+                                &nbsp;&nbsp;yAxis: { formatter: 'currency' }<br />
                                 });
                             </code>
                         </div>
@@ -174,7 +175,8 @@
                                 const barChart = new SeriesChart({<br />
                                 &nbsp;&nbsp;title: 'Revenue',<br />
                                 &nbsp;&nbsp;chartType: 'bar',<br />
-                                &nbsp;&nbsp;data: revenueData<br />
+                                &nbsp;&nbsp;data: revenueData,<br />
+                                &nbsp;&nbsp;yAxis: { formatter: 'currency' }<br />
                                 });
                             </code>
                         </div>
@@ -196,7 +198,8 @@
                             <code>
                                 const pieChart = new PieChart({<br />
                                 &nbsp;&nbsp;title: 'Market Share',<br />
-                                &nbsp;&nbsp;data: marketData<br />
+                                &nbsp;&nbsp;data: marketData,<br />
+                                &nbsp;&nbsp;valueFormatter: 'percent'<br />
                                 });
                             </code>
                         </div>
@@ -290,16 +293,18 @@
                         title: "Monthly Sales Trend",
                         chartType: "line",
                         data: sampleData.sales,
-                        xAxis: { formatter: "category" },
+                        yAxis: {
+                            formatter: "currency",
+                            label: "Sales ($)",
+                        },
+                        tooltip: {
+                            y: "currency",
+                        },
                     });
 
                     log("SeriesChart instance created");
-                    await chart.render();
+                    await chart.render(true, container);
                     log("Chart rendered");
-                    container.appendChild(chart.element);
-                    log("Chart element added to container");
-                    await chart.mount();
-                    log("Chart mounted");
 
                     // Check if Chart.js instance was created
                     if (chart.chart) {
@@ -336,16 +341,17 @@
                         title: "Quarterly Revenue",
                         chartType: "bar",
                         data: sampleData.revenue,
-                        xAxis: { formatter: "category" },
+                        yAxis: {
+                            formatter: "currency",
+                            label: "Revenue ($)",
+                        },
+                        tooltip: {
+                            y: "currency",
+                        },
                     });
 
                     log("SeriesChart instance created");
-                    await chart.render();
-                    log("Chart rendered");
-                    container.appendChild(chart.element);
-                    log("Chart element added to container");
-                    await chart.mount();
-                    log("Chart mounted");
+                    await chart.render(true, container);
 
                     // Check if Chart.js instance was created
                     if (chart.chart) {
@@ -356,6 +362,18 @@
                         );
                         log(`Chart type: ${chart.chart.config.type}`);
                         log(`Canvas element: ${chart.canvas ? "exists" : "missing"}`);
+
+                        // Debug Y-axis configuration specifically
+                        log(`Y-axis beginAtZero: ${chart.chart.options.scales.y.beginAtZero}`);
+                        log(`Y-axis reverse: ${chart.chart.options.scales.y.reverse}`);
+                        log(`Y-axis type: ${chart.chart.options.scales.y.type}`);
+
+                        // Debug data values
+                        const dataValues = chart.chart.data.datasets[0].data;
+                        log(`Data values: [${dataValues.join(", ")}]`);
+                        log(
+                            `Min value: ${Math.min(...dataValues)}, Max value: ${Math.max(...dataValues)}`,
+                        );
                     } else {
                         log(`❌ Chart.js instance not created`);
                     }
@@ -377,11 +395,10 @@
                     const chart = new PieChart({
                         title: "Market Share Distribution",
                         data: sampleData.market,
+                        valueFormatter: "percent",
                     });
 
-                    await chart.render();
-                    container.appendChild(chart.element);
-                    await chart.mount();
+                    await chart.render(true, container);
 
                     // Debug PieChart for comparison
                     if (chart.chart) {
@@ -430,7 +447,6 @@
                         title: "Simple Test Chart",
                         chartType: "line",
                         data: simpleData,
-                        xAxis: { formatter: "category" },
                     });
 
                     log("Simple chart instance created");

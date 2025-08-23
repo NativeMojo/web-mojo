@@ -1,0 +1,199 @@
+<div class="charts-page">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">{{pageTitle}}</h1>
+            <p class="text-muted mb-0">{{pageSubtitle}}</p>
+            <small class="text-info"><i class="bi bi-info-circle me-1"></i>Interactive charts with PNG & CSV export capabilities</small>
+        </div>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-action="toggle-theme" title="Toggle Theme">
+                <i class="bi bi-palette"></i> Theme
+            </button>
+            <button type="button" class="btn btn-outline-primary btn-sm" data-action="refresh-charts" title="Refresh All Charts">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+            <button type="button" class="btn btn-outline-success btn-sm" data-action="export-dashboard" title="Export All Charts (PNG + CSV)">
+                <i class="bi bi-download"></i> Export All
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-lg-6 col-12 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="card-title text-muted mb-2">Total Revenue</h6>
+                            <h3 class="mb-1">{{stats.totalRevenue}}</h3>
+                            <span class="badge bg-success-subtle text-success">
+                                <i class="bi bi-arrow-up"></i> {{stats.revenueChange}}
+                            </span>
+                        </div>
+                        <div class="text-primary">
+                            <i class="bi bi-currency-dollar fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6 col-12 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="card-title text-muted mb-2">Active Users</h6>
+                            <h3 class="mb-1">{{stats.activeUsers}}</h3>
+                            <span class="badge bg-success-subtle text-success">
+                                <i class="bi bi-arrow-up"></i> {{stats.usersChange}}
+                            </span>
+                        </div>
+                        <div class="text-info">
+                            <i class="bi bi-people fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6 col-12 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="card-title text-muted mb-2">Conversion Rate</h6>
+                            <h3 class="mb-1">{{stats.conversionRate}}</h3>
+                            <span class="badge bg-danger-subtle text-danger">
+                                <i class="bi bi-arrow-down"></i> {{stats.conversionChange}}
+                            </span>
+                        </div>
+                        <div class="text-warning">
+                            <i class="bi bi-graph-up fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-6 col-12 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="card-title text-muted mb-2">Avg Order Value</h6>
+                            <h3 class="mb-1">{{stats.avgOrderValue}}</h3>
+                            <span class="badge bg-success-subtle text-success">
+                                <i class="bi bi-arrow-up"></i> {{stats.orderValueChange}}
+                            </span>
+                        </div>
+                        <div class="text-success">
+                            <i class="bi bi-cart-check fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row">
+        <!-- Revenue Trend Chart -->
+        <div class="col-xl-8 col-lg-7 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up text-primary me-2"></i>
+                        Revenue Trends
+                    </h5>
+                </div>
+                <div class="card-body" style="min-height: 400px;">
+                    <div data-container="revenue-chart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Segments Pie Chart -->
+        <div class="col-xl-4 col-lg-5 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-pie-chart text-info me-2"></i>
+                        User Segments
+                    </h5>
+                </div>
+                <div class="card-body" style="min-height: 400px;">
+                    <div data-container="segments-chart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Growth Rate Chart -->
+        <div class="col-xl-6 col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-bar-chart text-success me-2"></i>
+                        Quarterly Growth
+                    </h5>
+                </div>
+                <div class="card-body" style="min-height: 350px;">
+                    <div data-container="growth-chart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales Channels Chart -->
+        <div class="col-xl-6 col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-pie-chart-fill text-warning me-2"></i>
+                        Sales Channels
+                    </h5>
+                </div>
+                <div class="card-body" style="min-height: 350px;">
+                    <div data-container="channels-chart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Metrics Chart -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-speedometer2 text-danger me-2"></i>
+                        Weekly Performance Metrics
+                    </h5>
+                </div>
+                <div class="card-body" style="min-height: 400px;">
+                    <div data-container="performance-chart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Interactions Help -->
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h6 class="alert-heading">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Interactive Features
+                </h6>
+                <ul class="mb-0">
+                    <li><strong>Click</strong> chart elements for detailed information</li>
+                    <li><strong>Switch</strong> between line and bar chart types using the controls</li>
+                    <li><strong>Export</strong> charts as PNG images or CSV data files</li>
+                    <li><strong>Toggle</strong> between light and dark themes</li>
+                    <li><strong>Hover</strong> over data points for tooltips</li>
+                    <li><strong>CSV Export</strong> - Perfect for spreadsheet analysis and data processing</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

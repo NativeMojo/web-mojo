@@ -41,9 +41,12 @@ export default class SeriesChart extends BaseChart {
       'rgba(83, 102, 255, 0.8)'    // Indigo
     ];
 
-    // Axis configuration with DataFormatter support
-    this.xAxisConfig = this.processAxisConfig(this.xAxis);
-    this.yAxisConfig = this.processAxisConfig(this.yAxis);
+    // Process axis configurations
+    this.xAxisConfig = this.processAxisConfig(options.xAxis);
+    this.yAxisConfig = this.processAxisConfig(options.yAxis);
+    
+    // Process tooltip formatters
+    this.tooltipFormatters = options.tooltip || {};
   }
 
   async getTemplate() {
@@ -196,35 +199,14 @@ export default class SeriesChart extends BaseChart {
 
     const processedData = { ...data };
 
-    // Apply x-axis formatter to labels
+    // Apply x-axis formatter to labels if configured
     if (this.xAxisConfig.formatter && processedData.labels) {
       processedData.labels = processedData.labels.map(label => 
-        this.dataFormatter.apply(label, this.xAxisConfig.formatter)
+        this.dataFormatter.pipe(label, this.xAxisConfig.formatter)
       );
     }
 
     return processedData;
-  }
-
-  processAxisConfig(axisConfig) {
-    if (!axisConfig) return {};
-
-    if (typeof axisConfig === 'string') {
-      // Simple string format: "date:MMM YYYY"
-      return { formatter: axisConfig };
-    }
-
-    if (typeof axisConfig === 'object') {
-      // Object format: { field: 'date', formatter: 'date:MMM YYYY', label: 'Month' }
-      return {
-        field: axisConfig.field,
-        formatter: axisConfig.formatter,
-        label: axisConfig.label,
-        ...axisConfig
-      };
-    }
-
-    return {};
   }
 
   buildChartOptions() {
@@ -232,6 +214,14 @@ export default class SeriesChart extends BaseChart {
 
     // Configure scales based on chart type and orientation
     options.scales = this.buildScalesConfig();
+
+    // Debug logging for troubleshooting
+    console.log('SeriesChart buildChartOptions:', {
+      chartType: this.chartType,
+      orientation: this.orientation,
+      yAxisConfig: this.yAxisConfig,
+      scales: options.scales
+    });
 
     // Configure stacking if enabled
     if (this.stacked && this.chartType === 'bar') {
@@ -250,6 +240,10 @@ export default class SeriesChart extends BaseChart {
       mode: this.chartType === 'line' ? 'index' : 'nearest'
     };
 
+    // Ensure maintainAspectRatio is properly set
+    options.maintainAspectRatio = this.maintainAspectRatio !== false;
+    options.responsive = true;
+
     // Configure elements styling
     options.elements = {
       line: {
@@ -267,6 +261,28 @@ export default class SeriesChart extends BaseChart {
       }
     };
 
+    // Apply tooltip formatters if configured
+    if (this.tooltipFormatters && Object.keys(this.tooltipFormatters).length > 0) {
+      options.plugins = options.plugins || {};
+      options.plugins.tooltip = options.plugins.tooltip || {};
+      options.plugins.tooltip.callbacks = options.plugins.tooltip.callbacks || {};
+
+      if (this.tooltipFormatters.x) {
+        options.plugins.tooltip.callbacks.title = (context) => {
+          const value = context[0]?.label;
+          return value ? this.dataFormatter.pipe(value, this.tooltipFormatters.x) : value;
+        };
+      }
+
+      if (this.tooltipFormatters.y) {
+        options.plugins.tooltip.callbacks.label = (context) => {
+          const value = context.raw;
+          const formattedValue = this.dataFormatter.pipe(value, this.tooltipFormatters.y);
+          return `${context.dataset.label}: ${formattedValue}`;
+        };
+      }
+    }
+
     return options;
   }
 
@@ -277,9 +293,18 @@ export default class SeriesChart extends BaseChart {
     const xAxisConfig = this.orientation === 'horizontal' ? this.yAxisConfig : this.xAxisConfig;
     const yAxisConfig = this.orientation === 'horizontal' ? this.xAxisConfig : this.yAxisConfig;
 
-    // X-axis configuration
+    // Debug axis configs
+    console.log('buildScalesConfig axis configs:', {
+      orientation: this.orientation,
+      xAxisConfig,
+      yAxisConfig,
+      originalXAxis: this.xAxisConfig,
+      originalYAxis: this.yAxisConfig
+    });
+
+    // X-axis configuration with smart type detection
     scales.x = {
-      type: this.getAxisType(xAxisConfig),
+      type: this._detectAxisType(this.data, xAxisConfig, 'x'),
       display: true,
       title: {
         display: !!xAxisConfig.label,
@@ -293,11 +318,17 @@ export default class SeriesChart extends BaseChart {
       }
     };
 
-    // Y-axis configuration
+    // Add formatter callback for x-axis if specified
+    if (xAxisConfig.formatter) {
+      scales.x.ticks.callback = this._createFormatterCallback(xAxisConfig.formatter);
+    }
+
+    // Y-axis configuration with smart type detection
     scales.y = {
-      type: this.getAxisType(yAxisConfig),
+      type: this._detectAxisType(this.data, yAxisConfig, 'y'),
       display: true,
       beginAtZero: yAxisConfig.beginAtZero !== false,
+      reverse: false, // Ensure Y-axis is not reversed
       title: {
         display: !!yAxisConfig.label,
         text: yAxisConfig.label || ''
@@ -305,32 +336,47 @@ export default class SeriesChart extends BaseChart {
       grid: {
         display: true
       },
-      ticks: {
-        callback: (value) => {
-          if (yAxisConfig.formatter) {
-            return this.dataFormatter.apply(value, yAxisConfig.formatter);
-          }
-          return value;
-        }
-      }
+      ticks: {}
     };
+
+    // Add formatter callback for y-axis if specified
+    if (yAxisConfig.formatter) {
+      scales.y.ticks.callback = this._createFormatterCallback(yAxisConfig.formatter);
+    }
+
+    // Debug final scales configuration
+    console.log('Final scales config:', {
+      xScale: scales.x,
+      yScale: scales.y,
+      yAxisBeginAtZero: scales.y.beginAtZero,
+      yAxisReverse: scales.y.reverse,
+      yAxisType: scales.y.type
+    });
 
     return scales;
   }
 
-  getAxisType(axisConfig) {
-    if (!axisConfig.formatter) return 'linear';
+  // Process simple axis configuration into detailed config
+  processAxisConfig(axisConfig) {
+    if (!axisConfig) return {};
 
-    // Determine axis type from formatter
-    if (axisConfig.formatter.startsWith('date')) {
-      return 'time';
-    }
-    
-    if (axisConfig.formatter.startsWith('category')) {
-      return 'category';
+    if (typeof axisConfig === 'string') {
+      // Simple string format: just a formatter name
+      return { formatter: axisConfig };
     }
 
-    return 'linear';
+    if (typeof axisConfig === 'object') {
+      // Object format: full configuration
+      return {
+        formatter: axisConfig.formatter,
+        label: axisConfig.label,
+        type: axisConfig.type,
+        beginAtZero: axisConfig.beginAtZero,
+        ...axisConfig
+      };
+    }
+
+    return {};
   }
 
 

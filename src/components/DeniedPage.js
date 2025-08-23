@@ -36,7 +36,7 @@ class DeniedPage extends Page {
                   {{#description}}
                   <p class="card-text">{{description}}</p>
                   {{/description}}
-                  
+
                   {{#requiredPermissions}}
                   <div class="mt-3">
                     <h6 class="mb-2">Required Permissions:</h6>
@@ -68,7 +68,7 @@ class DeniedPage extends Page {
                 </button>
                 {{/showLogin}}
               </div>
-              
+
               {{#currentUser}}
               <div class="text-center mt-4">
                 <small class="text-muted">
@@ -82,7 +82,7 @@ class DeniedPage extends Page {
       `,
       ...options
     });
-    
+
     // Store the denied page instance
     this.deniedPage = null;
     this.deniedPageOptions = null;
@@ -93,7 +93,7 @@ class DeniedPage extends Page {
    */
   async onParams(params = {}, query = {}) {
     await super.onParams(params, query);
-    
+
     // If page info is passed in params
     if (params.page) {
       this.deniedPage = params.page;
@@ -117,19 +117,18 @@ class DeniedPage extends Page {
    * Get view data for template rendering
    */
   async getViewData() {
-    const baseData = await super.getViewData();
     const app = this.getApp();
-    
+
     // Get current user info
     const currentUser = app?.activeUser || app?.getCurrentUser?.() || null;
-    
+
     // Process denied page info
     let deniedPageInfo = null;
     if (this.deniedPage) {
-      const permissions = this.deniedPageOptions?.permissions || 
+      const permissions = this.deniedPageOptions?.permissions ||
                          this.deniedPage.options?.permissions ||
                          this.deniedPage.pageOptions?.permissions;
-      
+
       deniedPageInfo = {
         displayName: this.deniedPage.displayName || this.deniedPage.pageName || this.deniedPage.title || 'Unknown Page',
         pageName: this.deniedPage.pageName,
@@ -147,9 +146,8 @@ class DeniedPage extends Page {
         pageIcon: 'bi bi-file-text'
       };
     }
-    
+
     return {
-      ...baseData,
       deniedPage: deniedPageInfo,
       currentUser: currentUser ? {
         username: currentUser.username || currentUser.name || currentUser.email || 'Unknown User',
@@ -165,7 +163,7 @@ class DeniedPage extends Page {
    */
   async handleActionGoBack(event, element) {
     event.preventDefault();
-    
+
     // Try to go back in browser history
     if (window.history.length > 1) {
       window.history.back();
@@ -180,7 +178,7 @@ class DeniedPage extends Page {
    */
   async handleActionGoHome(event, element) {
     event.preventDefault();
-    
+
     const app = this.getApp();
     if (app) {
       await app.navigateToDefault();
@@ -195,9 +193,9 @@ class DeniedPage extends Page {
    */
   async handleActionLogin(event, element) {
     event.preventDefault();
-    
+
     const app = this.getApp();
-    
+
     // Try to navigate to login page
     if (app) {
       try {
@@ -211,7 +209,7 @@ class DeniedPage extends Page {
           this.emit('login-required', {
             returnUrl: this.deniedPage?.route || window.location.pathname
           });
-          
+
           // Show message if no handlers
           setTimeout(() => {
             app?.showInfo?.('Please contact your administrator for access.');
@@ -226,7 +224,7 @@ class DeniedPage extends Page {
    */
   async onEnter() {
     await super.onEnter();
-    
+
     // Set appropriate page title
     const pageName = this.deniedPage?.pageName || this.deniedPageName;
     if (pageName) {
@@ -234,7 +232,7 @@ class DeniedPage extends Page {
         title: `Access Denied - ${pageName}`
       });
     }
-    
+
     // Log access denial for security monitoring
     console.warn('Access denied to page:', {
       page: this.deniedPage?.pageName || this.deniedPageName,

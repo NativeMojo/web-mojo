@@ -319,7 +319,7 @@ class Sidebar extends View {
                 <li class="nav-item">
                     {{#hasChildren}}
                     <!-- Item with submenu -->
-                    <a class="nav-link {{#active}}active{{/active}} has-children"
+                    <a class="nav-link {{#active}}active{{/active}} has-children collapsed"
                        data-bs-toggle="collapse"
                        href="#collapse-{{id}}"
                        role="button"

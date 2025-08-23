@@ -307,21 +307,6 @@ class Page extends View {
     });
   }
 
-  /**
-   * Override View's getViewData to include page-specific data
-   * @returns {Promise<object>} View data object
-   */
-  async getViewData() {
-
-    return {
-      pageName: this.pageName,
-      route: this.route,
-      params: this.params,
-      query: this.query,
-      title: this.pageOptions.title,
-      description: this.pageOptions.description
-    };
-  }
 
   /**
    * Show error message with page context

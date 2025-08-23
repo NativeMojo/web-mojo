@@ -10,6 +10,7 @@ import TemplatesPage from './pages/TemplatesPage.js';
 import TodosPage from './pages/TodosPage.js';
 import FormsPage from './pages/FormsPage.js';
 import DialogsPage from './pages/DialogsPage.js';
+import ChartsPage from './pages/ChartsPage.js';
 import Page from '/src/core/Page.js';
 import ImageViewer from '/src/lightbox/ImageViewer.js';
 import { registerAdminPages } from '/src/admin.js';
@@ -66,45 +67,25 @@ const app = new PortalApp({
                     route: '?page=dashboard',
                     icon: 'bi-speedometer2'
                 },
+
                 {
-                    text: 'Lightbox',
-                    icon: 'bi-images',
-                    children: [
-                        {
-                            text: 'Image Viewer',
-                            route: '?page=image',
-                            icon: 'bi-image'
-                        },
-                        {
-                            text: 'Image Edit',
-                            route: '?page=image-edit',
-                            icon: 'bi-brush-fill'
-                        },
-                        {
-                            text: 'PDF Viewer',
-                            route: '?page=pdf',
-                            icon: 'bi-file-earmark-pdf'
-                        }
-                    ]
-                },
-                {
-                    text: 'Charts',
+                    text: 'Example Sub Menu',
                     icon: 'bi-graph-up',
                     children: [
                         {
-                            text: 'Image Viewer',
-                            route: '?page=sales',
-                            icon: 'bi-currency-dollar'
+                            text: 'Charts',
+                            route: '?page=charts',
+                            icon: 'bi-graph-up'
                         },
                         {
-                            text: 'Analytics',
-                            route: '?page=analytics',
+                            text: 'Image Editor',
+                            route: '?page=image-editor',
                             icon: 'bi-bar-chart'
                         },
                         {
-                            text: 'Performance',
-                            route: '?page=performance',
-                            icon: 'bi-speedometer'
+                            text: 'File Upload',
+                            route: '?page=file-upload',
+                            icon: 'bi-upload'
                         }
                     ]
                 },
@@ -281,6 +262,7 @@ const app = new PortalApp({
 // Register pages using clean API: registerPage(name, PageClass, options)
 app.registerPage('home', HomePage);
 app.registerPage('dashboard', DashboardPage);
+app.registerPage('charts', ChartsPage);
 app.registerPage('templates', TemplatesPage);
 app.registerPage('todos', TodosPage);
 app.registerPage('forms', FormsPage);

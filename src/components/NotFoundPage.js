@@ -47,7 +47,7 @@ class NotFoundPage extends Page {
       `,
       ...options
     });
-    
+
     // Store the not found path
     this.path = null;
   }
@@ -57,7 +57,7 @@ class NotFoundPage extends Page {
    */
   async onParams(params = {}, query = {}) {
     await super.onParams(params, query);
-    
+
     // Store path from params or query
     if (params.path) {
       this.path = params.path;
@@ -76,23 +76,11 @@ class NotFoundPage extends Page {
   }
 
   /**
-   * Get view data for template rendering
-   */
-  async getViewData() {
-    const baseData = await super.getViewData();
-    
-    return {
-      ...baseData,
-      path: this.path
-    };
-  }
-
-  /**
    * Handle going back to previous page
    */
   async handleActionGoBack(event, _element) {
     event.preventDefault();
-    
+
     // Try to go back in browser history
     if (window.history.length > 1) {
       window.history.back();
@@ -107,7 +95,7 @@ class NotFoundPage extends Page {
    */
   async handleActionGoHome(event, _element) {
     event.preventDefault();
-    
+
     const app = this.getApp();
     if (app) {
       await app.navigateToDefault();
@@ -122,14 +110,14 @@ class NotFoundPage extends Page {
    */
   async onEnter() {
     await super.onEnter();
-    
+
     // Set appropriate page title
     if (this.path) {
       this.setMeta({
         title: `404 - ${this.path} Not Found`
       });
     }
-    
+
     // Log 404 for analytics
     console.warn('404 Not Found:', {
       path: this.path,

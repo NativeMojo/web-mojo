@@ -58,6 +58,9 @@ export default class PieChart extends BaseChart {
     this.selectedSegment = null;
     this.highlightedSegments = new Set();
 
+    // Value formatting
+    this.valueFormatter = options.valueFormatter || null;
+
     // Template data properties (available to Mustache)
     this.refreshEnabled = !!(this.endpoint || this.websocketUrl);
     this.showLabels = this.showLabels;
@@ -232,19 +235,19 @@ export default class PieChart extends BaseChart {
             const label = context.label || '';
             const value = context.raw;
             const dataset = context.dataset;
-            
+                
             // Calculate percentage
             const total = dataset.data.reduce((sum, val) => sum + val, 0);
             const percentage = ((value / total) * 100).toFixed(1);
-            
+                
             // Apply value formatter if configured
             let formattedValue = value;
             if (this.valueFormatter) {
-              formattedValue = this.dataFormatter.apply(value, this.valueFormatter);
-            } else if (this.tooltipFormatters.y) {
-              formattedValue = this.dataFormatter.apply(value, this.tooltipFormatters.y);
+              formattedValue = this.dataFormatter.pipe(value, this.valueFormatter);
+            } else if (this.tooltipFormatters && this.tooltipFormatters.y) {
+              formattedValue = this.dataFormatter.pipe(value, this.tooltipFormatters.y);
             }
-            
+                
             return `${label}: ${formattedValue} (${percentage}%)`;
           }
         }

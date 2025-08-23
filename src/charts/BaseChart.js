@@ -76,7 +76,7 @@ export default class BaseChart extends View {
 
     // Export options
     this.exportEnabled = options.exportEnabled !== false;
-    this.exportFormats = options.exportFormats || ['png', 'jpg'];
+    this.exportFormats = options.exportFormats || ['png', 'jpg', 'csv'];
 
     // State
     this.isLoading = false;
@@ -140,7 +140,10 @@ export default class BaseChart extends View {
                       <i class="bi bi-image"></i> PNG
                     </a></li>
                     <li><a class="dropdown-item" href="#" data-action="export-chart" data-format="jpg">
-                      <i class="bi bi-image"></i> JPEG
+                      <i class="bi bi-image"></i> JPEG  
+                    </a></li>
+                    <li><a class="dropdown-item" href="#" data-action="export-chart" data-format="csv">
+                      <i class="bi bi-file-earmark-spreadsheet"></i> CSV
                     </a></li>
                   </ul>
                 </div>
@@ -474,8 +477,8 @@ export default class BaseChart extends View {
 
     // Apply formatters to labels if xAxis formatter is configured
     if (this.xAxis && typeof this.xAxis === 'string' && processedData.labels) {
-      processedData.labels = processedData.labels.map(label =>
-        this.dataFormatter.apply(label, this.xAxis)
+      processedData.labels = processedData.labels.map(label => 
+        this.dataFormatter.pipe(label, this.xAxis)
       );
     }
 
@@ -521,20 +524,89 @@ export default class BaseChart extends View {
       if (this.tooltipFormatters.x) {
         options.plugins.tooltip.callbacks.title = (context) => {
           const value = context[0]?.label;
-          return value ? this.dataFormatter.apply(value, this.tooltipFormatters.x) : value;
+          return value ? this.dataFormatter.pipe(value, this.tooltipFormatters.x) : value;
         };
       }
 
       if (this.tooltipFormatters.y) {
         options.plugins.tooltip.callbacks.label = (context) => {
           const value = context.raw;
-          const formattedValue = this.dataFormatter.apply(value, this.tooltipFormatters.y);
+          const formattedValue = this.dataFormatter.pipe(value, this.tooltipFormatters.y);
           return `${context.dataset.label}: ${formattedValue}`;
         };
       }
     }
 
     return options;
+  }
+
+  // Helper method to create Chart.js callback from MOJO formatter
+  _createFormatterCallback(formatter) {
+    if (!formatter) return null;
+    
+    return (value) => {
+      try {
+        return this.dataFormatter.pipe(value, formatter);
+      } catch (error) {
+        console.warn(`Chart formatter error:`, error);
+        return value;
+      }
+    };
+  }
+
+  // Smart axis type detection from data
+  _detectAxisType(data, axisConfig, axisName = 'x') {
+    // If user explicitly set the type, use it
+    if (axisConfig && axisConfig.type) {
+      return axisConfig.type;
+    }
+    
+    // If formatter suggests a type
+    if (axisConfig && axisConfig.formatter) {
+      const formatter = axisConfig.formatter.toLowerCase();
+      if (formatter.includes('date') || formatter.includes('time')) {
+        return 'time';
+      }
+    }
+    
+    // Auto-detect from data based on axis
+    if (data) {
+      if (axisName === 'x' && data.labels && data.labels.length > 0) {
+        // X-axis: check labels
+        const firstLabel = data.labels[0];
+        
+        // Check if labels are strings (category axis)
+        if (typeof firstLabel === 'string' && isNaN(parseFloat(firstLabel))) {
+          return 'category';
+        }
+        
+        // Check if labels are dates
+        if (firstLabel instanceof Date || 
+            (typeof firstLabel === 'string' && !isNaN(Date.parse(firstLabel)))) {
+          return 'time';
+        }
+        
+        // Numeric labels default to linear
+        return 'linear';
+      } else if (axisName === 'y' && data.datasets && data.datasets.length > 0) {
+        // Y-axis: check data values
+        const firstDataset = data.datasets[0];
+        if (firstDataset.data && firstDataset.data.length > 0) {
+          const firstValue = firstDataset.data[0];
+          
+          // If it's numeric data, use linear
+          if (typeof firstValue === 'number' || !isNaN(parseFloat(firstValue))) {
+            return 'linear';
+          }
+          
+          // If it's string data, use category
+          return 'category';
+        }
+      }
+    }
+    
+    // Default based on axis
+    return axisName === 'x' ? 'category' : 'linear';
   }
 
   setupChartEventHandlers() {
@@ -647,26 +719,89 @@ export default class BaseChart extends View {
     if (!this.chart) return;
 
     try {
-      const url = this.chart.toBase64Image('image/' + format, 1);
-      const link = document.createElement('a');
-      link.download = `chart-${Date.now()}.${format}`;
-      link.href = url;
-      link.click();
+      if (format === 'csv') {
+        this.exportCSV();
+      } else {
+        const url = this.chart.toBase64Image('image/' + format, 1);
+        const link = document.createElement('a');
+        link.download = `chart-${Date.now()}.${format}`;
+        link.href = url;
+        link.click();
 
-      // Emit export event
-      const eventBus = this.getApp()?.events;
-      if (eventBus) {
-        eventBus.emit('chart:exported', {
-          chart: this,
-          format,
-          filename: link.download
-        });
+        // Emit export event
+        const eventBus = this.getApp()?.events;
+        if (eventBus) {
+          eventBus.emit('chart:exported', {
+            chart: this,
+            format,
+            filename: link.download
+          });
+        }
       }
 
     } catch (error) {
       console.error('Failed to export chart:', error);
       this.showError('Failed to export chart');
     }
+  }
+
+  // CSV Export Functionality
+  exportCSV() {
+    if (!this.chart || !this.chart.data) return;
+
+    try {
+      const csvData = this.generateCSV();
+      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.download = `chart-data-${Date.now()}.csv`;
+      link.href = url;
+      link.click();
+      
+      // Clean up
+      URL.revokeObjectURL(url);
+
+      // Emit export event
+      const eventBus = this.getApp()?.events;
+      if (eventBus) {
+        eventBus.emit('chart:exported', {
+          chart: this,
+          format: 'csv',
+          filename: link.download
+        });
+      }
+
+    } catch (error) {
+      console.error('Failed to export CSV:', error);
+      this.showError('Failed to export CSV');
+    }
+  }
+
+  // Generate CSV data from chart
+  generateCSV() {
+    const data = this.chart.data;
+    const labels = data.labels || [];
+    const datasets = data.datasets || [];
+
+    // Create CSV header
+    let csv = 'Label';
+    datasets.forEach(dataset => {
+      csv += ',' + (dataset.label || 'Data');
+    });
+    csv += '\n';
+
+    // Add data rows
+    labels.forEach((label, index) => {
+      csv += `"${label}"`;
+      datasets.forEach(dataset => {
+        const value = dataset.data[index] || '';
+        csv += ',' + value;
+      });
+      csv += '\n';
+    });
+
+    return csv;
   }
 
   // UI State Management

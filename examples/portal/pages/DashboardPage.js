@@ -76,7 +76,7 @@ class DashboardPage extends Page {
 
         try {
             // Simulate refreshing data
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 300));
 
             // Update some values to show refresh worked
             this.updateData({

@@ -22,15 +22,11 @@ class HomePage extends Page {
 
     async onInit() {
         // Initialize page data
-        this.data = {
-            title: 'Welcome to MOJO Portal',
-            subtitle: 'A clean, modern web application framework',
-            stats: {
-                users: 1234,
-                projects: 56,
-                tasks: 789,
-                messages: 42
-            }
+        this.stats = {
+            users: 1234,
+            projects: 56,
+            tasks: 789,
+            messages: 42
         };
     }
 
@@ -40,13 +36,6 @@ class HomePage extends Page {
 
         // Set page title
         document.title = HomePage.title;
-    }
-
-    async onActionNavigate(event, element) {
-        const page = element.dataset.page;
-        if (page && window.APP) {
-            window.APP.navigate(page);
-        }
     }
 
     async onActionTestApi() {
