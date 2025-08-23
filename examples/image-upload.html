@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ImageUploadView Example</title>
+
+    <!-- Bootstrap CSS -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    />
+    <!-- Bootstrap Icons -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+        rel="stylesheet"
+    />
+
+    <style>
+        .example-section {
+            margin-bottom: 3rem;
+            padding: 2rem;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            background: #f8f9fa;
+        }
+        .upload-container {
+            max-width: 500px;
+        }
+        .code-preview {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container my-5">
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <h1 class="text-center mb-4">
+                    <i class="bi bi-cloud-upload"></i> ImageUploadView Examples
+                </h1>
+                <p class="lead text-center mb-5">
+                    Drag and drop image upload component with preview and upload functionality
+                </p>
+
+                <!-- Example 1: Auto Upload -->
+                <div class="example-section">
+                    <h3><i class="bi bi-magic"></i> Auto Upload</h3>
+                    <p class="text-muted mb-4">
+                        Automatically uploads when file is dropped or selected. Uses a custom upload handler.
+                    </p>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="upload-container" id="autoUploadContainer"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="code-preview">
+<strong>Configuration:</strong>
+autoUpload: true
+onUpload: customHandler
+maxFileSize: 5MB
+                            </div>
+                            <div class="mt-3" id="autoUploadResult">
+                                <small class="text-muted">Upload results will appear here...</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Example 2: Manual Upload -->
+                <div class="example-section">
+                    <h3><i class="bi bi-hand-index"></i> Manual Upload</h3>
+                    <p class="text-muted mb-4">
+                        Shows preview first, then requires clicking "Upload" button. Simulates server upload.
+                    </p>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="upload-container" id="manualUploadContainer"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="code-preview">
+<strong>Configuration:</strong>
+autoUpload: false
+uploadUrl: '/api/upload'
+acceptedTypes: ['image/jpeg', 'image/png']
+maxFileSize: 10MB
+                            </div>
+                            <div class="mt-3" id="manualUploadResult">
+                                <small class="text-muted">Upload results will appear here...</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Example 3: Custom Styling -->
+                <div class="example-section">
+                    <h3><i class="bi bi-palette"></i> Custom Configuration</h3>
+                    <p class="text-muted mb-4">
+                        Small file size limit with only JPEG/PNG support and custom styling.
+                    </p>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="upload-container" id="customUploadContainer"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="code-preview">
+<strong>Configuration:</strong>
+autoUpload: true
+acceptedTypes: ['image/jpeg', 'image/png']
+maxFileSize: 2MB
+className: 'custom-upload'
+                            </div>
+                            <div class="mt-3" id="customUploadResult">
+                                <small class="text-muted">Upload results will appear here...</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Usage Instructions -->
+                <div class="example-section">
+                    <h3><i class="bi bi-info-circle"></i> Usage Instructions</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Basic Usage</h5>
+                            <pre class="code-preview"><code>import ImageUploadView from '../src/lightbox/ImageUploadView.js';
+
+const uploadView = new ImageUploadView({
+  autoUpload: true,
+  onUpload: async (file, progressCallback) => {
+    // Your upload logic here
+    progressCallback(50);
+    // ... upload file
+    progressCallback(100);
+    return { success: true, url: 'uploaded-url' };
+  }
+});
+
+await uploadView.render(true, container);</code></pre>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Events</h5>
+                            <div class="code-preview">
+<strong>Available Events:</strong>
+• imageupload:preview
+• imageupload:upload-success
+• imageupload:upload-error
+• imageupload:cleared
+• imageupload:destroyed
+
+<strong>Event Usage:</strong>
+eventBus.on('imageupload:upload-success',
+  (data) => {
+    console.log('Uploaded:', data.result);
+  }
+);
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Images -->
+                <div class="example-section">
+                    <h3><i class="bi bi-images"></i> Test with Sample Images</h3>
+                    <p class="text-muted mb-3">Click to download test images of different sizes:</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-outline-primary btn-sm" onclick="downloadTestImage('small')">
+                            Small (100KB)
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" onclick="downloadTestImage('medium')">
+                            Medium (1MB)
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" onclick="downloadTestImage('large')">
+                            Large (5MB)
+                        </button>
+                        <button class="btn btn-outline-warning btn-sm" onclick="downloadTestImage('huge')">
+                            Too Large (15MB)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- MOJO Framework -->
+    <script type="module">
+        import ImageUploadView from '../src/lightbox/ImageUploadView.js';
+
+        // Auto Upload Example
+        const autoUploadView = new ImageUploadView({
+            autoUpload: true,
+            maxFileSize: 5 * 1024 * 1024, // 5MB
+            onUpload: async (file, progressCallback) => {
+                // Simulate upload with progress
+                for (let i = 0; i <= 100; i += 10) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    progressCallback(i);
+                }
+
+                // Simulate success/failure randomly
+                if (Math.random() > 0.2) {
+                    return {
+                        success: true,
+                        url: `https://example.com/uploads/${file.name}`,
+                        id: Math.random().toString(36).substring(7)
+                    };
+                } else {
+                    throw new Error('Simulated upload failure');
+                }
+            }
+        });
+
+        await autoUploadView.render(true, document.getElementById('autoUploadContainer'));
+
+        // Listen for events
+        const app = autoUploadView.getApp();
+        const eventBus = app?.events;
+        if (eventBus) {
+            eventBus.on('imageupload:upload-success', (data) => {
+                document.getElementById('autoUploadResult').innerHTML = `
+                    <div class="alert alert-success">
+                        <strong>Upload Success!</strong><br>
+                        File: ${data.file.name}<br>
+                        URL: ${data.result.url}<br>
+                        ID: ${data.result.id}
+                    </div>
+                `;
+            });
+
+            eventBus.on('imageupload:upload-error', (data) => {
+                document.getElementById('autoUploadResult').innerHTML = `
+                    <div class="alert alert-danger">
+                        <strong>Upload Failed!</strong><br>
+                        File: ${data.file.name}<br>
+                        Error: ${data.error.message}
+                    </div>
+                `;
+            });
+        }
+
+        // Manual Upload Example
+        const manualUploadView = new ImageUploadView({
+            autoUpload: false,
+            maxFileSize: 10 * 1024 * 1024, // 10MB
+            acceptedTypes: ['image/jpeg', 'image/png'],
+            onUpload: async (file, progressCallback) => {
+                // Simulate server upload
+                for (let i = 0; i <= 100; i += 5) {
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    progressCallback(i);
+                }
+
+                return {
+                    success: true,
+                    message: 'File uploaded to server successfully!',
+                    filename: `uploaded_${Date.now()}_${file.name}`
+                };
+            }
+        });
+
+        await manualUploadView.render(true, document.getElementById('manualUploadContainer'));
+
+        // Manual upload events
+        if (eventBus) {
+            eventBus.on('imageupload:upload-success', (data) => {
+                if (data.view === manualUploadView) {
+                    document.getElementById('manualUploadResult').innerHTML = `
+                        <div class="alert alert-success">
+                            <strong>Server Upload Complete!</strong><br>
+                            Original: ${data.file.name}<br>
+                            Uploaded: ${data.result.filename}
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        // Custom Upload Example
+        const customUploadView = new ImageUploadView({
+            autoUpload: true,
+            maxFileSize: 2 * 1024 * 1024, // 2MB limit
+            acceptedTypes: ['image/jpeg', 'image/png'],
+            className: 'custom-upload',
+            onUpload: async (file, progressCallback) => {
+                // Quick upload simulation
+                progressCallback(50);
+                await new Promise(resolve => setTimeout(resolve, 500));
+                progressCallback(100);
+
+                return {
+                    success: true,
+                    thumbnail: URL.createObjectURL(file),
+                    size: file.size
+                };
+            }
+        });
+
+        await customUploadView.render(true, document.getElementById('customUploadContainer'));
+
+        // Custom upload events
+        if (eventBus) {
+            eventBus.on('imageupload:upload-success', (data) => {
+                if (data.view === customUploadView) {
+                    document.getElementById('customUploadResult').innerHTML = `
+                        <div class="alert alert-info">
+                            <strong>Custom Handler Result!</strong><br>
+                            Size: ${(data.result.size / 1024).toFixed(1)} KB<br>
+                            Thumbnail created successfully
+                        </div>
+                    `;
+                }
+            });
+
+            eventBus.on('imageupload:upload-error', (data) => {
+                if (data.view === customUploadView) {
+                    document.getElementById('customUploadResult').innerHTML = `
+                        <div class="alert alert-warning">
+                            <strong>Upload Rejected!</strong><br>
+                            ${data.error.message}
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        // Test image generation
+        window.downloadTestImage = function(size) {
+            let width, height, quality;
+
+            switch(size) {
+                case 'small':
+                    width = 400; height = 300; quality = 0.7;
+                    break;
+                case 'medium':
+                    width = 1200; height = 900; quality = 0.8;
+                    break;
+                case 'large':
+                    width = 2400; height = 1800; quality = 0.9;
+                    break;
+                case 'huge':
+                    width = 4000; height = 3000; quality = 0.95;
+                    break;
+            }
+
+            // Create canvas and generate test image
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+
+            // Create colorful gradient
+            const gradient = ctx.createLinearGradient(0, 0, width, height);
+            gradient.addColorStop(0, '#ff6b6b');
+            gradient.addColorStop(0.5, '#4ecdc4');
+            gradient.addColorStop(1, '#45b7d1');
+
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+
+            // Add text
+            ctx.fillStyle = 'white';
+            ctx.font = `${Math.max(20, width/20)}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.fillText(`${size.toUpperCase()} TEST IMAGE`, width/2, height/2);
+            ctx.fillText(`${width} x ${height}`, width/2, height/2 + 50);
+
+            // Convert to blob and download
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `test-image-${size}.jpg`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }, 'image/jpeg', quality);
+        };
+
+        console.log('ImageUploadView examples loaded successfully!');
+    </script>
+</body>
+</html>
