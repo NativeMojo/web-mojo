@@ -57,20 +57,17 @@ export default class PieChart extends BaseChart {
     // Selected segment tracking
     this.selectedSegment = null;
     this.highlightedSegments = new Set();
+
+    // Template data properties (available to Mustache)
+    this.refreshEnabled = !!(this.endpoint || this.websocketUrl);
+    this.showLabels = this.showLabels;
+    this.cutout = this.cutout;
   }
 
   async getTemplate() {
     // Hide chart type switcher for PieChart
     const baseTemplate = await super.getTemplate();
     return baseTemplate.replace('chart-type-switcher', 'chart-type-switcher d-none');
-  }
-
-  get() {
-    return {
-      ...super.get(),
-      showLabels: this.showLabels,
-      cutout: this.cutout
-    };
   }
 
   processChartData(data) {

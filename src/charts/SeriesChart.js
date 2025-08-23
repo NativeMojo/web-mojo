@@ -25,6 +25,10 @@ export default class SeriesChart extends BaseChart {
     this.xField = options.xField || 'x';
     this.yField = options.yField || 'y';
 
+    // Template data properties (available to Mustache)
+    // Note: These override any from parent class
+    this.refreshEnabled = !!(this.endpoint || this.websocketUrl);
+
     // Color scheme for multiple datasets
     this.colors = options.colors || [
       'rgba(54, 162, 235, 0.8)',   // Blue
@@ -52,15 +56,7 @@ export default class SeriesChart extends BaseChart {
     );
   }
 
-  get() {
-    return {
-      ...super.get(),
-      chartType: this.chartType,
-      allowTypeSwitch: this.allowTypeSwitch,
-      orientation: this.orientation,
-      stacked: this.stacked
-    };
-  }
+
 
   async onAfterRender() {
     await super.onAfterRender();

@@ -5,7 +5,7 @@
 
 import View from '../core/View.js';
 import WebSocketClient from '../utils/WebSocket.js';
-import DataFormatter from '../utils/DataFormatter.js';
+import dataFormatter from '../utils/DataFormatter.js';
 
 export default class BaseChart extends View {
   constructor(options = {}) {
@@ -90,8 +90,11 @@ export default class BaseChart extends View {
     // Chart.js CDN URL - can be customized
     this.chartJsCdn = options.chartJsCdn || 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js';
 
-    // DataFormatter instance
-    this.dataFormatter = new DataFormatter();
+    // DataFormatter instance (use singleton)
+    this.dataFormatter = dataFormatter;
+
+    // Template data properties (available to Mustache)
+    this.refreshEnabled = !!(this.endpoint || this.websocketUrl);
 
     // Store essential listeners for cleanup
     this._essentialListeners = [];
@@ -126,7 +129,7 @@ export default class BaseChart extends View {
                   <i class="bi bi-arrow-clockwise"></i>
                 </button>
                 {{/refreshEnabled}}
-                
+
                 {{#exportEnabled}}
                 <div class="btn-group" role="group">
                   <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" title="Export Chart">
@@ -137,12 +140,12 @@ export default class BaseChart extends View {
                       <i class="bi bi-image"></i> PNG
                     </a></li>
                     <li><a class="dropdown-item" href="#" data-action="export-chart" data-format="jpg">
-                      <i class="bi bi-image"></i> JPEG  
+                      <i class="bi bi-image"></i> JPEG
                     </a></li>
                   </ul>
                 </div>
                 {{/exportEnabled}}
-                
+
                 <button type="button" class="btn btn-outline-secondary theme-toggle" data-action="toggle-theme" title="Toggle Theme">
                   <i class="bi bi-palette"></i>
                 </button>
@@ -219,14 +222,7 @@ export default class BaseChart extends View {
     `;
   }
 
-  get() {
-    return {
-      title: this.title,
-      theme: this.theme,
-      refreshEnabled: !!(this.endpoint || this.websocketUrl),
-      exportEnabled: this.exportEnabled
-    };
-  }
+
 
   async onAfterRender() {
     // Cache DOM elements
@@ -234,7 +230,7 @@ export default class BaseChart extends View {
     this.titleElement = this.element.querySelector('.chart-title');
     this.contentElement = this.element.querySelector('.chart-content');
     this.footerElement = this.element.querySelector('.chart-footer');
-    
+
     // Overlay elements
     this.loadingOverlay = this.element.querySelector('[data-loading]');
     this.errorOverlay = this.element.querySelector('[data-error]');
@@ -419,7 +415,7 @@ export default class BaseChart extends View {
       this.websocket.on('data', async (data) => {
         await this.updateChart(data);
         this.updateLastUpdatedTime();
-        
+
         // Emit real-time update event
         const eventBus = this.getApp()?.events;
         if (eventBus) {
@@ -473,12 +469,12 @@ export default class BaseChart extends View {
   processChartData(data) {
     // This method should be overridden by subclasses
     // Base implementation just applies formatters to labels if configured
-    
+
     let processedData = { ...data };
 
     // Apply formatters to labels if xAxis formatter is configured
     if (this.xAxis && typeof this.xAxis === 'string' && processedData.labels) {
-      processedData.labels = processedData.labels.map(label => 
+      processedData.labels = processedData.labels.map(label =>
         this.dataFormatter.apply(label, this.xAxis)
       );
     }
@@ -500,10 +496,10 @@ export default class BaseChart extends View {
 
     try {
       this.chart = new window.Chart(this.canvas, config);
-      
+
       // Set up chart event handlers
       this.setupChartEventHandlers();
-      
+
     } catch (error) {
       console.error('Failed to create chart:', error);
       throw error;
@@ -577,7 +573,7 @@ export default class BaseChart extends View {
   // Theme Management
   applyTheme() {
     this.element.setAttribute('data-theme', this.theme);
-    
+
     if (this.chart) {
       this.chart.options = this.buildChartOptions();
       this.chart.update('none');
@@ -586,14 +582,14 @@ export default class BaseChart extends View {
 
   applyThemeToOptions(options) {
     const isDark = this.theme === 'dark';
-    
+
     // Grid and axis colors
     if (options.scales) {
       Object.keys(options.scales).forEach(scaleId => {
         const scale = options.scales[scaleId];
         scale.grid = scale.grid || {};
         scale.ticks = scale.ticks || {};
-        
+
         scale.grid.color = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
         scale.ticks.color = isDark ? '#e9ecef' : '#495057';
       });
@@ -630,7 +626,7 @@ export default class BaseChart extends View {
     if (!this.endpoint || !this.refreshInterval) return;
 
     this.stopAutoRefresh();
-    
+
     this.refreshTimer = setInterval(() => {
       this.fetchData();
     }, this.refreshInterval);
@@ -719,17 +715,17 @@ export default class BaseChart extends View {
       this.websocketStatus.innerHTML = '<i class="bi bi-wifi"></i> Live';
     } else {
       this.websocketStatus.className = status === 'error' ? 'badge bg-danger' : 'badge bg-secondary';
-      this.websocketStatus.innerHTML = status === 'error' ? 
-        '<i class="bi bi-wifi-off"></i> Error' : 
+      this.websocketStatus.innerHTML = status === 'error' ?
+        '<i class="bi bi-wifi-off"></i> Error' :
         '<i class="bi bi-wifi-off"></i> Offline';
     }
-    
+
     this.websocketStatus.style.display = 'inline-block';
   }
 
   setRefreshButtonState(loading) {
     if (!this.refreshBtn) return;
-    
+
     const icon = this.refreshBtn.querySelector('i');
     if (loading) {
       this.refreshBtn.disabled = true;
@@ -743,7 +739,7 @@ export default class BaseChart extends View {
   updateLastUpdatedTime() {
     const lastUpdatedEl = this.element.querySelector('.last-updated');
     const timestampEl = this.element.querySelector('.timestamp');
-    
+
     if (lastUpdatedEl && timestampEl) {
       timestampEl.textContent = new Date().toLocaleTimeString();
       lastUpdatedEl.style.display = 'block';
@@ -753,7 +749,7 @@ export default class BaseChart extends View {
   updateRefreshStatus(active) {
     const statusEl = this.element.querySelector('.refresh-status');
     if (statusEl) {
-      statusEl.textContent = active ? 
+      statusEl.textContent = active ?
         `Every ${this.refreshInterval / 1000}s` : 'Off';
     }
   }
@@ -766,9 +762,9 @@ export default class BaseChart extends View {
         return sum + (dataset.data ? dataset.data.length : 0);
       }, 0);
     }
-    
+
     this.dataPoints = points;
-    
+
     const dataPointsEl = this.element.querySelector('.data-points');
     if (dataPointsEl) {
       dataPointsEl.textContent = `${points} data point${points !== 1 ? 's' : ''}`;
