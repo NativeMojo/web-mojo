@@ -538,7 +538,7 @@ class Dialog extends View {
   show(relatedTarget = null) {
     // Capture the currently focused element for later restoration
     this.previousFocus = document.activeElement;
-
+    window.lastDialog = this;
     if (this.modal) {
       this.modal.show(relatedTarget);
     }
@@ -892,9 +892,7 @@ class Dialog extends View {
     });
 
     // Render and mount
-    await dialog.render();
-    document.body.appendChild(dialog.element);
-    await dialog.mount();
+    await dialog.render(true, document.body);
 
     // Return promise that resolves based on button clicks
     return new Promise((resolve, reject) => {

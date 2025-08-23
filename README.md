@@ -65,11 +65,7 @@ class HomePage extends Page {
         });
         this.clicks = 0;
     }
-    
-    async getViewData() {
-        return { clicks: this.clicks };
-    }
-    
+
     async handleActionSayHello(event, element) {
         this.clicks++;
         await this.render();
@@ -143,13 +139,13 @@ class UsersPage extends Page {
             ...options
         });
     }
-    
+
     async onEnter() {
         // Called when page is entered
         this.users = await this.loadUsers();
         await this.render();
     }
-    
+
     async handleActionEdit(event, element) {
         const userId = element.getAttribute('data-id');
         await this.getApp().navigate(`/users/${userId}/edit`);
@@ -184,33 +180,32 @@ async handleActionFilterList(event, element) {
 
 ### Template System
 
-Uses Mustache templating with data binding:
+Uses Mustache templating with data binding directly to the View Context.
 
 ```javascript
-async getViewData() {
-    return {
-        title: 'My Page',
+const view = new View({
+    template: `
+        <div class="page">
+            <h1>{{title}}</h1>
+            {{#data.users}}
+                <div class="user {{#active}}active{{/active}}">
+                    {{name}}
+                </div>
+            {{/data.users}}
+            {{^data.users}}
+                <p>No users found.</p>
+            {{/data.users}}
+        </div>
+    `,
+    title: "My Page",
+    data: {
         users: [
             { id: 1, name: 'John', active: true },
             { id: 2, name: 'Jane', active: false }
         ],
         showEmpty: this.users.length === 0
-    };
-}
-```
-
-```html
-<div class="page">
-    <h1>{{title}}</h1>
-    {{#users}}
-        <div class="user {{#active}}active{{/active}}">
-            {{name}}
-        </div>
-    {{/users}}
-    {{^users}}
-        <p>No users found.</p>
-    {{/users}}
-</div>
+    }
+});
 ```
 
 ## 🛠️ Installation
@@ -312,7 +307,7 @@ const app = WebApp.create({
 });
 ```
 
-### History Mode (Server Hosting)  
+### History Mode (Server Hosting)
 Clean URLs with server-side URL rewriting:
 
 ```javascript
@@ -419,7 +414,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 ## 🙋‍♂️ Support
 
 - **📖 Documentation**: [Complete guides](docs/)
-- **💡 Examples**: [Working demos](examples/)  
+- **💡 Examples**: [Working demos](examples/)
 - **🐛 Issues**: [GitHub Issues](https://github.com/yourusername/web-mojo/issues)
 - **💬 Discussions**: [GitHub Discussions](https://github.com/yourusername/web-mojo/discussions)
 

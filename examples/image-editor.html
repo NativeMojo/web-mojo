@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ImageEditor Example</title>
+
+        <!-- Bootstrap CSS -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <!-- Bootstrap Icons -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+            rel="stylesheet"
+        />
+
+        <style>
+            .example-image {
+                transition: transform 0.2s ease;
+                cursor: pointer;
+            }
+            .example-image:hover {
+                transform: scale(1.05);
+            }
+            .feature-list {
+                list-style: none;
+                padding-left: 0;
+            }
+            .feature-list li {
+                padding: 0.5rem 0;
+                border-bottom: 1px solid #eee;
+            }
+            .feature-list li:last-child {
+                border-bottom: none;
+            }
+            .feature-list i {
+                width: 20px;
+                color: #28a745;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container my-5">
+            <div class="row">
+                <div class="col-lg-8 mx-auto">
+                    <h1 class="text-center mb-4">
+                        <i class="bi bi-image"></i> ImageEditor Example
+                    </h1>
+                    <p class="lead text-center mb-5">
+                        Full-featured image editing with crop, filters, transforms, and export
+                        capabilities<br />
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> Canvas state is preserved when
+                            switching between modes
+                        </small>
+                    </p>
+
+                    <!-- Main Demo Image -->
+                    <section class="mb-5 text-center">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Click to Edit Image</h3>
+                            </div>
+                            <div class="card-body">
+                                <img
+                                    src="./portal/media/monkey.png"
+                                    id="mainImage"
+                                    class="img-fluid example-image rounded shadow"
+                                    alt="Monkey"
+                                    style="max-height: 300px"
+                                />
+                                <p class="text-muted mt-3">
+                                    Click the image above to open the full-featured editor
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Action Buttons -->
+                    <section class="mb-5">
+                        <div class="row g-3">
+                            <div class="col-md-6 col-lg-3">
+                                <button class="btn btn-primary w-100" onclick="openBasicEditor()">
+                                    <i class="bi bi-pencil-square"></i><br />
+                                    <small>Full Editor</small>
+                                </button>
+                            </div>
+                            <div class="col-md-6 col-lg-3">
+                                <button class="btn btn-success w-100" onclick="openCropEditor()">
+                                    <i class="bi bi-crop"></i><br />
+                                    <small>Crop Focus</small>
+                                </button>
+                            </div>
+                            <div class="col-md-6 col-lg-3">
+                                <button class="btn btn-info w-100" onclick="openFilterEditor()">
+                                    <i class="bi bi-palette"></i><br />
+                                    <small>Filters Focus</small>
+                                </button>
+                            </div>
+                            <div class="col-md-6 col-lg-3">
+                                <button
+                                    class="btn btn-warning w-100"
+                                    onclick="openAdvancedEditor()"
+                                >
+                                    <i class="bi bi-sliders"></i><br />
+                                    <small>Advanced</small>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Test Canvas Preservation -->
+                        <div class="mt-3">
+                            <button
+                                class="btn btn-outline-primary w-100"
+                                onclick="testPreservation()"
+                            >
+                                <i class="bi bi-layers"></i> Test Canvas Preservation Between Modes
+                                <br />
+                                <small class="text-muted"
+                                    >Apply edits in different modes and see them preserved!</small
+                                >
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Features Overview -->
+                    <section class="mb-5">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <h4><i class="bi bi-tools"></i> Transform Tools</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul class="feature-list">
+                                            <li>
+                                                <i class="bi bi-zoom-in"></i> Zoom In/Out with mouse
+                                                wheel
+                                            </li>
+                                            <li>
+                                                <i class="bi bi-arrows-move"></i> Pan by dragging
+                                                image
+                                            </li>
+                                            <li>
+                                                <i class="bi bi-arrow-clockwise"></i> Rotate
+                                                left/right
+                                            </li>
+                                            <li>
+                                                <i class="bi bi-arrows-fullscreen"></i> Fit to
+                                                screen
+                                            </li>
+                                            <li>
+                                                <i class="bi bi-arrow-repeat"></i> Reset
+                                                transformations
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <h4><i class="bi bi-crop"></i> Crop Tools</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul class="feature-list">
+                                            <li>
+                                                <i class="bi bi-bounding-box"></i> Interactive crop
+                                                selection
+                                            </li>
+                                            <li>
+                                                <i class="bi bi-aspect-ratio"></i> Fixed aspect
+                                                ratios (1:1, 16:9, etc.)
+                                            </li>
+                                            <li>
+                                                <i class="bi bi-arrows"></i> Drag to resize crop
+                                                area
+                                            </li>
+                                            <li>
+                                                <i class="bi bi-check-circle"></i> Apply or cancel
+                                                crop
+                                            </li>
+                                            <li><i class="bi bi-crop"></i> Free-form cropping</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <h4><i class="bi bi-palette"></i> Filter Effects</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul class="feature-list">
+                                            <li>
+                                                <i class="bi bi-brightness-high"></i> Brightness
+                                                adjustment
+                                            </li>
+                                            <li>
+                                                <i class="bi bi-circle-half"></i> Contrast control
+                                            </li>
+                                            <li><i class="bi bi-droplet"></i> Saturation levels</li>
+                                            <li><i class="bi bi-palette2"></i> Hue shifting</li>
+                                            <li><i class="bi bi-blur"></i> Blur effects</li>
+                                            <li><i class="bi bi-filter"></i> Grayscale & Sepia</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <h4><i class="bi bi-download"></i> Export & History</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul class="feature-list">
+                                            <li>
+                                                <i class="bi bi-download"></i> Export edited image
+                                            </li>
+                                            <li>
+                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                                Unlimited undo
+                                            </li>
+                                            <li>
+                                                <i class="bi bi-arrow-clockwise"></i> Redo
+                                                functionality
+                                            </li>
+                                            <li><i class="bi bi-save"></i> Save current state</li>
+                                            <li>
+                                                <i class="bi bi-file-earmark-image"></i> Multiple
+                                                format support
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Code Examples -->
+                    <section class="mb-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4><i class="bi bi-code-slash"></i> Code Examples</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="accordion" id="codeExamples">
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header">
+                                            <button
+                                                class="accordion-button"
+                                                type="button"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target="#basicCode"
+                                            >
+                                                Basic Usage
+                                            </button>
+                                        </h2>
+                                        <div
+                                            id="basicCode"
+                                            class="accordion-collapse collapse show"
+                                        >
+                                            <div class="accordion-body">
+                                                <pre><code>// Import ImageEditor
+import ImageEditor from '../src/lightbox/ImageEditor.js';
+
+// Basic editor
+const result = await ImageEditor.showDialog('./portal/media/monkey.png');
+
+if (result.action === 'export') {
+  console.log('Image edited and exported:', result.data);
+}</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header">
+                                            <button
+                                                class="accordion-button collapsed"
+                                                type="button"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target="#advancedCode"
+                                            >
+                                                Advanced Configuration
+                                            </button>
+                                        </h2>
+                                        <div id="advancedCode" class="accordion-collapse collapse">
+                                            <div class="accordion-body">
+                                                <pre><code>// Advanced editor with custom options
+const result = await ImageEditor.showDialog('./portal/media/monkey.png', {
+  title: 'Edit Monkey Image',
+  showToolbar: true,
+  allowCrop: true,
+  allowFilters: true,
+  allowTransform: true,
+  allowHistory: true,
+  startMode: 'transform', // Start in specific mode
+  size: 'fullscreen'
+});
+
+// Handle different results
+switch (result.action) {
+  case 'export':
+    console.log('Exported:', result.filename);
+    // result.data contains the image data URL
+    downloadImage(result.data);
+    break;
+  case 'cancel':
+    console.log('User cancelled editing');
+    break;
+}</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header">
+                                            <button
+                                                class="accordion-button collapsed"
+                                                type="button"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target="#inlineCode"
+                                            >
+                                                Inline Editor
+                                            </button>
+                                        </h2>
+                                        <div id="inlineCode" class="accordion-collapse collapse">
+                                            <div class="accordion-body">
+                                                <pre><code>// Create inline editor (not in dialog)
+const editor = new ImageEditor({
+  imageUrl: './portal/media/monkey.png',
+  showToolbar: true,
+  allowCrop: true,
+  allowFilters: true,
+  allowTransform: true,
+  allowHistory: true,
+  startMode: 'transform'
+});
+
+await editor.render();
+document.getElementById('editor-container').appendChild(editor.element);
+await editor.mount();</code></pre>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Keyboard Shortcuts -->
+                    <section class="mb-5">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4><i class="bi bi-keyboard"></i> Keyboard Shortcuts</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>Navigation & Zoom</h6>
+                                        <ul class="list-unstyled">
+                                            <li><kbd>+</kbd> / <kbd>=</kbd> - Zoom In</li>
+                                            <li><kbd>-</kbd> - Zoom Out</li>
+                                            <li><kbd>0</kbd> - Fit to Screen</li>
+                                            <li><kbd>1</kbd> - Actual Size</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Transform & Tools</h6>
+                                        <ul class="list-unstyled">
+                                            <li><kbd>R</kbd> - Rotate Right</li>
+                                            <li><kbd>C</kbd> - Toggle Crop</li>
+                                            <li><kbd>F</kbd> - Toggle Filters</li>
+                                            <li><kbd>Ctrl+Z</kbd> - Undo</li>
+                                            <li><kbd>Ctrl+Y</kbd> - Redo</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+        <!-- MOJO Framework -->
+        <script type="module">
+            import ImageEditor from "../src/lightbox/ImageEditor.js";
+
+            // Make it available globally
+            window.ImageEditor = ImageEditor;
+
+            // Set up main image click handler
+            document.addEventListener("DOMContentLoaded", function () {
+                document.getElementById("mainImage").addEventListener("click", function () {
+                    openBasicEditor();
+                });
+            });
+
+            // Example functions
+            window.openBasicEditor = async function () {
+                try {
+                    const result = await ImageEditor.showDialog("./portal/media/monkey.png", {
+                        title: "Edit Monkey Image - Full Editor",
+                        alt: "Monkey",
+                        allowTransform: true,
+                        allowCrop: true,
+                        allowFilters: true,
+                        allowExport: true,
+                        allowHistory: true,
+                    });
+
+                    if (result.action === "export") {
+                        console.log("Image exported successfully:", result.filename);
+                        console.log("Exported image data available:", result.data ? "Yes" : "No");
+                        alert(
+                            "Image exported successfully! Check your downloads.\n\nNote: Edits are preserved when switching between modes!",
+                        );
+                    } else {
+                        console.log("User cancelled editing");
+                    }
+                } catch (error) {
+                    console.error("Editor error:", error);
+                    alert("Editor error: " + error.message);
+                }
+            };
+
+            window.openCropEditor = async function () {
+                const result = await ImageEditor.showDialog("./portal/media/monkey.png", {
+                    title: "Crop Monkey Image",
+                    startMode: "crop",
+                    allowCrop: true,
+                    allowFilters: false,
+                    allowTransform: false,
+                });
+
+                if (result.action === "export") {
+                    console.log("Image cropped and exported:", result.filename);
+                    alert("Image cropped and exported successfully!");
+                }
+            };
+
+            window.openFilterEditor = async function () {
+                const result = await ImageEditor.showDialog("./portal/media/monkey.png", {
+                    title: "Apply Filters to Monkey",
+                    startMode: "filters",
+                    allowCrop: false,
+                    allowFilters: true,
+                    allowTransform: false,
+                });
+
+                if (result.action === "export") {
+                    console.log("Filters applied and exported:", result.filename);
+                    alert("Filters applied and exported successfully!");
+                }
+            };
+
+            window.openAdvancedEditor = async function () {
+                const result = await ImageEditor.showDialog("./portal/media/monkey.png", {
+                    title: "Advanced Monkey Editor - All Features",
+                    showToolbar: true,
+                    allowCrop: true,
+                    allowFilters: true,
+                    allowTransform: true,
+                    allowHistory: true,
+                    allowExport: true,
+                    size: "fullscreen",
+                });
+
+                switch (result.action) {
+                    case "export":
+                        console.log("Advanced editing completed:", result.filename);
+                        alert(`Image edited successfully!\nFile: ${result.filename}`);
+                        break;
+                    case "cancel":
+                        console.log("User cancelled advanced editing");
+                        break;
+                }
+            };
+
+            // Test canvas preservation between modes
+            window.testPreservation = async function () {
+                try {
+                    const result = await ImageEditor.showDialog("./portal/media/monkey.png", {
+                        title: "Canvas Preservation Test - Try switching between modes!",
+                        alt: "Monkey",
+                        allowTransform: true,
+                        allowCrop: true,
+                        allowFilters: true,
+                        allowExport: true,
+                        allowHistory: true,
+                        startMode: "crop",
+                        size: "fullscreen",
+                    });
+
+                    if (result.action === "export") {
+                        console.log("Preservation test completed:", result.filename);
+                        alert(
+                            "Great! You've successfully tested canvas preservation.\n\nAll your edits from different modes were combined in the final export!",
+                        );
+                    } else {
+                        console.log("Preservation test cancelled");
+                    }
+                } catch (error) {
+                    console.error("Preservation test error:", error);
+                    alert("Error during preservation test: " + error.message);
+                }
+            };
+
+            // Helper function to download image data
+            window.downloadImage = function (imageData) {
+                const link = document.createElement("a");
+                link.download = "edited-monkey.png";
+                link.href = imageData;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+        </script>
+    </body>
+</html>

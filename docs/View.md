@@ -29,10 +29,6 @@ class GreetingView extends View {
       ...options
     });
   }
-  
-  async getViewData() {
-    return { name: 'World' };
-  }
 }
 
 // Usage
@@ -57,24 +53,20 @@ class CounterView extends View {
       `,
       ...options
     });
-    
+
     this.count = 0;
   }
-  
-  async getViewData() {
-    return { count: this.count };
-  }
-  
+
   async handleActionIncrement(event, element) {
     this.count++;
     await this.render();
   }
-  
+
   async handleActionDecrement(event, element) {
     this.count--;
     await this.render();
   }
-  
+
   async handleActionReset(event, element) {
     this.count = 0;
     await this.render();
@@ -96,27 +88,27 @@ const view = new View({
     'data-role': 'widget',
     'aria-label': 'My Widget'
   },
-  
+
   // Template Configuration
   template: '<div>{{content}}</div>', // Inline template
   templateUrl: '/templates/my.html',  // External template URL
-  
+
   // Container Configuration
   container: '#app',                  // Parent container selector/element
   autoRender: true,                   // Auto-render on creation
   autoMount: true,                    // Auto-mount after render
-  
+
   // Data Configuration
   data: { key: 'value' },            // Initial view data
   model: modelInstance,              // Associated model
   collection: collectionInstance,    // Associated collection
-  
+
   // Styling
   style: 'display: block;',          // Inline styles
-  
+
   // Child Views
   children: [],                      // Initial child views
-  
+
   // Custom Properties
   customOption: 'value'              // Any custom options
 });
@@ -167,37 +159,6 @@ Completely destroys the view, cleaning up all resources.
 
 ```javascript
 await view.destroy();
-```
-
-#### Data Methods
-
-##### `async getViewData()`
-Override this method to provide data for template rendering.
-
-```javascript
-class UserView extends View {
-  async getViewData() {
-    return {
-      user: this.model?.toJSON(),
-      timestamp: new Date().toISOString(),
-      isLoggedIn: !!this.getApp()?.getState('currentUser')
-    };
-  }
-}
-```
-
-##### `async updateData(data)`
-Updates view data and re-renders.
-
-```javascript
-await view.updateData({ message: 'Updated!' });
-```
-
-##### `async updateState(state)`
-Updates internal state and triggers re-render.
-
-```javascript
-await view.updateState({ loading: false });
 ```
 
 #### DOM Methods
@@ -356,12 +317,12 @@ class MyView extends View {
     const form = this.element.querySelector('form');
     await this.submitForm(form);
   }
-  
+
   async handleActionDelete(event, element) {
     const id = element.getAttribute('data-id');
     await this.deleteItem(id);
   }
-  
+
   async handleActionTogglePanel(event, element) {
     this.togglePanel();
   }
@@ -382,12 +343,12 @@ class MyView extends View {
     const filterValue = element.value;
     await this.applyFilter(filterValue);
   }
-  
+
   async handleActionSearch(event, element) {
     const searchTerm = element.value;
     await this.performSearch(searchTerm);
   }
-  
+
   async handleActionToggleOption(event, element) {
     const isChecked = element.checked;
     this.toggleOption(isChecked);
@@ -402,7 +363,7 @@ class MyView extends View {
   // Handle any unhandled actions
   async onActionDefault(action, event, element) {
     console.log('Unhandled action:', action);
-    
+
     // Implement fallback behavior
     if (action.startsWith('external-')) {
       this.handleExternalAction(action, event, element);
@@ -443,6 +404,8 @@ Views use Mustache templating with automatic data binding:
 class UserListView extends View {
   constructor(options = {}) {
     super({
+      title: 'User Directory',
+      users: [],
       template: `
         <div class="user-list">
           <h2>{{title}}</h2>
@@ -460,13 +423,6 @@ class UserListView extends View {
       `,
       ...options
     });
-  }
-  
-  async getViewData() {
-    return {
-      title: 'User Directory',
-      users: this.collection?.toJSON() || []
-    };
   }
 }
 ```
@@ -509,7 +465,7 @@ class MyView extends View {
       'loading': '<div class="spinner">Loading...</div>'
     };
   }
-  
+
   constructor(options = {}) {
     super({
       template: `
@@ -538,9 +494,9 @@ class UserProfileView extends View {
     super({
       template: `
         <div class="user-profile">
-          <img src="{{avatar}}" alt="{{name}}" class="avatar">
-          <h1>{{name}}</h1>
-          <p>{{email}}</p>
+          <img src="{{model.avatar}}" alt="{{model.name}}" class="avatar">
+          <h1>{{model.name}}</h1>
+          <p>{{model.email}}</p>
           <div class="actions">
             <button data-action="edit-profile">Edit Profile</button>
             <button data-action="change-avatar">Change Avatar</button>
@@ -551,23 +507,19 @@ class UserProfileView extends View {
       ...options
     });
   }
-  
-  async getViewData() {
-    return this.model?.toJSON() || {};
-  }
-  
+
   async handleActionEditProfile(event, element) {
     const formView = new ProfileFormView({ model: this.model });
     const result = await Dialog.showForm(formView, {
       title: 'Edit Profile',
       size: 'lg'
     });
-    
+
     if (result) {
       await this.render(); // Re-render with updated data
     }
   }
-  
+
   async handleActionChangeAvatar(event, element) {
     // Handle avatar change
   }
@@ -583,18 +535,18 @@ class TodoListView extends View {
       template: `
         <div class="todo-list">
           <div class="header">
-            <h2>Todo List ({{count}})</h2>
+            <h2>Todo List ({{collection.count}})</h2>
             <button data-action="add-todo">Add Todo</button>
           </div>
           <div class="todos">
-            {{#todos}}
+            {{collection.models}}
               <div class="todo-item {{#completed}}completed{{/completed}}">
-                <input type="checkbox" data-change-action="toggle-todo" 
+                <input type="checkbox" data-change-action="toggle-todo"
                        data-id="{{id}}" {{#completed}}checked{{/completed}}>
                 <span>{{title}}</span>
                 <button data-action="delete-todo" data-id="{{id}}">Delete</button>
               </div>
-            {{/todos}}
+            {{/collection.models}}
           </div>
         </div>
       `,
@@ -602,15 +554,7 @@ class TodoListView extends View {
       ...options
     });
   }
-  
-  async getViewData() {
-    const todos = this.collection?.toJSON() || [];
-    return {
-      todos,
-      count: todos.length
-    };
-  }
-  
+
   async handleActionAddTodo(event, element) {
     const title = await Dialog.prompt('Enter todo title:');
     if (title) {
@@ -620,7 +564,7 @@ class TodoListView extends View {
       await this.render();
     }
   }
-  
+
   async handleActionToggleTodo(event, element) {
     const id = element.getAttribute('data-id');
     const todo = this.collection.get(id);
@@ -628,7 +572,7 @@ class TodoListView extends View {
     await todo.save();
     await this.render();
   }
-  
+
   async handleActionDeleteTodo(event, element) {
     const id = element.getAttribute('data-id');
     const confirmed = await Dialog.confirm('Delete this todo?');
@@ -658,29 +602,29 @@ class DashboardView extends View {
       ...options
     });
   }
-  
+
   async onInit() {
     await super.onInit();
-    
+
     // Create child views
     this.headerView = new HeaderView({
       container: '[data-view-container="header"]'
     });
-    
+
     this.sidebarView = new SidebarView({
       container: '[data-view-container="sidebar"]'
     });
-    
+
     this.contentView = new MainContentView({
       container: '[data-view-container="content"]'
     });
-    
+
     // Add as children for lifecycle management
     this.addChild(this.headerView);
     this.addChild(this.sidebarView);
     this.addChild(this.contentView);
   }
-  
+
   async showContent(contentView) {
     // Replace main content
     this.removeChild(this.contentView);
@@ -711,38 +655,34 @@ class CounterView extends View {
       `,
       ...options
     });
-    
+
     this.state = {
       count: 0,
       loading: false
     };
   }
-  
-  async getViewData() {
-    return this.state;
-  }
-  
+
   async setState(updates) {
     this.state = { ...this.state, ...updates };
     await this.render();
   }
-  
+
   async handleActionIncrement(event, element) {
     await this.setState({ loading: true });
-    
+
     // Simulate async operation
     setTimeout(async () => {
-      await this.setState({ 
+      await this.setState({
         count: this.state.count + 1,
-        loading: false 
+        loading: false
       });
     }, 500);
   }
-  
+
   async handleActionDecrement(event, element) {
     await this.setState({ count: this.state.count - 1 });
   }
-  
+
   async handleActionReset(event, element) {
     await this.setState({ count: 0 });
   }
@@ -756,10 +696,6 @@ class CounterView extends View {
 ```javascript
 // Good - Clear responsibility separation
 class UserView extends View {
-  async getViewData() {
-    return this.model.toJSON();
-  }
-  
   async handleActionSave(event, element) {
     await this.model.save(this.getFormData());
   }
@@ -782,26 +718,26 @@ class BadUserView extends View {
 
 ```javascript
 class MyView extends View {
-  async onAfterMount() {
+  async onAfterRender() {
     await super.onAfterMount();
-    
+
     // Set up resources that need cleanup
     this.resizeHandler = () => this.handleResize();
     window.addEventListener('resize', this.resizeHandler);
-    
+
     this.interval = setInterval(() => this.updateTime(), 1000);
   }
-  
+
   async onBeforeDestroy() {
     // Clean up resources
     if (this.resizeHandler) {
       window.removeEventListener('resize', this.resizeHandler);
     }
-    
+
     if (this.interval) {
       clearInterval(this.interval);
     }
-    
+
     await super.onBeforeDestroy();
   }
 }
@@ -820,7 +756,7 @@ class MyView extends View {
       console.error('Save error:', error);
     }
   }
-  
+
   async onAfterRender() {
     try {
       await super.onAfterRender();
@@ -839,16 +775,16 @@ class MyView extends View {
 class OptimizedView extends View {
   constructor(options = {}) {
     super(options);
-    
+
     // Debounce expensive operations
     this.debouncedSearch = this.debounce(this.performSearch.bind(this), 300);
   }
-  
+
   async handleActionSearch(event, element) {
     // Use debounced version for search
     this.debouncedSearch(element.value);
   }
-  
+
   debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -860,16 +796,16 @@ class OptimizedView extends View {
       timeout = setTimeout(later, wait);
     };
   }
-  
+
   // Override render to prevent unnecessary re-renders
   async render(data, options = {}) {
     if (!this.shouldRender(data, options)) {
       return;
     }
-    
+
     return super.render(data, options);
   }
-  
+
   shouldRender(data, options) {
     // Implement custom logic to determine if render is needed
     return options.force || this.dataHasChanged(data);
@@ -889,13 +825,13 @@ class UserView extends View {
       template: '...',
       ...options
     });
-    
+
     // Listen for model changes
     if (this.model) {
       this.model.on('change', () => this.render());
     }
   }
-  
+
   async getViewData() {
     return this.model?.toJSON() || {};
   }
@@ -911,13 +847,13 @@ class ListView extends View {
       collection: options.collection,
       ...options
     });
-    
+
     // Listen for collection changes
     if (this.collection) {
       this.collection.on('add remove reset', () => this.render());
     }
   }
-  
+
   async getViewData() {
     return {
       items: this.collection?.toJSON() || []

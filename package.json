@@ -1,6 +1,6 @@
 {
     "name": "web-mojo",
-    "version": "2.0.983",
+    "version": "2.0.1267",
     "description": "MOJO - A lightweight JavaScript framework for building data-driven web applications",
     "type": "module",
     "main": "./dist/web-mojo.cjs.js",
@@ -36,10 +36,16 @@
             "import": "./src/admin/*.js",
             "default": "./src/admin/*.js"
         },
+        "./lightbox": {
+            "import": "./src/lightbox.js",
+            "require": "./dist/lightbox.cjs.js",
+            "default": "./src/lightbox.js"
+        },
         "./css/core": "./dist/core.css",
         "./css/portal": "./dist/portal.css",
         "./css/table": "./dist/table.css",
         "./css/auth": "./dist/auth.css",
+        "./css/lightbox": "./dist/lightbox.css",
         "./css/*": "./dist/*",
         "./styles/core": "./dist/core.css",
         "./styles/portal": "./dist/portal.css",

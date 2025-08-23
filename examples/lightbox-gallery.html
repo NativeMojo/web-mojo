@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LightboxGallery Example</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container my-5">
+        <h1>LightboxGallery Example</h1>
+        <p class="lead">Simple, clean fullscreen image gallery with navigation and zoom modes</p>
+
+        <!-- Single Image Example -->
+        <section class="mb-5">
+            <h2>Single Image</h2>
+            <p>Click the image to view in lightbox:</p>
+            <div class="row">
+                <div class="col-md-4">
+                    <img src="./portal/media/monkey.png"
+                         class="img-thumbnail cursor-pointer w-100"
+                         id="singleImage"
+                         alt="Monkey"
+                         style="cursor: pointer;">
+                    <p class="text-muted mt-2">Click to open in lightbox</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gallery Example -->
+        <section class="mb-5">
+            <h2>Image Gallery</h2>
+            <p>Click any image to open the gallery (using the same image for demo):</p>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <img src="./portal/media/monkey.png"
+                         class="img-thumbnail cursor-pointer w-100 gallery-image"
+                         data-index="0"
+                         alt="Monkey Image 1"
+                         style="cursor: pointer;">
+                </div>
+                <div class="col-md-3">
+                    <img src="./portal/media/monkey.png"
+                         class="img-thumbnail cursor-pointer w-100 gallery-image"
+                         data-index="1"
+                         alt="Monkey Image 2"
+                         style="cursor: pointer;">
+                </div>
+                <div class="col-md-3">
+                    <img src="./portal/media/monkey.png"
+                         class="img-thumbnail cursor-cursor w-100 gallery-image"
+                         data-index="2"
+                         alt="Monkey Image 3"
+                         style="cursor: pointer;">
+                </div>
+                <div class="col-md-3">
+                    <img src="./portal/media/monkey.png"
+                         class="img-thumbnail cursor-pointer w-100 gallery-image"
+                         data-index="3"
+                         alt="Monkey Image 4"
+                         style="cursor: pointer;">
+                </div>
+            </div>
+        </section>
+
+        <!-- Programmatic Examples -->
+        <section class="mb-5">
+            <h2>Programmatic Usage</h2>
+            <div class="d-flex gap-3 flex-wrap">
+                <button class="btn btn-primary" onclick="showSingleImage()">
+                    <i class="bi bi-image"></i> Show Single Image
+                </button>
+                <button class="btn btn-success" onclick="showGallery()">
+                    <i class="bi bi-images"></i> Show Gallery
+                </button>
+                <button class="btn btn-info" onclick="showGalleryAtIndex(2)">
+                    <i class="bi bi-skip-start"></i> Start at Image 3
+                </button>
+            </div>
+        </section>
+
+        <!-- Features -->
+        <section class="mb-5">
+            <h2>Features</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Navigation</h4>
+                    <ul>
+                        <li>Click on images or arrow buttons to navigate</li>
+                        <li>Keyboard shortcuts: ← → for navigation, Esc to close</li>
+                        <li>Image counter shows current position</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h4>Display Modes</h4>
+                    <ul>
+                        <li><strong>Fit to Screen</strong>: Images scale to fit viewport</li>
+                        <li><strong>Original Size</strong>: Images at natural resolution</li>
+                        <li>Click directly on image to toggle between modes</li>
+                        <li>Scroll to navigate large images in original size mode</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Code Examples -->
+        <section class="mb-5">
+            <h2>Code Examples</h2>
+
+            <div class="accordion" id="codeExamples">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#basicUsage">
+                            Basic Usage
+                        </button>
+                    </h2>
+                    <div id="basicUsage" class="accordion-collapse collapse show">
+                        <div class="accordion-body">
+                            <pre><code>// Import
+import LightboxGallery from '../src/lightbox/LightboxGallery.js';
+
+// Single image
+LightboxGallery.show('./portal/media/monkey.png');
+
+// Gallery with multiple images
+const images = [
+  { src: './portal/media/monkey.png', alt: 'Monkey 1' },
+  { src: './portal/media/monkey.png', alt: 'Monkey 2' },
+  { src: './portal/media/monkey.png', alt: 'Monkey 3' }
+];
+
+LightboxGallery.show(images, {
+  startIndex: 0,
+  showCounter: true,
+  fitToScreen: true
+});</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- MOJO Framework -->
+    <script type="module">
+        import LightboxGallery from '../src/lightbox/LightboxGallery.js';
+
+        // Make it available globally for the examples
+        window.LightboxGallery = LightboxGallery;
+
+        // Set up click handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            // Single image handler
+            document.getElementById('singleImage').addEventListener('click', function() {
+                LightboxGallery.show({
+                    src: './portal/media/monkey.png',
+                    alt: 'Monkey'
+                });
+            });
+
+            // Gallery images handler
+            document.querySelectorAll('.gallery-image').forEach((img, index) => {
+                img.addEventListener('click', function() {
+                    const images = [
+                        { src: './portal/media/monkey.png', alt: 'Monkey Image 1' },
+                        { src: './portal/media/monkey.png', alt: 'Monkey Image 2' },
+                        { src: './portal/media/monkey.png', alt: 'Monkey Image 3' },
+                        { src: './portal/media/monkey.png', alt: 'Monkey Image 4' }
+                    ];
+
+                    LightboxGallery.show(images, {
+                        startIndex: index
+                    });
+                });
+            });
+        });
+
+        // Example functions for buttons
+        window.showSingleImage = function() {
+            LightboxGallery.show('./portal/media/monkey.png');
+        };
+
+        window.showGallery = function() {
+            const images = [
+                { src: './portal/media/monkey.png', alt: 'Monkey Demo 1' },
+                { src: './portal/media/monkey.png', alt: 'Monkey Demo 2' },
+                { src: './portal/media/monkey.png', alt: 'Monkey Demo 3' },
+                { src: './portal/media/monkey.png', alt: 'Monkey Demo 4' },
+                { src: './portal/media/monkey.png', alt: 'Monkey Demo 5' }
+            ];
+
+            LightboxGallery.show(images, {
+                showCounter: true,
+                showNavigation: true
+            });
+        };
+
+        window.showGalleryAtIndex = function(index) {
+            const images = [
+                { src: './portal/media/monkey.png', alt: 'Start Image 1' },
+                { src: './portal/media/monkey.png', alt: 'Start Image 2' },
+                { src: './portal/media/monkey.png', alt: 'Start Image 3' },
+                { src: './portal/media/monkey.png', alt: 'Start Image 4' }
+            ];
+
+            LightboxGallery.show(images, {
+                startIndex: index,
+                fitToScreen: false  // Start in original size mode
+            });
+        };
+    </script>
+</body>
+</html>

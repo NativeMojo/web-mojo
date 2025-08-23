@@ -36,3 +36,5 @@ Do not write examples, tests, or documentation without explicit instructions.
 All Framework code is in src
 All Example code is in examples
 All Documentation code is in docs/guide/
+
+DO NOT use getViewData or get method on a view,  We pass in the view as the context to Mustache.render.

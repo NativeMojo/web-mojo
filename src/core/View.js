@@ -49,6 +49,8 @@ export class View {
     // in constructor
     this.events = new EventDelegate(this);
 
+    if (this.model) this.setModel(this.model);
+
   }
 
   // ---------------------------------------------
@@ -327,6 +329,14 @@ export class View {
       catch { return null; }
     };
 
+    const inDataContainer = (root, id) => {
+      try {
+        const cleanId = id.startsWith('#') ? id.substring(1) : id;
+        return root?.querySelector(`[data-container="${cleanId}"]`);
+      }
+      catch { return null; }
+    };
+
     try {
       const parentEl = this.parent?.element || null;
 
@@ -334,10 +344,12 @@ export class View {
         const cleanId = this.containerId.startsWith('#') ? this.containerId.substring(1) : this.containerId;
 
         if (parentEl) {
-          const container = byId(parentEl, cleanId);
+          const container = byId(parentEl, cleanId) || inDataContainer(parentEl, cleanId);
+          this.container = container;
           return { mode: "into-container-under-parent", container, parentEl };
         } else {
           const container = inBody(cleanId);
+          this.container = container;
           return { mode: "into-container-body", container };
         }
       } else {

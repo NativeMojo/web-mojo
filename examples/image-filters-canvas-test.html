@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ImageFiltersView Canvas Sizing Test</title>
+
+    <!-- Bootstrap CSS -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    />
+    <!-- Bootstrap Icons -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+        rel="stylesheet"
+    />
+
+    <style>
+        .test-container {
+            border: 2px solid #dee2e6;
+            margin: 1rem 0;
+            padding: 1rem;
+            border-radius: 0.375rem;
+        }
+        .size-label {
+            background: #f8f9fa;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid my-4">
+        <h1 class="text-center mb-4">
+            <i class="bi bi-palette"></i> ImageFiltersView Canvas Sizing Test
+        </h1>
+        <p class="lead text-center mb-5">
+            Testing the new unified canvas sizing system inherited from ImageCanvasView
+        </p>
+
+        <div class="row">
+            <!-- Small Canvas -->
+            <div class="col-lg-6 col-xl-4">
+                <div class="test-container">
+                    <div class="size-label">
+                        <strong>Size:</strong> sm (400x300)
+                    </div>
+                    <div id="canvas-sm-container" style="height: 400px;"></div>
+                    <button class="btn btn-outline-primary btn-sm mt-2" onclick="testCanvasSize('sm')">
+                        Test Small Canvas
+                    </button>
+                </div>
+            </div>
+
+            <!-- Medium Canvas -->
+            <div class="col-lg-6 col-xl-4">
+                <div class="test-container">
+                    <div class="size-label">
+                        <strong>Size:</strong> md (600x450)
+                    </div>
+                    <div id="canvas-md-container" style="height: 500px;"></div>
+                    <button class="btn btn-outline-primary btn-sm mt-2" onclick="testCanvasSize('md')">
+                        Test Medium Canvas
+                    </button>
+                </div>
+            </div>
+
+            <!-- Large Canvas -->
+            <div class="col-lg-6 col-xl-4">
+                <div class="test-container">
+                    <div class="size-label">
+                        <strong>Size:</strong> lg (800x600)
+                    </div>
+                    <div id="canvas-lg-container" style="height: 650px;"></div>
+                    <button class="btn btn-outline-primary btn-sm mt-2" onclick="testCanvasSize('lg')">
+                        Test Large Canvas
+                    </button>
+                </div>
+            </div>
+
+            <!-- Auto Canvas -->
+            <div class="col-lg-6 col-xl-4">
+                <div class="test-container">
+                    <div class="size-label">
+                        <strong>Size:</strong> auto (image-based)
+                    </div>
+                    <div id="canvas-auto-container" style="height: 500px;"></div>
+                    <button class="btn btn-outline-primary btn-sm mt-2" onclick="testCanvasSize('auto')">
+                        Test Auto Canvas
+                    </button>
+                </div>
+            </div>
+
+            <!-- XL Canvas -->
+            <div class="col-lg-6 col-xl-4">
+                <div class="test-container">
+                    <div class="size-label">
+                        <strong>Size:</strong> xl (1000x750)
+                    </div>
+                    <div id="canvas-xl-container" style="height: 650px;"></div>
+                    <button class="btn btn-outline-primary btn-sm mt-2" onclick="testCanvasSize('xl')">
+                        Test XL Canvas
+                    </button>
+                </div>
+            </div>
+
+            <!-- Fullscreen Test -->
+            <div class="col-lg-6 col-xl-4">
+                <div class="test-container">
+                    <div class="size-label">
+                        <strong>Size:</strong> fullscreen (viewport-based)
+                    </div>
+                    <div class="text-center" style="height: 200px; display: flex; align-items: center; justify-content: center;">
+                        <div>
+                            <i class="bi bi-arrows-fullscreen" style="font-size: 3rem; color: #6c757d;"></i>
+                            <p class="text-muted mt-2">Opens in dialog</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-outline-primary btn-sm mt-2" onclick="testCanvasSize('fullscreen')">
+                        Test Fullscreen Canvas
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Row -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Test Controls</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Canvas Size Tests</h6>
+                                <div class="btn-group-vertical w-100" role="group">
+                                    <button class="btn btn-outline-success" onclick="testAllSizes()">
+                                        Test All Canvas Sizes
+                                    </button>
+                                    <button class="btn btn-outline-info" onclick="showDialogTest()">
+                                        Test Dialog Mode
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Image Selection</h6>
+                                <select id="imageSelect" class="form-select mb-2" onchange="changeTestImage()">
+                                    <option value="./portal/media/monkey.png">Monkey (Square)</option>
+                                    <option value="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='600' viewBox='0 0 1200 600'%3E%3Crect width='1200' height='600' fill='%234CAF50'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-size='48'%3EWide Image (2:1)%3C/text%3E%3C/svg%3E">Wide Image (2:1)</option>
+                                    <option value="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='800' viewBox='0 0 400 800'%3E%3Crect width='400' height='800' fill='%23FF9800'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-size='24'%3ETall Image (1:2)%3C/text%3E%3C/svg%3E">Tall Image (1:2)</option>
+                                </select>
+                                <button class="btn btn-outline-warning w-100" onclick="clearAllCanvases()">
+                                    Clear All Canvases
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- MOJO Framework -->
+    <script type="module">
+        import ImageFiltersView from '../src/lightbox/ImageFiltersView.js';
+
+        // Store view instances
+        window.filterViews = {};
+        window.currentImage = './portal/media/monkey.png';
+
+        // Test individual canvas size
+        window.testCanvasSize = async function(size) {
+            const containerId = `canvas-${size}-container`;
+            const container = document.getElementById(containerId);
+
+            if (!container) {
+                console.error(`Container ${containerId} not found`);
+                return;
+            }
+
+            // Clear existing view
+            if (window.filterViews[size]) {
+                await window.filterViews[size].destroy();
+                container.innerHTML = '';
+            }
+
+            // Create new view with specific canvas size
+            const options = {
+                imageUrl: window.currentImage,
+                canvasSize: size,
+                autoFit: true,
+                showControls: size !== 'fullscreen', // Hide controls for fullscreen test
+                showPresets: true,
+                showBasicControls: true,
+                showAdvancedControls: false, // Simplified for testing
+                controlsInDropdowns: false
+            };
+
+            // Special handling for fullscreen
+            if (size === 'fullscreen') {
+                const result = await ImageFiltersView.showDialog(window.currentImage, {
+                    title: `Fullscreen Filters Test`,
+                    canvasSize: 'fullscreen',
+                    size: 'fullscreen'
+                });
+                console.log('Fullscreen test result:', result);
+                return;
+            }
+
+            try {
+                window.filterViews[size] = new ImageFiltersView(options);
+                await window.filterViews[size].render(true, container);
+
+                console.log(`Canvas ${size} created:`, {
+                    canvasWidth: window.filterViews[size].canvasWidth,
+                    canvasHeight: window.filterViews[size].canvasHeight,
+                    canvasSize: window.filterViews[size].canvasSize
+                });
+
+            } catch (error) {
+                console.error(`Error creating ${size} canvas:`, error);
+                container.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+            }
+        };
+
+        // Test all canvas sizes
+        window.testAllSizes = async function() {
+            const sizes = ['sm', 'md', 'lg', 'xl', 'auto'];
+
+            for (const size of sizes) {
+                console.log(`Testing canvas size: ${size}`);
+                await window.testCanvasSize(size);
+                // Small delay to see the progression
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            console.log('All canvas sizes tested!');
+        };
+
+        // Show dialog test
+        window.showDialogTest = async function() {
+            const result = await ImageFiltersView.showDialog(window.currentImage, {
+                title: 'Dialog Canvas Sizing Test',
+                canvasSize: 'auto',
+                size: 'xl'
+            });
+
+            console.log('Dialog test result:', result);
+        };
+
+        // Change test image
+        window.changeTestImage = function() {
+            const select = document.getElementById('imageSelect');
+            window.currentImage = select.value;
+            console.log('Changed test image to:', window.currentImage);
+        };
+
+        // Clear all canvases
+        window.clearAllCanvases = async function() {
+            for (const [size, view] of Object.entries(window.filterViews)) {
+                if (view) {
+                    await view.destroy();
+                    const container = document.getElementById(`canvas-${size}-container`);
+                    if (container) {
+                        container.innerHTML = '';
+                    }
+                }
+            }
+            window.filterViews = {};
+            console.log('All canvases cleared');
+        };
+
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            console.log('ImageFiltersView Canvas Sizing Test loaded');
+            console.log('Available canvas sizes:', ['sm', 'md', 'lg', 'xl', 'auto', 'fullscreen']);
+        });
+    </script>
+</body>
+</html>

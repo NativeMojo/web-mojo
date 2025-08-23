@@ -7,7 +7,7 @@ Get up and running with MOJO Framework in minutes. This guide will walk you thro
 MOJO is a lightweight, component-based JavaScript framework for building modern web applications. It provides:
 
 - 🏗️ **Component Architecture** - Pages and Views with automatic lifecycle management
-- 🔀 **Built-in Routing** - Clean URL routing with parameters and query strings  
+- 🔀 **Built-in Routing** - Clean URL routing with parameters and query strings
 - 🎨 **Bootstrap Integration** - Beautiful UI components out of the box
 - 📱 **Event System** - Declarative event handling with automatic delegation
 - 🔐 **Authentication** - Ready-to-use auth system with JWT tokens
@@ -42,10 +42,10 @@ Create a new HTML file for your application:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My MOJO App</title>
-    
+
     <!-- Bootstrap CSS (required) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <!-- MOJO CSS (optional, for enhanced styling) -->
     <link href="web-mojo/src/styles/mojo.css" rel="stylesheet">
 </head>
@@ -56,7 +56,7 @@ Create a new HTML file for your application:
 
     <!-- Bootstrap JavaScript (required) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- Your app script -->
     <script type="module" src="app.js"></script>
 </body>
@@ -85,12 +85,12 @@ class HomePage extends Page {
                                 <h1 class="display-4">Welcome to MOJO!</h1>
                                 <p class="lead">You've successfully created your first MOJO application.</p>
                             </div>
-                            
+
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">Quick Actions</h5>
                                     <p class="card-text">Try these interactive examples:</p>
-                                    
+
                                     <div class="d-grid gap-2">
                                         <button class="btn btn-primary" data-action="show-alert">
                                             Show Alert
@@ -110,25 +110,19 @@ class HomePage extends Page {
             `,
             ...options
         });
-        
+
         this.counter = 0;
     }
-    
-    async getViewData() {
-        return {
-            counter: this.counter
-        };
-    }
-    
+
     async handleActionShowAlert(event, element) {
         this.getApp().showSuccess('Hello from MOJO! 👋');
     }
-    
+
     async handleActionIncrementCounter(event, element) {
         this.counter++;
         await this.render(); // Re-render to show updated counter
     }
-    
+
     async handleActionNavigateAbout(event, element) {
         await this.getApp().navigate('/about');
     }
@@ -146,7 +140,7 @@ class AboutPage extends Page {
                         <div class="col-lg-8">
                             <h1>About MOJO Framework</h1>
                             <p>MOJO is a modern web framework that makes building interactive web applications simple and enjoyable.</p>
-                            
+
                             <h3>Key Features:</h3>
                             <ul>
                                 <li>Component-based architecture</li>
@@ -155,7 +149,7 @@ class AboutPage extends Page {
                                 <li>Bootstrap integration</li>
                                 <li>Template system with data binding</li>
                             </ul>
-                            
+
                             <button class="btn btn-primary" data-action="go-home">
                                 Back to Home
                             </button>
@@ -166,7 +160,7 @@ class AboutPage extends Page {
             ...options
         });
     }
-    
+
     async handleActionGoHome(event, element) {
         await this.getApp().navigate('/');
     }
@@ -176,7 +170,7 @@ class AboutPage extends Page {
 const app = WebApp.create({
     container: '#app',
     title: 'My MOJO App',
-    
+
     // Use params mode for static hosting (GitHub Pages, etc.)
     // Use history mode for server hosting with URL rewriting
     routerMode: 'params'  // or 'history'
@@ -248,12 +242,12 @@ class MyPage extends Page {
             ...options
         });
     }
-    
+
     // Lifecycle hooks
     async onEnter() {
         console.log('Page entered');
     }
-    
+
     async onExit() {
         console.log('Page exited');
     }
@@ -319,14 +313,14 @@ class ContactPage extends Page {
             `,
             ...options
         });
-        
+
         this.formData = {};
     }
-    
+
     async handleActionUpdateName(event, element) {
         this.formData.name = element.value;
     }
-    
+
     async handleActionSubmitForm(event, element) {
         this.getApp().showSuccess('Form submitted!');
         console.log('Form data:', this.formData);
@@ -363,7 +357,7 @@ class AppPage extends Page {
             ...options
         });
     }
-    
+
     async handleActionNavigate(event, element) {
         event.preventDefault();
         const page = element.getAttribute('data-page');
@@ -405,13 +399,13 @@ class UsersPage extends Page {
             ...options
         });
     }
-    
+
     async onEnter() {
         await super.onEnter();
         // Load user data when page is entered
         await this.loadUsers();
     }
-    
+
     async loadUsers() {
         // Simulate API call
         this.users = [
@@ -419,16 +413,10 @@ class UsersPage extends Page {
             { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
             { id: 3, name: 'Bob Johnson', email: 'bob@example.com' }
         ];
-        
+
         await this.render();
     }
-    
-    async getViewData() {
-        return {
-            users: this.users || []
-        };
-    }
-    
+
     async handleActionViewUser(event, element) {
         const userId = element.getAttribute('data-id');
         await this.getApp().navigate(`/users/${userId}`);
@@ -485,7 +473,7 @@ npm run dev  # Opens examples at http://localhost:3000
 ## Getting Help
 
 - **Documentation**: Complete guides in the `docs/` folder
-- **Examples**: Working examples in the `examples/` folder  
+- **Examples**: Working examples in the `examples/` folder
 - **Issues**: [GitHub Issues](https://github.com/yourusername/web-mojo/issues)
 
 ## Summary

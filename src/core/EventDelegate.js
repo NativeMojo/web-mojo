@@ -42,7 +42,7 @@ export class EventDelegate {
       const el = event.target.closest('[data-change-action]');
       if (!el || !this.shouldHandle(el, event)) return;
       const action = el.getAttribute('data-change-action');
-      this.dispatch(action, event, el).then((handled) => {
+      this.dispatchChange(action, event, el).then((handled) => {
         if (handled) {
           event.stopPropagation();
           event.handledByChild = true;
@@ -53,7 +53,7 @@ export class EventDelegate {
     const onInput = (event) => {
       const el = event.target.closest('[data-change-action]');
       if (!el || !this.shouldHandle(el, event)) return;
-      
+
       const liveSearch = event.target.matches('[data-filter="live-search"]');
       if (!liveSearch) return;
 

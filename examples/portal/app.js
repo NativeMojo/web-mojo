@@ -11,6 +11,7 @@ import TodosPage from './pages/TodosPage.js';
 import FormsPage from './pages/FormsPage.js';
 import DialogsPage from './pages/DialogsPage.js';
 import Page from '/src/core/Page.js';
+import ImageViewer from '/src/lightbox/ImageViewer.js';
 import { registerAdminPages } from '/src/admin.js';
 import { VERSION_INFO } from '/src/version.js';
 
@@ -66,11 +67,32 @@ const app = new PortalApp({
                     icon: 'bi-speedometer2'
                 },
                 {
-                    text: 'Reports',
+                    text: 'Lightbox',
+                    icon: 'bi-images',
+                    children: [
+                        {
+                            text: 'Image Viewer',
+                            route: '?page=image',
+                            icon: 'bi-image'
+                        },
+                        {
+                            text: 'Image Edit',
+                            route: '?page=image-edit',
+                            icon: 'bi-brush-fill'
+                        },
+                        {
+                            text: 'PDF Viewer',
+                            route: '?page=pdf',
+                            icon: 'bi-file-earmark-pdf'
+                        }
+                    ]
+                },
+                {
+                    text: 'Charts',
                     icon: 'bi-graph-up',
                     children: [
                         {
-                            text: 'Sales Report',
+                            text: 'Image Viewer',
                             route: '?page=sales',
                             icon: 'bi-currency-dollar'
                         },
