@@ -276,7 +276,7 @@ class TopNav extends View {
      */
     setupPageListeners() {
         // Use global MOJO event bus if available
-        this.getApp().events.on("page:show", (data) => {
+        this.getApp().events.on(["page:show", "page:hide", "page:denied"], (data) => {
             this.onPageChanged(data);
         });
     }

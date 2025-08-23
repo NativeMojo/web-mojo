@@ -211,7 +211,7 @@ export default class ImageFiltersView extends ImageCanvasView {
 
         <!-- Canvas Area -->
         <div class="image-canvas-content flex-grow-1 position-relative d-flex justify-content-center align-items-center">
-          <canvas class="image-filters-canvas w-100 h-100" data-container="canvas"></canvas>
+          <canvas class="image-filters-canvas" data-container="canvas"></canvas>
 
           <!-- Loading Overlay -->
           <div class="image-canvas-loading position-absolute top-50 start-50 translate-middle"
@@ -760,6 +760,7 @@ export default class ImageFiltersView extends ImageCanvasView {
       centered: true,
       backdrop: 'static',
       keyboard: true,
+      noBodyPadding: true,
       buttons: [
         {
           text: 'Cancel',

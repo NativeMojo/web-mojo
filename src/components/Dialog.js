@@ -32,13 +32,18 @@ class Dialog extends View {
     this.title = options.title || '';
     this.titleId = `${this.modalId}-label`;
 
-    // Size options: sm, md (default), lg, xl, fullscreen
+    // Size options: sm, md (default), lg, xl, fullscreen, auto
     // Or responsive fullscreen: fullscreen-sm-down, fullscreen-md-down, etc.
+    // 'auto' enables dynamic sizing based on content dimensions
     this.size = options.size || '';
 
     // Layout options
     this.centered = options.centered !== undefined ? options.centered : false;
     this.scrollable = options.scrollable !== undefined ? options.scrollable : false;
+    // Auto-sizing: dynamically size modal based on content dimensions
+    // Can be enabled with autoSize: true or size: 'auto'
+    // Waits for modal animation to complete before measuring content
+    this.autoSize = options.autoSize || options.size === 'auto'; // Auto-size modal based on content dimensions
 
     // Bootstrap modal options
     this.backdrop = options.backdrop !== undefined ? options.backdrop : true; // true, false, 'static'
@@ -54,6 +59,13 @@ class Dialog extends View {
     this.body = options.body || options.content || '';
     this.bodyView = null; // Will hold View instance if body is a View
     this.bodyClass = options.bodyClass || '';
+    this.noBodyPadding = options.noBodyPadding || false; // Remove default modal-body padding
+
+    // Auto-sizing constraints - only used when autoSize is enabled
+    this.minWidth = options.minWidth || 300;        // Minimum modal width (px)
+    this.minHeight = options.minHeight || 200;      // Minimum modal height (px)
+    this.maxWidthPercent = options.maxWidthPercent || 0.9;  // Max width as % of viewport
+    this.maxHeightPercent = options.maxHeightPercent || 0.8; // Max height as % of viewport
 
     // Handle different body types
     this._processBodyContent(this.body);
@@ -156,8 +168,8 @@ class Dialog extends View {
     // Build dialog classes
     const dialogClasses = ['modal-dialog'];
 
-    // Add size class
-    if (this.size) {
+    // Add size class (excluding 'auto' which uses default sizing)
+    if (this.size && this.size !== 'auto') {
       if (this.size.startsWith('fullscreen')) {
         // Fullscreen or responsive fullscreen
         dialogClasses.push(`modal-${this.size}`);
@@ -214,7 +226,9 @@ class Dialog extends View {
   async buildBody() {
     // If we have a View instance as body
     if (this.bodyView) {
-      return `<div class="modal-body ${this.bodyClass}" data-view-container="body">
+      this.bodyView.replaceById = true;
+      const bodyClass = this.noBodyPadding ? `modal-body p-0 ${this.bodyClass}` : `modal-body ${this.bodyClass}`;
+      return `<div class="${bodyClass}" data-view-container="body">
         <!-- View will be mounted here -->
         <div id="${this.bodyView.id}"></div>
       </div>`;
@@ -225,8 +239,9 @@ class Dialog extends View {
       return '';
     }
 
+    const bodyClass = this.noBodyPadding ? `modal-body p-0 ${this.bodyClass}` : `modal-body ${this.bodyClass}`;
     return `
-      <div class="modal-body ${this.bodyClass}">
+      <div class="${bodyClass}">
         ${this.body}
       </div>
     `;
@@ -326,6 +341,11 @@ class Dialog extends View {
     }
 
     // Child views will be mounted in onAfterMount when element is in DOM
+
+    // Apply auto-sizing after rendering if enabled
+    if (this.autoSize) {
+      this.setupAutoSizing();
+    }
   }
 
   /**
@@ -466,6 +486,139 @@ class Dialog extends View {
   }
 
   /**
+   * Setup auto-sizing - wait for modal animation to complete
+   */
+  setupAutoSizing() {
+    if (!this.element) return;
+
+    // Listen for modal shown event to apply sizing after animation
+    this.element.addEventListener('shown.bs.modal', () => {
+      this.applyAutoSizing();
+    }, { once: true });
+
+    // Fallback: apply immediately if modal is already shown or no animation
+    setTimeout(() => {
+      if (this.isShown()) {
+        this.applyAutoSizing();
+      }
+    }, 100);
+  }
+
+  /**
+   * Apply auto-sizing based on content dimensions
+   */
+  applyAutoSizing() {
+    if (!this.element) return;
+
+    try {
+      const modalDialog = this.element.querySelector('.modal-dialog');
+      const modalContent = this.element.querySelector('.modal-content');
+      const modalBody = this.element.querySelector('.modal-body');
+
+      if (!modalDialog || !modalContent || !modalBody) {
+        console.warn('Dialog auto-sizing: Required elements not found');
+        return;
+      }
+
+      // Wait for child views to fully render
+      if (this.bodyView && !this.bodyView.element) {
+        setTimeout(() => this.applyAutoSizing(), 50);
+        return;
+      }
+
+      // Store original styles for restoration
+      const originalStyles = {
+        dialogMaxWidth: modalDialog.style.maxWidth,
+        dialogWidth: modalDialog.style.width,
+        contentWidth: modalContent.style.width,
+        contentMaxHeight: modalContent.style.maxHeight,
+        bodyOverflow: modalBody.style.overflowY
+      };
+
+      // Temporarily remove size constraints to measure natural content size
+      modalDialog.style.maxWidth = 'none';
+      modalDialog.style.width = 'auto';
+      modalContent.style.width = 'auto';
+      modalContent.style.maxHeight = 'none';
+
+      // Force layout recalculation
+      modalContent.offsetHeight;
+
+      // Measure content dimensions after forced layout
+      const contentRect = modalContent.getBoundingClientRect();
+
+      // Calculate viewport constraints with margins
+      const viewportMargin = 40;
+      const maxWidth = Math.min(
+        window.innerWidth * this.maxWidthPercent,
+        window.innerWidth - viewportMargin
+      );
+      const maxHeight = Math.min(
+        window.innerHeight * this.maxHeightPercent,
+        window.innerHeight - viewportMargin
+      );
+
+      // Calculate optimal dimensions with padding for content
+      let optimalWidth = Math.max(this.minWidth, Math.ceil(contentRect.width + 20));
+      let optimalHeight = Math.max(this.minHeight, Math.ceil(contentRect.height));
+
+      // Apply viewport constraints
+      optimalWidth = Math.min(optimalWidth, maxWidth);
+      const heightExceedsMax = contentRect.height > maxHeight;
+
+      // Apply the calculated size
+      modalDialog.style.maxWidth = `${optimalWidth}px`;
+      modalDialog.style.width = `${optimalWidth}px`;
+
+      // Handle height overflow with scrolling
+      if (heightExceedsMax) {
+        modalContent.style.maxHeight = `${maxHeight}px`;
+        modalBody.style.overflowY = 'auto';
+        optimalHeight = maxHeight;
+      }
+
+      // Store the applied dimensions
+      this.autoSizedWidth = optimalWidth;
+      this.autoSizedHeight = optimalHeight;
+      this._originalStyles = originalStyles;
+
+    } catch (error) {
+      console.error('Error in dialog auto-sizing:', error);
+      // Fallback: ensure modal is still usable
+      this.element.querySelector('.modal-dialog').style.maxWidth = '';
+    }
+  }
+
+  /**
+   * Reset auto-sizing and restore original modal dimensions
+   */
+  resetAutoSizing() {
+    if (!this.autoSize || !this._originalStyles || !this.element) return;
+
+    try {
+      const modalDialog = this.element.querySelector('.modal-dialog');
+      const modalContent = this.element.querySelector('.modal-content');
+      const modalBody = this.element.querySelector('.modal-body');
+
+      if (modalDialog && modalContent && modalBody) {
+        // Restore original styles
+        modalDialog.style.maxWidth = this._originalStyles.dialogMaxWidth || '';
+        modalDialog.style.width = this._originalStyles.dialogWidth || '';
+        modalContent.style.width = this._originalStyles.contentWidth || '';
+        modalContent.style.maxHeight = this._originalStyles.contentMaxHeight || '';
+        modalBody.style.overflowY = this._originalStyles.bodyOverflow || '';
+
+        // Clear stored dimensions
+        delete this.autoSizedWidth;
+        delete this.autoSizedHeight;
+        delete this._originalStyles;
+      }
+    } catch (error) {
+      console.error('Error resetting dialog auto-sizing:', error);
+    }
+  }
+
+  /**
    * Bind Bootstrap modal events
    */
   bindBootstrapEvents() {
@@ -590,6 +743,11 @@ class Dialog extends View {
     if (this.previousFocus && document.body.contains(this.previousFocus)) {
       this.previousFocus.focus();
       this.previousFocus = null;
+    }
+
+    // Clean up auto-sizing
+    if (this.autoSize) {
+      this.resetAutoSizing();
     }
 
     // Call parent destroy
@@ -728,8 +886,7 @@ class Dialog extends View {
     });
 
     // Mount to body
-    await dialog.render(false);
-    await dialog.mount();
+    await dialog.render(true, document.body);
 
     // Apply syntax highlighting after mounting
     if (window.Prism && dialog.element) {
@@ -1017,9 +1174,7 @@ class Dialog extends View {
       ...options
     });
 
-    await dialog.render();
-    document.body.appendChild(dialog.element);
-    await dialog.mount();
+    await dialog.render(true, document.body)
     dialog.show();
 
     return new Promise((resolve) => {
@@ -1067,9 +1222,7 @@ class Dialog extends View {
       ...options
     });
 
-    await dialog.render();
-    document.body.appendChild(dialog.element);
-    await dialog.mount();
+    await dialog.render(true, document.body);
     dialog.show();
 
     // Focus the input
@@ -1167,8 +1320,7 @@ class Dialog extends View {
     });
 
     // Render and mount dialog
-    await dialog.render(false);
-    await dialog.mount();
+    await dialog.render(true, document.body);
 
     // Show the dialog and return promise
     dialog.show();
@@ -1283,8 +1435,7 @@ class Dialog extends View {
     });
 
     // Render and mount dialog
-    await dialog.render(false);
-    await dialog.mount();
+    await dialog.render(true, document.body);
 
     // Show the dialog and return promise
     dialog.show();

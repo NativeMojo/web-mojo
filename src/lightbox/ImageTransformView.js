@@ -37,6 +37,10 @@ export default class ImageTransformView extends ImageCanvasView {
     this._handleMouseMove = this.handleMouseMove.bind(this);
     this._handleMouseUp = this.handleMouseUp.bind(this);
     this._handleKeyboard = this.handleKeyboard.bind(this);
+
+    if (!options.maxCanvasHeightPercent) {
+      this.maxCanvasHeightPercent = 0.6;
+    }
   }
 
   async getTemplate() {
@@ -79,7 +83,7 @@ export default class ImageTransformView extends ImageCanvasView {
 
         <!-- Canvas Area -->
         <div class="image-canvas-content flex-grow-1 position-relative d-flex justify-content-center align-items-center">
-          <canvas class="image-canvas w-100 h-100" data-container="canvas"></canvas>
+          <canvas class="image-canvas" data-container="canvas"></canvas>
 
           <!-- Loading Overlay -->
           <div class="image-canvas-loading position-absolute top-50 start-50 translate-middle"
@@ -507,6 +511,8 @@ export default class ImageTransformView extends ImageCanvasView {
       centered: true,
       backdrop: 'static',
       keyboard: true,
+      noBodyPadding: true,
+      maxCanvasHeightPercent: 0.5,
       buttons: [
         {
           text: 'Cancel',

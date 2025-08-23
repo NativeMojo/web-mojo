@@ -23,7 +23,7 @@ class TablePage extends Page {
     // Model configuration
     this.modelName = options.modelName || 'Item';
     this.modelNamePlural = options.modelNamePlural || `${this.modelName}s`;
-    this.tableContainerId = `table-container-${this.pageName || 'default'}-container`;
+    this.tableContainerId = `table-container-${this.id}`;
 
     // Extract filters from columns
     const extractedFilters = {};
@@ -297,30 +297,6 @@ class TablePage extends Page {
         errorElement.style.display = 'none';
       }
     }
-  }
-
-  /**
-   * Get view data for template
-   */
-  async getViewConfig() {
-
-    const recordCount = this.table?.collection?.length || 0;
-
-    return {
-      ...baseData,
-      title: this.pageOptions.title || this.pageName,
-      description: this.pageOptions.description,
-      tableContainerId: `table-${this.pageName || 'default'}-container`,
-      pageName: this.pageName,
-
-      // Simple status data
-      showStatus: this.statusConfig.showStatus,
-      showRecordCount: this.statusConfig.showRecordCount,
-      recordCount: recordCount,
-      showLastUpdated: this.statusConfig.showLastUpdated,
-      lastUpdated: this.lastUpdated || 'Never',
-      loadError: this.loadError
-    };
   }
 
   /**

@@ -165,11 +165,7 @@ class WebApp {
         this.events.on('route:notfound', async (info) => {
             console.warn(`Route not found: ${info.path}`);
             // RENDER 404 PAGE IN PLACE: Just render, don't navigate
-            const notPage = this.getOrCreatePage('404');
-            if (notPage) {
-                notPage.setInfo({ path: info.path });
-                await notPage.render(); // Render over current page
-            }
+            this._show404(info.path);
         });
 
         // Start the router to begin handling routes
@@ -313,43 +309,23 @@ class WebApp {
                 pageInstance = page;
                 pageName = page.pageName;
             }
-
+            const oldPage = this.currentPage;
             if (!pageInstance) {
-                console.error(`Cannot resolve page: ${page}`);
-
-                // RENDER 404 PAGE IN PLACE: Just render, don't navigate
-                const notPage = this.getOrCreatePage('404');
-                if (notPage) {
-                    notPage.setInfo({ path: pageName });
-                    await notPage.render(); // Render over current page
-                }
-
+                this._show404(pageName, params, query, fromRouter);
                 return; // Keep current URL, don't update router/history
             }
 
             // 2. PERMISSION CHECK
             if (!pageInstance.canEnter()) {
-                console.warn(`Access denied to page: ${pageInstance.pageName}`);
-
-                // DENIED PAGE: Just render in place, don't navigate
-                const deniedPage = this.getOrCreatePage('denied');
-                if (deniedPage.setDeniedPage) {
-                    deniedPage.setDeniedPage(pageInstance);
-                }
-                await deniedPage.render(); // Render over current page
+                this._showDeniedPage(pageInstance, params, query, fromRouter);
                 return; // Keep current URL, don't update router/history
             }
 
             // 3. EXIT CURRENT PAGE
-            const oldPage = this.currentPage;
             if (oldPage && oldPage !== pageInstance) {
-                try {
-                    await oldPage.onExit();
-                    this.events.emit('page:hide', { page: oldPage });
-                } catch (error) {
-                    console.error(`Error exiting page ${oldPage.pageName}:`, error);
-                }
+                await this._exitOldPage(oldPage);
             }
+
 
             // 4. UPDATE PAGE DATA
             await pageInstance.onParams(params, query);
@@ -391,6 +367,52 @@ class WebApp {
             if (page !== 'error') {
                 await this.showPage('error', {}, { error, originalPage: page }, { fromRouter });
             }
+        }
+    }
+
+    async _show404(pageName, params, query, fromRouter) {
+        const notFoundPage = this.getOrCreatePage('404');
+        if (!notFoundPage) return;
+        if (notFoundPage.setInfo) {
+            notFoundPage.setInfo(pageName);
+        }
+        await this._exitOldPage(this.currentPage);
+        await notFoundPage.render(); // Render over current page
+        this.currentPage = notFoundPage;
+        this.events.emit('page:404', {
+            page: null,
+            pageName: pageName,
+            params,
+            query,
+            fromRouter
+        });
+    }
+
+    async _showDeniedPage(pageInstance, params, query, fromRouter) {
+        const deniedPage = this.getOrCreatePage('denied');
+        if (deniedPage.setDeniedPage) {
+            deniedPage.setDeniedPage(pageInstance);
+        }
+        await this._exitOldPage(this.currentPage);
+        await deniedPage.render(); // Render over current page
+        this.currentPage = deniedPage;
+        this.events.emit('page:denied', {
+            page: pageInstance,
+            pageName: pageInstance.pageName,
+            params,
+            query,
+            fromRouter
+        });
+    }
+
+    async _exitOldPage(oldPage) {
+        if (!oldPage) return;
+        try {
+            await oldPage.onExit();
+            await oldPage.unmount();
+            this.events.emit('page:hide', { page: oldPage });
+        } catch (error) {
+            console.error(`Error exiting page ${oldPage.pageName}:`, error);
         }
     }
 

@@ -48,6 +48,7 @@ export default class ImageCropView extends ImageCanvasView {
     // Options
     this.handleSize = options.handleSize || 12;
     this.showGrid = options.showGrid !== false;
+    this.showToolbar = options.showToolbar !== false; // Default to true - show toolbar
     this.autoFit = options.autoFit !== false; // Default to true - auto-fit large images
 
     // Image positioning on canvas
@@ -57,6 +58,9 @@ export default class ImageCropView extends ImageCanvasView {
     // Bind handlers for cleanup
     this._handleMouseMove = this.handleMouseMove.bind(this);
     this._handleMouseUp = this.handleMouseUp.bind(this);
+    if (!options.maxCanvasHeightPercent && this.showToolbar) {
+      this.maxCanvasHeightPercent = 0.6;
+    }
   }
 
   // Coordinate conversion helpers
@@ -66,7 +70,7 @@ export default class ImageCropView extends ImageCanvasView {
     // Calculate scale and positioning of image on canvas (same as renderImage)
     const scaleX = this.canvasWidth / this.image.naturalWidth;
     const scaleY = this.canvasHeight / this.image.naturalHeight;
-    
+
     let imageScale;
     if (this.autoFit) {
       imageScale = Math.min(scaleX, scaleY, 1); // Scale down if needed, but don't scale up
@@ -93,7 +97,7 @@ export default class ImageCropView extends ImageCanvasView {
     // Calculate scale and positioning of image on canvas (same as renderImage)
     const scaleX = this.canvasWidth / this.image.naturalWidth;
     const scaleY = this.canvasHeight / this.image.naturalHeight;
-    
+
     let imageScale;
     if (this.autoFit) {
       imageScale = Math.min(scaleX, scaleY, 1); // Scale down if needed, but don't scale up
@@ -122,6 +126,7 @@ export default class ImageCropView extends ImageCanvasView {
   async getTemplate() {
     return `
       <div class="image-crop-container d-flex flex-column h-100">
+        {{#showToolbar}}
         <!-- Crop Toolbar -->
         <div class="image-crop-toolbar bg-light border-bottom p-2">
           <div class="btn-toolbar justify-content-center" role="toolbar">
@@ -155,6 +160,7 @@ export default class ImageCropView extends ImageCanvasView {
             </div>
           </div>
         </div>
+        {{/showToolbar}}
 
         <!-- Canvas Area -->
         <div class="image-canvas-content flex-grow-1 position-relative d-flex justify-content-center align-items-center">
@@ -177,15 +183,18 @@ export default class ImageCropView extends ImageCanvasView {
 
     // Set up crop interaction listeners
     this.setupCropListeners();
-    
+
     // Initialize autoFit button state
     this.updateAutoFitButtonState();
   }
 
   updateAutoFitButtonState() {
+    // Skip if toolbar is hidden
+    if (!this.showToolbar) return;
+
     const button = this.element.querySelector('[data-action="toggle-auto-fit"]');
     const textSpan = button?.querySelector('.auto-fit-text');
-    
+
     if (button && textSpan) {
       if (this.autoFit) {
         button.classList.remove('btn-outline-warning');
@@ -215,7 +224,7 @@ export default class ImageCropView extends ImageCanvasView {
     // Calculate scale and positioning (same as renderImage)
     const scaleX = this.canvasWidth / this.image.naturalWidth;
     const scaleY = this.canvasHeight / this.image.naturalHeight;
-    
+
     let scale;
     if (this.autoFit) {
       // Auto-fit: scale down if image is larger than canvas, but don't scale up
@@ -224,10 +233,10 @@ export default class ImageCropView extends ImageCanvasView {
       // No auto-fit: always show at actual size (1:1)
       scale = 1;
     }
-    
+
     const scaledWidth = this.image.naturalWidth * scale;
     const scaledHeight = this.image.naturalHeight * scale;
-    
+
     // Store offset and scale for coordinate conversions
     this.imageOffsetX = (this.canvasWidth - scaledWidth) / 2;
     this.imageOffsetY = (this.canvasHeight - scaledHeight) / 2;
@@ -239,7 +248,7 @@ export default class ImageCropView extends ImageCanvasView {
   // Override setCanvasSize to update image offset when canvas is resized
   setCanvasSize(size) {
     super.setCanvasSize(size);
-    
+
     // Update image offset after canvas resize
     if (this.image && this.isLoaded) {
       this.updateImageOffset();
@@ -253,7 +262,7 @@ export default class ImageCropView extends ImageCanvasView {
     // Calculate scale to fit image in canvas
     const scaleX = this.canvasWidth / this.image.naturalWidth;
     const scaleY = this.canvasHeight / this.image.naturalHeight;
-    
+
     let scale;
     if (this.autoFit) {
       // Auto-fit: scale down if image is larger than canvas, but don't scale up
@@ -262,13 +271,13 @@ export default class ImageCropView extends ImageCanvasView {
       // No auto-fit: always show at actual size (1:1)
       scale = 1;
     }
-    
+
     // Calculate centered position
     const scaledWidth = this.image.naturalWidth * scale;
     const scaledHeight = this.image.naturalHeight * scale;
     const x = (this.canvasWidth - scaledWidth) / 2;
     const y = (this.canvasHeight - scaledHeight) / 2;
-    
+
     // Draw scaled and centered image
     this.context.drawImage(this.image, x, y, scaledWidth, scaledHeight);
   }
@@ -971,6 +980,36 @@ export default class ImageCropView extends ImageCanvasView {
     }
   }
 
+  // Toolbar control methods
+  showToolbarElement() {
+    if (!this.showToolbar) {
+      this.showToolbar = true;
+      const toolbar = this.element.querySelector('.image-crop-toolbar');
+      if (toolbar) {
+        toolbar.style.display = 'block';
+      }
+      this.updateAutoFitButtonState();
+    }
+  }
+
+  hideToolbarElement() {
+    if (this.showToolbar) {
+      this.showToolbar = false;
+      const toolbar = this.element.querySelector('.image-crop-toolbar');
+      if (toolbar) {
+        toolbar.style.display = 'none';
+      }
+    }
+  }
+
+  toggleToolbarElement() {
+    if (this.showToolbar) {
+      this.hideToolbarElement();
+    } else {
+      this.showToolbarElement();
+    }
+  }
+
   // Cleanup
   // Action handlers for toolbar buttons
   async onPassThruActionSetAspectRatio(e, el) {
@@ -996,15 +1035,18 @@ export default class ImageCropView extends ImageCanvasView {
   }
 
   async handleActionToggleAutoFit() {
+    // Skip if toolbar is hidden
+    if (!this.showToolbar) return;
+
     this.autoFit = !this.autoFit;
-    
+
     // Update button state
     this.updateAutoFitButtonState();
-    
+
     // Re-render with new scaling
     this.updateImageOffset();
     this.renderCanvas();
-    
+
     this.emitCropEvent('auto-fit-changed', { autoFit: this.autoFit });
   }
 
@@ -1048,9 +1090,11 @@ export default class ImageCropView extends ImageCanvasView {
       aspectRatio = null,
       minCropSize = 50,
       showGrid = true,
+      showToolbar = false,
       autoFit = true,
       fixedCropSize = null,
       cropAndScale = null,
+      canvasSize = size || 'auto',
       ...dialogOptions
     } = options;
 
@@ -1060,9 +1104,11 @@ export default class ImageCropView extends ImageCanvasView {
       title,
       aspectRatio,
       minCropSize,
+      canvasSize: canvasSize || size || 'md',
       fixedCropSize,
       cropAndScale,
       showGrid,
+      showToolbar,
       autoFit
     });
 
@@ -1073,6 +1119,7 @@ export default class ImageCropView extends ImageCanvasView {
       centered: true,
       backdrop: 'static',
       keyboard: true,
+      noBodyPadding: true,
       buttons: [
         {
           text: 'Cancel',

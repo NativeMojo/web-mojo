@@ -14,13 +14,19 @@ class EventBus {
 
   /**
    * Add event listener
-   * @param {string} event - Event name
+   * @param {string|Array<string>} event - Event name or array of event names
    * @param {function} callback - Event callback
    * @returns {EventBus} This instance for chaining
    */
   on(event, callback) {
     if (typeof callback !== 'function') {
       throw new Error('Callback must be a function');
+    }
+
+    // Handle multiple events
+    if (Array.isArray(event)) {
+      event.forEach(eventName => this.on(eventName, callback));
+      return this;
     }
 
     if (!this.listeners[event]) {
@@ -38,13 +44,19 @@ class EventBus {
 
   /**
    * Add one-time event listener
-   * @param {string} event - Event name
+   * @param {string|Array<string>} event - Event name or array of event names
    * @param {function} callback - Event callback
    * @returns {EventBus} This instance for chaining
    */
   once(event, callback) {
     if (typeof callback !== 'function') {
       throw new Error('Callback must be a function');
+    }
+
+    // Handle multiple events
+    if (Array.isArray(event)) {
+      event.forEach(eventName => this.once(eventName, callback));
+      return this;
     }
 
     if (!this.onceListeners[event]) {
@@ -57,11 +69,17 @@ class EventBus {
 
   /**
    * Remove event listener
-   * @param {string} event - Event name
+   * @param {string|Array<string>} event - Event name or array of event names
    * @param {function} callback - Event callback to remove
    * @returns {EventBus} This instance for chaining
    */
   off(event, callback) {
+    // Handle multiple events
+    if (Array.isArray(event)) {
+      event.forEach(eventName => this.off(eventName, callback));
+      return this;
+    }
+
     if (!callback) {
       // Remove all listeners for event
       delete this.listeners[event];

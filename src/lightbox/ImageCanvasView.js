@@ -24,11 +24,12 @@ export default class ImageCanvasView extends View {
     this.image = null;
     this.canvasWidth = 0;
     this.canvasHeight = 0;
-
+    this.maxCanvasHeightPercent = options.maxCanvasHeightPercent || 0.7;
+    this.maxCanvasWidthPercent = options.maxCanvasWidthPercent || 0.8;
     // Canvas size presets with viewport awareness
     this.canvasSizes = {
       sm: { width: 400, height: 300 },      // Small - thumbnails, previews
-      md: { width: 600, height: 450 },      // Medium - dialogs, cards  
+      md: { width: 600, height: 450 },      // Medium - dialogs, cards
       lg: { width: 800, height: 600 },      // Large - main editing
       xl: { width: 1000, height: 750 },     // Extra Large - detailed work
       fullscreen: { width: 0, height: 0 },  // Special case - use viewport
@@ -83,16 +84,16 @@ export default class ImageCanvasView extends View {
 
   setupCanvas() {
     if (!this.canvas || !this.containerElement) return;
-    
+
     // Set canvas dimensions based on size preset
     this.setCanvasSize(this.canvasSize);
-    
+
     // Simple resize listener (only for fullscreen mode)
     if (this.canvasSize === 'fullscreen') {
       this._resizeHandler = () => this.setCanvasSize('fullscreen');
       window.addEventListener('resize', this._resizeHandler);
     }
-    
+
     // Set up canvas context
     this.context.imageSmoothingEnabled = true;
     this.context.imageSmoothingQuality = 'high';
@@ -101,9 +102,9 @@ export default class ImageCanvasView extends View {
   setCanvasSize(size) {
     const preset = this.canvasSizes[size];
     if (!preset && size !== 'auto') return;
-    
+
     let canvasWidth, canvasHeight;
-    
+
     if (size === 'fullscreen') {
       // Use viewport dimensions for fullscreen
       canvasWidth = Math.min(1200, window.innerWidth * 0.9);
@@ -112,39 +113,39 @@ export default class ImageCanvasView extends View {
       // Auto-size based on image with viewport constraints
       if (this.image) {
         // Scale image to fit within viewport constraints
-        const maxWidth = window.innerWidth * 0.8;
-        const maxHeight = window.innerHeight * 0.8;
-        
+        const maxWidth = window.innerWidth * this.maxCanvasWidthPercent;
+        const maxHeight = window.innerHeight * this.maxCanvasHeightPercent;
+
         const scaleX = maxWidth / this.image.naturalWidth;
         const scaleY = maxHeight / this.image.naturalHeight;
         const scale = Math.min(scaleX, scaleY, 1); // Don't scale up
-        
+
         canvasWidth = Math.floor(this.image.naturalWidth * scale);
         canvasHeight = Math.floor(this.image.naturalHeight * scale);
-        
+
         // Ensure minimum usable size
         canvasWidth = Math.max(300, canvasWidth);
         canvasHeight = Math.max(200, canvasHeight);
       } else {
         // No image yet - use medium preset with viewport constraints
-        canvasWidth = Math.min(600, window.innerWidth * 0.8);
-        canvasHeight = Math.min(450, window.innerHeight * 0.8);
+        canvasWidth = Math.min(600, window.innerWidth * this.maxCanvasWidthPercent);
+        canvasHeight = Math.min(450, window.innerHeight * this.maxCanvasHeightPercent);
       }
     } else {
       // Check if preset fits within 80% viewport - if not, fall back to auto
-      const maxWidth = window.innerWidth * 0.8;
-      const maxHeight = window.innerHeight * 0.8;
-    
+      const maxWidth = window.innerWidth * this.maxCanvasWidthPercent;
+      const maxHeight = window.innerHeight * this.maxCanvasHeightPercent;
+
       if (preset.width > maxWidth || preset.height > maxHeight) {
         // Preset is too big - fall back to auto sizing
         if (this.image) {
           const scaleX = maxWidth / this.image.naturalWidth;
           const scaleY = maxHeight / this.image.naturalHeight;
           const scale = Math.min(scaleX, scaleY, 1); // Don't scale up
-        
+
           canvasWidth = Math.floor(this.image.naturalWidth * scale);
           canvasHeight = Math.floor(this.image.naturalHeight * scale);
-        
+
           // Ensure minimum usable size
           canvasWidth = Math.max(300, canvasWidth);
           canvasHeight = Math.max(200, canvasHeight);
@@ -159,31 +160,31 @@ export default class ImageCanvasView extends View {
         canvasHeight = preset.height;
       }
     }
-    
+
     // Final safety check (should not be needed now, but kept for robustness)
-    canvasWidth = Math.min(canvasWidth, window.innerWidth * 0.8);
-    canvasHeight = Math.min(canvasHeight, window.innerHeight * 0.8);
-    
+    canvasWidth = Math.min(canvasWidth, window.innerWidth * this.maxCanvasWidthPercent);
+    canvasHeight = Math.min(canvasHeight, window.innerHeight * this.maxCanvasHeightPercent);
+
     // Don't resize if dimensions haven't changed significantly
     if (Math.abs(canvasWidth - this.canvasWidth) < 10 &&
         Math.abs(canvasHeight - this.canvasHeight) < 10) {
       return;
     }
-    
+
     // Set dimensions and DPR handling
     const dpr = window.devicePixelRatio || 1;
-    
+
     this.canvasWidth = canvasWidth;
     this.canvasHeight = canvasHeight;
-    
+
     this.canvas.width = canvasWidth * dpr;
     this.canvas.height = canvasHeight * dpr;
-    
+
     this.canvas.style.width = canvasWidth + 'px';
     this.canvas.style.height = canvasHeight + 'px';
-    
+
     this.context.setTransform(dpr, 0, 0, dpr, 0, 0);
-    
+
     if (this.isLoaded) {
       this.renderCanvas();
     }
@@ -303,13 +304,13 @@ export default class ImageCanvasView extends View {
     const scaleX = this.canvasWidth / this.image.naturalWidth;
     const scaleY = this.canvasHeight / this.image.naturalHeight;
     const scale = Math.min(scaleX, scaleY, 1); // Don't scale up beyond 100%
-    
+
     // Calculate centered position
     const scaledWidth = this.image.naturalWidth * scale;
     const scaledHeight = this.image.naturalHeight * scale;
     const x = (this.canvasWidth - scaledWidth) / 2;
     const y = (this.canvasHeight - scaledHeight) / 2;
-    
+
     // Draw scaled and centered image
     this.context.drawImage(this.image, x, y, scaledWidth, scaledHeight);
   }
@@ -331,7 +332,7 @@ export default class ImageCanvasView extends View {
     if (this.canvasSize === 'auto') {
       this.setCanvasSize('auto');
     }
-    
+
     // Child classes will implement actual scaling
     this.renderCanvas();
   }

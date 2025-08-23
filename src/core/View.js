@@ -68,6 +68,8 @@ export class View {
   async onAfterRender() {}
   async onBeforeMount() {}
   async onAfterMount() {}
+  async onBeforeUnmount() {}
+  async onAfterUnmount() {}
   async onBeforeDestroy() {}
   async onAfterDestroy() {}
 
@@ -129,7 +131,7 @@ export class View {
   async updateData(newData, rerender = false) {
     Object.assign(this.data, newData);
 
-    if (rerender && this.rendered) {
+    if (rerender && this.isMounted()) {
       await this.render();
     }
 
@@ -237,22 +239,80 @@ export class View {
     return this.element?.isConnected;
   }
 
-  async mount(container =  null) {
-      // 2) place into DOM according to the rules
-      await this.onBeforeMount();
-      if (!container && this.container) {
-          container = this.container;
-      }
-      if (container == null) {
-          const plan = this._resolvePlacementPlan();
-          this._applyPlacement(plan);
-      } else if (!this.options.noAppend) {
-          if (!this.element.isConnected || this.element.parentNode !== container) {
-              container.appendChild(this.element);
+  getChildElementById(id, root = null) {
+    const cleanId = id.startsWith('#') ? id.substring(1) : id;
+    if (root) {
+        return root.querySelector(`#${cleanId}`);
+    }
+    return this.element.querySelector(`#${cleanId}`);
+  }
+
+  getChildElement(id) {
+    if (id.startsWith("#")) {
+        return this.getChildElementById(id);
+    }
+    let el = this.element?.querySelector(`[data-container="${id}"]`);
+    if (!el) {
+        return this.getChildElementById(id);
+    }
+    return el;
+  }
+
+  getContainer() {
+      if (this.replaceById) {
+          // this means we want to place the element in the dom that matches our id
+          if (this.parent) {
+              return this.parent.getChildElementById(this.id);
           }
+          // return this.getChildElementById(this.id, document.body);
+          return null;
       }
+      if (!this.containerId) return null;
+      if (this.parent) {
+          return this.parent.getChildElement(this.containerId);
+      }
+      return this.getChildElementById(this.containerId, document.body);
+  }
+
+  async mount(container =  null) {
+      await this.onBeforeMount();
+      if (!container) {
+          container = this.getContainer();
+      }
+
+      if (this.containerId && !container) {
+          // throw new Error(`Container not found for ${this.containerId}`);
+          console.error(`Container not found for ${this.containerId}`);
+          return;
+      }
+
+      if (container && this.replaceById) {
+          container.replaceWith(this.element);
+      } else if (container) {
+          // if we have a container just replace its children with our element
+          container.replaceChildren(this.element);
+      } else if (!this.containerId && this.parent) {
+          // append to parent
+          this.parent.element.appendChild(this.element);
+      } else if (!this.containerId && !this.parent) {
+          // append to body
+          document.body.appendChild(this.element);
+      } else {
+          // there is a containerId but no container
+          console.error(`Container not found for ${this.containerId}`);
+      }
+
       await this.onAfterMount();
       this.mounted = true;
+  }
+
+  async unmount() {
+      if (!this.element || !this.element.parentNode) return;
+      await this.onBeforeUnmount();
+      if (this.element.parentNode) this.element.parentNode.removeChild(this.element);
+      this.events.unbind();
+      await this.onAfterUnmount();
+      this.mounted = false;
   }
 
   // FIX #1: make destroy async (it already awaited hooks)
@@ -312,124 +372,6 @@ export class View {
         this.element.style.cssText = String(this.style);
       }
     } catch (e) { View._warn("_syncAttrs error", e); }
-  }
-
-  _resolvePlacementPlan() {
-    // Determines how/where to insert this.element without throwing
-    const byId = (root, id) => {
-      try { return root?.querySelector?.(`#${CSS.escape(id)}`) || null; }
-      catch { return null; }
-    };
-
-    const inBody = (id) => {
-      try {
-        const cleanId = id.startsWith('#') ? id.substring(1) : id;
-        return document.getElementById(cleanId) || byId(document.body, cleanId);
-      }
-      catch { return null; }
-    };
-
-    const inDataContainer = (root, id) => {
-      try {
-        const cleanId = id.startsWith('#') ? id.substring(1) : id;
-        return root?.querySelector(`[data-container="${cleanId}"]`);
-      }
-      catch { return null; }
-    };
-
-    try {
-      const parentEl = this.parent?.element || null;
-
-      if (this.containerId) {
-        const cleanId = this.containerId.startsWith('#') ? this.containerId.substring(1) : this.containerId;
-
-        if (parentEl) {
-          const container = byId(parentEl, cleanId) || inDataContainer(parentEl, cleanId);
-          this.container = container;
-          return { mode: "into-container-under-parent", container, parentEl };
-        } else {
-          const container = inBody(cleanId);
-          this.container = container;
-          return { mode: "into-container-body", container };
-        }
-      } else {
-        const placeholder = this.parent
-          ? byId(this.parent.element, this.id)
-          : inBody(this.id);
-
-        if (placeholder) {
-          return { mode: "replace-placeholder", placeholder, parentEl: placeholder.parentNode };
-        }
-
-        if (parentEl) {
-          return { mode: "append-to-parent", parentEl };
-        }
-
-        return { mode: "append-to-body" };
-      }
-    } catch (e) {
-      View._warn("_resolvePlacementPlan error", e);
-      return { mode: "append-to-body" };
-    }
-  }
-
-  _applyPlacement(plan) {
-    try {
-      switch (plan.mode) {
-        case "into-container-under-parent":
-        case "into-container-body": {
-          const container = plan.container;
-          if (!container) {
-            View._warn(`Container #${this.containerId} not found for ${this.id}`);
-            if (this.parent?.element) {
-              this.parent.element.appendChild(this.element);
-            } else {
-              document.body.appendChild(this.element);
-            }
-            return;
-          }
-          if (!this.element.isConnected || this.element.parentNode !== container) {
-            container.replaceChildren(this.element);
-          }
-          return;
-        }
-
-        case "replace-placeholder": {
-          const ph = plan.placeholder;
-          const parent = ph?.parentNode;
-          if (!parent) {
-            View._warn(`Placeholder for ${this.id} has no parent, appending to body`);
-            document.body.appendChild(this.element);
-            return;
-          }
-          if (this.element !== ph) {
-            parent.replaceChild(this.element, ph);
-          }
-          return;
-        }
-
-        case "append-to-parent": {
-          if (plan.parentEl) {
-            if (!this.element.isConnected || this.element.parentNode !== plan.parentEl) {
-              plan.parentEl.appendChild(this.element);
-            }
-            return;
-          }
-          document.body.appendChild(this.element);
-          return;
-        }
-
-        case "append-to-body":
-        default:
-          if (!this.element.isConnected || this.element.parentNode !== document.body) {
-            document.body.appendChild(this.element);
-          }
-          return;
-      }
-    } catch (e) {
-      View._warn("_applyPlacement error", e);
-      try { document.body.appendChild(this.element); } catch (_) {}
-    }
   }
 
   bindEvents() {

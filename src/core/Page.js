@@ -138,7 +138,6 @@ class Page extends View {
     this.emit('deactivated', {
       page: this.getMetadata()
     });
-
     console.log(`Page ${this.pageName} exiting`);
   }
 
