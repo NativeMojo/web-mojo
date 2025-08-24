@@ -15,7 +15,7 @@ MOJO is a lightweight, event-driven framework built around these core principles
 
 : Use PascalCase for class files (UserView.js, HomePage.js)
 - **Class naming**: Match filename (class UserView extends View)
-- **Action naming**: Use kebab-case in HTML, camelCase in handlers
+- **Action naming**: Use kebab-case in HTML (data-action="my-action")
 - **Container naming**: Use `data-container="name"` for child view containers
 - **Template structure**: Keep templates focused and readable
 - **Error handling**: Always provide user feedback for operations
@@ -47,6 +47,39 @@ DO NOT use getViewData or get method on a view,  We pass in the view as the cont
 - **Child Views**: Use `addChild(childView)` with `containerId: 'container-name'`
 - **Direct Rendering**: Use `view.render(true, container)` to mount directly to container
 - **Template Containers**: Use `data-container="name"` in templates
+
+### Action Handling System
+- **Action Naming**: Use kebab-case in templates: `data-action="restart"`, `data-action="crop-complete"`
+- **Handler Methods**: Framework converts kebab-case to camelCase method names
+- **Handler Patterns**: For `data-action="restart"`, framework calls:
+  1. `view.onActionRestart(action, event, element)` - preferred pattern
+  2. `view.handleActionRestart(action, event, element)` - alternative pattern
+  3. `view.onActionDefault(action, event, element)` - catch-all fallback
+- **Handler Arguments**: All handlers receive `(action, event, element)` parameters
+- **Method Signature**: `async onActionRestart(action, event, element) { /* implementation */ }`
+
+```html
+<!-- ✅ Template action usage -->
+<button data-action="save-draft">Save Draft</button>
+<button data-action="delete-item" data-id="123">Delete</button>
+```
+
+```js
+// ✅ Handler implementation
+async onActionSaveDraft(action, event, element) {
+    // Handle save draft action
+}
+
+async onActionDeleteItem(action, event, element) {
+    const itemId = element.getAttribute('data-id');
+    // Handle delete with item ID
+}
+
+// ✅ Catch-all handler
+async onActionDefault(action, event, element) {
+    console.log('Unhandled action:', action);
+}
+```
 
 ### DataFormatter Usage
 - **Import Singleton**: `import dataFormatter from '../utils/DataFormatter.js'`
@@ -91,7 +124,7 @@ async onInit() {
 const childView = new MyView({ containerId: 'my-container' });
 this.addChild(childView);
 
-// ✅ Direct container rendering  
+// ✅ Direct container rendering
 const view = new MyView();
 view.render(true, containerElement);
 
@@ -99,16 +132,66 @@ view.render(true, containerElement);
 const formatted = dataFormatter.pipe(value, 'currency|truncate(10)');
 ```
 
+### Rest Response Structure
+**IMPORTANT**: Understanding the Rest class response format is critical for proper error handling.
+
+The Rest class returns a standardized response object:
+```js
+{
+  success: boolean,    // HTTP level success (200-299) vs failure (400+, network errors)
+  status: number,      // HTTP status code (200, 404, 500, etc.)
+  statusText: string,  // HTTP status text
+  headers: object,     // Response headers
+  data: object,        // The actual server JSON response (your API data)
+  errors: object,      // HTTP level errors (network, parsing, etc.)
+  message: string      // HTTP level error message
+}
+```
+
+Your server responds with this format (stored in `response.data`):
+```js
+{
+  status: boolean,  // true for success, false for server/business logic errors
+  data: object,     // actual payload data
+  error: string,    // server error message if any
+  code: string      // server error code if any  
+}
+```
+
+**Error Handling Pattern**:
+```js
+const response = await rest.POST('/api/endpoint', data);
+
+// Check HTTP level first
+if (!response.success) {
+    // Network error, 500, etc.
+    throw new Error(response.message || 'Network error');
+}
+
+// Check server application response
+if (!response.data.status) {
+    // Business logic error, validation failure, etc.
+    throw new Error(response.data.error || 'Server error');
+}
+
+// Success - use the actual data
+const result = response.data.data;
+```
+
 ## ❌ Common Mistakes to Avoid
 
 - **NO `get()` methods** in views (breaks framework pattern)
-- **NO manual render/mount** when using `addChild()` 
+- **NO manual render/mount** when using `addChild()`
 - **NO MOJO formatters** in Chart.js config (use callbacks instead)
 - **NO missing `containerId`** for child views
 - **NO `dataFormatter.apply()`** - use `pipe()` instead
 - **NO complex template logic** - keep templates simple, logic in views
 - **NO direct DOM manipulation** - use framework patterns
+- **NO incorrect action handlers** - use `onAction*` or `handleAction*` method naming
+- **NO manual event binding** - use `data-action` attributes instead
 
 ## Framework Integration Notes
 
+**Dev Server**: we are always running the dev server with browser console open to help with debugging.
 **Keep It Simple**: Follow the framework patterns, let MOJO handle the complexity!
+**Improve The Framework**: Let's improve the framework vs adding improvements to our examples or projects.

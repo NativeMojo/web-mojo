@@ -596,10 +596,8 @@
 }
 
 .sidebar-light .nav-link.has-children {
-    border-left: 4px solid var(--bs-primary);
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
-    margin-left: 0.3rem;
 }
 
 .sidebar-nav .nav-link.has-children:hover {
@@ -611,8 +609,9 @@
 }
 
 .sidebar-light .nav-link.active.has-children {
-    color: var(--mojo-sidebar-dark-color-hover, #5388d6);
+    color: var(--bs-body-color);
     background-color: var(--bs-secondary-bg);
+    animation: none;
 }
 
 .sidebar-clean .sidebar-nav .nav-link {
@@ -960,9 +959,8 @@
 }
 
 .sidebar-light .nav-submenu {
-    margin-left: 0.3rem;
-    /*background-color: var(--bs-secondary-bg);*/
-    border-left: 4px solid var(--bs-primary);
+    margin-left: 1.8rem;
+    border-left: 4px solid #cdcdcd;
 }
 
 .sidebar-clean .nav-submenu {

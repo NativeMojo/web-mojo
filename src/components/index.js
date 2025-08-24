@@ -23,6 +23,9 @@ export { default as Dialog } from './Dialog.js';
 export { default as DeniedPage } from './DeniedPage.js';
 export { default as NotFoundPage } from './NotFoundPage.js';
 
+// Mixins
+export { default as applyFileDropMixin, FileDropMixin } from './FileDropMixin.js';
+
 // Re-export everything as a namespace for convenience
 import TopNav from './TopNav.js';
 import Sidebar from './Sidebar.js';
@@ -34,6 +37,7 @@ import FormView from './FormView.js';
 import Dialog from './Dialog.js';
 import DeniedPage from './DeniedPage.js';
 import NotFoundPage from './NotFoundPage.js';
+import applyFileDropMixin, { FileDropMixin } from './FileDropMixin.js';
 
 export const Components = {
   TopNav,
@@ -45,7 +49,9 @@ export const Components = {
   FormView,
   Dialog,
   DeniedPage,
-  NotFoundPage
+  NotFoundPage,
+  applyFileDropMixin,
+  FileDropMixin
 };
 
 // Default export for convenience

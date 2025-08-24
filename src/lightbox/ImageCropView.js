@@ -188,6 +188,8 @@ export default class ImageCropView extends ImageCanvasView {
     this.updateAutoFitButtonState();
   }
 
+
+
   updateAutoFitButtonState() {
     // Skip if toolbar is hidden
     if (!this.showToolbar) return;
@@ -216,6 +218,14 @@ export default class ImageCropView extends ImageCanvasView {
 
     // Calculate image offset for coordinate conversion
     this.updateImageOffset();
+
+    // Start crop mode once image is loaded and canvas is ready
+    // Use a small delay to ensure canvas dimensions are properly set
+    setTimeout(() => {
+      if (this.isLoaded && this.canvasWidth > 0 && this.canvasHeight > 0) {
+        this.startCropMode();
+      }
+    }, 10);
   }
 
   updateImageOffset() {
@@ -357,6 +367,63 @@ export default class ImageCropView extends ImageCanvasView {
     this.context.restore();
   }
 
+  // Override parent's exportImageBlob to export only the cropped area without overlay
+  exportImageBlob(quality = 0.9) {
+    if (!this.canvas || !this.image || !this.isLoaded || !this.cropMode) {
+      // Fallback to parent implementation if crop mode not active
+      return super.exportImageBlob(quality);
+    }
+
+    return new Promise((resolve) => {
+      try {
+        console.log('[ImageCropView] Exporting cropped image without overlay');
+        console.log('[ImageCropView] Crop box:', this.cropBox);
+        
+        // Calculate the actual crop area in image coordinates
+        const cropArea = {
+          x: Math.max(0, Math.min(this.cropBox.x, this.image.naturalWidth)),
+          y: Math.max(0, Math.min(this.cropBox.y, this.image.naturalHeight)),
+          width: Math.min(this.cropBox.width, this.image.naturalWidth - this.cropBox.x),
+          height: Math.min(this.cropBox.height, this.image.naturalHeight - this.cropBox.y)
+        };
+
+        console.log('[ImageCropView] Crop area in image coords:', cropArea);
+
+        // Handle cropAndScale option
+        let outputWidth = cropArea.width;
+        let outputHeight = cropArea.height;
+        
+        if (this.cropAndScale) {
+          outputWidth = this.cropAndScale.width;
+          outputHeight = this.cropAndScale.height;
+          console.log('[ImageCropView] Scaling to:', outputWidth, 'x', outputHeight);
+        }
+
+        // Create temporary canvas for cropped image
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = outputWidth;
+        tempCanvas.height = outputHeight;
+        const tempContext = tempCanvas.getContext('2d');
+
+        // Draw the cropped portion of the image
+        tempContext.drawImage(
+          this.image,
+          cropArea.x, cropArea.y, cropArea.width, cropArea.height,  // Source rectangle
+          0, 0, outputWidth, outputHeight  // Destination rectangle
+        );
+
+        // Export the cropped image
+        tempCanvas.toBlob((blob) => {
+          console.log('[ImageCropView] Successfully exported cropped image blob:', blob?.size, 'bytes');
+          resolve(blob);
+        }, 'image/png', quality);
+      } catch (error) {
+        console.error('Failed to export cropped image blob:', error);
+        resolve(null);
+      }
+    });
+  }
+
   drawGrid() {
     // Convert crop box to canvas coordinates for grid rendering
     const canvasBox = this.imageToCanvas(this.cropBox);
@@ -433,8 +500,6 @@ export default class ImageCropView extends ImageCanvasView {
 
         this.isDragging = true;
         this.canvas.style.cursor = 'move';
-      } else {
-
       }
     } else {
       // Check if clicking on a resize handle
@@ -498,24 +563,24 @@ export default class ImageCropView extends ImageCanvasView {
     e.preventDefault();
     const touch = e.touches[0];
     const rect = this.canvas.getBoundingClientRect();
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
+    const _x = touch.clientX - rect.left;
+    const _y = touch.clientY - rect.top;
 
     // Convert touch to mouse event
     this.handleMouseDown({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => {} });
   }
 
-  handleTouchMove(e) {
-    if (!this.cropMode || e.touches.length !== 1) return;
+  handleTouchMove(_e) {
+    if (!this.cropMode || _e.touches.length !== 1) return;
 
-    e.preventDefault();
-    const touch = e.touches[0];
+    _e.preventDefault();
+    const touch = _e.touches[0];
 
     // Convert touch to mouse event
     this.handleMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
   }
 
-  handleTouchEnd(e) {
+  handleTouchEnd(_e) {
     if (!this.cropMode) return;
 
     this.handleMouseUp({});
@@ -815,6 +880,12 @@ export default class ImageCropView extends ImageCanvasView {
 
   // Public API
   startCropMode() {
+    // Make this method idempotent - safe to call multiple times
+    if (this.cropMode) {
+      console.log('Crop mode already active, skipping initialization');
+      return;
+    }
+
     this.cropMode = true;
     this.initializeCropBox();
 

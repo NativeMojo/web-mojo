@@ -784,6 +784,44 @@
     background: rgba(255, 0, 0, 0.1) !important;
 }
 
+/* ========================================================================
+   FileDropMixin - Drag and Drop Visual Feedback
+   ======================================================================== */
+
+.drag-over {
+    border-color: var(--bs-primary) !important;
+    background-color: var(--bs-primary-bg-subtle) !important;
+    transition: all 0.2s ease;
+}
+
+.drag-active {
+    border-style: dashed !important;
+    border-width: 2px !important;
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25) !important;
+}
+
+/* Combined drag state */
+.drag-over.drag-active {
+    transform: scale(1.02);
+    box-shadow:
+        0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25),
+        0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Dark theme support */
+[data-bs-theme="dark"] .drag-over {
+    background-color: rgba(var(--bs-primary-rgb), 0.15) !important;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .drag-over,
+    .drag-active {
+        transition: none !important;
+        transform: none !important;
+    }
+}
+
 /* Hide debug helpers in production */
 @media (min-width: 1px) {
     .mojo-debug {

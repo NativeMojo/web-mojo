@@ -1,0 +1,241 @@
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <h1 class="mb-2">
+                        <i class="{{pageIcon}}"></i> {{pageTitle}}
+                    </h1>
+                    <p class="text-muted mb-0">{{pageDescription}}</p>
+                </div>
+                <button class="btn btn-outline-secondary" data-action="restart">
+                    <i class="bi bi-arrow-clockwise"></i> Start Over
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Steps -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        {{#steps}}
+                        <div class="d-flex flex-column align-items-center step-indicator {{#active}}active{{/active}} {{#completed}}completed{{/completed}}" style="flex: 1;">
+                            <div class="step-icon mb-2">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center
+                                          {{#completed}}bg-success text-white{{/completed}}
+                                          {{#active}}{{^completed}}bg-primary text-white{{/completed}}{{/active}}
+                                          {{^active}}{{^completed}}bg-light text-muted{{/completed}}{{/active}}"
+                                     style="width: 50px; height: 50px;">
+                                    {{#completed}}
+                                    <i class="bi bi-check-lg"></i>
+                                    {{/completed}}
+                                    {{^completed}}
+                                    <i class="{{icon}}"></i>
+                                    {{/completed}}
+                                </div>
+                            </div>
+                            <h6 class="text-center mb-1 {{#active}}text-primary{{/active}} {{#completed}}text-success{{/completed}}">
+                                {{title}}
+                            </h6>
+                            <small class="text-muted text-center">{{description}}</small>
+                        </div>
+                        {{/steps}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workflow Content -->
+    <div class="row">
+        <div class="col-12">
+
+            <!-- Step 1: Upload -->
+            {{#stepUpload}}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-cloud-upload"></i> Step 1: Upload Image
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Select an image file to begin the processing workflow.</p>
+                    <div data-container="upload-container"></div>
+                </div>
+            </div>
+            {{/stepUpload}}
+
+            <!-- Step 2: Crop -->
+            {{#stepCrop}}
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-crop"></i> Step 2: Crop & Scale
+                    </h5>
+                    <div>
+                        <button class="btn btn-outline-secondary me-2" data-action="go-to-step" data-step="upload">
+                            <i class="bi bi-arrow-left"></i> Back
+                        </button>
+                        <button class="btn btn-success" data-action="crop-complete">
+                            <i class="bi bi-check"></i> Apply Crop
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Adjust the crop area and scale to prepare your image for editing.</p>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Instructions:</strong> Use your mouse to select a crop area. Drag the corners to resize. Click "Apply Crop" when ready.
+                    </div>
+                    <div data-container="crop-container" style="min-height: 400px;"></div>
+                </div>
+            </div>
+            {{/stepCrop}}
+
+            <!-- Step 3: Edit -->
+            {{#stepEdit}}
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-magic"></i> Step 3: Edit & Enhance
+                    </h5>
+                    <div>
+                        <button class="btn btn-outline-secondary me-2" data-action="go-to-step" data-step="crop">
+                            <i class="bi bi-arrow-left"></i> Back
+                        </button>
+                        <button class="btn btn-success" data-action="edit-complete">
+                            <i class="bi bi-check"></i> Finish Editing
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Apply filters, transformations, and enhancements to your cropped image.</p>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Instructions:</strong> Use the editing tools to enhance your image. Try different filters and adjustments.
+                    </div>
+                    <div data-container="editor-container" style="min-height: 500px;"></div>
+                </div>
+            </div>
+            {{/stepEdit}}
+
+            <!-- Step 4: Results -->
+            {{#stepResults}}
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-check-circle"></i> Step 4: View Results
+                    </h5>
+                    <div>
+                        <button class="btn btn-outline-secondary me-2" data-action="go-to-step" data-step="edit">
+                            <i class="bi bi-arrow-left"></i> Back to Edit
+                        </button>
+                        <button class="btn btn-primary" data-action="restart">
+                            <i class="bi bi-arrow-clockwise"></i> Start New
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">Compare your original image with the processed results.</p>
+
+                    {{#showResultsSection}}
+                    <div class="row g-4">
+                        <!-- Original Image -->
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h6 class="mb-3">Original Image</h6>
+                                <div class="border rounded p-3 bg-light">
+                                    {{#results.original.url}}
+                                    <img src="{{results.original.url}}"
+                                         alt="Original"
+                                         class="img-fluid rounded mb-3"
+                                         style="max-height: 250px;">
+                                    {{/results.original.url}}
+                                    <div class="small text-muted">
+                                        <div><strong>{{results.original.filename}}</strong></div>
+                                        <div>Size: {{results.original.size}}</div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm mt-2"
+                                        data-action="download-result"
+                                        data-type="original">
+                                    <i class="bi bi-download"></i> Download
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Cropped Image -->
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h6 class="mb-3">Cropped Image</h6>
+                                <div class="border rounded p-3 bg-light">
+                                    {{#results.cropped.url}}
+                                    <img src="{{results.cropped.url}}"
+                                         alt="Cropped"
+                                         class="img-fluid rounded mb-3"
+                                         style="max-height: 250px;">
+                                    {{/results.cropped.url}}
+                                    <div class="small text-muted">
+                                        <div><strong>{{results.cropped.filename}}</strong></div>
+                                        <div>Size: {{results.cropped.size}}</div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm mt-2"
+                                        data-action="download-result"
+                                        data-type="cropped">
+                                    <i class="bi bi-download"></i> Download
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Final Result -->
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h6 class="mb-3">Final Result</h6>
+                                <div class="border rounded p-3 bg-light">
+                                    {{#results.edited.url}}
+                                    <img src="{{results.edited.url}}"
+                                         alt="Final Result"
+                                         class="img-fluid rounded mb-3"
+                                         style="max-height: 250px;">
+                                    {{/results.edited.url}}
+                                    <div class="small text-muted">
+                                        <div><strong>{{results.edited.filename}}</strong></div>
+                                        <div>Size: {{results.edited.size}}</div>
+                                    </div>
+                                </div>
+                                <button class="btn btn-success btn-sm mt-2"
+                                        data-action="download-result"
+                                        data-type="edited">
+                                    <i class="bi bi-download"></i> Download Final
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Summary Stats -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="alert alert-success">
+                                <h6 class="alert-heading">
+                                    <i class="bi bi-check-circle"></i> Processing Complete!
+                                </h6>
+                                <p class="mb-0">
+                                    Your image has been successfully processed through the complete workflow.
+                                    You can download any version above or start a new processing session.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {{/showResultsSection}}
+                </div>
+            </div>
+            {{/stepResults}}
+
+        </div>
+    </div>
+</div>

@@ -436,6 +436,8 @@ class TopNav extends View {
             }
         }
 
+        this.getApp().events.emit("portal:action", { action, event, el });
+
         return false;
     }
 

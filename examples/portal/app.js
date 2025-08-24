@@ -11,6 +11,8 @@ import TodosPage from './pages/TodosPage.js';
 import FormsPage from './pages/FormsPage.js';
 import DialogsPage from './pages/DialogsPage.js';
 import ChartsPage from './pages/ChartsPage.js';
+import ImagePage from './pages/ImagePage.js';
+import FileDropPage from './pages/FileDropPage.js';
 import Page from '/src/core/Page.js';
 import ImageViewer from '/src/lightbox/ImageViewer.js';
 import { registerAdminPages } from '/src/admin.js';
@@ -69,7 +71,7 @@ const app = new PortalApp({
                 },
 
                 {
-                    text: 'Example Sub Menu',
+                    text: 'Extensions',
                     icon: 'bi-graph-up',
                     children: [
                         {
@@ -78,26 +80,32 @@ const app = new PortalApp({
                             icon: 'bi-graph-up'
                         },
                         {
-                            text: 'Image Editor',
-                            route: '?page=image-editor',
-                            icon: 'bi-bar-chart'
+                            text: 'Image Processing',
+                            route: '?page=image',
+                            icon: 'bi-image'
                         },
                         {
-                            text: 'File Upload',
-                            route: '?page=file-upload',
-                            icon: 'bi-upload'
+                            text: 'File Drop Examples',
+                            route: '?page=file-drop',
+                            icon: 'bi-cloud-arrow-up'
                         }
                     ]
                 },
                 {
-                    text: 'Not Found',
-                    route: '?page=settings',
-                    icon: 'bi-question-circle'
-                },
-                {
-                    text: 'Need Permissions',
-                    route: '?page=noperms',
-                    icon: 'bi-shield'
+                    text: 'Special Pages',
+                    icon: 'bi-exclamation-circle',
+                    children: [
+                        {
+                            text: 'Not Found',
+                            route: '?page=settings',
+                            icon: 'bi-question-circle'
+                        },
+                        {
+                            text: 'Need Permissions',
+                            route: '?page=noperms',
+                            icon: 'bi-shield'
+                        },
+                    ]
                 },
                 {
                     text: 'Templates',
@@ -105,7 +113,7 @@ const app = new PortalApp({
                     icon: 'bi-code-slash'
                 },
                 {
-                    text: 'Todos',
+                    text: 'Todos (Table Page)',
                     route: '?page=todos',
                     icon: 'bi-check2-square'
                 },
@@ -212,6 +220,12 @@ const app = new PortalApp({
         // Right items (user menu, notifications, etc)
         rightItems: [
             {
+                icon: 'bi-cloud-upload',
+                action: 'test-upload',
+                buttonClass: 'btn btn-link text-white',
+                title: 'Test File Upload Progress'
+            },
+            {
                 icon: 'bi-bell',
                 action: 'notifications',
                 buttonClass: 'btn btn-link text-white'
@@ -267,6 +281,8 @@ app.registerPage('templates', TemplatesPage);
 app.registerPage('todos', TodosPage);
 app.registerPage('forms', FormsPage);
 app.registerPage('dialogs', DialogsPage);
+app.registerPage('image', ImagePage);
+app.registerPage('file-drop', FileDropPage);
 app.registerPage('simple', Page, {
     id: 'simple',
     title: "Simple",
@@ -289,6 +305,63 @@ app.registerPage('noperms', Page, {
 // Handle portal actions
 app.events.on('portal:action', ({ action }) => {
     switch (action) {
+        case 'test-upload':
+            // Import and test file upload progress UI
+            import('/src/services/ToastService.js').then(ToastModule => {
+                import('/src/components/ProgressView.js').then(ProgressModule => {
+                    const ToastService = ToastModule.default;
+                    const ProgressView = ProgressModule.default;
+                    
+                    const toastService = new ToastService();
+                    
+                    // Create fake file upload progress
+                    const progressView = new ProgressView({
+                        filename: 'test-document.pdf',
+                        filesize: 2560000, // 2.56 MB
+                        showCancel: true,
+                        onCancel: () => {
+                            clearInterval(progressInterval);
+                            app.showWarning('Test upload cancelled');
+                        }
+                    });
+                    
+                    // Show progress in toast
+                    const progressToast = toastService.showView(progressView, 'info', {
+                        title: 'Test File Upload',
+                        autohide: false,
+                        dismissible: false
+                    });
+                    
+                    // Simulate progress
+                    let progress = 0;
+                    const progressInterval = setInterval(() => {
+                        progress += Math.random() * 15; // Random progress increment
+                        
+                        if (progress >= 100) {
+                            progress = 100;
+                            clearInterval(progressInterval);
+                            
+                            // Mark as completed
+                            progressView.markCompleted('Test upload completed!');
+                            
+                            // Auto-hide after 2 seconds
+                            setTimeout(() => {
+                                progressToast.hide();
+                            }, 2000);
+                        }
+                        
+                        // Update progress
+                        const loaded = Math.round((progress / 100) * 2560000);
+                        progressView.updateProgress({
+                            progress: progress / 100,
+                            loaded: loaded,
+                            total: 2560000,
+                            percentage: Math.round(progress)
+                        });
+                    }, 200); // Update every 200ms
+                });
+            });
+            break;
         case 'notifications':
             app.showInfo('You have 3 new notifications');
             break;

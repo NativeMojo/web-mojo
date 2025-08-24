@@ -49,6 +49,34 @@ body {
 }
 
 /* ============================================
+   ImagePage Workflow Styles
+   ============================================ */
+
+.step-indicator {
+    position: relative;
+}
+
+.step-indicator:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 25px;
+    left: 60%;
+    right: -40%;
+    height: 2px;
+    background-color: #dee2e6;
+    z-index: 0;
+}
+
+.step-indicator.completed:not(:last-child)::after {
+    background-color: #28a745;
+}
+
+.step-icon {
+    position: relative;
+    z-index: 1;
+}
+
+/* ============================================
    Templates Documentation Page
    ============================================ */
 
@@ -131,4 +159,117 @@ code {
 
 .nav-tabs .nav-link.active {
     font-weight: 500;
+}
+
+/* ============================================
+   ProgressView Component Styles
+   ============================================ */
+
+.progress-view {
+    min-width: 280px;
+    max-width: 400px;
+}
+
+.progress-view .min-width-0 {
+    min-width: 0;
+}
+
+.progress-view .progress {
+    background-color: #e9ecef;
+}
+
+.progress-view .progress-bar {
+    transition: width 0.3s ease;
+}
+
+.progress-view .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+/* File icon styling */
+.progress-view .bi-file-earmark {
+    color: #6c757d;
+}
+
+/* Cancel button hover effect */
+.progress-view .btn-outline-secondary:hover {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+
+/* ============================================
+   Toast Service Enhancements
+   ============================================ */
+
+/* Toast view container */
+.toast-view-body {
+    min-height: auto;
+}
+
+/* Toast service specific icons */
+.toast-service-icon {
+    font-size: 1.1em;
+}
+
+/* Toast types with enhanced styling */
+.toast-service-success {
+    border-left: 4px solid #28a745;
+}
+
+.toast-service-error {
+    border-left: 4px solid #dc3545;
+}
+
+.toast-service-warning {
+    border-left: 4px solid #ffc107;
+}
+
+.toast-service-info {
+    border-left: 4px solid #17a2b8;
+}
+
+.toast-service-plain {
+    border-left: 4px solid #6c757d;
+}
+
+/* Toast close button styling */
+.toast-service-close {
+    font-size: 0.875rem;
+}
+
+/* Progress toast specific styling */
+.toast.toast-service-info .toast-header {
+    background-color: rgba(23, 162, 184, 0.1);
+}
+
+.toast.toast-service-success .toast-header {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+/* ============================================
+   File Upload Utilities
+   ============================================ */
+
+/* File size formatting */
+.file-size {
+    font-family: monospace;
+    font-size: 0.875rem;
+}
+
+/* Upload status indicators */
+.upload-status-uploading {
+    color: #ffc107;
+}
+
+.upload-status-completed {
+    color: #28a745;
+}
+
+.upload-status-failed {
+    color: #dc3545;
+}
+
+.upload-status-cancelled {
+    color: #6c757d;
 }

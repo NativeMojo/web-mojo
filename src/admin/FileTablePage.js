@@ -5,6 +5,7 @@
 
 import TablePage from '../components/TablePage.js';
 import { File, FileList, FileForms } from '../models/Files.js';
+import applyFileDropMixin from '../components/FileDropMixin.js';
 
 class FileTablePage extends TablePage {
     constructor(options = {}) {
@@ -16,7 +17,7 @@ class FileTablePage extends TablePage {
             Collection: FileList,
             formCreate: FileForms.create,
             formEdit: FileForms.edit,
-            
+
             // Column definitions
             columns: [
                 {
@@ -95,7 +96,57 @@ class FileTablePage extends TablePage {
                 ],
             }
         });
+
+        this.enableFileDrop({
+            acceptedTypes: ['*/*'],
+            maxFileSize: 100 * 1024 * 1024, // 100MB
+            multiple: false,
+            validateOnDrop: true
+        });
+    }
+
+    async onFileDrop(files, event, validation) {
+        const file = files[0];
+        console.log(`File Dropped: ${file.name} (${file.type}) (${file.size} bytes)`);
+
+        try {
+            // Create new File model instance
+            const fileModel = new File();
+
+            // Start upload with progress tracking
+            const upload = fileModel.upload({
+                file: file,
+                name: file.name,
+                description: `File uploaded via drag & drop on ${new Date().toLocaleDateString()}`,
+                showToast: true, // Show progress toast
+                onProgress: (progressInfo) => {
+                    // Progress is automatically shown in toast
+                    console.log(`Upload progress: ${progressInfo.percentage}%`);
+                },
+                onComplete: (result) => {
+                    console.log('Upload completed:', result);
+                    // Refresh the table to show the new file
+                    this.refreshTable();
+                },
+                onError: (error) => {
+                    console.error('Upload failed:', error);
+                }
+            });
+
+            // The upload starts automatically, but we can still handle the promise
+            upload.then(result => {
+                console.log('File upload successful!', result);
+            }).catch(error => {
+                console.error('File upload failed:', error.message);
+            });
+
+        } catch (error) {
+            console.error('Error starting file upload:', error);
+            this.showError('Failed to start file upload: ' + error.message);
+        }
     }
 }
+
+applyFileDropMixin(FileTablePage);
 
 export default FileTablePage;

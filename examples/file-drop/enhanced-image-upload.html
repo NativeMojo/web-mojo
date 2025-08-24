@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Enhanced Image Upload - FileDropMixin + ImageUploadView</title>
+
+        <!-- Bootstrap CSS -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <!-- Bootstrap Icons -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+            rel="stylesheet"
+        />
+        <!-- MOJO Core Styles -->
+        <link href="../../src/css/core.css" rel="stylesheet" />
+
+        <style>
+            .comparison-container {
+                min-height: 400px;
+                border: 2px dashed #dee2e6;
+                border-radius: 0.5rem;
+                padding: 1rem;
+                transition: all 0.2s ease;
+            }
+
+            .image-gallery {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 1rem;
+                margin-top: 1rem;
+            }
+
+            .image-card {
+                position: relative;
+                border: 1px solid #dee2e6;
+                border-radius: 0.375rem;
+                overflow: hidden;
+                background: #f8f9fa;
+            }
+
+            .image-card img {
+                width: 100%;
+                height: 120px;
+                object-fit: cover;
+            }
+
+            .image-card-body {
+                padding: 0.5rem;
+            }
+
+            .image-card-title {
+                font-size: 0.8rem;
+                font-weight: 500;
+                margin-bottom: 0.25rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .image-card-meta {
+                font-size: 0.7rem;
+                color: #6c757d;
+            }
+
+            .remove-btn {
+                position: absolute;
+                top: 0.25rem;
+                right: 0.25rem;
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.8rem;
+            }
+
+            .simple-drop-zone {
+                border: 2px dashed #6c757d;
+                border-radius: 0.5rem;
+                padding: 2rem;
+                text-align: center;
+                background: #f8f9fa;
+                min-height: 200px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+            }
+
+            .simple-drop-zone:hover {
+                border-color: #495057;
+                background: #e9ecef;
+            }
+
+            .feature-comparison {
+                background: #f8f9fa;
+                border-radius: 0.5rem;
+                padding: 1rem;
+                margin: 1rem 0;
+            }
+
+            .feature-list {
+                list-style: none;
+                padding: 0;
+            }
+
+            .feature-list li {
+                padding: 0.25rem 0;
+                display: flex;
+                align-items: center;
+            }
+
+            .feature-list li i {
+                margin-right: 0.5rem;
+                width: 16px;
+            }
+
+            .status-indicator {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 1050;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container-fluid my-4">
+            <!-- Header -->
+            <div class="row">
+                <div class="col-12">
+                    <h1 class="text-center mb-4">
+                        <i class="bi bi-images"></i> Enhanced Image Upload
+                    </h1>
+                    <p class="lead text-center mb-5">
+                        Comparing ImageUploadView (built-in drag-drop) with FileDropMixin (enhanced
+                        Views)
+                    </p>
+                </div>
+            </div>
+
+            <!-- Feature Comparison -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="feature-comparison">
+                        <h5><i class="bi bi-list-check"></i> Feature Comparison</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>ImageUploadView (Built-in)</h6>
+                                <ul class="feature-list">
+                                    <li>
+                                        <i class="bi bi-check-circle text-success"></i> Complete
+                                        upload UI
+                                    </li>
+                                    <li>
+                                        <i class="bi bi-check-circle text-success"></i> Built-in
+                                        preview
+                                    </li>
+                                    <li>
+                                        <i class="bi bi-check-circle text-success"></i> Upload
+                                        progress
+                                    </li>
+                                    <li>
+                                        <i class="bi bi-check-circle text-success"></i> File
+                                        validation
+                                    </li>
+                                    <li>
+                                        <i class="bi bi-check-circle text-success"></i> Drag & drop
+                                        zone
+                                    </li>
+                                    <li>
+                                        <i class="bi bi-info-circle text-info"></i> Single component
+                                        solution
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>FileDropMixin (Enhanced)</h6>
+                                <ul class="feature-list">
+                                    <li>
+                                        <i class="bi bi-check-circle text-success"></i> Add to any
+                                        View
+                                    </li>
+                                    <li>
+                                        <i class="bi bi-check-circle text-success"></i> Flexible
+                                        drop zones
+                                    </li>
+                                    <li>
+                                        <i class="bi bi-check-circle text-success"></i> Custom
+                                        validation
+                                    </li>
+                                    <li>
+                                        <i class="bi bi-check-circle text-success"></i> Multiple
+                                        file support
+                                    </li>
+                                    <li>
+                                        <i class="bi bi-check-circle text-success"></i> Configurable
+                                        feedback
+                                    </li>
+                                    <li>
+                                        <i class="bi bi-info-circle text-info"></i> Modular
+                                        enhancement
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Side by Side Comparison -->
+            <div class="row">
+                <!-- ImageUploadView -->
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="bi bi-cloud-upload"></i> ImageUploadView</h5>
+                            <small class="text-muted"
+                                >Built-in drag & drop with complete upload UI</small
+                            >
+                        </div>
+                        <div class="card-body">
+                            <div id="imageupload-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FileDropMixin Enhanced View -->
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="bi bi-plus-circle"></i> Enhanced with FileDropMixin</h5>
+                            <small class="text-muted"
+                                >Simple view enhanced with drag & drop capability</small
+                            >
+                        </div>
+                        <div class="card-body">
+                            <div id="enhanced-container"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Combined Approach -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="bi bi-puzzle"></i> Combined Approach</h5>
+                            <small class="text-muted"
+                                >Using both ImageUploadView and FileDropMixin together</small
+                            >
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Upload Area</h6>
+                                    <div id="combined-upload"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Quick Drop Zone</h6>
+                                    <div id="combined-drop"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Indicator -->
+        <div id="status-indicator" class="status-indicator"></div>
+
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+        <!-- MOJO Framework -->
+        <script type="module">
+            import View from "../../src/core/View.js";
+            import ImageUploadView from "../../src/lightbox/ImageUploadView.js";
+            import applyFileDropMixin from "../../src/components/FileDropMixin.js";
+
+            // Apply FileDropMixin to View class
+            applyFileDropMixin(View);
+
+            // Status indicator utility
+            function showStatus(message, type = "info", duration = 3000) {
+                const indicator = document.getElementById("status-indicator");
+                const alertClass =
+                    {
+                        success: "alert-success",
+                        error: "alert-danger",
+                        warning: "alert-warning",
+                        info: "alert-info",
+                    }[type] || "alert-info";
+
+                const iconClass =
+                    {
+                        success: "bi-check-circle",
+                        error: "bi-exclamation-triangle",
+                        warning: "bi-exclamation-circle",
+                        info: "bi-info-circle",
+                    }[type] || "bi-info-circle";
+
+                indicator.innerHTML = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    <i class="bi ${iconClass}"></i> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+
+                if (duration > 0) {
+                    setTimeout(() => {
+                        const alert = indicator.querySelector(".alert");
+                        if (alert) {
+                            const bsAlert = new bootstrap.Alert(alert);
+                            bsAlert.close();
+                        }
+                    }, duration);
+                }
+            }
+
+            // Utility to format file size
+            function formatFileSize(bytes) {
+                if (bytes === 0) return "0 Bytes";
+                const k = 1024;
+                const sizes = ["Bytes", "KB", "MB", "GB"];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+            }
+
+            // Enhanced Image Gallery View with FileDropMixin
+            class EnhancedImageGallery extends View {
+                constructor(options) {
+                    super(options);
+
+                    this.images = [];
+
+                    // Enable file drop on the entire view
+                    this.enableFileDrop({
+                        acceptedTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
+                        maxFileSize: 10 * 1024 * 1024, // 10MB
+                        multiple: true,
+                        validateOnDrop: true,
+                    });
+                }
+
+                async getTemplate() {
+                    return `
+                        <div class="simple-drop-zone">
+                            <i class="bi bi-images" style="font-size: 3rem; color: #6c757d;"></i>
+                            <h6 class="mt-3">Drop images to add to gallery</h6>
+                            <p class="text-muted mb-0">Multiple images supported</p>
+                        </div>
+                        <div id="image-gallery" class="image-gallery"></div>
+                    `;
+                }
+
+                async onFileDrop(files, event, validation) {
+                    showStatus(`Adding ${files.length} image(s) to gallery`, "success");
+
+                    for (const file of files) {
+                        const imageData = {
+                            file,
+                            url: URL.createObjectURL(file),
+                            name: file.name,
+                            size: file.size,
+                            id: Date.now() + Math.random(),
+                        };
+
+                        this.images.push(imageData);
+                    }
+
+                    this.updateGallery();
+                }
+
+                async onFileDropError(error, event, files) {
+                    showStatus(`Error adding images: ${error.message}`, "error");
+                }
+
+                updateGallery() {
+                    const gallery = document.getElementById("image-gallery");
+
+                    if (this.images.length === 0) {
+                        gallery.innerHTML =
+                            '<p class="text-muted text-center">No images in gallery</p>';
+                        return;
+                    }
+
+                    gallery.innerHTML = this.images
+                        .map(
+                            (img) => `
+                    <div class="image-card">
+                        <img src="${img.url}" alt="${img.name}" />
+                        <button class="btn btn-danger btn-sm remove-btn"
+                                onclick="removeImage('${img.id}')"
+                                title="Remove image">
+                            <i class="bi bi-x"></i>
+                        </button>
+                        <div class="image-card-body">
+                            <div class="image-card-title" title="${img.name}">${img.name}</div>
+                            <div class="image-card-meta">${formatFileSize(img.size)}</div>
+                        </div>
+                    </div>
+                `,
+                        )
+                        .join("");
+                }
+
+                removeImage(id) {
+                    const imageIndex = this.images.findIndex((img) => img.id == id);
+                    if (imageIndex !== -1) {
+                        URL.revokeObjectURL(this.images[imageIndex].url);
+                        this.images.splice(imageIndex, 1);
+                        this.updateGallery();
+                        showStatus("Image removed from gallery", "info");
+                    }
+                }
+
+                async destroy() {
+                    // Clean up object URLs
+                    this.images.forEach((img) => URL.revokeObjectURL(img.url));
+                    await super.destroy();
+                }
+            }
+
+            // Combined Quick Preview View
+            class QuickPreviewView extends View {
+                constructor(options) {
+                    super(options);
+
+                    this.enableFileDrop({
+                        acceptedTypes: ["image/*"],
+                        maxFileSize: 5 * 1024 * 1024, // 5MB
+                        multiple: false,
+                        validateOnDrop: true,
+                    });
+                }
+
+                async getTemplate() {
+                    return `
+                        <div class="comparison-container">
+                            <div class="text-center">
+                                <i class="bi bi-lightning" style="font-size: 3rem; color: #6c757d;"></i>
+                                <h6 class="mt-3">Quick Drop Zone</h6>
+                                <p class="text-muted">Enhanced with FileDropMixin for instant preview</p>
+                                <div id="quick-preview" class="mt-3"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                async onFileDrop(files, event, validation) {
+                    const file = files[0];
+                    showStatus(`Quick preview: ${file.name}`, "info");
+
+                    const previewDiv = document.getElementById("quick-preview");
+                    const imageUrl = URL.createObjectURL(file);
+
+                    previewDiv.innerHTML = `
+                    <div class="text-center">
+                        <img src="${imageUrl}" class="img-thumbnail mb-2" style="max-height: 150px;">
+                        <div><small class="text-muted">${file.name} (${formatFileSize(file.size)})</small></div>
+                        <button class="btn btn-sm btn-outline-danger mt-2" onclick="clearQuickPreview()">
+                            <i class="bi bi-x"></i> Clear
+                        </button>
+                    </div>
+                `;
+
+                    // Store URL for cleanup
+                    this._currentImageUrl = imageUrl;
+                }
+
+                async onFileDropError(error, event, files) {
+                    showStatus(`Quick preview error: ${error.message}`, "error");
+                }
+
+                clearPreview() {
+                    if (this._currentImageUrl) {
+                        URL.revokeObjectURL(this._currentImageUrl);
+                        this._currentImageUrl = null;
+                    }
+                    document.getElementById("quick-preview").innerHTML = "";
+                }
+
+                async destroy() {
+                    this.clearPreview();
+                    await super.destroy();
+                }
+            }
+
+            // Global functions for UI interactions
+            window.removeImage = function (id) {
+                if (window.enhancedGallery) {
+                    window.enhancedGallery.removeImage(id);
+                }
+            };
+
+            window.clearQuickPreview = function () {
+                if (window.quickPreview) {
+                    window.quickPreview.clearPreview();
+                }
+            };
+
+            // Initialize all components
+            async function initializeComponents() {
+                try {
+                    showStatus("Initializing enhanced image upload components...", "info");
+
+                    // 1. Standard ImageUploadView
+                    const imageUpload = new ImageUploadView({
+                        autoUpload: false,
+                        maxFileSize: 5 * 1024 * 1024,
+                        onUpload: async (file, progressCallback) => {
+                            // Simulate upload with progress
+                            return new Promise((resolve) => {
+                                let progress = 0;
+                                const interval = setInterval(() => {
+                                    progress += Math.random() * 25;
+                                    if (progress >= 100) {
+                                        progress = 100;
+                                        clearInterval(interval);
+                                        showStatus("Upload completed successfully!", "success");
+                                        resolve({ success: true, url: URL.createObjectURL(file) });
+                                    }
+                                    progressCallback(Math.round(progress));
+                                }, 200);
+                            });
+                        },
+                    });
+
+                    await imageUpload.render(
+                        true,
+                        document.getElementById("imageupload-container"),
+                    );
+
+                    // 2. Enhanced Image Gallery with FileDropMixin
+                    window.enhancedGallery = new EnhancedImageGallery();
+                    await window.enhancedGallery.render(
+                        true,
+                        document.getElementById("enhanced-container"),
+                    );
+
+                    // 3. Combined upload area
+                    const combinedUpload = new ImageUploadView({
+                        autoUpload: false,
+                        maxFileSize: 5 * 1024 * 1024,
+                        onUpload: async (file, progressCallback) => {
+                            showStatus("Processing file...", "info");
+                            // Add to gallery as well
+                            if (window.enhancedGallery && file.type.startsWith("image/")) {
+                                await window.enhancedGallery.onFileDrop([file], null, {
+                                    valid: true,
+                                });
+                            }
+                            return { success: true };
+                        },
+                    });
+
+                    await combinedUpload.render(true, document.getElementById("combined-upload"));
+
+                    // 4. Quick Preview with FileDropMixin
+                    window.quickPreview = new QuickPreviewView();
+                    await window.quickPreview.render(
+                        true,
+                        document.getElementById("combined-drop"),
+                    );
+
+                    showStatus("All components initialized successfully!", "success");
+                } catch (error) {
+                    showStatus(`Initialization error: ${error.message}`, "error");
+                    console.error("Initialization failed:", error);
+                }
+            }
+
+            // Initialize when DOM is loaded
+            document.addEventListener("DOMContentLoaded", initializeComponents);
+
+            // Cleanup on page unload
+            window.addEventListener("beforeunload", () => {
+                if (window.enhancedGallery) window.enhancedGallery.destroy();
+                if (window.quickPreview) window.quickPreview.destroy();
+            });
+
+            // Log component interactions
+            console.log("Enhanced Image Upload example loaded");
+            console.log("This example demonstrates:");
+            console.log("1. ImageUploadView with built-in drag & drop");
+            console.log("2. Simple View enhanced with FileDropMixin");
+            console.log("3. Combined usage patterns");
+        </script>
+    </body>
+</html>

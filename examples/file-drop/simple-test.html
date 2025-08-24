@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>FileDropMixin Simple Test</title>
+
+        <!-- Bootstrap CSS -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <!-- Bootstrap Icons -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+            rel="stylesheet"
+        />
+        <!-- MOJO Core Styles -->
+        <link href="../../src/css/core.css" rel="stylesheet" />
+
+        <style>
+            .test-drop-zone {
+                border: 2px dashed #6c757d;
+                border-radius: 0.5rem;
+                padding: 3rem;
+                text-align: center;
+                background: #f8f9fa;
+                transition: all 0.2s ease;
+                min-height: 200px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .test-results {
+                margin-top: 2rem;
+                min-height: 100px;
+            }
+
+            .file-info {
+                background: #e9ecef;
+                border-radius: 0.375rem;
+                padding: 1rem;
+                margin: 0.5rem 0;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container my-5">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="text-center mb-4">
+                        <h1><i class="bi bi-bug"></i> FileDropMixin Simple Test</h1>
+                        <p class="text-muted">Testing basic FileDropMixin functionality</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Drop Test Zone</h5>
+                            <small class="text-muted">Drop any files here to test the mixin</small>
+                        </div>
+                        <div class="card-body">
+                            <div id="test-zone"></div>
+
+                            <div id="test-results" class="test-results">
+                                <div class="text-muted text-center">
+                                    <em>Drop files above to see results...</em>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h6>Test Log</h6>
+                        </div>
+                        <div class="card-body">
+                            <div
+                                id="test-log"
+                                style="
+                                    background: #f8f9fa;
+                                    padding: 1rem;
+                                    border-radius: 0.375rem;
+                                    font-family: monospace;
+                                    font-size: 0.9rem;
+                                    max-height: 200px;
+                                    overflow-y: auto;
+                                "
+                            >
+                                <div style="color: #28a745">✓ Page loaded</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+        <!-- MOJO Framework Test -->
+        <script type="module">
+            // Test logging utility
+            function testLog(message, status = "info") {
+                const logDiv = document.getElementById("test-log");
+                const timestamp = new Date().toLocaleTimeString();
+                const icons = {
+                    success: "✓",
+                    error: "✗",
+                    info: "ℹ",
+                    warning: "⚠",
+                };
+                const colors = {
+                    success: "#28a745",
+                    error: "#dc3545",
+                    info: "#17a2b8",
+                    warning: "#ffc107",
+                };
+
+                const entry = document.createElement("div");
+                entry.style.color = colors[status] || colors.info;
+                entry.innerHTML = `${icons[status] || icons.info} [${timestamp}] ${message}`;
+                logDiv.appendChild(entry);
+                logDiv.scrollTop = logDiv.scrollHeight;
+
+                console.log(`[FileDropMixin Test] ${message}`);
+            }
+
+            // Test the FileDropMixin
+            async function runTest() {
+                try {
+                    testLog("Starting FileDropMixin test...", "info");
+
+                    // Import MOJO components
+                    testLog("Importing MOJO components...", "info");
+                    const View = (await import("../../src/core/View.js")).default;
+                    const applyFileDropMixin = (
+                        await import("../../src/components/FileDropMixin.js")
+                    ).default;
+
+                    testLog("✓ MOJO components imported successfully", "success");
+
+                    // Apply the FileDropMixin to View class
+                    testLog("Applying FileDropMixin to View class...", "info");
+                    applyFileDropMixin(View);
+                    testLog("✓ FileDropMixin applied successfully", "success");
+
+                    // Create test view class
+                    class TestDropView extends View {
+                        constructor(options) {
+                            super(options);
+                            testLog("TestDropView constructor called", "info");
+
+                            // Enable file drop with test configuration
+                            this.enableFileDrop({
+                                acceptedTypes: ["*/*"], // Accept all file types for testing
+                                maxFileSize: 50 * 1024 * 1024, // 50MB
+                                multiple: true,
+                                validateOnDrop: true,
+                            });
+
+                            testLog("✓ FileDropMixin enabled on view", "success");
+                        }
+
+                        async getTemplate() {
+                            return `
+                                <div class="test-drop-zone">
+                                    <i class="bi bi-cloud-arrow-up" style="font-size: 4rem; color: #6c757d;"></i>
+                                    <h4 class="mt-3">Drop files here</h4>
+                                    <p class="text-muted">Testing FileDropMixin integration</p>
+                                </div>
+                            `;
+                        }
+
+                        async onFileDrop(files, event, validation) {
+                            testLog(`✓ onFileDrop called with ${files.length} file(s)`, "success");
+
+                            const resultsDiv = document.getElementById("test-results");
+
+                            const fileList = files
+                                .map(
+                                    (file) => `
+                            <div class="file-info">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-file-earmark text-primary me-2"></i>
+                                    <div>
+                                        <strong>${file.name}</strong>
+                                        <br><small class="text-muted">${this.formatFileSize(file.size)} • ${file.type}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        `,
+                                )
+                                .join("");
+
+                            resultsDiv.innerHTML = `
+                            <div class="alert alert-success">
+                                <i class="bi bi-check-circle"></i>
+                                <strong>Files dropped successfully!</strong>
+                            </div>
+                            ${fileList}
+                        `;
+
+                            // Log each file
+                            files.forEach((file, index) => {
+                                testLog(
+                                    `File ${index + 1}: ${file.name} (${this.formatFileSize(file.size)})`,
+                                    "info",
+                                );
+                            });
+                        }
+
+                        async onFileDropError(error, event, files) {
+                            testLog(`✗ onFileDropError called: ${error.message}`, "error");
+
+                            const resultsDiv = document.getElementById("test-results");
+                            resultsDiv.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <strong>Drop Error:</strong> ${error.message}
+                            </div>
+                        `;
+                        }
+
+                        formatFileSize(bytes) {
+                            if (bytes === 0) return "0 Bytes";
+                            const k = 1024;
+                            const sizes = ["Bytes", "KB", "MB", "GB"];
+                            const i = Math.floor(Math.log(bytes) / Math.log(k));
+                            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+                        }
+                    }
+
+                    testLog("TestDropView class created", "info");
+
+                    // Create and mount the test view
+                    const testView = new TestDropView();
+                    const testZone = document.getElementById("test-zone");
+
+                    await testView.render(true, testZone);
+                    testLog("✓ TestDropView rendered and mounted", "success");
+
+                    // Store globally for debugging
+                    window.testView = testView;
+                    window.testLog = testLog;
+
+                    testLog("✓ FileDropMixin test setup complete!", "success");
+                    testLog("Try dropping files in the zone above", "info");
+                } catch (error) {
+                    testLog(`✗ Test failed: ${error.message}`, "error");
+                    console.error("FileDropMixin test error:", error);
+
+                    // Show error in results area
+                    const resultsDiv = document.getElementById("test-results");
+                    resultsDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-x-circle"></i>
+                        <strong>Test Error:</strong> ${error.message}
+                        <br><small>Check console for details</small>
+                    </div>
+                `;
+                }
+            }
+
+            // Run test when DOM is ready
+            document.addEventListener("DOMContentLoaded", runTest);
+
+            // Test info
+            testLog("FileDropMixin Simple Test initialized", "info");
+        </script>
+    </body>
+</html>

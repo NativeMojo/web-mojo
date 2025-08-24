@@ -30,7 +30,7 @@ class ChartsPage extends Page {
         this.data = {
             pageTitle: 'Interactive Charts Dashboard',
             pageSubtitle: 'Real-time data visualization with Chart.js integration',
-            
+
             // Sample business data
             monthlyRevenue: {
                 labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
@@ -164,15 +164,15 @@ class ChartsPage extends Page {
             });
 
             this.addChild(this.charts.growth);
-            
+
             // Show success message for first chart load
-            if (Object.keys(this.charts).length === 2) {
-                this.showSuccess(
-                    `Interactive dashboard loaded successfully!<br>
-                     <small class="text-muted">💡 Click chart elements for details • Export as PNG or CSV</small>`,
-                    'Charts Ready'
-                );
-            }
+            // if (Object.keys(this.charts).length === 2) {
+            //     this.showSuccess(
+            //         `Interactive dashboard loaded successfully!<br>
+            //          <small class="text-muted">💡 Click chart elements for details • Export as PNG or CSV</small>`,
+            //         'Charts Ready'
+            //     );
+            // }
 
             // User Segments (Pie)
             this.charts.segments = new PieChart({
@@ -307,7 +307,7 @@ class ChartsPage extends Page {
     onSegmentClicked(data) {
         // Show detailed info about the clicked segment
         const { chart, label, value, percentage } = data;
-        
+
         this.showInfo(
             `<strong>${label}</strong><br>` +
             `Value: ${typeof value === 'number' ? value.toLocaleString() : value}<br>` +
@@ -319,7 +319,7 @@ class ChartsPage extends Page {
 
     onPointClicked(data) {
         const { chart, label, value } = data;
-        
+
         this.showInfo(
             `<strong>${label}</strong><br>` +
             `Value: ${typeof value === 'number' ? value.toLocaleString() : value}<br>` +
@@ -330,7 +330,7 @@ class ChartsPage extends Page {
 
     onChartTypeChanged(data) {
         const { chart, oldType, newType } = data;
-        
+
         this.showSuccess(
             `<strong>${chart.title}</strong><br>` +
             `Chart type changed from ${oldType} to ${newType}<br>` +
@@ -342,9 +342,9 @@ class ChartsPage extends Page {
     toggleChartsTheme() {
         const currentTheme = document.body.getAttribute('data-theme') || 'light';
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        
+
         document.body.setAttribute('data-theme', newTheme);
-        
+
         // Update all charts
         Object.values(this.charts).forEach(chart => {
             if (chart.setTheme) {
@@ -365,10 +365,10 @@ class ChartsPage extends Page {
         const chartCount = Object.keys(this.charts).length;
         this.showInfo(
             `🔄 Refreshing ${chartCount} charts with live data...<br>` +
-            `<small class="text-muted">Simulating real-time updates</small>`, 
+            `<small class="text-muted">Simulating real-time updates</small>`,
             'Data Update'
         );
-        
+
         // Add some random variation to simulate real data changes
         Object.keys(this.data.monthlyRevenue.datasets[0].data).forEach(key => {
             const currentValue = this.data.monthlyRevenue.datasets[0].data[key];
@@ -409,7 +409,7 @@ class ChartsPage extends Page {
                     setTimeout(() => {
                         chart.export(format);
                         exportCount++;
-                        
+
                         if (exportCount === totalExports) {
                             this.showSuccess(
                                 `Successfully exported ${Object.keys(this.charts).length} charts:<br>` +

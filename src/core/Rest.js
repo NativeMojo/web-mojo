@@ -326,14 +326,73 @@ class Rest {
   }
 
   /**
-   * Upload file(s) with multipart/form-data
+   * Upload file with raw PUT request (compatible with legacy backend)
+   * @param {string} url - Upload URL
+   * @param {File} file - Single file to upload
+   * @param {object} options - Request options
+   * @param {function} options.onProgress - Progress callback function(event)
+   * @returns {Promise} Promise that resolves with response data
+   */
+  async upload(url, file, options = {}) {
+    return new Promise((resolve, reject) => {
+      // Validate input - only accept single File objects
+      if (!(file instanceof File)) {
+        reject(new Error('Only single File objects are supported for legacy backend compatibility'));
+        return;
+      }
+
+      const xhr = new XMLHttpRequest();
+
+      // Set up progress tracking if callback provided
+      if (options.onProgress && typeof options.onProgress === 'function') {
+        xhr.upload.onprogress = options.onProgress;
+      }
+
+      // Set up response handlers
+      xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve({
+            data: xhr.response,
+            status: xhr.status,
+            statusText: xhr.statusText,
+            xhr: xhr
+          });
+        } else {
+          reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`));
+        }
+      };
+
+      xhr.onerror = function() {
+        reject(new Error('Upload failed: Network error'));
+      };
+
+      xhr.ontimeout = function() {
+        reject(new Error('Upload failed: Timeout'));
+      };
+
+      // Configure request - use PUT method with raw file data
+      xhr.open('PUT', url);
+      xhr.setRequestHeader('Content-Type', file.type);
+
+      // Set timeout if specified
+      if (options.timeout) {
+        xhr.timeout = options.timeout;
+      }
+
+      // Send the raw file data
+      xhr.send(file);
+    });
+  }
+
+  /**
+   * Upload multiple files with multipart/form-data (for modern backends)
    * @param {string} url - Upload URL
    * @param {File|FileList|FormData} files - File(s) to upload
    * @param {object} additionalData - Additional form fields
    * @param {object} options - Request options
    * @returns {Promise} Promise that resolves with response data
    */
-  async upload(url, files, additionalData = {}, options = {}) {
+  async uploadMultipart(url, files, additionalData = {}, options = {}) {
     const formData = new FormData();
 
     // Add files to form data

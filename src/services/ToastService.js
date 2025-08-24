@@ -167,6 +167,9 @@ class ToastService {
     this.container.appendChild(toastElement);
 
     // Initialize Bootstrap toast
+    if (typeof bootstrap === 'undefined') {
+      throw new Error('Bootstrap is required for ToastService. Make sure Bootstrap 5 is loaded.');
+    }
     const bsToast = new bootstrap.Toast(toastElement, {
       autohide: config.autohide,
       delay: config.delay
@@ -190,8 +193,89 @@ class ToastService {
 
     return {
       id: toastId,
-      hide: () => bsToast.hide(),
-      dispose: () => this.cleanup(toastId)
+      hide: () => {
+        try {
+          bsToast.hide();
+        } catch (error) {
+          console.warn('Error hiding toast:', error);
+        }
+      },
+      dispose: () => this.cleanup(toastId),
+      updateProgress: options.updateProgress || null
+    };
+  }
+
+  /**
+   * Show a toast with a View component in the body
+   * @param {View} view - The View component to display
+   * @param {string} type - Toast type (success, error, info, warning, plain)
+   * @param {object} options - Additional options
+   */
+  showView(view, type = 'info', options = {}) {
+    // Enforce max toasts limit
+    this.enforceMaxToasts();
+    
+    const toastId = `toast-${++this.toastCounter}`;
+    const config = {
+      title: options.title || this.getDefaultTitle(type),
+      icon: options.icon || this.getDefaultIcon(type),
+      autohide: this.options.autohide,
+      delay: this.options.defaultDelay,
+      dismissible: true,
+      ...options
+    };
+
+    const toastElement = this.createViewToastElement(toastId, view, type, config);
+    this.container.appendChild(toastElement);
+
+    // Initialize Bootstrap toast
+    if (typeof bootstrap === 'undefined') {
+      throw new Error('Bootstrap is required for ToastService. Make sure Bootstrap 5 is loaded.');
+    }
+    const bsToast = new bootstrap.Toast(toastElement, {
+      autohide: config.autohide,
+      delay: config.delay
+    });
+
+    // Store toast reference with view
+    this.toasts.set(toastId, {
+      element: toastElement,
+      bootstrap: bsToast,
+      type: type,
+      view: view,
+      message: 'View toast'
+    });
+
+    // Setup cleanup on hide - dispose view properly
+    toastElement.addEventListener('hidden.bs.toast', () => {
+      this.cleanupView(toastId);
+    });
+
+    // Mount and render the view
+    const bodyContainer = toastElement.querySelector('.toast-view-body');
+    if (bodyContainer && view) {
+      view.render(true, bodyContainer);
+    }
+
+    // Show the toast
+    bsToast.show();
+
+    return {
+      id: toastId,
+      view: view,
+      hide: () => {
+        try {
+          bsToast.hide();
+        } catch (error) {
+          console.warn('Error hiding view toast:', error);
+        }
+      },
+      dispose: () => this.cleanupView(toastId),
+      updateProgress: (progressInfo) => {
+        if (view && typeof view.updateProgress === 'function') {
+          view.updateProgress(progressInfo);
+        }
+      }
     };
   }
 
@@ -218,9 +302,42 @@ class ToastService {
   }
 
   /**
+   * Create toast DOM element for View component
+   */
+  createViewToastElement(id, view, type, config) {
+    const toast = document.createElement('div');
+    toast.id = id;
+    toast.className = `toast toast-service-${type}`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+
+    const header = config.title || config.icon ? this.createToastHeader(config, type) : '';
+    const body = this.createViewToastBody();
+
+    toast.innerHTML = `
+      ${header}
+      ${body}
+    `;
+
+    return toast;
+  }
+
+  /**
+   * Create toast body for View component
+   */
+  createViewToastBody() {
+    return `
+      <div class="toast-body p-0">
+        <div class="toast-view-body p-3"></div>
+      </div>
+    `;
+  }
+
+  /**
    * Create toast header with title and icon
    */
-  createToastHeader(config, type) {
+  createToastHeader(config, _type) {
     const iconHtml = config.icon ? 
       `<i class="${config.icon} toast-service-icon me-2"></i>` : '';
     
@@ -331,10 +448,43 @@ class ToastService {
   }
 
   /**
+   * Clean up view toast resources with proper view disposal
+   */
+  cleanupView(toastId) {
+    const toast = this.toasts.get(toastId);
+    
+    if (toast) {
+      // Dispose view first if it exists
+      if (toast.view && typeof toast.view.dispose === 'function') {
+        try {
+          toast.view.dispose();
+        } catch (e) {
+          console.warn('Error disposing view in toast:', e);
+        }
+      }
+      
+      // Dispose Bootstrap toast
+      try {
+        toast.bootstrap.dispose();
+      } catch (e) {
+        console.warn('Error disposing toast:', e);
+      }
+      
+      // Remove from DOM
+      if (toast.element && toast.element.parentNode) {
+        toast.element.parentNode.removeChild(toast.element);
+      }
+      
+      // Remove from tracking
+      this.toasts.delete(toastId);
+    }
+  }
+
+  /**
    * Hide all active toasts
    */
   hideAll() {
-    this.toasts.forEach((toast, id) => {
+    this.toasts.forEach((toast, _id) => {
       toast.bootstrap.hide();
     });
   }
