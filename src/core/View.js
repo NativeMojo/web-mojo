@@ -86,6 +86,15 @@ export class View {
       if (this.model && this.model.on) {
           this.model.on("change", this._onModelChange, this);
       }
+
+      // Set model on all children
+      for (const id in this.children) {
+          const child = this.children[id];
+          if (child && typeof child.setModel === 'function') {
+              child.setModel(model);
+          }
+      }
+
       if (isDiff ) {
           this._onModelChange();
       }

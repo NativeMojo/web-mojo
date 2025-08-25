@@ -50,6 +50,7 @@ class Table extends View {
     // if (options.actions === undefined) options.actions = ['view', 'edit', 'delete'];
     this.actions = options.actions || null;
     this.contextMenu = options.contextMenu || null;
+    this.itemViewClass = options.itemViewClass || null;
 
     // Internal state
     this.collection = options.collection || null;
@@ -1613,17 +1614,44 @@ class Table extends View {
    */
   async onItemClicked(item, event, target) {
     console.log('Item clicked:', item);
-    // Default implementation - can be overridden
-    let dlgOpts = {};
-      if (item.constructor.VIEW) dlgOpts = item.constructor.VIEW;
-    const dialogPromise = Dialog.showData({
-      ...dlgOpts,
-      title: `#${item.id} ${this.options.modelName}`,
-      model: item
-    });
-
-    // Emit event for external handlers
-    this.emit('item-clicked', { item, event, target });
+    
+    // Check if itemViewClass is explicitly set
+    if (this.itemViewClass) {
+      const viewInstance = new this.itemViewClass({ model: item });
+      await Dialog.showDialog({
+        title: `${item.constructor.name || 'Item'} Details`,
+        body: viewInstance,
+        size: 'lg'
+      });
+    }
+    // Check if item has a VIEW property
+    else if (item.constructor.VIEW) {
+      const viewConfig = item.constructor.VIEW;
+      
+      // Check if VIEW is a View class (has prototype.render or extends View)
+      if (typeof viewConfig === 'function' && 
+          (viewConfig.prototype?.render || viewConfig.prototype?.constructor?.name?.includes('View'))) {
+        // It's a View class
+        const viewInstance = new viewConfig({ model: item });
+        await Dialog.showDialog({
+          title: `${item.constructor.name || 'Item'} Details`,
+          body: viewInstance,
+          size: 'lg'
+        });
+      }
+      // It's a plain configuration object
+      else if (typeof viewConfig === 'object') {
+        await Dialog.showData({
+          ...viewConfig,
+          title: viewConfig.title || `#${item.id} ${this.options.modelName}`,
+          model: item
+        });
+      }
+    }
+    // Fallback - emit event for external handlers
+    else {
+      this.emit('item-clicked', { item, event, target });
+    }
   }
 
   /**

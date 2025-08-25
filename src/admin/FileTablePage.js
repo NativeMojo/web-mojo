@@ -6,6 +6,7 @@
 import TablePage from '../components/TablePage.js';
 import { File, FileList, FileForms } from '../models/Files.js';
 import applyFileDropMixin from '../components/FileDropMixin.js';
+import FileView from '../components/FileView.js';
 
 class FileTablePage extends TablePage {
     constructor(options = {}) {
@@ -17,6 +18,7 @@ class FileTablePage extends TablePage {
             Collection: FileList,
             formCreate: FileForms.create,
             formEdit: FileForms.edit,
+            itemViewClass: FileView,
 
             // Column definitions
             columns: [

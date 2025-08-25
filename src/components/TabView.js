@@ -1,14 +1,14 @@
 /**
  * TabView - Simple tabbed interface component for MOJO framework
  * Displays multiple views in a tabbed interface with clean navigation
- * 
+ *
  * Features:
  * - Simple tab-based navigation
  * - Child view management with proper mounting/unmounting
  * - Bootstrap 5 styling
  * - Keyboard navigation support
  * - Event-driven tab switching
- * 
+ *
  * Example Usage:
  * ```javascript
  * const tabView = new TabView({
@@ -82,16 +82,16 @@ class TabView extends View {
     const tabItems = this.tabLabels.map(label => {
       const isActive = label === this.activeTab;
       const tabId = this.getTabId(label);
-      
+
       return `
         <li class="nav-item" role="presentation">
-          <button class="nav-link ${isActive ? 'active' : ''}" 
-                  id="${tabId}-tab" 
+          <button class="nav-link ${isActive ? 'active' : ''}"
+                  id="${tabId}-tab"
                   data-action="show-tab"
                   data-tab-label="${this.escapeHtml(label)}"
-                  type="button" 
-                  role="tab" 
-                  aria-controls="${tabId}" 
+                  type="button"
+                  role="tab"
+                  aria-controls="${tabId}"
                   aria-selected="${isActive}">
             ${this.escapeHtml(label)}
           </button>
@@ -118,11 +118,11 @@ class TabView extends View {
     const tabPanes = this.tabLabels.map(label => {
       const isActive = label === this.activeTab;
       const tabId = this.getTabId(label);
-      
+
       return `
-        <div class="tab-pane fade ${isActive ? 'show active' : ''}" 
-             id="${tabId}" 
-             role="tabpanel" 
+        <div class="tab-pane fade ${isActive ? 'show active' : ''}"
+             id="${tabId}"
+             role="tabpanel"
              aria-labelledby="${tabId}-tab"
              data-tab-label="${this.escapeHtml(label)}">
           <div data-container="${tabId}-content"></div>
@@ -169,14 +169,14 @@ class TabView extends View {
     try {
       // Update tab navigation
       this.updateTabNavigation(tabLabel, previousTab);
-      
+
       // Update tab content
       await this.updateTabContent(tabLabel, previousTab);
-      
+
       // Emit tab change event
-      this.emit('tab:changed', { 
-        activeTab: tabLabel, 
-        previousTab: previousTab 
+      this.emit('tab:changed', {
+        activeTab: tabLabel,
+        previousTab: previousTab
       });
 
       return true;
@@ -252,10 +252,22 @@ class TabView extends View {
    * @param {Event} event - Click event
    * @param {HTMLElement} element - Clicked element
    */
-  async handleActionShowTab(event, element) {
+  async onActionShowTab(event, element) {
     const tabLabel = element.getAttribute('data-tab-label');
     if (tabLabel) {
       await this.showTab(tabLabel);
+    }
+  }
+
+  /**
+   * Initialize active tab after rendering
+   */
+  async onAfterRender() {
+    await super.onAfterRender();
+
+    // Show the active tab after initial render
+    if (this.activeTab && this.tabs[this.activeTab]) {
+      await this.showTab(this.activeTab);
     }
   }
 
@@ -264,13 +276,13 @@ class TabView extends View {
    */
   async onAfterMount() {
     await super.onAfterMount();
-    
+
     // Mount the initially active tab's view
     if (this.activeTab && this.tabs[this.activeTab]) {
       const activeTabId = this.getTabId(this.activeTab);
       const container = this.element.querySelector(`[data-container="${activeTabId}-content"]`);
       const activeView = this.tabs[this.activeTab];
-      
+
       if (container && activeView && !activeView.isMounted()) {
         await activeView.mount(container);
       }
@@ -282,7 +294,7 @@ class TabView extends View {
    */
   async onBeforeDestroy() {
     await super.onBeforeDestroy();
-    
+
     // Destroy all child tab views
     for (const [label, view] of Object.entries(this.tabs)) {
       if (view && typeof view.destroy === 'function') {
@@ -308,9 +320,18 @@ class TabView extends View {
   }
 
   /**
+   * Get a specific tab's view by label
+   * @param {string} label - Tab label
+   * @returns {View|null} The tab's view instance or null if not found
+   */
+  getTab(label) {
+    return this.tabs[label] || null;
+  }
+
+  /**
    * Add a new tab
    * @param {string} label - Tab label
-   * @param {View} view - Tab view
+   * @param {View} view - View instance for tab content
    * @param {boolean} makeActive - Whether to make this tab active
    * @returns {Promise<boolean>} True if tab was added successfully
    */
@@ -321,13 +342,20 @@ class TabView extends View {
     }
 
     this.tabs[label] = view;
+    this.addChild(view);
+    view.containerId = this.getTabId(label);
     this.tabLabels = Object.keys(this.tabs);
+
+    // Set as active tab if it's the first tab or explicitly requested
+    if (!this.activeTab || makeActive) {
+      this.activeTab = label;
+    }
 
     // Re-render if mounted
     if (this.isMounted()) {
       await this.render();
-      
-      if (makeActive) {
+
+      if (makeActive || this.activeTab === label) {
         await this.showTab(label);
       }
     }
@@ -348,7 +376,7 @@ class TabView extends View {
     }
 
     const view = this.tabs[label];
-    
+
     // Destroy the view
     if (view && typeof view.destroy === 'function') {
       await view.destroy();
@@ -366,7 +394,7 @@ class TabView extends View {
     // Re-render if mounted
     if (this.isMounted()) {
       await this.render();
-      
+
       if (this.activeTab) {
         await this.showTab(this.activeTab);
       }

@@ -6,6 +6,8 @@
 
 import View from '../core/View.js';
 import FormView from '../forms/FormView.js';
+import DataView from '../components/DataView.js';
+
 
 class Dialog extends View {
   constructor(options = {}) {
@@ -1609,8 +1611,6 @@ class Dialog extends View {
       ...dialogOptions
     } = options;
 
-    // Import DataView if not already available
-    const DataView = (await import('./DataView.js')).default;
 
     // Create the DataView
     const dataView = new DataView({

@@ -1,42 +1,16 @@
 /**
  * FileView - Display file metadata and renditions in organized tabs
- * Shows file information in a user-friendly format with support for both
- * simple URLs and complex file objects with renditions
- * 
- * Features:
- * - Three-tab layout: Overview, Renditions, Metadata
- * - Support for both URL strings and file objects
- * - Responsive image previews with multiple sizes
- * - Clean metadata display with formatted values
- * - Bootstrap 5 styling with proper responsive behavior
- * 
- * Example Usage:
- * ```javascript
- * // With file object
- * const fileView = new FileView({
- *   file: fileObject, // Complex file object with renditions
- *   size: 'lg'
- * });
- * 
- * // With simple URL
- * const fileView = new FileView({
- *   file: 'https://example.com/image.jpg'
- * });
- * ```
+ * Shows file information using proper MOJO framework patterns with Mustache templating
  */
 
 import View from '../core/View.js';
 import TabView from './TabView.js';
-import dataFormatter from '../utils/DataFormatter.js';
 
 class FileView extends View {
   constructor(options = {}) {
     const {
       file,
-      size = 'md',
-      showActions = true,
-      showMetadata = true,
-      showRenditions = true,
+      model,
       ...viewOptions
     } = options;
 
@@ -46,581 +20,415 @@ class FileView extends View {
       ...viewOptions
     });
 
-    // File data and configuration
-    this.file = file;
-    this.size = size;
-    this.showActions = showActions;
-    this.showMetadata = showMetadata;
-    this.showRenditions = showRenditions;
-
-    // Processed file information
-    this.fileInfo = this.processFileData(file);
-    this.tabs = {};
+    // Support both file property and model property (from TablePage)
+    this.model = file || model || {};
     this.tabView = null;
   }
 
-  /**
-   * Process file data into standardized format
-   * @param {string|Object} file - File URL or file object
-   * @returns {Object} Processed file information
-   */
-  processFileData(file) {
-    if (!file) {
-      return {
-        isValid: false,
-        type: 'empty',
-        displayName: 'No file',
-        url: null,
-        fileSize: 0,
-        contentType: 'unknown'
-      };
-    }
-
-    // Handle simple URL string
-    if (typeof file === 'string') {
-      return {
-        isValid: true,
-        type: 'url',
-        displayName: this.extractFilenameFromUrl(file),
-        url: file,
-        originalUrl: file,
-        fileSize: 0,
-        contentType: this.guessContentTypeFromUrl(file),
-        isImage: this.isImageUrl(file)
-      };
-    }
-
-    // Handle complex file object
-    if (typeof file === 'object' && file.url) {
-      return {
-        isValid: true,
-        type: 'object',
-        id: file.id,
-        displayName: file.filename || 'Unknown file',
-        url: file.url,
-        originalUrl: file.url,
-        fileSize: file.file_size || 0,
-        contentType: file.content_type || 'unknown',
-        category: file.category || 'unknown',
-        isImage: file.category === 'image' || this.isImageContentType(file.content_type),
-        created: file.created,
-        modified: file.modified,
-        metadata: file.metadata || {},
-        renditions: file.renditions || {},
-        uploadStatus: file.upload_status,
-        isPublic: file.is_public,
-        isActive: file.is_active,
-        checksum: file.checksum,
-        storageFilename: file.storage_filename,
-        storageFilePath: file.storage_file_path
-      };
-    }
-
-    return {
-      isValid: false,
-      type: 'invalid',
-      displayName: 'Invalid file',
-      url: null
-    };
+  async getTemplate() {
+    return '<div data-container="tab-container"></div>';
   }
 
-  /**
-   * Extract filename from URL
-   * @param {string} url - File URL
-   * @returns {string} Extracted filename
-   */
-  extractFilenameFromUrl(url) {
-    try {
-      const urlObj = new URL(url);
-      const pathname = urlObj.pathname;
-      const filename = pathname.split('/').pop() || 'file';
-      return decodeURIComponent(filename);
-    } catch (error) {
-      return 'file';
-    }
-  }
+  async onInit() {
+    // Process the file data for template usage
+    this.processFileForTemplating();
 
-  /**
-   * Guess content type from URL
-   * @param {string} url - File URL
-   * @returns {string} Guessed content type
-   */
-  guessContentTypeFromUrl(url) {
-    const extension = url.split('.').pop()?.toLowerCase();
-    const typeMap = {
-      jpg: 'image/jpeg',
-      jpeg: 'image/jpeg',
-      png: 'image/png',
-      gif: 'image/gif',
-      webp: 'image/webp',
-      svg: 'image/svg+xml',
-      pdf: 'application/pdf',
-      txt: 'text/plain',
-      doc: 'application/msword',
-      docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    };
-    return typeMap[extension] || 'application/octet-stream';
-  }
-
-  /**
-   * Check if URL points to an image
-   * @param {string} url - File URL
-   * @returns {boolean} True if likely an image
-   */
-  isImageUrl(url) {
-    return this.isImageContentType(this.guessContentTypeFromUrl(url));
-  }
-
-  /**
-   * Check if content type is an image
-   * @param {string} contentType - MIME type
-   * @returns {boolean} True if image content type
-   */
-  isImageContentType(contentType) {
-    return contentType?.startsWith('image/') || false;
-  }
-
-  /**
-   * Get best image URL for display
-   * @param {string} size - Requested size (xs, sm, md, lg, xl)
-   * @returns {string|null} Best image URL or null
-   */
-  getBestImageUrl(size = 'md') {
-    if (!this.fileInfo.isValid || !this.fileInfo.isImage) {
-      return null;
-    }
-
-    // For simple URLs, return as-is
-    if (this.fileInfo.type === 'url') {
-      return this.fileInfo.url;
-    }
-
-    // For file objects with renditions
-    if (this.fileInfo.renditions && Object.keys(this.fileInfo.renditions).length > 0) {
-      const sizeMap = {
-        xs: ['thumbnail_sm', 'thumbnail', 'square_sm'],
-        sm: ['thumbnail', 'thumbnail_sm', 'square_sm'],
-        md: ['thumbnail_md', 'thumbnail', 'thumbnail_lg'],
-        lg: ['thumbnail_lg', 'thumbnail_md', 'thumbnail'],
-        xl: ['original', 'thumbnail_lg']
-      };
-
-      const preferredSizes = sizeMap[size] || sizeMap.md;
-      
-      for (const renditionName of preferredSizes) {
-        const rendition = this.fileInfo.renditions[renditionName];
-        if (rendition && rendition.url) {
-          return rendition.url;
-        }
-      }
-    }
-
-    // Fall back to original
-    return this.fileInfo.originalUrl;
-  }
-
-  /**
-   * Create overview tab content
-   * @returns {View} Overview tab view
-   */
-  createOverviewTab() {
-    return new View({
-      tagName: 'div',
-      className: 'file-overview p-3',
-      data: {
-        fileInfo: this.fileInfo,
-        imageUrl: this.getBestImageUrl(this.size),
-        showActions: this.showActions
-      }
+    // Create TabView
+    this.tabView = new TabView({
+      containerId: 'tab-container'
     });
+
+    // Add the TabView as a child
+    this.addChild(this.tabView);
   }
 
-  /**
-   * Create renditions tab content
-   * @returns {View} Renditions tab view
-   */
-  createRenditionsTab() {
-    const renditions = this.fileInfo.renditions || {};
-    const renditionsList = Object.entries(renditions).map(([name, rendition]) => ({
-      name,
-      ...rendition,
-      formattedSize: dataFormatter.pipe(rendition.file_size, 'filesize'),
-      dimensions: this.extractDimensions(rendition.metadata)
-    }));
-
-    return new View({
-      tagName: 'div',
-      className: 'file-renditions p-3',
-      data: {
-        fileInfo: this.fileInfo,
-        renditions: renditionsList,
-        hasRenditions: renditionsList.length > 0
-      }
-    });
-  }
-
-  /**
-   * Create metadata tab content  
-   * @returns {View} Metadata tab view
-   */
-  createMetadataTab() {
-    const metadata = [];
-
-    if (this.fileInfo.type === 'object') {
-      // Basic file information
-      if (this.fileInfo.id) metadata.push({ label: 'ID', value: this.fileInfo.id });
-      if (this.fileInfo.fileSize) {
-        metadata.push({ 
-          label: 'File Size', 
-          value: dataFormatter.pipe(this.fileInfo.fileSize, 'filesize') 
-        });
-      }
-      if (this.fileInfo.contentType) {
-        metadata.push({ label: 'Content Type', value: this.fileInfo.contentType });
-      }
-      if (this.fileInfo.category) {
-        metadata.push({ label: 'Category', value: this.fileInfo.category });
-      }
-
-      // Timestamps
-      if (this.fileInfo.created) {
-        metadata.push({ 
-          label: 'Created', 
-          value: dataFormatter.pipe(this.fileInfo.created, 'datetime') 
-        });
-      }
-      if (this.fileInfo.modified) {
-        metadata.push({ 
-          label: 'Modified', 
-          value: dataFormatter.pipe(this.fileInfo.modified, 'datetime') 
-        });
-      }
-
-      // Status information
-      if (this.fileInfo.uploadStatus) {
-        metadata.push({ 
-          label: 'Upload Status', 
-          value: dataFormatter.pipe(this.fileInfo.uploadStatus, 'badge') 
-        });
-      }
-      metadata.push({ 
-        label: 'Public', 
-        value: this.fileInfo.isPublic ? 'Yes' : 'No' 
-      });
-      metadata.push({ 
-        label: 'Active', 
-        value: this.fileInfo.isActive ? 'Yes' : 'No' 
-      });
-
-      // Storage information
-      if (this.fileInfo.storageFilename) {
-        metadata.push({ label: 'Storage Filename', value: this.fileInfo.storageFilename });
-      }
-      if (this.fileInfo.checksum) {
-        metadata.push({ label: 'Checksum', value: this.fileInfo.checksum });
-      }
-
-      // Custom metadata
-      if (this.fileInfo.metadata && Object.keys(this.fileInfo.metadata).length > 0) {
-        Object.entries(this.fileInfo.metadata).forEach(([key, value]) => {
-          metadata.push({ 
-            label: key.charAt(0).toUpperCase() + key.slice(1),
-            value: typeof value === 'object' ? JSON.stringify(value, null, 2) : value
-          });
-        });
-      }
-    }
-
-    return new View({
-      tagName: 'div', 
-      className: 'file-metadata p-3',
-      data: {
-        fileInfo: this.fileInfo,
-        metadata: metadata,
-        hasMetadata: metadata.length > 0
-      }
-    });
-  }
-
-  /**
-   * Extract dimensions from metadata
-   * @param {Object} metadata - File metadata
-   * @returns {string|null} Formatted dimensions or null
-   */
-  extractDimensions(metadata) {
-    if (!metadata) return null;
-    
-    const width = metadata.width || metadata.image_width;
-    const height = metadata.height || metadata.image_height;
-    
-    if (width && height) {
-      return `${width} × ${height}`;
-    }
-    
-    return null;
-  }
-
-  /**
-   * Get template for overview tab
-   * @returns {string} Overview template
-   */
-  getOverviewTemplate() {
-    return `
-      <div class="row">
-        {{#fileInfo.isImage}}
-        <div class="col-md-6">
-          <div class="text-center mb-3">
-            {{#imageUrl}}
-            <img src="{{imageUrl}}" 
-                 alt="{{fileInfo.displayName}}" 
-                 class="img-fluid rounded shadow-sm"
-                 style="max-height: 300px; width: auto;">
-            {{/imageUrl}}
-            {{^imageUrl}}
-            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 200px;">
-              <i class="bi bi-file-earmark fs-1 text-muted"></i>
-            </div>
-            {{/imageUrl}}
-          </div>
-        </div>
-        {{/fileInfo.isImage}}
-        
-        <div class="{{#fileInfo.isImage}}col-md-6{{/fileInfo.isImage}}{{^fileInfo.isImage}}col-12{{/fileInfo.isImage}}">
-          <h5 class="mb-3">{{fileInfo.displayName}}</h5>
-          
-          <dl class="row">
-            {{#fileInfo.contentType}}
-            <dt class="col-sm-4">Type:</dt>
-            <dd class="col-sm-8">{{fileInfo.contentType}}</dd>
-            {{/fileInfo.contentType}}
-            
-            {{#fileInfo.fileSize}}
-            <dt class="col-sm-4">Size:</dt>
-            <dd class="col-sm-8">{{fileInfo.fileSize|filesize}}</dd>
-            {{/fileInfo.fileSize}}
-            
-            {{#fileInfo.category}}
-            <dt class="col-sm-4">Category:</dt>
-            <dd class="col-sm-8">{{fileInfo.category}}</dd>
-            {{/fileInfo.category}}
-            
-            {{#fileInfo.uploadStatus}}
-            <dt class="col-sm-4">Status:</dt>
-            <dd class="col-sm-8">{{fileInfo.uploadStatus|badge}}</dd>
-            {{/fileInfo.uploadStatus}}
-          </dl>
-          
-          {{#showActions}}
-          <div class="mt-3">
-            {{#fileInfo.url}}
-            <a href="{{fileInfo.url}}" 
-               target="_blank" 
-               class="btn btn-primary btn-sm me-2">
-              <i class="bi bi-download me-1"></i> Download
-            </a>
-            {{/fileInfo.url}}
-            <button type="button" 
-                    class="btn btn-outline-secondary btn-sm"
-                    data-action="copy-url">
-              <i class="bi bi-clipboard me-1"></i> Copy URL
-            </button>
-          </div>
-          {{/showActions}}
-        </div>
-      </div>
-    `;
-  }
-
-  /**
-   * Get template for renditions tab
-   * @returns {string} Renditions template
-   */
-  getRenditionsTemplate() {
-    return `
-      {{#hasRenditions}}
-      <div class="row g-3">
-        {{#renditions}}
-        <div class="col-sm-6 col-lg-4">
-          <div class="card">
-            <div class="text-center p-3">
-              {{#url}}
-              <img src="{{url}}" 
-                   alt="{{name}}" 
-                   class="img-fluid rounded"
-                   style="max-height: 150px; width: auto;">
-              {{/url}}
-              {{^url}}
-              <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 100px;">
-                <i class="bi bi-file-earmark text-muted"></i>
-              </div>
-              {{/url}}
-            </div>
-            <div class="card-body pt-0">
-              <h6 class="card-title">{{name}}</h6>
-              <small class="text-muted">
-                {{#formattedSize}}{{formattedSize}}{{/formattedSize}}
-                {{#dimensions}} • {{dimensions}}{{/dimensions}}
-              </small>
-              {{#url}}
-              <div class="mt-2">
-                <a href="{{url}}" 
-                   target="_blank" 
-                   class="btn btn-outline-primary btn-sm">
-                  <i class="bi bi-download"></i>
-                </a>
-              </div>
-              {{/url}}
-            </div>
-          </div>
-        </div>
-        {{/renditions}}
-      </div>
-      {{/hasRenditions}}
-      
-      {{^hasRenditions}}
-      <div class="text-center text-muted py-5">
-        <i class="bi bi-images fs-1 mb-3 d-block"></i>
-        <p>No renditions available for this file.</p>
-      </div>
-      {{/hasRenditions}}
-    `;
-  }
-
-  /**
-   * Get template for metadata tab
-   * @returns {string} Metadata template
-   */
-  getMetadataTemplate() {
-    return `
-      {{#hasMetadata}}
-      <dl class="row">
-        {{#metadata}}
-        <dt class="col-sm-4">{{label}}:</dt>
-        <dd class="col-sm-8">
-          {{#value}}
-          <code class="small">{{value}}</code>
-          {{/value}}
-          {{^value}}
-          <span class="text-muted">-</span>
-          {{/value}}
-        </dd>
-        {{/metadata}}
-      </dl>
-      {{/hasMetadata}}
-      
-      {{^hasMetadata}}
-      <div class="text-center text-muted py-5">
-        <i class="bi bi-info-circle fs-1 mb-3 d-block"></i>
-        <p>No metadata available for this file.</p>
-      </div>
-      {{/hasMetadata}}
-    `;
-  }
-
-  /**
-   * Initialize the component after rendering
-   */
   async onAfterRender() {
     await super.onAfterRender();
 
-    if (!this.fileInfo.isValid) {
-      this.element.innerHTML = `
-        <div class="alert alert-warning">
-          <i class="bi bi-exclamation-triangle me-2"></i>
-          Invalid or missing file data.
-        </div>
-      `;
-      return;
+    // Add tabs after TabView is rendered
+    await this.tabView.addTab('Overview', new OverviewTabView({
+      model: this.model
+    }), true);
+
+    // Only show renditions tab if we have renditions
+    if (this.model.get("renditions")) {
+      await this.tabView.addTab('Renditions', new RenditionsTabView({
+        model: this.model
+      }));
     }
 
-    // Create tab views with their templates
-    const overviewTab = this.createOverviewTab();
-    overviewTab.renderTemplateString = () => this.getOverviewTemplate();
-
-    const tabs = { 'Overview': overviewTab };
-
-    // Add renditions tab if renditions exist or should be shown
-    if (this.showRenditions && (this.fileInfo.renditions || this.fileInfo.type === 'object')) {
-      const renditionsTab = this.createRenditionsTab();
-      renditionsTab.renderTemplateString = () => this.getRenditionsTemplate();
-      tabs['Renditions'] = renditionsTab;
-    }
-
-    // Add metadata tab if metadata exists or should be shown
-    if (this.showMetadata && this.fileInfo.type === 'object') {
-      const metadataTab = this.createMetadataTab();
-      metadataTab.renderTemplateString = () => this.getMetadataTemplate();
-      tabs['Metadata'] = metadataTab;
-    }
-
-    // Create and mount TabView
-    this.tabView = new TabView({
-      tabs: tabs,
-      activeTab: 'Overview'
-    });
-
-    await this.tabView.mount(this.element);
+    await this.tabView.addTab('Metadata', new MetadataTabView({
+      model: this.model
+    }));
   }
 
-  /**
-   * Handle copy URL action
-   * @param {string} action - Action name
-   * @param {Event} event - Click event
-   * @param {Element} element - Clicked element
-   */
-  async handleActionCopyUrl(action, event, element) {
-    if (!this.fileInfo.url) return;
+  processFileForTemplating() {
+    // Add computed properties for template use
+    this.model.hasImagePreview = this.isImageContentType(this.model.get("content_type")) || this.isImageUrl(this.model._.url);
+    this.model.hasRenditions = this.model._.renditions && Array.isArray(this.model._.renditions) && this.model._.renditions.length > 0;
+
+    // Process renditions for template use
+    if (this.model._.renditions && Array.isArray(this.model._.renditions)) {
+      this.model.renditions = this.model._.renditions.map(rendition => ({
+        ...rendition,
+        isImage: this.isImageContentType(rendition.content_type),
+        dimensions: this.extractDimensions(rendition)
+      }));
+    }
+
+    // Add best image URL for preview
+    if (this.model.hasImagePreview) {
+      this.model.bestImageUrl = this.getBestImageUrl(this.model);
+    }
+  }
+
+  isImageContentType(contentType) {
+    return contentType && contentType.startsWith('image/');
+  }
+
+  isImageUrl(url) {
+    return url && /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
+  }
+
+  getBestImageUrl(file) {
+    if (file.renditions && Array.isArray(file.renditions)) {
+      const imageRenditions = file.renditions.filter(r => this.isImageContentType(r.content_type));
+      if (imageRenditions.length > 0) {
+        return imageRenditions.reduce((best, current) => {
+          const bestSize = parseInt(best.width || 0) * parseInt(best.height || 0);
+          const currentSize = parseInt(current.width || 0) * parseInt(current.height || 0);
+          return currentSize > bestSize ? current : best;
+        }).url;
+      }
+    }
+    return file.url;
+  }
+
+  extractDimensions(rendition) {
+    if (rendition.width && rendition.height) {
+      return `${rendition.width} × ${rendition.height}`;
+    }
+    return null;
+  }
+
+  static create(options) {
+    return new FileView(options);
+  }
+}
+
+// Overview Tab View
+class OverviewTabView extends View {
+  constructor(options) {
+    super({
+      tagName: 'div',
+      className: 'file-overview p-3',
+      ...options
+    });
+  }
+
+  async getTemplate() {
+    return `
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header">
+              <h6 class="card-title mb-0">
+                <i class="bi bi-file-earmark me-2"></i>File Information
+              </h6>
+            </div>
+            <div class="card-body">
+              <div class="row g-2">
+                <div class="col-4"><strong>Name:</strong></div>
+                <div class="col-8">{{model.filename}}</div>
+
+                {{#model.content_type}}
+                <div class="col-4"><strong>Type:</strong></div>
+                <div class="col-8">
+                  <span class="badge bg-secondary">{{model.content_type}}</span>
+                </div>
+                {{/model.content_type}}
+
+                {{#model.file_size}}
+                <div class="col-4"><strong>Size:</strong></div>
+                <div class="col-8">{{model.file_size|filesize}}</div>
+                {{/model.file_size}}
+
+                {{#model.created}}
+                <div class="col-4"><strong>Created:</strong></div>
+                <div class="col-8">{{model.created|epoch|datetime}}</div>
+                {{/model.created}}
+
+                {{#model.description}}
+                <div class="col-12 mt-3">
+                  <strong>Description:</strong><br>
+                  <div class="text-muted">{{model.description}}</div>
+                </div>
+                {{/model.description}}
+              </div>
+
+              {{#model.url}}
+              <div class="mt-3">
+                <a href="{{model.url}}" target="_blank" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-box-arrow-up-right me-1"></i>Open File
+                </a>
+                <button class="btn btn-sm btn-outline-secondary ms-2" data-action="copy-url">
+                  <i class="bi bi-clipboard me-1"></i>Copy URL
+                </button>
+              </div>
+              {{/model.url}}
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          {{#model.isImage}}
+          <div class="card h-100">
+            <div class="card-header">
+              <h6 class="card-title mb-0">
+                <i class="bi bi-image me-2"></i>Preview
+              </h6>
+            </div>
+            <div class="card-body text-center">
+              {{{model|image}}}
+            </div>
+          </div>
+          {{/model.isImage}}
+
+          {{^model.isImage}}
+          <div class="card h-100">
+            <div class="card-body d-flex align-items-center justify-content-center text-muted">
+              <div class="text-center">
+                <i class="bi bi-file-earmark display-1"></i>
+                <p class="mt-3">No preview available</p>
+              </div>
+            </div>
+          </div>
+          {{/model.isImage}}
+        </div>
+      </div>
+    `;
+  }
+
+  async onActionCopyUrl(action, event, element) {
+    const url = this.model.url;
+    if (!url) return;
 
     try {
-      await navigator.clipboard.writeText(this.fileInfo.url);
-      
-      // Visual feedback
+      await navigator.clipboard.writeText(url);
+
+      // Show temporary success state
       const originalText = element.innerHTML;
-      element.innerHTML = '<i class="bi bi-check me-1"></i> Copied!';
-      element.classList.add('btn-success');
+      element.innerHTML = '<i class="bi bi-check me-1"></i>Copied!';
       element.classList.remove('btn-outline-secondary');
-      
+      element.classList.add('btn-success');
+
       setTimeout(() => {
         element.innerHTML = originalText;
         element.classList.remove('btn-success');
         element.classList.add('btn-outline-secondary');
       }, 2000);
-      
+
     } catch (error) {
       console.error('Failed to copy URL:', error);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
     }
   }
+}
 
-  /**
-   * Clean up when destroying
-   */
-  async onBeforeDestroy() {
-    if (this.tabView) {
-      await this.tabView.destroy();
-    }
-    await super.onBeforeDestroy();
+// Renditions Tab View
+class RenditionsTabView extends View {
+  constructor(options) {
+    super({
+      tagName: 'div',
+      className: 'file-renditions p-3',
+      ...options
+    });
   }
 
-  /**
-   * Update file data
-   * @param {string|Object} newFile - New file data
-   */
-  async updateFile(newFile) {
-    this.file = newFile;
-    this.fileInfo = this.processFileData(newFile);
-    
-    if (this.isMounted()) {
-      await this.render();
-    }
+  async getTemplate() {
+    return `
+      {{#model.renditions|boolean}}
+      <div class="row g-3">
+        {{#model.renditions}}
+        <div class="col-md-6 col-lg-4">
+          <div class="card">
+            {{#isImage}}
+            <img src="{{url}}"
+                 alt="{{filename}}"
+                 class="card-img-top"
+                 style="height: 200px; object-fit: cover;"
+                 onerror="this.style.display='none'">
+            {{/isImage}}
+
+            {{^isImage}}
+            <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
+                 style="height: 200px;">
+              <i class="bi bi-file-earmark display-4 text-muted"></i>
+            </div>
+            {{/isImage}}
+
+            <div class="card-body">
+              <h6 class="card-title">{{filename|default('Rendition')}}</h6>
+              <div class="small text-muted">
+                {{#dimensions}}<div>Size: {{dimensions}}</div>{{/dimensions}}
+                {{#file_size}}<div>File Size: {{file_size|filesize}}</div>{{/file_size}}
+                <div>Type: {{content_type|default('Unknown')}}</div>
+              </div>
+              {{#url}}
+              <a href="{{url}}" target="_blank"
+                 class="btn btn-sm btn-outline-primary mt-2">
+                <i class="bi bi-box-arrow-up-right me-1"></i>Open
+              </a>
+              {{/url}}
+            </div>
+          </div>
+        </div>
+        {{/model.renditions|boolean}}
+      </div>
+      {{/model.hasRenditions}}
+
+      {{^model.hasRenditions}}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-images display-4"></i>
+        <p class="mt-3">No renditions available</p>
+      </div>
+      {{/model.hasRenditions}}
+    `;
+  }
+}
+
+// Metadata Tab View
+class MetadataTabView extends View {
+  constructor(options) {
+    super({
+      tagName: 'div',
+      className: 'file-metadata p-3',
+      ...options
+    });
   }
 
-  /**
-   * Static factory method
-   * @param {Object} options - FileView options
-   * @returns {FileView} New FileView instance
-   */
-  static create(options = {}) {
-    return new FileView(options);
+  async getTemplate() {
+    return `
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <tbody>
+            {{#model.id}}
+            <tr>
+              <th class="text-nowrap" style="width: 200px;">ID</th>
+              <td>{{model.id}}</td>
+            </tr>
+            {{/model.id}}
+
+            {{#model.filename}}
+            <tr>
+              <th class="text-nowrap">Filename</th>
+              <td>{{model.filename}}</td>
+            </tr>
+            {{/model.filename}}
+
+            {{#model.content_type}}
+            <tr>
+              <th class="text-nowrap">Content Type</th>
+              <td><code>{{model.content_type}}</code></td>
+            </tr>
+            {{/model.content_type}}
+
+            {{#model.file_size}}
+            <tr>
+              <th class="text-nowrap">File Size</th>
+              <td>{{model.file_size|filesize}} <small class="text-muted">({{model.file_size}} bytes)</small></td>
+            </tr>
+            {{/model.file_size}}
+
+            {{#model.created}}
+            <tr>
+              <th class="text-nowrap">Created</th>
+              <td>{{model.created|epoch|datetime}}</td>
+            </tr>
+            {{/model.created}}
+
+            {{#model.modified}}
+            <tr>
+              <th class="text-nowrap">Modified</th>
+              <td>{{model.modified|epoch|datetime}}</td>
+            </tr>
+            {{/model.modified}}
+
+            {{#model.upload_status}}
+            <tr>
+              <th class="text-nowrap">Upload Status</th>
+              <td><span class="badge bg-info">{{model.upload_status}}</span></td>
+            </tr>
+            {{/model.upload_status}}
+
+            {{#model.group}}
+            <tr>
+              <th class="text-nowrap">Group</th>
+              <td>{{model.group}}</td>
+            </tr>
+            {{/model.group}}
+
+            <tr>
+              <th class="text-nowrap">Public</th>
+              <td>
+                {{#model.is_public}}
+                <span class="badge bg-success">Yes</span>
+                {{/model.is_public}}
+                {{^model.is_public}}
+                <span class="badge bg-secondary">No</span>
+                {{/model.is_public}}
+              </td>
+            </tr>
+
+            <tr>
+              <th class="text-nowrap">Active</th>
+              <td>
+                {{#model.is_active}}
+                <span class="badge bg-success">Yes</span>
+                {{/model.is_active}}
+                {{^model.is_active}}
+                <span class="badge bg-secondary">No</span>
+                {{/model.is_active}}
+              </td>
+            </tr>
+
+            {{#model.storage_filename}}
+            <tr>
+              <th class="text-nowrap">Storage Filename</th>
+              <td><code class="small">{{model.storage_filename}}</code></td>
+            </tr>
+            {{/model.storage_filename}}
+
+            {{#model.storage_file_path}}
+            <tr>
+              <th class="text-nowrap">Storage Path</th>
+              <td><code class="small">{{model.storage_file_path}}</code></td>
+            </tr>
+            {{/model.storage_file_path}}
+
+            {{#model.checksum}}
+            <tr>
+              <th class="text-nowrap">Checksum</th>
+              <td><code class="small">{{model.checksum}}</code></td>
+            </tr>
+            {{/model.checksum}}
+
+            {{#model.url}}
+            <tr>
+              <th class="text-nowrap">URL</th>
+              <td><code class="small">{{model.url}}</code></td>
+            </tr>
+            {{/model.url}}
+          </tbody>
+        </table>
+      </div>
+    `;
   }
 }
 

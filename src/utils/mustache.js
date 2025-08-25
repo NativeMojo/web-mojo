@@ -87,6 +87,13 @@ class Context {
     this.view = view;
     this.cache = { '.': this.view };
     this.parent = parentContext;
+    
+    // Generate unique context ID for render caching
+    if (!this.view?._cacheId) {
+      if (this.view && typeof this.view === 'object') {
+        this.view._cacheId = Math.random().toString(36).substring(2);
+      }
+    }
   }
 
   push(view) {
@@ -94,6 +101,14 @@ class Context {
   }
 
   lookup(name) {
+    // Check render-level cache first
+    if (this.renderCache && this.view?._cacheId) {
+      const cacheKey = `${this.view._cacheId}:${name}`;
+      if (this.renderCache.has(cacheKey)) {
+        return this.renderCache.get(cacheKey);
+      }
+    }
+
     // Special case: '.' refers to the current context value itself
     if (name === '.') {
       return this.view;
@@ -250,6 +265,12 @@ class Context {
     }
 
     if (isFunction(value)) value = value.call(this.view);
+
+    // Store in render-level cache after function evaluation
+    if (this.renderCache && this.view?._cacheId) {
+      const cacheKey = `${this.view._cacheId}:${name}`;
+      this.renderCache.set(cacheKey, value);
+    }
 
     return value;
   }
@@ -442,10 +463,18 @@ class Writer {
   render(template, view, partials, config) {
     const tags = this.getConfigTags(config) || ['{{', '}}'];
     const tokens = this.parse(template, tags);
-    return this.renderTokens(tokens, new Context(view), partials, template, config);
+    
+    // Create render-level cache for this render operation
+    const renderCache = new Map();
+    
+    return this.renderTokens(tokens, new Context(view), partials, template, config, renderCache);
   }
 
-  renderTokens(tokens, context, partials, originalTemplate, config) {
+  renderTokens(tokens, context, partials, originalTemplate, config, renderCache) {
+    // Attach render cache to context if provided
+    if (renderCache && !context.renderCache) {
+      context.renderCache = renderCache;
+    }
     let buffer = '';
 
     for (let i = 0; i < tokens.length; ++i) {
@@ -468,18 +497,27 @@ class Writer {
             // Process each array item
             for (let j = 0; j < value.length; ++j) {
               const itemContext = context.push(value[j]);
-              const itemResult = this.renderTokens(childTokens, itemContext, partials, originalTemplate, config);
+              // Pass render cache to child context
+              if (context.renderCache) {
+                itemContext.renderCache = context.renderCache;
+              }
+              const itemResult = this.renderTokens(childTokens, itemContext, partials, originalTemplate, config, renderCache);
               buffer += itemResult;
             }
           } else if (typeof value === 'object' || typeof value === 'string' || typeof value === 'number') {
-            buffer += this.renderTokens(childTokens, context.push(value), partials, originalTemplate, config);
+            const pushedContext = context.push(value);
+            // Pass render cache to child context
+            if (context.renderCache) {
+              pushedContext.renderCache = context.renderCache;
+            }
+            buffer += this.renderTokens(childTokens, pushedContext, partials, originalTemplate, config, renderCache);
           } else if (isFunction(value)) {
             const text = originalTemplate == null ? null : originalTemplate.slice(token[3], token[5]);
             value = value.call(context.view, text, (template) => this.render(template, context.view, partials, config));
             if (value != null) buffer += value;
           } else if (value) {
             // Handle boolean true and other truthy values
-            buffer += this.renderTokens(childTokens, context, partials, originalTemplate, config);
+            buffer += this.renderTokens(childTokens, context, partials, originalTemplate, config, renderCache);
           }
           break;
 
@@ -489,7 +527,7 @@ class Writer {
             // Ensure we have child tokens for inverted sections too
             const childTokens = token[4];
             if (childTokens && isArray(childTokens)) {
-              buffer += this.renderTokens(childTokens, context, partials, originalTemplate, config);
+              buffer += this.renderTokens(childTokens, context, partials, originalTemplate, config, renderCache);
             }
           }
           break;

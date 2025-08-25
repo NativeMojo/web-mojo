@@ -62,7 +62,11 @@ class Model {
    */
    get(key) {
      // Check if key exists as an instance field first (for 'id', 'endpoint', etc.)
-     if (!key.includes('.') && !key.includes('|') && this.hasOwnProperty(key)) {
+     if (!key.includes('.') && !key.includes('|') && this[key] !== undefined) {
+       // If it's a function, call it and return the result
+       if (typeof this[key] === 'function') {
+         return this[key]();
+       }
        return this[key];
      }
 
@@ -83,6 +87,7 @@ class Model {
     if (typeof key === 'object') {
       // Set multiple attributes
       Object.assign(this.attributes, key);
+      Object.assign(this, key);
       if (key.id !== undefined) {
         this.id = key.id;
       }
@@ -95,6 +100,7 @@ class Model {
       } else {
         const oldValue = this.attributes[key];
         this.attributes[key] = value;
+        this[key] = value;
         hasChanged = oldValue !== value;
       }
     }
@@ -249,7 +255,7 @@ class Model {
       }
 
       this.errors = { fetch: error.message };
-      
+
       // Return error response for network/other errors
       return {
         success: false,
@@ -339,10 +345,10 @@ class Model {
       }
 
       return response;
-      
+
     } catch (error) {
       this.errors = { destroy: error.message };
-      
+
       // Return error response for network/other errors
       return {
         success: false,

@@ -113,14 +113,18 @@ class File extends Model {
         });
     }
 
+    isImage() {
+        return this.get("category") === 'image';
+    }
+
     /**
      * Upload file with progress tracking and UI integration
      * Returns a FileUpload instance with promise interface and cancellation support
-     * 
+     *
      * @param {object} options - Upload configuration
      * @param {File} options.file - File object to upload
      * @param {string} options.name - Custom filename (optional)
-     * @param {string} options.group - File group/category (optional)  
+     * @param {string} options.group - File group/category (optional)
      * @param {string} options.description - File description (optional)
      * @param {function} options.onProgress - Progress callback ({ progress, loaded, total, percentage })
      * @param {function} options.onComplete - Success callback

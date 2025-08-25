@@ -55,6 +55,7 @@ class TablePage extends Page {
       groupFiltering: options.groupFiltering || false,
       listOptions: options.listOptions || {},
       view: options.view || 'table',
+      itemViewClass: options.itemViewClass || null,
       selectable: options.selectable !== undefined ? options.selectable : false,
       searchable: options.searchable !== undefined ? options.searchable : true,
       sortable: options.sortable !== undefined ? options.sortable : true,

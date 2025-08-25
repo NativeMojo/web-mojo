@@ -833,6 +833,8 @@ class DataFormatter {
 
     // Handle file object with renditions
     if (typeof value === 'object') {
+
+        if (value.attributes) value = value.attributes;
       // Check if it has renditions
       if (value.renditions && typeof value.renditions === 'object') {
         // Try to get preferred rendition
