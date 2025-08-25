@@ -22,13 +22,15 @@ class GroupTablePage extends TablePage {
                     class: 'text-muted'
                 },
                 {
+                    key: 'kind',
+                    label: 'Kind',
+                    filter: { type: "text" }
+                },
+                {
                     key: 'name',
                     label: 'Display Name',
                 },
-                {
-                    key: 'kind',
-                    label: 'Kind',
-                },
+
                 {
                     key: 'parent.name',
                     label: 'Parent',

@@ -584,8 +584,13 @@ class Sidebar extends View {
     }
 
     async onAfterRender() {
-        // Re-initialize tooltips after state change
-        this.initializeTooltips();
+        // Re-initialize tooltips after render, but only if collapsed
+        if (this.isCollapsedState()) {
+            // Small delay to ensure DOM is fully rendered
+            setTimeout(() => this.initializeTooltips(), 50);
+        } else {
+            this.destroyTooltips();
+        }
     }
 
     /**
@@ -861,6 +866,9 @@ class Sidebar extends View {
             const portalContainer = document.querySelector('.portal-container');
             if (!portalContainer) return;
 
+            // Hide any visible tooltips before state change
+            this.hideAllTooltips();
+
             const isCurrentlyCollapsed = portalContainer.classList.contains('collapse-sidebar');
             const isCurrentlyHidden = portalContainer.classList.contains('hide-sidebar');
 
@@ -868,14 +876,18 @@ class Sidebar extends View {
                 // Hidden -> Normal
                 portalContainer.classList.remove('hide-sidebar');
                 this.isCollapsed = false;
+                this.destroyTooltips();
             } else if (isCurrentlyCollapsed) {
                 // Collapsed -> Normal
                 portalContainer.classList.remove('collapse-sidebar');
                 this.isCollapsed = false;
+                this.destroyTooltips();
             } else {
                 // Normal -> Collapsed
                 portalContainer.classList.add('collapse-sidebar');
                 this.isCollapsed = true;
+                // Initialize tooltips with delay to ensure DOM is ready
+                setTimeout(() => this.initializeTooltips(), 150);
             }
 
             return this;
@@ -906,6 +918,17 @@ class Sidebar extends View {
                     break;
             }
 
+            // Handle tooltips based on state
+            if (this.isCollapsed) {
+                // Hide any visible tooltips first
+                this.hideAllTooltips();
+                // Initialize tooltips when collapsed
+                setTimeout(() => this.initializeTooltips(), 100);
+            } else {
+                // Destroy tooltips when not collapsed
+                this.destroyTooltips();
+            }
+
             return this;
         }
 
@@ -913,18 +936,83 @@ class Sidebar extends View {
          * Initialize tooltips for nav items when sidebar is collapsed
          */
         initializeTooltips() {
+            // Clean up existing tooltips first
+            this.destroyTooltips();
+
+            // Only initialize tooltips in collapsed state
+            if (!this.isCollapsedState()) {
+                return this;
+            }
+
             // Auto-generate tooltips from nav-text content
             const navLinks = this.element.querySelectorAll('.sidebar-nav .nav-link');
 
             navLinks.forEach((link) => {
                 const navText = link.querySelector('.nav-text');
 
-                if (navText && !link.hasAttribute('data-tooltip')) {
+                if (navText && navText.textContent.trim()) {
                     const tooltipText = navText.textContent.trim();
-                    if (tooltipText) {
-                        link.setAttribute('data-tooltip', tooltipText);
+
+                    // Set Bootstrap tooltip attributes
+                    link.setAttribute('data-bs-toggle', 'tooltip');
+                    link.setAttribute('data-bs-placement', 'right');
+                    link.setAttribute('data-bs-title', tooltipText);
+                    link.setAttribute('data-bs-container', 'body');
+
+                    // Initialize Bootstrap tooltip with better config
+                    if (window.bootstrap && window.bootstrap.Tooltip) {
+                        const tooltip = new window.bootstrap.Tooltip(link, {
+                            placement: 'right',
+                            container: 'body',
+                            trigger: 'hover',
+                            delay: { show: 500, hide: 100 },
+                            fallbackPlacements: ['top', 'bottom', 'left']
+                        });
+
+                        // Store tooltip instance for better management
+                        link._tooltipInstance = tooltip;
+
+                        // Add event listeners to prevent stuck tooltips
+                        link.addEventListener('click', () => {
+                            tooltip.hide();
+                        });
+
+                        link.addEventListener('blur', () => {
+                            tooltip.hide();
+                        });
                     }
                 }
+            });
+
+            // Add global event listeners to hide tooltips
+            this.addTooltipHideListeners();
+
+            return this;
+        }
+
+        destroyTooltips() {
+            // Remove global tooltip hide listeners
+            this.removeTooltipHideListeners();
+
+            const navLinks = this.element.querySelectorAll('.sidebar-nav .nav-link[data-bs-toggle="tooltip"]');
+
+            navLinks.forEach((link) => {
+                // Use stored instance first, then try to get it
+                const tooltipInstance = link._tooltipInstance || window.bootstrap?.Tooltip?.getInstance(link);
+                if (tooltipInstance) {
+                    // Force hide before dispose
+                    tooltipInstance.hide();
+                    tooltipInstance.dispose();
+                }
+
+                // Clean up stored reference
+                delete link._tooltipInstance;
+
+                // Remove tooltip attributes
+                link.removeAttribute('data-bs-toggle');
+                link.removeAttribute('data-bs-placement');
+                link.removeAttribute('data-bs-title');
+                link.removeAttribute('data-bs-container');
             });
 
             return this;
@@ -974,6 +1062,82 @@ class Sidebar extends View {
             options.menu.name = options.menu.name || "default";
             this.addMenu(options.menu.name, options.menu);
         }
+    }
+
+    /**
+     * Add global listeners to hide tooltips when needed
+     */
+    addTooltipHideListeners() {
+        // Hide tooltips on scroll
+        this._tooltipScrollHandler = () => this.hideAllTooltips();
+        this.element.addEventListener('scroll', this._tooltipScrollHandler, { passive: true });
+
+        // Hide tooltips on route change
+        this._tooltipRouteHandler = () => this.hideAllTooltips();
+        const app = this.getApp();
+
+
+        // Hide tooltips on window blur
+        this._tooltipBlurHandler = () => this.hideAllTooltips();
+        window.addEventListener('blur', this._tooltipBlurHandler);
+
+        // Hide tooltips on escape key
+        this._tooltipEscapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                this.hideAllTooltips();
+            }
+        };
+        document.addEventListener('keydown', this._tooltipEscapeHandler);
+    }
+
+    /**
+     * Remove global tooltip hide listeners
+     */
+    removeTooltipHideListeners() {
+        if (this._tooltipScrollHandler) {
+            this.element.removeEventListener('scroll', this._tooltipScrollHandler);
+            delete this._tooltipScrollHandler;
+        }
+
+        if (this._tooltipBlurHandler) {
+            window.removeEventListener('blur', this._tooltipBlurHandler);
+            delete this._tooltipBlurHandler;
+        }
+
+        if (this._tooltipEscapeHandler) {
+            document.removeEventListener('keydown', this._tooltipEscapeHandler);
+            delete this._tooltipEscapeHandler;
+        }
+    }
+
+    /**
+     * Force hide all visible tooltips
+     */
+    hideAllTooltips() {
+        const navLinks = this.element.querySelectorAll('.sidebar-nav .nav-link[data-bs-toggle="tooltip"]');
+        navLinks.forEach((link) => {
+            const tooltip = link._tooltipInstance || window.bootstrap?.Tooltip?.getInstance(link);
+            if (tooltip) {
+                tooltip.hide();
+            }
+        });
+
+        // Also hide any orphaned tooltips
+        const visibleTooltips = document.querySelectorAll('.tooltip.show');
+        visibleTooltips.forEach(tooltip => {
+            tooltip.remove();
+        });
+    }
+
+    /**
+     * Cleanup on destroy
+     */
+    async onBeforeDestroy() {
+        // Clean up tooltips
+        this.destroyTooltips();
+
+        // Call parent cleanup
+        await super.onBeforeDestroy();
     }
 
     /**

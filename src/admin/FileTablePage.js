@@ -25,25 +25,21 @@ class FileTablePage extends TablePage {
                 {
                     key: 'id',
                     label: 'ID',
-                    width: '60px',
                     sortable: true,
                     class: 'text-muted'
                 },
                 {
                     key: 'filename',
                     label: 'Filename',
-                    sortable: true
                 },
                 {
                     key: 'content_type',
                     label: 'Type',
-                    width: '120px',
                     formatter: "default('Unknown')"
                 },
                 {
                     key: 'file_size',
                     label: 'Size',
-                    width: '100px',
                     formatter: "filesize"
                 },
                 {
@@ -54,13 +50,7 @@ class FileTablePage extends TablePage {
                 {
                     key: 'upload_status',
                     label: 'Status',
-                    width: '100px',
-                    formatter: "default('Completed')|badge('Completed:success,Uploading:warning,Failed:danger,Pending:info')"
-                },
-                {
-                    key: 'description',
-                    label: 'Description',
-                    formatter: "truncate(50)|default('No description')"
+                    formatter: "badge"
                 },
                 {
                     key: 'created',

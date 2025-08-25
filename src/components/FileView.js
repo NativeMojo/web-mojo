@@ -5,6 +5,7 @@
 
 import View from '../core/View.js';
 import TabView from './TabView.js';
+import Table from './Table.js';
 
 class FileView extends View {
   constructor(options = {}) {
@@ -40,33 +41,26 @@ class FileView extends View {
 
     // Add the TabView as a child
     this.addChild(this.tabView);
-  }
-
-  async onAfterRender() {
-    await super.onAfterRender();
 
     // Add tabs after TabView is rendered
     await this.tabView.addTab('Overview', new OverviewTabView({
       model: this.model
     }), true);
 
-    // Only show renditions tab if we have renditions
-    if (this.model.get("renditions")) {
-      await this.tabView.addTab('Renditions', new RenditionsTabView({
-        model: this.model
-      }));
-    }
+    await this.tabView.addTab('Renditions', new RenditionsTabView({
+      model: this.model
+    }));
 
     await this.tabView.addTab('Metadata', new MetadataTabView({
       model: this.model
     }));
+
   }
 
   processFileForTemplating() {
     // Add computed properties for template use
     this.model.hasImagePreview = this.isImageContentType(this.model.get("content_type")) || this.isImageUrl(this.model._.url);
-    this.model.hasRenditions = this.model._.renditions && Array.isArray(this.model._.renditions) && this.model._.renditions.length > 0;
-
+    this.model.hasRenditions = this.model._.renditions;
     // Process renditions for template use
     if (this.model._.renditions && Array.isArray(this.model._.renditions)) {
       this.model.renditions = this.model._.renditions.map(rendition => ({
@@ -241,66 +235,40 @@ class OverviewTabView extends View {
   }
 }
 
-// Renditions Tab View
+// Renditions Tab View - Using Table.js for better functionality
 class RenditionsTabView extends View {
   constructor(options) {
     super({
       tagName: 'div',
-      className: 'file-renditions p-3',
+      className: 'file-renditions',
       ...options
     });
+
+    this.renditionsTable = null;
+  }
+
+  async onInit() {
+    await super.onInit();
+
+    // Initialize the renditions table
+    this.renditionsTable = new Table({
+      container: "renditions-table",
+      columns: [
+        { title: 'Role', key: 'role' },
+        { title: 'Size', key: 'file_size|filesize' },
+        { title: 'Type', key: 'content_type' },
+        { title: 'URL', key: 'url|url("view image", true)' }
+      ],
+      data: Object.values(this.model._.renditions)
+    });
+
+    this.addChild(this.renditionsTable);
   }
 
   async getTemplate() {
-    return `
-      {{#model.renditions|boolean}}
-      <div class="row g-3">
-        {{#model.renditions}}
-        <div class="col-md-6 col-lg-4">
-          <div class="card">
-            {{#isImage}}
-            <img src="{{url}}"
-                 alt="{{filename}}"
-                 class="card-img-top"
-                 style="height: 200px; object-fit: cover;"
-                 onerror="this.style.display='none'">
-            {{/isImage}}
-
-            {{^isImage}}
-            <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
-                 style="height: 200px;">
-              <i class="bi bi-file-earmark display-4 text-muted"></i>
-            </div>
-            {{/isImage}}
-
-            <div class="card-body">
-              <h6 class="card-title">{{filename|default('Rendition')}}</h6>
-              <div class="small text-muted">
-                {{#dimensions}}<div>Size: {{dimensions}}</div>{{/dimensions}}
-                {{#file_size}}<div>File Size: {{file_size|filesize}}</div>{{/file_size}}
-                <div>Type: {{content_type|default('Unknown')}}</div>
-              </div>
-              {{#url}}
-              <a href="{{url}}" target="_blank"
-                 class="btn btn-sm btn-outline-primary mt-2">
-                <i class="bi bi-box-arrow-up-right me-1"></i>Open
-              </a>
-              {{/url}}
-            </div>
-          </div>
-        </div>
-        {{/model.renditions|boolean}}
-      </div>
-      {{/model.hasRenditions}}
-
-      {{^model.hasRenditions}}
-      <div class="text-center py-5 text-muted">
-        <i class="bi bi-images display-4"></i>
-        <p class="mt-3">No renditions available</p>
-      </div>
-      {{/model.hasRenditions}}
-    `;
+    return '<div data-container="renditions-table"></div>';
   }
+
 }
 
 // Metadata Tab View

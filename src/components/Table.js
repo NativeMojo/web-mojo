@@ -23,6 +23,7 @@
 
 import dataFormatter from '../utils/DataFormatter.js';
 import View from '../core/View.js';
+import Collection from '../core/Collection.js';
 import Dialog from './Dialog.js';
 import FormView from '../forms/FormView.js';
 
@@ -54,6 +55,10 @@ class Table extends View {
 
     // Internal state
     this.collection = options.collection || null;
+
+    if (options.data && !this.collection && !this.Collection) {
+        this.collection = new Collection(options.data);
+    }
 
     this.loading = false;
 
@@ -954,7 +959,7 @@ class Table extends View {
       return `
         <th class="${sortable ? 'sortable' : ''}">
           <div class="d-flex align-items-center">
-            <span>${column.title || column.key}</span>
+            <span>${column.title || column.label || column.key}</span>
             ${sortDropdown}
           </div>
         </th>
@@ -1614,7 +1619,7 @@ class Table extends View {
    */
   async onItemClicked(item, event, target) {
     console.log('Item clicked:', item);
-    
+
     // Check if itemViewClass is explicitly set
     if (this.itemViewClass) {
       const viewInstance = new this.itemViewClass({ model: item });
@@ -1627,9 +1632,9 @@ class Table extends View {
     // Check if item has a VIEW property
     else if (item.constructor.VIEW) {
       const viewConfig = item.constructor.VIEW;
-      
+
       // Check if VIEW is a View class (has prototype.render or extends View)
-      if (typeof viewConfig === 'function' && 
+      if (typeof viewConfig === 'function' &&
           (viewConfig.prototype?.render || viewConfig.prototype?.constructor?.name?.includes('View'))) {
         // It's a View class
         const viewInstance = new viewConfig({ model: item });
@@ -1650,6 +1655,10 @@ class Table extends View {
     }
     // Fallback - emit event for external handlers
     else {
+    await Dialog.showData({
+        title: `#${item.id} ${this.options.modelName}`,
+        model: item
+    });
       this.emit('item-clicked', { item, event, target });
     }
   }

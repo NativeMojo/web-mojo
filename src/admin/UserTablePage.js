@@ -28,6 +28,11 @@ class UserTablePage extends TablePage {
                     class: 'text-muted'
                 },
                 {
+                    label: 'Avatar',
+                    key: 'avatar|avatar("sm")',
+                    sortable: false
+                },
+                {
                     key: 'display_name',
                     label: 'Display Name',
                 },

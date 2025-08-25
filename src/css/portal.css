@@ -352,14 +352,6 @@
     transform: rotate(180deg);
 }*/
 
-.portal-container #portal-sidebar {
-    overflow: visible !important;
-}
-
-.portal-container .sidebar-body {
-    overflow: visible !important;
-}
-
 /* ========================================================================
    TopNav Sidebar Toggle Button
    ======================================================================== */
@@ -511,9 +503,8 @@
 .sidebar-nav {
     display: flex;
     flex-direction: column;
-    height: 100%;
     padding: 0.5rem 0;
-    min-height: 0;
+    min-height: 100%;
 }
 
 .sidebar-nav .nav-link {
@@ -712,7 +703,7 @@
     width: var(--mojo-sidebar-collapsed-width, 48px);
 }
 
-/* Primary tooltip using data-tooltip attribute */
+/* CSS tooltips disabled - using Bootstrap tooltips instead
 .portal-container.collapse-sidebar .sidebar .nav-link[data-tooltip]:hover::after {
     content: attr(data-tooltip);
     position: absolute;
@@ -742,7 +733,6 @@
     pointer-events: none;
 }
 
-/* Tooltip arrow */
 .portal-container.collapse-sidebar .sidebar .nav-link[data-tooltip]:hover::before {
     content: "";
     position: absolute;
@@ -760,7 +750,6 @@
     animation-delay: 300ms;
 }
 
-/* Auto-tooltip using nav-text content (fallback when no data-tooltip) */
 .portal-container.collapse-sidebar .sidebar .nav-link:not([data-tooltip]):hover::after {
     content: attr(data-nav-text);
     position: absolute;
@@ -803,7 +792,6 @@
     animation-delay: 300ms;
 }
 
-/* Theme-specific tooltips */
 .portal-container.collapse-sidebar .sidebar-light .nav-link:hover::after {
     background: #2c3e50;
     color: white;

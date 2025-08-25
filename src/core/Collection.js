@@ -45,16 +45,26 @@
  */
 
 import EventEmitter from '../utils/EventEmitter.js';
+import Model from '../core/Model.js';
 import rest from '../core/Rest.js';
 
 class Collection {
-  constructor(ModelClass, options = {}) {
-    this.ModelClass = ModelClass;
+  constructor(ModelClass, options = {}, data = null) {
+    // Handle case where first argument is data instead of ModelClass
+    if (ModelClass && typeof ModelClass === 'object' && !ModelClass.prototype) {
+        // First argument appears to be data/options, not a class
+        data = ModelClass;
+        ModelClass = Model;
+    }
+    this.ModelClass = ModelClass || Model;
     this.models = [];
     this.loading = false;
     this.errors = {};
     this.meta = {};
     this.rest = rest;
+    if (data) {
+        this.add(data);
+    }
 
     // Initialize params with defaults - single source of truth for query state
     this.params = {
