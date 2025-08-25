@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>MOJO Framework - Examples</title>
+
+        <!-- Bootstrap 5.3 CSS -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <!-- Bootstrap Icons -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
+            rel="stylesheet"
+        />
+
+        <style>
+            :root {
+                --mojo-primary: #0d6efd;
+                --mojo-secondary: #6c757d;
+                --mojo-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+
+            body {
+                background: var(--bs-body-bg);
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            }
+
+            .hero-section {
+                background: var(--mojo-gradient);
+                color: white;
+                padding: 4rem 0;
+                margin-bottom: 2rem;
+            }
+
+            .hero-section h1 {
+                font-size: 3.5rem;
+                font-weight: 700;
+                margin-bottom: 1rem;
+            }
+
+            .hero-section p {
+                font-size: 1.25rem;
+                opacity: 0.9;
+            }
+
+            .example-card {
+                transition: all 0.3s ease;
+                border: 1px solid var(--bs-border-color);
+                height: 100%;
+            }
+
+            .example-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+                border-color: var(--mojo-primary);
+            }
+
+            .category-section {
+                margin-bottom: 3rem;
+            }
+
+            .category-title {
+                font-size: 2rem;
+                font-weight: 600;
+                color: var(--mojo-primary);
+                margin-bottom: 1.5rem;
+                padding-bottom: 0.5rem;
+                border-bottom: 3px solid var(--bs-primary-bg-subtle);
+            }
+
+            .example-icon {
+                width: 48px;
+                height: 48px;
+                border-radius: 0.5rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.5rem;
+                margin-bottom: 1rem;
+            }
+
+            .example-meta {
+                font-size: 0.875rem;
+                color: var(--bs-secondary);
+            }
+
+            .theme-toggle {
+                position: fixed;
+                top: 1rem;
+                right: 1rem;
+                z-index: 1000;
+            }
+
+            .search-box {
+                max-width: 400px;
+                margin: 0 auto 3rem;
+            }
+
+            .example-tags {
+                margin-top: 0.5rem;
+            }
+
+            .example-tag {
+                display: inline-block;
+                background: var(--bs-primary-bg-subtle);
+                color: var(--bs-primary);
+                padding: 0.25rem 0.5rem;
+                border-radius: 0.25rem;
+                font-size: 0.75rem;
+                margin-right: 0.5rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .stats-section {
+                background: var(--bs-light);
+                padding: 2rem 0;
+                margin: 3rem 0;
+                border-radius: 1rem;
+            }
+
+            .stats-item {
+                text-align: center;
+            }
+
+            .stats-number {
+                font-size: 2.5rem;
+                font-weight: 700;
+                color: var(--mojo-primary);
+            }
+
+            .stats-label {
+                color: var(--bs-secondary);
+                font-size: 0.9rem;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            @media (max-width: 768px) {
+                .hero-section h1 {
+                    font-size: 2.5rem;
+                }
+
+                .hero-section {
+                    padding: 2rem 0;
+                }
+            }
+
+            [data-bs-theme="dark"] .stats-section {
+                background: var(--bs-dark);
+            }
+
+            [data-bs-theme="dark"] .hero-section {
+                background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Theme Toggle -->
+        <button class="btn btn-outline-light theme-toggle" onclick="toggleTheme()">
+            <i class="bi bi-sun-fill"></i>
+        </button>
+
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <h1>
+                            <i class="bi bi-code-slash me-3"></i>
+                            MOJO Examples
+                        </h1>
+                        <p class="lead">
+                            Comprehensive examples showcasing MOJO Framework's capabilities for
+                            building modern web applications
+                        </p>
+                        <div class="d-flex gap-3 mt-4">
+                            <a
+                                href="https://github.com/your-org/mojo-framework"
+                                class="btn btn-light btn-lg"
+                            >
+                                <i class="bi bi-github me-2"></i>
+                                View on GitHub
+                            </a>
+                            <a href="#examples" class="btn btn-outline-light btn-lg">
+                                <i class="bi bi-arrow-down me-2"></i>
+                                Browse Examples
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 text-center">
+                        <div class="hero-stats">
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="stats-number text-white">15+</div>
+                                    <div class="text-white-50">Examples</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="stats-number text-white">8</div>
+                                    <div class="text-white-50">Categories</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="container">
+            <!-- Search -->
+            <div class="search-box">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input
+                        type="text"
+                        class="form-control"
+                        placeholder="Search examples..."
+                        id="searchInput"
+                    />
+                </div>
+            </div>
+
+            <!-- Stats Section -->
+            <div class="stats-section">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="stats-item">
+                                <div class="stats-number">6</div>
+                                <div class="stats-label">File Handling</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="stats-item">
+                                <div class="stats-number">4</div>
+                                <div class="stats-label">UI Components</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="stats-item">
+                                <div class="stats-number">2</div>
+                                <div class="stats-label">Applications</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="stats-item">
+                                <div class="stats-number">3</div>
+                                <div class="stats-label">Specialized</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="examples">
+                <!-- File Handling Examples -->
+                <section class="category-section">
+                    <h2 class="category-title">
+                        <i class="bi bi-file-earmark me-3"></i>
+                        File Handling
+                    </h2>
+                    <div class="row">
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card example-card">
+                                <div class="card-body">
+                                    <div class="example-icon bg-primary-subtle text-primary">
+                                        <i class="bi bi-image"></i>
+                                    </div>
+                                    <h5 class="card-title">Enhanced Image Fields</h5>
+                                    <p class="card-text">
+                                        FormBuilder image fields with drag & drop, size variants,
+                                        and preview functionality.
+                                    </p>
+                                    <div class="example-tags">
+                                        <span class="example-tag">FormBuilder</span>
+                                        <span class="example-tag">Drag & Drop</span>
+                                        <span class="example-tag">Images</span>
+                                    </div>
+                                    <div class="example-meta mt-3">
+                                        <i class="bi bi-folder me-1"></i> file-components/
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <a
+                                        href="file-components/index.html"
+                                        class="btn btn-primary btn-sm me-2"
+                                    >
+                                        <i class="bi bi-eye me-1"></i> Demo
+                                    </a>
+                                    <a
+                                        href="file-components/image-field-example.html"
+                                        class="btn btn-outline-secondary btn-sm"
+                                    >
+                                        <i class="bi bi-zoom-in me-1"></i> Focus
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card example-card">
+                                <div class="card-body">
+                                    <div class="example-icon bg-info-subtle text-info">
+                                        <i class="bi bi-eye"></i>
+                                    </div>
+                                    <h5 class="card-title">FileView Component</h5>
+                                    <p class="card-text">
+                                        Rich file information display with tabbed interface,
+                                        metadata, and renditions.
+                                    </p>
+                                    <div class="example-tags">
+                                        <span class="example-tag">TabView</span>
+                                        <span class="example-tag">Metadata</span>
+                                        <span class="example-tag">Renditions</span>
+                                    </div>
+                                    <div class="example-meta mt-3">
+                                        <i class="bi bi-folder me-1"></i> file-components/
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <a
+                                        href="file-components/fileview-example.html"
+                                        class="btn btn-info btn-sm"
+                                    >
+                                        <i class="bi bi-eye me-1"></i> View Demo
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card example-card">
+                                <div class="card-body">
+                                    <div class="example-icon bg-success-subtle text-success">
+                                        <i class="bi bi-cloud-arrow-up"></i>
+                                    </div>
+                                    <h5 class="card-title">File Drop Mixin</h5>
+                                    <p class="card-text">
+                                        Drag & drop functionality that can be added to any View
+                                        component.
+                                    </p>
+                                    <div class="example-tags">
+                                        <span class="example-tag">Mixin</span>
+                                        <span class="example-tag">Drag & Drop</span>
+                                        <span class="example-tag">Extensible</span>
+                                    </div>
+                                    <div class="example-meta mt-3">
+                                        <i class="bi bi-folder me-1"></i> file-drop/
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <a
+                                        href="file-drop/file-drop-example.html"
+                                        class="btn btn-success btn-sm me-2"
+                                    >
+                                        <i class="bi bi-eye me-1"></i> Demo
+                                    </a>
+                                    <a
+                                        href="file-drop/simple-test.html"
+                                        class="btn btn-outline-secondary btn-sm"
+                                    >
+                                        <i class="bi bi-lightning me-1"></i> Simple
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card example-card">
+                                <div class="card-body">
+                                    <div class="example-icon bg-warning-subtle text-warning">
+                                        <i class="bi bi-upload"></i>
+                                    </div>
+                                    <h5 class="card-title">Image Upload</h5>
+                                    <p class="card-text">
+                                        Traditional image upload component with preview and
+                                        validation.
+                                    </p>
+                                    <div class="example-tags">
+                                        <span class="example-tag">Upload</span>
+                                        <span class="example-tag">Preview</span>
+                                        <span class="example-tag">Validation</span>
+                                    </div>
+                                    <div class="example-meta mt-3">
+                                        <i class="bi bi-file-code me-1"></i> image-upload.html
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <a href="image-upload.html" class="btn btn-warning btn-sm">
+                                        <i class="bi bi-eye me-1"></i> View Demo
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card example-card">
+                                <div class="card-body">
+                                    <div class="example-icon bg-secondary-subtle text-secondary">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </div>
+                                    <h5 class="card-title">Image Editor</h5>
+                                    <p class="card-text">
+                                        Basic image editing capabilities with crop, resize, and
+                                        filter options.
+                                    </p>
+                                    <div class="example-tags">
+                                        <span class="example-tag">Editor</span>
+                                        <span class="example-tag">Canvas</span>
+                                        <span class="example-tag">Filters</span>
+                                    </div>
+                                    <div class="example-meta mt-3">
+                                        <i class="bi bi-file-code me-1"></i> image-editor.html
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <a href="image-editor.html" class="btn btn-secondary btn-sm">
+                                        <i class="bi bi-eye me-1"></i> View Demo
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card example-card">
+                                <div class="card-body">
+                                    <div class="example-icon bg-danger-subtle text-danger">
+                                        <i class="bi bi-cloud-upload"></i>
+                                    </div>
+                                    <h5 class="card-title">Enhanced Upload</h5>
+                                    <p class="card-text">
+                                        Advanced upload component with progress tracking and
+                                        multiple file support.
+                                    </p>
+                                    <div class="example-tags">
+                                        <span class="example-tag">Progress</span>
+                                        <span class="example-tag">Multiple Files</span>
+                                        <span class="example-tag">Advanced</span>
+                                    </div>
+                                    <div class="example-meta mt-3">
+                                        <i class="bi bi-folder me-1"></i> file-drop/
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <a
+                                        href="file-drop/enhanced-image-upload.html"
+                                        class="btn btn-danger btn-sm"
+                                    >
+                                        <i class="bi bi-eye me-1"></i> View Demo
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- UI Components -->
+                <section class="category-section">
+                    <h2 class="category-title">
+                        <i class="bi bi-grid me-3"></i>
+                        UI Components
+                    </h2>
+                    <div class="row">
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card example-card">
+                                <div class="card-body">
+                                    <div class="example-icon bg-primary-subtle text-primary">
+                                        <i class="bi bi-images"></i>
+                                    </div>
+                                    <h5 class="card-title">Lightbox Gallery</h5>
+                                    <p class="card-text">
+                                        Image gallery with lightbox functionality, zoom, and
+                                        navigation controls.
+                                    </p>
+                                    <div class="example-tags">
+                                        <span class="example-tag">Gallery</span>
+                                        <span class="example-tag">Lightbox</span>
+                                        <span class="example-tag">Navigation</span>
+                                    </div>
+                                    <div class="example-meta mt-3">
+                                        <i class="bi bi-file-code me-1"></i> lightbox-gallery.html
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <a href="lightbox-gallery.html" class="btn btn-primary btn-sm">
+                                        <i class="bi bi-eye me-1"></i> View Demo
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card example-card">
+                                <div class="card-body">
+                                    <div class="example-icon bg-info-subtle text-info">
+                                        <i class="bi bi-fullscreen"></i>
+                                    </div>
+                                    <h5 class="card-title">Simple Lightbox</h5>
+                                    <p class="card-text">
+                                        Basic lightbox implementation for image viewing and
+                                        interaction.
+                                    </p>
+                                    <div class="example-tags">
+                                        <span class="example-tag">Lightbox</span>
+                                        <span class="example-tag">Simple</span>
+                                        <span class="example-tag">Modal</span>
+                                    </div>
+                                    <div class="example-meta mt-3">
+                                        <i class="bi bi-file-code me-1"></i> lightbox.html
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <a href="lightbox.html" class="btn btn-info btn-sm">
+                                        <i class="bi bi-eye me-1"></i> View Demo
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card example-card">
+                                <div class="card-body">
+                                    <div class="example-icon bg-success-subtle text-success">
+                                        <i class="bi bi-bar-chart"></i>
+                                    </div>
+                                    <h5 class="card-title">Chart Components</h5>
+                                    <p class="card-text">
+                                        Various chart types including bar, line, pie charts with
+                                        Chart.js integration.
+                                    </p>
+                                    <div class="example-tags">
+                                        <span class="example-tag">Charts</span>
+                                        <span class="example-tag">Data Viz</span>
+                                        <span class="example-tag">Chart.js</span>
+                                    </div>
+                                    <div class="example-meta mt-3">
+                                        <i class="bi bi-file-code me-1"></i> simple-charts.html
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <a href="simple-charts.html" class="btn btn-success btn-sm">
+                                        <i class="bi bi-eye me-1"></i> View Demo
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card example-card">
+                                <div class="card-body">
+                                    <div class="example-icon bg-warning-subtle text-warning">
+                                        <i class="bi bi-people"></i>
+                                    </div>
+                                    <h5 class="card-title">ActiveGroup Demo</h5>
+                                    <p class="card-text">
+                                        Demonstration of active group functionality and user
+                                        management features.
+                                    </p>
+                                    <div class="example-tags">
+                                        <span class="example-tag">Groups</span>
+                                        <span class="example-tag">Users</span>
+                                        <span class="example-tag">Management</span>
+                                    </div>
+                                    <div class="example-meta mt-3">
+                                        <i class="bi bi-file-code me-1"></i> activegroup-demo.html
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <a href="activegroup-demo.html" class="btn btn-warning btn-sm">
+                                        <i class="bi bi-eye me-1"></i> View Demo
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Complete Applications -->
+                <section class="category-section">
+                    <h2 class="category-title">
+                        <i class="bi bi-window me-3"></i>
+                        Complete Applications
+                    </h2>
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <div class="card example-card">
+                                <div class="card-body">
+                                    <div class="example-icon bg-primary-subtle text-primary">
+                                        <i class="bi bi-grid-3x3-gap"></i>
+                                    </div>
+                                    <h5 class="card-title">Portal Application</h5>
+                                    <p class="card-text">
+                                        Complete admin portal with dashboard, file management,
+                                        charts, and user interface components.
+                                    </p>
+                                    <div class="example-tags">
+                                        <span class="example-tag">Portal</span>
+                                        <span class="example-tag">Dashboard</span>
+                                        <span class="example-tag">Admin</span>
+                                        <span class="example-tag">Complete App</span>
+                                    </div>
+                                    <div class="example-meta mt-3">
+                                        <i class="bi bi-folder me-1"></i> portal/
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <a href="portal/index.html" class="btn btn-primary btn-lg">
+                                        <i class="bi bi-box-arrow-up-right me-1"></i> Open Portal
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            <div class="card example-card">
+                                <div class="card-body">
+                                    <div class="example-icon bg-secondary-subtle text-secondary">
+                                        <i class="bi bi-shield-check"></i>
+                                    </div>
+                                    <h5 class="card-title">Authentication System</h5>
+                                    <p class="card-text">
+                                        Complete authentication system with login, registration, and
+                                        user management.
+                                    </p>
+                                    <div class="example-tags">
+                                        <span class="example-tag">Auth</span>
+                                        <span class="example-tag">Login</span>
+                                        <span class="example-tag">Registration</span>
+                                        <span class="example-tag">Security</span>
+                                    </div>
+                                    <div class="example-meta mt-3">
+                                        <i class="bi bi-folder me-1"></i> auth/
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <a href="auth/index.html" class="btn btn-secondary btn-lg">
+                                        <i class="bi bi-box-arrow-up-right me-1"></i> Open Auth Demo
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Footer -->
+            <footer class="text-center py-5 mt-5 border-top">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>MOJO Framework</h5>
+                        <p class="text-muted">
+                            Modern JavaScript framework for building web applications
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Quick Links</h6>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="#" class="text-muted"><i class="bi bi-github"></i> GitHub</a>
+                            <a href="#" class="text-muted"><i class="bi bi-book"></i> Docs</a>
+                            <a href="#examples" class="text-muted"
+                                ><i class="bi bi-code"></i> Examples</a
+                            >
+                        </div>
+                    </div>
+                </div>
+                <hr class="my-4" />
+                <p class="text-muted mb-0">© 2024 MOJO Framework. Built with ❤️ for developers.</p>
+            </footer>
+        </div>
+
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+        <script>
+            // Theme toggle functionality
+            function toggleTheme() {
+                const html = document.documentElement;
+                const button = document.querySelector(".theme-toggle i");
+
+                if (html.getAttribute("data-bs-theme") === "light") {
+                    html.setAttribute("data-bs-theme", "dark");
+                    button.className = "bi bi-moon-fill";
+                } else {
+                    html.setAttribute("data-bs-theme", "light");
+                    button.className = "bi bi-sun-fill";
+                }
+            }
+
+            // Search functionality
+            document.getElementById("searchInput").addEventListener("input", function (e) {
+                const searchTerm = e.target.value.toLowerCase();
+                const cards = document.querySelectorAll(".example-card");
+
+                cards.forEach((card) => {
+                    const title = card.querySelector(".card-title").textContent.toLowerCase();
+                    const description = card.querySelector(".card-text").textContent.toLowerCase();
+                    const tags = Array.from(card.querySelectorAll(".example-tag"))
+                        .map((tag) => tag.textContent.toLowerCase())
+                        .join(" ");
+
+                    const matches =
+                        title.includes(searchTerm) ||
+                        description.includes(searchTerm) ||
+                        tags.includes(searchTerm);
+
+                    card.closest(".col-md-6, .col-lg-4").style.display = matches ? "" : "none";
+                });
+
+                // Show/hide category sections if no matches
+                document.querySelectorAll(".category-section").forEach((section) => {
+                    const visibleCards = section.querySelectorAll(
+                        '.example-card:not([style*="display: none"])',
+                    ).length;
+                    section.style.display = visibleCards > 0 ? "" : "none";
+                });
+            });
+
+            // Smooth scrolling
+            document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+                anchor.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute("href"));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: "smooth",
+                            block: "start",
+                        });
+                    }
+                });
+            });
+
+            // Animation on scroll
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: "0px 0px -50px 0px",
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = "1";
+                        entry.target.style.transform = "translateY(0)";
+                    }
+                });
+            }, observerOptions);
+
+            // Apply animation to cards
+            document.querySelectorAll(".example-card").forEach((card) => {
+                card.style.opacity = "0";
+                card.style.transform = "translateY(20px)";
+                card.style.transition = "opacity 0.6s ease, transform 0.6s ease";
+                observer.observe(card);
+            });
+        </script>
+    </body>
+</html>

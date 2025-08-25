@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Field Example - MOJO Framework</title>
+
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- MOJO CSS -->
+    <link href="../../src/css/core.css" rel="stylesheet">
+
+    <style>
+        body {
+            padding: 2rem 0;
+            background: var(--bs-body-bg);
+        }
+        .example-card {
+            background: var(--bs-body-bg);
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .size-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+        .size-demo {
+            text-align: center;
+        }
+        .size-label {
+            font-weight: 600;
+            color: var(--bs-primary);
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .form-output {
+            background: var(--bs-light);
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.375rem;
+            padding: 1rem;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .demo-header {
+            color: var(--bs-primary);
+            border-bottom: 2px solid var(--bs-primary-bg-subtle);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="text-center mb-5">
+            <h1 class="display-5 fw-bold">
+                <i class="bi bi-image text-primary me-3"></i>
+                Image Field Example
+            </h1>
+            <p class="lead text-muted">
+                Enhanced FormBuilder image fields with drag & drop, size variants, and preview
+            </p>
+        </div>
+
+        <!-- Size Variants Demo -->
+        <div class="example-card">
+            <h2 class="demo-header">
+                <i class="bi bi-aspect-ratio me-2"></i>
+                Size Variants
+            </h2>
+            <p class="text-muted mb-4">
+                Image fields support five size variants: xs, sm, md, lg, and xl. Each maintains aspect ratio and provides appropriate preview dimensions.
+            </p>
+
+            <div class="size-grid">
+                <div class="size-demo">
+                    <div class="size-label">Extra Small (48×48)</div>
+                    <div id="field-xs-container"></div>
+                </div>
+                <div class="size-demo">
+                    <div class="size-label">Small (96×96)</div>
+                    <div id="field-sm-container"></div>
+                </div>
+                <div class="size-demo">
+                    <div class="size-label">Medium (150×150)</div>
+                    <div id="field-md-container"></div>
+                </div>
+                <div class="size-demo">
+                    <div class="size-label">Large (200×200)</div>
+                    <div id="field-lg-container"></div>
+                </div>
+                <div class="size-demo">
+                    <div class="size-label">Extra Large (300×300)</div>
+                    <div id="field-xl-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Practical Form Example -->
+        <div class="example-card">
+            <h2 class="demo-header">
+                <i class="bi bi-card-image me-2"></i>
+                Practical Example
+            </h2>
+            <p class="text-muted mb-4">
+                A real-world form using image fields of different sizes for different purposes.
+            </p>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <div id="practical-form-container"></div>
+                </div>
+                <div class="col-md-4">
+                    <h5 class="mb-3">Form Data</h5>
+                    <div id="form-data-output" class="form-output">
+                        <em>Upload images to see form data...</em>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Demo -->
+        <div class="example-card">
+            <h2 class="demo-header">
+                <i class="bi bi-gear me-2"></i>
+                Field Features
+            </h2>
+            <p class="text-muted mb-4">
+                Image fields support various configuration options and behaviors.
+            </p>
+
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <h5>Required Field</h5>
+                    <div id="required-field-container"></div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <h5>Disabled Field</h5>
+                    <div id="disabled-field-container"></div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <h5>Custom Placeholder</h5>
+                    <div id="placeholder-field-container"></div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <h5>With Help Text</h5>
+                    <div id="help-field-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="alert alert-info">
+            <h5 class="alert-heading">
+                <i class="bi bi-info-circle me-2"></i>
+                How to Use
+            </h5>
+            <ul class="mb-0">
+                <li><strong>Click</strong> on any image field to open the file picker</li>
+                <li><strong>Drag & drop</strong> images directly onto the fields</li>
+                <li><strong>Remove</strong> images using the × button that appears on hover</li>
+                <li><strong>Preview</strong> images are automatically generated and scaled</li>
+                <li><strong>Validation</strong> ensures only image files are accepted</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- MOJO Framework -->
+    <script type="module">
+        import FormBuilder from '../../src/components/FormBuilder.js';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initializeSizeVariants();
+            await initializePracticalExample();
+            await initializeFeaturesDemo();
+        });
+
+        async function initializeSizeVariants() {
+            const sizes = ['xs', 'sm', 'md', 'lg', 'xl'];
+
+            for (const size of sizes) {
+                const form = new FormBuilder({
+                    fields: [{
+                        type: 'image',
+                        name: `avatar_${size}`,
+                        size: size,
+                        placeholder: `Drop ${size.toUpperCase()} image here`
+                    }]
+                });
+
+                const container = document.getElementById(`field-${size}-container`);
+                await form.render(true, container);
+            }
+        }
+
+        async function initializePracticalExample() {
+            const form = new FormBuilder({
+                fields: [
+                    {
+                        type: 'text',
+                        name: 'product_name',
+                        label: 'Product Name',
+                        required: true,
+                        placeholder: 'Enter product name'
+                    },
+                    {
+                        type: 'image',
+                        name: 'hero_image',
+                        label: 'Hero Image',
+                        size: 'lg',
+                        required: true,
+                        help: 'Main product image (recommended: 1200×800px)'
+                    },
+                    {
+                        type: 'image',
+                        name: 'thumbnail',
+                        label: 'Thumbnail',
+                        size: 'sm',
+                        help: 'Small preview image for listings'
+                    },
+                    {
+                        type: 'image',
+                        name: 'gallery_image',
+                        label: 'Gallery Image',
+                        size: 'md',
+                        help: 'Additional product photo'
+                    },
+                    {
+                        type: 'textarea',
+                        name: 'description',
+                        label: 'Description',
+                        rows: 3,
+                        placeholder: 'Product description...'
+                    }
+                ],
+                buttons: [
+                    { type: 'submit', label: 'Save Product', class: 'btn-primary' },
+                    { type: 'reset', label: 'Clear Form', class: 'btn-outline-secondary' }
+                ]
+            });
+
+            // Monitor form changes
+            let debounceTimer;
+            form.on('change', (data) => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    updateFormDataOutput(data.values);
+                }, 300);
+            });
+
+            const container = document.getElementById('practical-form-container');
+            await form.render(true, container);
+        }
+
+        async function initializeFeaturesDemo() {
+            // Required field
+            const requiredForm = new FormBuilder({
+                fields: [{
+                    type: 'image',
+                    name: 'required_image',
+                    label: 'Profile Photo',
+                    size: 'md',
+                    required: true,
+                    placeholder: 'Required image field'
+                }]
+            });
+
+            // Disabled field
+            const disabledForm = new FormBuilder({
+                fields: [{
+                    type: 'image',
+                    name: 'disabled_image',
+                    label: 'Disabled Field',
+                    size: 'md',
+                    disabled: true,
+                    placeholder: 'This field is disabled'
+                }]
+            });
+
+            // Custom placeholder
+            const placeholderForm = new FormBuilder({
+                fields: [{
+                    type: 'image',
+                    name: 'custom_image',
+                    label: 'Logo Upload',
+                    size: 'md',
+                    placeholder: 'Drop your company logo here (PNG preferred)'
+                }]
+            });
+
+            // Help text
+            const helpForm = new FormBuilder({
+                fields: [{
+                    type: 'image',
+                    name: 'help_image',
+                    label: 'Banner Image',
+                    size: 'md',
+                    help: 'Upload a banner image. Recommended size: 1200×400px. Accepts JPG, PNG, WebP formats up to 10MB.',
+                    placeholder: 'Banner image upload'
+                }]
+            });
+
+            // Render all feature demos
+            const containers = [
+                'required-field-container',
+                'disabled-field-container',
+                'placeholder-field-container',
+                'help-field-container'
+            ];
+
+            const forms = [requiredForm, disabledForm, placeholderForm, helpForm];
+
+            for (let i = 0; i < forms.length; i++) {
+                const container = document.getElementById(containers[i]);
+                await forms[i].render(true, container);
+            }
+        }
+
+        function updateFormDataOutput(values) {
+            const output = document.getElementById('form-data-output');
+
+            if (!values || Object.keys(values).length === 0) {
+                output.innerHTML = '<em>No form data yet...</em>';
+                return;
+            }
+
+            // Clean up values for display
+            const cleanValues = {};
+            for (const [key, value] of Object.entries(values)) {
+                if (value instanceof FileList && value.length > 0) {
+                    cleanValues[key] = Array.from(value).map(file => ({
+                        name: file.name,
+                        size: `${(file.size / 1024).toFixed(1)} KB`,
+                        type: file.type,
+                        lastModified: new Date(file.lastModified).toLocaleString()
+                    }));
+                } else if (value instanceof File) {
+                    cleanValues[key] = {
+                        name: value.name,
+                        size: `${(value.size / 1024).toFixed(1)} KB`,
+                        type: value.type,
+                        lastModified: new Date(value.lastModified).toLocaleString()
+                    };
+                } else if (value !== null && value !== undefined && value !== '') {
+                    cleanValues[key] = value;
+                }
+            }
+
+            output.textContent = JSON.stringify(cleanValues, null, 2);
+        }
+
+        // Make FormBuilder available globally for debugging
+        window.MOJO = { FormBuilder };
+    </script>
+</body>
+</html>

@@ -1,188 +1,284 @@
 <div class="example-page">
-    <h1 class="mb-4">Dialog Component</h1>
-    <p class="lead">Full Bootstrap 5 modal support with all features including sizes, fullscreen, scrollable content, and View instance support.</p>
+    <div class="mb-5">
+        <h1 class="mb-4">Dialog Component</h1>
+        <p class="lead">Complete Bootstrap 5 modal support with context menus, permissions, sizes, fullscreen modes, View instances, and utility methods.</p>
+    </div>
 
-    <!-- Sizes Section -->
-    <div class="example-section">
-        <div class="example-header">
-        <h2>Dialog Sizes</h2>
-        <div class="source-buttons">
-            <button class="btn btn-sm btn-outline-primary" data-action="show-sizes-source">
-            <i class="bi bi-code-slash me-1"></i>View Source
-            </button>
+    <!-- Context Menu Section (NEW FEATURE) -->
+    <div class="example-section mb-5">
+        <div class="example-header mb-4">
+            <h2><i class="bi bi-three-dots-vertical me-2"></i>Context Menus</h2>
+            <div class="source-buttons">
+                <button class="btn btn-sm btn-outline-primary" data-action="show-context-menu-source">
+                    <i class="bi bi-code-slash me-1"></i>View Source
+                </button>
+            </div>
         </div>
+
+        <p class="mb-4">New context menu functionality with permissions, custom icons, and flexible menu items.</p>
+
+        <!-- Permission Status Display -->
+        <div class="alert alert-info mb-4">
+            <div id="permission-status">
+                <strong>Permission System:</strong> Use the buttons below to test permission-based menu items.
+            </div>
         </div>
-        <p>Dialogs support all Bootstrap modal sizes: small, default, large, extra large, and fullscreen.</p>
+
+        <!-- Permission Controls -->
+        <div class="mb-4">
+            <h6 class="mb-3">Permission Controls:</h6>
+            <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-sm btn-outline-warning" data-action="toggle-admin">
+                    <i class="bi bi-shield-check me-1"></i>Toggle Admin Mode
+                </button>
+                <button class="btn btn-sm btn-outline-info" data-action="toggle-permission" data-permission="edit_content">
+                    <i class="bi bi-pencil me-1"></i>Toggle Edit Permission
+                </button>
+                <button class="btn btn-sm btn-outline-success" data-action="toggle-permission" data-permission="view_admin">
+                    <i class="bi bi-eye me-1"></i>Toggle View Admin
+                </button>
+            </div>
+        </div>
 
         <div class="example-demo">
-        <button class="btn btn-primary me-2" data-action="show-small">
-            Small (sm)
-        </button>
-        <button class="btn btn-primary me-2" data-action="show-default">
-            Default
-        </button>
-        <button class="btn btn-primary me-2" data-action="show-large">
-            Large (lg)
-        </button>
-        <button class="btn btn-primary me-2" data-action="show-xl">
-            Extra Large (xl)
-        </button>
-        <button class="btn btn-primary" data-action="show-fullscreen">
-            Fullscreen
-        </button>
+            <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-primary" data-action="show-basic-context-menu">
+                    <i class="bi bi-menu-button-wide me-1"></i>Basic Context Menu
+                </button>
+                <button class="btn btn-success" data-action="show-advanced-context-menu">
+                    <i class="bi bi-gear me-1"></i>Advanced with Permissions
+                </button>
+                <button class="btn btn-warning" data-action="show-custom-context-menu">
+                    <i class="bi bi-palette me-1"></i>Custom Styled Menu
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <hr class="my-5">
+
+    <!-- Sizes Section -->
+    <div class="example-section mb-5">
+        <div class="example-header mb-4">
+            <h2><i class="bi bi-aspect-ratio me-2"></i>Dialog Sizes</h2>
+            <div class="source-buttons">
+                <button class="btn btn-sm btn-outline-primary" data-action="show-sizes-source">
+                    <i class="bi bi-code-slash me-1"></i>View Source
+                </button>
+            </div>
+        </div>
+
+        <p class="mb-4">Dialogs support all Bootstrap modal sizes: small, default, large, extra large, and fullscreen.</p>
+
+        <div class="example-demo">
+            <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-primary" data-action="show-small">
+                    Small (sm)
+                </button>
+                <button class="btn btn-primary" data-action="show-default">
+                    Default
+                </button>
+                <button class="btn btn-primary" data-action="show-large">
+                    Large (lg)
+                </button>
+                <button class="btn btn-primary" data-action="show-xl">
+                    Extra Large (xl)
+                </button>
+                <button class="btn btn-primary" data-action="show-fullscreen">
+                    Fullscreen
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- Responsive Fullscreen Section -->
-    <div class="example-section">
-        <div class="example-header">
-        <h2>Responsive Fullscreen</h2>
-        <div class="source-buttons">
-            <button class="btn btn-sm btn-outline-primary" data-action="show-responsive-source">
-            <i class="bi bi-code-slash me-1"></i>View Source
-            </button>
+    <div class="example-section mb-5">
+        <div class="example-header mb-4">
+            <h2><i class="bi bi-phone me-2"></i>Responsive Fullscreen</h2>
         </div>
-        </div>
-        <p>Fullscreen modals that respond to viewport breakpoints.</p>
+
+        <p class="mb-4">Fullscreen modals that respond to viewport breakpoints - perfect for mobile-first design.</p>
 
         <div class="example-demo">
-        <button class="btn btn-info me-2" data-action="show-fullscreen-sm">
-            Fullscreen below sm
-        </button>
-        <button class="btn btn-info me-2" data-action="show-fullscreen-md">
-            Fullscreen below md
-        </button>
-        <button class="btn btn-info me-2" data-action="show-fullscreen-lg">
-            Fullscreen below lg
-        </button>
-        <button class="btn btn-info" data-action="show-fullscreen-xl">
-            Fullscreen below xl
-        </button>
+            <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-info" data-action="show-fullscreen-sm">
+                    Fullscreen &lt; SM
+                </button>
+                <button class="btn btn-info" data-action="show-fullscreen-md">
+                    Fullscreen &lt; MD
+                </button>
+                <button class="btn btn-info" data-action="show-fullscreen-lg">
+                    Fullscreen &lt; LG
+                </button>
+                <button class="btn btn-info" data-action="show-fullscreen-xl">
+                    Fullscreen &lt; XL
+                </button>
+            </div>
         </div>
     </div>
+
+    <hr class="my-5">
 
     <!-- Options Section -->
-    <div class="example-section">
-        <div class="example-header">
-        <h2>Dialog Options</h2>
-        <div class="source-buttons">
-            <button class="btn btn-sm btn-outline-primary" data-action="show-options-source">
-            <i class="bi bi-code-slash me-1"></i>View Source
-            </button>
+    <div class="example-section mb-5">
+        <div class="example-header mb-4">
+            <h2><i class="bi bi-sliders me-2"></i>Dialog Options</h2>
+            <div class="source-buttons">
+                <button class="btn btn-sm btn-outline-primary" data-action="show-options-source">
+                    <i class="bi bi-code-slash me-1"></i>View Source
+                </button>
+            </div>
         </div>
-        </div>
-        <p>Various configuration options for dialogs.</p>
+
+        <p class="mb-4">Various configuration options for dialog behavior and appearance.</p>
 
         <div class="example-demo">
-        <button class="btn btn-secondary me-2" data-action="show-centered">
-            Centered Dialog
-        </button>
-        <button class="btn btn-secondary me-2" data-action="show-scrollable">
-            Scrollable Dialog
-        </button>
-        <button class="btn btn-secondary me-2" data-action="show-static">
-            Static Backdrop
-        </button>
-        <button class="btn btn-secondary" data-action="show-no-fade">
-            No Fade Animation
-        </button>
+            <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-secondary" data-action="show-centered">
+                    <i class="bi bi-arrows-move me-1"></i>Centered
+                </button>
+                <button class="btn btn-secondary" data-action="show-scrollable">
+                    <i class="bi bi-arrow-down-up me-1"></i>Scrollable
+                </button>
+                <button class="btn btn-secondary" data-action="show-static">
+                    <i class="bi bi-lock me-1"></i>Static Backdrop
+                </button>
+                <button class="btn btn-secondary" data-action="show-no-fade">
+                    <i class="bi bi-lightning me-1"></i>No Animation
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- View as Body Section -->
-    <div class="example-section">
-        <div class="example-header">
-        <h2>View Instance as Body</h2>
-        <div class="source-buttons">
-            <button class="btn btn-sm btn-outline-primary" data-action="show-view-body-source">
-            <i class="bi bi-code-slash me-1"></i>View Source
-            </button>
+    <!-- View Instance Body Section -->
+    <div class="example-section mb-5">
+        <div class="example-header mb-4">
+            <h2><i class="bi bi-puzzle me-2"></i>View Components</h2>
         </div>
-        </div>
-        <p>Dialogs can accept View instances as body content for complex interactive content.</p>
+
+        <p class="mb-4">Dialogs can contain complete View instances for complex interactive content.</p>
 
         <div class="example-demo">
-        <button class="btn btn-success me-2" data-action="show-view-dialog">
-            Dialog with View Component
-        </button>
-        <button class="btn btn-success" data-action="show-form-view">
-            Form as View Component
-        </button>
+            <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-success" data-action="show-view-dialog">
+                    <i class="bi bi-calculator me-1"></i>Interactive Counter
+                </button>
+                <button class="btn btn-success" data-action="show-form-view">
+                    <i class="bi bi-card-text me-1"></i>Form Component
+                </button>
+            </div>
         </div>
     </div>
+
+    <hr class="my-5">
 
     <!-- Utility Methods Section -->
-    <div class="example-section">
-        <div class="example-header">
-        <h2>Utility Methods</h2>
-        <div class="source-buttons">
-            <button class="btn btn-sm btn-outline-primary" data-action="show-utilities-source">
-            <i class="bi bi-code-slash me-1"></i>View Source
-            </button>
+    <div class="example-section mb-5">
+        <div class="example-header mb-4">
+            <h2><i class="bi bi-tools me-2"></i>Utility Methods</h2>
         </div>
-        </div>
-        <p>Static utility methods for common dialog patterns.</p>
+
+        <p class="mb-4">Static utility methods for common dialog patterns - simple one-line implementations.</p>
 
         <div class="example-demo">
-        <button class="btn btn-warning me-2" data-action="show-alert">
-            Alert Dialog
-        </button>
-        <button class="btn btn-warning me-2" data-action="show-confirm">
-            Confirm Dialog
-        </button>
-        <button class="btn btn-warning me-2" data-action="show-prompt">
-            Prompt Dialog
-        </button>
-        <button class="btn btn-warning" data-action="show-code-example">
-            Code Viewer Dialog
-        </button>
+            <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-warning" data-action="show-alert">
+                    <i class="bi bi-exclamation-triangle me-1"></i>Alert
+                </button>
+                <button class="btn btn-warning" data-action="show-confirm">
+                    <i class="bi bi-question-circle me-1"></i>Confirm
+                </button>
+                <button class="btn btn-warning" data-action="show-prompt">
+                    <i class="bi bi-chat-square-text me-1"></i>Prompt
+                </button>
+                <button class="btn btn-warning" data-action="show-code-example">
+                    <i class="bi bi-file-code me-1"></i>Code Viewer
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- Promise-based Dialogs Section -->
-    <div class="example-section">
-        <div class="example-header">
-        <h2>Promise-based Dialogs</h2>
-        <div class="source-buttons">
-            <button class="btn btn-sm btn-outline-primary" data-action="show-promise-source">
-            <i class="bi bi-code-slash me-1"></i>View Source
-            </button>
+    <div class="example-section mb-5">
+        <div class="example-header mb-4">
+            <h2><i class="bi bi-arrow-repeat me-2"></i>Promise-based Dialogs</h2>
         </div>
-        </div>
-        <p>Modern promise-based dialog patterns with form integration.</p>
+
+        <p class="mb-4">Modern async/await patterns for dialogs that return values and handle complex workflows.</p>
 
         <div class="example-demo">
-        <button class="btn btn-info me-2" data-action="show-form">
-            Form Dialog
-        </button>
-        <button class="btn btn-info" data-action="show-promise-dialog">
-            Multi-Button Promise Dialog
-        </button>
+            <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-info" data-action="show-form">
+                    <i class="bi bi-card-list me-1"></i>Form Dialog
+                </button>
+                <button class="btn btn-info" data-action="show-promise-dialog">
+                    <i class="bi bi-check2-all me-1"></i>Multi-Choice Dialog
+                </button>
+            </div>
         </div>
     </div>
+
+    <hr class="my-5">
 
     <!-- Advanced Examples Section -->
-    <div class="example-section">
-        <div class="example-header">
-        <h2>Advanced Examples</h2>
-        <div class="source-buttons">
-            <button class="btn btn-sm btn-outline-primary" data-action="show-advanced-source">
-            <i class="bi bi-code-slash me-1"></i>View Source
-            </button>
+    <div class="example-section mb-5">
+        <div class="example-header mb-4">
+            <h2><i class="bi bi-stars me-2"></i>Advanced Examples</h2>
         </div>
-        </div>
-        <p>Complex dialog implementations and patterns.</p>
+
+        <p class="mb-4">Complex dialog implementations showcasing advanced features and interaction patterns.</p>
 
         <div class="example-demo">
-        <button class="btn btn-dark me-2" data-action="show-wizard">
-            Multi-Step Wizard
-        </button>
-        <button class="btn btn-dark me-2" data-action="show-loading">
-            Loading State
-        </button>
-        <button class="btn btn-dark" data-action="show-nested">
-            Dialog Actions
-        </button>
+            <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-dark" data-action="show-wizard">
+                    <i class="bi bi-list-ol me-1"></i>Multi-Step Wizard
+                </button>
+                <button class="btn btn-dark" data-action="show-loading">
+                    <i class="bi bi-hourglass-split me-1"></i>Loading States
+                </button>
+                <button class="btn btn-dark" data-action="show-nested">
+                    <i class="bi bi-layers me-1"></i>Nested Interactions
+                </button>
+            </div>
         </div>
     </div>
+
+    <hr class="my-5">
+
+    <!-- Documentation Section -->
+    <div class="example-section">
+        <div class="example-header mb-4">
+            <h2><i class="bi bi-book me-2"></i>Documentation</h2>
+        </div>
+
+        <p class="mb-4">Implementation details and code examples for all dialog features.</p>
+
+        <div class="alert alert-light border p-4">
+            <h6 class="alert-heading mb-3">Key Features Covered:</h6>
+            <div class="row">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <ul class="mb-0">
+                        <li><strong>Context Menus</strong> - Permission-based dropdown menus</li>
+                        <li><strong>Flexible Sizing</strong> - From small alerts to fullscreen apps</li>
+                        <li><strong>View Integration</strong> - Complete components as dialog content</li>
+                        <li><strong>Promise Support</strong> - Modern async/await patterns</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="mb-0">
+                        <li><strong>Responsive Design</strong> - Mobile-first breakpoint handling</li>
+                        <li><strong>Loading States</strong> - Built-in progress indicators</li>
+                        <li><strong>Form Integration</strong> - Complete form handling</li>
+                        <li><strong>Utility Methods</strong> - One-line common patterns</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <small class="text-muted">
+                All examples are interactive and include complete source code viewing.
+            </small>
+        </div>
     </div>
+</div>

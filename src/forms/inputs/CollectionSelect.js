@@ -6,7 +6,7 @@
  * - CollectionDropdownView (child): Handles dropdown rendering only
  */
 
-import { View } from '../core/View.js';
+import { View } from '../../core/View.js';
 
 /**
  * CollectionDropdownView - Child component for dropdown results only
@@ -117,28 +117,28 @@ class CollectionSelectView extends View {
       className: 'collection-select-view',
       template: `
         <div class="position-relative">
-          <input type="text" 
-                 class="form-control {{#data.hasError}}is-invalid{{/data.hasError}} {{#data.showClear}}pe-5{{/data.showClear}}" 
+          <input type="text"
+                 class="form-control {{#data.hasError}}is-invalid{{/data.hasError}} {{#data.showClear}}pe-5{{/data.showClear}}"
                  placeholder="{{data.placeholder}}"
                  value="{{data.displayValue}}"
                  autocomplete="off" />
-          
-          <input type="hidden" 
-                 name="{{data.name}}" 
+
+          <input type="hidden"
+                 name="{{data.name}}"
                  value="{{data.selectedValue}}" />
-          
+
           {{#data.showClear}}
-            <button type="button" 
-                    class="btn btn-link position-absolute top-50 end-0 translate-middle-y me-2 p-0 border-0" 
+            <button type="button"
+                    class="btn btn-link position-absolute top-50 end-0 translate-middle-y me-2 p-0 border-0"
                     style="z-index: 10; color: #6c757d;"
                     data-action="clear-selection"
                     title="Clear selection">
               <i class="bi bi-x-circle"></i>
             </button>
           {{/data.showClear}}
-          
+
           <div class="dropdown-container"></div>
-          
+
           {{#data.hasError}}
             <div class="invalid-feedback">{{data.errorMessage}}</div>
           {{/data.hasError}}
@@ -346,7 +346,7 @@ class CollectionSelectView extends View {
   async handleActionClearSelection(event, _element) {
     event.preventDefault();
     event.stopPropagation();
-    
+
     this.clearSelection();
   }
 
@@ -358,20 +358,20 @@ class CollectionSelectView extends View {
     this.hasError = false;
     this.focusedIndex = -1;
     this.hasSearched = false;
-    
+
     // Update input display
     const input = this.getInput();
     if (input) {
       input.value = '';
       input.focus(); // Focus back on input after clearing
     }
-    
+
     // Update hidden input
     const hiddenInput = this.getHiddenInput();
     if (hiddenInput) {
       hiddenInput.value = '';
     }
-    
+
     this.updateDropdown();
     this.render(); // Re-render to hide clear button
     this.emit('change', { value: '', label: '' });

@@ -9,7 +9,10 @@ import DashboardPage from './pages/DashboardPage.js';
 import TemplatesPage from './pages/TemplatesPage.js';
 import TodosPage from './pages/TodosPage.js';
 import FormsPage from './pages/FormsPage.js';
+import FormInputsPage from './pages/FormInputsPage.js';
+import FormValidationPage from './pages/FormValidationPage.js';
 import DialogsPage from './pages/DialogsPage.js';
+import FormDialogsPage from './pages/FormDialogsPage.js';
 import ChartsPage from './pages/ChartsPage.js';
 import ImagePage from './pages/ImagePage.js';
 import FileDropPage from './pages/FileDropPage.js';
@@ -119,8 +122,29 @@ const app = new PortalApp({
                 },
                 {
                     text: 'Forms',
-                    route: '?page=forms',
-                    icon: 'bi-input-cursor-text'
+                    icon: 'bi-input-cursor-text',
+                    children: [
+                        {
+                            text: 'Form Examples',
+                            route: '?page=forms',
+                            icon: 'bi-clipboard-data'
+                        },
+                        {
+                            text: 'Input Types',
+                            route: '?page=form-inputs',
+                            icon: 'bi-ui-checks-grid'
+                        },
+                        {
+                            text: 'Validation',
+                            route: '?page=form-validation',
+                            icon: 'bi-shield-check'
+                        },
+                        {
+                            text: 'Form Dialogs',
+                            route: '?page=form-dialogs',
+                            icon: 'bi-chat-square-text'
+                        }
+                    ]
                 },
                 {
                     text: 'Dialogs',
@@ -280,7 +304,10 @@ app.registerPage('charts', ChartsPage);
 app.registerPage('templates', TemplatesPage);
 app.registerPage('todos', TodosPage);
 app.registerPage('forms', FormsPage);
+app.registerPage('form-inputs', FormInputsPage);
+app.registerPage('form-validation', FormValidationPage);
 app.registerPage('dialogs', DialogsPage);
+app.registerPage('form-dialogs', FormDialogsPage);
 app.registerPage('image', ImagePage);
 app.registerPage('file-drop', FileDropPage);
 app.registerPage('simple', Page, {

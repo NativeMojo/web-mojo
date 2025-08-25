@@ -24,36 +24,72 @@ class LogTablePage extends TablePage {
                     key: 'created',
                     label: 'Timestamp',
                     sortable: true,
-                    formatter: "epoch|datetime"
+                    formatter: "epoch|datetime",
+                    filter: {
+                        type: 'daterange',
+                        startName: 'dr_start',
+                        endName: 'dr_end',
+                        label: 'Date Range',
+                        format: 'YYYY-MM-DD',
+                        displayFormat: 'MMM DD, YYYY',
+                        separator: ' to '
+                    }
                 },
                 {
                     key: 'level',
                     label: 'Level',
-                    sortable: true
+                    sortable: true,
+                    filter: {
+                        type: 'select',
+                        options: [
+                            { value: 'info', label: 'Info' },
+                            { value: 'warning', label: 'Warning' },
+                            { value: 'error', label: 'Error' }
+                        ]
+                    }
                 },
                 {
                     key: 'kind',
-                    label: 'Kind'
+                    label: 'Kind',
+                    filter: {
+                        type: 'select',
+                        options: ["org", "iso", "group", "test"]
+                    }
                 },
                 {
                     key: 'method',
-                    label: 'Method'
+                    label: 'Method',
+                    filter: {
+                        type: "text"
+                    }
                 },
                 {
                     key: 'path',
-                    label: 'Path'
+                    label: 'Path',
+                    filter: {
+                        type: "text"
+                    }
                 },
                 {
                     key: 'username',
                     label: 'User',
+                    filter: {
+                        type: "text"
+                    }
                 },
                 {
                     key: 'ip',
-                    label: 'IP'
+                    label: 'IP',
+                    filter: {
+                        type: "text"
+                    }
                 },
                 {
                     key: 'duid',
                     label: 'Browser ID',
+                    filter: {
+                        type: "text"
+                    }
                 }
             ],
 
@@ -63,6 +99,81 @@ class LogTablePage extends TablePage {
             sortable: true,
             filterable: true,
             paginated: true,
+
+            // Additional filters not tied to columns
+            filters: [
+                {
+                    name: 'user_search',
+                    label: 'User Search',
+                    type: 'text',
+                    placeholder: 'Search username, email, or session...',
+                    help: 'Search across username and email fields',
+                    columns: 6
+                },
+                {
+                    name: 'ip_range',
+                    label: 'IP Address',
+                    type: 'text',
+                    placeholder: '192.168.1.0/24 or specific IP',
+                    help: 'CIDR notation or specific IP address',
+                    columns: 6
+                },
+                {
+                    name: 'session_timeframe',
+                    label: 'Session Duration',
+                    type: 'daterange',
+                    startName: 'session_start',
+                    endName: 'session_end',
+                    outputFormat: 'epoch',
+                    displayFormat: 'MMM DD, YYYY HH:mm',
+                    separator: ' through ',
+                    help: 'Filter by session time range',
+                    columns: 12
+                },
+                {
+                    name: 'advanced_search',
+                    label: 'Advanced Search',
+                    type: 'form',
+                    fields: [
+                        {
+                            type: 'text',
+                            name: 'request_id',
+                            label: 'Request ID',
+                            placeholder: 'req_123456...',
+                            columns: 6
+                        },
+                        {
+                            type: 'text',
+                            name: 'correlation_id',
+                            label: 'Correlation ID',
+                            placeholder: 'corr_abcdef...',
+                            columns: 6
+                        },
+                        {
+                            type: 'select',
+                            name: 'severity',
+                            label: 'Severity Level',
+                            options: [
+                                { value: '', text: 'All Severities' },
+                                { value: 'critical', text: 'Critical' },
+                                { value: 'high', text: 'High' },
+                                { value: 'medium', text: 'Medium' },
+                                { value: 'low', text: 'Low' }
+                            ],
+                            columns: 4
+                        },
+                        {
+                            type: 'tags',
+                            name: 'event_tags',
+                            label: 'Event Tags',
+                            options: ['auth', 'api', 'database', 'cache', 'security', 'performance'],
+                            placeholder: 'Select event tags...',
+                            columns: 8
+                        }
+                    ],
+                    help: 'Complex multi-field search across log metadata'
+                }
+            ],
 
             // TablePage toolbar
             showRefresh: true,

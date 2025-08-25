@@ -5,8 +5,6 @@
 
 import TablePage from '../../../src/components/TablePage.js';
 import { TodoList, TodoForms } from '../models/Todo.js';
-import { FormView } from '../../../src/components/FormView.js';
-import Dialog from '../../../src/components/Dialog.js';
 
 class TodosPage extends TablePage {
     // Static page properties for routing

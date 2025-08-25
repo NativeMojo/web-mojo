@@ -5,6 +5,7 @@
  */
 
 import View from '../core/View.js';
+import FormView from '../forms/FormView.js';
 
 class Dialog extends View {
   constructor(options = {}) {
@@ -54,6 +55,7 @@ class Dialog extends View {
     this.header = options.header !== undefined ? options.header : true;
     this.headerContent = options.headerContent || null;
     this.closeButton = options.closeButton !== undefined ? options.closeButton : true;
+    this.contextMenu = options.contextMenu || null;
 
     // Enhanced body handling - support View, Promise<View>, or function returning View
     this.body = options.body || options.content || '';
@@ -212,12 +214,117 @@ class Dialog extends View {
       return `<div class="modal-header">${this.headerContent}</div>`;
     }
 
+    // Build context menu or close button
+    let headerActions = '';
+    if (this.contextMenu && this.contextMenu.items && this.contextMenu.items.length > 0) {
+      headerActions = await this.buildContextMenu();
+    } else if (this.closeButton) {
+      headerActions = '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>';
+    }
+
     return `
       <div class="modal-header">
         ${this.title ? `<h5 class="modal-title" id="${this.titleId}">${this.title}</h5>` : ''}
-        ${this.closeButton ? '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>' : ''}
+        ${headerActions}
       </div>
     `;
+  }
+
+  async buildContextMenu() {
+    const menuItems = await this.filterContextMenuItems();
+    if (menuItems.length === 0) {
+      // If no items pass permission checks, show regular close button
+      return this.closeButton ? '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>' : '';
+    }
+
+    const triggerIcon = this.contextMenu.icon || 'bi-three-dots-vertical';
+    const buttonClass = this.contextMenu.buttonClass || 'btn btn-link p-1 mojo-modal-context-menu-btn';
+
+    const menuItemsHtml = menuItems.map(item => {
+      if (item.type === 'divider') {
+        return '<li><hr class="dropdown-divider"></li>';
+      }
+
+      const icon = item.icon ? `<i class="${item.icon} me-2"></i>` : '';
+      const label = item.label || '';
+
+      if (item.href) {
+        return `<li><a class="dropdown-item" href="${item.href}"${item.target ? ` target="${item.target}"` : ''}>${icon}${label}</a></li>`;
+      } else if (item.action) {
+        const dataAttrs = Object.keys(item)
+          .filter(key => key.startsWith('data-'))
+          .map(key => `${key}="${item[key]}"`)
+          .join(' ');
+        return `<li><a class="dropdown-item" data-action="${item.action}" ${dataAttrs}>${icon}${label}</a></li>`;
+      }
+
+      return '';
+    }).join('');
+
+    return `
+      <div class="dropdown">
+        <button class="${buttonClass}" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="${triggerIcon}"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          ${menuItemsHtml}
+        </ul>
+      </div>
+    `;
+  }
+
+  async filterContextMenuItems() {
+    if (!this.contextMenu || !this.contextMenu.items) {
+      return [];
+    }
+
+    const filteredItems = [];
+
+    for (const item of this.contextMenu.items) {
+      // Always include dividers
+      if (item.type === 'divider') {
+        filteredItems.push(item);
+        continue;
+      }
+
+      // Check permissions if specified
+      if (item.permissions) {
+        try {
+          const app = this.getApp?.();
+          let user = null;
+
+          if (app) {
+            user = app.activeUser || app.getState?.('activeUser');
+          }
+
+          // Also check window.getApp as fallback for mock systems
+          if (!user && typeof window !== 'undefined' && window.getApp) {
+            try {
+              const globalApp = window.getApp();
+              user = globalApp?.activeUser;
+            } catch (e) {
+              // Ignore global app errors
+            }
+          }
+
+          if (user && user.hasPermission) {
+            if (!user.hasPermission(item.permissions)) {
+              continue; // Skip this item
+            }
+          } else {
+            // If no permission system available, skip items with permission requirements
+            continue;
+          }
+        } catch (error) {
+          console.warn('Error checking permissions for context menu item:', error);
+          continue;
+        }
+      }
+
+      filteredItems.push(item);
+    }
+
+    return filteredItems;
   }
 
   /**
@@ -294,7 +401,7 @@ class Dialog extends View {
    * Override mount to not require a container for dialogs
    * Dialogs are appended to body directly
    */
-  async mount(container = null) {
+  async mount(_container = null) {
     if (this.mounted || this.destroyed) {
       return;
     }
@@ -1266,9 +1373,9 @@ class Dialog extends View {
   }
 
   /**
-   * Show a form dialog using FormView
-   * @param {Object} options - Form dialog options
-   * @returns {Promise<Object|null>} Resolves with form data or null on cancel
+   * Show form in a dialog for simple data collection (no model saving)
+   * @param {object} options - Configuration options
+   * @returns {Promise} Promise that resolves with form data or null if cancelled
    */
   static async showForm(options = {}) {
     const {
@@ -1278,21 +1385,17 @@ class Dialog extends View {
       centered = true,
       submitText = 'Submit',
       cancelText = 'Cancel',
-      validateBeforeSubmit = true,
       ...dialogOptions
     } = options;
 
-    // Import FormView if not already available
-    const FormView = (await import('./FormView.js')).default;
-
-    // Create the FormView
+    // Create the FormView (no model for simple form)
     const formView = new FormView({
+      fileHandling: options.fileHandling || 'base64',
+      data: options.data,
+      defaults: options.defaults,
       formConfig: {
-        model: options.model,
-        data: options.data,
         fields: formConfig.fields || options.fields,
         ...formConfig,
-        // Override submit button to prevent default form submission
         submitButton: false,
         resetButton: false
       }
@@ -1308,12 +1411,12 @@ class Dialog extends View {
         {
           text: cancelText,
           class: 'btn-secondary',
-          value: 'cancel'
+          action: 'cancel'
         },
         {
           text: submitText,
           class: 'btn-primary',
-          value: 'submit'
+          action: 'submit'
         }
       ],
       ...dialogOptions
@@ -1322,49 +1425,39 @@ class Dialog extends View {
     // Render and mount dialog
     await dialog.render(true, document.body);
 
-    // Show the dialog and return promise
+    // Show the dialog
     dialog.show();
 
     return new Promise((resolve) => {
       let resolved = false;
 
-      // Get button elements
-      const cancelBtn = dialog.element.querySelector('.modal-footer button:first-child');
-      const submitBtn = dialog.element.querySelector('.modal-footer button:last-child');
-
-      // Handle submit
-      const handleSubmit = async () => {
+      // Handle dialog actions
+      dialog.on('action:submit', async () => {
         if (resolved) return;
 
-        // Validate if required
-        if (validateBeforeSubmit && !formView.validate()) {
+        // Validate form
+        if (!formView.validate()) {
           formView.focusFirstError();
           return;
         }
 
-        // Get form values
-        const formData = formView.getValues();
-        resolved = true;
-        dialog.hide();
-        resolve(formData);
-      };
+        // Get form data and resolve
+        try {
+          const formData = await formView.getFormData();
+          resolved = true;
+          dialog.hide();
+          resolve(formData);
+        } catch (error) {
+          console.error('Error collecting form data:', error);
+          formView.showError('Error collecting form data');
+        }
+      });
 
-      // Handle cancel
-      const handleCancel = () => {
+      dialog.on('action:cancel', () => {
         if (resolved) return;
         resolved = true;
         dialog.hide();
         resolve(null);
-      };
-
-      // Attach event listeners
-      submitBtn?.addEventListener('click', handleSubmit);
-      cancelBtn?.addEventListener('click', handleCancel);
-
-      // Handle form submit event (if user presses Enter)
-      formView.on('submit', (e) => {
-        e.preventDefault();
-        handleSubmit();
       });
 
       // Handle ESC key or backdrop click
@@ -1377,7 +1470,119 @@ class Dialog extends View {
         setTimeout(() => {
           formView.destroy();
           dialog.destroy();
-          dialog.element.remove();
+        }, 100);
+      });
+    });
+  }
+
+  /**
+   * Show form in a dialog with automatic model saving
+   * @param {object} options - Configuration options (requires model)
+   * @returns {Promise} Promise that resolves with save result or null if cancelled
+   */
+  static async showModelForm(options = {}) {
+    const {
+      title = 'Edit',
+      formConfig = {},
+      size = 'md',
+      centered = true,
+      submitText = 'Save',
+      cancelText = 'Cancel',
+      model,
+      ...dialogOptions
+    } = options;
+
+    if (!model) {
+      throw new Error('showModelForm requires a model');
+    }
+
+    // Create the FormView with model
+    const formView = new FormView({
+      fileHandling: options.fileHandling || 'base64',
+      model: model,
+      data: options.data,
+      defaults: options.defaults,
+      formConfig: {
+        fields: formConfig.fields || options.fields,
+        ...formConfig,
+        submitButton: false,
+        resetButton: false
+      }
+    });
+
+    // Create the dialog with the FormView as body
+    const dialog = new Dialog({
+      title,
+      body: formView,
+      size,
+      centered,
+      buttons: [
+        {
+          text: cancelText,
+          class: 'btn-secondary',
+          action: 'cancel'
+        },
+        {
+          text: submitText,
+          class: 'btn-primary',
+          action: 'submit'
+        }
+      ],
+      ...dialogOptions
+    });
+
+    // Render and mount dialog
+    await dialog.render(true, document.body);
+
+    // Show the dialog
+    dialog.show();
+
+    return new Promise((resolve) => {
+      let resolved = false;
+
+      // Handle dialog actions
+      dialog.on('action:submit', async () => {
+        if (resolved) return;
+
+        // Show loading state
+        dialog.setLoading(true, 'Saving...');
+
+        try {
+          const result = await formView.handleSubmit();
+          if (result.success) {
+            resolved = true;
+            dialog.hide();
+            resolve(result);
+          } else {
+            // Restore form and show error
+            await dialog.setContent(formView);
+            formView.showError(result.error || 'Save failed. Please try again.');
+          }
+        } catch (error) {
+          console.error('Error saving form:', error);
+          // Restore form and show error
+          await dialog.setContent(formView);
+          formView.showError(error.message || 'An error occurred while saving');
+        }
+      });
+
+      dialog.on('action:cancel', () => {
+        if (resolved) return;
+        resolved = true;
+        dialog.hide();
+        resolve(null);
+      });
+
+      // Handle ESC key or backdrop click
+      dialog.on('hidden', () => {
+        if (!resolved) {
+          resolved = true;
+          resolve(null);
+        }
+        // Clean up
+        setTimeout(() => {
+          formView.destroy();
+          dialog.destroy();
         }, 100);
       });
     });

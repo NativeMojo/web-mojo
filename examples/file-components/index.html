@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOJO File Components Demo</title>
+
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- MOJO CSS -->
+    <link href="../../src/css/core.css" rel="stylesheet">
+
+    <style>
+        body {
+            padding-top: 2rem;
+            background: var(--bs-body-bg);
+        }
+        .demo-section {
+            margin-bottom: 3rem;
+            padding: 2rem;
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.5rem;
+            background: var(--bs-body-bg);
+        }
+        .demo-title {
+            color: var(--bs-primary);
+            border-bottom: 2px solid var(--bs-primary);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .size-demo {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+        }
+        .size-label {
+            font-weight: 600;
+            color: var(--bs-secondary);
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+        }
+        .example-file-object {
+            background: var(--bs-light);
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Toggle -->
+    <button class="btn btn-outline-primary theme-toggle" onclick="toggleTheme()">
+        <i class="bi bi-sun-fill"></i>
+    </button>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="text-center mb-5">
+                    <i class="bi bi-file-image me-2"></i>
+                    MOJO File Components Demo
+                </h1>
+                <p class="lead text-center mb-5">
+                    Demonstrating enhanced FormBuilder image fields and FileView component
+                </p>
+            </div>
+        </div>
+
+        <!-- FormBuilder Image Fields Demo -->
+        <div class="demo-section">
+            <h2 class="demo-title">
+                <i class="bi bi-form me-2"></i>
+                FormBuilder Enhanced Image Fields
+            </h2>
+
+            <p class="text-muted mb-4">
+                Image fields with different sizes, drag & drop support, and preview functionality.
+                Try uploading images or dragging them onto the fields.
+            </p>
+
+            <!-- Size Variants Demo -->
+            <h4 class="mb-3">Size Variants</h4>
+            <div class="size-demo">
+                <div>
+                    <div class="size-label">Extra Small (xs)</div>
+                    <div id="image-field-xs-container"></div>
+                </div>
+                <div>
+                    <div class="size-label">Small (sm)</div>
+                    <div id="image-field-sm-container"></div>
+                </div>
+                <div>
+                    <div class="size-label">Medium (md)</div>
+                    <div id="image-field-md-container"></div>
+                </div>
+                <div>
+                    <div class="size-label">Large (lg)</div>
+                    <div id="image-field-lg-container"></div>
+                </div>
+                <div>
+                    <div class="size-label">Extra Large (xl)</div>
+                    <div id="image-field-xl-container"></div>
+                </div>
+            </div>
+
+            <!-- Full Form Example -->
+            <h4 class="mb-3">Complete Form Example</h4>
+            <div id="complete-form-container" class="border rounded p-3"></div>
+
+            <!-- Form Data Display -->
+            <h4 class="mb-3 mt-4">Form Values</h4>
+            <div id="form-values" class="example-file-object">
+                <em>Upload images to see form values here...</em>
+            </div>
+        </div>
+
+        <!-- FileView Component Demo -->
+        <div class="demo-section">
+            <h2 class="demo-title">
+                <i class="bi bi-eye me-2"></i>
+                FileView Component
+            </h2>
+
+            <p class="text-muted mb-4">
+                Display file information in organized, user-friendly tabs.
+                Supports both simple URLs and complex file objects with renditions.
+            </p>
+
+            <div class="row">
+                <!-- Simple URL Example -->
+                <div class="col-lg-6 mb-4">
+                    <h4 class="mb-3">Simple URL Example</h4>
+                    <div id="fileview-simple-container" style="min-height: 400px;"></div>
+                </div>
+
+                <!-- Complex File Object Example -->
+                <div class="col-lg-6 mb-4">
+                    <h4 class="mb-3">Complex File Object Example</h4>
+                    <div id="fileview-complex-container" style="min-height: 400px;"></div>
+                </div>
+            </div>
+
+            <!-- File Object Structure -->
+            <h4 class="mb-3">Sample File Object Structure</h4>
+            <div class="example-file-object" id="sample-file-object">
+                Loading sample data...
+            </div>
+        </div>
+
+        <!-- Integration Demo -->
+        <div class="demo-section">
+            <h2 class="demo-title">
+                <i class="bi bi-puzzle me-2"></i>
+                Integration Demo
+            </h2>
+
+            <p class="text-muted mb-4">
+                Complete workflow: Upload an image in the form, then view its details with FileView.
+            </p>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <h4 class="mb-3">Upload Form</h4>
+                    <div id="integration-form-container"></div>
+                </div>
+                <div class="col-md-6">
+                    <h4 class="mb-3">File Details</h4>
+                    <div id="integration-fileview-container" class="border rounded p-3">
+                        <div class="text-center text-muted py-5">
+                            <i class="bi bi-upload fs-1 mb-3 d-block"></i>
+                            <p>Upload a file to see its details here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- MOJO Framework -->
+    <script type="module">
+        import View from '../../src/core/View.js';
+        import FormBuilder from '../../src/components/FormBuilder.js';
+        import FileView from '../../src/components/FileView.js';
+        import dataFormatter from '../../src/utils/DataFormatter.js';
+
+        // Sample file object with renditions
+        const sampleFileObject = {
+            "id": 31,
+            "created": 1756006943,
+            "modified": 1756006946,
+            "group": null,
+            "user": 2,
+            "file_manager": 2,
+            "filename": "nature_landscape.jpg",
+            "storage_filename": "nature_landscape_bf35da8e.jpg",
+            "storage_file_path": "demo/nature_landscape_bf35da8e.jpg",
+            "download_url": null,
+            "file_size": 2557500,
+            "content_type": "image/jpeg",
+            "category": "image",
+            "checksum": "sha256:a1b2c3d4e5f6...",
+            "upload_token": "",
+            "upload_status": "completed",
+            "metadata": {
+                "width": 1920,
+                "height": 1080,
+                "camera": "Canon EOS R5",
+                "iso": 100,
+                "aperture": "f/8",
+                "shutter_speed": "1/125s"
+            },
+            "is_active": true,
+            "is_public": false,
+            "url": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800",
+            "renditions": {
+                "thumbnail": {
+                    "id": 23,
+                    "created": 1756006945,
+                    "modified": 1756006945,
+                    "original_file": 31,
+                    "filename": "thumbnail.jpg",
+                    "storage_path": "demo/nature_landscape_bf35da8e_renditions/thumbnail.jpg",
+                    "file_size": 25484,
+                    "content_type": "image/jpeg",
+                    "category": "image",
+                    "role": "thumbnail",
+                    "upload_status": "completed",
+                    "url": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=150"
+                },
+                "thumbnail_sm": {
+                    "id": 24,
+                    "created": 1756006945,
+                    "modified": 1756006945,
+                    "original_file": 31,
+                    "filename": "thumbnail_sm.jpg",
+                    "file_size": 1780,
+                    "content_type": "image/jpeg",
+                    "category": "image",
+                    "role": "thumbnail_sm",
+                    "upload_status": "completed",
+                    "url": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=96"
+                },
+                "thumbnail_md": {
+                    "id": 25,
+                    "created": 1756006945,
+                    "modified": 1756006945,
+                    "original_file": 31,
+                    "filename": "thumbnail_md.jpg",
+                    "file_size": 5584,
+                    "content_type": "image/jpeg",
+                    "category": "image",
+                    "role": "thumbnail_md",
+                    "upload_status": "completed",
+                    "url": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300"
+                },
+                "thumbnail_lg": {
+                    "id": 26,
+                    "created": 1756006946,
+                    "modified": 1756006946,
+                    "original_file": 31,
+                    "filename": "thumbnail_lg.jpg",
+                    "file_size": 93493,
+                    "content_type": "image/jpeg",
+                    "category": "image",
+                    "role": "thumbnail_lg",
+                    "upload_status": "completed",
+                    "url": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500"
+                },
+                "square_sm": {
+                    "id": 27,
+                    "created": 1756006946,
+                    "modified": 1756006946,
+                    "original_file": 31,
+                    "filename": "square_sm.jpg",
+                    "file_size": 15508,
+                    "content_type": "image/jpeg",
+                    "category": "image",
+                    "role": "square_sm",
+                    "upload_status": "completed",
+                    "url": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=150&h=150&fit=crop"
+                }
+            }
+        };
+
+        // Initialize demos when DOM is loaded
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initializeFormBuilderDemo();
+            await initializeFileViewDemo();
+            await initializeIntegrationDemo();
+        });
+
+        // Initialize FormBuilder demos
+        async function initializeFormBuilderDemo() {
+            // Size variant demos
+            const sizes = ['xs', 'sm', 'md', 'lg', 'xl'];
+
+            for (const size of sizes) {
+                const formBuilder = new FormBuilder({
+                    fields: [{
+                        type: 'image',
+                        name: `image_${size}`,
+                        label: `Image ${size.toUpperCase()}`,
+                        size: size,
+                        placeholder: `Drop ${size} image here`,
+                        help: `${size} size (${getSizeDimensions(size)})`
+                    }]
+                });
+
+                const container = document.getElementById(`image-field-${size}-container`);
+                await formBuilder.render(true, container);
+            }
+
+            // Complete form example
+            const completeForm = new FormBuilder({
+                fields: [
+                    {
+                        type: 'text',
+                        name: 'title',
+                        label: 'Title',
+                        required: true,
+                        placeholder: 'Enter image title'
+                    },
+                    {
+                        type: 'image',
+                        name: 'featured_image',
+                        label: 'Featured Image',
+                        size: 'lg',
+                        required: true,
+                        help: 'Main image for the post'
+                    },
+                    {
+                        type: 'image',
+                        name: 'thumbnail',
+                        label: 'Thumbnail',
+                        size: 'sm',
+                        help: 'Optional thumbnail image'
+                    },
+                    {
+                        type: 'textarea',
+                        name: 'description',
+                        label: 'Description',
+                        rows: 3,
+                        placeholder: 'Describe the image...'
+                    }
+                ],
+                buttons: [
+                    { type: 'submit', label: 'Save Images', class: 'btn-primary' },
+                    { type: 'reset', label: 'Reset Form', class: 'btn-outline-secondary' }
+                ]
+            });
+
+            // Listen for form changes to update display
+            completeForm.on('change', (data) => {
+                updateFormValues(data.values);
+            });
+
+            const completeContainer = document.getElementById('complete-form-container');
+            await completeForm.render(true, completeContainer);
+        }
+
+        // Initialize FileView demos
+        async function initializeFileViewDemo() {
+            // Simple URL example
+            const simpleFileView = new FileView({
+                file: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800',
+                size: 'md'
+            });
+
+            const simpleContainer = document.getElementById('fileview-simple-container');
+            await simpleFileView.render(true, simpleContainer);
+
+            // Complex file object example
+            const complexFileView = new FileView({
+                file: sampleFileObject,
+                size: 'lg'
+            });
+
+            const complexContainer = document.getElementById('fileview-complex-container');
+            await complexFileView.render(true, complexContainer);
+
+            // Display sample file object
+            document.getElementById('sample-file-object').textContent =
+                JSON.stringify(sampleFileObject, null, 2);
+        }
+
+        // Initialize integration demo
+        async function initializeIntegrationDemo() {
+            const integrationForm = new FormBuilder({
+                fields: [
+                    {
+                        type: 'text',
+                        name: 'name',
+                        label: 'File Name',
+                        placeholder: 'Enter a name for your file'
+                    },
+                    {
+                        type: 'image',
+                        name: 'upload',
+                        label: 'Upload Image',
+                        size: 'md',
+                        required: true,
+                        help: 'Upload an image to see its details'
+                    }
+                ],
+                buttons: [
+                    { type: 'submit', label: 'Process File', class: 'btn-success' }
+                ]
+            });
+
+            // Handle form submission
+            integrationForm.on('submit', async (data) => {
+                const fileInput = integrationForm.element.querySelector('input[name="upload"]');
+                if (fileInput && fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+
+                    // Create a mock file object for demonstration
+                    const mockFileObject = {
+                        id: Date.now(),
+                        filename: file.name,
+                        file_size: file.size,
+                        content_type: file.type,
+                        category: file.type.startsWith('image/') ? 'image' : 'file',
+                        created: Math.floor(Date.now() / 1000),
+                        modified: Math.floor(Date.now() / 1000),
+                        upload_status: 'completed',
+                        is_active: true,
+                        is_public: false,
+                        url: URL.createObjectURL(file),
+                        metadata: {
+                            original_name: file.name,
+                            upload_date: new Date().toISOString()
+                        }
+                    };
+
+                    // Create FileView with the mock object
+                    const fileView = new FileView({
+                        file: mockFileObject,
+                        size: 'md'
+                    });
+
+                    const container = document.getElementById('integration-fileview-container');
+                    container.innerHTML = ''; // Clear previous content
+                    await fileView.render(true, container);
+                }
+            });
+
+            const integrationContainer = document.getElementById('integration-form-container');
+            await integrationForm.render(true, integrationContainer);
+        }
+
+        // Helper functions
+        function getSizeDimensions(size) {
+            const dimensions = {
+                xs: '48×48px',
+                sm: '96×96px',
+                md: '150×150px',
+                lg: '200×200px',
+                xl: '300×300px'
+            };
+            return dimensions[size] || '150×150px';
+        }
+
+        function updateFormValues(values) {
+            const display = document.getElementById('form-values');
+            if (values && Object.keys(values).length > 0) {
+                // Clean up the values for display (remove file objects)
+                const cleanValues = {};
+                for (const [key, value] of Object.entries(values)) {
+                    if (value instanceof FileList) {
+                        cleanValues[key] = Array.from(value).map(f => ({
+                            name: f.name,
+                            size: f.size,
+                            type: f.type,
+                            lastModified: f.lastModified
+                        }));
+                    } else if (value instanceof File) {
+                        cleanValues[key] = {
+                            name: value.name,
+                            size: value.size,
+                            type: value.type,
+                            lastModified: value.lastModified
+                        };
+                    } else {
+                        cleanValues[key] = value;
+                    }
+                }
+                display.textContent = JSON.stringify(cleanValues, null, 2);
+            } else {
+                display.innerHTML = '<em>No form values yet...</em>';
+            }
+        }
+
+        // Theme toggle function
+        window.toggleTheme = function() {
+            const html = document.documentElement;
+            const button = document.querySelector('.theme-toggle i');
+
+            if (html.getAttribute('data-bs-theme') === 'light') {
+                html.setAttribute('data-bs-theme', 'dark');
+                button.className = 'bi bi-moon-fill';
+            } else {
+                html.setAttribute('data-bs-theme', 'light');
+                button.className = 'bi bi-sun-fill';
+            }
+        };
+
+        // Make FormBuilder and FileView available globally for debugging
+        window.MOJO = {
+            FormBuilder,
+            FileView,
+            View,
+            dataFormatter,
+            sampleFileObject
+        };
+    </script>
+</body>
+</html>

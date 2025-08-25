@@ -13,6 +13,7 @@ import {User} from '../models/User.js';
 import {Group} from '../models/Group.js';
 import NotFoundPage from '../components/NotFoundPage.js';
 import ToastService from '../services/ToastService.js';
+import Dialog from '../components/Dialog.js';
 
 export default class PortalApp extends WebApp {
     constructor(config = {}) {
@@ -79,6 +80,9 @@ export default class PortalApp extends WebApp {
             this.setActiveUser(null);
             return;
         });
+
+        this.events.on('portal:action', this.onPortalAction.bind(this));
+
 
         // Check and load active group after auth
         await this.checkActiveGroup();
@@ -560,6 +564,192 @@ export default class PortalApp extends WebApp {
             localStorage.removeItem(key);
         } catch (error) {
             console.warn('Failed to clear sidebar state:', error);
+        }
+    }
+
+    onPortalAction(action) {
+        switch (action.action) {
+            case 'logout':
+                this.showError("You have been logged out");
+                this.tokenManager.clearTokens();
+                this.setActiveUser(null);
+                break;
+            case 'profile':
+                this.showProfile();
+                break;
+            default:
+                console.warn(`Unknown portal action: ${action}`);
+        }
+    }
+
+    async showProfile() {
+        if (!this.activeUser) {
+            this.showError("No user is currently logged in");
+            return;
+        }
+
+        try {
+            // Debug: Check what activeUser contains
+            console.log('=== DEBUG: Profile Form Data ===');
+            console.log('activeUser object:', this.activeUser);
+            console.log('activeUser type:', typeof this.activeUser);
+            console.log('activeUser constructor:', this.activeUser?.constructor?.name);
+            console.log('Has get method:', typeof this.activeUser?.get === 'function');
+            console.log('Has attributes:', !!this.activeUser?.attributes);
+
+            if (this.activeUser?.attributes) {
+                console.log('activeUser.attributes:', this.activeUser.attributes);
+            }
+
+            if (typeof this.activeUser?.get === 'function') {
+                console.log('Testing get method:');
+                try {
+                    console.log('  - first_name:', this.activeUser.get('first_name'));
+                    console.log('  - last_name:', this.activeUser.get('last_name'));
+                    console.log('  - email:', this.activeUser.get('email'));
+                } catch (e) {
+                    console.log('  - Error calling get:', e.message);
+                }
+            }
+            console.log('=== END DEBUG ===');
+
+            // Show profile edit form with automatic model saving
+            const result = await Dialog.showModelForm({
+                title: 'Edit Profile',
+                size: 'lg',
+                fileHandling: 'base64',
+                model: this.activeUser,
+                fields: [
+                    // Profile Header
+                    {
+                        type: 'header',
+                        text: 'Profile Information',
+                        level: 4,
+                        class: 'text-primary mb-3'
+                    },
+
+                    // Avatar and Basic Info
+                    {
+                        type: 'group',
+                        columns: { xs: 12, md: 4 },
+                        title: 'Avatar',
+                        fields: [
+                            {
+                                type: 'image',
+                                name: 'avatar',
+                                size: 'lg',
+                                imageSize: { width: 200, height: 200 },
+                                placeholder: 'Upload your avatar',
+                                help: 'Square images work best'
+                            }
+                        ]
+                    },
+
+                    // Profile Details
+                    {
+                        type: 'group',
+                        columns: { xs: 12, md: 8 },
+                        title: 'Details',
+                        fields: [
+                            {
+                                type: 'text',
+                                name: 'display_name',
+                                label: 'Display Name',
+                                required: true,
+                                columns: 12,
+                                placeholder: 'Enter first name'
+                            },
+                            {
+                                type: 'email',
+                                name: 'email',
+                                label: 'Email Address',
+                                required: true,
+                                columns: 8,
+                                placeholder: 'your.email@example.com'
+                            },
+                            {
+                                type: 'tel',
+                                name: 'phone_number',
+                                label: 'Phone Number',
+                                columns: 4,
+                                placeholder: '(555) 123-4567'
+                            },
+                        ]
+                    },
+
+                    // Account Settings
+                    {
+                        type: 'group',
+                        columns: 12,
+                        title: 'Account Settings',
+                        class: "pt-3",
+                        fields: [
+                            {
+                                type: 'select',
+                                name: 'timezone',
+                                label: 'Timezone',
+                                columns: 6,
+                                options: [
+                                    { value: 'America/New_York', text: 'Eastern Time' },
+                                    { value: 'America/Chicago', text: 'Central Time' },
+                                    { value: 'America/Denver', text: 'Mountain Time' },
+                                    { value: 'America/Los_Angeles', text: 'Pacific Time' },
+                                    { value: 'UTC', text: 'UTC' }
+                                ]
+                            },
+                            {
+                                type: 'select',
+                                name: 'language',
+                                label: 'Language',
+                                columns: 6,
+                                options: [
+                                    { value: 'en', text: 'English' },
+                                    { value: 'es', text: 'Spanish' },
+                                    { value: 'fr', text: 'French' },
+                                    { value: 'de', text: 'German' }
+                                ]
+                            },
+                            {
+                                type: 'switch',
+                                name: 'email_notifications',
+                                label: 'Email Notifications',
+                                columns: 4
+                            },
+                            {
+                                type: 'switch',
+                                name: 'two_factor_enabled',
+                                label: 'Two-Factor Authentication',
+                                columns: 4
+                            },
+                            {
+                                type: 'switch',
+                                name: 'profile_public',
+                                label: 'Public Profile',
+                                columns: 4
+                            }
+                        ]
+                    }
+                ],
+                submitText: 'Save Profile',
+                cancelText: 'Cancel'
+            });
+
+            if (result && result.success) {
+                console.log('Profile saved successfully:', result);
+                
+                // Update active user with new data from model
+                // (model should already be updated by save operation)
+                
+                // Show success message
+                this.showSuccess('Profile updated successfully!');
+            } else if (result && !result.success) {
+                // Error case - already handled by Dialog.showForm
+                console.log('Profile save failed:', result);
+            }
+
+        } catch (error) {
+            console.error('Error showing profile form:', error);
+            this.showError('Failed to load profile form');
         }
     }
 

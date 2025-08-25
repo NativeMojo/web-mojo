@@ -7,6 +7,7 @@ Dialog is a powerful modal component built on Bootstrap 5 that provides rich int
 ## Key Features
 
 - **Bootstrap 5 Integration**: Full Bootstrap modal functionality with all sizes and options
+- **Context Menus**: Header dropdown menus with permission-based filtering and custom styling
 - **View Integration**: Accept View instances as content with proper lifecycle management
 - **Static Helper Methods**: Pre-built dialogs for common scenarios (confirm, prompt, forms)
 - **Async Content**: Support for asynchronous content loading
@@ -73,6 +74,29 @@ const dialog = new Dialog({
   body: 'Content or View',         // String, HTML, or View instance
   footer: 'Footer content',        // String, HTML, or View instance
   buttons: [],                     // Array of button configurations
+  
+  // Context Menu
+  contextMenu: {                   // Header context menu configuration
+    icon: 'bi-three-dots-vertical', // Trigger button icon
+    buttonClass: 'btn btn-link',     // Trigger button styling
+    items: [                         // Menu items array
+      {
+        id: 'save',
+        icon: 'bi-save',
+        action: 'save-document',
+        label: 'Save Document',
+        permissions: 'edit_content'  // Optional permission check
+      },
+      { type: 'divider' },          // Visual separator
+      {
+        id: 'help',
+        icon: 'bi-question-circle',
+        href: '/help',               // External link
+        label: 'Help',
+        target: '_blank'
+      }
+    ]
+  },
   
   // Layout
   size: 'lg',                      // 'sm', 'lg', 'xl', 'fullscreen', etc.
@@ -153,6 +177,466 @@ buttons: [
     }
   }
 ]
+```
+
+## Context Menus
+
+Context menus provide a dropdown menu in the dialog header, replacing the standard close button with a more flexible action menu.
+
+### Basic Context Menu
+
+```javascript
+const dialog = new Dialog({
+  title: 'Document Editor',
+  body: documentContent,
+  contextMenu: {
+    items: [
+      {
+        id: 'save',
+        icon: 'bi-save',
+        action: 'save-document',
+        label: 'Save Document'
+      },
+      {
+        id: 'print',
+        icon: 'bi-printer',
+        action: 'print-document',
+        label: 'Print'
+      },
+      {
+        type: 'divider'
+      },
+      {
+        id: 'close',
+        icon: 'bi-x-lg',
+        action: 'close-dialog',
+        label: 'Close'
+      }
+    ]
+  }
+});
+
+// Handle context menu actions
+dialog.onActionSaveDocument = async () => {
+  await saveDocument();
+  showSuccessMessage('Document saved!');
+};
+
+dialog.onActionPrintDocument = async () => {
+  window.print();
+};
+
+dialog.onActionCloseDialog = async () => {
+  dialog.hide();
+};
+```
+
+### Advanced Context Menu with Permissions
+
+```javascript
+const dialog = new Dialog({
+  title: 'Admin Panel',
+  body: adminContent,
+  contextMenu: {
+    icon: 'bi-gear-fill',                    // Custom trigger icon
+    buttonClass: 'btn btn-outline-light',   // Custom styling
+    items: [
+      {
+        id: 'admin-settings',
+        icon: 'bi-wrench',
+        action: 'open-admin-settings',
+        label: 'Admin Settings',
+        permissions: 'view_admin'            // Requires permission
+      },
+      {
+        id: 'manage-users',
+        icon: 'bi-people',
+        action: 'manage-users',
+        label: 'Manage Users',
+        permissions: 'manage_users'
+      },
+      {
+        type: 'divider'
+      },
+      {
+        id: 'help',
+        icon: 'bi-question-circle',
+        href: 'https://docs.example.com/admin',
+        label: 'Admin Documentation',
+        target: '_blank'                     // External link
+      },
+      {
+        id: 'feedback',
+        icon: 'bi-chat-square-text',
+        action: 'send-feedback',
+        label: 'Send Feedback',
+        'data-section': 'admin'              // Custom data attributes
+      }
+    ]
+  }
+});
+
+// Permission-based actions
+dialog.onActionOpenAdminSettings = async () => {
+  showAdminSettings();
+};
+
+dialog.onActionManageUsers = async (event, element) => {
+  const section = element.getAttribute('data-section');
+  openUserManagement(section);
+};
+```
+
+### Context Menu Item Types
+
+#### Action Items
+Trigger dialog action handlers via the event system:
+
+```javascript
+{
+  id: 'unique-id',
+  icon: 'bi-icon-name',
+  action: 'kebab-case-action',    // Calls onActionKebabCaseAction()
+  label: 'Display Text',
+  permissions: 'permission_name'  // Optional permission check
+}
+```
+
+#### External Links
+Navigate to external URLs:
+
+```javascript
+{
+  id: 'help-link',
+  icon: 'bi-question-circle',
+  href: 'https://help.example.com',
+  label: 'Help Documentation',
+  target: '_blank'                // Optional: open in new tab
+}
+```
+
+#### Visual Dividers
+Separate menu sections:
+
+```javascript
+{
+  type: 'divider'
+}
+```
+
+### Permission System Integration
+
+Context menus automatically filter items based on user permissions:
+
+```javascript
+// Set up permission system (example)
+window.getApp = () => ({
+  activeUser: {
+    hasPermission: (permission) => {
+      // Your permission checking logic
+      return userPermissions.includes(permission);
+    }
+  }
+});
+
+// Context menu items are automatically filtered
+const dialog = new Dialog({
+  contextMenu: {
+    items: [
+      {
+        action: 'admin-action',
+        label: 'Admin Only',
+        permissions: 'admin_access'    // Only shown if user has permission
+      },
+      {
+        action: 'user-action',
+        label: 'All Users'            // Always shown
+      }
+    ]
+  }
+});
+```
+
+### Context Menu Styling
+
+The context menu button automatically adapts to the modal's theme:
+
+```javascript
+// Default styling - inherits header colors
+const dialog = new Dialog({
+  contextMenu: {
+    items: [...]  // Uses default mojo-modal-context-menu-btn styling
+  }
+});
+
+// Custom styling
+const dialog = new Dialog({
+  className: 'modal-info',  // Modal theme affects button color
+  contextMenu: {
+    icon: 'bi-gear-fill',                    // Custom trigger icon
+    buttonClass: 'btn btn-outline-light',   // Override button styling
+    items: [...]
+  }
+});
+```
+
+### Common Context Menu Patterns
+
+#### Document/Content Actions
+```javascript
+const dialog = new Dialog({
+  title: 'Document Editor',
+  body: documentEditor,
+  contextMenu: {
+    items: [
+      {
+        id: 'save',
+        icon: 'bi-save',
+        action: 'save-document', 
+        label: 'Save',
+        permissions: 'edit_content'
+      },
+      {
+        id: 'save-as',
+        icon: 'bi-save2',
+        action: 'save-as-document',
+        label: 'Save As...',
+        permissions: 'edit_content'
+      },
+      {
+        type: 'divider'
+      },
+      {
+        id: 'export-pdf',
+        icon: 'bi-file-pdf',
+        action: 'export-pdf',
+        label: 'Export as PDF'
+      },
+      {
+        id: 'share',
+        icon: 'bi-share',
+        action: 'share-document',
+        label: 'Share Document'
+      },
+      {
+        type: 'divider'
+      },
+      {
+        id: 'close',
+        icon: 'bi-x-lg',
+        action: 'close-dialog',
+        label: 'Close'
+      }
+    ]
+  }
+});
+```
+
+#### Administrative Actions
+```javascript
+const dialog = new Dialog({
+  title: 'User Management',
+  body: userManagementView,
+  contextMenu: {
+    items: [
+      {
+        id: 'add-user',
+        icon: 'bi-person-plus',
+        action: 'add-user',
+        label: 'Add User',
+        permissions: 'create_users'
+      },
+      {
+        id: 'bulk-import',
+        icon: 'bi-upload',
+        action: 'bulk-import-users',
+        label: 'Bulk Import',
+        permissions: 'import_users'
+      },
+      {
+        type: 'divider'
+      },
+      {
+        id: 'export-users',
+        icon: 'bi-download',
+        action: 'export-users',
+        label: 'Export Users'
+      },
+      {
+        id: 'audit-log',
+        icon: 'bi-clock-history',
+        action: 'view-audit-log',
+        label: 'View Audit Log',
+        permissions: 'view_audit'
+      }
+    ]
+  }
+});
+```
+
+#### Settings and Configuration
+```javascript
+const dialog = new Dialog({
+  title: 'Application Settings',
+  body: settingsView,
+  contextMenu: {
+    icon: 'bi-gear',
+    items: [
+      {
+        id: 'reset-defaults',
+        icon: 'bi-arrow-clockwise',
+        action: 'reset-to-defaults',
+        label: 'Reset to Defaults'
+      },
+      {
+        id: 'export-config',
+        icon: 'bi-box-arrow-up',
+        action: 'export-configuration',
+        label: 'Export Configuration',
+        permissions: 'export_settings'
+      },
+      {
+        id: 'import-config',
+        icon: 'bi-box-arrow-in-down',
+        action: 'import-configuration',
+        label: 'Import Configuration',
+        permissions: 'import_settings'
+      },
+      {
+        type: 'divider'
+      },
+      {
+        id: 'help',
+        icon: 'bi-question-circle',
+        href: '/help/settings',
+        label: 'Settings Help',
+        target: '_blank'
+      }
+    ]
+  }
+});
+```
+
+### Context Menu Best Practices
+
+#### 1. Logical Grouping
+Use dividers to group related actions:
+
+```javascript
+contextMenu: {
+  items: [
+    // Primary actions
+    { action: 'save', label: 'Save' },
+    { action: 'save-as', label: 'Save As...' },
+    
+    { type: 'divider' },
+    
+    // Secondary actions  
+    { action: 'export', label: 'Export' },
+    { action: 'share', label: 'Share' },
+    
+    { type: 'divider' },
+    
+    // Navigation/exit
+    { action: 'close', label: 'Close' }
+  ]
+}
+```
+
+#### 2. Permission-Based Filtering
+Structure permissions hierarchically:
+
+```javascript
+contextMenu: {
+  items: [
+    // Always visible
+    { action: 'view-details', label: 'View Details' },
+    
+    // Edit permissions
+    { 
+      action: 'edit', 
+      label: 'Edit',
+      permissions: 'edit_content' 
+    },
+    { 
+      action: 'delete', 
+      label: 'Delete',
+      permissions: 'delete_content'  // Requires higher permission
+    },
+    
+    // Admin only
+    {
+      action: 'admin-settings',
+      label: 'Admin Settings', 
+      permissions: 'admin_access'
+    }
+  ]
+}
+```
+
+#### 3. Consistent Icon Usage
+Use consistent icons for similar actions across your app:
+
+```javascript
+// Define icon constants
+const ICONS = {
+  SAVE: 'bi-save',
+  EDIT: 'bi-pencil', 
+  DELETE: 'bi-trash',
+  SETTINGS: 'bi-gear',
+  HELP: 'bi-question-circle',
+  CLOSE: 'bi-x-lg'
+};
+
+contextMenu: {
+  items: [
+    { action: 'save', icon: ICONS.SAVE, label: 'Save' },
+    { action: 'edit', icon: ICONS.EDIT, label: 'Edit' },
+    { action: 'delete', icon: ICONS.DELETE, label: 'Delete' }
+  ]
+}
+```
+
+#### 4. Action Handler Naming
+Use consistent naming patterns for action handlers:
+
+```javascript
+// Context menu actions
+contextMenu: {
+  items: [
+    { action: 'save-document', label: 'Save' },
+    { action: 'export-pdf', label: 'Export PDF' },
+    { action: 'share-link', label: 'Share Link' }
+  ]
+}
+
+// Corresponding handlers
+dialog.onActionSaveDocument = async () => { /* ... */ };
+dialog.onActionExportPdf = async () => { /* ... */ };
+dialog.onActionShareLink = async () => { /* ... */ };
+```
+
+#### 5. Graceful Degradation
+Handle missing permissions gracefully:
+
+```javascript
+contextMenu: {
+  items: [
+    // Always include basic actions
+    { action: 'view', label: 'View Details' },
+    { action: 'refresh', label: 'Refresh' },
+    
+    // Optional actions based on permissions
+    { action: 'edit', label: 'Edit', permissions: 'edit' },
+    { action: 'admin', label: 'Admin', permissions: 'admin' },
+    
+    // Always include close option
+    { type: 'divider' },
+    { action: 'close', label: 'Close' }
+  ]
+}
+
+// If no items pass permission checks, regular close button is shown
 ```
 
 ## Static Helper Methods
@@ -252,7 +736,7 @@ switch (result) {
 }
 ```
 
-### `Dialog.showCode(code, language, options)`
+### `Dialog.showCode(options)`
 Show a code display dialog with syntax highlighting.
 
 ```javascript
@@ -262,7 +746,9 @@ function hello() {
 }
 `;
 
-await Dialog.showCode(jsCode, 'javascript', {
+await Dialog.showCode({
+  code: jsCode,
+  language: 'javascript',
   title: 'Example Code',
   size: 'lg'
 });
@@ -298,21 +784,38 @@ dialog.show();
 const dialog = new Dialog({
   title: 'Custom Actions',
   body: '<p>Choose an action:</p>',
+  contextMenu: {
+    items: [
+      {
+        id: 'action1',
+        icon: 'bi-1-circle',
+        action: 'custom-action-1',
+        label: 'Custom Action 1'
+      },
+      {
+        id: 'action2', 
+        icon: 'bi-2-circle',
+        action: 'custom-action-2',
+        label: 'Custom Action 2'
+      }
+    ]
+  },
   buttons: [
-    { text: 'Action 1', action: 'custom-action-1' },
-    { text: 'Action 2', action: 'custom-action-2' }
+    { text: 'Close', action: 'close', class: 'btn btn-secondary' }
   ]
 });
 
-// Handle custom actions
-dialog.on('action:custom-action-1', (event) => {
-  console.log('Custom action 1 triggered');
-  // Don't auto-hide, do custom processing
-  event.preventDefault();
-  
-  // Hide manually when done
-  setTimeout(() => dialog.hide(), 1000);
-});
+// Handle context menu actions
+dialog.onActionCustomAction1 = async (event, element) => {
+  console.log('Custom action 1 triggered from context menu');
+  // Perform custom processing
+  await performCustomAction1();
+};
+
+dialog.onActionCustomAction2 = async (event, element) => {
+  console.log('Custom action 2 triggered from context menu');
+  await performCustomAction2();
+};
 
 dialog.show();
 ```
@@ -540,14 +1043,68 @@ class EditUserView extends View {
     const user = await User.find(userId);
     
     const formView = new UserFormView({ model: user });
-    const result = await Dialog.showForm(formView, {
+    const dialog = new Dialog({
       title: 'Edit User',
-      size: 'lg'
+      body: formView,
+      size: 'lg',
+      contextMenu: {
+        items: [
+          {
+            id: 'reset-form',
+            icon: 'bi-arrow-clockwise',
+            action: 'reset-form',
+            label: 'Reset Form'
+          },
+          {
+            id: 'save-draft',
+            icon: 'bi-save2',
+            action: 'save-draft',
+            label: 'Save Draft',
+            permissions: 'save_drafts'
+          },
+          {
+            type: 'divider'
+          },
+          {
+            id: 'user-history',
+            icon: 'bi-clock-history', 
+            action: 'view-user-history',
+            label: 'View History',
+            'data-user-id': userId
+          }
+        ]
+      },
+      buttons: [
+        { text: 'Cancel', class: 'btn btn-secondary', dismiss: true },
+        { text: 'Save User', class: 'btn btn-primary', action: 'save-user' }
+      ]
     });
-    
-    if (result) {
-      await this.refresh(); // Refresh parent view
-    }
+
+    // Context menu handlers
+    dialog.onActionResetForm = async () => {
+      formView.reset();
+    };
+
+    dialog.onActionSaveDraft = async () => {
+      const draftData = formView.getFormData();
+      await user.saveDraft(draftData);
+      this.showSuccess('Draft saved');
+    };
+
+    dialog.onActionViewUserHistory = async (event, element) => {
+      const userId = element.getAttribute('data-user-id');
+      await this.showUserHistory(userId);
+    };
+
+    // Button handlers
+    dialog.onActionSaveUser = async () => {
+      const formData = formView.getFormData();
+      await user.save(formData);
+      dialog.hide();
+      await this.refresh();
+    };
+
+    dialog.show();
   }
 }
 ```
@@ -584,7 +1141,41 @@ import { View, Dialog } from 'web-mojo';
 class UserFormView extends View {
   async handleActionSave(event, element) {
     if (!this.validate()) {
-      await Dialog.confirm('Form has errors. Please fix them before saving.');
+      const dialog = new Dialog({
+        title: 'Form Validation',
+        body: '<p>Please fix the form errors before saving.</p>',
+        contextMenu: {
+          items: [
+            {
+              id: 'highlight-errors',
+              icon: 'bi-exclamation-triangle',
+              action: 'highlight-errors',
+              label: 'Highlight Errors'
+            },
+            {
+              id: 'reset-form',
+              icon: 'bi-arrow-clockwise', 
+              action: 'reset-form',
+              label: 'Reset Form'
+            }
+          ]
+        },
+        buttons: [
+          { text: 'OK', class: 'btn btn-primary', dismiss: true }
+        ]
+      });
+
+      dialog.onActionHighlightErrors = async () => {
+        this.highlightValidationErrors();
+        dialog.hide();
+      };
+
+      dialog.onActionResetForm = async () => {
+        this.reset();
+        dialog.hide();
+      };
+
+      dialog.show();
       return;
     }
     

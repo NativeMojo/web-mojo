@@ -424,6 +424,10 @@
     --bs-link-hover-color: color-mix(in srgb, var(--bs-primary) 85%, #000 15%);
 }
 
+.form-check {
+    margin-top: 0.9rem;
+}
+
 /* ========================================================================
    MOJO Core Animations
    ======================================================================== */
@@ -832,4 +836,269 @@
 /* Show debug helpers when explicitly enabled */
 .mojo-debug-enabled .mojo-debug {
     display: block !important;
+}
+
+/* ========================================
+   Image Field Styles
+   ======================================== */
+
+.image-field-container {
+    position: relative;
+    display: inline-block;
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.image-drop-zone {
+    position: relative;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+    overflow: hidden;
+}
+
+.image-drop-zone.droppable {
+    border: 2px dashed var(--bs-border-color);
+}
+
+.image-drop-zone.droppable:hover {
+    border-color: var(--bs-primary);
+    background-color: var(--bs-primary-bg-subtle);
+}
+
+/* Drop zone states */
+.image-drop-zone.drag-over {
+    border-color: var(--bs-primary) !important;
+    background-color: var(--bs-primary-bg-subtle) !important;
+    transform: scale(1.02);
+}
+
+.image-drop-zone.drag-active {
+    border-color: var(--bs-success) !important;
+    background-color: var(--bs-success-bg-subtle) !important;
+    box-shadow: 0 0 0 3px rgba(var(--bs-success-rgb), 0.25);
+}
+
+/* Size variants */
+.image-field-xs {
+    width: 48px;
+    height: 48px;
+}
+
+.image-field-sm {
+    width: 96px;
+    height: 96px;
+}
+
+.image-field-md {
+    width: 150px;
+    height: 150px;
+}
+
+.image-field-lg {
+    width: 200px;
+    height: 200px;
+}
+
+.image-field-xl {
+    width: 300px;
+    height: 300px;
+}
+
+/* Preview images */
+.image-field-container img {
+    transition: transform 0.2s ease;
+}
+
+.image-field-container:hover img {
+    transform: scale(1.05);
+}
+
+/* Remove button positioning */
+.image-field-container .btn {
+    transition: opacity 0.2s ease;
+}
+
+.image-field-container:not(:hover) .btn {
+    opacity: 0.6;
+}
+
+/* Dark theme adjustments */
+[data-bs-theme="dark"] .image-drop-zone.droppable {
+    border-color: var(--bs-border-color-translucent);
+}
+
+[data-bs-theme="dark"] .image-drop-zone.droppable:hover {
+    border-color: var(--bs-primary);
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+    .image-field-xl {
+        width: 250px;
+        height: 250px;
+    }
+
+    .image-field-lg {
+        width: 180px;
+        height: 180px;
+    }
+}
+
+/* Accessibility */
+.image-drop-zone:focus {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .image-drop-zone,
+    .image-field-container img,
+    .image-field-container .btn {
+        transition: none;
+    }
+
+    .image-drop-zone.drag-over {
+        transform: none;
+    }
+
+    .image-field-container:hover img {
+        transform: none;
+    }
+}
+
+/* ========================================================================
+   MOJO Form Groups
+   ======================================================================== */
+
+.mojo-form-group {
+    margin-bottom: 1rem;
+}
+
+.mojo-form-group .h6 {
+    color: var(--bs-secondary);
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+/* Responsive adjustments for form groups */
+@media (max-width: 767.98px) {
+    .mojo-form-group {
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+}
+
+/* ========================================================================
+   MOJO Form Controls
+   ======================================================================== */
+
+.mojo-form-control {
+    margin-bottom: 1rem;
+}
+
+.mojo-form-control .form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--bs-body-color);
+}
+
+.mojo-form-control .form-text {
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    color: var(--bs-secondary);
+}
+
+.mojo-form-control .invalid-feedback {
+    margin-top: 0.25rem;
+}
+
+/* Form check controls (checkboxes, switches, radios) */
+.mojo-form-control .form-check {
+    margin-bottom: 0;
+}
+
+.mojo-form-control .form-check .form-check-label {
+    font-weight: normal;
+}
+
+/* Image field specific styling */
+.mojo-form-control .image-field-container {
+    margin-top: 0.5rem;
+}
+
+/* Range slider specific styling */
+.mojo-form-control input[type="range"] {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Responsive adjustments for form controls */
+@media (max-width: 767.98px) {
+    .mojo-form-control {
+        margin-bottom: 0.75rem;
+    }
+
+    .mojo-form-control .form-label {
+        margin-bottom: 0.375rem;
+    }
+}
+
+/* ==============================================
+   Modal Context Menu Button Styles
+   ============================================== */
+
+/* Base context menu button - inherits header color by default */
+.mojo-modal-context-menu-btn {
+    color: inherit !important;
+    border: none;
+    background: transparent;
+    opacity: 0.7;
+    transition: opacity 0.15s ease-in-out;
+}
+
+.mojo-modal-context-menu-btn:hover,
+.mojo-modal-context-menu-btn:focus {
+    color: inherit !important;
+    background: rgba(var(--bs-emphasis-color-rgb), 0.1);
+    opacity: 1;
+}
+
+.mojo-modal-context-menu-btn:active {
+    background: rgba(var(--bs-emphasis-color-rgb), 0.2);
+}
+
+/* Modal type-specific overrides */
+.modal.modal-info .mojo-modal-context-menu-btn {
+    color: #ffffff !important;
+}
+
+.modal.modal-success .mojo-modal-context-menu-btn {
+    color: #ffffff !important;
+}
+
+.modal.modal-warning .mojo-modal-context-menu-btn {
+    color: #000000 !important;
+}
+
+.modal.modal-error .mojo-modal-context-menu-btn {
+    color: #ffffff !important;
+}
+
+.modal.modal-dark .mojo-modal-context-menu-btn {
+    color: #ffffff !important;
+}
+
+/* Dark theme support */
+[data-bs-theme="dark"] .mojo-modal-context-menu-btn {
+    color: #ffffff !important;
+}
+
+/* Ensure proper spacing and alignment */
+.modal-header .mojo-modal-context-menu-btn {
+    margin-left: auto;
+    margin-right: 0;
 }

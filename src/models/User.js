@@ -72,7 +72,7 @@ const UserForms = {
                 name: `permissions.${permission.name}`,
                 type: 'switch',
                 label: permission.label,
-                col: 6
+                columns: 6
             }))
         ]
     }
@@ -255,7 +255,7 @@ const UserDataView = {
                 label: 'User',
                 type: 'text',
                 format: 'capitalize',
-                colSize: 12
+                columns: 12
             },
             {
                 name: 'permissions',

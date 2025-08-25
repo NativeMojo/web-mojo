@@ -13,8 +13,13 @@ export { default as Table } from './Table.js';
 export { default as TablePage } from './TablePage.js';
 
 // Form Components
-export { FormBuilder } from './FormBuilder.js';
-export { default as FormView } from './FormView.js';
+export { FormBuilder } from '../forms/FormBuilder.js';
+export { default as FormView } from '../forms/FormView.js';
+
+// UI Components
+export { default as TabView } from './TabView.js';
+export { default as FileView } from './FileView.js';
+export { default as TagInputView } from '../forms/inputs/TagInput.js';
 
 // Dialog/Modal Components
 export { default as Dialog } from './Dialog.js';
@@ -32,8 +37,11 @@ import Sidebar from './Sidebar.js';
 import MainContent from './MainContent.js';
 import Table from './Table.js';
 import TablePage from './TablePage.js';
-import { FormBuilder } from './FormBuilder.js';
-import FormView from './FormView.js';
+import { FormBuilder } from '../forms/FormBuilder.js';
+import FormView from '../forms/FormView.js';
+import TabView from './TabView.js';
+import FileView from './FileView.js';
+import TagInputView from '../forms/inputs/TagInput.js';
 import Dialog from './Dialog.js';
 import DeniedPage from './DeniedPage.js';
 import NotFoundPage from './NotFoundPage.js';
@@ -47,6 +55,9 @@ export const Components = {
   TablePage,
   FormBuilder,
   FormView,
+  TabView,
+  FileView,
+  TagInputView,
   Dialog,
   DeniedPage,
   NotFoundPage,

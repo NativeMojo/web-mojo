@@ -24,6 +24,7 @@
 import dataFormatter from '../utils/DataFormatter.js';
 import View from '../core/View.js';
 import Dialog from './Dialog.js';
+import FormView from '../forms/FormView.js';
 
 
 class Table extends View {
@@ -39,7 +40,8 @@ class Table extends View {
     // Initialize with defaults that might be overridden
     this.Collection = options.Collection || null;
     this.columns = options.columns || [];
-    this.filters = options.filters || {};
+    this.filters = {}; // Column-based filters only
+    this.additionalFilters = options.filters || []; // Additional filters from options
     this.collectionParams = options.collectionParams || {};
     this.groupFiltering = options.groupFiltering || false;
     this.listOptions = options.listOptions || {};
@@ -51,7 +53,6 @@ class Table extends View {
 
     // Internal state
     this.collection = options.collection || null;
-
 
     this.loading = false;
 
@@ -164,13 +165,64 @@ class Table extends View {
   }
 
   setFilter(key, value) {
-    if (this.collection) {
-      if (value === null || value === undefined || value === '') {
-        delete this.collection.params[key];
+    if (!this.collection) return;
+
+    // Get filter configuration to handle special cases
+    const filterConfig = this.getFilterConfig(key);
+
+    if (value === null || value === undefined || value === '') {
+      // Clear filter
+      if (filterConfig && filterConfig.type === 'daterange') {
+        // Clear daterange filter - remove start/end params
+        const startName = filterConfig.startName || `${key}_start`;
+        const endName = filterConfig.endName || `${key}_end`;
+        delete this.collection.params[startName];
+        delete this.collection.params[endName];
+        delete this.collection.params[key]; // Also clear main key if it exists
       } else {
+        delete this.collection.params[key];
+      }
+    } else {
+      // Set filter value
+      if (filterConfig && filterConfig.type === 'daterange' && typeof value === 'object') {
+        // Handle daterange filter - set individual start/end params
+        const startName = filterConfig.startName || `${key}_start`;
+        const endName = filterConfig.endName || `${key}_end`;
+
+        if (value.start) {
+          this.collection.params[startName] = value.start;
+        }
+        if (value.end) {
+          this.collection.params[endName] = value.end;
+        }
+
+        // Don't set the main key for daterange filters
+      } else {
+        // Regular filter
         this.collection.params[key] = value;
       }
     }
+  }
+
+  /**
+   * Get filter configuration for a key
+   */
+  getFilterConfig(filterKey) {
+    // Check column filters first
+    const column = this.columns.find(col => col.key === filterKey);
+    if (column && column.filter) {
+      return column.filter;
+    }
+
+    // Check additional filters
+    if (this.additionalFilters && Array.isArray(this.additionalFilters)) {
+      const filter = this.additionalFilters.find(f => f.name === filterKey);
+      if (filter) {
+        return filter;
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -286,15 +338,13 @@ class Table extends View {
       this.size = this.options.tableOptions.defaultPageSize;
     }
 
-    // Extract filters from columns if not explicitly provided
-    if (!this.filters || Object.keys(this.filters).length === 0) {
-      this.filters = {};
-      this.columns.forEach(column => {
-        if (column.filter) {
-          this.filters[column.key] = '';
-        }
-      });
-    }
+    // Extract filters from columns
+    this.filters = {};
+    this.columns.forEach(column => {
+      if (column.filter) {
+        this.filters[column.key] = column.filter;
+      }
+    });
   }
 
   initTableListeners() {
@@ -513,8 +563,6 @@ class Table extends View {
       return '';
     }
 
-    const hasFilters = this.filters && Object.keys(this.filters).length > 0;
-
     return `
       <div class="dropdown">
         <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
@@ -522,9 +570,8 @@ class Table extends View {
           <i class="bi bi-filter me-1"></i>
           <span class="d-none d-sm-inline">Add Filter</span>
         </button>
-        <div class="dropdown-menu p-3" style="min-width: 300px;">
-          ${this.options.searchable && this.options.searchPlacement === 'dropdown' ? this.buildSearchInDropdown() : ''}
-          ${hasFilters ? this.buildFiltersInDropdown() : ''}
+        <div class="dropdown-menu" style="min-width: 250px;">
+          ${this.buildFilterList()}
         </div>
       </div>
     `;
@@ -653,22 +700,39 @@ class Table extends View {
       return '';
     }
 
-    const pills = activeFilters.map(([key, value]) => {
-      const displayValue = this.getFilterDisplayValue(key, value);
-      const label = this.getFilterLabel(key);
+    // Group filters and handle daterange combinations
+    const processedFilters = this.groupDateRangeFilters(activeFilters);
+
+    const pills = processedFilters.map((filterInfo) => {
+      const { key, label, displayValue, isDateRange } = filterInfo;
+      const icon = key === 'search' ? 'search' : (isDateRange ? 'calendar-range' : 'filter');
 
       return `
-        <span class="badge bg-primary me-2 mb-2 fs-6 py-2 px-3">
-          <i class="bi bi-${key === 'search' ? 'search' : 'filter'} me-1"></i>
+        <span class="badge bg-primary me-2 mb-2 fs-6 py-2 px-3 position-relative">
+          <i class="bi bi-${icon} me-1"></i>
           ${label}: ${displayValue}
-          <button type="button" class="btn-close btn-close-white ms-2"
-                  style="font-size: 0.75em;" data-action="remove-filter"
-                  data-filter="${key}" aria-label="Remove filter"></button>
+
+          <!-- Edit button -->
+          <button type="button" class="btn btn-link text-white p-0 ms-1 me-1"
+                  style="font-size: 0.75em;"
+                  data-action="edit-filter"
+                  data-filter="${key}"
+                  title="Edit filter">
+            <i class="bi bi-pencil"></i>
+          </button>
+
+          <!-- Remove button -->
+          <button type="button" class="btn-close btn-close-white ms-1"
+                  style="font-size: 0.75em;"
+                  data-action="remove-filter"
+                  data-filter="${key}"
+                  title="Remove filter">
+          </button>
         </span>
       `;
     }).join('');
 
-    const clearAllButton = activeFilters.length > 1 ? `
+    const clearAllButton = processedFilters.length > 1 ? `
       <button class="btn btn-sm btn-outline-secondary mb-2" data-action="clear-all-filters">
         <i class="bi bi-x-circle me-1"></i>
         Clear All
@@ -687,15 +751,126 @@ class Table extends View {
     `;
   }
 
+  /**
+   * Group daterange filters into single entries
+   */
+  groupDateRangeFilters(activeFilters) {
+    const processed = [];
+    const usedKeys = new Set();
+
+    // Process each active filter
+    activeFilters.forEach(([key, value]) => {
+      if (usedKeys.has(key)) return;
+
+      // Check if this is part of a daterange filter
+      const dateRangeInfo = this.findDateRangeForKey(key);
+
+      if (dateRangeInfo) {
+        // This is a daterange filter component
+        const { baseKey, filterConfig, startName, endName } = dateRangeInfo;
+        const startValue = this.activeFilters[startName];
+        const endValue = this.activeFilters[endName];
+
+        if (startValue || endValue) {
+          // Create combined daterange display
+          const separator = filterConfig.separator || ' - ';
+          let displayValue = '';
+
+          if (startValue && endValue) {
+            displayValue = `${startValue}${separator}${endValue}`;
+          } else if (startValue) {
+            displayValue = `From ${startValue}`;
+          } else if (endValue) {
+            displayValue = `Until ${endValue}`;
+          }
+
+          processed.push({
+            key: baseKey,
+            label: filterConfig.label || this.getFilterLabel(baseKey),
+            displayValue: displayValue,
+            isDateRange: true
+          });
+
+          // Mark both keys as used
+          usedKeys.add(startName);
+          usedKeys.add(endName);
+        }
+      } else {
+        // Regular filter
+        processed.push({
+          key: key,
+          label: this.getFilterLabel(key),
+          displayValue: this.getFilterDisplayValue(key, value),
+          isDateRange: false
+        });
+        usedKeys.add(key);
+      }
+    });
+
+    return processed;
+  }
+
+  /**
+   * Find daterange configuration for a given key
+   */
+  findDateRangeForKey(key) {
+    // Check all available filters for daterange types
+    const allFilters = this.getAllAvailableFilters();
+
+    for (const filterInfo of allFilters) {
+      if (filterInfo.type === 'daterange') {
+        const config = filterInfo.config;
+        const startName = config.startName || `${filterInfo.key}_start`;
+        const endName = config.endName || `${filterInfo.key}_end`;
+
+        if (key === startName || key === endName) {
+          return {
+            baseKey: filterInfo.key,
+            filterConfig: config,
+            startName: startName,
+            endName: endName
+          };
+        }
+      }
+    }
+
+    return null;
+  }
+
   getFilterDisplayValue(key, value) {
     if (key === 'search') {
       return `"${value}"`;
     }
 
     const filter = this.filters[key];
+
+    // Handle daterange filters
+    if (filter && filter.type === 'daterange' && value && typeof value === 'object') {
+      if (value.combined) {
+        return value.combined;
+      }
+      if (value.start && value.end) {
+        const separator = filter.separator || ' - ';
+        return `${value.start}${separator}${value.end}`;
+      }
+      if (value.start) {
+        return `From ${value.start}`;
+      }
+      if (value.end) {
+        return `Until ${value.end}`;
+      }
+    }
+
     if (filter && filter.type === 'select' && filter.options) {
-      const option = filter.options.find(opt => opt.value === value);
-      return option ? option.label : value;
+      // Handle array of objects: [{ value: 'info', label: 'Info' }]
+      if (typeof filter.options[0] === 'object') {
+        const option = filter.options.find(opt => opt.value === value);
+        return option ? option.label : value;
+      }
+      // Handle array of strings: ["org", "iso", "group", "test"]
+      else {
+        return filter.options.includes(value) ? value : value;
+      }
     }
 
     return value;
@@ -1462,15 +1637,12 @@ class Table extends View {
     console.log('Item dialog:', item, mode);
     // Default implementation - can be overridden
     let frmConfig = this.options.formEdit || this.options.formCreate;
-    const data = await Dialog.showForm({
+    const resp = await Dialog.showModelForm({
         title: `EDIT - #${item.id} ${this.options.modelName}`,
         model: item,
         formConfig: frmConfig,
     });
-    if (data) {
-        // let model = new this.collection.ModelClass();
-        await item.save(data);
-        // await this.collection.fetch();
+    if (resp) {
         this.render();
     }
     // Emit event for external handlers
@@ -1847,6 +2019,13 @@ class Table extends View {
 
    // Emit params changed event for URL synchronization
    this.emit('params-changed');
+ }
+
+ /**
+  * Handle clear all filters action
+  */
+ async onActionClearAllFilters(event, element) {
+   await this.handleClearAllFilters(event);
  }
 
   /**
@@ -2391,6 +2570,231 @@ class Table extends View {
     // This is handled by Bootstrap's dropdown functionality
     // We can add custom logic here if needed
   }
+
+  /**
+   * Build simple filter selection list
+   */
+  buildFilterList() {
+    const allFilters = this.getAllAvailableFilters();
+
+    if (allFilters.length === 0) {
+      return '<div class="dropdown-item-text text-muted">No filters available</div>';
+    }
+
+    const filterItems = allFilters.map(filter => {
+      const isActive = this.activeFilters.hasOwnProperty(filter.key);
+      const activeClass = isActive ? 'active' : '';
+      const icon = this.getFilterIcon(filter.type);
+
+      return `
+        <button class="dropdown-item ${activeClass}"
+                data-action="add-filter"
+                data-filter-key="${filter.key}">
+          <i class="bi bi-${icon} me-2"></i>
+          ${filter.label}
+          ${isActive ? '<i class="bi bi-check-circle ms-auto"></i>' : ''}
+        </button>
+      `;
+    }).join('');
+
+    return `
+      ${filterItems}
+      ${Object.keys(this.activeFilters).length > 0 ? `
+        <div class="dropdown-divider"></div>
+        <button class="dropdown-item text-danger" data-action="clear-all-filters">
+          <i class="bi bi-x-circle me-2"></i>Clear All Filters
+        </button>
+      ` : ''}
+    `;
+  }
+
+  /**
+   * Get all available filters (column + additional)
+   */
+  getAllAvailableFilters() {
+    const filters = [];
+
+    // Add column-based filters
+    this.columns.forEach(column => {
+      if (column.filter) {
+        filters.push({
+          key: column.key,
+          label: column.filter.label || column.label,
+          type: column.filter.type,
+          config: column.filter
+        });
+      }
+    });
+
+    // Add additional filters
+    if (this.additionalFilters && Array.isArray(this.additionalFilters)) {
+      this.additionalFilters.forEach(filter => {
+        filters.push({
+          key: filter.name,
+          label: filter.label,
+          type: filter.type,
+          config: filter
+        });
+      });
+    }
+
+    return filters;
+  }
+
+  /**
+   * Get icon for filter type
+   */
+  getFilterIcon(type) {
+    const icons = {
+      'text': 'search',
+      'select': 'funnel',
+      'date': 'calendar',
+      'daterange': 'calendar-range',
+      'datepicker': 'calendar3',
+      'form': 'gear',
+      'tags': 'tags',
+      'number': '123'
+    };
+    return icons[type] || 'filter';
+  }
+
+  /**
+   * Handle add filter action
+   */
+  async onActionAddFilter(event, element) {
+    const filterKey = element.getAttribute('data-filter-key');
+    const filterConfig = this.getFilterConfig(filterKey);
+    const currentValue = this.activeFilters[filterKey];
+
+    if (!filterConfig) {
+      console.warn('No filter config found for key:', filterKey);
+      return;
+    }
+
+    // Show dialog for this specific filter
+    const result = await Dialog.showForm({
+      title: `${currentValue ? 'Edit' : 'Add'} ${this.getFilterLabel(filterKey)} Filter`,
+      size: 'md',
+      fields: [this.buildFilterDialogField(filterConfig, currentValue)],
+      formConfig: {
+        options: {
+          submitButton: false,
+          resetButton: false
+        }
+      }
+    });
+
+    if (result) {
+      // Extract the new filter value(s)
+      const newFilterValue = this.extractFilterValue(filterConfig, result);
+      this.setFilter(filterKey, newFilterValue);
+      await this.applyFilters();
+    }
+  }
+
+  /**
+   * Handle edit filter action from pill
+   */
+  async onActionEditFilter(event, element) {
+    const filterKey = element.getAttribute('data-filter');
+    const filterConfig = this.getFilterConfig(filterKey);
+    const currentValue = this.activeFilters[filterKey];
+
+    if (!filterConfig) {
+      console.warn('No filter config found for key:', filterKey);
+      return;
+    }
+
+    // Show mini dialog for this specific filter
+    const result = await Dialog.showForm({
+      title: `Edit ${this.getFilterLabel(filterKey)} Filter`,
+      size: 'md',
+      fields: [this.buildFilterDialogField(filterConfig, currentValue)],
+      formConfig: {
+        options: {
+          submitButton: false,
+          resetButton: false
+        }
+      }
+    });
+
+    if (result) {
+      // Extract the new filter value(s)
+      const newFilterValue = this.extractFilterValue(filterConfig, result);
+      this.setFilter(filterKey, newFilterValue);
+      await this.applyFilters();
+    }
+  }
+
+  /**
+   * Build filter dialog field configuration
+   */
+  buildFilterDialogField(filterConfig, currentValue) {
+    const field = {
+      name: 'filter_value',
+      label: filterConfig.label,
+      ...filterConfig
+    };
+
+    // Set current value appropriately based on filter type
+    if (filterConfig.type === 'daterange') {
+      // Handle daterange current values
+      if (currentValue && typeof currentValue === 'object') {
+        field.startDate = currentValue.start || '';
+        field.endDate = currentValue.end || '';
+      }
+    } else {
+      field.value = currentValue;
+    }
+
+    return field;
+  }
+
+  /**
+   * Extract filter value from form result
+   */
+  extractFilterValue(filterConfig, formResult) {
+    if (filterConfig.type === 'daterange') {
+      // Extract start/end values based on naming convention
+      const startName = filterConfig.startName || 'filter_value_start';
+      const endName = filterConfig.endName || 'filter_value_end';
+
+      return {
+        start: formResult[startName],
+        end: formResult[endName],
+        combined: formResult.filter_value // Display value
+      };
+    }
+
+    return formResult.filter_value;
+  }
+
+
+
+  /**
+   * Apply filters to collection and refresh
+   */
+  async applyFilters() {
+    this.setStart(0, false);  // Reset to beginning when filter changes
+
+    // For REST collections, fetch data with new filters
+    if (this.collection?.restEnabled) {
+      try {
+        await this.collection.fetch();
+        this.render();
+      } catch (error) {
+        console.error('Failed to fetch filtered data:', error);
+        this.render();
+      }
+    } else {
+      this.render();
+    }
+
+    // Emit params changed event for URL synchronization
+    this.emit('params-changed');
+  }
+
+
 
 }
 
