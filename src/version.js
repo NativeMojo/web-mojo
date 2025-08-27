@@ -1,13 +1,13 @@
 /**
  * MOJO Framework Version Information
- * Auto-generated on 2025-08-27T03:06:49.741Z
+ * Auto-generated on 2025-08-27T13:39:38.375Z
  */
 
-export const VERSION = '2.0.1881';
+export const VERSION = '2.0.1931';
 export const VERSION_MAJOR = 2;
 export const VERSION_MINOR = 0;
-export const VERSION_REVISION = 1881;
-export const BUILD_TIME = '2025-08-27T03:06:49.741Z';
+export const VERSION_REVISION = 1931;
+export const BUILD_TIME = '2025-08-27T13:39:38.375Z';
 
 // Version object for easy access
 export const VERSION_INFO = {

@@ -716,8 +716,8 @@ class DataFormatter {
    */
   inferBadgeType(text) {
     const lowered = text.toLowerCase();
-    if (['active', 'success', 'complete', 'approved', 'done'].includes(lowered)) return 'success';
-    if (['error', 'failed', 'rejected', 'deleted', 'cancelled'].includes(lowered)) return 'danger';
+    if (['active', 'success', 'complete', 'approved', 'done', 'true'].includes(lowered)) return 'success';
+    if (['error', 'failed', 'rejected', 'deleted', 'cancelled', 'false'].includes(lowered)) return 'danger';
     if (['warning', 'pending', 'review', 'processing'].includes(lowered)) return 'warning';
     if (['info', 'new', 'draft'].includes(lowered)) return 'info';
     if (['inactive', 'disabled', 'archived', 'suspended'].includes(lowered)) return 'secondary';
@@ -897,12 +897,12 @@ class DataFormatter {
     if (count === null || count === undefined || singular === null || singular === undefined) {
       return includeCount ? `${count} ${singular}` : (singular || '');
     }
-    
+
     const num = parseInt(count);
     if (isNaN(num)) {
       return includeCount ? `${count} ${singular}` : (singular || '');
     }
-    
+
     const word = Math.abs(num) === 1 ? singular : (plural || singular + 's');
     return includeCount ? `${num} ${word}` : word;
   }
@@ -919,7 +919,7 @@ class DataFormatter {
     }
 
     const { conjunction = 'and', limit = null, moreText = 'others' } = options;
-    
+
     if (array.length === 0) return '';
     if (array.length === 1) return String(array[0]);
 
@@ -951,9 +951,9 @@ class DataFormatter {
    */
   duration(milliseconds, options = {}) {
     const { short = false, precision = 2 } = options;
-    
+
     if (milliseconds === null || milliseconds === undefined) return '';
-    
+
     const ms = parseInt(milliseconds);
     if (isNaN(ms)) return String(milliseconds);
 
@@ -975,10 +975,10 @@ class DataFormatter {
       if (remaining >= unit.value) {
         const count = Math.floor(remaining / unit.value);
         remaining = remaining % unit.value;
-        
+
         const unitName = short ? unit.short : (count === 1 ? unit.name : unit.name + 's');
         parts.push(short ? `${count}${unitName}` : `${count} ${unitName}`);
-        
+
         if (parts.length >= precision) break;
       }
     }
@@ -1000,7 +1000,7 @@ class DataFormatter {
    */
   hash(value, length = 8, prefix = '', suffix = '...') {
     if (value === null || value === undefined) return '';
-    
+
     const str = String(value);
     if (str.length <= length) return prefix + str;
     return prefix + str.substring(0, length) + suffix;
@@ -1027,7 +1027,7 @@ class DataFormatter {
     if (text === null || text === undefined || !searchTerm) {
       return String(text || '');
     }
-    
+
     const escapedTerm = String(searchTerm).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(`(${escapedTerm})`, 'gi');
     return String(text).replace(regex, `<mark class="${className}">$1</mark>`);

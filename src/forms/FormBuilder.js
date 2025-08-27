@@ -8,27 +8,46 @@ import Mustache from '../utils/mustache.js';
 import MOJOUtils from '../utils/MOJOUtils.js';
 
 class FormBuilder {
-  constructor(config = {}) {
-    this.fields = config.fields || [];
-    this.options = {
-      formClass: 'needs-validation',
-      formMethod: 'POST',
-      formAction: '',
-      groupClass: 'row mb-3',
-      fieldWrapper: '',
-      labelClass: 'form-label',
-      inputClass: 'form-control',
-      errorClass: 'invalid-feedback',
-      helpClass: 'form-text',
-      submitButton: false,
-      resetButton: false,
-      ...config.options
-    };
-    this.buttons = config.buttons || [];
-    this.data = config.data || {};
-    this.errors = config.errors || {};
-    this.initializeTemplates();
-  }
+    constructor(config = {}) {
+      this.fields = config.fields || [];
+
+      // Convert cols to columns for all fields
+      this.fields.forEach(field => {
+        if (field.cols && !field.columns) {
+          field.columns = field.cols;
+          delete field.cols;
+        }
+
+        // Handle nested fields in groups
+        if (field.type === 'group' && field.fields) {
+          field.fields.forEach(groupField => {
+            if (groupField.cols && !groupField.columns) {
+              groupField.columns = groupField.cols;
+              delete groupField.cols;
+            }
+          });
+        }
+      });
+
+      this.options = {
+        formClass: 'needs-validation',
+        formMethod: 'POST',
+        formAction: '',
+        groupClass: 'row mb-3',
+        fieldWrapper: '',
+        labelClass: 'form-label',
+        inputClass: 'form-control',
+        errorClass: 'invalid-feedback',
+        helpClass: 'form-text',
+        submitButton: false,
+        resetButton: false,
+        ...config.options
+      };
+      this.buttons = config.buttons || [];
+      this.data = config.data || {};
+      this.errors = config.errors || {};
+      this.initializeTemplates();
+    }
 
   /**
    * Initialize field templates
@@ -314,6 +333,7 @@ class FormBuilder {
 
     while (i < this.fields.length) {
       const field = this.fields[i];
+      field.columns = field.columns || field.cols;
 
       if (field.type === 'group') {
         // Collect consecutive groups that should be in a row
@@ -747,7 +767,7 @@ class FormBuilder {
 
     const inputClass = `${this.options.inputClass} ${fieldClass}`.trim();
     const error = this.errors[name];
-    const fieldValue = this.getFieldValue(name) || value;
+    const fieldValue = (this.getFieldValue(name) ?? value);
 
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
     const fieldId = this.getFieldId(name);
@@ -797,7 +817,7 @@ class FormBuilder {
 
     const inputClass = `${this.options.inputClass} ${fieldClass}`.trim();
     const error = this.errors[name];
-    const fieldValue = this.getFieldValue(name) || value;
+    const fieldValue = (this.getFieldValue(name) ?? value);
 
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
     const fieldId = this.getFieldId(name);
@@ -846,7 +866,7 @@ class FormBuilder {
 
     const inputClass = `form-select ${fieldClass}`.trim();
     const error = this.errors[name];
-    const fieldValue = this.getFieldValue(name) || value;
+    const fieldValue = (this.getFieldValue(name) ?? value);
 
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
     const fieldId = this.getFieldId(name);
@@ -913,7 +933,7 @@ class FormBuilder {
     } = field;
 
     const error = this.errors[name];
-    const fieldValue = this.getFieldValue(name) || value;
+    const fieldValue = (this.getFieldValue(name) ?? value);
     const checked = fieldValue === true || fieldValue === 'true' || fieldValue === '1';
 
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
@@ -957,7 +977,7 @@ class FormBuilder {
     } = field;
 
     const error = this.errors[name];
-    const fieldValue = this.getFieldValue(name) || value;
+    const fieldValue = (this.getFieldValue(name) ?? value);
     const checked = fieldValue === true || fieldValue === 'true' || fieldValue === '1';
 
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
@@ -1003,7 +1023,7 @@ class FormBuilder {
     } = field;
 
     const error = this.errors[name];
-    const fieldValue = this.getFieldValue(name) || value;
+    const fieldValue = (this.getFieldValue(name) ?? value);
 
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
 
@@ -1265,7 +1285,7 @@ class FormBuilder {
 
     const inputClass = `${this.options.inputClass} ${fieldClass}`.trim();
     const error = this.errors[name];
-    const fieldValue = this.getFieldValue(name) || value;
+    const fieldValue = (this.getFieldValue(name) ?? value);
 
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
     const fieldId = this.getFieldId(name);
@@ -1298,7 +1318,7 @@ class FormBuilder {
    */
   renderHiddenField(field) {
     const { name, value = '' } = field;
-    const fieldValue = this.getFieldValue(name) || value;
+    const fieldValue = (this.getFieldValue(name) ?? value);
 
     return `<input type="hidden" name="${name}" value="${this.escapeHtml(fieldValue)}">`;
   }
@@ -1472,7 +1492,7 @@ class FormBuilder {
 
     const fieldId = this.getFieldId(name);
     const error = this.errors[name];
-    const fieldValue = this.getFieldValue(name) || value;
+    const fieldValue = (this.getFieldValue(name) ?? value);
 
     return `
       <div class="mojo-form-control">
@@ -1533,7 +1553,7 @@ class FormBuilder {
 
     const fieldId = this.getFieldId(name);
     const error = this.errors[name];
-    const fieldValue = this.getFieldValue(name) || value;
+    const fieldValue = (this.getFieldValue(name) ?? value);
 
     return `
       <div class="mojo-form-control">
@@ -1594,7 +1614,7 @@ class FormBuilder {
 
     const fieldId = this.getFieldId(name);
     const error = this.errors[name];
-    const fieldValue = this.getFieldValue(name) || value;
+    const fieldValue = (this.getFieldValue(name) ?? value);
 
     return `
       <div class="mojo-form-control">
@@ -1739,8 +1759,8 @@ class FormBuilder {
    * @returns {string} Rendered HTML
    */
   renderChecklistDropdownField(field) {
-    const fieldId = this.getFieldId(field);
-    const selectedValues = this.getFieldValue(field) || [];
+    const fieldId = this.getFieldId(field.name);
+    const selectedValues = (this.getFieldValue(field.name) ?? []);
 
     // Prepare data for Mustache template
     const templateData = {
@@ -1768,8 +1788,8 @@ class FormBuilder {
    * @returns {string} Rendered HTML
    */
   renderButtonGroupField(field) {
-    const fieldId = this.getFieldId(field);
-    const selectedValue = this.getFieldValue(field);
+    const fieldId = this.getFieldId(field.name);
+    const selectedValue = (this.getFieldValue(field.name) ?? field.value);
 
     // Prepare data for Mustache template
     const templateData = {

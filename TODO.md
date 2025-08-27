@@ -5,14 +5,16 @@
 - [ ] User Reset Password Flow
 - [ ] LOG pruning and other DB pruning
 - [ ] LOG ability to ignore api prefix logging
+- [x] Forms need to support default value field.default = true
 - [x] Table Date Range filter should specify dr_field
-- [ ] Task, record a TaskLog to have a long running record of tasks, optional **logit** param off by default?
-- [ ] Fix Chart rendering flow
-- [ ] Series Chart needs a "refresh button"
-- [ ] Add Metrics
-  - [ ] User Activity, check if last_activity is today, else record "user_activity_day"
-  - [ ] Group Activity, add last_acitivity to group with toucn, record "group_activity"
-- [ ] Metrics api to fetch totals: when, slug, current total
+- [x] Task, record a TaskLog to have a long running record of tasks, optional **logit** param off by default?
+- [ ] Task: webhook support with proper retry
+- [x] Fix Chart rendering flow
+- [x] Series Chart needs a "refresh button"
+- [x] Add Metrics
+  - [x] User Activity, check if last_activity is today, else record "user_activity_day"
+  - [x] Group Activity, add last_acitivity to group with toucn, record "group_activity"
+- [x] Metrics api to fetch totals: when, slug, current total
 - [x] Group Selection Flow
   - [x] Sidebar Group Selection
   - [x] Sidebar meny by activeGroup.kind
@@ -23,9 +25,9 @@
 - [x] Bug: Table is not showing loading
 - [x] Table fetch should show error inside table?
 - [x] Pre Page load should check page permissions
-  - [ ] Show not authorized when viewing page without permissions
-  - [ ] Support sys.PERMISSION vs any permission
-- [ ] Build Image/PDF Preview View
+  - [x] Show not authorized when viewing page without permissions
+  - [x] Support sys.PERMISSION vs any permission
+- [x] Build Image/PDF Preview View
 - [x] Add 404 Page Support
 - [x] Better error handling via global EventBus
   - [ ] Collection/Model fetch errors should return EventBus events

@@ -74,7 +74,7 @@ class Table extends View {
       sortable: true,
       filterable: true,
       paginated: true,
-      responsive: true,
+      responsive: false,
       striped: true,
       bordered: false,
       hover: true,
@@ -465,7 +465,7 @@ class Table extends View {
     return `
       <div class="mojo-table-wrapper">
         ${this.buildToolbar()}
-        <div class="table-responsive">
+        <div>
           <table class="${tableClasses}">
             ${this.buildTableHeader()}
             ${this.buildTableBody(data)}
@@ -1701,18 +1701,42 @@ class Table extends View {
 
   async onItemAdd(event) {
     console.log('Item add:', event);
-    // Default implementation - can be overridden
-    const data = await Dialog.showForm({
+    try {
+      // Default implementation - can be overridden
+      const data = await Dialog.showForm({
         title: `Create ${this.options.modelName}`,
         formConfig: this.options.formCreate || this.options.formEdit,
-    });
-    if (data) {
-        let model = new this.collection.ModelClass();
-        await model.save(data);
-        await this.collection.fetch();
+      });
+
+      if (!data) {
+        // User cancelled
+        return this.emit('item-add', { event, cancelled: true });
+      }
+
+      const model = new this.collection.ModelClass();
+      const resp = await model.save(data);
+
+      // HTTP/network level error
+      if (!resp?.success) {
+        this.getApp()?.toast?.error(resp?.message || resp?.error || 'Network error creating item');
+        return this.emit('item-add', { event, error: resp });
+      }
+
+      // Server application-level error
+      if (resp?.data && resp.data.status === false) {
+        this.getApp()?.toast?.error(resp.data.error || 'Failed to create item');
+        return this.emit('item-add', { event, error: resp.data });
+      }
+
+      // Success - refresh table data
+      await this.collection.fetch();
+      this.emit('item-add', { event, model });
+
+    } catch (err) {
+      console.error('Item add failed:', err);
+      this.getApp()?.toast?.error(err?.message || 'Failed to create item');
+      this.emit('item-add', { event, error: err });
     }
-    // Emit event for external handlers
-    this.emit('item-add', { event });
   }
 
   async onItemDelete(item, event) {

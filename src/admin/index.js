@@ -5,3 +5,4 @@
 
 export { default as AdminDashboardPage } from './AdminDashboardPage.js';
 export { default as TaskManagementPage } from './TaskManagementPage.js';
+export { default as EmailDomainTablePage } from './EmailDomainTablePage.js';

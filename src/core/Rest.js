@@ -69,6 +69,115 @@ class Rest {
   }
 
   /**
+   * Categorize error into common reason codes
+   * @param {Error} error - The error object
+   * @param {number} status - HTTP status code (if available)
+   * @returns {object} Object with reason code and user-friendly message
+   */
+  categorizeError(error, status = 0) {
+    // Network/connection errors
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      return {
+        reason: 'not_reachable',
+        message: 'Service is not reachable - please check your connection'
+      };
+    }
+    
+    if (error.name === 'AbortError') {
+      return {
+        reason: 'cancelled',
+        message: 'Request was cancelled'
+      };
+    }
+    
+    if (error.name === 'TimeoutError' || error.message.includes('timeout')) {
+      return {
+        reason: 'timed_out',
+        message: 'Request timed out - please try again'
+      };
+    }
+    
+    // HTTP status-based categorization
+    if (status >= 400) {
+      if (status === 400) {
+        return {
+          reason: 'bad_request',
+          message: 'Invalid request data'
+        };
+      }
+      if (status === 401) {
+        return {
+          reason: 'unauthorized',
+          message: 'Authentication required'
+        };
+      }
+      if (status === 403) {
+        return {
+          reason: 'forbidden',
+          message: 'Access denied'
+        };
+      }
+      if (status === 404) {
+        return {
+          reason: 'not_found',
+          message: 'Resource not found'
+        };
+      }
+      if (status === 409) {
+        return {
+          reason: 'conflict',
+          message: 'Resource conflict'
+        };
+      }
+      if (status === 422) {
+        return {
+          reason: 'validation_error',
+          message: 'Validation failed'
+        };
+      }
+      if (status === 429) {
+        return {
+          reason: 'rate_limited',
+          message: 'Too many requests - please wait'
+        };
+      }
+      if (status >= 500) {
+        return {
+          reason: 'server_error',
+          message: 'Server error - please try again later'
+        };
+      }
+      if (status >= 400) {
+        return {
+          reason: 'client_error',
+          message: 'Request error'
+        };
+      }
+    }
+    
+    // Generic network errors
+    if (error.message.includes('CORS')) {
+      return {
+        reason: 'cors_error',
+        message: 'Cross-origin request blocked'
+      };
+    }
+    
+    if (error.message.includes('DNS') || error.message.includes('ENOTFOUND')) {
+      return {
+        reason: 'dns_error',
+        message: 'Unable to resolve server address'
+      };
+    }
+    
+    // Default fallback
+    return {
+      reason: 'unknown_error',
+      message: `Network error: ${error.message}`
+    };
+  }
+
+  /**
    * Build query string from parameters
    * @param {object} params - Query parameters
    * @returns {string} Query string
@@ -124,7 +233,8 @@ class Rest {
       headers: Object.fromEntries(response.headers.entries()),
       data: null,
       errors: null,
-      message: null
+      message: null,
+      reason: null
     };
 
     // Parse response body
@@ -137,14 +247,18 @@ class Rest {
 
         // Handle API error responses
         if (!response.ok) {
+          const errorInfo = this.categorizeError(new Error('HTTP Error'), response.status);
           responseData.errors = jsonData.errors || {};
-          responseData.message = jsonData.message || `HTTP ${response.status}: ${response.statusText}`;
+          responseData.message = jsonData.message || errorInfo.message;
+          responseData.reason = errorInfo.reason;
         }
       } else {
         responseData.data = await response.text();
 
         if (!response.ok) {
-          responseData.message = `HTTP ${response.status}: ${response.statusText}`;
+          const errorInfo = this.categorizeError(new Error('HTTP Error'), response.status);
+          responseData.message = errorInfo.message;
+          responseData.reason = errorInfo.reason;
         }
       }
     } catch (error) {
@@ -246,6 +360,9 @@ class Rest {
         throw error;
       }
 
+      // Categorize the error
+      const errorInfo = this.categorizeError(error);
+
       // Handle network and timeout errors
       const errorResponse = {
         success: false,
@@ -254,16 +371,23 @@ class Rest {
         headers: {},
         data: null,
         errors: { network: error.message },
-        message: error.name === 'TimeoutError'
-          ? `Request timeout after ${request.options.timeout}ms`
-          : `Network error: ${error.message}`
+        message: errorInfo.message,
+        reason: errorInfo.reason
       };
 
-      // Process error through response interceptors
-      return await this.processResponseInterceptors(
-        { ok: false, status: 0, statusText: 'Network Error', headers: new Headers() },
-        request
-      );
+      // Create mock response for interceptor processing
+      const mockResponse = {
+        ok: false,
+        status: 0,
+        statusText: 'Network Error',
+        headers: new Headers(),
+        json: async () => ({}),
+        text: async () => ''
+      };
+
+      // Process through interceptors and return the categorized error
+      await this.processResponseInterceptors(mockResponse, request);
+      return errorResponse;
     }
   }
 
@@ -433,6 +557,74 @@ class Rest {
    */
   clearAuth() {
     delete this.config.headers['Authorization'];
+  }
+
+  /**
+   * Check if an error is retryable (network issues that might resolve)
+   * @param {object} response - Response object with reason field
+   * @returns {boolean} True if error can be retried
+   */
+  isRetryableError(response) {
+    const retryableReasons = [
+      'not_reachable',
+      'timed_out', 
+      'server_error',
+      'dns_error'
+    ];
+    return retryableReasons.includes(response.reason);
+  }
+
+  /**
+   * Check if error requires authentication
+   * @param {object} response - Response object with reason field
+   * @returns {boolean} True if authentication is required
+   */
+  requiresAuth(response) {
+    return response.reason === 'unauthorized';
+  }
+
+  /**
+   * Check if error is network-related
+   * @param {object} response - Response object with reason field  
+   * @returns {boolean} True if it's a network error
+   */
+  isNetworkError(response) {
+    const networkReasons = [
+      'not_reachable',
+      'timed_out',
+      'cancelled', 
+      'cors_error',
+      'dns_error'
+    ];
+    return networkReasons.includes(response.reason);
+  }
+
+  /**
+   * Get user-friendly error message based on reason
+   * @param {object} response - Response object with reason field
+   * @returns {string} User-friendly error message
+   */
+  getUserMessage(response) {
+    if (response.message) {
+      return response.message;
+    }
+    
+    const messages = {
+      'not_reachable': 'Unable to connect to the server. Please check your internet connection.',
+      'timed_out': 'The request took too long. Please try again.',
+      'cancelled': 'The request was cancelled.',
+      'unauthorized': 'Please log in to continue.',
+      'forbidden': 'You don\'t have permission to perform this action.',
+      'not_found': 'The requested resource was not found.',
+      'validation_error': 'Please check your input and try again.',
+      'rate_limited': 'Too many requests. Please wait a moment before trying again.',
+      'server_error': 'Server error. Please try again later.',
+      'cors_error': 'Access blocked by security policy.',
+      'dns_error': 'Unable to reach the server.',
+      'unknown_error': 'An unexpected error occurred.'
+    };
+    
+    return messages[response.reason] || 'An error occurred. Please try again.';
   }
 }
 

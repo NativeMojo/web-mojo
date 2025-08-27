@@ -16,14 +16,14 @@ class AdminHeaderView extends View {
 
     // Mock data - replace with real API calls
     this.stats = {
-      user_activity_day: '1,248',
+      user_activity_day: 0,
       total_users: 0,
-      group_activity_day: '+3',
+      group_activity_day: 0,
       total_groups: 0,
-      api_calls: '15.2K',
-      apiChange: '+8%',
-      incidents: '3',
-      incidentsChange: '-2'
+      api_calls: 0,
+      apiChange: '',
+      incidents: 0,
+      incidentsChange: ''
     };
 
     // Prepare formatted data for template

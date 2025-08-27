@@ -1113,8 +1113,13 @@ class Dialog extends View {
 
   /**
    * Show a dialog with promise-based button handling
+   * - If a button has a handler, it will be called. Return semantics:
+   *   - true or undefined: resolve and close (with button.value || button.action || index)
+   *   - null or false: keep dialog open (do not resolve)
+   *   - any other value: resolve with that value and close
+   * - If no handler, resolve with action/value/index and close
    * @param {Object} options - Dialog options
-   * @returns {Promise} Resolves with button value or null on dismiss
+   * @returns {Promise} Resolves with value/action/index or null on dismiss
    */
   static async showDialog(options = {}) {
     // Handle legacy signature (message, title, options)
@@ -1142,18 +1147,13 @@ class Dialog extends View {
       ...dialogOptions
     } = options;
 
-    // Create the dialog
+    // Create the dialog (preserve original button action/dismiss attributes)
     const dialog = new Dialog({
       title,
       body: body,
       size,
       centered,
-      buttons: buttons.map(btn => ({
-        ...btn,
-        // We'll handle clicks manually for promise resolution
-        dismiss: false,
-        action: null
-      })),
+      buttons,
       ...dialogOptions
     });
 
@@ -1168,38 +1168,72 @@ class Dialog extends View {
       const buttonElements = dialog.element.querySelectorAll('.modal-footer button');
       buttonElements.forEach((btnElement, index) => {
         const buttonConfig = buttons[index];
-        if (buttonConfig) {
-          btnElement.addEventListener('click', () => {
-            if (!resolved) {
-              resolved = true;
-              dialog.hide();
+        if (!buttonConfig) return;
 
-              // Resolve with button value or index
-              const value = buttonConfig.value !== undefined
-                  ? buttonConfig.value
-                  : buttonConfig.action || index;
-              resolve(value);
+        btnElement.addEventListener('click', async (e) => {
+          if (resolved) return;
+
+          const defaultResolveValue = (
+            buttonConfig.value !== undefined
+              ? buttonConfig.value
+              : (buttonConfig.action ?? index)
+          );
+
+          // If a handler is provided, call it and respect its return semantics
+          if (typeof buttonConfig.handler === 'function') {
+            try {
+              const result = await buttonConfig.handler({
+                dialog,
+                button: buttonConfig,
+                index,
+                event: e
+              });
+
+              // null/false -> keep dialog open
+              if (result === null || result === false) {
+                return;
+              }
+
+              // Determine resolve value and close
+              const valueToResolve =
+                (result === true || result === undefined)
+                  ? defaultResolveValue
+                  : result;
+
+              resolved = true;
+              // Close the dialog (Bootstrap will close if dismiss attribute is present)
+              if (!buttonConfig.dismiss) {
+                dialog.hide();
+              }
+              resolve(valueToResolve);
+            } catch (err) {
+              console.error('Dialog button handler error:', err);
+              // Keep dialog open on handler error
+              return;
             }
-          });
-        }
+          } else {
+            // No handler: resolve with action/value/index and close
+            resolved = true;
+            if (!buttonConfig.dismiss) {
+              dialog.hide();
+            }
+            resolve(defaultResolveValue);
+          }
+        });
       });
 
       // Handle backdrop click or ESC key
       dialog.on('hidden', () => {
+        // If not already resolved by a button handler, resolve as dismiss
         if (!resolved) {
           resolved = true;
-          dialog.destroy();
-          dialog.element.remove();
           if (rejectOnDismiss) {
             reject(new Error('Dialog dismissed'));
           } else {
             resolve(null);
           }
         }
-      });
-
-      // Clean up after resolution
-      dialog.on('hidden', () => {
+        // Always cleanup after hide
         setTimeout(() => {
           dialog.destroy();
           dialog.element.remove();

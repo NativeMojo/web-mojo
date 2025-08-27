@@ -15,6 +15,10 @@ import IncidentTablePage from './admin/IncidentTablePage.js';
 import LogTablePage from './admin/LogTablePage.js';
 import AdminDashboardPage from './admin/AdminDashboardPage.js';
 import TaskManagementPage from './admin/TaskManagementPage.js';
+import EmailDomainTablePage from './admin/EmailDomainTablePage.js';
+import EmailMailboxTablePage from './admin/EmailMailboxTablePage.js';
+import SentMessageTablePage from './admin/SentMessageTablePage.js';
+import EmailTemplateTablePage from './admin/EmailTemplateTablePage.js';
 import TablePage from './components/TablePage.js';
 
 // Re-export all admin pages
@@ -29,6 +33,10 @@ export {
     LogTablePage,
     AdminDashboardPage,
     TaskManagementPage,
+    EmailDomainTablePage,
+    EmailMailboxTablePage,
+    SentMessageTablePage,
+    EmailTemplateTablePage,
     TablePage
 };
 
@@ -49,6 +57,10 @@ export function registerAdminPages(app, addToMenu = true) {
     app.registerPage('admin/files', FileTablePage, {permissions: ["manage_files"]});
     app.registerPage('admin/incidents', IncidentTablePage, {permissions: ["view_incidents"]});
     app.registerPage('admin/logs', LogTablePage, {permissions: ["view_logs"]});
+    app.registerPage('admin/email/mailboxes', EmailMailboxTablePage, {permissions: ["manage_aws"]});
+    app.registerPage('admin/email/domains', EmailDomainTablePage, {permissions: ["manage_aws"]});
+    app.registerPage('admin/email/sent', SentMessageTablePage, {permissions: ["manage_aws"]});
+    app.registerPage('admin/email/templates', EmailTemplateTablePage, {permissions: ["manage_aws"]});
 
     // Check if sidebar exists and has an admin menu config
     if (addToMenu &&app.sidebar && app.sidebar.getMenuConfig) {
@@ -87,42 +99,98 @@ export function registerAdminPages(app, addToMenu = true) {
                     permissions: ["manage_groups"]
                 },
                 {
-                    text: 'S3 Buckets',
-                    route: '?page=admin/s3buckets',
-                    icon: 'bi-bucket',
-                    permissions: ["manage_aws"]
+                    text: 'Storage',
+                    route: null,
+                    icon: 'bi-folder',
+                    permissions: ["manage_files", "manage_aws"],
+                    children: [
+                        {
+                            text: 'S3 Buckets',
+                            route: '?page=admin/s3buckets',
+                            icon: 'bi-bucket',
+                            permissions: ["manage_aws"]
+                        },
+                        {
+                            text: 'Storage Backends',
+                            route: '?page=admin/filemanagers',
+                            icon: 'bi-hdd-stack',
+                            permissions: ["manage_aws"]
+                        },
+                        {
+                            text: 'Files',
+                            route: '?page=admin/files',
+                            icon: 'bi-file-earmark',
+                            permissions: ["manage_files"]
+                        },
+                    ]
                 },
+
                 {
-                    text: 'Storage Backends',
-                    route: '?page=admin/filemanagers',
-                    icon: 'bi-hdd-stack',
-                    permissions: ["manage_aws"]
+                    text: 'Security',
+                    route: null,
+                    icon: 'bi-shield',
+                    permissions: ["manage_groups"],
+                    children: [
+                        {
+                            text: 'Incidents',
+                            route: '?page=admin/incidents',
+                            icon: 'bi-exclamation-triangle',
+                            permissions: ["manage_groups"]
+                        },
+                        {
+                            text: 'Events',
+                            route: '?page=admin/events',
+                            icon: 'bi-exclamation-triangle',
+                            permissions: ["manage_groups"]
+                        },
+                        {
+                            text: 'Logs',
+                            route: '?page=admin/logs',
+                            icon: 'bi-journal-text',
+                            permissions: ["view_logs"]
+                        },
+                    ]
                 },
+
                 {
-                    text: 'Files',
-                    route: '?page=admin/files',
-                    icon: 'bi-file-earmark',
-                    permissions: ["manage_files"]
-                },
-                {
-                    text: 'Incidents',
-                    route: '?page=admin/incidents',
-                    icon: 'bi-exclamation-triangle',
-                    permissions: ["manage_groups"]
-                },
-                {
-                    text: 'Logs',
-                    route: '?page=admin/logs',
-                    icon: 'bi-journal-text',
-                    permissions: ["view_logs"]
+                    text: 'Email Admin',
+                    route: null,
+                    icon: 'bi-envelope',
+                    permissions: ["manage_aws"],
+                    children: [
+                        {
+                            text: 'Domains',
+                            route: '?page=admin/email/domains',
+                            icon: 'bi-globe',
+                            permissions: ["manage_aws"]
+                        },
+                        {
+                            text: 'Mailboxes',
+                            route: '?page=admin/email/mailboxes',
+                            icon: 'bi-inbox',
+                            permissions: ["manage_aws"]
+                        },
+                        {
+                            text: 'Sent',
+                            route: '?page=admin/email/sent',
+                            icon: 'bi-send-check',
+                            permissions: ["manage_aws"]
+                        },
+                        {
+                            text: 'Templates',
+                            route: '?page=admin/email/templates',
+                            icon: 'bi-file-text',
+                            permissions: ["manage_aws"]
+                        }
+                    ]
                 }
             ];
 
             // Add items to existing admin menu
             adminMenuConfig.items.unshift(...adminMenuItems);
-            console.log('Added 10 admin menu items to sidebar');
+            console.log('Added 11 admin menu items to sidebar');
         }
     }
 
-    console.log('Registered 10 admin pages to WebApp');
+    console.log('Registered 14 admin pages to WebApp');
 }

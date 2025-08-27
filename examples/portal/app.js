@@ -196,7 +196,8 @@ const app = new PortalApp({
         },
         {
            name: "admin",
-           header: "<div class='pt-3 text-center fs-5'><i class='bi bi-wrench pe-2'></i> Admin</div>",
+           className: 'sidebar sidebar-light',
+           header: "<div class='pt-3 text-center fs-5 text-danger'><i class='bi bi-wrench pe-2'></i> Admin</div>",
            items: [
                {
                    spacer: true
@@ -338,9 +339,9 @@ app.events.on('portal:action', ({ action }) => {
                 import('/src/components/ProgressView.js').then(ProgressModule => {
                     const ToastService = ToastModule.default;
                     const ProgressView = ProgressModule.default;
-                    
+
                     const toastService = new ToastService();
-                    
+
                     // Create fake file upload progress
                     const progressView = new ProgressView({
                         filename: 'test-document.pdf',
@@ -351,32 +352,32 @@ app.events.on('portal:action', ({ action }) => {
                             app.showWarning('Test upload cancelled');
                         }
                     });
-                    
+
                     // Show progress in toast
                     const progressToast = toastService.showView(progressView, 'info', {
                         title: 'Test File Upload',
                         autohide: false,
                         dismissible: false
                     });
-                    
+
                     // Simulate progress
                     let progress = 0;
                     const progressInterval = setInterval(() => {
                         progress += Math.random() * 15; // Random progress increment
-                        
+
                         if (progress >= 100) {
                             progress = 100;
                             clearInterval(progressInterval);
-                            
+
                             // Mark as completed
                             progressView.markCompleted('Test upload completed!');
-                            
+
                             // Auto-hide after 2 seconds
                             setTimeout(() => {
                                 progressToast.hide();
                             }, 2000);
                         }
-                        
+
                         // Update progress
                         const loaded = Math.round((progress / 100) * 2560000);
                         progressView.updateProgress({
