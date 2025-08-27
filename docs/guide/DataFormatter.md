@@ -236,6 +236,69 @@ dataFormatter.apply('mask', '1234567890', '***-***-****');
 // Result: "123-456-7890" (if pattern allows) or masked version
 ```
 
+### Text & Content Formatters
+
+#### `plural(count, singular, plural, includeCount)`
+Format pluralization based on count.
+
+```js
+dataFormatter.apply('plural', 1, 'item');           // "1 item"
+dataFormatter.apply('plural', 5, 'item');           // "5 items"
+dataFormatter.apply('plural', 2, 'child', 'children'); // "2 children"
+dataFormatter.apply('plural', 1, 'item', null, false); // "item"
+```
+
+#### `list(array, options)`
+Format arrays as human-readable lists.
+
+```js
+dataFormatter.apply('list', ['Apple', 'Banana', 'Orange']);
+// "Apple, Banana, and Orange"
+
+dataFormatter.apply('list', ['A', 'B'], { conjunction: 'or' });
+// "A or B"
+
+dataFormatter.apply('list', ['A', 'B', 'C', 'D'], { limit: 2 });
+// "A, B, and 2 others"
+```
+
+#### `duration(milliseconds, options)`
+Format durations in human-readable format.
+
+```js
+dataFormatter.apply('duration', 7230000);           // "2 hours 30 seconds"
+dataFormatter.apply('duration', 3661000, { short: true }); // "1h1m1s"
+dataFormatter.apply('duration', 90000, { precision: 1 }); // "1 minute"
+```
+
+#### `hash(value, length, prefix, suffix)`
+Format long strings/IDs with truncation.
+
+```js
+dataFormatter.apply('hash', 'abc123def456ghi789', 8); // "abc123de..."
+dataFormatter.apply('hash', 'user-12345', 6, '#', ''); // "#user-1"
+dataFormatter.apply('hash', 'short');                // "short"
+```
+
+#### `stripHtml(html)`
+Strip HTML tags from text.
+
+```js
+dataFormatter.apply('stripHtml', '<p>Hello <b>World</b></p>'); // "Hello World"
+dataFormatter.apply('stripHtml', 'Plain text');      // "Plain text"
+```
+
+#### `highlight(text, searchTerm, className)`
+Highlight search terms in text.
+
+```js
+dataFormatter.apply('highlight', 'Hello World', 'World');
+// "Hello <mark class="highlight">World</mark>"
+
+dataFormatter.apply('highlight', 'JavaScript is fun', 'script', 'search-hit');
+// "Java<mark class="search-hit">Script</mark> is fun"
+```
+
 ### HTML & Web Formatters
 
 #### `email(value)`

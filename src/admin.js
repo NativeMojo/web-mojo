@@ -13,6 +13,8 @@ import FileManagerTablePage from './admin/FileManagerTablePage.js';
 import FileTablePage from './admin/FileTablePage.js';
 import IncidentTablePage from './admin/IncidentTablePage.js';
 import LogTablePage from './admin/LogTablePage.js';
+import AdminDashboardPage from './admin/AdminDashboardPage.js';
+import TaskManagementPage from './admin/TaskManagementPage.js';
 import TablePage from './components/TablePage.js';
 
 // Re-export all admin pages
@@ -25,6 +27,8 @@ export {
     FileTablePage,
     IncidentTablePage,
     LogTablePage,
+    AdminDashboardPage,
+    TaskManagementPage,
     TablePage
 };
 
@@ -35,6 +39,8 @@ export {
  */
 export function registerAdminPages(app, addToMenu = true) {
     // Register all admin pages with consistent naming
+    app.registerPage('admin/dashboard', AdminDashboardPage, {permissions: ["view_admin"]});
+    app.registerPage('admin/tasks', TaskManagementPage, {permissions: ["view_admin"]});
     app.registerPage('admin/users', UserTablePage, {permissions: ["manage_users"]});
     app.registerPage('admin/groups', GroupTablePage, {permissions: ["manage_groups"]});
     app.registerPage('admin/members', MemberTablePage, {permissions: ["manage_members"]});
@@ -50,6 +56,18 @@ export function registerAdminPages(app, addToMenu = true) {
         if (adminMenuConfig && adminMenuConfig.items) {
             // Add admin pages to sidebar menu
             const adminMenuItems = [
+                {
+                    text: 'Dashboard',
+                    route: '?page=admin/dashboard',
+                    icon: 'bi-speedometer2',
+                    permissions: ["view_admin"]
+                },
+                {
+                    text: 'Task Management',
+                    route: '?page=admin/tasks',
+                    icon: 'bi-cpu',
+                    permissions: ["view_admin"]
+                },
                 {
                     text: 'Users',
                     route: '?page=admin/users',
@@ -102,9 +120,9 @@ export function registerAdminPages(app, addToMenu = true) {
 
             // Add items to existing admin menu
             adminMenuConfig.items.unshift(...adminMenuItems);
-            console.log('Added 8 admin menu items to sidebar');
+            console.log('Added 10 admin menu items to sidebar');
         }
     }
 
-    console.log('Registered 8 admin pages to WebApp');
+    console.log('Registered 10 admin pages to WebApp');
 }

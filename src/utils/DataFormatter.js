@@ -64,6 +64,14 @@ class DataFormatter {
     this.register('raw', (v) => v);
     this.register('custom', (v, fn) => typeof fn === 'function' ? fn(v) : v);
     this.register('iter', this.iter.bind(this));
+
+    // Text/Content formatters
+    this.register('plural', this.plural.bind(this));
+    this.register('list', this.formatList.bind(this));
+    this.register('duration', this.duration.bind(this));
+    this.register('hash', this.hash.bind(this));
+    this.register('stripHtml', this.stripHtml.bind(this));
+    this.register('highlight', this.highlight.bind(this));
   }
 
   /**
@@ -758,7 +766,7 @@ class DataFormatter {
    * @returns {string} Boolean text
    */
   boolean(value, trueText = 'True', falseText = 'False') {
-    return !!value ? trueText : falseText;
+    return value ? trueText : falseText;
   }
 
   /**
@@ -877,6 +885,154 @@ class DataFormatter {
    * @param {number} indent - Indentation
    * @returns {string} JSON string
    */
+  /**
+   * Format pluralization based on count
+   * @param {number} count - The count value
+   * @param {string} singular - Singular form of the word
+   * @param {string|null} plural - Plural form (defaults to singular + 's')
+   * @param {boolean} includeCount - Whether to include the count in output
+   * @returns {string} Formatted plural string
+   */
+  plural(count, singular, plural = null, includeCount = true) {
+    if (count === null || count === undefined || singular === null || singular === undefined) {
+      return includeCount ? `${count} ${singular}` : (singular || '');
+    }
+    
+    const num = parseInt(count);
+    if (isNaN(num)) {
+      return includeCount ? `${count} ${singular}` : (singular || '');
+    }
+    
+    const word = Math.abs(num) === 1 ? singular : (plural || singular + 's');
+    return includeCount ? `${num} ${word}` : word;
+  }
+
+  /**
+   * Format array as a human-readable list
+   * @param {Array} array - Array to format
+   * @param {Object} options - Formatting options
+   * @returns {string} Formatted list string
+   */
+  formatList(array, options = {}) {
+    if (!Array.isArray(array)) {
+      return String(array);
+    }
+
+    const { conjunction = 'and', limit = null, moreText = 'others' } = options;
+    
+    if (array.length === 0) return '';
+    if (array.length === 1) return String(array[0]);
+
+    let items = array.slice();
+    let hasMore = false;
+
+    if (limit && array.length > limit) {
+      items = array.slice(0, limit);
+      hasMore = true;
+    }
+
+    if (hasMore) {
+      const remaining = array.length - limit;
+      return `${items.join(', ')}, ${conjunction} ${remaining} ${moreText}`;
+    }
+
+    if (items.length === 2) {
+      return `${items[0]} ${conjunction} ${items[1]}`;
+    }
+
+    return `${items.slice(0, -1).join(', ')}, ${conjunction} ${items[items.length - 1]}`;
+  }
+
+  /**
+   * Format duration in milliseconds to human-readable format
+   * @param {number} milliseconds - Duration in milliseconds
+   * @param {Object} options - Formatting options
+   * @returns {string} Formatted duration string
+   */
+  duration(milliseconds, options = {}) {
+    const { short = false, precision = 2 } = options;
+    
+    if (milliseconds === null || milliseconds === undefined) return '';
+    
+    const ms = parseInt(milliseconds);
+    if (isNaN(ms)) return String(milliseconds);
+
+    const units = [
+      { name: 'day', short: 'd', value: 86400000 },
+      { name: 'hour', short: 'h', value: 3600000 },
+      { name: 'minute', short: 'm', value: 60000 },
+      { name: 'second', short: 's', value: 1000 }
+    ];
+
+    if (ms === 0) return short ? '0s' : '0 seconds';
+
+    const absMs = Math.abs(ms);
+    const sign = ms < 0 ? '-' : '';
+    const parts = [];
+    let remaining = absMs;
+
+    for (const unit of units) {
+      if (remaining >= unit.value) {
+        const count = Math.floor(remaining / unit.value);
+        remaining = remaining % unit.value;
+        
+        const unitName = short ? unit.short : (count === 1 ? unit.name : unit.name + 's');
+        parts.push(short ? `${count}${unitName}` : `${count} ${unitName}`);
+        
+        if (parts.length >= precision) break;
+      }
+    }
+
+    if (parts.length === 0) {
+      return short ? `${Math.round(absMs)}ms` : `${Math.round(absMs)} milliseconds`;
+    }
+
+    return sign + (short ? parts.join('') : parts.join(' '));
+  }
+
+  /**
+   * Format long strings/IDs with truncation
+   * @param {string} value - Value to format
+   * @param {number} length - Maximum length before truncation
+   * @param {string} prefix - Prefix to add
+   * @param {string} suffix - Suffix for truncated strings
+   * @returns {string} Formatted hash string
+   */
+  hash(value, length = 8, prefix = '', suffix = '...') {
+    if (value === null || value === undefined) return '';
+    
+    const str = String(value);
+    if (str.length <= length) return prefix + str;
+    return prefix + str.substring(0, length) + suffix;
+  }
+
+  /**
+   * Strip HTML tags from text
+   * @param {string} html - HTML string to strip
+   * @returns {string} Plain text without HTML tags
+   */
+  stripHtml(html) {
+    if (html === null || html === undefined) return '';
+    return String(html).replace(/<[^>]*>/g, '');
+  }
+
+  /**
+   * Highlight search terms in text
+   * @param {string} text - Text to search in
+   * @param {string} searchTerm - Term to highlight
+   * @param {string} className - CSS class for highlighting
+   * @returns {string} Text with highlighted terms
+   */
+  highlight(text, searchTerm, className = 'highlight') {
+    if (text === null || text === undefined || !searchTerm) {
+      return String(text || '');
+    }
+    
+    const escapedTerm = String(searchTerm).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedTerm})`, 'gi');
+    return String(text).replace(regex, `<mark class="${className}">$1</mark>`);
+  }
+
   json(value, indent = 2) {
     try {
       return JSON.stringify(value, null, indent);
@@ -907,7 +1063,7 @@ class DataFormatter {
    * Get all formatter names
    * @returns {Array} Formatter names
    */
-  list() {
+  listFormatters() {
     return Array.from(this.formatters.keys()).sort();
   }
 

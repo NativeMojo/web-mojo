@@ -53,6 +53,11 @@ class TabView extends View {
     if (this.tabLabels.length === 0) {
       console.warn('TabView: No tabs provided');
     }
+
+    // Initialize tabs by adding them as child views
+    for (const [label, view] of Object.entries(this.tabs)) {
+        this.addTab(label, view);
+    }
   }
 
   /**
@@ -242,7 +247,10 @@ class TabView extends View {
     if (activeView) {
       const container = this.element.querySelector(`[data-container="${activeTabId}-content"]`);
       if (container && !activeView.isMounted()) {
-        await activeView.mount(container);
+        await activeView.render(true, container);
+      }
+      if (activeView.onTabActivated) {
+        await activeView.onTabActivated();
       }
     }
   }

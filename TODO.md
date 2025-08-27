@@ -3,10 +3,20 @@
 - [ ] User Change Password Flow
 - [ ] Admin Change Password Flow
 - [ ] User Reset Password Flow
-- [ ] Group Selection Flow
+- [ ] LOG pruning and other DB pruning
+- [ ] LOG ability to ignore api prefix logging
+- [x] Table Date Range filter should specify dr_field
+- [ ] Task, record a TaskLog to have a long running record of tasks, optional **logit** param off by default?
+- [ ] Fix Chart rendering flow
+- [ ] Series Chart needs a "refresh button"
+- [ ] Add Metrics
+  - [ ] User Activity, check if last_activity is today, else record "user_activity_day"
+  - [ ] Group Activity, add last_acitivity to group with toucn, record "group_activity"
+- [ ] Metrics api to fetch totals: when, slug, current total
+- [x] Group Selection Flow
   - [x] Sidebar Group Selection
-  - [ ] Sidebar meny by activeGroup.kind
-  - [ ] edit admin menu needs to tell sidebar to exit menu instead of changing menu
+  - [x] Sidebar meny by activeGroup.kind
+  - [x] edit admin menu needs to tell sidebar to exit menu instead of changing menu
     logic should check activeGroup and show appropriate menu
 - [x] Wire up the proper Refresh Token
 - [x] Handle TopNav showing "Login" vs Current User

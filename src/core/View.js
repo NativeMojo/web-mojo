@@ -243,6 +243,14 @@ export class View {
     }
   }
 
+  async _unmountChildren() {
+    for (const id in this.children) {
+      const child = this.children[id];
+      if (!child) continue;
+      child.unbindEvents()
+    }
+  }
+
 
   isMounted() {
     return this.element?.isConnected;
@@ -318,6 +326,8 @@ export class View {
   async unmount() {
       if (!this.element || !this.element.parentNode) return;
       await this.onBeforeUnmount();
+      // unbind all children
+      await this._unmountChildren();
       if (this.element.parentNode) this.element.parentNode.removeChild(this.element);
       this.events.unbind();
       await this.onAfterUnmount();
@@ -557,6 +567,10 @@ export class View {
     ];
     this.app = apps.find(app => app && typeof app.showPage === 'function') || null;
     return this.app;
+  }
+
+  handleActionError(action, err, evt, el) {
+      this.showError(`Action '${action}' failed: ${err}`, evt, el);
   }
 
   // ---------------------------------------------

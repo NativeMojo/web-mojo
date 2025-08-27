@@ -34,11 +34,24 @@ export default class BaseChart extends View {
     this.websocket = null;
     this.websocketReconnect = options.websocketReconnect !== false;
 
+    // Dimensions
+    this.width = options.width || null;
+    this.height = options.height || null;
+    // Precompute inline content style for initial render (Mustache section)
+    this.contentStyle = [
+      this.width ? `width: ${this.width}px;` : '',
+      this.height ? `height: ${this.height}px;` : ''
+    ].filter(Boolean).join(' ');
+    if (options.maintainAspectRatio === undefined) {
+      options.maintainAspectRatio = true;
+    }
+
     // Chart configuration
     this.title = options.title || '';
+    this.chartTitle = options.chartTitle || '';
     this.chartOptions = {
       responsive: true,
-      maintainAspectRatio: options.maintainAspectRatio !== false,
+      maintainAspectRatio: options.maintainAspectRatio,
       interaction: {
         intersect: false,
         mode: 'index'
@@ -49,8 +62,8 @@ export default class BaseChart extends View {
           position: options.legendPosition || 'top'
         },
         title: {
-          display: !!this.title,
-          text: this.title
+          display: !!this.chartTitle,
+          text: this.chartTitle
         },
         tooltip: {
           enabled: options.showTooltips !== false,
@@ -75,8 +88,8 @@ export default class BaseChart extends View {
     this.animations = options.animations !== false;
 
     // Export options
-    this.exportEnabled = options.exportEnabled !== false;
-    this.exportFormats = options.exportFormats || ['png', 'jpg', 'csv'];
+        this.exportEnabled = (options.exportEnabled === undefined ? true : !!options.exportEnabled);
+        this.exportFormats = options.exportFormats || ['png', 'jpg', 'csv'];
 
     // State
     this.isLoading = false;
@@ -94,70 +107,37 @@ export default class BaseChart extends View {
     this.dataFormatter = dataFormatter;
 
     // Template data properties (available to Mustache)
-    this.refreshEnabled = !!(this.endpoint || this.websocketUrl);
 
     // Store essential listeners for cleanup
     this._essentialListeners = [];
   }
 
+  get refreshEnabled() {
+    return !!(this.endpoint || this.websocketUrl);
+  }
+
+  buildDefaultHeaderConfig() {
+    return {
+      titleHtml: this.title || '',
+      chartTitle: this.chartTitle || '',
+      showExport: !!this.exportEnabled,
+      showRefresh: this.refreshEnabled,
+      showTheme: true,
+      controls: []
+    };
+  }
+
   async getTemplate() {
     return `
       <div class="chart-container" data-theme="{{theme}}">
-        <div class="d-flex justify-content-between align-items-start mb-3">
-          <div class="chart-title-section">
-            <h5 class="mb-1 chart-title">{{title}}</h5>
-            <small class="text-muted last-updated" style="display: none;">
-              Last updated: <span class="timestamp"></span>
-            </small>
-          </div>
-          <div class="chart-controls">
-            <div class="btn-toolbar" role="toolbar">
-              <!-- Chart type switcher (for SeriesChart) -->
-              <div class="btn-group btn-group-sm me-2 chart-type-switcher" role="group" style="display: none;">
-                <button type="button" class="btn btn-outline-primary" data-action="set-chart-type" data-type="line" title="Line Chart">
-                  <i class="bi bi-graph-up"></i>
-                </button>
-                <button type="button" class="btn btn-outline-primary" data-action="set-chart-type" data-type="bar" title="Bar Chart">
-                  <i class="bi bi-bar-chart"></i>
-                </button>
-              </div>
-
-              <!-- Standard controls -->
-              <div class="btn-group btn-group-sm me-2" role="group">
-                {{#refreshEnabled}}
-                <button type="button" class="btn btn-outline-secondary refresh-btn" data-action="refresh-chart" title="Refresh Data">
-                  <i class="bi bi-arrow-clockwise"></i>
-                </button>
-                {{/refreshEnabled}}
-
-                {{#exportEnabled}}
-                <div class="btn-group" role="group">
-                  <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" title="Export Chart">
-                    <i class="bi bi-download"></i>
-                  </button>
-                  <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#" data-action="export-chart" data-format="png">
-                      <i class="bi bi-image"></i> PNG
-                    </a></li>
-                    <li><a class="dropdown-item" href="#" data-action="export-chart" data-format="jpg">
-                      <i class="bi bi-image"></i> JPEG  
-                    </a></li>
-                    <li><a class="dropdown-item" href="#" data-action="export-chart" data-format="csv">
-                      <i class="bi bi-file-earmark-spreadsheet"></i> CSV
-                    </a></li>
-                  </ul>
-                </div>
-                {{/exportEnabled}}
-
-                <button type="button" class="btn btn-outline-secondary theme-toggle" data-action="toggle-theme" title="Toggle Theme">
-                  <i class="bi bi-palette"></i>
-                </button>
-              </div>
-            </div>
+        <div class="chart-header mb-3">
+          <div data-container="header"></div>
+          <div class="chart-header-aux mt-2">
+            <div data-container="header-aux"></div>
           </div>
         </div>
 
-        <div class="chart-content position-relative">
+        <div class="chart-content position-relative" {{#contentStyle}}style="{{contentStyle}}"{{/contentStyle}}>
           <canvas class="chart-canvas" data-container="canvas"></canvas>
 
           <!-- Loading overlay -->
@@ -211,7 +191,7 @@ export default class BaseChart extends View {
             <div class="col">
               <small class="text-muted">
                 <i class="bi bi-graph-up me-1"></i>
-                <span class="data-points">0</span> data points
+                <span class="data-points">0 data points</span>
               </small>
             </div>
             <div class="col text-end">
@@ -225,7 +205,22 @@ export default class BaseChart extends View {
     `;
   }
 
+  async onInit() {
+      // Initialize Chart.js
+      await this.initializeChartJS();
 
+      // Build and create header view in onInit
+      try {
+        const headerConfig = this.headerConfig || (this.buildDefaultHeaderConfig ? this.buildDefaultHeaderConfig() : null);
+        if (headerConfig) {
+          this.headerView = new ChartHeaderView({ ...headerConfig, containerId: 'header' });
+          this.addChild(this.headerView);
+        }
+      } catch (e) {
+        // Header is optional; ignore if missing
+        console.debug('ChartHeaderView not available:', e?.message);
+      }
+  }
 
   async onAfterRender() {
     // Cache DOM elements
@@ -244,17 +239,25 @@ export default class BaseChart extends View {
     this.refreshBtn = this.element.querySelector('.refresh-btn');
     this.themeToggle = this.element.querySelector('.theme-toggle');
 
-    // Initialize Chart.js
-    await this.initializeChartJS();
-
     // Apply initial theme
     this.applyTheme();
 
-    // Load initial data
-    if (this.data) {
-      await this.updateChart(this.data);
-    } else if (this.endpoint) {
-      await this.fetchData();
+    // Header is created in onInit
+
+    // First-time data fetch occurs here, before creating the chart
+    if (this.endpoint) {
+      await this.fetchData(); // fetchData will call updateChart() which creates the chart
+      await this.updateChart(this.data, true);
+      if (this.height || this.width) {
+        this._updateChartDimensions();
+      }
+    } else if (this.data) {
+      await this.updateChart(this.data, true);
+      if (this.height || this.width) {
+        this._updateChartDimensions();
+      }
+    } else {
+      this.showNoData();
     }
 
     // Set up auto-refresh
@@ -358,7 +361,7 @@ export default class BaseChart extends View {
       }
 
       this.lastFetch = new Date();
-      await this.updateChart(data);
+      this.data = data;
       this.updateLastUpdatedTime();
 
       // Emit success event
@@ -377,15 +380,12 @@ export default class BaseChart extends View {
       this.showError(`Failed to load data: ${error.message}`);
 
       // Emit error event
-      const eventBus = this.getApp()?.events;
-      if (eventBus) {
-        eventBus.emit('chart:error', {
-          chart: this,
-          error,
-          source: 'http',
-          endpoint: this.endpoint
-        });
-      }
+      this.emit('chart:error', {
+        chart: this,
+        error,
+        source: 'http',
+        endpoint: this.endpoint
+      });
     } finally {
       this.hideLoading();
       this.setRefreshButtonState(false);
@@ -420,14 +420,11 @@ export default class BaseChart extends View {
         this.updateLastUpdatedTime();
 
         // Emit real-time update event
-        const eventBus = this.getApp()?.events;
-        if (eventBus) {
-          eventBus.emit('chart:data-updated', {
-            chart: this,
-            data,
-            source: 'websocket'
-          });
-        }
+        this.emit('chart:data-updated', {
+          chart: this,
+          data,
+          source: 'websocket'
+        });
       });
 
       this.websocket.on('error', (error) => {
@@ -444,17 +441,28 @@ export default class BaseChart extends View {
     }
   }
 
-  async updateChart(data) {
+  async updateChart(data, recreate=false) {
     if (!data) {
       this.showNoData();
       return;
     }
 
-    this.hideAllOverlays();
     this.data = data;
+
+    // If canvas is not ready yet (called before render), defer chart creation
+    if (!this.canvas || typeof window.Chart === 'undefined') {
+      return;
+    }
+
+    this.hideAllOverlays();
 
     // Process data with axis formatters
     const processedData = this.processChartData(data);
+
+    if (recreate && this.chart) {
+      this.chart.destroy();
+      this.chart = null;
+    }
 
     if (this.chart) {
       // Update existing chart
@@ -467,6 +475,11 @@ export default class BaseChart extends View {
 
     // Update stats
     this.updateDataStats(processedData);
+
+    if (this.height || this.width) {
+        this._updateChartDimensions();
+    }
+
   }
 
   processChartData(data) {
@@ -475,10 +488,11 @@ export default class BaseChart extends View {
 
     let processedData = { ...data };
 
-    // Apply formatters to labels if xAxis formatter is configured
-    if (this.xAxis && typeof this.xAxis === 'string' && processedData.labels) {
-      processedData.labels = processedData.labels.map(label => 
-        this.dataFormatter.pipe(label, this.xAxis)
+    // Apply formatters to labels if xAxis formatter is configured (normalized)
+    const xAxisCfg = this.normalizeAxis(this.xAxis);
+    if (xAxisCfg && xAxisCfg.formatter && processedData.labels) {
+      processedData.labels = processedData.labels.map(label =>
+        this.dataFormatter.pipe(label, xAxisCfg.formatter)
       );
     }
 
@@ -489,6 +503,9 @@ export default class BaseChart extends View {
     if (!this.canvas || typeof window.Chart === 'undefined') {
       throw new Error('Chart.js not loaded or canvas not found');
     }
+
+    // Chart.js handles canvas dimensions internally
+    // Container dimensions are set via CSS in template
 
     // Build chart configuration
     const config = {
@@ -511,6 +528,49 @@ export default class BaseChart extends View {
 
   buildChartOptions() {
     const options = { ...this.chartOptions };
+
+    // Handle custom dimensions
+    if (this.width || this.height) {
+      options.responsive = true;
+      options.maintainAspectRatio = false;
+    }
+
+    // Build scales from normalized axis configs
+    const xAxisCfg = this.normalizeAxis(this.xAxis);
+    const yAxisCfg = this.normalizeAxis(this.yAxis);
+
+    options.scales = options.scales || {};
+
+    // X-axis
+    options.scales.x = {
+      type: this._detectAxisType(this.data, xAxisCfg, 'x'),
+      display: true,
+      title: {
+        display: !!xAxisCfg.label,
+        text: xAxisCfg.label || ''
+      },
+      grid: { display: true },
+      ticks: {}
+    };
+    if (xAxisCfg.formatter) {
+      options.scales.x.ticks.callback = this._createFormatterCallback(xAxisCfg.formatter);
+    }
+
+    // Y-axis
+    options.scales.y = {
+      type: this._detectAxisType(this.data, yAxisCfg, 'y'),
+      display: true,
+      beginAtZero: yAxisCfg.beginAtZero !== false,
+      title: {
+        display: !!yAxisCfg.label,
+        text: yAxisCfg.label || ''
+      },
+      grid: { display: true },
+      ticks: {}
+    };
+    if (yAxisCfg.formatter) {
+      options.scales.y.ticks.callback = this._createFormatterCallback(yAxisCfg.formatter);
+    }
 
     // Apply theme colors
     this.applyThemeToOptions(options);
@@ -537,13 +597,18 @@ export default class BaseChart extends View {
       }
     }
 
+    // Allow subclasses to tweak chart options (e.g., indexAxis, stacking)
+    if (typeof this.applySubclassChartOptions === 'function') {
+      this.applySubclassChartOptions(options);
+    }
+
     return options;
   }
 
   // Helper method to create Chart.js callback from MOJO formatter
   _createFormatterCallback(formatter) {
     if (!formatter) return null;
-    
+
     return (value) => {
       try {
         return this.dataFormatter.pipe(value, formatter);
@@ -554,13 +619,27 @@ export default class BaseChart extends View {
     };
   }
 
+  // Normalize axis configuration into a consistent object
+  normalizeAxis(axisConfig) {
+    if (!axisConfig) return {};
+    if (typeof axisConfig === 'string') {
+      // Simple formatter shorthand
+      return { formatter: axisConfig };
+    }
+    if (typeof axisConfig === 'object') {
+      const { formatter, label, type, beginAtZero, ...rest } = axisConfig;
+      return { formatter, label, type, beginAtZero, ...rest };
+    }
+    return {};
+  }
+
   // Smart axis type detection from data
   _detectAxisType(data, axisConfig, axisName = 'x') {
     // If user explicitly set the type, use it
     if (axisConfig && axisConfig.type) {
       return axisConfig.type;
     }
-    
+
     // If formatter suggests a type
     if (axisConfig && axisConfig.formatter) {
       const formatter = axisConfig.formatter.toLowerCase();
@@ -568,24 +647,28 @@ export default class BaseChart extends View {
         return 'time';
       }
     }
-    
+
     // Auto-detect from data based on axis
     if (data) {
       if (axisName === 'x' && data.labels && data.labels.length > 0) {
         // X-axis: check labels
         const firstLabel = data.labels[0];
-        
+
         // Check if labels are strings (category axis)
-        if (typeof firstLabel === 'string' && isNaN(parseFloat(firstLabel))) {
-          return 'category';
+        if (typeof firstLabel === 'string') {
+          // If it's a string that's not purely numeric, treat as category
+          // This handles cases like "01:00", "Jan", "Q1 2023", etc.
+          if (!/^\d+\.?\d*$/.test(firstLabel.trim())) {
+            return 'category';
+          }
         }
-        
+
         // Check if labels are dates
-        if (firstLabel instanceof Date || 
+        if (firstLabel instanceof Date ||
             (typeof firstLabel === 'string' && !isNaN(Date.parse(firstLabel)))) {
           return 'time';
         }
-        
+
         // Numeric labels default to linear
         return 'linear';
       } else if (axisName === 'y' && data.datasets && data.datasets.length > 0) {
@@ -593,18 +676,18 @@ export default class BaseChart extends View {
         const firstDataset = data.datasets[0];
         if (firstDataset.data && firstDataset.data.length > 0) {
           const firstValue = firstDataset.data[0];
-          
+
           // If it's numeric data, use linear
           if (typeof firstValue === 'number' || !isNaN(parseFloat(firstValue))) {
             return 'linear';
           }
-          
+
           // If it's string data, use category
           return 'category';
         }
       }
     }
-    
+
     // Default based on axis
     return axisName === 'x' ? 'category' : 'linear';
   }
@@ -622,17 +705,14 @@ export default class BaseChart extends View {
         const label = this.chart.data.labels[index];
 
         // Emit click event
-        const eventBus = this.getApp()?.events;
-        if (eventBus) {
-          eventBus.emit('chart:point-clicked', {
-            chart: this,
-            datasetIndex,
-            index,
-            value,
-            label,
-            dataset: this.chart.data.datasets[datasetIndex]
-          });
-        }
+        this.emit('chart:point-clicked', {
+          chart: this,
+          datasetIndex,
+          index,
+          value,
+          label,
+          dataset: this.chart.data.datasets[datasetIndex]
+        });
       }
     };
 
@@ -684,13 +764,10 @@ export default class BaseChart extends View {
     this.applyTheme();
 
     // Emit theme change event
-    const eventBus = this.getApp()?.events;
-    if (eventBus) {
-      eventBus.emit('chart:theme-changed', {
-        chart: this,
-        theme: this.theme
-      });
-    }
+    this.emit('chart:theme-changed', {
+      chart: this,
+      theme: this.theme
+    });
   }
 
   // Auto-refresh Management
@@ -729,14 +806,11 @@ export default class BaseChart extends View {
         link.click();
 
         // Emit export event
-        const eventBus = this.getApp()?.events;
-        if (eventBus) {
-          eventBus.emit('chart:exported', {
-            chart: this,
-            format,
-            filename: link.download
-          });
-        }
+        this.emit('chart:exported', {
+          chart: this,
+          format,
+          filename: link.download
+        });
       }
 
     } catch (error) {
@@ -753,24 +827,21 @@ export default class BaseChart extends View {
       const csvData = this.generateCSV();
       const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
-      
+
       const link = document.createElement('a');
       link.download = `chart-data-${Date.now()}.csv`;
       link.href = url;
       link.click();
-      
+
       // Clean up
       URL.revokeObjectURL(url);
 
       // Emit export event
-      const eventBus = this.getApp()?.events;
-      if (eventBus) {
-        eventBus.emit('chart:exported', {
-          chart: this,
-          format: 'csv',
-          filename: link.download
-        });
-      }
+      this.emit('chart:exported', {
+        chart: this,
+        format: 'csv',
+        filename: link.download
+      });
 
     } catch (error) {
       console.error('Failed to export CSV:', error);
@@ -957,10 +1028,7 @@ export default class BaseChart extends View {
     }
 
     // Emit destroy event
-    const eventBus = this.getApp()?.events;
-    if (eventBus) {
-      eventBus.emit('chart:destroyed', { chart: this });
-    }
+    this.emit('chart:destroyed', { chart: this });
   }
 
   // Public API
@@ -983,6 +1051,67 @@ export default class BaseChart extends View {
     this.websocketUrl = url;
     if (url) {
       return this.connectWebSocket();
+    }
+  }
+
+  // Dimension Control Methods
+  setWidth(width) {
+    this.width = width;
+    this.contentStyle = [
+      this.width ? `width: ${this.width}px;` : '',
+      this.height ? `height: ${this.height}px;` : ''
+    ].filter(Boolean).join(' ');
+    if (this.contentElement) {
+      this._updateChartDimensions();
+    }
+  }
+
+  setHeight(height) {
+    this.height = height;
+    this.contentStyle = [
+      this.width ? `width: ${this.width}px;` : '',
+      this.height ? `height: ${this.height}px;` : ''
+    ].filter(Boolean).join(' ');
+    if (this.contentElement) {
+      this._updateChartDimensions();
+    }
+  }
+
+  setDimensions(width, height) {
+    this.width = width;
+    this.height = height;
+    this.contentStyle = [
+      this.width ? `width: ${this.width}px;` : '',
+      this.height ? `height: ${this.height}px;` : ''
+    ].filter(Boolean).join(' ');
+    if (this.contentElement) {
+      this._updateChartDimensions();
+    }
+  }
+
+  _updateChartDimensions() {
+    if (this.chart) {
+      // Update chart options for custom dimensions
+      if (this.width || this.height) {
+        this.chart.options.responsive = true;
+        this.chart.options.maintainAspectRatio = false;
+        if (this.width && this.contentElement) {
+            this.contentElement.style.width = this.width ? this.width + 'px' : '';
+        }
+        if (this.height && this.contentElement) {
+            this.contentElement.style.height = this.height ? this.height + 'px' : '';
+        }
+      } else {
+        this.chart.options.responsive = true;
+        this.chart.options.maintainAspectRatio = this.chartOptions.maintainAspectRatio;
+      }
+      this.chart.resize();
+    }
+  }
+
+  resize() {
+    if (this.chart) {
+      this.chart.resize();
     }
   }
 
@@ -1010,5 +1139,191 @@ export default class BaseChart extends View {
       autoRefresh: !!this.refreshTimer,
       websocketConnected: this.websocket?.isConnected || false
     };
+  }
+}
+
+class ChartHeaderView extends View {
+  constructor(options = {}) {
+    super({
+      ...options,
+      className: `mojo-chart-header ${options.className || ''}`,
+      tagName: 'div'
+    });
+
+    // Header configuration
+    this.titleHtml = options.titleHtml || '';
+    this.chartTitle = options.chartTitle || '';
+    this.showExport = options.showExport !== false && options.showExport !== undefined ? !!options.showExport : true;
+    this.showRefresh = !!options.showRefresh;
+    this.showTheme = false;
+    this.showTheme = options.showTheme === true;
+    this.controls = Array.isArray(options.controls) ? options.controls : [];
+
+    // Pre-rendered controls HTML
+    this.controlsHtml = this._buildControlsHtml(this.controls);
+  }
+
+  async getTemplate() {
+    return `
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="chart-title-section">
+          <h5 class="mb-2 chart-title">{{{titleHtml}}}</h5>
+          <small class="text-muted last-updated" style="display: none;">
+            Last updated: <span class="timestamp"></span>
+          </small>
+        </div>
+
+        <div class="chart-controls">
+          <div class="btn-toolbar" role="toolbar">
+            {{{controlsHtml}}}
+
+            <div class="btn-group btn-group-sm" role="group">
+
+            {{#showTheme}}
+            <button type="button" class="btn btn-outline-secondary theme-toggle" data-action="toggle-theme" title="Toggle Theme">
+              <i class="bi bi-palette"></i>
+            </button>
+            {{/showTheme}}
+
+              {{#showExport}}
+              <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" title="Export Chart">
+                  <i class="bi bi-download"></i>
+                </button>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="#" data-action="export-chart" data-format="png">
+                    <i class="bi bi-image"></i> PNG
+                  </a></li>
+                  <li><a class="dropdown-item" href="#" data-action="export-chart" data-format="jpg">
+                    <i class="bi bi-image"></i> JPEG
+                  </a></li>
+                  <li><a class="dropdown-item" href="#" data-action="export-chart" data-format="csv">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+                  </a></li>
+                </ul>
+              </div>
+              {{/showExport}}
+
+              {{#showRefresh}}
+              <button type="button" class="btn btn-outline-secondary refresh-btn" data-action="refresh-chart" title="Refresh Data">
+                <i class="bi bi-arrow-clockwise"></i>
+              </button>
+              {{/showRefresh}}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Build custom controls HTML for the toolbar from config
+  _buildControlsHtml(controls) {
+    if (!Array.isArray(controls) || controls.length === 0) return '';
+
+    const parts = [];
+
+    controls.forEach((item) => {
+      if (!item || !item.type) return;
+
+      switch (item.type) {
+        case 'select': {
+          const sizeCls = item.size === 'md' ? '' : ' form-select-sm';
+          const cls = `form-select${sizeCls} ${item.className || ''}`.trim();
+          const optionsHtml = (item.options || [])
+            .map(opt => `<option value="${this._escapeAttr(opt.value)}"${opt.selected ? ' selected' : ''}>${this._escapeHtml(opt.label)}</option>`)
+            .join('');
+          parts.push(`
+            <div class="btn-group btn-group-sm me-2" role="group">
+              <select class="${cls}" data-change-action="${this._escapeAttr(item.action || item.name || 'select-changed')}" style="width: auto;">
+                ${optionsHtml}
+              </select>
+            </div>
+          `);
+          break;
+        }
+
+        case 'button': {
+          const { variant = 'outline-secondary', size = 'sm' } = item;
+          const sizeCls = size === 'md' ? '' : ' btn-sm';
+          const btnCls = `btn btn-${variant}${sizeCls} ${item.className || ''}`.trim();
+          const titleAttr = item.title ? ` title="${this._escapeAttr(item.title)}"` : '';
+          const dataAttrs = this._buildDataAttrs(item.data);
+          parts.push(`
+            <div class="btn-group btn-group-sm me-2" role="group">
+              <button type="button" class="${btnCls}" data-action="${this._escapeAttr(item.action || 'button-action')}"${titleAttr}${dataAttrs}>
+                ${item.labelHtml || ''}
+              </button>
+            </div>
+          `);
+          break;
+        }
+
+        case 'buttongroup': {
+          const size = item.size || 'sm';
+          const groupCls = `btn-group btn-group-${size} me-2 ${item.className || ''}`.trim();
+          const buttons = (item.buttons || []).map(btn => {
+            const variant = btn.variant || 'outline-secondary';
+            const sizeCls = size === 'md' ? '' : ' btn-sm';
+            const btnCls = `btn btn-${variant}${sizeCls} ${btn.className || ''}`.trim();
+            const titleAttr = btn.title ? ` title="${this._escapeAttr(btn.title)}"` : '';
+            const dataAttrs = this._buildDataAttrs(btn.data);
+            return `<button type="button" class="${btnCls}" data-action="${this._escapeAttr(btn.action || 'button-action')}"${titleAttr}${dataAttrs}>${btn.labelHtml || ''}</button>`;
+          }).join('');
+          parts.push(`
+            <div class="${groupCls}" role="group">
+              ${buttons}
+            </div>
+          `);
+          break;
+        }
+
+        case 'divider': {
+          parts.push(`<div class="vr mx-2"></div>`);
+          break;
+        }
+
+        case 'html': {
+          const html = item.html || '';
+          parts.push(`<div class="me-2 d-inline-block">${html}</div>`);
+          break;
+        }
+
+        default:
+          // Unknown type; ignore silently
+          break;
+      }
+    });
+
+    return parts.join('\n');
+  }
+
+  _buildDataAttrs(data) {
+    if (!data || typeof data !== 'object') return '';
+    return Object.entries(data)
+      .map(([key, val]) => ` data-${this._kebabCase(String(key))}="${this._escapeAttr(String(val))}"`)
+      .join('');
+  }
+
+  _kebabCase(str) {
+    return str
+      .replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2')
+      .toLowerCase()
+      .replace(/[^a-z0-9\-]/g, '-')
+      .replace(/--+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  _escapeAttr(value) {
+    return String(value)
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  _escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   }
 }

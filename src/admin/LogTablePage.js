@@ -26,9 +26,11 @@ class LogTablePage extends TablePage {
                     sortable: true,
                     formatter: "epoch|datetime",
                     filter: {
+                        name: "created",
                         type: 'daterange',
                         startName: 'dr_start',
                         endName: 'dr_end',
+                        fieldName: 'dr_field',
                         label: 'Date Range',
                         format: 'YYYY-MM-DD',
                         displayFormat: 'MMM DD, YYYY',

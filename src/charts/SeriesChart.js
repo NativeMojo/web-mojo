@@ -5,6 +5,7 @@
 
 import BaseChart from './BaseChart.js';
 
+
 export default class SeriesChart extends BaseChart {
   constructor(options = {}) {
     super({
@@ -13,21 +14,33 @@ export default class SeriesChart extends BaseChart {
     });
 
     // Series-specific options
-    this.allowTypeSwitch = options.allowTypeSwitch !== false;
+    this.showTypeSwitch = true;
+    if (options.showTypeSwitch !== undefined) this.showTypeSwitch = options.showTypeSwitch;
     this.orientation = options.orientation || 'vertical'; // 'vertical' or 'horizontal'
     this.stacked = options.stacked || false;
     this.stepped = options.stepped || false; // For line charts
     this.tension = options.tension || 0.4; // Line curve tension
     this.fill = options.fill || false; // Fill area under line
+    this.showRefreshButton = options.showRefreshButton !== false;
+
+    if (!this.headerConfig) {
+        this.headerConfig = {
+          titleHtml: this.title || '',
+          chartTitle: this.chartTitle || '',
+          showExport: this.exportEnabled,
+          showRefresh: this.refreshEnabled,
+          showTheme: true,
+          controls: []
+        }
+    }
+
 
     // Data series configuration
     this.series = options.series || [];
     this.xField = options.xField || 'x';
     this.yField = options.yField || 'y';
 
-    // Template data properties (available to Mustache)
-    // Note: These override any from parent class
-    this.refreshEnabled = !!(this.endpoint || this.websocketUrl);
+
 
     // Color scheme for multiple datasets
     this.colors = options.colors || [
@@ -41,38 +54,49 @@ export default class SeriesChart extends BaseChart {
       'rgba(83, 102, 255, 0.8)'    // Indigo
     ];
 
-    // Process axis configurations
-    this.xAxisConfig = this.processAxisConfig(options.xAxis);
-    this.yAxisConfig = this.processAxisConfig(options.yAxis);
-    
+
+
     // Process tooltip formatters
     this.tooltipFormatters = options.tooltip || {};
   }
 
   async getTemplate() {
-    const baseTemplate = await super.getTemplate();
-    
-    // Show the chart type switcher for SeriesChart
-    return baseTemplate.replace(
-      'style="display: none;"', 
-      this.allowTypeSwitch ? '' : 'style="display: none;"'
-    );
+    return await super.getTemplate();
   }
 
+  async onInit() {
+    // Provide header controls (type switcher) via BaseChart headerConfig
+    if (this.showTypeSwitch) {
+        this.headerConfig.controls.push({
+            type: 'buttongroup',
+            size: 'sm',
+            buttons: [
+                { action: 'set-chart-type', labelHtml: '<i class="bi bi-graph-up"></i>', title: 'Line', variant: (this.chartType === 'line' ? 'primary' : 'outline-primary'), data: { type: 'line' } },
+                { action: 'set-chart-type', labelHtml: '<i class="bi bi-bar-chart"></i>', title: 'Bar', variant: (this.chartType === 'bar' ? 'primary' : 'outline-primary'), data: { type: 'bar' } }
+            ]
+        });
+    }
 
+    await super.onInit();
 
-  async onAfterRender() {
-    await super.onAfterRender();
-    
-    // Update chart type switcher UI
-    this.updateChartTypeSwitcher();
   }
 
   // Action Handlers
-  async handleActionSetChartType(event, element) {
+  async onActionSetChartType(event, element) {
+    event.stopPropagation();
     const newType = element.getAttribute('data-type');
     if (newType && newType !== this.chartType) {
       await this.setChartType(newType);
+    }
+  }
+
+  async rebuildChart() {
+    if (this.chart && this.data) {
+      this.chart.destroy();
+      this.chart = null;
+
+      const processedData = this.processChartData(this.data);
+      await this.createChart(processedData);
     }
   }
 
@@ -88,13 +112,13 @@ export default class SeriesChart extends BaseChart {
     if (this.chart && this.data) {
       this.chart.destroy();
       this.chart = null;
-      
+
       const processedData = this.processChartData(this.data);
       await this.createChart(processedData);
     }
 
-    // Update UI
-    this.updateChartTypeSwitcher();
+    // Update type switcher button styles dynamically
+    this._updateTypeSwitcherButtons();
 
     // Emit type change event
     const eventBus = this.getApp()?.events;
@@ -137,7 +161,7 @@ export default class SeriesChart extends BaseChart {
     data.forEach(item => {
       const xValue = item[this.xField];
       const yValue = item[this.yField];
-      
+
       labels.push(xValue);
       values.push(yValue);
     });
@@ -160,7 +184,7 @@ export default class SeriesChart extends BaseChart {
   processChartJSData(data) {
     // Already in Chart.js format, just apply our styling
     const processedData = { ...data };
-    
+
     processedData.datasets = processedData.datasets.map((dataset, index) => ({
       ...dataset,
       backgroundColor: dataset.backgroundColor || this.colors[index % this.colors.length].replace('0.8', '0.6'),
@@ -200,161 +224,54 @@ export default class SeriesChart extends BaseChart {
     const processedData = { ...data };
 
     // Apply x-axis formatter to labels if configured
-    if (this.xAxisConfig.formatter && processedData.labels) {
-      processedData.labels = processedData.labels.map(label => 
-        this.dataFormatter.pipe(label, this.xAxisConfig.formatter)
+    const xAxisCfg = this.normalizeAxis ? this.normalizeAxis(this.xAxis) : {};
+    if (xAxisCfg.formatter && processedData.labels) {
+      processedData.labels = processedData.labels.map(label =>
+        this.dataFormatter.pipe(label, xAxisCfg.formatter)
       );
     }
 
     return processedData;
   }
 
-  buildChartOptions() {
-    const options = super.buildChartOptions();
-
-    // Configure scales based on chart type and orientation
-    options.scales = this.buildScalesConfig();
-
-    // Debug logging for troubleshooting
-    console.log('SeriesChart buildChartOptions:', {
-      chartType: this.chartType,
-      orientation: this.orientation,
-      yAxisConfig: this.yAxisConfig,
-      scales: options.scales
-    });
-
-    // Configure stacking if enabled
-    if (this.stacked && this.chartType === 'bar') {
-      options.scales.x.stacked = true;
-      options.scales.y.stacked = true;
+  applySubclassChartOptions(options) {
+    // Stacking for bar charts
+    if (this.stacked && this.chartType === 'bar' && options.scales) {
+      if (options.scales.x) options.scales.x.stacked = true;
+      if (options.scales.y) options.scales.y.stacked = true;
     }
 
-    // Configure indexAxis for horizontal bars
+    // Horizontal bars
     if (this.chartType === 'bar' && this.orientation === 'horizontal') {
       options.indexAxis = 'y';
     }
 
-    // Configure interaction mode
-    options.interaction = {
-      intersect: false,
-      mode: this.chartType === 'line' ? 'index' : 'nearest'
+    // Interaction mode tuned to chart type
+    options.interaction = options.interaction || {};
+    options.interaction.intersect = false;
+    options.interaction.mode = this.chartType === 'line' ? 'index' : 'nearest';
+
+    // Elements styling
+    options.elements = options.elements || {};
+    options.elements.line = {
+      ...(options.elements.line || {}),
+      tension: this.tension,
+      borderWidth: 2
     };
-
-    // Ensure maintainAspectRatio is properly set
-    options.maintainAspectRatio = this.maintainAspectRatio !== false;
-    options.responsive = true;
-
-    // Configure elements styling
-    options.elements = {
-      line: {
-        tension: this.tension,
-        borderWidth: 2
-      },
-      point: {
-        radius: this.chartType === 'line' ? 4 : 0,
-        hoverRadius: 6,
-        hitRadius: 8
-      },
-      bar: {
-        borderWidth: 1,
-        borderSkipped: false
-      }
+    options.elements.point = {
+      ...(options.elements.point || {}),
+      radius: this.chartType === 'line' ? 4 : 0,
+      hoverRadius: 6,
+      hitRadius: 8
     };
-
-    // Apply tooltip formatters if configured
-    if (this.tooltipFormatters && Object.keys(this.tooltipFormatters).length > 0) {
-      options.plugins = options.plugins || {};
-      options.plugins.tooltip = options.plugins.tooltip || {};
-      options.plugins.tooltip.callbacks = options.plugins.tooltip.callbacks || {};
-
-      if (this.tooltipFormatters.x) {
-        options.plugins.tooltip.callbacks.title = (context) => {
-          const value = context[0]?.label;
-          return value ? this.dataFormatter.pipe(value, this.tooltipFormatters.x) : value;
-        };
-      }
-
-      if (this.tooltipFormatters.y) {
-        options.plugins.tooltip.callbacks.label = (context) => {
-          const value = context.raw;
-          const formattedValue = this.dataFormatter.pipe(value, this.tooltipFormatters.y);
-          return `${context.dataset.label}: ${formattedValue}`;
-        };
-      }
-    }
-
-    return options;
+    options.elements.bar = {
+      ...(options.elements.bar || {}),
+      borderWidth: 1,
+      borderSkipped: false
+    };
   }
 
-  buildScalesConfig() {
-    const scales = {};
 
-    // Determine which axis is which based on orientation
-    const xAxisConfig = this.orientation === 'horizontal' ? this.yAxisConfig : this.xAxisConfig;
-    const yAxisConfig = this.orientation === 'horizontal' ? this.xAxisConfig : this.yAxisConfig;
-
-    // Debug axis configs
-    console.log('buildScalesConfig axis configs:', {
-      orientation: this.orientation,
-      xAxisConfig,
-      yAxisConfig,
-      originalXAxis: this.xAxisConfig,
-      originalYAxis: this.yAxisConfig
-    });
-
-    // X-axis configuration with smart type detection
-    scales.x = {
-      type: this._detectAxisType(this.data, xAxisConfig, 'x'),
-      display: true,
-      title: {
-        display: !!xAxisConfig.label,
-        text: xAxisConfig.label || ''
-      },
-      grid: {
-        display: true
-      },
-      ticks: {
-        maxTicksLimit: 20
-      }
-    };
-
-    // Add formatter callback for x-axis if specified
-    if (xAxisConfig.formatter) {
-      scales.x.ticks.callback = this._createFormatterCallback(xAxisConfig.formatter);
-    }
-
-    // Y-axis configuration with smart type detection
-    scales.y = {
-      type: this._detectAxisType(this.data, yAxisConfig, 'y'),
-      display: true,
-      beginAtZero: yAxisConfig.beginAtZero !== false,
-      reverse: false, // Ensure Y-axis is not reversed
-      title: {
-        display: !!yAxisConfig.label,
-        text: yAxisConfig.label || ''
-      },
-      grid: {
-        display: true
-      },
-      ticks: {}
-    };
-
-    // Add formatter callback for y-axis if specified
-    if (yAxisConfig.formatter) {
-      scales.y.ticks.callback = this._createFormatterCallback(yAxisConfig.formatter);
-    }
-
-    // Debug final scales configuration
-    console.log('Final scales config:', {
-      xScale: scales.x,
-      yScale: scales.y,
-      yAxisBeginAtZero: scales.y.beginAtZero,
-      yAxisReverse: scales.y.reverse,
-      yAxisType: scales.y.type
-    });
-
-    return scales;
-  }
 
   // Process simple axis configuration into detailed config
   processAxisConfig(axisConfig) {
@@ -381,20 +298,22 @@ export default class SeriesChart extends BaseChart {
 
 
 
-  updateChartTypeSwitcher() {
-    const buttons = this.element.querySelectorAll('[data-action="set-chart-type"]');
-    
+
+
+  _updateTypeSwitcherButtons() {
+    const buttons = this.element?.querySelectorAll('[data-action="set-chart-type"]');
+    if (!buttons || buttons.length === 0) return;
+
     buttons.forEach(button => {
       const buttonType = button.getAttribute('data-type');
-      if (buttonType === this.chartType) {
-        button.classList.add('active');
-        button.classList.remove('btn-outline-primary');
-        button.classList.add('btn-primary');
-      } else {
-        button.classList.remove('active');
-        button.classList.remove('btn-primary');
-        button.classList.add('btn-outline-primary');
-      }
+      const isActive = buttonType === this.chartType;
+
+      // Normalize classes for Bootstrap primary/outline-primary variants
+      button.classList.toggle('btn-primary', isActive);
+      button.classList.toggle('btn-outline-primary', !isActive);
+
+      // Optional 'active' state for accessibility/visual feedback
+      button.classList.toggle('active', isActive);
     });
   }
 
@@ -405,11 +324,11 @@ export default class SeriesChart extends BaseChart {
     }
 
     this.orientation = orientation;
-    
+
     if (this.chart) {
       this.chart.destroy();
       this.chart = null;
-      
+
       if (this.data) {
         const processedData = this.processChartData(this.data);
         this.createChart(processedData);
@@ -419,7 +338,7 @@ export default class SeriesChart extends BaseChart {
 
   setStacked(stacked) {
     this.stacked = stacked;
-    
+
     if (this.chart) {
       this.chart.options.scales.x.stacked = stacked;
       this.chart.options.scales.y.stacked = stacked;
@@ -441,7 +360,7 @@ export default class SeriesChart extends BaseChart {
     };
 
     this.data.datasets.push(newDataset);
-    
+
     if (this.chart) {
       this.chart.data.datasets.push(newDataset);
       this.chart.update();
@@ -463,7 +382,7 @@ export default class SeriesChart extends BaseChart {
     }
 
     const removedSeries = this.data.datasets.splice(index, 1)[0];
-    
+
     if (this.chart) {
       this.chart.data.datasets.splice(index, 1);
       this.chart.update();
@@ -503,14 +422,14 @@ export default class SeriesChart extends BaseChart {
       backdrop: 'static',
       keyboard: true,
       buttons: [
-        { 
-          text: 'Export PNG', 
-          action: 'export', 
-          class: 'btn btn-outline-primary' 
+        {
+          text: 'Export PNG',
+          action: 'export',
+          class: 'btn btn-outline-primary'
         },
-        { 
-          text: 'Close', 
-          action: 'close', 
+        {
+          text: 'Close',
+          action: 'close',
           class: 'btn btn-secondary',
           dismiss: true
         }

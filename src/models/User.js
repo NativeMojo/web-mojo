@@ -60,8 +60,8 @@ const UserForms = {
     edit: {
         title: 'Edit User',
         fields: [
-            { name: 'email', type: 'text', label: 'Email' },
-            { name: 'display_name', type: 'text', label: 'Display Name' },
+            { name: 'email', type: 'text', label: 'Email', columns: 12 },
+            { name: 'display_name', type: 'text', label: 'Display Name', columns: 12},
             {
               type: 'header',
               text: 'Permissions',

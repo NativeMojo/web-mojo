@@ -6,3 +6,4 @@
 export { default as BaseChart } from './BaseChart.js';
 export { default as SeriesChart } from './SeriesChart.js';
 export { default as PieChart } from './PieChart.js';
+export { default as MetricsChart } from './MetricsChart.js';

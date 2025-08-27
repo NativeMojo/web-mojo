@@ -1,886 +1,887 @@
-# View - Core UI Component
-
-The `View` class is the foundation of the MOJO framework, providing a powerful component-based architecture for building interactive web applications. Views handle rendering, data binding, event management, and child component coordination.
+# View - Base UI Component
 
 ## Overview
 
-Views are self-contained UI components that:
-- Render HTML templates using Mustache templating
-- Handle user interactions through declarative event binding
-- Manage component lifecycle and cleanup
-- Support hierarchical parent-child relationships
-- Provide robust data formatting and binding capabilities
+View is the foundational component of the MOJO framework. Every visual element in your application extends from View, providing a consistent structure for UI components with automatic event handling, template rendering, lifecycle management, and parent-child relationships.
 
-## Constructor Options
+## Key Features
 
-```js
-import View from './src/core/View.js';
+- **Event Delegation**: Automatic handling of click, change, and keyboard events
+- **Template Rendering**: Mustache template integration with data binding
+- **Lifecycle Hooks**: Complete component lifecycle with hooks for customization
+- **Parent-Child Management**: Hierarchical component structure with automatic cleanup
+- **Action System**: Convention-based event handling with `onAction*` methods
+- **DOM Management**: Automatic element creation, mounting, and cleanup
+- **State Management**: Built-in data management with reactivity
 
-const view = new View({
-  // Element configuration
-  tagName: 'div',              // HTML tag for root element
-  className: 'my-view',        // CSS class names
-  id: 'unique-view-id',        // Element ID (auto-generated if not provided)
-  style: 'color: red;',        // Inline CSS styles
+## Basic Usage
 
-  // Container configuration
-  containerId: 'app-container', // ID of container to mount into
-  container: document.getElementById('app'), // Direct container element reference
+### 1. Simple View
 
-  // Template configuration
-  template: '<h1>{{title}}</h1>',           // Inline template string
-  templateUrl: '/templates/my-view.html',    // External template file
-  template: (data, state) => `<h1>${data.title}</h1>`, // Template function
+```javascript
+import { View } from 'web-mojo';
 
-  // Data configuration
-  data: { title: 'Hello World' },           // Template data
-  model: new UserModel({ id: 123 }),        // Associated model
-
-  // Hierarchy configuration
-  parent: parentView,                        // Parent view reference
-  children: { sidebar: sidebarView },       // Child views
-
-  // Options
-  debug: true,                               // Enable debug logging
-  cacheTemplate: true,                       // Cache loaded templates
-  renderCooldown: 100,                       // Minimum ms between renders
-  app: appInstance                           // Application instance reference
-});
-```
-
-## Template System
-
-### Inline Templates
-
-Use template strings directly in the constructor:
-
-```js
 class GreetingView extends View {
   constructor(options = {}) {
     super({
-      template: `
-        <div class="greeting">
-          <h2>Hello, {{name}}!</h2>
-          <p>Welcome to {{app.title}}</p>
-        </div>
-      `,
-      data: { name: 'World' },
+      template: '<h1>Hello, {{name}}!</h1>',
+      className: 'greeting-component',
       ...options
     });
   }
 }
+
+// Usage
+const greeting = new GreetingView();
+document.body.appendChild(greeting.element);
+await greeting.render();
 ```
 
-### External Template Files
+### 2. Interactive View
 
-Load templates from separate HTML files:
-
-```js
-class UserProfileView extends View {
-  constructor(options = {}) {
-    super({
-      templateUrl: '/templates/user-profile.html',
-      cacheTemplate: true, // Cache after first load
-      ...options
-    });
-  }
-}
-```
-
-External template files are loaded relative to the application's `basePath` and automatically cached when `cacheTemplate: true` is set.
-
-### Dynamic Template Functions
-
-Generate templates programmatically:
-
-```js
-class DynamicListView extends View {
-  constructor(options = {}) {
-    super({
-      template: (data, state) => {
-        const itemsHtml = data.items
-          .map(item => `<li class="item">${item.name}</li>`)
-          .join('');
-        
-        return `
-          <div class="dynamic-list">
-            <h3>${data.title}</h3>
-            <ul>${itemsHtml}</ul>
-            ${state.showFooter ? '<footer>Total: ' + data.items.length + '</footer>' : ''}
-          </div>
-        `;
-      },
-      ...options
-    });
-  }
-}
-```
-
-### Template Partials
-
-Reuse template fragments with partials:
-
-```js
-class ArticleView extends View {
-  getPartials() {
-    return {
-      'author-info': `
-        <div class="author">
-          <img src="{{author.avatar}}" alt="{{author.name}}">
-          <span>{{author.name}}</span>
-        </div>
-      `,
-      'article-meta': `
-        <div class="meta">
-          <time>{{publishDate|date('MMMM D, YYYY')}}</time>
-          <span>{{readTime}} min read</span>
-        </div>
-      `
-    };
-  }
-}
-```
-
-Use partials in templates:
-
-```html
-<article>
-  <header>
-    <h1>{{title}}</h1>
-    {{>article-meta}}
-    {{>author-info}}
-  </header>
-  <div class="content">{{content}}</div>
-</article>
-```
-
-## Data Binding and Context
-
-### The get() Method
-
-Views provide a powerful `get()` method that supports dot notation, method calls, and data formatting:
-
-```js
-class UserDashboardView extends View {
-  constructor(options = {}) {
-    super({
-      data: {
-        user: {
-          name: 'John Doe',
-          email: 'john@example.com',
-          lastLogin: '2024-01-15T10:30:00Z'
-        },
-        stats: {
-          posts: 42,
-          followers: 1250
-        }
-      },
-      ...options
-    });
-  }
-
-  getStatus() {
-    return this.data.user.lastLogin ? 'active' : 'inactive';
-  }
-
-  getDisplayName() {
-    return this.data.user.name.toUpperCase();
-  }
-}
-```
-
-Template usage with various data access patterns:
-
-```html
-<div class="dashboard">
-  <!-- Direct property access -->
-  <h1>{{data.user.name}}</h1>
-  
-  <!-- Method calls -->
-  <span class="status">Status: {{getStatus}}</span>
-  <h2>{{getDisplayName}}</h2>
-  
-  <!-- Dot notation with formatting -->
-  <p>Email: {{data.user.email|lowercase}}</p>
-  <p>Last Login: {{data.user.lastLogin|date('MMMM D, YYYY')}}</p>
-  <p>Posts: {{data.stats.posts|number}} | Followers: {{data.stats.followers|compact}}</p>
-</div>
-```
-
-### Data Formatters and Pipes
-
-MOJO includes a comprehensive data formatting system accessible via pipe syntax:
-
-```html
-<!-- Date formatting -->
-<time>{{createdAt|date('YYYY-MM-DD')}}</time>
-<span>{{updatedAt|relative}}</span>
-
-<!-- Number formatting -->
-<span>{{price|currency}}</span>
-<span>{{progress|percent}}</span>
-<span>{{fileSize|filesize}}</span>
-
-<!-- Text formatting -->
-<h3>{{title|capitalize}}</h3>
-<p>{{description|truncate(100)}}</p>
-<span>{{status|uppercase}}</span>
-
-<!-- Chained formatting -->
-<span>{{userName|lowercase|truncate(20)|capitalize}}</span>
-
-<!-- Custom formatting with arguments -->
-<img src="{{avatar|image(150, 150, 'crop')}}" alt="{{name|initials}}">
-```
-
-### Model Integration
-
-Views seamlessly integrate with MOJO Models:
-
-```js
-import UserModel from '../models/UserModel.js';
-
-class UserProfileView extends View {
-  constructor(options = {}) {
-    const userModel = new UserModel({ id: options.userId });
-    
-    super({
-      model: userModel,
-      templateUrl: '/templates/user-profile.html',
-      ...options
-    });
-  }
-
-  async onInit() {
-    // Load user data when view initializes
-    await this.model.fetch();
-    this.render();
-  }
-
-  async handleActionSave(event, element) {
-    const formData = new FormData(element.closest('form'));
-    
-    try {
-      await this.model.save(Object.fromEntries(formData));
-      this.showSuccess('Profile updated successfully!');
-    } catch (error) {
-      this.showError('Failed to save profile: ' + error.message);
-    }
-  }
-}
-```
-
-Template accessing model data:
-
-```html
-<div class="user-profile">
-  <img src="{{model.avatar|image(200, 200)}}" alt="{{model.name}}">
-  <h1>{{model.name}}</h1>
-  <p>{{model.email}}</p>
-  <p>Member since {{model.createdAt|date('MMMM YYYY')}}</p>
-  
-  {{#model.isActive}}
-  <span class="badge bg-success">Active</span>
-  {{/model.isActive}}
-  
-  {{^model.isActive}}
-  <span class="badge bg-danger">Inactive</span>
-  {{/model.isActive}}
-</div>
-```
-
-## Event System
-
-MOJO Views use the EventDelegate system for declarative event binding through HTML data attributes.
-
-### Click Actions
-
-Use `data-action` for click events:
-
-```html
-<div class="todo-item">
-  <span>{{text}}</span>
-  <button data-action="toggle-complete" data-id="{{id}}">
-    {{#completed}}✓{{/completed}}{{^completed}}○{{/completed}}
-  </button>
-  <button data-action="delete-todo" data-id="{{id}}" class="btn-danger">Delete</button>
-</div>
-```
-
-Handle actions in your view:
-
-```js
-class TodoItemView extends View {
-  async handleActionToggleComplete(event, element) {
-    const todoId = element.getAttribute('data-id');
-    const todo = this.data.todos.find(t => t.id === todoId);
-    
-    todo.completed = !todo.completed;
-    await this.updateData({ todos: this.data.todos });
-  }
-
-  async handleActionDeleteTodo(event, element) {
-    const todoId = element.getAttribute('data-id');
-    
-    if (confirm('Delete this todo?')) {
-      this.data.todos = this.data.todos.filter(t => t.id !== todoId);
-      await this.updateData({ todos: this.data.todos });
-    }
-  }
-}
-```
-
-### Change Actions
-
-Use `data-change-action` for input change events:
-
-```html
-<div class="filters">
-  <input type="text" 
-         data-change-action="filter-items" 
-         data-filter="search"
-         placeholder="Search items...">
-  
-  <select data-change-action="sort-items">
-    <option value="name">Sort by Name</option>
-    <option value="date">Sort by Date</option>
-    <option value="priority">Sort by Priority</option>
-  </select>
-</div>
-```
-
-```js
-class ItemListView extends View {
-  async handleActionFilterItems(event, element) {
-    const searchTerm = element.value.toLowerCase();
-    const filteredItems = this.originalItems.filter(item => 
-      item.name.toLowerCase().includes(searchTerm)
-    );
-    
-    await this.updateData({ items: filteredItems });
-  }
-
-  async handleActionSortItems(event, element) {
-    const sortBy = element.value;
-    const sortedItems = [...this.data.items].sort((a, b) => {
-      return a[sortBy] > b[sortBy] ? 1 : -1;
-    });
-    
-    await this.updateData({ items: sortedItems });
-  }
-}
-```
-
-### Form Submissions
-
-Use `data-action` on forms:
-
-```html
-<form data-action="submit-contact" class="contact-form">
-  <input type="text" name="name" required>
-  <input type="email" name="email" required>
-  <textarea name="message" required></textarea>
-  <button type="submit">Send Message</button>
-</form>
-```
-
-```js
-class ContactFormView extends View {
-  async handleActionSubmitContact(event, form) {
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData);
-    
-    try {
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      
-      if (response.ok) {
-        this.showSuccess('Message sent successfully!');
-        form.reset();
-      } else {
-        throw new Error('Failed to send message');
-      }
-    } catch (error) {
-      this.showError(error.message);
-    }
-  }
-}
-```
-
-### Default Action Handler
-
-Provide a fallback for unhandled actions:
-
-```js
-class MyView extends View {
-  async onActionDefault(action, event, element) {
-    console.log('Unhandled action:', action);
-    
-    // Return true to prevent default behavior
-    // Return false to allow default behavior
-    return false;
-  }
-}
-```
-
-### Navigation Events
-
-Views automatically handle navigation through `data-page` attributes and anchor links:
-
-```html
-<!-- Page navigation -->
-<a data-page="user-profile" data-user-id="123">View Profile</a>
-<button data-page="dashboard">Go to Dashboard</button>
-
-<!-- Standard link navigation (handled by router) -->
-<a href="/users/123">User Profile</a>
-<a href="/dashboard">Dashboard</a>
-
-<!-- External links (not handled by framework) -->
-<a href="https://example.com" data-external>External Link</a>
-```
-
-## Lifecycle Methods
-
-Views provide comprehensive lifecycle hooks for managing component behavior:
-
-### Initialization Hooks
-
-```js
-class MyView extends View {
-  // Called once when view is first created
-  async onInit() {
-    console.log('View initialized');
-    // Set up initial data, event listeners, etc.
-  }
-
-  // Called once after onInit, used internally
-  async onInitView() {
-    // Framework initialization
-    // Don't override unless you know what you're doing
-  }
-}
-```
-
-### Rendering Hooks
-
-```js
-class MyView extends View {
-  // Called before each render
-  async onBeforeRender() {
-    console.log('About to render');
-    // Prepare data, validate state, etc.
-  }
-
-  // Called after each render
-  async onAfterRender() {
-    console.log('Render complete');
-    // Initialize third-party widgets, set focus, etc.
-  }
-}
-```
-
-### Mounting Hooks
-
-```js
-class MyView extends View {
-  // Called before mounting to DOM
-  async onBeforeMount() {
-    console.log('About to mount');
-    // Final preparations before DOM insertion
-  }
-
-  // Called after mounting to DOM
-  async onAfterMount() {
-    console.log('Mounted to DOM');
-    // Initialize DOM-dependent features
-    this.initializeCharts();
-    this.setupResizeObserver();
-  }
-}
-```
-
-### Destruction Hooks
-
-```js
-class MyView extends View {
-  // Called before destroying view
-  async onBeforeDestroy() {
-    console.log('About to destroy');
-    // Save state, show confirmation, etc.
-  }
-
-  // Called after destroying view
-  async onAfterDestroy() {
-    console.log('Destroyed');
-    // Final cleanup, remove external references, etc.
-  }
-}
-```
-
-## Child View Management
-
-Views support hierarchical parent-child relationships:
-
-### Adding Child Views
-
-```js
-class DashboardView extends View {
-  async onInit() {
-    // Add child views
-    const sidebar = new SidebarView({ parent: this });
-    const content = new ContentView({ parent: this });
-    const footer = new FooterView({ parent: this });
-    
-    this.addChild(sidebar, { containerId: 'sidebar' });
-    this.addChild(content, { containerId: 'main-content' });
-    this.addChild(footer, { containerId: 'footer' });
-  }
-}
-```
-
-### Child Container Templates
-
-Define containers in your template for child views:
-
-```html
-<div class="dashboard">
-  <header class="dashboard-header">
-    <h1>{{title}}</h1>
-  </header>
-  
-  <div class="dashboard-body">
-    <div id="sidebar" data-container="sidebar"></div>
-    <div id="main-content" data-container="main-content"></div>
-  </div>
-  
-  <div id="footer" data-container="footer"></div>
-</div>
-```
-
-### Managing Child Views
-
-```js
-class ParentView extends View {
-  // Get reference to child view
-  getSidebar() {
-    return this.getChild('sidebar');
-  }
-
-  // Update child data
-  async updateChildData(childId, newData) {
-    const child = this.getChild(childId);
-    if (child) {
-      await child.updateData(newData);
-    }
-  }
-
-  // Remove child view
-  removeChildView(childId) {
-    const child = this.getChild(childId);
-    if (child) {
-      this.removeChild(child);
-    }
-  }
-
-  // Get all children
-  getAllChildren() {
-    return Object.values(this.children);
-  }
-}
-```
-
-## Advanced Features
-
-### Conditional Rendering
-
-Use Mustache sections for conditional content:
-
-```html
-<div class="user-status">
-  {{#user.isOnline}}
-    <span class="status online">Online</span>
-    <span class="last-seen">Active now</span>
-  {{/user.isOnline}}
-  
-  {{^user.isOnline}}
-    <span class="status offline">Offline</span>
-    <span class="last-seen">Last seen {{user.lastSeen|relative}}</span>
-  {{/user.isOnline}}
-  
-  {{#user.notifications.length}}
-    <span class="badge">{{user.notifications.length}}</span>
-  {{/user.notifications.length}}
-</div>
-```
-
-### List Rendering with Iteration
-
-Render arrays and objects using special iteration syntax:
-
-```html
-<!-- Array iteration -->
-<ul class="todo-list">
-  {{#.todos|iter}}
-    <li class="todo-item {{#completed}}completed{{/completed}}">
-      <span>{{text}}</span>
-      <button data-action="toggle" data-id="{{id}}">Toggle</button>
-    </li>
-  {{/.todos|iter}}
-</ul>
-
-<!-- Object iteration -->
-<div class="user-meta">
-  {{#.user.metadata|iter}}
-    <div class="meta-item">
-      <strong>{{key}}:</strong> {{value}}
-    </div>
-  {{/.user.metadata|iter}}
-</div>
-```
-
-### Error Handling
-
-Views provide built-in error handling and user feedback:
-
-```js
-class MyView extends View {
-  async handleActionRiskyOperation(event, element) {
-    try {
-      const result = await this.performRiskyOperation();
-      this.showSuccess('Operation completed successfully!');
-    } catch (error) {
-      this.showError('Operation failed: ' + error.message);
-      console.error('Detailed error:', error);
-    }
-  }
-
-  // Override default error handler
-  handleActionError(action, error, event, element) {
-    console.error(`Action ${action} failed:`, error);
-    this.showError(`Failed to ${action.replace('-', ' ')}`);
-  }
-
-  async performOperation() {
-    try {
-      // Risky operation
-    } catch (error) {
-      // Show user-friendly message
-      this.showWarning('Unable to complete operation. Please try again.');
-      
-      // Log technical details
-      console.error('Technical error details:', error);
-      
-      // Show info message for guidance
-      this.showInfo('Check your internet connection and try again.');
-    }
-  }
-}
-```
-
-### State Management
-
-Manage component state separate from template data:
-
-```js
+```javascript
 class CounterView extends View {
   constructor(options = {}) {
     super({
       template: `
         <div class="counter">
-          <button data-action="decrement">-</button>
-          <span class="count">{{count}}</span>
+          <h2>Count: {{count}}</h2>
           <button data-action="increment">+</button>
+          <button data-action="decrement">-</button>
           <button data-action="reset">Reset</button>
         </div>
       `,
-      data: { count: 0 },
+      ...options
+    });
+
+    this.count = 0;
+  }
+
+  async onActionIncrement(event, element) {
+    this.count++;
+    await this.render();
+  }
+
+  async onActionDecrement(event, element) {
+    this.count--;
+    await this.render();
+  }
+
+  async onActionReset(event, element) {
+    this.count = 0;
+    await this.render();
+  }
+}
+```
+
+## API Reference
+
+### Constructor Options
+
+```javascript
+const view = new View({
+  // DOM Configuration
+  tagName: 'div',                    // Element tag name
+  className: 'my-component',         // CSS classes
+  id: 'unique-id',                   // Element ID
+  attributes: {                      // HTML attributes
+    'data-role': 'widget',
+    'aria-label': 'My Widget'
+  },
+
+  // Template Configuration
+  template: '<div>{{content}}</div>', // Inline template
+  templateUrl: '/templates/my.html',  // External template URL
+
+  // Container Configuration
+  container: '#app',                  // Parent container selector/element
+  autoRender: true,                   // Auto-render on creation
+  autoMount: true,                    // Auto-mount after render
+
+  // Data Configuration
+  data: { key: 'value' },            // Initial view data
+  model: modelInstance,              // Associated model
+  collection: collectionInstance,    // Associated collection
+
+  // Styling
+  style: 'display: block;',          // Inline styles
+
+  // Child Views
+  children: [],                      // Initial child views
+
+  // Custom Properties
+  customOption: 'value'              // Any custom options
+});
+```
+
+### Core Methods
+
+#### Lifecycle Methods
+
+##### `async render()`
+Renders the view with current data and updates the DOM.
+
+```javascript
+// Basic rendering
+await view.render();
+
+// With custom data
+await view.render({ message: 'Hello!' });
+
+// Force re-render
+await view.render(null, { force: true });
+```
+
+##### `async mount(container)`
+Mounts the rendered view into the DOM.
+
+```javascript
+// Mount to specific container
+await view.mount('#app');
+
+// Mount to element
+const container = document.getElementById('app');
+await view.mount(container);
+
+// Auto-mount (uses configured container)
+await view.mount();
+```
+
+##### `async unmount()`
+Removes the view from the DOM while keeping it available for re-mounting.
+
+```javascript
+await view.unmount();
+```
+
+##### `async destroy()`
+Completely destroys the view, cleaning up all resources.
+
+```javascript
+await view.destroy();
+```
+
+#### DOM Methods
+
+##### `createElement()`
+Creates the DOM element (called automatically).
+
+```javascript
+const element = view.createElement();
+```
+
+##### `setContainer(container)`
+Sets the parent container for mounting.
+
+```javascript
+view.setContainer('#main-content');
+view.setContainer(document.body);
+```
+
+#### Child Management
+
+##### `addChild(child, options)`
+Adds a child view with automatic lifecycle management.
+
+```javascript
+const childView = new ChildView();
+view.addChild(childView, {
+  container: '.child-container',  // Where to mount child
+  autoRender: true,              // Auto-render child
+  autoMount: true                // Auto-mount child
+});
+```
+
+##### `removeChild(child)`
+Removes and cleans up a child view.
+
+```javascript
+view.removeChild(childView);
+```
+
+##### `getChild(id)`
+Gets a child view by ID.
+
+```javascript
+const child = view.getChild('child-id');
+```
+
+##### `getChildren()`
+Gets all child views.
+
+```javascript
+const children = view.getChildren();
+children.forEach(child => console.log(child.id));
+```
+
+### Lifecycle Hooks
+
+Override these methods to customize behavior:
+
+#### `onInit()`
+Called during construction, before rendering.
+
+```javascript
+class MyView extends View {
+  onInit() {
+    super.onInit();
+    console.log('View initializing...');
+    this.setupInitialState();
+  }
+}
+```
+
+#### `async onBeforeRender()`
+Called before each render operation.
+
+```javascript
+async onBeforeRender() {
+  await super.onBeforeRender();
+  this.validateData();
+  this.prepareRenderData();
+}
+```
+
+#### `async onAfterRender()`
+Called after each render operation.
+
+```javascript
+async onAfterRender() {
+  await super.onAfterRender();
+  this.initializePlugins();
+  this.bindCustomEvents();
+}
+```
+
+#### `async onBeforeMount()`
+Called before mounting to DOM.
+
+```javascript
+async onBeforeMount() {
+  await super.onBeforeMount();
+  this.prepareForMounting();
+}
+```
+
+#### `async onAfterMount()`
+Called after mounting to DOM.
+
+```javascript
+async onAfterMount() {
+  await super.onAfterMount();
+  this.focusFirstInput();
+  this.startAnimations();
+}
+```
+
+#### `async onBeforeDestroy()`
+Called before destroying the view.
+
+```javascript
+async onBeforeDestroy() {
+  await super.onBeforeDestroy();
+  this.saveState();
+  this.cleanupResources();
+}
+```
+
+#### `async onAfterDestroy()`
+Called after destroying the view.
+
+```javascript
+async onAfterDestroy() {
+  await super.onAfterDestroy();
+  console.log('View destroyed');
+}
+```
+
+## Event System
+
+### Action Events
+
+Views automatically handle events through the action system:
+
+#### Click Actions (`data-action`)
+
+```html
+<button data-action="save">Save</button>
+<a data-action="delete" data-id="123">Delete</a>
+<div data-action="toggle-panel">Toggle</div>
+```
+
+```javascript
+class MyView extends View {
+  // Method naming: onAction + PascalCase(action-name)
+  async onActionSave(event, element) {
+    // Handle save button click
+    const form = this.element.querySelector('form');
+    await this.submitForm(form);
+  }
+
+  async onActionDelete(event, element) {
+    const id = element.getAttribute('data-id');
+    await this.deleteItem(id);
+  }
+
+  async onActionTogglePanel(event, element) {
+    this.togglePanel();
+  }
+}
+```
+
+#### Change Actions (`data-change-action`)
+
+```html
+<select data-change-action="filter-data">
+<input data-change-action="search" data-filter="name">
+<input type="checkbox" data-change-action="toggle-option">
+```
+
+```javascript
+class MyView extends View {
+  async onActionFilterData(event, element) {
+    const filterValue = element.value;
+    await this.applyFilter(filterValue);
+  }
+
+  async onActionSearch(event, element) {
+    const searchTerm = element.value;
+    await this.performSearch(searchTerm);
+  }
+
+  async onActionToggleOption(event, element) {
+    const isChecked = element.checked;
+    this.toggleOption(isChecked);
+  }
+}
+```
+
+#### Fallback Handler
+
+```javascript
+class MyView extends View {
+  // Handle any unhandled actions
+  async onActionDefault(action, event, element) {
+    console.log('Unhandled action:', action);
+
+    // Implement fallback behavior
+    if (action.startsWith('external-')) {
+      this.handleExternalAction(action, event, element);
+    }
+  }
+}
+```
+
+### Custom Events
+
+Views extend EventEmitter for custom event handling:
+
+```javascript
+class MyView extends View {
+  async onActionSubmit(event, element) {
+    // Emit custom event
+    this.emit('form-submitted', {
+      data: this.getFormData(),
+      timestamp: Date.now()
+    });
+  }
+}
+
+// Listen for custom events
+const view = new MyView();
+view.on('form-submitted', (data) => {
+  console.log('Form submitted:', data);
+});
+```
+
+## Template System
+
+### Mustache Templates
+
+Views use Mustache templating with automatic data binding:
+
+```javascript
+class UserListView extends View {
+  constructor(options = {}) {
+    super({
+      title: 'User Directory',
+      users: [],
+      template: `
+        <div class="user-list">
+          <h2>{{title}}</h2>
+          {{#users}}
+            <div class="user-card">
+              <h3>{{name}}</h3>
+              <p>{{email}}</p>
+              <button data-action="edit-user" data-id="{{id}}">Edit</button>
+            </div>
+          {{/users}}
+          {{^users}}
+            <p class="empty-state">No users found</p>
+          {{/users}}
+        </div>
+      `,
+      ...options
+    });
+  }
+}
+```
+
+### External Templates
+
+```javascript
+class MyView extends View {
+  constructor(options = {}) {
+    super({
+      templateUrl: '/templates/my-view.html',
+      ...options
+    });
+  }
+}
+```
+
+### Dynamic Templates
+
+```javascript
+class DynamicView extends View {
+  async getTemplate() {
+    // Return different templates based on state
+    if (this.model?.get('type') === 'admin') {
+      return await this.loadTemplate('/templates/admin-view.html');
+    } else {
+      return '<div class="user-view">{{content}}</div>';
+    }
+  }
+}
+```
+
+### Partials
+
+```javascript
+class MyView extends View {
+  getPartials() {
+    return {
+      'user-card': '<div class="card">{{name}} - {{email}}</div>',
+      'loading': '<div class="spinner">Loading...</div>'
+    };
+  }
+
+  constructor(options = {}) {
+    super({
+      template: `
+        <div>
+          {{#loading}}
+            {{> loading}}
+          {{/loading}}
+          {{#users}}
+            {{> user-card}}
+          {{/users}}
+        </div>
+      `,
+      ...options
+    });
+  }
+}
+```
+
+## Advanced Usage
+
+### 1. Data-Driven View with Model
+
+```javascript
+class UserProfileView extends View {
+  constructor(options = {}) {
+    super({
+      template: `
+        <div class="user-profile">
+          <img src="{{model.avatar}}" alt="{{model.name}}" class="avatar">
+          <h1>{{model.name}}</h1>
+          <p>{{model.email}}</p>
+          <div class="actions">
+            <button data-action="edit-profile">Edit Profile</button>
+            <button data-action="change-avatar">Change Avatar</button>
+          </div>
+        </div>
+      `,
+      model: options.user,
+      ...options
+    });
+  }
+
+  async onActionEditProfile(event, element) {
+    const formView = new ProfileFormView({ model: this.model });
+    const result = await Dialog.showForm(formView, {
+      title: 'Edit Profile',
+      size: 'lg'
+    });
+
+    if (result) {
+      await this.render(); // Re-render with updated data
+    }
+  }
+
+  async onActionChangeAvatar(event, element) {
+    // Handle avatar change
+  }
+}
+```
+
+### 2. Collection-Driven View
+
+```javascript
+class TodoListView extends View {
+  constructor(options = {}) {
+    super({
+      template: `
+        <div class="todo-list">
+          <div class="header">
+            <h2>Todo List ({{collection.count}})</h2>
+            <button data-action="add-todo">Add Todo</button>
+          </div>
+          <div class="todos">
+            {{collection.models}}
+              <div class="todo-item {{#completed}}completed{{/completed}}">
+                <input type="checkbox" data-change-action="toggle-todo"
+                       data-id="{{id}}" {{#completed}}checked{{/completed}}>
+                <span>{{title}}</span>
+                <button data-action="delete-todo" data-id="{{id}}">Delete</button>
+              </div>
+            {{/collection.models}}
+          </div>
+        </div>
+      `,
+      collection: options.todos,
+      ...options
+    });
+  }
+
+  async onActionAddTodo(event, element) {
+    const title = await Dialog.prompt('Enter todo title:');
+    if (title) {
+      const todo = new Todo({ title, completed: false });
+      await todo.save();
+      this.collection.add(todo);
+      await this.render();
+    }
+  }
+
+  async onActionToggleTodo(event, element) {
+    const id = element.getAttribute('data-id');
+    const todo = this.collection.get(id);
+    todo.set('completed', element.checked);
+    await todo.save();
+    await this.render();
+  }
+
+  async onActionDeleteTodo(event, element) {
+    const id = element.getAttribute('data-id');
+    const confirmed = await Dialog.confirm('Delete this todo?');
+    if (confirmed) {
+      const todo = this.collection.get(id);
+      await todo.destroy();
+      this.collection.remove(todo);
+      await this.render();
+    }
+  }
+}
+```
+
+### 3. Composite View with Children
+
+```javascript
+class DashboardView extends View {
+  constructor(options = {}) {
+    super({
+      template: `
+        <div class="dashboard">
+          <div class="header" data-view-container="header"></div>
+          <div class="sidebar" data-view-container="sidebar"></div>
+          <div class="main-content" data-view-container="content"></div>
+        </div>
+      `,
+      ...options
+    });
+  }
+
+  async onInit() {
+    await super.onInit();
+
+    // Create child views
+    this.headerView = new HeaderView({
+      container: '[data-view-container="header"]'
+    });
+
+    this.sidebarView = new SidebarView({
+      container: '[data-view-container="sidebar"]'
+    });
+
+    this.contentView = new MainContentView({
+      container: '[data-view-container="content"]'
+    });
+
+    // Add as children for lifecycle management
+    this.addChild(this.headerView);
+    this.addChild(this.sidebarView);
+    this.addChild(this.contentView);
+  }
+
+  async showContent(contentView) {
+    // Replace main content
+    this.removeChild(this.contentView);
+    this.contentView = contentView;
+    this.addChild(this.contentView, {
+      container: '[data-view-container="content"]'
+    });
+  }
+}
+```
+
+### 4. Reactive View with State
+
+```javascript
+class CounterView extends View {
+  constructor(options = {}) {
+    super({
+      template: `
+        <div class="counter">
+          <h2>{{count}}</h2>
+          <button data-action="increment" {{#loading}}disabled{{/loading}}>
+            {{#loading}}Loading...{{/loading}}
+            {{^loading}}+1{{/loading}}
+          </button>
+          <button data-action="decrement">-1</button>
+          <button data-action="reset">Reset</button>
+        </div>
+      `,
       ...options
     });
 
     this.state = {
-      history: [],
-      maxCount: 100
+      count: 0,
+      loading: false
     };
   }
 
-  async handleActionIncrement(event, element) {
-    const newCount = Math.min(this.data.count + 1, this.state.maxCount);
-    this.state.history.push(this.data.count);
-    await this.updateData({ count: newCount });
+  async setState(updates) {
+    this.state = { ...this.state, ...updates };
+    await this.render();
   }
 
-  async handleActionDecrement(event, element) {
-    const newCount = Math.max(this.data.count - 1, 0);
-    this.state.history.push(this.data.count);
-    await this.updateData({ count: newCount });
+  async onActionIncrement(event, element) {
+    await this.setState({ loading: true });
+
+    // Simulate async operation
+    setTimeout(async () => {
+      await this.setState({
+        count: this.state.count + 1,
+        loading: false
+      });
+    }, 500);
   }
 
-  async handleActionReset(event, element) {
-    this.state.history.push(this.data.count);
-    await this.updateData({ count: 0 });
+  async onActionDecrement(event, element) {
+    await this.setState({ count: this.state.count - 1 });
+  }
+
+  async onActionReset(event, element) {
+    await this.setState({ count: 0 });
   }
 }
 ```
+
+### 5. Event Handling
+
+Views support
+ - on("event", callback, context)
+ - off(event, callback, context)
+ - emit(event, ...args)
+
 
 ## Best Practices
 
 ### 1. Separation of Concerns
 
-Keep templates focused on presentation, business logic in methods:
-
-```js
-// Good
+```javascript
+// Good - Clear responsibility separation
 class UserView extends View {
-  async getDisplayName() {
-    return `${this.model.firstName} ${this.model.lastName}`.trim();
+  async onActionSave(event, element) {
+    await this.model.save(this.getFormData());
   }
+}
 
-  async getStatusBadge() {
-    const status = this.model.isActive ? 'active' : 'inactive';
-    const className = this.model.isActive ? 'badge-success' : 'badge-danger';
-    return { status, className };
+// Avoid - Mixing data logic with presentation
+class BadUserView extends View {
+  async onActionSave(event, element) {
+    const userData = this.getFormData();
+    // Don't do API calls directly in views
+    const response = await fetch('/api/users', {
+      method: 'POST',
+      body: JSON.stringify(userData)
+    });
   }
 }
 ```
 
-```html
-<div class="user-card">
-  <h3>{{getDisplayName}}</h3>
-  <span class="badge {{getStatusBadge.className}}">
-    {{getStatusBadge.status}}
-  </span>
-</div>
-```
+### 2. Lifecycle Management
 
-### 2. Use Lifecycle Methods Appropriately
+```javascript
+class MyView extends View {
+  async onAfterRender() {
+    await super.onAfterMount();
 
-```js
-class OptimizedView extends View {
-  async onAfterMount() {
-    // Initialize expensive operations only after DOM is ready
-    this.initializeCharts();
-    this.setupWebSocket();
+    // Set up resources that need cleanup
+    this.resizeHandler = () => this.handleResize();
+    window.addEventListener('resize', this.resizeHandler);
+
+    this.interval = setInterval(() => this.updateTime(), 1000);
   }
 
   async onBeforeDestroy() {
-    // Clean up resources to prevent memory leaks
-    this.disconnectWebSocket();
-    this.destroyCharts();
+    // Clean up resources
+    if (this.resizeHandler) {
+      window.removeEventListener('resize', this.resizeHandler);
+    }
+
+    if (this.interval) {
+      clearInterval(this.interval);
+    }
+
+    await super.onBeforeDestroy();
   }
 }
 ```
 
-### 3. Efficient Rendering
+### 3. Error Handling
 
-```js
-class EfficientView extends View {
-  constructor(options = {}) {
-    super({
-      renderCooldown: 100, // Prevent excessive re-renders
-      cacheTemplate: true, // Cache external templates
-      ...options
-    });
-  }
-
-  shouldRender(newData) {
-    // Override to implement smart rendering
-    return JSON.stringify(newData) !== JSON.stringify(this.data);
-  }
-}
-```
-
-### 4. Error Handling
-
-Always handle potential errors gracefully:
-
-```js
-class RobustView extends View {
-  async handleActionSaveData(event, element) {
+```javascript
+class MyView extends View {
+  async onActionSave(event, element) {
     try {
-      await this.saveData();
-      this.showSuccess('Data saved successfully');
+      await this.model.save();
+      this.showSuccess('Saved successfully!');
     } catch (error) {
-      this.showError('Failed to save data: ' + error.message);
+      this.showError('Save failed: ' + error.message);
       console.error('Save error:', error);
     }
   }
 
   async onAfterRender() {
     try {
-      this.initializeWidgets();
+      await super.onAfterRender();
+      this.initializeComponents();
     } catch (error) {
-      console.warn('Widget initialization failed:', error);
-      // Continue gracefully without widgets
+      this.showError('Failed to initialize view');
+      console.error('Render error:', error);
     }
   }
 }
 ```
 
-## Integration Examples
+### 4. Performance Optimization
 
-### With Collections
+```javascript
+class OptimizedView extends View {
+  constructor(options = {}) {
+    super(options);
 
-```js
-import UserCollection from '../collections/UserCollection.js';
+    // Debounce expensive operations
+    this.debouncedSearch = this.debounce(this.performSearch.bind(this), 300);
+  }
 
-class UserListView extends View {
+  async onActionSearch(event, element) {
+    // Use debounced version for search
+    this.debouncedSearch(element.value);
+  }
+
+  debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
+  // Override render to prevent unnecessary re-renders
+  async render(data, options = {}) {
+    if (!this.shouldRender(data, options)) {
+      return;
+    }
+
+    return super.render(data, options);
+  }
+
+  shouldRender(data, options) {
+    // Implement custom logic to determine if render is needed
+    return options.force || this.dataHasChanged(data);
+  }
+}
+```
+
+## Integration with Other Components
+
+### With Models
+
+```javascript
+class UserView extends View {
   constructor(options = {}) {
     super({
-      templateUrl: '/templates/user-list.html',
+      model: options.user,
+      template: '...',
       ...options
     });
 
-    this.collection = new UserCollection();
+    // Listen for model changes
+    if (this.model) {
+      this.model.on('change', () => this.render());
+    }
   }
 
-  async onInit() {
-    await this.collection.fetch();
-    await this.updateData({ 
-      users: this.collection.toJSON(),
-      total: this.collection.length 
+  async getViewData() {
+    return this.model?.toJSON() || {};
+  }
+}
+```
+
+### With Collections
+
+```javascript
+class ListView extends View {
+  constructor(options = {}) {
+    super({
+      collection: options.collection,
+      ...options
     });
+
+    // Listen for collection changes
+    if (this.collection) {
+      this.collection.on('add remove reset', () => this.render());
+    }
   }
 
-  async handleActionRefreshUsers(event, element) {
-    try {
-      await this.collection.fetch();
-      await this.updateData({ 
-        users: this.collection.toJSON(),
-        total: this.collection.length 
-      });
-      this.showSuccess('User list refreshed');
-    } catch (error) {
-      this.showError('Failed to refresh users');
-    }
+  async getViewData() {
+    return {
+      items: this.collection?.toJSON() || []
+    };
   }
 }
 ```
 
-### With Router Integration
+### With Pages
 
-```js
-class RoutedView extends View {
-  async handleActionNavigateToUser(event, element) {
-    const userId = element.getAttribute('data-user-id');
-    const router = this.findRouter();
-    
-    if (router) {
-      await router.navigate(`/users/${userId}`);
-    }
-  }
-
-  async handlePageNavigation(element) {
-    // Custom page navigation logic
+```javascript
+class PageContentView extends View {
+  async onActionNavigate(event, element) {
     const page = element.getAttribute('data-page');
-    const params = this.getNavParams(element);
-    
-    await this.getApp().navigateToPage(page, params);
+    const app = this.getApp();
+    await app.showPage(page);
   }
 }
 ```
 
-This comprehensive guide covers the essential aspects of MOJO Views. For more advanced templating features and data formatting options, see the [Templates Guide](./Templates.md).
+---
+
+View is the cornerstone of the MOJO framework, providing a powerful foundation for building interactive, maintainable UI components with clean separation of concerns and automatic lifecycle management.

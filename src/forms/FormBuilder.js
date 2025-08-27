@@ -5,6 +5,7 @@
  */
 
 import Mustache from '../utils/mustache.js';
+import MOJOUtils from '../utils/MOJOUtils.js';
 
 class FormBuilder {
   constructor(config = {}) {
@@ -41,16 +42,16 @@ class FormBuilder {
             {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}
           </label>
           {{/label}}
-          <input type="{{type}}" id="{{fieldId}}" name="{{name}}" 
-                 class="{{inputClass}}{{#error}} is-invalid{{/error}}" 
+          <input type="{{type}}" id="{{fieldId}}" name="{{name}}"
+                 class="{{inputClass}}{{#error}} is-invalid{{/error}}"
                  value="{{fieldValue}}" {{#placeholder}}placeholder="{{placeholder}}"{{/placeholder}}
-                 {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}} 
+                 {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}}
                  {{#readonly}}readonly{{/readonly}} data-change-action="validate-field" {{{attrs}}}>
           {{#help}}<div class="{{helpClass}}">{{help}}</div>{{/help}}
           {{#error}}<div class="{{errorClass}}">{{error}}</div>{{/error}}
         </div>
       `,
-      
+
       textarea: `
         <div class="mojo-form-control">
           {{#label}}
@@ -60,13 +61,13 @@ class FormBuilder {
           {{/label}}
           <textarea id="{{fieldId}}" name="{{name}}" class="{{inputClass}}{{#error}} is-invalid{{/error}}"
                     rows="{{rows}}" {{#placeholder}}placeholder="{{placeholder}}"{{/placeholder}}
-                    {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}} 
+                    {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}}
                     {{#readonly}}readonly{{/readonly}} data-change-action="validate-field" {{{attrs}}}>{{fieldValue}}</textarea>
           {{#help}}<div class="{{helpClass}}">{{help}}</div>{{/help}}
           {{#error}}<div class="{{errorClass}}">{{error}}</div>{{/error}}
         </div>
       `,
-      
+
       select: `
         <div class="mojo-form-control">
           {{#label}}
@@ -76,7 +77,7 @@ class FormBuilder {
           {{/label}}
           {{#searchInput}}{{{searchInput}}}{{/searchInput}}
           <select id="{{fieldId}}" name="{{name}}" class="{{inputClass}}{{#error}} is-invalid{{/error}}"
-                  {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}} 
+                  {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}}
                   {{#multiple}}multiple{{/multiple}} data-change-action="validate-field" {{{attrs}}}>
             {{{optionsHTML}}}
           </select>
@@ -84,11 +85,11 @@ class FormBuilder {
           {{#error}}<div class="{{errorClass}}">{{error}}</div>{{/error}}
         </div>
       `,
-      
+
       checkbox: `
         <div class="mojo-form-control">
           <div class="form-check {{fieldClass}}">
-            <input type="checkbox" id="{{fieldId}}" name="{{name}}" 
+            <input type="checkbox" id="{{fieldId}}" name="{{name}}"
                    class="form-check-input{{#error}} is-invalid{{/error}}" value="{{value}}"
                    {{#checked}}checked{{/checked}} {{#required}}required{{/required}}
                      {{#disabled}}disabled{{/disabled}} data-change-action="validate-field" {{{attrs}}}>
@@ -99,14 +100,14 @@ class FormBuilder {
           </div>
         </div>
       `,
-      
+
       switch: `
         <div class="mojo-form-control">
           <div class="form-check form-switch {{sizeClass}} {{fieldClass}}">
             <input type="checkbox" id="{{fieldId}}" name="{{name}}" role="switch"
                    class="form-check-input{{#error}} is-invalid{{/error}}" value="{{value}}"
-                   {{#checked}}checked{{/checked}} {{#required}}required{{/required}} 
-                   {{#disabled}}disabled{{/disabled}} data-change-action="toggle-switch" 
+                   {{#checked}}checked{{/checked}} {{#required}}required{{/required}}
+                   {{#disabled}}disabled{{/disabled}} data-change-action="toggle-switch"
                    data-field="{{name}}" {{{attrs}}}>
             <label class="form-check-label" for="{{fieldId}}">{{label}}</label>
           </div>
@@ -185,7 +186,7 @@ class FormBuilder {
           {{#label}}<div class="{{labelClass}}">{{label}}{{#required}}<span class="text-danger">*</span>{{/required}}</div>{{/label}}
           {{#options}}
           <div class="form-check">
-            <input type="radio" id="{{fieldId}}_{{value}}" name="{{name}}" value="{{value}}" 
+            <input type="radio" id="{{fieldId}}_{{value}}" name="{{name}}" value="{{value}}"
                    class="form-check-input{{#error}} is-invalid{{/error}}" {{#checked}}checked{{/checked}}
                    {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}}
                    data-change-action="validate-field" {{{attrs}}}>
@@ -218,6 +219,59 @@ class FormBuilder {
 
       hidden: `
         <input type="hidden" id="{{fieldId}}" name="{{name}}" value="{{fieldValue}}">
+      `,
+
+      checklistdropdown: `
+        <div class="dropdown">
+          <button class="{{buttonClass}}" type="button" data-bs-toggle="dropdown">
+            <i class="{{buttonIcon}} me-1"></i> {{buttonText}}
+          </button>
+          <div class="{{dropdownClass}}" style="min-width: {{minWidth}};">
+            {{#options}}
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox"
+                     value="{{value}}"
+                     id="{{id}}"
+                     {{#checked}}checked{{/checked}}
+                     data-change-action="update-checklist"
+                     data-field="{{fieldName}}">
+              <label class="form-check-label" for="{{id}}">
+                {{label}}
+              </label>
+            </div>
+            {{/options}}
+            <hr class="my-2">
+            <button class="btn btn-sm btn-primary w-100" data-action="apply-filter">
+              Apply
+            </button>
+          </div>
+        </div>
+      `,
+
+      buttongroup: `
+        <div class="btn-group btn-group-{{size}}" role="group">
+          {{#options}}
+          <button type="button" class="{{buttonClass}} {{#active}}active{{/active}}"
+                  data-action="select-button-option"
+                  data-field="{{fieldName}}"
+                  data-value="{{value}}">
+            {{label}}
+          </button>
+          {{/options}}
+        </div>
+      `,
+
+      toolbarform: `
+        <div class="mojo-toolbar-form">
+          <div class="row g-2 align-items-center">
+            {{#fields}}
+            <div class="{{containerClass}}">
+              {{#label}}<label class="form-label-sm mb-1">{{label}}</label>{{/label}}
+              {{{fieldHtml}}}
+            </div>
+            {{/fields}}
+          </div>
+        </div>
       `
     };
   }
@@ -229,9 +283,9 @@ class FormBuilder {
   buildFormHTML() {
     const fieldsHTML = this.buildFieldsHTML();
     const buttonsHTML = this.buildButtonsHTML();
-    
+
     return `
-      <form class="${this.options.formClass}" 
+      <form class="${this.options.formClass}"
             method="${this.options.formMethod}"
             ${this.options.formAction ? `action="${this.options.formAction}"` : ''}
             novalidate>
@@ -245,37 +299,46 @@ class FormBuilder {
    * Generate HTML for all fields
    * @returns {string} Fields HTML
    */
+  /**
+   * Check if field should use auto-sizing columns (class="col")
+   * @param {object} field - Field configuration
+   * @returns {boolean}
+   */
+  isAutoSizingField(field) {
+    return !field.columns || field.columns === 'auto' || field.columns === '';
+  }
+
   buildFieldsHTML() {
     const result = [];
     let i = 0;
-    
+
     while (i < this.fields.length) {
       const field = this.fields[i];
-      
+
       if (field.type === 'group') {
         // Collect consecutive groups that should be in a row
         const groupsInRow = [field];
         let totalColumns = field.columns || 12;
-        
+
         // Handle responsive columns - use md breakpoint for calculation, fallback to largest available
         if (typeof totalColumns === 'object' && totalColumns !== null) {
           totalColumns = totalColumns.md || totalColumns.sm || totalColumns.xs || 12;
         }
-        
+
         let j = i + 1;
-        
+
         // Look ahead for more groups that can fit in the same row
-        while (j < this.fields.length && 
-               this.fields[j].type === 'group' && 
+        while (j < this.fields.length &&
+               this.fields[j].type === 'group' &&
                totalColumns < 12) {
           const nextGroup = this.fields[j];
           let nextColumns = nextGroup.columns || 12;
-          
+
           // Handle responsive columns - use md breakpoint for calculation, fallback to largest available
           if (typeof nextColumns === 'object' && nextColumns !== null) {
             nextColumns = nextColumns.md || nextColumns.sm || nextColumns.xs || 12;
           }
-          
+
           if (totalColumns + nextColumns <= 12) {
             groupsInRow.push(nextGroup);
             totalColumns += nextColumns;
@@ -284,10 +347,10 @@ class FormBuilder {
             break;
           }
         }
-        
+
         // If we have multiple groups or a single group with specific columns, wrap in row
         let shouldWrap = groupsInRow.length > 1;
-        
+
         // Check if single group has specific columns (not full width)
         if (groupsInRow.length === 1 && field.columns) {
           let cols = field.columns;
@@ -296,39 +359,39 @@ class FormBuilder {
           }
           shouldWrap = shouldWrap || cols < 12;
         }
-        
+
         if (shouldWrap) {
           const groupsHTML = groupsInRow.map(group => this.buildGroupHTML(group)).join('');
           result.push(`<div class="row">${groupsHTML}</div>`);
         } else {
           result.push(this.buildGroupHTML(field));
         }
-        
+
         i = j;
       } else if (field.columns && field.columns < 12) {
         // Collect consecutive fields with columns that should be in a row
         const fieldsInRow = [field];
         let totalColumns = field.columns || 12;
-        
+
         // Handle responsive columns - use md breakpoint for calculation, fallback to largest available
         if (typeof totalColumns === 'object' && totalColumns !== null) {
           totalColumns = totalColumns.md || totalColumns.sm || totalColumns.xs || 12;
         }
-        
+
         let j = i + 1;
-        
+
         // Look ahead for more fields that can fit in the same row
-        while (j < this.fields.length && 
-               this.fields[j].columns && 
+        while (j < this.fields.length &&
+               this.fields[j].columns &&
                totalColumns < 12) {
           const nextField = this.fields[j];
           let nextColumns = nextField.columns || 12;
-          
+
           // Handle responsive columns - use md breakpoint for calculation, fallback to largest available
           if (typeof nextColumns === 'object' && nextColumns !== null) {
             nextColumns = nextColumns.md || nextColumns.sm || nextColumns.xs || 12;
           }
-          
+
           if (totalColumns + nextColumns <= 12) {
             fieldsInRow.push(nextField);
             totalColumns += nextColumns;
@@ -337,18 +400,44 @@ class FormBuilder {
             break;
           }
         }
-        
+
         // Wrap fields in a row
         const fieldsHTML = fieldsInRow.map(f => this.buildFieldHTML(f)).join('');
         result.push(`<div class="row">${fieldsHTML}</div>`);
-        
+
+        i = j;
+      } else if (this.isAutoSizingField(field)) {
+        // Collect consecutive auto-sizing fields that should be in a row
+        const fieldsInRow = [field];
+        let j = i + 1;
+
+        // Look ahead for more auto-sizing fields
+        while (j < this.fields.length) {
+          const nextField = this.fields[j];
+          if (this.isAutoSizingField(nextField)) {
+            fieldsInRow.push(nextField);
+            j++;
+          } else {
+            break;
+          }
+        }
+
+        // If we have multiple auto-sizing fields, wrap them in a row
+        if (fieldsInRow.length > 1) {
+          const fieldsHTML = fieldsInRow.map(f => this.buildFieldHTML(f)).join('');
+          result.push(`<div class="row">${fieldsHTML}</div>`);
+        } else {
+          // Single auto-sizing field, still wrap in row for consistency
+          result.push(`<div class="row">${this.buildFieldHTML(field)}</div>`);
+        }
+
         i = j;
       } else {
         result.push(this.buildFieldHTML(field));
         i++;
       }
     }
-    
+
     return result.join('');
   }
 
@@ -369,7 +458,7 @@ class FormBuilder {
 
     // Build responsive column classes
     let colClasses = [];
-    
+
     // Handle columns as object (responsive) or number (legacy)
     if (typeof columns === 'object' && columns !== null) {
       // New responsive syntax: columns: { xs: 12, sm: 6, md: 4, lg: 3 }
@@ -379,13 +468,13 @@ class FormBuilder {
       if (columns.lg) colClasses.push(`col-lg-${columns.lg}`);
       if (columns.xl) colClasses.push(`col-xl-${columns.xl}`);
       if (columns.xxl) colClasses.push(`col-xxl-${columns.xxl}`);
-      
+
       // If no md is specified but xs/sm are, use xs or sm as fallback for md
       if (!columns.md && (columns.xs || columns.sm)) {
         const fallback = columns.sm || columns.xs;
         colClasses.push(`col-md-${fallback}`);
       }
-      
+
       // If no breakpoints specified at all, default to col-md-12
       if (colClasses.length === 0) {
         colClasses.push('col-md-12');
@@ -394,7 +483,7 @@ class FormBuilder {
       // Legacy syntax: columns: 6
       colClasses.push(`col-md-${columns}`);
     }
-    
+
     // Support legacy responsive property (for backward compatibility)
     if (responsive.xs) colClasses.push(`col-${responsive.xs}`);
     if (responsive.sm) colClasses.push(`col-sm-${responsive.sm}`);
@@ -426,8 +515,8 @@ class FormBuilder {
    * @returns {string} Field HTML
    */
   buildFieldHTML(field) {
-    const { type, columns = 12, class: fieldClass = '' } = field;
-    
+    const { type, columns, class: fieldClass = '' } = field;
+
     let fieldHTML = '';
     switch (type) {
       case 'text':
@@ -515,13 +604,24 @@ class FormBuilder {
       case 'daterange':
         fieldHTML = this.renderDateRangeField(field);
         break;
+      case 'checklistdropdown':
+        fieldHTML = this.renderChecklistDropdownField(field);
+        break;
+      case 'buttongroup':
+        fieldHTML = this.renderButtonGroupField(field);
+        break;
       default:
         console.warn(`Unknown field type: ${type}`);
         fieldHTML = this.renderTextField(field);
     }
 
-    // Wrap field in column
-    const colClass = `col-md-${columns} ${fieldClass}`.trim();
+    // Wrap field in column - handle auto-sizing columns
+    let colClass;
+    if (this.isAutoSizingField(field)) {
+      colClass = `col ${fieldClass}`.trim();
+    } else {
+      colClass = `col-${columns} ${fieldClass}`.trim();
+    }
     return `<div class="${colClass}">${fieldHTML}</div>`;
   }
 
@@ -648,7 +748,7 @@ class FormBuilder {
     const inputClass = `${this.options.inputClass} ${fieldClass}`.trim();
     const error = this.errors[name];
     const fieldValue = this.getFieldValue(name) || value;
-    
+
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
     const fieldId = this.getFieldId(name);
 
@@ -698,7 +798,7 @@ class FormBuilder {
     const inputClass = `${this.options.inputClass} ${fieldClass}`.trim();
     const error = this.errors[name];
     const fieldValue = this.getFieldValue(name) || value;
-    
+
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
     const fieldId = this.getFieldId(name);
 
@@ -726,7 +826,7 @@ class FormBuilder {
 
   /**
    * Render select field
-   * @param {Object} field - Field configuration  
+   * @param {Object} field - Field configuration
    * @returns {string} Field HTML
    */
   renderSelectField(field) {
@@ -747,7 +847,7 @@ class FormBuilder {
     const inputClass = `form-select ${fieldClass}`.trim();
     const error = this.errors[name];
     const fieldValue = this.getFieldValue(name) || value;
-    
+
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
     const fieldId = this.getFieldId(name);
 
@@ -766,7 +866,7 @@ class FormBuilder {
     }
 
     const searchInput = searchable ? `
-      <input type="text" 
+      <input type="text"
              class="form-control form-control-sm mb-2"
              placeholder="Search options..."
              data-filter="live-search"
@@ -815,7 +915,7 @@ class FormBuilder {
     const error = this.errors[name];
     const fieldValue = this.getFieldValue(name) || value;
     const checked = fieldValue === true || fieldValue === 'true' || fieldValue === '1';
-    
+
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
     const fieldId = this.getFieldId(name);
 
@@ -859,7 +959,7 @@ class FormBuilder {
     const error = this.errors[name];
     const fieldValue = this.getFieldValue(name) || value;
     const checked = fieldValue === true || fieldValue === 'true' || fieldValue === '1';
-    
+
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
     const fieldId = this.getFieldId(name);
     const sizeClass = size !== 'md' ? `form-switch-${size}` : '';
@@ -904,7 +1004,7 @@ class FormBuilder {
 
     const error = this.errors[name];
     const fieldValue = this.getFieldValue(name) || value;
-    
+
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
 
     let optionsHTML = '';
@@ -1047,7 +1147,7 @@ class FormBuilder {
     const fieldId = this.getFieldId(name);
     const dropZoneId = `${fieldId}_dropzone`;
     const previewId = `${fieldId}_preview`;
-    
+
     // Size configurations
     const sizeMap = {
       xs: { width: 48, height: 48, containerClass: 'image-field-xs' },
@@ -1056,10 +1156,10 @@ class FormBuilder {
       lg: { width: 200, height: 200, containerClass: 'image-field-lg' },
       xl: { width: 300, height: 300, containerClass: 'image-field-xl' }
     };
-    
+
     const sizeConfig = sizeMap[size] || sizeMap.md;
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
-    
+
     // Get current value (could be URL string or file object)
     const currentValue = this.getFieldValue(name);
     const imageUrl = this.extractImageUrl(currentValue, size);
@@ -1101,12 +1201,12 @@ class FormBuilder {
    */
   extractImageUrl(value, size = 'md') {
     if (!value) return null;
-    
+
     // If it's already a URL string
     if (typeof value === 'string') {
       return value;
     }
-    
+
     // If it's a file object with renditions
     if (typeof value === 'object' && value.url) {
       // Try to get appropriate rendition based on size
@@ -1118,20 +1218,20 @@ class FormBuilder {
           lg: ['thumbnail_lg', 'thumbnail_md', 'thumbnail'],
           xl: ['original', 'thumbnail_lg']
         };
-        
+
         const preferredSizes = sizeMap[size] || sizeMap.md;
-        
+
         for (const renditionName of preferredSizes) {
           if (value.renditions[renditionName] && value.renditions[renditionName].url) {
             return value.renditions[renditionName].url;
           }
         }
       }
-      
+
       // Fall back to original URL
       return value.url;
     }
-    
+
     return null;
   }
 
@@ -1166,7 +1266,7 @@ class FormBuilder {
     const inputClass = `${this.options.inputClass} ${fieldClass}`.trim();
     const error = this.errors[name];
     const fieldValue = this.getFieldValue(name) || value;
-    
+
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
     const fieldId = this.getFieldId(name);
 
@@ -1323,7 +1423,7 @@ class FormBuilder {
       buttonsHTML += `<button type="submit" class="btn btn-primary me-2" data-action="submit-form">${submitLabel}</button>`;
     }
 
-    // Default reset button  
+    // Default reset button
     if (this.options.resetButton) {
       let resetLabel = 'Reset';
       if (typeof this.options.resetButton === 'string') {
@@ -1347,7 +1447,7 @@ class FormBuilder {
    * @returns {*} Field value
    */
   getFieldValue(name) {
-    return this.data[name];
+    return MOJOUtils.getContextData(this.data, name);
   }
 
   /**
@@ -1377,22 +1477,22 @@ class FormBuilder {
     return `
       <div class="mojo-form-control">
         ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}</label>` : ''}
-        <div class="tag-input-placeholder" 
+        <div class="tag-input-placeholder"
              data-field-name="${name}"
              data-field-type="tag"
-             data-field-config='${JSON.stringify({ 
-               name, 
-               value: fieldValue, 
-               placeholder, 
-               maxTags, 
-               allowDuplicates, 
-               separator, 
-               disabled, 
-               readonly, 
-               required 
+             data-field-config='${JSON.stringify({
+               name,
+               value: fieldValue,
+               placeholder,
+               maxTags,
+               allowDuplicates,
+               separator,
+               disabled,
+               readonly,
+               required
              })}'>
-          <input type="text" 
-                 id="${fieldId}" 
+          <input type="text"
+                 id="${fieldId}"
                  name="${name}_display"
                  class="${this.options.inputClass}${error ? ' is-invalid' : ''}"
                  placeholder="${this.escapeHtml(placeholder)}"
@@ -1438,24 +1538,24 @@ class FormBuilder {
     return `
       <div class="mojo-form-control">
         ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}</label>` : ''}
-        <div class="collection-select-placeholder" 
+        <div class="collection-select-placeholder"
              data-field-name="${name}"
              data-field-type="collection"
-             data-field-config='${JSON.stringify({ 
-               name, 
-               value: fieldValue, 
+             data-field-config='${JSON.stringify({
+               name,
+               value: fieldValue,
                placeholder,
                labelField,
                valueField,
                maxItems,
                emptyFetch,
                debounceMs,
-               disabled, 
-               readonly, 
-               required 
+               disabled,
+               readonly,
+               required
              })}'>
-          <input type="text" 
-                 id="${fieldId}" 
+          <input type="text"
+                 id="${fieldId}"
                  name="${name}_display"
                  class="${this.options.inputClass}${error ? ' is-invalid' : ''}"
                  placeholder="${this.escapeHtml(placeholder)}"
@@ -1499,23 +1599,23 @@ class FormBuilder {
     return `
       <div class="mojo-form-control">
         ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}</label>` : ''}
-        <div class="date-picker-placeholder" 
+        <div class="date-picker-placeholder"
              data-field-name="${name}"
              data-field-type="datepicker"
-             data-field-config='${JSON.stringify({ 
-               name, 
-               value: fieldValue, 
+             data-field-config='${JSON.stringify({
+               name,
+               value: fieldValue,
                placeholder,
                min,
                max,
                format,
                displayFormat,
-               disabled, 
-               readonly, 
-               required 
+               disabled,
+               readonly,
+               required
              })}'>
-          <input type="date" 
-                 id="${fieldId}" 
+          <input type="date"
+                 id="${fieldId}"
                  name="${name}"
                  class="${this.options.inputClass}${error ? ' is-invalid' : ''}"
                  value="${this.escapeHtml(fieldValue)}"
@@ -1544,6 +1644,7 @@ class FormBuilder {
       name,
       startName,
       endName,
+      fieldName,
       label,
       startDate = '',
       endDate = '',
@@ -1570,14 +1671,15 @@ class FormBuilder {
     return `
       <div class="mojo-form-control">
         ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}</label>` : ''}
-        <div class="date-range-picker-placeholder" 
+        <div class="date-range-picker-placeholder"
              data-field-name="${name || startName || 'daterange'}"
              data-field-type="daterange"
-             data-field-config='${JSON.stringify({ 
-               name, 
+             data-field-config='${JSON.stringify({
+               name,
                startName,
                endName,
-               startDate: startValue, 
+               fieldName,
+               startDate: startValue,
                endDate: endValue,
                placeholder,
                min,
@@ -1586,14 +1688,14 @@ class FormBuilder {
                displayFormat,
                outputFormat,
                separator,
-               disabled, 
-               readonly, 
-               required 
+               disabled,
+               readonly,
+               required
              })}'>
           <div class="row g-2">
             <div class="col">
-              <input type="date" 
-                     id="${fieldId}_start" 
+              <input type="date"
+                     id="${fieldId}_start"
                      name="${name}_start"
                      class="${this.options.inputClass}${error ? ' is-invalid' : ''}"
                      value="${this.escapeHtml(startValue)}"
@@ -1609,8 +1711,8 @@ class FormBuilder {
               <span class="text-muted">${this.escapeHtml(separator.trim())}</span>
             </div>
             <div class="col">
-              <input type="date" 
-                     id="${fieldId}_end" 
+              <input type="date"
+                     id="${fieldId}_end"
                      name="${name}_end"
                      class="${this.options.inputClass}${error ? ' is-invalid' : ''}"
                      value="${this.escapeHtml(endValue)}"
@@ -1632,7 +1734,77 @@ class FormBuilder {
   }
 
   /**
-   * Escape HTML to prevent XSS
+   * Render checklistdropdown field
+   * @param {Object} field - Field configuration
+   * @returns {string} Rendered HTML
+   */
+  renderChecklistDropdownField(field) {
+    const fieldId = this.getFieldId(field);
+    const selectedValues = this.getFieldValue(field) || [];
+
+    // Prepare data for Mustache template
+    const templateData = {
+      fieldId,
+      fieldName: field.name,
+      buttonText: field.buttonText || 'Select Options',
+      buttonIcon: field.buttonIcon || 'bi-chevron-down',
+      buttonClass: field.buttonClass || 'btn btn-outline-secondary btn-sm dropdown-toggle',
+      dropdownClass: field.dropdownClass || 'dropdown-menu p-2',
+      minWidth: field.minWidth || '200px',
+      options: field.options.map(option => ({
+        value: option.value,
+        label: option.label,
+        id: `${field.name}-${option.value}`,
+        checked: selectedValues.includes(option.value)
+      }))
+    };
+
+    return Mustache.render(this.templates.checklistdropdown, templateData);
+  }
+
+  /**
+   * Render buttongroup field
+   * @param {Object} field - Field configuration
+   * @returns {string} Rendered HTML
+   */
+  renderButtonGroupField(field) {
+    const fieldId = this.getFieldId(field);
+    const selectedValue = this.getFieldValue(field);
+
+    // Prepare data for Mustache template
+    const templateData = {
+      fieldId,
+      fieldName: field.name,
+      size: field.size || 'sm',
+      variant: field.variant || 'outline-primary',
+      options: field.options.map(option => ({
+        value: option.value,
+        label: option.label,
+        active: option.value === selectedValue,
+        buttonClass: this.getButtonClass(option.value === selectedValue, field.variant)
+      }))
+    };
+
+    return Mustache.render(this.templates.buttongroup, templateData);
+  }
+
+  /**
+   * Get button class based on active state and variant
+   * @param {boolean} isActive - Whether button is active
+   * @param {string} variant - Button variant
+   * @returns {string} Button class
+   */
+  getButtonClass(isActive, variant = 'outline-primary') {
+    if (isActive) {
+      // Remove 'outline-' prefix for active buttons
+      const activeVariant = variant.replace('outline-', '');
+      return `btn btn-${activeVariant}`;
+    }
+    return `btn btn-${variant}`;
+  }
+
+  /**
+   * Escape HTML characters to prevent XSS
    * @param {string} str - String to escape
    * @returns {string} Escaped string
    */

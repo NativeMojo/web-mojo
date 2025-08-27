@@ -1,0 +1,621 @@
+/**
+ * Admin CSS - Styles for administrative dashboard components
+ * Task Management, System Monitoring, and Admin UI elements
+ */
+
+/* === Task Management Styles === */
+
+.mojo-task-management-page {
+    padding: 0;
+}
+
+.mojo-task-management-container {
+    max-width: 100%;
+    margin: 0;
+}
+
+/* Task Stats Cards */
+.mojo-task-stats-header .card {
+    transition: all 0.2s ease-in-out;
+    border: 1px solid var(--bs-border-color);
+}
+
+.mojo-task-stats-header .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1) !important;
+}
+
+.mojo-task-stats-header .card-body {
+    padding: 1.5rem;
+}
+
+.mojo-task-stats-header h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--bs-dark);
+}
+
+.mojo-task-stats-header .badge {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.5rem;
+    border-radius: 0.375rem;
+}
+
+.mojo-task-stats-header .fs-2 {
+    opacity: 0.6;
+    font-size: 2.5rem !important;
+}
+
+/* Task Runners Section */
+.task-runners-section .mojo-task-runner-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.task-runners-section .mojo-task-runner-item {
+    border: 1px solid var(--bs-gray-200);
+    transition: all 0.2s ease-in-out;
+}
+
+.task-runners-section .mojo-task-runner-item:hover {
+    border-color: var(--bs-primary);
+    background-color: var(--bs-gray-50) !important;
+}
+
+.task-runners-section .mojo-task-runner-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.task-runners-section .mojo-task-runner-name {
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+}
+
+.task-runners-section .mojo-task-runner-channels {
+    word-break: break-all;
+    line-height: 1.3;
+}
+
+.task-runners-section .mojo-task-runner-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.task-runners-section .mojo-task-runner-list::-webkit-scrollbar-track {
+    background: var(--bs-gray-100);
+    border-radius: 3px;
+}
+
+.task-runners-section .mojo-task-runner-list::-webkit-scrollbar-thumb {
+    background: var(--bs-gray-400);
+    border-radius: 3px;
+}
+
+.task-runners-section .mojo-task-runner-list::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-gray-500);
+}
+
+.task-runners-section .mojo-task-runner-status .badge {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+}
+
+.task-runners-section .mojo-task-runner-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.task-runners-section .dropdown-toggle {
+    border: 1px solid var(--bs-border-color);
+    background: white;
+    transition: all 0.2s ease;
+}
+
+.task-runners-section .dropdown-toggle:hover {
+    background: var(--bs-gray-50);
+    border-color: var(--bs-primary);
+}
+
+.task-runners-section .dropdown-menu {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    min-width: 160px;
+}
+
+.task-runners-section .dropdown-item {
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.task-runners-section .dropdown-item:hover {
+    background-color: var(--bs-gray-100);
+}
+
+.task-runners-section .dropdown-item i {
+    width: 1rem;
+    text-align: center;
+}
+
+/* Task Charts Section */
+.mojo-task-charts-section .card {
+    border: 1px solid var(--bs-border-color);
+    transition: all 0.2s ease-in-out;
+}
+
+.mojo-task-charts-section .card:hover {
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.08) !important;
+}
+
+.mojo-task-charts-section .card-body {
+    padding: 1.5rem;
+}
+
+/* Task Tables Section */
+.mojo-task-management-page .tab-view .nav-tabs {
+    border-bottom: 2px solid var(--bs-gray-200);
+    margin-bottom: 1.5rem;
+}
+
+.mojo-task-management-page .tab-view .nav-link {
+    color: var(--bs-gray-600);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    margin-right: 0.5rem;
+    border-radius: 0.5rem 0.5rem 0 0;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.mojo-task-management-page .tab-view .nav-link:hover {
+    color: var(--bs-primary);
+    background-color: var(--bs-gray-50);
+}
+
+.mojo-task-management-page .tab-view .nav-link.active {
+    color: var(--bs-primary);
+    background-color: white;
+    border-bottom: 2px solid var(--bs-primary);
+    transform: translateY(1px);
+}
+
+.mojo-task-management-page .tab-content {
+    min-height: 400px;
+}
+
+.mojo-task-management-page .table-container {
+    background: white;
+    border-radius: 0.5rem;
+}
+
+/* Task Status Badges */
+.badge.mojo-task-status-pending {
+    background-color: var(--bs-primary) !important;
+    color: white;
+}
+
+.badge.mojo-task-status-running {
+    background-color: var(--bs-success) !important;
+    color: white;
+}
+
+.badge.mojo-task-status-completed {
+    background-color: var(--bs-info) !important;
+    color: white;
+}
+
+.badge.mojo-task-status-error {
+    background-color: var(--bs-danger) !important;
+    color: white;
+}
+
+/* Action Buttons */
+.mojo-task-management-page .btn-group .btn {
+    transition: all 0.2s ease;
+}
+
+.mojo-task-management-page .btn-group .btn:hover {
+    transform: translateY(-1px);
+}
+
+.mojo-task-management-page .btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.375rem;
+}
+
+/* Loading States */
+.mojo-task-management-page .bi-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.spinning {
+    animation: spin 1s linear infinite;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .mojo-task-stats-header .card-body {
+        padding: 1rem;
+    }
+
+    .mojo-task-stats-header h3 {
+        font-size: 1.5rem;
+    }
+
+    .task-runners-section .mojo-task-runner-item .row {
+        margin: 0;
+    }
+
+    .task-runners-section .mojo-task-runner-item .col-md-8,
+    .task-runners-section .mojo-task-runner-item .col-md-4 {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .task-runners-section .mojo-task-runner-channels small {
+        font-size: 0.75rem;
+    }
+
+    .mojo-task-management-page .btn-group {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .mojo-task-management-page .btn-group .btn {
+        margin-bottom: 0.25rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .mojo-task-management-container {
+        padding: 0.5rem;
+    }
+
+    .mojo-task-stats-header .col-12 {
+        margin-bottom: 0.5rem !important;
+    }
+
+    .mojo-task-charts-section .col-xl-6 {
+        margin-bottom: 1rem !important;
+    }
+
+    .mojo-task-management-page .tab-view .nav-link {
+        padding: 0.5rem 1rem;
+        margin-right: 0.25rem;
+        font-size: 0.875rem;
+    }
+
+    .task-runners-section .mojo-task-runner-item {
+        padding: 1rem !important;
+    }
+
+    .task-runners-section .mojo-task-runner-name {
+        font-size: 0.9rem;
+    }
+
+    .task-runners-section .mojo-task-runner-channels small {
+        font-size: 0.7rem;
+        display: block;
+        margin-top: 0.25rem;
+    }
+}
+
+/* === Admin Dashboard General Styles === */
+
+.admin-dashboard-page,
+.admin-page {
+    background-color: var(--bs-gray-50);
+    min-height: 100vh;
+}
+
+.admin-dashboard-container,
+.admin-container {
+    padding: 2rem;
+    max-width: 100%;
+}
+
+/* Admin Cards */
+.admin-page .card {
+    border: 1px solid var(--bs-border-color);
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: all 0.2s ease-in-out;
+}
+
+.admin-page .card:hover {
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+}
+
+.admin-page .card-header {
+    background-color: white;
+    border-bottom: 1px solid var(--bs-border-color);
+    padding: 1rem 1.5rem;
+}
+
+.admin-page .card-body {
+    padding: 1.5rem;
+}
+
+/* Admin Header Styles */
+.admin-page h1,
+.admin-page .h3 {
+    color: var(--bs-dark);
+    font-weight: 600;
+}
+
+.admin-page .text-muted {
+    color: var(--bs-gray-600) !important;
+}
+
+/* Admin Alerts */
+.admin-page .alert {
+    border: none;
+    border-radius: 0.5rem;
+    padding: 1rem 1.5rem;
+}
+
+.admin-page .alert-success {
+    background-color: rgba(25, 135, 84, 0.1);
+    color: var(--bs-success-text-emphasis);
+}
+
+.admin-page .alert-info {
+    background-color: rgba(13, 202, 240, 0.1);
+    color: var(--bs-info-text-emphasis);
+}
+
+.admin-page .alert-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: var(--bs-warning-text-emphasis);
+}
+
+.admin-page .alert-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: var(--bs-danger-text-emphasis);
+}
+
+/* Admin Utilities */
+.admin-page .text-truncate {
+    max-width: 200px;
+}
+
+.admin-page .small-text {
+    font-size: 0.875rem;
+}
+
+.admin-page .micro-text {
+    font-size: 0.75rem;
+}
+
+/* Admin Navigation */
+.admin-page .breadcrumb {
+    background-color: transparent;
+    padding: 0;
+    margin-bottom: 1rem;
+}
+
+.admin-page .breadcrumb-item + .breadcrumb-item::before {
+    color: var(--bs-gray-500);
+}
+
+.admin-page .breadcrumb-item a {
+    color: var(--bs-primary);
+    text-decoration: none;
+}
+
+.admin-page .breadcrumb-item a:hover {
+    text-decoration: underline;
+}
+
+/* === Modal Styles === */
+
+/* Task Details Modal */
+.mojo-task-details-modal .modal-dialog {
+    max-width: 800px;
+}
+
+.mojo-task-details-modal .fw-mono {
+    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+    font-size: 0.9rem;
+}
+
+.mojo-task-details-modal .log-entry {
+    border-left: 3px solid var(--bs-gray-300);
+    transition: all 0.2s ease;
+}
+
+.mojo-task-details-modal .log-entry:hover {
+    border-left-color: var(--bs-primary);
+    background-color: var(--bs-gray-50) !important;
+}
+
+.mojo-task-details-modal pre code {
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.mojo-task-details-modal .badge {
+    font-weight: 500;
+}
+
+/* Runner Details Modal */
+.mojo-runner-details-modal .modal-dialog {
+    max-width: 1200px;
+}
+
+.mojo-runner-details-modal .performance-metric {
+    transition: all 0.3s ease;
+}
+
+.mojo-runner-details-modal .performance-metric:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+}
+
+.runner-detailsPrint Styles */
+/* === Task and Runner Details Views === */
+
+.mojo-task-details-view,
+.mojo-runner-details-view {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.mojo-task-details-view .card,
+.mojo-runner-details-view .card {
+    border: 1px solid var(--bs-border-color);
+}
+
+.mojo-task-details-view .card-header,
+.mojo-runner-details-view .card-header {
+    background-color: var(--bs-gray-50);
+    font-weight: 500;
+}
+
+.mojo-task-details-view .log-entry,
+.mojo-runner-details-view .log-entry {
+    transition: background-color 0.2s ease;
+}
+
+.mojo-task-details-view .log-entry:hover,
+.mojo-runner-details-view .log-entry:hover {
+    background-color: var(--bs-gray-50) !important;
+}
+
+.mojo-task-details-view .progress,
+.mojo-runner-details-view .progress {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.mojo-task-details-view .progress-bar,
+.mojo-runner-details-view .progress-bar {
+    transition: width 0.3s ease;
+}
+
+/* Log level badges */
+.mojo-task-details-view .badge,
+.mojo-runner-details-view .badge {
+    font-weight: 500;
+}
+
+/* Code blocks in task details */
+.mojo-task-details-view pre {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    border: 1px solid var(--bs-border-color);
+}
+
+.mojo-task-details-view pre code,
+.mojo-runner-details-view pre code {
+    color: var(--bs-gray-800);
+}
+
+/* Resource usage bars */
+.mojo-runner-details-view .progress {
+    background-color: var(--bs-gray-200);
+}
+
+.mojo-runner-details-view .progress-bar {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* Tables in modals */
+.mojo-task-details-view .table,
+.mojo-runner-details-view .table {
+    font-size: 0.875rem;
+}
+
+.mojo-task-details-view .table th,
+.mojo-runner-details-view .table th {
+    font-weight: 600;
+    color: var(--bs-gray-700);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.mojo-task-details-view .table td,
+.mojo-runner-details-view .table td {
+    vertical-align: middle;
+}
+
+/* Button groups in tables */
+.mojo-task-details-view .btn-group-sm .btn,
+.mojo-runner-details-view .btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* Filter buttons */
+.mojo-runner-details-view .btn-group .btn.active {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: white;
+}
+
+/* Scrollable containers */
+.mojo-task-logs-container,
+.mojo-runner-logs-container {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.375rem;
+}
+
+.mojo-task-logs-container::-webkit-scrollbar,
+.mojo-runner-logs-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.mojo-task-logs-container::-webkit-scrollbar-track,
+.mojo-runner-logs-container::-webkit-scrollbar-track {
+    background: var(--bs-gray-100);
+    border-radius: 3px;
+}
+
+.mojo-task-logs-container::-webkit-scrollbar-thumb,
+.mojo-runner-logs-container::-webkit-scrollbar-thumb {
+    background: var(--bs-gray-400);
+    border-radius: 3px;
+}
+
+.mojo-task-logs-container::-webkit-scrollbar-thumb:hover,
+.mojo-runner-logs-container::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-gray-500);
+}
+
+/* Print Styles */
+@media print {
+    .admin-page .btn,
+    .admin-page .dropdown,
+    .admin-page .card-header .btn-group {
+        display: none !important;
+    }
+
+    .admin-page .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+    }
+
+    .admin-page {
+        background-color: white !important;
+    }
+
+    .mojo-task-details-view,
+    .mojo-runner-details-view {
+        max-height: none;
+        overflow: visible;
+    }
+}

@@ -589,29 +589,9 @@ export default class PortalApp extends WebApp {
         }
 
         try {
-            // Debug: Check what activeUser contains
-            console.log('=== DEBUG: Profile Form Data ===');
-            console.log('activeUser object:', this.activeUser);
-            console.log('activeUser type:', typeof this.activeUser);
-            console.log('activeUser constructor:', this.activeUser?.constructor?.name);
-            console.log('Has get method:', typeof this.activeUser?.get === 'function');
-            console.log('Has attributes:', !!this.activeUser?.attributes);
-
             if (this.activeUser?.attributes) {
                 console.log('activeUser.attributes:', this.activeUser.attributes);
             }
-
-            if (typeof this.activeUser?.get === 'function') {
-                console.log('Testing get method:');
-                try {
-                    console.log('  - first_name:', this.activeUser.get('first_name'));
-                    console.log('  - last_name:', this.activeUser.get('last_name'));
-                    console.log('  - email:', this.activeUser.get('email'));
-                } catch (e) {
-                    console.log('  - Error calling get:', e.message);
-                }
-            }
-            console.log('=== END DEBUG ===');
 
             // Show profile edit form with automatic model saving
             const result = await Dialog.showModelForm({
@@ -736,10 +716,10 @@ export default class PortalApp extends WebApp {
 
             if (result && result.success) {
                 console.log('Profile saved successfully:', result);
-                
+
                 // Update active user with new data from model
                 // (model should already be updated by save operation)
-                
+
                 // Show success message
                 this.showSuccess('Profile updated successfully!');
             } else if (result && !result.success) {

@@ -1,6 +1,6 @@
 /**
  * Auto-generated template module
- * Generated: 2025-08-25T02:32:17.617Z
+ * Generated: 2025-08-27T06:32:19.697Z
  * Contains all framework templates compiled as JavaScript strings
  */
 
@@ -744,6 +744,10 @@ templates['components/TablePage.mst'] = `<div class="table-page-container">
     {{/description}}
   </div>
   {{/showTitle}}
+  {{#showHeader}}
+  <div data-container="table-page-header">
+  </div>
+  {{/showHeader}}
 
   <!-- Table Container - Child view will render here -->
   <div id="{{tableContainerId}}" class="table-container" data-table-page="{{pageName}}">

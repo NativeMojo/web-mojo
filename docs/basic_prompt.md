@@ -132,6 +132,27 @@ view.render(true, containerElement);
 const formatted = dataFormatter.pipe(value, 'currency|truncate(10)');
 ```
 
+// Anothe example of View overrides
+
+```js
+async onInit() {
+  // Create child views
+  // Setup initial state
+  // Handle first data fetch
+  await this.fetchData();
+}
+
+async onAfterRender() {
+  // Only DOM access, no data fetching
+  // Cache DOM elements if needed
+}
+
+// Follow-up fetches via actions
+async onActionRefreshChart(event, element) {
+  await this.fetchData();
+}
+```
+
 ### Rest Response Structure
 **IMPORTANT**: Understanding the Rest class response format is critical for proper error handling.
 
@@ -154,7 +175,7 @@ Your server responds with this format (stored in `response.data`):
   status: boolean,  // true for success, false for server/business logic errors
   data: object,     // actual payload data
   error: string,    // server error message if any
-  code: string      // server error code if any  
+  code: string      // server error code if any
 }
 ```
 
@@ -189,9 +210,29 @@ const result = response.data.data;
 - **NO direct DOM manipulation** - use framework patterns
 - **NO incorrect action handlers** - use `onAction*` or `handleAction*` method naming
 - **NO manual event binding** - use `data-action` attributes instead
+- **NO onAfterMount**: This is not good, use onAfterRender so you have the rendered HTML vs just the mounted DOM element.
+- **NO Fetching of Data in onAfterRender or onAfterMount**: This is not good, as typically the data fetch will cause a re-render, which can lead to performance issues and unexpected behavior.
 
 ## Framework Integration Notes
+
+**USE onInit**: to build your child views and setup your initial state, this is only called once when the view is first used.
 
 **Dev Server**: we are always running the dev server with browser console open to help with debugging.
 **Keep It Simple**: Follow the framework patterns, let MOJO handle the complexity!
 **Improve The Framework**: Let's improve the framework vs adding improvements to our examples or projects.
+
+
+Use bootstrap 5 css as much as possible unless doing something unique then create our own css.
+
+Use our Dialog where showDialog({body:view}) will show your view.
+Keep admin views and pages inside the src/admin folder.
+
+WE USE MUSTACHE for our templates.
+We should break out our templates into child views if we think that area of the template would need rendering when the entire template does not.
+
+Our Mustache version support built in data formatter via pipes. {{user.name|uppercase}} no need to call dataformatter directly
+
+A views template renders with the view itself as the root context.
+Mustache Partials can easily be provided by just overriding the views getPartials function.
+
+IMPORTANT do not write tests or examples unless asked to.

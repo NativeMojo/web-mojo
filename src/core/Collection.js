@@ -51,9 +51,13 @@ import rest from '../core/Rest.js';
 class Collection {
   constructor(ModelClass, options = {}, data = null) {
     // Handle case where first argument is data instead of ModelClass
-    if (ModelClass && typeof ModelClass === 'object' && !ModelClass.prototype) {
-        // First argument appears to be data/options, not a class
+    if (Array.isArray(ModelClass)) {
+        // First argument is an array, treat it as data
         data = ModelClass;
+        ModelClass = Model;
+    } else if (ModelClass && typeof ModelClass === 'object' && !ModelClass.prototype) {
+        // First argument appears to be data/options, not a class
+        options = ModelClass;
         ModelClass = Model;
     }
     this.ModelClass = ModelClass || Model;

@@ -32,6 +32,7 @@ class DateRangePicker extends View {
       name,
       startName,
       endName,
+      fieldName,
       startDate = '',
       endDate = '',
       format = 'YYYY-MM-DD',
@@ -63,6 +64,7 @@ class DateRangePicker extends View {
     this.name = name;
     this.startName = startName;
     this.endName = endName;
+    this.fieldName = fieldName;
     this.format = format;
     this.displayFormat = displayFormat;
     this.outputFormat = outputFormat;
@@ -169,7 +171,7 @@ class DateRangePicker extends View {
           type="text"
           id="${inputId}"
           ${this.name ? `name="${this.name}"` : ''}
-          class="${this.inputClass}${this.hasError() ? ' is-invalid' : ''}"
+          class="${this.inputClass} date-range-picker-input${this.hasError() ? ' is-invalid' : ''}"
           value="${this.escapeHtml(displayValue)}"
           placeholder="${this.escapeHtml(this.placeholder)}"
           ${this.disabled ? 'disabled' : ''}
@@ -177,11 +179,13 @@ class DateRangePicker extends View {
           ${this.required ? 'required' : ''}
           autocomplete="off"
           data-change-action="range-changed"
+          style="background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><path fill=%22%236c757d%22 fill-rule=%22evenodd%22 d=%22M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z%22/></svg>'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 16px 12px; padding-right: 2.25rem; cursor: pointer;"
         />
         
         <!-- Hidden inputs for form submission -->
         ${startFieldName ? `<input type="hidden" name="${startFieldName}" value="${this.escapeHtml(startValue)}" />` : ''}
         ${endFieldName ? `<input type="hidden" name="${endFieldName}" value="${this.escapeHtml(endValue)}" />` : ''}
+        ${this.fieldName ? `<input type="hidden" name="${this.fieldName}" value="${this.escapeHtml(this.name || '')}" />` : ''}
         
         <div class="date-range-picker-feedback"></div>
       </div>
@@ -234,6 +238,7 @@ class DateRangePicker extends View {
         
         <!-- Hidden input for combined value -->
         <input type="hidden" name="${this.name}" value="${this.escapeHtml(this.getCombinedValue())}" />
+        ${this.fieldName ? `<input type="hidden" name="${this.fieldName}" value="${this.escapeHtml(this.name || '')}" />` : ''}
         
         <div class="date-range-picker-feedback"></div>
       </div>
@@ -344,7 +349,7 @@ class DateRangePicker extends View {
   /**
    * Handle range change from Easepick
    */
-  async onChangeRangeChanged(action, event, element) {
+  async onChangeRangeChanged(_action, _event, _element) {
     // This is handled by Easepick setup callback
   }
 
@@ -445,10 +450,11 @@ class DateRangePicker extends View {
         return `${month}/${day}/${year}`;
       case 'DD/MM/YYYY':
         return `${day}/${month}/${year}`;
-      case 'MMM DD, YYYY':
+      case 'MMM DD, YYYY': {
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         return `${monthNames[d.getMonth()]} ${day}, ${year}`;
+      }
       default:
         return `${year}-${month}-${day}`;
     }
@@ -532,10 +538,12 @@ class DateRangePicker extends View {
     const startInput = startFieldName ? this.element?.querySelector(`[name="${startFieldName}"]`) : null;
     const endInput = endFieldName ? this.element?.querySelector(`[name="${endFieldName}"]`) : null;
     const combinedInput = this.name ? this.element?.querySelector(`[name="${this.name}"]`) : null;
+    const fieldNameInput = this.fieldName ? this.element?.querySelector(`[name="${this.fieldName}"]`) : null;
 
     if (startInput) startInput.value = this.currentStartDate ? this.formatForOutput(this.currentStartDate) : '';
     if (endInput) endInput.value = this.currentEndDate ? this.formatForOutput(this.currentEndDate) : '';
     if (combinedInput) combinedInput.value = this.getDisplayValue();
+    if (fieldNameInput) fieldNameInput.value = this.name || '';
   }
 
   /**

@@ -61,17 +61,10 @@ export default class PieChart extends BaseChart {
     // Value formatting
     this.valueFormatter = options.valueFormatter || null;
 
-    // Template data properties (available to Mustache)
-    this.refreshEnabled = !!(this.endpoint || this.websocketUrl);
-    this.showLabels = this.showLabels;
-    this.cutout = this.cutout;
+
   }
 
-  async getTemplate() {
-    // Hide chart type switcher for PieChart
-    const baseTemplate = await super.getTemplate();
-    return baseTemplate.replace('chart-type-switcher', 'chart-type-switcher d-none');
-  }
+
 
   processChartData(data) {
     if (!data) return data;
@@ -160,8 +153,8 @@ export default class PieChart extends BaseChart {
 
     // Apply label formatter to labels
     if (this.labelFormatter && processedData.labels) {
-      processedData.labels = processedData.labels.map(label => 
-        this.dataFormatter.apply(label, this.labelFormatter)
+      processedData.labels = processedData.labels.map(label =>
+        this.dataFormatter.pipe(label, this.labelFormatter)
       );
     }
 

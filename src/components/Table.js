@@ -182,8 +182,12 @@ class Table extends View {
         // Clear daterange filter - remove start/end params
         const startName = filterConfig.startName || `${key}_start`;
         const endName = filterConfig.endName || `${key}_end`;
+        const fieldName = filterConfig.fieldName;
         delete this.collection.params[startName];
         delete this.collection.params[endName];
+        if (fieldName) {
+          delete this.collection.params[fieldName];
+        }
         delete this.collection.params[key]; // Also clear main key if it exists
       } else {
         delete this.collection.params[key];
@@ -194,12 +198,16 @@ class Table extends View {
         // Handle daterange filter - set individual start/end params
         const startName = filterConfig.startName || `${key}_start`;
         const endName = filterConfig.endName || `${key}_end`;
+        const fieldName = filterConfig.fieldName;
 
         if (value.start) {
           this.collection.params[startName] = value.start;
         }
         if (value.end) {
           this.collection.params[endName] = value.end;
+        }
+        if (fieldName && value.fieldName) {
+          this.collection.params[fieldName] = value.fieldName;
         }
 
         // Don't set the main key for daterange filters
@@ -773,7 +781,7 @@ class Table extends View {
 
       if (dateRangeInfo) {
         // This is a daterange filter component
-        const { baseKey, filterConfig, startName, endName } = dateRangeInfo;
+        const { baseKey, filterConfig, startName, endName, fieldName } = dateRangeInfo;
         const startValue = this.activeFilters[startName];
         const endValue = this.activeFilters[endName];
 
@@ -797,9 +805,12 @@ class Table extends View {
             isDateRange: true
           });
 
-          // Mark both keys as used
+          // Mark all keys as used
           usedKeys.add(startName);
           usedKeys.add(endName);
+          if (fieldName) {
+            usedKeys.add(fieldName);
+          }
         }
       } else {
         // Regular filter
@@ -828,13 +839,15 @@ class Table extends View {
         const config = filterInfo.config;
         const startName = config.startName || `${filterInfo.key}_start`;
         const endName = config.endName || `${filterInfo.key}_end`;
+        const fieldName = config.fieldName;
 
-        if (key === startName || key === endName) {
+        if (key === startName || key === endName || (fieldName && key === fieldName)) {
           return {
             baseKey: filterInfo.key,
             filterConfig: config,
             startName: startName,
-            endName: endName
+            endName: endName,
+            fieldName: fieldName
           };
         }
       }
@@ -2528,6 +2541,14 @@ class Table extends View {
     return true;
   }
 
+  async onTabActivated() {
+    // Default implementation - override this method to implement tab activation logic
+    // You can access the app via this.getApp() and perform actions when the tab is activated
+      await this.initializeData();
+      await this.collection.fetch();
+      await this.render();
+  }
+
   async handleActionContextMenuItem(event, element) {
     event.preventDefault();
 
@@ -2795,12 +2816,20 @@ class Table extends View {
       // Extract start/end values based on naming convention
       const startName = filterConfig.startName || 'filter_value_start';
       const endName = filterConfig.endName || 'filter_value_end';
+      const fieldName = filterConfig.fieldName;
 
-      return {
+      const result = {
         start: formResult[startName],
         end: formResult[endName],
         combined: formResult.filter_value // Display value
       };
+
+      // Include fieldName value if specified
+      if (fieldName && formResult[fieldName]) {
+        result.fieldName = formResult[fieldName];
+      }
+
+      return result;
     }
 
     return formResult.filter_value;

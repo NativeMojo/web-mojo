@@ -463,6 +463,85 @@ class FormView extends View {
     await this.updateField(fieldName);
   }
 
+  /**
+   * Handle button group selection
+   */
+  async onActionSelectButtonOption(event, element) {
+    const fieldName = element.getAttribute('data-field');
+    const value = element.getAttribute('data-value');
+    
+    if (!fieldName || !value) return;
+
+    // Update form data
+    this.data[fieldName] = value;
+
+    // Update UI - remove active class from siblings and add to this button
+    const buttonGroup = element.closest('.btn-group');
+    if (buttonGroup) {
+      const buttons = buttonGroup.querySelectorAll('button');
+      buttons.forEach(btn => {
+        btn.classList.remove('active');
+        btn.classList.add('btn-outline-primary');
+        btn.classList.remove('btn-primary');
+      });
+      
+      element.classList.add('active');
+      element.classList.remove('btn-outline-primary');
+      element.classList.add('btn-primary');
+    }
+
+    // Emit field change event
+    this.emit('field:changed', {
+      field: fieldName,
+      value: value,
+      form: this
+    });
+
+    // Emit general form change event
+    this.emit('form:changed', await this.getFormData());
+  }
+
+  /**
+   * Handle checklist dropdown filter apply
+   */
+  async onActionApplyFilter(event, element) {
+    const dropdown = element.closest('.dropdown');
+    const checkboxes = dropdown?.querySelectorAll('input[type="checkbox"]');
+    
+    if (!checkboxes || checkboxes.length === 0) return;
+
+    const fieldName = checkboxes[0].getAttribute('data-field');
+    if (!fieldName) return;
+
+    // Collect checked values
+    const selectedValues = [];
+    checkboxes.forEach(checkbox => {
+      if (checkbox.checked) {
+        selectedValues.push(checkbox.value);
+      }
+    });
+
+    // Update form data
+    this.data[fieldName] = selectedValues;
+
+    // Close dropdown
+    const dropdownBtn = dropdown.querySelector('[data-bs-toggle="dropdown"]');
+    if (dropdownBtn && window.bootstrap?.Dropdown) {
+      const dropdownInstance = window.bootstrap.Dropdown.getInstance(dropdownBtn);
+      dropdownInstance?.hide();
+    }
+
+    // Emit field change event
+    this.emit('field:changed', {
+      field: fieldName,
+      value: selectedValues,
+      form: this
+    });
+
+    // Emit general form change event
+    this.emit('form:changed', await this.getFormData());
+  }
+
   // ========================================
   // EventDelegate Change Handlers
   // ========================================

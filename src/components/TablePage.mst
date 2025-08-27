@@ -8,6 +8,10 @@
     {{/description}}
   </div>
   {{/showTitle}}
+  {{#showHeader}}
+  <div data-container="table-page-header">
+  </div>
+  {{/showHeader}}
 
   <!-- Table Container - Child view will render here -->
   <div id="{{tableContainerId}}" class="table-container" data-table-page="{{pageName}}">
