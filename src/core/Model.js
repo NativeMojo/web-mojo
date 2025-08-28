@@ -122,6 +122,10 @@ class Model {
     }
   }
 
+  getData() {
+    return this.attributes;
+  }
+
   /**
    * Fetch model data from API with request deduplication and cancellation
    * @param {object} options - Request options

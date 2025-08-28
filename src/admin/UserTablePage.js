@@ -7,6 +7,8 @@ import TablePage from '../components/TablePage.js';
 import {UserList, UserForms} from '../models/User.js';
 import Dialog from '../components/Dialog.js';
 import MOJOUtils from '../utils/MOJOUtils.js';
+import UserView from './views/UserView.js';
+
 
 class UserTablePage extends TablePage {
     constructor(options = {}) {
@@ -69,6 +71,8 @@ class UserTablePage extends TablePage {
                 defaultPageSize: 10,
                 emptyMessage: 'No todos found. Click "Add Todo" to create your first task.',
                 emptyIcon: 'bi-inbox',
+                itemViewClass: UserView,
+                viewDialogOptions: {header:false},
                 contextMenu: [
                   {
                     icon: 'bi-pencil',

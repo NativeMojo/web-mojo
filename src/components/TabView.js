@@ -31,6 +31,10 @@ class TabView extends View {
       activeTab,
       tabsClass,
       contentClass,
+      minWidth,
+      enableResponsive,
+      tabPadding,
+      dropdownStyle, // 'button' (default) or 'select'
       ...viewOptions
     } = options;
 
@@ -49,6 +53,26 @@ class TabView extends View {
     this.tabsClass = tabsClass || 'nav nav-tabs mb-3';
     this.contentClass = contentClass || 'tab-content';
 
+    // Responsive configuration
+    this.dropdownStyle = dropdownStyle || 'button'; // 'button' or 'select'
+    this.minWidth = minWidth || 768; // Minimum width before switching to dropdown
+    this.enableResponsive = enableResponsive !== false; // Default to enabled
+    this.tabPadding = tabPadding || 80; // Estimated padding per tab (16px * 2)
+    this.currentMode = 'tabs'; // 'tabs' or 'dropdown'
+
+    // Width calculation cache
+    this.tabWidthCache = new Map();
+    this.lastContainerWidth = 0;
+    this.resizeObserver = null;
+    this._measurementSpan = null; // Reusable measurement element
+    this._tabComputedStyle = null; // To store computed styles
+
+
+
+    // State tracking
+    this.isMobileMode = false;
+    this.hasOverflow = false;
+
     // Validate tabs
     if (this.tabLabels.length === 0) {
       console.warn('TabView: No tabs provided');
@@ -58,6 +82,9 @@ class TabView extends View {
     for (const [label, view] of Object.entries(this.tabs)) {
         this.addTab(label, view);
     }
+
+    // Bind resize handler
+    this.handleResize = this.handleResize.bind(this);
   }
 
   /**
@@ -76,7 +103,7 @@ class TabView extends View {
   }
 
   /**
-   * Build the tab navigation HTML
+   * Build the tab navigation HTML - supports both tab and dropdown modes
    * @returns {string} Tab navigation HTML
    */
   buildTabNavigation() {
@@ -84,6 +111,18 @@ class TabView extends View {
       return '';
     }
 
+    if (this.currentMode === 'dropdown') {
+      return this.buildDropdownNavigation();
+    } else {
+      return this.buildTabsNavigation();
+    }
+  }
+
+  /**
+   * Build traditional tab navigation
+   * @returns {string} Tab navigation HTML
+   */
+  buildTabsNavigation() {
     const tabItems = this.tabLabels.map(label => {
       const isActive = label === this.activeTab;
       const tabId = this.getTabId(label);
@@ -105,10 +144,121 @@ class TabView extends View {
     }).join('');
 
     return `
-      <ul class="${this.tabsClass}" role="tablist">
+      <ul class="${this.tabsClass}" role="tablist" data-tab-mode="tabs">
         ${tabItems}
       </ul>
     `;
+  }
+
+  /**
+   * Build dropdown navigation for mobile/narrow screens
+   * @returns {string} Dropdown navigation HTML
+   */
+  buildDropdownNavigation() {
+    const activeLabel = this.activeTab || this.tabLabels[0];
+    const dropdownItems = this.tabLabels.map(label => {
+      const isActive = label === this.activeTab;
+      return `
+        <li>
+          <button class="dropdown-item ${isActive ? 'active' : ''}"
+                  data-action="show-tab"
+                  data-tab-label="${this.escapeHtml(label)}"
+                  type="button">
+            ${this.escapeHtml(label)}
+            ${isActive ? '<i class="bi bi-check-lg ms-2"></i>' : ''}
+          </button>
+        </li>
+      `;
+    }).join('');
+
+    let buttonHtml;
+    if (this.dropdownStyle === 'select') {
+      // New "select" style button
+      buttonHtml = `
+        <button class="btn tab-view-select-style dropdown-toggle"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                id="tab-dropdown-${this.id}">
+          <span class="tab-view-select-label">${this.escapeHtml(activeLabel)}</span>
+        </button>
+      `;
+    } else {
+      // Original "button" style
+      buttonHtml = `
+        <button class="btn btn-outline-secondary dropdown-toggle w-100 w-sm-auto"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                id="tab-dropdown-${this.id}">
+          <i class="bi bi-list me-2"></i>
+          ${this.escapeHtml(activeLabel)}
+        </button>
+      `;
+    }
+
+    return `
+      <div class="dropdown mb-3" data-tab-mode="dropdown">
+        ${buttonHtml}
+        <ul class="dropdown-menu" aria-labelledby="tab-dropdown-${this.id}">
+          ${dropdownItems}
+        </ul>
+      </div>
+    `;
+  }
+
+  /**
+   * Build mobile dropdown navigation
+   * @returns {string} Mobile dropdown HTML
+   */
+  buildMobileDropdownNavigation() {
+    const activeLabel = this.activeTab || this.tabLabels[0];
+    const dropdownItems = this.tabLabels.map(label => {
+      const isActive = label === this.activeTab;
+      return `
+        <li>
+          <button class="dropdown-item ${isActive ? 'active' : ''}"
+                  data-action="show-tab"
+                  data-tab-label="${this.escapeHtml(label)}"
+                  type="button">
+            ${this.escapeHtml(label)}
+            ${isActive ? '<i class="bi bi-check ms-2"></i>' : ''}
+          </button>
+        </li>
+      `;
+    }).join('');
+
+    return `
+      <div class="dropdown mb-3" data-tab-navigation="mobile">
+        <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false">
+          <i class="bi bi-list me-2"></i>
+          ${this.escapeHtml(activeLabel)}
+        </button>
+        <ul class="dropdown-menu w-100">
+          ${dropdownItems}
+        </ul>
+      </div>
+    `;
+  }
+
+  /**
+   * Determine if mobile dropdown should be used
+   * @returns {boolean} True if mobile dropdown should be used
+   */
+  shouldUseMobileDropdown() {
+    if (!this.enableMobileDropdown) return false;
+
+    // Check viewport width
+    const viewportWidth = window.innerWidth;
+    if (viewportWidth < this.mobileBreakpoint) {
+      return true;
+    }
+
+    // Check for overflow in desktop mode
+    return this.hasOverflow && viewportWidth < 992; // Bootstrap lg breakpoint
   }
 
   /**
@@ -156,16 +306,25 @@ class TabView extends View {
    * @param {string} tabLabel - Label of the tab to show
    * @returns {Promise<boolean>} True if tab was shown successfully
    */
-  async showTab(tabLabel) {
+  async showTab(tabLabel, options = {}) {
+    const { force = false } = options;
+
     // Validate tab exists
     if (!this.tabs[tabLabel]) {
       console.warn(`TabView: Tab "${tabLabel}" does not exist`);
       return false;
     }
 
-    // Skip if already active
-    if (this.activeTab === tabLabel) {
-      return true;
+    // Skip if already active and not being forced
+    // This prevents re-rendering the same tab on repeated clicks, but allows
+    // for forced re-mounting after a parent view render.
+    if (this.activeTab === tabLabel && !force) {
+      // As a safeguard, ensure the view is actually in the DOM.
+      // If not, proceed to re-mount it.
+      const activeView = this.tabs[tabLabel];
+      if (activeView && activeView.isMounted() && this.element.contains(activeView.element)) {
+        return true;
+      }
     }
 
     const previousTab = this.activeTab;
@@ -173,7 +332,7 @@ class TabView extends View {
 
     try {
       // Update tab navigation
-      this.updateTabNavigation(tabLabel, previousTab);
+      await this.updateTabNavigation(tabLabel, previousTab);
 
       // Update tab content
       await this.updateTabContent(tabLabel, previousTab);
@@ -197,10 +356,16 @@ class TabView extends View {
    * @param {string} activeTabLabel - New active tab
    * @param {string} previousTabLabel - Previous active tab
    */
-  updateTabNavigation(activeTabLabel, previousTabLabel) {
+  async updateTabNavigation(activeTabLabel, previousTabLabel) {
     if (!this.element) return;
 
-    // Remove active state from previous tab
+    // In dropdown mode, re-render the navigation to update the button label and items
+    if (this.currentMode === 'dropdown') {
+      await this.reRenderNavigation();
+      return; // Re-rendering handles all visual updates for navigation
+    }
+
+    // In tabs mode, just toggle classes for efficiency
     if (previousTabLabel) {
       const prevTabButton = this.element.querySelector(`[data-tab-label="${previousTabLabel}"]`);
       if (prevTabButton) {
@@ -268,14 +433,44 @@ class TabView extends View {
   }
 
   /**
+   * Initialize measurement styles by reading computed styles from a rendered tab
+   */
+  _initializeMeasurementStyles() {
+    if (!this.element || this._tabComputedStyle) return;
+
+    const tabButton = this.element.querySelector('.nav-link');
+    if (tabButton && typeof window.getComputedStyle === 'function') {
+      const style = window.getComputedStyle(tabButton);
+      this._tabComputedStyle = {
+        font: style.font,
+        letterSpacing: style.letterSpacing,
+      };
+
+      // Calculate horizontal padding from computed styles
+      const paddingLeft = parseFloat(style.paddingLeft) || 0;
+      const paddingRight = parseFloat(style.paddingRight) || 0;
+      this.tabPadding = paddingLeft + paddingRight + 12; // Update with real value
+    }
+  }
+
+  /**
    * Initialize active tab after rendering
    */
   async onAfterRender() {
     await super.onAfterRender();
 
-    // Show the active tab after initial render
+    // Initialize styles for accurate width calculation before setting up responsive handling
+    this._initializeMeasurementStyles();
+
+    // Set up responsive behavior
+    if (this.enableResponsive) {
+      this.setupResponsiveHandling();
+    }
+
+    // Show the active tab after initial render. Forcing ensures the content is
+    // correctly re-mounted if the TabView itself was re-rendered.
     if (this.activeTab && this.tabs[this.activeTab]) {
-      await this.showTab(this.activeTab);
+      await this.showTab(this.activeTab, { force: true });
     }
   }
 
@@ -285,16 +480,9 @@ class TabView extends View {
   async onAfterMount() {
     await super.onAfterMount();
 
-    // Mount the initially active tab's view
-    if (this.activeTab && this.tabs[this.activeTab]) {
-      const activeTabId = this.getTabId(this.activeTab);
-      const container = this.element.querySelector(`[data-container="${activeTabId}-content"]`);
-      const activeView = this.tabs[this.activeTab];
-
-      if (container && activeView && !activeView.isMounted()) {
-        await activeView.mount(container);
-      }
-    }
+    // The active tab's content is now mounted via the onAfterRender -> showTab flow,
+    // which correctly handles both initial renders and subsequent re-renders.
+    // The logic previously here was redundant.
   }
 
   /**
@@ -302,6 +490,23 @@ class TabView extends View {
    */
   async onBeforeDestroy() {
     await super.onBeforeDestroy();
+
+    // Clean up resize observer
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
+
+    // Remove window resize listener
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', this.handleResize);
+    }
+
+    // Remove measurement span if it exists
+    if (this._measurementSpan && this._measurementSpan.parentElement) {
+      this._measurementSpan.parentElement.removeChild(this._measurementSpan);
+    }
+    this._measurementSpan = null;
 
     // Destroy all child tab views
     for (const [label, view] of Object.entries(this.tabs)) {
@@ -410,6 +615,198 @@ class TabView extends View {
 
     this.emit('tab:removed', { label, view });
     return true;
+  }
+
+  /**
+   * Calculate estimated width needed for a tab label
+   * @param {string} label - Tab label text
+   * @returns {number} Estimated width in pixels
+   */
+  calculateTabWidth(label) {
+    if (this.tabWidthCache.has(label)) {
+      return this.tabWidthCache.get(label);
+    }
+
+    // Fallback for non-browser environments
+    if (typeof document === 'undefined') {
+      const estimatedWidth = label.length * 8 + this.tabPadding; // Original fallback
+      this.tabWidthCache.set(label, estimatedWidth);
+      return estimatedWidth;
+    }
+
+    // Create a reusable measurement span if it doesn't exist
+    if (!this._measurementSpan) {
+      this._measurementSpan = document.createElement('span');
+      this._measurementSpan.style.visibility = 'hidden';
+      this._measurementSpan.style.position = 'absolute';
+      this._measurementSpan.style.whiteSpace = 'nowrap';
+    }
+
+    const span = this._measurementSpan;
+
+    // Apply computed styles if available, otherwise use defaults
+    if (this._tabComputedStyle) {
+      span.style.font = this._tabComputedStyle.font;
+      span.style.letterSpacing = this._tabComputedStyle.letterSpacing;
+    } else {
+      // Fallback to original hardcoded styles if computed style not yet available
+      span.style.fontSize = '14px';
+      span.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+    }
+
+    span.textContent = label;
+    document.body.appendChild(span);
+    const width = span.offsetWidth + this.tabPadding;
+    document.body.removeChild(span);
+
+    this.tabWidthCache.set(label, width);
+    return width;
+  }
+
+  /**
+   * Calculate total width needed for all tabs
+   * @returns {number} Total width in pixels
+   */
+  getTotalTabWidth() {
+    return this.tabLabels.reduce((total, label) => {
+      return total + this.calculateTabWidth(label);
+    }, 0);
+  }
+
+  /**
+   * Get current container width
+   * @returns {number} Container width in pixels
+   */
+  getContainerWidth() {
+    if (!this.element) {
+      return this.minWidth;
+    }
+
+    const container = this.element.parentElement || this.element;
+    return container.offsetWidth || this.minWidth;
+  }
+
+  /**
+   * Determine if dropdown mode should be used
+   * @returns {boolean} True if dropdown mode should be used
+   */
+  shouldUseDropdown() {
+    if (!this.enableResponsive) {
+      return false;
+    }
+
+    const containerWidth = this.getContainerWidth();
+    const totalTabWidth = this.getTotalTabWidth();
+
+    // Use dropdown if tabs would overflow or container is too narrow
+    return containerWidth < Math.max(totalTabWidth, this.minWidth);
+  }
+
+  /**
+   * Setup responsive handling with ResizeObserver
+   */
+  setupResponsiveHandling() {
+    if (!this.element || !this.enableResponsive) {
+      return;
+    }
+
+    // Set initial mode
+    this.updateNavigationMode();
+
+    // Use ResizeObserver for better performance
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.handleResize();
+      });
+
+      const container = this.element.parentElement || this.element;
+      this.resizeObserver.observe(container);
+    } else {
+      // Fallback to window resize
+      window.addEventListener('resize', this.handleResize);
+    }
+  }
+
+  /**
+   * Handle resize events
+   */
+  async handleResize() {
+    const containerWidth = this.getContainerWidth();
+
+    // Only update if width changed significantly (avoid excessive updates)
+    if (Math.abs(containerWidth - this.lastContainerWidth) > 50) {
+      this.lastContainerWidth = containerWidth;
+      await this.updateNavigationMode();
+    }
+  }
+
+  /**
+   * Update navigation mode based on current space
+   */
+  async updateNavigationMode() {
+    const shouldUseDropdown = this.shouldUseDropdown();
+    const newMode = shouldUseDropdown ? 'dropdown' : 'tabs';
+
+    if (newMode !== this.currentMode) {
+      this.currentMode = newMode;
+
+      // Re-render navigation if mounted
+      if (this.isMounted()) {
+        await this.reRenderNavigation();
+      }
+
+      // Emit mode change event
+      this.emit('navigation:modeChanged', {
+        mode: this.currentMode,
+        containerWidth: this.getContainerWidth(),
+        totalTabWidth: this.getTotalTabWidth()
+      });
+    }
+  }
+
+  /**
+   * Re-render just the navigation part
+   */
+  async reRenderNavigation() {
+    if (!this.element) return;
+
+    const navigationContainer = this.element.querySelector('[data-tab-mode]');
+    if (navigationContainer) {
+      const newNavigation = this.buildTabNavigation();
+      navigationContainer.outerHTML = newNavigation;
+    }
+  }
+
+  /**
+   * Get current navigation mode
+   * @returns {string} Current mode ('tabs' or 'dropdown')
+   */
+  getNavigationMode() {
+    return this.currentMode;
+  }
+
+  /**
+   * Force a specific navigation mode
+   * @param {string} mode - 'tabs' or 'dropdown'
+   */
+  async setNavigationMode(mode) {
+    if (mode !== 'tabs' && mode !== 'dropdown') {
+      console.warn('TabView: Invalid navigation mode. Use "tabs" or "dropdown"');
+      return;
+    }
+
+    this.currentMode = mode;
+
+    if (this.isMounted()) {
+      await this.reRenderNavigation();
+    }
+  }
+
+  /**
+   * Clear the tab width cache (useful when tab labels change)
+   */
+  clearWidthCache() {
+    this.tabWidthCache.clear();
   }
 
   /**

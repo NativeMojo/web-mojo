@@ -4,6 +4,10 @@
  * @version 1.0.0
  */
 
+// A generic, gray, person icon SVG, encoded as a Base64 data URI.
+// This is used as a fallback for the avatar formatter when no image URL is provided.
+const GENERIC_AVATAR_SVG = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NlZDRkYSI+PHBhdGggZD0iTTEyIDEyYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00LTQgMS43OS00IDQgMS43OSA0IDQgNHptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTQtOC00eiIvPjwvc3ZnPg==';
+
 class DataFormatter {
   constructor() {
     this.formatters = new Map();
@@ -54,6 +58,7 @@ class DataFormatter {
     this.register('status', this.status.bind(this));
     this.register('boolean', this.boolean.bind(this));
     this.register('yesno', (v) => this.boolean(v, 'Yes', 'No'));
+    this.register('yesnoicon', this.yesnoicon.bind(this));
     this.register('icon', this.icon.bind(this));
     this.register('avatar', this.avatar.bind(this));
     this.register('image', this.image.bind(this));
@@ -64,6 +69,18 @@ class DataFormatter {
     this.register('raw', (v) => v);
     this.register('custom', (v, fn) => typeof fn === 'function' ? fn(v) : v);
     this.register('iter', this.iter.bind(this));
+    this.register('keys', (v) => {
+      if (v && typeof v === 'object' && !Array.isArray(v)) {
+        return Object.keys(v);
+      }
+      return null;
+    });
+    this.register('values', (v) => {
+      if (v && typeof v === 'object' && !Array.isArray(v)) {
+        return Object.values(v);
+      }
+      return null;
+    });
 
     // Text/Content formatters
     this.register('plural', this.plural.bind(this));
@@ -342,6 +359,9 @@ class DataFormatter {
 
   normalizeEpoch(value) {
     if (typeof value !== "number") value = Number(value);
+
+    // Check if the number is valid
+    if (isNaN(value)) return '';
 
     // treat anything smaller than year 2000 in ms as seconds
     if (value < 1e11) {   // less than ~Sat Mar 03 1973 09:46:40 GMT
@@ -702,6 +722,11 @@ class DataFormatter {
    * @returns {string} Badge HTML
    */
   badge(value, type = 'auto') {
+    // If the value is an array, map over it and create a badge for each item.
+    if (Array.isArray(value)) {
+      return value.map(item => this.badge(item, type)).join(' ');
+    }
+
     const text = String(value);
     const badgeType = type === 'auto' ? this.inferBadgeType(text) : type;
     const className = badgeType ? `bg-${badgeType}` : 'bg-secondary';
@@ -716,9 +741,9 @@ class DataFormatter {
    */
   inferBadgeType(text) {
     const lowered = text.toLowerCase();
-    if (['active', 'success', 'complete', 'approved', 'done', 'true'].includes(lowered)) return 'success';
-    if (['error', 'failed', 'rejected', 'deleted', 'cancelled', 'false'].includes(lowered)) return 'danger';
-    if (['warning', 'pending', 'review', 'processing'].includes(lowered)) return 'warning';
+    if (['active', 'success', 'complete', 'completed', 'approved', 'done', 'true', 'on', 'yes'].includes(lowered)) return 'success';
+    if (['error', 'failed', 'rejected', 'deleted', 'cancelled', 'false', 'off', 'no'].includes(lowered)) return 'danger';
+    if (['warning', 'pending', 'review', 'processing', 'uploading'].includes(lowered)) return 'warning';
     if (['info', 'new', 'draft'].includes(lowered)) return 'info';
     if (['inactive', 'disabled', 'archived', 'suspended'].includes(lowered)) return 'secondary';
     return 'secondary';
@@ -782,6 +807,19 @@ class DataFormatter {
   }
 
   /**
+   * Format boolean as a yes/no icon
+   * @param {*} value - Boolean value
+   * @returns {string} Icon HTML
+   */
+  yesnoicon(value) {
+    if (value) { // Handles true, 1, "true", "on", etc.
+      return '<i class="bi bi-check-circle-fill text-success"></i>';
+    }
+    // Handles false, 0, "", null, undefined
+    return '<i class="bi bi-x-circle-fill text-danger"></i>';
+  }
+
+  /**
    * Format value as Bootstrap 5 image with optional rendition support
    * @param {string|object} value - URL string or file object with renditions
    * @param {string} rendition - Desired rendition (thumbnail, thumbnail_sm, etc.)
@@ -805,8 +843,7 @@ class DataFormatter {
    * @returns {string} Bootstrap avatar HTML
    */
   avatar(value, size = 'md', classes = '', alt = '') {
-    const url = this._extractImageUrl(value, 'square_sm');
-    if (!url) return '';
+    const url = this._extractImageUrl(value, 'square_sm') || GENERIC_AVATAR_SVG;
 
     // Bootstrap avatar sizing
     const sizeClasses = {
@@ -1092,6 +1129,7 @@ class DataFormatter {
 
 // Create singleton instance
 const dataFormatter = new DataFormatter();
+window.dataFormatter = dataFormatter;
 
 // Export both class and instance
 export { DataFormatter };

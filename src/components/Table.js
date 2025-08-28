@@ -80,6 +80,8 @@ class Table extends View {
       hover: true,
       preloaded: false,  // Skip REST fetching when true
       batchPanelTitle: "Rows",
+      hideActivePills: false, // Hide active filter pills when true
+      hideActivePillNames: [], // Array of filter names to hide from pills
       ...options
     };
 
@@ -355,6 +357,9 @@ class Table extends View {
     // Extract filters from columns
     this.filters = {};
     this.columns.forEach(column => {
+      if (column.name && !column.key) {
+        column.key = column.name;
+      }
       if (column.filter) {
         this.filters[column.key] = column.filter;
       }
@@ -706,9 +711,19 @@ class Table extends View {
   }
 
   buildActivePills() {
-    const activeFilters = Object.entries(this.activeFilters).filter(([key, value]) =>
+    if (this.options.hideActivePills) {
+      return '';
+    }
+
+    let activeFilters = Object.entries(this.activeFilters).filter(([key, value]) =>
       value && value.toString().trim() !== ''
     );
+
+    // Selectively hide pills based on the hideActivePillNames option
+    if (this.options.hideActivePillNames && this.options.hideActivePillNames.length > 0) {
+      const hiddenNames = this.options.hideActivePillNames;
+      activeFilters = activeFilters.filter(([key]) => !hiddenNames.includes(key));
+    }
 
     if (activeFilters.length === 0) {
       return '';
@@ -1639,7 +1654,8 @@ class Table extends View {
       await Dialog.showDialog({
         title: `${item.constructor.name || 'Item'} Details`,
         body: viewInstance,
-        size: 'lg'
+        size: 'lg',
+        ...this.options.viewDialogOptions
       });
     }
     // Check if item has a VIEW property

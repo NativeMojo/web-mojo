@@ -817,12 +817,12 @@ class FormView extends View {
         }
       }
 
-      // Handle unchecked checkboxes
+      // Handle checkboxes and switches to ensure correct boolean values
       const checkboxes = form.querySelectorAll('input[type="checkbox"]');
       checkboxes.forEach(checkbox => {
-        if (!checkbox.checked && !data[checkbox.name]) {
-          data[checkbox.name] = false;
-        }
+        // Overwrite any value from FormData with the correct boolean state.
+        // This handles both checked (true) and unchecked (false) cases correctly.
+        data[checkbox.name] = checkbox.checked;
       });
 
       // Convert files to base64 and add to data
@@ -1058,18 +1058,25 @@ class FormView extends View {
   getChangedObjectData(currentData, originalData) {
     const changedData = {};
     let hasChanges = false;
+    const allKeys = new Set([...Object.keys(originalData), ...Object.keys(currentData)]);
 
-    // Compare each field
-    for (const [key, value] of Object.entries(currentData)) {
-      const originalValue = originalData[key];
+    const resolveDotNotation = (obj, path) => path.split('.').reduce((o, i) => (o && typeof o === 'object' ? o[i] : undefined), obj);
 
-      // Handle different value types
-      if (this.valuesAreDifferent(value, originalValue)) {
-        console.log(`  - ${key}: "${originalValue}" → "${value}" (${this.getChangeReason(value, originalValue)})`);
-        changedData[key] = value;
+    for (const key of allKeys) {
+      const fieldConfig = this.findFieldConfig(key);
+      // Only process fields that are actually defined in the form's schema.
+      if (!fieldConfig) {
+        continue;
+      }
+
+      const newValue = currentData[key];
+      const originalValue = resolveDotNotation(originalData, key);
+
+      const fieldType = fieldConfig.type || 'text';
+
+      if (this.valuesAreDifferent(newValue, originalValue, fieldType)) {
+        changedData[key] = newValue;
         hasChanges = true;
-      } else {
-        console.log(`  - ${key}: unchanged ("${value}")`);
       }
     }
 
@@ -1080,17 +1087,13 @@ class FormView extends View {
    * Compare two values to determine if they're different
    * @param {*} newValue - New value from form
    * @param {*} originalValue - Original value from model
+   * @param {string} fieldType - The type of the field from the form config
    * @returns {boolean} True if values are different
    */
-  valuesAreDifferent(newValue, originalValue) {
+  valuesAreDifferent(newValue, originalValue, fieldType = 'text') {
     // Handle File objects (new uploads vs existing)
     if (newValue instanceof File) {
-      // If file has no content or is empty, treat as no change
-      if (newValue.size === 0 || newValue.name === '' || newValue.name === 'blob') {
-        return false;
-      }
-      // Files with actual content are always considered changed
-      return true;
+      return newValue.size > 0 && newValue.name !== '' && newValue.name !== 'blob';
     }
 
     // Handle base64 images (always considered changed if present)
@@ -1098,15 +1101,14 @@ class FormView extends View {
       return true;
     }
 
-    // Handle boolean comparisons (checkboxes/switches)
-    // Treat undefined/null as false for boolean fields
-    if (typeof newValue === 'boolean' || typeof originalValue === 'boolean') {
-      const newBool = Boolean(newValue);
-      const originalBool = originalValue === null || originalValue === undefined ? false : Boolean(originalValue);
+    // For switches and checkboxes, perform a strict boolean comparison
+    if (fieldType === 'switch' || fieldType === 'checkbox') {
+      const newBool = !!newValue;
+      const originalBool = !!originalValue;
       return newBool !== originalBool;
     }
 
-    // Handle null/undefined/empty string comparisons
+    // For all other fields, compare their string representations
     const newStr = newValue === null || newValue === undefined ? '' : String(newValue).trim();
     const originalStr = originalValue === null || originalValue === undefined ? '' : String(originalValue).trim();
 

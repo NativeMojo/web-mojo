@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>UserView Example - MOJO Framework</title>
+
+        <!-- Bootstrap 5.3 CSS -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
+            rel="stylesheet"
+        />
+
+        <link href="/src/css/core.css" rel="stylesheet" />
+        <link href="/src/css/table.css" rel="stylesheet" />
+        <link href="/src/css/portal.css" rel="stylesheet" />
+        <link href="/src/css/toast.css" rel="stylesheet" />
+        <link href="/src/css/admin.css" rel="stylesheet" />
+
+        <style>
+            .demo-container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+
+            .width-controls {
+                background: #f8f9fa;
+                padding: 15px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+            }
+
+            .demo-wrapper {
+                border: 2px dashed #dee2e6;
+                padding: 20px;
+                border-radius: 8px;
+                resize: horizontal;
+                overflow: auto;
+                min-width: 300px;
+                max-width: 100%;
+            }
+
+            .mode-indicator {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 1050;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="demo-container">
+            <h1 class="mb-4">UserView with Intelligent TabView Demo</h1>
+
+            <div class="width-controls">
+                <h5>Demo Controls</h5>
+                <p class="text-muted mb-3">
+                    Resize the container below to see the TabView intelligently switch between tabs
+                    and dropdown modes. The switch happens when the calculated tab widths exceed the
+                    available space.
+                </p>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="containerWidth" class="form-label">Container Width:</label>
+                        <input
+                            type="range"
+                            class="form-range"
+                            id="containerWidth"
+                            min="300"
+                            max="1200"
+                            value="800"
+                        />
+                        <div class="d-flex justify-content-between small text-muted">
+                            <span>300px</span>
+                            <span id="widthValue">800px</span>
+                            <span>1200px</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-outline-primary" id="addTab">
+                            Add Long Tab Name
+                        </button>
+                        <button class="btn btn-outline-secondary" id="removeTab">Remove Tab</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mode Indicator -->
+            <div class="mode-indicator">
+                <span class="badge bg-info" id="modeIndicator">Mode: tabs</span>
+            </div>
+
+            <!-- Resizable Demo Container -->
+            <div class="demo-wrapper" id="demoWrapper" style="width: 800px">
+                <div id="userViewContainer"></div>
+            </div>
+
+            <div class="mt-4">
+                <h6>Debug Information</h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <small class="text-muted"
+                            >Container Width: <span id="debugWidth">-</span></small
+                        >
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted"
+                            >Total Tab Width: <span id="debugTabWidth">-</span></small
+                        >
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted"
+                            >Current Mode: <span id="debugMode">-</span></small
+                        >
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bootstrap 5.3 JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+        <!-- MOJO Framework -->
+        <script type="module">
+            import UserView from "../src/admin/views/UserView.js";
+            import { User } from "../src/models/User.js";
+
+            // Sample user data
+            const userData = {
+                id: 1,
+                display_name: "John Smith",
+                email: "john.smith@company.com",
+                phone_number: "+1 (555) 123-4567",
+                username: "jsmith",
+                is_active: true,
+                last_login: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
+                last_activity: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
+                title: "Software Engineer",
+                avatar: {
+                    url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+                },
+                permissions: {
+                    manage_users: true,
+                    view_groups: true,
+                    view_metrics: false,
+                    view_admin: true,
+                },
+                metadata: {
+                    department: "Engineering",
+                    location: "San Francisco, CA",
+                    hire_date: "2022-03-15",
+                },
+            };
+
+            // Create user model
+            const userModel = new User(userData);
+            window.user = userModel;
+            // Create UserView
+            const userView = new UserView({
+                model: userModel,
+            });
+
+            // Render the view
+            const container = document.getElementById("userViewContainer");
+            await userView.render(true, container);
+
+            // Get reference to the TabView for demo controls
+            const tabView = userView.tabView;
+
+            // Demo Controls
+            const containerWidthSlider = document.getElementById("containerWidth");
+            const widthValueDisplay = document.getElementById("widthValue");
+            const demoWrapper = document.getElementById("demoWrapper");
+            const modeIndicator = document.getElementById("modeIndicator");
+            const debugWidth = document.getElementById("debugWidth");
+            const debugTabWidth = document.getElementById("debugTabWidth");
+            const debugMode = document.getElementById("debugMode");
+
+            // Width control
+            containerWidthSlider.addEventListener("input", (e) => {
+                const width = e.target.value + "px";
+                demoWrapper.style.width = width;
+                widthValueDisplay.textContent = width;
+                updateDebugInfo();
+            });
+
+            // Tab management for testing
+            let extraTabCounter = 0;
+            document.getElementById("addTab").addEventListener("click", async () => {
+                extraTabCounter++;
+                const longTabName = `Very Long Tab Name ${extraTabCounter}`;
+
+                // Create a simple view for the new tab
+                const { default: View } = await import("../src/core/View.js");
+                const dummyView = new View({
+                    template: `<div class="p-4 text-center text-muted">
+                    <h5>Demo Tab Content</h5>
+                    <p>This is a dynamically added tab: <strong>${longTabName}</strong></p>
+                </div>`,
+                });
+
+                await tabView.addTab(longTabName, dummyView, false);
+                updateDebugInfo();
+            });
+
+            document.getElementById("removeTab").addEventListener("click", async () => {
+                if (extraTabCounter > 0) {
+                    const tabName = `Very Long Tab Name ${extraTabCounter}`;
+                    await tabView.removeTab(tabName);
+                    extraTabCounter--;
+                    updateDebugInfo();
+                }
+            });
+
+            // Listen for navigation mode changes
+            tabView.on("navigation:modeChanged", (eventData) => {
+                console.log("Navigation mode changed:", eventData);
+                updateModeIndicator(eventData.mode);
+                updateDebugInfo();
+            });
+
+            // Update mode indicator
+            function updateModeIndicator(mode) {
+                modeIndicator.textContent = `Mode: ${mode}`;
+                modeIndicator.className = `badge bg-${mode === "dropdown" ? "warning" : "info"}`;
+            }
+
+            // Update debug information
+            function updateDebugInfo() {
+                setTimeout(() => {
+                    const containerWidth = tabView.getContainerWidth();
+                    const totalTabWidth = tabView.getTotalTabWidth();
+                    const currentMode = tabView.getNavigationMode();
+
+                    debugWidth.textContent = containerWidth + "px";
+                    debugTabWidth.textContent = totalTabWidth + "px";
+                    debugMode.textContent = currentMode;
+                }, 100);
+            }
+
+            // Initial debug info
+            setTimeout(() => {
+                updateDebugInfo();
+                updateModeIndicator(tabView.getNavigationMode());
+            }, 500);
+
+            // Make userView available globally for debugging
+            window.userView = userView;
+            window.tabView = tabView;
+
+            console.log("UserView Demo loaded successfully!");
+            console.log(
+                "Try resizing the container or adding/removing tabs to see the intelligent responsive behavior.",
+            );
+        </script>
+    </body>
+</html>

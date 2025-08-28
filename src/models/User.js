@@ -72,7 +72,7 @@ const UserForms = {
                 name: `permissions.${permission.name}`,
                 type: 'switch',
                 label: permission.label,
-                columns: 6
+                columns: 4
             }))
         ]
     }
@@ -90,41 +90,35 @@ const UserDataView = {
                 name: 'id',
                 label: 'User ID',
                 type: 'number',
-                colSize: 3
-            },
-            {
-                name: 'display_name',
-                label: 'Display Name',
-                type: 'text',
-                format: 'capitalize',
-                colSize: 9
+                columns: 3
             },
             {
                 name: 'username',
                 label: 'Username',
                 type: 'text',
                 format: 'lowercase',
-                colSize: 6
+                columns: 9
             },
             {
-                name: 'email',
-                label: 'Email Address',
-                type: 'email',
-                colSize: 6
+                name: 'last_login',
+                label: 'Last Login',
+                type: 'datetime',
+                format: 'relative',
+                columns: 6
             },
             {
-                name: 'phone_number',
-                label: 'Phone Number',
-                type: 'phone',
-                format: 'phone|default("Not provided")',
-                colSize: 6
+                name: 'last_activity',
+                label: 'Last Activity',
+                type: 'datetime',
+                format: 'relative',
+                columns: 6
             },
-            {
-                name: 'is_active',
-                label: 'Account Status',
-                type: 'boolean',
-                colSize: 6
-            }
+            ...User.PERMISSIONS.map(permission => ({
+                name: `permissions.${permission.name}`,
+                label: permission.label,
+                format: "boolean('on', 'off')|badge",
+                columns: 4
+            }))
         ]
     },
 

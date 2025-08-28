@@ -405,6 +405,76 @@
     --bs-nav-tabs-link-active-border-color: var(--bs-primary);
 }
 
+.nav-tabs .nav-link {
+    color: var(--bs-secondary);
+}
+
+.nav-tabs .nav-link.active {
+    border-top-color: rgb(26, 115, 232);
+    border-right-color: rgb(26, 115, 232);
+    border-bottom-color: transparent;
+    border-left-color: rgb(26, 115, 232);
+}
+
+/* ========================================================================
+   TabView Component Styles
+   ======================================================================== */
+
+/*
+ * Style for the 'select' mode dropdown in the TabView component.
+ * These styles mimic the appearance of a Bootstrap .form-select element
+ * to provide a consistent look and feel with standard form inputs.
+ */
+.tab-view-select-style {
+    display: inline-flex; /* Use inline-flex to allow the button to size to its content */
+    align-items: center; /* Vertically align the label and chevron */
+
+    /* Mimic Bootstrap .form-select styles for appearance */
+    padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--bs-body-color);
+    background-color: var(--bs-body-bg);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 12px;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    transition:
+        border-color 0.15s ease-in-out,
+        box-shadow 0.15s ease-in-out;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* The .dropdown-toggle class adds its own chevron, which we don't want. */
+/* This rule hides the default Bootstrap chevron so we can use our own background-image version. */
+.tab-view-select-style::after {
+    display: none;
+}
+
+/* Hover state - slightly darken the border like a real input */
+.tab-view-select-style:hover {
+    border-color: var(--bs-secondary-border-subtle);
+}
+
+/* Focus state - mimic Bootstrap's standard focus ring */
+.tab-view-select-style:focus {
+    border-color: var(--bs-primary);
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* The text label inside the button */
+.tab-view-select-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* Alerts (optional, stays tied to primary) */
 .alert-primary {
     --bs-alert-color: var(

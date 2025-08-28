@@ -468,7 +468,7 @@ class DataView extends View {
     }
 
     // Apply formatting using DataFormatter pipe system if specified
-    if (field.format && value != null) {
+    if (field.format) {
       value = dataFormatter.pipe(value, field.format);
     }
 
@@ -491,7 +491,7 @@ class DataView extends View {
       return 'col-12';
     }
 
-    const colSize = field.colSize || field.cols || Math.floor(12 / this.dataViewOptions.columns);
+    const colSize = field.columns || field.colSize || field.cols || Math.floor(12 / this.dataViewOptions.columns);
 
     if (this.dataViewOptions.responsive) {
       // Responsive breakpoints: 1 column on small, configured on larger screens
@@ -572,11 +572,25 @@ class DataView extends View {
       return this.dataViewOptions.emptyValueText;
     }
 
-    // If user specified a custom format, respect it completely
-    // Only apply DataView's special HTML formatting when NO custom format is provided
+    // If a custom format is specified, we trust the DataFormatter.
+    // However, we must determine if the output is intended to be HTML or plain text.
     if (field.format) {
-      // Custom format was applied - trust DataFormatter completely
-      // Just escape and return the formatted value
+      // A list of formatters known to produce safe HTML output.
+      const htmlSafeFormatters = [
+        'badge', 'email', 'url', 'icon', 'status',
+        'image', 'avatar', 'phone', 'highlight'
+      ];
+
+      // Parse the pipe string to find the last formatter applied.
+      const pipes = dataFormatter.parsePipeString(field.format);
+      const lastFormatter = pipes.length > 0 ? pipes[pipes.length - 1].name.toLowerCase() : null;
+
+      // If the last formatter is in our safe list, render the HTML directly.
+      if (lastFormatter && htmlSafeFormatters.includes(lastFormatter)) {
+        return String(value);
+      }
+
+      // Otherwise, escape the output for security.
       return this.escapeHtml(String(value));
     }
 

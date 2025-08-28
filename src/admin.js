@@ -124,7 +124,6 @@ export function registerAdminPages(app, addToMenu = true) {
                         },
                     ]
                 },
-
                 {
                     text: 'Security',
                     route: null,

@@ -66,6 +66,7 @@ class TablePage extends Page {
       bordered: options.bordered !== undefined ? options.bordered : false,
       hover: options.hover !== undefined ? options.hover : true,
       preloaded: options.preloaded !== undefined ? options.preloaded : false,
+      viewDialogOptions: options.viewDialogOptions || {},
       ...options.tableOptions
     };
 
