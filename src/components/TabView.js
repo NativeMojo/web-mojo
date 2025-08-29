@@ -55,7 +55,7 @@ class TabView extends View {
 
     // Responsive configuration
     this.dropdownStyle = dropdownStyle || 'select'; // 'button' or 'select'
-    this.minWidth = minWidth || 768; // Minimum width before switching to dropdown
+    this.minWidth = minWidth || 300; // Minimum width before switching to dropdown
     this.enableResponsive = enableResponsive !== false; // Default to enabled
     this.tabPadding = tabPadding || 80; // Estimated padding per tab (16px * 2)
     this.currentMode = 'tabs'; // 'tabs' or 'dropdown'

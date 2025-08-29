@@ -45,6 +45,8 @@
     --bs-info-text-emphasis: #174ea6;
     --bs-warning-text-emphasis: #b06000;
     --bs-danger-text-emphasis: #a50e0e;
+
+    --bs-btn-hover-bg: #e8f0fe;
 }
 
 :root[data-bs-theme="ocean"] {

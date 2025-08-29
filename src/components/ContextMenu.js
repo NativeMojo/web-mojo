@@ -65,7 +65,7 @@ class ContextMenu extends View {
         }
 
         const triggerIcon = this.config.icon || 'bi-three-dots-vertical';
-        const buttonClass = this.config.buttonClass || 'btn btn-sm btn-link text-secondary p-0';
+        const buttonClass = this.config.buttonClass || 'btn btn-link text-secondary ps-3 pe-0 pt-0 pb-1';
         const dropdownId = `context-menu-${this.id}`;
 
         const menuItemsHtml = menuItems.map(item => this.buildMenuItemHTML(item)).join('');

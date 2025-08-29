@@ -85,9 +85,6 @@ class Table extends View {
       ...options
     };
 
-
-    // Event listeners
-    this.listeners = {};
     this.rowActions = options.rowActions || [];
 
     this.initCollection();
@@ -1646,6 +1643,10 @@ class Table extends View {
   async onItemClicked(item, event, target) {
     console.log('Item clicked:', item);
 
+    if (item.constructor.VIEW_CLASS && !this.itemViewClass) {
+        this.itemViewClass = item.constructor.VIEW_CLASS;
+    }
+
     // Check if itemViewClass is explicitly set
     if (this.itemViewClass) {
       const viewInstance = new this.itemViewClass({ model: item });
@@ -2332,43 +2333,6 @@ class Table extends View {
   showSuccess(message) {
     console.log('Table success:', message);
     // Could be enhanced with toast notifications
-  }
-
-  /**
-   * Emit custom event
-   * @param {string} event - Event name
-   * @param {object} data - Event data
-   */
-  emit(event, data) {
-    if (this.listeners[event]) {
-      this.listeners[event].forEach(callback => callback(data));
-    }
-  }
-
-  /**
-   * Add event listener
-   * @param {string} event - Event name
-   * @param {function} callback - Event callback
-   */
-  on(event, callback) {
-    if (!this.listeners[event]) {
-      this.listeners[event] = [];
-    }
-    this.listeners[event].push(callback);
-  }
-
-  /**
-   * Remove event listener
-   * @param {string} event - Event name
-   * @param {function} callback - Event callback
-   */
-  off(event, callback) {
-    if (this.listeners[event]) {
-      const index = this.listeners[event].indexOf(callback);
-      if (index !== -1) {
-        this.listeners[event].splice(index, 1);
-      }
-    }
   }
 
   /**
