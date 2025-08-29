@@ -46,6 +46,7 @@ class DataFormatter {
     this.register('lowercase', (v) => String(v).toLowerCase());
     this.register('capitalize', this.capitalize.bind(this));
     this.register('truncate', this.truncate.bind(this));
+    this.register('truncate_middle', this.truncate_middle.bind(this));
     this.register('slug', this.slug.bind(this));
     this.register('initials', this.initials.bind(this));
     this.register('mask', this.mask.bind(this));
@@ -597,6 +598,26 @@ class DataFormatter {
   }
 
   /**
+   * Truncate string in the middle
+   * @param {*} value - String value
+   * @param {number} size - The total number of characters to keep (half for the start, half for the end).
+   * @param {string} replace - The character(s) to use for the middle part.
+   * @returns {string} Truncated string
+   */
+  truncate_middle(value, size = 8, replace = '***') {
+    const str = String(value);
+    if (str.length <= size) {
+      return str;
+    }
+
+    const halfSize = Math.floor(size / 2);
+    const front = str.substring(0, halfSize);
+    const back = str.substring(str.length - halfSize);
+
+    return `${front}${replace}${back}`;
+  }
+
+  /**
    * Create slug from string
    * @param {*} value - String value
    * @param {string} separator - Word separator
@@ -842,7 +863,7 @@ class DataFormatter {
    * @param {string} alt - Alt text for the avatar
    * @returns {string} Bootstrap avatar HTML
    */
-  avatar(value, size = 'md', classes = '', alt = '') {
+  avatar(value, size = 'md', classes = 'rounded-circle', alt = '') {
     const url = this._extractImageUrl(value, 'square_sm') || GENERIC_AVATAR_SVG;
 
     // Bootstrap avatar sizing
@@ -855,7 +876,7 @@ class DataFormatter {
     };
 
     const sizeStyle = sizeClasses[size] || sizeClasses['md'];
-    const baseClasses = 'rounded-circle object-fit-cover';
+    const baseClasses = 'object-fit-cover';
     const allClasses = `${baseClasses} ${classes}`.trim();
 
     return `<img src="${url}" class="${allClasses}" style="${sizeStyle}" alt="${alt}" />`;

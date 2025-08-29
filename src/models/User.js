@@ -104,7 +104,7 @@ const UserDataView = {
                 label: 'Last Login',
                 type: 'datetime',
                 format: 'relative',
-                columns: 6
+                columns: 3
             },
             {
                 name: 'last_activity',
@@ -296,4 +296,54 @@ const UserDataView = {
 
 User.VIEW = UserDataView.detailed;
 
-export { User, UserList, UserForms, UserDataView };
+/* =========================
+ * UserDevice
+ * ========================= */
+class UserDevice extends Model {
+    constructor(data = {}) {
+        super(data, {
+            endpoint: '/api/user/device',
+        });
+    }
+
+    static async getByDuid(duid) {
+        const model = new UserDevice();
+        const resp = await model.rest.GET('/api/user/device/lookup', { duid: duid });
+        if (resp.success && resp.data && resp.data.data) {
+            // A direct lookup should return a single object
+            return new UserDevice(resp.data.data);
+        }
+        return null;
+    }
+}
+
+class UserDeviceList extends Collection {
+    constructor(options = {}) {
+        super(UserDevice, {
+            endpoint: '/api/user/device',
+            ...options,
+        });
+    }
+}
+
+/* =========================
+ * UserDeviceLocation
+ * ========================= */
+class UserDeviceLocation extends Model {
+    constructor(data = {}) {
+        super(data, {
+            endpoint: '/api/user/device/location',
+        });
+    }
+}
+
+class UserDeviceLocationList extends Collection {
+    constructor(options = {}) {
+        super(UserDeviceLocation, {
+            endpoint: '/api/user/device/location',
+            ...options,
+        });
+    }
+}
+
+export { User, UserList, UserForms, UserDataView, UserDevice, UserDeviceList, UserDeviceLocation, UserDeviceLocationList };

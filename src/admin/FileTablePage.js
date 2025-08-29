@@ -6,7 +6,7 @@
 import TablePage from '../components/TablePage.js';
 import { File, FileList, FileForms } from '../models/Files.js';
 import applyFileDropMixin from '../components/FileDropMixin.js';
-import FileView from '../components/FileView.js';
+import FileView from './views/FileView.js';
 
 class FileTablePage extends TablePage {
     constructor(options = {}) {
@@ -19,6 +19,10 @@ class FileTablePage extends TablePage {
             formCreate: FileForms.create,
             formEdit: FileForms.edit,
             itemViewClass: FileView,
+            viewDialogOptions: {
+                header: false,
+                size: 'xl'
+            },
 
             // Column definitions
             columns: [
@@ -95,6 +99,17 @@ class FileTablePage extends TablePage {
             multiple: false,
             validateOnDrop: true
         });
+    }
+
+    async onItemView(item, mode, event, target) {
+        const dialog = await super.onItemView(item, mode, event, target);
+        if (dialog && dialog.bodyView) {
+            dialog.bodyView.on('file:deleted', () => {
+                dialog.hide();
+                this.refreshTable();
+            });
+        }
+        return dialog;
     }
 
     async onFileDrop(files, event, validation) {

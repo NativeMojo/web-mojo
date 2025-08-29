@@ -28,10 +28,10 @@ export { default as Dialog } from './components/Dialog.js';
 export { default as TopNav } from './components/TopNav.js';
 export { default as Sidebar } from './components/Sidebar.js';
 export { default as MainContent } from './components/MainContent.js';
-export { FormBuilder } from './components/FormBuilder.js';
-export { default as FormView } from './components/FormView.js';
-export { DataView } from './components/DataView.js';
-export { TabView } from './components/TabView.js';
+export { FormBuilder } from './forms/FormBuilder.js';
+export { default as FormView } from './forms/FormView.js';
+export { default as DataView } from './components/DataView.js';
+export { default as TabView } from './components/TabView.js';
 
 // Utilities
 export { default as EventBus } from './utils/EventBus.js';

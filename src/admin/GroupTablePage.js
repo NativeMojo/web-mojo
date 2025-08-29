@@ -1,12 +1,13 @@
 
 import TablePage from '../components/TablePage.js';
 import {GroupList, GroupForms} from '../models/Group.js';
+import GroupView from './views/GroupView.js';
 
 class GroupTablePage extends TablePage {
     constructor(options = {}) {
         super({
             ...options,
-            name: 'admin_users',
+            name: 'admin_groups',
             pageName: 'Manage Groups',
             router: "admin/groups",
             Collection: GroupList,
@@ -20,6 +21,11 @@ class GroupTablePage extends TablePage {
                     width: '60px',
                     sortable: true,
                     class: 'text-muted'
+                },
+                {
+                    label: 'Avatar',
+                    key: 'avatar|avatar("sm", "rounded")',
+                    sortable: false
                 },
                 {
                     key: 'kind',
@@ -60,9 +66,11 @@ class GroupTablePage extends TablePage {
             tableOptions: {
                 pageSizes: [5, 10, 25, 50],
                 defaultPageSize: 10,
-                emptyMessage: 'No todos found. Click "Add Todo" to create your first task.',
-                emptyIcon: 'bi-inbox',
+                emptyMessage: 'No groups found. Click "Add Group" to create your first one.',
+                emptyIcon: 'bi-diagram-3',
                 actions: ["edit", "view"],
+                itemViewClass: GroupView,
+                viewDialogOptions: { header: false },
                 batchActions: [
                   { label: "Delete", icon: "bi bi-trash", action: "batch_delete" },
                   { label: "Export", icon: "bi bi-download", action: "batch_export" },

@@ -5,6 +5,7 @@
 
 import TablePage from '../components/TablePage.js';
 import { Log, LogList } from '../models/Log.js';
+import LogView from './views/LogView.js';
 
 class LogTablePage extends TablePage {
     constructor(options = {}) {
@@ -14,9 +15,11 @@ class LogTablePage extends TablePage {
             pageName: 'Manage Logs',
             router: "admin/logs",
             Collection: LogList,
-            // Note: Log model doesn't have forms defined
-            // formCreate: LogForms.create,
-            // formEdit: LogForms.edit,
+            itemViewClass: LogView,
+            viewDialogOptions: {
+                header: false,
+                size: 'xl'
+            },
 
             // Column definitions
             columns: [
@@ -41,6 +44,7 @@ class LogTablePage extends TablePage {
                     key: 'level',
                     label: 'Level',
                     sortable: true,
+                    formatter: 'badge',
                     filter: {
                         type: 'select',
                         options: [
@@ -53,10 +57,6 @@ class LogTablePage extends TablePage {
                 {
                     key: 'kind',
                     label: 'Kind',
-                    filter: {
-                        type: 'select',
-                        options: ["org", "iso", "group", "test"]
-                    }
                 },
                 {
                     key: 'method',
@@ -89,6 +89,7 @@ class LogTablePage extends TablePage {
                 {
                     key: 'duid',
                     label: 'Browser ID',
+                    formatter: 'truncate_middle(16)',
                     filter: {
                         type: "text"
                     }
@@ -102,81 +103,6 @@ class LogTablePage extends TablePage {
             filterable: true,
             paginated: true,
 
-            // Additional filters not tied to columns
-            filters: [
-                {
-                    name: 'user_search',
-                    label: 'User Search',
-                    type: 'text',
-                    placeholder: 'Search username, email, or session...',
-                    help: 'Search across username and email fields',
-                    columns: 6
-                },
-                {
-                    name: 'ip_range',
-                    label: 'IP Address',
-                    type: 'text',
-                    placeholder: '192.168.1.0/24 or specific IP',
-                    help: 'CIDR notation or specific IP address',
-                    columns: 6
-                },
-                {
-                    name: 'session_timeframe',
-                    label: 'Session Duration',
-                    type: 'daterange',
-                    startName: 'session_start',
-                    endName: 'session_end',
-                    outputFormat: 'epoch',
-                    displayFormat: 'MMM DD, YYYY HH:mm',
-                    separator: ' through ',
-                    help: 'Filter by session time range',
-                    columns: 12
-                },
-                {
-                    name: 'advanced_search',
-                    label: 'Advanced Search',
-                    type: 'form',
-                    fields: [
-                        {
-                            type: 'text',
-                            name: 'request_id',
-                            label: 'Request ID',
-                            placeholder: 'req_123456...',
-                            columns: 6
-                        },
-                        {
-                            type: 'text',
-                            name: 'correlation_id',
-                            label: 'Correlation ID',
-                            placeholder: 'corr_abcdef...',
-                            columns: 6
-                        },
-                        {
-                            type: 'select',
-                            name: 'severity',
-                            label: 'Severity Level',
-                            options: [
-                                { value: '', text: 'All Severities' },
-                                { value: 'critical', text: 'Critical' },
-                                { value: 'high', text: 'High' },
-                                { value: 'medium', text: 'Medium' },
-                                { value: 'low', text: 'Low' }
-                            ],
-                            columns: 4
-                        },
-                        {
-                            type: 'tags',
-                            name: 'event_tags',
-                            label: 'Event Tags',
-                            options: ['auth', 'api', 'database', 'cache', 'security', 'performance'],
-                            placeholder: 'Select event tags...',
-                            columns: 8
-                        }
-                    ],
-                    help: 'Complex multi-field search across log metadata'
-                }
-            ],
-
             // TablePage toolbar
             showRefresh: true,
             showAdd: false, // Logs are typically not manually created
@@ -188,7 +114,7 @@ class LogTablePage extends TablePage {
                 defaultPageSize: 25,
                 emptyMessage: 'No log entries found.',
                 emptyIcon: 'bi-journal-text',
-                actions: ["view", "details"],
+                actions: ["view"],
                 batchActions: [
                     { label: "Export", icon: "bi bi-download", action: "batch_export" },
                     { label: "Archive", icon: "bi bi-archive", action: "batch_archive" },
@@ -201,6 +127,17 @@ class LogTablePage extends TablePage {
                 defaultSort: { key: 'timestamp', direction: 'desc' }
             }
         });
+    }
+
+    async onItemView(item, mode, event, target) {
+        const dialog = await super.onItemView(item, mode, event, target);
+        if (dialog && dialog.bodyView) {
+            dialog.bodyView.on('log:deleted', () => {
+                dialog.hide();
+                this.refreshTable();
+            });
+        }
+        return dialog;
     }
 }
 

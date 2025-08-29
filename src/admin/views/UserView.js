@@ -13,10 +13,11 @@ import TabView from '../../components/TabView.js';
 import DataView from '../../components/DataView.js';
 import Table from '../../components/Table.js';
 import ContextMenu from '../../components/ContextMenu.js';
-import { User, UserDataView } from '../../models/User.js';
+import { User, UserDataView, UserForms, UserDeviceList, UserDeviceLocationList } from '../../models/User.js';
 import { LogList } from '../../models/Log.js';
 import { IncidentEventList } from '../../models/Incident.js';
 import { MemberList } from '../../models/Member.js';
+import Dialog from '../../components/Dialog.js';
 
 class UserView extends View {
     constructor(options = {}) {
@@ -39,10 +40,10 @@ class UserView extends View {
         this.template = `
             <div class="user-view-container">
                 <!-- User Header -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex justify-content-between align-items-start mb-4">
                     <!-- Left Side: Primary Identity -->
                     <div class="d-flex align-items-center gap-3">
-                        {{{model.avatar|avatar(80,'rounded-circle')}}}
+                        {{{model.avatar|avatar('md','rounded-circle')}}}
                         <div>
                             <h3 class="mb-0">{{model.display_name|default('Unnamed User')}}</h3>
                             <a href="mailto:{{model.email}}" class="text-decoration-none text-body">{{model.email}}</a>
@@ -53,7 +54,7 @@ class UserView extends View {
                     </div>
 
                     <!-- Right Side: Status & Actions -->
-                    <div class="d-flex align-items-center gap-4">
+                    <div class="d-flex align-items-start gap-4">
                         <div class="text-end">
                             <div class="d-flex align-items-center gap-2">
                                 <i class="bi bi-circle-fill fs-8 {{model.is_active|boolean('text-success','text-secondary')}}"></i>
@@ -84,7 +85,7 @@ class UserView extends View {
 
         // Create Groups table with MemberList collection
         const membersCollection = new MemberList({
-            params: { user: this.model.get('id') }
+            params: { user: this.model.get('id'), size: 5 }
         });
         this.groupsView = new Table({
             title: 'User Groups',
@@ -107,37 +108,45 @@ class UserView extends View {
                     label: 'Permissions'
                 }
 
-            ],
-            pageSize: 10
+            ]
         });
 
         // Create Events table with IncidentEventList collection
         const eventsCollection = new IncidentEventList({
-            filters: { user_id: this.model.get('id') }
+            params: {
+                size: 5,
+                model_name: "account.User",
+                model_id: this.model.get('id')
+            }
         });
         this.eventsView = new Table({
             title: 'System Events',
             collection: eventsCollection,
+            hideActivePillNames: ['model_name', 'model_id'],
             columns: [
                 {
-                    name: 'created_at',
+                    key: 'id',
+                    label: 'ID',
+                    sortable: true,
+                    width: '40px'
+                },
+                {
+                    key: 'created',
                     label: 'Date',
                     formatter: 'datetime',
                     sortable: true,
                     width: '150px'
                 },
                 {
-                    name: 'category',
-                    label: 'Type',
-                    formatter: 'badge',
-                    width: '120px'
+                    key: 'category|badge',
+                    label: 'Category'
                 },
                 {
-                    name: 'description',
-                    label: 'Description'
+                    key: 'title',
+                    label: 'Title'
                 },
                 {
-                    name: 'actions',
+                    key: 'actions',
                     label: 'Actions',
                     width: '100px',
                     template: `
@@ -146,52 +155,166 @@ class UserView extends View {
                         </button>
                     `
                 }
-            ],
-            pageSize: 10
+            ]
         });
+
+        const userDevices = new UserDeviceList({
+            params: {
+                size: 5,
+                user: this.model.get('id')
+            }
+        });
+        this.devicesView = new Table({
+            title: 'Devices',
+            collection: userDevices,
+            hideActivePillNames: ['user'],
+            columns: [
+                { key: 'duid|truncate_middle(16)', label: 'Device ID', sortable: true },
+                { key: 'device_info.user_agent.family', label: 'Browser', formatter: "default('—')" },
+                { key: 'device_info.os.family', label: 'OS', formatter: "default('—')" },
+                { key: 'first_seen', label: 'First Seen', formatter: "epoch|datetime" },
+                { key: 'last_seen', label: 'Last Seen', formatter: "epoch|datetime" }
+            ],
+            size: 5
+        });
+
+
+        const userLocations = new UserDeviceLocationList({
+            params: {
+                size: 5,
+                user: this.model.get('id')
+            }
+        });
+        this.locationsView = new Table({
+            title: 'Locations',
+            collection: userLocations,
+
+            hideActivePillNames: ['user'],
+            columns: [
+                { key: 'user_device', label: 'Device', template: '{{user_device.device_info.user_agent.family}} on {{user_device.device_info.os.family}}', sortable: true },
+                { key: 'geolocation.city', label: 'City', formatter: "default('—')" },
+                { key: 'geolocation.region', label: 'Region', formatter: "default('—')" },
+                { key: 'geolocation.country_name', label: 'Country', formatter: "default('—')" },
+                { key: 'last_seen', label: 'Last Seen', formatter: "epoch|datetime" }
+            ],
+            size: 5
+        });
+
+
 
         // Create Logs table with LogList collection
         const logsCollection = new LogList({
-            filters: { user_id: this.model.get('id') }
+            params: {
+                size: 5,
+                model_name: "account.User",
+                model_id: this.model.get('id')
+            }
         });
         this.logsView = new Table({
-            title: 'Activity Logs',
+            title: 'Logs',
             collection: logsCollection,
+            permissions: 'view_logs',
+            hideActivePillNames: ['model_name', 'model_id'],
             columns: [
                 {
-                    name: 'timestamp',
-                    label: 'Time',
-                    formatter: 'datetime',
+                    key: 'created',
+                    label: 'Timestamp',
                     sortable: true,
-                    width: '150px'
+                    formatter: "epoch|datetime",
+                    filter: {
+                        name: "created",
+                        type: 'daterange',
+                        startName: 'dr_start',
+                        endName: 'dr_end',
+                        fieldName: 'dr_field',
+                        label: 'Date Range',
+                        format: 'YYYY-MM-DD',
+                        displayFormat: 'MMM DD, YYYY',
+                        separator: ' to '
+                    }
                 },
                 {
-                    name: 'action',
-                    label: 'Action',
-                    formatter: 'capitalize',
-                    width: '120px'
+                    key: 'level',
+                    label: 'Level',
+                    sortable: true,
+                    filter: {
+                        type: 'select',
+                        options: [
+                            { value: 'info', label: 'Info' },
+                            { value: 'warning', label: 'Warning' },
+                            { value: 'error', label: 'Error' }
+                        ]
+                    }
                 },
                 {
-                    name: 'ip_address',
-                    label: 'IP Address',
-                    width: '120px'
+                    key: 'kind',
+                    label: 'Kind',
+                    filter: {
+                        type: 'text'
+                    }
                 },
                 {
-                    name: 'details',
-                    label: 'Details'
-                },
-                {
-                    name: 'actions',
-                    label: 'Actions',
-                    width: '100px',
-                    template: `
-                        <button class="btn btn-sm btn-outline-primary" data-action="view-log" data-id="{{id}}">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                    `
+                    name: 'log',
+                    label: 'Log',
                 }
-            ],
-            pageSize: 10
+            ]
+        });
+
+        // Create Logs table with LogList collection
+        const activityCollection = new LogList({
+            params: {
+                size: 5,
+                uid: this.model.get('id')
+            }
+        });
+        this.activityView = new Table({
+            title: 'Activity',
+            collection: activityCollection,
+            hideActivePillNames: ['uid'],
+            permissions: 'view_logs',
+            columns: [
+                {
+                    key: 'created',
+                    label: 'Timestamp',
+                    sortable: true,
+                    formatter: "epoch|datetime",
+                    filter: {
+                        name: "created",
+                        type: 'daterange',
+                        startName: 'dr_start',
+                        endName: 'dr_end',
+                        fieldName: 'dr_field',
+                        label: 'Date Range',
+                        format: 'YYYY-MM-DD',
+                        displayFormat: 'MMM DD, YYYY',
+                        separator: ' to '
+                    }
+                },
+                {
+                    key: 'level',
+                    label: 'Level',
+                    sortable: true,
+                    filter: {
+                        type: 'select',
+                        options: [
+                            { value: 'info', label: 'Info' },
+                            { value: 'warning', label: 'Warning' },
+                            { value: 'error', label: 'Error' }
+                        ]
+                    }
+                },
+                {
+                    key: 'kind',
+                    label: 'Kind',
+                    filter: {
+                        type: 'text'
+                    }
+                },
+                {
+                    name: 'path',
+                    label: 'Path',
+                }
+            ]
         });
 
         // Create TabView with all tabs and responsive behavior
@@ -200,7 +323,10 @@ class UserView extends View {
                 'Profile': this.profileView,
                 'Groups': this.groupsView,
                 'Events': this.eventsView,
-                'Logs': this.logsView
+                'Logs': this.logsView,
+                'Activity': this.activityView,
+                "Devices": this.devicesView,
+                "Locations": this.locationsView
             },
             activeTab: 'Profile',
             containerId: 'user-tabs',
@@ -224,19 +350,26 @@ class UserView extends View {
                     this.model.get('is_active')
                         ? { label: 'Deactivate User', action: 'deactivate-user', icon: 'bi-person-dash' }
                         : { label: 'Activate User', action: 'activate-user', icon: 'bi-person-check' },
-                    { type: 'divider' },
-                    { label: 'Delete User', action: 'delete-user', icon: 'bi-trash', danger: true }
                 ]
             }
         });
         this.addChild(userMenu);
     }
 
-    async onActionEditUser() { console.log("TODO: edit user") }
+    async onActionEditUser() {
+        let frmConfig = UserForms.edit;
+        const resp = await Dialog.showModelForm({
+            title: `EDIT - #${this.model.id} ${this.options.modelName}`,
+            model: this.model,
+            formConfig: frmConfig,
+        });
+        if (resp) {
+            this.render();
+        }
+    }
     async onActionResetPassword() { console.log("TODO: reset password") }
     async onActionDeactivateUser() { console.log("TODO: deactivate user") }
     async onActionActivateUser() { console.log("TODO: activate user") }
-    async onActionDeleteUser() { console.log("TODO: delete user") }
 
 
 

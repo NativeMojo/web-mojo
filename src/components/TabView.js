@@ -45,7 +45,7 @@ class TabView extends View {
     });
 
     // Tab configuration
-    this.tabs = tabs || {};
+    this.tabs = {};
     this.tabLabels = Object.keys(this.tabs);
     this.activeTab = activeTab || this.tabLabels[0] || null;
 
@@ -54,7 +54,7 @@ class TabView extends View {
     this.contentClass = contentClass || 'tab-content';
 
     // Responsive configuration
-    this.dropdownStyle = dropdownStyle || 'button'; // 'button' or 'select'
+    this.dropdownStyle = dropdownStyle || 'select'; // 'button' or 'select'
     this.minWidth = minWidth || 768; // Minimum width before switching to dropdown
     this.enableResponsive = enableResponsive !== false; // Default to enabled
     this.tabPadding = tabPadding || 80; // Estimated padding per tab (16px * 2)
@@ -79,7 +79,7 @@ class TabView extends View {
     }
 
     // Initialize tabs by adding them as child views
-    for (const [label, view] of Object.entries(this.tabs)) {
+    for (const [label, view] of Object.entries(tabs)) {
         this.addTab(label, view);
     }
 
@@ -551,6 +551,10 @@ class TabView extends View {
   async addTab(label, view, makeActive = false) {
     if (this.tabs[label]) {
       console.warn(`TabView: Tab "${label}" already exists`);
+      return false;
+    }
+
+    if (view.options.permissions && !this.getApp().activeUser.hasPerm(view.options.permissions)) {
       return false;
     }
 

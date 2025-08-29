@@ -10,6 +10,12 @@ import DataView from '../components/DataView.js';
 
 
 class Dialog extends View {
+  static _openDialogs = [];
+  static _baseZIndex = {
+    backdrop: 1050,
+    modal: 1055
+  };
+
   constructor(options = {}) {
     // Generate unique ID if not provided
     const modalId = options.id || `modal-${Date.now()}`;
@@ -733,6 +739,21 @@ class Dialog extends View {
   bindBootstrapEvents() {
     // show.bs.modal
     this.element.addEventListener('show.bs.modal', (e) => {
+      // Manage stacking for multiple dialogs
+      const stackIndex = Dialog._openDialogs.length;
+      const newZIndex = Dialog._baseZIndex.modal + (stackIndex * 20);
+      this.element.style.zIndex = newZIndex;
+      Dialog._openDialogs.push(this);
+
+      // Adjust backdrop z-index after a short delay to ensure it exists
+      setTimeout(() => {
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        const backdrop = backdrops[backdrops.length - 1]; // Get the latest one
+        if (backdrop) {
+          backdrop.style.zIndex = newZIndex - 5;
+        }
+      }, 0);
+
       if (this.onShow) this.onShow(e);
       this.emit('show', {
         dialog: this,
@@ -777,6 +798,29 @@ class Dialog extends View {
 
     // hidden.bs.modal
     this.element.addEventListener('hidden.bs.modal', (e) => {
+      // Manage stacking
+      const index = Dialog._openDialogs.indexOf(this);
+      if (index > -1) {
+        Dialog._openDialogs.splice(index, 1);
+      }
+
+      // If there are still modals open, ensure body has modal-open class
+      // and the top backdrop is correctly layered.
+      if (Dialog._openDialogs.length > 0) {
+        document.body.classList.add('modal-open');
+
+        const topDialog = Dialog._openDialogs[Dialog._openDialogs.length - 1];
+        const topZIndex = parseInt(topDialog.element.style.zIndex, 10);
+
+        setTimeout(() => { // Let Bootstrap finish its hide animation
+          const backdrops = document.querySelectorAll('.modal-backdrop');
+          const backdrop = backdrops[backdrops.length - 1];
+          if (backdrop) {
+            backdrop.style.zIndex = topZIndex - 5;
+          }
+        }, 0);
+      }
+
       // Restore focus to the element that had it before modal opened
       if (this.previousFocus && document.body.contains(this.previousFocus)) {
         this.previousFocus.focus();

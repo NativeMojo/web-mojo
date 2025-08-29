@@ -19,6 +19,10 @@ import EmailDomainTablePage from './admin/EmailDomainTablePage.js';
 import EmailMailboxTablePage from './admin/EmailMailboxTablePage.js';
 import SentMessageTablePage from './admin/SentMessageTablePage.js';
 import EmailTemplateTablePage from './admin/EmailTemplateTablePage.js';
+import UserDeviceTablePage from './admin/UserDeviceTablePage.js';
+import UserDeviceLocationTablePage from './admin/UserDeviceLocationTablePage.js';
+import GeoLocatedIPTablePage from './admin/GeoLocatedIPTablePage.js';
+import EventTablePage from './admin/EventTablePage.js';
 import TablePage from './components/TablePage.js';
 
 // Re-export all admin pages
@@ -37,6 +41,10 @@ export {
     EmailMailboxTablePage,
     SentMessageTablePage,
     EmailTemplateTablePage,
+    UserDeviceTablePage,
+    UserDeviceLocationTablePage,
+    GeoLocatedIPTablePage,
+    EventTablePage,
     TablePage
 };
 
@@ -56,7 +64,11 @@ export function registerAdminPages(app, addToMenu = true) {
     app.registerPage('admin/filemanagers', FileManagerTablePage, {permissions: ["manage_files"]});
     app.registerPage('admin/files', FileTablePage, {permissions: ["manage_files"]});
     app.registerPage('admin/incidents', IncidentTablePage, {permissions: ["view_incidents"]});
+    app.registerPage('admin/events', EventTablePage, {permissions: ["view_incidents"]});
     app.registerPage('admin/logs', LogTablePage, {permissions: ["view_logs"]});
+    app.registerPage('admin/user/devices', UserDeviceTablePage, {permissions: ["manage_users"]});
+    app.registerPage('admin/user/device-locations', UserDeviceLocationTablePage, {permissions: ["manage_users"]});
+    app.registerPage('admin/system/geoip', GeoLocatedIPTablePage, {permissions: ["manage_users"]});
     app.registerPage('admin/email/mailboxes', EmailMailboxTablePage, {permissions: ["manage_aws"]});
     app.registerPage('admin/email/domains', EmailDomainTablePage, {permissions: ["manage_aws"]});
     app.registerPage('admin/email/sent', SentMessageTablePage, {permissions: ["manage_aws"]});
@@ -139,8 +151,8 @@ export function registerAdminPages(app, addToMenu = true) {
                         {
                             text: 'Events',
                             route: '?page=admin/events',
-                            icon: 'bi-exclamation-triangle',
-                            permissions: ["manage_groups"]
+                            icon: 'bi-bell',
+                            permissions: ["view_incidents"]
                         },
                         {
                             text: 'Logs',
@@ -148,6 +160,24 @@ export function registerAdminPages(app, addToMenu = true) {
                             icon: 'bi-journal-text',
                             permissions: ["view_logs"]
                         },
+                        {
+                            text: 'User Devices',
+                            route: '?page=admin/user/devices',
+                            icon: 'bi-phone',
+                            permissions: ["manage_users"]
+                        },
+                        {
+                            text: 'Device Locations',
+                            route: '?page=admin/user/device-locations',
+                            icon: 'bi-geo-alt',
+                            permissions: ["manage_users"]
+                        },
+                        {
+                            text: 'GeoIP Cache',
+                            route: '?page=admin/system/geoip',
+                            icon: 'bi-globe',
+                            permissions: ["manage_users"]
+                        }
                     ]
                 },
 
@@ -191,5 +221,5 @@ export function registerAdminPages(app, addToMenu = true) {
         }
     }
 
-    console.log('Registered 14 admin pages to WebApp');
+    console.log('Registered 18 admin pages to WebApp');
 }

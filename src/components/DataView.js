@@ -477,7 +477,52 @@ class DataView extends View {
       return this.dataViewOptions.showEmptyValues ? this.dataViewOptions.emptyValueText : null;
     }
 
+    // Apply template if provided
+    if (field.template) {
+      const modelData = this.model ? this.model : this.data;
+      return this.renderTemplateString(field.template, modelData);
+    }
+
     return value;
+  }
+
+  /**
+   * Render a template string with data from a model or object.
+   * Replaces {{key}} and {{nested.key}} placeholders.
+   * @param {string} templateString - The template string.
+   * @param {object} data - The data object or model.
+   * @returns {string} The rendered string.
+   */
+  renderTemplateString(templateString, data) {
+    if (!templateString || !data) {
+      return '';
+    }
+
+    // Regex to find all {{...}} placeholders
+    return templateString.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
+      const trimmedKey = key.trim();
+      let value;
+
+      // Handle potential formatters in the template key
+      const parts = trimmedKey.split('|');
+      const dataKey = parts[0];
+      const formatters = parts.slice(1).join('|');
+
+      // Get value from model or plain object
+      if (this.model && typeof this.model.get === 'function') {
+        value = this.model.get(dataKey);
+      } else {
+        // Handle nested keys for plain objects
+        value = dataKey.split('.').reduce((o, i) => (o ? o[i] : undefined), data);
+      }
+
+      // Apply formatters if any
+      if (formatters) {
+        value = dataFormatter.pipe(value, formatters);
+      }
+
+      return value !== undefined && value !== null ? value : '';
+    });
   }
 
   /**
@@ -570,6 +615,11 @@ class DataView extends View {
   formatDisplayValue(value, field) {
     if (value === null || value === undefined) {
       return this.dataViewOptions.emptyValueText;
+    }
+
+    // If a template was used, the value is already the final HTML. Return it directly.
+    if (field.template) {
+      return String(value);
     }
 
     // If a custom format is specified, we trust the DataFormatter.

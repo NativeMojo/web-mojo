@@ -11,13 +11,58 @@ class Rest {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      }
+      },
+      trackDevice: true, // New setting to control DUID tracking
+      duidHeader: 'X-Mojo-UID', // Header name for the DUID
+      duidTransport: 'header' // How to send the DUID: 'payload' or 'header'
     };
 
     this.interceptors = {
       request: [],
       response: []
     };
+
+    this.duid = null;
+    if (this.config.trackDevice) {
+      this._initializeDuid();
+    }
+  }
+
+  /**
+   * Initialize or generate the Device Unique ID (DUID)
+   * @private
+   */
+  _initializeDuid() {
+    const storageKey = 'mojo_device_uid';
+    try {
+      let storedDuid = localStorage.getItem(storageKey);
+      if (storedDuid) {
+        this.duid = storedDuid;
+      } else {
+        this.duid = this._generateDuid();
+        localStorage.setItem(storageKey, this.duid);
+      }
+    } catch (e) {
+      console.error("Could not access localStorage to get/set DUID.", e);
+      // Use a non-persistent DUID as a fallback
+      this.duid = this._generateDuid();
+    }
+  }
+
+  /**
+   * Generate a new DUID (UUID v4)
+   * @private
+   * @returns {string} A new UUID
+   */
+  _generateDuid() {
+    if (crypto && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    // Fallback for older browsers
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
   }
 
   /**
@@ -26,6 +71,8 @@ class Rest {
    */
   configure(config) {
     if (config.baseUrl) config.baseURL = config.baseUrl;
+    const oldTrackDevice = this.config.trackDevice;
+
     this.config = {
       ...this.config,
       ...config,
@@ -35,6 +82,10 @@ class Rest {
       }
     };
 
+    // Initialize DUID if tracking is newly enabled
+    if (this.config.trackDevice && !oldTrackDevice) {
+      this._initializeDuid();
+    }
   }
 
   /**
@@ -82,21 +133,21 @@ class Rest {
         message: 'Service is not reachable - please check your connection'
       };
     }
-    
+
     if (error.name === 'AbortError') {
       return {
         reason: 'cancelled',
         message: 'Request was cancelled'
       };
     }
-    
+
     if (error.name === 'TimeoutError' || error.message.includes('timeout')) {
       return {
         reason: 'timed_out',
         message: 'Request timed out - please try again'
       };
     }
-    
+
     // HTTP status-based categorization
     if (status >= 400) {
       if (status === 400) {
@@ -154,7 +205,7 @@ class Rest {
         };
       }
     }
-    
+
     // Generic network errors
     if (error.message.includes('CORS')) {
       return {
@@ -162,14 +213,14 @@ class Rest {
         message: 'Cross-origin request blocked'
       };
     }
-    
+
     if (error.message.includes('DNS') || error.message.includes('ENOTFOUND')) {
       return {
         reason: 'dns_error',
         message: 'Unable to resolve server address'
       };
     }
-    
+
     // Default fallback
     return {
       reason: 'unknown_error',
@@ -305,6 +356,25 @@ class Rest {
 
     // Process request interceptors
     request = await this.processRequestInterceptors(request);
+
+    // Add DUID if tracking is enabled
+    if (this.config.trackDevice && this.duid) {
+      if (this.config.duidTransport === 'header') {
+        // Always add as a header
+        request.headers[this.config.duidHeader] = this.duid;
+      } else { // 'payload' transport (default)
+        if (request.method === 'GET') {
+          // For GET requests, add as a query parameter
+          const url = new URL(request.url);
+          url.searchParams.append('duid', this.duid);
+          request.url = url.toString();
+        } else if (request.data && typeof request.data === 'object' && !(request.data instanceof FormData)) {
+          // For POST/PUT/PATCH with JSON body, add to the data payload
+          request.data.duid = this.duid;
+        }
+        // Note: For other request types like FormData, the duid is not sent in 'payload' mode.
+      }
+    }
 
     // Prepare fetch options
     const fetchOptions = {
@@ -567,7 +637,7 @@ class Rest {
   isRetryableError(response) {
     const retryableReasons = [
       'not_reachable',
-      'timed_out', 
+      'timed_out',
       'server_error',
       'dns_error'
     ];
@@ -585,14 +655,14 @@ class Rest {
 
   /**
    * Check if error is network-related
-   * @param {object} response - Response object with reason field  
+   * @param {object} response - Response object with reason field
    * @returns {boolean} True if it's a network error
    */
   isNetworkError(response) {
     const networkReasons = [
       'not_reachable',
       'timed_out',
-      'cancelled', 
+      'cancelled',
       'cors_error',
       'dns_error'
     ];
@@ -608,7 +678,7 @@ class Rest {
     if (response.message) {
       return response.message;
     }
-    
+
     const messages = {
       'not_reachable': 'Unable to connect to the server. Please check your internet connection.',
       'timed_out': 'The request took too long. Please try again.',
@@ -623,7 +693,7 @@ class Rest {
       'dns_error': 'Unable to reach the server.',
       'unknown_error': 'An unexpected error occurred.'
     };
-    
+
     return messages[response.reason] || 'An error occurred. Please try again.';
   }
 }

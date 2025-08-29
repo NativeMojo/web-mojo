@@ -1215,9 +1215,7 @@ class Table extends View {
         value = column.template(value, item);
       } else if (typeof column.template === 'string') {
         // Simple template substitution
-        value = column.template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-          return this.getCellValue(item, { key }) || '';
-        });
+        value = this.renderTemplateString(column.template, item);
       }
     }
 
@@ -1655,6 +1653,7 @@ class Table extends View {
         title: `${item.constructor.name || 'Item'} Details`,
         body: viewInstance,
         size: 'lg',
+        centered: false,
         ...this.options.viewDialogOptions
       });
     }
