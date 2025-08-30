@@ -49,7 +49,8 @@ User.PERMISSIONS = [
     { name: "manage_files", label: "Manage Files" },
     { name: "force_single_session", label: "Force Single Session" },
     { name: "file_vault", label: "Access File Vault" },
-    { name: "manage_aws", label: "Manage AWS" }
+    { name: "manage_aws", label: "Manage AWS" },
+    { name: "manage_docit", label: "Manage DocIt" }
 ];
 
 const UserForms = {

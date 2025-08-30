@@ -23,6 +23,7 @@ class Sidebar extends View {
         this.showToggle = options.showToggle; // Default to true
         this.isCollapsed = false;
         this.sidebarTheme = options.theme || 'sidebar-light';
+        this.customView = null;
 
         // Apply sidebar theme
         if (this.sidebarTheme) {
@@ -248,6 +249,9 @@ class Sidebar extends View {
     }
 
     getTemplate() {
+        if (this.customView) {
+            return '<div class="sidebar-container" id="sidebar-custom-view-container"></div>';
+        }
         if (this.showSearch) return this.getSearchTemplate();
         return this.getMenuTemplate();
     }
@@ -573,8 +577,8 @@ class Sidebar extends View {
         // Process menu data through template if it contains handlebars
         this.data = {
             currentMenu: {
-                header: this.renderTemplateString(currentMenu.header, subData),
-                footer: this.renderTemplateString(currentMenu.footer, subData),
+                header: this.renderTemplateString(currentMenu.header || '', subData),
+                footer: this.renderTemplateString(currentMenu.footer || '', subData),
                 items: this.processNavItems(currentMenu.items, currentMenu.groupKind),
                 data: currentMenu.data,
                 showToggle: this.showToggle
@@ -591,6 +595,28 @@ class Sidebar extends View {
         } else {
             this.destroyTooltips();
         }
+    }
+
+    setCustomView(view) {
+        if (this.customView) {
+            this.removeChild(this.customView.id);
+        }
+        this.customView = view;
+        if (view) {
+            view.containerId = 'sidebar-custom-view-container';
+            this.addChild(view);
+        }
+        this.render();
+        return this;
+    }
+
+    clearCustomView() {
+        if (this.customView) {
+            this.removeChild(this.customView.id);
+            this.customView = null;
+        }
+        this.render();
+        return this;
     }
 
     /**

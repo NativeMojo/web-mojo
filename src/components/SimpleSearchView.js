@@ -100,8 +100,8 @@ class SimpleSearchView extends View {
                 <div class="p-3 border-bottom bg-light">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <h6 class="text-muted fw-semibold mb-0">
-                            <i class="{{data.headerIcon}} me-2"></i>
-                            {{data.headerText}}
+                            {{#data.headerIcon}}<i class="{{data.headerIcon}} me-2"></i>{{/data.headerIcon}}
+                            {{{data.headerText}}}
                         </h6>
                         {{#data.showExitButton}}
                         <button class="btn btn-link p-0 text-muted simple-search-exit-btn"

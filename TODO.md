@@ -3,18 +3,18 @@
 ## TODO LIST
 
 - [ ] GET FLOWHUB REPORTS
-- [ ] We need a Wiki System
-- [ ] We need Cloud Push Notifications support
+- [x] We need a Wiki System
+- [x] We need Cloud Push Notifications support
 - [ ] Invite User
 - [ ] Invite Group Member
-- [ ] Metrics Permissions
-  - [ ] We need an API to manage metrics permissions
+- [x] Metrics Permissions
+  - [x] We need an API to manage metrics permissions
 - [ ] User Change Password Flow
 - [ ] Admin Change Password Flow
 - [ ] User Reset Password Flow
 - [ ] LOG pruning and other DB pruning
 - [x] LOG ability to ignore api prefix logging
-- [ ] Firebase Notification Support
+- [x] Firebase Notification Support
 - [x] Forms need to support default value field.default = true
 - [x] Table Date Range filter should specify dr_field
 - [x] Task, record a TaskLog to have a long running record of tasks, optional **logit** param off by default?
