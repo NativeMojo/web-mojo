@@ -279,7 +279,7 @@ class Sidebar extends View {
 
                 <!-- Navigation Items -->
                 <div class="sidebar-body">
-                    <ul class="nav nav-pills flex-column sidebar-nav">
+                    <ul class="nav nav-pills flex-column sidebar-nav" id="sidebar-nav-menu">
                         {{#items}}
                         {{>nav-item}}
                         {{/items}}
@@ -332,7 +332,7 @@ class Sidebar extends View {
                         {{/badge}}
                         <i class="bi bi-chevron-down nav-arrow ms-auto"></i>
                     </a>
-                    <div class="collapse {{#active}}show{{/active}}" id="collapse-{{id}}">
+                    <div class="collapse {{#active}}show{{/active}}" id="collapse-{{id}}" data-bs-parent="#sidebar-nav-menu">
                         <ul class="nav flex-column nav-submenu">
                             {{#children}}
                             <li class="nav-item">

@@ -1,6 +1,8 @@
 import Collection from '../core/Collection.js';
 import Model from '../core/Model.js';
 
+import { GroupList } from './Group.js';
+
 class User extends Model {
     constructor(data = {}) {
         super(data, {
@@ -63,6 +65,7 @@ const UserForms = {
         fields: [
             { name: 'email', type: 'text', label: 'Email', columns: 12 },
             { name: 'display_name', type: 'text', label: 'Display Name', columns: 12},
+            { type: 'collection', name: 'org', label: 'Organization', Collection: GroupList, labelField: 'name', valueField: 'id', columns: 12 },
             {
               type: 'header',
               text: 'Permissions',

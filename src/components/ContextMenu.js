@@ -64,7 +64,7 @@ class ContextMenu extends View {
             return ''; // Don't render anything if there are no items
         }
 
-        const triggerIcon = this.config.icon || 'bi-three-dots-vertical';
+        const triggerIcon = this.config.icon || 'bi-three-dots-horizontal';
         const buttonClass = this.config.buttonClass || 'btn btn-link text-secondary ps-3 pe-0 pt-0 pb-1';
         const dropdownId = `context-menu-${this.id}`;
 

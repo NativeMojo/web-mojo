@@ -16,6 +16,8 @@ class FormBuilder {
         if (field.cols && !field.columns) {
           field.columns = field.cols;
           delete field.cols;
+        } else if (!field.columns) {
+          field.columns = 12;
         }
 
         // Handle nested fields in groups
@@ -563,6 +565,9 @@ class FormBuilder {
       case 'textarea':
         fieldHTML = this.renderTextareaField(field);
         break;
+      case 'json':
+        fieldHTML = this.renderJsonField(field);
+        break;
       case 'select':
         fieldHTML = this.renderSelectField(field);
         break;
@@ -829,7 +834,7 @@ class FormBuilder {
       errorClass: this.options.errorClass,
       fieldId,
       name,
-      fieldValue: this.escapeHtml(fieldValue),
+      fieldValue: fieldValue, // Pass raw value to template for correct rendering
       label: label ? this.escapeHtml(label) : null,
       placeholder: placeholder ? this.escapeHtml(placeholder) : null,
       help: help ? this.escapeHtml(help) : null,
@@ -843,6 +848,71 @@ class FormBuilder {
 
     return Mustache.render(this.templates.textarea, context);
   }
+
+  /**
+   * Render JSON field as a textarea
+   * @param {Object} field - Field configuration
+   * @returns {string} Field HTML
+   */
+  renderJsonField(field) {
+    const {
+      name,
+      label,
+      placeholder = '',
+      required = false,
+      disabled = false,
+      readonly = false,
+      rows = 3,
+      class: fieldClass = '',
+      attributes = {},
+      help = field.helpText || field.help || ''
+    } = field;
+
+    const rawValue = this.getFieldValue(field.name) ?? field.value ?? {};
+    let formattedValue = rawValue;
+
+    if (typeof rawValue === 'object' && rawValue !== null) {
+        try {
+            formattedValue = JSON.stringify(rawValue, null, 2);
+        } catch (e) {
+            formattedValue = "{}";
+        }
+    } else if (typeof rawValue !== 'string') {
+        formattedValue = String(rawValue);
+    }
+
+    const inputClass = `${this.options.inputClass} ${fieldClass}`.trim();
+    const error = this.errors[name];
+    const fieldId = this.getFieldId(name);
+
+    const attrs = Object.entries({
+      ...attributes,
+      'data-field-type': 'json'
+    }).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
+
+    const context = {
+      labelClass: this.options.labelClass,
+      inputClass: inputClass,
+      helpClass: this.options.helpClass,
+      errorClass: this.options.errorClass,
+      fieldId,
+      name,
+      fieldValue: formattedValue, // Use the formatted JSON string directly
+      label: label ? this.escapeHtml(label) : null,
+      placeholder: placeholder ? this.escapeHtml(placeholder) : null,
+      help: help ? this.escapeHtml(help) : null,
+      error: error ? this.escapeHtml(error) : null,
+      rows: rows || 3,
+      required,
+      disabled,
+      readonly,
+      attrs
+    };
+
+    return Mustache.render(this.templates.textarea, context);
+  }
+
+
 
   /**
    * Render select field

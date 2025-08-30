@@ -820,9 +820,18 @@ class FormView extends View {
       // Handle checkboxes and switches to ensure correct boolean values
       const checkboxes = form.querySelectorAll('input[type="checkbox"]');
       checkboxes.forEach(checkbox => {
-        // Overwrite any value from FormData with the correct boolean state.
-        // This handles both checked (true) and unchecked (false) cases correctly.
         data[checkbox.name] = checkbox.checked;
+      });
+
+      // Handle JSON fields
+      const jsonFields = form.querySelectorAll('[data-field-type="json"]');
+      jsonFields.forEach(textarea => {
+          try {
+              data[textarea.name] = JSON.parse(textarea.value);
+          } catch (e) {
+              console.warn(`Invalid JSON in field ${textarea.name}:`, textarea.value);
+              data[textarea.name] = textarea.value; // Keep as string if invalid
+          }
       });
 
       // Convert files to base64 and add to data
