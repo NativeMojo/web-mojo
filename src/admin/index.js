@@ -10,3 +10,7 @@ export { default as UserDeviceTablePage } from './UserDeviceTablePage.js';
 export { default as UserDeviceLocationTablePage } from './UserDeviceLocationTablePage.js';
 export { default as GeoLocatedIPTablePage } from './GeoLocatedIPTablePage.js';
 export { default as EventTablePage } from './EventTablePage.js';
+export { default as RuleSetTablePage } from './RuleSetTablePage.js';
+export { default as TicketTablePage } from './TicketTablePage.js';
+export { default as IncidentDashboardPage } from './IncidentDashboardPage.js';
+export { default as MetricsPermissionsTablePage } from './MetricsPermissionsTablePage.js';

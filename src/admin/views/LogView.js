@@ -65,10 +65,10 @@ class LogView extends View {
                 { name: 'id', label: 'Log ID' },
                 { name: 'level', label: 'Level', format: 'badge' },
                 { name: 'kind', label: 'Kind' },
-                { name: 'ip', label: 'IP Address', template: '<a href="#" data-action="view-ip">{{ip}}</a>' },
+                { name: 'ip', label: 'IP Address', template: '<a href="#" data-action="view-ip">{{model.ip}}</a>' },
                 { name: 'uid', label: 'User ID' },
                 { name: 'username', label: 'Username' },
-                { name: 'duid', label: 'Device ID', template: '<a href="#" data-action="view-device">{{duid|truncate_middle(32)}}</a>' },
+                { name: 'duid', label: 'Device ID', template: '<a href="#" data-action="view-device">{{model.duid|truncate_middle(32)}}</a>' },
                 { name: 'model_name', label: 'Related Model' },
                 { name: 'model_id', label: 'Related Model ID' },
             ]
@@ -114,6 +114,7 @@ class LogView extends View {
         // ContextMenu
         const logMenu = new ContextMenu({
             containerId: 'log-context-menu',
+            className: "context-menu-view header-menu-absolute",
             context: this.model,
             config: {
                 icon: 'bi-three-dots-vertical',
@@ -162,5 +163,7 @@ class LogView extends View {
         }
     }
 }
+
+Log.VIEW_CLASS = LogView;
 
 export default LogView;

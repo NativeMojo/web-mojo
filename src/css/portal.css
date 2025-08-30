@@ -1467,6 +1467,12 @@
     margin-top: -0.6rem;
 }
 
+.context-menu-view.header-menu-absolute {
+    /*position: absolute;*/
+    top: 1rem;
+    right: 1rem;
+}
+
 /* ========================================================================
    Responsive Design
    ======================================================================== */

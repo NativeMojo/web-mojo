@@ -5,6 +5,7 @@
 
 import TablePage from '../components/TablePage.js';
 import { Incident, IncidentList, IncidentForms } from '../models/Incident.js';
+import IncidentView from './views/IncidentView.js';
 
 class IncidentTablePage extends TablePage {
     constructor(options = {}) {
@@ -16,6 +17,11 @@ class IncidentTablePage extends TablePage {
             Collection: IncidentList,
             formCreate: IncidentForms.create,
             formEdit: IncidentForms.edit,
+            itemViewClass: IncidentView,
+            viewDialogOptions: {
+                header: false,
+                size: 'xl'
+            },
 
             // Column definitions
             columns: [
@@ -40,6 +46,7 @@ class IncidentTablePage extends TablePage {
                 {
                     key: 'state',
                     label: 'State',
+                    formatter: 'badge'
                 },
                 {
                     key: 'priority',
@@ -70,7 +77,7 @@ class IncidentTablePage extends TablePage {
                 defaultPageSize: 10,
                 emptyMessage: 'No incidents found. Click "Add Incident" to create your first incident.',
                 emptyIcon: 'bi-exclamation-triangle',
-                actions: ["edit", "view", "resolve"],
+                actions: ["edit", "view"],
                 batchActions: [
                     { label: "Resolve", icon: "bi bi-check-circle", action: "batch_resolve" },
                     { label: "Close", icon: "bi bi-x-circle", action: "batch_close" },
@@ -82,6 +89,20 @@ class IncidentTablePage extends TablePage {
                 ],
             }
         });
+    }
+
+    async onItemView(item, mode, event, target) {
+        const dialog = await super.onItemView(item, mode, event, target);
+        if (dialog && dialog.bodyView) {
+            dialog.bodyView.on('incident:deleted', () => {
+                dialog.hide();
+                this.refreshTable();
+            });
+            dialog.bodyView.on('incident:updated', () => {
+                this.refreshTable();
+            });
+        }
+        return dialog;
     }
 }
 

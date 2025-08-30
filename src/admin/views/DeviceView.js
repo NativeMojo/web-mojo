@@ -147,6 +147,7 @@ class DeviceView extends View {
         // ContextMenu
         const deviceMenu = new ContextMenu({
             containerId: 'device-context-menu',
+            className: "context-menu-view header-menu-absolute",
             context: this.model,
             config: {
                 icon: 'bi-three-dots-vertical',
@@ -191,4 +192,5 @@ class DeviceView extends View {
     }
 }
 
+UserDevice.VIEW_CLASS = DeviceView;
 export default DeviceView;

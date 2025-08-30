@@ -3,6 +3,7 @@
  */
 
 import View from '../../core/View.js';
+import TabView from '../../components/TabView.js';
 import DataView from '../../components/DataView.js';
 import ContextMenu from '../../components/ContextMenu.js';
 import { IncidentEvent } from '../../models/Incident.js';
@@ -40,7 +41,7 @@ class EventView extends View {
                 </div>
 
                 <!-- Body -->
-                <div data-container="event-data-view"></div>
+                <div data-container="event-tabs"></div>
             </div>
         `;
     }
@@ -53,13 +54,10 @@ class EventView extends View {
     }
 
     async onInit() {
-        // DataView for all details
-        this.dataView = new DataView({
-            containerId: 'event-data-view',
+        // Overview Tab
+        this.overviewView = new DataView({
             model: this.model,
-            className: "p-3 border rounded",
-            showEmptyValues: true,
-            emptyValueText: '—',
+            className: "p-3",
             columns: 2,
             fields: [
                 { name: 'id', label: 'Event ID' },
@@ -68,11 +66,35 @@ class EventView extends View {
                 { name: 'incident', label: 'Incident ID' },
                 { name: 'model_name', label: 'Related Model' },
                 { name: 'model_id', label: 'Related Model ID' },
-                { name: 'details', label: 'Details', columns: 12, format: 'json' },
-                { name: 'metadata', label: 'Metadata', columns: 12, format: 'json' },
+                { name: 'details', label: 'Details', columns: 12 },
             ]
         });
-        this.addChild(this.dataView);
+
+        // Metadata Tab
+        this.metadataView = new View({
+            model: this.model,
+            template: `<pre class="bg-light p-3 border rounded"><code>{{{model.metadata|json}}}</code></pre>`
+        });
+
+        const tabs = { 'Overview': this.overviewView };
+        if (this.model.get('metadata') && Object.keys(this.model.get('metadata')).length > 0) {
+            tabs['Metadata'] = this.metadataView;
+        }
+
+        if (this.model.get('metadata.stack_trace')) {
+            this.stackTraceView = new View({
+                model: this.model,
+                template: `<pre class="bg-dark text-white p-3 border rounded">{{{model.metadata.stack_trace}}}</pre>`
+            });
+            tabs['Stack Trace'] = this.stackTraceView;
+        }
+
+        this.tabView = new TabView({
+            containerId: 'event-tabs',
+            tabs: tabs,
+            activeTab: 'Overview'
+        });
+        this.addChild(this.tabView);
 
         // ContextMenu
         const menuItems = [
@@ -84,6 +106,7 @@ class EventView extends View {
 
         const eventMenu = new ContextMenu({
             containerId: 'event-context-menu',
+            className: "context-menu-view header-menu-absolute",
             context: this.model,
             config: {
                 icon: 'bi-three-dots-vertical',
@@ -115,5 +138,7 @@ class EventView extends View {
         }
     }
 }
+
+IncidentEvent.VIEW_CLASS = EventView;
 
 export default EventView;

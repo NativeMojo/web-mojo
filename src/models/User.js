@@ -39,6 +39,7 @@ User.PERMISSIONS = [
     { name: "view_metrics", label: "View System Metrics" },
     { name: "view_logs", label: "View Logs" },
     { name: "view_incidents", label: "View Incidents" },
+    { name: "manage_incidents", label: "Manage Incidents" },
     { name: "view_admin", label: "View Admin" },
     { name: "view_taskqueue", label: "View TaskQueue" },
     { name: "view_global", label: "View Global" },

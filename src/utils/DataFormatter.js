@@ -14,6 +14,20 @@ class DataFormatter {
     this.registerBuiltInFormatters();
   }
 
+  escapeHtml(str) {
+    if (str === null || str === undefined) {
+        return '';
+    }
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return String(str).replace(/[&<>"']/g, (m) => map[m]);
+  }
+
   /**
    * Register all built-in formatters
    */
@@ -90,6 +104,7 @@ class DataFormatter {
     this.register('hash', this.hash.bind(this));
     this.register('stripHtml', this.stripHtml.bind(this));
     this.register('highlight', this.highlight.bind(this));
+    this.register('pre', (v) => `<pre class="bg-light p-2 rounded border">${this.escapeHtml(String(v))}</pre>`);
   }
 
   /**

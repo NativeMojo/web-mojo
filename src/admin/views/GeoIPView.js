@@ -96,6 +96,7 @@ class GeoIPView extends View {
 
         const geoIPMenu = new ContextMenu({
             containerId: 'geoip-context-menu',
+            className: "context-menu-view header-menu-absolute",
             context: this.model,
             config: {
                 icon: 'bi-three-dots-vertical',
@@ -152,5 +153,7 @@ class GeoIPView extends View {
         return null;
     }
 }
+
+GeoLocatedIP.VIEW_CLASS = GeoIPView;
 
 export default GeoIPView;

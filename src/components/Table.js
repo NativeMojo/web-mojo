@@ -1651,7 +1651,7 @@ class Table extends View {
     if (this.itemViewClass) {
       const viewInstance = new this.itemViewClass({ model: item });
       await Dialog.showDialog({
-        title: `${item.constructor.name || 'Item'} Details`,
+        header: false,
         body: viewInstance,
         size: 'lg',
         centered: false,
@@ -1703,6 +1703,12 @@ class Table extends View {
     console.log('Item dialog:', item, mode);
     // Default implementation - can be overridden
     let frmConfig = this.options.formEdit || this.options.formCreate;
+    if (item.constructor.VIEW_CLASS && !this.itemViewClass) {
+        this.itemViewClass = item.constructor.VIEW_CLASS;
+    }
+    if (!frmConfig) {
+        frmConfig = item.constructor.EDIT_FORM || item.constructor.CREATE_FORM;
+    }
     const resp = await Dialog.showModelForm({
         title: `EDIT - #${item.id} ${this.options.modelName}`,
         model: item,
@@ -1718,6 +1724,10 @@ class Table extends View {
   async onItemAdd(event) {
     console.log('Item add:', event);
     try {
+        let frmConfig = this.options.formCreate || this.options.formEdit;
+        if (!frmConfig) {
+            frmConfig = this.collection.ModelClass.constructor.EDIT_FORM || this.collection.ModelClass.constructor.CREATE_FORM;
+        }
       // Default implementation - can be overridden
       const data = await Dialog.showForm({
         title: `Create ${this.options.modelName}`,

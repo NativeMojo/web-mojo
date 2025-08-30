@@ -626,9 +626,11 @@ class DataView extends View {
     // However, we must determine if the output is intended to be HTML or plain text.
     if (field.format) {
       // A list of formatters known to produce safe HTML output.
+      // A list of formatters known to produce safe HTML output.
+      // A list of formatters known to produce safe HTML output.
       const htmlSafeFormatters = [
         'badge', 'email', 'url', 'icon', 'status',
-        'image', 'avatar', 'phone', 'highlight'
+        'image', 'avatar', 'phone', 'highlight', 'pre'
       ];
 
       // Parse the pipe string to find the last formatter applied.

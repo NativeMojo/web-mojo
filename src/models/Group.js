@@ -250,4 +250,7 @@ const GroupForms = {
     },
 };
 
+Group.EDIT_FORM = GroupForms.edit;
+Group.CREATE_FORM = GroupForms.create;
+
 export { Group, GroupList, GroupForms };

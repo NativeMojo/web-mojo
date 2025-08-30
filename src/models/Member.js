@@ -26,4 +26,34 @@ class MemberList extends Collection {
     }
 }
 
-export { Member, MemberList };
+/* =========================
+ * Forms
+ * ========================= */
+const MemberForms = {
+    edit: {
+        title: 'Edit Membership',
+        fields: [
+            {
+                name: 'role',
+                type: 'text',
+                label: 'Role',
+                required: true,
+                placeholder: 'Enter role'
+            },
+            {
+                name: 'status',
+                type: 'select',
+                label: 'Status',
+                required: true,
+                options: [
+                    { value: 'active', label: 'Active' },
+                    { value: 'inactive', label: 'Inactive' },
+                    { value: 'pending', label: 'Pending' }
+                ]
+            }
+        ]
+    }
+};
+
+
+export { Member, MemberList, MemberForms };

@@ -147,6 +147,7 @@ class FileView extends View {
         // Create ContextMenu
         const fileMenu = new ContextMenu({
             containerId: 'file-context-menu',
+            className: "context-menu-view header-menu-absolute",
             context: this.model,
             config: {
                 icon: 'bi-three-dots-vertical',

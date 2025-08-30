@@ -340,7 +340,7 @@ class UserView extends View {
 
         const userMenu = new ContextMenu({
             containerId: 'user-context-menu',
-            className: "context-menu-view header-menu",
+            className: "context-menu-view header-menu-absolute",
             context: this.model, // Pass the user model as context
             config: {
                 icon: 'bi-three-dots-vertical',
@@ -433,5 +433,7 @@ class UserView extends View {
         return new UserView(options);
     }
 }
+
+User.VIEW_CLASS = UserView;
 
 export default UserView;

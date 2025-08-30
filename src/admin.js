@@ -23,6 +23,10 @@ import UserDeviceTablePage from './admin/UserDeviceTablePage.js';
 import UserDeviceLocationTablePage from './admin/UserDeviceLocationTablePage.js';
 import GeoLocatedIPTablePage from './admin/GeoLocatedIPTablePage.js';
 import EventTablePage from './admin/EventTablePage.js';
+import RuleSetTablePage from './admin/RuleSetTablePage.js';
+import TicketTablePage from './admin/TicketTablePage.js';
+import IncidentDashboardPage from './admin/IncidentDashboardPage.js';
+import MetricsPermissionsTablePage from './admin/MetricsPermissionsTablePage.js';
 import TablePage from './components/TablePage.js';
 
 // Re-export all admin pages
@@ -45,6 +49,10 @@ export {
     UserDeviceLocationTablePage,
     GeoLocatedIPTablePage,
     EventTablePage,
+    RuleSetTablePage,
+    TicketTablePage,
+    IncidentDashboardPage,
+    MetricsPermissionsTablePage,
     TablePage
 };
 
@@ -73,6 +81,10 @@ export function registerAdminPages(app, addToMenu = true) {
     app.registerPage('admin/email/domains', EmailDomainTablePage, {permissions: ["manage_aws"]});
     app.registerPage('admin/email/sent', SentMessageTablePage, {permissions: ["manage_aws"]});
     app.registerPage('admin/email/templates', EmailTemplateTablePage, {permissions: ["manage_aws"]});
+    app.registerPage('admin/incident-dashboard', IncidentDashboardPage, { permissions: ["view_incidents"] });
+    app.registerPage('admin/rulesets', RuleSetTablePage, { permissions: ["manage_incidents"] });
+    app.registerPage('admin/tickets', TicketTablePage, { permissions: ["manage_incidents"] });
+    app.registerPage('admin/metrics/permissions', MetricsPermissionsTablePage, { permissions: ["manage_metrics", "manage_users"] });
 
     // Check if sidebar exists and has an admin menu config
     if (addToMenu &&app.sidebar && app.sidebar.getMenuConfig) {
@@ -85,6 +97,44 @@ export function registerAdminPages(app, addToMenu = true) {
                     route: '?page=admin/dashboard',
                     icon: 'bi-speedometer2',
                     permissions: ["view_admin"]
+                },
+                {
+                    text: 'Incidents & Tickets',
+                    route: null,
+                    icon: 'bi-shield-exclamation',
+                    permissions: ["view_incidents"],
+                    children: [
+                        {
+                            text: 'Dashboard',
+                            route: '?page=admin/incident-dashboard',
+                            icon: 'bi-bar-chart-line',
+                            permissions: ["view_incidents"]
+                        },
+                        {
+                            text: 'Incidents',
+                            route: '?page=admin/incidents',
+                            icon: 'bi-exclamation-triangle',
+                            permissions: ["view_incidents"]
+                        },
+                        {
+                            text: 'Tickets',
+                            route: '?page=admin/tickets',
+                            icon: 'bi-ticket-detailed',
+                            permissions: ["manage_incidents"]
+                        },
+                        {
+                            text: 'Events',
+                            route: '?page=admin/events',
+                            icon: 'bi-bell',
+                            permissions: ["view_incidents"]
+                        },
+                        {
+                            text: 'Rule Engine',
+                            route: '?page=admin/rulesets',
+                            icon: 'bi-gear-wide-connected',
+                            permissions: ["manage_incidents"]
+                        },
+                    ]
                 },
                 {
                     text: 'Task Management',
@@ -143,18 +193,6 @@ export function registerAdminPages(app, addToMenu = true) {
                     permissions: ["manage_groups"],
                     children: [
                         {
-                            text: 'Incidents',
-                            route: '?page=admin/incidents',
-                            icon: 'bi-exclamation-triangle',
-                            permissions: ["manage_groups"]
-                        },
-                        {
-                            text: 'Events',
-                            route: '?page=admin/events',
-                            icon: 'bi-bell',
-                            permissions: ["view_incidents"]
-                        },
-                        {
                             text: 'Logs',
                             route: '?page=admin/logs',
                             icon: 'bi-journal-text',
@@ -177,6 +215,12 @@ export function registerAdminPages(app, addToMenu = true) {
                             route: '?page=admin/system/geoip',
                             icon: 'bi-globe',
                             permissions: ["manage_users"]
+                        },
+                        {
+                            text: 'Metrics Permissions',
+                            route: '?page=admin/metrics/permissions',
+                            icon: 'bi-bar-chart-line',
+                            permissions: ["manage_metrics", "manage_users"]
                         }
                     ]
                 },
@@ -217,9 +261,9 @@ export function registerAdminPages(app, addToMenu = true) {
 
             // Add items to existing admin menu
             adminMenuConfig.items.unshift(...adminMenuItems);
-            console.log('Added 11 admin menu items to sidebar');
+            console.log('Added admin menu items to sidebar');
         }
     }
 
-    console.log('Registered 18 admin pages to WebApp');
+    console.log('Registered 22 admin pages to WebApp');
 }

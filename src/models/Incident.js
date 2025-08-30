@@ -98,6 +98,16 @@ class IncidentList extends Collection {
 }
 
 const IncidentForms = {
+    create: {
+        title: 'Create Incident',
+        fields: [
+            { name: 'title', type: 'text', label: 'Title', required: true, cols: 12 },
+            { name: 'details', type: 'textarea', label: 'Details', required: true, cols: 12 },
+            { name: 'priority', type: 'number', label: 'Priority', value: 5, cols: 6 },
+            { name: 'state', type: 'select', label: 'State', value: 'open', options: ['open', 'investigating', 'resolved', 'closed'], cols: 6 },
+            { name: 'category', type: 'text', label: 'Category', value: 'manual', cols: 12 },
+        ]
+    },
     edit: {
         title: 'Edit Incident',
         fields: [
@@ -220,3 +230,45 @@ export {
     IncidentHistory,
     IncidentHistoryList
 };
+
+/* =========================
+ * RuleSet
+ * ========================= */
+class RuleSet extends Model {
+    constructor(data = {}) {
+        super(data, {
+            endpoint: '/api/event/ruleset',
+        });
+    }
+}
+
+class RuleSetList extends Collection {
+    constructor(options = {}) {
+        super(RuleSet, {
+            endpoint: '/api/event/ruleset',
+            ...options,
+        });
+    }
+}
+
+/* =========================
+ * Rule
+ * ========================= */
+class Rule extends Model {
+    constructor(data = {}) {
+        super(data, {
+            endpoint: '/api/event/ruleset/rule',
+        });
+    }
+}
+
+class RuleList extends Collection {
+    constructor(options = {}) {
+        super(Rule, {
+            endpoint: '/api/event/ruleset/rule',
+            ...options,
+        });
+    }
+}
+
+export { RuleSet, RuleSetList, Rule, RuleList };

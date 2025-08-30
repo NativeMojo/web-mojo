@@ -156,6 +156,7 @@ class GroupView extends View {
         // Create ContextMenu
         const groupMenu = new ContextMenu({
             containerId: 'group-context-menu',
+            className: "context-menu-view header-menu-absolute",
             context: this.model,
             config: {
                 icon: 'bi-three-dots-vertical',
@@ -199,5 +200,7 @@ class GroupView extends View {
         this.emit('view-parent-group', { groupId: parentId });
     }
 }
+
+Group.VIEW_CLASS = GroupView;
 
 export default GroupView;

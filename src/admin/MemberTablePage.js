@@ -4,7 +4,8 @@
  */
 
 import TablePage from '../components/TablePage.js';
-import { Member, MemberList } from '../models/Member.js';
+import { Member, MemberList, MemberForms } from '../models/Member.js';
+import MemberView from './views/MemberView.js';
 
 class MemberTablePage extends TablePage {
     constructor(options = {}) {
@@ -14,9 +15,12 @@ class MemberTablePage extends TablePage {
             pageName: 'Manage Members',
             router: "admin/members",
             Collection: MemberList,
-            // Note: Member model doesn't have forms defined yet
-            // formCreate: MemberForms.create,
-            // formEdit: MemberForms.edit,
+            formEdit: MemberForms.edit,
+            itemViewClass: MemberView,
+            viewDialogOptions: {
+                header: false,
+                size: 'lg'
+            },
             
             // Column definitions
             columns: [
@@ -45,12 +49,12 @@ class MemberTablePage extends TablePage {
                 {
                     key: 'role',
                     label: 'Role',
-                    formatter: "default('Member')"
+                    formatter: "badge"
                 },
                 {
                     key: 'status',
                     label: 'Status',
-                    formatter: "default('Active')"
+                    formatter: "badge"
                 },
                 {
                     key: 'created',
@@ -77,7 +81,7 @@ class MemberTablePage extends TablePage {
                 defaultPageSize: 10,
                 emptyMessage: 'No members found. Click "Add Member" to add users to groups.',
                 emptyIcon: 'bi-people',
-                actions: ["edit", "view", "remove"],
+                actions: ["edit", "view", "delete"],
                 batchActions: [
                     { label: "Remove", icon: "bi bi-person-dash", action: "batch_remove" },
                     { label: "Export", icon: "bi bi-download", action: "batch_export" },
@@ -87,6 +91,17 @@ class MemberTablePage extends TablePage {
                 ],
             }
         });
+    }
+
+    async onItemView(item, mode, event, target) {
+        const dialog = await super.onItemView(item, mode, event, target);
+        if (dialog && dialog.bodyView) {
+            dialog.bodyView.on('member:removed', () => {
+                dialog.hide();
+                this.refreshTable();
+            });
+        }
+        return dialog;
     }
 }
 
