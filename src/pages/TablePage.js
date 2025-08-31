@@ -254,10 +254,10 @@ class TablePage extends Page {
    */
   applyQueryToCollection() {
     const params = {};
-    if (!this.query || Object.keys(this.query).length === 0) {
+    const query = { ...this.defaultQuery, ...this.query };
+    if (!query || Object.keys(query).length === 0) {
         return;
     }
-    const query = { ...this.defaultQuery, ...this.query };
     // Pagination
     if (query.start !== undefined) params.start = parseInt(query.start) || 0;
     if (query.size !== undefined) params.size = parseInt(query.size) || 10;

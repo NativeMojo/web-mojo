@@ -84,10 +84,6 @@ class UserTablePage extends TablePage {
                     icon: 'bi-shield',
                     action: 'change-password',
                     label: "Change Password",
-                    handler: async (item, event, el) => {
-                        console.log("ADMIN CLICKED", item, this);
-                        this.handleActionChangePassword(item);
-                    }
                 }
             ],
 
@@ -113,8 +109,9 @@ class UserTablePage extends TablePage {
         });
     }
 
-    async handleActionChangePassword(item) {
+    async onActionChangePassword(event, element) {
         // Implement password change logic here
+        const item = this.collection.get(element.dataset.id);
         const data = await Dialog.showForm({
             title: `Change Password for "${item._.username}"`,
             fields: [

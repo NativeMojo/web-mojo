@@ -222,6 +222,7 @@ class TableRow extends ListViewItem {
       return `
         <li>
           <a class="${itemClass}" href="#"
+             data-id="{{model.id}}"
              data-action="${menuItem.action}"
              ${menuItem.disabled ? 'aria-disabled="true" tabindex="-1"' : ''}>
             ${menuItem.icon ? `<i class="${menuItem.icon} me-2"></i>` : ''}

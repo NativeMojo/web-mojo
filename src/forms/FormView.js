@@ -190,7 +190,7 @@ class FormView extends View {
         const config = JSON.parse(configData);
 
         // Get Collection class from field config
-        const fieldConfig = this.formConfig.fields.find(f => f.name === fieldName);
+        const fieldConfig = this.getFormFieldConfig(fieldName);  // this.formConfig.fields.find(f => f.name === fieldName);
         if (!fieldConfig || !fieldConfig.Collection) {
           console.warn(`CollectionSelect field ${fieldName} missing Collection class`);
           return;
@@ -469,7 +469,7 @@ class FormView extends View {
   async onActionSelectButtonOption(event, element) {
     const fieldName = element.getAttribute('data-field');
     const value = element.getAttribute('data-value');
-    
+
     if (!fieldName || !value) return;
 
     // Update form data
@@ -484,7 +484,7 @@ class FormView extends View {
         btn.classList.add('btn-outline-primary');
         btn.classList.remove('btn-primary');
       });
-      
+
       element.classList.add('active');
       element.classList.remove('btn-outline-primary');
       element.classList.add('btn-primary');
@@ -507,7 +507,7 @@ class FormView extends View {
   async onActionApplyFilter(event, element) {
     const dropdown = element.closest('.dropdown');
     const checkboxes = dropdown?.querySelectorAll('input[type="checkbox"]');
-    
+
     if (!checkboxes || checkboxes.length === 0) return;
 
     const fieldName = checkboxes[0].getAttribute('data-field');
@@ -773,6 +773,24 @@ class FormView extends View {
    */
   getFormElement() {
     return this.element ? this.element.querySelector('form') : null;
+  }
+
+  getFormFieldConfig(name) {
+    const searchInFields = (fields) => {
+      for (const field of fields) {
+        if (field.name === name) {
+          return field;
+        }
+        // Search in nested fields recursively
+        if (field.fields && Array.isArray(field.fields)) {
+          const found = searchInFields(field.fields);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    return searchInFields(this.formConfig.fields || []);
   }
 
   /**

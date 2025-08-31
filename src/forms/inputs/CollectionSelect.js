@@ -188,7 +188,13 @@ class CollectionSelectView extends View {
     this.collection.params.size = this.maxItems;
     this.defaultParams.size = this.maxItems;
 
-    this.collection.on('update', () => {
+    this.collection.on('fetch:start', () => {
+      this.loading = true;
+      this.showDropdown = true;
+      this.updateDropdown();
+    });
+
+    this.collection.on('fetch:end', () => {
       this.loading = false;
       this.showDropdown = true;
       this.updateDropdown();
@@ -380,8 +386,8 @@ class CollectionSelectView extends View {
   async performSearch() {
     if (!this.collection) return;
 
-    this.loading = true;
-    this.updateDropdown();
+    // this.loading = true;
+    // this.updateDropdown();
 
     try {
       const searchParams = { ...this.defaultParams };

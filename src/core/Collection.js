@@ -190,9 +190,8 @@ class Collection {
    * @returns {Promise} Promise that resolves with REST response
    */
   async _performFetch(url, additionalParams, abortController) {
-    console.log('Fetching collection data from', url);
     const fetchParams = { ...this.params, ...additionalParams };
-
+    console.log('Fetching collection data from', url, fetchParams);
     try {
       this.emit("fetch:start");
       const response = await this.rest.GET(url, fetchParams, {
@@ -536,11 +535,11 @@ class Collection {
     if (typeof callback !== 'function') {
       throw new TypeError('Callback must be a function');
     }
-    
+
     this.models.forEach((model, index) => {
       callback.call(thisArg, model, index, this);
     });
-    
+
     return this;
   }
 
