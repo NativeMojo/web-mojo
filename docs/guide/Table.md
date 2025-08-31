@@ -1,103 +1,67 @@
-# Table Component
+# TableView Component
 
-The Table component is a powerful, feature-rich data table built for the MOJO framework. It provides comprehensive table functionality including pagination, sorting, filtering, searching, batch operations, and context menus with automatic event handling and lifecycle management.
+The TableView component is an advanced data table that extends ListView for efficient, row-based rendering. Each row is a separate TableRow view (extending ListViewItem) that only re-renders when its model changes, providing excellent performance even with large datasets.
+
+## Overview
+
+TableView leverages ListView's view management system where:
+- **Each row is a separate view**: Individual TableRow instances manage their own rendering
+- **Smart re-rendering**: Only affected rows update when data changes
+- **Efficient DOM management**: ListView handles view lifecycle and DOM operations
+- **Responsive columns**: Built-in Bootstrap breakpoint-based visibility
+- **Advanced filtering**: Dropdown UI with active filter pills
 
 ## Features
 
-- **Data Management**: Works with Collections and Models for automatic data binding
-- **Pagination**: Built-in pagination with configurable page sizes
-- **Sorting**: Click-to-sort columns with visual indicators
-- **Filtering**: Advanced filtering with dropdown UI and active filter pills
-- **Searching**: Global search across all visible columns
-- **Selection**: Single and multiple row selection with batch operations
-- **Actions**: Row-level and batch actions with context menus
+- **Performance**: Row-level view management for efficient rendering
+- **Responsive Design**: Column visibility control at different breakpoints
+- **Smart Forms**: Automatic form configuration from Model classes
+- **Advanced Filtering**: Filter dropdown with pills and inline editing
+- **Batch Operations**: Multi-select with batch action panel
+- **Live Search**: Real-time search with debouncing
+- **Sorting**: Column sorting with visual indicators
+- **Pagination**: Built-in pagination controls
+- **Context Menus**: Row-level context menus
 - **Export**: CSV export functionality
-- **Responsive**: Mobile-friendly responsive design
-- **Customizable**: Flexible column definitions with custom formatters
-- **Permissions**: Built-in permission checking for actions
 
 ## Basic Usage
 
 ### Simple Table
 
 ```javascript
-import { Table } from 'web-mojo';
-import { UserCollection } from 'web-mojo/models';
+import TableView from 'web-mojo/views/table/TableView.js';
+import UserCollection from './collections/UserCollection.js';
 
-class UsersTable extends Table {
-  constructor(options = {}) {
-    super({
-      columns: [
-        { key: 'name', label: 'Name', sortable: true },
-        { key: 'email', label: 'Email', sortable: true },
-        { key: 'created_at', label: 'Created', formatter: 'date' }
-      ],
-      collection: new UserCollection(),
-      ...options
-    });
-  }
-}
-
-// Usage in a page or view
-const usersTable = new UsersTable({
-  container: '#users-table'
+const table = new TableView({
+  collection: new UserCollection(),
+  columns: [
+    { key: 'name', label: 'Name', sortable: true },
+    { key: 'email', label: 'Email' },
+    { key: 'role', label: 'Role', formatter: 'badge' },
+    { key: 'created_at', label: 'Created', formatter: 'date' }
+  ],
+  actions: ['view', 'edit', 'delete']
 });
-this.addChild(usersTable);
+
+// Add to parent view
+this.addChild(table);
 ```
 
-### Table with Actions
+### Table with Responsive Columns
 
 ```javascript
-class UsersTable extends Table {
-  constructor(options = {}) {
-    super({
-      columns: [
-        { key: 'name', label: 'Name', sortable: true },
-        { key: 'email', label: 'Email', sortable: true },
-        { key: 'status', label: 'Status', formatter: 'badge' }
-      ],
-      collection: new UserCollection(),
-      actions: [
-        { key: 'edit', label: 'Edit', icon: 'edit' },
-        { key: 'delete', label: 'Delete', icon: 'trash', class: 'text-danger' }
-      ],
-      batchActions: [
-        { key: 'activate', label: 'Activate Selected' },
-        { key: 'deactivate', label: 'Deactivate Selected' }
-      ],
-      ...options
-    });
-  }
-
-  // Handle row-level edit action
-  async handleActionEdit(event, element) {
-    const itemId = element.getAttribute('data-id');
-    const user = this.collection.get(itemId);
-    
-    const formView = new UserFormView({ model: user });
-    const result = await Dialog.showForm(formView, {
-      title: 'Edit User'
-    });
-
-    if (result) {
-      await user.save(result);
-      await this.refresh();
-    }
-  }
-
-  // Handle batch activate action
-  async handleActionActivate(event, element) {
-    const selectedItems = this.getSelectedItems();
-    
-    for (const item of selectedItems) {
-      await item.save({ status: 'active' });
-    }
-    
-    this.clearSelection();
-    await this.refresh();
-    this.showSuccess(`${selectedItems.length} users activated`);
-  }
-}
+const table = new TableView({
+  collection: userCollection,
+  columns: [
+    { key: 'id', label: 'ID', visibility: 'xl' },        // Only on XL+ screens
+    { key: 'name', label: 'Name' },                      // Always visible
+    { key: 'email', label: 'Email', visibility: 'sm' },  // Hidden on XS only
+    { key: 'phone', label: 'Phone', visibility: 'md' },  // Hidden on XS/SM
+    { key: 'address', label: 'Address', visibility: 'lg' }, // Hidden on XS/SM/MD
+    { key: 'notes', label: 'Notes', visibility: 'xl' }   // Only on XL+
+  ],
+  actions: ['view', 'edit', 'delete']
+});
 ```
 
 ## Configuration Options
@@ -105,45 +69,60 @@ class UsersTable extends Table {
 ### Constructor Options
 
 ```javascript
-const table = new Table({
-  // Data
-  collection: myCollection,        // Collection instance for data
-  model: MyModel,                 // Model class for new items
+const table = new TableView({
+  // Data source
+  collection: myCollection,        // Collection instance (required)
   
-  // Display
-  columns: [...],                 // Column definitions (required)
-  title: 'My Data',              // Table title
-  emptyMessage: 'No data found', // Message when no data
+  // Column configuration
+  columns: [...],                  // Column definitions (required)
+  
+  // Row actions
+  actions: ['view', 'edit', 'delete'], // String shortcuts or action objects
+  contextMenu: [...],              // Context menu items
+  batchActions: [...],             // Batch operations for selected rows
   
   // Features
-  searchable: true,              // Enable global search
-  sortable: true,                // Enable column sorting
-  filterable: true,              // Enable filtering
-  selectable: true,              // Enable row selection
-  exportable: true,              // Enable CSV export
+  searchable: true,                // Enable global search
+  sortable: true,                  // Enable column sorting
+  filterable: true,                // Enable filtering
+  paginated: true,                 // Enable pagination
+  selectionMode: 'multiple',       // 'none', 'single', 'multiple'
   
-  // Pagination
-  paginated: true,               // Enable pagination
-  pageSize: 20,                  // Items per page
-  pageSizeOptions: [10, 20, 50], // Available page sizes
+  // Form configurations
+  addForm: {...},                  // Form config for adding items
+  editForm: {...},                 // Form config for editing items
+  itemView: CustomDetailView,      // Custom view class for viewing items
+  deleteTemplate: 'Delete {{name}}?', // Delete confirmation template
   
-  // Actions
-  actions: [...],                // Row-level actions
-  batchActions: [...],           // Batch actions for selected items
-  toolbarActions: [...],         // Toolbar actions (add, refresh, etc.)
+  // Filter configuration
+  filters: [...],                  // Additional filters beyond columns
+  hideActivePills: false,          // Hide filter pills display
+  hideActivePillNames: ['status'], // Hide specific filter pills
+  searchPlacement: 'toolbar',      // 'toolbar' or 'dropdown'
   
-  // Permissions
-  permissions: {
-    create: 'user.create',
-    edit: 'user.edit',
-    delete: 'user.delete'
+  // Display options
+  tableOptions: {                  // HTML table styling
+    striped: true,
+    bordered: false,
+    hover: true,
+    responsive: false,
+    size: null                    // null, 'sm', 'lg'
   },
   
-  // Styling
-  tableClass: 'table-striped',   // Additional CSS classes
-  responsive: true,              // Responsive table wrapper
-  striped: true,                 // Striped rows
-  hover: true                    // Hover effects
+  // Messages
+  emptyMessage: 'No data available',
+  searchPlaceholder: 'Search...',
+  
+  // Toolbar buttons
+  showAdd: true,                   // Show Add button
+  showExport: true,                // Show Export button
+  
+  // Event handlers
+  onItemView: async (model) => {},
+  onItemEdit: async (model) => {},
+  onItemDelete: async (model) => {},
+  onAdd: async () => {},
+  onExport: async (data) => {}
 });
 ```
 
@@ -152,283 +131,420 @@ const table = new Table({
 ```javascript
 columns: [
   {
-    key: 'name',                    // Data property key
+    key: 'name',                    // Model property key
     label: 'Full Name',             // Column header
-    sortable: true,                 // Enable sorting
-    searchable: true,               // Include in search
-    formatter: 'text',              // Value formatter
-    width: '200px',                 // Column width
-    align: 'left',                  // Text alignment
-    class: 'font-weight-bold',      // CSS classes
-    render: (value, item) => {      // Custom render function
+    
+    // Responsive visibility
+    visibility: 'md',               // Bootstrap breakpoint: 'sm', 'md', 'lg', 'xl', 'xxl'
+                                   // Column hidden below this breakpoint
+    
+    // Sorting
+    sortable: true,                 // Enable column sorting
+    
+    // Formatting
+    formatter: 'currency',          // Built-in formatter name
+    formatter: (value, context) => { // Or custom formatter function
+      // context = { value, row, column, table, index }
       return `<strong>${value}</strong>`;
+    },
+    
+    // Filtering
+    filter: {                       // Enable column filter
+      type: 'select',              // 'text', 'select', 'date', 'daterange', 'number', 'boolean'
+      label: 'Status Filter',      
+      options: [                   
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' }
+      ]
+    },
+    
+    // Styling
+    class: 'text-nowrap',          // CSS classes for cells
+    width: '200px',                // Fixed column width
+    
+    // Interaction
+    action: 'row-click',           // Action triggered on cell click
+    
+    // Custom template (alternative to formatter)
+    template: (value, model) => {
+      return `<a href="/users/${model.id}">${value}</a>`;
     }
-  },
-  {
-    key: 'email',
-    label: 'Email',
-    formatter: 'email',             // Email formatter (creates mailto link)
-    searchable: true
-  },
-  {
-    key: 'created_at',
-    label: 'Created',
-    formatter: 'datetime',          // Date/time formatter
-    sortable: true
-  },
-  {
-    key: 'status',
-    label: 'Status',
-    formatter: 'badge',             // Badge formatter
-    filterOptions: [                // Filter dropdown options
-      { value: 'active', label: 'Active' },
-      { value: 'inactive', label: 'Inactive' }
-    ]
   }
 ]
 ```
 
 ## Built-in Formatters
 
-The Table component includes several built-in formatters:
+TableView includes these formatters via DataFormatter:
 
-- **text**: Plain text (default)
-- **email**: Creates mailto link
-- **url**: Creates clickable link
-- **date**: Formats date (YYYY-MM-DD)
-- **datetime**: Formats date and time
-- **time**: Formats time only
-- **currency**: Formats as currency ($1,234.56)
-- **number**: Formats numbers with commas
-- **percent**: Formats as percentage
-- **boolean**: Shows Yes/No or checkmark
-- **badge**: Creates Bootstrap badge
-- **truncate**: Truncates long text with ellipsis
+- `text` - Plain text (default)
+- `email` - Creates mailto link
+- `url` - Creates clickable link  
+- `date` - Formats as date
+- `datetime` - Formats as date and time
+- `time` - Time only
+- `currency` - Currency formatting
+- `number` - Number with thousands separator
+- `percent` - Percentage formatting
+- `boolean` - Yes/No display
+- `badge` - Bootstrap badge
+- `truncate(n)` - Truncates to n characters
 
-### Custom Formatters
+### Using Formatters
 
 ```javascript
-// Register custom formatter
-Table.registerFormatter('status-icon', (value, item, column) => {
-  const icon = value === 'active' ? 'check-circle' : 'x-circle';
-  const color = value === 'active' ? 'success' : 'danger';
-  return `<i class="fas fa-${icon} text-${color}"></i>`;
-});
-
-// Use in column definition
 columns: [
-  {
+  // String formatter
+  { key: 'price', label: 'Price', formatter: 'currency' },
+  
+  // Pipe multiple formatters
+  { key: 'description', label: 'Description', formatter: 'truncate(100)|escape' },
+  
+  // Function formatter for complex logic
+  { 
     key: 'status',
     label: 'Status',
-    formatter: 'status-icon'
+    formatter: (value, context) => {
+      const colors = {
+        active: 'success',
+        pending: 'warning',
+        inactive: 'danger'
+      };
+      return `<span class="badge bg-${colors[value]}">${value}</span>`;
+    }
   }
 ]
 ```
 
-## Event Handling
+## Row Actions
 
-The Table component uses MOJO's automatic event delegation system:
-
-### Action Handlers
+### Simple Actions
 
 ```javascript
-class MyTable extends Table {
-  // Row action: data-action="edit" -> handleActionEdit()
-  async handleActionEdit(event, element) {
-    const itemId = element.getAttribute('data-id');
-    const item = this.collection.get(itemId);
-    // Handle edit logic
-  }
+// Use string shortcuts
+actions: ['view', 'edit', 'delete']
 
-  // Batch action: data-action="delete-selected" -> handleActionDeleteSelected()
-  async handleActionDeleteSelected(event, element) {
-    const selectedItems = this.getSelectedItems();
-    const confirmed = await Dialog.confirm(
-      `Delete ${selectedItems.length} items?`
-    );
-    
-    if (confirmed) {
-      for (const item of selectedItems) {
-        await item.destroy();
-      }
-      this.clearSelection();
-      await this.refresh();
-    }
-  }
-
-  // Toolbar action: data-action="add" -> handleActionAdd()
-  async handleActionAdd(event, element) {
-    const formView = new ItemFormView();
-    const result = await Dialog.showForm(formView, {
-      title: 'Add New Item'
-    });
-
-    if (result) {
-      const item = new this.model(result);
-      await item.save();
-      this.collection.add(item);
-      await this.refresh();
-    }
-  }
-}
+// Generates standard buttons with icons:
+// - View: eye icon, primary style
+// - Edit: pencil icon, secondary style  
+// - Delete: trash icon, danger style
 ```
 
-### Lifecycle Events
+### Custom Actions
 
 ```javascript
-class MyTable extends Table {
-  async onInit() {
-    await super.onInit();
-    // Custom initialization
-  }
-
-  async onBeforeRender() {
-    await super.onBeforeRender();
-    // Pre-render setup
-  }
-
-  async onAfterRender() {
-    await super.onAfterRender();
-    // Post-render setup
-  }
-
-  // Item event handlers
-  async onItemClicked(item, event, element) {
-    // Handle item click
-    console.log('Item clicked:', item);
-  }
-
-  async onItemEdit(item, result) {
-    // Handle after item edit
-    console.log('Item edited:', item, result);
-  }
-
-  async onItemAdd(item) {
-    // Handle after item add
-    console.log('Item added:', item);
-  }
-
-  async onItemDelete(item) {
-    // Handle after item delete
-    console.log('Item deleted:', item);
-  }
-}
-```
-
-## Advanced Features
-
-### Filtering
-
-```javascript
-// Configure filterable columns
-columns: [
+actions: [
   {
-    key: 'status',
-    label: 'Status',
-    filterable: true,
-    filterOptions: [
-      { value: 'active', label: 'Active' },
-      { value: 'inactive', label: 'Inactive' },
-      { value: 'pending', label: 'Pending' }
-    ]
+    action: 'approve',
+    label: 'Approve',
+    icon: 'bi bi-check-circle',
+    class: 'btn-success'
+  },
+  {
+    action: 'reject',
+    label: 'Reject', 
+    icon: 'bi bi-x-circle',
+    class: 'btn-danger'
   }
 ]
-
-// Programmatic filtering
-table.setFilter('status', 'active');
-table.setFilter('category', ['tech', 'business']); // Multiple values
-
-// Get active filters
-const filters = table.activeFilters; // { status: 'active', category: ['tech', 'business'] }
-
-// Clear filters
-table.handleClearAllFilters();
-```
-
-### Selection Management
-
-```javascript
-// Enable selection
-const table = new Table({
-  selectable: true,
-  // ... other options
-});
-
-// Get selected items
-const selectedItems = table.getSelectedItems();
-
-// Clear selection
-table.clearSelection();
-
-// Check if all items are selected
-const allSelected = table.isAllSelected();
-
-// Handle selection events
-table.on('selection-changed', (selectedItems) => {
-  console.log('Selection changed:', selectedItems);
-});
 ```
 
 ### Context Menus
 
 ```javascript
-// Enable context menus with custom actions
-const table = new Table({
-  contextMenu: true,
-  contextMenuActions: [
-    { key: 'view', label: 'View Details', icon: 'eye' },
-    { key: 'edit', label: 'Edit', icon: 'edit' },
-    { key: 'duplicate', label: 'Duplicate', icon: 'copy' },
-    { key: 'delete', label: 'Delete', icon: 'trash', class: 'text-danger' }
-  ],
-  // ... other options
-});
-
-// Handle context menu actions
-class MyTable extends Table {
-  async handleActionContextMenuView(event, element) {
-    const itemId = element.getAttribute('data-id');
-    const item = this.collection.get(itemId);
-    // Show item details
+contextMenu: [
+  {
+    action: 'view',
+    label: 'View Details',
+    icon: 'bi bi-eye'
+  },
+  {
+    separator: true  // Divider line
+  },
+  {
+    action: 'duplicate',
+    label: 'Duplicate',
+    icon: 'bi bi-copy'
+  },
+  {
+    action: 'archive',
+    label: 'Archive',
+    icon: 'bi bi-archive'
+  },
+  {
+    separator: true
+  },
+  {
+    action: 'delete',
+    label: 'Delete',
+    icon: 'bi bi-trash',
+    danger: true  // Red text
   }
-
-  async handleActionContextMenuDuplicate(event, element) {
-    const itemId = element.getAttribute('data-id');
-    const item = this.collection.get(itemId);
-    const duplicate = item.clone();
-    await duplicate.save();
-    this.collection.add(duplicate);
-    await this.refresh();
-  }
-}
+]
 ```
 
-### CSV Export
+## Model-Based Configuration
+
+TableView automatically reads configuration from Model classes:
 
 ```javascript
-// Enable export
-const table = new Table({
-  exportable: true,
-  exportFilename: 'my-data.csv',
-  // ... other options
+class ProductModel extends Model {
+  static MODEL_NAME = 'Product';
+  
+  // Form for adding new products
+  static ADD_FORM = {
+    title: 'Add Product',
+    fields: [
+      { name: 'name', label: 'Product Name', required: true },
+      { name: 'price', label: 'Price', type: 'currency', required: true },
+      { name: 'category', label: 'Category', type: 'select',
+        options: ['Electronics', 'Clothing', 'Books'] }
+    ]
+  };
+  
+  // Form for editing products
+  static EDIT_FORM = {
+    title: 'Edit Product',
+    fields: [
+      { name: 'name', label: 'Product Name', required: true },
+      { name: 'price', label: 'Price', type: 'currency', required: true },
+      { name: 'category', label: 'Category', type: 'select',
+        options: ['Electronics', 'Clothing', 'Books'] },
+      { name: 'status', label: 'Status', type: 'select',
+        options: ['active', 'draft', 'archived'] }
+    ]
+  };
+  
+  // Custom view for product details
+  static VIEW_CLASS = ProductDetailView;
+  
+  // Delete confirmation template
+  static DELETE_TEMPLATE = 'Delete product "{{name}}" (SKU: {{sku}})? This cannot be undone.';
+}
+
+// TableView automatically uses Model configuration
+const table = new TableView({
+  collection: productCollection, // Uses ProductModel
+  columns: [...],
+  actions: ['view', 'edit', 'delete']
+  // No need to specify forms - they're read from ProductModel!
+});
+```
+
+## Filtering System
+
+### Column Filters
+
+```javascript
+columns: [
+  {
+    key: 'category',
+    label: 'Category',
+    filter: {
+      type: 'select',
+      label: 'Product Category',
+      options: [
+        { value: 'electronics', label: 'Electronics' },
+        { value: 'clothing', label: 'Clothing' }
+      ]
+    }
+  },
+  {
+    key: 'price',
+    label: 'Price',
+    filter: {
+      type: 'range',
+      min: 0,
+      max: 1000,
+      step: 10
+    }
+  }
+]
+```
+
+### Additional Filters
+
+```javascript
+const table = new TableView({
+  columns: [...],
+  
+  // Filters not tied to columns
+  filters: [
+    {
+      key: 'date_range',
+      label: 'Date Range',
+      type: 'daterange',
+      startName: 'start_date',
+      endName: 'end_date'
+    },
+    {
+      key: 'has_discount',
+      label: 'On Sale Only',
+      type: 'boolean'
+    },
+    {
+      key: 'min_rating',
+      label: 'Minimum Rating',
+      type: 'select',
+      options: [1, 2, 3, 4, 5]
+    }
+  ]
+});
+```
+
+### Filter Pills Display
+
+Active filters are shown as pills below the toolbar:
+
+```javascript
+// Control pill display
+hideActivePills: false,              // Hide all pills
+hideActivePillNames: ['category'],   // Hide specific pills
+
+// Pills show filter name and value with edit/remove buttons
+// Example: "Category: Electronics [edit] [x]"
+```
+
+## Batch Operations
+
+### Configuration
+
+```javascript
+const table = new TableView({
+  selectionMode: 'multiple',  // Enable multi-select
+  
+  batchActions: [
+    {
+      action: 'activate',
+      label: 'Activate',
+      icon: 'bi bi-check-circle'
+    },
+    {
+      action: 'archive',
+      label: 'Archive',
+      icon: 'bi bi-archive'
+    },
+    {
+      action: 'delete',
+      label: 'Delete',
+      icon: 'bi bi-trash',
+      class: 'text-danger'
+    }
+  ]
+});
+```
+
+### Handling Batch Actions
+
+```javascript
+table.on('batch:action', async ({ action, items, event }) => {
+  switch(action) {
+    case 'activate':
+      for (const item of items) {
+        await item.model.save({ status: 'active' });
+      }
+      await table.refresh();
+      break;
+      
+    case 'delete':
+      const confirmed = await Dialog.confirm(
+        `Delete ${items.length} items?`
+      );
+      if (confirmed) {
+        for (const item of items) {
+          await item.model.destroy();
+        }
+        await table.refresh();
+      }
+      break;
+  }
+});
+```
+
+## Event Handling
+
+### Table Events
+
+```javascript
+// Row events
+table.on('row:click', ({ model, column, event }) => {
+  console.log('Row clicked:', model);
 });
 
-// Programmatic export
-table.handleExport();
+table.on('row:view', ({ model, event }) => {
+  console.log('View action:', model);
+});
 
-// Custom export data processing
-class MyTable extends Table {
-  exportToCSV(filename = null) {
-    const data = this.getVisibleItems().map(item => ({
-      'Full Name': item.get('name'),
-      'Email': item.get('email'),
-      'Status': item.get('status').toUpperCase(),
-      'Created': new Date(item.get('created_at')).toLocaleDateString()
-    }));
+table.on('row:edit', ({ model, event }) => {
+  console.log('Edit action:', model);
+});
 
-    return super.exportToCSV(filename, data);
+table.on('row:delete', ({ model, event }) => {
+  console.log('Delete action:', model);
+});
+
+// Table events
+table.on('table:add', ({ event }) => {
+  console.log('Add button clicked');
+});
+
+table.on('table:export', ({ data, event }) => {
+  console.log('Export data:', data);
+});
+
+// Search/filter events
+table.on('table:search', ({ searchTerm, event }) => {
+  console.log('Search:', searchTerm);
+});
+
+table.on('table:sort', ({ field, event }) => {
+  console.log('Sort by:', field);
+});
+
+table.on('table:page', ({ page, event }) => {
+  console.log('Page changed:', page);
+});
+
+// Parameter change event (useful for URL sync)
+table.on('params-changed', () => {
+  console.log('Table parameters changed');
+});
+```
+
+### Custom Action Handlers
+
+```javascript
+// Override default handlers
+const table = new TableView({
+  onItemView: async (model, event) => {
+    // Custom view logic
+    const app = this.getApp();
+    app.navigate(`/items/${model.id}`);
+  },
+  
+  onItemEdit: async (model, event) => {
+    // Custom edit logic
+    const result = await showCustomEditDialog(model);
+    if (result) {
+      await model.save(result);
+      await table.refresh();
+    }
+  },
+  
+  onItemDelete: async (model, event) => {
+    // Custom delete logic with additional checks
+    if (!canDelete(model)) {
+      await Dialog.alert('Cannot delete this item');
+      return;
+    }
+    
+    const confirmed = await Dialog.confirm(`Delete ${model.get('name')}?`);
+    if (confirmed) {
+      await model.destroy();
+      table.collection.remove(model);
+    }
   }
-}
+});
 ```
 
 ## API Reference
@@ -436,278 +552,293 @@ class MyTable extends Table {
 ### Properties
 
 - `collection` - The data collection
-- `model` - Model class for new items
 - `columns` - Column definitions array
-- `selectedItems` - Array of selected item IDs
-- `activeFilters` - Object of active filters
-- `sortBy` - Current sort column
-- `sortDirection` - Current sort direction ('asc' or 'desc')
-- `start` - Current pagination offset
-- `size` - Current page size
+- `tableView` - Reference to self (for TableRow compatibility)
+- `itemViews` - Map of model.id to TableRow views
+- `selectedItems` - Set of selected item IDs
 
 ### Methods
 
 #### Data Management
-- `async loadDataIfNeeded()` - Load data if not already loaded
-- `async refresh()` - Reload data and re-render table
-- `getVisibleItems()` - Get currently visible items after filtering
-- `processData()` - Apply sorting and filtering to data
-
-#### Pagination
-- `setStart(start)` - Set pagination offset
-- `setSize(size)` - Set page size
-- `async handlePageChange(page)` - Navigate to specific page
-- `async handlePageSizeChange(size)` - Change page size
-
-#### Sorting
-- `setSort(column, direction)` - Set sort column and direction
-- `async handleSort(column)` - Handle column sort click
+- `refresh()` - Reload and re-render data
+- `getSelectedItems()` - Get array of selected items
+- `clearSelection()` - Clear all selections
+- `forEachItem(callback)` - Iterate over all rows
 
 #### Filtering
-- `setFilter(column, value)` - Set filter for column
-- `async handleRemoveFilter(column)` - Remove specific filter
-- `async handleClearAllFilters()` - Clear all filters
+- `setFilter(key, value)` - Set a filter value
+- `getActiveFilters()` - Get all active filters
+- `getAllAvailableFilters()` - Get filter configurations
+- `updateFilterPills()` - Update filter pills display
 
-#### Selection
-- `getSelectedItems()` - Get array of selected model instances
-- `clearSelection()` - Clear all selections
-- `handleSelectAll()` - Toggle select all
-- `handleSelectItem(itemId, checked)` - Select/deselect specific item
-- `isAllSelected()` - Check if all items are selected
+#### Sorting
+- `getSortBy()` - Get current sort field
+- `getSortDirection()` - Get sort direction ('asc' or 'desc')
+- `updateSortIcons()` - Update sort UI indicators
 
-#### UI
-- `async render()` - Re-render entire table
-- `updateLoadingState()` - Show/hide loading indicators
-- `updateSelectionDisplay()` - Update selection UI elements
-- `showError(message)` - Display error message
-- `showSuccess(message)` - Display success message
-
-### Events
-
-The Table component emits events that can be listened to:
-
-```javascript
-table.on('data-loaded', (data) => {
-  console.log('Data loaded:', data);
-});
-
-table.on('selection-changed', (selectedItems) => {
-  console.log('Selection changed:', selectedItems);
-});
-
-table.on('sort-changed', ({ column, direction }) => {
-  console.log('Sort changed:', column, direction);
-});
-
-table.on('filter-changed', (filters) => {
-  console.log('Filters changed:', filters);
-});
-
-table.on('page-changed', ({ start, size }) => {
-  console.log('Page changed:', start, size);
-});
-```
+#### Actions
+- `onActionSort(event, element)` - Handle sort action
+- `onActionPage(event, element)` - Handle pagination
+- `onActionApplySearch(event, element)` - Handle search
+- `onActionAddFilter(event, element)` - Show filter dialog
+- `onActionRemoveFilter(event, element)` - Remove a filter
+- `onActionClearAllFilters(event, element)` - Clear all filters
 
 ## Complete Example
 
-Here's a complete example showing all major features:
-
 ```javascript
-import { Table } from 'web-mojo';
-import { UserCollection, User } from 'web-mojo/models';
-import { UserFormView } from '../views/UserFormView.js';
+import TableView from 'web-mojo/views/table/TableView.js';
+import { ProductCollection, ProductModel } from '../models/ProductModel.js';
+import ProductDetailView from '../views/ProductDetailView.js';
 
-class UsersTable extends Table {
+// Configure Model with forms
+ProductModel.ADD_FORM = {
+  title: 'Add Product',
+  fields: [
+    { name: 'name', label: 'Product Name', required: true },
+    { name: 'sku', label: 'SKU', required: true },
+    { name: 'price', label: 'Price', type: 'currency', required: true },
+    { name: 'category', label: 'Category', type: 'select',
+      options: ['Electronics', 'Clothing', 'Books', 'Home'] },
+    { name: 'stock', label: 'Initial Stock', type: 'number', value: 0 }
+  ]
+};
+
+ProductModel.VIEW_CLASS = ProductDetailView;
+
+// Create table instance
+class ProductTableView extends TableView {
   constructor(options = {}) {
     super({
-      title: 'User Management',
-      collection: new UserCollection(),
-      model: User,
+      collection: new ProductCollection(),
       
       columns: [
-        { 
-          key: 'avatar', 
-          label: '', 
-          width: '50px',
-          render: (value, item) => `<img src="${value}" class="avatar-sm rounded-circle" alt="Avatar">`
+        {
+          key: 'image',
+          label: '',
+          width: '60px',
+          formatter: (value) => `<img src="${value}" class="img-thumbnail" style="width: 50px;">`
         },
-        { key: 'name', label: 'Name', sortable: true, searchable: true },
-        { key: 'email', label: 'Email', formatter: 'email', sortable: true, searchable: true },
-        { 
-          key: 'role', 
-          label: 'Role', 
+        {
+          key: 'name',
+          label: 'Product',
           sortable: true,
-          filterable: true,
-          filterOptions: [
-            { value: 'admin', label: 'Admin' },
-            { value: 'user', label: 'User' },
-            { value: 'moderator', label: 'Moderator' }
-          ]
+          action: 'row-click'
         },
-        { 
-          key: 'status', 
-          label: 'Status', 
+        {
+          key: 'sku',
+          label: 'SKU',
+          visibility: 'md'
+        },
+        {
+          key: 'price',
+          label: 'Price',
+          formatter: 'currency',
+          sortable: true
+        },
+        {
+          key: 'stock',
+          label: 'Stock',
+          visibility: 'sm',
+          formatter: (value) => {
+            const color = value > 10 ? 'success' : value > 0 ? 'warning' : 'danger';
+            return `<span class="badge bg-${color}">${value}</span>`;
+          }
+        },
+        {
+          key: 'category',
+          label: 'Category',
           formatter: 'badge',
-          filterable: true,
-          filterOptions: [
-            { value: 'active', label: 'Active' },
-            { value: 'inactive', label: 'Inactive' }
-          ]
+          filter: {
+            type: 'select',
+            options: ['Electronics', 'Clothing', 'Books', 'Home']
+          }
         },
-        { key: 'last_login', label: 'Last Login', formatter: 'datetime', sortable: true },
-        { key: 'created_at', label: 'Created', formatter: 'date', sortable: true }
+        {
+          key: 'status',
+          label: 'Status',
+          visibility: 'lg',
+          formatter: (value) => {
+            const icons = {
+              active: 'check-circle text-success',
+              draft: 'pencil text-warning',
+              archived: 'archive text-secondary'
+            };
+            return `<i class="bi bi-${icons[value]}"></i> ${value}`;
+          },
+          filter: {
+            type: 'select',
+            options: [
+              { value: 'active', label: 'Active' },
+              { value: 'draft', label: 'Draft' },
+              { value: 'archived', label: 'Archived' }
+            ]
+          }
+        }
       ],
       
-      actions: [
-        { key: 'edit', label: 'Edit', icon: 'edit' },
-        { key: 'reset-password', label: 'Reset Password', icon: 'key' },
-        { key: 'delete', label: 'Delete', icon: 'trash', class: 'text-danger' }
+      actions: ['view', 'edit', 'delete'],
+      
+      contextMenu: [
+        { action: 'duplicate', label: 'Duplicate', icon: 'bi bi-copy' },
+        { action: 'archive', label: 'Archive', icon: 'bi bi-archive' },
+        { separator: true },
+        { action: 'delete', label: 'Delete', icon: 'bi bi-trash', danger: true }
       ],
       
       batchActions: [
-        { key: 'activate', label: 'Activate Selected' },
-        { key: 'deactivate', label: 'Deactivate Selected' },
-        { key: 'delete-selected', label: 'Delete Selected', class: 'text-danger' }
+        { action: 'activate', label: 'Activate', icon: 'bi bi-check-circle' },
+        { action: 'archive', label: 'Archive', icon: 'bi bi-archive' },
+        { action: 'delete', label: 'Delete', icon: 'bi bi-trash', class: 'text-danger' }
       ],
       
-      toolbarActions: [
-        { key: 'add', label: 'Add User', icon: 'plus', class: 'btn-primary' }
+      filters: [
+        {
+          key: 'price_range',
+          label: 'Price Range',
+          type: 'range',
+          min: 0,
+          max: 1000
+        },
+        {
+          key: 'in_stock',
+          label: 'In Stock Only',
+          type: 'boolean'
+        }
       ],
       
+      selectionMode: 'multiple',
       searchable: true,
       sortable: true,
       filterable: true,
-      selectable: true,
-      exportable: true,
       paginated: true,
-      pageSize: 20,
       
-      permissions: {
-        create: 'users.create',
-        edit: 'users.edit',
-        delete: 'users.delete'
+      showAdd: true,
+      showExport: true,
+      
+      tableOptions: {
+        striped: true,
+        hover: true
       },
       
       ...options
     });
-  }
-
-  // Action handlers
-  async handleActionAdd(event, element) {
-    const formView = new UserFormView();
-    const result = await Dialog.showForm(formView, {
-      title: 'Add New User'
-    });
-
-    if (result) {
-      const user = new User(result);
-      await user.save();
-      this.collection.add(user);
-      await this.refresh();
-      this.showSuccess('User added successfully');
-    }
-  }
-
-  async handleActionEdit(event, element) {
-    const userId = element.getAttribute('data-id');
-    const user = this.collection.get(userId);
     
-    const formView = new UserFormView({ model: user });
-    const result = await Dialog.showForm(formView, {
-      title: 'Edit User'
-    });
-
-    if (result) {
-      await user.save(result);
-      await this.refresh();
-      this.showSuccess('User updated successfully');
-    }
+    this.setupEventListeners();
   }
-
-  async handleActionResetPassword(event, element) {
-    const userId = element.getAttribute('data-id');
-    const user = this.collection.get(userId);
-    
-    const confirmed = await Dialog.confirm(
-      `Reset password for ${user.get('name')}?`,
-      'A new password will be sent to their email address.'
-    );
-
-    if (confirmed) {
-      try {
-        await user.resetPassword();
-        this.showSuccess('Password reset email sent');
-      } catch (error) {
-        this.showError('Failed to reset password: ' + error.message);
+  
+  setupEventListeners() {
+    // Handle batch actions
+    this.on('batch:action', async ({ action, items }) => {
+      switch(action) {
+        case 'activate':
+          await this.activateProducts(items);
+          break;
+        case 'archive':
+          await this.archiveProducts(items);
+          break;
+        case 'delete':
+          await this.deleteProducts(items);
+          break;
       }
-    }
+    });
+    
+    // Handle row click
+    this.on('row:click', ({ model, column }) => {
+      if (column === 'name') {
+        // Navigate to product detail
+        const app = this.getApp();
+        app.navigate(`/products/${model.id}`);
+      }
+    });
   }
-
-  async handleActionDelete(event, element) {
-    const userId = element.getAttribute('data-id');
-    const user = this.collection.get(userId);
-    
-    const confirmed = await Dialog.confirm(
-      `Delete ${user.get('name')}?`,
-      'This action cannot be undone.'
-    );
-
-    if (confirmed) {
-      await user.destroy();
-      this.collection.remove(user);
-      await this.refresh();
-      this.showSuccess('User deleted successfully');
+  
+  async activateProducts(items) {
+    for (const item of items) {
+      await item.model.save({ status: 'active' });
     }
-  }
-
-  // Batch actions
-  async handleActionActivate(event, element) {
-    const selectedUsers = this.getSelectedItems();
-    
-    for (const user of selectedUsers) {
-      await user.save({ status: 'active' });
-    }
-    
-    this.clearSelection();
     await this.refresh();
-    this.showSuccess(`${selectedUsers.length} users activated`);
+    this.showSuccess(`${items.length} products activated`);
   }
-
-  async handleActionDeleteSelected(event, element) {
-    const selectedUsers = this.getSelectedItems();
-    
+  
+  async archiveProducts(items) {
     const confirmed = await Dialog.confirm(
-      `Delete ${selectedUsers.length} selected users?`,
-      'This action cannot be undone.'
+      `Archive ${items.length} products?`
     );
-
+    
     if (confirmed) {
-      for (const user of selectedUsers) {
-        await user.destroy();
-        this.collection.remove(user);
+      for (const item of items) {
+        await item.model.save({ status: 'archived' });
       }
-      
-      this.clearSelection();
       await this.refresh();
-      this.showSuccess(`${selectedUsers.length} users deleted`);
+      this.showSuccess(`${items.length} products archived`);
     }
   }
-
-  // Lifecycle events
-  async onItemClicked(item, event, element) {
-    // Navigate to user detail page
-    const app = this.getApp();
-    app.navigate(`/users/${item.get('id')}`);
+  
+  async deleteProducts(items) {
+    const confirmed = await Dialog.confirm(
+      `Delete ${items.length} products?`,
+      'This action cannot be undone.'
+    );
+    
+    if (confirmed) {
+      for (const item of items) {
+        await item.model.destroy();
+      }
+      await this.refresh();
+      this.showSuccess(`${items.length} products deleted`);
+    }
   }
 }
 
 // Usage
-const usersTable = new UsersTable({
-  container: '#users-table-container'
-});
-
-// Add to parent view
-this.addChild(usersTable);
+const productTable = new ProductTableView();
+this.addChild(productTable);
 ```
 
-This Table component provides a complete data table solution with all the features needed for modern web applications, following MOJO framework patterns and conventions.
+## Best Practices
+
+### 1. Use Model Configuration
+Define forms and templates on your Model classes for reusability:
+```javascript
+Model.ADD_FORM = {...}
+Model.EDIT_FORM = {...}
+Model.VIEW_CLASS = CustomView
+Model.DELETE_TEMPLATE = "..."
+```
+
+### 2. Responsive Column Design
+Plan column visibility for different screen sizes:
+- Always visible: Critical information (name, primary action)
+- `sm`+: Important secondary info
+- `md`+: Useful context
+- `lg`+: Nice to have details
+- `xl`+: Additional metadata
+
+### 3. Efficient Formatters
+Use built-in formatters when possible, function formatters for complex logic:
+```javascript
+// Good - built-in formatter
+{ formatter: 'currency' }
+
+// Good - function for complex logic
+{ formatter: (value, context) => customFormat(value) }
+
+// Avoid - inline complex HTML
+{ formatter: (value) => /* complex HTML string */ }
+```
+
+### 4. Event Delegation
+TableView uses automatic event delegation - use data-action attributes:
+```javascript
+// Actions are automatically routed to onAction* methods
+// data-action="edit" → onActionEdit(event, element)
+```
+
+### 5. Performance Tips
+- TableView only re-renders changed rows
+- Use pagination for large datasets
+- Consider virtual scrolling for very large lists
+- Keep formatters lightweight
+
+The TableView component provides a powerful, efficient data table solution that leverages ListView's view management for optimal performance while maintaining a rich feature set perfect for modern web applications.

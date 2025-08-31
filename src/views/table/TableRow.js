@@ -35,6 +35,24 @@ class TableRow extends ListViewItem {
   }
 
   /**
+   * Get responsive CSS classes for column visibility
+   * @param {string} visibility - Bootstrap breakpoint (sm, md, lg, xl, xxl)
+   * @returns {string} Bootstrap responsive display classes
+   */
+  getResponsiveClasses(visibility) {
+    if (!visibility) return ''; // Always visible if no visibility specified
+
+    const validBreakpoints = ['sm', 'md', 'lg', 'xl', 'xxl'];
+    if (!validBreakpoints.includes(visibility)) {
+      console.warn(`Invalid visibility breakpoint: ${visibility}. Valid options are: ${validBreakpoints.join(', ')}`);
+      return '';
+    }
+
+    // Hide on smaller screens, show at breakpoint and up using table-cell display
+    return `d-none d-${visibility}-table-cell`;
+  }
+
+  /**
    * Build the row template with table cells
    */
   buildRowTemplate() {
@@ -57,15 +75,17 @@ class TableRow extends ListViewItem {
     // Data cells for each column
     this.columns.forEach(column => {
       const cellClass = column.class || column.className || '';
+      const responsiveClasses = this.getResponsiveClasses(column.visibility);
+      const combinedClasses = [cellClass, responsiveClasses].filter(c => c).join(' ');
       const cellContent = this.buildCellTemplate(column);
       if (!column.action && this.tableView.rowAction) {
           column.action = this.tableView.rowAction;
       }
 
       if (column.action) {
-        template += `<td class="${cellClass}" data-action="${column.action}" data-column="${column.key}">${cellContent}</td>`;
+        template += `<td class="${combinedClasses}" data-action="${column.action}" data-column="${column.key}">${cellContent}</td>`;
       } else {
-        template += `<td class="${cellClass}" data-column="${column.key}">${cellContent}</td>`;
+        template += `<td class="${combinedClasses}" data-column="${column.key}">${cellContent}</td>`;
       }
     });
 
@@ -171,7 +191,6 @@ class TableRow extends ListViewItem {
                   type="button"
                   data-bs-toggle="dropdown"
                   aria-expanded="false"
-                  data-action="context-menu"
                   style="color: #6c757d;">
             <i class="bi bi-three-dots-vertical"></i>
           </button>
@@ -326,6 +345,7 @@ class TableRow extends ListViewItem {
         event: event
       });
     }
+      return true;
   }
 
   /**
@@ -355,7 +375,7 @@ class TableRow extends ListViewItem {
   select() {
     super.select();
     this.addClass('selected');
-    
+
     // Update checkbox visual state
     const selectCell = this.element?.querySelector('.mojo-select-cell');
     if (selectCell) {
@@ -369,7 +389,7 @@ class TableRow extends ListViewItem {
   deselect() {
     super.deselect();
     this.removeClass('selected');
-    
+
     // Update checkbox visual state
     const selectCell = this.element?.querySelector('.mojo-select-cell');
     if (selectCell) {

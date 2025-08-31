@@ -37,13 +37,27 @@ class TablePage extends Page {
     this.Collection = options.Collection || null;
     this.collection = options.collection || null;
 
-    // Table configuration
-    this.tableConfig = {
+    // our default collection query
+    this.defaultQuery = options.defaultQuery || {};
+
+    // Store configuration for TableView
+    // Map legacy property names to new ones
+    this.tableViewConfig = {
+      // Core table properties
       columns: options.columns || [],
       actions: options.actions || null,
       contextMenu: options.contextMenu || null,
       batchActions: options.batchActions || null,
-      selectionMode: options.selectionMode || (options.selectable ? 'multiple' : 'none'),
+
+      // Map legacy form properties to new names
+      addForm: options.addForm || options.formFields || options.formCreate,
+      editForm: options.editForm || options.formEdit || options.formFields,
+
+      // Model operation configurations
+      itemView: options.itemView,
+      deleteTemplate: options.deleteTemplate,
+      formDialogConfig: options.formDialogConfig,
+      viewDialogOptions: options.viewDialogOptions,
 
       // Features
       searchable: options.searchable !== false,
@@ -51,13 +65,16 @@ class TablePage extends Page {
       filterable: options.filterable !== false,
       paginated: options.paginated !== false,
 
+      // Selection mode
+      selectionMode: options.selectionMode || (options.selectable ? 'multiple' : 'none'),
+
       // Filter configuration
       filters: options.filters || options.additionalFilters || [],
       hideActivePills: options.hideActivePills || false,
       hideActivePillNames: options.hideActivePillNames || [],
       searchPlacement: options.searchPlacement || 'toolbar',
 
-      // Display options
+      // Display options for the HTML table element
       tableOptions: {
         striped: true,
         bordered: false,
@@ -72,10 +89,6 @@ class TablePage extends Page {
       showAdd: options.showAdd !== false,
       showExport: options.showExport !== false,
 
-      // Form configurations
-      formFields: options.formFields || options.formCreate || null,
-      formEdit: options.formEdit || options.formFields || null,
-
       // Custom handlers
       onItemView: options.onItemView,
       onItemEdit: options.onItemEdit,
@@ -83,6 +96,7 @@ class TablePage extends Page {
       onAdd: options.onAdd,
       onExport: options.onExport,
 
+      // Override with tableViewOptions if provided
       ...options.tableViewOptions
     };
 
@@ -145,35 +159,11 @@ class TablePage extends Page {
     // Apply URL query parameters to collection
     this.applyQueryToCollection();
 
-    // Create TableView instance with proper configuration
+    // Create TableView instance with all configuration
     this.tableView = new TableView({
       collection: this.collection,
       containerId: 'table',
-      columns: this.tableConfig.columns,
-      actions: this.tableConfig.actions,
-      contextMenu: this.tableConfig.contextMenu,
-      batchActions: this.tableConfig.batchActions,
-      selectionMode: this.tableConfig.selectionMode,
-      searchable: this.tableConfig.searchable,
-      sortable: this.tableConfig.sortable,
-      filterable: this.tableConfig.filterable,
-      paginated: this.tableConfig.paginated,
-      filters: this.tableConfig.filters,
-      hideActivePills: this.tableConfig.hideActivePills,
-      hideActivePillNames: this.tableConfig.hideActivePillNames,
-      searchPlacement: this.tableConfig.searchPlacement,
-      tableOptions: this.tableConfig.tableOptions,
-      emptyMessage: this.tableConfig.emptyMessage,
-      searchPlaceholder: this.tableConfig.searchPlaceholder,
-      showAdd: this.tableConfig.showAdd,
-      showExport: this.tableConfig.showExport,
-      formFields: this.tableConfig.formFields,
-      formEdit: this.tableConfig.formEdit,
-      onItemView: this.tableConfig.onItemView,
-      onItemEdit: this.tableConfig.onItemEdit,
-      onItemDelete: this.tableConfig.onItemDelete,
-      onAdd: this.tableConfig.onAdd,
-      onExport: this.tableConfig.onExport
+      ...this.tableViewConfig
     });
 
     // Add as child view
@@ -228,33 +218,33 @@ class TablePage extends Page {
 
     // Row action events
     this.tableView.on('row:view', async ({ model }) => {
-      if (this.tableConfig.onItemView) {
-        await this.tableConfig.onItemView(model);
+      if (this.tableViewConfig.onItemView) {
+        await this.tableViewConfig.onItemView(model);
       }
     });
 
     this.tableView.on('row:edit', async ({ model }) => {
-      if (this.tableConfig.onItemEdit) {
-        await this.tableConfig.onItemEdit(model);
+      if (this.tableViewConfig.onItemEdit) {
+        await this.tableViewConfig.onItemEdit(model);
       }
     });
 
     this.tableView.on('row:delete', async ({ model }) => {
-      if (this.tableConfig.onItemDelete) {
-        await this.tableConfig.onItemDelete(model);
+      if (this.tableViewConfig.onItemDelete) {
+        await this.tableViewConfig.onItemDelete(model);
       }
     });
 
     // Table action events
     this.tableView.on('table:add', async () => {
-      if (this.tableConfig.onAdd) {
-        await this.tableConfig.onAdd();
+      if (this.tableViewConfig.onAdd) {
+        await this.tableViewConfig.onAdd();
       }
     });
 
     this.tableView.on('table:export', async ({ data }) => {
-      if (this.tableConfig.onExport) {
-        await this.tableConfig.onExport(data);
+      if (this.tableViewConfig.onExport) {
+        await this.tableViewConfig.onExport(data);
       }
     });
   }
@@ -267,7 +257,7 @@ class TablePage extends Page {
     if (!this.query || Object.keys(this.query).length === 0) {
         return;
     }
-    const query = this.query;
+    const query = { ...this.defaultQuery, ...this.query };
     // Pagination
     if (query.start !== undefined) params.start = parseInt(query.start) || 0;
     if (query.size !== undefined) params.size = parseInt(query.size) || 10;

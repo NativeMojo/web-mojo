@@ -18,8 +18,13 @@ class UserTablePage extends TablePage {
             pageName: 'Manage Users',
             router: "admin/users",
             Collection: UserList,
-            formCreate: UserForms.create,
-            formEdit: UserForms.edit,
+
+            viewDialogOptions: { header: false },
+
+            defaultQuery: {
+                sort: '-last_activity',
+            },
+
             // Column definitions
             columns: [
                 {
@@ -65,21 +70,17 @@ class UserTablePage extends TablePage {
             showAdd: true,
             showExport: true,
 
-            // Table options
-            tableOptions: {
-                pageSizes: [5, 10, 25, 50],
-                defaultPageSize: 10,
-                emptyMessage: 'No todos found. Click "Add Todo" to create your first task.',
-                emptyIcon: 'bi-inbox',
-                itemViewClass: UserView,
-                viewDialogOptions: {header:false},
-                contextMenu: [
-                  {
+            // Empty state
+            emptyMessage: 'No users found. Click "Add" to create a new user.',
+
+            // Context menu configuration
+            contextMenu: [
+                {
                     icon: 'bi-pencil',
-                    action: 'item-edit',
+                    action: 'edit',
                     label: "Edit Profile"
-                  },
-                  {
+                },
+                {
                     icon: 'bi-shield',
                     action: 'change-password',
                     label: "Change Password",
@@ -87,8 +88,15 @@ class UserTablePage extends TablePage {
                         console.log("ADMIN CLICKED", item, this);
                         this.handleActionChangePassword(item);
                     }
-                  }
-                ],
+                }
+            ],
+
+            // Table display options (for HTML table styling)
+            tableOptions: {
+                striped: true,
+                bordered: false,
+                hover: true,
+                responsive: false
             }
         });
     }

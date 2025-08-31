@@ -1473,6 +1473,7 @@ class Dialog extends View {
       fileHandling: options.fileHandling || 'base64',
       data: options.data,
       defaults: options.defaults,
+      model: options.model,
       formConfig: {
         fields: formConfig.fields || options.fields,
         ...formConfig,

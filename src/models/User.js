@@ -299,7 +299,9 @@ const UserDataView = {
     }
 };
 
-User.VIEW = UserDataView.detailed;
+User.DATA_VIEW = UserDataView.detailed;
+User.EDIT_FORM = UserForms.edit;
+User.ADD_FORM = UserForms.create;
 
 /* =========================
  * UserDevice

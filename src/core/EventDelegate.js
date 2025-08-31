@@ -128,6 +128,21 @@ export class EventDelegate {
     this.debounceTimers.clear();
   }
 
+  hideDropdown(element) {
+    const dropdownMenu = element.closest('.dropdown-menu');
+    const dropdown = dropdownMenu.closest('.dropdown');
+    // if (dropdown) {
+    //   const hideEvent = new Event('hide.bs.dropdown', { bubbles: true });
+    //   dropdown.dispatchEvent(hideEvent);
+    // }
+
+    const dropdownBtn = dropdown.querySelector('[data-bs-toggle="dropdown"]');
+    if (dropdownBtn && window.bootstrap?.Dropdown) {
+      const dropdownInstance = window.bootstrap.Dropdown.getInstance(dropdownBtn);
+      dropdownInstance?.hide();
+    }
+  }
+
   async dispatch(action, event, el) {
     const v = this.view;
     const cap = (s) => (s.includes('-') ? s.split('-').map(w => w[0].toUpperCase()+w.slice(1)).join('') : s[0].toUpperCase()+s.slice(1));
@@ -140,7 +155,16 @@ export class EventDelegate {
 
     const generic = `onAction${cap(action)}`;
     if (typeof v[generic] === 'function') {
-      try { event.preventDefault(); await v[generic](event, el); return true; }
+      try {
+          if (await v[generic](event, el)) {
+              const isInDropdown = !!el.closest('.dropdown-menu');
+              if (isInDropdown) this.hideDropdown(el);
+              event.preventDefault();
+              event.stopPropagation();
+              return true;
+          }
+          return false;
+      }
       catch (e) { console.error(`Error in action ${action}:`, e); v.handleActionError(action, e, event, el); return true; }
     }
 

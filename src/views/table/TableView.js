@@ -9,8 +9,9 @@
  *   collection: userCollection,
  *   columns: [
  *     { key: 'name', label: 'Name', sortable: true },
- *     { key: 'email', label: 'Email' },
- *     { key: 'created', label: 'Created', formatter: 'date' }
+ *     { key: 'email', label: 'Email', visibility: 'md' },  // Hidden on xs/sm, visible md+
+ *     { key: 'phone', label: 'Phone', visibility: 'lg' },  // Visible only on lg+
+ *     { key: 'created', label: 'Created', formatter: 'date', visibility: 'xl' }  // Visible only on xl+
  *   ],
  *   actions: ['view', 'edit', 'delete'],
  *   selectionMode: 'multiple'
@@ -19,7 +20,7 @@
 
 import ListView from '../list/ListView.js';
 import TableRow from './TableRow.js';
-import dataFormatter from '../../utils/DataFormatter.js';
+import Mustache from '../../utils/mustache.js';
 
 class TableView extends ListView {
   constructor(options = {}) {
@@ -43,6 +44,14 @@ class TableView extends ListView {
     this.sortable = options.sortable !== false;
     this.filterable = options.filterable !== false;
     this.paginated = options.paginated !== false;
+
+    // Model operation configurations
+    this.itemView = options.itemView;
+    this.addForm = options.addForm;
+    this.editForm = options.editForm;
+    this.deleteTemplate = options.deleteTemplate;
+    this.formDialogConfig = options.formDialogConfig || {};
+    this.viewDialogOptions = options.viewDialogOptions || {};
 
     // Filter configuration
     this.filters = {};
@@ -90,6 +99,24 @@ class TableView extends ListView {
         column.label = column.key.charAt(0).toUpperCase() + column.key.slice(1);
       }
     });
+  }
+
+  /**
+   * Get responsive CSS classes for column visibility
+   * @param {string} visibility - Bootstrap breakpoint (sm, md, lg, xl, xxl)
+   * @returns {string} Bootstrap responsive display classes
+   */
+  getResponsiveClasses(visibility) {
+    if (!visibility) return ''; // Always visible if no visibility specified
+
+    const validBreakpoints = ['sm', 'md', 'lg', 'xl', 'xxl'];
+    if (!validBreakpoints.includes(visibility)) {
+      console.warn(`Invalid visibility breakpoint: ${visibility}. Valid options are: ${validBreakpoints.join(', ')}`);
+      return '';
+    }
+
+    // Hide on smaller screens, show at breakpoint and up using table-cell display
+    return `d-none d-${visibility}-table-cell`;
   }
 
   /**
@@ -177,8 +204,9 @@ class TableView extends ListView {
       <div class="table-action-buttons mb-3">
         <div class="d-flex align-items-center gap-2">
           ${this.buildActionButtonsTemplate()}
-          ${this.searchable && this.searchPlacement === 'toolbar' ? this.buildSearchTemplate() : ''}
           ${this.filterable ? this.buildFilterDropdownTemplate() : ''}
+          ${this.searchable && this.searchPlacement === 'toolbar' ? this.buildSearchTemplate() : ''}
+
         </div>
         <div data-container="filter-pills"></div>
       </div>
@@ -207,7 +235,7 @@ class TableView extends ListView {
                 data-action="add"
                 title="Add">
           <i class="bi bi-plus-circle me-1"></i>
-          <span class="d-none d-sm-inline">Add</span>
+          <span class="d-none d-lg-inline">Add</span>
         </button>
       `);
     }
@@ -218,14 +246,14 @@ class TableView extends ListView {
                 data-action="export"
                 title="Export">
           <i class="bi bi-download me-1"></i>
-          <span class="d-none d-sm-inline">Export</span>
+          <span class="d-none d-lg-inline">Export</span>
         </button>
       `);
     }
 
-    if (buttons.length > 0) {
-      buttons.push(`<div class="vr mx-2"></div>`);
-    }
+    // if (buttons.length > 0) {
+    //   buttons.push(`<div class="vr mx-2"></div>`);
+    // }
 
     return buttons.join('');
   }
@@ -275,7 +303,7 @@ class TableView extends ListView {
         <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
                 data-bs-toggle="dropdown" aria-expanded="false">
           <i class="bi bi-filter me-1"></i>
-          <span class="d-none d-sm-inline">Add Filter</span>
+          <span class="d-none d-lg-inline">Add Filter</span>
         </button>
         <div class="dropdown-menu" style="min-width: 250px;">
           ${this.buildFilterList()}
@@ -449,6 +477,7 @@ class TableView extends ListView {
       const currentSort = this.getSortBy() === column.key ? this.getSortDirection() : null;
       const sortIcon = this.getSortIcon(currentSort);
       const label = column.label || column.title || column.key;
+      const responsiveClasses = this.getResponsiveClasses(column.visibility);
 
       const sortDropdown = sortable ? `
         <div class="dropdown d-inline-block ms-2">
@@ -475,7 +504,7 @@ class TableView extends ListView {
       ` : '';
 
       headerCells += `
-        <th class="${sortable ? 'sortable' : ''}">
+        <th class="${sortable ? 'sortable' : ''} ${responsiveClasses}">
           <div class="d-flex align-items-center">
             <span>${label}</span>
             ${sortDropdown}
@@ -554,9 +583,9 @@ class TableView extends ListView {
 
     return `
       <div class="table-status-bar mt-3">
-        <div class="d-flex justify-content-between align-items-center">
-          <div class="d-flex align-items-center">
-            <span class="text-muted me-3">
+        <div class="d-flex flex-column flex-lg-row justify-content-center justify-content-lg-between align-items-center gap-3">
+          <div class="d-flex flex-column flex-sm-row align-items-center gap-2 gap-sm-3 text-center text-lg-start">
+            <span class="text-muted">
               Showing <span data-value="start">0</span> to <span data-value="end">0</span>
               of <span data-value="total">0</span> entries
             </span>
@@ -572,7 +601,7 @@ class TableView extends ListView {
             </div>
           </div>
           <nav aria-label="Table pagination">
-            <ul class="pagination pagination-sm mb-0" data-container="pagination">
+            <ul class="pagination pagination-sm mb-0 justify-content-center" data-container="pagination">
               <!-- Pagination will be rendered here -->
             </ul>
           </nav>
@@ -600,7 +629,6 @@ class TableView extends ListView {
 
     // Store the item view
     this.itemViews.set(model.id, itemView);
-    this.addChild(itemView);
 
     // Set up item event listeners
     itemView.on('item:select', (event) => {
@@ -668,19 +696,116 @@ class TableView extends ListView {
   }
 
   /**
+   * Get the Model class from collection or instance
+   */
+  getModelClass(model) {
+    // Try to get from collection first
+    if (this.collection?.ModelClass) return this.collection.ModelClass;
+    if (this.collection?.model) return this.collection.model;
+
+    // Try to get from a model instance
+    if (model?.constructor) return model.constructor;
+
+    // Return null if we can't determine
+    return null;
+  }
+
+  /**
+   * Get model name for display
+   */
+  getModelName(model) {
+    const ModelClass = this.getModelClass(model);
+    if (!ModelClass) return 'Item';
+
+    return ModelClass.MODEL_NAME ||
+           ModelClass.name.replace(/Model$/, '') ||
+           'Item';
+  }
+
+  /**
+   * Resolve item view class with fallbacks
+   */
+  getItemViewClass(model) {
+    // Check instance options first
+    if (this.itemView) return this.itemView;
+
+    // Check Model class static property
+    const ModelClass = this.getModelClass(model);
+    if (ModelClass?.VIEW_CLASS) return ModelClass.VIEW_CLASS;
+
+    return null; // Will use data view as fallback
+  }
+
+  /**
+   * Resolve add form configuration with fallbacks
+   */
+  getAddFormConfig(ModelClass) {
+    return this.addForm ||
+           ModelClass?.ADD_FORM ||
+           this.editForm ||
+           ModelClass?.EDIT_FORM;
+  }
+
+  /**
+   * Resolve edit form configuration with fallbacks
+   */
+  getEditFormConfig(ModelClass) {
+    return this.editForm ||
+           ModelClass?.EDIT_FORM ||
+           this.addForm ||
+           ModelClass?.ADD_FORM;
+  }
+
+  /**
+   * Get form dialog configuration
+   */
+  getFormDialogConfig(ModelClass) {
+    return {
+      ...ModelClass?.FORM_DIALOG_CONFIG,
+      ...this.formDialogConfig
+    };
+  }
+
+  /**
+   * Render a template string with model context
+   */
+  renderTemplateString(template, model) {
+    if (!template) return '';
+
+    // Use Mustache to render the template with the model as context
+    return Mustache.render(template, model);
+  }
+
+  /**
    * Handle row view action
    */
   async _onRowView(event) {
     this.emit('row:view', event);
 
-    // Default behavior
+    // Check for custom handler first
     if (this.options.onItemView) {
       await this.options.onItemView(event.model, event.event);
+      return;
+    }
+
+    const Dialog = await import('../../core/Dialog.js').then(m => m.default);
+    const ViewClass = this.getItemViewClass(event.model);
+
+    if (ViewClass) {
+      // Use custom view class
+      const viewInstance = new ViewClass({ model: event.model });
+      await Dialog.showDialog({
+        header: false,
+        body: viewInstance,
+        size: 'lg',
+        centered: false,
+        ...this.getFormDialogConfig(this.getModelClass(event.model)),
+        ...this.viewDialogOptions
+      });
     } else {
-      // Show default view dialog
-      const Dialog = await import('../../core/Dialog.js').then(m => m.default);
+      // Fallback to data view
       await Dialog.showData({
-        title: `View Item #${event.model.id}`,
+        title: `View ${this.getModelName(event.model)} #${event.model.id}`,
         model: event.model
       });
     }
@@ -692,16 +817,36 @@ class TableView extends ListView {
   async _onRowEdit(event) {
     this.emit('row:edit', event);
 
-    // Default behavior
+    // Check for custom handler first
     if (this.options.onItemEdit) {
       await this.options.onItemEdit(event.model, event.event);
-    } else {
-      // Show default edit dialog
-      const Dialog = await import('../../core/Dialog.js').then(m => m.default);
-      const FormView = await import('../../forms/FormView.js').then(m => m.default);
+      return;
+    }
 
+    const Dialog = await import('../../core/Dialog.js').then(m => m.default);
+    const ModelClass = this.getModelClass(event.model);
+    let formConfig = this.getEditFormConfig(ModelClass);
+
+    if (formConfig) {
+        if (!formConfig.fields) {
+            formConfig = { title: `Edit ${this.getModelName(event.model)}`, fields: formConfig };
+        }
+
+      const result = await Dialog.showForm({
+        model: event.model,
+        ...formConfig,
+        ...this.getFormDialogConfig(ModelClass)
+      });
+
+      if (result) {
+        await event.model.save(result);
+        await this.refresh();
+      }
+    } else {
+      // Fallback to basic form if no config provided
+      const FormView = await import('../../forms/FormView.js').then(m => m.default);
       const result = await Dialog.showDialog({
-        title: `Edit Item #${event.model.id}`,
+        title: `Edit ${this.getModelName(event.model)} #${event.model.id}`,
         body: new FormView({
           model: event.model,
           fields: this.options.formFields || []
@@ -710,7 +855,7 @@ class TableView extends ListView {
 
       if (result) {
         await event.model.save(result);
-        this.refresh();
+        await this.refresh();
       }
     }
   }
@@ -721,21 +866,33 @@ class TableView extends ListView {
   async _onRowDelete(event) {
     this.emit('row:delete', event);
 
-    // Default behavior
+    // Check for custom handler first
     if (this.options.onItemDelete) {
       await this.options.onItemDelete(event.model, event.event);
-    } else {
-      // Show confirmation dialog
-      const Dialog = await import('../../core/Dialog.js').then(m => m.default);
-      const confirmed = await Dialog.confirm(
-        'Are you sure you want to delete this item?',
-        'Confirm Delete'
-      );
+      return;
+    }
 
-      if (confirmed) {
-        await event.model.destroy();
-        this.collection.remove(event.model);
-      }
+    const Dialog = await import('../../core/Dialog.js').then(m => m.default);
+    const ModelClass = this.getModelClass(event.model);
+
+    // Get delete template from options, Model class, or use default
+    const template = this.deleteTemplate ||
+                    ModelClass?.DELETE_TEMPLATE ||
+                    'Are you sure you want to delete this {{name||"item"}}?';
+
+    // Render template with model context
+    const message = this.renderTemplateString(template, event.model);
+
+    const confirmed = await Dialog.confirm({
+      message: message || 'Are you sure you want to delete this item?',
+      title: 'Confirm Delete',
+      confirmText: 'Delete',
+      confirmClass: 'btn-danger'
+    });
+
+    if (confirmed) {
+      await event.model.destroy();
+      this.collection.remove(event.model);
     }
   }
 
@@ -752,8 +909,61 @@ class TableView extends ListView {
   async onActionAdd(event, element) {
     this.emit('table:add', { event });
 
+    // Check for custom handler first
     if (this.options.onAdd) {
       await this.options.onAdd(event);
+      return;
+    }
+
+    const ModelClass = this.getModelClass();
+    if (!ModelClass) {
+      console.warn('Cannot determine Model class for add operation');
+      return;
+    }
+
+    let formConfig = this.getAddFormConfig(ModelClass);
+
+    if (formConfig) {
+      const Dialog = await import('../../core/Dialog.js').then(m => m.default);
+      const model = new ModelClass();
+      if (!formConfig.fields) {
+          formConfig = { title: `Add ${this.getModelName()}`, fields: formConfig };
+      }
+
+      const result = await Dialog.showForm({
+        model: model,
+        ...formConfig,
+        ...this.getFormDialogConfig(ModelClass)
+      });
+
+      if (result) {
+        await model.save(result);
+        if (this.collection) {
+          this.collection.add(model);
+        }
+        await this.refresh();
+      }
+    } else {
+      // Fallback to basic form if no config provided
+      const Dialog = await import('../../core/Dialog.js').then(m => m.default);
+      const FormView = await import('../../forms/FormView.js').then(m => m.default);
+      const model = new ModelClass();
+
+      const result = await Dialog.showDialog({
+        title: `Add ${this.getModelName()}`,
+        body: new FormView({
+          model: model,
+          fields: this.options.formFields || []
+        })
+      });
+
+      if (result) {
+        await model.save(result);
+        if (this.collection) {
+          this.collection.add(model);
+        }
+        await this.refresh();
+      }
     }
   }
 

@@ -25,7 +25,8 @@ class GroupTablePage extends TablePage {
                 {
                     label: 'Avatar',
                     key: 'avatar|avatar("sm", "rounded")',
-                    sortable: false
+                    sortable: false,
+                    visibility: 'lg'
                 },
                 {
                     key: 'kind',
@@ -40,13 +41,15 @@ class GroupTablePage extends TablePage {
                 {
                     key: 'parent.name',
                     label: 'Parent',
-                    formatter: "default('No Parent')"
+                    formatter: "default('No Parent')",
+                    visibility: 'md'
                 },
                 {
                     key: 'created',
                     label: 'Created',
                     className: 'text-muted fs-8',
-                    formatter: "epoch|datetime"
+                    formatter: "epoch|datetime",
+                    visibility: 'lg'
                 }
             ],
 

@@ -151,8 +151,8 @@ class Page extends View {
   /**
    * Handle default action - fallback from design doc
    */
-  async onActionDefault() {
-    console.log(`Default action triggered on page: ${this.pageName}`);
+  async onActionDefault(action) {
+    console.log(`Default action '${action}' triggered on page: ${this.pageName}`);
   }
 
   async makeActive() {

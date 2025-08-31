@@ -1,38 +1,49 @@
 # TablePage Component
 
-The TablePage component is a specialized Page that provides complete table functionality with automatic URL parameter synchronization. It combines the power of the Table component with page-level routing, making it perfect for data management interfaces that need to maintain state across navigation.
+The TablePage component is a specialized Page that provides complete table functionality with automatic URL parameter synchronization. It leverages the new TableView component (which extends ListView) for efficient row-based rendering where each row is a separate view that only re-renders when its model changes.
+
+## Overview
+
+TablePage combines:
+- **TableView Component**: Advanced data table extending ListView for efficient rendering
+- **URL Synchronization**: Automatic syncing of pagination, sorting, and filtering with URL parameters
+- **Page Lifecycle**: Full page routing and lifecycle management
+- **Model Operations**: Built-in support for view, edit, delete with fallback patterns
 
 ## Features
 
-- **URL Synchronization**: Automatically syncs pagination, sorting, and filtering with URL parameters
-- **Built-in Table Management**: Manages a Table component as a child view with automatic lifecycle
-- **Status Display**: Shows record counts, last updated time, and loading states
-- **Page-level Actions**: Built-in support for add, refresh, and export operations
-- **State Persistence**: Maintains table state across page navigation
-- **Loading Management**: Built-in loading states and error handling
-- **Responsive Design**: Mobile-friendly responsive table layout
-- **Custom Templates**: Support for custom page templates
+- **Efficient Rendering**: Each row is a separate TableRow view (extends ListViewItem)
+- **URL State Management**: Maintains table state across navigation
+- **Responsive Columns**: Column visibility control at different breakpoints
+- **Smart Form Handling**: Automatic form configuration from Models
+- **Filter System**: Advanced filtering with pills and dropdown UI
+- **Batch Operations**: Multi-select with batch action panel
+- **Live Search**: Real-time search with URL synchronization
 
 ## Basic Usage
 
 ### Simple TablePage
 
 ```javascript
-import { TablePage } from 'web-mojo';
-import { UserCollection } from 'web-mojo/models';
+import TablePage from 'web-mojo/pages/TablePage.js';
+import UserCollection from './collections/UserCollection.js';
 
 class UsersPage extends TablePage {
   constructor(options = {}) {
     super({
-      pageName: 'Users',
+      pageName: 'users',
       route: '/users',
       title: 'User Management',
       Collection: UserCollection,
+      
       columns: [
-        { key: 'name', label: 'Name', sortable: true, searchable: true },
-        { key: 'email', label: 'Email', sortable: true, searchable: true },
-        { key: 'created_at', label: 'Created', formatter: 'date', sortable: true }
+        { key: 'name', label: 'Name', sortable: true },
+        { key: 'email', label: 'Email', visibility: 'md' }, // Hidden on mobile
+        { key: 'role', label: 'Role', type: 'badge' },
+        { key: 'created_at', label: 'Created', formatter: 'date', visibility: 'lg' }
       ],
+      
+      actions: ['view', 'edit', 'delete'],
       ...options
     });
   }
@@ -42,80 +53,63 @@ class UsersPage extends TablePage {
 app.registerPage('users', UsersPage);
 ```
 
-### TablePage with Actions
+### TablePage with Model-Based Forms
 
 ```javascript
-import { TablePage, Dialog } from 'web-mojo';
-import { UserCollection } from 'web-mojo/models';
-import { UserFormView } from '../views/UserFormView.js';
-
-class UsersPage extends TablePage {
+class ProductsPage extends TablePage {
   constructor(options = {}) {
     super({
-      pageName: 'Users',
-      route: '/users',
-      title: 'User Management',
-      Collection: UserCollection,
+      pageName: 'products',
+      title: 'Product Catalog',
+      Collection: ProductCollection,
       
       columns: [
-        { key: 'name', label: 'Name', sortable: true, searchable: true },
-        { key: 'email', label: 'Email', sortable: true, searchable: true },
-        { 
-          key: 'status', 
-          label: 'Status', 
-          formatter: 'badge',
-          filterable: true,
-          filterOptions: [
-            { value: 'active', label: 'Active' },
-            { value: 'inactive', label: 'Inactive' }
-          ]
-        },
-        { key: 'created_at', label: 'Created', formatter: 'date', sortable: true }
+        { key: 'image', label: '', width: '60px', 
+          formatter: (value) => `<img src="${value}" class="img-thumbnail" style="width: 50px;">` },
+        { key: 'name', label: 'Product', sortable: true },
+        { key: 'price', label: 'Price', formatter: 'currency', sortable: true },
+        { key: 'stock', label: 'Stock', visibility: 'md' },
+        { key: 'status', label: 'Status', formatter: 'badge',
+          filter: {
+            type: 'select',
+            options: [
+              { value: 'active', label: 'Active' },
+              { value: 'draft', label: 'Draft' },
+              { value: 'archived', label: 'Archived' }
+            ]
+          }
+        }
       ],
       
-      actions: [
-        { key: 'edit', label: 'Edit', icon: 'edit' },
-        { key: 'delete', label: 'Delete', icon: 'trash', class: 'text-danger' }
-      ],
+      // Form configurations (can also be defined on Model class)
+      addForm: {
+        title: 'Add Product',
+        fields: [
+          { name: 'name', label: 'Product Name', required: true },
+          { name: 'price', label: 'Price', type: 'currency', required: true },
+          { name: 'stock', label: 'Initial Stock', type: 'number', value: 0 },
+          { name: 'status', label: 'Status', type: 'select',
+            options: ['active', 'draft'] }
+        ]
+      },
       
+      editForm: {
+        title: 'Edit Product',
+        fields: [
+          { name: 'name', label: 'Product Name', required: true },
+          { name: 'price', label: 'Price', type: 'currency', required: true },
+          { name: 'stock', label: 'Stock Level', type: 'number' },
+          { name: 'status', label: 'Status', type: 'select',
+            options: ['active', 'draft', 'archived'] }
+        ]
+      },
+      
+      actions: ['view', 'edit', 'delete'],
       showAdd: true,
       showExport: true,
-      urlSyncEnabled: true,
       
       ...options
     });
-  }
-
-  // Handle table actions by delegating to child table
-  async handleActionEdit(event, element) {
-    const itemId = element.getAttribute('data-id');
-    const user = this.table.collection.get(itemId);
-    
-    const formView = new UserFormView({ model: user });
-    const result = await Dialog.showForm(formView, {
-      title: 'Edit User'
-    });
-
-    if (result) {
-      await user.save(result);
-      await this.refreshTable();
-      this.showSuccess('User updated successfully');
-    }
-  }
-
-  async handleActionAdd(event, element) {
-    const formView = new UserFormView();
-    const result = await Dialog.showForm(formView, {
-      title: 'Add New User'
-    });
-
-    if (result) {
-      const user = new this.table.model(result);
-      await user.save();
-      this.table.collection.add(user);
-      await this.refreshTable();
-      this.showSuccess('User added successfully');
-    }
   }
 }
 ```
@@ -127,684 +121,721 @@ class UsersPage extends TablePage {
 ```javascript
 const tablePage = new TablePage({
   // Page configuration
-  pageName: 'MyData',           // Page name for routing
-  route: '/data',               // Route pattern
-  title: 'Data Management',     // Page title
-  description: 'Manage data',   // Page description
+  pageName: 'users',              // Page name for routing
+  route: '/users',                // Route pattern
+  title: 'User Management',       // Page title
+  description: 'Manage users',    // Page description
   
-  // Table configuration
-  Collection: MyCollection,     // Collection class for data
-  collection: myCollectionInstance, // Or existing collection instance
-  columns: [...],               // Column definitions (required)
+  // Data source
+  Collection: UserCollection,     // Collection class
+  collection: userCollection,     // Or existing instance
+  defaultQuery: {                 // Default URL query params
+    status: 'active'
+  },
+  
+  // Table configuration (passed to TableView)
+  columns: [...],                 // Column definitions
+  actions: ['view', 'edit', 'delete'], // Row actions
+  contextMenu: [...],             // Context menu items
+  batchActions: [...],            // Batch operations
+  
+  // Form configurations
+  addForm: {...},                 // Add form config or fields array
+  editForm: {...},                // Edit form config or fields array
+  formFields: [...],              // Legacy: shared form fields
+  
+  // Model operations
+  itemView: CustomItemView,       // Custom view class for viewing items
+  deleteTemplate: 'Delete {{name}}?', // Delete confirmation template
+  formDialogConfig: {             // Dialog options for forms
+    size: 'lg',
+    centered: true
+  },
   
   // Features
-  searchable: true,             // Enable global search
-  sortable: true,               // Enable column sorting
-  filterable: true,             // Enable filtering
-  selectable: true,             // Enable row selection
-  paginated: true,              // Enable pagination
+  searchable: true,               // Enable search
+  sortable: true,                 // Enable sorting
+  filterable: true,               // Enable filters
+  paginated: true,                // Enable pagination
+  selectionMode: 'multiple',      // 'none', 'single', 'multiple'
   
-  // Actions
-  actions: [...],               // Row-level actions
-  contextMenu: [...],           // Context menu actions
-  showAdd: true,                // Show add button
-  showExport: true,             // Show export button
-  
-  // URL synchronization
-  urlSyncEnabled: true,         // Sync table state with URL
+  // Filter configuration
+  filters: [...],                 // Additional filters beyond columns
+  hideActivePills: false,         // Hide filter pills display
+  hideActivePillNames: ['status'], // Hide specific filter pills
+  searchPlacement: 'toolbar',     // 'toolbar' or 'dropdown'
   
   // Display options
-  responsive: true,             // Responsive table wrapper
-  striped: true,                // Striped rows
-  hover: true,                  // Hover effects
-  bordered: false,              // Table borders
+  tableOptions: {                 // HTML table styling
+    striped: true,
+    bordered: false,
+    hover: true,
+    responsive: false
+  },
   
-  // Status display
-  showStatus: true,             // Show status information
-  showRecordCount: true,        // Show record count
-  showLastUpdated: true,        // Show last updated time
+  // Toolbar options
+  showAdd: true,                  // Show Add button
+  showExport: true,               // Show Export button
   
-  // Loading configuration
-  showLoadingOverlay: true,     // Show loading overlay
-  loadingText: 'Loading...',    // Loading text
+  // URL synchronization
+  urlSyncEnabled: true,           // Sync with URL params
   
-  // Collection parameters
-  collectionParams: {           // Default collection parameters
-    size: 20,
-    sort: 'created_at',
-    dir: 'desc'
-  }
+  // Custom handlers
+  onItemView: async (model) => {},
+  onItemEdit: async (model) => {},
+  onItemDelete: async (model) => {},
+  onAdd: async () => {},
+  onExport: async (data) => {}
 });
 ```
 
 ### Column Configuration
 
-Same as Table component - see [Table documentation](./Table.md#column-definitions) for complete column options.
-
 ```javascript
 columns: [
   {
-    key: 'name',
-    label: 'Name',
-    sortable: true,
-    searchable: true,
-    filterable: true,
-    filterOptions: [...]
-  },
-  // ... more columns
+    key: 'name',                    // Model property key
+    label: 'Full Name',             // Column header
+    sortable: true,                 // Enable sorting
+    
+    // Responsive visibility
+    visibility: 'md',               // 'sm', 'md', 'lg', 'xl', 'xxl'
+                                   // Column hidden below this breakpoint
+    
+    // Formatting
+    formatter: 'currency',          // Built-in formatter string
+    formatter: (value, context) => { // Or function formatter
+      return `<strong>${value}</strong>`;
+    },
+    
+    // Filtering
+    filter: {                       // Enable column filter
+      type: 'select',              // Filter type
+      label: 'Status Filter',      // Filter label
+      options: [                   // Filter options
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' }
+      ]
+    },
+    
+    // Styling
+    class: 'text-nowrap',          // CSS classes
+    width: '200px',                // Fixed width
+    
+    // Cell action
+    action: 'row-click'            // Action on cell click
+  }
 ]
+```
+
+## Model-Based Configuration
+
+The TablePage intelligently reads configuration from your Model classes:
+
+```javascript
+// In your Model class
+class UserModel extends Model {
+  static MODEL_NAME = 'User';
+  
+  // Form configuration for adding
+  static ADD_FORM = {
+    title: 'Add User',
+    fields: [
+      { name: 'name', label: 'Name', required: true },
+      { name: 'email', label: 'Email', type: 'email', required: true },
+      { name: 'role', label: 'Role', type: 'select',
+        options: ['admin', 'user'] }
+    ]
+  };
+  
+  // Form configuration for editing
+  static EDIT_FORM = {
+    title: 'Edit User',
+    fields: [
+      { name: 'name', label: 'Name', required: true },
+      { name: 'email', label: 'Email', type: 'email', required: true },
+      { name: 'role', label: 'Role', type: 'select',
+        options: ['admin', 'moderator', 'user'] },
+      { name: 'status', label: 'Status', type: 'select',
+        options: ['active', 'suspended', 'deleted'] }
+    ]
+  };
+  
+  // Custom view class for viewing
+  static VIEW_CLASS = UserDetailView;
+  
+  // Delete confirmation template
+  static DELETE_TEMPLATE = 'Are you sure you want to delete user "{{name}}"? This will also remove all their data.';
+  
+  // Dialog configuration
+  static FORM_DIALOG_CONFIG = {
+    size: 'lg',
+    centered: false
+  };
+}
+
+// Simple TablePage using Model configuration
+class UsersPage extends TablePage {
+  constructor(options = {}) {
+    super({
+      pageName: 'users',
+      Collection: UserCollection, // UserCollection uses UserModel
+      columns: [
+        { key: 'name', label: 'Name', sortable: true },
+        { key: 'email', label: 'Email' },
+        { key: 'role', label: 'Role', formatter: 'badge' }
+      ],
+      actions: ['view', 'edit', 'delete'],
+      ...options
+    });
+  }
+  // All form configurations are automatically read from UserModel!
+}
 ```
 
 ## URL Synchronization
 
-TablePage automatically synchronizes table state with URL parameters, making it easy to share filtered, sorted, or paginated table views.
-
-### Automatic URL Updates
+### Automatic URL Parameter Mapping
 
 ```javascript
-// User navigates to: /users?start=20&size=10&sort=name&search=john&status=active
-// TablePage automatically applies these parameters to the table:
-// - Pagination: start at item 20, show 10 per page  
-// - Sorting: sort by name column
-// - Search: filter for "john"
-// - Filters: status = "active"
+// URL: /users?start=20&size=10&sort=-created_at&search=john&status=active
 
-class UsersPage extends TablePage {
-  constructor(options = {}) {
-    super({
-      urlSyncEnabled: true,  // Enable URL synchronization (default)
-      // ... other options
-    });
-  }
-}
+// Automatically maps to:
+// - Pagination: start at item 20, show 10 per page
+// - Sorting: sort by created_at descending (- prefix)
+// - Search: filter for "john"
+// - Filter: status = "active"
 ```
 
-### URL Parameter Mapping
+### URL Parameter Reference
 
-The following table state is automatically synchronized with URL parameters:
-
-| Table State | URL Parameter | Example |
-|------------|---------------|---------|
-| Pagination offset | `start` | `?start=20` |
-| Page size | `size` | `?size=50` |
-| Sort column | `sort` | `?sort=name` |
-| Sort direction | `dir` | `?dir=desc` |
-| Search term | `search` | `?search=john` |
-| Column filters | Column key | `?status=active&role=admin` |
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `start` | Pagination offset | `?start=20` |
+| `size` | Page size | `?size=50` |
+| `sort` | Sort field (- for desc) | `?sort=-name` |
+| `search` | Search term | `?search=john` |
+| Custom | Column/filter values | `?status=active&role=admin` |
 
 ### Programmatic URL Updates
 
 ```javascript
 // The table automatically updates URL when state changes
-await this.table.setSort('name', 'asc');       // URL: ?sort=name&dir=asc
-await this.table.setFilter('status', 'active'); // URL: ?sort=name&dir=asc&status=active
-await this.table.handlePageChange(2);          // URL: ?sort=name&dir=asc&status=active&start=20
+this.tableView.setFilter('status', 'active');  // Adds ?status=active
+this.tableView.onActionSort(event, element);    // Updates ?sort=field
+this.tableView.onActionPage(event, element);    // Updates ?start=offset
 ```
 
 ## Event Handling
 
-TablePage uses MOJO's automatic event delegation system and passes events to the child Table component.
-
-### Action Handlers
+### TablePage Events
 
 ```javascript
 class MyTablePage extends TablePage {
-  // Row actions - delegated to table
-  async handleActionEdit(event, element) {
-    const itemId = element.getAttribute('data-id');
-    // Handle edit logic
-  }
-
-  async handleActionDelete(event, element) {
-    const itemId = element.getAttribute('data-id');
-    const confirmed = await Dialog.confirm('Delete this item?');
-    if (confirmed) {
-      // Handle delete logic
-    }
-  }
-
-  // Page-level toolbar actions
-  async handleActionAdd(event, element) {
-    // Handle add new item
-  }
-
-  async handleActionExport(event, element) {
-    // Handle export - or use built-in table export
-    this.table.handleExport();
-  }
-
-  async handleActionRefresh(event, element) {
-    await this.refreshTable();
-  }
-}
-```
-
-### Lifecycle Events
-
-```javascript
-class MyTablePage extends TablePage {
-  async onEnter() {
-    await super.onEnter();
-    // Called when entering this page
-    console.log('Entering table page');
-  }
-
-  onParams(params, query) {
-    super.onParams(params, query);
-    // Called when URL parameters change
-    console.log('URL parameters changed:', params, query);
-  }
-
-  async onAfterMount() {
-    await super.onAfterMount();
-    // Called after page is mounted to DOM
-    this.updateStatusDisplay();
-  }
-}
-```
-
-## API Reference
-
-### Properties
-
-- `table` - The child Table component instance
-- `config` - Page configuration object
-- `tableConfig` - Table-specific configuration
-- `urlSyncEnabled` - Whether URL synchronization is enabled
-- `lastUpdated` - Timestamp of last data update
-- `isLoading` - Current loading state
-- `loadError` - Last error message (if any)
-
-### Methods
-
-#### Data Management
-- `async refreshTable()` - Refresh table data
-- `getTableData()` - Get current table data as plain objects
-- `setTableData(data)` - Set table data programmatically
-
-#### Selection Management  
-- `getSelectedItems()` - Get selected table items
-- `clearSelection()` - Clear all selections
-
-#### Filter Management
-- `getFilters()` - Get current filters including search
-- `setFilters(filters)` - Set filters programmatically
-- `getSort()` - Get current sort configuration
-- `setSort(field, direction)` - Set sort programmatically
-
-#### Status Management
-- `updateStatusDisplay()` - Update status display elements
-- `syncUrlWithTable()` - Manually sync URL with table state
-
-#### URL Management
-- `applyUrlToCollection(query)` - Apply URL parameters to collection
-- `onParams(params, query)` - Handle URL parameter changes
-
-### Events
-
-TablePage listens to events from the child Table component:
-
-```javascript
-// Automatic event listeners (set up internally)
-this.table.on('params-changed', () => this.syncUrlWithTable());
-this.table.on('data:loaded', () => {
-  this.lastUpdated = new Date().toLocaleTimeString();
-  this.updateStatusDisplay();
-});
-this.table.on('data:error', (error) => {
-  this.loadError = error.message;
-  this.updateStatusDisplay();
-});
-```
-
-## Advanced Usage
-
-### Custom Status Display
-
-```javascript
-class UsersPage extends TablePage {
-  constructor(options = {}) {
-    super({
-      // ... other options
-      statusConfig: {
-        showStatus: true,
-        showRecordCount: true,
-        showLastUpdated: true,
-        statusPosition: 'top'    // 'top', 'bottom', or 'both'
-      },
-      ...options
-    });
-  }
-
-  updateStatusDisplay() {
-    super.updateStatusDisplay();
+  setupEventListeners() {
+    super.setupEventListeners();
     
-    // Custom status updates
-    const statusElement = this.element.querySelector('[data-status="custom"]');
-    if (statusElement) {
-      const selectedCount = this.getSelectedItems().length;
-      statusElement.textContent = `${selectedCount} selected`;
-    }
-  }
-}
-```
-
-### Custom Loading States
-
-```javascript
-class UsersPage extends TablePage {
-  constructor(options = {}) {
-    super({
-      // ... other options
-      loadingConfig: {
-        showOverlay: true,
-        loadingText: 'Loading users...',
-        spinnerClass: 'custom-spinner'
-      },
-      ...options
+    // TableView events
+    this.tableView.on('row:view', async ({ model }) => {
+      console.log('Viewing:', model);
+    });
+    
+    this.tableView.on('row:edit', async ({ model }) => {
+      console.log('Editing:', model);
+    });
+    
+    this.tableView.on('row:delete', async ({ model }) => {
+      console.log('Deleting:', model);
+    });
+    
+    this.tableView.on('table:add', async () => {
+      console.log('Adding new item');
+    });
+    
+    this.tableView.on('table:export', async ({ data }) => {
+      console.log('Exporting:', data);
+    });
+    
+    // Filter events
+    this.tableView.on('table:search', ({ searchTerm }) => {
+      console.log('Search:', searchTerm);
+    });
+    
+    this.tableView.on('table:sort', ({ field }) => {
+      console.log('Sort by:', field);
+    });
+    
+    this.tableView.on('params-changed', () => {
+      console.log('Table params changed');
     });
   }
 }
 ```
 
-### Collection Parameter Customization
+### Custom Action Handlers
 
 ```javascript
 class UsersPage extends TablePage {
   constructor(options = {}) {
     super({
-      // ... other options
-      collectionParams: {
-        size: 25,                    // Default page size
-        sort: 'created_at',          // Default sort field
-        dir: 'desc',                 // Default sort direction
-        status: 'active',            // Default filter
-        include: 'profile,roles'     // Include related data
-      },
-      ...options
-    });
-  }
-
-  // Override URL parameter application for custom logic
-  applyUrlToCollection(query) {
-    // Custom parameter processing
-    const params = {
-      start: parseInt(query.start) || 0,
-      size: parseInt(query.size) || this.tableConfig.collectionParams.size || 25
-    };
-
-    // Custom sort handling
-    if (query.sort) {
-      params.sort = query.sort;
-      params.dir = query.dir || 'asc';
-    }
-
-    // Custom search handling
-    if (query.search) {
-      params.q = query.search; // Use 'q' instead of 'search'
-    }
-
-    // Apply to collection and refresh
-    this.table.collection.params = { ...this.table.collection.params, ...params };
-  }
-}
-```
-
-### Integration with Authentication
-
-```javascript
-import { TablePage } from 'web-mojo';
-import { requiresPermission } from 'web-mojo/auth';
-
-class AdminUsersPage extends TablePage {
-  constructor(options = {}) {
-    super({
-      pageName: 'AdminUsers', 
-      route: '/admin/users',
-      requiresAuth: true,
-      requiredPermissions: ['users.view'],
+      // ... configuration
       
-      // ... table configuration
-      actions: [
-        { 
-          key: 'edit', 
-          label: 'Edit', 
-          icon: 'edit',
-          permission: 'users.edit'    // Permission check for action
+      // Custom handlers override default behavior
+      onItemView: async (model) => {
+        // Custom view logic
+        const app = this.getApp();
+        app.navigate(`/users/${model.id}/profile`);
+      },
+      
+      onItemEdit: async (model) => {
+        // Custom edit logic
+        const result = await this.showCustomEditDialog(model);
+        if (result) {
+          await model.save(result);
+          await this.refresh();
+        }
+      },
+      
+      onItemDelete: async (model) => {
+        // Custom delete logic with additional checks
+        if (model.get('role') === 'admin') {
+          await Dialog.alert('Cannot delete admin users');
+          return;
+        }
+        
+        const confirmed = await Dialog.confirm(
+          `Delete ${model.get('name')}?`
+        );
+        if (confirmed) {
+          await model.destroy();
+          this.collection.remove(model);
+        }
+      },
+      
+      ...options
+    });
+  }
+}
+```
+
+## Advanced Features
+
+### Responsive Column Visibility
+
+```javascript
+columns: [
+  { key: 'id', label: 'ID', visibility: 'xl' },        // Only on XL screens
+  { key: 'name', label: 'Name' },                      // Always visible
+  { key: 'email', label: 'Email', visibility: 'sm' },  // Hidden on XS only
+  { key: 'phone', label: 'Phone', visibility: 'md' },  // Hidden on XS/SM
+  { key: 'address', label: 'Address', visibility: 'lg' }, // Hidden on XS/SM/MD
+  { key: 'notes', label: 'Notes', visibility: 'xl' }   // Only on XL+
+]
+```
+
+### Batch Operations
+
+```javascript
+class UsersPage extends TablePage {
+  constructor(options = {}) {
+    super({
+      selectionMode: 'multiple',
+      
+      batchActions: [
+        {
+          action: 'activate',
+          label: 'Activate',
+          icon: 'bi bi-check-circle'
         },
-        { 
-          key: 'delete', 
-          label: 'Delete', 
-          icon: 'trash',
-          permission: 'users.delete',
+        {
+          action: 'deactivate', 
+          label: 'Deactivate',
+          icon: 'bi bi-x-circle'
+        },
+        {
+          action: 'delete',
+          label: 'Delete Selected',
+          icon: 'bi bi-trash',
           class: 'text-danger'
         }
       ],
+      
       ...options
     });
   }
-
-  @requiresPermission('users.edit')
-  async handleActionEdit(event, element) {
-    // Edit logic - automatically checks permission
+  
+  setupEventListeners() {
+    super.setupEventListeners();
+    
+    this.tableView.on('batch:action', async ({ action, items }) => {
+      switch(action) {
+        case 'activate':
+          for (const item of items) {
+            await item.model.save({ status: 'active' });
+          }
+          await this.refresh();
+          break;
+          
+        case 'delete':
+          const confirmed = await Dialog.confirm(
+            `Delete ${items.length} items?`
+          );
+          if (confirmed) {
+            for (const item of items) {
+              await item.model.destroy();
+            }
+            await this.refresh();
+          }
+          break;
+      }
+    });
   }
+}
+```
 
-  @requiresPermission('users.delete') 
-  async handleActionDelete(event, element) {
-    // Delete logic - automatically checks permission
+### Advanced Filtering
+
+```javascript
+class ProductsPage extends TablePage {
+  constructor(options = {}) {
+    super({
+      // Column-based filters
+      columns: [
+        {
+          key: 'category',
+          label: 'Category',
+          filter: {
+            type: 'select',
+            label: 'Product Category',
+            options: [
+              { value: 'electronics', label: 'Electronics' },
+              { value: 'clothing', label: 'Clothing' },
+              { value: 'books', label: 'Books' }
+            ]
+          }
+        },
+        {
+          key: 'price',
+          label: 'Price',
+          formatter: 'currency',
+          filter: {
+            type: 'range',
+            min: 0,
+            max: 1000,
+            step: 10
+          }
+        }
+      ],
+      
+      // Additional filters not tied to columns
+      filters: [
+        {
+          key: 'date_range',
+          label: 'Date Range',
+          type: 'daterange',
+          startName: 'start_date',
+          endName: 'end_date'
+        },
+        {
+          key: 'has_discount',
+          label: 'On Sale',
+          type: 'boolean'
+        }
+      ],
+      
+      // Control filter pill display
+      hideActivePillNames: ['category'], // Don't show pill for category filter
+      
+      ...options
+    });
+  }
+}
+```
+
+### Custom Row Actions
+
+```javascript
+class OrdersPage extends TablePage {
+  constructor(options = {}) {
+    super({
+      // Custom action objects
+      actions: [
+        {
+          action: 'view',
+          label: 'View',
+          icon: 'bi bi-eye',
+          class: 'btn-outline-primary'
+        },
+        {
+          action: 'invoice',
+          label: 'Invoice',
+          icon: 'bi bi-file-pdf',
+          class: 'btn-outline-info'
+        },
+        {
+          action: 'ship',
+          label: 'Ship',
+          icon: 'bi bi-truck',
+          class: 'btn-outline-success'
+        },
+        {
+          action: 'cancel',
+          label: 'Cancel',
+          icon: 'bi bi-x-circle',
+          class: 'btn-outline-danger'
+        }
+      ],
+      
+      ...options
+    });
+  }
+  
+  setupEventListeners() {
+    super.setupEventListeners();
+    
+    // Custom action handlers
+    this.tableView.element.addEventListener('click', async (e) => {
+      if (e.target.closest('[data-action="invoice"]')) {
+        const row = e.target.closest('tr');
+        const modelId = row.getAttribute('data-id');
+        const order = this.collection.get(modelId);
+        await this.generateInvoice(order);
+      }
+      
+      if (e.target.closest('[data-action="ship"]')) {
+        const row = e.target.closest('tr');
+        const modelId = row.getAttribute('data-id');
+        const order = this.collection.get(modelId);
+        await this.shipOrder(order);
+      }
+    });
   }
 }
 ```
 
 ## Complete Example
 
-Here's a comprehensive example showing all major features:
-
 ```javascript
-import { TablePage, Dialog } from 'web-mojo';
-import { UserCollection, User } from 'web-mojo/models';
-import { requiresPermission } from 'web-mojo/auth';
-import { UserFormView } from '../views/UserFormView.js';
+import TablePage from 'web-mojo/pages/TablePage.js';
+import { UserCollection, UserModel } from '../models/UserModel.js';
+import UserDetailView from '../views/UserDetailView.js';
 
+// Configure Model with form definitions
+UserModel.ADD_FORM = {
+  title: 'Add New User',
+  fields: [
+    { name: 'name', label: 'Full Name', required: true },
+    { name: 'email', label: 'Email', type: 'email', required: true },
+    { name: 'phone', label: 'Phone', type: 'tel' },
+    { name: 'role', label: 'Role', type: 'select',
+      options: ['admin', 'moderator', 'user'] },
+    { name: 'send_welcome', label: 'Send Welcome Email', type: 'checkbox' }
+  ]
+};
+
+UserModel.VIEW_CLASS = UserDetailView;
+UserModel.DELETE_TEMPLATE = 'Delete user "{{name}}" ({{email}})? This cannot be undone.';
+
+// Create the TablePage
 class UsersManagementPage extends TablePage {
   constructor(options = {}) {
     super({
-      pageName: 'Users',
-      route: '/users',
+      pageName: 'users',
+      route: '/admin/users',
       title: 'User Management',
-      description: 'Manage system users and their permissions',
+      description: 'Manage system users and permissions',
       
-      // Data configuration
       Collection: UserCollection,
       
-      // Column definitions
       columns: [
         { 
-          key: 'avatar', 
-          label: '', 
+          key: 'avatar',
+          label: '',
           width: '50px',
-          render: (value, item) => `<img src="${value}" class="avatar-sm rounded-circle">`
+          formatter: (value) => `<img src="${value}" class="rounded-circle" style="width: 40px;">`
         },
-        { key: 'name', label: 'Name', sortable: true, searchable: true },
-        { key: 'email', label: 'Email', formatter: 'email', sortable: true, searchable: true },
+        { key: 'name', label: 'Name', sortable: true },
+        { key: 'email', label: 'Email', visibility: 'sm' },
+        { key: 'phone', label: 'Phone', visibility: 'md' },
         { 
-          key: 'role', 
-          label: 'Role', 
-          sortable: true,
-          filterable: true,
-          filterOptions: [
-            { value: 'admin', label: 'Administrator' },
-            { value: 'moderator', label: 'Moderator' },
-            { value: 'user', label: 'User' }
-          ]
-        },
-        { 
-          key: 'status', 
-          label: 'Status', 
+          key: 'role',
+          label: 'Role',
           formatter: 'badge',
-          filterable: true,
-          filterOptions: [
-            { value: 'active', label: 'Active' },
-            { value: 'inactive', label: 'Inactive' },
-            { value: 'pending', label: 'Pending' }
-          ]
+          filter: {
+            type: 'select',
+            options: [
+              { value: 'admin', label: 'Administrator' },
+              { value: 'moderator', label: 'Moderator' },
+              { value: 'user', label: 'User' }
+            ]
+          }
         },
-        { key: 'last_login', label: 'Last Login', formatter: 'datetime', sortable: true },
-        { key: 'created_at', label: 'Created', formatter: 'date', sortable: true }
+        {
+          key: 'status',
+          label: 'Status',
+          formatter: (value) => {
+            const colors = {
+              active: 'success',
+              inactive: 'secondary',
+              suspended: 'warning'
+            };
+            return `<span class="badge bg-${colors[value]}">${value}</span>`;
+          },
+          filter: {
+            type: 'select',
+            options: ['active', 'inactive', 'suspended']
+          }
+        },
+        { key: 'last_login', label: 'Last Login', formatter: 'datetime', visibility: 'lg' },
+        { key: 'created_at', label: 'Joined', formatter: 'date', visibility: 'xl', sortable: true }
       ],
       
-      // Actions configuration
-      actions: [
-        { key: 'view', label: 'View', icon: 'eye' },
-        { key: 'edit', label: 'Edit', icon: 'edit', permission: 'users.edit' },
-        { key: 'reset-password', label: 'Reset Password', icon: 'key', permission: 'users.edit' },
-        { key: 'delete', label: 'Delete', icon: 'trash', class: 'text-danger', permission: 'users.delete' }
+      actions: ['view', 'edit', 'delete'],
+      
+      batchActions: [
+        { action: 'activate', label: 'Activate', icon: 'bi bi-check-circle' },
+        { action: 'suspend', label: 'Suspend', icon: 'bi bi-pause-circle' },
+        { action: 'delete', label: 'Delete', icon: 'bi bi-trash', class: 'text-danger' }
       ],
       
-      // Context menu
-      contextMenu: [
-        { key: 'duplicate', label: 'Duplicate User', icon: 'copy' },
-        { key: 'export-user', label: 'Export Data', icon: 'download' }
-      ],
-      
-      // Features
+      selectionMode: 'multiple',
       searchable: true,
       sortable: true,
       filterable: true,
-      selectable: true,
       paginated: true,
       
-      // Page actions
       showAdd: true,
       showExport: true,
       
-      // URL synchronization
-      urlSyncEnabled: true,
-      
-      // Default collection parameters
-      collectionParams: {
+      defaultQuery: {
         size: 25,
-        sort: 'created_at',
-        dir: 'desc',
-        include: 'profile,roles'
+        sort: '-created_at'
       },
       
-      // Status display
-      statusConfig: {
-        showStatus: true,
-        showRecordCount: true,
-        showLastUpdated: true,
-        statusPosition: 'top'
+      onItemView: async (model) => {
+        // Custom view behavior - navigate to detail page
+        const app = this.getApp();
+        app.navigate(`/admin/users/${model.id}`);
       },
       
-      // Loading configuration
-      loadingConfig: {
-        showOverlay: true,
-        loadingText: 'Loading users...'
+      onExport: async (data) => {
+        // Custom export logic
+        const csv = this.convertToCSV(data);
+        this.downloadFile(csv, 'users.csv');
       },
       
       ...options
     });
   }
-
-  // Page lifecycle
-  async onEnter() {
-    await super.onEnter();
-    console.log('Entering users management page');
-  }
-
-  // Action handlers
-  async handleActionAdd(event, element) {
-    const formView = new UserFormView();
-    const result = await Dialog.showForm(formView, {
-      title: 'Add New User',
-      size: 'lg'
-    });
-
-    if (result) {
-      try {
-        const user = new User(result);
-        await user.save();
-        this.table.collection.add(user);
-        await this.refreshTable();
-        this.showSuccess('User created successfully');
-      } catch (error) {
-        this.showError('Failed to create user: ' + error.message);
-      }
-    }
-  }
-
-  async handleActionView(event, element) {
-    const userId = element.getAttribute('data-id');
-    const app = this.getApp();
-    app.navigate(`/users/${userId}`);
-  }
-
-  @requiresPermission('users.edit')
-  async handleActionEdit(event, element) {
-    const userId = element.getAttribute('data-id');
-    const user = this.table.collection.get(userId);
+  
+  setupEventListeners() {
+    super.setupEventListeners();
     
-    const formView = new UserFormView({ model: user });
-    const result = await Dialog.showForm(formView, {
-      title: 'Edit User',
-      size: 'lg'
-    });
-
-    if (result) {
-      try {
-        await user.save(result);
-        await this.refreshTable();
-        this.showSuccess('User updated successfully');
-      } catch (error) {
-        this.showError('Failed to update user: ' + error.message);
+    // Handle batch actions
+    this.tableView.on('batch:action', async ({ action, items }) => {
+      switch(action) {
+        case 'activate':
+          await this.activateUsers(items);
+          break;
+        case 'suspend':
+          await this.suspendUsers(items);
+          break;
+        case 'delete':
+          await this.deleteUsers(items);
+          break;
       }
-    }
+    });
   }
-
-  @requiresPermission('users.edit')
-  async handleActionResetPassword(event, element) {
-    const userId = element.getAttribute('data-id');
-    const user = this.table.collection.get(userId);
-    
+  
+  async activateUsers(items) {
+    for (const item of items) {
+      await item.model.save({ status: 'active' });
+    }
+    await this.refresh();
+    this.showSuccess(`${items.length} users activated`);
+  }
+  
+  async suspendUsers(items) {
     const confirmed = await Dialog.confirm(
-      `Reset password for ${user.get('name')}?`,
-      'A temporary password will be sent to their email address.'
+      `Suspend ${items.length} users?`,
+      'They will not be able to log in.'
     );
-
+    
     if (confirmed) {
-      try {
-        await user.resetPassword();
-        this.showSuccess('Password reset email sent successfully');
-      } catch (error) {
-        this.showError('Failed to reset password: ' + error.message);
+      for (const item of items) {
+        await item.model.save({ status: 'suspended' });
       }
+      await this.refresh();
+      this.showSuccess(`${items.length} users suspended`);
     }
   }
-
-  @requiresPermission('users.delete')
-  async handleActionDelete(event, element) {
-    const userId = element.getAttribute('data-id');
-    const user = this.table.collection.get(userId);
-    
+  
+  async deleteUsers(items) {
     const confirmed = await Dialog.confirm(
-      `Delete user ${user.get('name')}?`,
-      'This action cannot be undone. All user data will be permanently removed.'
+      `Permanently delete ${items.length} users?`,
+      'This action cannot be undone.'
     );
-
+    
     if (confirmed) {
-      try {
-        await user.destroy();
-        this.table.collection.remove(user);
-        await this.refreshTable();
-        this.showSuccess('User deleted successfully');
-      } catch (error) {
-        this.showError('Failed to delete user: ' + error.message);
+      for (const item of items) {
+        await item.model.destroy();
       }
+      await this.refresh();
+      this.showSuccess(`${items.length} users deleted`);
     }
   }
-
-  // Context menu actions
-  async handleActionContextMenuDuplicate(event, element) {
-    const userId = element.getAttribute('data-id');
-    const originalUser = this.table.collection.get(userId);
+  
+  convertToCSV(data) {
+    // CSV conversion logic
+    const headers = ['Name', 'Email', 'Role', 'Status', 'Joined'];
+    const rows = data.map(user => [
+      user.name,
+      user.email,
+      user.role,
+      user.status,
+      new Date(user.created_at).toLocaleDateString()
+    ]);
     
-    // Create copy with modified data
-    const userData = { ...originalUser.attributes };
-    delete userData.id;
-    userData.name = `${userData.name} (Copy)`;
-    userData.email = `copy-${userData.email}`;
-    
-    const formView = new UserFormView({ 
-      model: new User(userData)
-    });
-    
-    const result = await Dialog.showForm(formView, {
-      title: 'Duplicate User'
-    });
-
-    if (result) {
-      try {
-        const newUser = new User(result);
-        await newUser.save();
-        this.table.collection.add(newUser);
-        await this.refreshTable();
-        this.showSuccess('User duplicated successfully');
-      } catch (error) {
-        this.showError('Failed to duplicate user: ' + error.message);
-      }
-    }
+    return [headers, ...rows]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
   }
-
-  // Custom status display
-  updateStatusDisplay() {
-    super.updateStatusDisplay();
-    
-    // Show selection count
-    const selectedCount = this.getSelectedItems().length;
-    const selectionElement = this.element.querySelector('[data-status="selection"]');
-    if (selectionElement) {
-      selectionElement.textContent = selectedCount > 0 ? 
-        `${selectedCount} selected` : '';
-    }
-
-    // Show filter summary
-    const filters = this.getFilters();
-    const filterCount = Object.keys(filters).filter(key => 
-      filters[key] && key !== 'search'
-    ).length;
-    
-    const filterElement = this.element.querySelector('[data-status="filters"]');
-    if (filterElement) {
-      filterElement.textContent = filterCount > 0 ? 
-        `${filterCount} active filters` : 'No filters';
-    }
-  }
-
-  // Custom URL parameter handling
-  applyUrlToCollection(query) {
-    super.applyUrlToCollection(query);
-    
-    // Custom logic for specific parameters
-    if (query.role && query.role !== 'all') {
-      this.table.collection.params.role = query.role;
-    }
-    
-    if (query.created_after) {
-      this.table.collection.params.created_after = query.created_after;
-    }
+  
+  downloadFile(content, filename) {
+    const blob = new Blob([content], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 }
 
-// Register with application
 export default UsersManagementPage;
 ```
 
-## Best Practices
+## Migration from Legacy TablePage
 
-### 1. URL Parameter Management
-- Enable URL synchronization for shareable table states
-- Use meaningful parameter names that match your API
-- Consider SEO implications when designing URL structure
+If migrating from the old Table component:
 
-### 2. Performance Optimization
-- Use pagination for large datasets
-- Implement server-side filtering and sorting when possible
-- Consider lazy loading for complex column formatters
+1. **Property Mapping**: The new TablePage automatically maps legacy properties:
+   - `formFields` → `addForm` / `editForm`
+   - `formCreate` → `addForm`
+   - `formEdit` → `editForm`
+   - `selectable` → `selectionMode`
 
-### 3. User Experience
-- Provide meaningful loading states and error messages
-- Show status information to keep users informed
-- Use appropriate page sizes for different screen sizes
+2. **Event Changes**: Events now emit from `tableView`:
+   - Listen to `this.tableView.on()` instead of `this.table.on()`
+   - Row events: `row:view`, `row:edit`, `row:delete`
+   - Table events: `table:add`, `table:export`
 
-### 4. Security
-- Always validate permissions for actions
-- Use the `@requiresPermission` decorator for sensitive operations
-- Sanitize user input in custom formatters and filters
+3. **Column Visibility**: Use Bootstrap breakpoints for responsive columns
+   - Old: `visible: ['desktop']`
+   - New: `visibility: 'md'`
 
-### 5. Maintenance
-- Keep table configuration separate from business logic
-- Use consistent naming conventions for actions and columns
-- Document custom formatters and complex configurations
+4. **Form Handling**: Forms can now be defined on Model classes
+   - Define `ADD_FORM`, `EDIT_FORM` on your Model
+   - Or pass `addForm`, `editForm` to TablePage
 
-The TablePage component provides a complete solution for data management interfaces, combining the power of the Table component with page-level routing and state management. It's ideal for admin panels, data browsers, and any interface that needs to present tabular data with full CRUD capabilities.
+The new TablePage with TableView provides better performance through ListView's efficient rendering system while maintaining all the powerful features of the original Table component.
