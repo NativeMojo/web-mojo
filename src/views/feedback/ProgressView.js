@@ -25,8 +25,8 @@
  * progressView.updateProgress({ progress: 0.5, loaded: 512000, total: 1024000 });
  */
 
-import View from '../core/View.js';
-import dataFormatter from '../utils/DataFormatter.js';
+import View from '../../core/View.js';
+import dataFormatter from '../../utils/DataFormatter.js';
 
 class ProgressView extends View {
     constructor(options = {}) {

@@ -9,13 +9,13 @@
  */
 
 import View from '../../core/View.js';
-import TabView from '../../components/TabView.js';
-import Table from '../../components/Table.js';
-import ContextMenu from '../../components/ContextMenu.js';
+import TabView from '../../views/navigation/TabView.js';
+import Table from '../../views/table/Table.js';
+import ContextMenu from '../../views/feedback/ContextMenu.js';
 import { Group, GroupList, GroupForms } from '../../models/Group.js';
 import { MemberList } from '../../models/Member.js';
 import { LogList } from '../../models/Log.js';
-import Dialog from '../../components/Dialog.js';
+import Dialog from '../../core/Dialog.js';
 
 class GroupView extends View {
     constructor(options = {}) {

@@ -3,9 +3,9 @@
  * Provides easy menu switching and dynamic configuration
  */
 
-import View from '../core/View.js';
+import View from '../../core/View.js';
 import SimpleSearchView from './SimpleSearchView.js';
-import {GroupList} from '../models/Group.js';
+import {GroupList} from '../../models/Group.js';
 
 
 class Sidebar extends View {

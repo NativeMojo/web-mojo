@@ -3,9 +3,9 @@
  * Demonstrates clean usage of TablePage framework features
  */
 
-import TablePage from '../components/TablePage.js';
+import TablePage from '../pages/TablePage.js';
 import {UserList, UserForms} from '../models/User.js';
-import Dialog from '../components/Dialog.js';
+import Dialog from '../core/Dialog.js';
 import MOJOUtils from '../utils/MOJOUtils.js';
 import UserView from './views/UserView.js';
 

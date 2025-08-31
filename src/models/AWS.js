@@ -20,7 +20,7 @@ class S3BucketList extends Collection {
     constructor(options = {}) {
         super(S3Bucket, {
             endpoint: '/api/aws/s3/bucket',
-            size: 20,
+            size: 10,
             ...options,
         });
     }

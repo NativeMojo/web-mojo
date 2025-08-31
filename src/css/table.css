@@ -145,10 +145,10 @@
 }
 
 /* MOJO Table Status Bar */
-.table-status-bar {
+/*.table-status-bar {
     border-top: 1px solid var(--bs-border-color);
     padding-top: 0.75rem;
-}
+}*/
 
 .table-status-bar.table-status-top {
     border-top: none;
@@ -206,11 +206,11 @@
 }
 
 /* MOJO Action Buttons Toolbar */
-.table-action-buttons {
+/*.table-action-buttons {
     border-bottom: 1px solid var(--bs-border-color);
     padding-bottom: 1rem;
     margin-bottom: 1rem;
-}
+}*/
 
 .table-actions-bottom {
     border-bottom: none;

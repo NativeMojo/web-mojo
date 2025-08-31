@@ -3,8 +3,8 @@
  * Demonstrates every field type available with examples and documentation
  */
 
-import Page from '../../../src/core/Page.js';
-import FormView from '../../../src/forms/FormView.js';
+import Page from '/src/core/Page.js';
+import FormView from '/src/forms/FormView.js';
 import { GroupList } from '/src/models/Group.js';
 
 export default class FormInputsPage extends Page {

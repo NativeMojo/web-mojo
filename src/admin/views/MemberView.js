@@ -3,11 +3,11 @@
  */
 
 import View from '../../core/View.js';
-import TabView from '../../components/TabView.js';
-import DataView from '../../components/DataView.js';
-import ContextMenu from '../../components/ContextMenu.js';
+import TabView from '../../views/navigation/TabView.js';
+import DataView from '../../views/data/DataView.js';
+import ContextMenu from '../../views/feedback/ContextMenu.js';
 import { Member, MemberForms } from '../../models/Member.js';
-import Dialog from '../../components/Dialog.js';
+import Dialog from '../../core/Dialog.js';
 
 class MemberView extends View {
     constructor(options = {}) {

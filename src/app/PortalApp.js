@@ -5,15 +5,15 @@
  */
 
 import WebApp from './WebApp.js';
-import TopNav from '../components/TopNav.js';
-import Sidebar from '../components/Sidebar.js';
-import DeniedPage from '../components/DeniedPage.js';
+import TopNav from '../views/navigation/TopNav.js';
+import Sidebar from '../views/navigation/Sidebar.js';
+import DeniedPage from '../pages/DeniedPage.js';
 import TokenManager from '../auth/TokenManager.js';
 import {User} from '../models/User.js';
 import {Group} from '../models/Group.js';
-import NotFoundPage from '../components/NotFoundPage.js';
+import NotFoundPage from '../pages/NotFoundPage.js';
 import ToastService from '../services/ToastService.js';
-import Dialog from '../components/Dialog.js';
+import Dialog from '../core/Dialog.js';
 
 export default class PortalApp extends WebApp {
     constructor(config = {}) {
@@ -451,8 +451,8 @@ export default class PortalApp extends WebApp {
     /**
      * Override showPage to update navigation
      */
-    async showPage(pageName, options = {}) {
-        const result = await super.showPage(pageName, options);
+    async showPage(page, query = {}, params = {}, options = {}) {
+        const result = await super.showPage(page, query, params, options);
 
         if (this.hasMobileLayout()) {
             this.getPortalContainer().classList.add('hide-sidebar');

@@ -3,7 +3,7 @@
  * Manages group membership and member roles
  */
 
-import TablePage from '../components/TablePage.js';
+import TablePage from '../pages/TablePage.js';
 import { Member, MemberList, MemberForms } from '../models/Member.js';
 import MemberView from './views/MemberView.js';
 

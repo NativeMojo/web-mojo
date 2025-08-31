@@ -52,8 +52,8 @@
  * ```
  */
 
-import View from '../core/View.js';
-import dataFormatter from '../utils/DataFormatter.js';
+import View from '../../core/View.js';
+import dataFormatter from '../../utils/DataFormatter.js';
 
 class DataView extends View {
   constructor(options = {}) {

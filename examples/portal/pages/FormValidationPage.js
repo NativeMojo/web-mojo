@@ -3,8 +3,8 @@
  * Demonstrates various validation techniques and error handling
  */
 
-import Page from '../../../src/core/Page.js';
-import FormView from '../../../src/forms/FormView.js';
+import Page from '/src/core/Page.js';
+import FormView from '/src/forms/FormView.js';
 
 export default class FormValidationPage extends Page {
   static pageName = 'form-validation';

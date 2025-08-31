@@ -2,7 +2,7 @@
  * HomePage - Simple landing page for the portal example
  */
 
-import Page from '../../../src/core/Page.js';
+import Page from '/src/core/Page.js';
 
 class HomePage extends Page {
     static pageName = 'home';

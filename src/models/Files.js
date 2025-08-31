@@ -18,7 +18,7 @@ class FileManagerList extends Collection {
     constructor(options = {}) {
         super(FileManager, {
             endpoint: '/api/fileman/manager',
-            size: 20,
+            size: 10,
             ...options,
         });
     }
@@ -141,7 +141,7 @@ class FileList extends Collection {
     constructor(options = {}) {
         super(File, {
             endpoint: '/api/fileman/file',
-            size: 20,
+            size: 10,
             ...options,
         });
     }

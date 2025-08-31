@@ -522,7 +522,8 @@
 }
 
 .sidebar-nav .nav-link:hover {
-    transform: translateX(2px);
+    /*transform: translateX(2px);*/
+    margin-left: 0.4rem !important;
 }
 
 .sidebar-nav .nav-link i {

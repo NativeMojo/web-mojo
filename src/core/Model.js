@@ -533,7 +533,7 @@ class Model {
   }
 
   async showError(message) {
-      const Dialog = await import('../components/Dialog.js').then(m => m.default);
+      const Dialog = await import('./Dialog.js').then(m => m.default);
       await Dialog.alert(message, 'Error', {
         size: 'md',
         class: 'text-danger'

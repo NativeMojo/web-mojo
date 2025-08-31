@@ -3,9 +3,9 @@
  * Shows file information using proper MOJO framework patterns with Mustache templating
  */
 
-import View from '../core/View.js';
-import TabView from './TabView.js';
-import Table from './Table.js';
+import View from '../../core/View.js';
+import TabView from '../navigation/TabView.js';
+import Table from '../table/Table.js';
 
 class FileView extends View {
   constructor(options = {}) {

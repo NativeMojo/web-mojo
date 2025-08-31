@@ -20,7 +20,7 @@ class MemberList extends Collection {
     constructor(options = {}) {
         super(Member, {
             endpoint: '/api/group/member',
-            size: 20,
+            size: 10,
             ...options,
         });
     }

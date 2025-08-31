@@ -25,7 +25,7 @@
  */
 
 import ToastService from './ToastService.js';
-import ProgressView from '../components/ProgressView.js';
+import ProgressView from '../views/feedback/ProgressView.js';
 
 class FileUpload {
     constructor(fileModel, options = {}) {

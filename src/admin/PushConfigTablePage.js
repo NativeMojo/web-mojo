@@ -1,4 +1,4 @@
-import TablePage from '../components/TablePage.js';
+import TablePage from '../pages/TablePage.js';
 import { PushConfigList, PushConfigForms } from '../models/Push.js';
 
 class PushConfigTablePage extends TablePage {

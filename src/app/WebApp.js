@@ -335,18 +335,11 @@ class WebApp {
                 await pageInstance.onEnter();
             }
 
+            pageInstance.syncUrl();
+
             // 6. RENDER PAGE (automatically replaces DOM content)
             await pageInstance.render();
             this.currentPage = pageInstance;
-
-            // 7. SYNC WITH ROUTER (only if not from router)
-            if (!fromRouter && pageInstance.route && this.router) {
-                const targetPath = this.buildPagePath(pageInstance, params, query);
-                await this.router.navigate(targetPath, {
-                    replace,
-                    trigger: false  // Don't trigger route change event
-                });
-            }
 
             // 8. EMIT SUCCESS EVENT
             this.events.emit('page:show', {

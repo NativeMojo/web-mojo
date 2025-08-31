@@ -4,7 +4,7 @@
  * Emits item:selected event when user selects an item
  */
 
-import { View } from '../core/View.js';
+import { View } from '../../core/View.js';
 
 /**
  * ResultsView - Internal child view for rendering search results

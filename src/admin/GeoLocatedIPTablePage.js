@@ -1,4 +1,4 @@
-import TablePage from '../components/TablePage.js';
+import TablePage from '../pages/TablePage.js';
 import { GeoLocatedIPList } from '../models/System.js';
 import GeoIPView from './views/GeoIPView.js';
 

@@ -3,7 +3,7 @@
  * Demonstrates clean usage of TablePage framework features
  */
 
-import TablePage from '../../../src/components/TablePage.js';
+import TablePage from '/src/pages/TablePage.js';
 import { TodoList, TodoForms } from '../models/Todo.js';
 
 class TodosPage extends TablePage {

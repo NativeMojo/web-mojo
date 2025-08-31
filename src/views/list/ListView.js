@@ -45,8 +45,8 @@
  * listView.setItemTemplate('<div class="compact">{{name}}</div>', true);
  */
 
-import View from '../core/View.js';
-import Collection from '../core/Collection.js';
+import View from '../../core/View.js';
+import Collection from '../../core/Collection.js';
 import ListViewItem from './ListViewItem.js';
 
 class ListView extends View {
@@ -153,7 +153,7 @@ class ListView extends View {
       await super._renderChildren();
       const itemsContainer = this.getChildElement("items");
       if (!itemsContainer) {
-          console.warn('ListView: items container not found');
+          // console.warn('ListView: items container not found');
           return;
       }
       this.forEachItem((item, index) => {

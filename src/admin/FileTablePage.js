@@ -3,9 +3,9 @@
  * Manages uploaded files and their metadata
  */
 
-import TablePage from '../components/TablePage.js';
+import TablePage from '../pages/TablePage.js';
 import { File, FileList, FileForms } from '../models/Files.js';
-import applyFileDropMixin from '../components/FileDropMixin.js';
+import applyFileDropMixin from '../mixins/FileDropMixin.js';
 import FileView from './views/FileView.js';
 
 class FileTablePage extends TablePage {

@@ -32,7 +32,7 @@ import PushTemplateTablePage from './admin/PushTemplateTablePage.js';
 import PushDeliveryTablePage from './admin/PushDeliveryTablePage.js';
 import PushDeviceTablePage from './admin/PushDeviceTablePage.js';
 import PushDashboardPage from './admin/PushDashboardPage.js';
-import TablePage from './components/TablePage.js';
+import TablePage from './pages/TablePage.js';
 
 // Re-export all admin pages
 export {

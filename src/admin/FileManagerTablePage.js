@@ -3,7 +3,7 @@
  * Manages storage backends and their configurations
  */
 
-import TablePage from '../components/TablePage.js';
+import TablePage from '../pages/TablePage.js';
 import { FileManager, FileManagerList, FileManagerForms } from '../models/Files.js';
 
 class FileManagerTablePage extends TablePage {

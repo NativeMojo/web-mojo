@@ -4,7 +4,7 @@
  */
 
 import View from '../core/View.js';
-import Dialog from '../components/Dialog.js';
+import Dialog from '../core/Dialog.js';
 
 export default class PDFViewer extends View {
   constructor(options = {}) {

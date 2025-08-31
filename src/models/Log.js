@@ -20,7 +20,7 @@ class LogList extends Collection {
     constructor(options = {}) {
         super(Log, {
             endpoint: '/api/logs',
-            size: 20,
+            size: 10,
             ...options,
         });
     }

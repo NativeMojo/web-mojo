@@ -1,7 +1,7 @@
 import Page from '../core/Page.js';
 import View from '../core/View.js';
 import { MetricsChart, PieChart } from '../charts/index.js';
-import Table from '../components/Table.js';
+import Table from '../views/table/Table.js';
 import { IncidentList } from '../models/Incident.js';
 import { TicketList } from '../models/Tickets.js';
 

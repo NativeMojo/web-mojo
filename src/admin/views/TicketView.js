@@ -1,8 +1,8 @@
 import View from '../../core/View.js';
-import DataView from '../../components/DataView.js';
-import ContextMenu from '../../components/ContextMenu.js';
+import DataView from '../../views/data/DataView.js';
+import ContextMenu from '../../views/feedback/ContextMenu.js';
 import { Ticket } from '../../models/Tickets.js';
-import ChatView from '../components/ChatView.js';
+import ChatView from '../../views/chat/ChatView.js';
 import TicketNoteAdapter from '../adapters/TicketNoteAdapter.js';
 
 class TicketView extends View {

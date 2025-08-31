@@ -607,7 +607,7 @@ export class View {
 
     // Use Dialog component for better UX
     try {
-      const Dialog = await import('../components/Dialog.js').then(m => m.default);
+      const Dialog = await import('./Dialog.js').then(m => m.default);
       await Dialog.alert(message, 'Error', {
         size: 'md',
         class: 'text-danger'
@@ -629,7 +629,7 @@ export class View {
 
     // Use Dialog component for better UX
     try {
-      const Dialog = await import('../components/Dialog.js').then(m => m.default);
+      const Dialog = await import('./Dialog.js').then(m => m.default);
       await Dialog.alert(message, 'Success', {
         size: 'md',
         class: 'text-success'
@@ -654,7 +654,7 @@ export class View {
 
     // Use Dialog component for better UX
     try {
-      const Dialog = await import('../components/Dialog.js').then(m => m.default);
+      const Dialog = await import('./Dialog.js').then(m => m.default);
       await Dialog.alert(message, 'Information', {
         size: 'md',
         class: 'text-info'
@@ -679,7 +679,7 @@ export class View {
 
     // Use Dialog component for better UX
     try {
-      const Dialog = await import('../components/Dialog.js').then(m => m.default);
+      const Dialog = await import('./Dialog.js').then(m => m.default);
       await Dialog.alert(message, 'Warning', {
         size: 'md',
         class: 'text-warning'

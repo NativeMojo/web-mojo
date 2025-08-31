@@ -1,5 +1,5 @@
 
-import TablePage from '../components/TablePage.js';
+import TablePage from '../pages/TablePage.js';
 import {GroupList, GroupForms} from '../models/Group.js';
 import GroupView from './views/GroupView.js';
 

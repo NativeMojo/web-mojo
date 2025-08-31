@@ -1,5 +1,5 @@
-import Dialog from '../../../src/components/Dialog.js';
-import Page from '../../../src/core/Page.js';
+import Dialog from '/src/core/Dialog.js';
+import Page from '/src/core/Page.js';
 
 class FormDialogsPage extends Page {
   static pageName = 'Form Dialogs';

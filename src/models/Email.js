@@ -174,7 +174,7 @@ class EmailDomainList extends Collection {
   constructor(options = {}) {
     super(EmailDomain, {
       endpoint: '/api/aws/email/domain',
-      size: 20,
+      size: 10,
       ...options
     });
   }
@@ -442,7 +442,7 @@ class MailboxList extends Collection {
   constructor(options = {}) {
     super(Mailbox, {
       endpoint: '/api/aws/email/mailbox',
-      size: 20,
+      size: 10,
       ...options
     });
   }
@@ -563,7 +563,7 @@ class SentMessageList extends Collection {
   constructor(options = {}) {
     super(SentMessage, {
       endpoint: '/api/aws/email/sent',
-      size: 20,
+      size: 10,
       ...options
     });
   }
@@ -610,7 +610,7 @@ class EmailTemplateList extends Collection {
   constructor(options = {}) {
     super(EmailTemplate, {
       endpoint: '/api/aws/email/template',
-      size: 20,
+      size: 10,
       ...options
     });
   }

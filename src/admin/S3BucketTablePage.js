@@ -3,7 +3,7 @@
  * Manages AWS S3 buckets and their configurations
  */
 
-import TablePage from '../components/TablePage.js';
+import TablePage from '../pages/TablePage.js';
 import { S3Bucket, S3BucketList, S3BucketForms } from '../models/AWS.js';
 
 class S3BucketTablePage extends TablePage {

@@ -1,4 +1,4 @@
-import TablePage from '../components/TablePage.js';
+import TablePage from '../pages/TablePage.js';
 import { UserDeviceList } from '../models/User.js';
 import DeviceView from './views/DeviceView.js';
 

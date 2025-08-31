@@ -36,7 +36,7 @@ class Router {
     const { pageName, queryParams } = this.parseInput(path);
 
     // Update browser URL
-    this.updateBrowserUrl(pageName, queryParams, replace, state);
+    // this.updateBrowserUrl(pageName, queryParams, replace, state);
 
     // Handle the route change
     if (trigger) {
@@ -141,11 +141,11 @@ class Router {
       if (input.includes('?')) {
         const [pathPart, queryPart] = input.split('?', 2);
         const urlParams = new URLSearchParams(queryPart);
-        
+
         // If page parameter exists in search params, use it
         if (urlParams.has('page')) {
           pageName = urlParams.get('page') || this.defaultRoute;
-          
+
           // Get all other parameters
           for (const [key, value] of urlParams) {
             if (key !== 'page') {
@@ -159,7 +159,7 @@ class Router {
           } else {
             pageName = pathPart || this.defaultRoute;
           }
-          
+
           // Still collect query parameters
           for (const [key, value] of urlParams) {
             queryParams[key] = value;

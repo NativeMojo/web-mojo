@@ -1,5 +1,5 @@
 import View from '../../core/View.js';
-import DataView from '../../components/DataView.js';
+import DataView from '../../views/data/DataView.js';
 
 class PushDeviceView extends View {
     constructor(options = {}) {

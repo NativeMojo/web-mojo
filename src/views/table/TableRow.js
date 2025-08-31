@@ -12,8 +12,8 @@
  * });
  */
 
-import ListViewItem from './ListViewItem.js';
-import dataFormatter from '../utils/DataFormatter.js';
+import ListViewItem from '../list/ListViewItem.js';
+import dataFormatter from '../../utils/DataFormatter.js';
 
 class TableRow extends ListViewItem {
   constructor(options = {}) {
@@ -41,7 +41,7 @@ class TableRow extends ListViewItem {
     let template = '';
 
     // Selection checkbox cell
-    if (this.tableView.batchActions && this.tableView.batchActions.length > 0) {
+    if (this.tableView && this.tableView.batchActions && this.tableView.batchActions.length > 0) {
       template += `
         <td style="padding: 0;">
           <div class="mojo-select-cell {{#selected}}selected{{/selected}}"
@@ -354,7 +354,13 @@ class TableRow extends ListViewItem {
    */
   select() {
     super.select();
-    this.addClass('table-active');
+    this.addClass('selected');
+    
+    // Update checkbox visual state
+    const selectCell = this.element?.querySelector('.mojo-select-cell');
+    if (selectCell) {
+      selectCell.classList.add('selected');
+    }
   }
 
   /**
@@ -362,7 +368,13 @@ class TableRow extends ListViewItem {
    */
   deselect() {
     super.deselect();
-    this.removeClass('table-active');
+    this.removeClass('selected');
+    
+    // Update checkbox visual state
+    const selectCell = this.element?.querySelector('.mojo-select-cell');
+    if (selectCell) {
+      selectCell.classList.remove('selected');
+    }
   }
 }
 

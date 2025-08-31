@@ -3,7 +3,7 @@
  */
 
 import View from '../../core/View.js';
-import TabView from '../../components/TabView.js';
+import TabView from '../../views/navigation/TabView.js';
 import { EmailTemplate } from '../../models/Email.js';
 
 class EmailTemplateView extends View {

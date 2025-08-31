@@ -1,5 +1,5 @@
-import Collection from '../../../src/core/Collection.js';
-import Model from '../../../src/core/Model.js';
+import Collection from '/src/core/Collection.js';
+import Model from '/src/core/Model.js';
 
 window.Model = Model;
 

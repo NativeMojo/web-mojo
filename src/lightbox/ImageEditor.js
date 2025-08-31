@@ -4,7 +4,7 @@
  */
 
 import View from '../core/View.js';
-import Dialog from '../components/Dialog.js';
+import Dialog from '../core/Dialog.js';
 import ImageTransformView from './ImageTransformView.js';
 import ImageCropView from './ImageCropView.js';
 import ImageFiltersView from './ImageFiltersView.js';

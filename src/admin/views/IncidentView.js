@@ -3,13 +3,13 @@
  */
 
 import View from '../../core/View.js';
-import TabView from '../../components/TabView.js';
-import DataView from '../../components/DataView.js';
-import ContextMenu from '../../components/ContextMenu.js';
+import TabView from '../../views/navigation/TabView.js';
+import DataView from '../../views/data/DataView.js';
+import ContextMenu from '../../views/feedback/ContextMenu.js';
 import { Incident, IncidentForms } from '../../models/Incident.js';
-import Dialog from '../../components/Dialog.js';
+import Dialog from '../../core/Dialog.js';
 import IncidentHistoryAdapter from '../adapters/IncidentHistoryAdapter.js';
-import ChatView from '../components/ChatView.js';
+import ChatView from '../../views/chat/ChatView.js';
 
 class IncidentView extends View {
     constructor(options = {}) {

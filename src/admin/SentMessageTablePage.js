@@ -3,8 +3,8 @@
  * Displays outbound messages with a details dialog
  */
 
-import TablePage from '../components/TablePage.js';
-import Dialog from '../components/Dialog.js';
+import TablePage from '../pages/TablePage.js';
+import Dialog from '../core/Dialog.js';
 import { SentMessage, SentMessageList } from '../models/Email.js';
 import EmailView from './views/EmailView.js';
 

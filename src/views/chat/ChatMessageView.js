@@ -1,5 +1,5 @@
 import View from '../../core/View.js';
-import FilePreviewView from './FilePreviewView.js';
+import FilePreviewView from '../file/FilePreviewView.js';
 
 class ChatMessageView extends View {
     constructor(options = {}) {

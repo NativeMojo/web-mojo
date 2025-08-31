@@ -3,7 +3,7 @@
  * Manages incidents and their lifecycle
  */
 
-import TablePage from '../components/TablePage.js';
+import TablePage from '../pages/TablePage.js';
 import { Incident, IncidentList, IncidentForms } from '../models/Incident.js';
 import IncidentView from './views/IncidentView.js';
 

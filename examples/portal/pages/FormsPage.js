@@ -3,9 +3,9 @@
  * Showcases group layouts, enhanced fields, EventDelegate integration
  */
 
-import Page from '../../../src/core/Page.js';
-import FormView from '../../../src/forms/FormView.js';
-import TagInputView from '../../../src/forms/inputs/TagInput.js';
+import Page from '/src/core/Page.js';
+import FormView from '/src/forms/FormView.js';
+import TagInputView from '/src/forms/inputs/TagInput.js';
 
 class FormsPage extends Page {
     static pageName = 'forms';

@@ -1,4 +1,4 @@
-import TablePage from '../components/TablePage.js';
+import TablePage from '../pages/TablePage.js';
 import { PushDeliveryList } from '../models/Push.js';
 import PushDeliveryView from './views/PushDeliveryView.js';
 

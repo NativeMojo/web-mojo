@@ -1,6 +1,6 @@
 import Page from '../core/Page.js';
 import { MetricsChart, PieChart } from '../charts/index.js';
-import Table from '../components/Table.js';
+import Table from '../views/table/Table.js';
 import { PushDeliveryList } from '../models/Push.js';
 
 class PushDashboardPage extends Page {

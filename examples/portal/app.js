@@ -3,7 +3,7 @@
  * Demonstrates WebApp with Portal layout (sidebar + topnav)
  */
 
-import PortalApp from '../../src/app/PortalApp.js';
+import PortalApp from '/src/app/PortalApp.js';
 import HomePage from './pages/HomePage.js';
 import DashboardPage from './pages/DashboardPage.js';
 import TemplatesPage from './pages/TemplatesPage.js';
@@ -336,7 +336,7 @@ app.events.on('portal:action', ({ action }) => {
         case 'test-upload':
             // Import and test file upload progress UI
             import('/src/services/ToastService.js').then(ToastModule => {
-                import('/src/components/ProgressView.js').then(ProgressModule => {
+                import('/src/views/feedback/ProgressView.js').then(ProgressModule => {
                     const ToastService = ToastModule.default;
                     const ProgressView = ProgressModule.default;
 

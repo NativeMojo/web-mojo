@@ -6,7 +6,7 @@
 
 import View from '../core/View.js';
 import FormView from '../forms/FormView.js';
-import DataView from '../components/DataView.js';
+import DataView from '../views/data/DataView.js';
 
 
 class Dialog extends View {

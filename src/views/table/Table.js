@@ -21,11 +21,11 @@
  * });
  */
 
-import dataFormatter from '../utils/DataFormatter.js';
-import View from '../core/View.js';
-import Collection from '../core/Collection.js';
-import Dialog from './Dialog.js';
-import FormView from '../forms/FormView.js';
+import dataFormatter from '../../utils/DataFormatter.js';
+import View from '../../core/View.js';
+import Collection from '../../core/Collection.js';
+import Dialog from '../../core/Dialog.js';
+import FormView from '../../forms/FormView.js';
 
 
 class Table extends View {

@@ -412,7 +412,7 @@ export default class SeriesChart extends BaseChart {
       title
     });
 
-    const Dialog = (await import('../components/Dialog.js')).default;
+    const Dialog = (await import('../core/Dialog.js')).default;
 
     const dialog = new Dialog({
       title,

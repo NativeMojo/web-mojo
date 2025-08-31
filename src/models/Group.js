@@ -27,7 +27,7 @@ class GroupList extends Collection {
     constructor(options = {}) {
         super(Group, {
             endpoint: '/api/group',
-            size: 20,
+            size: 10,
             ...options
         });
     }

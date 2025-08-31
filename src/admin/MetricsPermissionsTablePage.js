@@ -1,4 +1,4 @@
-import TablePage from '../components/TablePage.js';
+import TablePage from '../pages/TablePage.js';
 import { MetricsPermissionList, MetricsForms } from '../models/Metrics.js';
 import MetricsPermissionsView from './views/MetricsPermissionsView.js';
 

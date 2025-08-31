@@ -4,7 +4,7 @@
  */
 
 import PortalApp from '/src/app/PortalApp.js';
-import { DocitPage } from '/src/docit/index.js';
+// import { DocitPage } from '/src/docit/index.js';
 
 // Create and configure the app
 const app = new PortalApp({

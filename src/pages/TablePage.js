@@ -19,7 +19,7 @@
  */
 
 import Page from '../core/Page.js';
-import TableView from './TableView.js';
+import TableView from '../views/table/TableView.js';
 import Collection from '../core/Collection.js';
 
 class TablePage extends Page {
@@ -42,7 +42,7 @@ class TablePage extends Page {
       columns: options.columns || [],
       actions: options.actions || null,
       contextMenu: options.contextMenu || null,
-      batchActions: options.batchActions || options.tableOptions?.batchActions || null,
+      batchActions: options.batchActions || null,
       selectionMode: options.selectionMode || (options.selectable ? 'multiple' : 'none'),
 
       // Features
@@ -50,6 +50,12 @@ class TablePage extends Page {
       sortable: options.sortable !== false,
       filterable: options.filterable !== false,
       paginated: options.paginated !== false,
+
+      // Filter configuration
+      filters: options.filters || options.additionalFilters || [],
+      hideActivePills: options.hideActivePills || false,
+      hideActivePillNames: options.hideActivePillNames || [],
+      searchPlacement: options.searchPlacement || 'toolbar',
 
       // Display options
       tableOptions: {
@@ -82,7 +88,6 @@ class TablePage extends Page {
 
     // URL synchronization
     this.urlSyncEnabled = options.urlSyncEnabled !== false;
-    this._isUpdatingUrl = false;
 
     // Status tracking
     this.lastUpdated = null;
@@ -97,26 +102,18 @@ class TablePage extends Page {
    */
   buildTemplate() {
     return `
-      <div class="table-page">
-        {{#title}}
-          <div class="page-header mb-4">
-            <h1>{{title}}</h1>
-            {{#description}}
-              <p class="text-muted">{{description}}</p>
-            {{/description}}
-          </div>
-        {{/title}}
+      <div class="table-page-container">
+
+        <div class="table-container" data-container="table"></div>
 
         {{#showStatus}}
-          <div class="page-status mb-3">
-            <div class="row">
-              <div class="col">
+          <div class="table-status-bar table-status-top">
+            <div class="status-info">
+              <div class="d-flex justify-content-between w-100">
                 <span class="text-muted">
                   <i class="bi bi-clock me-1"></i>
                   Last updated: <span data-status="last-updated">{{lastUpdated}}</span>
                 </span>
-              </div>
-              <div class="col text-end">
                 <span class="text-muted">
                   <i class="bi bi-list-ol me-1"></i>
                   Total records: <span data-status="record-count">0</span>
@@ -126,7 +123,6 @@ class TablePage extends Page {
           </div>
         {{/showStatus}}
 
-        <div data-container="table"></div>
       </div>
     `;
   }
@@ -146,11 +142,38 @@ class TablePage extends Page {
       }
     }
 
-    // Create TableView instance
+    // Apply URL query parameters to collection
+    this.applyQueryToCollection();
+
+    // Create TableView instance with proper configuration
     this.tableView = new TableView({
       collection: this.collection,
       containerId: 'table',
-      ...this.tableConfig
+      columns: this.tableConfig.columns,
+      actions: this.tableConfig.actions,
+      contextMenu: this.tableConfig.contextMenu,
+      batchActions: this.tableConfig.batchActions,
+      selectionMode: this.tableConfig.selectionMode,
+      searchable: this.tableConfig.searchable,
+      sortable: this.tableConfig.sortable,
+      filterable: this.tableConfig.filterable,
+      paginated: this.tableConfig.paginated,
+      filters: this.tableConfig.filters,
+      hideActivePills: this.tableConfig.hideActivePills,
+      hideActivePillNames: this.tableConfig.hideActivePillNames,
+      searchPlacement: this.tableConfig.searchPlacement,
+      tableOptions: this.tableConfig.tableOptions,
+      emptyMessage: this.tableConfig.emptyMessage,
+      searchPlaceholder: this.tableConfig.searchPlaceholder,
+      showAdd: this.tableConfig.showAdd,
+      showExport: this.tableConfig.showExport,
+      formFields: this.tableConfig.formFields,
+      formEdit: this.tableConfig.formEdit,
+      onItemView: this.tableConfig.onItemView,
+      onItemEdit: this.tableConfig.onItemEdit,
+      onItemDelete: this.tableConfig.onItemDelete,
+      onAdd: this.tableConfig.onAdd,
+      onExport: this.tableConfig.onExport
     });
 
     // Add as child view
@@ -169,7 +192,6 @@ class TablePage extends Page {
       // Sync URL when collection params change
       this.collection.on('fetch:start', () => {
         this.isLoading = true;
-        this.syncUrlWithTable();
       });
 
       this.collection.on('fetch:end', () => {
@@ -179,23 +201,29 @@ class TablePage extends Page {
       });
     }
 
-    // Listen for table events
-    this.tableView.on('table:search', ({ searchTerm }) => {
-      if (this.collection) {
-        this.collection.setParams({
-          ...this.collection.params,
-          search: searchTerm || undefined
-        });
-        this.syncUrlWithTable();
+    // Listen for params-changed event from TableView to sync URL
+    this.tableView.on('params-changed', () => {
+      if (this.urlSyncEnabled) {
+        this.syncUrl();
       }
     });
 
+    // Listen for table events (these also emit params-changed, but keep for backwards compatibility)
+    this.tableView.on('table:search', ({ searchTerm }) => {
+      // params-changed will handle URL sync
+    });
+
     this.tableView.on('table:sort', ({ field }) => {
-      this.syncUrlWithTable();
+      // params-changed will handle URL sync
     });
 
     this.tableView.on('table:page', ({ page }) => {
-      this.syncUrlWithTable();
+      // params-changed will handle URL sync
+    });
+
+    // Filter events - params-changed will handle URL sync
+    this.tableView.on('filter:edit', async ({ key }) => {
+      await this.handleFilterEdit(key);
     });
 
     // Row action events
@@ -232,23 +260,14 @@ class TablePage extends Page {
   }
 
   /**
-   * Handle page parameters
+   * Apply URL query parameters to collection
    */
-  onParams(params = {}, query = {}) {
-    super.onParams(params, query);
-
-    // Apply URL parameters to collection if not currently updating URL
-    if (this.collection && !this._isUpdatingUrl) {
-      this.applyUrlToCollection(query);
-    }
-  }
-
-  /**
-   * Apply URL parameters to collection
-   */
-  applyUrlToCollection(query) {
+  applyQueryToCollection() {
     const params = {};
-
+    if (!this.query || Object.keys(this.query).length === 0) {
+        return;
+    }
+    const query = this.query;
     // Pagination
     if (query.start !== undefined) params.start = parseInt(query.start) || 0;
     if (query.size !== undefined) params.size = parseInt(query.size) || 10;
@@ -259,10 +278,20 @@ class TablePage extends Page {
     // Search
     if (query.search !== undefined) params.search = query.search;
 
-    // All other params are filters
+    // Process all other params as potential filters
+    const reservedParams = ['start', 'size', 'sort', 'search', 'page'];
     Object.entries(query).forEach(([key, value]) => {
-      if (!['start', 'size', 'sort', 'search', 'page'].includes(key) && value) {
-        params[key] = value;
+      if (!reservedParams.includes(key) && value !== undefined && value !== '') {
+        // Parse value if it looks like JSON
+        if (typeof value === 'string' && (value.startsWith('{') || value.startsWith('['))) {
+          try {
+            params[key] = JSON.parse(value);
+          } catch (e) {
+            params[key] = value;
+          }
+        } else {
+          params[key] = value;
+        }
       }
     });
 
@@ -272,22 +301,14 @@ class TablePage extends Page {
         ...this.collection.params,
         ...params
       });
-
-      // Fetch if REST enabled
-      if (this.collection.restEnabled) {
-        this.collection.fetch();
-      } else {
-        // Re-render for local collections
-        this.tableView.render();
-      }
     }
   }
 
   /**
    * Sync URL with current table state
    */
-  syncUrlWithTable() {
-    if (!this.urlSyncEnabled || !this.collection || !this.app?.router || this._isUpdatingUrl) {
+  syncUrl(force = true) {
+    if (!this.urlSyncEnabled || !this.collection || !this.getApp()?.router) {
       return;
     }
 
@@ -305,10 +326,10 @@ class TablePage extends Page {
     const collectionParams = this.collection.params || {};
 
     // Only include non-default values
-    if (collectionParams.start && collectionParams.start !== 0) {
+    if (collectionParams.start) {
       desiredParams.start = collectionParams.start;
     }
-    if (collectionParams.size && collectionParams.size !== 10) {
+    if (collectionParams.size) {
       desiredParams.size = collectionParams.size;
     }
     if (collectionParams.sort) {
@@ -320,8 +341,13 @@ class TablePage extends Page {
 
     // Include other filters
     Object.entries(collectionParams).forEach(([key, value]) => {
-      if (!['start', 'size', 'sort', 'search'].includes(key) && value) {
-        desiredParams[key] = value;
+      if (!['start', 'size', 'sort', 'search'].includes(key) && value !== undefined && value !== '') {
+        // Stringify complex values for URL
+        if (typeof value === 'object') {
+          desiredParams[key] = JSON.stringify(value);
+        } else {
+          desiredParams[key] = value;
+        }
       }
     });
 
@@ -334,12 +360,11 @@ class TablePage extends Page {
         !(key in desiredParams)
       );
 
-    if (!hasChanges) return;
+    this.query = desiredParams;
+    if (!hasChanges && !force) return;
 
     // Update URL
-    this._isUpdatingUrl = true;
-    this.app.router.updateUrl(desiredParams, { replace: true });
-    setTimeout(() => { this._isUpdatingUrl = false; }, 100);
+    this.updateBrowserUrl(desiredParams, true, false);
   }
 
   /**
@@ -368,9 +393,19 @@ class TablePage extends Page {
   async onEnter() {
     await super.onEnter();
 
+    this.applyQueryToCollection();
+
     // Refresh data if collection is REST-enabled
     if (this.collection && this.collection.restEnabled) {
       await this.collection.fetch();
+    }
+
+    // Ensure filter pills are shown if there are active filters from URL
+    if (this.tableView && this.tableView.element) {
+      setTimeout(() => {
+        this.tableView.updateFilterPills();
+        this.tableView.updateSortIcons();
+      }, 100);
     }
   }
 
@@ -396,6 +431,61 @@ class TablePage extends Page {
   }
 
   /**
+   * Handle filter edit dialog
+   */
+  async handleFilterEdit(filterKey) {
+    const Dialog = await import('../core/Dialog.js').then(m => m.default);
+    const filterConfig = this.tableView.getAllAvailableFilters().find(f => f.key === filterKey);
+    const currentValue = this.collection.params[filterKey];
+
+    if (!filterConfig) return;
+
+    // Build form field for the filter
+    const field = {
+      name: 'filter_value',
+      label: filterConfig.label || filterKey,
+      value: currentValue,
+      ...filterConfig.config
+    };
+
+    const result = await Dialog.showForm({
+      title: `Edit ${field.label} Filter`,
+      size: 'md',
+      fields: [field]
+    });
+
+    if (result && result.filter_value !== undefined) {
+      this.tableView.setFilter(filterKey, result.filter_value);
+
+      if (this.collection.restEnabled) {
+        await this.collection.fetch();
+      }
+      await this.tableView.render();
+      this.syncUrl();
+    }
+  }
+
+  /**
+   * Clear all filters
+   */
+  clearAllFilters() {
+    if (!this.collection) return;
+
+    // Keep only pagination and sort params
+    const { start, size, sort } = this.collection.params;
+    this.collection.params = { start, size };
+    if (sort) this.collection.params.sort = sort;
+
+    this.syncUrl();
+
+    if (this.collection.restEnabled) {
+      this.collection.fetch();
+    } else {
+      this.tableView.render();
+    }
+  }
+
+  /**
    * Cleanup on destroy
    */
   async onBeforeDestroy() {
@@ -406,9 +496,11 @@ class TablePage extends Page {
     }
 
     if (this.tableView) {
+      this.tableView.off('params-changed');
       this.tableView.off('table:search');
       this.tableView.off('table:sort');
       this.tableView.off('table:page');
+      this.tableView.off('filter:edit');
       this.tableView.off('row:view');
       this.tableView.off('row:edit');
       this.tableView.off('row:delete');
@@ -423,7 +515,7 @@ class TablePage extends Page {
    * Show/hide status display
    */
   get showStatus() {
-    return this.options.showStatus !== false;
+    return this.options.showStatus === true;
   }
 
   /**

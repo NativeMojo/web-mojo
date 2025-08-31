@@ -3,7 +3,7 @@
  * Manages system and application logs
  */
 
-import TablePage from '../components/TablePage.js';
+import TablePage from '../pages/TablePage.js';
 import { Log, LogList } from '../models/Log.js';
 import LogView from './views/LogView.js';
 

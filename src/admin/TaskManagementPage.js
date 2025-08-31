@@ -5,10 +5,10 @@
 import Page from '../core/Page.js';
 import View from '../core/View.js';
 import Collection from '../core/Collection.js';
-import TabView from '../components/TabView.js';
-import Table from '../components/Table.js';
+import TabView from '../views/navigation/TabView.js';
+import Table from '../views/table/Table.js';
 import { MetricsChart } from '../charts/index.js';
-import Dialog from '../components/Dialog.js';
+import Dialog from '../core/Dialog.js';
 import TaskDetailsView from './TaskDetailsView.js';
 import RunnerDetailsView from './RunnerDetailsView.js';
 

@@ -5,8 +5,8 @@
  * - Details dialog to preview template fields
  */
 
-import TablePage from '../components/TablePage.js';
-import Dialog from '../components/Dialog.js';
+import TablePage from '../pages/TablePage.js';
+import Dialog from '../core/Dialog.js';
 import {
   EmailTemplate,
   EmailTemplateList,

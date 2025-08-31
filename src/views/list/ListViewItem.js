@@ -16,7 +16,7 @@
  * });
  */
 
-import View from '../core/View.js';
+import View from '../../core/View.js';
 
 class ListViewItem extends View {
   constructor(options = {}) {

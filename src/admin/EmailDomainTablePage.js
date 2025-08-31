@@ -14,9 +14,9 @@
  * - /api/aws/email/domain/<id>/reconcile (POST)
  */
 
-import TablePage from '../components/TablePage.js';
+import TablePage from '../pages/TablePage.js';
 import View from '../core/View.js';
-import Dialog from '../components/Dialog.js';
+import Dialog from '../core/Dialog.js';
 import { EmailDomain, EmailDomainList, EmailDomainForms } from '../models/Email.js';
 
 class DomainDetailsView extends View {

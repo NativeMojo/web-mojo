@@ -1,10 +1,10 @@
 import View from '../../core/View.js';
-import TabView from '../../components/TabView.js';
-import DataView from '../../components/DataView.js';
-import Table from '../../components/Table.js';
-import ContextMenu from '../../components/ContextMenu.js';
+import TabView from '../../views/navigation/TabView.js';
+import DataView from '../../views/data/DataView.js';
+import Table from '../../views/table/Table.js';
+import ContextMenu from '../../views/feedback/ContextMenu.js';
 import { RuleSet, RuleList } from '../../models/Incident.js';
-import Dialog from '../../components/Dialog.js';
+import Dialog from '../../core/Dialog.js';
 
 class RuleSetView extends View {
     constructor(options = {}) {

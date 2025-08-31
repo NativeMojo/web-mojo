@@ -1,4 +1,4 @@
-import TablePage from '../components/TablePage.js';
+import TablePage from '../pages/TablePage.js';
 import { UserDeviceLocationList } from '../models/User.js';
 
 class UserDeviceLocationTablePage extends TablePage {

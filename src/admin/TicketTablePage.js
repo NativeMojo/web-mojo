@@ -1,4 +1,4 @@
-import TablePage from '../components/TablePage.js';
+import TablePage from '../pages/TablePage.js';
 import { TicketList, TicketForms } from '../models/Tickets.js';
 import TicketView from './views/TicketView.js';
 

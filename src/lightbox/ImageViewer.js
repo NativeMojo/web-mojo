@@ -4,7 +4,7 @@
  */
 
 import View from '/src/core/View.js';
-import Dialog from '/src/components/Dialog.js';
+import Dialog from '../core/Dialog.js';
 
 export default class ImageViewer extends View {
   constructor(options = {}) {

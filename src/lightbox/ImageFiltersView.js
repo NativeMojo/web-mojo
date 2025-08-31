@@ -4,7 +4,7 @@
  */
 
 import ImageCanvasView from './ImageCanvasView.js';
-import Dialog from '../components/Dialog.js';
+import Dialog from '../core/Dialog.js';
 
 export default class ImageFiltersView extends ImageCanvasView {
   constructor(options = {}) {

@@ -1,4 +1,4 @@
-import TablePage from '../components/TablePage.js';
+import TablePage from '../pages/TablePage.js';
 import { IncidentEventList, IncidentEventForms } from '../models/Incident.js';
 import EventView from './views/EventView.js';
 

@@ -1,4 +1,4 @@
-import TablePage from '../components/TablePage.js';
+import TablePage from '../pages/TablePage.js';
 import { RuleSetList } from '../models/Incident.js';
 import RuleSetView from './views/RuleSetView.js';
 

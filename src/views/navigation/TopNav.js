@@ -3,7 +3,7 @@
  * Provides clean, responsive top navigation
  */
 
-import View from '../core/View.js';
+import View from '../../core/View.js';
 
 class TopNav extends View {
     constructor(options = {}) {

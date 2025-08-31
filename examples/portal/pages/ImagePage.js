@@ -3,10 +3,10 @@
  * Shows: Upload -> Crop -> Edit -> Results pipeline
  */
 
-import Page from '../../../src/core/Page.js';
-import ImageUploadView from '../../../src/lightbox/ImageUploadView.js';
-import ImageCropView from '../../../src/lightbox/ImageCropView.js';
-import ImageEditor from '../../../src/lightbox/ImageEditor.js';
+import Page from '/src/core/Page.js';
+import ImageUploadView from '/src/lightbox/ImageUploadView.js';
+import ImageCropView from '/src/lightbox/ImageCropView.js';
+import ImageEditor from '/src/lightbox/ImageEditor.js';
 
 class ImagePage extends Page {
     static pageName = 'image-processing';

@@ -59,15 +59,6 @@ class Page extends View {
   }
 
   /**
-   * Initialize page - called during View construction
-   * Calls the design doc's onInit() method
-   */
-  onInit() {
-    super.onInit();
-
-  }
-
-  /**
    * Handle route parameters - from design doc
    * @param {object} params - Route parameters
    * @param {object} query - Query string parameters
@@ -105,6 +96,7 @@ class Page extends View {
    */
   async onEnter() {
     this.isActive = true;
+    await this.onInitView();
 
     // Restore saved state if exists
     if (this.savedState) {
@@ -420,6 +412,29 @@ class Page extends View {
     }
 
     console.error('No router available for navigation');
+  }
+
+  getRoute() {
+      if (this.route) {
+          let route = this.route;
+          if (typeof route === 'string' && route.startsWith('/')) {
+              route = route.substring(1);
+          }
+          return route;
+      }
+      return this.pageName;
+  }
+
+  syncUrl(force = true) {
+      this.updateBrowserUrl(this.query, false, false);
+  }
+
+  updateBrowserUrl(query = null, replace = false, trigger = false) {
+    this.getApp();
+    // we need to do this to normalize the URL
+    // const targetPath = this.app.buildPagePath(this, this.params, query);
+    // const { pageName, queryParams } = this.app.router.parseInput(targetPath);
+    this.app.router.updateBrowserUrl(this.getRoute(), query, replace, trigger);
   }
 
   /**

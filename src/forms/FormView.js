@@ -6,7 +6,7 @@
 
 import View from '../core/View.js';
 import FormBuilder from './FormBuilder.js';
-import applyFileDropMixin from '../components/FileDropMixin.js';
+import applyFileDropMixin from '../mixins/FileDropMixin.js';
 import ImageCropView from '../lightbox/ImageCropView.js';
 
 import { TagInput, CollectionSelect, DatePicker, DateRangePicker } from './inputs/index.js';

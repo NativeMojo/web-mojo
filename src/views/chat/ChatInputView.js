@@ -1,5 +1,5 @@
 import View from '../../core/View.js';
-import applyFileDropMixin from '../../components/FileDropMixin.js';
+import applyFileDropMixin from '../../mixins/FileDropMixin.js';
 import FileUpload from '../../services/FileUpload.js';
 import { File } from '../../models/Files.js';
 

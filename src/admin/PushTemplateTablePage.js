@@ -1,4 +1,4 @@
-import TablePage from '../components/TablePage.js';
+import TablePage from '../pages/TablePage.js';
 import { PushTemplateList, PushTemplateForms } from '../models/Push.js';
 
 class PushTemplateTablePage extends TablePage {

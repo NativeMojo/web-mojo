@@ -5,7 +5,7 @@
 
 import Page from '/src/core/Page.js';
 import View from '/src/core/View.js';
-import applyFileDropMixin from '/src/components/FileDropMixin.js';
+import applyFileDropMixin from '/src/mixins/FileDropMixin.js';
 
 // Apply FileDropMixin to View class
 applyFileDropMixin(View);

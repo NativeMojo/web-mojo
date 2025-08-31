@@ -17,7 +17,7 @@ class IncidentEventList extends Collection {
     constructor(options = {}) {
         super(IncidentEvent, {
             endpoint: '/api/incident/event',
-            size: 20,
+            size: 10,
             ...options,
         });
     }
@@ -91,7 +91,7 @@ class IncidentList extends Collection {
     constructor(options = {}) {
         super(Incident, {
             endpoint: '/api/incident/incident',
-            size: 20,
+            size: 10,
             ...options,
         });
     }
@@ -170,7 +170,7 @@ class IncidentRuleSetList extends Collection {
     constructor(options = {}) {
         super(IncidentRuleSet, {
             endpoint: '/api/event/ruleset',
-            size: 20,
+            size: 10,
             ...options,
         });
     }
@@ -188,7 +188,7 @@ class IncidentRuleList extends Collection {
     constructor(options = {}) {
         super(IncidentRule, {
             endpoint: '/api/event/ruleset/rule',
-            size: 20,
+            size: 10,
             ...options,
         });
     }
@@ -209,7 +209,7 @@ class IncidentHistoryList extends Collection {
     constructor(options = {}) {
         super(IncidentHistory, {
             endpoint: '/api/incident/incident/history',
-            size: 20,
+            size: 10,
             ...options,
         });
     }
