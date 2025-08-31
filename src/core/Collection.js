@@ -527,6 +527,24 @@ class Collection {
   }
 
   /**
+   * Iterate over each model in the collection
+   * @param {function} callback - Function to execute for each model (model, index, collection)
+   * @param {object} thisArg - Optional value to use as this when executing callback
+   * @returns {Collection} Returns the collection for chaining
+   */
+  forEach(callback, thisArg) {
+    if (typeof callback !== 'function') {
+      throw new TypeError('Callback must be a function');
+    }
+    
+    this.models.forEach((model, index) => {
+      callback.call(thisArg, model, index, this);
+    });
+    
+    return this;
+  }
+
+  /**
    * Sort collection by comparator function
    * @param {function|string} comparator - Comparison function or attribute name
    * @param {object} options - Sort options
