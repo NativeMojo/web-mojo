@@ -45,11 +45,11 @@ class BookSearchView extends SimpleSearchView {
             const response = await newBook.save(newBook.attributes);
 
             if (response.success) {
-                this.getApp().toast.success('Book created successfully!');
+                this.getApp().toast.showSuccess('Book created successfully!');
                 // Refresh the list to show the new book
                 this.collection.fetch();
             } else {
-                this.getApp().toast.error('Failed to create book.');
+                this.getApp().toast.showError('Failed to create book.');
                 console.error('Failed to save book:', response);
             }
         }

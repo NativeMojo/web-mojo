@@ -7,6 +7,12 @@ class PageListView extends View {
         super(options);
         this.collection = new DocitPageList();
         this.book = null;
+
+        // Listen for changes to the collection and re-render
+        this.collection.on('fetch:success', () => {
+            console.log("Collection size:", this.collection.meta.size);
+            this.render();
+        });
     }
 
     getTemplate() {
@@ -25,27 +31,24 @@ class PageListView extends View {
                 </div>
             </div>
             <div class="list-group list-group-flush">
-                {{#each models}}
+                {{collection.meta.size}}
+                {{#collection.models}}
                     <a href="#/docit/page/{{id}}" class="list-group-item list-group-item-action">
-                        {{title}}
+                        {{title}} - page
                     </a>
-                {{/each}}
+                {{/collection.models}}
             </div>
         `;
-    }
-
-    get models() {
-        return this.collection.toJSON();
     }
 
     async setBook(book) {
         this.book = book.attributes;
         if (!book) {
             this.collection.reset();
-            return this.render();
+            return; // No need to render, the 'reset' event will trigger it if listened for.
         }
+        // The fetch will populate the collection, which will trigger the 'update' event.
         await this.collection.fetch({ book: book.id });
-        this.render();
     }
 
     onActionBackToBooks() {
@@ -71,14 +74,12 @@ class PageListView extends View {
             const response = await newPage.save(newPage.attributes);
 
             if (response.success) {
-                this.getApp().toast.success('Page created successfully!');
-                // Refresh the list
+                this.getApp().toast.showSuccess('Page created successfully!');
+                // The collection's 'add' will trigger the 'update' event, causing a re-render.
                 this.collection.add(response.data.data, { merge: true });
-                this.render();
-                // Emit an event to tell the main page to open the editor for the new page
                 this.emit('edit-page', newPage);
             } else {
-                this.getApp().toast.error('Failed to create page.');
+                this.getApp().toast.showError('Failed to create page.');
                 console.error('Failed to save page:', response);
             }
         }

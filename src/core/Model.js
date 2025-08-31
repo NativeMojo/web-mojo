@@ -55,6 +55,10 @@ class Model {
     };
   }
 
+  getContextValue(key) {
+      return this.get(key);
+  }
+
   /**
    * Get attribute value with support for dot notation and pipe formatting
    * @param {string} key - Attribute key with optional pipes (e.g., "name|uppercase")

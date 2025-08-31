@@ -112,10 +112,10 @@ class MOJOUtils {
         }
       } else {
         // For nested objects, check if they have a get() method
-        if (current && typeof current.get === 'function') {
+        if (current && typeof current.getContextValue === 'function') {
           // Use get() for the remaining path
           const remainingPath = keys.slice(i).join('.');
-          return current.get(remainingPath);
+          return current.getContextValue(remainingPath);
         }
 
         // Standard property access
@@ -526,14 +526,14 @@ class MOJOUtils {
     }
 
     // Don't wrap if already has get method
-    if (typeof data.get === 'function') {
+    if (typeof data.getContextValue === 'function') {
       return data;
     }
 
     // Handle arrays specially - wrap each element but keep as array
     if (Array.isArray(data)) {
       return data.map(item => {
-        if (item && typeof item === 'object' && !item.get) {
+        if (item && typeof item === 'object' && !item.getContextValue) {
           return new DataWrapper(item, rootContext);
         }
         return item;
@@ -584,7 +584,7 @@ class DataWrapper {
    * @param {string} key - Key with optional pipes
    * @returns {*} Value, possibly formatted
    */
-  get(key) {
+  getContextValue(key) {
     // Check if key has pipes
     let field = key;
     let pipes = '';

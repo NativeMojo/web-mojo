@@ -468,7 +468,7 @@ export class View {
     return templateContent;
   }
 
-  get(path) {
+  getContextValue(path) {
     const value = MOJOUtils.getContextData(this, path);
 
     if (path && path.startsWith('data.') && value && typeof value === 'object') {
@@ -478,7 +478,7 @@ export class View {
     if (path && path.startsWith('model.') &&
         path !== 'model' &&
         value && typeof value === 'object' &&
-        typeof value.get !== 'function') {
+        typeof value.getContextValue !== 'function') {
       return MOJOUtils.wrapData(value, null);
     }
 

@@ -87,7 +87,7 @@ class Context {
     this.view = view;
     this.cache = { '.': this.view };
     this.parent = parentContext;
-    
+
     // Generate unique context ID for render caching
     if (!this.view?._cacheId) {
       if (this.view && typeof this.view === 'object') {
@@ -131,9 +131,9 @@ class Context {
         let value;
 
         // Check if view has a get method for unified access
-        if (typeof this.view.get === 'function') {
+        if (typeof this.view.getContextValue === 'function') {
           try {
-            value = this.view.get(actualName);
+            value = this.view.getContextValue(actualName);
             if (value !== undefined) {
               if (isFunction(value)) {
                 value = value.call(this.view);
@@ -198,9 +198,9 @@ class Context {
 
       while (context) {
         // Check if view has a get method for unified access
-        if (context.view && typeof context.view.get === 'function') {
+        if (context.view && typeof context.view.getContextValue === 'function') {
           try {
-            intermediateValue = context.view.get(name);
+            intermediateValue = context.view.getContextValue(name);
             if (intermediateValue !== undefined) {
               lookupHit = true;
             }
@@ -219,10 +219,10 @@ class Context {
 
             while (intermediateValue != null && index < names.length) {
               // Check if intermediate value has a get method
-              if (intermediateValue && typeof intermediateValue.get === 'function' && index < names.length) {
+              if (intermediateValue && typeof intermediateValue.getContextValue === 'function' && index < names.length) {
                 try {
                   const remainingPath = names.slice(index).join('.');
-                  intermediateValue = intermediateValue.get(remainingPath);
+                  intermediateValue = intermediateValue.getContextValue(remainingPath);
                   index = names.length; // Skip to end
                   if (intermediateValue !== undefined) {
                     lookupHit = true;
@@ -463,10 +463,10 @@ class Writer {
   render(template, view, partials, config) {
     const tags = this.getConfigTags(config) || ['{{', '}}'];
     const tokens = this.parse(template, tags);
-    
+
     // Create render-level cache for this render operation
     const renderCache = new Map();
-    
+
     return this.renderTokens(tokens, new Context(view), partials, template, config, renderCache);
   }
 
