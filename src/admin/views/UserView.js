@@ -11,7 +11,7 @@
 import View from '../../core/View.js';
 import TabView from '../../views/navigation/TabView.js';
 import DataView from '../../views/data/DataView.js';
-import Table from '../../views/table/Table.js';
+import TableView from '../../views/table/TableView.js';
 import ContextMenu from '../../views/feedback/ContextMenu.js';
 import { User, UserDataView, UserForms, UserDeviceList, UserDeviceLocationList } from '../../models/User.js';
 import { LogList } from '../../models/Log.js';
@@ -87,8 +87,7 @@ class UserView extends View {
         const membersCollection = new MemberList({
             params: { user: this.model.get('id'), size: 5 }
         });
-        this.groupsView = new Table({
-            title: 'User Groups',
+        this.groupsView = new TableView({
             collection: membersCollection,
             hideActivePillNames: ['user'],
             columns: [
@@ -119,8 +118,7 @@ class UserView extends View {
                 model_id: this.model.get('id')
             }
         });
-        this.eventsView = new Table({
-            title: 'System Events',
+        this.eventsView = new TableView({
             collection: eventsCollection,
             hideActivePillNames: ['model_name', 'model_id'],
             columns: [
@@ -164,8 +162,7 @@ class UserView extends View {
                 user: this.model.get('id')
             }
         });
-        this.devicesView = new Table({
-            title: 'Devices',
+        this.devicesView = new TableView({
             collection: userDevices,
             hideActivePillNames: ['user'],
             columns: [
@@ -185,13 +182,12 @@ class UserView extends View {
                 user: this.model.get('id')
             }
         });
-        this.locationsView = new Table({
-            title: 'Locations',
+        this.locationsView = new TableView({
             collection: userLocations,
 
             hideActivePillNames: ['user'],
             columns: [
-                { key: 'user_device', label: 'Device', template: '{{user_device.device_info.user_agent.family}} on {{user_device.device_info.os.family}}', sortable: true },
+                { key: 'user_device', label: 'Device', template: '{{model.user_device.device_info.user_agent.family}} on {{model.user_device.device_info.os.family}}', sortable: true },
                 { key: 'geolocation.city', label: 'City', formatter: "default('—')" },
                 { key: 'geolocation.region', label: 'Region', formatter: "default('—')" },
                 { key: 'geolocation.country_name', label: 'Country', formatter: "default('—')" },
@@ -210,8 +206,7 @@ class UserView extends View {
                 model_id: this.model.get('id')
             }
         });
-        this.logsView = new Table({
-            title: 'Logs',
+        this.logsView = new TableView({
             collection: logsCollection,
             permissions: 'view_logs',
             hideActivePillNames: ['model_name', 'model_id'],
@@ -267,8 +262,7 @@ class UserView extends View {
                 uid: this.model.get('id')
             }
         });
-        this.activityView = new Table({
-            title: 'Activity',
+        this.activityView = new TableView({
             collection: activityCollection,
             hideActivePillNames: ['uid'],
             permissions: 'view_logs',

@@ -91,6 +91,18 @@ class UserTablePage extends TablePage {
                 }
             ],
 
+            batchBarLocation: 'top',
+            batchActions: [
+                {
+                    icon: 'bi-x-circle',
+                    action: 'disable-users',
+                    label: "Disable Users",
+                    handler: async (items, event, el) => {
+                        console.log("ADMIN CLICKED", items, this)
+                    }
+                }
+            ],
+
             // Table display options (for HTML table styling)
             tableOptions: {
                 striped: true,

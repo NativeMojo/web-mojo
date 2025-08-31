@@ -265,6 +265,45 @@ div.batch-select-end {
     width: 10px;
 }
 
+/* MOJO Batch Actions Panel - Top Position */
+.batch-actions-panel-top {
+    border-left: 4px solid var(--bs-primary);
+    /*background-color: var(--bs-info-bg-subtle);*/
+    border-color: var(--bs-info-border-subtle);
+    /*border: none;*/
+    margin: 0 !important;
+    padding: 0.4rem;
+    animation: slideDown 0.3s ease-out;
+}
+
+.batch-actions-panel-top .batch-select-count {
+    font-weight: bold;
+    color: var(--bs-primary);
+    font-size: 1.1rem;
+}
+
+.batch-actions-panel-top button {
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.batch-actions-panel-top button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* MOJO Button Enhancements */
 .btn-refresh:not(:disabled):hover .bi-arrow-clockwise {
     animation: mojo-spin 0.5s ease-in-out;
@@ -439,6 +478,20 @@ div.batch-select-end {
         margin-bottom: 1rem;
     }
 
+    /* Batch actions panel top - responsive */
+    .batch-actions-panel-top {
+        padding: 0.75rem !important;
+    }
+
+    .batch-actions-panel-top .d-flex {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .batch-actions-panel-top .batch-select-count {
+        font-size: 1rem;
+    }
+
     .page-title {
         font-size: 1.5rem;
     }
@@ -479,6 +532,16 @@ div.batch-select-end {
     .loading-content {
         padding: 1rem;
     }
+
+    /* Batch actions panel top - mobile */
+    .batch-actions-panel-top button {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .batch-actions-panel-top .btn-group {
+        flex-wrap: wrap;
+    }
 }
 
 /* ========================================================================
@@ -492,6 +555,11 @@ div.batch-select-end {
 
 [data-bs-theme="dark"] .batch-actions-panel {
     background-color: var(--bs-dark);
+}
+
+[data-bs-theme="dark"] .batch-actions-panel-top {
+    background-color: rgba(13, 110, 253, 0.1);
+    border-color: rgba(13, 110, 253, 0.3);
 }
 
 [data-bs-theme="dark"] .collection-select-view .dropdown-menu::-webkit-scrollbar-track {
@@ -549,8 +617,18 @@ div.batch-select-end {
 @media (prefers-reduced-motion: reduce) {
     .table-container,
     .mojo-checkbox,
-    .batch-select-action {
+    .batch-select-action,
+    .batch-actions-panel-top,
+    .batch-actions-panel-top button {
         transition: none;
+    }
+
+    @keyframes slideDown {
+        from,
+        to {
+            opacity: 1;
+            transform: none;
+        }
     }
 
     .btn-refresh:not(:disabled):hover .bi-arrow-clockwise,

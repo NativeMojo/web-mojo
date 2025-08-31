@@ -10,7 +10,7 @@
 
 import View from '../../core/View.js';
 import TabView from '../../views/navigation/TabView.js';
-import Table from '../../views/table/Table.js';
+import TableView from '../../views/table/TableView.js';
 import ContextMenu from '../../views/feedback/ContextMenu.js';
 import { Group, GroupList, GroupForms } from '../../models/Group.js';
 import { MemberList } from '../../models/Member.js';
@@ -94,8 +94,7 @@ class GroupView extends View {
         const membersCollection = new MemberList({
             params: { group: this.model.get('id'), size: 5 }
         });
-        this.membersView = new Table({
-            title: 'Group Members',
+        this.membersView = new TableView({
             collection: membersCollection,
             hideActivePillNames: ['group'],
             columns: [
@@ -109,8 +108,7 @@ class GroupView extends View {
         const childrenCollection = new GroupList({
             params: { parent: this.model.get('id'), size: 5 }
         });
-        this.childrenView = new Table({
-            title: 'Child Groups',
+        this.childrenView = new TableView({
             collection: childrenCollection,
             hideActivePillNames: ['parent'],
             columns: [
@@ -128,8 +126,7 @@ class GroupView extends View {
                 model_id: this.model.get('id')
             }
         });
-        this.logsView = new Table({
-            title: 'Group Logs',
+        this.logsView = new TableView({
             collection: logsCollection,
             permissions: 'view_logs',
             hideActivePillNames: ['model_name', 'model_id'],

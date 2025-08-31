@@ -10,7 +10,7 @@
 import View from '../../core/View.js';
 import TabView from '../../views/navigation/TabView.js';
 import DataView from '../../views/data/DataView.js';
-import Table from '../../views/table/Table.js';
+import TableView from '../../views/table/TableView.js';
 import ContextMenu from '../../views/feedback/ContextMenu.js';
 import Collection from '../../core/Collection.js';
 import { File, FileForms } from '../../models/Files.js';
@@ -109,9 +109,8 @@ class FileView extends View {
             ]
         });
 
-        // Renditions Tab using Table
-        this.renditionsView = new Table({
-            title: 'Available Renditions',
+        // Renditions Tab using TableView
+        this.renditionsView = new TableView({
             collection: this.renditionsCollection,
             columns: [
                 { key: 'role', label: 'Role', formatter: 'badge' },

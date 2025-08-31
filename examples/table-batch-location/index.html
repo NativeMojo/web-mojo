@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TableView Batch Bar Location Example</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- MOJO CSS -->
+    <link rel="stylesheet" href="../../src/css/main.css">
+    <link rel="stylesheet" href="../../src/css/table.css">
+
+    <style>
+        .example-section {
+            margin-bottom: 3rem;
+            padding: 2rem;
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.5rem;
+        }
+
+        .example-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--bs-primary);
+        }
+
+        .example-description {
+            color: var(--bs-secondary-color);
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">TableView Batch Bar Location Examples</h1>
+                <p class="lead mb-5">
+                    This example demonstrates the TableView component with batch action panels in different positions.
+                    The batch actions panel can be positioned either at the top (toolbar style) or bottom (floating panel style).
+                </p>
+
+                <!-- Top Position Example -->
+                <div class="example-section">
+                    <h2 class="example-title">Batch Actions Bar - Top Position</h2>
+                    <p class="example-description">
+                        When <code>batchBarLocation: "top"</code> is set, the batch actions appear as a toolbar above the table.
+                        This style integrates better with standard form layouts and provides a cleaner, less intrusive interface.
+                    </p>
+                    <div id="table-top-container"></div>
+                </div>
+
+                <!-- Bottom Position Example -->
+                <div class="example-section">
+                    <h2 class="example-title">Batch Actions Bar - Bottom Position</h2>
+                    <p class="example-description">
+                        When <code>batchBarLocation: "bottom"</code> is set (default), the batch actions appear as a floating panel at the bottom.
+                        This style is more prominent and works well for tables where batch actions are a primary feature.
+                    </p>
+                    <div id="table-bottom-container"></div>
+                </div>
+
+                <!-- Toggle Example -->
+                <div class="example-section">
+                    <h2 class="example-title">Dynamic Position Toggle</h2>
+                    <p class="example-description">
+                        This example allows you to dynamically switch between top and bottom positions.
+                    </p>
+                    <div class="mb-3">
+                        <div class="btn-group" role="group" aria-label="Batch bar position">
+                            <input type="radio" class="btn-check" name="position" id="position-top" autocomplete="off">
+                            <label class="btn btn-outline-primary" for="position-top">Top Position</label>
+
+                            <input type="radio" class="btn-check" name="position" id="position-bottom" autocomplete="off" checked>
+                            <label class="btn btn-outline-primary" for="position-bottom">Bottom Position</label>
+                        </div>
+                    </div>
+                    <div id="table-toggle-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- MOJO Framework -->
+    <script type="module">
+        import Collection from '../../src/data/Collection.js';
+        import Model from '../../src/data/Model.js';
+        import TableView from '../../src/views/table/TableView.js';
+
+        // Sample data
+        const sampleData = [
+            { id: 1, name: 'John Smith', email: 'john@example.com', department: 'Engineering', status: 'Active' },
+            { id: 2, name: 'Jane Doe', email: 'jane@example.com', department: 'Marketing', status: 'Active' },
+            { id: 3, name: 'Bob Johnson', email: 'bob@example.com', department: 'Sales', status: 'Inactive' },
+            { id: 4, name: 'Alice Brown', email: 'alice@example.com', department: 'Engineering', status: 'Active' },
+            { id: 5, name: 'Charlie Wilson', email: 'charlie@example.com', department: 'HR', status: 'Active' },
+            { id: 6, name: 'Diana Prince', email: 'diana@example.com', department: 'Marketing', status: 'Active' },
+            { id: 7, name: 'Edward Norton', email: 'edward@example.com', department: 'Sales', status: 'Active' },
+            { id: 8, name: 'Fiona Green', email: 'fiona@example.com', department: 'Engineering', status: 'Inactive' }
+        ];
+
+        // Create collections
+        const collection1 = new Collection(sampleData);
+        const collection2 = new Collection(sampleData);
+        const collection3 = new Collection(sampleData);
+
+        // Define columns
+        const columns = [
+            { key: 'name', label: 'Name', sortable: true },
+            { key: 'email', label: 'Email', sortable: true },
+            { key: 'department', label: 'Department', sortable: true },
+            { key: 'status', label: 'Status', sortable: true }
+        ];
+
+        // Define batch actions
+        const batchActions = [
+            {
+                action: 'export',
+                label: 'Export',
+                icon: 'bi bi-download'
+            },
+            {
+                action: 'delete',
+                label: 'Delete',
+                icon: 'bi bi-trash'
+            },
+            {
+                action: 'archive',
+                label: 'Archive',
+                icon: 'bi bi-archive'
+            }
+        ];
+
+        // Create table with top batch bar
+        const tableTop = new TableView({
+            collection: collection1,
+            columns: columns,
+            batchActions: batchActions,
+            batchBarLocation: 'top',
+            batchPanelTitle: 'users',
+            searchable: true,
+            filterable: true,
+            paginated: true
+        });
+
+        // Mount to container
+        tableTop.render(true, document.getElementById('table-top-container'));
+
+        // Create table with bottom batch bar (default)
+        const tableBottom = new TableView({
+            collection: collection2,
+            columns: columns,
+            batchActions: batchActions,
+            batchBarLocation: 'bottom',
+            batchPanelTitle: 'Users',
+            searchable: true,
+            filterable: true,
+            paginated: true
+        });
+
+        // Mount to container
+        tableBottom.render(true, document.getElementById('table-bottom-container'));
+
+        // Create toggle example table
+        let toggleTable = new TableView({
+            collection: collection3,
+            columns: columns,
+            batchActions: batchActions,
+            batchBarLocation: 'bottom',
+            batchPanelTitle: 'users',
+            searchable: true,
+            filterable: true,
+            paginated: true
+        });
+
+        toggleTable.render(true, document.getElementById('table-toggle-container'));
+
+        // Handle position toggle
+        document.getElementById('position-top').addEventListener('change', function() {
+            if (this.checked) {
+                // Destroy current table
+                toggleTable.destroy();
+
+                // Create new table with top position
+                toggleTable = new TableView({
+                    collection: collection3,
+                    columns: columns,
+                    batchActions: batchActions,
+                    batchBarLocation: 'top',
+                    batchPanelTitle: 'users',
+                    searchable: true,
+                    filterable: true,
+                    paginated: true
+                });
+
+                toggleTable.render(true, document.getElementById('table-toggle-container'));
+            }
+        });
+
+        document.getElementById('position-bottom').addEventListener('change', function() {
+            if (this.checked) {
+                // Destroy current table
+                toggleTable.destroy();
+
+                // Create new table with bottom position
+                toggleTable = new TableView({
+                    collection: collection3,
+                    columns: columns,
+                    batchActions: batchActions,
+                    batchBarLocation: 'bottom',
+                    batchPanelTitle: 'Users',
+                    searchable: true,
+                    filterable: true,
+                    paginated: true
+                });
+
+                toggleTable.render(true, document.getElementById('table-toggle-container'));
+            }
+        });
+
+        // Add batch action handlers for demonstration
+        [tableTop, tableBottom, toggleTable].forEach(table => {
+            table.on('batch:action', (event) => {
+                const { action, items } = event;
+                console.log(`Batch action: ${action} on ${items.length} items`, items);
+
+                // Show alert for demonstration
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-info alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+                alert.style.zIndex = '9999';
+                alert.innerHTML = `
+                    <strong>Batch Action:</strong> ${action} on ${items.length} items
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                document.body.appendChild(alert);
+
+                // Auto-dismiss after 3 seconds
+                setTimeout(() => {
+                    alert.remove();
+                }, 3000);
+            });
+        });
+    </script>
+</body>
+</html>

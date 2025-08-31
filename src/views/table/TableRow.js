@@ -107,7 +107,7 @@ class TableRow extends ListViewItem {
     */
    buildCellTemplate(column) {
        // Build path for Mustache to access the value
-       const path = column.key.includes('.') ? column.key : `model.${column.key}`;
+       const path = `model.${column.key}`;
        if (column.formatter) {
          // For string formatters that are pipe expressions
          if (typeof column.formatter === 'string') {
@@ -118,7 +118,7 @@ class TableRow extends ListViewItem {
        }
 
        if (column.template) {
-         return `<span data-template="${column.key}">{{${path}}}</span>`;
+         return column.template;
        }
        return `{{{${path}}}}`;
    }
@@ -256,13 +256,13 @@ class TableRow extends ListViewItem {
       }
 
       // Apply function templates
-      if (column.template && typeof column.template === 'function') {
-        const cell = this.element.querySelector(`[data-template="${column.key}"]`);
-        if (cell) {
-          const value = this.model.get ? this.model.get(column.key) : this.model[column.key];
-          cell.innerHTML = column.template(value, this.model);
-        }
-      }
+      // if (column.template && typeof column.template === 'function') {
+      //   const cell = this.element.querySelector(`[data-template="${column.key}"]`);
+      //   if (cell) {
+      //     const value = this.model.get ? this.model.get(column.key) : this.model[column.key];
+      //     cell.innerHTML = column.template(value, this.model);
+      //   }
+      // }
     });
 
     // Update selection state

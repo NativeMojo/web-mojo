@@ -4,7 +4,7 @@
 
 import View from '../../core/View.js';
 import TabView from '../../views/navigation/TabView.js';
-import Table from '../../views/table/Table.js';
+import TableView from '../../views/table/TableView.js';
 import ContextMenu from '../../views/feedback/ContextMenu.js';
 import { UserDevice, UserDeviceLocationList } from '../../models/User.js';
 import Dialog from '../../core/Dialog.js';
@@ -119,8 +119,7 @@ class DeviceView extends View {
         const locationsCollection = new UserDeviceLocationList({
             params: { user_device: this.model.get('id'), size: 10 }
         });
-        this.locationsView = new Table({
-            title: 'Device Locations',
+        this.locationsView = new TableView({
             collection: locationsCollection,
             hideActivePillNames: ['user_device'],
             columns: [

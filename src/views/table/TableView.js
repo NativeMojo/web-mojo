@@ -44,6 +44,7 @@ class TableView extends ListView {
     this.sortable = options.sortable !== false;
     this.filterable = options.filterable !== false;
     this.paginated = options.paginated !== false;
+    this.clickAction = options.clickAction || "view";
 
     // Model operation configurations
     this.itemView = options.itemView;
@@ -59,6 +60,7 @@ class TableView extends ListView {
     this.hideActivePills = options.hideActivePills || false;
     this.hideActivePillNames = options.hideActivePillNames || [];
     this.rowAction = options.rowAction || "row-click";
+    this.batchBarLocation = options.batchBarLocation || "bottom"; // "top" or "bottom"
 
     // Table display options
     this.tableOptions = {
@@ -144,9 +146,13 @@ class TableView extends ListView {
    * Build the complete table template
    */
   buildTableTemplate() {
+    const batchPanelTop = this.batchBarLocation === 'top' ? this.buildBatchActionsPanel() : '';
+    const batchPanelBottom = this.batchBarLocation === 'bottom' ? this.buildBatchActionsPanel() : '';
+    
     return `
       <div class="mojo-table-wrapper">
         ${this.buildToolbarTemplate()}
+        ${batchPanelTop}
         <div class="table-container">
           {{#loading}}
             <div class="mojo-table-loading d-flex justify-content-center align-items-center py-5">
@@ -170,7 +176,7 @@ class TableView extends ListView {
             {{/isEmpty}}
           {{/loading}}
         </div>
-        ${this.buildBatchActionsPanel()}
+        ${batchPanelBottom}
         ${this.buildPaginationTemplate()}
       </div>
     `;
@@ -186,6 +192,7 @@ class TableView extends ListView {
     if (this.tableOptions.bordered) classes.push('table-bordered');
     if (this.tableOptions.hover) classes.push('table-hover');
     if (this.tableOptions.responsive) classes.push('table-responsive');
+    if (this.tableOptions.background) classes.push(`table-${this.tableOptions.background}`);
     if (this.tableOptions.size === 'sm') classes.push('table-sm');
     if (this.tableOptions.size === 'lg') classes.push('table-lg');
 
@@ -537,40 +544,73 @@ class TableView extends ListView {
       return '';
     }
 
-    let actionsHTML = '';
-    this.batchActions.forEach(action => {
-      actionsHTML += `
-        <div class="batch-select-action text-center px-2" data-action="batch-${action.action}">
-          <div class="batch-action-icon fs-3">
-            <i class="${action.icon}"></i>
+    if (this.batchBarLocation === 'top') {
+      // Toolbar-style batch actions for top placement
+      let actionsHTML = '';
+      this.batchActions.forEach(action => {
+        actionsHTML += `
+          <button class="btn btn-sm btn-outline-secondary" data-action="batch-${action.action}" title="${action.label}">
+            <i class="${action.icon} me-1"></i>
+            <span class="d-none d-lg-inline">${action.label}</span>
+          </button>
+        `;
+      });
+
+      return `
+        <div class="batch-actions-panel-top alert alert-info d-none mb-3" role="alert">
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+              <strong class="me-2">
+                <span class="batch-select-count">0</span> ${this.options.batchPanelTitle || 'items'} selected
+              </strong>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+              ${actionsHTML}
+              <button class="btn btn-sm btn-outline-secondary" data-action="clear-selection" title="Clear Selection">
+                <i class="bi bi-x-circle me-1"></i>
+                <span class="d-none d-lg-inline">Clear</span>
+              </button>
+            </div>
           </div>
-          <div class="batch-action-title small">${action.label}</div>
         </div>
       `;
-    });
+    } else {
+      // Original bottom panel style
+      let actionsHTML = '';
+      this.batchActions.forEach(action => {
+        actionsHTML += `
+          <div class="batch-select-action text-center px-2" data-action="batch-${action.action}">
+            <div class="batch-action-icon fs-3">
+              <i class="${action.icon}"></i>
+            </div>
+            <div class="batch-action-title small">${action.label}</div>
+          </div>
+        `;
+      });
 
-    return `
-      <div class="batch-actions-panel rounded-start rounded-end" style="display: none;">
-        <div class="batch-select-panel rounded-start rounded-end">
-          <div class="row g-0">
-            <div class="col-auto">
-              <div class="batch-select-count rounded-start">0</div>
-            </div>
-            <div class="col">
-              <div class="ps-2 batch-select-title">${this.options.batchPanelTitle || 'Rows'}</div>
-            </div>
-            <div class="col">
-              <div class="batch-select-actions d-flex justify-content-end">
-                ${actionsHTML}
+      return `
+        <div class="batch-actions-panel rounded-start rounded-end" style="display: none;">
+          <div class="batch-select-panel rounded-start rounded-end">
+            <div class="row g-0">
+              <div class="col-auto">
+                <div class="batch-select-count rounded-start">0</div>
               </div>
-            </div>
-            <div class="col-auto">
-              <div class="batch-select-end rounded-end"></div>
+              <div class="col">
+                <div class="ps-2 batch-select-title">${this.options.batchPanelTitle || 'Rows'}</div>
+              </div>
+              <div class="col">
+                <div class="batch-select-actions d-flex justify-content-end">
+                  ${actionsHTML}
+                </div>
+              </div>
+              <div class="col-auto">
+                <div class="batch-select-end rounded-end"></div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    `;
+      `;
+    }
   }
 
   /**
@@ -691,7 +731,13 @@ class TableView extends ListView {
 
     // Default behavior - show item details if configured
     if (this.options.onRowClick) {
-      this.options.onRowClick(event.model, event.event);
+      return this.options.onRowClick(event.model, event.event);
+    }
+
+    if (this.clickAction === 'view') {
+      this._onRowView(event);
+    } else if (this.clickAction === 'edit') {
+      this._onRowEdit(event);
     }
   }
 
@@ -1654,18 +1700,33 @@ class TableView extends ListView {
   updateBatchActionsPanel() {
     if (!this.batchActions || this.batchActions.length === 0) return;
 
-    const panel = this.element?.querySelector('.batch-actions-panel');
-    const countEl = this.element?.querySelector('.batch-select-count');
-
-    if (!panel || !countEl) return;
-
     const selectedCount = this.getSelectedItems().length;
 
-    // Update count
-    countEl.textContent = selectedCount;
+    if (this.batchBarLocation === 'top') {
+      // Handle top panel style
+      const panel = this.element?.querySelector('.batch-actions-panel-top');
+      const countEl = this.element?.querySelector('.batch-select-count');
 
-    // Show/hide panel
-    panel.style.display = selectedCount > 0 ? 'block' : 'none';
+      if (panel && countEl) {
+        countEl.textContent = selectedCount;
+        
+        // Use Bootstrap's d-none class for cleaner show/hide
+        if (selectedCount > 0) {
+          panel.classList.remove('d-none');
+        } else {
+          panel.classList.add('d-none');
+        }
+      }
+    } else {
+      // Handle bottom panel style (original)
+      const panel = this.element?.querySelector('.batch-actions-panel');
+      const countEl = this.element?.querySelector('.batch-select-count');
+
+      if (panel && countEl) {
+        countEl.textContent = selectedCount;
+        panel.style.display = selectedCount > 0 ? 'block' : 'none';
+      }
+    }
 
     // Update select all checkbox state
     const selectAllCell = this.element?.querySelector('.mojo-select-all-cell');
@@ -1697,6 +1758,14 @@ class TableView extends ListView {
       items: selectedItems,
       event
     });
+  }
+
+  /**
+   * Handle clear selection action (for top batch bar)
+   */
+  async onActionClearSelection(event, element) {
+    this.clearSelection();
+    this.updateBatchActionsPanel();
   }
 }
 

@@ -1,7 +1,7 @@
 import View from '../../core/View.js';
 import TabView from '../../views/navigation/TabView.js';
 import DataView from '../../views/data/DataView.js';
-import Table from '../../views/table/Table.js';
+import TableView from '../../views/table/TableView.js';
 import ContextMenu from '../../views/feedback/ContextMenu.js';
 import { RuleSet, RuleList } from '../../models/Incident.js';
 import Dialog from '../../core/Dialog.js';
@@ -58,8 +58,7 @@ class RuleSetView extends View {
         const rulesCollection = new RuleList({
             params: { parent: this.model.get('id') }
         });
-        this.rulesView = new Table({
-            title: 'Rules',
+        this.rulesView = new TableView({
             collection: rulesCollection,
             columns: [
                 { key: 'id', label: 'ID', width: '70px' },
