@@ -1,14 +1,14 @@
 /**
  * ListViewItem - Individual item view for ListView
- * 
+ *
  * Each item is its own View with its own model, allowing for
  * independent re-rendering when the model changes.
- * 
+ *
  * Events:
  *   - 'item:click' - Emitted when item is clicked
  *   - 'item:select' - Emitted when item is selected
  *   - 'item:deselect' - Emitted when item is deselected
- * 
+ *
  * @example
  * const item = new ListViewItem({
  *   model: userModel,
@@ -29,7 +29,7 @@ class ListViewItem extends View {
     this.selected = false;
     this.index = options.index ?? 0;
     this.listView = options.listView ?? null;
-    
+
     // Default template if none provided
     if (!this.template) {
       this.template = `
@@ -52,9 +52,9 @@ class ListViewItem extends View {
   /**
    * Handle item selection action
    */
-  async onActionSelect(action, event, _element) {
+  async onActionSelect(event, _element) {
     event.stopPropagation();
-    
+
     if (this.selected) {
       this.deselect();
     } else {
@@ -67,10 +67,10 @@ class ListViewItem extends View {
    */
   select() {
     if (this.selected) return;
-    
+
     this.selected = true;
     this.addClass('selected');
-    
+
     // Emit selection event with item data
     this.emit('item:select', {
       item: this,
@@ -78,7 +78,7 @@ class ListViewItem extends View {
       index: this.index,
       data: this.model?.toJSON ? this.model.toJSON() : this.model
     });
-    
+
     // Notify parent ListView if available
     if (this.listView) {
       this.listView.emit('item:select', {
@@ -95,10 +95,10 @@ class ListViewItem extends View {
    */
   deselect() {
     if (!this.selected) return;
-    
+
     this.selected = false;
     this.removeClass('selected');
-    
+
     // Emit deselection event
     this.emit('item:deselect', {
       item: this,
@@ -106,7 +106,7 @@ class ListViewItem extends View {
       index: this.index,
       data: this.model?.toJSON ? this.model.toJSON() : this.model
     });
-    
+
     // Notify parent ListView if available
     if (this.listView) {
       this.listView.emit('item:deselect', {
@@ -130,7 +130,7 @@ class ListViewItem extends View {
       action: action,
       data: this.model?.toJSON ? this.model.toJSON() : this.model
     });
-    
+
     // Notify parent ListView if available
     if (this.listView) {
       this.listView.emit('item:click', {
@@ -170,7 +170,7 @@ class ListViewItem extends View {
   async destroy() {
     // Remove reference to parent ListView
     this.listView = null;
-    
+
     // Call parent destroy
     await super.destroy();
   }

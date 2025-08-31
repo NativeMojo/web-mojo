@@ -52,11 +52,11 @@ DO NOT use getViewData or get method on a view,  We pass in the view as the cont
 - **Action Naming**: Use kebab-case in templates: `data-action="restart"`, `data-action="crop-complete"`
 - **Handler Methods**: Framework converts kebab-case to camelCase method names
 - **Handler Patterns**: For `data-action="restart"`, framework calls:
-  1. `view.onActionRestart(action, event, element)` - preferred pattern
-  2. `view.handleActionRestart(action, event, element)` - alternative pattern
-  3. `view.onActionDefault(action, event, element)` - catch-all fallback
-- **Handler Arguments**: All handlers receive `(action, event, element)` parameters
-- **Method Signature**: `async onActionRestart(action, event, element) { /* implementation */ }`
+  1. `view.onActionRestart(event, element)` - preferred pattern
+  2. `view.handleActionRestart(event, element)` - alternative pattern
+  3. `view.onActionDefault(action,event, element)` - catch-all fallback
+- **Handler Arguments**: All handlers receive `(event, element)` parameters
+- **Method Signature**: `async onActionRestart(event, element) { /* implementation */ }`
 
 ```html
 <!-- ✅ Template action usage -->
@@ -66,11 +66,11 @@ DO NOT use getViewData or get method on a view,  We pass in the view as the cont
 
 ```js
 // ✅ Handler implementation
-async onActionSaveDraft(action, event, element) {
+async onActionSaveDraft(event, element) {
     // Handle save draft action
 }
 
-async onActionDeleteItem(action, event, element) {
+async onActionDeleteItem(event, element) {
     const itemId = element.getAttribute('data-id');
     // Handle delete with item ID
 }
