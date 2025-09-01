@@ -113,6 +113,18 @@ const GroupForms = {
                 debounceMs: 300,             // Search debounce delay
             },
             {
+                name: 'metadata.domain',
+                type: 'text',
+                label: 'Default Domain',
+                placeholder: 'Enter Domain',
+            },
+            {
+                name: 'metadata.portal',
+                type: 'text',
+                label: 'Default Portal',
+                placeholder: 'Enter Portal URL',
+            },
+            {
                 name: 'is_active',
                 type: 'switch',
                 label: 'Is Active',

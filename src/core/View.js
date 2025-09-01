@@ -31,7 +31,6 @@ export class View {
     this.parent      = opts.parent ?? null;                 // parent view
     this.children    = opts.children ?? {};                 // dict of id -> child view
     this.template    = opts.template || opts.templateUrl || "";                 // string or function(model) -> string
-    this.model       = opts.model ?? {};
     this.data        = opts.data ?? {};                    // data for Mustache or basic templating
     this.isRendering     = false;
     this.lastRenderTime  = 0;
@@ -49,7 +48,7 @@ export class View {
     // in constructor
     this.events = new EventDelegate(this);
 
-    if (this.model) this.setModel(this.model);
+    if (opts.model) this.setModel(opts.model);
 
   }
 

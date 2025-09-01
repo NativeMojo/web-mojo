@@ -1,10 +1,10 @@
 /**
  * MemberTablePage - Member management using TablePage component
- * Manages group membership and member roles
+ * Clean implementation using TablePage with minimal overrides
  */
 
 import TablePage from '../pages/TablePage.js';
-import { Member, MemberList, MemberForms } from '../models/Member.js';
+import { MemberList, MemberForms } from '../models/Member.js';
 import MemberView from './views/MemberView.js';
 
 class MemberTablePage extends TablePage {
@@ -15,8 +15,10 @@ class MemberTablePage extends TablePage {
             pageName: 'Manage Members',
             router: "admin/members",
             Collection: MemberList,
+            
             formEdit: MemberForms.edit,
             itemViewClass: MemberView,
+            
             viewDialogOptions: {
                 header: false,
                 size: 'lg'
@@ -70,38 +72,32 @@ class MemberTablePage extends TablePage {
             filterable: true,
             paginated: true,
 
-            // TablePage toolbar
+            // Toolbar
             showRefresh: true,
             showAdd: true,
             showExport: true,
 
-            // Table options
+            // Empty state
+            emptyMessage: 'No members found. Click "Add Member" to add users to groups.',
+
+            // Batch actions
+            batchBarLocation: 'top',
+            batchActions: [
+                { label: "Remove", icon: "bi bi-person-dash", action: "batch-remove" },
+                { label: "Export", icon: "bi bi-download", action: "batch-export" },
+                { label: "Change Role", icon: "bi bi-person-gear", action: "batch-role" },
+                { label: "Activate", icon: "bi bi-check-circle", action: "batch-activate" },
+                { label: "Deactivate", icon: "bi bi-x-circle", action: "batch-deactivate" }
+            ],
+
+            // Table display options
             tableOptions: {
-                pageSizes: [5, 10, 25, 50],
-                defaultPageSize: 10,
-                emptyMessage: 'No members found. Click "Add Member" to add users to groups.',
-                emptyIcon: 'bi-people',
-                actions: ["edit", "view", "delete"],
-                batchActions: [
-                    { label: "Remove", icon: "bi bi-person-dash", action: "batch_remove" },
-                    { label: "Export", icon: "bi bi-download", action: "batch_export" },
-                    { label: "Change Role", icon: "bi bi-person-gear", action: "batch_role" },
-                    { label: "Activate", icon: "bi bi-check-circle", action: "batch_activate" },
-                    { label: "Deactivate", icon: "bi bi-x-circle", action: "batch_deactivate" }
-                ],
+                striped: true,
+                bordered: false,
+                hover: true,
+                responsive: false
             }
         });
-    }
-
-    async onItemView(item, mode, event, target) {
-        const dialog = await super.onItemView(item, mode, event, target);
-        if (dialog && dialog.bodyView) {
-            dialog.bodyView.on('member:removed', () => {
-                dialog.hide();
-                this.refreshTable();
-            });
-        }
-        return dialog;
     }
 }
 

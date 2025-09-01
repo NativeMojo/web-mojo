@@ -148,7 +148,7 @@ class TableView extends ListView {
   buildTableTemplate() {
     const batchPanelTop = this.batchBarLocation === 'top' ? this.buildBatchActionsPanel() : '';
     const batchPanelBottom = this.batchBarLocation === 'bottom' ? this.buildBatchActionsPanel() : '';
-    
+
     return `
       <div class="mojo-table-wrapper">
         ${this.buildToolbarTemplate()}
@@ -878,16 +878,12 @@ class TableView extends ListView {
             formConfig = { title: `Edit ${this.getModelName(event.model)}`, fields: formConfig };
         }
 
-      const result = await Dialog.showForm({
+      const result = await Dialog.showModelForm({
         model: event.model,
         ...formConfig,
         ...this.getFormDialogConfig(ModelClass)
       });
 
-      if (result) {
-        await event.model.save(result);
-        await this.refresh();
-      }
     } else {
       // Fallback to basic form if no config provided
       const FormView = await import('../../forms/FormView.js').then(m => m.default);
@@ -1709,7 +1705,7 @@ class TableView extends ListView {
 
       if (panel && countEl) {
         countEl.textContent = selectedCount;
-        
+
         // Use Bootstrap's d-none class for cleaner show/hide
         if (selectedCount > 0) {
           panel.classList.remove('d-none');

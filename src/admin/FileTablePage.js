@@ -1,12 +1,12 @@
 /**
  * FileTablePage - File management using TablePage component
- * Manages uploaded files and their metadata
+ * Clean implementation with file drop support
  */
 
 import TablePage from '../pages/TablePage.js';
-import { File, FileList, FileForms } from '../models/Files.js';
-import applyFileDropMixin from '../mixins/FileDropMixin.js';
+import { FileList, FileForms } from '../models/Files.js';
 import FileView from './views/FileView.js';
+import applyFileDropMixin from '../mixins/FileDropMixin.js';
 
 class FileTablePage extends TablePage {
     constructor(options = {}) {
@@ -16,9 +16,11 @@ class FileTablePage extends TablePage {
             pageName: 'Manage Files',
             router: "admin/files",
             Collection: FileList,
+            
             formCreate: FileForms.create,
             formEdit: FileForms.edit,
             itemViewClass: FileView,
+            
             viewDialogOptions: {
                 header: false,
                 size: 'xl'
@@ -34,7 +36,7 @@ class FileTablePage extends TablePage {
                 },
                 {
                     key: 'filename',
-                    label: 'Filename',
+                    label: 'Filename'
                 },
                 {
                     key: 'content_type',
@@ -70,29 +72,32 @@ class FileTablePage extends TablePage {
             filterable: true,
             paginated: true,
 
-            // TablePage toolbar
+            // Toolbar
             showRefresh: true,
             showAdd: true,
             showExport: true,
 
-            // Table options
+            // Empty state
+            emptyMessage: 'No files found. Click "Add File" to upload your first file.',
+
+            // Batch actions
+            batchBarLocation: 'top',
+            batchActions: [
+                { label: "Download", icon: "bi bi-download", action: "batch-download" },
+                { label: "Delete", icon: "bi bi-trash", action: "batch-delete" },
+                { label: "Move to Group", icon: "bi bi-folder", action: "batch-move" }
+            ],
+
+            // Table display options
             tableOptions: {
-                pageSizes: [5, 10, 25, 50],
-                defaultPageSize: 10,
-                emptyMessage: 'No files found. Click "Add File" to upload your first file.',
-                emptyIcon: 'bi-file-earmark',
-                actions: ["view", "download", "edit", "delete"],
-                batchActions: [
-                    { label: "Download", icon: "bi bi-download", action: "batch_download" },
-                    { label: "Delete", icon: "bi bi-trash", action: "batch_delete" },
-                    { label: "Move to Group", icon: "bi bi-folder", action: "batch_move" },
-                    { label: "Export Metadata", icon: "bi bi-file-text", action: "batch_export" },
-                    { label: "Archive", icon: "bi bi-archive", action: "batch_archive" },
-                    { label: "Generate Links", icon: "bi bi-link", action: "batch_links" }
-                ],
+                striped: true,
+                bordered: false,
+                hover: true,
+                responsive: false
             }
         });
 
+        // Enable file drop support
         this.enableFileDrop({
             acceptedTypes: ['*/*'],
             maxFileSize: 100 * 1024 * 1024, // 100MB
@@ -101,23 +106,13 @@ class FileTablePage extends TablePage {
         });
     }
 
-    async onItemView(item, mode, event, target) {
-        const dialog = await super.onItemView(item, mode, event, target);
-        if (dialog && dialog.bodyView) {
-            dialog.bodyView.on('file:deleted', () => {
-                dialog.hide();
-                this.refreshTable();
-            });
-        }
-        return dialog;
-    }
-
     async onFileDrop(files, event, validation) {
         const file = files[0];
         console.log(`File Dropped: ${file.name} (${file.type}) (${file.size} bytes)`);
 
         try {
             // Create new File model instance
+            const { File } = await import('../models/Files.js');
             const fileModel = new File();
 
             // Start upload with progress tracking
@@ -125,28 +120,21 @@ class FileTablePage extends TablePage {
                 file: file,
                 name: file.name,
                 description: `File uploaded via drag & drop on ${new Date().toLocaleDateString()}`,
-                showToast: true, // Show progress toast
+                showToast: true,
                 onProgress: (progressInfo) => {
-                    // Progress is automatically shown in toast
                     console.log(`Upload progress: ${progressInfo.percentage}%`);
                 },
                 onComplete: (result) => {
                     console.log('Upload completed:', result);
-                    // Refresh the table to show the new file
-                    this.refreshTable();
+                    this.refresh();
                 },
                 onError: (error) => {
                     console.error('Upload failed:', error);
+                    this.showError('Upload failed: ' + error.message);
                 }
             });
 
-            // The upload starts automatically, but we can still handle the promise
-            upload.then(result => {
-                console.log('File upload successful!', result);
-            }).catch(error => {
-                console.error('File upload failed:', error.message);
-            });
-
+            await upload;
         } catch (error) {
             console.error('Error starting file upload:', error);
             this.showError('Failed to start file upload: ' + error.message);
@@ -154,6 +142,7 @@ class FileTablePage extends TablePage {
     }
 }
 
+// Apply file drop mixin
 applyFileDropMixin(FileTablePage);
 
 export default FileTablePage;

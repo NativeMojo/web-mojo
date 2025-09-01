@@ -1,6 +1,10 @@
+/**
+ * GroupTablePage - Group management using TablePage component
+ * Clean implementation using TablePage with minimal overrides
+ */
 
 import TablePage from '../pages/TablePage.js';
-import {GroupList, GroupForms} from '../models/Group.js';
+import { GroupList, GroupForms } from '../models/Group.js';
 import GroupView from './views/GroupView.js';
 
 class GroupTablePage extends TablePage {
@@ -11,8 +15,15 @@ class GroupTablePage extends TablePage {
             pageName: 'Manage Groups',
             router: "admin/groups",
             Collection: GroupList,
+
             formCreate: GroupForms.create,
             formEdit: GroupForms.edit,
+            itemViewClass: GroupView,
+
+            viewDialogOptions: {
+                header: false
+            },
+
             // Column definitions
             columns: [
                 {
@@ -35,9 +46,8 @@ class GroupTablePage extends TablePage {
                 },
                 {
                     key: 'name',
-                    label: 'Display Name',
+                    label: 'Display Name'
                 },
-
                 {
                     key: 'parent.name',
                     label: 'Parent',
@@ -53,6 +63,14 @@ class GroupTablePage extends TablePage {
                 }
             ],
 
+            contextMenu: [
+                {
+                    icon: 'bi-pencil',
+                    action: 'edit',
+                    label: "Edit Group"
+                },
+            ],
+
             // Table features
             selectable: true,
             searchable: true,
@@ -60,31 +78,33 @@ class GroupTablePage extends TablePage {
             filterable: true,
             paginated: true,
 
-            // TablePage toolbar
+            // Toolbar
             showRefresh: true,
             showAdd: true,
             showExport: true,
 
-            // Table options
+            // Empty state
+            emptyMessage: 'No groups found. Click "Add Group" to create your first one.',
+
+            // Batch actions
+            batchBarLocation: 'top',
+            batchActions: [
+                { label: "Delete", icon: "bi bi-trash", action: "batch-delete" },
+                { label: "Export", icon: "bi bi-download", action: "batch-export" },
+                { label: "Activate", icon: "bi bi-check-circle", action: "batch-activate" },
+                { label: "Deactivate", icon: "bi bi-x-circle", action: "batch-deactivate" },
+                { label: "Move", icon: "bi bi-arrow-right", action: "batch-move" }
+            ],
+
+            // Table display options
             tableOptions: {
-                pageSizes: [5, 10, 25, 50],
-                defaultPageSize: 10,
-                emptyMessage: 'No groups found. Click "Add Group" to create your first one.',
-                emptyIcon: 'bi-diagram-3',
-                actions: ["edit", "view"],
-                itemViewClass: GroupView,
-                viewDialogOptions: { header: false },
-                batchActions: [
-                  { label: "Delete", icon: "bi bi-trash", action: "batch_delete" },
-                  { label: "Export", icon: "bi bi-download", action: "batch_export" },
-                  { label: "Activate", icon: "bi bi-check-circle", action: "batch_activate" },
-                  { label: "Deactivate", icon: "bi bi-x-circle", action: "batch_deactivate" },
-                  { label: "Move", icon: "bi bi-arrow-right", action: "batch_move" }
-                ],
+                striped: true,
+                bordered: false,
+                hover: true,
+                responsive: false
             }
         });
     }
-
 }
 
 export default GroupTablePage;

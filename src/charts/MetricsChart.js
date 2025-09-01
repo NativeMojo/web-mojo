@@ -108,7 +108,7 @@ export default class MetricsChart extends SeriesChart {
     this.headerConfig = {
       titleHtml: this.title || 'Metrics',
       chartTitle: this.chartTitle || '',
-      showExport: this.exportEnabled,
+      showExport: this.exportEnabled === true,
       showRefresh: this.refreshEnabled,
       showTheme: false,
       controls

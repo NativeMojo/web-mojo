@@ -79,4 +79,7 @@ class EmailView extends View {
     }
 }
 
+SentMessage.VIEW_CLASS = EmailView;
+
+
 export default EmailView;

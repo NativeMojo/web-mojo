@@ -1,10 +1,10 @@
 /**
  * FileManagerTablePage - File Manager backend management using TablePage component
- * Manages storage backends and their configurations
+ * Clean implementation using TablePage with minimal overrides
  */
 
 import TablePage from '../pages/TablePage.js';
-import { FileManager, FileManagerList, FileManagerForms } from '../models/Files.js';
+import { FileManagerList, FileManagerForms } from '../models/Files.js';
 
 class FileManagerTablePage extends TablePage {
     constructor(options = {}) {
@@ -14,6 +14,7 @@ class FileManagerTablePage extends TablePage {
             pageName: 'Manage Storage Backends',
             router: "admin/file-managers",
             Collection: FileManagerList,
+            
             formCreate: FileManagerForms.create,
             formEdit: FileManagerForms.edit,
 
@@ -64,26 +65,29 @@ class FileManagerTablePage extends TablePage {
             filterable: true,
             paginated: true,
 
-            // TablePage toolbar
+            // Toolbar
             showRefresh: true,
             showAdd: true,
             showExport: true,
 
-            // Table options
-            tableOptions: {
-                pageSizes: [5, 10, 25, 50],
-                defaultPageSize: 10,
-                emptyMessage: 'No storage backends found. Click "Add Storage Backend" to configure your first backend.',
-                emptyIcon: 'bi-hdd-stack',
-                actions: ["edit", "view", "delete"],
-                batchActions: [
-                    { label: "Delete", icon: "bi bi-trash", action: "batch_delete" },
-                    { label: "Export", icon: "bi bi-download", action: "batch_export" },
-                    { label: "Activate", icon: "bi bi-check-circle", action: "batch_activate" },
-                    { label: "Deactivate", icon: "bi bi-x-circle", action: "batch_deactivate" },
-                    { label: "Test", icon: "bi bi-wifi", action: "batch_test" }
+            // Empty state
+            emptyMessage: 'No storage backends found. Click "Add Storage Backend" to configure your first backend.',
 
-                ],
+            // Batch actions
+            batchBarLocation: 'top',
+            batchActions: [
+                { label: "Delete", icon: "bi bi-trash", action: "batch-delete" },
+                { label: "Export", icon: "bi bi-download", action: "batch-export" },
+                { label: "Activate", icon: "bi bi-check-circle", action: "batch-activate" },
+                { label: "Deactivate", icon: "bi bi-x-circle", action: "batch-deactivate" }
+            ],
+
+            // Table display options
+            tableOptions: {
+                striped: true,
+                bordered: false,
+                hover: true,
+                responsive: false
             }
         });
     }

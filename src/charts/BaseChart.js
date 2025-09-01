@@ -88,7 +88,7 @@ export default class BaseChart extends View {
     this.animations = options.animations !== false;
 
     // Export options
-        this.exportEnabled = (options.exportEnabled === undefined ? true : !!options.exportEnabled);
+        this.exportEnabled = options.exportEnabled === true;
         this.exportFormats = options.exportFormats || ['png', 'jpg', 'csv'];
 
     // State
@@ -120,7 +120,7 @@ export default class BaseChart extends View {
     return {
       titleHtml: this.title || '',
       chartTitle: this.chartTitle || '',
-      showExport: !!this.exportEnabled,
+      showExport: this.exportEnabled === true,
       showRefresh: this.refreshEnabled,
       showTheme: true,
       controls: []
@@ -1153,7 +1153,7 @@ class ChartHeaderView extends View {
     // Header configuration
     this.titleHtml = options.titleHtml || '';
     this.chartTitle = options.chartTitle || '';
-    this.showExport = options.showExport !== false && options.showExport !== undefined ? !!options.showExport : true;
+    this.showExport = options.showExport === true;
     this.showRefresh = !!options.showRefresh;
     this.showTheme = false;
     this.showTheme = options.showTheme === true;
@@ -1186,7 +1186,7 @@ class ChartHeaderView extends View {
             {{/showTheme}}
 
               {{#showExport}}
-              <div class="btn-group" role="group">
+              <div class="btn-group btn-group-sm" role="group">
                 <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" title="Export Chart">
                   <i class="bi bi-download"></i>
                 </button>

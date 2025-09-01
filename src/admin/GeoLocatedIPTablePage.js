@@ -1,3 +1,8 @@
+/**
+ * GeoLocatedIPTablePage - GeoIP cache management using TablePage component
+ * Clean implementation using TablePage with minimal overrides
+ */
+
 import TablePage from '../pages/TablePage.js';
 import { GeoLocatedIPList } from '../models/System.js';
 import GeoIPView from './views/GeoIPView.js';
@@ -10,12 +15,14 @@ class GeoLocatedIPTablePage extends TablePage {
             pageName: 'GeoIP Cache',
             router: "admin/system/geoip",
             Collection: GeoLocatedIPList,
+            
             itemViewClass: GeoIPView,
             viewDialogOptions: {
                 header: false,
                 size: 'lg'
             },
 
+            // Column definitions
             columns: [
                 { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },
                 { key: 'ip_address', label: 'IP Address', sortable: true },
@@ -23,38 +30,32 @@ class GeoLocatedIPTablePage extends TablePage {
                 { key: 'region', label: 'Region', sortable: true, formatter: "default('—')" },
                 { key: 'country_name', label: 'Country', sortable: true, formatter: "default('—')" },
                 { key: 'provider', label: 'Provider', sortable: true },
-                { key: 'is_expired', label: 'Expired', formatter: "boolean|badge" },
+                { key: 'is_expired', label: 'Expired', formatter: "boolean|badge" }
             ],
 
+            // Table features
             selectable: true,
             searchable: true,
             sortable: true,
-filterable: true,
+            filterable: true,
             paginated: true,
 
+            // Toolbar
             showRefresh: true,
             showAdd: false,
             showExport: true,
 
+            // Empty state
+            emptyMessage: 'No GeoIP records found.',
+
+            // Table display options
             tableOptions: {
-                pageSizes: [10, 25, 50, 100],
-                defaultPageSize: 25,
-                emptyMessage: 'No GeoIP records found.',
-                emptyIcon: 'bi-globe',
-                actions: ["view"],
+                striped: true,
+                bordered: false,
+                hover: true,
+                responsive: false
             }
         });
-    }
-
-    async onItemView(item, mode, event, target) {
-        const dialog = await super.onItemView(item, mode, event, target);
-        if (dialog && dialog.bodyView) {
-            dialog.bodyView.on('geoip:deleted', () => {
-                dialog.hide();
-                this.refreshTable();
-            });
-        }
-        return dialog;
     }
 }
 

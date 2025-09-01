@@ -1,3 +1,8 @@
+/**
+ * EventTablePage - System events management using TablePage component
+ * Clean implementation using TablePage with minimal overrides
+ */
+
 import TablePage from '../pages/TablePage.js';
 import { IncidentEventList, IncidentEventForms } from '../models/Incident.js';
 import EventView from './views/EventView.js';
@@ -10,13 +15,16 @@ class EventTablePage extends TablePage {
             pageName: 'System Events',
             router: "admin/events",
             Collection: IncidentEventList,
+            
             formEdit: IncidentEventForms.edit,
             itemViewClass: EventView,
+            
             viewDialogOptions: {
                 header: false,
                 size: 'lg'
             },
 
+            // Column definitions
             columns: [
                 { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },
                 { key: 'created', label: 'Timestamp', sortable: true, formatter: 'datetime' },
@@ -24,38 +32,32 @@ class EventTablePage extends TablePage {
                 { key: 'category', label: 'Category', sortable: true, formatter: 'badge' },
                 { key: 'title', label: 'Title', sortable: true, formatter: 'truncate(50)' },
                 { key: 'source_ip', label: 'Source IP', sortable: true },
-                { key: 'model_name', label: 'Related Model', sortable: true },
+                { key: 'model_name', label: 'Related Model', sortable: true }
             ],
 
+            // Table features
             selectable: true,
             searchable: true,
             sortable: true,
             filterable: true,
             paginated: true,
 
+            // Toolbar
             showRefresh: true,
             showAdd: false,
             showExport: true,
 
+            // Empty state
+            emptyMessage: 'No events found.',
+
+            // Table display options
             tableOptions: {
-                pageSizes: [10, 25, 50, 100],
-                defaultPageSize: 25,
-                emptyMessage: 'No events found.',
-                emptyIcon: 'bi-bell',
-                actions: ["view", "edit"],
+                striped: true,
+                bordered: false,
+                hover: true,
+                responsive: false
             }
         });
-    }
-
-    async onItemView(item, mode, event, target) {
-        const dialog = await super.onItemView(item, mode, event, target);
-        if (dialog && dialog.bodyView) {
-            dialog.bodyView.on('event:deleted', () => {
-                dialog.hide();
-                this.refreshTable();
-            });
-        }
-        return dialog;
     }
 }
 

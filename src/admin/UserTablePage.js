@@ -81,9 +81,20 @@ class UserTablePage extends TablePage {
                     label: "Edit Profile"
                 },
                 {
+                    icon: 'bi-shield-check',
+                    action: 'edit-permissions',
+                    label: "Edit Permissions"
+                },
+                {
                     icon: 'bi-shield',
                     action: 'change-password',
                     label: "Change Password",
+                },
+                { separator: true },
+                {
+                    icon: 'bi-envelope',
+                    action: 'send-invite',
+                    label: "Send Invite"
                 }
             ],
 
@@ -107,6 +118,17 @@ class UserTablePage extends TablePage {
                 responsive: false
             }
         });
+    }
+
+    async onActionEditPermissions(event, element) {
+        const item = this.collection.get(element.dataset.id);
+        const result = await Dialog.showModelForm({
+          model: item,
+          size: 'lg',
+          title: `Edit Permissions for "${item._.username}"`,
+          fields: UserForms.permissions.fields
+        });
+        console.log(result);
     }
 
     async onActionChangePassword(event, element) {
@@ -167,6 +189,23 @@ class UserTablePage extends TablePage {
         }
         return false;
     }
+
+    async onActionSendInvite(event, element) {
+        const item = this.collection.get(element.dataset.id);
+        const resp = await item.save({send_invite: true});
+        if (resp.success) {
+            this.getApp().toast.success('Invite sent successfully');
+            return true;
+        } else {
+            if (resp.data && resp.data.error) {
+                this.getApp().toast.error(resp.data.error);
+            } else {
+                this.getApp().toast.error('Failed to send invite');
+            }
+        }
+        return false;
+    }
+
 
 }
 

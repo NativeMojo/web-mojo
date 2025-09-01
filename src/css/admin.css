@@ -321,11 +321,11 @@
     min-height: 100vh;
 }
 
-.admin-dashboard-container,
+/*.admin-dashboard-container,
 .admin-container {
     padding: 2rem;
     max-width: 100%;
-}
+}*/
 
 /* Admin Cards */
 .admin-page .card {

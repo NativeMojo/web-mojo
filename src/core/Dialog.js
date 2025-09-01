@@ -496,111 +496,6 @@ class Dialog extends View {
   }
 
   /**
-   * After mount - initialize Bootstrap modal and mount child views
-   */
-  async onAfterMount2() {
-    await super.onAfterMount();
-
-
-    // Handle async body if present
-    if (this.bodyPromise) {
-      try {
-        const view = await this.bodyPromise;
-        if (view instanceof View) {
-          this.bodyView = view;
-          this.addChild(this.bodyView);
-          const bodyContainer = this.element.querySelector('.modal-body');
-          if (bodyContainer) {
-            bodyContainer.innerHTML = '';
-            bodyContainer.setAttribute('data-view-container', 'body');
-          }
-        }
-      } catch (error) {
-        console.error('Error loading async body view:', error);
-      }
-    }
-
-    // Handle async footer if present
-    if (this.footerPromise) {
-      try {
-        const view = await this.footerPromise;
-        if (view instanceof View) {
-          this.footerView = view;
-          this.addChild(this.footerView);
-          const footerElement = this.element.querySelector('.modal-footer');
-          if (footerElement) {
-            footerElement.innerHTML = '<div data-view-container="footer"></div>';
-          }
-        }
-      } catch (error) {
-        console.error('Error loading async footer view:', error);
-      }
-    }
-
-    // Now that we're mounted and in the DOM, render child views
-    // Mount body View if exists
-    if (this.bodyView && this.element) {
-      const bodyContainer = this.element.querySelector('[data-view-container="body"]');
-      if (bodyContainer) {
-        // Check if view is already rendered
-        if (!this.bodyView.rendered) {
-          await this.bodyView.render(bodyContainer);
-        } else if (!this.bodyView.mounted) {
-          // If rendered but not mounted, just mount it
-          this.bodyView.setContainer(bodyContainer);
-          await this.bodyView.mount();
-        } else {
-          // If already mounted elsewhere, move it
-          bodyContainer.appendChild(this.bodyView.element);
-        }
-      }
-    }
-
-    // Mount footer View if exists
-    if (this.footerView && this.element) {
-      const footerContainer = this.element.querySelector('[data-view-container="footer"]');
-      if (footerContainer) {
-        // Check if view is already rendered
-        if (!this.footerView.rendered) {
-          await this.footerView.render(footerContainer);
-        } else if (!this.footerView.mounted) {
-          // If rendered but not mounted, just mount it
-          this.footerView.setContainer(footerContainer);
-          await this.footerView.mount();
-        } else {
-          // If already mounted elsewhere, move it
-          footerContainer.appendChild(this.footerView.element);
-        }
-      }
-    }
-
-    if (typeof window !== 'undefined' && window.bootstrap && window.bootstrap.Modal) {
-      // Set data attributes if needed
-      if (this.backdrop === 'static') {
-        this.element.setAttribute('data-bs-backdrop', 'static');
-      }
-      if (!this.keyboard) {
-        this.element.setAttribute('data-bs-keyboard', 'false');
-      }
-
-      // Initialize Bootstrap modal with options
-      this.modal = new window.bootstrap.Modal(this.element, {
-        backdrop: this.backdrop,
-        keyboard: this.keyboard,
-        focus: this.focus
-      });
-
-      // Bind Bootstrap events
-      this.bindBootstrapEvents();
-
-      // Auto show if requested
-      if (this.autoShow) {
-        this.show(this.relatedTarget);
-      }
-    }
-  }
-
-  /**
    * Setup auto-sizing - wait for modal animation to complete
    */
   setupAutoSizing() {
@@ -978,6 +873,8 @@ class Dialog extends View {
             <p>${message}</p>
           </div>
         `;
+      } else if (this.bodyView) {
+          bodyEl.replaceChildren(this.bodyView.element);
       }
     }
   }
@@ -1522,6 +1419,20 @@ class Dialog extends View {
           return;
         }
 
+        if (options.autoSave && options.model) {
+            dialog.setLoading(true);
+            const result = await formView.saveModel()
+            if (!result.success) {
+                dialog.setLoading(false);
+                dialog.render();
+                dialog.getApp().toast.error(result.message);
+                return;
+            }
+            resolved = true;
+            dialog.hide();
+            resolve(result);
+        }
+
         // Get form data and resolve
         try {
           const formData = await formView.getFormData();
@@ -1636,8 +1547,9 @@ class Dialog extends View {
             resolve(result);
           } else {
             // Restore form and show error
-            await dialog.setContent(formView);
-            formView.showError(result.error || 'Save failed. Please try again.');
+            dialog.setLoading(false);
+            dialog.getApp().toast.error(result.error);
+            // formView.showError(result.error || 'Save failed. Please try again.');
           }
         } catch (error) {
           console.error('Error saving form:', error);

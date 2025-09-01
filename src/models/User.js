@@ -57,22 +57,23 @@ const UserForms = {
     create: {
         title: 'Create User',
         fields: [
-            { name: 'email', type: 'text', label: 'Email' },
+            { name: 'email', type: 'text', label: 'Email', required: true },
+            { name: 'phone_number', type: 'text', label: 'Phone number', columns: 12 },
             { name: 'display_name', type: 'text', label: 'Display Name' }
         ]
     },
     edit: {
         title: 'Edit User',
         fields: [
-            { name: 'email', type: 'text', label: 'Email', columns: 12 },
+            { name: 'email', type: 'email', label: 'Email', columns: 12 },
             { name: 'display_name', type: 'text', label: 'Display Name', columns: 12},
+            { name: 'phone_number', type: 'text', label: 'Phone number', columns: 12 },
             { type: 'collection', name: 'org', label: 'Organization', Collection: GroupList, labelField: 'name', valueField: 'id', columns: 12 },
-            {
-              type: 'header',
-              text: 'Permissions',
-              level: 5,
-              className: 'mt-4'
-            },
+        ]
+    },
+    permissions: {
+        title: 'Edit Permissions',
+        fields: [
             ...User.PERMISSIONS.map(permission => ({
                 name: `permissions.${permission.name}`,
                 type: 'switch',

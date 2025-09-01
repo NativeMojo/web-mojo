@@ -99,4 +99,6 @@ class RuleSetView extends View {
     }
 }
 
+RuleSetView.VIEW_CLASS = RuleSetView;
+
 export default RuleSetView;

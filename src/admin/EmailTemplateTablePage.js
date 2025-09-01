@@ -1,63 +1,64 @@
 /**
- * EmailTemplateTablePage - Admin page for managing Email Templates (DB templates)
- * - Provides CRUD via TablePage
- * - Validates metadata JSON on create/edit
- * - Details dialog to preview template fields
+ * EmailTemplateTablePage - Admin page for managing Email Templates
+ * Clean implementation using TablePage with minimal overrides
  */
 
 import TablePage from '../pages/TablePage.js';
-import Dialog from '../core/Dialog.js';
-import {
-  EmailTemplate,
-  EmailTemplateList,
-  EmailTemplateForms
-} from '../models/Email.js';
+import { EmailTemplateList, EmailTemplateForms } from '../models/Email.js';
 import EmailTemplateView from './views/EmailTemplateView.js';
 
-export default class EmailTemplateTablePage extends TablePage {
-  constructor(options = {}) {
-    super({
-      ...options,
-      name: 'admin_email_templates',
-      pageName: 'Email Templates',
-      router: 'admin/email/templates',
-      Collection: EmailTemplateList,
-      formCreate: EmailTemplateForms.create,
-      formEdit: EmailTemplateForms.edit,
-      itemViewClass: EmailTemplateView,
-      viewDialogOptions: {
-          header: false,
-          size: 'xl',
-          scrollable: true
-      },
+class EmailTemplateTablePage extends TablePage {
+    constructor(options = {}) {
+        super({
+            ...options,
+            name: 'admin_email_templates',
+            pageName: 'Email Templates',
+            router: 'admin/email/templates',
+            Collection: EmailTemplateList,
 
-      // Table columns
-      columns: [
-        { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },
-        { key: 'name', label: 'Name', sortable: true },
-        { key: 'created', label: 'Created', formatter: 'datetime' },
-        { key: 'modified', label: 'Modified', formatter: 'datetime' }
-      ],
+            formCreate: EmailTemplateForms.create,
+            formEdit: EmailTemplateForms.edit,
+            itemViewClass: EmailTemplateView,
+            clickAction: "edit",
 
-      // Features
-      selectable: true,
-      searchable: true,
-      sortable: true,
-      filterable: true,
-      paginated: true,
+            viewDialogOptions: {
+                header: false,
+                size: 'xl',
+                scrollable: true
+            },
 
-      // Toolbar
-      showRefresh: true,
-      showAdd: true,
-      showExport: true,
+            // Table columns
+            columns: [
+                { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },
+                { key: 'name', label: 'Name', sortable: true },
+                { key: 'created', label: 'Created', formatter: 'datetime' },
+                { key: 'modified', label: 'Modified', formatter: 'datetime' }
+            ],
 
-      tableOptions: {
-        pageSizes: [10, 25, 50, 100],
-        defaultPageSize: 25,
-        emptyMessage: 'No email templates found. Click "Add Template" to create your first one.',
-        emptyIcon: 'bi-file-text',
-        actions: ['view', 'edit', 'delete'],
-      }
-    });
-  }
+            // Features
+            selectable: true,
+            searchable: true,
+            sortable: true,
+            filterable: true,
+            paginated: true,
+
+            // Toolbar
+            showRefresh: true,
+            showAdd: true,
+            showExport: true,
+
+            // Empty state
+            emptyMessage: 'No email templates found. Click "Add Template" to create your first one.',
+
+            // Table display options
+            tableOptions: {
+                striped: true,
+                bordered: false,
+                hover: true,
+                responsive: false
+            }
+        });
+    }
 }
+
+export default EmailTemplateTablePage;

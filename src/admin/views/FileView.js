@@ -232,4 +232,6 @@ class FileView extends View {
     }
 }
 
+File.VIEW_CLASS = FileView;
+
 export default FileView;

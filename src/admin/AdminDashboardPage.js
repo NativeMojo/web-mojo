@@ -181,11 +181,10 @@ export default class AdminDashboardPage extends Page {
 
   async getTemplate() {
     return `
-      <div class="admin-dashboard-container">
+      <div class="admin-dashboard-container container-lg">
         <!-- Page Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
           <div>
-            <h1 class="h3 mb-1">{{pageTitle}}</h1>
             <p class="text-muted mb-0">{{pageSubtitle}}</p>
             <small class="text-info">
               <i class="bi bi-shield-check me-1"></i>

@@ -72,4 +72,6 @@ class MetricsPermissionsView extends View {
     }
 }
 
+MetricsPermission.VIEW_CLASS = MetricsPermissionsView;
+
 export default MetricsPermissionsView;

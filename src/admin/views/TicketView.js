@@ -85,4 +85,6 @@ class TicketView extends View {
     }
 }
 
+Ticket.VIEW_CLASS = TicketView;
+
 export default TicketView;

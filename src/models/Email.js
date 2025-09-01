@@ -491,6 +491,18 @@ const MailboxForms = {
         columns: 6
       },
       {
+        name: 'is_system_default',
+        type: 'switch',
+        label: 'System Default',
+        columns: 6
+      },
+      {
+        name: 'is_domain_default',
+        type: 'switch',
+        label: 'Domain Default',
+        columns: 6
+      },
+      {
         name: 'async_handler',
         type: 'text',
         label: 'Async Handler (optional)',
@@ -504,15 +516,6 @@ const MailboxForms = {
   edit: {
     title: 'Edit Mailbox',
     fields: [
-      {
-        name: 'domain',
-        type: 'text',
-        label: 'Domain (ID or Name)',
-        placeholder: 'example.com or 42',
-        required: true,
-        columns: 12,
-        readonly: true
-      },
       {
         name: 'email',
         type: 'email',
@@ -530,6 +533,18 @@ const MailboxForms = {
         name: 'allow_outbound',
         type: 'switch',
         label: 'Allow Outbound',
+        columns: 6
+      },
+      {
+        name: 'is_system_default',
+        type: 'switch',
+        label: 'System Default',
+        columns: 6
+      },
+      {
+        name: 'is_domain_default',
+        type: 'switch',
+        label: 'Domain Default',
         columns: 6
       },
       {
@@ -627,7 +642,7 @@ const EmailTemplateForms = {
       { name: 'subject_template', type: 'text', label: 'Subject Template', cols: 12 },
       { name: 'html_template', type: 'textarea', label: 'HTML Template', rows: 8, cols: 12 },
       { name: 'text_template', type: 'textarea', label: 'Text Template', rows: 6, cols: 12 },
-      { name: 'metadata', type: 'textarea', label: 'Metadata (JSON)', rows: 4, cols: 12, help: 'Optional JSON metadata' }
+      { name: 'metadata', type: 'json', label: 'Metadata (JSON)', rows: 4, cols: 12, help: 'Optional JSON metadata' }
     ]
   },
   edit: {
@@ -637,7 +652,7 @@ const EmailTemplateForms = {
       { name: 'subject_template', type: 'text', label: 'Subject Template', cols: 12 },
       { name: 'html_template', type: 'textarea', label: 'HTML Template', rows: 8, cols: 12 },
       { name: 'text_template', type: 'textarea', label: 'Text Template', rows: 6, cols: 12 },
-      { name: 'metadata', type: 'textarea', label: 'Metadata (JSON)', rows: 4, cols: 12 }
+      { name: 'metadata', type: 'json', label: 'Metadata (JSON)', rows: 4, cols: 12 }
     ]
   }
 };

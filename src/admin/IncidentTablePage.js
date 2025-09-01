@@ -1,10 +1,10 @@
 /**
  * IncidentTablePage - Incident management using TablePage component
- * Manages incidents and their lifecycle
+ * Clean implementation using TablePage with minimal overrides
  */
 
 import TablePage from '../pages/TablePage.js';
-import { Incident, IncidentList, IncidentForms } from '../models/Incident.js';
+import { IncidentList, IncidentForms } from '../models/Incident.js';
 import IncidentView from './views/IncidentView.js';
 
 class IncidentTablePage extends TablePage {
@@ -15,9 +15,11 @@ class IncidentTablePage extends TablePage {
             pageName: 'Manage Incidents',
             router: "admin/incidents",
             Collection: IncidentList,
+            
             formCreate: IncidentForms.create,
             formEdit: IncidentForms.edit,
             itemViewClass: IncidentView,
+            
             viewDialogOptions: {
                 header: false,
                 size: 'xl'
@@ -66,43 +68,34 @@ class IncidentTablePage extends TablePage {
             filterable: true,
             paginated: true,
 
-            // TablePage toolbar
+            // Toolbar
             showRefresh: true,
             showAdd: true,
             showExport: true,
 
-            // Table options
+            // Empty state
+            emptyMessage: 'No incidents found. Click "Add Incident" to create your first incident.',
+
+            // Batch actions
+            batchBarLocation: 'top',
+            batchActions: [
+                { label: "Resolve", icon: "bi bi-check-circle", action: "batch-resolve" },
+                { label: "Close", icon: "bi bi-x-circle", action: "batch-close" },
+                { label: "Assign", icon: "bi bi-person-plus", action: "batch-assign" },
+                { label: "Set Priority", icon: "bi bi-flag", action: "batch-priority" },
+                { label: "Change State", icon: "bi bi-arrow-repeat", action: "batch-state" },
+                { label: "Export", icon: "bi bi-download", action: "batch-export" },
+                { label: "Delete", icon: "bi bi-trash", action: "batch-delete" }
+            ],
+
+            // Table display options
             tableOptions: {
-                pageSizes: [5, 10, 25, 50],
-                defaultPageSize: 10,
-                emptyMessage: 'No incidents found. Click "Add Incident" to create your first incident.',
-                emptyIcon: 'bi-exclamation-triangle',
-                actions: ["edit", "view"],
-                batchActions: [
-                    { label: "Resolve", icon: "bi bi-check-circle", action: "batch_resolve" },
-                    { label: "Close", icon: "bi bi-x-circle", action: "batch_close" },
-                    { label: "Assign", icon: "bi bi-person-plus", action: "batch_assign" },
-                    { label: "Set Priority", icon: "bi bi-flag", action: "batch_priority" },
-                    { label: "Change State", icon: "bi bi-arrow-repeat", action: "batch_state" },
-                    { label: "Export", icon: "bi bi-download", action: "batch_export" },
-                    { label: "Delete", icon: "bi bi-trash", action: "batch_delete" }
-                ],
+                striped: true,
+                bordered: false,
+                hover: true,
+                responsive: false
             }
         });
-    }
-
-    async onItemView(item, mode, event, target) {
-        const dialog = await super.onItemView(item, mode, event, target);
-        if (dialog && dialog.bodyView) {
-            dialog.bodyView.on('incident:deleted', () => {
-                dialog.hide();
-                this.refreshTable();
-            });
-            dialog.bodyView.on('incident:updated', () => {
-                this.refreshTable();
-            });
-        }
-        return dialog;
     }
 }
 

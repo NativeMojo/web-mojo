@@ -1,10 +1,10 @@
 /**
  * S3BucketTablePage - S3 Bucket management using TablePage component
- * Manages AWS S3 buckets and their configurations
+ * Clean implementation using TablePage with minimal overrides
  */
 
 import TablePage from '../pages/TablePage.js';
-import { S3Bucket, S3BucketList, S3BucketForms } from '../models/AWS.js';
+import { S3BucketList, S3BucketForms } from '../models/AWS.js';
 
 class S3BucketTablePage extends TablePage {
     constructor(options = {}) {
@@ -14,6 +14,7 @@ class S3BucketTablePage extends TablePage {
             pageName: 'Manage S3 Buckets',
             router: "admin/s3-buckets",
             Collection: S3BucketList,
+            
             formCreate: S3BucketForms.create,
             formEdit: S3BucketForms.edit,
 
@@ -45,25 +46,30 @@ class S3BucketTablePage extends TablePage {
             filterable: true,
             paginated: true,
 
-            // TablePage toolbar
+            // Toolbar
             showRefresh: true,
             showAdd: true,
             showExport: true,
 
-            // Table options
+            // Empty state
+            emptyMessage: 'No S3 buckets found. Click "Add S3 Bucket" to create your first bucket.',
+
+            // Batch actions
+            batchBarLocation: 'top',
+            batchActions: [
+                { label: "Delete", icon: "bi bi-trash", action: "batch-delete" },
+                { label: "Export", icon: "bi bi-download", action: "batch-export" },
+                { label: "Make Public", icon: "bi bi-unlock", action: "batch-public" },
+                { label: "Make Private", icon: "bi bi-lock", action: "batch-private" },
+                { label: "Empty Bucket", icon: "bi bi-bucket", action: "batch-empty" }
+            ],
+
+            // Table display options
             tableOptions: {
-                pageSizes: [5, 10, 25, 50],
-                defaultPageSize: 10,
-                emptyMessage: 'No S3 buckets found. Click "Add S3 Bucket" to create your first bucket.',
-                emptyIcon: 'bi-bucket',
-                actions: ["edit", "view", "delete"],
-                batchActions: [
-                    { label: "Delete", icon: "bi bi-trash", action: "batch_delete" },
-                    { label: "Export", icon: "bi bi-download", action: "batch_export" },
-                    { label: "Make Public", icon: "bi bi-unlock", action: "batch_public" },
-                    { label: "Make Private", icon: "bi bi-lock", action: "batch_private" },
-                    { label: "Empty Bucket", icon: "bi bi-bucket", action: "batch_empty" }
-                ],
+                striped: true,
+                bordered: false,
+                hover: true,
+                responsive: false
             }
         });
     }

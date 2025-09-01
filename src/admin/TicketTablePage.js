@@ -1,3 +1,8 @@
+/**
+ * TicketTablePage - Ticket management using TablePage component
+ * Clean implementation using TablePage with minimal overrides
+ */
+
 import TablePage from '../pages/TablePage.js';
 import { TicketList, TicketForms } from '../models/Tickets.js';
 import TicketView from './views/TicketView.js';
@@ -10,14 +15,17 @@ class TicketTablePage extends TablePage {
             pageName: 'Tickets',
             router: "admin/tickets",
             Collection: TicketList,
+            
             formCreate: TicketForms.create,
             formEdit: TicketForms.edit,
             itemViewClass: TicketView,
+            
             viewDialogOptions: {
                 header: false,
                 size: 'xl'
             },
 
+            // Column definitions
             columns: [
                 { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },
                 { key: 'title', label: 'Title', sortable: true },
@@ -25,23 +33,30 @@ class TicketTablePage extends TablePage {
                 { key: 'priority', label: 'Priority', sortable: true },
                 { key: 'assignee.display_name', label: 'Assignee', sortable: true, formatter: "default('Unassigned')" },
                 { key: 'incident', label: 'Incident ID', sortable: true },
-                { key: 'created', label: 'Created', sortable: true, formatter: 'datetime' },
+                { key: 'created', label: 'Created', sortable: true, formatter: 'datetime' }
             ],
 
+            // Table features
             selectable: true,
             searchable: true,
             sortable: true,
+            filterable: true,
             paginated: true,
+
+            // Toolbar
             showRefresh: true,
             showAdd: true,
             showExport: true,
 
+            // Empty state
+            emptyMessage: 'No tickets found.',
+
+            // Table display options
             tableOptions: {
-                pageSizes: [10, 25, 50],
-                defaultPageSize: 25,
-                emptyMessage: 'No tickets found.',
-                emptyIcon: 'bi-ticket-detailed',
-                actions: ["view", "edit", "delete"],
+                striped: true,
+                bordered: false,
+                hover: true,
+                responsive: false
             }
         });
     }

@@ -49,6 +49,7 @@ class TablePage extends Page {
       contextMenu: options.contextMenu || null,
       batchActions: options.batchActions || null,
       batchBarLocation: options.batchBarLocation || 'top',
+      clickAction: options.clickAction || 'view',
       // Map legacy form properties to new names
       addForm: options.addForm || options.formFields || options.formCreate,
       editForm: options.editForm || options.formEdit || options.formFields,
