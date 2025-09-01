@@ -17,6 +17,7 @@ import { User, UserDataView, UserForms, UserDeviceList, UserDeviceLocationList }
 import { LogList } from '../../models/Log.js';
 import { IncidentEventList } from '../../models/Incident.js';
 import { MemberList } from '../../models/Member.js';
+import { PushDeviceList } from '../../models/Push.js';
 import Dialog from '../../core/Dialog.js';
 
 class UserView extends View {
@@ -48,7 +49,7 @@ class UserView extends View {
                             <h3 class="mb-0">{{model.display_name|default('Unnamed User')}}</h3>
                             <a href="mailto:{{model.email}}" class="text-decoration-none text-body">{{model.email}}</a>
                             {{#model.phone_number}}
-                                <div class="text-muted small mt-1">{{model.phone_number|phone(false)}}</div>
+                                <div class="text-muted small mt-1">{{{model.phone_number|phone(false)}}}</div>
                             {{/model.phone_number}}
                         </div>
                     </div>
@@ -196,7 +197,24 @@ class UserView extends View {
             size: 5
         });
 
-
+        const pushDevices = new PushDeviceList({
+            params: {
+                size: 5,
+                user: this.model.get('id')
+            }
+        });
+        this.pushDevicesView = new TableView({
+            collection: pushDevices,
+            hideActivePillNames: ['user'],
+            columns: [
+                { key: 'duid|truncate_middle(16)', label: 'Device ID', sortable: true },
+                { key: 'device_info.user_agent.family', label: 'Browser', formatter: "default('—')" },
+                { key: 'device_info.os.family', label: 'OS', formatter: "default('—')" },
+                { key: 'first_seen', label: 'First Seen', formatter: "epoch|datetime" },
+                { key: 'last_seen', label: 'Last Seen', formatter: "epoch|datetime" }
+            ],
+            size: 5
+        });
 
         // Create Logs table with LogList collection
         const logsCollection = new LogList({
@@ -320,7 +338,8 @@ class UserView extends View {
                 'Logs': this.logsView,
                 'Activity': this.activityView,
                 "Devices": this.devicesView,
-                "Locations": this.locationsView
+                "Locations": this.locationsView,
+                "Push Devices": this.pushDevicesView
             },
             activeTab: 'Profile',
             containerId: 'user-tabs',

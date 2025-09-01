@@ -915,7 +915,10 @@ class DataFormatter {
     // Handle file object with renditions
     if (typeof value === 'object') {
 
-        if (value.attributes) value = value.attributes;
+      if (value.attributes) value = value.attributes;
+      if (preferredRendition === "thumbnail" && value.thumbnail && typeof value.thumbnail === 'string') {
+          return value.thumbnail;
+      }
       // Check if it has renditions
       if (value.renditions && typeof value.renditions === 'object') {
         // Try to get preferred rendition

@@ -36,7 +36,6 @@
                                     placeholder="Enter your username or email"
                                     value="{{username}}"
                                     data-field="username"
-                                    data-change-action="updateField"
                                     data-action-keydown="handleKeyPress"
                                     autocomplete="username"
                                     required
@@ -57,7 +56,6 @@
                                         placeholder="Enter your password"
                                         value="{{password}}"
                                         data-field="password"
-                                        data-change-action="updateField"
                                         data-action-keydown="handleKeyPress"
                                         autocomplete="current-password"
                                         required

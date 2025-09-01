@@ -128,40 +128,35 @@ export default class LoginPage extends Page {
     async onActionLogin(event) {
         event.preventDefault();
 
-        // Clear previous errors and show loading
-        this.updateData({ error: null, isLoading: true });
+        // Manually get values from form inputs on submit
+        this.data.username = this.element.querySelector('#loginUsername')?.value || '';
+        this.data.password = this.element.querySelector('#loginPassword')?.value || '';
 
-        try {
-            // Basic validation
-            if (!this.data.username || !this.data.password) {
-                throw new Error('Please enter both username and password');
-            }
+        await this.updateData({ error: null, isLoading: true }, true);
 
-            // Get auth manager
-            const auth = this.getApp().auth;
-            if (!auth) {
-                throw new Error('Authentication system not available');
-            }
+        const auth = this.getApp().auth;
+        if (!auth) {
+            await this.updateData({ error: 'Authentication system not available', isLoading: false }, true);
+            return;
+        }
 
-            // Attempt login
-            const result = await auth.login(
-                this.data.username,
-                this.data.password,
-                this.data.rememberMe
-            );
+        // Basic validation
+        if (!this.data.username || !this.data.password) {
+            await this.updateData({ error: 'Please enter both username and password', isLoading: false }, true);
+            return;
+        }
 
-            if (result.success) {
-                // Success is handled by AuthApp's event handlers
-                // which will redirect and show success message
-                console.log('Login successful');
-            }
+        const result = await auth.login(
+            this.data.username,
+            this.data.password,
+            this.data.rememberMe
+        );
 
-        } catch (error) {
-            console.error('Login error:', error);
-            this.updateData({
-                error: error.message || 'Login failed. Please try again.',
+        if (!result.success) {
+            await this.updateData({
+                error: result.message,
                 isLoading: false
-            });
+            }, true);
 
             // Focus password field for retry
             const passwordInput = this.element.querySelector('#loginPassword');
@@ -170,6 +165,7 @@ export default class LoginPage extends Page {
                 passwordInput.select();
             }
         }
+        // On success, the global 'auth:login' event will trigger navigation.
     }
 
     /**

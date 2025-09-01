@@ -11,6 +11,7 @@ import { AuthApp } from '/src/auth.js';
 
 // Configuration from URL params or environment variables
 const config = {
+    passwordResetMethod: 'code',
     apiURL: new URLSearchParams(window.location.search).get('api') ||
             window.AUTH_API_URL ||
             'http://localhost:8881',
@@ -45,10 +46,13 @@ async function initAuthPortal() {
             basePath: '/'
         });
 
+        // Configure the app's core REST service
+        app.rest.configure({
+            baseURL: config.apiURL
+        });
+
         // Setup Authentication
         const authApp = await AuthApp.create(app, {
-            baseURL: config.apiURL,
-
             // Routes
             routes: {
                 login: '/login',

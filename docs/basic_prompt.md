@@ -221,6 +221,9 @@ const result = response.data.data;
 **Keep It Simple**: Follow the framework patterns, let MOJO handle the complexity!
 **Improve The Framework**: Let's improve the framework vs adding improvements to our examples or projects.
 
+When building forms in html:
+ - never put data-action on the form element
+ - use data-action on the submit button instead, but make the submit button a button type="button" to avoid triggering a form submission
 
 Use bootstrap 5 css as much as possible unless doing something unique then create our own css.
 

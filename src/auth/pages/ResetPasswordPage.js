@@ -151,7 +151,7 @@ export default class ResetPasswordPage extends Page {
             strength = 'fair';
         }
 
-        this.updateData({ passwordStrength: strength });
+        this.updateData({ passwordStrength: strength }, true);
     }
 
     /**
@@ -160,7 +160,7 @@ export default class ResetPasswordPage extends Page {
     checkPasswordMatch() {
         const match = !this.data.confirmPassword ||
                      this.data.password === this.data.confirmPassword;
-        this.updateData({ passwordMatch: match });
+        this.updateData({ passwordMatch: match }, true);
     }
 
     /**
@@ -190,65 +190,47 @@ export default class ResetPasswordPage extends Page {
      */
     async onActionResetPassword(event) {
         event.preventDefault();
+        await this.updateData({ error: null, isLoading: true }, true);
 
-        // Clear previous errors and show loading
-        this.updateData({ error: null, isLoading: true });
+        // Basic validation
+        if (!this.data.password || !this.data.confirmPassword) {
+            await this.updateData({ error: 'Please enter and confirm your new password', isLoading: false }, true);
+            return;
+        }
+        if (this.data.password.length < 6) {
+            await this.updateData({ error: 'Password must be at least 6 characters long', isLoading: false }, true);
+            return;
+        }
+        if (this.data.password !== this.data.confirmPassword) {
+            await this.updateData({ error: 'Passwords do not match', isLoading: false }, true);
+            return;
+        }
 
-        try {
-            // Basic validation
-            if (!this.data.password || !this.data.confirmPassword) {
-                throw new Error('Please enter and confirm your new password');
-            }
+        const auth = this.getApp().auth;
+        if (!auth) {
+            await this.updateData({ error: 'Authentication system not available', isLoading: false }, true);
+            return;
+        }
 
-            // Validate password length
-            if (this.data.password.length < 6) {
-                throw new Error('Password must be at least 6 characters long');
-            }
+        const response = await auth.resetPasswordWithToken(this.resetToken, this.data.password);
 
-            // Check password match
-            if (this.data.password !== this.data.confirmPassword) {
-                throw new Error('Passwords do not match');
-            }
-
-            // Get auth manager
-            const auth = this.getApp().auth;
-            if (!auth) {
-                throw new Error('Authentication system not available');
-            }
-
-            // Submit password reset
-            const response = await auth.resetPassword(this.resetToken, this.data.password);
-
-            if (response.success) {
-                // Show success state
-                this.updateData({
-                    success: true,
-                    successMessage: response.message || 'Password reset successful! You can now log in with your new password.',
-                    isLoading: false
-                });
-
-                // Redirect to login after delay
-                setTimeout(() => {
-                    this.getApp().showSuccess('Password reset complete. Please log in.');
-                    this.getApp().navigate('/login');
-                }, 3000);
-            } else {
-                throw new Error(response.message || 'Failed to reset password');
-            }
-
-        } catch (error) {
-            console.error('Password reset error:', error);
-            this.updateData({
-                error: error.message || 'Password reset failed. Please try again.',
+        if (response.success) {
+            await this.updateData({
+                success: true,
+                successMessage: response.message || 'Password reset successful! You can now log in.',
                 isLoading: false
-            });
+            }, true);
 
-            // Focus on password field for retry
-            const passwordInput = this.element.querySelector('#resetPassword');
-            if (passwordInput) {
-                passwordInput.focus();
-                passwordInput.select();
-            }
+            // Redirect to login after delay
+            setTimeout(() => {
+                this.getApp().showSuccess('Password reset complete. Please log in.');
+                this.getApp().navigate('/login');
+            }, 3000);
+        } else {
+            await this.updateData({
+                error: response.message || 'Password reset failed. Please try again.',
+                isLoading: false
+            }, true);
         }
     }
 

@@ -39,6 +39,9 @@ export default class AuthApp {
                 rememberMe: true
             },
 
+            // Password Reset Method ('link' or 'code')
+            passwordResetMethod: 'code',
+
             // UI Configuration
             ui: {
                 title: app.title || 'My App',

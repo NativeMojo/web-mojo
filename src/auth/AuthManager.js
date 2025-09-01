@@ -3,14 +3,12 @@
  * Handles auth state, integrates with AuthService and TokenManager, supports plugins
  */
 
-import AuthService from '../services/AuthService.js';
 import TokenManager from './TokenManager.js';
 
 export default class AuthManager {
     constructor(app, config = {}) {
         this.app = app;
         this.config = {
-            baseURL: 'http://localhost:8881',
             autoRefresh: true,
             refreshThreshold: 5, // minutes before expiry
             plugins: {},
@@ -18,9 +16,6 @@ export default class AuthManager {
         };
 
         // Core services
-        this.authService = new AuthService({
-            baseURL: this.config.baseURL
-        });
         this.tokenManager = new TokenManager();
 
         // Auth state
@@ -77,33 +72,30 @@ export default class AuthManager {
      * @returns {Promise<object>} Login result
      */
     async login(username, password, rememberMe = true) {
-        try {
-            const response = await this.authService.login(username, password);
+        const response = await this.app.rest.POST('/api/login', { username, password });
 
-            if (response.success) {
-                const { access_token, refresh_token, user } = response.data.data;
+        if (response.success && response.data.status) {
+            const { access_token, refresh_token, user } = response.data.data;
 
-                // Store tokens
-                this.tokenManager.setTokens(access_token, refresh_token, rememberMe);
+            // Store tokens
+            this.tokenManager.setTokens(access_token, refresh_token, rememberMe);
 
-                // Set auth state
-                const userInfo = this.tokenManager.getUserInfo();
-                this.setAuthState({ ...user, ...userInfo });
+            // Set auth state
+            const userInfo = this.tokenManager.getUserInfo();
+            this.setAuthState({ ...user, ...userInfo });
 
-                // Schedule refresh
-                if (this.config.autoRefresh) {
-                    this.scheduleTokenRefresh();
-                }
-
-                this.emit('login', this.user);
-                return { success: true, user: this.user };
+            // Schedule refresh
+            if (this.config.autoRefresh) {
+                this.scheduleTokenRefresh();
             }
 
-            throw new Error(response.message);
-        } catch (error) {
-            this.emit('loginError', error);
-            throw error;
+            this.emit('login', this.user);
+            return { success: true, user: this.user };
         }
+
+        const message = response.data?.error || response.message || 'Login failed. Please try again.';
+        this.emit('loginError', { message });
+        return { success: false, message };
     }
 
     /**
@@ -112,33 +104,30 @@ export default class AuthManager {
      * @returns {Promise<object>} Registration result
      */
     async register(userData) {
-        try {
-            const response = await this.authService.register(userData);
+        const response = await this.app.rest.POST('/api/register', userData);
 
-            if (response.success) {
-                const { token, refreshToken, user } = response.data;
+        if (response.success && response.data.status) {
+            const { token, refreshToken, user } = response.data.data;
 
-                // Store tokens
-                this.tokenManager.setTokens(token, refreshToken, true);
+            // Store tokens
+            this.tokenManager.setTokens(token, refreshToken, true);
 
-                // Set auth state
-                const userInfo = this.tokenManager.getUserInfo();
-                this.setAuthState({ ...user, ...userInfo });
+            // Set auth state
+            const userInfo = this.tokenManager.getUserInfo();
+            this.setAuthState({ ...user, ...userInfo });
 
-                // Schedule refresh
-                if (this.config.autoRefresh) {
-                    this.scheduleTokenRefresh();
-                }
-
-                this.emit('register', this.user);
-                return { success: true, user: this.user };
+            // Schedule refresh
+            if (this.config.autoRefresh) {
+                this.scheduleTokenRefresh();
             }
 
-            throw new Error(response.message);
-        } catch (error) {
-            this.emit('registerError', error);
-            throw error;
+            this.emit('register', this.user);
+            return { success: true, user: this.user };
         }
+
+        const message = response.data?.error || response.message || 'Registration failed.';
+        this.emit('registerError', { message });
+        return { success: false, message };
     }
 
     /**
@@ -148,8 +137,10 @@ export default class AuthManager {
         try {
             const token = this.tokenManager.getToken();
             if (token) {
-                // Call logout API (don't throw on failure)
-                await this.authService.logout(token).catch(console.warn);
+                // Call logout API but don't block logout on failure
+                this.app.rest.POST('/api/auth/logout').catch(err => {
+                    console.warn('Server logout failed, proceeding with local logout.', err);
+                });
             }
         } finally {
             this.clearAuthState();
@@ -162,43 +153,41 @@ export default class AuthManager {
      * @returns {Promise<boolean>} Success status
      */
     async refreshToken() {
-        try {
-            const refreshToken = this.tokenManager.getRefreshToken();
-            if (!refreshToken) {
-                throw new Error('No refresh token available');
-            }
-
-            const response = await this.authService.refreshToken(refreshToken);
-
-            if (response.success) {
-                const { token, refreshToken: newRefreshToken } = response.data;
-
-                // Determine persistence from current storage
-                const isPersistent = !!localStorage.getItem(this.tokenManager.tokenKey);
-
-                // Store new tokens
-                this.tokenManager.setTokens(token, newRefreshToken, isPersistent);
-
-                // Update user info
-                const userInfo = this.tokenManager.getUserInfo();
-                if (userInfo) {
-                    this.user = { ...this.user, ...userInfo };
-                }
-
-                // Schedule next refresh
-                this.scheduleTokenRefresh();
-
-                this.emit('tokenRefreshed');
-                return true;
-            }
-
-            throw new Error(response.message);
-        } catch (error) {
-            console.error('Token refresh failed:', error);
+        const refreshToken = this.tokenManager.getRefreshToken();
+        if (!refreshToken) {
             this.clearAuthState();
             this.emit('tokenExpired');
             return false;
         }
+
+        const response = await this.app.rest.POST('/api/auth/token/refresh', { refreshToken });
+
+        if (response.success && response.data.status) {
+            const { token, refreshToken: newRefreshToken } = response.data.data;
+
+            // Determine persistence from current storage
+            const isPersistent = !!localStorage.getItem(this.tokenManager.tokenKey);
+
+            // Store new tokens
+            this.tokenManager.setTokens(token, newRefreshToken, isPersistent);
+
+            // Update user info
+            const userInfo = this.tokenManager.getUserInfo();
+            if (userInfo) {
+                this.user = { ...this.user, ...userInfo };
+            }
+
+            // Schedule next refresh
+            this.scheduleTokenRefresh();
+
+            this.emit('tokenRefreshed');
+            return true;
+        }
+
+        console.error('Token refresh failed:', response.data?.error || response.message);
+        this.clearAuthState();
+        this.emit('tokenExpired');
+        return false;
     }
 
     /**
@@ -295,42 +284,65 @@ export default class AuthManager {
      * @param {string} email - User email
      * @returns {Promise<object>} Request result
      */
-    async forgotPassword(email) {
-        try {
-            const response = await this.authService.forgotPassword(email);
+    async forgotPassword(email, method = 'code') {
+        const response = await this.app.rest.POST('/api/auth/forgot', { email, method });
 
-            if (response.success) {
-                this.emit('forgotPasswordSuccess', email);
-                return response;
-            }
-
-            throw new Error(response.message);
-        } catch (error) {
-            this.emit('forgotPasswordError', error);
-            throw error;
+        if (response.success && response.data.status) {
+            this.emit('forgotPasswordSuccess', { email, method });
+            return { success: true, message: response.data.data?.message };
         }
+
+        const message = response.data?.error || response.message || 'Failed to process request.';
+        this.emit('forgotPasswordError', { message });
+        return { success: false, message };
     }
 
     /**
-     * Reset password with token
+     * Reset password with a token from an email link
      * @param {string} token - Reset token
      * @param {string} newPassword - New password
      * @returns {Promise<object>} Reset result
      */
-    async resetPassword(token, newPassword) {
-        try {
-            const response = await this.authService.resetPassword(token, newPassword);
+    async resetPasswordWithToken(token, newPassword) {
+        const payload = {
+            token: token,
+            new_password: newPassword
+        };
+        const response = await this.app.rest.POST('/api/auth/password/reset/token', payload);
 
-            if (response.success) {
-                this.emit('resetPasswordSuccess');
-                return response;
-            }
-
-            throw new Error(response.message);
-        } catch (error) {
-            this.emit('resetPasswordError', error);
-            throw error;
+        if (response.success && response.data.status) {
+            this.emit('resetPasswordSuccess');
+            return { success: true, message: response.data.data?.message };
         }
+
+        const message = response.data?.error || response.message || 'Failed to reset password.';
+        this.emit('resetPasswordError', { message });
+        return { success: false, message };
+    }
+
+    /**
+     * Reset password with an email and code
+     * @param {string} email - User's email
+     * @param {string} code - The verification code
+     * @param {string} newPassword - New password
+     * @returns {Promise<object>} Reset result
+     */
+    async resetPasswordWithCode(email, code, newPassword) {
+        const payload = {
+            email: email,
+            code: code,
+            new_password: newPassword
+        };
+        const response = await this.app.rest.POST('/api/auth/password/reset/code', payload);
+
+        if (response.success && response.data.status) {
+            this.emit('resetPasswordSuccess');
+            return { success: true, message: response.data.data?.message };
+        }
+
+        const message = response.data?.error || response.message || 'Failed to reset password.';
+        this.emit('resetPasswordError', { message });
+        return { success: false, message };
     }
 
     /**

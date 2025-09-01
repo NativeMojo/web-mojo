@@ -28,7 +28,6 @@ export default class PasskeyPlugin {
     async initialize(authManager, app) {
         this.authManager = authManager;
         this.app = app;
-        this.authService = authManager.authService;
 
         // Check browser support
         if (!this.isSupported()) {
@@ -66,16 +65,17 @@ export default class PasskeyPlugin {
 
         try {
             // Step 1: Get authentication challenge from server
-            const challengeResponse = await this.authService.makeRequest('/api/auth/passkey/challenge', 'POST');
+            const challengeResponse = await this.app.rest.POST('/api/auth/passkey/challenge');
 
-            if (!challengeResponse.challenge) {
+            if (!challengeResponse.success || !challengeResponse.data.data.challenge) {
                 throw new Error('No authentication challenge received from server');
             }
+            const challengeData = challengeResponse.data.data;
 
             // Step 2: Create credential request options
             const credentialRequestOptions = {
                 publicKey: {
-                    challenge: this.base64ToArrayBuffer(challengeResponse.challenge),
+                    challenge: this.base64ToArrayBuffer(challengeData.challenge),
                     timeout: this.config.timeout,
                     userVerification: this.config.userVerification,
                     rpId: this.config.rpId
@@ -104,12 +104,16 @@ export default class PasskeyPlugin {
             };
 
             // Step 5: Send credential to server for verification and login
-            const loginResponse = await this.authService.makeRequest('/api/auth/passkey/verify', 'POST', {
+            const loginResponse = await this.app.rest.POST('/api/auth/passkey/verify', {
                 credential: credentialData,
-                challengeId: challengeResponse.challengeId
+                challengeId: challengeData.challengeId
             });
 
-            const { token, refreshToken, user } = loginResponse;
+            if (!loginResponse.success || !loginResponse.data.status) {
+                throw new Error(loginResponse.data.error || 'Passkey verification failed');
+            }
+
+            const { token, refreshToken, user } = loginResponse.data.data;
 
             // Store tokens and set auth state
             this.authManager.tokenManager.setTokens(token, refreshToken, true);
@@ -151,21 +155,15 @@ export default class PasskeyPlugin {
         }
 
         try {
-            const token = this.authManager.tokenManager.getToken();
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
-
             // Step 1: Get registration options from server
-            const optionsResponse = await this.authService.makeRequest('/api/auth/passkey/register-options', 'POST', null, {
-                'Authorization': `Bearer ${token}`
-            });
+            const optionsResponse = await this.app.rest.POST('/api/auth/passkey/register-options');
 
-            if (!optionsResponse.options) {
+            if (!optionsResponse.success || !optionsResponse.data.data.options) {
                 throw new Error('No registration options received from server');
             }
 
-            const options = optionsResponse.options;
+            const optionsData = optionsResponse.data.data;
+            const options = optionsData.options;
 
             // Step 2: Create credential creation options
             const credentialCreationOptions = {
@@ -217,19 +215,21 @@ export default class PasskeyPlugin {
             };
 
             // Step 5: Register credential with server
-            const registrationResponse = await this.authService.makeRequest('/api/auth/passkey/register', 'POST', {
+            const registrationResponse = await this.app.rest.POST('/api/auth/passkey/register', {
                 credential: credentialData,
-                optionsId: optionsResponse.optionsId
-            }, {
-                'Authorization': `Bearer ${token}`
+                optionsId: optionsData.optionsId
             });
 
+            if (!registrationResponse.success || !registrationResponse.data.status) {
+                throw new Error(registrationResponse.data.error || 'Failed to register passkey');
+            }
+
             // Emit success event
-            this.authManager.emit('passkeySetupSuccess', registrationResponse);
+            this.authManager.emit('passkeySetupSuccess', registrationResponse.data.data);
 
             return {
                 success: true,
-                data: registrationResponse
+                data: registrationResponse.data.data
             };
 
         } catch (error) {
@@ -249,15 +249,12 @@ export default class PasskeyPlugin {
         }
 
         try {
-            const token = this.authManager.tokenManager.getToken();
-            const response = await this.authService.makeRequest('/api/auth/passkey/list', 'GET', null, {
-                'Authorization': `Bearer ${token}`
-            });
+            const response = await this.app.rest.GET('/api/auth/passkey/list');
 
             return {
-                success: true,
-                hasPasskeys: response.passkeys && response.passkeys.length > 0,
-                count: response.passkeys ? response.passkeys.length : 0
+                success: response.success,
+                hasPasskeys: response.data.data?.passkeys && response.data.data.passkeys.length > 0,
+                count: response.data.data?.passkeys ? response.data.data.passkeys.length : 0
             };
         } catch (error) {
             console.error('Error checking passkeys:', error);
@@ -276,18 +273,17 @@ export default class PasskeyPlugin {
         }
 
         try {
-            const token = this.authManager.tokenManager.getToken();
-            const response = await this.authService.makeRequest('/api/auth/passkey/remove', 'DELETE', {
-                credentialId
-            }, {
-                'Authorization': `Bearer ${token}`
-            });
+            const response = await this.app.rest.DELETE('/api/auth/passkey/remove', { credentialId });
+
+            if (!response.success || !response.data.status) {
+                throw new Error(response.data.error || 'Failed to remove passkey');
+            }
 
             this.authManager.emit('passkeyRemoved', { credentialId });
 
             return {
                 success: true,
-                data: response
+                data: response.data.data
             };
         } catch (error) {
             console.error('Error removing passkey:', error);

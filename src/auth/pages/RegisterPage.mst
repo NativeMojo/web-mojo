@@ -37,6 +37,7 @@
                                     value="{{name}}"
                                     data-field="name"
                                     data-change-action="updateField"
+                                    data-filter="live-search"
                                     data-action-keydown="handleKeyPress"
                                     autocomplete="name"
                                     required
@@ -57,6 +58,7 @@
                                     value="{{email}}"
                                     data-field="email"
                                     data-change-action="updateField"
+                                    data-filter="live-search"
                                     data-action-keydown="handleKeyPress"
                                     autocomplete="email"
                                     required
@@ -77,6 +79,7 @@
                                         value="{{password}}"
                                         data-field="password"
                                         data-change-action="updateField"
+                                        data-filter="live-search"
                                         data-action-keydown="handleKeyPress"
                                         autocomplete="new-password"
                                         required
@@ -129,6 +132,7 @@
                                         value="{{confirmPassword}}"
                                         data-field="confirmPassword"
                                         data-change-action="updateField"
+                                        data-filter="live-search"
                                         data-action-keydown="handleKeyPress"
                                         autocomplete="new-password"
                                         required

@@ -79,7 +79,7 @@ export const PACKAGE_NAME = 'web-mojo';
 export { VERSION_INFO, VERSION, VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, BUILD_TIME };
 
 // Re-export namespaces for convenience
-export { 
+export {
   TableComponents,
   ListComponents,
   ChatComponents,
@@ -91,67 +91,6 @@ export {
 
 // Default export with all components organized by category
 export default {
-  // Core
-  View,
-  Page,
-  Router,
-  Model,
-  Collection,
-  Rest,
-  Dialog,
-  EventDelegate,
-  
-  // Views
-  Table,
-  TableView,
-  TableRow,
-  ListView,
-  ListViewItem,
-  ChatView,
-  ChatInputView,
-  ChatMessageView,
-  TopNav,
-  Sidebar,
-  TabView,
-  SimpleSearchView,
-  DataView,
-  FileView,
-  ProgressView,
-  ContextMenu,
-  FilePreviewView,
-  
-  // Pages
-  NotFoundPage,
-  ErrorPage,
-  DeniedPage,
-  TablePage,
-  
-  // Forms
-  FormBuilder,
-  FormView,
-  
-  // Mixins
-  FileDropMixin,
-  applyFileDropMixin,
-  
-  // Utilities
-  EventBus,
-  mustache,
-  DataFormatter,
-  MustacheFormatter,
-  MOJOUtils,
-  DataWrapper,
-  
-  // Auth
-  TokenManager,
-  
-  // Apps
-  WebApp,
-  PortalApp,
-  
-  // Services
-  FileUpload,
-  
   // Framework info
   FRAMEWORK_NAME,
   PACKAGE_NAME,

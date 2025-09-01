@@ -1,8 +1,7 @@
 /**
  * ForgotPasswordPage - Simplified password reset page for MOJO Auth
- * Handles password reset request via email
+ * Handles password reset request via email, supporting both 'link' and 'code' methods.
  */
-
 import Page from '../../core/Page.js';
 
 export default class ForgotPasswordPage extends Page {
@@ -12,211 +11,119 @@ export default class ForgotPasswordPage extends Page {
     static route = 'forgot-password';
 
     constructor(options = {}) {
-        super({
-            ...options,
-            pageName: ForgotPasswordPage.pageName,
-            route: options.route || ForgotPasswordPage.route,
-            pageIcon: ForgotPasswordPage.icon,
-            template: options.template
-        });
-
-        // Get auth config from options (passed from AuthApp)
+        super({ ...options, template: options.template });
         this.authConfig = options.authConfig || {
-            ui: {
-                title: 'My App',
-                logoUrl: '/assets/logo.png',
-                messages: {
-                    forgotTitle: 'Reset Password',
-                    forgotSubtitle: 'We\'ll send you reset instructions'
-                }
-            },
-            features: {
-                forgotPassword: true,
-                registration: true
-            }
+            passwordResetMethod: 'code',
+            ui: { title: 'My App' },
+            features: {}
         };
     }
 
     async onInit() {
-        await super.onInit();
-
-        // Initialize form data
         this.data = {
-            // Config data for template
             ...this.authConfig.ui,
             ...this.authConfig.features,
-
-            // Form fields
-            email: '',
-
-            // UI state
+            passwordResetMethod: this.authConfig.passwordResetMethod,
+            step: 'email', // 'email', 'code', 'link_sent', 'success'
             isLoading: false,
             error: null,
-            success: false,
-            successMessage: null
+            email: '' // Store email across steps
         };
     }
 
     async onEnter() {
-        await super.onEnter();
-
-        // Set page title
         document.title = `${ForgotPasswordPage.title} - ${this.authConfig.ui.title}`;
-
-        // Clear form and reset state
         this.updateData({
-            email: '',
+            step: 'email',
+            isLoading: false,
             error: null,
-            success: false,
-            successMessage: null,
-            isLoading: false
+            email: ''
         });
     }
 
-    async onAfterRender() {
-        await super.onAfterRender();
+    /**
+     * Gets data from the currently visible form.
+     * @param {string} formSelector - The CSS selector for the form.
+     * @returns {object} An object containing the form data.
+     */
+    getFormData(formSelector) {
+        const form = this.element.querySelector(formSelector);
+        if (!form) return {};
+        const formData = new FormData(form);
+        return Object.fromEntries(formData.entries());
+    }
 
-        // Focus on email input
-        const emailInput = this.element.querySelector('#forgotEmail');
-        if (emailInput) {
-            emailInput.focus();
+    /**
+     * Handles the initial request to reset a password.
+     */
+    async onActionRequestReset() {
+        const { email } = this.getFormData('#form-request-reset');
+        await this.updateData({ isLoading: true, error: null, email }, true);
+
+        if (!email) {
+            return this.updateData({ error: 'Please enter your email address', isLoading: false }, true);
         }
-    }
 
-    /**
-     * Handle field updates
-     */
-    async onActionUpdateField(event, element) {
-        const field = element.dataset.field;
-        const value = element.value;
+        const auth = this.getApp().auth;
+        const resetMethod = this.authConfig.passwordResetMethod || 'code';
+        const response = await auth.forgotPassword(email, resetMethod);
 
-        this.updateData({
-            [field]: value,
-            error: null // Clear error on input change
-        });
-    }
-
-    /**
-     * Handle password reset request
-     */
-    async onActionResetPassword(event) {
-        event.preventDefault();
-
-        // Clear previous messages and show loading
-        this.updateData({
-            error: null,
-            success: false,
-            successMessage: null,
-            isLoading: true
-        });
-
-        try {
-            // Basic validation
-            if (!this.data.email) {
-                throw new Error('Please enter your email address');
-            }
-
-            // Validate email format
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(this.data.email)) {
-                throw new Error('Please enter a valid email address');
-            }
-
-            // Get auth manager
-            const auth = this.getApp().auth;
-            if (!auth) {
-                throw new Error('Authentication system not available');
-            }
-
-            // Send reset request
-            const response = await auth.forgotPassword(this.data.email);
-
+        if (resetMethod === 'link') {
+            await this.updateData({ step: 'link_sent', isLoading: false }, true);
+            if (!response.success) console.error('Forgot password (link) error:', response.message);
+        } else {
             if (response.success) {
-                // Show success state
-                this.updateData({
-                    success: true,
-                    successMessage: response.message || 'Password reset instructions have been sent to your email',
-                    isLoading: false,
-                    email: '' // Clear email field
-                });
-
-                // Optional: Redirect to login after delay
-                setTimeout(() => {
-                    this.getApp().showInfo('Check your email for reset instructions');
-                    this.getApp().navigate('/login');
-                }, 5000);
+                await this.updateData({ step: 'code', isLoading: false }, true);
             } else {
-                throw new Error(response.message || 'Failed to process request');
-            }
-
-        } catch (error) {
-            console.error('Forgot password error:', error);
-            this.updateData({
-                error: error.message || 'Failed to process request. Please try again.',
-                isLoading: false
-            });
-
-            // Re-focus on email input for retry
-            const emailInput = this.element.querySelector('#forgotEmail');
-            if (emailInput) {
-                emailInput.focus();
-                emailInput.select();
+                await this.updateData({ error: response.message, isLoading: false }, true);
             }
         }
     }
 
     /**
-     * Navigate back to login page
+     * Handles the final password reset using a verification code.
      */
-    async onActionBackToLogin(event) {
-        event.preventDefault();
+    async onActionResetWithCode() {
+        const { code, new_password, confirm_password } = this.getFormData('#form-reset-with-code');
+        await this.updateData({ isLoading: true, error: null }, true);
+
+        if (!code || !new_password) {
+            return this.updateData({ error: 'Please enter the code and your new password', isLoading: false }, true);
+        }
+        if (new_password !== confirm_password) {
+            return this.updateData({ error: 'Passwords do not match', isLoading: false }, true);
+        }
+
+        const auth = this.getApp().auth;
+        const response = await auth.resetPasswordWithCode(this.data.email, code, new_password);
+
+        if (response.success) {
+            await this.updateData({ step: 'success', isLoading: false }, true);
+            setTimeout(() => this.getApp().navigate('/login'), 3000);
+        } else {
+            await this.updateData({ error: response.message, isLoading: false }, true);
+        }
+    }
+
+    async onActionBackToLogin() {
         this.getApp().navigate('/login');
     }
 
-    /**
-     * Navigate to registration page
-     */
-    async onActionRegister(event) {
-        event.preventDefault();
-        this.getApp().navigate('/register');
+    // --- Template Getters for State ---
+
+    get isStepEmail() {
+        return this.data.step === 'email';
     }
 
-    /**
-     * Handle Enter key in email field
-     */
-    async onActionHandleKeyPress(event) {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            await this.onActionResetPassword(event);
-        }
+    get isStepCode() {
+        return this.data.step === 'code';
     }
 
-    /**
-     * Resend reset email (when in success state)
-     */
-    async onActionResendEmail(event) {
-        event.preventDefault();
-
-        // Reset to initial state
-        this.updateData({
-            success: false,
-            successMessage: null,
-            error: null
-        });
-
-        // Focus back on email input
-        const emailInput = this.element.querySelector('#forgotEmail');
-        if (emailInput) {
-            emailInput.focus();
-        }
+    get isStepLinkSent() {
+        return this.data.step === 'link_sent';
     }
 
-    /**
-     * Get view data for template rendering
-     */
-    async getViewData() {
-        return {
-            ...this.data
-        };
+    get isStepSuccess() {
+        return this.data.step === 'success';
     }
 }

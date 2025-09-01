@@ -146,7 +146,7 @@ export default class RegisterPage extends Page {
             strength = 'fair';
         }
 
-        this.updateData({ passwordStrength: strength });
+        this.updateData({ passwordStrength: strength }, true);
     }
 
     /**
@@ -155,7 +155,7 @@ export default class RegisterPage extends Page {
     checkPasswordMatch() {
         const match = !this.data.confirmPassword ||
                      this.data.password === this.data.confirmPassword;
-        this.updateData({ passwordMatch: match });
+        this.updateData({ passwordMatch: match }, true);
     }
 
     /**
@@ -185,70 +185,53 @@ export default class RegisterPage extends Page {
      */
     async onActionRegister(event) {
         event.preventDefault();
+        await this.updateData({ error: null, isLoading: true }, true);
 
-        // Clear previous errors and show loading
-        this.updateData({ error: null, isLoading: true });
-
-        try {
-            // Basic validation
-            if (!this.data.name || !this.data.email || !this.data.password || !this.data.confirmPassword) {
-                throw new Error('Please fill in all required fields');
-            }
-
-            // Validate name
-            if (this.data.name.trim().length < 2) {
-                throw new Error('Name must be at least 2 characters long');
-            }
-
-            // Validate email format
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(this.data.email)) {
-                throw new Error('Please enter a valid email address');
-            }
-
-            // Validate password length
-            if (this.data.password.length < 6) {
-                throw new Error('Password must be at least 6 characters long');
-            }
-
-            // Check password match
-            if (this.data.password !== this.data.confirmPassword) {
-                throw new Error('Passwords do not match');
-            }
-
-            // Get auth manager
-            const auth = this.getApp().auth;
-            if (!auth) {
-                throw new Error('Authentication system not available');
-            }
-
-            // Prepare registration data
-            const registrationData = {
-                name: this.data.name.trim(),
-                email: this.data.email.toLowerCase().trim(),
-                password: this.data.password,
-                acceptedTerms: this.data.acceptTerms
-            };
-
-            // Attempt registration
-            const result = await auth.register(registrationData);
-
-            if (result.success) {
-                // Success is handled by AuthApp's event handlers
-                // which will redirect and show success message
-                console.log('Registration successful');
-            }
-
-        } catch (error) {
-            console.error('Registration error:', error);
-            this.updateData({
-                error: error.message || 'Registration failed. Please try again.',
-                isLoading: false
-            });
-
-            // Scroll to top to show error
-            this.element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Validation
+        if (!this.data.name || !this.data.email || !this.data.password || !this.data.confirmPassword) {
+            await this.updateData({ error: 'Please fill in all required fields', isLoading: false }, true);
+            return;
         }
+        if (this.data.name.trim().length < 2) {
+            await this.updateData({ error: 'Name must be at least 2 characters long', isLoading: false }, true);
+            return;
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(this.data.email)) {
+            await this.updateData({ error: 'Please enter a valid email address', isLoading: false }, true);
+            return;
+        }
+        if (this.data.password.length < 6) {
+            await this.updateData({ error: 'Password must be at least 6 characters long', isLoading: false }, true);
+            return;
+        }
+        if (this.data.password !== this.data.confirmPassword) {
+            await this.updateData({ error: 'Passwords do not match', isLoading: false }, true);
+            return;
+        }
+
+        const auth = this.getApp().auth;
+        if (!auth) {
+            await this.updateData({ error: 'Authentication system not available', isLoading: false }, true);
+            return;
+        }
+
+        const registrationData = {
+            name: this.data.name.trim(),
+            email: this.data.email.toLowerCase().trim(),
+            password: this.data.password,
+            acceptedTerms: this.data.acceptTerms
+        };
+
+        const result = await auth.register(registrationData);
+
+        if (!result.success) {
+            await this.updateData({
+                error: result.message || 'Registration failed. Please try again.',
+                isLoading: false
+            }, true);
+        }
+        // On success, the global 'auth:register' event will trigger navigation.
     }
 
     /**
