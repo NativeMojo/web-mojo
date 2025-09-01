@@ -6,12 +6,10 @@
  * https://auth.yourcompany.com/?portal=https://app.yourcompany.com&company=Acme%20Corp&api=https://api.yourcompany.com
  */
 
-import { WebApp } from '/src/index.js';
-import { AuthApp } from '/src/auth.js';
+import AuthApp from '/src/auth/AuthApp.js';
 
 // Configuration from URL params or environment variables
 const config = {
-    passwordResetMethod: 'code',
     apiURL: new URLSearchParams(window.location.search).get('api') ||
             window.AUTH_API_URL ||
             'http://localhost:8881',
@@ -27,97 +25,43 @@ const config = {
     logoURL: new URLSearchParams(window.location.search).get('logo') ||
              window.LOGO_URL ||
              null
-
 };
 
 async function initAuthPortal() {
     try {
-        console.log('Initializing Auth Portal...', {
-            api: config.apiURL,
-            portal: config.portalURL,
-            company: config.companyName
-        });
+        console.log('Initializing Auth Portal...', config);
 
-        // Create WebApp with page-container
-        const app = WebApp.create({
+        // Create the AuthApp instance directly
+        const app = new AuthApp({
             container: '#app',
-            layout: 'custom',
-            title: `${config.companyName} - Sign In`,
-            basePath: '/'
-        });
-
-        // Configure the app's core REST service
-        app.rest.configure({
-            baseURL: config.apiURL
-        });
-
-        // Setup Authentication
-        const authApp = await AuthApp.create(app, {
-            // Routes
-            routes: {
-                login: '/login',
-                register: '/register',
-                forgot: '/forgot-password'
+            name: `${config.companyName} - Sign In`,
+            api: {
+                baseURL: config.apiURL
             },
-
-            // Navigation
-            loginRedirect: '/',
-            logoutRedirect: '/login',
-
-            // UI Configuration
+            passwordResetMethod: 'code',
+            // Auth-specific UI customizations
             ui: {
                 title: config.companyName,
                 logoUrl: config.logoURL,
-                loginIcon: 'bi bi-lightning-charge-fill',
                 messages: {
                     loginTitle: `Welcome to ${config.companyName}`,
                     loginSubtitle: 'Sign in to continue to your account',
-                    registerTitle: 'Create Account',
-                    registerSubtitle: 'Join us to get started',
-                    forgotTitle: 'Reset Password',
-                    forgotSubtitle: 'We\'ll send you reset instructions'
                 }
             },
-
-            // Features - enable all login page features
-            features: {
-                registration: true,
-                forgotPassword: true,
-                rememberMe: true
-            }
+            // Redirect to the main portal on successful login
+            loginRedirect: config.portalURL
         });
 
         // Handle successful authentication - redirect to portal
         app.events.on('auth:login', (user) => {
             console.log('User authenticated:', user?.email);
-
-            // Show brief success message
-            app.showSuccess(`Welcome back, ${user?.name || user?.email}!`);
-
-            // Redirect to external portal with token
-            setTimeout(() => {
-                redirectToPortal(user, app.auth.tokenManager.getToken());
-            }, 1500);
+            redirectToPortal(user, app.auth.tokenManager.getToken());
         });
 
         // Handle registration success - also redirect to portal
         app.events.on('auth:register', (user) => {
             console.log('User registered:', user?.email);
-
-            app.showSuccess(`Account created! Welcome, ${user?.name || user?.email}!`);
-
-            setTimeout(() => {
-                redirectToPortal(user, app.auth.tokenManager.getToken(), true);
-            }, 1500);
-        });
-
-        // Handle auth errors
-        app.events.on('auth:loginError', (error) => {
-            console.error('Login failed:', error.message);
-        });
-
-        app.events.on('auth:registerError', (error) => {
-            console.error('Registration failed:', error.message);
+            redirectToPortal(user, app.auth.tokenManager.getToken(), true);
         });
 
         // Start the application
@@ -126,33 +70,21 @@ async function initAuthPortal() {
         // Store app reference for demo navigation
         window.mojoApp = app;
 
-        // Hide initial loader
-        if (window.hideInitialLoader) {
-            window.hideInitialLoader();
-        }
+        // Hide initial loader and update demo info
+        window.hideInitialLoader?.();
+        window.updateDemoInfo?.(config);
 
-        // Update demo bar info
-        if (window.updateDemoInfo) {
-            window.updateDemoInfo(config);
+        // Show login page by default if no other route is active
+        if (!app.router.getCurrentRoute()) {
+            await app.navigate('/login');
         }
-
-        // Show login page by default
-        await app.navigate('/login');
 
         console.log('Auth Portal ready');
 
     } catch (error) {
         console.error('Auth Portal initialization failed:', error);
-
-        // Hide loader and show error
-        if (window.hideInitialLoader) {
-            window.hideInitialLoader();
-        }
-
-        // Show error in page-container
-        setTimeout(() => {
-            showErrorPage(error);
-        }, 500);
+        window.hideInitialLoader?.();
+        setTimeout(() => showErrorPage(error), 500);
     }
 }
 

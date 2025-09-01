@@ -1,8 +1,8 @@
 /**
- * AuthApp - Factory for easy authentication setup with MOJO WebApp
- * Integrates authentication seamlessly with existing WebApp infrastructure
+ * AuthApp - A specialized WebApp with built-in authentication.
+ * Extends the core WebApp to provide a seamless, out-of-the-box authentication system.
  */
-
+import WebApp from '../app/WebApp.js';
 import AuthManager from './AuthManager.js';
 import LoginPage from './pages/LoginPage.js';
 import RegisterPage from './pages/RegisterPage.js';
@@ -11,358 +11,173 @@ import ResetPasswordPage from './pages/ResetPasswordPage.js';
 import {
     auth_pages_ForgotPasswordPage_mst,
     auth_pages_LoginPage_mst,
-    auth_pages_RegisterPage_mst } from '../templates.js';
+    auth_pages_RegisterPage_mst
+} from '../templates.js';
 
-export default class AuthApp {
-    constructor(app, config = {}) {
-        this.app = app;
-        this.config = {
-            // API Configuration
-            baseURL: 'http://localhost:8881',
-
-            // Page Routes
+export default class AuthApp extends WebApp {
+    constructor(config = {}) {
+        // Merge user config with auth defaults
+        const authConfig = {
+            // Default auth routes
             routes: {
                 login: '/login',
                 register: '/register',
                 forgot: '/forgot-password',
-                reset: '/reset-password'
+                reset: '/reset-password',
+                ...config.routes
             },
-
-            // Navigation
-            loginRedirect: '/',
-            logoutRedirect: '/login',
-
-            // Features (for future plugins)
+            // Default navigation redirects
+            loginRedirect: config.loginRedirect || '/',
+            logoutRedirect: config.logoutRedirect || '/login',
+            // Default features
             features: {
                 forgotPassword: true,
                 registration: true,
-                rememberMe: true
+                rememberMe: true,
+                ...config.features
             },
-
-            // Password Reset Method ('link' or 'code')
-            passwordResetMethod: 'code',
-
-            // UI Configuration
+            // Default password reset method
+            passwordResetMethod: config.passwordResetMethod || 'code',
+            // Default UI messages and branding
             ui: {
-                title: app.title || 'My App',
-                logoUrl: '/assets/logo.png',
+                title: config.name || 'My App',
+                logoUrl: config.logoUrl || null,
                 messages: {
                     loginTitle: 'Welcome Back',
                     loginSubtitle: 'Sign in to your account',
                     registerTitle: 'Create Account',
                     registerSubtitle: 'Join us today',
                     forgotTitle: 'Reset Password',
-                    forgotSubtitle: 'We\'ll send you reset instructions'
+                    forgotSubtitle: "We'll send you reset instructions",
+                    ...(config.ui?.messages || {})
                 }
             },
-
-            // Plugin system
-            plugins: [],
-
             ...config
         };
 
-        this.authManager = null;
-        this.plugins = new Map();
-        this.initialized = false;
-    }
+        // Initialize the parent WebApp
+        super(authConfig);
 
-    /**
-     * Initialize authentication system
-     */
-    async initialize() {
-        if (this.initialized) return;
+        // Initialize and attach the AuthManager
+        this.auth = new AuthManager(this, authConfig);
+        this.authConfig = authConfig;
 
-        // Create and configure AuthManager
-        this.authManager = new AuthManager(this.app, {
-            baseURL: this.config.baseURL,
-            autoRefresh: true,
-            refreshThreshold: 5
-        });
-
-        // Register authentication pages with WebApp
+        // Setup all authentication components
         this.registerAuthPages();
-
-        // Set up authentication integration
         this.setupAuthIntegration();
-
-        // Set up route guards
         this.setupAuthGuards();
-
-        // Initialize plugins
-        await this.initializePlugins();
-
-        // Make auth available globally on app
-        this.app.auth = this.authManager;
-
-        this.initialized = true;
-
-        console.log('AuthApp initialized successfully');
     }
 
     /**
-     * Register authentication pages with WebApp
+     * Registers all the standard authentication pages with the application.
      */
     registerAuthPages() {
-        const authConfig = this.config;
+        const cfg = this.authConfig;
 
-        // Register login page with config
-        this.app.registerPage('login', class extends LoginPage {
-            constructor(options = {}) {
-                super({
-                    route: authConfig.routes.login,
-                    authConfig: authConfig,
-                    template: auth_pages_LoginPage_mst,
-                    ...options
-                });
-            }
-        }, {
-            route: this.config.routes.login,
-            title: 'Login'
+        this.registerPage('login', LoginPage, {
+            route: cfg.routes.login,
+            title: 'Login',
+            authConfig: cfg,
+            template: auth_pages_LoginPage_mst
         });
 
-        // Register registration page if enabled
-        if (this.config.features.registration) {
-            this.app.registerPage('register', class extends RegisterPage {
-                constructor(options = {}) {
-                    super({
-                        route: authConfig.routes.register,
-                        authConfig: authConfig,
-                        template: auth_pages_RegisterPage_mst,
-                        ...options
-                    });
-                }
-            }, {
-                route: this.config.routes.register,
-                title: 'Register'
+        if (cfg.features.registration) {
+            this.registerPage('register', RegisterPage, {
+                route: cfg.routes.register,
+                title: 'Register',
+                authConfig: cfg,
+                template: auth_pages_RegisterPage_mst
             });
         }
 
-        // Register forgot password page if enabled
-        if (this.config.features.forgotPassword) {
-            this.app.registerPage('forgot-password', class extends ForgotPasswordPage {
-                constructor(options = {}) {
-                    super({
-                        route: authConfig.routes.forgot,
-                        authConfig: authConfig,
-                        template: auth_pages_ForgotPasswordPage_mst,
-                        ...options
-                    });
-                }
-            }, {
-                route: this.config.routes.forgot,
-                title: 'Reset Password'
+        if (cfg.features.forgotPassword) {
+            this.registerPage('forgot-password', ForgotPasswordPage, {
+                route: cfg.routes.forgot,
+                title: 'Reset Password',
+                authConfig: cfg,
+                template: auth_pages_ForgotPasswordPage_mst
             });
 
-            // Register reset password completion page
-            this.app.registerPage('reset-password', class extends ResetPasswordPage {
-                constructor(options = {}) {
-                    super({
-                        route: authConfig.routes.reset,
-                        authConfig: authConfig,
-                        ...options
-                    });
-                }
-            }, {
-                route: this.config.routes.reset,
-                title: 'Set New Password'
+            this.registerPage('reset-password', ResetPasswordPage, {
+                route: cfg.routes.reset,
+                title: 'Set New Password',
+                authConfig: cfg
             });
         }
     }
 
     /**
-     * Set up authentication integration with WebApp
+     * Sets up global event listeners to integrate AuthManager state with the app.
      */
     setupAuthIntegration() {
-        // Listen to auth events and integrate with WebApp
-        this.authManager.app.events?.on('auth:login', (user) => {
-            // Update WebApp state
-            this.app.setState('auth', {
-                isAuthenticated: true,
-                user: user
-            });
-
-            // Show success message
-            this.app.showSuccess(`Welcome back, ${user.name || user.email}!`);
-
-            // Navigate to intended page or home
+        this.events.on('auth:login', (user) => {
+            this.showSuccess(`Welcome back, ${user.name || user.email}!`);
             this.navigateAfterLogin();
         });
 
-        this.authManager.app.events?.on('auth:logout', () => {
-            // Clear WebApp state
-            this.app.setState('auth', {
-                isAuthenticated: false,
-                user: null
-            });
-
-            // Show logout message
-            this.app.showInfo('You have been logged out');
-
-            // Navigate to login
-            this.app.navigate(this.config.logoutRedirect);
+        this.events.on('auth:logout', () => {
+            this.showInfo('You have been logged out.');
+            this.navigate(this.authConfig.logoutRedirect);
         });
 
-        this.authManager.app.events?.on('auth:register', (user) => {
-            // Update WebApp state
-            this.app.setState('auth', {
-                isAuthenticated: true,
-                user: user
-            });
-
-            // Show welcome message
-            this.app.showSuccess(`Welcome, ${user.name || user.email}! Your account has been created.`);
-
-            // Navigate to home
-            this.app.navigate(this.config.loginRedirect);
+        this.events.on('auth:register', (user) => {
+            this.showSuccess(`Welcome, ${user.name || user.email}! Your account is ready.`);
+            this.navigate(this.authConfig.loginRedirect);
         });
 
-        this.authManager.app.events?.on('auth:tokenExpired', () => {
-            this.app.showWarning('Your session has expired. Please login again.');
-            this.app.navigate(this.config.logoutRedirect);
-        });
-
-        this.authManager.app.events?.on('auth:loginError', (error) => {
-            this.app.showError(error.message || 'Login failed');
-        });
-
-        this.authManager.app.events?.on('auth:registerError', (error) => {
-            this.app.showError(error.message || 'Registration failed');
+        this.events.on('auth:tokenExpired', () => {
+            this.showWarning('Your session has expired. Please login again.');
+            this.navigate(this.authConfig.logoutRedirect);
         });
     }
 
     /**
-     * Set up route guards for protected pages
+     * Sets up route guards to protect pages.
      */
     setupAuthGuards() {
-        // Listen for route changes from WebApp's router
-        this.app.events?.on('route:changed', ({ pageName, path }) => {
-            const PageClass = this.app.getPage(pageName);
+        this.events.on('route:changed', ({ pageName, path }) => {
+            const page = this.getOrCreatePage(pageName);
+            if (!page) return;
 
-            // Check if page requires authentication
-            if (PageClass?.requiresAuth && !this.isAuthenticated()) {
-                // Store intended destination
+            const PageClass = page.constructor;
+            const isAuthenticated = this.auth.isAuthenticated;
+            const isAuthPage = ['login', 'register', 'forgot-password', 'reset-password'].includes(pageName);
+
+            // If page requires auth and user is not logged in, redirect to login
+            if (PageClass.requiresAuth && !isAuthenticated) {
                 sessionStorage.setItem('auth_redirect', path);
-
-                // Redirect to login
-                this.app.navigate(this.config.routes.login);
-                this.app.showWarning('Please login to access this page');
-
+                this.navigate(this.authConfig.routes.login);
+                this.showWarning('Please login to access this page.');
                 return;
             }
 
-            // If user is authenticated and trying to access auth pages, redirect home
-            if (this.isAuthenticated() && this.isAuthPage(pageName)) {
-                this.app.navigate(this.config.loginRedirect);
+            // If user is logged in and tries to access an auth page, redirect away
+            if (isAuthenticated && isAuthPage) {
+                this.navigate(this.authConfig.loginRedirect);
             }
         });
     }
 
     /**
-     * Initialize plugins
-     */
-    async initializePlugins() {
-        for (const plugin of this.config.plugins) {
-            try {
-                if (typeof plugin.initialize === 'function') {
-                    await plugin.initialize(this.authManager, this.app);
-                    this.plugins.set(plugin.name, plugin);
-                }
-            } catch (error) {
-                console.error(`Failed to initialize auth plugin ${plugin.name}:`, error);
-            }
-        }
-    }
-
-    /**
-     * Navigate after successful login
+     * Navigates to the intended page after a successful login.
      */
     navigateAfterLogin() {
-        // Check for stored redirect path
         const redirectPath = sessionStorage.getItem('auth_redirect');
         if (redirectPath) {
             sessionStorage.removeItem('auth_redirect');
-            this.app.navigate(redirectPath);
+            this.navigate(redirectPath);
         } else {
-            this.app.navigate(this.config.loginRedirect);
+            this.navigate(this.authConfig.loginRedirect);
         }
     }
 
     /**
-     * Check if current user is authenticated
-     */
-    isAuthenticated() {
-        return this.authManager?.isAuthenticated || false;
-    }
-
-    /**
-     * Check if page is an auth page
-     */
-    isAuthPage(pageName) {
-        return ['login', 'register', 'forgot-password'].includes(pageName);
-    }
-
-    /**
-     * Get current user
-     */
-    getUser() {
-        return this.authManager?.user || null;
-    }
-
-    /**
-     * Add authentication plugin
-     */
-    addPlugin(plugin) {
-        if (this.initialized) {
-            // Initialize immediately if AuthApp is already initialized
-            plugin.initialize(this.authManager, this.app);
-            this.plugins.set(plugin.name, plugin);
-        } else {
-            // Add to config for later initialization
-            this.config.plugins.push(plugin);
-        }
-    }
-
-    /**
-     * Get plugin by name
-     */
-    getPlugin(name) {
-        return this.plugins.get(name);
-    }
-
-    /**
-     * Protect a page class with authentication requirement
+     * Helper to protect a Page class.
+     * @param {Page} PageClass - The class to protect.
+     * @returns {Page} The protected class.
      */
     static requireAuth(PageClass) {
         PageClass.requiresAuth = true;
         return PageClass;
     }
-
-    /**
-     * Create and initialize AuthApp with WebApp
-     */
-    static async create(app, config = {}) {
-        const authApp = new AuthApp(app, config);
-        await authApp.initialize();
-        return authApp;
-    }
-}
-
-/**
- * Quick setup function for basic authentication
- * @param {WebApp} app - MOJO WebApp instance
- * @param {object} config - Configuration options
- * @returns {Promise<AuthApp>} Initialized AuthApp instance
- */
-export async function setupAuth(app, config = {}) {
-    return await AuthApp.create(app, config);
-}
-
-/**
- * Decorator function to protect pages with authentication
- * @param {Page} PageClass - Page class to protect
- * @returns {Page} Protected page class
- */
-export function requireAuth(PageClass) {
-    return AuthApp.requireAuth(PageClass);
 }

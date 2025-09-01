@@ -197,7 +197,7 @@ const app = new PortalApp({
         {
            name: "admin",
            className: 'sidebar sidebar-light',
-           header: "<div class='pt-3 text-center fs-5 text-danger'><i class='bi bi-wrench pe-2'></i> Admin</div>",
+           header: "<div class='pt-3 text-center fs-5 fw-bold'><i class='bi bi-wrench pe-2'></i> Admin</div>",
            items: [
                {
                    spacer: true
@@ -410,8 +410,16 @@ registerAdminPages(app, true);
 // Start the application
 app.start().then(() => {
     console.log('Portal app started successfully');
+    // Hide the initial loader once the app is ready
+    if (window.hideInitialLoader) {
+        window.hideInitialLoader();
+    }
 }).catch(error => {
     console.error('Failed to start app:', error);
+    // Also hide loader on error
+    if (window.hideInitialLoader) {
+        window.hideInitialLoader();
+    }
 });
 
 // Make app globally available for debugging

@@ -3,6 +3,14 @@
 ## TODO LIST
 
 - [ ] GET FLOWHUB REPORTS
+- [x] AUTH IS INCLUDING EVERYTHING
+- [ ] Support Multiple fields in a table filter
+- [ ] Status Checks
+  - [ ] cron running
+  - [ ] tasks running
+  - [ ] db connection
+  - [ ] redis connection
+  - [ ] websocket up
 - [x] We need a Wiki System
 - [x] We need Cloud Push Notifications support
 - [ ] Invite User
@@ -11,7 +19,7 @@
   - [x] We need an API to manage metrics permissions
 - [ ] User Change Password Flow
 - [ ] Admin Change Password Flow
-- [ ] User Reset Password Flow
+- [x] User Reset Password Flow
 - [ ] LOG pruning and other DB pruning
 - [x] LOG ability to ignore api prefix logging
 - [x] Firebase Notification Support

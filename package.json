@@ -1,6 +1,6 @@
 {
     "name": "web-mojo",
-    "version": "2.0.2708",
+    "version": "2.0.2712",
     "description": "MOJO - A lightweight JavaScript framework for building data-driven web applications",
     "type": "module",
     "main": "./dist/web-mojo.cjs.js",
@@ -12,6 +12,11 @@
             "require": "./dist/web-mojo.cjs.js",
             "browser": "./dist/web-mojo.umd.js",
             "types": "./dist/web-mojo.d.ts"
+        },
+        "./loader": {
+            "import": "./dist/loader.es.js",
+            "require": "./dist/loader.umd.js",
+            "browser": "./dist/loader.umd.js"
         },
         "./auth": {
             "import": "./src/auth.js",
@@ -98,9 +103,10 @@
         "build:templates": "node scripts/build-templates.js",
         "build:templates:watch": "node scripts/build-templates.js --watch",
         "build:lib": "npm run build:templates && vite build --config vite.config.lib.js",
+        "build:loader": "vite build --config vite.config.loader.js",
         "build:lib:watch": "vite build --config vite.config.lib.js --watch",
         "build:css": "cp src/css/core.css dist/core.css && cp src/css/portal.css dist/portal.css && cp src/css/table.css dist/table.css && cp src/css/auth.css dist/auth.css",
-        "build:dist": "npm run clean && npm run build:templates && npm run build:lib && npm run build:css",
+        "build:dist": "npm run clean && npm run build:templates && npm run build:lib && npm run build:loader && npm run build:css",
         "build:watch": "vite build --watch",
         "clean": "rm -rf dist",
         "preview": "vite preview",

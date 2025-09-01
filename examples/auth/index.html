@@ -19,48 +19,6 @@
         <link rel="stylesheet" href="../../src/css/auth.css" />
 
         <style>
-            /* Loading animation styles */
-            .loading-container {
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            }
-
-            .loading-content {
-                background: rgba(255, 255, 255, 0.95);
-                padding: 3rem;
-                border-radius: 1rem;
-                text-align: center;
-                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-                backdrop-filter: blur(10px);
-                max-width: 400px;
-                margin: 2rem;
-            }
-
-            .loading-spinner {
-                width: 3rem;
-                height: 3rem;
-                border-width: 0.25em;
-                color: #667eea;
-            }
-
-            .fade-out {
-                opacity: 0;
-                transition: opacity 0.3s ease-in-out;
-            }
-
-            /* Ensure page-container takes full viewport */
-            #page-container {
-                min-height: 100vh;
-            }
-
-            /* Hide scrollbar during loading */
-            body.loading {
-                overflow: hidden;
-            }
-
             /* Demo bar styling */
             .demo-bar {
                 background: rgba(255, 255, 255, 0.95);
@@ -94,7 +52,7 @@
             }
         </style>
     </head>
-    <body class="loading">
+    <body class="mojo-loader-theme-futuristic">
         <!-- Fixed Demo Bar -->
         <div id="demo-bar" class="demo-bar fixed-top" style="display: none">
             <div class="container-fluid px-3">
@@ -147,91 +105,24 @@
 
         <div id="app">
             <div id="page-container">
-                <!-- Initial loading state -->
-                <div class="loading-container" id="initial-loader">
-                    <div class="loading-content">
-                        <div class="spinner-border loading-spinner mb-3" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <h4 class="text-dark mb-2">Initializing Portal</h4>
-                        <p class="text-muted mb-3" id="loading-message">
-                            Setting up authentication system...
-                        </p>
-                        <div class="progress" style="height: 4px">
-                            <div
-                                class="progress-bar progress-bar-striped progress-bar-animated"
-                                role="progressbar"
-                                style="width: 0%"
-                                id="loading-progress"
-                            ></div>
-                        </div>
-                    </div>
-                </div>
+                <!-- The loader script will inject the loader here -->
             </div>
         </div>
 
         <!-- Bootstrap JS -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+        <!-- MOJO Loader -->
+        <script src="../../src/loader/loader.js"></script>
+
         <!-- Auth Portal -->
         <script type="module" src="./main.js"></script>
 
         <script>
-            // Loading animation and progress
-            let progress = 0;
-            const progressBar = document.getElementById("loading-progress");
-            const loadingMessage = document.getElementById("loading-message");
-
-            const messages = [
-                "Connecting to authentication service...",
-                "Loading security components...",
-                "Preparing user interface...",
-                "Finalizing setup...",
-            ];
-
-            let messageIndex = 0;
-
-            const updateProgress = () => {
-                progress += Math.random() * 12 + 3; // Random progress between 3-15%
-                if (progress > 90) progress = 90; // Don't complete until app loads
-
-                if (progressBar) {
-                    progressBar.style.width = `${progress}%`;
-                }
-
-                // Update message occasionally
-                if (Math.random() < 0.3 && messageIndex < messages.length - 1) {
-                    messageIndex++;
-                    if (loadingMessage) {
-                        loadingMessage.textContent = messages[messageIndex];
-                    }
-                }
-
-                if (progress < 90) {
-                    setTimeout(updateProgress, 250 + Math.random() * 400);
-                }
-            };
-
-            // Start progress animation after short delay
-            setTimeout(updateProgress, 200);
-
-            // Global function to hide loader (called by main.js)
+            // Global function to hide loader is now called by main.js, but we need to show the demo bar
+            const originalHideLoader = window.hideInitialLoader;
             window.hideInitialLoader = function () {
-                const loader = document.getElementById("initial-loader");
-
-                // Complete progress bar
-                if (progressBar) {
-                    progressBar.style.width = "100%";
-                    progressBar.classList.remove("progress-bar-striped", "progress-bar-animated");
-                }
-
-                if (loadingMessage) {
-                    loadingMessage.textContent = "Ready!";
-                }
-
-                // Allow scrolling
-                document.body.classList.remove("loading");
-
+                originalHideLoader();
                 // Show demo bar
                 setTimeout(() => {
                     const demoBar = document.getElementById("demo-bar");
@@ -240,18 +131,6 @@
                         document.body.classList.add("demo-mode");
                     }
                 }, 100);
-
-                // Fade out loader
-                setTimeout(() => {
-                    if (loader) {
-                        loader.classList.add("fade-out");
-                        setTimeout(() => {
-                            if (loader && loader.parentNode) {
-                                loader.parentNode.removeChild(loader);
-                            }
-                        }, 300);
-                    }
-                }, 200);
             };
 
             // Update demo bar info (called by main.js)
@@ -259,76 +138,38 @@
                 const apiUrl = document.getElementById("demo-api-url");
                 const company = document.getElementById("demo-company");
 
-                if (apiUrl) {
-                    const url = new URL(config.apiURL);
-                    apiUrl.textContent = `API: ${url.hostname}`;
+                if (apiUrl && config.apiURL) {
+                    try {
+                        const url = new URL(config.apiURL);
+                        apiUrl.textContent = `API: ${url.hostname}`;
+                    } catch (e) {
+                        console.warn("Invalid API URL for demo bar");
+                    }
                 }
 
-                if (company) {
+                if (company && config.companyName) {
                     company.textContent = `Company: ${config.companyName}`;
                 }
             };
 
             // Theme switching functionality
             document.addEventListener("click", (e) => {
-                // Theme switching
                 if (e.target.closest("[data-theme]")) {
                     const button = e.target.closest("[data-theme]");
                     const theme = button.dataset.theme;
-                    const body = document.body;
-
-                    // Remove existing theme classes
-                    body.classList.remove("mojo-auth-dark", "mojo-auth-compact");
-
-                    // Apply new theme
-                    switch (theme) {
-                        case "dark":
-                            body.classList.add("mojo-auth-dark");
-                            break;
-                        case "compact":
-                            body.classList.add("mojo-auth-compact");
-                            break;
-                        case "default":
-                        default:
-                            // Default theme, no additional classes needed
-                            break;
-                    }
-
-                    // Update active button
-                    document.querySelectorAll("[data-theme]").forEach((btn) => {
-                        btn.classList.remove("active");
-                    });
+                    document.body.classList.remove("mojo-auth-dark", "mojo-auth-compact");
+                    if (theme === "dark") document.body.classList.add("mojo-auth-dark");
+                    if (theme === "compact") document.body.classList.add("mojo-auth-compact");
+                    document
+                        .querySelectorAll("[data-theme]")
+                        .forEach((btn) => btn.classList.remove("active"));
                     button.classList.add("active");
-
-                    console.log(`Theme switched to: ${theme}`);
                 }
-
-                // Register button
                 if (e.target.closest("#demo-register-btn")) {
                     e.preventDefault();
-                    // Trigger navigation to register page
-                    if (window.AuthPortal && window.AuthPortal.navigateToRegister) {
-                        window.AuthPortal.navigateToRegister();
-                    }
+                    window.mojoApp?.navigate("/register");
                 }
             });
-
-            // Handle long loading times
-            setTimeout(() => {
-                if (document.getElementById("initial-loader")) {
-                    if (loadingMessage) {
-                        loadingMessage.textContent = "This is taking longer than usual...";
-                    }
-                }
-            }, 10000);
-
-            // Fallback - hide loader after 30 seconds
-            setTimeout(() => {
-                if (document.getElementById("initial-loader")) {
-                    console.warn("Loading timeout - forcing loader hide");
-                    window.hideInitialLoader();
-                }
-            }, 30000);
         </script>
     </body>
 </html>

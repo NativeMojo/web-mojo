@@ -11,7 +11,7 @@ import './css/auth.css';
 import { VERSION_INFO, VERSION, VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, BUILD_TIME } from './version.js';
 
 // Core auth functionality - handles all auth features internally
-export { default as AuthApp, setupAuth, requireAuth } from './auth/AuthApp.js';
+export { default as AuthApp } from './auth/AuthApp.js';
 
 // Optional passkey authentication plugin
 export { default as PasskeyPlugin } from './auth/plugins/PasskeyPlugin.js';

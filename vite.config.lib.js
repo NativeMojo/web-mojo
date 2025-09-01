@@ -42,24 +42,16 @@ function findTemplateFiles() {
 export default defineConfig({
   build: {
     lib: {
-      // Multiple entry points for the library
-      entry: {
-        index: path.resolve(__dirname, 'src/index.js'),
-        auth: path.resolve(__dirname, 'src/auth.js')
-      },
+      entry: [
+        path.resolve(__dirname, 'src/index.js'),
+        path.resolve(__dirname, 'src/auth.js')
+      ],
       name: 'MOJO',
       // Generate multiple formats
-      formats: ['es', 'umd', 'cjs'],
+      formats: ['es', 'cjs'],
       fileName: (format, entryName) => {
-        if (entryName === 'auth') {
-          if (format === 'es') return 'auth.esm.js';
-          if (format === 'cjs') return 'auth.cjs.js';
-          return 'auth.umd.js';
-        }
-        // Main entry point
-        if (format === 'es') return 'web-mojo.esm.js';
-        if (format === 'cjs') return 'web-mojo.cjs.js';
-        return 'web-mojo.umd.js';
+        // Use entry name to differentiate files
+        return `${entryName}.${format}.js`;
       }
     },
     rollupOptions: {
@@ -69,13 +61,6 @@ export default defineConfig({
         // Global variable names for UMD builds
         globals: {
           bootstrap: 'bootstrap'
-        },
-        // Different global names for different entry points
-        name: (chunkInfo) => {
-          if (chunkInfo.facadeModuleId?.includes('auth.js')) {
-            return 'MOJOAuth';
-          }
-          return 'MOJO';
         },
         // Export everything from index.js
         exports: 'named',
