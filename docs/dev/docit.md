@@ -220,6 +220,47 @@ GET /api/docit/page/{id}?graph=detail
 }
 ```
 
+**Response (html graph):**
+```http
+GET /api/docit/page/{id}?graph=html
+```
+
+```json
+{
+  "id": 1,
+  "title": "Getting Started",
+  "slug": "getting-started",
+  "order_priority": 100,
+  "metadata": {
+    "tags": ["introduction", "tutorial"],
+    "author": "Documentation Team"
+  },
+  "is_published": true,
+  "created": "2024-01-15T10:45:00Z",
+  "modified": "2024-01-15T10:45:00Z",
+  "html": "<h1>Getting Started</h1>\n<p>Welcome to our documentation...</p>"
+}
+```
+
+**Response (list graph):**
+```http
+GET /api/docit/page/{id}?graph=list
+```
+
+```json
+{
+  "id": 1,
+  "title": "Getting Started",
+  "slug": "getting-started",
+  "order_priority": 100,
+  "is_published": true,
+  "created": "2024-01-15T10:45:00Z",
+  "modified": "2024-01-15T10:45:00Z"
+}
+```
+
+
+
 ### Create Page
 
 ```http
@@ -641,3 +682,35 @@ GET /api/docit/book/asset?book=1&file__category=image
 2. **Filter results**: Use query parameters to limit results to what you need
 3. **Pagination**: Use `limit` and `offset` for large datasets
 4. **Batch operations**: Consider creating multiple resources in sequence rather than individual requests
+
+
+## UI Development Ideas
+
+
+We should build it as its own WebApp and use our framework to build it.
+
+We want it to be reaaly simple and clean.  A left Navbar that lets you navigate between "Books" and then once a book is active the pages show in the left Nav again that you can select and show the page.  A Page should use graph=html to get the rendered html, the rendered html is handled on the server and is scrubbed safe for security already.
+
+If the user has permissions for "manage_docit" then a toolbar should show up in the right corner of the page to "edit markdown", "edit page order".
+
+We should use the TOAST UI editor.
+
+
+Do not implement until we discuss and approve design.  Do not write tests or examples unless asked.
+
+Ok for the design we want the app to support either a hard code book (by slug) if hard code always stay in that book.  If not then allow the showing of a book navigation side bar.  We added apis for getting a book or page by slug...
+/api/docit/book/slug/BOOK_SLUG
+/api/docit/apge/slug/PAGE_SLUG
+
+Pages children depth is only allowed to one.  IE
+YES:
+ - Page
+   - Child Page
+   - Child Page
+   - Child Page
+NO:
+ - Page
+   - Child Page
+     - Child Page
+   - Child Page
+     - Child Page

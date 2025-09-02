@@ -16,6 +16,97 @@ class Dialog extends View {
     modal: 1055
   };
 
+  static _busyIndicator = null;
+  static _busyCounter = 0;
+  static _busyTimeout = null;
+
+  /**
+   * Shows a full-screen busy indicator.
+   * Manages a counter for nested calls, only showing one indicator.
+   * @param {object} options - Options { timeout, message }
+   */
+  static showBusy(options = {}) {
+      const { timeout = 30000, message = 'Loading...' } = options;
+
+      this._busyCounter++;
+
+      if (this._busyCounter === 1) {
+          if (this._busyTimeout) {
+              clearTimeout(this._busyTimeout);
+          }
+
+          if (!this._busyIndicator) {
+              this._busyIndicator = document.createElement('div');
+              this._busyIndicator.className = 'mojo-busy-indicator';
+              this._busyIndicator.innerHTML = `
+                  <div class="mojo-busy-spinner">
+                      <div class="spinner-border text-light" role="status">
+                          <span class="visually-hidden">Loading...</span>
+                      </div>
+                      <p class="mojo-busy-message mt-3 text-light">${message}</p>
+                  </div>
+                  <style>
+                      .mojo-busy-indicator {
+                          position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                          background-color: rgba(0, 0, 0, 0.5); z-index: 9999;
+                          display: flex; align-items: center; justify-content: center;
+                          opacity: 0; transition: opacity 0.15s linear;
+                      }
+                      .mojo-busy-indicator.show { opacity: 1; }
+                      .mojo-busy-spinner .spinner-border { width: 3rem; height: 3rem; }
+                  </style>
+              `;
+              document.body.appendChild(this._busyIndicator);
+          }
+
+          const msgElement = this._busyIndicator.querySelector('.mojo-busy-message');
+          if (msgElement) msgElement.textContent = message;
+          
+          setTimeout(() => this._busyIndicator.classList.add('show'), 10);
+
+          this._busyTimeout = setTimeout(() => {
+              console.error('Busy indicator timed out.');
+              this.hideBusy(true); // Force hide
+              this.alert({
+                  title: 'Operation Timed Out',
+                  message: 'The operation took too long. Please check your connection and try again.',
+                  type: 'danger'
+              });
+          }, timeout);
+      }
+  }
+
+  /**
+   * Hides the full-screen busy indicator.
+   * Decrements the counter and only hides when the counter reaches zero.
+   * @param {boolean} force - If true, forces the indicator to hide immediately.
+   */
+  static hideBusy(force = false) {
+      if (force) {
+          this._busyCounter = 0;
+      } else {
+          this._busyCounter--;
+      }
+
+      if (this._busyCounter <= 0) {
+          this._busyCounter = 0;
+          if (this._busyTimeout) {
+              clearTimeout(this._busyTimeout);
+              this._busyTimeout = null;
+          }
+
+          if (this._busyIndicator) {
+              this._busyIndicator.classList.remove('show');
+              setTimeout(() => {
+                  if (this._busyIndicator && this._busyCounter === 0) {
+                       this._busyIndicator.remove();
+                       this._busyIndicator = null;
+                  }
+              }, 150);
+          }
+      }
+  }
+
   constructor(options = {}) {
     // Generate unique ID if not provided
     const modalId = options.id || `modal-${Date.now()}`;

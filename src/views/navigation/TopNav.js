@@ -71,6 +71,12 @@ class TopNav extends View {
         return false;
     }
 
+    setBrand(brand, icon=null) {
+        this.config.brand = brand;
+        this.config.brandIcon = icon || this.config.brandIcon;
+        this.render();
+    }
+
     setUser(user) {
         if (!user) {
             this.replaceMenuItem('user', this.loginMenu);

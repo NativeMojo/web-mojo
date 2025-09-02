@@ -18,6 +18,7 @@
 
 import Router from '../core/Router.js';
 import EventBus from '../utils/EventBus.js';
+import Dialog from '../core/Dialog.js';
 import rest from '../core/Rest.js';
 
 class WebApp {
@@ -529,17 +530,26 @@ class WebApp {
     /**
      * Show loading indicator
      */
-    showLoading(message = 'Loading...') {
-        this.state.loading = true;
-        this.events.emit('loading:show', { message });
+    showLoading(opts = {}) {
+        if (typeof opts === 'string') {
+            opts = { message: opts };
+        }
+        Dialog.showBusy(opts);
     }
 
     /**
      * Hide loading indicator
      */
     hideLoading() {
-        this.state.loading = false;
-        this.events.emit('loading:hide');
+        Dialog.hideBusy();
+    }
+
+    async showModelForm(options = {}) {
+        return await Dialog.showModelForm(options);
+    }
+
+    async showForm(options = {}) {
+        return await Dialog.showForm(options);
     }
 
     /**

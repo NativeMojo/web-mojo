@@ -3,42 +3,326 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>DocIt Example</title>
+        <title>DocIt Portal - Documentation System</title>
+
         <!-- Bootstrap CSS -->
         <link
-            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
             rel="stylesheet"
         />
-        <!-- Bootstrap Icons -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+            rel="stylesheet"
+        />
+
+        <!-- DocIt Styles -->
+        <link href="../../src/docit/styles/docit.css" rel="stylesheet" />
+
+        <!-- TOAST UI Editor -->
         <link
             rel="stylesheet"
-            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+            href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"
         />
 
-        <!-- MOJO Framework CSS -->
-        <link href="../../src/css/core.css" rel="stylesheet" />
-        <link href="../../src/css/table.css" rel="stylesheet" />
-        <link href="../../src/css/portal.css" rel="stylesheet" />
-        <link href="../../src/css/toast.css" rel="stylesheet" />
-        <link href="../../src/css/admin.css" rel="stylesheet" />
+        <!-- Custom Example Styles -->
+        <style>
+            /* Additional custom styles for the example */
+            .docit-app {
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+                    sans-serif;
+            }
 
-        <!-- Custom App CSS -->
-        <link rel="stylesheet" href="app.css" />
+            /* Loading screen */
+            .app-loading {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+            }
+
+            .app-loading.hide {
+                display: none;
+            }
+
+            .loading-content {
+                text-align: center;
+            }
+
+            .loading-content .spinner-border {
+                width: 3rem;
+                height: 3rem;
+                margin-bottom: 1rem;
+            }
+        </style>
     </head>
     <body>
-        <div id="app">
-            <!-- App will be rendered here -->
-
-            <div class="d-flex justify-content-center align-items-center" style="height: 100vh">
+        <!-- Loading Screen -->
+        <div class="app-loading" id="app-loading">
+            <div class="loading-content">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
+                <h4>Loading Documentation...</h4>
             </div>
         </div>
 
-        <!-- Bootstrap JS Bundle -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-        <!-- Application Entry Point -->
-        <script type="module" src="app.js"></script>
+        <!-- App Container -->
+        <div id="app"></div>
+
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+        <!-- TOAST UI Editor -->
+        <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+
+        <!-- Optional: Prism.js for syntax highlighting -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css"
+            rel="stylesheet"
+        />
+        <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-javascript.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+
+        <!-- DocIt Application -->
+        <script type="module">
+            // Import DocIt application
+            import DocItApp from "../../src/docit/DocItApp.js";
+
+            // Configure REST API
+            import rest from "../../src/core/Rest.js";
+
+            // Example configuration
+            async function initializeApp() {
+                try {
+                    // Configure REST API base URL
+                    rest.configure({
+                        baseURL: "http://localhost:8881", // Adjust to your API server
+                        headers: {
+                            "Content-Type": "application/json",
+                            Accept: "application/json",
+                        },
+                    });
+
+                    // Set authentication token if available
+                    const token = localStorage.getItem("auth_token");
+                    if (token) {
+                        rest.setAuthToken(token);
+                        console.log("Auth token found and set");
+                    } else {
+                        console.log("No auth token found - running in anonymous mode");
+                    }
+
+                    // ===================================================
+                    // EXAMPLE 1: Multi-Book Mode (Documentation Portal)
+                    // ===================================================
+                    const app = new DocItApp({
+                        container: "#app",
+                        title: "Documentation Portal",
+                        theme: "light", // 'light' or 'dark'
+
+                        // Multi-book mode - shows book navigation
+                        showBookNav: true,
+
+                        // Set default route to docs
+                        defaultRoute: "docs",
+
+                        // API configuration
+                        api: {
+                            baseURL: "http://localhost:8881",
+                        },
+
+                        // Sidebar configuration
+                        sidebar: {
+                            showSearch: true,
+                            defaultCollapsed: false,
+                        },
+
+                        // Edit permissions (optional)
+                        permissions: {
+                            edit: ["manage_docit", "admin"],
+                        },
+                    });
+
+                    // ===================================================
+                    // EXAMPLE 2: Single-Book Mode (Locked to one book)
+                    // ===================================================
+                    // const app = new DocItApp({
+                    //     container: '#app',
+                    //     title: 'User Guide',
+                    //     theme: 'light',
+                    //
+                    //     // Single-book mode - locked to specific book
+                    //     bookSlug: 'user-guide',  // Lock to this book
+                    //     showBookNav: false,      // Hide book navigation
+                    //     defaultRoute: 'docs',    // Default to docs page
+                    //
+                    //     // API configuration
+                    //     api: {
+                    //         baseURL: 'http://localhost:8881'
+                    //     },
+                    //
+                    //     // Sidebar configuration
+                    //     sidebar: {
+                    //         showSearch: true,
+                    //         defaultCollapsed: false
+                    //     }
+                    // });
+
+                    // ===================================================
+                    // EXAMPLE 3: Simplified Setup (Auto-detects mode)
+                    // ===================================================
+                    // const app = DocItApp.create({
+                    //     container: '#app'
+                    // });
+
+                    // ===================================================
+                    // EXAMPLE 4: Single Book with Custom Configuration
+                    // ===================================================
+                    // const app = DocItApp.createForBook('api-docs', {
+                    //     container: '#app',
+                    //     title: 'API Documentation',
+                    //     theme: 'dark',
+                    //     sidebar: {
+                    //         showSearch: false
+                    //     }
+                    // });
+
+                    // Start the application
+                    await app.start();
+
+                    // Hide loading screen
+                    document.getElementById("app-loading").classList.add("hide");
+
+                    // Handle authentication events
+                    app.events.on("auth:unauthorized", () => {
+                        console.log("User is not authorized - running in anonymous mode");
+                        // You could redirect to login or show a login modal here
+                        // window.location.href = '/login';
+                    });
+
+                    app.events.on("auth:expired", () => {
+                        console.log("Authentication token has expired");
+                        alert("Your session has expired. Please log in again.");
+                        // Clear token and reload
+                        localStorage.removeItem("auth_token");
+                        window.location.reload();
+                    });
+
+                    app.events.on("auth:expiring", () => {
+                        console.log("Authentication token expiring soon");
+                        // Could show a warning or auto-refresh the token
+                    });
+
+                    app.events.on("auth:logout", () => {
+                        console.log("User logged out");
+                        localStorage.removeItem("auth_token");
+                        // Reload to reset the app
+                        window.location.reload();
+                    });
+
+                    app.events.on("user:changed", (data) => {
+                        if (data.user) {
+                            console.log(
+                                "User authenticated:",
+                                data.user.get("display_name") || data.user.get("username"),
+                            );
+                        }
+                    });
+
+                    // Optional: Handle navigation events
+                    app.events.on("docit:book-changed", (data) => {
+                        console.log("Book changed:", data.book.get("title"));
+                    });
+
+                    app.events.on("page:show", (data) => {
+                        console.log("Page shown:", data.page);
+                    });
+
+                    // Optional: Add keyboard shortcuts
+                    document.addEventListener("keydown", (e) => {
+                        // Ctrl/Cmd + K for search
+                        if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+                            e.preventDefault();
+                            const searchInput = document.querySelector(".docit-nav-search input");
+                            if (searchInput) {
+                                searchInput.focus();
+                            }
+                        }
+
+                        // Ctrl/Cmd + E for edit (if on a page)
+                        if ((e.ctrlKey || e.metaKey) && e.key === "e") {
+                            e.preventDefault();
+                            const editBtn = document.querySelector('[data-action="edit-page"]');
+                            if (editBtn) {
+                                editBtn.click();
+                            }
+                        }
+                    });
+
+                    // Make app available globally for debugging
+                    window.docitApp = app;
+                    console.log("DocIt Portal initialized successfully!");
+                    console.log("App instance available as window.docitApp");
+
+                    // Check authentication status
+                    if (app.activeUser) {
+                        console.log(
+                            "Logged in as:",
+                            app.activeUser.get("display_name") || app.activeUser.get("username"),
+                        );
+                    } else {
+                        console.log("Running in anonymous mode (no authentication)");
+                    }
+
+                    // Example: How to manually set a token (for testing)
+                    window.setAuthToken = (token) => {
+                        localStorage.setItem("auth_token", token);
+                        console.log("Token saved. Reloading app...");
+                        window.location.reload();
+                    };
+
+                    // Example: How to clear authentication
+                    window.logout = () => {
+                        if (app.logout) {
+                            app.logout();
+                        }
+                    };
+
+                    console.log('Tip: Use window.setAuthToken("your-token") to authenticate');
+                    console.log("Tip: Use window.logout() to clear authentication");
+                    console.log("Navigation examples:");
+                    console.log('  app.navigate("/docs", { book: "api-docs", slug: "intro" })');
+                    console.log('  app.navigate("/edit", { id: 123 })');
+                } catch (error) {
+                    console.error("Failed to initialize DocIt Portal:", error);
+
+                    // Show error message
+                    document.getElementById("app-loading").innerHTML = `
+                    <div class="alert alert-danger" role="alert">
+                        <h4 class="alert-heading">Failed to Initialize</h4>
+                        <p>${error.message}</p>
+                        <hr>
+                        <p class="mb-0">Please check your configuration and API server.</p>
+                    </div>
+                `;
+                }
+            }
+
+            // Initialize when DOM is ready
+            if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", initializeApp);
+            } else {
+                initializeApp();
+            }
+        </script>
     </body>
 </html>

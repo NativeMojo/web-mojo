@@ -70,22 +70,22 @@ const app = new WebApp({
   version: '1.0.0',             // Application version
   debug: true,                  // Enable debug mode
   container: '#app',            // Main container selector
-  
+
   // Layout Configuration
   layout: 'portal',             // Layout type: 'portal', 'single', 'custom', 'none'
   pageContainer: '#page-container', // Page content container
   basePath: '/',                // Base path for routing
-  
+
   // Router Configuration
   routerMode: 'params',         // 'params', 'history'
   defaultRoute: 'home',         // Default route
-  
+
   // API Configuration
   api: {
     baseUrl: 'https://api.example.com',
     timeout: 30000
   },
-  
+
   // Portal Layout Configuration (when layout: 'portal')
   sidebar: {
     className: 'sidebar sidebar-light',
@@ -103,7 +103,7 @@ const app = new WebApp({
       }
     ]
   },
-  
+
   // Topbar Configuration (when layout: 'portal')
   topbar: {
     brand: 'My App',
@@ -158,7 +158,7 @@ Gets an existing page instance or creates a new one.
 const page = await app.getOrCreatePage('users', { id: '123' }, { tab: 'profile' });
 ```
 
-##### `async showPage(name, params, query, options)`
+##### `async showPage(name, query, params, options)`
 Navigates to and displays a page.
 
 ```javascript
@@ -341,7 +341,7 @@ const app = new WebApp({
   container: '#app',
   layout: 'portal',
   pageContainer: '#page-container',
-  
+
   // Sidebar configuration
   sidebar: {
     className: 'sidebar sidebar-light',
@@ -376,7 +376,7 @@ const app = new WebApp({
     ],
     footer: '<div class="text-center text-muted small">v1.0.0</div>'
   },
-  
+
   // Topbar configuration
   topbar: {
     brand: 'MOJO Portal',
@@ -553,16 +553,16 @@ Create only one WebApp instance per application:
 
 ```javascript
 // Good - using create factory method
-const app = WebApp.create({ 
+const app = WebApp.create({
   container: '#app',
-  layout: 'portal' 
+  layout: 'portal'
 });
 export default app;
 
 // Also good - direct instantiation
-const app = new WebApp({ 
+const app = new WebApp({
   container: '#app',
-  layout: 'portal' 
+  layout: 'portal'
 });
 
 // Bad - multiple instances

@@ -72,6 +72,7 @@ class DataFormatter {
     this.register('badge', this.badge.bind(this));
     this.register('status', this.status.bind(this));
     this.register('boolean', this.boolean.bind(this));
+    this.register('bool', this.boolean.bind(this));
     this.register('yesno', (v) => this.boolean(v, 'Yes', 'No'));
     this.register('yesnoicon', this.yesnoicon.bind(this));
     this.register('icon', this.icon.bind(this));

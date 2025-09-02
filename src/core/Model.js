@@ -137,12 +137,6 @@ class Model {
    * @returns {Promise} Promise that resolves with REST response
    */
   async fetch(options = {}) {
-    if (!this.id && !options.id) {
-      const error = 'Cannot fetch model without ID';
-      this.showError(error);
-      throw new Error(error);
-    }
-
     const id = options.id || this.id;
     const url = this.buildUrl(id);
     const requestKey = JSON.stringify({ id, url, params: options.params });
@@ -238,6 +232,10 @@ class Model {
    */
   async _performFetch(url, options, abortController) {
     try {
+      if (options.graph && (!options.params || !options.params.graph)) {
+          if (!options.params) options.params = {};
+          options.params.graph = options.graph;
+      }
       const response = await this.rest.GET(url, options.params, {
         signal: abortController.signal
       });
@@ -407,6 +405,12 @@ class Model {
    * @returns {string} Complete API URL
    */
   buildUrl(id = null) {
+    if (!this.id && !id) {
+        const error = 'Cannot fetch model without ID';
+        this.showError(error);
+        throw new Error(error);
+    }
+
     let url = this.endpoint;
     if (id) {
       url = url.endsWith('/') ? `${url}${id}` : `${url}/${id}`;
