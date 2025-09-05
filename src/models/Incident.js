@@ -5,6 +5,16 @@ import Model from '../core/Model.js';
 /* =========================
  * IncidentEvent
  * ========================= */
+ class IncidentStats extends Model {
+     constructor(data = {}) {
+         super(data, {
+             endpoint: '/api/incident/stats',
+             requiresId: false
+         });
+     }
+ }
+
+
 class IncidentEvent extends Model {
     constructor(data = {}) {
         super(data, {
@@ -278,4 +288,4 @@ class RuleList extends Collection {
     }
 }
 
-export { RuleSet, RuleSetList, Rule, RuleList };
+export { RuleSet, RuleSetList, Rule, RuleList, IncidentStats };

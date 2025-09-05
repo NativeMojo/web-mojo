@@ -400,4 +400,16 @@ class JobEventList extends Collection {
     }
 }
 
-export { Job, JobList, JobForms, JobLog, JobLogList, JobEvent, JobEventList };
+class JobsEngineStats extends Model {
+    constructor(data = {}) {
+        super(data, {
+            endpoint: '/api/jobs/stats',
+            requiresId: false
+        });
+    }
+}
+
+export {
+    Job, JobList, JobForms,
+    JobLog, JobLogList, JobEvent,
+    JobEventList, JobsEngineStats };

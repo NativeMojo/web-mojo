@@ -4,7 +4,7 @@
  */
 
 import TablePage from '../pages/TablePage.js';
-import { MailboxList, MailboxForms } from '../models/Email.js';
+import { MailboxList, MailboxForms, Mailbox } from '../models/Email.js';
 import Dialog from '../core/Dialog.js';
 
 class EmailMailboxTablePage extends TablePage {
@@ -63,21 +63,58 @@ class EmailMailboxTablePage extends TablePage {
     }
 
     async onActionSendEmail(event, element) {
+        const item = this.collection.get(element.dataset.id);
         // Implement send email action
         const data = await Dialog.showForm({
             title: 'Send Email',
             fields: [
                 { name: 'to', label: 'To', type: 'email', required: true },
                 { name: 'subject', label: 'Subject', type: 'text', required: true },
-                { name: 'body', label: 'Body', type: 'textarea', required: true }
+                { name: 'body_html', label: 'Body', type: 'textarea', required: true }
             ]
         });
-
-        console.log(data);
+        data.from_email = item.get('email');
+        const result = await Mailbox.sendEmail(data);
+        if (result.success) {
+            this.getApp().toast.success('Email sent successfully');
+        } else {
+            let msg = "Failed to send email";
+            if (result.data.details) {
+                msg = result.data.details;
+            } else if (result.data.error) {
+                msg = result.data.error;
+            }
+            console.log(result);
+            this.getApp().toast.error(msg);
+        }
     }
 
     async onActionSendTemplateEmail(event, element) {
-        // Implement send template email action
+        const item = this.collection.get(element.dataset.id);
+        // Implement send email action
+        const data = await Dialog.showForm({
+            title: 'Send Email',
+            fields: [
+                { name: 'to', label: 'To', type: 'email', required: true },
+                { name: 'subject', label: 'Subject', type: 'text', required: true },
+                { name: 'template_name', label: 'Template', type: 'text', required: true },
+                { name: 'template_context', label: 'Context', type: 'textarea', required: true }
+            ]
+        });
+        data.from_email = item.get('email');
+        const result = await Mailbox.sendEmail(data);
+        if (result.success) {
+            this.getApp().toast.success('Email sent successfully');
+        } else {
+            let msg = "Failed to send email";
+            if (result.data.details) {
+                msg = result.data.details;
+            } else if (result.data.error) {
+                msg = result.data.error;
+            }
+            console.log(result);
+            this.getApp().toast.error(msg);
+        }
     }
 }
 

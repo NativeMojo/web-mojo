@@ -78,6 +78,11 @@ class EmailDomainTablePage extends TablePage {
 
       // Context menu configuration
       contextMenu: [
+          {
+            icon: 'bi-shield-check',
+            action: 'edit-aws-creds',
+            label: 'Edit AWS Credentials'
+          },
         {
           icon: 'bi-rocket-takeoff',
           action: 'onboard',
@@ -105,10 +110,20 @@ class EmailDomainTablePage extends TablePage {
     });
   }
 
+    async onActionEditAwsCreds(event, element) {
+        const item = this.collection.get(element.dataset.id);
+        const result = await Dialog.showModelForm({
+                model: item,
+                formConfig: EmailDomainForms.credentials,
+            }
+        );
+        return true;
+    }
+
   async onActionOnboard(event, element) {
     const item = this.collection.get(element.dataset.id);
     const model = new EmailDomain({ id: item.id });
-    
+
     const formData = await Dialog.showForm(EmailDomainForms.onboard);
     if (!formData) return;
 
@@ -132,7 +147,7 @@ class EmailDomainTablePage extends TablePage {
   async onActionAudit(event, element) {
     const item = this.collection.get(element.dataset.id);
     const model = new EmailDomain({ id: item.id });
-    
+
     try {
       const resp = await model.audit();
       if (!resp.success) {
@@ -165,7 +180,7 @@ class EmailDomainTablePage extends TablePage {
   async onActionReconcile(event, element) {
     const item = this.collection.get(element.dataset.id);
     const model = new EmailDomain({ id: item.id });
-    
+
     try {
       const resp = await model.reconcile();
       if (!resp.success) {

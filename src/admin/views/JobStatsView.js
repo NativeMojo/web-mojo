@@ -122,18 +122,14 @@ export default class JobStatsView extends View {
         `;
     }
 
-    async onInit() {
-        await this.loadStats();
+    _onModelChange() {
+      this.loadStats();
+      if (this.isMounted()) {
+          this.render();
+      }
     }
 
     async loadStats() {
-        try {
-            const response = await Job.getStats();
-            if (response?.status) {
-                this.stats = response.data.totals;
-            }
-        } catch (error) {
-            console.error('Failed to load job stats:', error);
-        }
+        this.stats = this.model.attributes.totals;
     }
 }

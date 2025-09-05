@@ -255,17 +255,22 @@ class JobDetailsView extends View {
         });
         this.addChild(jobMenu);
 
+        await this.model.fetch({ params: { graph: "detail" } });
         // Start auto-refresh if job is active
         // this.startAutoRefresh();
+    }
+
+    async onBeforeRender() {
+        await this.prepareJobData();
     }
 
     async prepareJobData() {
         if (!this.model) return;
 
         // Status styling
-        this.model.statusBadgeClass = this.model.getStatusBadgeClass ? this.model.getStatusBadgeClass() : 'bg-secondary';
-        this.model.statusIcon = this.model.getStatusIcon ? this.model.getStatusIcon() : 'bi-question-circle';
-        this.model.formattedDuration = this.model.getFormattedDuration ? this.model.getFormattedDuration() : 'N/A';
+        this.model._.statusBadgeClass = this.model.getStatusBadgeClass ? this.model.getStatusBadgeClass() : 'bg-secondary';
+        this.model._.statusIcon = this.model.getStatusIcon ? this.model.getStatusIcon() : 'bi-question-circle';
+        this.model._.formattedDuration = this.model.getFormattedDuration ? this.model.getFormattedDuration() : 'N/A';
     }
 
     async loadJobDetails() {
@@ -281,15 +286,8 @@ class JobDetailsView extends View {
         }
     }
 
-    async onBeforeRender() {
-        if (this.model){
-            await this.model.fetch({ params: { graph: "detail" } });
-        }
-    }
-
     async onActionRefreshJob() {
-        await this.loadJobDetails();
-        await this.render();
+        await this.model.fetch({ params: { graph: "detail" } });
     }
 
     async onActionCancelJob() {

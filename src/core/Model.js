@@ -142,7 +142,7 @@ class Model {
    */
   async fetch(options = {}) {
     const id = options.id || this.getId();
-    if (!id) {
+    if (!id && this.options.requiresId !== false) {
       throw new Error('Model: ID is required for fetching');
     }
     const url = this.buildUrl(id);

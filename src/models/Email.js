@@ -1,5 +1,7 @@
 import Collection from '../core/Collection.js';
 import Model from '../core/Model.js';
+import rest from '../core/Rest.js';
+
 
 /**
  * EmailDomain - SES/SNS/S3-backed email domain model
@@ -202,10 +204,26 @@ const EmailDomainForms = {
       {
         name: 'region',
         type: 'text',
-        label: 'AWS Region',
+        label: 'AWS Region (optional)',
         placeholder: 'us-east-1',
         columns: 12,
         help: 'Optional. Defaults to project AWS_REGION if omitted.'
+      },
+      {
+        name: 'aws_key',
+        type: 'text',
+        label: 'AWS Key (optional)',
+        placeholder: 'enter your AWS Key with SES permissions',
+        columns: 12,
+        help: 'Optional, AWS Key with SES permissions'
+      },
+      {
+        name: 'aws_secret',
+        type: 'text',
+        label: 'AWS Secret (optional)',
+        placeholder: 'enter your AWS Secret with SES permissions',
+        columns: 12,
+        help: 'Optional, AWS Secret with SES permissions'
       },
       {
         name: 'receiving_enabled',
@@ -213,33 +231,6 @@ const EmailDomainForms = {
         label: 'Enable Inbound Receiving',
         columns: 12,
         help: 'Catch-all SES receipt rule to S3 + SNS; routing is done in-app.'
-      },
-      {
-        name: 's3_inbound_bucket',
-        type: 'text',
-        label: 'Inbound S3 Bucket',
-        placeholder: 'my-inbound-bucket',
-        columns: 12,
-        help: 'Required if receiving is enabled.'
-      },
-      {
-        name: 's3_inbound_prefix',
-        type: 'text',
-        label: 'Inbound S3 Prefix',
-        placeholder: 'inbound/example.com/',
-        columns: 12,
-        help: 'Optional S3 key prefix for inbound messages.'
-      },
-      {
-        name: 'dns_mode',
-        type: 'select',
-        label: 'DNS Mode',
-        options: [
-          { value: 'manual', text: 'Manual (show records)' },
-          { value: 'godaddy', text: 'GoDaddy (apply via API)' }
-        ],
-        value: 'manual',
-        columns: 12
       }
     ]
   },
@@ -294,8 +285,51 @@ const EmailDomainForms = {
         ],
         columns: 12
       }
-    ]
+    ],
   },
+
+  credentials: {
+    fields: [
+        {
+            name: 'region',
+            type: 'select',
+            label: 'AWS Region (optional)',
+            placeholder: 'us-east-1',
+            options: [
+                { value: 'us-east-1', text: 'US East (N. Virginia)' },
+                { value: 'us-east-2', text: 'US East (Ohio)' },
+                { value: 'us-west-1', text: 'US West (N. California)' },
+                { value: 'us-west-2', text: 'US West (Oregon)' },
+                { value: 'ca-central-1', text: 'Canada (Central)' },
+                { value: 'eu-west-1', text: 'Europe (Ireland)' },
+                { value: 'eu-west-2', text: 'Europe (London)' },
+                { value: 'eu-west-3', text: 'Europe (Paris)' },
+                { value: 'eu-central-1', text: 'Europe (Frankfurt)' },
+                { value: 'eu-north-1', text: 'Europe (Stockholm)' },
+                { value: 'eu-south-1', text: 'Europe (Milan)' },
+                { value: 'ap-southeast-2', text: 'Asia Pacific (Sydney)' }
+            ],
+            columns: 12,
+            help: 'Optional. Defaults to project AWS_REGION if omitted.'
+        },
+        {
+            name: 'aws_key',
+            type: 'text',
+            label: 'AWS Key (optional)',
+            placeholder: 'enter your AWS Key with SES permissions',
+            columns: 12,
+            help: 'Optional, AWS Key with SES permissions'
+        },
+        {
+            name: 'aws_secret',
+            type: 'text',
+            label: 'AWS Secret (optional)',
+            placeholder: 'enter your AWS Secret with SES permissions',
+            columns: 12,
+            help: 'Optional, AWS Secret with SES permissions'
+        },
+    ]
+},
 
   onboard: {
     title: 'Onboard Domain',
@@ -428,13 +462,17 @@ const EmailDomainForms = {
  *  - async_handler: "package.module:function" for task dispatch on inbound
  */
 class Mailbox extends Model {
-  constructor(data = {}, options = {}) {
-    super(data, {
-      endpoint: '/api/aws/email/mailbox',
-      ...options
-    });
-  }
+    constructor(data = {}, options = {}) {
+        super(data, {
+            endpoint: '/api/aws/email/mailbox',
+            ...options
+        });
+    }
 }
+
+Mailbox.sendEmail = async function(data) {
+    return await rest.POST('/api/aws/email/send', data);
+};
 
 /**
  * MailboxList - Collection of Mailboxes

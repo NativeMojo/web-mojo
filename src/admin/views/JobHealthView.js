@@ -77,42 +77,38 @@ export default class JobHealthView extends View {
         `;
     }
 
-    async onInit() {
-        await this.loadHealth();
+    _onModelChange() {
+      this.loadHealth();
+      if (this.isMounted()) {
+          this.render();
+      }
     }
 
     async loadHealth() {
-        try {
-            const response = await Job.getStats();
-            if (response?.status) {
-                const data = response.data;
-
-                // Determine overall health status
-                let overall_status = 'healthy';
-                if (data.totals.runners_active === 0) {
-                    overall_status = 'critical';
-                } else if (!data.scheduler.active) {
-                    overall_status = 'warning';
-                }
-
-                this.health = {
-                    overall_status,
-                    channels: data.channels,
-                    runners: {
-                        active: data.totals.runners_active,
-                        total: data.runners.length
-                    },
-                    totals: data.totals,
-                    scheduler: data.scheduler
-                };
-
-                this.healthStatusClass = this.getHealthStatusClass(this.health.overall_status);
-                this.setupChannelDisplay();
-                this.setupSchedulerDisplay();
-            }
-        } catch (error) {
-            console.error('Failed to load job health:', error);
+        if (!this.model._.totals) return;
+        const data = this.model.attributes
+        // Determine overall health status
+        let overall_status = 'healthy';
+        if (data.totals.runners_active === 0) {
+            overall_status = 'critical';
+        } else if (!data.scheduler.active) {
+            overall_status = 'warning';
         }
+        this.health = {
+            overall_status,
+            channels: data.channels,
+            runners: {
+                active: data.totals.runners_active,
+                total: data.runners.length
+            },
+            totals: data.totals,
+            scheduler: data.scheduler
+        };
+
+        this.healthStatusClass = this.getHealthStatusClass(this.health.overall_status);
+        this.setupChannelDisplay();
+        this.setupSchedulerDisplay();
+
     }
 
     setupChannelDisplay() {
@@ -120,7 +116,7 @@ export default class JobHealthView extends View {
 
         this.health.channelsArray = Object.values(this.health.channels).map(channel => {
             let channelStatus = 'healthy';
-            
+
             // Determine status based on queue backlog and runner availability
             const totalJobs = (channel.queued_count || 0) + (channel.inflight_count || 0);
             if (totalJobs > 50) {
@@ -194,8 +190,7 @@ export default class JobHealthView extends View {
     async onActionRefreshHealth(event, element) {
         try {
             element.disabled = true;
-            await this.loadHealth();
-            await this.render();
+            await this.model.fetch();
         } catch (error) {
             console.error('Failed to refresh health:', error);
         } finally {

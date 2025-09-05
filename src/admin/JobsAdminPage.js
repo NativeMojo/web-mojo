@@ -6,7 +6,7 @@
 import Page from '../core/Page.js';
 import TabView from '../views/navigation/TabView.js';
 import Dialog from '../core/Dialog.js';
-import { Job } from '../models/Job.js';
+import { Job, JobsEngineStats } from '../models/Job.js';
 import { JobRunner, JobRunnerForms } from '../models/JobRunner.js';
 
 // Import component views
@@ -106,14 +106,18 @@ export default class JobsAdminPage extends Page {
     }
 
     async onInit() {
+
+        this.jobStats = new JobsEngineStats();
         // Create child views
         this.jobStatsView = new JobStatsView({
-            containerId: 'job-stats'
+            containerId: 'job-stats',
+            model: this.jobStats
         });
         this.addChild(this.jobStatsView);
 
         this.jobHealthView = new JobHealthView({
-            containerId: 'job-health'
+            containerId: 'job-health',
+            model: this.jobStats
         });
         this.addChild(this.jobHealthView);
 
@@ -128,8 +132,8 @@ export default class JobsAdminPage extends Page {
         });
         this.addChild(this.jobTablesView);
 
-        // Start auto-refresh
-        this.startAutoRefresh();
+        await this.jobStats.fetch();
+
     }
 
     // Auto-refresh management
@@ -148,10 +152,7 @@ export default class JobsAdminPage extends Page {
     async refreshData() {
         try {
             // Refresh stats and health
-            await Promise.allSettled([
-                this.jobStatsView?.loadStats(),
-                this.jobHealthView?.loadHealth()
-            ]);
+            await this.jobStats.fetch();
 
             // Refresh active table
             const activeTab = this.jobTablesView?.getActiveTab();
@@ -397,8 +398,8 @@ export default class JobsAdminPage extends Page {
 
             const result = await actionFn();
             if (result.success && result.data?.status) {
-                const message = typeof successMessage === 'function' 
-                    ? successMessage(result) 
+                const message = typeof successMessage === 'function'
+                    ? successMessage(result)
                     : successMessage;
                 this.getApp().toast.success(message);
                 await this.refreshData();
@@ -415,12 +416,16 @@ export default class JobsAdminPage extends Page {
         }
     }
 
-    async onDestroy() {
+    async onEnter() {
+        // Start auto-refresh
+        this.startAutoRefresh();
+    }
+
+    async onExit() {
         if (this.autoRefreshInterval) {
             clearInterval(this.autoRefreshInterval);
             this.autoRefreshInterval = null;
         }
-        await super.onDestroy();
     }
 
     // Public API

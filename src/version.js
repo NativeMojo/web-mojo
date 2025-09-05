@@ -3,10 +3,10 @@
  * Auto-generated on 2025-09-04T18:48:36.268Z
  */
 
-export const VERSION = '2.0.3001';
+export const VERSION = '2.0.3067';
 export const VERSION_MAJOR = 2;
 export const VERSION_MINOR = 0;
-export const VERSION_REVISION = 3001;
+export const VERSION_REVISION = 3067;
 export const BUILD_TIME = '2025-09-04T18:48:36.268Z';
 
 // Version object for easy access
