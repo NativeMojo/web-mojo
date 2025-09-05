@@ -49,18 +49,16 @@ import Model from '../core/Model.js';
 import rest from '../core/Rest.js';
 
 class Collection {
-  constructor(ModelClass, options = {}, data = null) {
+  constructor(options = {}, data = null) {
     // Handle case where first argument is data instead of ModelClass
-    if (Array.isArray(ModelClass)) {
+    if (Array.isArray(options)) {
         // First argument is an array, treat it as data
-        data = ModelClass;
-        ModelClass = Model;
-    } else if (ModelClass && typeof ModelClass === 'object' && !ModelClass.prototype) {
-        // First argument appears to be data/options, not a class
-        options = ModelClass;
-        ModelClass = Model;
+        data = options;
+        options = data || {};
+    } else {
+        data = data || options.data || [];
     }
-    this.ModelClass = ModelClass || Model;
+    this.ModelClass = options.ModelClass || Model;
     this.models = [];
     this.loading = false;
     this.errors = {};
@@ -78,9 +76,9 @@ class Collection {
     };
 
     // Set up endpoint
-    this.endpoint = options.endpoint || ModelClass.endpoint || '';
+    this.endpoint = options.endpoint || this.ModelClass.endpoint || '';
     if (!this.endpoint) {
-        let tmp = new ModelClass();
+        let tmp = new this.ModelClass();
         this.endpoint = tmp.endpoint;
     }
 

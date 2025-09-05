@@ -18,7 +18,8 @@ class S3Bucket extends Model {
  * ========================= */
 class S3BucketList extends Collection {
     constructor(options = {}) {
-        super(S3Bucket, {
+        super({
+            ModelClass: S3Bucket,
             endpoint: '/api/aws/s3/bucket',
             size: 10,
             ...options,

@@ -25,7 +25,8 @@ class Group extends Model {
  */
 class GroupList extends Collection {
     constructor(options = {}) {
-        super(Group, {
+        super({
+            ModelClass: Group,
             endpoint: '/api/group',
             size: 10,
             ...options

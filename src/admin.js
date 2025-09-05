@@ -14,7 +14,7 @@ import FileTablePage from './admin/FileTablePage.js';
 import IncidentTablePage from './admin/IncidentTablePage.js';
 import LogTablePage from './admin/LogTablePage.js';
 import AdminDashboardPage from './admin/AdminDashboardPage.js';
-import TaskManagementPage from './admin/TaskManagementPage.js';
+import JobsAdminPage from './admin/JobsAdminPage.js';
 import EmailDomainTablePage from './admin/EmailDomainTablePage.js';
 import EmailMailboxTablePage from './admin/EmailMailboxTablePage.js';
 import SentMessageTablePage from './admin/SentMessageTablePage.js';
@@ -45,7 +45,7 @@ export {
     IncidentTablePage,
     LogTablePage,
     AdminDashboardPage,
-    TaskManagementPage,
+    JobsAdminPage,
     EmailDomainTablePage,
     EmailMailboxTablePage,
     SentMessageTablePage,
@@ -74,7 +74,7 @@ export {
 export function registerAdminPages(app, addToMenu = true) {
     // Register all admin pages with consistent naming
     app.registerPage('admin/dashboard', AdminDashboardPage, {permissions: ["view_admin"]});
-    app.registerPage('admin/tasks', TaskManagementPage, {permissions: ["view_admin"]});
+    app.registerPage('admin/jobs', JobsAdminPage, {permissions: ["view_jobs", "manage_jobs"]});
     app.registerPage('admin/users', UserTablePage, {permissions: ["manage_users"]});
     app.registerPage('admin/groups', GroupTablePage, {permissions: ["manage_groups"]});
     app.registerPage('admin/members', MemberTablePage, {permissions: ["manage_members"]});
@@ -114,10 +114,10 @@ export function registerAdminPages(app, addToMenu = true) {
                     permissions: ["view_admin"]
                 },
                 {
-                    text: 'Task Management',
-                    route: '?page=admin/tasks',
-                    icon: 'bi-cpu',
-                    permissions: ["view_admin"]
+                    text: 'Jobs Management',
+                    route: '?page=admin/jobs',
+                    icon: 'bi-gear-wide-connected',
+                    permissions: ["view_jobs", "manage_jobs"]
                 },
                 {
                     text: 'Users',

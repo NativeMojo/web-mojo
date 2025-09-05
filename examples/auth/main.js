@@ -12,7 +12,7 @@ import AuthApp from '/src/auth/AuthApp.js';
 const config = {
     apiURL: new URLSearchParams(window.location.search).get('api') ||
             window.AUTH_API_URL ||
-            'http://localhost:8881',
+            'http://localhost:8882',
 
     portalURL: new URLSearchParams(window.location.search).get('portal') ||
                window.PORTAL_URL ||

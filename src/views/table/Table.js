@@ -26,6 +26,7 @@ import View from '../../core/View.js';
 import Collection from '../../core/Collection.js';
 import Dialog from '../../core/Dialog.js';
 import FormView from '../../forms/FormView.js';
+import Model from '../../core/Model.js';
 
 
 class Table extends View {
@@ -55,10 +56,6 @@ class Table extends View {
 
     // Internal state
     this.collection = options.collection || null;
-
-    if (options.data && !this.collection && !this.Collection) {
-        this.collection = new Collection(options.data);
-    }
 
     this.loading = false;
 
@@ -415,7 +412,7 @@ class Table extends View {
   initCollection() {
     // Only create collection if we don't already have one (preserve preloaded collections)
     if (this.Collection && !this.collection) {
-      this.collection = new this.Collection(this.Collection.Model || Object, {
+      this.collection = new this.Collection({
         size: this.options.size || 10,
         params: {
           start: 0,
@@ -2612,6 +2609,7 @@ class Table extends View {
         return;
       }
 
+      let handler = null;
       // Default handlers for common actions
       switch (menuAction) {
         case 'item-view':
@@ -2625,6 +2623,18 @@ class Table extends View {
           break;
         default:
           // Emit a custom event with the action
+          handler = this.findItemHandler(menuAction, item, event);
+          if (handler != null) {
+            try {
+                if (await handler(item, event)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return true;
+                }
+                return false;
+            }
+            catch (e) { console.error(`Error in action ${menuAction}:`, e); return false; }
+          }
           this.emit(menuAction, item, event, element);
           break;
       }
@@ -2635,6 +2645,19 @@ class Table extends View {
         app.showError('Action failed: ' + error.message);
       }
     }
+  }
+
+  findItemHandler(action, item, event) {
+      const cap = (s) => (s.includes('-') ? s.split('-').map(w => w[0].toUpperCase()+w.slice(1)).join('') : s[0].toUpperCase()+s.slice(1));
+      const generic = `onItem${cap(action)}`;
+      let parent = this;
+      while (parent) {
+          if (typeof parent[generic] === 'function') {
+              return parent[generic].bind(parent);
+          }
+          parent = this.parent;
+      }
+      return null;
   }
 
   async handleActionToggleContextMenu(event, element) {

@@ -23,7 +23,8 @@ export class DocitBook extends Model {
  */
 export class DocitBookList extends Collection {
     constructor(options = {}) {
-        super(DocitBook, {
+        super({
+            ModelClass: DocitBook,
             endpoint: '/api/docit/book',
             ...options
         });

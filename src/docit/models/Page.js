@@ -23,7 +23,8 @@ export class DocitPage extends Model {
  */
 export class DocitPageList extends Collection {
     constructor(options = {}) {
-        super(DocitPage, {
+        super({
+            ModelClass: DocitPage,
             endpoint: '/api/docit/page',
             ...options
         });

@@ -172,7 +172,8 @@ class EmailDomain extends Model {
  */
 class EmailDomainList extends Collection {
   constructor(options = {}) {
-    super(EmailDomain, {
+    super({
+      ModelClass: EmailDomain,
       endpoint: '/api/aws/email/domain',
       size: 10,
       ...options
@@ -440,7 +441,8 @@ class Mailbox extends Model {
  */
 class MailboxList extends Collection {
   constructor(options = {}) {
-    super(Mailbox, {
+    super({
+      ModelClass: Mailbox,
       endpoint: '/api/aws/email/mailbox',
       size: 10,
       ...options
@@ -576,7 +578,8 @@ class SentMessage extends Model {
  */
 class SentMessageList extends Collection {
   constructor(options = {}) {
-    super(SentMessage, {
+    super({
+      ModelClass: SentMessage,
       endpoint: '/api/aws/email/sent',
       size: 10,
       ...options
@@ -623,7 +626,8 @@ class EmailTemplate extends Model {
  */
 class EmailTemplateList extends Collection {
   constructor(options = {}) {
-    super(EmailTemplate, {
+    super({
+      ModelClass: EmailTemplate,
       endpoint: '/api/aws/email/template',
       size: 10,
       ...options

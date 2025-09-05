@@ -130,6 +130,10 @@ class Model {
     return this.attributes;
   }
 
+  getId() {
+    return this.id;
+  }
+
   /**
    * Fetch model data from API with request deduplication and cancellation
    * @param {object} options - Request options
@@ -137,7 +141,10 @@ class Model {
    * @returns {Promise} Promise that resolves with REST response
    */
   async fetch(options = {}) {
-    const id = options.id || this.id;
+    const id = options.id || this.getId();
+    if (!id) {
+      throw new Error('Model: ID is required for fetching');
+    }
     const url = this.buildUrl(id);
     const requestKey = JSON.stringify({ id, url, params: options.params });
 
@@ -405,12 +412,6 @@ class Model {
    * @returns {string} Complete API URL
    */
   buildUrl(id = null) {
-    if (!this.id && !id) {
-        const error = 'Cannot fetch model without ID';
-        this.showError(error);
-        throw new Error(error);
-    }
-
     let url = this.endpoint;
     if (id) {
       url = url.endsWith('/') ? `${url}${id}` : `${url}/${id}`;

@@ -61,7 +61,7 @@ class Dialog extends View {
 
           const msgElement = this._busyIndicator.querySelector('.mojo-busy-message');
           if (msgElement) msgElement.textContent = message;
-          
+
           setTimeout(() => this._busyIndicator.classList.add('show'), 10);
 
           this._busyTimeout = setTimeout(() => {
@@ -1336,6 +1336,11 @@ class Dialog extends View {
    * Static confirm dialog
    */
   static async confirm(message, title = 'Confirm', options = {}) {
+    if (typeof message === 'object') {
+        options = message;
+        message = options.message;
+        title = options.title || title;
+    }
     const dialog = new Dialog({
       title,
       body: `<p>${message}</p>`,
@@ -1769,5 +1774,8 @@ class Dialog extends View {
     });
   }
 }
+
+Dialog.showConfirm = Dialog.confirm;
+Dialog.showError = Dialog.alert;
 
 export default Dialog;

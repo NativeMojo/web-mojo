@@ -16,7 +16,8 @@ class Ticket extends Model {
 
 class TicketList extends Collection {
     constructor(options = {}) {
-        super(Ticket, {
+        super({
+            ModelClass: Ticket,
             endpoint: '/api/incident/ticket',
             ...options,
         });
@@ -61,7 +62,8 @@ class TicketNote extends Model {
 
 class TicketNoteList extends Collection {
     constructor(options = {}) {
-        super(TicketNote, {
+        super({
+            ModelClass: TicketNote,
             endpoint: '/api/incident/ticket/note',
             ...options,
         });

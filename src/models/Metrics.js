@@ -12,7 +12,8 @@ class MetricsPermission extends Model {
 
 class MetricsPermissionList extends Collection {
     constructor(options = {}) {
-        super(MetricsPermission, {
+        super({
+            ModelClass: MetricsPermission,
             endpoint: '/api/metrics/permissions',
             ...options,
         });

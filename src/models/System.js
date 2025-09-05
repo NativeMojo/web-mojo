@@ -23,7 +23,8 @@ class GeoLocatedIP extends Model {
 
 class GeoLocatedIPList extends Collection {
     constructor(options = {}) {
-        super(GeoLocatedIP, {
+        super({
+            ModelClass: GeoLocatedIP,
             endpoint: '/api/system/geoip',
             ...options,
         });

@@ -15,7 +15,8 @@ class IncidentEvent extends Model {
 
 class IncidentEventList extends Collection {
     constructor(options = {}) {
-        super(IncidentEvent, {
+        super({
+            ModelClass: IncidentEvent,
             endpoint: '/api/incident/event',
             size: 10,
             ...options,
@@ -89,7 +90,8 @@ class Incident extends Model {
 
 class IncidentList extends Collection {
     constructor(options = {}) {
-        super(Incident, {
+        super({
+            ModelClass: Incident,
             endpoint: '/api/incident/incident',
             size: 10,
             ...options,
@@ -168,7 +170,8 @@ class IncidentRuleSet extends Model {
 
 class IncidentRuleSetList extends Collection {
     constructor(options = {}) {
-        super(IncidentRuleSet, {
+        super({
+            ModelClass: IncidentRuleSet,
             endpoint: '/api/event/ruleset',
             size: 10,
             ...options,
@@ -186,7 +189,8 @@ class IncidentRule extends Model {
 
 class IncidentRuleList extends Collection {
     constructor(options = {}) {
-        super(IncidentRule, {
+        super({
+            ModelClass: IncidentRule,
             endpoint: '/api/event/ruleset/rule',
             size: 10,
             ...options,
@@ -207,7 +211,8 @@ class IncidentHistory extends Model {
 
 class IncidentHistoryList extends Collection {
     constructor(options = {}) {
-        super(IncidentHistory, {
+        super({
+            ModelClass: IncidentHistory,
             endpoint: '/api/incident/incident/history',
             size: 10,
             ...options,
@@ -244,7 +249,8 @@ class RuleSet extends Model {
 
 class RuleSetList extends Collection {
     constructor(options = {}) {
-        super(RuleSet, {
+        super({
+            ModelClass: RuleSet,
             endpoint: '/api/event/ruleset',
             ...options,
         });
@@ -264,7 +270,8 @@ class Rule extends Model {
 
 class RuleList extends Collection {
     constructor(options = {}) {
-        super(Rule, {
+        super({
+            ModelClass: Rule,
             endpoint: '/api/event/ruleset/rule',
             ...options,
         });

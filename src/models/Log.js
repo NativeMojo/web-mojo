@@ -18,7 +18,8 @@ class Log extends Model {
  * ========================= */
 class LogList extends Collection {
     constructor(options = {}) {
-        super(Log, {
+        super({
+            ModelClass: Log,
             endpoint: '/api/logs',
             size: 10,
             ...options,

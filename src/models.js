@@ -45,6 +45,10 @@ export {
 // Log models
 export { Log, LogList } from './models/Log.js';
 
+// Jobs models
+export { Job, JobList, JobForms } from './models/Job.js';
+export { JobRunner, JobRunnerList, JobRunnerForms } from './models/JobRunner.js';
+
 // Core base classes for custom models
 export { default as Model } from './core/Model.js';
 export { default as Collection } from './core/Collection.js';

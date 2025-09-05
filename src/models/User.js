@@ -28,7 +28,9 @@ class User extends Model {
 
 class UserList extends Collection {
     constructor(options = {}) {
-        super(User, {
+        super({
+            ModelClass: User,
+            endpoint: '/api/user',
             ...options
         });
     }
@@ -43,7 +45,8 @@ User.PERMISSIONS = [
     { name: "view_incidents", label: "View Incidents" },
     { name: "manage_incidents", label: "Manage Incidents" },
     { name: "view_admin", label: "View Admin" },
-    { name: "view_taskqueue", label: "View TaskQueue" },
+    { name: "view_jobs", label: "View Jobs" },
+    { name: "manage_jobs", label: "Manage Jobs" },
     { name: "view_global", label: "View Global" },
     { name: "manage_notifications", label: "Manage Notifications" },
     { name: "manage_files", label: "Manage Files" },
@@ -327,7 +330,8 @@ class UserDevice extends Model {
 
 class UserDeviceList extends Collection {
     constructor(options = {}) {
-        super(UserDevice, {
+        super({
+            ModelClass: UserDevice,
             endpoint: '/api/user/device',
             ...options,
         });
@@ -347,7 +351,8 @@ class UserDeviceLocation extends Model {
 
 class UserDeviceLocationList extends Collection {
     constructor(options = {}) {
-        super(UserDeviceLocation, {
+        super({
+            ModelClass: UserDeviceLocation,
             endpoint: '/api/user/device/location',
             ...options,
         });

@@ -16,7 +16,8 @@ class FileManager extends Model {
 
 class FileManagerList extends Collection {
     constructor(options = {}) {
-        super(FileManager, {
+        super({
+            ModelClass: FileManager,
             endpoint: '/api/fileman/manager',
             size: 10,
             ...options,
@@ -139,7 +140,8 @@ class File extends Model {
 
 class FileList extends Collection {
     constructor(options = {}) {
-        super(File, {
+        super({
+            ModelClass: File,
             endpoint: '/api/fileman/file',
             size: 10,
             ...options,

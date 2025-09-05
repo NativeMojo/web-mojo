@@ -4,7 +4,7 @@
  */
 
 export { default as AdminDashboardPage } from './AdminDashboardPage.js';
-export { default as TaskManagementPage } from './TaskManagementPage.js';
+export { default as JobsAdminPage } from './JobsAdminPage.js';
 export { default as EmailDomainTablePage } from './EmailDomainTablePage.js';
 export { default as UserDeviceTablePage } from './UserDeviceTablePage.js';
 export { default as UserDeviceLocationTablePage } from './UserDeviceLocationTablePage.js';

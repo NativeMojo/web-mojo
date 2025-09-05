@@ -18,7 +18,8 @@ class Member extends Model {
  * ========================= */
 class MemberList extends Collection {
     constructor(options = {}) {
-        super(Member, {
+        super({
+            ModelClass: Member,
             endpoint: '/api/group/member',
             size: 10,
             ...options,

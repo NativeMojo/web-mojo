@@ -13,7 +13,7 @@ class PushDevice extends Model {
 
 class PushDeviceList extends Collection {
     constructor(options = {}) {
-        super(PushDevice, { endpoint: '/api/account/devices/push', ...options });
+        super({ ModelClass: PushDevice, endpoint: '/api/account/devices/push', ...options });
     }
 }
 
@@ -28,7 +28,7 @@ class PushTemplate extends Model {
 
 class PushTemplateList extends Collection {
     constructor(options = {}) {
-        super(PushTemplate, { endpoint: '/api/account/devices/push/templates', ...options });
+        super({ ModelClass: PushTemplate, endpoint: '/api/account/devices/push/templates', ...options });
     }
 }
 
@@ -43,7 +43,7 @@ class PushConfig extends Model {
 
 class PushConfigList extends Collection {
     constructor(options = {}) {
-        super(PushConfig, { endpoint: '/api/account/devices/push/config', ...options });
+        super({ ModelClass: PushConfig, endpoint: '/api/account/devices/push/config', ...options });
     }
 }
 
@@ -58,7 +58,7 @@ class PushDelivery extends Model {
 
 class PushDeliveryList extends Collection {
     constructor(options = {}) {
-        super(PushDelivery, { endpoint: '/api/account/devices/push/deliveries', ...options });
+        super({ ModelClass: PushDelivery, endpoint: '/api/account/devices/push/deliveries', ...options });
     }
 }
 

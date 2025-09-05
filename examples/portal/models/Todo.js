@@ -27,7 +27,9 @@ class Todo extends Model {
 // Todo Collection with localStorage persistence
 class TodoList extends Collection {
     constructor(options = {}) {
-        super(Todo, {
+        super({
+            ModelClass: Todo,
+            endpoint: '/api/example/todo',
             ...options
         });
     }
