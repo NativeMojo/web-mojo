@@ -113,63 +113,64 @@
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
         <!-- MOJO Loader -->
-        <script src="../../dist/loader.es.js"></script>
+        <script src="https://unpkg.com/web-mojo/dist/loader.umd.js"></script>
+        <script>
+
+            <script>
+                // Global function to hide loader is now called by main.js, but we need to show the demo bar
+                const originalHideLoader = window.hideInitialLoader;
+                window.hideInitialLoader = function () {
+                    originalHideLoader();
+                    // Show demo bar
+                    setTimeout(() => {
+                        const demoBar = document.getElementById("demo-bar");
+                        if (demoBar) {
+                            demoBar.style.display = "block";
+                            document.body.classList.add("demo-mode");
+                        }
+                    }, 100);
+                };
+
+                // Update demo bar info (called by main.js)
+                window.updateDemoInfo = function (config) {
+                    const apiUrl = document.getElementById("demo-api-url");
+                    const company = document.getElementById("demo-company");
+
+                    if (apiUrl && config.apiURL) {
+                        try {
+                            const url = new URL(config.apiURL);
+                            apiUrl.textContent = `API: ${url.hostname}`;
+                        } catch (e) {
+                            console.warn("Invalid API URL for demo bar");
+                        }
+                    }
+
+                    if (company && config.companyName) {
+                        company.textContent = `Company: ${config.companyName}`;
+                    }
+                };
+
+                // Theme switching functionality
+                document.addEventListener("click", (e) => {
+                    if (e.target.closest("[data-theme]")) {
+                        const button = e.target.closest("[data-theme]");
+                        const theme = button.dataset.theme;
+                        document.body.classList.remove("mojo-auth-dark", "mojo-auth-compact");
+                        if (theme === "dark") document.body.classList.add("mojo-auth-dark");
+                        if (theme === "compact") document.body.classList.add("mojo-auth-compact");
+                        document
+                            .querySelectorAll("[data-theme]")
+                            .forEach((btn) => btn.classList.remove("active"));
+                        button.classList.add("active");
+                    }
+                    if (e.target.closest("#demo-register-btn")) {
+                        e.preventDefault();
+                        window.mojoApp?.navigate("/register");
+                    }
+                });
+        </script>
 
         <!-- Auth Portal -->
         <script type="module" src="./main.js"></script>
-
-        <script>
-            // Global function to hide loader is now called by main.js, but we need to show the demo bar
-            const originalHideLoader = window.hideInitialLoader;
-            window.hideInitialLoader = function () {
-                originalHideLoader();
-                // Show demo bar
-                setTimeout(() => {
-                    const demoBar = document.getElementById("demo-bar");
-                    if (demoBar) {
-                        demoBar.style.display = "block";
-                        document.body.classList.add("demo-mode");
-                    }
-                }, 100);
-            };
-
-            // Update demo bar info (called by main.js)
-            window.updateDemoInfo = function (config) {
-                const apiUrl = document.getElementById("demo-api-url");
-                const company = document.getElementById("demo-company");
-
-                if (apiUrl && config.apiURL) {
-                    try {
-                        const url = new URL(config.apiURL);
-                        apiUrl.textContent = `API: ${url.hostname}`;
-                    } catch (e) {
-                        console.warn("Invalid API URL for demo bar");
-                    }
-                }
-
-                if (company && config.companyName) {
-                    company.textContent = `Company: ${config.companyName}`;
-                }
-            };
-
-            // Theme switching functionality
-            document.addEventListener("click", (e) => {
-                if (e.target.closest("[data-theme]")) {
-                    const button = e.target.closest("[data-theme]");
-                    const theme = button.dataset.theme;
-                    document.body.classList.remove("mojo-auth-dark", "mojo-auth-compact");
-                    if (theme === "dark") document.body.classList.add("mojo-auth-dark");
-                    if (theme === "compact") document.body.classList.add("mojo-auth-compact");
-                    document
-                        .querySelectorAll("[data-theme]")
-                        .forEach((btn) => btn.classList.remove("active"));
-                    button.classList.add("active");
-                }
-                if (e.target.closest("#demo-register-btn")) {
-                    e.preventDefault();
-                    window.mojoApp?.navigate("/register");
-                }
-            });
-        </script>
     </body>
 </html>

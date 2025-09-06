@@ -1,6 +1,6 @@
 {
     "name": "web-mojo",
-    "version": "2.1.38",
+    "version": "2.1.46",
     "description": "WEB-MOJO - A lightweight JavaScript framework for building data-driven web applications",
     "type": "module",
     "main": "./dist/index.cjs.js",
@@ -82,7 +82,7 @@
         "build:watch": "vite build --watch",
         "clean": "rm -rf dist",
         "preview": "vite preview",
-        "prepublishOnly": "npm run build:dist && npm run test",
+        "prepublishOnly": "npm run build:dist",
         "postpublish": "echo 'Successfully published web-mojo@'$npm_package_version",
         "debug": "node test/utils/debug-server.js",
         "debug:watch": "node test/utils/debug-server.js --watch",

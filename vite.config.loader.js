@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
     build: {
         lib: {
-            entry: 'src/loader/loader.js',
+            entry: 'src/extensions/loader/loader.js',
             name: 'MojoLoader',
             fileName: (format) => `loader.${format}.js`,
             formats: ['umd', 'es']

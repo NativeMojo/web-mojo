@@ -558,11 +558,11 @@ export class View {
     if (this.app) return this.app;
     const apps = [
       window.__app__,
-      window.matchUUID ? window[window.matchUUID]() : window[window.matchUUID],
       window.MOJO?.app,
       window.APP,
       window.app,
-      window.WebApp
+      window.WebApp,
+      window.matchUUID ? window[window.matchUUID]() : window[window.matchUUID]
     ];
     this.app = apps.find(app => app && typeof app.showPage === 'function') || null;
     return this.app;

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web-MOJO Loader Example</title>
+
+    <!-- Bootstrap CSS (required for loader styling) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        /* Custom app styles */
+        .app-content {
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .theme-button {
+            margin: 0.25rem;
+        }
+
+        .example-section {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+
+<!-- Try different themes by changing the class on body -->
+<!-- Options: mojo-loader-theme-dark, mojo-loader-theme-light,
+     mojo-loader-theme-corporate, mojo-loader-theme-playful,
+     mojo-loader-theme-futuristic, mojo-loader-theme-minimal -->
+<body class="mojo-loader-theme-futuristic">
+
+    <!-- Include the Web-MOJO loader -->
+    <!-- Option 1: From CDN (when published) -->
+    <!-- <script src="https://unpkg.com/web-mojo/dist/loader.umd.js"></script> -->
+
+    <!-- Option 2: Local copy (for development) -->
+    <script src="../../dist/loader.umd.js"></script>
+
+    <div class="app-content">
+        <h1>Web-MOJO Loader Example</h1>
+
+        <div class="example-section">
+            <h2>Quick Start</h2>
+            <p>This page demonstrates how to use the Web-MOJO loader in your external projects:</p>
+
+            <h3>1. Include Bootstrap CSS</h3>
+            <pre><code>&lt;link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"&gt;</code></pre>
+
+            <h3>2. Add Theme Class (Optional)</h3>
+            <pre><code>&lt;body class="mojo-loader-theme-futuristic"&gt;</code></pre>
+
+            <h3>3. Include the Loader Script</h3>
+            <pre><code>&lt;script src="https://unpkg.com/web-mojo/dist/loader.umd.js"&gt;&lt;/script&gt;</code></pre>
+
+            <h3>4. Hide Loader When Ready</h3>
+            <pre><code>// In your app initialization code:
+setTimeout(() => {
+    window.hideInitialLoader();
+}, 3000);</code></pre>
+        </div>
+
+        <div class="example-section">
+            <h2>Available Themes</h2>
+            <p>Add any of these classes to your <code>&lt;body&gt;</code> tag:</p>
+
+            <button class="btn btn-outline-primary theme-button" onclick="changeTheme('default')">Default (Purple)</button>
+            <button class="btn btn-outline-secondary theme-button" onclick="changeTheme('mojo-loader-theme-dark')">Dark</button>
+            <button class="btn btn-outline-light theme-button" onclick="changeTheme('mojo-loader-theme-light')">Light</button>
+            <button class="btn btn-outline-info theme-button" onclick="changeTheme('mojo-loader-theme-corporate')">Corporate</button>
+            <button class="btn btn-outline-warning theme-button" onclick="changeTheme('mojo-loader-theme-playful')">Playful</button>
+            <button class="btn btn-outline-success theme-button" onclick="changeTheme('mojo-loader-theme-futuristic')">Futuristic</button>
+            <button class="btn btn-outline-dark theme-button" onclick="changeTheme('mojo-loader-theme-minimal')">Minimal</button>
+        </div>
+
+        <div class="example-section">
+            <h2>Test Controls</h2>
+            <p>Use these buttons to test the loader functionality:</p>
+
+            <button class="btn btn-success me-2" onclick="showLoader()">Show Loader</button>
+            <button class="btn btn-danger me-2" onclick="window.hideInitialLoader()">Hide Loader</button>
+            <button class="btn btn-primary" onclick="simulateAppLoad()">Simulate App Load (5s)</button>
+        </div>
+
+        <div class="example-section">
+            <h2>Integration Examples</h2>
+
+            <h3>Vanilla JavaScript</h3>
+            <pre><code>// app.js
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        // Your app initialization
+        await loadUserData();
+        await initializeComponents();
+
+        // Hide loader when ready
+        window.hideInitialLoader();
+    } catch (error) {
+        console.error('App initialization failed:', error);
+        window.hideInitialLoader();
+    }
+});</code></pre>
+
+            <h3>React</h3>
+            <pre><code>// App.js
+import { useEffect } from 'react';
+
+function App() {
+    useEffect(() => {
+        // Hide loader after React app mounts
+        window.hideInitialLoader?.();
+    }, []);
+
+    return &lt;div&gt;Your React App&lt;/div&gt;;
+}</code></pre>
+
+            <h3>Vue.js</h3>
+            <pre><code>// main.js
+import { createApp } from 'vue';
+import App from './App.vue';
+
+const app = createApp(App);
+
+app.mount('#app');
+
+// Hide loader after Vue app mounts
+window.hideInitialLoader?.();</code></pre>
+        </div>
+    </div>
+
+    <script>
+        // Demo functions
+        function changeTheme(themeClass) {
+            // Remove all theme classes
+            document.body.className = document.body.className.replace(/mojo-loader-theme-\w+/g, '');
+
+            // Add new theme class
+            if (themeClass !== 'default') {
+                document.body.classList.add(themeClass);
+            }
+
+            console.log(`Theme changed to: ${themeClass}`);
+        }
+
+        function showLoader() {
+            // Remove existing loader if present
+            const existingLoader = document.getElementById('mojo-initial-loader');
+            if (existingLoader) {
+                existingLoader.remove();
+            }
+
+            // Reload the script to show loader again
+            location.reload();
+        }
+
+        function simulateAppLoad() {
+            showLoader();
+
+            // Simulate app loading time
+            setTimeout(() => {
+                window.hideInitialLoader();
+            }, 5000);
+        }
+
+        // Hide the initial loader after a short delay to demonstrate
+        setTimeout(() => {
+            if (window.hideInitialLoader) {
+                window.hideInitialLoader();
+            }
+        }, 3000);
+    </script>
+</body>
+</html>
