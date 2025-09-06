@@ -1,19 +1,25 @@
 /**
- * MOJO Charts Package - Chart components using Chart.js
- * Package: web-mojo/charts
+ * MOJO Charts Extension - Entry (2.1.0)
  */
 
-// Import charts CSS
-import './css/charts.css';
+// Bundle charts CSS
+import '@ext/charts/css/charts.css';
 
-// Export chart components
-export { default as BaseChart } from './charts/BaseChart.js';
-export { default as SeriesChart } from './charts/SeriesChart.js';
-export { default as PieChart } from './charts/PieChart.js';
+// Chart Components
+export { default as BaseChart } from '@ext/charts/BaseChart.js';
+export { default as SeriesChart } from '@ext/charts/SeriesChart.js';
+export { default as PieChart } from '@ext/charts/PieChart.js';
+export { default as MetricsChart } from '@ext/charts/MetricsChart.js';
 
-// Export WebSocket utility (used by charts)
-export { default as WebSocketClient } from './utils/WebSocket.js';
+// Convenience
+export { default as WebApp } from '@core/WebApp.js';
 
-// Package metadata
-export const CHARTS_PACKAGE_NAME = 'web-mojo/charts';
-export const CHARTS_VERSION = '1.0.0';
+// Version info passthrough
+export {
+  VERSION_INFO,
+  VERSION,
+  VERSION_MAJOR,
+  VERSION_MINOR,
+  VERSION_REVISION,
+  BUILD_TIME
+} from './version.js';

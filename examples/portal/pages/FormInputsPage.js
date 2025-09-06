@@ -3,9 +3,7 @@
  * Demonstrates every field type available with examples and documentation
  */
 
-import Page from '/src/core/Page.js';
-import FormView from '/src/forms/FormView.js';
-import { GroupList } from '/src/models/Group.js';
+import { Page, FormView, GroupList } from 'web-mojo';
 
 export default class FormInputsPage extends Page {
   static pageName = 'form-inputs';

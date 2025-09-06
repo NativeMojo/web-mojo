@@ -1,0 +1,269 @@
+
+import Collection from '@core/Collection.js';
+import Model from '@core/Model.js';
+
+/**
+ * Group Model - Represents an organization, team, or group entity
+ *
+ * Features:
+ * - Hierarchical group support (parent/child relationships)
+ * - Member management
+ * - Search and filtering capabilities
+ * - Role-based permissions within groups
+ * - Metadata and settings management
+ */
+class Group extends Model {
+    constructor(data = {}) {
+        super(data, {
+            endpoint: '/api/group'
+        });
+    }
+}
+
+/**
+ * GroupCollection - Enhanced collection for managing groups with advanced search and filtering
+ */
+class GroupList extends Collection {
+    constructor(options = {}) {
+        super({
+            ModelClass: Group,
+            endpoint: '/api/group',
+            size: 10,
+            ...options
+        });
+    }
+}
+
+/**
+ * Form configurations for group management
+ */
+const GroupForms = {
+    create: {
+        title: 'Create Group',
+        fields: [
+            {
+                name: 'name',
+                type: 'text',
+                label: 'Group Name',
+                required: true,
+                placeholder: 'Enter group name'
+            },
+            {
+                name: 'kind',
+                type: 'select',
+                label: 'Group Kind',
+                required: true,
+                options: [
+                    { value: 'org', label: 'Organization' },
+                    { value: 'team', label: 'Team' },
+                    { value: 'department', label: 'Department' },
+                    { value: 'merchant', label: 'Merchant' },
+                    { value: 'iso', label: 'ISO' },
+                    { value: 'group', label: 'Group' }
+                ]
+            },
+            {
+                type: 'collection',
+                name: 'parent',
+                label: 'Parent Group',
+                Collection: GroupList,  // Collection class
+                labelField: 'name',          // Field to display in dropdown
+                valueField: 'id',            // Field to use as value
+                maxItems: 10,                // Max items to show in dropdown
+                placeholder: 'Search groups...',
+                emptyFetch: false,
+                debounceMs: 300,             // Search debounce delay
+            }
+        ]
+    },
+
+    edit: {
+        title: 'Edit Group',
+        fields: [
+            {
+                name: 'name',
+                type: 'text',
+                label: 'Group Name',
+                required: true,
+                placeholder: 'Enter group name',
+            },
+            {
+                name: 'kind',
+                type: 'select',
+                label: 'Group Kind',
+                required: true,
+                options: [
+                    { value: 'org', label: 'Organization' },
+                    { value: 'team', label: 'Team' },
+                    { value: 'department', label: 'Department' },
+                    { value: 'merchant', label: 'Merchant' },
+                    { value: 'iso', label: 'ISO' },
+                    { value: 'group', label: 'Group' }
+                ]
+            },
+            {
+                type: 'collection',
+                name: 'parent',
+                label: 'Parent Group',
+                Collection: GroupList,  // Collection class
+                labelField: 'name',          // Field to display in dropdown
+                valueField: 'id',            // Field to use as value
+                maxItems: 10,                // Max items to show in dropdown
+                placeholder: 'Search groups...',
+                emptyFetch: false,
+                debounceMs: 300,             // Search debounce delay
+            },
+            {
+                name: 'metadata.domain',
+                type: 'text',
+                label: 'Default Domain',
+                placeholder: 'Enter Domain',
+            },
+            {
+                name: 'metadata.portal',
+                type: 'text',
+                label: 'Default Portal',
+                placeholder: 'Enter Portal URL',
+            },
+            {
+                name: 'is_active',
+                type: 'switch',
+                label: 'Is Active',
+                cols: 4
+            },
+        ]
+    },
+
+    detailed: {
+        title: 'Group Details',
+        fields: [
+            // Profile Header
+            {
+                type: 'header',
+                text: 'Profile Information',
+                level: 4,
+                class: 'text-primary mb-3'
+            },
+
+            // Avatar and Basic Info
+            {
+                type: 'group',
+                columns: { xs: 12, md: 4 },
+                fields: [
+                    {
+                        type: 'image',
+                        name: 'avatar',
+                        size: 'lg',
+                        imageSize: { width: 200, height: 200 },
+                        placeholder: 'Upload your avatar',
+                        help: 'Square images work best',
+                        columns: 12
+                    },
+                    {
+                        name: 'is_active',
+                        type: 'switch',
+                        label: 'Is Active',
+                        columns: 12
+                    },
+                ]
+            },
+
+            // Profile Details
+            {
+                type: 'group',
+                columns: { xs: 12, md: 8 },
+                title: 'Details',
+                fields: [
+                    {
+                        name: 'name',
+                        type: 'text',
+                        label: 'Group Name',
+                        required: true,
+                        placeholder: 'Enter group name',
+                        columns: 12
+                    },
+                    {
+                        name: 'kind',
+                        type: 'select',
+                        label: 'Group Kind',
+                        required: true,
+                        columns: 12,
+                        options: [
+                            { value: 'org', label: 'Organization' },
+                            { value: 'team', label: 'Team' },
+                            { value: 'department', label: 'Department' },
+                            { value: 'merchant', label: 'Merchant' },
+                            { value: 'iso', label: 'ISO' },
+                            { value: 'group', label: 'Group' }
+                        ]
+                    },
+                    {
+                        type: 'collection',
+                        name: 'parent',
+                        label: 'Parent Group',
+                        Collection: GroupList,  // Collection class
+                        labelField: 'name',          // Field to display in dropdown
+                        valueField: 'id',            // Field to use as value
+                        maxItems: 10,                // Max items to show in dropdown
+                        placeholder: 'Search groups...',
+                        emptyFetch: false,
+                        debounceMs: 300,             // Search debounce delay
+                        columns: 12
+                    }
+                ]
+            },
+
+            // Account Settings
+            {
+                type: 'group',
+                columns: 12,
+                title: 'Account Settings',
+                class: "pt-3",
+                fields: [
+                    {
+                        type: 'select',
+                        name: 'metadata.timezone',
+                        label: 'Timezone',
+                        columns: 6,
+                        options: [
+                            { value: 'America/New_York', text: 'Eastern Time' },
+                            { value: 'America/Chicago', text: 'Central Time' },
+                            { value: 'America/Denver', text: 'Mountain Time' },
+                            { value: 'America/Los_Angeles', text: 'Pacific Time' },
+                            { value: 'UTC', text: 'UTC' }
+                        ]
+                    },
+                    {
+                        type: 'select',
+                        name: 'metadata.language',
+                        label: 'Language',
+                        columns: 6,
+                        options: [
+                            { value: 'en', text: 'English' },
+                            { value: 'es', text: 'Spanish' },
+                            { value: 'fr', text: 'French' },
+                            { value: 'de', text: 'German' }
+                        ]
+                    },
+                    {
+                        type: 'switch',
+                        name: 'metadata.notify.email',
+                        label: 'Email Notifications',
+                        columns: 4
+                    },
+                    {
+                        type: 'switch',
+                        name: 'metadata.profile_public',
+                        label: 'Public Profile',
+                        columns: 4
+                    }
+                ]
+            }
+        ]
+    },
+};
+
+Group.EDIT_FORM = GroupForms.edit;
+Group.CREATE_FORM = GroupForms.create;
+
+export { Group, GroupList, GroupForms };

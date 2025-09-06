@@ -44,7 +44,12 @@ export default defineConfig({
     lib: {
       entry: [
         path.resolve(__dirname, 'src/index.js'),
-        path.resolve(__dirname, 'src/auth.js')
+        path.resolve(__dirname, 'src/auth.js'),
+        path.resolve(__dirname, 'src/lightbox.js'),
+        path.resolve(__dirname, 'src/charts.js'),
+        path.resolve(__dirname, 'src/docit.js'),
+        path.resolve(__dirname, 'src/admin.js'),
+        path.resolve(__dirname, 'src/loader.js')
       ],
       name: 'MOJO',
       // Generate multiple formats
@@ -64,6 +69,8 @@ export default defineConfig({
         },
         // Export everything from index.js
         exports: 'named',
+        // Organize shared chunks for clarity during multi-entry builds
+        chunkFileNames: 'chunks/[name]-[hash].js',
         // Asset naming for CSS and other assets
         assetFileNames: (assetInfo) => {
           // Handle CSS files
@@ -130,14 +137,18 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      // Legacy aliases (to be cleaned after restructure)
       '@': path.resolve(__dirname, 'src'),
-      '@core': path.resolve(__dirname, 'src/core'),
       '@components': path.resolve(__dirname, 'src/components'),
       '@utils': path.resolve(__dirname, 'src/utils'),
       '@pages': path.resolve(__dirname, 'src/pages'),
       '@models': path.resolve(__dirname, 'src/models'),
       '@templates': path.resolve(__dirname, 'src/templates'),
-      '@styles': path.resolve(__dirname, 'src/styles')
+      '@styles': path.resolve(__dirname, 'src/styles'),
+
+      // New aliases for clearer boundaries
+      '@core': path.resolve(__dirname, 'src/core'),
+      '@ext': path.resolve(__dirname, 'src/extensions')
     }
   },
   // Define global constants

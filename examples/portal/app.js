@@ -3,7 +3,7 @@
  * Demonstrates WebApp with Portal layout (sidebar + topnav)
  */
 
-import PortalApp from '/src/app/PortalApp.js';
+import { PortalApp, Page, VERSION_INFO } from 'web-mojo';
 import HomePage from './pages/HomePage.js';
 import DashboardPage from './pages/DashboardPage.js';
 import TemplatesPage from './pages/TemplatesPage.js';
@@ -16,10 +16,7 @@ import FormDialogsPage from './pages/FormDialogsPage.js';
 import ChartsPage from './pages/ChartsPage.js';
 import ImagePage from './pages/ImagePage.js';
 import FileDropPage from './pages/FileDropPage.js';
-import Page from '/src/core/Page.js';
-import ImageViewer from '/src/lightbox/ImageViewer.js';
-import { registerAdminPages } from '/src/admin.js';
-import { VERSION_INFO } from '/src/version.js';
+import { ImageViewer } from 'web-mojo/lightbox';
 
 // Detect page reloads
 if (window.performance && window.performance.navigation.type === 1) {
@@ -335,10 +332,9 @@ app.events.on('portal:action', ({ action }) => {
     switch (action) {
         case 'test-upload':
             // Import and test file upload progress UI
-            import('/src/services/ToastService.js').then(ToastModule => {
-                import('/src/views/feedback/ProgressView.js').then(ProgressModule => {
-                    const ToastService = ToastModule.default;
-                    const ProgressView = ProgressModule.default;
+            import('web-mojo').then(({ ToastService }) => {
+                import('web-mojo').then(({ ProgressView }) => {
+                    // ToastService and ProgressView are already destructured
 
                     const toastService = new ToastService();
 
@@ -406,7 +402,6 @@ app.events.on('portal:action', ({ action }) => {
     }
 });
 
-registerAdminPages(app, true);
 // Start the application
 app.start().then(() => {
     console.log('Portal app started successfully');

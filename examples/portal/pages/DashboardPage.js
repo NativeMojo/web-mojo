@@ -2,7 +2,7 @@
  * DashboardPage - Simple dashboard for the portal example
  */
 
-import Page from '/src/core/Page.js';
+import { Page } from 'web-mojo';
 
 class DashboardPage extends Page {
     static pageName = 'dashboard';

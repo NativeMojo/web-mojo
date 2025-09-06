@@ -3,8 +3,7 @@
  * Demonstrates all features of the MOJO Mustache implementation
  */
 
-import Page from '/src/core/Page.js';
-import MOJOUtils from '/src/utils/MOJOUtils.js';
+import { Page, MOJOUtils } from 'web-mojo';
 
 class TemplatesPage extends Page {
     constructor(options = {}) {

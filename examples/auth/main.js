@@ -6,7 +6,7 @@
  * https://auth.yourcompany.com/?portal=https://app.yourcompany.com&company=Acme%20Corp&api=https://api.yourcompany.com
  */
 
-import AuthApp from '/src/auth/AuthApp.js';
+import { AuthApp } from 'web-mojo/auth';
 
 // Configuration from URL params or environment variables
 const config = {

@@ -3,9 +3,7 @@
  * Demonstrates various drag-and-drop file handling patterns in MOJO framework
  */
 
-import Page from '/src/core/Page.js';
-import View from '/src/core/View.js';
-import applyFileDropMixin from '/src/mixins/FileDropMixin.js';
+import { View, Page, applyFileDropMixin } from 'web-mojo';
 
 // Apply FileDropMixin to View class
 applyFileDropMixin(View);

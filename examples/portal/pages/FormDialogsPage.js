@@ -1,5 +1,5 @@
-import Dialog from '/src/core/Dialog.js';
-import Page from '/src/core/Page.js';
+import { Dialog } from 'web-mojo';
+import { Page } from 'web-mojo';
 
 class FormDialogsPage extends Page {
   static pageName = 'Form Dialogs';

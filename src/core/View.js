@@ -1,12 +1,12 @@
 // -----------------------------------------------
 // Imports
 // -----------------------------------------------
-import Mustache from '../utils/mustache.js';
+import Mustache from '@core/utils/mustache.js';
 if (typeof window !== 'undefined') {
   window.Mustache = Mustache;
 }
-import MOJOUtils from '../utils/MOJOUtils.js';
-import EventDelegate from './EventDelegate.js';
+import MOJOUtils from '@core/utils/MOJOUtils.js';
+import EventDelegate from '@core/mixins/EventDelegate.js';
 
 // -----------------------------------------------
 // View
@@ -669,7 +669,7 @@ export class View {
   }
 }
 
-import EventEmitter from '../utils/EventEmitter.js';
+import EventEmitter from '@core/mixins/EventEmitter.js';
 Object.assign(View.prototype, EventEmitter);
 
 export default View;

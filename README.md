@@ -1,429 +1,510 @@
-# MOJO Framework
+# MOJO Framework 2.1.0
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Version](https://img.shields.io/badge/version-2.0.344-green.svg)](https://github.com/yourusername/web-mojo)
+[![Version](https://img.shields.io/badge/version-2.1.0-green.svg)](https://github.com/yourusername/web-mojo)
 
-**MOJO** is a lightweight, component-based JavaScript framework for building modern web applications. It provides a clean architecture with automatic event handling, built-in routing, and seamless Bootstrap integration.
+**MOJO** is a modern, lightweight JavaScript framework for building data-driven web applications. Built with a **core + extensions** architecture, MOJO provides maximum flexibility while maintaining clean boundaries and optimal performance.
 
-## ✨ Why MOJO?
+## ✨ What's New in 2.1.0
 
-- 🚀 **Zero Build Step** - Works directly in the browser with ES6 modules
-- 🏗️ **Component Architecture** - Pages and Views with automatic lifecycle management
-- 🔀 **Built-in Routing** - Clean URL routing with parameters and query strings
-- 🎨 **Bootstrap Integration** - Beautiful, responsive UI components out of the box
-- 📱 **Event System** - Declarative event handling with automatic delegation
-- 🔐 **Authentication Ready** - Complete auth system with JWT tokens
-- 📄 **Template Engine** - Mustache templating with data binding
-- ⚡ **Performance First** - Minimal overhead, maximum efficiency
+🏗️ **Core + Extensions Architecture** - Clean separation with plugin system  
+📦 **Subpath Exports** - Import exactly what you need  
+⚡ **Lazy Loading** - Reduced bundle sizes with dynamic imports  
+🔌 **Plugin System** - Extensions enhance core without dependencies  
+🎯 **Tree Shaking** - Optimized builds with modern bundlers  
 
 ## 🚀 Quick Start
 
-Get up and running in under 5 minutes:
+### Installation
 
-### 1. Create Your HTML File
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My MOJO App</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <div id="app"></div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script type="module" src="app.js"></script>
-</body>
-</html>
+```bash
+npm install web-mojo
 ```
 
-### 2. Create Your App Script
+### Basic Usage
 
 ```javascript
-import WebApp from './web-mojo/src/app/WebApp.js';
-import Page from './web-mojo/src/core/Page.js';
+// Core framework
+import { WebApp, Page, View } from 'web-mojo';
 
 // Create a simple page
 class HomePage extends Page {
-    constructor(options = {}) {
-        super({
-            pageName: 'home',
-            route: '/',
-            template: `
-                <div class="container py-5">
-                    <h1 class="display-4">Welcome to MOJO! 🚀</h1>
-                    <p class="lead">You've successfully created your first MOJO application.</p>
-                    <button class="btn btn-primary" data-action="say-hello">
-                        Say Hello
-                    </button>
-                    <p class="mt-3">Button clicked: {{clicks}} times</p>
-                </div>
-            `,
-            ...options
-        });
-        this.clicks = 0;
-    }
-
-    async handleActionSayHello(event, element) {
-        this.clicks++;
-        await this.render();
-        this.getApp().showSuccess(`Hello! You've clicked ${this.clicks} times.`);
-    }
+  getTemplate() {
+    return '<h1>Welcome to MOJO!</h1>';
+  }
 }
 
-// Create and start the app
-const app = WebApp.create({
-    container: '#app',
-    title: 'My MOJO App',
-    routerMode: 'params' // Perfect for static hosting
+// Initialize app
+const app = new WebApp({
+  name: 'My App',
+  container: '#app'
 });
 
 app.registerPage('home', HomePage);
 app.start();
 ```
 
-### 3. Serve and Run
+## 📦 Architecture Overview
 
-```bash
-# Using Python
-python -m http.server 8000
+MOJO 2.1.0 uses a **core + extensions** architecture:
 
-# Using Node.js
-npx http-server
+### Core Package (`web-mojo`)
+The stable runtime and building blocks:
+- **WebApp** & **PortalApp** - Application containers
+- **View** & **Page** - Component system
+- **Model** & **Collection** - Data layer
+- **Router** - URL routing
+- **Dialog** - Modal system
+- **Essential services** - File upload, events, utilities
 
-# Visit http://localhost:8000
-```
+### Extensions
+Feature-rich packages that extend core functionality:
 
-That's it! You have a working MOJO application.
-
-## 📚 Documentation
-
-| Guide | Description |
-|-------|-------------|
-| **[Quick Start](docs/QuickStart.md)** | Get started in 5 minutes |
-| **[WebApp Guide](docs/guide/WebApp.md)** | Application container and lifecycle |
-| **[Page Guide](docs/guide/Page.md)** | Route-level components and navigation |
-| **[View Guide](docs/guide/View.md)** | Base UI components and event handling |
-| **[Router Guide](docs/guide/Router.md)** | URL routing and navigation |
-| **[Authentication](docs/guide/Auth.md)** | User authentication and security |
-| **[Forms & UI](docs/guide/Forms.md)** | Forms, dialogs, and UI components |
-| **[REST API](docs/guide/Rest.md)** | Data models and API communication |
-
-## 🎯 Core Concepts
-
-### Pages - Route-Level Components
-
-Pages represent different views in your application:
+#### 🔐 Authentication (`web-mojo/auth`)
+Complete authentication system with JWT tokens:
 
 ```javascript
-class UsersPage extends Page {
-    constructor(options = {}) {
-        super({
-            pageName: 'users',
-            route: '/users/:id?',
-            template: `
-                <div class="container">
-                    <h1>Users</h1>
-                    {{#users}}
-                        <div class="card mb-2">
-                            <div class="card-body">
-                                <h5>{{name}}</h5>
-                                <button data-action="edit" data-id="{{id}}">Edit</button>
-                            </div>
-                        </div>
-                    {{/users}}
-                </div>
-            `,
-            ...options
-        });
-    }
+import { AuthApp, LoginPage } from 'web-mojo/auth';
 
-    async onEnter() {
-        // Called when page is entered
-        this.users = await this.loadUsers();
-        await this.render();
-    }
-
-    async handleActionEdit(event, element) {
-        const userId = element.getAttribute('data-id');
-        await this.getApp().navigate(`/users/${userId}/edit`);
-    }
-}
+const app = new AuthApp({
+  api: { baseURL: 'https://api.example.com' },
+  loginRedirect: '/dashboard'
+});
 ```
 
-### Automatic Event Handling
+#### 🖼️ Lightbox (`web-mojo/lightbox`) 
+Image and PDF viewers with editing capabilities:
 
-MOJO automatically wires up events using data attributes:
+```javascript
+import 'web-mojo/lightbox'; // Auto-registers plugins
+
+// Core can now use lightbox features
+import { Dialog } from 'web-mojo';
+// Dialog automatically gets image cropping when lightbox is loaded
+```
+
+#### 📊 Charts (`web-mojo/charts`)
+Interactive charts built on Chart.js:
+
+```javascript
+import { PieChart, SeriesChart } from 'web-mojo/charts';
+
+const chart = new PieChart({
+  data: salesData,
+  container: '#chart'
+});
+```
+
+#### 📚 Documentation (`web-mojo/docit`)
+Documentation portal system:
+
+```javascript
+import { DocItApp } from 'web-mojo/docit';
+
+const docs = new DocItApp({
+  books: ['user-guide', 'api-docs']
+});
+```
+
+#### ⚡ Loader (`web-mojo/loader`)
+Beautiful loading animations:
 
 ```html
-<!-- Click events -->
-<button data-action="save-data">Save</button>
-<a data-action="navigate-page" data-page="about">About</a>
-
-<!-- Change events -->
-<input data-change-action="filter-list" type="text">
-<select data-change-action="sort-items">
+<script src="web-mojo/loader"></script>
+<script>
+  // Your app initialization
+  // Call hideInitialLoader() when ready
+</script>
 ```
 
-```javascript
-// Corresponding handlers in your Page/View class
-async handleActionSaveData(event, element) {
-    // Handles data-action="save-data"
-}
+## 🎯 Usage Examples
 
-async handleActionFilterList(event, element) {
-    // Handles data-change-action="filter-list"
-}
-```
-
-### Template System
-
-Uses Mustache templating with data binding directly to the View Context.
+### Portal Application
 
 ```javascript
-const view = new View({
-    template: `
-        <div class="page">
-            <h1>{{title}}</h1>
-            {{#data.users}}
-                <div class="user {{#active}}active{{/active}}">
-                    {{name}}
-                </div>
-            {{/data.users}}
-            {{^data.users}}
-                <p>No users found.</p>
-            {{/data.users}}
+import { PortalApp, Page } from 'web-mojo';
+import 'web-mojo/lightbox'; // Enable image features
+
+const app = new PortalApp({
+  name: 'Admin Portal',
+  sidebar: {
+    menus: [{
+      items: [
+        { text: 'Dashboard', route: 'dashboard', icon: 'bi-speedometer2' },
+        { text: 'Users', route: 'users', icon: 'bi-people' }
+      ]
+    }]
+  }
+});
+
+class DashboardPage extends Page {
+  constructor(options = {}) {
+    super({
+      title: 'Dashboard',
+      template: `
+        <div class="row">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-body">
+                <h5>Welcome to MOJO</h5>
+                <p>{{message}}</p>
+                <button class="btn btn-primary" data-action="show-dialog">
+                  Open Dialog
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-    `,
-    title: "My Page",
-    data: {
-        users: [
-            { id: 1, name: 'John', active: true },
-            { id: 2, name: 'Jane', active: false }
-        ],
-        showEmpty: this.users.length === 0
-    }
+      `,
+      ...options
+    });
+  }
+  
+  getTemplateData() {
+    return {
+      message: 'Your application is ready!'
+    };
+  }
+  
+  async onActionShowDialog() {
+    const { Dialog } = await import('web-mojo');
+    Dialog.showInfo('Hello from MOJO!');
+  }
+}
+
+app.registerPage('dashboard', DashboardPage);
+app.start();
+```
+
+### Authentication Flow
+
+```javascript
+import { AuthApp } from 'web-mojo/auth';
+import { WebApp } from 'web-mojo';
+
+// Auth portal
+const authApp = new AuthApp({
+  api: { baseURL: 'https://api.example.com' },
+  ui: {
+    title: 'Acme Corp',
+    logoUrl: '/assets/logo.png'
+  }
 });
-```
 
-## 🛠️ Installation
-
-### Option 1: Direct Download/Clone
-
-```bash
-git clone https://github.com/yourusername/web-mojo.git
-cd web-mojo
-```
-
-### Option 2: NPM Package (when published)
-
-```bash
-npm install web-mojo bootstrap
-```
-
-```javascript
-import MOJO, { Page, View } from 'web-mojo';
-import 'web-mojo/css';
-```
-
-### Option 3: CDN (when available)
-
-```html
-<script src="https://unpkg.com/web-mojo/dist/web-mojo.umd.js"></script>
-<link href="https://unpkg.com/web-mojo/dist/web-mojo.css" rel="stylesheet">
-```
-
-## 🌟 Examples
-
-Explore working examples:
-
-### Portal Example
-A complete application with authentication, navigation, and multiple pages.
-
-```bash
-cd examples/portal
-python -m http.server 8000
-# Visit http://localhost:8000
-```
-
-### Auth Demo
-Authentication system with login, registration, and password reset.
-
-```bash
-cd examples/auth-demo
-python -m http.server 8000
-# Visit http://localhost:8000
-```
-
-### Development Server
-Run all examples with hot reload:
-
-```bash
-npm install
-npm run dev  # Opens http://localhost:3000/examples/
-```
-
-## 🏗️ Architecture
-
-MOJO follows a component-based architecture:
-
-```
-┌─────────────┐
-│   WebApp    │  ← Application container & router
-└─────────────┘
-       │
-   ┌───▼───┐
-   │ Pages │  ← Route-level components (/home, /about, /users/:id)
-   └───┬───┘
-       │
-   ┌───▼───┐
-   │ Views │  ← Reusable UI components (forms, tables, cards)
-   └───┬───┘
-       │
-   ┌───▼───┐
-   │Models │  ← Data models with REST API integration
-   └───────┘
-```
-
-### Key Classes
-
-- **`WebApp`** - Application container, routing, and global state
-- **`Page`** - Route-level components with URL parameters
-- **`View`** - Base UI components with event handling
-- **`Model`** - Data models with REST API integration
-- **`Collection`** - Arrays of models with pagination
-- **`Router`** - URL routing and navigation
-
-## 🎨 Routing Modes
-
-### Params Mode (Static Hosting)
-Perfect for GitHub Pages, Netlify, or any static hosting:
-
-```javascript
-const app = WebApp.create({
-    routerMode: 'params'  // URLs: ?page=about&id=123
-});
-```
-
-### History Mode (Server Hosting)
-Clean URLs with server-side URL rewriting:
-
-```javascript
-const app = WebApp.create({
-    routerMode: 'history'  // URLs: /about/123
-});
-```
-
-## 🔐 Authentication
-
-MOJO includes a complete authentication system:
-
-```javascript
-import AuthApp from 'web-mojo/src/auth/AuthApp.js';
-
-const authApp = await AuthApp.create(app, {
+// Main app (after authentication)
+const mainApp = new WebApp({
+  name: 'Acme Portal',
+  api: { 
     baseURL: 'https://api.example.com',
-    features: {
-        registration: true,
-        forgotPassword: true,
-        rememberMe: true
-    }
+    token: localStorage.getItem('auth_token')
+  }
 });
 
-// Handle login success
-app.events.on('auth:login', (user) => {
-    console.log('User logged in:', user.email);
-    app.navigate('/dashboard');
+// Handle successful login
+authApp.events.on('auth:login', (user) => {
+  window.location.href = '/dashboard';
 });
 ```
 
-## 🧪 Testing
+### Data Management
 
-Run the test suite:
+```javascript
+import { Model, Collection, View } from 'web-mojo';
 
-```bash
-npm install
-npm test
+// Define models
+class User extends Model {
+  static endpoint = '/api/users';
+}
+
+class UserList extends Collection {
+  model = User;
+  endpoint = '/api/users';
+}
+
+// Create views
+class UserTableView extends View {
+  constructor(options = {}) {
+    super({
+      template: `
+        <table class="table">
+          <thead>
+            <tr><th>Name</th><th>Email</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            {{#users}}
+            <tr>
+              <td>{{name}}</td>
+              <td>{{email}}</td>
+              <td>
+                <button class="btn btn-sm btn-primary" 
+                        data-action="edit-user" 
+                        data-user-id="{{id}}">Edit</button>
+              </td>
+            </tr>
+            {{/users}}
+          </tbody>
+        </table>
+      `,
+      ...options
+    });
+    
+    this.collection = new UserList();
+  }
+  
+  async onMount() {
+    await this.collection.fetch();
+    this.render();
+  }
+  
+  getTemplateData() {
+    return {
+      users: this.collection.toJSON()
+    };
+  }
+  
+  async onActionEditUser(action, event, element) {
+    const userId = element.dataset.userId;
+    const user = this.collection.get(userId);
+    
+    const { Dialog } = await import('web-mojo');
+    Dialog.showModelForm(user, {
+      title: 'Edit User',
+      fields: ['name', 'email']
+    });
+  }
+}
 ```
 
-Run specific test suites:
+## 🛠️ Development
 
-```bash
-npm run test:unit        # Unit tests
-npm run test:integration # Integration tests
-npm run test:build      # Build tests
-```
-
-## 📁 Project Structure
-
+### Project Structure
 ```
 web-mojo/
-├── src/                    # Source code
-│   ├── app/               # Application core
-│   ├── core/              # Base components (Page, View, Router)
-│   ├── components/        # UI components (Table, Dialog, Forms)
-│   ├── auth/              # Authentication system
-│   └── styles/            # CSS and styling
-├── examples/              # Working examples
-│   ├── portal/           # Full-featured app example
-│   └── auth-demo/        # Authentication example
-├── docs/                  # Documentation
-│   ├── guide/            # Component guides
-│   └── Library/          # Library usage docs
-├── test/                  # Test suites
-└── dist/                  # Built distributions
+├── src/
+│   ├── index.js              # Core entry point
+│   ├── auth.js               # Auth extension entry
+│   ├── lightbox.js           # Lightbox extension entry
+│   ├── charts.js             # Charts extension entry
+│   ├── docit.js              # DocIt extension entry
+│   ├── loader.js             # Loader entry
+│   ├── core/                 # Core framework
+│   │   ├── View.js
+│   │   ├── Page.js
+│   │   ├── WebApp.js
+│   │   ├── PortalApp.js
+│   │   ├── models/
+│   │   ├── views/
+│   │   ├── services/
+│   │   └── utils/
+│   └── extensions/           # Extension packages
+│       ├── auth/
+│       ├── lightbox/
+│       ├── charts/
+│       └── docit/
+├── examples/                 # Live examples
+└── dist/                     # Built packages
 ```
 
-## 🚀 Performance
+### Building from Source
 
-MOJO is designed for performance:
+```bash
+# Install dependencies
+npm install
 
-- **Minimal Bundle Size** - Core framework is ~50KB gzipped
-- **No Build Required** - Works directly in browsers with ES6 modules
-- **Lazy Loading** - Components load on demand
-- **Event Delegation** - Efficient event handling
-- **Template Caching** - Templates compiled once, reused many times
+# Build all packages
+npm run build:lib
+
+# Development server
+npm run dev
+
+# Watch mode
+npm run dev:watch
+```
+
+### Import Aliases (Development)
+When developing the framework itself:
+
+```javascript
+// Use aliases for clean imports
+import View from '@core/View.js';
+import AuthApp from '@ext/auth/AuthApp.js';
+import { PieChart } from '@ext/charts/PieChart.js';
+```
+
+## 📋 API Reference
+
+### WebApp
+Main application container with routing and page management.
+
+```javascript
+const app = new WebApp({
+  name: 'My App',           // App name
+  container: '#app',        // DOM container
+  debug: true,              // Debug mode
+  api: {                    // API configuration
+    baseURL: 'https://api.example.com',
+    token: 'jwt-token'
+  }
+});
+
+// Register pages
+app.registerPage('home', HomePage);
+app.registerPage('users', UserListPage);
+
+// Navigation
+await app.navigate('users');
+await app.navigate('user/123');
+
+// Start app
+await app.start();
+```
+
+### PortalApp
+Extended WebApp with built-in sidebar and top navigation.
+
+```javascript
+const app = new PortalApp({
+  // All WebApp options plus:
+  sidebar: {
+    menus: [{
+      name: 'main',
+      items: [
+        { text: 'Home', route: 'home', icon: 'bi-house' },
+        { 
+          text: 'Admin', 
+          icon: 'bi-gear',
+          children: [
+            { text: 'Users', route: 'users' },
+            { text: 'Settings', route: 'settings' }
+          ]
+        }
+      ]
+    }]
+  },
+  topbar: {
+    brand: 'My Portal',
+    rightItems: [
+      { icon: 'bi-bell', action: 'notifications' }
+    ]
+  }
+});
+```
+
+### View Component System
+
+```javascript
+class MyView extends View {
+  constructor(options = {}) {
+    super({
+      className: 'my-view',
+      template: `
+        <div>
+          <h3>{{title}}</h3>
+          <button data-action="click-me">Click Me</button>
+          <div data-region="content"></div>
+        </div>
+      `,
+      ...options
+    });
+  }
+  
+  // Lifecycle hooks
+  async onMount() { /* Called when mounted to DOM */ }
+  async onUnmount() { /* Called when removed */ }
+  
+  // Template data
+  getTemplateData() {
+    return { title: 'My View' };
+  }
+  
+  // Event handlers
+  async onActionClickMe(action, event, element) {
+    this.showRegion('content', new AnotherView());
+  }
+  
+  // Custom events
+  onCustomEvent(data) { /* Handle custom events */ }
+}
+```
+
+## 🔧 Configuration
+
+### Vite Integration
+For modern build tools:
+
+```javascript
+// vite.config.js
+export default {
+  optimizeDeps: { 
+    exclude: ['web-mojo'] 
+  },
+  ssr: { 
+    noExternal: ['web-mojo'] 
+  }
+}
+```
+
+### CSS Imports
+```javascript
+// Bundle all CSS automatically
+import 'web-mojo'; // Includes core CSS
+
+// Or import specific stylesheets
+import 'web-mojo/css/core';
+import 'web-mojo/css/portal';
+import 'web-mojo/css/auth';
+```
+
+## 🔄 Migration from 2.0.x
+
+### Import Changes
+```javascript
+// Old (2.0.x)
+import WebApp from '/src/core/WebApp.js';
+import AuthApp from '/src/auth/AuthApp.js';
+
+// New (2.1.0)
+import { WebApp } from 'web-mojo';
+import { AuthApp } from 'web-mojo/auth';
+```
+
+### CSS Updates
+```html
+<!-- Old -->
+<link href="/src/css/core.css" rel="stylesheet" />
+
+<!-- New -->
+<link href="/dist/core.css" rel="stylesheet" />
+```
 
 ## 🤝 Contributing
 
-We welcome contributions! Here's how to get started:
-
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b my-new-feature`
-3. **Make your changes** and add tests
-4. **Run the tests**: `npm test`
-5. **Commit your changes**: `git commit -am 'Add some feature'`
-6. **Push to the branch**: `git push origin my-new-feature`
-7. **Submit a pull request**
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes following our coding standards
+4. Add tests for new functionality
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
 ### Development Setup
-
 ```bash
 git clone https://github.com/yourusername/web-mojo.git
 cd web-mojo
 npm install
-npm run dev  # Start development server
+npm run dev
 ```
 
 ## 📄 License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
-## 🙋‍♂️ Support
+## 🙋 Support
 
-- **📖 Documentation**: [Complete guides](docs/)
-- **💡 Examples**: [Working demos](examples/)
-- **🐛 Issues**: [GitHub Issues](https://github.com/yourusername/web-mojo/issues)
-- **💬 Discussions**: [GitHub Discussions](https://github.com/yourusername/web-mojo/discussions)
-
-## ⭐ Star History
-
-If you find MOJO useful, please consider giving it a star! ⭐
+- 📖 **Documentation**: [Full docs and examples](./docs/)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/yourusername/web-mojo/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/yourusername/web-mojo/discussions)
 
 ---
 
-**Built with ❤️ for the modern web**
-
-Ready to build something amazing? Check out the [Quick Start Guide](docs/QuickStart.md) and start coding!
+Built with ❤️ by the MOJO Framework Team

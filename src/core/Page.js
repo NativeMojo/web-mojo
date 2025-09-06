@@ -7,7 +7,7 @@
  *   - Use .emit/.on/.off/.once for all custom events.
  */
 
-import View from './View.js';
+import View from '@core/View.js';
 
 class Page extends View {
   constructor(options = {}) {

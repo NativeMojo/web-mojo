@@ -3,8 +3,7 @@
  * Demonstrates various validation techniques and error handling
  */
 
-import Page from '/src/core/Page.js';
-import FormView from '/src/forms/FormView.js';
+import { Page, FormView } from 'web-mojo';
 
 export default class FormValidationPage extends Page {
   static pageName = 'form-validation';
@@ -34,19 +33,19 @@ export default class FormValidationPage extends Page {
         <!-- Navigation Tabs -->
         <ul class="nav nav-tabs mb-4" id="validationTabs" role="tablist">
           <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic-validation" 
+            <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic-validation"
                     type="button" role="tab">Basic Validation</button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link" id="advanced-tab" data-bs-toggle="tab" data-bs-target="#advanced-validation" 
+            <button class="nav-link" id="advanced-tab" data-bs-toggle="tab" data-bs-target="#advanced-validation"
                     type="button" role="tab">Advanced Validation</button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link" id="custom-tab" data-bs-toggle="tab" data-bs-target="#custom-validation" 
+            <button class="nav-link" id="custom-tab" data-bs-toggle="tab" data-bs-target="#custom-validation"
                     type="button" role="tab">Custom Validation</button>
           </li>
           <li class="nav-item" role="presentation">
-            <button class="nav-link" id="realtime-tab" data-bs-toggle="tab" data-bs-target="#realtime-validation" 
+            <button class="nav-link" id="realtime-tab" data-bs-toggle="tab" data-bs-target="#realtime-validation"
                     type="button" role="tab">Real-time Validation</button>
           </li>
         </ul>
@@ -77,7 +76,7 @@ export default class FormValidationPage extends Page {
                       <li>Shows validation error on submit if empty</li>
                       <li>Displays red asterisk (*) in label</li>
                     </ul>
-                    
+
                     <h6 class="mt-3">Built-in HTML5 Validation</h6>
                     <ul class="small">
                       <li><strong>email</strong> - Validates email format</li>
@@ -537,7 +536,7 @@ export default class FormValidationPage extends Page {
     // Override validation for custom logic
     customForm.validateField = (name, value, field) => {
       const formData = customForm.getFormData();
-      
+
       switch (name) {
         case 'username_check':
           // Simulate username availability check
@@ -668,14 +667,14 @@ export default class FormValidationPage extends Page {
     realtimeForm.onChangeValidateField = async (action, event, element) => {
       const field = element.name;
       const value = element.value;
-      
+
       // Add visual feedback for real-time validation
       const fieldElement = element;
       fieldElement.classList.remove('is-valid', 'is-invalid');
-      
+
       // Perform validation
       const error = this.validateRealtimeField(field, value);
-      
+
       if (error) {
         fieldElement.classList.add('is-invalid');
         this.showFieldError(field, error);

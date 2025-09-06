@@ -1,7 +1,7 @@
 {
     "name": "web-mojo",
-    "version": "2.0.3109",
-    "description": "MOJO - A lightweight JavaScript framework for building data-driven web applications",
+    "version": "2.1.29",
+    "description": "WEB-MOJO - A lightweight JavaScript framework for building data-driven web applications",
     "type": "module",
     "main": "./dist/index.cjs.js",
     "module": "./dist/index.es.js",
@@ -19,13 +19,33 @@
             "import": "./dist/auth.es.js",
             "require": "./dist/auth.cjs.js"
         },
+        "./lightbox": {
+            "import": "./dist/lightbox.es.js",
+            "require": "./dist/lightbox.cjs.js"
+        },
+        "./admin": {
+            "import": "./dist/admin.es.js",
+            "require": "./dist/admin.cjs.js"
+        },
+        "./charts": {
+            "import": "./dist/charts.es.js",
+            "require": "./dist/charts.cjs.js"
+        },
+        "./docit": {
+            "import": "./dist/docit.es.js",
+            "require": "./dist/docit.cjs.js"
+        },
         "./templates": "./dist/templates/index.js",
         "./templates/*": "./dist/templates/*",
         "./style.css": "./dist/css/web-mojo.css",
         "./css/core": "./dist/core.css",
         "./css/portal": "./dist/portal.css",
         "./css/table": "./dist/table.css",
+        "./css/toast": "./dist/toast.css",
         "./css/auth": "./dist/auth.css",
+        "./css/lightbox": "./dist/lightbox.css",
+        "./css/charts": "./dist/charts.css",
+        "./css/admin": "./dist/admin.css",
         "./package.json": "./package.json"
     },
     "files": [
@@ -52,7 +72,7 @@
         "build:lib": "npm run build:templates && vite build --config vite.config.lib.js",
         "build:loader": "vite build --config vite.config.loader.js",
         "build:lib:watch": "vite build --config vite.config.lib.js --watch",
-        "build:css": "cp src/css/core.css dist/core.css && cp src/css/portal.css dist/portal.css && cp src/css/table.css dist/table.css && cp src/css/auth.css dist/auth.css",
+        "build:css": "cp src/core/css/core.css dist/core.css && cp src/core/css/portal.css dist/portal.css && cp src/core/css/table.css dist/table.css && cp src/core/css/toast.css dist/toast.css && cp src/extensions/auth/css/auth.css dist/auth.css && cp src/extensions/lightbox/css/lightbox.css dist/lightbox.css && cp src/extensions/charts/css/charts.css dist/charts.css && cp src/extensions/admin/css/admin.css dist/admin.css",
         "build:dist": "npm run clean && npm run build:templates && npm run build:lib && npm run build:loader && npm run build:css",
         "build:watch": "vite build --watch",
         "clean": "rm -rf dist",

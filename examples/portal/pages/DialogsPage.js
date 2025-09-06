@@ -3,9 +3,9 @@
  * Including the new context menu functionality with permissions
  */
 
-import Page from '/src/core/Page.js';
-import View from '/src/core/View.js';
-import Dialog from '/src/core/Dialog.js';
+import { Page } from 'web-mojo';
+import { View } from 'web-mojo';
+import { Dialog } from 'web-mojo';
 
 // Mock user with permission system for context menu demonstration
 class MockUser {

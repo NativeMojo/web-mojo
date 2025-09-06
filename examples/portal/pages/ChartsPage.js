@@ -3,8 +3,8 @@
  * Demonstrates SeriesChart and PieChart components with real-world data
  */
 
-import Page from '/src/core/Page.js';
-import { SeriesChart, PieChart } from '/src/charts/index.js';
+import { Page } from 'web-mojo';
+import { SeriesChart, PieChart } from 'web-mojo/charts';
 
 class ChartsPage extends Page {
     static pageName = 'charts';

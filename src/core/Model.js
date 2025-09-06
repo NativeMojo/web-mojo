@@ -30,10 +30,9 @@
  * user.set({ name: 'Bob', email: 'bob@example.com' }); // Emits 'change' and individual field events
  */
 
-import MOJOUtils from '../utils/MOJOUtils.js';
-import EventEmitter from '../utils/EventEmitter.js';
-import rest from './Rest.js';
-import Dialog from './Dialog.js';
+import MOJOUtils from '@core/utils/MOJOUtils.js';
+import EventEmitter from '@core/mixins/EventEmitter.js';
+import rest from '@core/Rest.js';
 
 class Model {
   constructor(data = {}, options = {}) {

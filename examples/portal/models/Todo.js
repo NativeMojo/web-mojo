@@ -1,5 +1,4 @@
-import Collection from '/src/core/Collection.js';
-import Model from '/src/core/Model.js';
+import { Collection, Model } from 'web-mojo';
 
 window.Model = Model;
 

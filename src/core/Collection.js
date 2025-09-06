@@ -44,9 +44,9 @@
  * await collection.fetch(); // Will make API call
  */
 
-import EventEmitter from '../utils/EventEmitter.js';
-import Model from '../core/Model.js';
-import rest from '../core/Rest.js';
+import EventEmitter from '@core/mixins/EventEmitter.js';
+import Model from '@core/Model.js';
+import rest from '@core/Rest.js';
 
 class Collection {
   constructor(options = {}, data = null) {

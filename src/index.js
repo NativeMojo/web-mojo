@@ -1,103 +1,71 @@
 /**
- * MOJO Framework - Main Library Entry Point
- * Export all public APIs for external consumption
- * Package: web-mojo
+ * MOJO Framework - Core Entry (2.1.0)
  */
 
-// Import CSS files so they are included in the build
-import './css/core.css';
-import './css/portal.css';
-import './css/table.css';
-import './css/toast.css';
+// Bundle core CSS
+import '@core/css/core.css';
+import '@core/css/portal.css';
+import '@core/css/table.css';
+import '@core/css/toast.css';
 
-// Import version information
-import { VERSION_INFO, VERSION, VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, BUILD_TIME } from './version.js';
-
-// Core framework classes
-export { default as View } from './core/View.js';
-export { default as Page } from './core/Page.js';
-export { default as Router } from './core/Router.js';
-export { default as Model } from './core/Model.js';
-export { default as Collection } from './core/Collection.js';
-export { default as Rest } from './core/Rest.js';
-export { default as Dialog } from './core/Dialog.js';
-export { default as EventDelegate } from './core/EventDelegate.js';
-
-// Views - Export all view components
-export * from './views/index.js';
-
-// Individual view exports for backward compatibility
-export { TableView, TableRow } from './views/table/index.js';
-export { ListView, ListViewItem } from './views/list/index.js';
-export { ChatView, ChatInputView, ChatMessageView } from './views/chat/index.js';
-export { TopNav, Sidebar, TabView, SimpleSearchView } from './views/navigation/index.js';
-export { DataView, FileView } from './views/data/index.js';
-export { ProgressView, ContextMenu } from './views/feedback/index.js';
-export { FilePreviewView } from './views/file/index.js';
-
-// Pages
-export * from './pages/index.js';
-export { default as NotFoundPage } from './pages/NotFoundPage.js';
-export { default as ErrorPage } from './pages/ErrorPage.js';
-export { default as DeniedPage } from './pages/DeniedPage.js';
-export { default as TablePage } from './pages/TablePage.js';
-
-// Forms
-export * from './forms/index.js';
-export { default as FormBuilder } from './forms/FormBuilder.js';
-export { default as FormView } from './forms/FormView.js';
-
-// Charts
-export * from './charts/index.js';
-
-// Mixins
-export * from './mixins/index.js';
-export { default as FileDropMixin, default as applyFileDropMixin } from './mixins/FileDropMixin.js';
-
-// Utilities
-export { default as EventBus } from './utils/EventBus.js';
-export { default as mustache } from './utils/mustache.js';
-export { default as DataFormatter } from './utils/DataFormatter.js';
-export { default as MustacheFormatter } from './utils/MustacheFormatter.js';
-export { default as MOJOUtils, DataWrapper } from './utils/MOJOUtils.js';
-
-// Authentication
-export { default as TokenManager } from './auth/TokenManager.js';
-
-// App classes
-export { default as WebApp } from './app/WebApp.js';
-export { default as PortalApp } from './app/PortalApp.js';
-
-// Services
-export { default as FileUpload } from './services/FileUpload.js';
-
-// Export framework metadata
-export const FRAMEWORK_NAME = 'MOJO';
-export const PACKAGE_NAME = 'web-mojo';
-
-// Export version information
-export { VERSION_INFO, VERSION, VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, BUILD_TIME };
-
-// Re-export namespaces for convenience
+// Version info
 export {
-  TableComponents,
-  ListComponents,
-  ChatComponents,
-  NavigationComponents,
-  DataComponents,
-  FeedbackComponents,
-  FileComponents
-} from './views/index.js';
-
-// Default export with all components organized by category
-export default {
-  // Framework info
-  FRAMEWORK_NAME,
-  PACKAGE_NAME,
   VERSION_INFO,
   VERSION,
   VERSION_MAJOR,
   VERSION_MINOR,
   VERSION_REVISION,
   BUILD_TIME
+} from './version.js';
+
+// Core runtime
+export { default as View } from '@core/View.js';
+export { default as Page } from '@core/Page.js';
+export { default as Router } from '@core/Router.js';
+export { default as Model } from '@core/Model.js';
+export { default as Collection } from '@core/Collection.js';
+export { default as Rest } from '@core/Rest.js';
+
+// App classes
+export { default as WebApp } from '@core/WebApp.js';
+export { default as PortalApp } from '@core/PortalApp.js';
+
+// UI helper
+export { default as Dialog } from '@core/views/feedback/Dialog.js';
+
+// Selected views (curated for tree-shaking)
+export { default as TableView } from '@core/views/table/TableView.js';
+export { default as TableRow } from '@core/views/table/TableRow.js';
+export { default as ListView } from '@core/views/list/ListView.js';
+export { default as ListViewItem } from '@core/views/list/ListViewItem.js';
+export { default as TopNav } from '@core/views/navigation/TopNav.js';
+export { default as Sidebar } from '@core/views/navigation/Sidebar.js';
+export { default as TabView } from '@core/views/navigation/TabView.js';
+export { default as SimpleSearchView } from '@core/views/navigation/SimpleSearchView.js';
+export { default as DataView } from '@core/views/data/DataView.js';
+export { default as FormView } from '@core/forms/FormView.js';
+export { default as FilePreviewView } from '@core/views/data/FilePreviewView.js';
+
+// Services, utils, mixins
+export { default as FileUpload } from '@core/services/FileUpload.js';
+export { default as applyFileDropMixin } from '@core/mixins/FileDropMixin.js';
+export { default as TokenManager } from '@core/services/TokenManager.js';
+export { default as ToastService } from '@core/services/ToastService.js';
+export { default as WebSocketClient } from '@core/services/WebSocketClient.js';
+export { default as EventDelegate } from '@core/mixins/EventDelegate.js';
+export { default as EventBus } from '@core/utils/EventBus.js';
+export { default as dataFormatter } from '@core/utils/DataFormatter.js';
+export { default as MustacheFormatter } from '@core/utils/MustacheFormatter.js';
+export { default as MOJOUtils, DataWrapper } from '@core/utils/MOJOUtils.js';
+
+// Additional views
+export { default as ProgressView } from '@core/views/feedback/ProgressView.js';
+
+// Names
+export const FRAMEWORK_NAME = 'MOJO';
+export const PACKAGE_NAME = 'web-mojo';
+
+export default {
+  FRAMEWORK_NAME,
+  PACKAGE_NAME,
 };

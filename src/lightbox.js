@@ -1,16 +1,30 @@
 /**
- * MOJO Lightbox Package - Media viewer components
- * Package: web-mojo/lightbox
+ * MOJO Lightbox Extension - Entry (2.1.0)
  */
 
-// Import lightbox CSS
-import './css/lightbox.css';
+// Bundle lightbox CSS
+import '@ext/lightbox/css/lightbox.css';
 
-// Export lightbox components
-export { default as ImageViewer } from './lightbox/ImageViewer.js';
-export { default as ImageEditor } from './lightbox/ImageEditor.js';
-export { default as PDFViewer } from './lightbox/PDFViewer.js';
+// Export all lightbox components
+export { default as ImageViewer } from '@ext/lightbox/ImageViewer.js';
+export { default as ImageEditor } from '@ext/lightbox/ImageEditor.js';
+export { default as ImageCropView } from '@ext/lightbox/ImageCropView.js';
+export { default as ImageCanvasView } from '@ext/lightbox/ImageCanvasView.js';
+export { default as ImageFiltersView } from '@ext/lightbox/ImageFiltersView.js';
+export { default as ImageTransformView } from '@ext/lightbox/ImageTransformView.js';
+export { default as ImageUploadView } from '@ext/lightbox/ImageUploadView.js';
+export { default as LightboxGallery } from '@ext/lightbox/LightboxGallery.js';
+export { default as PDFViewer } from '@ext/lightbox/PDFViewer.js';
 
-// Package metadata
-export const LIGHTBOX_PACKAGE_NAME = 'web-mojo/lightbox';
-export const LIGHTBOX_VERSION = '1.0.0';
+// Convenience
+export { default as WebApp } from '@core/WebApp.js';
+
+// Version info passthrough
+export {
+  VERSION_INFO,
+  VERSION,
+  VERSION_MAJOR,
+  VERSION_MINOR,
+  VERSION_REVISION,
+  BUILD_TIME
+} from './version.js';

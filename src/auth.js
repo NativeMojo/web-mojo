@@ -1,19 +1,31 @@
 /**
- * MOJO Auth Extension - Authentication Entry Point
- * Minimal auth module exports - AuthApp handles everything else
- * Package: web-mojo/auth
+ * MOJO Auth Extension - Entry (2.1.0)
  */
 
-// Import auth-specific CSS
-import './css/auth.css';
+// Bundle auth CSS
+import '@ext/auth/css/auth.css';
 
-// Import version information
-import { VERSION_INFO, VERSION, VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, BUILD_TIME } from './version.js';
+export { default as AuthApp } from '@ext/auth/AuthApp.js';
+export { default as AuthManager } from '@ext/auth/AuthManager.js';
 
-// Core auth functionality - handles all auth features internally
-export { default as AuthApp } from './auth/AuthApp.js';
+// Auth Pages
+export { default as LoginPage } from '@ext/auth/pages/LoginPage.js';
+export { default as RegisterPage } from '@ext/auth/pages/RegisterPage.js';
+export { default as ForgotPasswordPage } from '@ext/auth/pages/ForgotPasswordPage.js';
+export { default as ResetPasswordPage } from '@ext/auth/pages/ResetPasswordPage.js';
 
-// Optional passkey authentication plugin
-export { default as PasskeyPlugin } from './auth/plugins/PasskeyPlugin.js';
+// Auth Plugins
+export { default as PasskeyPlugin } from '@ext/auth/plugins/PasskeyPlugin.js';
 
-export { VERSION_INFO, VERSION, VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, BUILD_TIME };
+// Convenience
+export { default as WebApp } from '@core/WebApp.js';
+
+// Version info passthrough
+export {
+  VERSION_INFO,
+  VERSION,
+  VERSION_MAJOR,
+  VERSION_MINOR,
+  VERSION_REVISION,
+  BUILD_TIME
+} from './version.js';
