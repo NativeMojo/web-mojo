@@ -7,7 +7,7 @@ The MOJO Table component now supports context menus as an alternative to action 
 Instead of using the traditional `actions` array, you can now pass a `contextMenu` array to the Table constructor:
 
 ```javascript
-const table = new Table({
+const table = new TableView({
   Collection: UserCollection,
   collection: users,
   columns: [
@@ -86,7 +86,7 @@ contextMenu: [
 The table will check permissions using the `checkPermission()` method. By default, it looks for `app.user.hasPermission(permission)`. You can override this method in your table subclass:
 
 ```javascript
-class UsersTable extends Table {
+class UsersTable extends TableView {
   checkPermission(permission) {
     const app = this.getApp();
     return app?.user?.permissions?.includes(permission) || false;
@@ -114,7 +114,7 @@ contextMenu: [
       const confirmed = await Dialog.confirm(
         `Reset password for ${model.get('name')}?`
       );
-      
+
       if (confirmed) {
         try {
           await model.resetPassword();
@@ -134,7 +134,7 @@ contextMenu: [
       // Show role selection dialog
       const roleDialog = new RoleSelectionDialog({ user: model });
       const newRole = await Dialog.showForm(roleDialog);
-      
+
       if (newRole) {
         await model.save({ role: newRole });
         await this.refresh();
@@ -181,9 +181,9 @@ class UsersPage extends Page {
 
   async onInit() {
     await super.onInit();
-    
+
     this.users = new UserCollection();
-    
+
     this.table = new Table({
       Collection: UserCollection,
       collection: this.users,
@@ -232,16 +232,16 @@ class UsersPage extends Page {
         }
       ]
     });
-    
+
     this.addChild(this.table);
   }
-  
+
   async handleResetPassword(user, event, element) {
     const confirmed = await Dialog.confirm(
       `Reset password for ${user.get('name')}?`,
       'This will send a password reset email to the user.'
     );
-    
+
     if (confirmed) {
       try {
         await user.resetPassword();
@@ -251,22 +251,22 @@ class UsersPage extends Page {
       }
     }
   }
-  
+
   async handleChangeRole(user, event, element) {
     const roles = ['user', 'admin', 'moderator'];
     const currentRole = user.get('role');
-    
+
     const roleOptions = roles.map(role => ({
       value: role,
       label: role.charAt(0).toUpperCase() + role.slice(1),
       selected: role === currentRole
     }));
-    
+
     const newRole = await Dialog.showSelect(
       'Select new role:',
       roleOptions
     );
-    
+
     if (newRole && newRole !== currentRole) {
       try {
         await user.save({ role: newRole });
@@ -286,7 +286,7 @@ To migrate from action buttons to context menu, simply replace the `actions` pro
 
 ### Before (Action Buttons)
 ```javascript
-const table = new Table({
+const table = new TableView({
   // ... other options
   actions: ['view', 'edit', 'delete']
 });
@@ -294,7 +294,7 @@ const table = new Table({
 
 ### After (Context Menu)
 ```javascript
-const table = new Table({
+const table = new TableView({
   // ... other options
   contextMenu: [
     { icon: 'bi-eye', action: 'item-view', label: 'View' },
@@ -334,9 +334,9 @@ Disable menu items conditionally:
 ```javascript
 contextMenu: [
   { icon: 'bi-eye', action: 'item-view', label: 'View' },
-  { 
-    icon: 'bi-pencil', 
-    action: 'item-edit', 
+  {
+    icon: 'bi-pencil',
+    action: 'item-edit',
     label: 'Edit',
     disabled: item => item.get('status') === 'archived'
   }

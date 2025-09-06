@@ -2,12 +2,12 @@
  * JobsTable - Jobs management table
  */
 
-import Table from '../../views/table/Table.js';
+import TableView from '../../views/table/TableView.js';
 import Dialog from '../../core/Dialog.js';
 import { JobList, JobForms } from '../../models/Job.js';
 import JobDetailsView from '../views/JobDetailsView.js';
 
-export default class JobsTable extends Table {
+export default class JobsTable extends TableView {
     constructor(options = {}) {
         super({
             Collection: JobList,

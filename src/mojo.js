@@ -11,10 +11,8 @@ import MOJO from './index.js';
 export default MOJO;
 
 // Log version info in development
+import { VERSION_INFO } from './version.js';
+
 if (typeof window !== 'undefined' && window.console) {
-  import('./version.js').then(({ VERSION_INFO }) => {
-    console.log(`MOJO Framework ${VERSION_INFO.version} loaded`);
-  }).catch(() => {
-    // Silent fail if version info not available
-  });
+  console.log(`MOJO Framework ${VERSION_INFO.version} loaded`);
 }

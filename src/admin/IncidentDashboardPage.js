@@ -4,7 +4,7 @@ import {
     MetricsChart,
     PieChart
 } from '../charts/index.js';
-import Table from '../views/table/Table.js';
+import TableView from '../views/table/TableView.js';
 import {
     IncidentList,
     IncidentStats
@@ -217,7 +217,7 @@ class IncidentDashboardPage extends Page {
                 status: 'open'
             }
         });
-        this.myTicketsTable = new Table({
+        this.myTicketsTable = new TableView({
             containerId: 'my-tickets-table',
             title: 'My Open Tickets',
             collection: myTicketsCollection,
@@ -241,7 +241,7 @@ class IncidentDashboardPage extends Page {
                 state: 'open'
             }
         });
-        this.highPriorityIncidentsTable = new Table({
+        this.highPriorityIncidentsTable = new TableView({
             containerId: 'high-priority-incidents-table',
             title: 'Recent High-Priority Incidents',
             collection: highPriorityIncidentsCollection,

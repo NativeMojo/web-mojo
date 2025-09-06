@@ -4,7 +4,7 @@
  */
 
 import TablePage from '../pages/TablePage.js';
-import { FileList, FileForms } from '../models/Files.js';
+import { File, FileList, FileForms } from '../models/Files.js';
 import FileView from './views/FileView.js';
 import applyFileDropMixin from '../mixins/FileDropMixin.js';
 
@@ -112,7 +112,6 @@ class FileTablePage extends TablePage {
 
         try {
             // Create new File model instance
-            const { File } = await import('../models/Files.js');
             const fileModel = new File();
 
             // Start upload with progress tracking

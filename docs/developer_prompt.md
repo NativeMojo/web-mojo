@@ -194,7 +194,7 @@ Powerful tabular data display with sorting, search, paging, REST or local, and e
 import { Table, TablePage } from 'web-mojo';
 
 // Table: direct instantiation
-const table = new Table({
+const table = new TableView({
   Collection: MyUserCollection,
   columns: [
     { key: 'id', title: 'ID', sortable: true },

@@ -66,7 +66,7 @@ const list1 = new ListView({ collection });
 const list2 = new ListView({ collection: UserCollection });
 
 // 3. Array of data (will create basic Collection)
-const list3 = new ListView({ 
+const list3 = new ListView({
   collection: [
     { id: 1, name: 'Item 1' },
     { id: 2, name: 'Item 2' }
@@ -156,7 +156,7 @@ import ListViewItem from './components/ListViewItem.js';
 class ProductItem extends ListViewItem {
   constructor(options) {
     super(options);
-    
+
     this.template = `
       <div class="product">
         <h3>{{model.name}}</h3>
@@ -164,7 +164,7 @@ class ProductItem extends ListViewItem {
       </div>
     `;
   }
-  
+
   async onActionAddToCart(action, event, element) {
     const product = this.model;
     await cartService.addItem(product);
@@ -252,16 +252,16 @@ Columns support various formatting options:
 const columns = [
   // Simple column
   { key: 'name', label: 'Name' },
-  
+
   // With sorting
   { key: 'email', label: 'Email', sortable: true },
-  
+
   // With formatter (string)
   { key: 'price', label: 'Price', formatter: 'currency' },
-  
+
   // With formatter (pipe expression)
   { key: 'description', label: 'Description', formatter: 'truncate(50)|capitalize' },
-  
+
   // With formatter (function)
   {
     key: 'status',
@@ -272,12 +272,12 @@ const columns = [
       return `<span class="badge bg-${color}">${value}</span>`;
     }
   },
-  
+
   // With type-based formatting
   { key: 'active', label: 'Active', type: 'boolean' },
   { key: 'created', label: 'Created', type: 'date' },
   { key: 'avatar', label: 'Avatar', type: 'image' },
-  
+
   // With custom template
   {
     key: 'user',
@@ -289,7 +289,7 @@ const columns = [
       </div>
     `
   },
-  
+
   // With CSS classes
   { key: 'amount', label: 'Amount', className: 'text-end', formatter: 'currency' }
 ];
@@ -342,7 +342,7 @@ const table3 = new TableView({
 const tableView = new TableView({
   collection: items,
   columns: columns,
-  
+
   // Display options
   tableOptions: {
     striped: true,      // Zebra striping
@@ -351,28 +351,28 @@ const tableView = new TableView({
     responsive: false,  // Responsive wrapper
     size: 'sm'         // Table size: null, 'sm', 'lg'
   },
-  
+
   // Features
   searchable: true,           // Show search box
   sortable: true,            // Enable column sorting
   filterable: true,          // Show filter dropdown
   paginated: true,           // Enable pagination
   selectable: true,          // Enable row selection
-  
+
   // Search configuration
   searchPlacement: 'toolbar', // 'toolbar' or 'dropdown'
   searchPlaceholder: 'Search users...',
-  
+
   // Batch actions (requires selectable: true)
   batchActions: [
     { action: 'delete-selected', label: 'Delete', icon: 'bi bi-trash' },
     { action: 'export-selected', label: 'Export', icon: 'bi bi-download' }
   ],
-  
+
   // Additional buttons
   showAdd: true,
   showExport: true,
-  
+
   // Empty state
   emptyMessage: 'No users found'
 });
@@ -458,15 +458,15 @@ class UserRow extends TableRow {
   buildCellTemplate(column) {
     if (column.key === 'avatar') {
       return `
-        <img src="{{model.avatar}}" 
-             class="rounded-circle" 
+        <img src="{{model.avatar}}"
+             class="rounded-circle"
              width="32" height="32"
              alt="{{model.name}}">
       `;
     }
     return super.buildCellTemplate(column);
   }
-  
+
   async onActionPromote(action, event, element) {
     await this.model.save({ role: 'admin' });
     this.showSuccess('User promoted!');
@@ -512,8 +512,8 @@ If you're using the legacy `Table` component, you can migrate gradually:
 ### Step 1: Run Side-by-Side
 ```javascript
 // Keep existing Table for now
-import Table from './components/Table.js';
-const legacyTable = new Table({ ... });
+import TableView from './components/Table.js';
+const legacyTable = new TableView({ ... });
 
 // Add new TableView for new features
 import TableView from './components/TableView.js';
@@ -562,8 +562,8 @@ tableView.on('row:click', ({ model }) => { ... });
 const productTable = new TableView({
   collection: productCollection,
   columns: [
-    { 
-      key: 'image', 
+    {
+      key: 'image',
       label: 'Product',
       template: (value, row) => `
         <div class="d-flex align-items-center">
@@ -598,10 +598,10 @@ const userTable = new TableView({
     { key: 'email', label: 'Email' },
     { key: 'role', label: 'Role', type: 'badge' },
     { key: 'lastLogin', label: 'Last Login', formatter: 'datetime' },
-    { 
-      key: 'active', 
+    {
+      key: 'active',
       label: 'Status',
-      formatter: (value) => value 
+      formatter: (value) => value
         ? '<span class="badge bg-success">Active</span>'
         : '<span class="badge bg-danger">Inactive</span>'
     }

@@ -12,7 +12,7 @@ export * from './feedback/index.js';
 export * from './file/index.js';
 
 // Named exports for direct access to common components
-export { Table, TableView, TableRow } from './table/index.js';
+export { TableView, TableRow } from './table/index.js';
 export { ListView, ListViewItem } from './list/index.js';
 export { ChatView, ChatInputView, ChatMessageView } from './chat/index.js';
 export { TopNav, Sidebar, TabView, SimpleSearchView } from './navigation/index.js';

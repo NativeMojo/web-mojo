@@ -32,7 +32,8 @@
 
 import MOJOUtils from '../utils/MOJOUtils.js';
 import EventEmitter from '../utils/EventEmitter.js';
-import rest from '../core/Rest.js';
+import rest from './Rest.js';
+import Dialog from './Dialog.js';
 
 class Model {
   constructor(data = {}, options = {}) {
@@ -538,7 +539,6 @@ class Model {
   }
 
   async showError(message) {
-      const Dialog = await import('./Dialog.js').then(m => m.default);
       await Dialog.alert(message, 'Error', {
         size: 'md',
         class: 'text-danger'

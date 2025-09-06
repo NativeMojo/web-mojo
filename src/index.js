@@ -27,7 +27,7 @@ export { default as EventDelegate } from './core/EventDelegate.js';
 export * from './views/index.js';
 
 // Individual view exports for backward compatibility
-export { Table, TableView, TableRow } from './views/table/index.js';
+export { TableView, TableRow } from './views/table/index.js';
 export { ListView, ListViewItem } from './views/list/index.js';
 export { ChatView, ChatInputView, ChatMessageView } from './views/chat/index.js';
 export { TopNav, Sidebar, TabView, SimpleSearchView } from './views/navigation/index.js';

@@ -21,6 +21,8 @@
 import ListView from '../list/ListView.js';
 import TableRow from './TableRow.js';
 import Mustache from '../../utils/mustache.js';
+import Dialog from '../../core/Dialog.js';
+import FormView from '../../forms/FormView.js';
 
 class TableView extends ListView {
   constructor(options = {}) {
@@ -834,7 +836,6 @@ class TableView extends ListView {
       return;
     }
 
-    const Dialog = await import('../../core/Dialog.js').then(m => m.default);
     const ViewClass = this.getItemViewClass(event.model);
 
     if (ViewClass) {
@@ -869,7 +870,6 @@ class TableView extends ListView {
       return;
     }
 
-    const Dialog = await import('../../core/Dialog.js').then(m => m.default);
     const ModelClass = this.getModelClass(event.model);
     let formConfig = this.getEditFormConfig(ModelClass);
 
@@ -886,7 +886,7 @@ class TableView extends ListView {
 
     } else {
       // Fallback to basic form if no config provided
-      const FormView = await import('../../forms/FormView.js').then(m => m.default);
+      // Using statically imported FormView
       const result = await Dialog.showDialog({
         title: `Edit ${this.getModelName(event.model)} #${event.model.id}`,
         body: new FormView({
@@ -914,7 +914,6 @@ class TableView extends ListView {
       return;
     }
 
-    const Dialog = await import('../../core/Dialog.js').then(m => m.default);
     const ModelClass = this.getModelClass(event.model);
 
     // Get delete template from options, Model class, or use default
@@ -966,7 +965,6 @@ class TableView extends ListView {
     let formConfig = this.getAddFormConfig(ModelClass);
 
     if (formConfig) {
-      const Dialog = await import('../../core/Dialog.js').then(m => m.default);
       const model = new ModelClass();
       if (!formConfig.fields) {
           formConfig = { title: `Add ${this.getModelName()}`, fields: formConfig };
@@ -987,8 +985,7 @@ class TableView extends ListView {
       }
     } else {
       // Fallback to basic form if no config provided
-      const Dialog = await import('../../core/Dialog.js').then(m => m.default);
-      const FormView = await import('../../forms/FormView.js').then(m => m.default);
+      // Using statically imported FormView
       const model = new ModelClass();
 
       const result = await Dialog.showDialog({
@@ -1519,8 +1516,7 @@ class TableView extends ListView {
       return;
     }
 
-    // Import Dialog dynamically
-    const Dialog = await import('../../core/Dialog.js').then(m => m.default);
+    // Using statically imported Dialog
 
     // Show dialog for this specific filter
     const result = await Dialog.showForm({
@@ -1622,8 +1618,7 @@ class TableView extends ListView {
       return;
     }
 
-    // Import Dialog dynamically
-    const Dialog = await import('../../core/Dialog.js').then(m => m.default);
+    // Using statically imported Dialog
 
     // Show mini dialog for this specific filter
     const result = await Dialog.showForm({

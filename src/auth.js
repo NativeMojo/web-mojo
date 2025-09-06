@@ -16,7 +16,4 @@ export { default as AuthApp } from './auth/AuthApp.js';
 // Optional passkey authentication plugin
 export { default as PasskeyPlugin } from './auth/plugins/PasskeyPlugin.js';
 
-// WebApp directly from source (avoid loading entire framework)
-export { default as WebApp } from './app/WebApp.js';
-
 export { VERSION_INFO, VERSION, VERSION_MAJOR, VERSION_MINOR, VERSION_REVISION, BUILD_TIME };

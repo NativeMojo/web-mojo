@@ -6,7 +6,7 @@ import Page from '../core/Page.js';
 import View from '../core/View.js';
 import Collection from '../core/Collection.js';
 import TabView from '../views/navigation/TabView.js';
-import Table from '../views/table/Table.js';
+import TableView from '../views/table/TableView.js';
 import { MetricsChart } from '../charts/index.js';
 import Dialog from '../core/Dialog.js';
 import TaskDetailsView from './TaskDetailsView.js';
@@ -445,7 +445,7 @@ class TaskChartsView extends View {
 }
 
 // Task Table Views
-class BaseTaskTable extends Table {
+class BaseTaskTable extends TableView {
   constructor(options = {}) {
     super({
       showPagination: true,
@@ -599,7 +599,7 @@ class BaseTaskTable extends Table {
   }
 }
 
-class PendingTasksTable extends Table {
+class PendingTasksTable extends TableView {
   constructor(options = {}) {
     super({
       ...options,
@@ -618,7 +618,7 @@ class PendingTasksTable extends Table {
   }
 }
 
-class RunningTasksTable extends Table {
+class RunningTasksTable extends TableView {
   constructor(options = {}) {
     super({
       ...options,
@@ -637,7 +637,7 @@ class RunningTasksTable extends Table {
   }
 }
 
-class CompletedTasksTable extends Table {
+class CompletedTasksTable extends TableView {
   constructor(options = {}) {
     super({
       ...options,
@@ -657,7 +657,7 @@ class CompletedTasksTable extends Table {
   }
 }
 
-class ErrorTasksTable extends Table {
+class ErrorTasksTable extends TableView {
   constructor(options = {}) {
     super({
       ...options,

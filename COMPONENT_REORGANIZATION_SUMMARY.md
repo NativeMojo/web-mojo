@@ -116,12 +116,12 @@ All import statements throughout the codebase were updated to reflect the new st
 ### 4. **Better Import Experience**
 ```javascript
 // Before (unclear organization)
-import Table from '../components/Table.js';
+import TableView from '../components/TableView.js';
 import Dialog from '../components/Dialog.js';
 import ChatView from '../admin/components/ChatView.js';
 
 // After (clear, semantic imports)
-import Table from '../views/table/Table.js';
+import TableView from '../views/table/TableView.js';
 import Dialog from '../core/Dialog.js';
 import ChatView from '../views/chat/ChatView.js';
 

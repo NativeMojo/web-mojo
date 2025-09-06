@@ -18,7 +18,8 @@
 
 import Router from '../core/Router.js';
 import EventBus from '../utils/EventBus.js';
-import Dialog from '../core/Dialog.js';
+// Dialog is intentionally not imported statically to avoid circular deps and reduce initial bundle size.
+// It will be loaded lazily inside helper methods when needed.
 import rest from '../core/Rest.js';
 
 class WebApp {
@@ -495,29 +496,73 @@ class WebApp {
     /**
      * Show error notification
      */
-    showError(message) {
-        this.events.emit('notification', { message, type: 'error' });
+    async showError(message) {
+        try {
+            const Dialog = (await import('../core/Dialog.js')).default;
+            await Dialog.alert(message, 'Error', { size: 'md', class: 'text-danger' });
+        } catch (e) {
+            this.events.emit('notification', { message, type: 'error' });
+            if (typeof window !== 'undefined' && window?.console) {
+                console.error('[WebApp] showError fallback:', e);
+            }
+            if (typeof window !== 'undefined') {
+                alert(`Error: ${message}`);
+            }
+        }
     }
 
     /**
      * Show success notification
      */
-    showSuccess(message) {
-        this.events.emit('notification', { message, type: 'success' });
+    async showSuccess(message) {
+        try {
+            const Dialog = (await import('../core/Dialog.js')).default;
+            await Dialog.alert(message, 'Success', { size: 'md', class: 'text-success' });
+        } catch (e) {
+            this.events.emit('notification', { message, type: 'success' });
+            if (typeof window !== 'undefined' && window?.console) {
+                console.warn('[WebApp] showSuccess fallback:', e);
+            }
+            if (typeof window !== 'undefined') {
+                alert(`Success: ${message}`);
+            }
+        }
     }
 
     /**
      * Show info notification
      */
-    showInfo(message) {
-        this.events.emit('notification', { message, type: 'info' });
+    async showInfo(message) {
+        try {
+            const Dialog = (await import('../core/Dialog.js')).default;
+            await Dialog.alert(message, 'Information', { size: 'md', class: 'text-info' });
+        } catch (e) {
+            this.events.emit('notification', { message, type: 'info' });
+            if (typeof window !== 'undefined' && window?.console) {
+                console.info('[WebApp] showInfo fallback:', e);
+            }
+            if (typeof window !== 'undefined') {
+                alert(`Info: ${message}`);
+            }
+        }
     }
 
     /**
      * Show warning notification
      */
-    showWarning(message) {
-        this.events.emit('notification', { message, type: 'warning' });
+    async showWarning(message) {
+        try {
+            const Dialog = (await import('../core/Dialog.js')).default;
+            await Dialog.alert(message, 'Warning', { size: 'md', class: 'text-warning' });
+        } catch (e) {
+            this.events.emit('notification', { message, type: 'warning' });
+            if (typeof window !== 'undefined' && window?.console) {
+                console.warn('[WebApp] showWarning fallback:', e);
+            }
+            if (typeof window !== 'undefined') {
+                alert(`Warning: ${message}`);
+            }
+        }
     }
 
     /**
@@ -530,26 +575,59 @@ class WebApp {
     /**
      * Show loading indicator
      */
-    showLoading(opts = {}) {
+    async showLoading(opts = {}) {
         if (typeof opts === 'string') {
             opts = { message: opts };
         }
-        Dialog.showBusy(opts);
+        try {
+            const Dialog = (await import('../core/Dialog.js')).default;
+            Dialog.showBusy(opts);
+        } catch (e) {
+            if (typeof window !== 'undefined' && window?.console) {
+                console.warn('[WebApp] showLoading fallback:', e, opts);
+            }
+            // Minimal no-op fallback; consumers can listen to 'notification' if desired
+            this.events.emit('notification', { message: opts.message || 'Loading...', type: 'info' });
+        }
     }
 
     /**
      * Hide loading indicator
      */
-    hideLoading() {
-        Dialog.hideBusy();
+    async hideLoading() {
+        try {
+            const Dialog = (await import('../core/Dialog.js')).default;
+            Dialog.hideBusy();
+        } catch (e) {
+            if (typeof window !== 'undefined' && window?.console) {
+                console.warn('[WebApp] hideLoading fallback:', e);
+            }
+            // No visible fallback necessary
+        }
     }
 
     async showModelForm(options = {}) {
-        return await Dialog.showModelForm(options);
+        try {
+            const Dialog = (await import('../core/Dialog.js')).default;
+            return await Dialog.showModelForm(options);
+        } catch (e) {
+            if (typeof window !== 'undefined' && window?.console) {
+                console.error('[WebApp] showModelForm failed:', e);
+            }
+            throw e;
+        }
     }
 
     async showForm(options = {}) {
-        return await Dialog.showForm(options);
+        try {
+            const Dialog = (await import('../core/Dialog.js')).default;
+            return await Dialog.showForm(options);
+        } catch (e) {
+            if (typeof window !== 'undefined' && window?.console) {
+                console.error('[WebApp] showForm failed:', e);
+            }
+            throw e;
+        }
     }
 
     /**

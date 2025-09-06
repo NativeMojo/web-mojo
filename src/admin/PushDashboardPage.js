@@ -1,6 +1,6 @@
 import Page from '../core/Page.js';
 import { MetricsChart, PieChart } from '../charts/index.js';
-import Table from '../views/table/Table.js';
+import TableView from '../views/table/TableView.js';
 import { PushDeliveryList } from '../models/Push.js';
 
 class PushDashboardPage extends Page {
@@ -56,7 +56,7 @@ class PushDashboardPage extends Page {
         });
         this.addChild(this.statusChart);
 
-        this.recentDeliveries = new Table({
+        this.recentDeliveries = new TableView({
             containerId: 'recent-deliveries',
             title: 'Recent Deliveries',
             Collection: new PushDeliveryList({ params: { _sort: '-created', _limit: 5 } }),
@@ -64,7 +64,7 @@ class PushDashboardPage extends Page {
         });
         this.addChild(this.recentDeliveries);
 
-        this.failedDeliveries = new Table({
+        this.failedDeliveries = new TableView({
             containerId: 'failed-deliveries',
             title: 'Failed Deliveries',
             Collection: new PushDeliveryList({ params: { status: 'failed', _sort: '-created', _limit: 5 } }),

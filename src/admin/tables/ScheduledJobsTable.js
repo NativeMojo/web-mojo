@@ -2,10 +2,10 @@
  * ScheduledJobsTable - Scheduled jobs table
  */
 
-import Table from '../../views/table/Table.js';
+import TableView from '../../views/table/TableView.js';
 import { JobList } from '../../models/Job.js';
 
-export default class ScheduledJobsTable extends Table {
+export default class ScheduledJobsTable extends TableView {
     constructor(options = {}) {
         super({
             Collection: JobList,

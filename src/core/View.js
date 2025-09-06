@@ -603,18 +603,13 @@ export class View {
    */
   async showError(message) {
     console.error(`View ${this.id} error:`, message);
-
-    // Use Dialog component for better UX
-    try {
-      const Dialog = await import('./Dialog.js').then(m => m.default);
-      await Dialog.alert(message, 'Error', {
-        size: 'md',
-        class: 'text-danger'
-      });
-    } catch (importError) {
-      // Fallback to MOJO framework dialog if Dialog import fails
-      alert(`Error: ${message}`);
+    const app = this.getApp ? this.getApp() : (this.app || null);
+    if (app && typeof app.showError === 'function') {
+      await app.showError(message);
+      return;
     }
+    // Fallback to browser alert if no app or helper available
+    alert(`Error: ${message}`);
   }
 
   /**
@@ -625,23 +620,13 @@ export class View {
     if (this.debug) {
       console.log(`View ${this.id} success:`, message);
     }
-
-    // Use Dialog component for better UX
-    try {
-      const Dialog = await import('./Dialog.js').then(m => m.default);
-      await Dialog.alert(message, 'Success', {
-        size: 'md',
-        class: 'text-success'
-      });
-    } catch (importError) {
-      // Fallback to MOJO framework dialog if Dialog import fails
-      if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showSuccess) {
-        window.MOJO.showSuccess(message);
-      } else {
-        // Ultimate fallback to browser alert
-        alert(`Success: ${message}`);
-      }
+    const app = this.getApp ? this.getApp() : (this.app || null);
+    if (app && typeof app.showSuccess === 'function') {
+      await app.showSuccess(message);
+      return;
     }
+    // Fallback to browser alert if no app or helper available
+    alert(`Success: ${message}`);
   }
 
   /**
@@ -650,23 +635,13 @@ export class View {
    */
   async showInfo(message) {
     console.info(`View ${this.id} info:`, message);
-
-    // Use Dialog component for better UX
-    try {
-      const Dialog = await import('./Dialog.js').then(m => m.default);
-      await Dialog.alert(message, 'Information', {
-        size: 'md',
-        class: 'text-info'
-      });
-    } catch (importError) {
-      // Fallback to MOJO framework dialog if Dialog import fails
-      if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showInfo) {
-        window.MOJO.showInfo(message);
-      } else {
-        // Ultimate fallback to browser alert
-        alert(`Info: ${message}`);
-      }
+    const app = this.getApp ? this.getApp() : (this.app || null);
+    if (app && typeof app.showInfo === 'function') {
+      await app.showInfo(message);
+      return;
     }
+    // Fallback to browser alert if no app or helper available
+    alert(`Info: ${message}`);
   }
 
   /**
@@ -675,23 +650,13 @@ export class View {
    */
   async showWarning(message) {
     console.warn(`View ${this.id} warning:`, message);
-
-    // Use Dialog component for better UX
-    try {
-      const Dialog = await import('./Dialog.js').then(m => m.default);
-      await Dialog.alert(message, 'Warning', {
-        size: 'md',
-        class: 'text-warning'
-      });
-    } catch (importError) {
-      // Fallback to MOJO framework dialog if Dialog import fails
-      if (typeof window !== 'undefined' && window.MOJO && window.MOJO.showWarning) {
-        window.MOJO.showWarning(message);
-      } else {
-        // Ultimate fallback to browser alert
-        alert(`Warning: ${message}`);
-      }
+    const app = this.getApp ? this.getApp() : (this.app || null);
+    if (app && typeof app.showWarning === 'function') {
+      await app.showWarning(message);
+      return;
     }
+    // Fallback to browser alert if no app or helper available
+    alert(`Warning: ${message}`);
   }
 
   static _genId() { return `view_${Math.random().toString(36).substr(2, 9)}`; }

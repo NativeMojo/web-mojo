@@ -2,10 +2,10 @@
  * RunnersTable - Job runners management table
  */
 
-import Table from '../../views/table/Table.js';
+import TableView from '../../views/table/TableView.js';
 import { JobRunnerList } from '../../models/JobRunner.js';
 
-export default class RunnersTable extends Table {
+export default class RunnersTable extends TableView {
     constructor(options = {}) {
         super({
             Collection: JobRunnerList,

@@ -74,7 +74,7 @@ const dialog = new Dialog({
   body: 'Content or View',         // String, HTML, or View instance
   footer: 'Footer content',        // String, HTML, or View instance
   buttons: [],                     // Array of button configurations
-  
+
   // Context Menu
   contextMenu: {                   // Header context menu configuration
     icon: 'bi-three-dots-vertical', // Trigger button icon
@@ -97,30 +97,30 @@ const dialog = new Dialog({
       }
     ]
   },
-  
+
   // Layout
   size: 'lg',                      // 'sm', 'lg', 'xl', 'fullscreen', etc.
   centered: true,                  // Vertically center the modal
   scrollable: true,                // Make body scrollable for long content
-  
+
   // Behavior
   backdrop: true,                  // true, false, or 'static'
   keyboard: true,                  // Close on Escape key
   focus: true,                     // Focus modal when shown
   autoShow: false,                 // Show immediately after creation
-  
+
   // Styling
   fade: true,                      // Fade animation
   className: 'custom-modal',       // Additional CSS classes
   bodyClass: 'custom-body',        // Body container classes
   footerClass: 'custom-footer',    // Footer container classes
-  
+
   // Events
   onShow: () => {},                // Called when showing
   onShown: () => {},               // Called after shown
   onHide: () => {},                // Called when hiding
   onHidden: () => {},              // Called after hidden
-  
+
   // Header customization
   header: true,                    // Show header
   headerContent: '<custom>',       // Custom header HTML
@@ -392,7 +392,7 @@ const dialog = new Dialog({
       {
         id: 'save',
         icon: 'bi-save',
-        action: 'save-document', 
+        action: 'save-document',
         label: 'Save',
         permissions: 'edit_content'
       },
@@ -528,15 +528,15 @@ contextMenu: {
     // Primary actions
     { action: 'save', label: 'Save' },
     { action: 'save-as', label: 'Save As...' },
-    
+
     { type: 'divider' },
-    
-    // Secondary actions  
+
+    // Secondary actions
     { action: 'export', label: 'Export' },
     { action: 'share', label: 'Share' },
-    
+
     { type: 'divider' },
-    
+
     // Navigation/exit
     { action: 'close', label: 'Close' }
   ]
@@ -551,23 +551,23 @@ contextMenu: {
   items: [
     // Always visible
     { action: 'view-details', label: 'View Details' },
-    
+
     // Edit permissions
-    { 
-      action: 'edit', 
+    {
+      action: 'edit',
       label: 'Edit',
-      permissions: 'edit_content' 
+      permissions: 'edit_content'
     },
-    { 
-      action: 'delete', 
+    {
+      action: 'delete',
       label: 'Delete',
       permissions: 'delete_content'  // Requires higher permission
     },
-    
+
     // Admin only
     {
       action: 'admin-settings',
-      label: 'Admin Settings', 
+      label: 'Admin Settings',
       permissions: 'admin_access'
     }
   ]
@@ -581,7 +581,7 @@ Use consistent icons for similar actions across your app:
 // Define icon constants
 const ICONS = {
   SAVE: 'bi-save',
-  EDIT: 'bi-pencil', 
+  EDIT: 'bi-pencil',
   DELETE: 'bi-trash',
   SETTINGS: 'bi-gear',
   HELP: 'bi-question-circle',
@@ -625,11 +625,11 @@ contextMenu: {
     // Always include basic actions
     { action: 'view', label: 'View Details' },
     { action: 'refresh', label: 'Refresh' },
-    
+
     // Optional actions based on permissions
     { action: 'edit', label: 'Edit', permissions: 'edit' },
     { action: 'admin', label: 'Admin', permissions: 'admin' },
-    
+
     // Always include close option
     { type: 'divider' },
     { action: 'close', label: 'Close' }
@@ -766,10 +766,10 @@ const dialog = new Dialog({
   body: async () => {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     // Return View or HTML
-    return new DataTableView({ 
-      collection: await loadUserData() 
+    return new DataTableView({
+      collection: await loadUserData()
     });
   },
   size: 'xl'
@@ -793,7 +793,7 @@ const dialog = new Dialog({
         label: 'Custom Action 1'
       },
       {
-        id: 'action2', 
+        id: 'action2',
         icon: 'bi-2-circle',
         action: 'custom-action-2',
         label: 'Custom Action 2'
@@ -850,10 +850,10 @@ dialog.on('action:submit', (event) => {
     form.reportValidity(); // Show validation messages
     return;
   }
-  
+
   const formData = new FormData(form);
   const data = Object.fromEntries(formData);
-  
+
   console.log('Form submitted:', data);
   // Dialog will close automatically
 });
@@ -876,11 +876,11 @@ class WizardDialog extends Dialog {
       ],
       ...options
     });
-    
+
     this.currentStep = 0;
     this.steps = options.steps || [];
   }
-  
+
   async buildBody() {
     const step = this.steps[this.currentStep];
     return `
@@ -893,14 +893,14 @@ class WizardDialog extends Dialog {
       </div>
     `;
   }
-  
+
   async handleActionNext() {
     if (this.currentStep < this.steps.length - 1) {
       this.currentStep++;
       await this.render();
     }
   }
-  
+
   async handleActionPrev() {
     if (this.currentStep > 0) {
       this.currentStep--;
@@ -1000,16 +1000,16 @@ Handle errors gracefully:
 dialog.on('action:save', async (event, element) => {
   try {
     event.preventDefault(); // Don't auto-close
-    
+
     const button = element;
     button.disabled = true;
     button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
-    
+
     await saveData();
-    
+
     dialog.hide();
     showSuccessMessage('Data saved successfully!');
-    
+
   } catch (error) {
     showErrorMessage('Failed to save: ' + error.message);
   } finally {
@@ -1041,7 +1041,7 @@ class EditUserView extends View {
   async handleActionEdit(event, element) {
     const userId = element.getAttribute('data-id');
     const user = await User.find(userId);
-    
+
     const formView = new UserFormView({ model: user });
     const dialog = new Dialog({
       title: 'Edit User',
@@ -1067,7 +1067,7 @@ class EditUserView extends View {
           },
           {
             id: 'user-history',
-            icon: 'bi-clock-history', 
+            icon: 'bi-clock-history',
             action: 'view-user-history',
             label: 'View History',
             'data-user-id': userId
@@ -1113,11 +1113,11 @@ class EditUserView extends View {
 ```javascript
 import { Table, Dialog } from 'web-mojo';
 
-class UsersTable extends Table {
+class UsersTable extends TableView {
   async handleActionDelete(event, element) {
     const itemId = element.getAttribute('data-id');
     const item = this.collection.get(itemId);
-    
+
     const confirmed = await Dialog.confirm(
       `Are you sure you want to delete "${item.get('name')}"?`,
       {
@@ -1126,7 +1126,7 @@ class UsersTable extends Table {
         confirmClass: 'btn btn-danger'
       }
     );
-    
+
     if (confirmed) {
       await this.handleDeleteItem(item);
     }
@@ -1154,7 +1154,7 @@ class UserFormView extends View {
             },
             {
               id: 'reset-form',
-              icon: 'bi-arrow-clockwise', 
+              icon: 'bi-arrow-clockwise',
               action: 'reset-form',
               label: 'Reset Form'
             }
@@ -1178,12 +1178,12 @@ class UserFormView extends View {
       dialog.show();
       return;
     }
-    
+
     const confirmed = await Dialog.confirm(
       'Save changes to this user?',
       { title: 'Confirm Save' }
     );
-    
+
     if (confirmed) {
       await this.model.save(this.getFormData());
     }

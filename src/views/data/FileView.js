@@ -5,7 +5,7 @@
 
 import View from '../../core/View.js';
 import TabView from '../navigation/TabView.js';
-import Table from '../table/Table.js';
+import TableView from '../table/TableView.js';
 
 class FileView extends View {
   constructor(options = {}) {
@@ -251,7 +251,7 @@ class RenditionsTabView extends View {
     await super.onInit();
 
     // Initialize the renditions table
-    this.renditionsTable = new Table({
+    this.renditionsTable = new TableView({
       container: "renditions-table",
       columns: [
         { title: 'Role', key: 'role' },

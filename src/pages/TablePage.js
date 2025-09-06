@@ -19,6 +19,7 @@
  */
 
 import Page from '../core/Page.js';
+import Dialog from '../core/Dialog.js';
 import TableView from '../views/table/TableView.js';
 import Collection from '../core/Collection.js';
 
@@ -425,7 +426,7 @@ class TablePage extends Page {
    * Handle filter edit dialog
    */
   async handleFilterEdit(filterKey) {
-    const Dialog = await import('../core/Dialog.js').then(m => m.default);
+    // Using statically imported Dialog
     const filterConfig = this.tableView.getAllAvailableFilters().find(f => f.key === filterKey);
     const currentValue = this.collection.params[filterKey];
 

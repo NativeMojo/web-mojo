@@ -42,6 +42,18 @@
             "rules": {
                 "no-unused-expressions": "off"
             }
+        },
+        {
+            "files": ["src/**/*.js"],
+            "rules": {
+                "no-restricted-syntax": [
+                    "error",
+                    {
+                        "selector": "ImportExpression",
+                        "message": "Do not use dynamic import(); use static imports."
+                    }
+                ]
+            }
         }
     ],
     "ignorePatterns": [

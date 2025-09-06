@@ -207,7 +207,7 @@ class TableRow extends ListViewItem {
    */
   buildContextMenuItems() {
     return this.contextMenu.map(menuItem => {
-      if (menuItem.separator) {
+      if (menuItem.separator||menuItem.divider) {
         return '<li><hr class="dropdown-divider"></li>';
       }
 

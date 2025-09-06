@@ -4,6 +4,7 @@
  */
 
 import BaseChart from './BaseChart.js';
+import Dialog from '../core/Dialog.js';
 
 export default class PieChart extends BaseChart {
   constructor(options = {}) {
@@ -517,7 +518,7 @@ export default class PieChart extends BaseChart {
       title
     });
 
-    const Dialog = (await import('../core/Dialog.js')).default;
+    // Using static import at top: import Dialog from '../core/Dialog.js';
 
     const dialog = new Dialog({
       title,

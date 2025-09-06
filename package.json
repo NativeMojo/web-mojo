@@ -1,88 +1,35 @@
 {
     "name": "web-mojo",
-    "version": "2.0.3067",
+    "version": "2.0.3109",
     "description": "MOJO - A lightweight JavaScript framework for building data-driven web applications",
     "type": "module",
-    "main": "./dist/web-mojo.cjs.js",
-    "module": "./dist/web-mojo.esm.js",
-    "browser": "./dist/web-mojo.umd.js",
+    "main": "./dist/index.cjs.js",
+    "module": "./dist/index.es.js",
+    "browser": "./dist/index.es.js",
     "exports": {
         ".": {
-            "import": "./dist/web-mojo.esm.js",
-            "require": "./dist/web-mojo.cjs.js",
-            "browser": "./dist/web-mojo.umd.js",
-            "types": "./dist/web-mojo.d.ts"
+            "import": "./dist/index.es.js",
+            "require": "./dist/index.cjs.js"
         },
         "./loader": {
             "import": "./dist/loader.es.js",
-            "require": "./dist/loader.umd.js",
-            "browser": "./dist/loader.umd.js"
+            "require": "./dist/loader.umd.js"
         },
         "./auth": {
-            "import": "./src/auth.js",
-            "require": "./dist/auth.cjs.js",
-            "default": "./src/auth.js"
+            "import": "./dist/auth.es.js",
+            "require": "./dist/auth.cjs.js"
         },
-        "./models": {
-            "import": "./src/models.js",
-            "require": "./dist/models.cjs.js",
-            "default": "./src/models.js"
-        },
-        "./models/*": {
-            "import": "./src/models/*.js",
-            "default": "./src/models/*.js"
-        },
-        "./admin": {
-            "import": "./src/admin.js",
-            "require": "./dist/admin.cjs.js",
-            "default": "./src/admin.js"
-        },
-        "./admin/*": {
-            "import": "./src/admin/*.js",
-            "default": "./src/admin/*.js"
-        },
-        "./lightbox": {
-            "import": "./src/lightbox.js",
-            "require": "./dist/lightbox.cjs.js",
-            "default": "./src/lightbox.js"
-        },
+        "./templates": "./dist/templates/index.js",
+        "./templates/*": "./dist/templates/*",
+        "./style.css": "./dist/css/web-mojo.css",
         "./css/core": "./dist/core.css",
         "./css/portal": "./dist/portal.css",
         "./css/table": "./dist/table.css",
         "./css/auth": "./dist/auth.css",
-        "./css/lightbox": "./dist/lightbox.css",
-        "./css/*": "./dist/*",
-        "./styles/core": "./dist/core.css",
-        "./styles/portal": "./dist/portal.css",
-        "./styles/table": "./dist/table.css",
-        "./styles/auth": "./dist/auth.css",
-        "./styles/*": "./dist/*",
-        "./components": {
-            "import": "./dist/components/index.esm.js",
-            "require": "./dist/components/index.cjs.js",
-            "default": "./src/components/index.js"
-        },
-        "./components/*": {
-            "import": "./src/components/*.js",
-            "default": "./src/components/*.js"
-        },
-        "./utils": {
-            "import": "./dist/utils/index.esm.js",
-            "require": "./dist/utils/index.cjs.js",
-            "default": "./src/utils/index.js"
-        },
-        "./utils/*": {
-            "import": "./src/utils/*.js",
-            "default": "./src/utils/*.js"
-        },
-        "./templates": "./dist/templates/index.js",
-        "./templates/*": "./dist/templates/*",
-        "./src/*": "./src/*",
         "./package.json": "./package.json"
     },
     "files": [
         "dist",
-        "src",
         "README.md",
         "LICENSE",
         "CHANGELOG.md",
@@ -199,5 +146,8 @@
         "access": "public",
         "registry": "https://registry.npmjs.org/"
     },
-    "sideEffects": false
+    "sideEffects": [
+        "dist/loader.es.js",
+        "dist/**/*.css"
+    ]
 }
