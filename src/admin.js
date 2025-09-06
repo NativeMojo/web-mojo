@@ -8,10 +8,31 @@ import '@ext/admin/css/admin.css';
 // Admin Pages
 export { default as AdminDashboardPage } from '@ext/admin/AdminDashboardPage.js';
 export { default as EmailDomainTablePage } from '@ext/admin/EmailDomainTablePage.js';
+export { default as EmailMailboxTablePage } from '@ext/admin/EmailMailboxTablePage.js';
+export { default as EmailTemplateTablePage } from '@ext/admin/EmailTemplateTablePage.js';
+export { default as EventTablePage } from '@ext/admin/EventTablePage.js';
+export { default as FileManagerTablePage } from '@ext/admin/FileManagerTablePage.js';
+export { default as FileTablePage } from '@ext/admin/FileTablePage.js';
+export { default as GeoLocatedIPTablePage } from '@ext/admin/GeoLocatedIPTablePage.js';
+export { default as GroupTablePage } from '@ext/admin/GroupTablePage.js';
 export { default as IncidentDashboardPage } from '@ext/admin/IncidentDashboardPage.js';
+export { default as IncidentTablePage } from '@ext/admin/IncidentTablePage.js';
 export { default as JobsAdminPage } from '@ext/admin/JobsAdminPage.js';
+export { default as LogTablePage } from '@ext/admin/LogTablePage.js';
+export { default as MemberTablePage } from '@ext/admin/MemberTablePage.js';
+export { default as MetricsPermissionsTablePage } from '@ext/admin/MetricsPermissionsTablePage.js';
+export { default as PushConfigTablePage } from '@ext/admin/PushConfigTablePage.js';
 export { default as PushDashboardPage } from '@ext/admin/PushDashboardPage.js';
+export { default as PushDeliveryTablePage } from '@ext/admin/PushDeliveryTablePage.js';
+export { default as PushDeviceTablePage } from '@ext/admin/PushDeviceTablePage.js';
+export { default as PushTemplateTablePage } from '@ext/admin/PushTemplateTablePage.js';
+export { default as RuleSetTablePage } from '@ext/admin/RuleSetTablePage.js';
+export { default as S3BucketTablePage } from '@ext/admin/S3BucketTablePage.js';
+export { default as SentMessageTablePage } from '@ext/admin/SentMessageTablePage.js';
 export { default as TaskManagementPage } from '@ext/admin/TaskManagementPage.js';
+export { default as TicketTablePage } from '@ext/admin/TicketTablePage.js';
+export { default as UserDeviceLocationTablePage } from '@ext/admin/UserDeviceLocationTablePage.js';
+export { default as UserDeviceTablePage } from '@ext/admin/UserDeviceTablePage.js';
 export { default as UserTablePage } from '@ext/admin/UserTablePage.js';
 
 // Admin Views
@@ -51,3 +72,265 @@ export {
   VERSION_REVISION,
   BUILD_TIME
 } from './version.js';
+
+
+
+// Import all admin page classes for the register function
+import AdminDashboardPageClass from '@ext/admin/AdminDashboardPage.js';
+import EmailDomainTablePageClass from '@ext/admin/EmailDomainTablePage.js';
+import EmailMailboxTablePageClass from '@ext/admin/EmailMailboxTablePage.js';
+import EmailTemplateTablePageClass from '@ext/admin/EmailTemplateTablePage.js';
+import EventTablePageClass from '@ext/admin/EventTablePage.js';
+import FileManagerTablePageClass from '@ext/admin/FileManagerTablePage.js';
+import FileTablePageClass from '@ext/admin/FileTablePage.js';
+import GeoLocatedIPTablePageClass from '@ext/admin/GeoLocatedIPTablePage.js';
+import GroupTablePageClass from '@ext/admin/GroupTablePage.js';
+import IncidentDashboardPageClass from '@ext/admin/IncidentDashboardPage.js';
+import IncidentTablePageClass from '@ext/admin/IncidentTablePage.js';
+import JobsAdminPageClass from '@ext/admin/JobsAdminPage.js';
+import LogTablePageClass from '@ext/admin/LogTablePage.js';
+import MemberTablePageClass from '@ext/admin/MemberTablePage.js';
+import MetricsPermissionsTablePageClass from '@ext/admin/MetricsPermissionsTablePage.js';
+import PushConfigTablePageClass from '@ext/admin/PushConfigTablePage.js';
+import PushDashboardPageClass from '@ext/admin/PushDashboardPage.js';
+import PushDeliveryTablePageClass from '@ext/admin/PushDeliveryTablePage.js';
+import PushDeviceTablePageClass from '@ext/admin/PushDeviceTablePage.js';
+import PushTemplateTablePageClass from '@ext/admin/PushTemplateTablePage.js';
+import RuleSetTablePageClass from '@ext/admin/RuleSetTablePage.js';
+import S3BucketTablePageClass from '@ext/admin/S3BucketTablePage.js';
+import SentMessageTablePageClass from '@ext/admin/SentMessageTablePage.js';
+import TaskManagementPageClass from '@ext/admin/TaskManagementPage.js';
+import TicketTablePageClass from '@ext/admin/TicketTablePage.js';
+import UserDeviceLocationTablePageClass from '@ext/admin/UserDeviceLocationTablePage.js';
+import UserDeviceTablePageClass from '@ext/admin/UserDeviceTablePage.js';
+import UserTablePageClass from '@ext/admin/UserTablePage.js';
+
+/**
+ * Register all admin pages to a WebApp instance
+ * @param {WebApp} app - The WebApp instance to register pages to
+ * @returns {void}
+ */
+export function registerAdminPages(app, addToMenu = true) {
+    // Register all admin pages with consistent naming
+    app.registerPage('admin/dashboard', AdminDashboardPageClass, {permissions: ["view_admin"]});
+    app.registerPage('admin/jobs', JobsAdminPageClass, {permissions: ["view_jobs", "manage_jobs"]});
+    app.registerPage('admin/users', UserTablePageClass, {permissions: ["manage_users"]});
+    app.registerPage('admin/groups', GroupTablePageClass, {permissions: ["manage_groups"]});
+    app.registerPage('admin/members', MemberTablePageClass, {permissions: ["manage_members"]});
+    app.registerPage('admin/s3buckets', S3BucketTablePageClass, {permissions: ["manage_aws"]});
+    app.registerPage('admin/filemanagers', FileManagerTablePageClass, {permissions: ["manage_files"]});
+    app.registerPage('admin/files', FileTablePageClass, {permissions: ["manage_files"]});
+    app.registerPage('admin/incidents', IncidentTablePageClass, {permissions: ["view_incidents"]});
+    app.registerPage('admin/events', EventTablePageClass, {permissions: ["view_incidents"]});
+    app.registerPage('admin/logs', LogTablePageClass, {permissions: ["view_logs"]});
+    app.registerPage('admin/user/devices', UserDeviceTablePageClass, {permissions: ["manage_users"]});
+    app.registerPage('admin/user/device-locations', UserDeviceLocationTablePageClass, {permissions: ["manage_users"]});
+    app.registerPage('admin/system/geoip', GeoLocatedIPTablePageClass, {permissions: ["manage_users"]});
+    app.registerPage('admin/email/mailboxes', EmailMailboxTablePageClass, {permissions: ["manage_aws"]});
+    app.registerPage('admin/email/domains', EmailDomainTablePageClass, {permissions: ["manage_aws"]});
+    app.registerPage('admin/email/sent', SentMessageTablePageClass, {permissions: ["manage_aws"]});
+    app.registerPage('admin/email/templates', EmailTemplateTablePageClass, {permissions: ["manage_aws"]});
+    app.registerPage('admin/incident-dashboard', IncidentDashboardPageClass, { permissions: ["view_incidents"] });
+    app.registerPage('admin/rulesets', RuleSetTablePageClass, { permissions: ["manage_incidents"] });
+    app.registerPage('admin/tickets', TicketTablePageClass, { permissions: ["manage_incidents"] });
+    app.registerPage('admin/metrics/permissions', MetricsPermissionsTablePageClass, { permissions: ["manage_metrics"] });
+    app.registerPage('admin/push/dashboard', PushDashboardPageClass, { permissions: ["manage_users"] });
+    app.registerPage('admin/push/configs', PushConfigTablePageClass, { permissions: ["manage_users"] });
+    app.registerPage('admin/push/templates', PushTemplateTablePageClass, { permissions: ["manage_users"] });
+    app.registerPage('admin/push/deliveries', PushDeliveryTablePageClass, { permissions: ["manage_users"] });
+    app.registerPage('admin/push/devices', PushDeviceTablePageClass, { permissions: ["manage_users"] });
+
+    // Check if sidebar exists and has an admin menu config
+    if (addToMenu && app.sidebar && app.sidebar.getMenuConfig) {
+        const adminMenuConfig = app.sidebar.getMenuConfig('admin');
+        if (adminMenuConfig && adminMenuConfig.items) {
+            // Add admin pages to sidebar menu
+            const adminMenuItems = [
+                {
+                    text: 'Dashboard',
+                    route: '?page=admin/dashboard',
+                    icon: 'bi-speedometer2',
+                    permissions: ["view_admin"]
+                },
+                {
+                    text: 'Jobs Management',
+                    route: '?page=admin/jobs',
+                    icon: 'bi-gear-wide-connected',
+                    permissions: ["view_jobs", "manage_jobs"]
+                },
+                {
+                    text: 'Users',
+                    route: '?page=admin/users',
+                    icon: 'bi-people',
+                    permissions: ["manage_users"]
+                },
+                {
+                    text: 'Groups',
+                    route: '?page=admin/groups',
+                    icon: 'bi-diagram-3',
+                    permissions: ["manage_groups"]
+                },
+                {
+                    text: 'Members',
+                    route: '?page=admin/members',
+                    icon: 'bi-person-badge',
+                    permissions: ["manage_groups"]
+                },
+
+                {
+                    text: 'Incidents & Tickets',
+                    route: null,
+                    icon: 'bi-shield-exclamation',
+                    permissions: ["view_incidents"],
+                    children: [
+                        {
+                            text: 'Dashboard',
+                            route: '?page=admin/incident-dashboard',
+                            icon: 'bi-bar-chart-line',
+                            permissions: ["view_incidents"]
+                        },
+                        {
+                            text: 'Incidents',
+                            route: '?page=admin/incidents',
+                            icon: 'bi-exclamation-triangle',
+                            permissions: ["view_incidents"]
+                        },
+                        {
+                            text: 'Tickets',
+                            route: '?page=admin/tickets',
+                            icon: 'bi-ticket-detailed',
+                            permissions: ["manage_incidents"]
+                        },
+                        {
+                            text: 'Events',
+                            route: '?page=admin/events',
+                            icon: 'bi-bell',
+                            permissions: ["view_incidents"]
+                        },
+                        {
+                            text: 'Rule Engine',
+                            route: '?page=admin/rulesets',
+                            icon: 'bi-gear-wide-connected',
+                            permissions: ["manage_incidents"]
+                        },
+                    ]
+                },
+                {
+                    text: 'Security',
+                    route: null,
+                    icon: 'bi-shield',
+                    permissions: ["manage_groups"],
+                    children: [
+                        {
+                            text: 'Logs',
+                            route: '?page=admin/logs',
+                            icon: 'bi-journal-text',
+                            permissions: ["view_logs"]
+                        },
+                        {
+                            text: 'User Devices',
+                            route: '?page=admin/user/devices',
+                            icon: 'bi-phone',
+                            permissions: ["manage_users"]
+                        },
+                        {
+                            text: 'Device Locations',
+                            route: '?page=admin/user/device-locations',
+                            icon: 'bi-geo-alt',
+                            permissions: ["manage_users"]
+                        },
+                        {
+                            text: 'GeoIP Cache',
+                            route: '?page=admin/system/geoip',
+                            icon: 'bi-globe',
+                            permissions: ["manage_users"]
+                        },
+                        {
+                            text: 'Metrics Permissions',
+                            route: '?page=admin/metrics/permissions',
+                            icon: 'bi-bar-chart-line',
+                            permissions: ["manage_metrics"]
+                        }
+                    ]
+                },
+                {
+                    text: 'Storage',
+                    route: null,
+                    icon: 'bi-folder',
+                    permissions: ["manage_files", "manage_aws"],
+                    children: [
+                        {
+                            text: 'S3 Buckets',
+                            route: '?page=admin/s3buckets',
+                            icon: 'bi-bucket',
+                            permissions: ["manage_aws"]
+                        },
+                        {
+                            text: 'Storage Backends',
+                            route: '?page=admin/filemanagers',
+                            icon: 'bi-hdd-stack',
+                            permissions: ["manage_aws"]
+                        },
+                        {
+                            text: 'Files',
+                            route: '?page=admin/files',
+                            icon: 'bi-file-earmark',
+                            permissions: ["manage_files"]
+                        },
+                    ]
+                },
+                {
+                    text: 'Push Notifications',
+                    route: null,
+                    icon: 'bi-broadcast',
+                    permissions: ["manage_users"],
+                    children: [
+                        { text: 'Dashboard', route: '?page=admin/push/dashboard', icon: 'bi-bar-chart-line' },
+                        { text: 'Configurations', route: '?page=admin/push/configs', icon: 'bi-gear' },
+                        { text: 'Templates', route: '?page=admin/push/templates', icon: 'bi-file-earmark-text' },
+                        { text: 'Deliveries', route: '?page=admin/push/deliveries', icon: 'bi-send' },
+                        { text: 'Devices', route: '?page=admin/push/devices', icon: 'bi-phone' },
+                    ]
+                },
+                {
+                    text: 'Email Admin',
+                    route: null,
+                    icon: 'bi-envelope',
+                    permissions: ["manage_aws"],
+                    children: [
+                        {
+                            text: 'Domains',
+                            route: '?page=admin/email/domains',
+                            icon: 'bi-globe',
+                            permissions: ["manage_aws"]
+                        },
+                        {
+                            text: 'Mailboxes',
+                            route: '?page=admin/email/mailboxes',
+                            icon: 'bi-inbox',
+                            permissions: ["manage_aws"]
+                        },
+                        {
+                            text: 'Sent',
+                            route: '?page=admin/email/sent',
+                            icon: 'bi-send-check',
+                            permissions: ["manage_aws"]
+                        },
+                        {
+                            text: 'Templates',
+                            route: '?page=admin/email/templates',
+                            icon: 'bi-file-text',
+                            permissions: ["manage_aws"]
+                        }
+                    ]
+                }
+            ];
+
+            // Add items to existing admin menu
+            adminMenuConfig.items.unshift(...adminMenuItems);
+            console.log('Added admin menu items to sidebar');
+        }
+    }
+
+    console.log('Registered 27 admin pages to WebApp');
+}

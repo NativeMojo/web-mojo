@@ -15,12 +15,31 @@
             rel="stylesheet"
         />
 
-        <!-- MOJO Framework CSS -->
+        <!-- MOJO Framework CSS Options -->
+
+        <!-- Option 1: Single Bundle (Recommended) - Includes all core + extension styles -->
+        <link href="../../dist/css/web-mojo.css" rel="stylesheet" />
+
+        <!-- Option 2: Individual Core Files (Selective Loading) -->
+        <!--
         <link href="../../dist/core.css" rel="stylesheet" />
-        <link href="../../dist/table.css" rel="stylesheet" />
         <link href="../../dist/portal.css" rel="stylesheet" />
+        <link href="../../dist/table.css" rel="stylesheet" />
         <link href="../../dist/toast.css" rel="stylesheet" />
+        -->
+
+        <!-- Option 3: Core + Specific Extensions -->
+        <!--
+        <link href="../../dist/core.css" rel="stylesheet" />
+        <link href="../../dist/portal.css" rel="stylesheet" />
         <link href="../../dist/admin.css" rel="stylesheet" />
+        <link href="../../dist/auth.css" rel="stylesheet" />
+        <link href="../../dist/lightbox.css" rel="stylesheet" />
+        <link href="../../dist/charts.css" rel="stylesheet" />
+        -->
+
+        <!-- Option 4: Package Style (when using as npm package) -->
+        <!-- <link href="./node_modules/web-mojo/dist/css/web-mojo.css" rel="stylesheet" /> -->
 
         <!-- Custom styles -->
         <link rel="stylesheet" href="app.css" />
@@ -37,7 +56,7 @@
         <script src="https://cdn.jsdelivr.net/npm/@easepick/bundle@1.2.1/dist/index.umd.min.js"></script>
 
         <!-- MOJO Loader -->
-        <script src="../../dist/loader.es.js"></script>
+        <script type="module" src="../../dist/loader.es.js"></script>
 
         <!-- MOJO Framework -->
         <script type="module" src="app.js"></script>

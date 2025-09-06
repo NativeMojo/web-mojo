@@ -26,6 +26,22 @@ export { default as Model } from '@core/Model.js';
 export { default as Collection } from '@core/Collection.js';
 export { default as Rest } from '@core/Rest.js';
 
+// Core Models - re-export everything from models/
+export * from '@core/models/AWS.js';
+export * from '@core/models/Email.js';
+export * from '@core/models/Files.js';
+export * from '@core/models/Group.js';
+export * from '@core/models/Incident.js';
+export * from '@core/models/Job.js';
+export * from '@core/models/JobRunner.js';
+export * from '@core/models/Log.js';
+export * from '@core/models/Member.js';
+export * from '@core/models/Metrics.js';
+export * from '@core/models/Push.js';
+export * from '@core/models/System.js';
+export * from '@core/models/Tickets.js';
+export * from '@core/models/User.js';
+
 // App classes
 export { default as WebApp } from '@core/WebApp.js';
 export { default as PortalApp } from '@core/PortalApp.js';
@@ -36,6 +52,7 @@ export { default as Dialog } from '@core/views/feedback/Dialog.js';
 // Selected views (curated for tree-shaking)
 export { default as TableView } from '@core/views/table/TableView.js';
 export { default as TableRow } from '@core/views/table/TableRow.js';
+export { default as TablePage } from '@core/pages/TablePage.js';
 export { default as ListView } from '@core/views/list/ListView.js';
 export { default as ListViewItem } from '@core/views/list/ListViewItem.js';
 export { default as TopNav } from '@core/views/navigation/TopNav.js';

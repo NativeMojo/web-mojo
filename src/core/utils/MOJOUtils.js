@@ -3,9 +3,7 @@
  * Provides centralized data access and formatting utilities
  */
 
-import DataFormatter from './DataFormatter.js';
-
-const dataFormatter = new DataFormatter();
+import dataFormatter from './DataFormatter.js';
 
 class MOJOUtils {
   /**

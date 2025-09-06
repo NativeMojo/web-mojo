@@ -17,6 +17,7 @@ import ChartsPage from './pages/ChartsPage.js';
 import ImagePage from './pages/ImagePage.js';
 import FileDropPage from './pages/FileDropPage.js';
 import { ImageViewer } from 'web-mojo/lightbox';
+import { registerAdminPages } from 'web-mojo/admin';
 
 // Detect page reloads
 if (window.performance && window.performance.navigation.type === 1) {
@@ -325,6 +326,14 @@ app.registerPage('noperms', Page, {
     permissions: ['not_real_permission'],
     template: '<div class="fs-5 mt-4 text-center">Simple page</div>'
 });
+
+// Register admin pages
+try {
+    registerAdminPages(app, true);
+    console.log('Admin pages registered successfully');
+} catch (error) {
+    console.warn('Failed to register admin pages:', error);
+}
 
 // Register ReportsPage for all report-related routes
 // Handle portal actions
