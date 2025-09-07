@@ -144,6 +144,10 @@ class TableView extends ListView {
     return data;
   }
 
+  isSelectable() {
+      return this.batchActions && this.batchActions.length > 0 && this.selectionMode == 'multiple';
+  }
+
   /**
    * Build the complete table template
    */
@@ -468,7 +472,7 @@ class TableView extends ListView {
     let headerCells = '';
 
     // Selection checkbox header
-    if (this.batchActions && this.batchActions.length > 0) {
+    if (this.isSelectable()) {
       headerCells += `
         <th style="width: 40px; padding: 0;">
           <div class="mojo-select-all-cell" data-action="select-all">

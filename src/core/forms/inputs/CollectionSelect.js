@@ -158,7 +158,7 @@ class CollectionSelectView extends View {
     this.emptyFetch = options.emptyFetch !== false;
 
     // State
-    this.selectedValue = options.value || '';
+    this.selectedValue = options.value || '0';
     this.selectedLabel = '';
     this.searchValue = '';
     this.showDropdown = false;
@@ -167,6 +167,11 @@ class CollectionSelectView extends View {
     this.focusedIndex = -1;
     this.hasError = false;
     this.errorMessage = '';
+
+    if (this.selectedValue && typeof this.selectedValue === 'object') {
+      this.selectedLabel = this.selectedValue[this.labelField] || '';
+      this.selectedValue = this.selectedValue[this.valueField] || '0';
+    }
 
     // Internal
     this.searchTimer = null;
@@ -232,7 +237,8 @@ class CollectionSelectView extends View {
 
       let model = await this.collection.fetchOne(this.selectedValue);
       if (model) {
-        this.selectedLabel = model.get(this.labelField);
+        this.selectedLabel = model.get(this.labelField, `${model.constructor.name} #${model.id}`);
+        this.render();
       }
     } catch (error) {
       console.error('Error loading selected item:', error);
@@ -252,7 +258,7 @@ class CollectionSelectView extends View {
       placeholder: this.placeholder,
       displayValue: displayValue,
       selectedValue: this.selectedValue,
-      showClear: !!(this.selectedValue && this.selectedLabel),
+      showClear: !!(this.selectedValue && this.selectedValue !== '0' && this.selectedLabel),
       hasError: this.hasError,
       errorMessage: this.errorMessage
     };
@@ -332,9 +338,9 @@ class CollectionSelectView extends View {
       this.focusedIndex = -1;
 
       if (this.searchValue !== this.selectedLabel) {
-        this.selectedValue = '';
+        this.selectedValue = '0';
         this.selectedLabel = '';
-        this.emit('change', { value: '', label: '' });
+        this.emit('change', { value: '0', label: '' });
       }
 
       if (this.searchTimer) {
@@ -357,7 +363,7 @@ class CollectionSelectView extends View {
   }
 
   clearSelection() {
-    this.selectedValue = '';
+    this.selectedValue = '0';
     this.selectedLabel = '';
     this.searchValue = '';
     this.showDropdown = false;
@@ -375,12 +381,12 @@ class CollectionSelectView extends View {
     // Update hidden input
     const hiddenInput = this.getHiddenInput();
     if (hiddenInput) {
-      hiddenInput.value = '';
+      hiddenInput.value = '0';
     }
 
     this.updateDropdown();
     this.render(); // Re-render to hide clear button
-    this.emit('change', { value: '', label: '' });
+    this.emit('change', { value: '0', label: '' });
   }
 
   async performSearch() {
@@ -557,25 +563,34 @@ class CollectionSelectView extends View {
   }
 
   setFormValue(value) {
-    if (value && value[this.valueField]) {
-        if (value[this.valueField] == this.selectedValue) return;
-        this.selectedValue = value[this.valueField];
-        this.selectedLabel = value[this.labelField];
-        this.searchValue = value[this.labelField];
-        this.hasSearched = false;
-        this.showDropdown = false;
-        this.hasError = false;
+    let newValue = value;
+    let newLabel = '';
+
+    if (newValue && typeof newValue === 'object') {
+        newLabel = newValue[this.labelField] || '';
+        newValue = newValue[this.valueField];
+    }
+
+    newValue = newValue || '0';
+
+    if (newValue == this.selectedValue) {
+        return;
+    }
+
+    this.selectedValue = newValue;
+    this.selectedLabel = newLabel;
+    this.searchValue = '';
+    this.hasSearched = false;
+    this.showDropdown = false;
+    this.hasError = false;
+
+    if (this.selectedValue && this.selectedValue !== '0') {
+        if (!this.selectedLabel) {
+            this.selectedLabel = `${this.collection.getModelName()} #${this.selectedValue}`;
+        }
         this.loadSelectedItem();
-        this.setValue(this.selectedValue, this.selectedLabel);
-    } else if (value !== this.selectedValue) {
-        this.selectedValue = value;
-        this.selectedLabel = `${this.collection.getModelName()} #${value}`;
-        this.searchValue = `${this.collection.getModelName()} #${value}`;
-        this.hasSearched = false;
-        this.showDropdown = false;
-        this.hasError = false;
-        if (this.selectedValue) this.loadSelectedItem();
-        this.setValue(this.selectedValue, this.selectedLabel);
+    } else {
+        this.render();
     }
   }
 

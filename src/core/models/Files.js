@@ -2,8 +2,8 @@
 import Collection from '@core/Collection.js';
 import Model from '@core/Model.js';
 import FileUpload from '@core/services/FileUpload.js';
-import {UserList} from './User.js';
-import {GroupList} from './Group.js';
+import {UserList} from '@core/models/User.js';
+import {GroupList} from '@core/models/Group.js';
 /* =========================
  * FileManager
  * ========================= */
@@ -146,23 +146,29 @@ const FileManagerForms = {
     owners: {
         fields: [
             {
-                name: 'owner_id',
-                type: 'text',
-                label: 'Owner ID',
-                required: true,
-                placeholder: 'Enter owner ID',
-                help: 'Enter the owner ID',
-                cols: 12,
+                type: 'collection',
+                name: 'group',
+                label: 'Group (Owner)',
+                Collection: GroupList,  // Collection class
+                labelField: 'name',          // Field to display in dropdown
+                valueField: 'id',            // Field to use as value
+                maxItems: 10,                // Max items to show in dropdown
+                placeholder: 'Search groups...',
+                emptyFetch: false,
+                debounceMs: 300,             // Search debounce delay
             },
             {
-                name: 'owner_name',
-                type: 'text',
-                label: 'Owner Name',
-                required: true,
-                placeholder: 'Enter owner name',
-                help: 'Enter the owner name',
-                cols: 12,
-            }
+                type: 'collection',
+                name: 'user',
+                label: 'User (Owner)',
+                Collection: UserList,  // Collection class
+                labelField: 'display_name',          // Field to display in dropdown
+                valueField: 'id',            // Field to use as value
+                maxItems: 10,                // Max items to show in dropdown
+                placeholder: 'Search users...',
+                emptyFetch: false,
+                debounceMs: 300,             // Search debounce delay
+            },
         ],
     },
 

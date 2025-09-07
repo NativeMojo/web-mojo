@@ -31,30 +31,36 @@ class MemberList extends Collection {
  * Forms
  * ========================= */
 const MemberForms = {
+
     edit: {
         title: 'Edit Membership',
         fields: [
             {
-                name: 'role',
+                name: 'user.display_name',
+                type: 'text',
+                label: 'Display Name',
+                placeholder: 'Enter Display Name'
+            },
+            {
+                name: 'metadata.role',
                 type: 'text',
                 label: 'Role',
                 required: true,
                 placeholder: 'Enter role'
             },
             {
-                name: 'status',
-                type: 'select',
-                label: 'Status',
-                required: true,
-                options: [
-                    { value: 'active', label: 'Active' },
-                    { value: 'inactive', label: 'Inactive' },
-                    { value: 'pending', label: 'Pending' }
-                ]
+                name: `is_active`,
+                type: 'switch',
+                label: "Is Enabled",
+                columns: 12
             }
         ]
     }
 };
+
+
+Member.EDIT_FORM = MemberForms.edit;
+Member.ADD_FORM = MemberForms.create;
 
 
 export { Member, MemberList, MemberForms };

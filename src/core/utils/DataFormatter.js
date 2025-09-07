@@ -848,12 +848,12 @@ class DataFormatter {
    * @param {*} value - Boolean value
    * @returns {string} Icon HTML
    */
-  yesnoicon(value) {
+  yesnoicon(value, yesIcon = 'bi bi-check-circle-fill text-success', noIcon = 'bi bi-x-circle-fill text-danger') {
     if (value) { // Handles true, 1, "true", "on", etc.
-      return '<i class="bi bi-check-circle-fill text-success"></i>';
+      return `<i class="${yesIcon}"></i>`;
     }
     // Handles false, 0, "", null, undefined
-    return '<i class="bi bi-x-circle-fill text-danger"></i>';
+    return `<i class="${noIcon}"></i>`;
   }
 
   /**

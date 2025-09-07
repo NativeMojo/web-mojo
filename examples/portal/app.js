@@ -108,6 +108,7 @@ const app = new PortalApp({
                         },
                     ]
                 },
+                { divider: true },
                 {
                     text: 'Templates',
                     route: '?page=templates',
@@ -148,6 +149,11 @@ const app = new PortalApp({
                     text: 'Dialogs',
                     route: '?page=dialogs',
                     icon: 'bi-input-cursor-text'
+                },
+                {
+                    kind: "label",
+                    text: "This is a label",
+                    className: "mt-3"
                 },
                 {
                     text: 'Simple',

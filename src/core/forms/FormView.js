@@ -300,7 +300,7 @@ class FormView extends View {
     this.data[fieldName] = value;
 
     // Update model if available
-    if (this.model && typeof this.model.set === 'function') {
+    if (this.model && this.options.allowModelChange) {
       this.model.set(fieldName, value);
     }
 
@@ -594,12 +594,12 @@ class FormView extends View {
         try {
           // Check if lightbox extension is available for image cropping
           const ImageCropView = window.MOJO?.plugins?.ImageCropView;
-          
+
           if (!ImageCropView) {
             console.warn('ImageCropView not available. Load lightbox extension for image cropping.');
             return;
           }
-          
+
           // Open crop dialog with crop and scale
           const result = await ImageCropView.showDialog(previewUrl, {
             title: `Crop ${fieldConfig.label || fieldName}`,
@@ -928,7 +928,7 @@ class FormView extends View {
 
       // If there's a model, save via model
       if (this.model && typeof this.model.save === 'function') {
-        const result = await this.saveModel();
+        const result = await this.saveModel(formData);
 
         // Check if save was successful
         if (result && result.success !== false) {
@@ -967,13 +967,13 @@ class FormView extends View {
    * Only saves changed data for efficiency
    * @returns {Promise<Object>} Save result from model
    */
-  async saveModel() {
+  async saveModel(formData = null) {
     if (!this.model || typeof this.model.save !== 'function') {
       throw new Error('No model available for saving');
     }
 
     // Get form data (auto-detects FormData vs Object)
-    const formData = await this.getFormData();
+    if (!formData) formData = await this.getFormData();
 
     // Check for changes before saving
     const changes = this.getChangedData(formData);
@@ -1108,7 +1108,7 @@ class FormView extends View {
 
       const fieldType = fieldConfig.type || 'text';
 
-      if (this.valuesAreDifferent(newValue, originalValue, fieldType)) {
+      if (this.valuesAreDifferent(newValue, originalValue, fieldType, fieldConfig)) {
         changedData[key] = newValue;
         hasChanges = true;
       }
@@ -1122,9 +1122,10 @@ class FormView extends View {
    * @param {*} newValue - New value from form
    * @param {*} originalValue - Original value from model
    * @param {string} fieldType - The type of the field from the form config
+   * @param {object} fieldConfig - The configuration of the field from the form config
    * @returns {boolean} True if values are different
    */
-  valuesAreDifferent(newValue, originalValue, fieldType = 'text') {
+  valuesAreDifferent(newValue, originalValue, fieldType = 'text', fieldConfig = {}) {
     // Handle File objects (new uploads vs existing)
     if (newValue instanceof File) {
       return newValue.size > 0 && newValue.name !== '' && newValue.name !== 'blob';
@@ -1133,6 +1134,21 @@ class FormView extends View {
     // Handle base64 images (always considered changed if present)
     if (typeof newValue === 'string' && newValue.startsWith('data:image/')) {
       return true;
+    }
+
+    if (fieldType === "collection") {
+        // this is the collection select, the field will typically be an ID or "0" for null;
+        if (typeof originalValue === 'object' && typeof newValue === 'string') {
+            // we really need to field config here if fieldKey is not id
+            if (newValue === '0') {
+                return originalValue !== null;
+            }
+            const valueField = fieldConfig.valueField || 'id';
+            // we compare (str to int)
+            if (originalValue[valueField] == newValue) {
+                return false;
+            }
+        }
     }
 
     // For switches and checkboxes, perform a strict boolean comparison

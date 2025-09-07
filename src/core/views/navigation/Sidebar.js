@@ -314,12 +314,18 @@ class Sidebar extends View {
         return {
             'nav-item': `
                 {{#isDivider}}
-                {{>nav-divider}}
+                    {{>nav-divider}}
                 {{/isDivider}}
                 {{#isSpacer}}
-                {{>nav-spacer}}
+                    {{>nav-spacer}}
                 {{/isSpacer}}
-                {{^isDivider}}{{^isSpacer}}
+                {{#isLabel}}
+                    {{>nav-label}}
+                {{/isLabel}}
+
+                {{^isDivider}}
+                {{^isSpacer}}
+                {{^isLabel}}
                 <li class="nav-item">
                     {{#hasChildren}}
                     <!-- Item with submenu -->
@@ -367,7 +373,9 @@ class Sidebar extends View {
                     </a>
                     {{/hasChildren}}
                 </li>
-                {{/isDivider}}{{/isSpacer}}
+                {{/isLabel}}
+                {{/isSpacer}}
+                {{/isDivider}}
             `,
             'nav-divider': `
                 <li class="nav-divider-item">
@@ -376,6 +384,11 @@ class Sidebar extends View {
             `,
             'nav-spacer': `
                 <li class="nav-spacer-item"></li>
+            `,
+            'nav-label': `
+                <li class="nav-item {{className}}">
+                    <div class="nav-text px-3">{{text}}</div>
+                </li>
             `
         };
     }
@@ -661,6 +674,14 @@ class Sidebar extends View {
                      return null; // Will be filtered out
                  }
              }
+
+             if (processedItem.kind === 'label') {
+                processedItem.isLabel = true;
+                if (!processedItem.id) {
+                    processedItem.id = `nav-label-${index}`;
+                }
+                return processedItem;
+            }
 
              // Generate ID if not provided
              if (!processedItem.id) {

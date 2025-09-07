@@ -59,7 +59,7 @@ class TableRow extends ListViewItem {
     let template = '';
 
     // Selection checkbox cell
-    if (this.tableView && this.tableView.batchActions && this.tableView.batchActions.length > 0) {
+    if (this.tableView && this.tableView.isSelectable()) {
       template += `
         <td style="padding: 0;">
           <div class="mojo-select-cell {{#selected}}selected{{/selected}}"

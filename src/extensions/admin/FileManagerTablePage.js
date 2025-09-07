@@ -112,6 +112,7 @@ class FileManagerTablePage extends TablePage {
             model: item,
             fields: FileManagerForms.owners.fields
         });
+        if (!result) return true;
         if (result.success) {
             this.getApp().toast.success("Owners Updated successfully");
         } else {
