@@ -56,6 +56,16 @@ class TableView extends ListView {
     this.formDialogConfig = options.formDialogConfig || {};
     this.viewDialogOptions = options.viewDialogOptions || {};
 
+    // Export configuration
+    this.exportOptions = options.exportOptions || null;
+    if (this.options.showExport && !this.exportOptions) {
+      this.exportOptions = [
+        { format: 'csv', label: 'Export as CSV', icon: 'bi bi-file-earmark-spreadsheet' },
+        { format: 'json', label: 'Export as JSON', icon: 'bi bi-file-earmark-code' }
+      ];
+    }
+    this.exportSource = options.exportSource || 'remote';
+
     // Filter configuration
     this.filters = {};
     this.additionalFilters = options.filters || [];
@@ -254,14 +264,41 @@ class TableView extends ListView {
     }
 
     if (this.options.showExport) {
-      buttons.push(`
-        <button class="btn btn-sm btn-outline-secondary btn-export"
-                data-action="export"
-                title="Export">
-          <i class="bi bi-download me-1"></i>
-          <span class="d-none d-lg-inline">Export</span>
-        </button>
-      `);
+      if (this.exportOptions && this.exportOptions.length > 1) {
+        // Dropdown for multiple export options
+        const dropdownItems = this.exportOptions.map(opt => `
+          <li>
+            <a class="dropdown-item" href="#" data-action="export" data-format="${opt.format}">
+              <i class="${opt.icon || 'bi bi-file-earmark-arrow-down'} me-2"></i>${opt.label}
+            </a>
+          </li>
+        `).join('');
+
+        buttons.push(`
+          <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                    data-bs-toggle="dropdown" aria-expanded="false" title="Export">
+              <i class="bi bi-download me-1"></i>
+              <span class="d-none d-lg-inline">Export</span>
+            </button>
+            <ul class="dropdown-menu">
+              ${dropdownItems}
+            </ul>
+          </div>
+        `);
+      } else {
+        // Single export button
+        const format = this.exportOptions && this.exportOptions.length === 1 ? this.exportOptions[0].format : 'json';
+        buttons.push(`
+          <button class="btn btn-sm btn-outline-secondary btn-export"
+                  data-action="export"
+                  data-format="${format}"
+                  title="Export">
+            <i class="bi bi-download me-1"></i>
+            <span class="d-none d-lg-inline">Export</span>
+          </button>
+        `);
+      }
     }
 
     // if (buttons.length > 0) {
@@ -1014,13 +1051,27 @@ class TableView extends ListView {
    * Handle export action
    */
   async onActionExport(event, element) {
+    const format = element.getAttribute('data-format') || 'json';
+
     this.emit('table:export', {
-      data: this.collection?.toJSON() || [],
+      format: format,
+      source: this.exportSource,
       event
     });
 
-    if (this.options.onExport) {
-      await this.options.onExport(this.collection?.toJSON() || []);
+    if (this.exportSource === 'remote') {
+      if (this.collection) {
+        await this.collection.download(format);
+      } else {
+        console.warn('TableView: Cannot export from remote without a collection.');
+      }
+    } else {
+      // Handle local export (future enhancement)
+      if (this.options.onExport) {
+        await this.options.onExport(this.collection?.toJSON() || [], format);
+      } else {
+        console.warn('TableView: onExport handler not implemented for local export.');
+      }
     }
   }
 

@@ -520,6 +520,152 @@ class Rest {
   }
 
   /**
+   * Download a file from a URL
+   * @param {string} url - Request URL
+   * @param {object} params - Query parameters
+   * @param {object} options - Request options
+   * @returns {Promise} Promise that resolves when download is initiated
+   */
+  async download(url, params = {}, options = {}) {
+    const requestUrl = this.buildUrl(url) + this.buildQueryString(params);
+    const request = {
+      method: 'GET',
+      url: requestUrl,
+      headers: {
+        ...this.config.headers,
+        'Accept': '*/*', // Default, can be overridden by options
+        ...options.headers
+      },
+      options: {
+        ...options
+      }
+    };
+    // Remove content-type for GET request
+    delete request.headers['Content-Type'];
+
+    try {
+      const response = await fetch(request.url, {
+        method: request.method,
+        headers: request.headers,
+        signal: request.options.signal
+      });
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+      }
+
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = options.filename || 'download';
+
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+        if (filenameMatch && filenameMatch.length > 1) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      // Create download without loading entire file into memory
+      const reader = response.body.getReader();
+      const stream = new ReadableStream({
+        start(controller) {
+          function pump() {
+            return reader.read().then(({ done, value }) => {
+              if (done) {
+                controller.close();
+                return;
+              }
+              controller.enqueue(value);
+              return pump();
+            });
+          }
+          return pump();
+        }
+      });
+
+      const blob = await new Response(stream).blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(downloadUrl);
+      a.remove();
+
+      return { success: true, message: 'Download initiated' };
+
+    } catch (error) {
+      console.error('Download error:', error);
+      return { success: false, message: error.message };
+    }
+  }
+
+  /**
+   * Download a file from a URL by fetching the entire content into a Blob.
+   * @param {string} url - Request URL
+   * @param {object} params - Query parameters
+   * @param {object} options - Request options
+   * @returns {Promise} Promise that resolves when download is initiated
+   */
+  async downloadBlob(url, params = {}, options = {}) {
+    const requestUrl = this.buildUrl(url) + this.buildQueryString(params);
+    const request = {
+      method: 'GET',
+      url: requestUrl,
+      headers: {
+        ...this.config.headers,
+        'Accept': '*/*', // Default, can be overridden by options
+        ...options.headers
+      },
+      options: {
+        ...options
+      }
+    };
+    // Remove content-type for GET request
+    delete request.headers['Content-Type'];
+
+    try {
+      const response = await fetch(request.url, {
+        method: request.method,
+        headers: request.headers,
+        signal: request.options.signal
+      });
+
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status} ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = options.filename || 'download';
+
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+        if (filenameMatch && filenameMatch.length > 1) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = downloadUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(downloadUrl);
+      a.remove();
+
+      return { success: true, message: 'Download initiated' };
+
+    } catch (error) {
+      console.error('Download error:', error);
+      return { success: false, message: error.message };
+    }
+  }
+
+  /**
    * Upload file with raw PUT request (compatible with legacy backend)
    * @param {string} url - Upload URL
    * @param {File} file - Single file to upload

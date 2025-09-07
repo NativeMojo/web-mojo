@@ -1138,7 +1138,7 @@ class FormView extends View {
 
     if (fieldType === "collection") {
         // this is the collection select, the field will typically be an ID or "0" for null;
-        if (typeof originalValue === 'object' && typeof newValue === 'string') {
+        if (typeof originalValue === 'object' && originalValue !== null && originalValue !== undefined && typeof newValue === 'string') {
             // we really need to field config here if fieldKey is not id
             if (newValue === '0') {
                 return originalValue !== null;

@@ -329,6 +329,44 @@ class Collection {
   }
 
   /**
+   * Download collection data in a specified format
+   * @param {string} format - The format for the download (e.g., 'csv', 'json')
+   * @param {object} options - Download options
+   * @returns {Promise} Promise that resolves with the download result
+   */
+  async download(format = 'json', options = {}) {
+    if (!this.restEnabled) {
+      console.warn('Collection: REST is not enabled, cannot download from remote.');
+      // Here we could implement local data export in the future.
+      return { success: false, message: 'Remote downloads are not enabled for this collection.' };
+    }
+
+    const url = this.buildUrl();
+    const downloadParams = { ...this.params };
+
+    // Remove pagination params for full export
+    delete downloadParams.start;
+    delete downloadParams.size;
+
+    // Add format param
+    downloadParams.format = format;
+
+    // Provide a default filename and content type
+    const filename = `export-${this.getModelName().toLowerCase()}.${format}`;
+    const contentTypes = {
+      json: 'application/json',
+      csv: 'text/csv'
+    };
+    const acceptHeader = contentTypes[format] || '*/*';
+
+    return this.rest.download(url, downloadParams, {
+      ...options,
+      filename,
+      headers: { 'Accept': acceptHeader }
+    });
+  }
+
+  /**
    * Parse response data - override in subclasses for custom parsing
    * @param {object} response - API response
    * @returns {array} Array of model data objects
