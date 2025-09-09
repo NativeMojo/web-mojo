@@ -91,15 +91,28 @@ class ListView extends View {
     this.loading = false;
     this.isEmpty = true;
 
-    // Initialize collection
-    this._initCollection(options.collection);
   }
+
+  /**
+   * Override onInit to set up initial state
+   */
+  async onInit() {
+    // Initial render will happen automatically
+    this._initCollection(this.options.collection || this.options.Collection);
+    if (this.collection && this.collection.isEmpty() && this.collection.restEnabled) {
+      await this.collection.fetch();
+    }
+  }
+
 
   /**
    * Initialize the collection
    */
   _initCollection(collectionOrClass) {
-    if (!collectionOrClass) return;
+    if (!collectionOrClass) {
+        console.log('Collection not provided');
+        return;
+    };
 
     // Check if it's already a Collection instance
     if (collectionOrClass instanceof Collection) {
@@ -449,16 +462,6 @@ class ListView extends View {
       return await this.collection.fetch();
     }
     this._buildItems();
-  }
-
-  /**
-   * Override onInit to set up initial state
-   */
-  async onInit() {
-    // Initial render will happen automatically
-    if (this.collection && this.collection.isEmpty() && this.collection.restEnabled) {
-      await this.collection.fetch();
-    }
   }
 
   /**

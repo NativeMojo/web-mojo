@@ -396,9 +396,9 @@ class Sidebar extends View {
     getGroupHeader() {
         return `
         <div class="sidebar-group-header py-3" data-action="show-group-search">
-        <div class='text-center text-muted fs-7'>active group</div>
-            <div class='text-center fs-5 px-1'>{{group.name}}</div>
-            <div class='text-center fs-6'>kind: {{group.kind}}</div>
+        <div class='text-center text-muted fs-7 collapsed-hidden'>active group</div>
+            <div class='text-center fs-5 px-1 collapsed-hidden'>{{group.name}}</div>
+            <div class='text-center fs-6 collapsed-hidden'>kind: {{group.kind}}</div>
         </div>
         `;
     }

@@ -73,11 +73,6 @@ class TabView extends View {
     this.isMobileMode = false;
     this.hasOverflow = false;
 
-    // Validate tabs
-    if (this.tabLabels.length === 0) {
-      console.warn('TabView: No tabs provided');
-    }
-
     // Initialize tabs by adding them as child views
     for (const [label, view] of Object.entries(tabs)) {
         this.addTab(label, view);
