@@ -74,6 +74,8 @@ class TableView extends ListView {
     this.rowAction = options.rowAction || "row-click";
     this.batchBarLocation = options.batchBarLocation || "bottom"; // "top" or "bottom"
 
+    this.options.addButtonLabel = options.addButtonLabel || 'Add';
+
     // Table display options
     this.tableOptions = {
       striped: true,
@@ -256,9 +258,9 @@ class TableView extends ListView {
       buttons.push(`
         <button class="btn btn-sm btn-success btn-add"
                 data-action="add"
-                title="Add">
+                title="${this.options.addButtonLabel}">
           <i class="bi bi-plus-circle me-1"></i>
-          <span class="d-none d-lg-inline">Add</span>
+          <span class="d-none d-lg-inline">${this.options.addButtonLabel}</span>
         </button>
       `);
     }

@@ -25,8 +25,9 @@ import rest from '@core/Rest.js';
 class WebApp {
     constructor(config = {}) {
         // Initialize global MOJO plugin registry
+        this.config = config;
         this.initPluginRegistry();
-        
+
         // Core configuration
         this.name = config.name || 'MOJO App';
         this.version = config.version || '1.0.0';
@@ -839,12 +840,12 @@ class WebApp {
             if (!window.MOJO) {
                 window.MOJO = {};
             }
-            
+
             // Create plugins registry
             if (!window.MOJO.plugins) {
                 window.MOJO.plugins = {};
             }
-            
+
             // Store reference to this app instance
             window.MOJO.app = this;
         }
@@ -863,7 +864,7 @@ class WebApp {
             if (!window.MOJO.plugins) {
                 window.MOJO.plugins = {};
             }
-            
+
             window.MOJO.plugins[name] = component;
             console.debug(`MOJO Plugin registered: ${name}`);
         }

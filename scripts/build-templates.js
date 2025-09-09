@@ -17,10 +17,8 @@ const rootDir = path.resolve(__dirname, '..');
 // Configuration
 const TEMPLATE_EXTENSIONS = ['.mst', '.html'];
 const SOURCE_DIRS = [
-  'src/auth/pages',
-  'src/components',
-  'src/pages',
-  'src/templates'
+  'src/core',
+  'src/extensions'
 ];
 const OUTPUT_FILE = 'src/templates.js';
 

@@ -16,7 +16,7 @@
         />
 
         <!-- MOJO Auth CSS -->
-        <link rel="stylesheet" href="../../dist/auth.css" />
+        <link rel="stylesheet" href="/src/extensions/auth/css/auth.css" />
 
         <style>
             /* Demo bar styling */
@@ -29,66 +29,102 @@
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                 font-size: 0.85rem;
             }
-
-            /* Dark theme for demo bar */
-            .mojo-auth-dark .demo-bar {
+            body.auth-panel-dark .demo-bar {
                 background: rgba(26, 32, 44, 0.95);
                 border-bottom-color: rgba(255, 255, 255, 0.2);
                 color: white;
             }
-
-            .mojo-auth-dark .demo-bar .text-muted {
+            body.auth-panel-dark .demo-bar .text-muted {
                 color: rgba(255, 255, 255, 0.7) !important;
-            }
-
-            /* Compact theme adjustments */
-            .mojo-auth-compact .demo-bar {
-                padding: 0.25rem 0;
-                font-size: 0.8rem;
-            }
-
-            .mojo-auth-compact body.demo-mode #page-container {
-                padding-top: 45px;
             }
         </style>
     </head>
-    <body class="mojo-loader-theme-futuristic">
+    <body class="auth-bg-light auth-panel-light">
         <!-- Fixed Demo Bar -->
         <div id="demo-bar" class="demo-bar fixed-top" style="display: none">
             <div class="container-fluid px-3">
                 <div class="row align-items-center">
-                    <div class="col-md-6">
+                    <div class="col-lg-4">
                         <small class="text-muted me-3">
                             <i class="bi bi-gear-fill me-1"></i>
-                            <strong>Demo Mode:</strong>
+                            <strong>Demo Mode</strong>
                         </small>
-                        <small class="text-muted me-2" id="demo-api-url">API: Loading...</small>
-                        <small class="text-muted" id="demo-company">Company: Loading...</small>
                     </div>
-                    <div class="col-md-6 text-md-end">
+                    <div class="col-lg-8 text-lg-end">
                         <div class="d-flex justify-content-end align-items-center flex-wrap gap-2">
-                            <div class="btn-group btn-group-sm" role="group">
+                            <!-- Background Theme Dropdown -->
+                            <div class="btn-group btn-group-sm">
                                 <button
                                     type="button"
-                                    class="btn btn-outline-secondary active"
-                                    data-theme="default"
+                                    class="btn btn-outline-secondary dropdown-toggle"
+                                    data-bs-toggle="dropdown"
                                 >
-                                    <i class="bi bi-sun me-1"></i>Light
+                                    <i class="bi bi-image-fill me-1"></i>
+                                    <span id="bg-theme-label">Light BG</span>
                                 </button>
+                                <ul class="dropdown-menu dropdown-menu-end" id="bg-theme-selector">
+                                    <li>
+                                        <a
+                                            class="dropdown-item active"
+                                            href="#"
+                                            data-theme="auth-bg-light"
+                                            >Light</a
+                                        >
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#" data-theme="auth-bg-dark"
+                                            >Dark</a
+                                        >
+                                    </li>
+                                    <li>
+                                        <a
+                                            class="dropdown-item"
+                                            href="#"
+                                            data-theme="auth-bg-gradient"
+                                            >Gradient</a
+                                        >
+                                    </li>
+                                </ul>
+                            </div>
+                            <!-- Panel Theme Dropdown -->
+                            <div class="btn-group btn-group-sm">
                                 <button
                                     type="button"
-                                    class="btn btn-outline-secondary"
-                                    data-theme="dark"
+                                    class="btn btn-outline-secondary dropdown-toggle"
+                                    data-bs-toggle="dropdown"
                                 >
-                                    <i class="bi bi-moon me-1"></i>Dark
+                                    <i class="bi bi-card-heading me-1"></i>
+                                    <span id="panel-theme-label">Light Panel</span>
                                 </button>
-                                <button
-                                    type="button"
-                                    class="btn btn-outline-secondary"
-                                    data-theme="compact"
+                                <ul
+                                    class="dropdown-menu dropdown-menu-end"
+                                    id="panel-theme-selector"
                                 >
-                                    <i class="bi bi-layout-text-window me-1"></i>Compact
-                                </button>
+                                    <li>
+                                        <a
+                                            class="dropdown-item active"
+                                            href="#"
+                                            data-theme="auth-panel-light"
+                                            >Light</a
+                                        >
+                                    </li>
+                                    <li>
+                                        <a
+                                            class="dropdown-item"
+                                            href="#"
+                                            data-theme="auth-panel-dark"
+                                            >Dark</a
+                                        >
+                                    </li>
+                                    <li>
+                                        <a
+                                            class="dropdown-item"
+                                            href="#"
+                                            data-theme="auth-panel-translucent"
+                                            >Translucent</a
+                                        >
+                                    </li>
+                                </ul>
                             </div>
                             <button
                                 type="button"
@@ -115,59 +151,60 @@
         <!-- MOJO Loader -->
         <script src="https://unpkg.com/web-mojo/dist/loader.umd.js"></script>
         <script>
-
-            <script>
-                // Global function to hide loader is now called by main.js, but we need to show the demo bar
-                const originalHideLoader = window.hideInitialLoader;
-                window.hideInitialLoader = function () {
-                    originalHideLoader();
-                    // Show demo bar
-                    setTimeout(() => {
-                        const demoBar = document.getElementById("demo-bar");
-                        if (demoBar) {
-                            demoBar.style.display = "block";
-                            document.body.classList.add("demo-mode");
-                        }
-                    }, 100);
-                };
-
-                // Update demo bar info (called by main.js)
-                window.updateDemoInfo = function (config) {
-                    const apiUrl = document.getElementById("demo-api-url");
-                    const company = document.getElementById("demo-company");
-
-                    if (apiUrl && config.apiURL) {
-                        try {
-                            const url = new URL(config.apiURL);
-                            apiUrl.textContent = `API: ${url.hostname}`;
-                        } catch (e) {
-                            console.warn("Invalid API URL for demo bar");
-                        }
+            // Global function to hide loader is now called by main.js, but we need to show the demo bar
+            const originalHideLoader = window.hideInitialLoader;
+            window.hideInitialLoader = function () {
+                originalHideLoader();
+                // Show demo bar
+                setTimeout(() => {
+                    const demoBar = document.getElementById("demo-bar");
+                    if (demoBar) {
+                        demoBar.style.display = "block";
+                        document.body.classList.add("demo-mode");
                     }
+                }, 100);
+            };
 
-                    if (company && config.companyName) {
-                        company.textContent = `Company: ${config.companyName}`;
-                    }
-                };
+            // Theme switching functionality
+            function handleThemeSelection(selectorId, prefix, labelId) {
+                const selector = document.getElementById(selectorId);
+                selector.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    const link = e.target.closest("[data-theme]");
+                    if (!link) return;
 
-                // Theme switching functionality
-                document.addEventListener("click", (e) => {
-                    if (e.target.closest("[data-theme]")) {
-                        const button = e.target.closest("[data-theme]");
-                        const theme = button.dataset.theme;
-                        document.body.classList.remove("mojo-auth-dark", "mojo-auth-compact");
-                        if (theme === "dark") document.body.classList.add("mojo-auth-dark");
-                        if (theme === "compact") document.body.classList.add("mojo-auth-compact");
-                        document
-                            .querySelectorAll("[data-theme]")
-                            .forEach((btn) => btn.classList.remove("active"));
-                        button.classList.add("active");
-                    }
-                    if (e.target.closest("#demo-register-btn")) {
-                        e.preventDefault();
-                        window.mojoApp?.navigate("/register");
-                    }
+                    const theme = link.dataset.theme;
+
+                    // Remove previous theme classes with the same prefix
+                    const classesToRemove = Array.from(document.body.classList).filter((c) =>
+                        c.startsWith(prefix),
+                    );
+                    document.body.classList.remove(...classesToRemove);
+
+                    // Add new theme class
+                    document.body.classList.add(theme);
+
+                    // Update active state in dropdown
+                    selector
+                        .querySelectorAll(".dropdown-item")
+                        .forEach((item) => item.classList.remove("active"));
+                    link.classList.add("active");
+
+                    // Update label
+                    document.getElementById(labelId).textContent =
+                        link.textContent + (prefix === "auth-bg-" ? " BG" : " Panel");
                 });
+            }
+
+            handleThemeSelection("bg-theme-selector", "auth-bg-", "bg-theme-label");
+            handleThemeSelection("panel-theme-selector", "auth-panel-", "panel-theme-label");
+
+            document.addEventListener("click", (e) => {
+                if (e.target.closest("#demo-register-btn")) {
+                    e.preventDefault();
+                    window.mojoApp?.navigate("/register");
+                }
+            });
         </script>
 
         <!-- Auth Portal -->

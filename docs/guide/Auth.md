@@ -150,14 +150,13 @@ All pages now follow these patterns:
 
 ## Styling & CSS
 
-The MOJO Auth system includes consolidated, professional CSS styling that's easy to customize and integrate.
+The MOJO Auth system includes a flexible, decoupled CSS theming system that's easy to customize.
 
 ### CSS Files
 
 ```
-src/css/
-├── auth.css     # Complete auth system styles
-└── index.css    # Main import file for external projects
+src/extensions/auth/css/
+└── auth.css     # Complete auth system styles
 ```
 
 ### Basic Usage
@@ -165,22 +164,42 @@ src/css/
 Include the auth CSS in your HTML:
 
 ```html
-<!-- Option 1: Direct import -->
-<link rel="stylesheet" href="path/to/mojo/src/css/auth.css">
-
-<!-- Option 2: Full framework CSS (includes auth) -->
-<link rel="stylesheet" href="path/to/mojo/src/css/index.css">
+<link rel="stylesheet" href="path/to/mojo/src/extensions/auth/css/auth.css">
 ```
 
-Or import in your CSS:
+### Theming System
 
-```css
-@import url('path/to/mojo/src/css/auth.css');
+The look and feel are controlled by adding theme classes to the `<body>` element. You can mix and match background and panel themes independently.
+
+**Background Themes:**
+- `auth-bg-light`: A clean, light gray background (default).
+- `auth-bg-dark`: A dark charcoal background.
+- `auth-bg-gradient`: A professional gradient background.
+
+**Panel Themes:**
+- `auth-panel-light`: A solid white panel (default).
+- `auth-panel-dark`: A solid dark panel.
+- `auth-panel-translucent`: A semi-transparent "glassmorphism" panel that adapts to the background.
+
+These themes can be set directly in your HTML or configured in the `AuthApp` constructor, which will apply them for you.
+
+**Example HTML Usage:**
+
+```html
+<!-- Dark theme with a translucent panel -->
+<body class="auth-bg-dark auth-panel-translucent">
+    <!-- App container -->
+</body>
+
+<!-- Gradient background with a solid dark panel -->
+<body class="auth-bg-gradient auth-panel-dark">
+    <!-- App container -->
+</body>
 ```
 
-### Custom Theming
+### Customizing Colors
 
-Override CSS custom properties to match your brand:
+Override CSS custom properties in your own stylesheet to match your brand:
 
 ```css
 :root {
@@ -190,44 +209,14 @@ Override CSS custom properties to match your brand:
 }
 ```
 
-### Layout Helpers
-
-```html
-<!-- Full-screen auth experience -->
-<div class="mojo-auth-container">
-    <div class="mojo-auth-wrapper">
-        <!-- Your auth page content -->
-    </div>
-</div>
-
-<!-- Compact embedded auth -->
-<div class="mojo-auth-compact">
-    <!-- Auth content -->
-</div>
-
-<!-- Dark theme -->
-<div class="mojo-auth-dark">
-    <!-- Auth content -->
-</div>
-```
-
-### Framework Integration
-
-The CSS is designed to work with:
-- ✅ **Bootstrap 5** - Full compatibility
-- ✅ **Vanilla CSS** - No dependencies
-- ✅ **Tailwind CSS** - Helper classes included
-- ✅ **Custom themes** - CSS variables for easy customization
-
 ### Features Included
 
-- 🎨 **Professional Design** - Modern gradient backgrounds and glass-morphism cards
-- 📱 **Responsive Layout** - Mobile-first responsive design
-- ♿ **Accessibility** - High contrast, focus states, and screen reader support
-- 🌗 **Dark Mode** - Automatic dark mode detection and manual override
-- 🖨️ **Print Friendly** - Optimized for printing
-- ⚡ **Performance** - Optimized CSS with minimal size
-- 🔧 **Customizable** - CSS custom properties for easy theming
+- 🎨 **Flexible Theming** - Decoupled background and panel themes.
+- 📱 **Responsive Layout** - Mobile-first responsive design.
+- ♿ **Accessibility** - High contrast, focus states, and screen reader support.
+- 🖨️ **Print Friendly** - Optimized for printing.
+- ⚡ **Performance** - Optimized CSS with minimal size.
+- 🔧 **Customizable** - CSS custom properties for easy theming.
 
 ## Plugin System
 
@@ -348,7 +337,7 @@ app.events.on('auth:tokenExpired', () => {
 
 ## Configuration Options
 
-### initAuth Config
+### AuthApp Config
 ```javascript
 {
     // Required
@@ -369,6 +358,12 @@ app.events.on('auth:tokenExpired', () => {
     ui: {
         title: 'My App',
         logoUrl: '/assets/logo.png',
+        termsUrl: '/tos.html',          // Optional ToS link
+        privacyUrl: '/privacy.html',    // Optional Privacy Policy link
+        theme: {
+            background: 'auth-bg-gradient', // e.g., auth-bg-light, auth-bg-dark
+            panel: 'auth-panel-translucent' // e.g., auth-panel-light, auth-panel-dark
+        },
         messages: {
             loginTitle: 'Welcome Back',
             loginSubtitle: 'Sign in to your account'

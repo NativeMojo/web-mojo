@@ -4,6 +4,7 @@
  */
 
 import Page from '@core/Page.js';
+import { VERSION } from '/src/version.js';
 
 export default class LoginPage extends Page {
     static pageName = 'login';
@@ -17,7 +18,7 @@ export default class LoginPage extends Page {
             pageName: LoginPage.pageName,
             route: options.route || LoginPage.route,
             pageIcon: LoginPage.icon,
-            template: options.template
+            template: options.template,
         });
 
         // Get auth config from options (passed from AuthApp)
@@ -31,9 +32,9 @@ export default class LoginPage extends Page {
                 }
             },
             features: {
-                rememberMe: true,
+                rememberMe: false,
                 forgotPassword: true,
-                registration: true
+                registration: false
             }
         };
     }
@@ -53,6 +54,7 @@ export default class LoginPage extends Page {
             isLoading: false,
             error: null,
             showPassword: false,
+            version: VERSION,
             // Feature availability
             passkeySupported: this.getApp().auth?.isPasskeySupported?.() || false,
             // Config data for template
@@ -79,7 +81,6 @@ export default class LoginPage extends Page {
         this.updateData({
             username: '',
             password: '',
-            rememberMe: true,
             error: null,
             isLoading: false
         });

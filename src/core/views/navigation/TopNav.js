@@ -7,8 +7,22 @@ import View from '@core/View.js';
 
 class TopNav extends View {
     constructor(options = {}) {
-        // Handle theme/className from config
-        const navbarClass = options.theme || 'navbar navbar-expand-lg';
+        // Define theme-to-class mappings
+        const themes = {
+            light: 'navbar navbar-expand-lg navbar-light topnav-light',
+            dark: 'navbar navbar-expand-lg navbar-dark topnav-dark',
+            clean: 'navbar navbar-expand-lg navbar-light topnav-clean',
+            gradient: 'navbar navbar-expand-lg navbar-dark topnav-gradient',
+        };
+
+        // Set a default theme and determine the final class string
+        const themeName = options.theme || 'light';
+        let navbarClass = themes[themeName] || themes.light;
+
+        // Add shadow class if specified
+        if (options.shadow) {
+            navbarClass += ` topnav-shadow-${options.shadow}`;
+        }
 
         super({
             tagName: 'nav',
@@ -114,7 +128,7 @@ class TopNav extends View {
                     <div>
                         <span>{{data.currentPageName}}</span>
                         {{#data.currentPageDescription}}
-                        <small class="d-block text-white-50" style="font-size: 0.75rem; line-height: 1;">{{data.currentPageDescription}}</small>
+                        <small class="d-block" style="font-size: 0.75rem; line-height: 1;">{{data.currentPageDescription}}</small>
                         {{/data.currentPageDescription}}
                     </div>
                 </div>

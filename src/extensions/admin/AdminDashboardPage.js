@@ -214,31 +214,19 @@ export default class AdminDashboardPage extends Page {
         <div class="row">
           <!-- Full Width API Metrics Chart -->
           <div class="col-12 mb-4">
-            <div class="card border shadow-sm">
-              <div class="card-body" style="min-height: 250px;">
-                <div data-container="api-metrics-chart"></div>
-              </div>
-            </div>
+            <div data-container="api-metrics-chart"></div>
           </div>
         </div>
 
         <div class="row">
           <!-- System Events Chart -->
           <div class="col-xl-6 col-lg-6 mb-4">
-            <div class="card border shadow-sm">
-              <div class="card-body" style="min-height: 200px;">
-                <div data-container="system-events-chart"></div>
-              </div>
-            </div>
+            <div data-container="system-events-chart"></div>
           </div>
 
           <!-- System Incidents Chart -->
           <div class="col-xl-6 col-lg-6 mb-4">
-            <div class="card border shadow-sm">
-              <div class="card-body" style="min-height: 200px;">
-                <div data-container="system-incidents-chart"></div>
-              </div>
-            </div>
+            <div data-container="system-incidents-chart"></div>
           </div>
         </div>
 

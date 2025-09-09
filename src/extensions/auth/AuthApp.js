@@ -8,51 +8,53 @@ import LoginPage from '@ext/auth/pages/LoginPage.js';
 import RegisterPage from '@ext/auth/pages/RegisterPage.js';
 import ForgotPasswordPage from '@ext/auth/pages/ForgotPasswordPage.js';
 import ResetPasswordPage from '@ext/auth/pages/ResetPasswordPage.js';
-import {
-    auth_pages_ForgotPasswordPage_mst,
-    auth_pages_LoginPage_mst,
-    auth_pages_RegisterPage_mst
-} from '../../templates.js';
+import { getTemplate } from '/src/templates.js';
 
 export default class AuthApp extends WebApp {
     constructor(config = {}) {
+        // Deep merge UI config to handle nested theme object
+        const uiConfig = {
+            title: config.name || 'My App',
+            logoUrl: null,
+            termsUrl: null,
+            privacyUrl: null,
+            theme: {
+                background: 'auth-bg-light',
+                panel: 'auth-panel-light',
+                ...(config.ui?.theme || {})
+            },
+            messages: {
+                loginTitle: 'Welcome Back',
+                loginSubtitle: 'Sign in to your account',
+                registerTitle: 'Create Account',
+                registerSubtitle: 'Join us today',
+                forgotTitle: 'Reset Password',
+                forgotSubtitle: "We'll send you reset instructions",
+                ...(config.ui?.messages || {})
+            },
+            ...(config.ui || {})
+        };
+
         // Merge user config with auth defaults
         const authConfig = {
-            // Default auth routes
+            ...config,
             routes: {
                 login: '/login',
                 register: '/register',
                 forgot: '/forgot-password',
                 reset: '/reset-password',
-                ...config.routes
+                ...(config.routes || {})
             },
-            // Default navigation redirects
             loginRedirect: config.loginRedirect || '/',
             logoutRedirect: config.logoutRedirect || '/login',
-            // Default features
             features: {
                 forgotPassword: true,
                 registration: true,
                 rememberMe: true,
-                ...config.features
+                ...(config.features || {})
             },
-            // Default password reset method
             passwordResetMethod: config.passwordResetMethod || 'code',
-            // Default UI messages and branding
-            ui: {
-                title: config.name || 'My App',
-                logoUrl: config.logoUrl || null,
-                messages: {
-                    loginTitle: 'Welcome Back',
-                    loginSubtitle: 'Sign in to your account',
-                    registerTitle: 'Create Account',
-                    registerSubtitle: 'Join us today',
-                    forgotTitle: 'Reset Password',
-                    forgotSubtitle: "We'll send you reset instructions",
-                    ...(config.ui?.messages || {})
-                }
-            },
-            ...config
+            ui: uiConfig,
         };
 
         // Initialize the parent WebApp
@@ -63,9 +65,34 @@ export default class AuthApp extends WebApp {
         this.authConfig = authConfig;
 
         // Setup all authentication components
+        this.applyAuthTheme();
         this.registerAuthPages();
         this.setupAuthIntegration();
         this.setupAuthGuards();
+    }
+
+    /**
+     * Applies the configured background and panel themes to the body.
+     */
+    applyAuthTheme() {
+        const theme = this.authConfig.ui.theme;
+        if (!theme) return;
+
+        // Clear any existing theme classes
+        const classesToRemove = Array.from(document.body.classList).filter(
+            c => c.startsWith('auth-bg-') || c.startsWith('auth-panel-')
+        );
+        if (classesToRemove.length) {
+            document.body.classList.remove(...classesToRemove);
+        }
+
+        // Add new theme classes
+        if (theme.background) {
+            document.body.classList.add(theme.background);
+        }
+        if (theme.panel) {
+            document.body.classList.add(theme.panel);
+        }
     }
 
     /**
@@ -78,7 +105,7 @@ export default class AuthApp extends WebApp {
             route: cfg.routes.login,
             title: 'Login',
             authConfig: cfg,
-            template: auth_pages_LoginPage_mst
+            template: getTemplate('extensions/auth/pages/LoginPage.mst')
         });
 
         if (cfg.features.registration) {
@@ -86,7 +113,7 @@ export default class AuthApp extends WebApp {
                 route: cfg.routes.register,
                 title: 'Register',
                 authConfig: cfg,
-                template: auth_pages_RegisterPage_mst
+                template: getTemplate('extensions/auth/pages/RegisterPage.mst')
             });
         }
 
@@ -95,13 +122,14 @@ export default class AuthApp extends WebApp {
                 route: cfg.routes.forgot,
                 title: 'Reset Password',
                 authConfig: cfg,
-                template: auth_pages_ForgotPasswordPage_mst
+                template: getTemplate('extensions/auth/pages/ForgotPasswordPage.mst')
             });
 
             this.registerPage('reset-password', ResetPasswordPage, {
                 route: cfg.routes.reset,
                 title: 'Set New Password',
-                authConfig: cfg
+                authConfig: cfg,
+                template: getTemplate('extensions/auth/pages/ResetPasswordPage.mst')
             });
         }
     }

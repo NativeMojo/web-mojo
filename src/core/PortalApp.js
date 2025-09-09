@@ -84,9 +84,10 @@ export default class PortalApp extends WebApp {
 
         this.events.on('portal:action', this.onPortalAction.bind(this));
 
-
-        // Check and load active group after auth
-        await this.checkActiveGroup();
+        if (this.activeUser) {
+            // Check and load active group after auth
+            await this.checkActiveGroup();
+        }
 
         console.log('Setting up router...');
         await this.setupRouter();
@@ -346,7 +347,6 @@ export default class PortalApp extends WebApp {
         // Map config to TopNav format
         this.topbar = new TopNav({
             containerId: "portal-topnav",
-            className: this.topbarConfig.className || 'navbar navbar-expand-lg navbar-dark',
             brandText: this.topbarConfig.brand || this.brand || this.title,
             brandRoute: this.topbarConfig.brandRoute || '/',
             brandIcon: this.topbarConfig.brandIcon || this.brandIcon,

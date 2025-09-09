@@ -6,7 +6,7 @@
  * https://auth.yourcompany.com/?portal=https://app.yourcompany.com&company=Acme%20Corp&api=https://api.yourcompany.com
  */
 
-import { AuthApp } from 'web-mojo/auth';
+import AuthApp from '@ext/auth/AuthApp.js';
 
 // Configuration from URL params or environment variables
 const config = {
@@ -35,6 +35,7 @@ async function initAuthPortal() {
         const app = new AuthApp({
             container: '#app',
             name: `${config.companyName} - Sign In`,
+            theme: "dark",
             api: {
                 baseURL: config.apiURL
             },
@@ -43,10 +44,17 @@ async function initAuthPortal() {
             ui: {
                 title: config.companyName,
                 logoUrl: config.logoURL,
+                termsUrl: "/examples/auth/tos.html",
+                privacyUrl: "/examples/auth/privacy.html",
                 messages: {
-                    loginTitle: `Welcome to ${config.companyName}`,
-                    loginSubtitle: 'Sign in to continue to your account',
-                }
+                    loginTitle: `Login`,
+                    // loginSubtitle: 'Sign in to continue to your account',
+                },
+            },
+            features: {
+                rememberMe: false,
+                forgotPassword: true,
+                registration: false
             },
             // Redirect to the main portal on successful login
             loginRedirect: config.portalURL

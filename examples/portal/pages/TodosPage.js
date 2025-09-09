@@ -3,7 +3,7 @@
  * Demonstrates clean usage of TablePage framework features
  */
 
-import { TablePage } from 'web-mojo';
+import TablePage from '@core/pages/TablePage.js';
 import { TodoList, TodoForms } from '../models/Todo.js';
 
 class TodosPage extends TablePage {

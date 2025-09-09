@@ -3,7 +3,9 @@
  * Demonstrates WebApp with Portal layout (sidebar + topnav)
  */
 
-import { PortalApp, Page, VERSION_INFO } from 'web-mojo';
+import { VERSION_INFO } from '/src/version.js'
+import Page from '@core/Page.js';
+import PortalApp from '@core/PortalApp.js'
 import HomePage from './pages/HomePage.js';
 import DashboardPage from './pages/DashboardPage.js';
 import TemplatesPage from './pages/TemplatesPage.js';
@@ -16,8 +18,9 @@ import FormDialogsPage from './pages/FormDialogsPage.js';
 import ChartsPage from './pages/ChartsPage.js';
 import ImagePage from './pages/ImagePage.js';
 import FileDropPage from './pages/FileDropPage.js';
-import { ImageViewer } from 'web-mojo/lightbox';
-import { registerAdminPages } from 'web-mojo/admin';
+
+import ImageViewer from '@ext/lightbox/ImageViewer.js';
+import { registerAdminPages } from '/src/admin.js';
 
 // Detect page reloads
 if (window.performance && window.performance.navigation.type === 1) {
@@ -57,7 +60,7 @@ const app = new PortalApp({
     sidebar: {
         menus: [{
             name: "default",
-            className: 'sidebar sidebar-light',
+            className: 'sidebar sidebar-dark',
             header: '<div class="fs-5 fw-bold text-center pt-3 sidebar-collapse-hide">Main Menu</div>',
             items: [
                 {
@@ -166,12 +169,12 @@ const app = new PortalApp({
                     icon: 'bi-menu-down'
                 }
             ],
-            footer: '<div class="text-center text-muted small">v1.0.0</div>'
+            footer: '<div class="text-center text-muted small collapsed-hidden">v1.0.0</div>'
         },
         {
            name: "group_default",
            groupKind: "any",
-           className: 'sidebar sidebar-light',
+           className: 'sidebar sidebar-light sidebar-global',
            items: [
                {
                    text: 'Dashboard',
@@ -200,8 +203,8 @@ const app = new PortalApp({
         },
         {
            name: "admin",
-           className: 'sidebar sidebar-light',
-           header: "<div class='pt-3 text-center fs-5 fw-bold'><i class='bi bi-wrench pe-2'></i> Admin</div>",
+           className: 'sidebar sidebar-light sidebar-admin',
+           header: "<div class='pt-3 text-center fs-5 fw-bold'><i class='bi bi-wrench pe-2'></i> <span class='collapsed-hidden'>Admin</span></div>",
            items: [
                {
                    spacer: true
@@ -217,7 +220,7 @@ const app = new PortalApp({
                }
            ],
            footer: `
-               <div class="text-center text-light small p-2" style="height: 56px;">
+               <div class="text-center text-light small p-2 collapsed-hidden" style="height: 56px;">
                    <div class="mt-1">v${VERSION_INFO.full}</div>
                    <div class="text-muted" style="font-size: 0.75em;">${VERSION_INFO.buildTime.split('T')[0]}</div>
                </div>
@@ -232,6 +235,8 @@ const app = new PortalApp({
         brandRoute: '?page=home',
         // theme: 'navbar-dark bg-primary',
         displayMode: 'both',
+        theme: "dark",
+        shadow: "dark",
         showSidebarToggle: true,
         // Left navigation items
         // leftItems: [
@@ -251,19 +256,19 @@ const app = new PortalApp({
             {
                 icon: 'bi-cloud-upload',
                 action: 'test-upload',
-                buttonClass: 'btn btn-link text-white',
+                buttonClass: 'btn btn-link',
                 title: 'Test File Upload Progress'
             },
             {
                 icon: 'bi-bell',
                 action: 'notifications',
-                buttonClass: 'btn btn-link text-white'
+                buttonClass: 'btn btn-link'
             },
             {
                 id: "admin",
                 icon: 'bi-wrench',
                 action: 'admin-menu',
-                buttonClass: 'btn btn-link text-white',
+                buttonClass: 'btn btn-link',
                 permissions: "view_admin",
                 handler: async (action, event, el) => {
                     console.log("ADMIN CLICKED");

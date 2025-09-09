@@ -349,7 +349,7 @@ class Collection {
     delete downloadParams.size;
 
     // Add format param
-    downloadParams.format = format;
+    downloadParams.download_format = format;
 
     // Provide a default filename and content type
     const filename = `export-${this.getModelName().toLowerCase()}.${format}`;
