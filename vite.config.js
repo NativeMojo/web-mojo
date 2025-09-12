@@ -41,14 +41,6 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    rollupOptions: {
-      input: {
-        // Main framework entry
-        main: path.resolve(__dirname, 'src/index.html'),
-        mojo: path.resolve(__dirname, 'src/mojo.js'),
-        app: path.resolve(__dirname, 'src/app.js')
-      }
-    }
   },
 
   // Preview server (for production builds)

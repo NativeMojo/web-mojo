@@ -4,8 +4,8 @@
  */
 
 import { VERSION_INFO } from '/src/version.js'
-import Page from '@core/Page.js';
-import PortalApp from '@core/PortalApp.js'
+import Page from '/src/core/Page.js';
+import PortalApp from '/src/core/PortalApp.js'
 import HomePage from './pages/HomePage.js';
 import DashboardPage from './pages/DashboardPage.js';
 import TemplatesPage from './pages/TemplatesPage.js';
@@ -19,7 +19,7 @@ import ChartsPage from './pages/ChartsPage.js';
 import ImagePage from './pages/ImagePage.js';
 import FileDropPage from './pages/FileDropPage.js';
 
-import ImageViewer from '@ext/lightbox/ImageViewer.js';
+import ImageViewer from '/src/extensions/lightbox/ImageViewer.js';
 import { registerAdminPages } from '/src/admin.js';
 
 // Detect page reloads
@@ -352,8 +352,8 @@ app.events.on('portal:action', ({ action }) => {
     switch (action) {
         case 'test-upload':
             // Import and test file upload progress UI
-            import('web-mojo').then(({ ToastService }) => {
-                import('web-mojo').then(({ ProgressView }) => {
+            import('/src/index.js').then(({ ToastService }) => {
+                import('/src/index.js').then(({ ProgressView }) => {
                     // ToastService and ProgressView are already destructured
 
                     const toastService = new ToastService();

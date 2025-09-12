@@ -204,7 +204,7 @@ export class View {
 
     try {
       if (!this.initialized) await this.onInitView();
-      this.events.unbind();
+      this.unbindEvents();
 
       await this.onBeforeRender();
       if (this.getViewData) {
@@ -221,7 +221,7 @@ export class View {
       // 3) render children
       await this._renderChildren();
       await this.onAfterRender();
-      this.events.bind(this.element);
+      this.bindEvents();
 
     } catch (e) {
       View._warn(`Render error in ${this.id}`, e);

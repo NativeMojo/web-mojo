@@ -80,18 +80,24 @@ export class EventDelegate {
       this.debounceTimers.set(timerId, timer);
     };
 
-    const onEnterKey = (event) => {
-      if (event.key !== 'Enter' || !event.target.matches('[data-filter="search"]')) return;
+    const onKeyDown = (event) => {
+      if (event.target.matches('[data-filter="search"]')) return;
       const el = event.target.closest('[data-change-action]');
       if (!el || !this.shouldHandle(el, event)) return;
-      event.preventDefault();
-      const action = el.getAttribute('data-change-action');
-      this.dispatch(action, event, el).then((handled) => {
-        if (handled) {
-          event.stopPropagation();
-          event.handledByChild = true;
-        }
-      });
+      let changeKeys = ["Enter"];
+      if (el.getAttribute('data-change-keys')) {
+          changeKeys = el.getAttribute('data-change-keys').split(',').map(key => key.trim());
+      }
+      if (changeKeys.includes(event.key)) {
+        event.preventDefault();
+        const action = el.getAttribute('data-change-action');
+        this.dispatch(action, event, el).then((handled) => {
+          if (handled) {
+            event.stopPropagation();
+            event.handledByChild = true;
+          }
+        });
+      }
     };
 
     const onSubmit = (event) => {
@@ -105,14 +111,14 @@ export class EventDelegate {
     rootEl.addEventListener('click', onClick);
     rootEl.addEventListener('change', onChange);
     rootEl.addEventListener('input', onInput);
-    rootEl.addEventListener('keydown', onEnterKey);
+    rootEl.addEventListener('keydown', onKeyDown);
     rootEl.addEventListener('submit', onSubmit);
 
     this.domListeners.push(
       { el: rootEl, type: 'click', fn: onClick },
       { el: rootEl, type: 'change', fn: onChange },
       { el: rootEl, type: 'input', fn: onInput },
-      { el: rootEl, type: 'keydown', fn: onEnterKey },
+      { el: rootEl, type: 'keydown', fn: onKeyDown },
       { el: rootEl, type: 'submit', fn: onSubmit },
     );
   }

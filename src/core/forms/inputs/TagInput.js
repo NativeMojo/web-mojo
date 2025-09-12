@@ -174,10 +174,15 @@ class TagInputView extends View {
    * Handle focus on container
    */
   async onActionFocusInput(_event, _element) {
+      this.focus();
+  }
+
+  focus() {
     const input = this.element.querySelector('.tag-input-field');
     if (input && !this.disabled) {
       input.focus();
     }
+    this.focusedTagIndex = -1;
   }
 
   /**
@@ -211,7 +216,18 @@ class TagInputView extends View {
     }
 
     // Handle other trigger keys via keydown
-    element.addEventListener('keydown', this.handleInputKeydown.bind(this), { once: true });
+
+  }
+
+  bindEvents() {
+      if (!this.__bnd_keydown) this.__bnd_keydown = this.handleInputKeydown.bind(this);
+      this.element.addEventListener('keydown', this.__bnd_keydown);
+      this.events.bind(this.element);
+  }
+
+  unbindEvents() {
+      if (this.__bnd_keydown)this.element.removeEventListener('keydown', this.__bnd_keydown);
+      this.events.unbind();
   }
 
   /**
@@ -219,11 +235,11 @@ class TagInputView extends View {
    */
   handleInputKeydown(event) {
     const input = event.target;
-    const value = input.value;
-
+    const value = input.value || '';
     switch (event.key) {
       case 'Enter':
       case 'Tab':
+      case ',':
         if (value.trim()) {
           event.preventDefault();
           this.addTag(value);
@@ -234,16 +250,50 @@ class TagInputView extends View {
       case 'Backspace':
         if (value === '' && this.tags.length > 0) {
           event.preventDefault();
-          this.removeTag(this.tags.length - 1);
+          if (this.focusedTagIndex >= 0) {
+              this.removeTag(this.focusedTagIndex);
+              if (this.focusedTagIndex == 0) {
+                  this.focus();
+              } else {
+                  this.focusTag(this.focusedTagIndex - 1);
+              }
+          } else {
+              this.removeTag(this.tags.length - 1);
+          }
         }
         break;
 
-      case 'ArrowLeft':
-        if (value === '' && this.tags.length > 0) {
-          event.preventDefault();
-          this.focusTag(this.tags.length - 1);
-        }
-        break;
+    case 'ArrowLeft':
+          if (value === '' && this.tags.length > 0) {
+            event.preventDefault();
+            if (this.focusedTagIndex >= 0) {
+                const newIndex = this.focusedTagIndex - 1;
+                if (newIndex >= 0) {
+                    this.focusTag(newIndex);
+                } else {
+                    this.focus();
+                }
+            } else {
+                this.focusTag(this.tags.length - 1);
+            }
+          }
+          break;
+
+      case 'ArrowRight':
+          if (value === '' && this.tags.length > 0) {
+              event.preventDefault();
+              if (this.focusedTagIndex >= 0) {
+                  const newIndex = this.focusedTagIndex + 1;
+                  if (newIndex < this.tags.length) {
+                      this.focusTag(newIndex);
+                  } else {
+                      this.focus();
+                  }
+              } else {
+                  this.focusTag(0);
+              }
+          }
+          break;
 
       case 'Escape':
         input.value = '';
@@ -417,6 +467,7 @@ class TagInputView extends View {
     const tagElements = this.element.querySelectorAll('.tag-item');
     if (tagElements[index]) {
       this.focusedTagIndex = index;
+      console.log(`Focused tag index: ${index}`);
       tagElements[index].focus();
     }
   }
