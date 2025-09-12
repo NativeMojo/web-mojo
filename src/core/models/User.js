@@ -41,6 +41,7 @@ User.PERMISSIONS = [
     { name: "view_groups", label: "View Groups" },
     { name: "manage_groups", label: "Manage Groups" },
     { name: "view_metrics", label: "View System Metrics" },
+    { name: "manage_metrics", label: "Manage System Metrics" },
     { name: "view_logs", label: "View Logs" },
     { name: "view_incidents", label: "View Incidents" },
     { name: "manage_incidents", label: "Manage Incidents" },
