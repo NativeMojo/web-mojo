@@ -670,6 +670,14 @@ nav.topnav-shadow-dark {
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
+.sidebar-dark .sidebar-group-header {
+    background-color: var(--bs-dark);
+}
+
+.sidebar-light .sidebar-group-header {
+    background-color: #dfe5ea;
+}
+
 .sidebar-group-header:hover {
     cursor: pointer;
     color: var(--mojo-primary);

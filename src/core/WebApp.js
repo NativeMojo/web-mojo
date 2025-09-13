@@ -343,10 +343,6 @@ class WebApp {
 
             pageInstance.syncUrl();
 
-            // 6. RENDER PAGE (automatically replaces DOM content)
-            await pageInstance.render();
-            this.currentPage = pageInstance;
-
             // 8. EMIT SUCCESS EVENT
             this.events.emit('page:show', {
                 page: pageInstance,
@@ -355,6 +351,10 @@ class WebApp {
                 query,
                 fromRouter
             });
+
+            // 6. RENDER PAGE (automatically replaces DOM content)
+            await pageInstance.render();
+            this.currentPage = pageInstance;
 
             console.log(`✅ Showing page: ${pageInstance.pageName}`, { query, params });
 
