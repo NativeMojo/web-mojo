@@ -1020,6 +1020,12 @@ class TableView extends ListView {
       });
 
       if (result) {
+        if (this.options.addRequiresActiveGroup) {
+            result.group = this.getApp().activeGroup.id;
+        }
+        if (this.options.addRequiresActiveUser) {
+            result.user = this.getApp().activeUser.id;
+        }
         await model.save(result);
         if (this.collection) {
           this.collection.add(model);
