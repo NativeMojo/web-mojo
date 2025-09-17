@@ -385,6 +385,10 @@ class TablePage extends Page {
   async onEnter() {
     await super.onEnter();
 
+    if (this.options.requiresGroup && !this.query.group && this.getApp().activeGroup) {
+      this.query.group = this.getApp().activeGroup.id;
+    }
+
     this.applyQueryToCollection();
 
     // Refresh data if collection is REST-enabled
@@ -475,6 +479,15 @@ class TablePage extends Page {
     } else {
       this.tableView.render();
     }
+  }
+
+  async onGroupChange(group) {
+      if (!group || !this.collection || !this.options.requiresGroup) return;
+      this.query.group = group.id;
+      this.applyQueryToCollection();
+      if (this.collection && this.collection.restEnabled) {
+        await this.collection.fetch();
+      }
   }
 
   /**

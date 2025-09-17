@@ -1644,7 +1644,11 @@ class Dialog extends View {
           } else {
             // Restore form and show error
             dialog.setLoading(false);
-            dialog.getApp().toast.error(result.error);
+            let errmsg = result.error;
+            if (result.data && result.data.error) {
+                errmsg = result.data.error;
+            }
+            dialog.getApp().toast.error(errmsg);
             // formView.showError(result.error || 'Save failed. Please try again.');
           }
         } catch (error) {

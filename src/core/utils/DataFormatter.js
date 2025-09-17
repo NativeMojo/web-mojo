@@ -479,17 +479,49 @@ class DataFormatter {
 
   /**
    * Format currency
-   * @param {*} value - Number value
+   * @param {*} value - Number value in cents
    * @param {string} symbol - Currency symbol
    * @param {number} decimals - Decimal places
    * @returns {string} Formatted currency
    */
   currency(value, symbol = '$', decimals = 2) {
-    const num = parseFloat(value);
+    const num = parseInt(value);
     if (isNaN(num)) return String(value);
 
-    const formatted = this.number(num, decimals);
-    return symbol + formatted;
+    // Convert cents to dollars using string manipulation to avoid floating point issues
+    const centsStr = Math.abs(num).toString();
+    const sign = num < 0 ? '-' : '';
+
+    let dollars, cents;
+    if (centsStr.length <= 2) {
+      dollars = '0';
+      cents = centsStr.padStart(2, '0');
+    } else {
+      dollars = centsStr.slice(0, -2);
+      cents = centsStr.slice(-2);
+    }
+
+    // Add thousands separators to dollars part
+    dollars = dollars.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    // Format based on requested decimals
+    let formatted;
+    if (decimals === 0) {
+      // Round to nearest dollar
+      const totalCents = parseInt(cents);
+      if (totalCents >= 50) {
+        dollars = (parseInt(dollars.replace(/,/g, '')) + 1).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      }
+      formatted = dollars;
+    } else if (decimals === 2) {
+      formatted = `${dollars}.${cents}`;
+    } else {
+      // For other decimal places, truncate or pad cents as needed
+      const adjustedCents = cents.slice(0, decimals).padEnd(decimals, '0');
+      formatted = `${dollars}.${adjustedCents}`;
+    }
+
+    return sign + symbol + formatted;
   }
 
   /**
@@ -779,7 +811,7 @@ class DataFormatter {
   inferBadgeType(text) {
     const lowered = text.toLowerCase();
     if (['active', 'success', 'complete', 'completed', 'approved', 'done', 'true', 'on', 'yes'].includes(lowered)) return 'success';
-    if (['error', 'failed', 'rejected', 'deleted', 'cancelled', 'false', 'off', 'no'].includes(lowered)) return 'danger';
+    if (['error', 'failed', 'rejected', 'deleted', 'cancelled', 'false', 'off', 'no', 'declined'].includes(lowered)) return 'danger';
     if (['warning', 'pending', 'review', 'processing', 'uploading'].includes(lowered)) return 'warning';
     if (['info', 'new', 'draft'].includes(lowered)) return 'info';
     if (['inactive', 'disabled', 'archived', 'suspended'].includes(lowered)) return 'secondary';

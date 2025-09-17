@@ -562,6 +562,9 @@ class FormBuilder {
       case 'search':
         fieldHTML = this.renderSearchField(field);
         break;
+      case 'hex':
+        fieldHTML = this.renderHexField(field);
+        break;
       case 'textarea':
         fieldHTML = this.renderTextareaField(field);
         break;
@@ -748,6 +751,77 @@ class FormBuilder {
       }
     };
     return this.renderInputField(searchField, 'search');
+  }
+
+  /**
+   * Render hex input field with validation
+   * @param {Object} field - Field configuration
+   * @returns {string} Field HTML
+   */
+  renderHexField(field) {
+    const {
+      hexType = 'color', // 'color', 'string', 'any'
+      allowPrefix = true,
+      minLength: originalMinLength,
+      maxLength: originalMaxLength,
+      ...baseField
+    } = field;
+
+    let pattern, minLength, maxLength, placeholder, help;
+
+    switch (hexType) {
+      case 'color':
+        // Hex color: #RRGGBB or RRGGBB
+        pattern = allowPrefix ? '^#?[0-9A-Fa-f]{6}$' : '^[0-9A-Fa-f]{6}$';
+        minLength = allowPrefix ? 6 : 6;
+        maxLength = allowPrefix ? 7 : 6;
+        placeholder = allowPrefix ? '#FF0000' : 'FF0000';
+        help = help || 'Enter a valid hex color (e.g., ' + placeholder + ')';
+        break;
+      
+      case 'color-short':
+        // Hex color: #RGB or RGB, #RRGGBB or RRGGBB
+        pattern = allowPrefix ? '^#?[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$' : '^[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$';
+        minLength = allowPrefix ? 4 : 3;
+        maxLength = allowPrefix ? 7 : 6;
+        placeholder = allowPrefix ? '#F00 or #FF0000' : 'F00 or FF0000';
+        help = help || 'Enter a valid hex color (3 or 6 digits)';
+        break;
+      
+      case 'string':
+        // General hex string
+        pattern = '^[0-9A-Fa-f]+$';
+        minLength = originalMinLength || 1;
+        maxLength = originalMaxLength || 64;
+        placeholder = 'ABCDEF123456';
+        help = help || 'Only hexadecimal characters (0-9, A-F) allowed';
+        break;
+      
+      default:
+        // Any hex format
+        pattern = allowPrefix ? '^#?[0-9A-Fa-f]+$' : '^[0-9A-Fa-f]+$';
+        minLength = originalMinLength || 1;
+        maxLength = originalMaxLength || 64;
+        placeholder = allowPrefix ? '#ABCDEF or ABCDEF' : 'ABCDEF';
+        help = help || 'Enter hexadecimal characters only';
+    }
+
+    const hexField = {
+      ...baseField,
+      pattern,
+      minLength,
+      maxLength,
+      placeholder: baseField.placeholder || placeholder,
+      help: baseField.help || help,
+      attributes: {
+        'data-hex-type': hexType,
+        'data-allow-prefix': allowPrefix,
+        'style': 'text-transform: uppercase;',
+        ...baseField.attributes
+      }
+    };
+
+    return this.renderInputField(hexField, 'text');
   }
 
   /**

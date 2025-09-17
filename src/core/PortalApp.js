@@ -196,6 +196,11 @@ export default class PortalApp extends WebApp {
             app: this
         });
 
+        const page = this.getCurrentPage();
+        if (page && page.onGroupChange) {
+            page.onGroupChange(group);
+        }
+
         this.router.updateUrl({group:group.id}, { replace: true });
         console.log('Active group set to:', group ? group.get('name') : 'none');
         return this;
