@@ -105,20 +105,22 @@ export default class PortalApp extends WebApp {
         const token = this.tokenManager.getTokenInstance();
         if (!token || !token.isValid()) {
             this.events.emit('auth:unauthorized', { app: this });
-            return;
+            return false;
         }
         if (token.isExpired()) {
             this.events.emit('auth:expired', { app: this });
-            return;
+            return false;
         }
         if (token.isExpiringSoon()) {
             this.events.emit('auth:expiring', { app: this });
         }
+        if (this.activeUser) return true;
         this.tokenManager.startAutoRefresh(this);
         this.rest.setAuthToken(token.token);
         const user = new User({ id: token.getUserId() });
         await user.fetch();
         this.setActiveUser(user);
+        return true;
     }
 
     /**
@@ -270,6 +272,17 @@ export default class PortalApp extends WebApp {
      */
     getActiveGroupStorageKey() {
         return `mojo_active_group_id`;
+    }
+
+    /**
+     * Set portal profile to localStorage
+     */
+    setPortalProfile(profile) {
+        try {
+            localStorage.setItem('mojo_portal_profile', profile);
+        } catch (error) {
+            console.warn('Failed to save portal profile:', error);
+        }
     }
 
     /**
