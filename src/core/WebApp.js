@@ -13,6 +13,8 @@
  *   - 'loading:show' - When loading indicator should be shown
  *   - 'loading:hide' - When loading indicator should be hidden
  *   - 'state:changed' - When application state changes
+ *   - 'browser:focus' - When browser/tab gains focus
+ *   - 'browser:blur' - When browser/tab loses focus
  *   - Router events are also emitted via this.events (see Router documentation)
  */
 
@@ -97,6 +99,9 @@ class WebApp {
             window.MOJO = window.MOJO || {};
             window.MOJO.router = this.router;
         }
+
+        // Setup browser focus/blur tracking
+        this.setupFocusTracking();
 
         // Component registries
         this.pageCache = new Map();     // pageName -> page instance (cached)
@@ -635,6 +640,62 @@ class WebApp {
     }
 
     /**
+     * Setup browser focus/blur tracking
+     */
+    setupFocusTracking() {
+        if (typeof window === 'undefined') return;
+
+        this.isFocused = !document.hidden;
+
+        // Handle visibility change (tab switching, minimizing, etc.)
+        const handleVisibilityChange = () => {
+            const wasFocused = this.isFocused;
+            this.isFocused = !document.hidden;
+
+            if (wasFocused !== this.isFocused) {
+                if (this.isFocused) {
+                    console.log('🔥 Browser gained focus');
+                    this.events.emit('browser:focus');
+                } else {
+                    console.log('💤 Browser lost focus');
+                    this.events.emit('browser:blur');
+                }
+            }
+        };
+
+        // Handle window focus/blur (for when user clicks in/out of window)
+        const handleFocus = () => {
+            if (!this.isFocused) {
+                this.isFocused = true;
+                console.log('🔥 Browser gained focus');
+                this.events.emit('browser:focus');
+            }
+        };
+
+        const handleBlur = () => {
+            if (this.isFocused) {
+                this.isFocused = false;
+                console.log('💤 Browser lost focus');
+                this.events.emit('browser:blur');
+            }
+        };
+
+        // Listen for visibility changes
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        
+        // Listen for window focus/blur
+        window.addEventListener('focus', handleFocus);
+        window.addEventListener('blur', handleBlur);
+
+        // Store references for cleanup
+        this._focusHandlers = {
+            visibilitychange: handleVisibilityChange,
+            focus: handleFocus,
+            blur: handleBlur
+        };
+    }
+
+    /**
      * Setup global error handling
      */
     setupErrorHandling() {
@@ -732,6 +793,13 @@ class WebApp {
         // Stop router
         if (this.router) {
             this.router.stop();
+        }
+
+        // Clean up focus tracking
+        if (this._focusHandlers && typeof window !== 'undefined') {
+            document.removeEventListener('visibilitychange', this._focusHandlers.visibilitychange);
+            window.removeEventListener('focus', this._focusHandlers.focus);
+            window.removeEventListener('blur', this._focusHandlers.blur);
         }
 
         // Destroy all cached pages

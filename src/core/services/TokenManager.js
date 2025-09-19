@@ -54,7 +54,6 @@ class Token {
             // Determine validity
             this.isValidToken = this._checkValidity();
         } catch (error) {
-            console.error('Failed to decode JWT:', error);
             this.payload = null;
         }
     }
@@ -234,11 +233,41 @@ export default class TokenManager {
      * @returns {Token|null} Token instance or null if no token
      */
     getTokenInstance() {
-        if (!this.tokenInstance) {
-            const token = this.getToken();
-            this.tokenInstance = token ? new Token(token) : null;
+        const currentToken = this.getToken();
+        
+        // If no token stored, clear instance and return null
+        if (!currentToken) {
+            this.tokenInstance = null;
+            return null;
         }
+        
+        // If instance doesn't exist or token changed, create new instance
+        if (!this.tokenInstance || this.tokenInstance.token !== currentToken) {
+            this.tokenInstance = new Token(currentToken);
+        }
+        
         return this.tokenInstance;
+    }
+
+    /**
+     * Get Token instance for refresh token
+     * @returns {Token|null} Token instance or null if no refresh token
+     */
+    getRefreshTokenInstance() {
+        const currentRefreshToken = this.getRefreshToken();
+        
+        // If no refresh token stored, clear instance and return null
+        if (!currentRefreshToken) {
+            this._refreshTokenInstance = null;
+            return null;
+        }
+        
+        // If instance doesn't exist or token changed, create new instance
+        if (!this._refreshTokenInstance || this._refreshTokenInstance.token !== currentRefreshToken) {
+            this._refreshTokenInstance = new Token(currentRefreshToken);
+        }
+        
+        return this._refreshTokenInstance;
     }
 
     /**
@@ -297,22 +326,79 @@ export default class TokenManager {
         return currentToken ? currentToken.getUserInfo() : null;
     }
 
-    startAutoRefresh(app) {
-        // Implement token watcher logic here
-        this.stopAutoRefresh();
-        this._tokenWatcher = setInterval(() => {
-            // Implement token watcher logic here
-            const token = this.getTokenInstance();
-            if (!token || !token.isValid() || token.isExpired()) {
+    /**
+     * Check current token status and determine what action is needed
+     * @returns {object} Status object with action and details
+     */
+    checkTokenStatus() {
+        const token = this.getTokenInstance();
+        const refreshToken = this.getRefreshTokenInstance();
+        
+        // If no access token or it's invalid/expired
+        if (!token || !token.isValid() || token.isExpired()) {
+            // Check if refresh is possible
+            if (!refreshToken || !refreshToken.isValid() || refreshToken.isExpired()) {
+                return {
+                    action: 'logout',
+                    reason: 'Both access and refresh tokens are invalid/expired'
+                };
+            }
+            
+            return {
+                action: 'refresh',
+                reason: 'Access token invalid/expired but refresh token valid'
+            };
+        }
+
+        // Access token is valid - check if it needs refreshing soon
+        if (token.isExpiringSoon(10) || (token.getAgeMinutes() && token.getAgeMinutes() > 60)) {
+            // Only suggest refresh if refresh token is still valid
+            if (!refreshToken || !refreshToken.isValid() || refreshToken.isExpired()) {
+                return {
+                    action: 'none',
+                    reason: 'Access token expiring but refresh token invalid'
+                };
+            }
+            
+            return {
+                action: 'refresh',
+                reason: 'Access token expiring soon or aged'
+            };
+        }
+
+        return {
+            action: 'none',
+            reason: 'All tokens valid and not expiring soon'
+        };
+    }
+
+    /**
+     * Check tokens and take appropriate action
+     * @param {object} app - App instance for events and API calls
+     * @returns {Promise<boolean>} True if action was taken
+     */
+    async checkAndRefreshTokens(app) {
+        const status = this.checkTokenStatus();
+        
+        switch (status.action) {
+            case 'logout':
                 app.events.emit("auth:unauthorized");
                 this.stopAutoRefresh();
-                return;
-            }
+                return true;
+                
+            case 'refresh':
+                await this.refreshToken(app);
+                return true;
+                
+            default:
+                return false;
+        }
+    }
 
-            if (token.isExpiringSoon() || (token.getAgeMinutes() > 60)) {
-                this.refreshToken(app);
-            }
-
+    startAutoRefresh(app) {
+        this.stopAutoRefresh();
+        this._tokenWatcher = setInterval(() => {
+            this.checkAndRefreshTokens(app);
         }, 60000);
     }
 
@@ -324,24 +410,53 @@ export default class TokenManager {
     }
 
     async refreshToken(app) {
-        // Implement token refresh logic here
-        const refresh_token = this.getRefreshToken();
-        if (!refresh_token) {
+        const refreshTokenInstance = this.getRefreshTokenInstance();
+        
+        // Double-check refresh token validity before attempting refresh
+        if (!refreshTokenInstance || !refreshTokenInstance.isValid() || refreshTokenInstance.isExpired()) {
+
+            app.events.emit("auth:unauthorized");
             this.stopAutoRefresh();
             return;
         }
 
-        app.rest.POST('/api/token/refresh', { refresh_token })
-            .then((response) => {
-                const { access_token, refresh_token } = response.data.data;
-                this.setTokens(access_token, refresh_token);
-                app.rest.setAuthToken(access_token);
-                console.log('Token refreshed successfully');
-            })
-            .catch((error) => {
-                this.stopAutoRefresh();
-                // this.events.emit("tokenRefreshFailed", error);
-                app.showError(`Token refresh failed: ${error.message}`);
+        try {
+
+            const response = await app.rest.POST('/api/token/refresh', { 
+                refresh_token: refreshTokenInstance.token 
             });
+            
+            const { access_token, refresh_token } = response.data.data;
+            
+            // Clear old cached instances so new tokens are loaded
+            this.tokenInstance = null;
+            this._refreshTokenInstance = null;
+            
+            // Store new tokens
+            this.setTokens(access_token, refresh_token);
+            app.rest.setAuthToken(access_token);
+            
+            // Emit success event
+            app.events.emit('auth:token:refreshed', { 
+                newToken: access_token,
+                newRefreshToken: refresh_token
+            });
+            
+            console.log('Token refreshed successfully');
+            
+        } catch (error) {
+
+            
+            // Check if it's an authentication error (refresh token invalid)
+            if (error.status === 401 || error.status === 403) {
+
+                app.events.emit("auth:unauthorized");
+                this.stopAutoRefresh();
+            } else {
+                // For other errors, emit specific event but don't logout
+                app.events.emit('auth:token:refresh:failed', { error });
+                app.showError(`Token refresh failed: ${error.message}`);
+            }
+        }
     }
 }

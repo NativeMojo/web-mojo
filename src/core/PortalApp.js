@@ -82,6 +82,11 @@ export default class PortalApp extends WebApp {
             return;
         });
 
+        this.events.on("browser:focus", () => {
+            if (!this.activeUser) return;
+            this.tokenManager.checkAndRefreshTokens(this);
+        });
+
         this.events.on('portal:action', this.onPortalAction.bind(this));
 
         if (this.activeUser) {
@@ -102,19 +107,33 @@ export default class PortalApp extends WebApp {
     }
 
     async checkAuthStatus() {
+        const tokenStatus = this.tokenManager.checkTokenStatus();
+        
+        // Handle logout scenarios
+        if (tokenStatus.action === 'logout') {
+            this.events.emit('auth:unauthorized', { app: this });
+            return false;
+        }
+        
+        // Handle refresh scenarios - attempt refresh if needed
+        if (tokenStatus.action === 'refresh') {
+            const refreshed = await this.tokenManager.checkAndRefreshTokens(this);
+            if (!refreshed) {
+                // If refresh failed, checkAndRefreshTokens already handled logout
+                return false;
+            }
+        }
+        
+        // At this point we have a valid token
         const token = this.tokenManager.getTokenInstance();
-        if (!token || !token.isValid()) {
-            this.events.emit('auth:unauthorized', { app: this });
-            return false;
+        
+        // If user already loaded, just start auto-refresh and return
+        if (this.activeUser) {
+            this.tokenManager.startAutoRefresh(this);
+            return true;
         }
-        if (token.isExpired()) {
-            this.events.emit('auth:unauthorized', { app: this });
-            return false;
-        }
-        if (token.isExpiringSoon()) {
-            this.events.emit('auth:expiring', { app: this });
-        }
-        if (this.activeUser) return true;
+        
+        // Load user data
         this.rest.setAuthToken(token.token);
         const user = new User({ id: token.getUserId() });
         const resp = await user.fetch();
@@ -123,6 +142,7 @@ export default class PortalApp extends WebApp {
             this.events.emit('auth:unauthorized', { app: this, error: resp.error });
             return false;
         }
+        
         this.setActiveUser(user);
         this.tokenManager.startAutoRefresh(this);
         return true;

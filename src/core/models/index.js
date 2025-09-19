@@ -8,7 +8,7 @@
  *   import { User, Job, Email } from 'web-mojo/models';
  *   import { UserList, JobForms } from 'web-mojo/models';
  * 
- * Generated on: 2025-09-18T16:22:02.104Z
+ * Generated on: 2025-09-19T16:04:07.046Z
  */
 
 // AWS model exports
