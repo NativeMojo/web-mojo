@@ -108,18 +108,23 @@ export default class PortalApp extends WebApp {
             return false;
         }
         if (token.isExpired()) {
-            this.events.emit('auth:expired', { app: this });
+            this.events.emit('auth:unauthorized', { app: this });
             return false;
         }
         if (token.isExpiringSoon()) {
             this.events.emit('auth:expiring', { app: this });
         }
         if (this.activeUser) return true;
-        this.tokenManager.startAutoRefresh(this);
         this.rest.setAuthToken(token.token);
         const user = new User({ id: token.getUserId() });
-        await user.fetch();
+        const resp = await user.fetch();
+        if (!resp.success) {
+            this.tokenManager.clearTokens();
+            this.events.emit('auth:unauthorized', { app: this, error: resp.error });
+            return false;
+        }
         this.setActiveUser(user);
+        this.tokenManager.startAutoRefresh(this);
         return true;
     }
 
