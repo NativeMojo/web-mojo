@@ -462,6 +462,7 @@ class FormView extends View {
 
     // Update data and re-render
     delete this.data[fieldName];
+    this.emit('change', { field: fieldName, value: null, form: this });
     await this.updateField(fieldName);
   }
 
@@ -494,6 +495,12 @@ class FormView extends View {
 
     // Emit field change event
     this.emit('field:changed', {
+      field: fieldName,
+      value: value,
+      form: this
+    });
+
+    this.emit('change', {
       field: fieldName,
       value: value,
       form: this
@@ -540,6 +547,12 @@ class FormView extends View {
       form: this
     });
 
+    this.emit('change', {
+      field: fieldName,
+      value: selectedValues,
+      form: this
+    });
+
     // Emit general form change event
     this.emit('form:changed', await this.getFormData());
   }
@@ -573,6 +586,11 @@ class FormView extends View {
       this.emit('switch:toggle', {
         field: fieldName,
         checked: element.checked,
+        form: this
+      });
+      this.emit('change', {
+        field: fieldName,
+        value: element.checked,
         form: this
       });
     }
@@ -633,6 +651,12 @@ class FormView extends View {
               cropData: result.cropData,
               form: this
             });
+
+            this.emit('change', {
+              field: fieldName,
+              value: croppedFile,
+              form: this
+            });
           } else {
             // User cancelled cropping, don't update the field
             element.value = ''; // Clear the input
@@ -646,6 +670,12 @@ class FormView extends View {
           this.emit('image:selected', {
             field: fieldName,
             file: file,
+            form: this
+          });
+
+          this.emit('change', {
+            field: fieldName,
+            value: file,
             form: this
           });
         }
@@ -673,6 +703,12 @@ class FormView extends View {
       files: files,
       form: this
     });
+
+    this.emit('change', {
+      field: element.name,
+      value: files,
+      form: this
+    });
   }
 
   /**
@@ -688,6 +724,12 @@ class FormView extends View {
     }
 
     this.emit('range:changed', {
+      field: element.name,
+      value: element.value,
+      form: this
+    });
+
+    this.emit('change', {
       field: element.name,
       value: element.value,
       form: this
