@@ -11,6 +11,21 @@ class Member extends Model {
             endpoint: '/api/group/member',
         });
     }
+
+    hasPermission(permission) {
+        if (Array.isArray(permission)) {
+            return permission.some(p => this.hasPermission(p));
+        }
+        const permissions = this.get("permissions");
+        if (!permissions) {
+            return false;
+        }
+        return permissions[permission] == true;
+    }
+
+    static async getForGroup(groupId) {
+        return this.fetch(`/api/group/${groupId}/member`);
+    }
 }
 
 /* =========================

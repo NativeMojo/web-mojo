@@ -197,7 +197,7 @@ class FormView extends View {
 
         // Create collection instance
         const collection = new fieldConfig.Collection();
-        if fieldConfig.collectionParams) {
+        if (fieldConfig.collectionParams) {
           collection.params = {...collection.params, ...fieldConfig.collectionParams};
         }
 

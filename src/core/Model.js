@@ -141,12 +141,15 @@ class Model {
    * @returns {Promise} Promise that resolves with REST response
    */
   async fetch(options = {}) {
-    const id = options.id || this.getId();
-    if (!id && this.options.requiresId !== false) {
-      throw new Error('Model: ID is required for fetching');
+    let url = options.url;
+    if (!url) {
+        const id = options.id || this.getId();
+        if (!id && this.options.requiresId !== false) {
+          throw new Error('Model: ID is required for fetching');
+        }
+        url = this.buildUrl(id);
     }
-    const url = this.buildUrl(id);
-    const requestKey = JSON.stringify({ id, url, params: options.params });
+    const requestKey = JSON.stringify({url, params: options.params});
 
     // Handle debounced fetch
     if (options.debounceMs && options.debounceMs > 0) {

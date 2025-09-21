@@ -11,12 +11,30 @@ class User extends Model {
     }
 
     hasPermission(permission) {
+        if (Array.isArray(permission)) {
+            return permission.some(p => this.hasPermission(p));
+        }
+
+        // Check if permission has "sys." prefix
+        const isSysPermission = permission.startsWith('sys.');
+        const permissionToCheck = isSysPermission ? permission.substring(4) : permission;
+
+        if (this._hasPermission(permissionToCheck)) {
+            return true;
+        }
+
+        // Only check member permissions if it's not a system permission
+        if (!isSysPermission && this.member && this.member.hasPermission(permission)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    _hasPermission(permission) {
         const permissions = this.get("permissions");
         if (!permissions) {
             return false;
-        }
-        if (Array.isArray(permission)) {
-            return permission.some(p => permissions[p] == true);
         }
         return permissions[permission] == true;
     }

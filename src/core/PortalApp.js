@@ -11,6 +11,7 @@ import DeniedPage from '@core/pages/DeniedPage.js';
 import TokenManager from '@core/services/TokenManager.js';
 import {User} from '@core/models/User.js';
 import {Group} from '@core/models/Group.js';
+import {Member} from '@core/models/Member.js';
 import NotFoundPage from '@core/pages/NotFoundPage.js';
 import ToastService from '@core/services/ToastService.js';
 import Dialog from '@core/views/feedback/Dialog.js';
@@ -215,6 +216,10 @@ export default class PortalApp extends WebApp {
             this.saveActiveGroupId(group.get('id'));
         } else {
             this.clearActiveGroupId();
+        }
+
+        if (this.activeUser) {
+            this.activeUser.member = await Member.getForGroup(group.id);
         }
 
         // Emit event
