@@ -48,7 +48,7 @@ const app = new PortalApp({
 
     // API configuration (optional - for demo purposes)
     api: {
-        baseUrl: 'http://localhost:8882',
+        baseUrl: 'http://localhost:9001',
         timeout: 30000
     },
 

@@ -177,6 +177,11 @@ export default class PortalApp extends WebApp {
                     this.saveActiveGroupId(groupId);
                 }
 
+                if (this.activeUser) {
+                    this.activeUser.member = new Member();
+                    await this.activeUser.member.fetchForGroup(group.id);
+                }
+
                 console.log('Loaded active group:', group.get('name'));
             } catch (error) {
                 console.warn('Failed to load active group:', error);
@@ -219,7 +224,8 @@ export default class PortalApp extends WebApp {
         }
 
         if (this.activeUser) {
-            this.activeUser.member = await Member.getForGroup(group.id);
+            this.activeUser.member = new Member();
+            await this.activeUser.member.fetchForGroup(group.id);
         }
 
         // Emit event

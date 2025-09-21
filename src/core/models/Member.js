@@ -23,8 +23,8 @@ class Member extends Model {
         return permissions[permission] == true;
     }
 
-    static async getForGroup(groupId) {
-        return this.fetch(`/api/group/${groupId}/member`);
+     async fetchForGroup(groupId) {
+         return await this.fetch({ url: `/api/group/${groupId}/member` });
     }
 }
 
