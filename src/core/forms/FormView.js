@@ -197,6 +197,9 @@ class FormView extends View {
 
         // Create collection instance
         const collection = new fieldConfig.Collection();
+        if fieldConfig.collectionParams) {
+          collection.params = {...collection.params, ...fieldConfig.collectionParams};
+        }
 
         // Create CollectionSelect component
         const collectionSelect = new CollectionSelect({

@@ -56,6 +56,7 @@ export default class PortalApp extends WebApp {
         this.setupPageContainer();
 
         this.toast = new ToastService();
+        this.Dialog = Dialog;
 
         this.registerPage("denied", DeniedPage);
         this.registerPage("404", NotFoundPage);
@@ -108,13 +109,13 @@ export default class PortalApp extends WebApp {
 
     async checkAuthStatus() {
         const tokenStatus = this.tokenManager.checkTokenStatus();
-        
+
         // Handle logout scenarios
         if (tokenStatus.action === 'logout') {
             this.events.emit('auth:unauthorized', { app: this });
             return false;
         }
-        
+
         // Handle refresh scenarios - attempt refresh if needed
         if (tokenStatus.action === 'refresh') {
             const refreshed = await this.tokenManager.checkAndRefreshTokens(this);
@@ -123,16 +124,16 @@ export default class PortalApp extends WebApp {
                 return false;
             }
         }
-        
+
         // At this point we have a valid token
         const token = this.tokenManager.getTokenInstance();
-        
+
         // If user already loaded, just start auto-refresh and return
         if (this.activeUser) {
             this.tokenManager.startAutoRefresh(this);
             return true;
         }
-        
+
         // Load user data
         this.rest.setAuthToken(token.token);
         const user = new User({ id: token.getUserId() });
@@ -142,7 +143,7 @@ export default class PortalApp extends WebApp {
             this.events.emit('auth:unauthorized', { app: this, error: resp.error });
             return false;
         }
-        
+
         this.setActiveUser(user);
         this.tokenManager.startAutoRefresh(this);
         return true;

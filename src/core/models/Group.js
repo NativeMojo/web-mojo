@@ -93,12 +93,20 @@ const GroupForms = {
                 label: 'Group Kind',
                 required: true,
                 options: [
-                    { value: 'org', label: 'Organization' },
-                    { value: 'team', label: 'Team' },
-                    { value: 'department', label: 'Department' },
-                    { value: 'merchant', label: 'Merchant' },
-                    { value: 'iso', label: 'ISO' },
-                    { value: 'group', label: 'Group' }
+                  { value: 'org', label: 'Organization' },
+                  { value: 'division', label: 'Division' },
+                  { value: 'department', label: 'Department' },
+                  { value: 'team', label: 'Team' },
+                  { value: 'merchant', label: 'Merchant' },
+                  { value: 'partner', label: 'Partner' },
+                  { value: 'client', label: 'Client' },
+                  { value: 'iso', label: 'ISO' },
+                  { value: 'location', label: 'Location' },
+                  { value: 'region', label: 'Region' },
+                  { value: 'route', label: 'Route' },
+                  { value: 'project', label: 'Project' },
+                  { value: 'role', label: 'Role' },
+                  { value: 'test', label: 'Testing' }
                 ]
             },
             {
