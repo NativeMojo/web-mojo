@@ -804,6 +804,18 @@ class DataFormatter {
   }
 
   /**
+   * Get badge CSS class for a value
+   * @param {*} value - Value to get badge class for
+   * @param {string} type - Badge type (optional, auto-detected if not specified)
+   * @returns {string} Badge CSS class
+   */
+  badgeClass(value, type = 'auto') {
+    const text = String(value);
+    const badgeType = type === 'auto' ? this.inferBadgeType(text) : type;
+    return badgeType ? `bg-${badgeType}` : 'bg-secondary';
+  }
+
+  /**
    * Infer badge type from text
    * @param {string} text - Badge text
    * @returns {string} Badge type

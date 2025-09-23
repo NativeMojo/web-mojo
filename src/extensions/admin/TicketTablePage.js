@@ -10,7 +10,6 @@ import TicketView from './views/TicketView.js';
 class TicketTablePage extends TablePage {
     constructor(options = {}) {
         super({
-            ...options,
             name: 'admin_tickets',
             pageName: 'Tickets',
             router: "admin/tickets",
@@ -66,7 +65,8 @@ class TicketTablePage extends TablePage {
                 bordered: false,
                 hover: true,
                 responsive: false
-            }
+            },
+            ...options,
         });
     }
 }

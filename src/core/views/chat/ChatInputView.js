@@ -10,6 +10,7 @@ class ChatInputView extends View {
             ...options
         });
         this.uploads = [];
+        this.buttonText = options.buttonText || 'Send';
     }
 
     getTemplate() {
@@ -18,7 +19,7 @@ class ChatInputView extends View {
                 <textarea class="form-control" placeholder="Type a message..." rows="3"></textarea>
                 <div class="d-flex justify-content-between align-items-center mt-2">
                     <small class="text-muted">Drag & drop files to attach.</small>
-                    <button class="btn btn-primary" data-action="send-message">Send</button>
+                    <button class="btn btn-primary" data-action="send-message">${this.buttonText}</button>
                 </div>
                 <div class="uploads-container mt-2"></div>
             </div>

@@ -63,6 +63,8 @@ User.PERMISSIONS = [
     { name: "view_logs", label: "View Logs" },
     { name: "view_incidents", label: "View Incidents" },
     { name: "manage_incidents", label: "Manage Incidents" },
+    { name: "view_tickets", label: "View Tickets" },
+    { name: "manage_tickets", label: "Manage Tickets" },
     { name: "view_admin", label: "View Admin" },
     { name: "view_jobs", label: "View Jobs" },
     { name: "manage_jobs", label: "Manage Jobs" },

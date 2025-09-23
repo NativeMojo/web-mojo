@@ -34,6 +34,46 @@ class Dialog extends View {
   static _busyTimeout = null;
 
   /**
+   * Fix all backdrop stacking - ensures proper layering of all open modals
+   */
+  static fixAllBackdropStacking() {
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    const openDialogs = Dialog._openDialogs;
+    
+    if (backdrops.length === 0 || openDialogs.length === 0) return;
+    
+    // Sort dialogs by z-index to get correct stacking order
+    const sortedDialogs = [...openDialogs].sort((a, b) => 
+      (a._dialogZIndex || 0) - (b._dialogZIndex || 0)
+    );
+    
+    // Set backdrop z-indices to create proper stacking
+    // Each backdrop should cover all previous modals but stay below its own modal
+    backdrops.forEach((backdrop, index) => {
+      if (index < sortedDialogs.length) {
+        const dialog = sortedDialogs[index];
+        const backdropZIndex = dialog._dialogZIndex - 5;
+        backdrop.style.zIndex = backdropZIndex;
+        
+        // Move backdrop to correct container
+        const fullscreenElement = document.querySelector('.table-fullscreen');
+        const targetContainer = fullscreenElement || document.body;
+        
+        if (backdrop.parentNode !== targetContainer) {
+          targetContainer.appendChild(backdrop);
+        }
+      }
+    });
+  }
+
+  /**
+   * Update backdrop stacking for all open dialogs
+   */
+  static updateAllBackdropStacking() {
+    Dialog.fixAllBackdropStacking();
+  }
+
+  /**
    * Shows a full-screen busy indicator.
    * Manages a counter for nested calls, only showing one indicator.
    * @param {object} options - Options { timeout, message }
@@ -748,16 +788,12 @@ class Dialog extends View {
       const zIndexBase = Dialog.getFullscreenAwareZIndex();
       const newZIndex = zIndexBase.modal + (stackIndex * 20);
       this.element.style.zIndex = newZIndex;
+      
+      // Store z-index on this dialog for later reference
+      this._dialogZIndex = newZIndex;
+      this._backdropZIndex = newZIndex - 10; // Ensure backdrop covers previous modals
+      
       Dialog._openDialogs.push(this);
-
-      // Adjust backdrop z-index after a short delay to ensure it exists
-      setTimeout(() => {
-        const backdrops = document.querySelectorAll('.modal-backdrop');
-        const backdrop = backdrops[backdrops.length - 1]; // Get the latest one
-        if (backdrop) {
-          backdrop.style.zIndex = newZIndex - 5;
-        }
-      }, 0);
 
       if (this.onShow) this.onShow(e);
       this.emit('show', {
@@ -768,8 +804,10 @@ class Dialog extends View {
 
     // shown.bs.modal
     this.element.addEventListener('shown.bs.modal', (e) => {
-      // Move backdrop to fullscreen element if it exists
-      this.moveBackdropToFullscreen();
+      // Fix all backdrop stacking after Bootstrap has finished
+      setTimeout(() => {
+        Dialog.fixAllBackdropStacking();
+      }, 50);
       
       if (this.onShown) this.onShown(e);
       this.emit('shown', {
@@ -813,20 +851,13 @@ class Dialog extends View {
       }
 
       // If there are still modals open, ensure body has modal-open class
-      // and the top backdrop is correctly layered.
+      // and properly manage backdrop stacking
       if (Dialog._openDialogs.length > 0) {
         document.body.classList.add('modal-open');
-
-        const topDialog = Dialog._openDialogs[Dialog._openDialogs.length - 1];
-        const topZIndex = parseInt(topDialog.element.style.zIndex, 10);
-
+        
         setTimeout(() => { // Let Bootstrap finish its hide animation
-          const backdrops = document.querySelectorAll('.modal-backdrop');
-          const backdrop = backdrops[backdrops.length - 1];
-          if (backdrop) {
-            backdrop.style.zIndex = topZIndex - 5;
-          }
-        }, 0);
+          Dialog.fixAllBackdropStacking();
+        }, 50);
       }
 
       // Restore focus to the element that had it before modal opened
@@ -845,24 +876,7 @@ class Dialog extends View {
     });
   }
 
-  /**
-   * Move modal backdrop to fullscreen element if it exists
-   */
-  moveBackdropToFullscreen() {
-    const fullscreenElement = document.querySelector('.table-fullscreen');
-    if (!fullscreenElement) return;
 
-    // Find the most recent backdrop (the one for this modal)
-    const backdrops = document.querySelectorAll('.modal-backdrop');
-    if (backdrops.length === 0) return;
-
-    const backdrop = backdrops[backdrops.length - 1];
-    
-    // Only move if it's currently in document.body
-    if (backdrop.parentNode === document.body) {
-      fullscreenElement.appendChild(backdrop);
-    }
-  }
 
   /**
    * Show the dialog

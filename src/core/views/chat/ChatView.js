@@ -10,6 +10,7 @@ class ChatView extends View {
         });
         this.adapter = options.adapter;
         this.items = [];
+        this.inputButtonText = options.inputButtonText || 'Send';
     }
 
     getTemplate() {
@@ -32,15 +33,21 @@ class ChatView extends View {
         });
 
         const inputContainer = this.element.querySelector('.chat-input-container');
-        this.inputView = new ChatInputView();
-        this.addChild(this.inputView);
+        
+        // Only create ChatInputView if it doesn't exist
+        if (!this.inputView) {
+            this.inputView = new ChatInputView({ buttonText: this.inputButtonText });
+            this.addChild(this.inputView);
+            
+            this.inputView.on('note:submit', async (data) => {
+                await this.adapter.addNote(data);
+                this.items = await this.adapter.fetch();
+                this.render();
+            });
+        }
+        
+        // Always render the input view to ensure it appears
         this.inputView.render(true, inputContainer);
-
-        this.inputView.on('note:submit', async (data) => {
-            await this.adapter.addNote(data);
-            this.items = await this.adapter.fetch();
-            this.render();
-        });
     }
 }
 
