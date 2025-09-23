@@ -577,6 +577,7 @@ class FormBuilder {
       case 'checkbox':
         fieldHTML = this.renderCheckboxField(field);
         break;
+      case 'toggle':
       case 'switch':
         fieldHTML = this.renderSwitchField(field);
         break;
@@ -616,6 +617,7 @@ class FormBuilder {
       case 'html':
         fieldHTML = this.renderHtmlField(field);
         break;
+      case 'heading':
       case 'header':
         fieldHTML = this.renderHeaderField(field);
         break;
@@ -778,7 +780,7 @@ class FormBuilder {
         placeholder = allowPrefix ? '#FF0000' : 'FF0000';
         help = help || 'Enter a valid hex color (e.g., ' + placeholder + ')';
         break;
-      
+
       case 'color-short':
         // Hex color: #RGB or RGB, #RRGGBB or RRGGBB
         pattern = allowPrefix ? '^#?[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$' : '^[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?$';
@@ -787,7 +789,7 @@ class FormBuilder {
         placeholder = allowPrefix ? '#F00 or #FF0000' : 'F00 or FF0000';
         help = help || 'Enter a valid hex color (3 or 6 digits)';
         break;
-      
+
       case 'string':
         // General hex string
         pattern = '^[0-9A-Fa-f]+$';
@@ -796,7 +798,7 @@ class FormBuilder {
         placeholder = 'ABCDEF123456';
         help = help || 'Only hexadecimal characters (0-9, A-F) allowed';
         break;
-      
+
       default:
         // Any hex format
         pattern = allowPrefix ? '^#?[0-9A-Fa-f]+$' : '^[0-9A-Fa-f]+$';

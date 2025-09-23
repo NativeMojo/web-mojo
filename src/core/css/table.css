@@ -600,6 +600,134 @@ div.batch-select-end {
 }
 
 /* ========================================================================
+   MOJO Table Inline Editing Styles
+   ======================================================================== */
+
+.editable-cell {
+    cursor: pointer;
+    position: relative;
+}
+
+.editable-cell:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.editable-cell.editing {
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+.cell-editor {
+    width: 100%;
+    max-width: 100%;
+}
+
+.cell-editor .form-control,
+.cell-editor .form-select {
+    flex: 1;
+    min-width: 0;
+}
+
+.cell-editor .btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: auto;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cell-editor .form-check {
+    margin-bottom: 0;
+}
+
+/* Focus styles for editing */
+.cell-editor .form-control:focus,
+.cell-editor .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Ensure proper spacing in editor buttons */
+.cell-editor .d-flex.gap-1 > * {
+    flex-shrink: 0;
+}
+
+/* Special styling for switch editors */
+.cell-editor .form-switch .form-check-input {
+    margin-left: 0;
+}
+
+/* Hover effect for editable cells */
+.editable-cell .cell-content {
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.editable-cell:hover .cell-content {
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+/* Small visual indicator for editable cells */
+.editable-cell::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-top: 4px solid rgba(108, 117, 125, 0.3);
+    opacity: 0;
+    transition: opacity 0.15s ease-in-out;
+}
+
+.editable-cell:hover::after {
+    opacity: 1;
+}
+
+/* Loading state for saving */
+.cell-editor.saving {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.cell-editor.saving .btn {
+    disabled: true;
+}
+
+/* Error state for failed saves */
+.cell-editor.saving-error {
+    border-left: 3px solid var(--bs-danger);
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.cell-editor.saving-error .form-control,
+.cell-editor.saving-error .form-select {
+    border-color: var(--bs-danger);
+}
+
+/* Dark theme support for inline editing */
+[data-bs-theme="dark"] .editable-cell:hover {
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+[data-bs-theme="dark"] .editable-cell.editing {
+    background-color: rgba(13, 110, 253, 0.15);
+}
+
+[data-bs-theme="dark"] .editable-cell:hover .cell-content {
+    background-color: rgba(13, 110, 253, 0.15);
+}
+
+[data-bs-theme="dark"] .editable-cell::after {
+    border-top-color: rgba(255, 255, 255, 0.3);
+}
+
+/* ========================================================================
    Accessibility
    ======================================================================== */
 

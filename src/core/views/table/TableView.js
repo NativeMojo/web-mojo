@@ -730,6 +730,9 @@ class TableView extends ListView {
     itemView.on('row:view', this._onRowView.bind(this));
     itemView.on('row:edit', this._onRowEdit.bind(this));
     itemView.on('row:delete', this._onRowDelete.bind(this));
+    itemView.on('cell:edit', this._onCellEdit.bind(this));
+    itemView.on('cell:save', this._onCellSave.bind(this));
+    itemView.on('cell:cancel', this._onCellCancel.bind(this));
 
     return itemView;
   }
@@ -978,6 +981,28 @@ class TableView extends ListView {
       await event.model.destroy();
       this.collection.remove(event.model);
     }
+  }
+
+  /**
+   * Handle cell edit event
+   */
+  _onCellEdit(event) {
+    this.emit('cell:edit', event);
+  }
+
+  /**
+   * Handle cell save event
+   */
+  async _onCellSave(event) {
+    this.emit('cell:save', event);
+    // Model save is now handled directly in TableRow.saveCellEdit()
+  }
+
+  /**
+   * Handle cell cancel event
+   */
+  _onCellCancel(event) {
+    this.emit('cell:cancel', event);
   }
 
   /**

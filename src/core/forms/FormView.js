@@ -931,13 +931,10 @@ class FormView extends View {
     }
   }
 
-  /**
-   * Set model (updates the model reference and rebuilds form)
-   * @param {*} newModel - Model to set
-   */
-  setModel(newModel) {
-    this.model = newModel;
-    // this.refreshForm();
+  _onModelChange() {
+    if (this.isMounted()) {
+        this.refreshForm();
+    }
   }
 
   /**

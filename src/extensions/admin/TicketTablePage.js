@@ -15,11 +15,11 @@ class TicketTablePage extends TablePage {
             pageName: 'Tickets',
             router: "admin/tickets",
             Collection: TicketList,
-            
+
             formCreate: TicketForms.create,
             formEdit: TicketForms.edit,
             itemViewClass: TicketView,
-            
+
             viewDialogOptions: {
                 header: false,
                 size: 'xl'
@@ -28,8 +28,17 @@ class TicketTablePage extends TablePage {
             // Column definitions
             columns: [
                 { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },
-                { key: 'title', label: 'Title', sortable: true },
-                { key: 'status', label: 'Status', sortable: true, formatter: 'badge' },
+                { key: 'title', label: 'Title', sortable: true, editable: true },
+                {
+                    key: 'status', label: 'Status', sortable: true,
+                    editable: true,
+                    editableOptions: {
+                      type: "select",
+                      options: [
+                        "new", "opened", "paused", "declined"
+                      ]
+                    }
+                },
                 { key: 'priority', label: 'Priority', sortable: true },
                 { key: 'assignee.display_name', label: 'Assignee', sortable: true, formatter: "default('Unassigned')" },
                 { key: 'incident', label: 'Incident ID', sortable: true },
