@@ -7,11 +7,11 @@
 
 ## ✨ What's New in 2.1.0
 
-🏗️ **Core + Extensions Architecture** - Clean separation with plugin system  
-📦 **Subpath Exports** - Import exactly what you need  
-⚡ **Lazy Loading** - Reduced bundle sizes with dynamic imports  
-🔌 **Plugin System** - Extensions enhance core without dependencies  
-🎯 **Tree Shaking** - Optimized builds with modern bundlers  
+🏗️ **Core + Extensions Architecture** - Clean separation with plugin system
+📦 **Subpath Exports** - Import exactly what you need
+⚡ **Lazy Loading** - Reduced bundle sizes with dynamic imports
+🔌 **Plugin System** - Extensions enhance core without dependencies
+🎯 **Tree Shaking** - Optimized builds with modern bundlers
 
 ## 🚀 Quick Start
 
@@ -72,7 +72,7 @@ const app = new AuthApp({
 });
 ```
 
-#### 🖼️ Lightbox (`web-mojo/lightbox`) 
+#### 🖼️ Lightbox (`web-mojo/lightbox`)
 Image and PDF viewers with editing capabilities:
 
 ```javascript
@@ -159,13 +159,8 @@ class DashboardPage extends Page {
       ...options
     });
   }
-  
-  getTemplateData() {
-    return {
-      message: 'Your application is ready!'
-    };
-  }
-  
+
+
   async onActionShowDialog() {
     const { Dialog } = await import('web-mojo');
     Dialog.showInfo('Hello from MOJO!');
@@ -194,7 +189,7 @@ const authApp = new AuthApp({
 // Main app (after authentication)
 const mainApp = new WebApp({
   name: 'Acme Portal',
-  api: { 
+  api: {
     baseURL: 'https://api.example.com',
     token: localStorage.getItem('auth_token')
   }
@@ -236,8 +231,8 @@ class UserTableView extends View {
               <td>{{name}}</td>
               <td>{{email}}</td>
               <td>
-                <button class="btn btn-sm btn-primary" 
-                        data-action="edit-user" 
+                <button class="btn btn-sm btn-primary"
+                        data-action="edit-user"
                         data-user-id="{{id}}">Edit</button>
               </td>
             </tr>
@@ -247,25 +242,19 @@ class UserTableView extends View {
       `,
       ...options
     });
-    
+
     this.collection = new UserList();
   }
-  
+
   async onMount() {
     await this.collection.fetch();
     this.render();
   }
-  
-  getTemplateData() {
-    return {
-      users: this.collection.toJSON()
-    };
-  }
-  
+
   async onActionEditUser(action, event, element) {
     const userId = element.dataset.userId;
     const user = this.collection.get(userId);
-    
+
     const { Dialog } = await import('web-mojo');
     Dialog.showModelForm(user, {
       title: 'Edit User',
@@ -370,8 +359,8 @@ const app = new PortalApp({
       name: 'main',
       items: [
         { text: 'Home', route: 'home', icon: 'bi-house' },
-        { 
-          text: 'Admin', 
+        {
+          text: 'Admin',
           icon: 'bi-gear',
           children: [
             { text: 'Users', route: 'users' },
@@ -407,21 +396,16 @@ class MyView extends View {
       ...options
     });
   }
-  
+
   // Lifecycle hooks
   async onMount() { /* Called when mounted to DOM */ }
   async onUnmount() { /* Called when removed */ }
-  
-  // Template data
-  getTemplateData() {
-    return { title: 'My View' };
-  }
-  
+
   // Event handlers
   async onActionClickMe(action, event, element) {
     this.showRegion('content', new AnotherView());
   }
-  
+
   // Custom events
   onCustomEvent(data) { /* Handle custom events */ }
 }
@@ -435,11 +419,11 @@ For modern build tools:
 ```javascript
 // vite.config.js
 export default {
-  optimizeDeps: { 
-    exclude: ['web-mojo'] 
+  optimizeDeps: {
+    exclude: ['web-mojo']
   },
-  ssr: { 
-    noExternal: ['web-mojo'] 
+  ssr: {
+    noExternal: ['web-mojo']
   }
 }
 ```

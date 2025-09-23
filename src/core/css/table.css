@@ -600,6 +600,41 @@ div.batch-select-end {
 }
 
 /* ========================================================================
+   MOJO Table Footer Totals
+   ======================================================================== */
+
+.table-totals-row {
+    background-color: var(--bs-light);
+    border-top: 2px solid var(--bs-primary);
+    font-weight: 500;
+}
+
+.table-footer-label {
+    color: var(--bs-emphasis-color);
+    font-weight: 600;
+}
+
+.table-footer-total {
+    color: var(--bs-primary);
+    font-weight: 600;
+    text-align: right;
+}
+
+/* Dark theme support for footer totals */
+[data-bs-theme="dark"] .table-totals-row {
+    background-color: var(--bs-dark);
+    border-top-color: var(--bs-primary);
+}
+
+[data-bs-theme="dark"] .table-footer-label {
+    color: var(--bs-light);
+}
+
+[data-bs-theme="dark"] .table-footer-total {
+    color: var(--bs-primary);
+}
+
+/* ========================================================================
    MOJO Table Inline Editing Styles
    ======================================================================== */
 

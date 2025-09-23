@@ -29,19 +29,19 @@ Download the latest release from [GitHub Releases](https://github.com/youruserna
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My MOJO App</title>
-    
+
     <!-- Bootstrap CSS (required) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    
+
     <!-- MOJO CSS (auto-included with JS imports) -->
 </head>
 <body>
     <div id="app"></div>
-    
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- Your App -->
     <script type="module" src="app.js"></script>
 </body>
@@ -67,7 +67,7 @@ class HomePage extends Page {
                                 <h1 class="display-4">⚡ Welcome to MOJO!</h1>
                                 <p class="lead">You've successfully created your first MOJO application.</p>
                             </div>
-                            
+
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">Interactive Demo</h5>
@@ -80,7 +80,7 @@ class HomePage extends Page {
                                     </button>
                                 </div>
                             </div>
-                            
+
                             <div class="mt-4">
                                 <h6>Next Steps:</h6>
                                 <ul class="list-unstyled">
@@ -96,22 +96,16 @@ class HomePage extends Page {
             `,
             ...options
         });
-        
+
         this.clickCount = 0;
     }
-    
-    getTemplateData() {
-        return {
-            clickCount: this.clickCount
-        };
-    }
-    
+
     async onActionIncrement() {
         this.clickCount++;
         await this.render();
         this.getApp().showSuccess(`Great! You've clicked ${this.clickCount} times! 🎉`);
     }
-    
+
     async onActionReset() {
         this.clickCount = 0;
         await this.render();
@@ -199,7 +193,7 @@ class DashboardPage extends Page {
 const app = new PortalApp({
     name: 'Admin Portal',
     brand: 'My Company',
-    
+
     // Sidebar navigation
     sidebar: {
         menus: [{
@@ -208,8 +202,8 @@ const app = new PortalApp({
                 { text: 'Dashboard', route: 'dashboard', icon: 'bi-speedometer2' },
                 { text: 'Users', route: 'users', icon: 'bi-people' },
                 { text: 'Reports', route: 'reports', icon: 'bi-bar-chart' },
-                { 
-                    text: 'Settings', 
+                {
+                    text: 'Settings',
                     icon: 'bi-gear',
                     children: [
                         { text: 'General', route: 'settings/general' },
@@ -219,7 +213,7 @@ const app = new PortalApp({
             ]
         }]
     },
-    
+
     // Top navigation
     topbar: {
         brand: 'Admin Portal',
@@ -292,7 +286,7 @@ class AnalyticsPage extends Page {
                 { label: 'Tablet', value: 10, color: '#ffc107' }
             ]
         });
-        
+
         // Create a line chart
         this.lineChart = new SeriesChart({
             container: '#line-chart',
@@ -336,7 +330,7 @@ import { Model, Collection } from 'web-mojo';
 // Define a model
 class User extends Model {
     static endpoint = '/api/users';
-    
+
     get fullName() {
         return `${this.get('firstName')} ${this.get('lastName')}`;
     }
@@ -360,7 +354,7 @@ class UsersPage extends Page {
                         <i class="bi bi-plus"></i> Add User
                     </button>
                 </div>
-                
+
                 <div class="table-responsive">
                     <table class="table">
                         <thead>
@@ -376,8 +370,8 @@ class UsersPage extends Page {
                                 <td>{{fullName}}</td>
                                 <td>{{email}}</td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-primary" 
-                                            data-action="edit-user" 
+                                    <button class="btn btn-sm btn-outline-primary"
+                                            data-action="edit-user"
                                             data-user-id="{{id}}">
                                         Edit
                                     </button>
@@ -390,27 +384,18 @@ class UsersPage extends Page {
             `,
             ...options
         });
-        
+
         this.users = new UserList();
     }
-    
+
     async onMount() {
         await this.users.fetch();
         await this.render();
     }
-    
-    getTemplateData() {
-        return {
-            users: this.users.map(user => ({
-                ...user.toJSON(),
-                fullName: user.fullName
-            }))
-        };
-    }
-    
+
     async onActionAddUser() {
         const { Dialog } = await import('web-mojo');
-        
+
         const result = await Dialog.showForm({
             title: 'Add User',
             fields: [
@@ -419,7 +404,7 @@ class UsersPage extends Page {
                 { name: 'email', type: 'email', label: 'Email', required: true }
             ]
         });
-        
+
         if (result.action === 'submit') {
             const user = new User(result.data);
             await user.save();
@@ -428,18 +413,18 @@ class UsersPage extends Page {
             this.getApp().showSuccess('User added successfully!');
         }
     }
-    
+
     async onActionEditUser(action, event, element) {
         const userId = element.dataset.userId;
         const user = this.users.get(userId);
-        
+
         const { Dialog } = await import('web-mojo');
-        
+
         const result = await Dialog.showModelForm(user, {
             title: 'Edit User',
             fields: ['firstName', 'lastName', 'email']
         });
-        
+
         if (result.success) {
             await this.render();
             this.getApp().showSuccess('User updated successfully!');
@@ -456,7 +441,7 @@ class UsersPage extends Page {
 class DataPage extends Page {
     async onMount() {
         this.showLoading();
-        
+
         try {
             this.data = await this.loadData();
             await this.render();
@@ -466,11 +451,11 @@ class DataPage extends Page {
             this.hideLoading();
         }
     }
-    
+
     showLoading() {
         this.el.innerHTML = '<div class="text-center p-5">Loading...</div>';
     }
-    
+
     showError(message) {
         this.el.innerHTML = `<div class="alert alert-danger">${message}</div>`;
     }
@@ -483,14 +468,14 @@ class DataPage extends Page {
 class ContactPage extends Page {
     async onActionSubmitForm() {
         const formData = this.getFormData();
-        
+
         // Validate
         const errors = this.validateForm(formData);
         if (errors.length > 0) {
             this.showErrors(errors);
             return;
         }
-        
+
         // Submit
         try {
             await this.submitForm(formData);
@@ -499,18 +484,18 @@ class ContactPage extends Page {
             this.getApp().showError('Submission failed: ' + error.message);
         }
     }
-    
+
     validateForm(data) {
         const errors = [];
-        
+
         if (!data.name?.trim()) {
             errors.push('Name is required');
         }
-        
+
         if (!data.email?.includes('@')) {
             errors.push('Valid email is required');
         }
-        
+
         return errors;
     }
 }
@@ -525,20 +510,20 @@ class LiveDataPage extends Page {
     async onMount() {
         // Subscribe to real-time updates
         EventBus.on('data:updated', this.handleDataUpdate.bind(this));
-        
+
         // Set up polling
         this.pollInterval = setInterval(() => {
             this.refreshData();
         }, 30000); // Every 30 seconds
     }
-    
+
     async onUnmount() {
         EventBus.off('data:updated', this.handleDataUpdate);
         if (this.pollInterval) {
             clearInterval(this.pollInterval);
         }
     }
-    
+
     async handleDataUpdate(newData) {
         this.data = newData;
         await this.render();
@@ -603,7 +588,7 @@ const app = new PortalApp({
         collapseOnMobile: true,
         menus: [/* ... */]
     },
-    
+
     // Responsive topbar
     topbar: {
         showSidebarToggle: true,
@@ -616,18 +601,18 @@ class SwipeablePage extends Page {
     onMount() {
         this.addTouchSupport();
     }
-    
+
     addTouchSupport() {
         let startX = 0;
-        
+
         this.el.addEventListener('touchstart', (e) => {
             startX = e.touches[0].clientX;
         });
-        
+
         this.el.addEventListener('touchend', (e) => {
             const endX = e.changedTouches[0].clientX;
             const diff = startX - endX;
-            
+
             if (Math.abs(diff) > 50) {
                 if (diff > 0) {
                     this.handleSwipeLeft();

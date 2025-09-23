@@ -23,6 +23,8 @@ TableView leverages ListView's view management system where:
 - **Pagination**: Built-in pagination controls
 - **Context Menus**: Row-level context menus
 - **Export**: CSV export functionality
+- **Inline Editing**: Edit table cells directly with text, select, and switch inputs
+- **Footer Totals**: Automatically calculate and display column totals
 
 ## Basic Usage
 
@@ -164,6 +166,22 @@ columns: [
     
     // Interaction
     action: 'row-click',           // Action triggered on cell click
+    
+    // Inline editing
+    editable: true,                // Enable inline editing for this column
+    editableOptions: {             // Editor configuration
+      type: 'text',               // 'text', 'select', 'switch', 'textarea'
+      placeholder: 'Enter name...',
+      // For select type:
+      options: ['option1', 'option2'], // or [{ value: 'val', label: 'Label' }]
+      // For textarea type:
+      rows: 3,
+      // Auto-save settings:
+      autoSave: true              // Auto-save on change (default: true for selects/switches)
+    },
+    
+    // Footer totals
+    footer_total: true,           // Include this column in footer totals calculation
     
     // Custom template (alternative to formatter)
     template: (value, model) => {
@@ -460,6 +478,236 @@ table.on('batch:action', async ({ action, items, event }) => {
   }
 });
 ```
+
+## Inline Editing
+
+TableView supports inline editing of table cells with different input types. When enabled, users can click on editable cells to edit values directly in the table.
+
+### Basic Inline Editing
+
+```javascript
+const table = new TableView({
+  collection: userCollection,
+  columns: [
+    {
+      key: 'name',
+      label: 'Name',
+      editable: true  // Simple text editing
+    },
+    {
+      key: 'email',
+      label: 'Email', 
+      editable: true,
+      editableOptions: {
+        type: 'text',
+        placeholder: 'Enter email address...'
+      }
+    }
+  ]
+});
+```
+
+### Editor Types
+
+#### Text Input
+```javascript
+{
+  key: 'description',
+  label: 'Description',
+  editable: true,
+  editableOptions: {
+    type: 'text',           // Default type
+    placeholder: 'Enter description...',
+    inputType: 'email'      // HTML input type: 'text', 'email', 'number', etc.
+  }
+}
+```
+
+#### Select Dropdown
+```javascript
+{
+  key: 'status',
+  label: 'Status',
+  editable: true,
+  editableOptions: {
+    type: 'select',
+    options: [
+      'new', 'opened', 'paused', 'declined'  // String array
+    ]
+    // Or object array:
+    // options: [
+    //   { value: 'new', label: 'New Request' },
+    //   { value: 'opened', label: 'In Progress' }
+    // ]
+  }
+}
+```
+
+#### Switch/Checkbox
+```javascript
+{
+  key: 'is_active',
+  label: 'Active',
+  editable: true,
+  editableOptions: {
+    type: 'switch'    // or 'checkbox'
+  }
+}
+```
+
+#### Textarea
+```javascript
+{
+  key: 'notes',
+  label: 'Notes',
+  editable: true,
+  editableOptions: {
+    type: 'textarea',
+    rows: 3,
+    placeholder: 'Enter additional notes...'
+  }
+}
+```
+
+### Auto-Save Behavior
+
+Inline editing automatically saves changes to the model and backend:
+
+- **Text inputs**: Save on Enter key or clicking the green checkmark
+- **Select/Switch**: Save immediately on change (default behavior)
+- **Model Update**: Calls `model.save({ fieldName: newValue })` directly
+- **Error Handling**: Failed saves show error styling and keep editor open
+
+```javascript
+// Handle editing events
+table.on('cell:edit', ({ row, model, column, originalValue }) => {
+  console.log('Started editing:', column);
+});
+
+table.on('cell:save', ({ row, model, column, oldValue, newValue }) => {
+  console.log('Cell saved:', column, oldValue, '->', newValue);
+});
+
+table.on('cell:cancel', ({ row, model, column }) => {
+  console.log('Edit cancelled:', column);
+});
+
+table.on('cell:save:error', ({ row, model, column, error }) => {
+  console.log('Save failed:', column, error);
+});
+```
+
+### Inline Editing with Formatters
+
+Formatters work seamlessly with inline editing. The display value uses the formatter while editing uses the raw value:
+
+```javascript
+{
+  key: 'price|currency',     // Key with pipe formatter
+  label: 'Price',
+  editable: true,           // Edit raw numeric value
+  editableOptions: {
+    type: 'text',
+    inputType: 'number'
+  }
+  // Display shows "$123.45", editing shows "123.45"
+}
+```
+
+## Footer Totals
+
+TableView can automatically calculate and display totals for numeric columns in a footer row.
+
+### Basic Footer Totals
+
+```javascript
+const table = new TableView({
+  collection: salesCollection,
+  columns: [
+    {
+      key: 'customer',
+      label: 'Customer'
+    },
+    {
+      key: 'sales_amount|currency',
+      label: 'Sales Amount',
+      footer_total: true        // Include in footer totals
+    },
+    {
+      key: 'tips|currency',
+      label: 'Tips', 
+      footer_total: true        // Include in footer totals
+    }
+  ]
+});
+```
+
+This produces a footer row like:
+| **Totals** | **$1,234.56** | **$89.00** |
+
+### How Footer Totals Work
+
+1. **Column Detection**: TableView automatically detects columns with `footer_total: true`
+2. **Calculation**: Sums all numeric values from the collection for each total column
+3. **Formatter Inheritance**: Totals use the same formatter as the column
+4. **Smart Parsing**: Handles combined keys like `"sales_amount|currency"`
+5. **Auto-Update**: Totals recalculate when data changes
+
+### Formatter Support
+
+Footer totals automatically inherit formatters from their columns:
+
+```javascript
+{
+  key: 'revenue|currency',      // Pipe formatter
+  label: 'Revenue',
+  footer_total: true           // Total will be formatted as currency
+},
+{
+  key: 'quantity',
+  label: 'Quantity',
+  formatter: 'number',         // Explicit formatter property
+  footer_total: true          // Total will use number formatting
+}
+```
+
+### Advanced Footer Configuration
+
+```javascript
+const table = new TableView({
+  columns: [
+    { key: 'product', label: 'Product' },
+    { 
+      key: 'price',
+      label: 'Unit Price',
+      formatter: 'currency'
+    },
+    {
+      key: 'quantity', 
+      label: 'Quantity',
+      footer_total: true
+    },
+    {
+      key: 'total|currency',
+      label: 'Total',
+      footer_total: true,
+      formatter: (value, context) => {
+        // Custom formatter also works with totals
+        return `$${value.toFixed(2)}`;
+      }
+    }
+  ]
+});
+```
+
+### Footer Styling
+
+Footer totals include professional styling:
+- Light background with blue top border
+- Bold "Totals" label in first column
+- Right-aligned totals in primary color
+- Responsive column support
+- Dark theme compatibility
 
 ## Event Handling
 

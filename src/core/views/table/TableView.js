@@ -23,6 +23,7 @@ import TableRow from './TableRow.js';
 import Mustache from '@core/utils/mustache.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 import FormView from '@core/forms/FormView.js';
+import dataFormatter from '@core/utils/DataFormatter.js';
 
 class TableView extends ListView {
   constructor(options = {}) {
@@ -96,8 +97,27 @@ class TableView extends ListView {
     // Extract filters from columns BEFORE building template
     this.extractColumnFilters();
 
+    // Detect columns that need footer totals
+    this.footerTotalColumns = this.columns.filter(col => col.footer_total === true);
+    this.hasFooterTotals = this.footerTotalColumns.length > 0;
+
     // Build template with Mustache variables
     this.template = this.buildTableTemplate();
+    
+    // Listen for collection changes to update totals
+    this.setupCollectionListeners();
+  }
+
+  /**
+   * Setup collection event listeners for totals updates
+   */
+  setupCollectionListeners() {
+    if (this.hasFooterTotals && this.collection) {
+      // Re-render totals when collection data changes
+      this.collection.on('reset add remove change', () => {
+        this.updateFooterTotals();
+      });
+    }
   }
 
   /**
@@ -136,6 +156,102 @@ class TableView extends ListView {
   }
 
   /**
+   * Extract column key and formatter from combined key (e.g., "sales_amount|currency")
+   */
+  parseColumnKey(key) {
+    const parts = key.split('|');
+    return {
+      fieldKey: parts[0],
+      formatter: parts[1] || null
+    };
+  }
+
+  /**
+   * Update footer totals in the DOM without full re-render
+   */
+  updateFooterTotals() {
+    if (!this.hasFooterTotals || !this.element) return;
+
+    const totals = this.calculateFooterTotals();
+    console.log('Updating footer totals in DOM:', totals);
+
+    // Update each total cell in the footer
+    let totalColumnIndex = 0;
+    this.columns.forEach((column) => {
+      if (column.footer_total) {
+        const safeKey = `col_${totalColumnIndex}`;
+        const cell = this.element.querySelector(`[data-total-column="${safeKey}"]`);
+        
+        if (cell && totals[safeKey]) {
+          const formatter = this.parseColumnKey(column.key).formatter || column.formatter;
+          let displayValue;
+          
+          if (formatter && typeof formatter === 'string') {
+            // Use DataFormatter if available
+            displayValue = this.formatValue(totals[safeKey].value, formatter);
+          } else {
+            displayValue = totals[safeKey].value;
+          }
+          
+          cell.textContent = displayValue;
+        }
+        totalColumnIndex++;
+      }
+    });
+  }
+
+  /**
+   * Format a value using DataFormatter
+   */
+  formatValue(value, formatter) {
+    try {
+      return dataFormatter.pipe(value, formatter);
+    } catch (e) {
+      console.warn('Error formatting value:', e);
+      return value;
+    }
+  }
+
+  /**
+   * Calculate totals for footer columns
+   */
+  calculateFooterTotals() {
+    if (!this.hasFooterTotals || !this.collection || this.collection.length === 0) {
+      return {};
+    }
+
+    const totals = {};
+    
+    this.footerTotalColumns.forEach((column, totalColumnIndex) => {
+      const { fieldKey, formatter } = this.parseColumnKey(column.key);
+      let sum = 0;
+      
+      // Sum values from all items in collection
+      this.collection.forEach(model => {
+        const value = model.get ? model.get(fieldKey) : model[fieldKey];
+        const numValue = parseFloat(value) || 0;
+        sum += numValue;
+      });
+      
+      // Debug logging
+      console.log(`Footer total for ${column.key}: ${sum} (from ${this.collection.length} items)`);
+      
+      // Use safe key for Mustache (avoid special characters)
+      const safeKey = `col_${totalColumnIndex}`;
+      
+      // Store total with formatter info
+      totals[safeKey] = {
+        value: sum,
+        formatter: formatter || column.formatter,
+        fieldKey: fieldKey,
+        originalKey: column.key
+      };
+    });
+    
+    return totals;
+  }
+
+  /**
    * Extract filters from column configuration
    */
   extractColumnFilters() {
@@ -147,14 +263,7 @@ class TableView extends ListView {
     });
   }
 
-  /**
-   * Override getTemplateData to provide dynamic values for Mustache
-   */
-  getTemplateData() {
-    const data = super.getTemplateData();
-    data.searchValue = this.getActiveFilters().search || '';
-    return data;
-  }
+
 
   isSelectable() {
       return this.batchActions && this.batchActions.length > 0 && this.selectionMode == 'multiple';
@@ -190,6 +299,7 @@ class TableView extends ListView {
               <table class="${this.buildTableClasses()}">
                 ${this.buildTableHeaderTemplate()}
                 <tbody data-container="items"></tbody>
+                ${this.hasFooterTotals ? this.buildTableFooterTemplate() : ''}
               </table>
             {{/isEmpty}}
           {{/loading}}
@@ -578,6 +688,61 @@ class TableView extends ListView {
           ${headerCells}
         </tr>
       </thead>
+    `;
+  }
+
+  /**
+   * Build table footer template with totals
+   */
+  buildTableFooterTemplate() {
+    let footerCells = '';
+
+    // Selection checkbox footer (empty)
+    if (this.isSelectable()) {
+      footerCells += '<td></td>';
+    }
+
+    // Column footers
+    let totalColumnIndex = 0;
+    this.columns.forEach((column, index) => {
+      const responsiveClasses = this.getResponsiveClasses(column.visibility);
+      
+      if (column.footer_total) {
+        // Use safe key for Mustache template
+        const safeKey = `col_${totalColumnIndex}`;
+        const formatter = this.parseColumnKey(column.key).formatter || column.formatter;
+        
+        let cellContent;
+        if (formatter && typeof formatter === 'string') {
+          cellContent = `{{{footerTotals.${safeKey}.value|${formatter}}}}`;
+        } else {
+          cellContent = `{{footerTotals.${safeKey}.value}}`;
+        }
+        
+        footerCells += `<td class="table-footer-total ${responsiveClasses}" data-total-column="${safeKey}">${cellContent}</td>`;
+        totalColumnIndex++;
+      } else if (index === 0) {
+        // First column shows "Totals" label
+        footerCells += `<td class="table-footer-label ${responsiveClasses}"><strong>Totals</strong></td>`;
+      } else {
+        // Empty cell for non-total columns
+        footerCells += `<td class="${responsiveClasses}"></td>`;
+      }
+    });
+
+    // Actions footer (empty)
+    if (this.actions) {
+      footerCells += '<td></td>';
+    } else if (this.contextMenu) {
+      footerCells += '<td></td>';
+    }
+
+    return `
+      <tfoot>
+        <tr class="table-totals-row">
+          ${footerCells}
+        </tr>
+      </tfoot>
     `;
   }
 
@@ -1315,10 +1480,27 @@ class TableView extends ListView {
   }
 
   /**
+   * Override render to set data properties before rendering
+   */
+  async render(force, container) {
+    // Set properties that Mustache needs
+    this.searchValue = this.getActiveFilters().search || '';
+    this.footerTotals = this.calculateFooterTotals();
+    console.log('Setting footerTotals before render:', this.footerTotals);
+    
+    return super.render(force, container);
+  }
+
+  /**
    * Override onAfterRender to update pagination info
    */
   async onAfterRender() {
     await super.onAfterRender();
+
+    // Update footer totals in case collection loaded after initial render
+    if (this.hasFooterTotals) {
+      this.updateFooterTotals();
+    }
 
     // Update pagination info
     if (this.paginated && this.collection) {

@@ -15,11 +15,11 @@ class IncidentTablePage extends TablePage {
             pageName: 'Manage Incidents',
             router: "admin/incidents",
             Collection: IncidentList,
-            
+
             formCreate: IncidentForms.create,
             formEdit: IncidentForms.edit,
             itemViewClass: IncidentView,
-            
+
             viewDialogOptions: {
                 header: false,
                 size: 'xl'
@@ -52,7 +52,7 @@ class IncidentTablePage extends TablePage {
                 },
                 {
                     key: 'priority',
-                    label: 'Priority'
+                    label: 'Priority',
                 },
                 {
                     key: 'details',
