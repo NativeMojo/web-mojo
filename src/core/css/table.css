@@ -600,6 +600,110 @@ div.batch-select-end {
 }
 
 /* ========================================================================
+   MOJO Table Fullscreen Mode
+   ======================================================================== */
+
+.table-fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 9999 !important;
+    background: var(--bs-body-bg) !important;
+    padding: 1rem !important;
+    overflow: auto !important;
+}
+
+/* Ensure modals appear above fullscreen tables */
+.modal.show {
+    z-index: 10050 !important;
+}
+
+.modal-backdrop.show {
+    z-index: 10040 !important;
+}
+
+.table-fullscreen .mojo-table-wrapper {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+}
+
+.table-fullscreen .table-container {
+    flex: 1;
+    overflow: auto;
+    margin-bottom: 1rem;
+}
+
+.table-fullscreen .table {
+    margin-bottom: 0;
+}
+
+/* Optimize pagination for fullscreen */
+.table-fullscreen .table-status-bar {
+    flex-shrink: 0;
+    margin-top: auto;
+    border-top: 1px solid var(--bs-border-color);
+    padding-top: 1rem;
+    background: var(--bs-body-bg);
+}
+
+/* Fullscreen button animation */
+.btn-fullscreen {
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.btn-fullscreen:hover {
+    transform: scale(1.05);
+}
+
+.table-fullscreen .btn-fullscreen {
+    background-color: var(--bs-primary);
+    color: var(--bs-white);
+    border-color: var(--bs-primary);
+}
+
+.table-fullscreen .btn-fullscreen:hover {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    opacity: 0.9;
+}
+
+/* Improve scrolling in fullscreen */
+.table-fullscreen .table-container::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.table-fullscreen .table-container::-webkit-scrollbar-track {
+    background: var(--bs-secondary-bg);
+}
+
+.table-fullscreen .table-container::-webkit-scrollbar-thumb {
+    background: var(--bs-secondary);
+    border-radius: 6px;
+}
+
+.table-fullscreen .table-container::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-secondary-color);
+}
+
+/* Dark theme support for fullscreen */
+[data-bs-theme="dark"] .table-fullscreen {
+    background: var(--bs-dark) !important;
+}
+
+[data-bs-theme="dark"] .table-fullscreen .table-status-bar {
+    background: var(--bs-dark);
+}
+
+/* ========================================================================
    MOJO Table Footer Totals
    ======================================================================== */
 

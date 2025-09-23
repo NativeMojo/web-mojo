@@ -38,6 +38,9 @@ class TableView extends ListView {
 
     super(tableOptions);
 
+    // Fullscreen state
+    this.isFullscreen = false;
+
     // Table-specific properties
     this.columns = options.columns || [];
     this.actions = options.actions || null;
@@ -362,6 +365,17 @@ class TableView extends ListView {
         <i class="bi bi-arrow-clockwise"></i>
       </button>
     `);
+
+    // Fullscreen button (only if browser supports it)
+    if (this.isFullscreenSupported()) {
+      buttons.push(`
+        <button class="btn btn-sm btn-outline-secondary btn-fullscreen"
+                data-action="toggle-fullscreen"
+                title="Toggle Fullscreen">
+          <i class="bi bi-fullscreen"></i>
+        </button>
+      `);
+    }
 
     // Custom action buttons from options
     if (this.options.showAdd) {
@@ -1168,6 +1182,158 @@ class TableView extends ListView {
    */
   _onCellCancel(event) {
     this.emit('cell:cancel', event);
+  }
+
+  /**
+   * Check if fullscreen is supported by the browser
+   */
+  isFullscreenSupported() {
+    return !!(
+      document.fullscreenEnabled ||
+      document.mozFullScreenEnabled ||
+      document.webkitFullscreenEnabled ||
+      document.msFullscreenEnabled
+    );
+  }
+
+  /**
+   * Handle toggle fullscreen action
+   */
+  async onActionToggleFullscreen(event, element) {
+    if (this.isFullscreen) {
+      await this.exitFullscreen();
+    } else {
+      await this.enterFullscreen();
+    }
+  }
+
+  /**
+   * Enter fullscreen mode
+   */
+  async enterFullscreen() {
+    try {
+      // Use browser's native fullscreen API
+      if (this.element.requestFullscreen) {
+        await this.element.requestFullscreen();
+      } else if (this.element.mozRequestFullScreen) {
+        await this.element.mozRequestFullScreen();
+      } else if (this.element.webkitRequestFullscreen) {
+        await this.element.webkitRequestFullscreen();
+      } else if (this.element.msRequestFullscreen) {
+        await this.element.msRequestFullscreen();
+      }
+      
+      this.isFullscreen = true;
+      this.element.classList.add('table-fullscreen');
+      this.updateFullscreenButton();
+      
+      // Listen for fullscreen change events
+      this.setupFullscreenListeners();
+      
+      this.emit('table:fullscreen:enter');
+      
+    } catch (error) {
+      console.warn('Could not enter fullscreen:', error);
+    }
+  }
+
+  /**
+   * Exit fullscreen mode
+   */
+  async exitFullscreen() {
+    try {
+      if (document.exitFullscreen) {
+        await document.exitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        await document.mozCancelFullScreen();
+      } else if (document.webkitExitFullscreen) {
+        await document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) {
+        await document.msExitFullscreen();
+      }
+      
+      this.isFullscreen = false;
+      this.element.classList.remove('table-fullscreen');
+      this.updateFullscreenButton();
+      
+      this.emit('table:fullscreen:exit');
+      
+    } catch (error) {
+      console.warn('Could not exit fullscreen:', error);
+    }
+  }
+
+  /**
+   * Update fullscreen button icon and title
+   */
+  updateFullscreenButton() {
+    const button = this.element?.querySelector('.btn-fullscreen');
+    const icon = button?.querySelector('i');
+    
+    if (button && icon) {
+      if (this.isFullscreen) {
+        icon.className = 'bi bi-fullscreen-exit';
+        button.title = 'Exit Fullscreen';
+      } else {
+        icon.className = 'bi bi-fullscreen';
+        button.title = 'Enter Fullscreen';
+      }
+    }
+  }
+
+  /**
+   * Setup fullscreen event listeners
+   */
+  setupFullscreenListeners() {
+    // Don't add listeners multiple times
+    if (this._fullscreenHandler) return;
+
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = !!(
+        document.fullscreenElement ||
+        document.mozFullScreenElement ||
+        document.webkitFullscreenElement ||
+        document.msFullscreenElement
+      );
+
+      if (!isCurrentlyFullscreen && this.isFullscreen) {
+        // User exited fullscreen via ESC or browser controls
+        this.isFullscreen = false;
+        this.element.classList.remove('table-fullscreen');
+        this.updateFullscreenButton();
+        this.emit('table:fullscreen:exit');
+      }
+    };
+
+    // Add listeners for all browser prefixes
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+    // Store handler for cleanup
+    this._fullscreenHandler = handleFullscreenChange;
+  }
+
+  /**
+   * Cleanup fullscreen listeners
+   */
+  cleanupFullscreenListeners() {
+    if (this._fullscreenHandler) {
+      document.removeEventListener('fullscreenchange', this._fullscreenHandler);
+      document.removeEventListener('mozfullscreenchange', this._fullscreenHandler);
+      document.removeEventListener('webkitfullscreenchange', this._fullscreenHandler);
+      document.removeEventListener('msfullscreenchange', this._fullscreenHandler);
+      this._fullscreenHandler = null;
+    }
+  }
+
+  /**
+   * Override destroy to cleanup fullscreen listeners
+   */
+  destroy() {
+    this.cleanupFullscreenListeners();
+    super.destroy();
   }
 
   /**

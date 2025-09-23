@@ -14,6 +14,21 @@ class Dialog extends View {
     modal: 1055
   };
 
+  /**
+   * Check if there's a fullscreen table and return appropriate z-index
+   */
+  static getFullscreenAwareZIndex() {
+    const fullscreenTable = document.querySelector('.table-fullscreen');
+    if (fullscreenTable) {
+      // Fullscreen table uses z-index 9999, so modals should be much higher
+      return {
+        backdrop: 10040,
+        modal: 10050
+      };
+    }
+    return this._baseZIndex;
+  }
+
   static _busyIndicator = null;
   static _busyCounter = 0;
   static _busyTimeout = null;
@@ -34,6 +49,9 @@ class Dialog extends View {
           }
 
           if (!this._busyIndicator) {
+              const zIndexBase = this.getFullscreenAwareZIndex();
+              const busyZIndex = zIndexBase.modal + 1000; // Higher than any modal
+              
               this._busyIndicator = document.createElement('div');
               this._busyIndicator.className = 'mojo-busy-indicator';
               this._busyIndicator.innerHTML = `
@@ -46,7 +64,7 @@ class Dialog extends View {
                   <style>
                       .mojo-busy-indicator {
                           position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-                          background-color: rgba(0, 0, 0, 0.5); z-index: 9999;
+                          background-color: rgba(0, 0, 0, 0.5); z-index: ${busyZIndex};
                           display: flex; align-items: center; justify-content: center;
                           opacity: 0; transition: opacity 0.15s linear;
                       }
@@ -496,7 +514,7 @@ class Dialog extends View {
 
   /**
    * Override mount to not require a container for dialogs
-   * Dialogs are appended to body directly
+   * Dialogs are appended to body or fullscreen element
    */
   async mount(_container = null) {
     if (this.mounted || this.destroyed) {
@@ -511,8 +529,10 @@ class Dialog extends View {
     // Call lifecycle hooks
     await this.onBeforeMount();
 
-    // The element should already be appended to document.body by the caller
-    document.body.appendChild(this.element);
+    // Append to fullscreen element if it exists, otherwise to body
+    const fullscreenElement = document.querySelector('.table-fullscreen');
+    const targetContainer = fullscreenElement || document.body;
+    targetContainer.appendChild(this.element);
 
     // Bind DOM events
     this.bindEvents();
@@ -723,9 +743,10 @@ class Dialog extends View {
   bindBootstrapEvents() {
     // show.bs.modal
     this.element.addEventListener('show.bs.modal', (e) => {
-      // Manage stacking for multiple dialogs
+      // Manage stacking for multiple dialogs with fullscreen awareness
       const stackIndex = Dialog._openDialogs.length;
-      const newZIndex = Dialog._baseZIndex.modal + (stackIndex * 20);
+      const zIndexBase = Dialog.getFullscreenAwareZIndex();
+      const newZIndex = zIndexBase.modal + (stackIndex * 20);
       this.element.style.zIndex = newZIndex;
       Dialog._openDialogs.push(this);
 
@@ -747,6 +768,9 @@ class Dialog extends View {
 
     // shown.bs.modal
     this.element.addEventListener('shown.bs.modal', (e) => {
+      // Move backdrop to fullscreen element if it exists
+      this.moveBackdropToFullscreen();
+      
       if (this.onShown) this.onShown(e);
       this.emit('shown', {
         dialog: this,
@@ -819,6 +843,25 @@ class Dialog extends View {
       if (this.onHidePrevented) this.onHidePrevented(e);
       this.emit('hidePrevented', { dialog: this });
     });
+  }
+
+  /**
+   * Move modal backdrop to fullscreen element if it exists
+   */
+  moveBackdropToFullscreen() {
+    const fullscreenElement = document.querySelector('.table-fullscreen');
+    if (!fullscreenElement) return;
+
+    // Find the most recent backdrop (the one for this modal)
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    if (backdrops.length === 0) return;
+
+    const backdrop = backdrops[backdrops.length - 1];
+    
+    // Only move if it's currently in document.body
+    if (backdrop.parentNode === document.body) {
+      fullscreenElement.appendChild(backdrop);
+    }
   }
 
   /**
@@ -1024,8 +1067,10 @@ class Dialog extends View {
       }
     });
 
-    // Mount to body
-    await dialog.render(true, document.body);
+    // Mount to fullscreen element if it exists, otherwise body
+    const fullscreenElement = document.querySelector('.table-fullscreen');
+    const targetContainer = fullscreenElement || document.body;
+    await dialog.render(true, targetContainer);
 
     // Apply syntax highlighting after mounting
     if (window.Prism && dialog.element) {
@@ -1188,7 +1233,10 @@ class Dialog extends View {
     });
 
     // Render and mount
-    await dialog.render(true, document.body);
+    // Mount to fullscreen element if it exists, otherwise body
+    const fullscreenElement = document.querySelector('.table-fullscreen');
+    const targetContainer = fullscreenElement || document.body;
+    await dialog.render(true, targetContainer);
 
     // Return promise that resolves based on button clicks
     return new Promise((resolve, reject) => {
@@ -1352,7 +1400,10 @@ class Dialog extends View {
       ...options
     });
 
-    await dialog.render(true, document.body)
+    // Mount to fullscreen element if it exists, otherwise body
+    const fullscreenElement = document.querySelector('.table-fullscreen');
+    const targetContainer = fullscreenElement || document.body;
+    await dialog.render(true, targetContainer);
     dialog.show();
 
     return new Promise((resolve) => {
@@ -1400,7 +1451,10 @@ class Dialog extends View {
       ...options
     });
 
-    await dialog.render(true, document.body);
+    // Mount to fullscreen element if it exists, otherwise body
+    const fullscreenElement = document.querySelector('.table-fullscreen');
+    const targetContainer = fullscreenElement || document.body;
+    await dialog.render(true, targetContainer);
     dialog.show();
 
     // Focus the input
@@ -1496,7 +1550,9 @@ class Dialog extends View {
     });
 
     // Render and mount dialog
-    await dialog.render(true, document.body);
+    const fullscreenElement = document.querySelector('.table-fullscreen');
+    const targetContainer = fullscreenElement || document.body;
+    await dialog.render(true, targetContainer);
 
     // Show the dialog
     dialog.show();
@@ -1620,7 +1676,9 @@ class Dialog extends View {
     });
 
     // Render and mount dialog
-    await dialog.render(true, document.body);
+    const fullscreenElement = document.querySelector('.table-fullscreen');
+    const targetContainer = fullscreenElement || document.body;
+    await dialog.render(true, targetContainer);
 
     // Show the dialog
     dialog.show();
@@ -1732,7 +1790,9 @@ class Dialog extends View {
     });
 
     // Render and mount dialog
-    await dialog.render(true, document.body);
+    const fullscreenElement = document.querySelector('.table-fullscreen');
+    const targetContainer = fullscreenElement || document.body;
+    await dialog.render(true, targetContainer);
 
     // Show the dialog and return promise
     dialog.show();
