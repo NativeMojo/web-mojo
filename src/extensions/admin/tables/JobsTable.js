@@ -12,7 +12,6 @@ export default class JobsTable extends TableView {
         super({
             Collection: JobList,
             collectionParams: {
-                start: 0,
                 size: 15,
                 sort: '-created'
             },

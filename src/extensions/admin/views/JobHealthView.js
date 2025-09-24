@@ -21,7 +21,7 @@ export default class JobHealthView extends View {
 
         this.template = `
             <div class="job-health-header mb-4">
-                <div class="card border-0 shadow-sm">
+                <div class="card border-0 shadow">
                     <div class="card-body">
                         <div class="row align-items-center">
                             <div class="col-md-6">

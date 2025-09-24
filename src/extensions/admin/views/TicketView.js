@@ -82,7 +82,7 @@ class TicketView extends View {
                             <div data-container="chat-view"></div>
                         </div>
                     </div>
-                    
+
                     <div class="col-lg-4">
                         <!-- Details Sidebar -->
                         <div class="border rounded p-3 bg-light">
@@ -147,7 +147,7 @@ class TicketView extends View {
             fields: [
                 { name: 'title', label: 'Title', type: 'text', required: true },
                 { name: 'description', label: 'Description', type: 'textarea', rows: 4 },
-                { name: 'status', label: 'Status', type: 'select', 
+                { name: 'status', label: 'Status', type: 'select',
                   options: ['open', 'in_progress', 'pending', 'resolved', 'closed'] },
                 { name: 'priority', label: 'Priority', type: 'select',
                   options: ['low', 'normal', 'high', 'urgent'] },
@@ -160,16 +160,16 @@ class TicketView extends View {
     }
 
     async onActionChangeStatus() {
-        const statuses = ['open', 'in_progress', 'pending', 'resolved', 'closed'];
+        const statuses = ['new', 'open', 'in_progress', 'pending', 'resolved', 'closed', 'ignored'];
         const currentStatus = this.model.get('status');
-        
+
         const result = await Dialog.showForm({
             title: 'Change Ticket Status',
             size: 'sm',
             fields: [
-                { 
-                    name: 'status', 
-                    label: 'New Status', 
+                {
+                    name: 'status',
+                    label: 'New Status',
                     type: 'select',
                     options: statuses.map(s => ({ value: s, label: s.replace('_', ' ').toUpperCase() })),
                     value: currentStatus,
@@ -177,7 +177,7 @@ class TicketView extends View {
                 }
             ]
         });
-        
+
         if (result) {
             try {
                 await this.model.save({ status: result.status });
@@ -195,14 +195,14 @@ class TicketView extends View {
     async onActionSetPriority() {
         const priorities = ['low', 'normal', 'high', 'urgent'];
         const currentPriority = this.model.get('priority');
-        
+
         const result = await Dialog.showForm({
             title: 'Set Ticket Priority',
             size: 'sm',
             fields: [
-                { 
-                    name: 'priority', 
-                    label: 'Priority Level', 
+                {
+                    name: 'priority',
+                    label: 'Priority Level',
                     type: 'select',
                     options: priorities.map(p => ({ value: p, label: p.toUpperCase() })),
                     value: currentPriority,
@@ -210,7 +210,7 @@ class TicketView extends View {
                 }
             ]
         });
-        
+
         if (result) {
             try {
                 await this.model.save({ priority: result.priority });
@@ -240,7 +240,7 @@ class TicketView extends View {
             confirmText: 'Close Ticket',
             confirmClass: 'btn-warning'
         });
-        
+
         if (confirmed) {
             try {
                 await this.model.save({ status: 'closed' });

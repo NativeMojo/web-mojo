@@ -147,6 +147,10 @@ class ListView extends View {
 
     this.collection = collection;
 
+    if (this.options.collectionParams) {
+        this.collection.params = {...this.options.collectionParams, ...this.collection.params};
+    }
+
     // Set up new collection listeners
     if (this.collection) {
       this.collection.on('add', this._onModelsAdded, this);

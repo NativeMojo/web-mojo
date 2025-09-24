@@ -8,6 +8,7 @@ import TabView from '@core/views/navigation/TabView.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 import { Job, JobsEngineStats } from '@core/models/Job.js';
 import { JobRunner, JobRunnerForms } from '@core/models/JobRunner.js';
+import { MetricsChart } from '@ext/charts/index.js';
 
 // Import component views
 import JobStatsView from './views/JobStatsView.js';
@@ -88,10 +89,17 @@ export default class JobsAdminPage extends Page {
                 <div data-container="job-stats"></div>
 
                 <!-- Job Health -->
-                <div data-container="job-health"></div>
+                <div class="row">
+                    <div class="col-12">
+                        <div data-container="job-health"></div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3" data-container="job-metrics"></div>
+                    </div>
+                </div>
 
                 <!-- Job Tables -->
-                <div class="card border shadow-sm">
+                <div class="card border shadow">
                     <div class="card-header">
                         <h5 class="card-title mb-0">
                             <i class="bi bi-list-task me-2"></i>Job Management
@@ -131,6 +139,27 @@ export default class JobsAdminPage extends Page {
             activeTab: 'Jobs'
         });
         this.addChild(this.jobTablesView);
+
+        // Create API Metrics Chart
+        this.jobMetricsChart = new MetricsChart({
+          title: `<i class="bi bi-graph-up me-2"></i> Job Metrics`,
+          endpoint: '/api/metrics/fetch',
+          height: 100,
+          granularity: 'hours',
+          category: 'jobs_channels',
+          account: 'global',
+          chartType: 'bar',
+          showDateRange: false,
+          yAxis: {
+            label: 'Count',
+            beginAtZero: true
+          },
+          tooltip: {
+            y: 'number'
+          },
+          containerId: 'job-metrics'
+        });
+        this.addChild(this.jobMetricsChart);
 
         await this.jobStats.fetch();
 

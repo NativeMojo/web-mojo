@@ -34,7 +34,8 @@ export default class MetricsChart extends SeriesChart {
 
     // Initial parameters
     this.granularity = options.granularity || 'hours';
-    this.slugs = options.slugs || ['api_calls', 'api_errors'];
+    this.slugs = options.slugs || null;
+    this.category = options.category || null;
     this.dateStart = options.dateStart || null;
     this.dateEnd = options.dateEnd || null;
     this.defaultDateRange = options.defaultDateRange || '24h';
@@ -177,11 +178,16 @@ export default class MetricsChart extends SeriesChart {
     };
 
     // Add slugs
-    this.slugs.forEach(slug => {
-      if (!params['slugs[]']) params['slugs[]'] = [];
-      params['slugs[]'].push(slug);
-    });
+    if (this.slugs) {
+        this.slugs.forEach(slug => {
+          if (!params['slugs[]']) params['slugs[]'] = [];
+          params['slugs[]'].push(slug);
+        });
+    }
 
+    if (this.category) {
+        params.category = this.category;
+    }
     // Date range
     if (this.dateStart) {
       params.dr_start = Math.floor(this.dateStart.getTime() / 1000);
