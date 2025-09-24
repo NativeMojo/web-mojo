@@ -144,7 +144,6 @@ export default class AuthApp extends WebApp {
         });
 
         this.events.on('auth:logout', () => {
-            this.showInfo('You have been logged out.');
             this.navigate(this.authConfig.logoutRedirect);
         });
 

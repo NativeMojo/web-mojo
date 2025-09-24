@@ -293,6 +293,13 @@ const app = new PortalApp({
                 },
                 {
                     divider: true
+                },                {
+                    label: 'Change Password',
+                    icon: 'bi-shield-lock',
+                    action: 'change-password'
+                },
+                {
+                    divider: true
                 },
                 {
                     label: 'Logout',

@@ -72,14 +72,15 @@ export default class PortalApp extends WebApp {
         await this.checkAuthStatus();
 
         this.events.on('auth:unauthorized', () => {
-            this.showError("You have been logged out");
+            this.tokenManager.clearTokens();
+            this.rest.clearAuth();
             this.setActiveUser(null);
             return;
         });
 
         this.events.on('auth:logout', () => {
-            this.showError("You have been logged out");
             this.tokenManager.clearTokens();
+            this.rest.clearAuth();
             this.setActiveUser(null);
             return;
         });
@@ -623,15 +624,72 @@ export default class PortalApp extends WebApp {
         }
     }
 
+    async changePassword() {
+        const data = await this.showForm({
+            title: "Change Password",
+            fields: [
+                {
+                    name: 'current_password', type: 'password',
+                    label: 'Current Password', required: true,
+                    showToggle: true,               // default, can omit
+                    strengthMeter: true,
+                    capsLockWarning: true,
+
+                },
+                {
+                    name: 'new_password', type: 'password', label: 'New Password', required: true,
+                    showToggle: true,
+                    passwordUsage: 'new',           // sets autocomplete to 'new-password'
+                    showToggle: true,               // default, can omit
+                    strengthMeter: true,
+                    capsLockWarning: true,
+                    attributes: {
+                      // optional, override autocomplete if needed
+                      autocomplete: 'new-password'
+                    }
+                },
+                {
+                    name: 'confirm_password', type: 'password', label: 'Confirm Password', required: true,
+                    showToggle: true,
+                    passwordUsage: 'new',           // sets autocomplete to 'new-password'
+                    showToggle: true,               // default, can omit
+                    strengthMeter: true,
+                    capsLockWarning: true,
+                    attributes: {
+                      // optional, override autocomplete if needed
+                      // autocomplete: 'new-password'
+                    }
+                }
+            ],
+            submitLabel: 'Change Password'
+        });
+        if (data) {
+            if (data.new_password === data.confirm_password) {
+                // Perform password change logic here
+                const resp = await this.activeUser.save(data);
+                if (resp.status === 200) {
+                    this.toast.success('Password changed successfully');
+                } else {
+                    this.toast.error('Failed to change password');
+                }
+            } else {
+                this.toast.error('Passwords do not match');
+            }
+        }
+    }
+
     onPortalAction(action) {
         switch (action.action) {
             case 'logout':
-                this.showError("You have been logged out");
                 this.tokenManager.clearTokens();
+                this.rest.clearAuth();
                 this.setActiveUser(null);
                 break;
             case 'profile':
                 this.showProfile();
+                break;
+            case 'change-password':
+                this.changePassword();
                 break;
             default:
                 console.warn(`Unknown portal action: ${action}`);

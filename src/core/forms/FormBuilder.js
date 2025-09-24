@@ -73,6 +73,51 @@ class FormBuilder {
         </div>
       `,
 
+      password: `
+        <div class="mojo-form-control">
+          {{#label}}
+          <label for="{{fieldId}}" class="{{labelClass}}">
+            {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}
+          </label>
+          {{/label}}
+          <div class="input-group">
+            <input type="password" id="{{fieldId}}" name="{{name}}"
+                   class="{{inputClass}}{{#error}} is-invalid{{/error}}"
+                   value="{{fieldValue}}" {{#placeholder}}placeholder="{{placeholder}}"{{/placeholder}}
+                   {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}}
+                   {{#readonly}}readonly{{/readonly}} data-change-action="validate-field"
+                   data-field-type="password" {{{attrs}}}>
+            {{#showToggle}}
+            <button type="button" class="btn btn-outline-secondary"
+                    data-action="toggle-password"
+                    data-target="{{fieldId}}"
+                    aria-label="Show password" aria-pressed="false">
+              <i class="bi bi-eye"></i>
+            </button>
+            {{/showToggle}}
+          </div>
+          {{#strengthMeter}}
+          <div class="mt-2">
+            <div class="progress" style="height: 4px;">
+              <div class="progress-bar bg-secondary" role="progressbar"
+                   style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+                   id="{{fieldId}}_strength_bar"></div>
+            </div>
+            <small class="{{helpClass}}" id="{{fieldId}}_strength_text">Strength</small>
+          </div>
+          {{/strengthMeter}}
+          {{#capsLockWarning}}
+          <div class="{{helpClass}} text-warning d-none" id="{{fieldId}}_caps_warning">
+            Caps Lock is on
+          </div>
+          {{/capsLockWarning}}
+          {{#help}}<div class="{{helpClass}}">{{help}}</div>{{/help}}
+          {{#error}}<div class="{{errorClass}}">{{error}}</div>{{/error}}
+        </div>
+      `,
+
+
+
       textarea: `
         <div class="mojo-form-control">
           {{#label}}
@@ -688,7 +733,25 @@ class FormBuilder {
    * @returns {string} Field HTML
    */
   renderPasswordField(field) {
-    return this.renderInputField(field, 'password');
+    const passwordUsage = field.passwordUsage || 'current';
+    const inferredAutocomplete =
+      passwordUsage === 'new' || passwordUsage === 'new-password'
+        ? 'new-password'
+        : 'current-password';
+
+    const attributes = {
+      ...(field.attributes || {}),
+      autocomplete: (field.attributes && field.attributes.autocomplete) || inferredAutocomplete
+    };
+
+    return this.renderInputField(
+      {
+        ...field,
+        showToggle: field.showToggle !== false, // default to showing the toggle unless explicitly disabled
+        attributes
+      },
+      'password'
+    );
   }
 
   /**
@@ -872,6 +935,24 @@ class FormBuilder {
       attrs
     };
 
+    if (type === 'password' && (field.showToggle || field.strengthMeter || field.capsLockWarning)) {
+      const enhancedContext = {
+        ...context,
+        showToggle: !!field.showToggle,
+        strengthMeter: !!field.strengthMeter,
+        capsLockWarning: !!field.capsLockWarning
+      };
+      return Mustache.render(this.templates.password, enhancedContext);
+    }
+    if (type === 'password') {
+      const enhancedContext = {
+        ...context,
+        showToggle: field.showToggle !== false,
+        strengthMeter: !!field.strengthMeter,
+        capsLockWarning: !!field.capsLockWarning
+      };
+      return Mustache.render(this.templates.password, enhancedContext);
+    }
     return Mustache.render(this.templates.input, context);
   }
 
