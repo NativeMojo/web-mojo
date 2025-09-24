@@ -24,12 +24,33 @@ class TicketList extends Collection {
     }
 }
 
+
+const TicketCategories = {
+    'ticket': 'Ticket',
+    'bug': 'Bug',
+    'feature': 'Feature Request',
+    'incident': 'Incident',
+    'security': 'Security Incident',
+    'fulfillment': 'Fulfillment',
+    'new_user': 'New User',
+    'new_group': 'New Group',
+    'qa': 'Quality Assurance'
+};
+
+// Convert TicketCategories to select options
+const TicketCategoriesOptions = Object.entries(TicketCategories).map(([key, label]) => ({
+    value: key,
+    label: label
+}));
+
+
 const TicketForms = {
     create: {
         title: 'Create Ticket',
         fields: [
             { name: 'title', type: 'text', label: 'Title', required: true, cols: 12 },
-            { name: 'description', type: 'textarea', label: 'Description', required: true, cols: 12 },
+            { name: 'description', type: 'textarea', label: 'Description', required: false, cols: 12 },
+            { name: "category", type: "select", label: "Category", options: TicketCategoriesOptions, cols: 12 },
             { name: 'priority', type: 'number', label: 'Priority', value: 5, cols: 6 },
             { name: 'status', type: 'select', label: 'Status', value: 'open', options: ['open', 'in_progress', 'resolved', 'closed'], cols: 6 },
             { type: 'collection', name: 'assignee', label: 'Assignee', Collection: UserList, labelField: 'display_name', valueField: 'id', cols: 12 },
@@ -40,7 +61,8 @@ const TicketForms = {
         title: 'Edit Ticket',
         fields: [
             { name: 'title', type: 'text', label: 'Title', required: true, cols: 12 },
-            { name: 'description', type: 'textarea', label: 'Description', required: true, cols: 12 },
+            { name: 'description', type: 'textarea', label: 'Description', required: false, cols: 12 },
+            { name: "category", type: "select", label: "Category", options: TicketCategoriesOptions, cols: 12 },
             { name: 'priority', type: 'number', label: 'Priority', cols: 6 },
             { name: 'status', type: 'select', label: 'Status', options: ['open', 'in_progress', 'resolved', 'closed'], cols: 6 },
             { type: 'collection', name: 'assignee', label: 'Assignee', Collection: UserList, labelField: 'display_name', valueField: 'id', cols: 12 },
@@ -70,4 +92,4 @@ class TicketNoteList extends Collection {
     }
 }
 
-export { Ticket, TicketList, TicketNote, TicketNoteList, TicketForms };
+export { Ticket, TicketList, TicketNote, TicketNoteList, TicketForms, TicketCategories };

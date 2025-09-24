@@ -34,6 +34,33 @@ class GroupList extends Collection {
     }
 }
 
+const GroupKinds = {
+    'org': 'Organization',
+    'division': 'Division',
+    'department': 'Department',
+    'team': 'Team',
+    'merchant': 'Merchant',
+    'partner': 'Partner',
+    'client': 'Client',
+    'iso': 'ISO',
+    'sales': 'Sales',
+    'reseller': 'Reseller',
+    'location': 'Location',
+    'region': 'Region',
+    'route': 'Route',
+    'project': 'Project',
+    "inventory": "Inventory",
+    'test': 'Testing',
+    'misc': 'Miscellaneous',
+    'qa': 'Quality Assurance'
+};
+
+// Convert GroupKinds to select options
+const GroupKindOptions = Object.entries(GroupKinds).map(([key, label]) => ({
+    value: key,
+    label: label
+}));
+
 /**
  * Form configurations for group management
  */
@@ -53,14 +80,7 @@ const GroupForms = {
                 type: 'select',
                 label: 'Group Kind',
                 required: true,
-                options: [
-                    { value: 'org', label: 'Organization' },
-                    { value: 'team', label: 'Team' },
-                    { value: 'department', label: 'Department' },
-                    { value: 'merchant', label: 'Merchant' },
-                    { value: 'iso', label: 'ISO' },
-                    { value: 'group', label: 'Group' }
-                ]
+                options: GroupKindOptions
             },
             {
                 type: 'collection',
@@ -92,22 +112,7 @@ const GroupForms = {
                 type: 'select',
                 label: 'Group Kind',
                 required: true,
-                options: [
-                  { value: 'org', label: 'Organization' },
-                  { value: 'division', label: 'Division' },
-                  { value: 'department', label: 'Department' },
-                  { value: 'team', label: 'Team' },
-                  { value: 'merchant', label: 'Merchant' },
-                  { value: 'partner', label: 'Partner' },
-                  { value: 'client', label: 'Client' },
-                  { value: 'iso', label: 'ISO' },
-                  { value: 'location', label: 'Location' },
-                  { value: 'region', label: 'Region' },
-                  { value: 'route', label: 'Route' },
-                  { value: 'project', label: 'Project' },
-                  { value: 'role', label: 'Role' },
-                  { value: 'test', label: 'Testing' }
-                ]
+                options: GroupKindOptions
             },
             {
                 type: 'collection',

@@ -4,7 +4,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { TicketList, TicketForms } from '@core/models/Tickets.js';
+import { TicketList, TicketForms, TicketCategories } from '@core/models/Tickets.js';
 import TicketView from './views/TicketView.js';
 
 class TicketTablePage extends TablePage {
@@ -39,6 +39,16 @@ class TicketTablePage extends TablePage {
                     }
                 },
                 { key: 'priority', label: 'Priority', sortable: true },
+                {
+                    key: 'category', label: 'Category', sortable: true,
+                    editable: true,
+                    editableOptions: {
+                      type: "select",
+                      options: [
+                          ... Object.keys(TicketCategories)
+                      ]
+                    }
+                },
                 { key: 'assignee.display_name', label: 'Assignee', sortable: true, formatter: "default('Unassigned')" },
                 { key: 'incident', label: 'Incident ID', sortable: true },
                 { key: 'created', label: 'Created', sortable: true, formatter: 'datetime' }
