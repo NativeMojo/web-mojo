@@ -152,6 +152,7 @@ class UserTablePage extends TablePage {
                     name: 'new_password',
                     label: 'New Password',
                     type: 'password',
+                    passwordUsage: 'new',
                     required: true,
                     showToggle: true,
                     attributes: {
@@ -166,12 +167,12 @@ class UserTablePage extends TablePage {
             const result = MOJOUtils.checkPasswordStrength(data.new_password);
             if (result.score < 5) {
                 this.getApp().toast.error('Password must be at least 6 characters long and contain at least 2 of the following: uppercase letter, lowercase letter, or number');
-                await this.handleActionChangePassword(item);
+                await this.onActionChangePassword(event, element);
                 return;
             }
             const resp = await item.save({new_password: data.new_password});
             if (!this.onPasswordChange(resp)) {
-                await this.handleActionChangePassword(item);
+                await this.onActionChangePassword(event, element);
             }
         }
     }

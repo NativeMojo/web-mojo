@@ -234,18 +234,18 @@ export default class TokenManager {
      */
     getTokenInstance() {
         const currentToken = this.getToken();
-        
+
         // If no token stored, clear instance and return null
         if (!currentToken) {
             this.tokenInstance = null;
             return null;
         }
-        
+
         // If instance doesn't exist or token changed, create new instance
         if (!this.tokenInstance || this.tokenInstance.token !== currentToken) {
             this.tokenInstance = new Token(currentToken);
         }
-        
+
         return this.tokenInstance;
     }
 
@@ -255,18 +255,18 @@ export default class TokenManager {
      */
     getRefreshTokenInstance() {
         const currentRefreshToken = this.getRefreshToken();
-        
+
         // If no refresh token stored, clear instance and return null
         if (!currentRefreshToken) {
             this._refreshTokenInstance = null;
             return null;
         }
-        
+
         // If instance doesn't exist or token changed, create new instance
         if (!this._refreshTokenInstance || this._refreshTokenInstance.token !== currentRefreshToken) {
             this._refreshTokenInstance = new Token(currentRefreshToken);
         }
-        
+
         return this._refreshTokenInstance;
     }
 
@@ -333,7 +333,7 @@ export default class TokenManager {
     checkTokenStatus() {
         const token = this.getTokenInstance();
         const refreshToken = this.getRefreshTokenInstance();
-        
+
         // If no access token or it's invalid/expired
         if (!token || !token.isValid() || token.isExpired()) {
             // Check if refresh is possible
@@ -343,7 +343,7 @@ export default class TokenManager {
                     reason: 'Both access and refresh tokens are invalid/expired'
                 };
             }
-            
+
             return {
                 action: 'refresh',
                 reason: 'Access token invalid/expired but refresh token valid'
@@ -359,7 +359,7 @@ export default class TokenManager {
                     reason: 'Access token expiring but refresh token invalid'
                 };
             }
-            
+
             return {
                 action: 'refresh',
                 reason: 'Access token expiring soon or aged'
@@ -379,17 +379,17 @@ export default class TokenManager {
      */
     async checkAndRefreshTokens(app) {
         const status = this.checkTokenStatus();
-        
+
         switch (status.action) {
             case 'logout':
                 app.events.emit("auth:unauthorized");
                 this.stopAutoRefresh();
                 return true;
-                
+
             case 'refresh':
                 await this.refreshToken(app);
                 return true;
-                
+
             default:
                 return false;
         }
@@ -411,7 +411,7 @@ export default class TokenManager {
 
     async refreshToken(app) {
         const refreshTokenInstance = this.getRefreshTokenInstance();
-        
+
         // Double-check refresh token validity before attempting refresh
         if (!refreshTokenInstance || !refreshTokenInstance.isValid() || refreshTokenInstance.isExpired()) {
 
@@ -422,31 +422,31 @@ export default class TokenManager {
 
         try {
 
-            const response = await app.rest.POST('/api/token/refresh', { 
-                refresh_token: refreshTokenInstance.token 
+            const response = await app.rest.POST('/api/token/refresh', {
+                refresh_token: refreshTokenInstance.token
             });
-            
+
             const { access_token, refresh_token } = response.data.data;
-            
+
             // Clear old cached instances so new tokens are loaded
             this.tokenInstance = null;
             this._refreshTokenInstance = null;
-            
+
             // Store new tokens
             this.setTokens(access_token, refresh_token);
             app.rest.setAuthToken(access_token);
-            
+
             // Emit success event
-            app.events.emit('auth:token:refreshed', { 
+            app.events.emit('auth:token:refreshed', {
                 newToken: access_token,
                 newRefreshToken: refresh_token
             });
-            
+
             console.log('Token refreshed successfully');
-            
+
         } catch (error) {
 
-            
+
             // Check if it's an authentication error (refresh token invalid)
             if (error.status === 401 || error.status === 403) {
 
@@ -455,7 +455,6 @@ export default class TokenManager {
             } else {
                 // For other errors, emit specific event but don't logout
                 app.events.emit('auth:token:refresh:failed', { error });
-                app.showError(`Token refresh failed: ${error.message}`);
             }
         }
     }

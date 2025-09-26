@@ -36,6 +36,8 @@ class DataFormatter {
     this.register('date', this.date.bind(this));
     this.register('time', this.time.bind(this));
     this.register('datetime', this.datetime.bind(this));
+    this.register('datetime_tz', this.datetime_tz.bind(this));
+    this.register('datatime_tz', this.datetime_tz.bind(this)); // Alias for common typo
     this.register('relative', this.relative.bind(this));
     this.register('fromNow', this.relative.bind(this)); // Alias
     this.register('iso', this.iso.bind(this));
@@ -367,11 +369,149 @@ class DataFormatter {
    * @param {string} timeFormat - Time format
    * @returns {string} Formatted datetime
    */
-  datetime(value, dateFormat = 'MM/DD/YYYY', timeFormat = 'HH:mm') {
+  datetime(value, dateFormat = 'MM/DD/YYYY', timeFormat = 'HH:mm:ss') {
     value = this.normalizeEpoch(value);
     const dateStr = this.date(value, dateFormat);
     const timeStr = this.time(value, timeFormat);
     return dateStr && timeStr ? `${dateStr} ${timeStr}` : '';
+  }
+
+  /**
+   * Format date and time with short timezone abbreviation (e.g., EST, PDT)
+   * @param {*} value - DateTime value
+   * @param {string} dateFormat - Date format
+   * @param {string} timeFormat - Time format
+   * @param {Object} options - Options: { timeZone?: string, locale?: string }
+   * @returns {string} Formatted datetime with timezone abbreviation
+   */
+  datetime_tz(value, dateFormat = 'MM/DD/YYYY', timeFormat = 'HH:mm:ss', options = {}) {
+    if (!value) return '';
+    value = this.normalizeEpoch(value);
+    const date = value instanceof Date ? value : new Date(value);
+    if (isNaN(date.getTime())) return String(value);
+
+    const locale = (options && options.locale) || 'en-US';
+    const timeZone = options && options.timeZone ? options.timeZone : undefined;
+
+    // Helper: build short TZ abbreviation in the requested zone
+    const getTzAbbr = () => {
+      let abbr = '';
+      try {
+        const parts = new Intl.DateTimeFormat(locale, {
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZoneName: 'short',
+          ...(timeZone ? { timeZone } : {})
+        }).formatToParts(date);
+        const tzPart = parts.find(p => p.type === 'timeZoneName');
+        abbr = tzPart ? tzPart.value : '';
+
+        // Try to avoid GMT offsets if browser returns them
+        if (abbr && /^GMT[+-]/i.test(abbr)) {
+          try {
+            const parts2 = new Intl.DateTimeFormat(locale, {
+              timeStyle: 'short',
+              timeZoneName: 'short',
+              ...(timeZone ? { timeZone } : {})
+            }).formatToParts(date);
+            const tz2 = parts2.find(p => p.type === 'timeZoneName');
+            if (tz2 && tz2.value && !/^GMT[+-]/i.test(tz2.value)) {
+              abbr = tz2.value;
+            }
+          } catch (e) {}
+        }
+        // Collapse long names like "Eastern Daylight Time" to initials "EDT"
+        if (abbr && /\s/.test(abbr)) {
+          const initials = abbr.split(/\s+/).map(w => w[0]).join('').toUpperCase();
+          if (initials.length >= 2 && initials.length <= 4) {
+            abbr = initials;
+          }
+        }
+      } catch (e) {
+        abbr = '';
+      }
+      return abbr;
+    };
+
+    // If no specific timeZone requested, fall back to existing date/time logic
+    if (!timeZone) {
+      const dateStr = this.date(date, dateFormat);
+      const timeStr = this.time(date, timeFormat);
+      const abbr = getTzAbbr();
+      return dateStr && timeStr ? `${dateStr} ${timeStr} ${abbr}`.trim() : '';
+    }
+
+    // With a specific timeZone, generate tokens from Intl parts in that zone
+    const parts = new Intl.DateTimeFormat(locale, {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23'
+    }).formatToParts(date);
+    const get = (type) => {
+      const p = parts.find(pt => pt.type === type);
+      return p ? p.value : '';
+    };
+
+    const y4 = get('year');
+    const M2 = get('month'); // '01'..'12'
+    const D2 = get('day');   // '01'..'31'
+    const H2 = get('hour');  // '00'..'23'
+    const m2 = get('minute');
+    const s2 = get('second');
+
+    const M = M2 ? String(parseInt(M2, 10)) : '';
+    const D = D2 ? String(parseInt(D2, 10)) : '';
+    const H = H2 ? String(parseInt(H2, 10)) : '';
+    const hNum = H2 ? ((parseInt(H2, 10) % 12) || 12) : '';
+    const A = H2 ? (parseInt(H2, 10) >= 12 ? 'PM' : 'AM') : '';
+    const a = A ? A.toLowerCase() : '';
+
+    const monthLong = new Intl.DateTimeFormat(locale, { timeZone, month: 'long' }).format(date);
+    const monthShort = new Intl.DateTimeFormat(locale, { timeZone, month: 'short' }).format(date);
+    const weekdayLong = new Intl.DateTimeFormat(locale, { timeZone, weekday: 'long' }).format(date);
+    const weekdayShort = new Intl.DateTimeFormat(locale, { timeZone, weekday: 'short' }).format(date);
+
+    const dateTokens = {
+      'YYYY': y4,
+      'YY': y4 ? y4.slice(-2) : '',
+      'MMMM': monthLong,
+      'MMM': monthShort,
+      'MM': M2,
+      'M': M,
+      'dddd': weekdayLong,
+      'ddd': weekdayShort,
+      'DD': D2,
+      'D': D
+    };
+    const timeTokens = {
+      'HH': H2,
+      'H': H,
+      'hh': hNum !== '' ? String(hNum).padStart(2, '0') : '',
+      'h': hNum !== '' ? String(hNum) : '',
+      'mm': m2,
+      'm': m2 ? String(parseInt(m2, 10)) : '',
+      'ss': s2,
+      's': s2 ? String(parseInt(s2, 10)) : '',
+      'A': A,
+      'a': a
+    };
+
+    const replaceTokens = (fmt, tokens) => {
+      if (!fmt) return '';
+      const pattern = new RegExp(`(${Object.keys(tokens).sort((a, b) => b.length - a.length).join('|')})`, 'g');
+      return fmt.replace(pattern, (match) => tokens[match] ?? match);
+    };
+
+    const dateStr = replaceTokens(dateFormat, dateTokens);
+    const timeStr = replaceTokens(timeFormat, timeTokens);
+    const abbr = getTzAbbr();
+
+    return dateStr && timeStr ? `${dateStr} ${timeStr} ${abbr}`.trim() : '';
   }
 
   normalizeEpoch(value) {

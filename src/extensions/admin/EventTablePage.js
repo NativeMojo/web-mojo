@@ -15,10 +15,10 @@ class EventTablePage extends TablePage {
             pageName: 'System Events',
             router: "admin/events",
             Collection: IncidentEventList,
-            
+
             formEdit: IncidentEventForms.edit,
             itemViewClass: EventView,
-            
+
             viewDialogOptions: {
                 header: false,
                 size: 'lg'
@@ -26,12 +26,36 @@ class EventTablePage extends TablePage {
 
             // Column definitions
             columns: [
-                { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },
                 { key: 'created', label: 'Timestamp', sortable: true, formatter: 'datetime' },
-                { key: 'level', label: 'Level', sortable: true, formatter: 'badge' },
-                { key: 'category', label: 'Category', sortable: true, formatter: 'badge' },
+                {
+                    key: 'level', label: 'Level',
+                    sortable: true, formatter: 'badge',
+                    filter: {
+                        type: "select",
+                        options: [
+                            { value: '5', label: 'Critical' },
+                            { value: '4', label: 'Warning' },
+                            { value: '3', label: 'Info' },
+                            { value: '2', label: 'Debug' },
+                            { value: '1', label: 'Trace' }
+                        ]
+                    }
+                },
+                {
+                    key: 'category',
+                    label: 'Category',
+                    sortable: true, formatter: 'badge',
+                    filter: {
+                        type: "text"
+                    }
+                },
                 { key: 'title', label: 'Title', sortable: true, formatter: 'truncate(50)' },
-                { key: 'source_ip', label: 'Source IP', sortable: true },
+                {
+                    key: 'source_ip', label: 'Source IP', sortable: true,
+                    filter: {
+                        type: "text"
+                    }
+                },
                 { key: 'model_name', label: 'Related Model', sortable: true }
             ],
 

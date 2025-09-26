@@ -43,16 +43,13 @@ class IncidentTablePage extends TablePage {
                     key: 'category',
                     label: 'Category',
                     sortable: true,
-                    formatter: "default('General')"
-                },
-                {
-                    key: 'state',
-                    label: 'State',
-                    formatter: 'badge'
+                    formatter: "default('General')",
+                    filter: {type:"text"}
                 },
                 {
                     key: 'priority',
                     label: 'Priority',
+                    filter: {type:"text"}
                 },
                 {
                     key: 'details',

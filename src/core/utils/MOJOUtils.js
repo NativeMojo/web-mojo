@@ -306,9 +306,9 @@ class MOJOUtils {
       score += 1;
       feedback.push('Consider using at least 8 characters for better security');
     } else if (password.length < 12) {
-      score += 2;
-    } else {
       score += 3;
+    } else {
+      score += 4;
     }
 
     // Character variety scoring

@@ -13,19 +13,32 @@ export default class WebSocketClient {
     this.isConnected = false;
     this.isConnecting = false;
     this.shouldReconnect = options.autoReconnect !== false;
+    this._authed = false;
+    this._authFailed = false;
     
     // Reconnection settings
-    this.maxReconnectAttempts = options.maxReconnectAttempts || 5;
+    this.maxReconnectAttempts = Number.isFinite(options.maxReconnectAttempts) ? options.maxReconnectAttempts : Infinity;
     this.reconnectInterval = options.reconnectInterval || 3000;
     this.reconnectBackoff = options.reconnectBackoff || 1.5;
     this.reconnectAttempts = 0;
     this.reconnectTimer = null;
     
-    // Heartbeat/ping settings
+    // Heartbeat/ping settings (JSON ping/pong)
     this.pingInterval = options.pingInterval || 30000;
     this.pongTimeout = options.pongTimeout || 5000;
     this.pingTimer = null;
     this.pongTimer = null;
+    this.pausePingWhenHidden = options.pausePingWhenHidden !== false; // default true
+    this._onVisibilityChange = this._onVisibilityChange?.bind ? this._onVisibilityChange.bind(this) : () => {};
+    
+    // Auth / token
+    this.getToken = options.getToken || null; // () => string
+    this.tokenPrefix = options.tokenPrefix || 'bearer';
+    this.refreshToken = options.refreshToken || null; // async () => string
+    this.autoSubscribeOwnTopic = options.autoSubscribeOwnTopic !== false; // default true
+    
+    // Subscriptions
+    this.subscriptions = new Set(); // always re-subscribe post-auth_success
     
     // Event handling
     this.eventBus = options.eventBus || null;
@@ -112,6 +125,39 @@ export default class WebSocketClient {
     this.socket.send(message);
     
     this.debug && console.log('[WebSocket] Sent:', message);
+  }
+
+  /**
+   * Subscribe to a topic (queued until authenticated)
+   * @param {string} topic
+   */
+  subscribe(topic) {
+    if (!topic) return;
+    this.subscriptions.add(topic);
+    if (this._authed && this.isConnected) {
+      this.send({ action: 'subscribe', topic });
+    }
+  }
+
+  /**
+   * Unsubscribe from a topic
+   * @param {string} topic
+   */
+  unsubscribe(topic) {
+    if (!topic) return;
+    this.subscriptions.delete(topic);
+    if (this.isConnected) {
+      this.send({ action: 'unsubscribe', topic });
+    }
+  }
+
+  /**
+   * Send ping (application-level heartbeat)
+   */
+  ping() {
+    if (this.isConnected) {
+      this.send({ action: 'ping' });
+    }
   }
 
   /**
@@ -204,9 +250,23 @@ export default class WebSocketClient {
     this.isConnected = true;
     this.isConnecting = false;
     this.reconnectAttempts = 0;
+    this._authed = false;
     
     // Start heartbeat
     this._startHeartbeat();
+    // Visibility handling for heartbeat
+    if (typeof document !== 'undefined' && document.addEventListener) {
+      document.removeEventListener('visibilitychange', this._onVisibilityChange);
+      document.addEventListener('visibilitychange', this._onVisibilityChange);
+    }
+    
+    // Authenticate immediately
+    const token = this.getToken ? this.getToken() : null;
+    if (!token) {
+      console.warn('[WebSocket] No token provided at open; waiting for auth_required or external authenticate');
+    } else {
+      this.send({ type: 'authenticate', token, prefix: this.tokenPrefix || undefined });
+    }
     
     // Resolve connection promise
     if (this._connectResolve) {
@@ -228,8 +288,8 @@ export default class WebSocketClient {
       data = event.data;
     }
     
-    // Handle heartbeat pong
-    if (data === 'pong' || (data && data.type === 'pong')) {
+    // Handle heartbeat pong (JSON only)
+    if (data && data.type === 'pong') {
       this._clearPongTimeout();
       return;
     }
@@ -242,6 +302,73 @@ export default class WebSocketClient {
         console.error('[WebSocket] Error transforming data:', error);
         this.emit('error', { error, originalData: data });
         return;
+      }
+    }
+
+    // Protocol handling
+    if (data && typeof data === 'object') {
+      switch (data.type) {
+        case 'auth_required':
+          this.emit('auth-required', data);
+          break;
+        case 'auth_timeout': {
+          this._authFailed = true;
+          this.emit('auth-timeout', data);
+          this.disconnect();
+          return;
+        }
+        case 'auth_success': {
+          this._authed = true;
+          this.emit('auth-success', data);
+          // Auto-subscribe to own topic if enabled
+          if (this.autoSubscribeOwnTopic) {
+            const { instance_kind, instance_id } = data;
+            if (instance_kind && instance_id !== undefined) {
+              this.subscribe(`${instance_kind}:${instance_id}`);
+            }
+          }
+          // Flush desired subscriptions
+          for (const topic of this.subscriptions) {
+            this.send({ action: 'subscribe', topic });
+          }
+          break;
+        }
+        case 'subscribed':
+          this.emit('subscribed', data);
+          break;
+        case 'unsubscribed':
+          this.emit('unsubscribed', data);
+          break;
+        case 'notification':
+          this.emit('notification', data);
+          break;
+        case 'error': {
+          this.emit('server-error', data);
+          const msg = (data.message || '').toString();
+          if (/token|auth/i.test(msg)) {
+            if (this.refreshToken) {
+              (async () => {
+                try {
+                  await this.refreshToken();
+                  this.disconnect();
+                  // allow a short delay before reconnect to use refreshed token
+                  setTimeout(() => this.connect().catch(() => {}), 250);
+                } catch (e) {
+                  console.warn('[WebSocket] Token refresh failed:', e);
+                  this._authFailed = true;
+                  this.disconnect();
+                }
+              })();
+            } else {
+              this._authFailed = true;
+              this.disconnect();
+            }
+            break;
+          }
+          break;
+        }
+        default:
+          break;
       }
     }
     
@@ -270,8 +397,12 @@ export default class WebSocketClient {
     
     this.isConnected = false;
     this.isConnecting = false;
+    this._authed = false;
     
     this._clearTimers();
+    if (typeof document !== 'undefined' && document.removeEventListener) {
+      document.removeEventListener('visibilitychange', this._onVisibilityChange);
+    }
     
     // Clean up socket
     if (this.socket) {
@@ -288,8 +419,8 @@ export default class WebSocketClient {
       wasClean: event.wasClean
     });
     
-    // Attempt reconnection if enabled and not a clean close
-    if (this.shouldReconnect && event.code !== 1000) {
+    // Attempt reconnection if enabled and not a clean close and not due to auth failure
+    if (this.shouldReconnect && !this._authFailed && event.code !== 1000) {
       this._attemptReconnect();
     }
   }
@@ -326,19 +457,27 @@ export default class WebSocketClient {
 
   _startHeartbeat() {
     if (!this.pingInterval) return;
+    if (this.pingTimer) return; // avoid duplicates
     
     this.pingTimer = setInterval(() => {
       if (this.isConnected && this.socket) {
-        this.send('ping');
+        // pause pings when hidden (optional)
+        if (this.pausePingWhenHidden && typeof document !== 'undefined' && document.hidden) {
+          return;
+        }
+        this.ping();
         this._startPongTimeout();
       }
     }, this.pingInterval);
   }
 
   _startPongTimeout() {
+    this._clearPongTimeout();
     this.pongTimer = setTimeout(() => {
       console.warn('[WebSocket] Pong timeout - connection may be stale');
-      this.socket?.close(1006, 'Pong timeout');
+      if (this.socket && typeof this.socket.close === 'function') {
+        this.socket.close(1006, 'Pong timeout');
+      }
     }, this.pongTimeout);
   }
 
@@ -361,6 +500,25 @@ export default class WebSocketClient {
     }
     
     this._clearPongTimeout();
+  }
+
+  /**
+   * Handle visibility change for heartbeat
+   */
+  _onVisibilityChange() {
+    if (!this.pausePingWhenHidden) return;
+    if (typeof document === 'undefined') return;
+    if (document.hidden) {
+      // Pause heartbeat to save power
+      if (this.pingTimer) {
+        clearInterval(this.pingTimer);
+        this.pingTimer = null;
+      }
+    } else {
+      // Resume heartbeat and send a ping
+      this._startHeartbeat();
+      this.ping();
+    }
   }
 
   /**
