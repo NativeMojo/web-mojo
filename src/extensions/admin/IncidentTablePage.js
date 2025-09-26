@@ -52,8 +52,8 @@ class IncidentTablePage extends TablePage {
                     filter: {type:"text"}
                 },
                 {
-                    key: 'details',
-                    label: 'Description',
+                    key: 'title',
+                    label: 'title',
                     formatter: "truncate(100)|default('No description')"
                 }
             ],

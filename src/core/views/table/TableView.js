@@ -283,7 +283,7 @@ class TableView extends ListView {
       <div class="mojo-table-wrapper">
         ${this.buildToolbarTemplate()}
         ${batchPanelTop}
-        <div class="table-container">
+        <div class="table-container"${(() => { const __fs = (this.tableOptions && this.tableOptions.fontSize != null) ? this.tableOptions.fontSize : (this.options && this.options.fontSize); const __val = __fs === 'sm' ? '0.9rem' : (__fs === 'xs' ? '0.8rem' : (__fs ? String(__fs) : null)); return __val ? ` style="font-size: ${__val};"` : ''; })()}>
           {{#loading}}
             <div class="mojo-table-loading d-flex justify-content-center align-items-center py-5">
               <div class="spinner-border" role="status">
@@ -1705,6 +1705,8 @@ class TableView extends ListView {
 
   /**
    * Render pagination controls
+   * - Prev/Next wrap around (never disabled)
+   * - Truncated page list with first/last and ellipses
    */
   renderPagination() {
     const paginationContainer = this.element.querySelector('[data-container="pagination"]');
@@ -1721,38 +1723,49 @@ class TableView extends ListView {
       return;
     }
 
-    let pages = [];
+    const prevPage = currentPage > 1 ? currentPage - 1 : totalPages;
+    const nextPage = currentPage < totalPages ? currentPage + 1 : 1;
 
-    // Previous button
+    const pages = [];
+
+    // Previous (wraps)
     pages.push(`
-      <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-        <a class="page-link" href="#" data-action="page" data-page="${currentPage - 1}">
+      <li class="page-item">
+        <a class="page-link" href="#" data-action="page" data-page="${prevPage}">
           <i class="bi bi-chevron-left"></i>
         </a>
       </li>
     `);
 
-    // Page numbers
-    const maxVisible = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-
-    if (endPage - startPage < maxVisible - 1) {
-      startPage = Math.max(1, endPage - maxVisible + 1);
+    // Build truncated page list: always show 1 and totalPages, with neighbors around current
+    const neighbors = 1; // how many pages to show on each side of current
+    const visibleSet = new Set([1, totalPages]);
+    for (let i = currentPage - neighbors; i <= currentPage + neighbors; i++) {
+      if (i >= 1 && i <= totalPages) visibleSet.add(i);
     }
+    const visible = Array.from(visibleSet).sort((a, b) => a - b);
 
-    for (let i = startPage; i <= endPage; i++) {
+    // Render pages with ellipses where there are gaps
+    let last = 0;
+    for (const p of visible) {
+      if (last && p - last > 1) {
+        // gap -> ellipsis
+        pages.push(`
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+        `);
+      }
       pages.push(`
-        <li class="page-item ${i === currentPage ? 'active' : ''}">
-          <a class="page-link" href="#" data-action="page" data-page="${i}">${i}</a>
+        <li class="page-item ${p === currentPage ? 'active' : ''}">
+          <a class="page-link" href="#" data-action="page" data-page="${p}">${p}</a>
         </li>
       `);
+      last = p;
     }
 
-    // Next button
+    // Next (wraps)
     pages.push(`
-      <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-        <a class="page-link" href="#" data-action="page" data-page="${currentPage + 1}">
+      <li class="page-item">
+        <a class="page-link" href="#" data-action="page" data-page="${nextPage}">
           <i class="bi bi-chevron-right"></i>
         </a>
       </li>
@@ -1763,12 +1776,19 @@ class TableView extends ListView {
 
   /**
    * Handle page change
+   * - Normalizes and wraps page number (1..totalPages)
    */
   async onActionPage(event, element) {
     event.preventDefault();
 
-    const page = parseInt(element.getAttribute('data-page'));
+    const rawPage = parseInt(element.getAttribute('data-page'), 10);
     const size = this.collection.params?.size || 10;
+    const total = this.collection.meta?.count || this.collection.length();
+    const totalPages = Math.max(1, Math.ceil(total / size));
+
+    let page = isNaN(rawPage) ? 1 : rawPage;
+    if (page < 1) page = totalPages;
+    if (page > totalPages) page = 1;
 
     this.collection.setParams({
       ...this.collection.params,
