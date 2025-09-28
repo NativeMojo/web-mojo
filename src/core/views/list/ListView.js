@@ -457,7 +457,7 @@ class ListView extends View {
 
   async onAfterMount() {
       await super.onAfterMount();
-      if (this.collection && !this.collection.lastFetchTime) {
+      if (this.collection && (this.options.fetchOnMount || !this.collection.lastFetchTime)) {
           this.collection.fetch();
       }
   }

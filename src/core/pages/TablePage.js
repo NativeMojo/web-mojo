@@ -165,6 +165,7 @@ class TablePage extends Page {
     this.tableView = new TableView({
       collection: this.collection,
       containerId: 'table',
+      fetchOnMount: true,
       ...this.tableViewConfig
     });
 
@@ -390,11 +391,6 @@ class TablePage extends Page {
     }
 
     this.applyQueryToCollection();
-
-    // Refresh data if collection is REST-enabled
-    if (this.collection && this.collection.restEnabled) {
-      await this.collection.fetch();
-    }
 
     // Ensure filter pills are shown if there are active filters from URL
     if (this.tableView && this.tableView.element) {
