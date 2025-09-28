@@ -1179,3 +1179,117 @@
     margin-left: auto;
     margin-right: 0;
 }
+
+/* ========================================================================
+   Field Status Indicators
+   ======================================================================== */
+
+/* Field status container */
+.field-status {
+    display: inline-block;
+    margin-left: 8px;
+}
+
+.field-status [data-status] {
+    display: none;
+    font-size: 1rem;
+    transition:
+        opacity 0.3s ease,
+        transform 0.3s ease;
+}
+
+.field-status .spinner-border {
+    /* Align spinner with other icons */
+    width: 1rem;
+    height: 1rem;
+    vertical-align: middle;
+    /* Let Bootstrap handle the animation */
+}
+
+.field-status [data-status="saved"] {
+    color: var(--bs-success);
+}
+
+.field-status [data-status="error"] {
+    color: var(--bs-danger);
+    cursor: help;
+}
+
+@keyframes mojo-status-fade-in {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes mojo-status-fade-out {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+}
+
+/* Responsive adjustments for field status */
+@media (max-width: 576px) {
+    .field-status {
+        margin-left: 4px;
+    }
+
+    .field-status [data-status] {
+        font-size: 0.875rem;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .field-status [data-status="saving"] {
+        color: #0066cc;
+    }
+
+    .field-status [data-status="saved"] {
+        color: #006600;
+    }
+
+    .field-status [data-status="error"] {
+        color: #cc0000;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .field-status [data-status] {
+        transition: none;
+    }
+
+    .field-status [data-status].show {
+        animation: none;
+    }
+
+    .field-status [data-status].hide {
+        animation: none;
+    }
+
+    @keyframes mojo-status-fade-in {
+        from,
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @keyframes mojo-status-fade-out {
+        from,
+        to {
+            opacity: 0;
+            transform: scale(1);
+        }
+    }
+}

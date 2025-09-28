@@ -77,6 +77,16 @@ User.PERMISSIONS = [
     { name: "manage_docit", label: "Manage DocIt" }
 ];
 
+
+User.PERMISSION_FIELDS = [
+    ...User.PERMISSIONS.map(permission => ({
+        name: `permissions.${permission.name}`,
+        type: 'switch',
+        label: permission.label,
+        columns: 4
+    }))
+];
+
 const UserForms = {
     create: {
         title: 'Create User',
@@ -97,14 +107,7 @@ const UserForms = {
     },
     permissions: {
         title: 'Edit Permissions',
-        fields: [
-            ...User.PERMISSIONS.map(permission => ({
-                name: `permissions.${permission.name}`,
-                type: 'switch',
-                label: permission.label,
-                columns: 4
-            }))
-        ]
+        fields: User.PERMISSIONS_FIELDS
     }
 };
 
@@ -120,35 +123,53 @@ const UserDataView = {
                 name: 'id',
                 label: 'User ID',
                 type: 'number',
-                columns: 3
+                columns: 4
             },
             {
                 name: 'username',
                 label: 'Username',
                 type: 'text',
                 format: 'lowercase',
-                columns: 9
+                columns: 4
             },
             {
                 name: 'last_login',
                 label: 'Last Login',
                 type: 'datetime',
                 format: 'relative',
-                columns: 3
+                columns: 4
+            },
+            {
+                name: 'email',
+                label: 'Email',
+                type: 'email',
+                columns: 4
+            },
+            {
+                name: 'display_name',
+                label: 'Display Name',
+                type: 'text',
+                columns: 4
             },
             {
                 name: 'last_activity',
                 label: 'Last Activity',
                 type: 'datetime',
                 format: 'relative',
-                columns: 6
-            },
-            ...User.PERMISSIONS.map(permission => ({
-                name: `permissions.${permission.name}`,
-                label: permission.label,
-                format: "boolean('on', 'off')|badge",
                 columns: 4
-            }))
+            },
+            {
+                name: 'org.name',
+                label: 'Organization',
+                type: 'text',
+                columns: 4
+            },
+            {
+                name: 'phone_number',
+                label: 'Phone Number',
+                type: 'text',
+                columns: 4
+            }
         ]
     },
 

@@ -60,7 +60,10 @@ class DataFormatter {
     // String formatters
     this.register('uppercase', (v) => String(v).toUpperCase());
     this.register('lowercase', (v) => String(v).toLowerCase());
+    this.register('upper', (v) => String(v).toUpperCase());
+    this.register('lower', (v) => String(v).toLowerCase());
     this.register('capitalize', this.capitalize.bind(this));
+    this.register('caps', this.capitalize.bind(this));
     this.register('truncate', this.truncate.bind(this));
     this.register('truncate_middle', this.truncate_middle.bind(this));
     this.register('slug', this.slug.bind(this));

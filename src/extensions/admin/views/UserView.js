@@ -19,6 +19,8 @@ import { IncidentEventList } from '@core/models/Incident.js';
 import { MemberList } from '@core/models/Member.js';
 import { PushDeviceList } from '@core/models/Push.js';
 import Dialog from '@core/views/feedback/Dialog.js';
+import FormView from '@core/forms/FormView.js';
+
 
 class UserView extends View {
     constructor(options = {}) {
@@ -41,34 +43,7 @@ class UserView extends View {
         this.template = `
             <div class="user-view-container">
                 <!-- User Header -->
-                <div class="d-flex justify-content-between align-items-start mb-4">
-                    <!-- Left Side: Primary Identity -->
-                    <div class="d-flex align-items-center gap-3">
-                        {{{model.avatar|avatar('md','rounded-circle')}}}
-                        <div>
-                            <h3 class="mb-0">{{model.display_name|default('Unnamed User')}}</h3>
-                            <a href="mailto:{{model.email}}" class="text-decoration-none text-body">{{model.email}}</a>
-                            {{#model.phone_number}}
-                                <div class="text-muted small mt-1">{{{model.phone_number|phone(false)}}}</div>
-                            {{/model.phone_number}}
-                        </div>
-                    </div>
-
-                    <!-- Right Side: Status & Actions -->
-                    <div class="d-flex align-items-start gap-4">
-                        <div class="text-end">
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="bi bi-circle-fill fs-8 {{model.is_active|boolean('text-success','text-secondary')}}"></i>
-                                <span>{{model.is_active|boolean('Active','Inactive')}}</span>
-                            </div>
-                            {{#model.last_activity}}
-                                <div class="text-muted small mt-1">Last active {{model.last_activity|relative}}</div>
-                            {{/model.last_activity}}
-                        </div>
-                        <div data-container="user-context-menu"></div>
-                    </div>
-                </div>
-
+                <div data-container="user-header"></div>
                 <!-- Tab Container -->
                 <div data-container="user-tabs"></div>
             </div>
@@ -77,11 +52,52 @@ class UserView extends View {
 
     async onInit() {
         // Create Profile tab using DataView
+        this.header = new View({
+            containerId: 'user-header',
+            template: `
+            <div class="d-flex justify-content-between align-items-start mb-4">
+                <!-- Left Side: Primary Identity -->
+                <div class="d-flex align-items-center gap-3">
+                    {{{model.avatar|avatar('md','rounded-circle')}}}
+                    <div>
+                        <h3 class="mb-0">{{model.display_name|default('Unnamed User')}}</h3>
+                        <a href="mailto:{{model.email}}" class="text-decoration-none text-body">{{model.email}}</a>
+                        {{#model.phone_number}}
+                            <div class="text-muted small mt-1">{{{model.phone_number|phone(false)}}}</div>
+                        {{/model.phone_number}}
+                    </div>
+                </div>
+
+                <!-- Right Side: Status & Actions -->
+                <div class="d-flex align-items-start gap-4">
+                    <div class="text-end">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-circle-fill fs-8 {{model.is_active|boolean('text-success','text-secondary')}}"></i>
+                            <span>{{model.is_active|boolean('Active','Inactive')}}</span>
+                        </div>
+                        {{#model.last_activity}}
+                            <div class="text-muted small mt-1">Last active {{model.last_activity|relative}}</div>
+                        {{/model.last_activity}}
+                    </div>
+                    <div data-container="user-context-menu"></div>
+                </div>
+            </div>`
+        });
+
+        this.header.setModel(this.model);
+        this.addChild(this.header);
+
         this.profileView = new DataView({
             model: this.model,
             className: "p-3",
             showEmptyValues: true,
             fields: UserDataView.profile.fields
+        });
+
+        this.permsView = new FormView({
+            fields: User.PERMISSION_FIELDS,
+            model: this.model, // Set model during construction
+            autosaveModelField: true // Enable auto-save with status indicators
         });
 
         // Create Groups table with MemberList collection
@@ -333,6 +349,7 @@ class UserView extends View {
         this.tabView = new TabView({
             tabs: {
                 'Profile': this.profileView,
+                'Permissions': this.permsView,
                 'Groups': this.groupsView,
                 'Events': this.eventsView,
                 'Logs': this.logsView,
@@ -412,25 +429,6 @@ class UserView extends View {
         // TODO: Implement log view dialog
     }
 
-    // Public methods for external control
-    async refreshData() {
-        // Refresh profile data
-        if (this.profileView) {
-            await this.profileView.updateData(this.model.getData());
-        }
-
-        // Refresh table collections
-        if (this.groupsView && this.groupsView.collection) {
-            await this.groupsView.collection.refresh();
-        }
-        if (this.eventsView && this.eventsView.collection) {
-            await this.eventsView.collection.refresh();
-        }
-        if (this.logsView && this.logsView.collection) {
-            await this.logsView.collection.refresh();
-        }
-    }
-
     async showTab(tabName) {
         if (this.tabView) {
             await this.tabView.showTab(tabName);
@@ -439,6 +437,10 @@ class UserView extends View {
 
     getActiveTab() {
         return this.tabView ? this.tabView.getActiveTab() : null;
+    }
+
+    _onModelChange() {
+      // do nothing, we do not want model changes to render this entire view
     }
 
     // Static factory method

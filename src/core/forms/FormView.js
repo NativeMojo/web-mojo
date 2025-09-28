@@ -7,6 +7,7 @@
 import View from '@core/View.js';
 import FormBuilder from './FormBuilder.js';
 import applyFileDropMixin from '@core/mixins/FileDropMixin.js';
+import MOJOUtils from '@core/utils/MOJOUtils.js';
 
 import { TagInput, CollectionSelect, DatePicker, DateRangePicker } from './inputs/index.js';
 
@@ -20,6 +21,7 @@ class FormView extends View {
       defaults = {},
       errors = {},
       fileHandling = 'base64', // 'base64' | 'multipart'
+      autosaveModelField = false, // Auto-save model on field changes
       ...viewOptions
     } = options;
 
@@ -36,7 +38,9 @@ class FormView extends View {
     this.errors = errors;
     this.loading = false;
     this.fileHandling = fileHandling;
+    this.autosaveModelField = autosaveModelField;
     this.customComponents = new Map();
+    this.fieldStatusManagers = new Map(); // Track field status managers
 
     // Prepare combined data for FormBuilder
     this.data = this.prepareFormData();
@@ -45,7 +49,7 @@ class FormView extends View {
     this.formConfig = formConfig || { fields: fields || [] };
     this.formBuilder = new FormBuilder({
       ...this.formConfig,
-      data: this.data,
+      structureOnly: true, // Only generate structure, FormView will control values
       errors
     });
   }
@@ -85,16 +89,65 @@ class FormView extends View {
   }
 
   /**
-   * Initialize form after rendering
+   * Called after form is rendered to populate values and initialize
    */
   async onAfterRender() {
     await super.onAfterRender();
 
-    // Initialize components and integrations
+    this.data = this.prepareFormData();
+    // Populate form with current data
+    this.populateFormValues();
+
+    // Initialize form components
+    this.initializeFormComponents();
+  }
+
+  /**
+   * Populate all form fields with current data values
+   */
+  populateFormValues() {
+    if (!this.element || !this.formConfig?.fields) return;
+
+    this.formConfig.fields.forEach(field => {
+      if (field.type === 'group' && field.fields) {
+        // Handle group fields
+        field.fields.forEach(groupField => {
+          this.populateFieldValue(groupField);
+        });
+      } else {
+        this.populateFieldValue(field);
+      }
+    });
+  }
+
+  /**
+   * Populate a single field with its value from data
+   */
+  populateFieldValue(fieldConfig) {
+    if (!fieldConfig.name || !this.element) return;
+
+    const fieldElement = this.element.querySelector(`[name="${fieldConfig.name}"]`);
+    if (!fieldElement) return;
+
+    // Use MOJOUtils to handle nested properties like 'permissions.manage_users'
+    const value = MOJOUtils.getContextData(this.data, fieldConfig.name);
+    this.setFieldValue(fieldElement, fieldConfig, value);
+  }
+
+  /**
+   * Initialize form components after rendering
+   */
+  initializeFormComponents() {
     this.initializeImageFields();
     this.initializeCustomComponents();
+    this.initializeTagInputs();
+    this.initializeCollectionSelects();
+    this.initializeDatePickers();
+    this.initializeDateRangePickers();
     this.initializePasswordFields();
   }
+
+
 
   /**
    * Initialize image fields with FileDropMixin
@@ -303,8 +356,13 @@ class FormView extends View {
     // Update internal data
     this.data[fieldName] = value;
 
-    // Update model if available
-    if (this.model && this.options.allowModelChange) {
+    // Handle autosave or regular model update
+    if (this.autosaveModelField && this.model) {
+      // Auto-save individual field to model
+      this.handleFieldSave(fieldName, value);
+    } else if (this.model && this.options.allowModelChange) {
+      // Regular model update without save
+      this._isFormDrivenChange = true;
       this.model.set(fieldName, value);
     }
 
@@ -313,20 +371,66 @@ class FormView extends View {
   }
 
   /**
-   * Refresh form data and rebuild FormBuilder
-   * Call this when model or data changes
+   * Handle saving individual field changes to the model
+   * @param {string} fieldName - Name of the field being saved
+   * @param {*} value - New value to save
+   */
+  async handleFieldSave(fieldName, value) {
+    if (!this.model) return;
+
+    const statusManager = this.getFieldStatusManager(fieldName);
+
+    try {
+      // Show saving state
+      statusManager.showStatus('saving');
+
+      // Mark as form-driven change to prevent sync back
+      this._isFormDrivenChange = true;
+
+      // Save to model (this will trigger API call if model has save method)
+      if (typeof this.model.save === 'function') {
+        await this.model.save({ [fieldName]: value });
+      } else {
+        // Just set on model if no save method
+        this.model.set(fieldName, value);
+      }
+
+      // Show success (auto-hides after 2.5s)
+      statusManager.showStatus('saved');
+
+    } catch (error) {
+      console.error('Field save error:', error);
+      // Show error (auto-hides after 6s)
+      statusManager.showStatus('error', { message: error.message });
+    }
+  }
+
+  /**
+   * Get or create a field status manager for a specific field
+   * @param {string} fieldName - Name of the field
+   * @returns {FieldStatusManager} Status manager instance
+   */
+  getFieldStatusManager(fieldName) {
+    if (!this.fieldStatusManagers.has(fieldName)) {
+      const fieldElement = this.element.querySelector(`[name="${fieldName}"]`);
+      if (fieldElement) {
+        const statusManager = new FieldStatusManager(fieldElement);
+        this.fieldStatusManagers.set(fieldName, statusManager);
+      }
+    }
+    return this.fieldStatusManagers.get(fieldName);
+  }
+
+  /**
+   * Refresh form data and repopulate values
+   * Call this when model or data changes externally
    */
   refreshForm() {
     this.data = this.prepareFormData();
-    this.formBuilder = new FormBuilder({
-      ...this.formConfig,
-      data: this.data,
-      errors: this.errors
-    });
 
-    // Re-render if already mounted
+    // If mounted, repopulate form values
     if (this.element) {
-      this.render();
+      this.populateFormValues();
     }
   }
 
@@ -568,12 +672,13 @@ class FormView extends View {
   async onChangeValidateField(event, element) {
     const fieldName = element.name;
     if (fieldName) {
+      const value = element.value;
+      
+      // Use handleFieldChange for consistent processing
+      this.handleFieldChange(fieldName, value);
+      
+      // Validate the field
       this.validateField(fieldName);
-      this.emit('change', {
-        field: fieldName,
-        value: element.value,
-        form: this
-      });
     }
   }
 
@@ -583,15 +688,15 @@ class FormView extends View {
   async onChangeToggleSwitch(event, element) {
     const fieldName = element.getAttribute('data-field');
     if (fieldName) {
-      this.data[fieldName] = element.checked;
+      const value = element.checked;
+      
+      // Use handleFieldChange for consistent processing
+      this.handleFieldChange(fieldName, value);
+      
+      // Emit specific switch events for backward compatibility
       this.emit('switch:toggle', {
         field: fieldName,
-        checked: element.checked,
-        form: this
-      });
-      this.emit('change', {
-        field: fieldName,
-        value: element.checked,
+        checked: value,
         form: this
       });
     }
@@ -716,23 +821,27 @@ class FormView extends View {
    * Handle range value changes
    */
   async onChangeRangeChanged(event, element) {
+    const fieldName = element.name;
+    const value = element.value;
+    
+    // Update display target if specified
     const targetId = element.getAttribute('data-target');
     if (targetId) {
       const valueDisplay = this.element.querySelector(`#${targetId}`);
       if (valueDisplay) {
-        valueDisplay.textContent = element.value;
+        valueDisplay.textContent = value;
       }
     }
 
-    this.emit('range:changed', {
-      field: element.name,
-      value: element.value,
-      form: this
-    });
+    // Use handleFieldChange for consistent processing
+    if (fieldName) {
+      this.handleFieldChange(fieldName, value);
+    }
 
-    this.emit('change', {
-      field: element.name,
-      value: element.value,
+    // Emit specific range event for backward compatibility
+    this.emit('range:changed', {
+      field: fieldName,
+      value: value,
       form: this
     });
   }
@@ -933,9 +1042,139 @@ class FormView extends View {
   }
 
   _onModelChange() {
+    // Always update internal data
+    this.data = this.prepareFormData();
+
     if (this.isMounted()) {
-        this.refreshForm();
+        // Only sync if the change wasn't initiated by this form
+        if (!this._isFormDrivenChange) {
+          this.syncFormWithModel();
+        }
+        // Reset the flag
+        this._isFormDrivenChange = false;
     }
+  }
+
+  /**
+   * Sync form field values with current model data without full rebuild
+   */
+  syncFormWithModel() {
+    if (!this.model || !this.element) return;
+
+    // Check if form data actually differs from current displayed values
+    if (this.formDataMatchesModelData(this.data)) {
+      return; // No sync needed - data is already in sync
+    }
+
+    // Re-populate form values with updated data
+    this.populateFormValues();
+  }
+
+  /**
+   * Compare current form values with new model data
+   * @param {Object} newModelData - New data from model
+   * @returns {boolean} True if form and model data match
+   */
+  formDataMatchesModelData(newModelData) {
+    if (!this.formConfig?.fields || !this.element) return true;
+
+    for (const field of this.formConfig.fields) {
+      if (field.type === 'group' && field.fields) {
+        // Check group fields
+        for (const groupField of field.fields) {
+          if (!this.fieldValueMatchesModel(groupField, newModelData)) {
+            return false;
+          }
+        }
+      } else {
+        if (!this.fieldValueMatchesModel(field, newModelData)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Check if a single field's current value matches the model data
+   * @param {Object} fieldConfig - Field configuration
+   * @param {Object} modelData - Model data to compare against
+   * @returns {boolean} True if field value matches model
+   */
+  fieldValueMatchesModel(fieldConfig, modelData) {
+    if (!fieldConfig.name) return true;
+
+    const fieldElement = this.element.querySelector(`[name="${fieldConfig.name}"]`);
+    if (!fieldElement) return true;
+
+    const currentValue = this.getFieldCurrentValue(fieldElement, fieldConfig);
+    // Use MOJOUtils to handle nested properties like 'permissions.manage_users'
+    const modelValue = MOJOUtils.getContextData(modelData, fieldConfig.name);
+
+    return this.valuesAreDifferent(currentValue, modelValue) === false;
+  }
+
+
+
+  /**
+   * Get current value from a form field element
+   */
+  getFieldCurrentValue(fieldElement, fieldConfig) {
+    switch (fieldConfig.type) {
+      case 'checkbox':
+        return fieldElement.checked;
+      case 'switch':
+        return fieldElement.checked;
+      case 'radio':
+        const checkedRadio = this.element.querySelector(`[name="${fieldConfig.name}"]:checked`);
+        return checkedRadio ? checkedRadio.value : '';
+      case 'select':
+        return fieldElement.multiple ?
+          Array.from(fieldElement.selectedOptions).map(opt => opt.value) :
+          fieldElement.value;
+      case 'file':
+      case 'image':
+        return null; // Don't sync file fields
+      default:
+        return fieldElement.value;
+    }
+  }
+
+  /**
+   * Set value on a form field element
+   */
+  setFieldValue(fieldElement, fieldConfig, newValue) {
+    switch (fieldConfig.type) {
+      case 'checkbox':
+      case 'switch':
+        fieldElement.checked = Boolean(newValue);
+        break;
+      case 'radio':
+        const radioOption = this.element.querySelector(`[name="${fieldConfig.name}"][value="${newValue}"]`);
+        if (radioOption) {
+          radioOption.checked = true;
+        }
+        break;
+      case 'select':
+        if (fieldElement.multiple && Array.isArray(newValue)) {
+          Array.from(fieldElement.options).forEach(option => {
+            option.selected = newValue.includes(option.value);
+          });
+        } else {
+          fieldElement.value = newValue || '';
+        }
+        break;
+      case 'file':
+      case 'image':
+        // Don't programmatically set file fields
+        break;
+      default:
+        fieldElement.value = newValue || '';
+        break;
+    }
+
+    // Trigger change event for any field listeners
+    fieldElement.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
   /**
@@ -1034,6 +1273,9 @@ class FormView extends View {
     console.log('Data type:', changes instanceof FormData ? 'FormData (multipart)' : 'Object (JSON/base64)');
 
     try {
+      // Mark this as a form-driven change to prevent sync back
+      this._isFormDrivenChange = true;
+
       // Model.save with only changed data
       const result = await this.model.save(changes);
       console.log('Model save result:', result);
@@ -1677,5 +1919,134 @@ class FormView extends View {
 }
 
 // Export for use in MOJO framework
+/**
+ * FieldStatusManager - Manages save status indicators for form fields
+ */
+class FieldStatusManager {
+  constructor(fieldElement) {
+    this.fieldElement = fieldElement;
+    this.statusContainer = this.findOrCreateStatusContainer();
+    this.timeouts = new Map(); // Track active timeouts
+  }
+
+  /**
+   * Find existing status container or create one
+   */
+  findOrCreateStatusContainer() {
+    // Look for existing status container
+    let container = this.fieldElement.parentElement.querySelector('.field-status');
+    
+    if (!container) {
+      // Create status container if it doesn't exist
+      container = document.createElement('div');
+      container.className = 'field-status';
+      container.innerHTML = `
+        <div class="spinner-border spinner-border-sm text-primary d-none" data-status="saving" role="status">
+          <span class="visually-hidden">Saving...</span>
+        </div>
+        <i class="bi bi-check-circle text-success d-none" data-status="saved"></i>
+        <i class="bi bi-exclamation-circle text-danger d-none" data-status="error"></i>
+      `;
+      
+      // Insert after the field element
+      this.fieldElement.parentElement.appendChild(container);
+    }
+    
+    return container;
+  }
+
+  /**
+   * Show a status indicator
+   * @param {string} type - Status type: 'saving', 'saved', 'error'
+   * @param {object} options - Additional options
+   */
+  showStatus(type, options = {}) {
+    // Clear any existing timeouts for this field
+    this.clearTimeout(type);
+    
+    // Hide all status indicators
+    this.hideAllStatuses();
+    
+    // Show the requested status
+    const indicator = this.statusContainer.querySelector(`[data-status="${type}"]`);
+    if (indicator) {
+      indicator.classList.remove('d-none');
+      indicator.classList.add('d-inline-block', 'show');
+      
+      // Set auto-hide timeout for temporary states
+      if (type === 'saved') {
+        this.setTimeout(type, () => this.hideStatus(type), 2500);
+      } else if (type === 'error') {
+        // Show error message in title if provided
+        if (options.message) {
+          indicator.title = options.message;
+        }
+        this.setTimeout(type, () => this.hideStatus(type), 6000);
+      }
+    }
+  }
+
+  /**
+   * Hide a specific status indicator
+   * @param {string} type - Status type to hide
+   */
+  hideStatus(type) {
+    const indicator = this.statusContainer.querySelector(`[data-status="${type}"]`);
+    if (indicator) {
+      indicator.classList.remove('show');
+      indicator.classList.add('hide');
+      
+      // Actually hide after animation
+      setTimeout(() => {
+        indicator.classList.add('d-none');
+        indicator.classList.remove('d-inline-block', 'hide');
+        indicator.title = ''; // Clear any error message
+      }, 300);
+    }
+  }
+
+  /**
+   * Hide all status indicators
+   */
+  hideAllStatuses() {
+    const indicators = this.statusContainer.querySelectorAll('[data-status]');
+    indicators.forEach(indicator => {
+      indicator.classList.add('d-none');
+      indicator.classList.remove('d-inline-block', 'show', 'hide');
+      indicator.title = '';
+    });
+  }
+
+  /**
+   * Set a timeout for auto-hiding status
+   * @param {string} type - Status type
+   * @param {function} callback - Callback to execute
+   * @param {number} delay - Delay in milliseconds
+   */
+  setTimeout(type, callback, delay) {
+    const timeoutId = setTimeout(callback, delay);
+    this.timeouts.set(type, timeoutId);
+  }
+
+  /**
+   * Clear a specific timeout
+   * @param {string} type - Status type
+   */
+  clearTimeout(type) {
+    if (this.timeouts.has(type)) {
+      clearTimeout(this.timeouts.get(type));
+      this.timeouts.delete(type);
+    }
+  }
+
+  /**
+   * Clean up all timeouts
+   */
+  destroy() {
+    this.timeouts.forEach(timeoutId => clearTimeout(timeoutId));
+    this.timeouts.clear();
+  }
+}
+
 export default FormView;
 export { FormView };

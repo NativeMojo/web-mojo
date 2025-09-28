@@ -10,6 +10,7 @@ import MOJOUtils from '@core/utils/MOJOUtils.js';
 class FormBuilder {
     constructor(config = {}) {
       this.fields = config.fields || [];
+      this.structureOnly = config.structureOnly || false; // New option
 
       // Convert cols to columns for all fields
       this.fields.forEach(field => {
@@ -1694,6 +1695,10 @@ class FormBuilder {
    * @returns {*} Field value
    */
   getFieldValue(name) {
+    // If in structure-only mode, return empty value
+    if (this.structureOnly) {
+      return '';
+    }
     return MOJOUtils.getContextData(this.data, name);
   }
 

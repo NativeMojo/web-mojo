@@ -554,8 +554,9 @@ class TabView extends View {
     }
 
     this.tabs[label] = view;
-    this.addChild(view);
+    // this.addChild(view);
     view.containerId = this.getTabId(label);
+    view.parent = this;
     this.tabLabels = Object.keys(this.tabs);
 
     // Set as active tab if it's the first tab or explicitly requested

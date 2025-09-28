@@ -15,7 +15,7 @@ class LogTablePage extends TablePage {
             pageName: 'Manage Logs',
             router: "admin/logs",
             Collection: LogList,
-            
+
             itemViewClass: LogView,
             viewDialogOptions: {
                 header: false,
@@ -57,7 +57,10 @@ class LogTablePage extends TablePage {
                 },
                 {
                     key: 'kind',
-                    label: 'Kind'
+                    label: 'Kind',
+                    filter: {
+                        type: "text"
+                    }
                 },
                 {
                     key: 'method',

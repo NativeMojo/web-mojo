@@ -77,6 +77,7 @@ export { default as MOJOUtils, DataWrapper } from '@core/utils/MOJOUtils.js';
 
 // Additional views
 export { default as ProgressView } from '@core/views/feedback/ProgressView.js';
+export { default as ContextMenu } from '@core/views/feedback/ContextMenu.js';
 
 // Names
 export const FRAMEWORK_NAME = 'MOJO';

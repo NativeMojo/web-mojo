@@ -85,27 +85,24 @@ class Model {
    * @param {object} options - Options (silent: true to not trigger change event)
    */
   set(key, value, options = {}) {
-    const previousAttributes = { ...this.attributes };
+    const previousAttributes = JSON.parse(JSON.stringify(this.attributes)); // Deep copy
     let hasChanged = false;
 
     if (typeof key === 'object') {
       // Set multiple attributes
-      Object.assign(this.attributes, key);
-      Object.assign(this, key);
+      for (const [attrKey, attrValue] of Object.entries(key)) {
+        hasChanged = this._setNestedAttribute(attrKey, attrValue) || hasChanged;
+      }
       if (key.id !== undefined) {
         this.id = key.id;
       }
-      hasChanged = JSON.stringify(previousAttributes) !== JSON.stringify(this.attributes);
     } else {
       // Set single attribute
       if (key === 'id') {
         this.id = value;
         hasChanged = true;
       } else {
-        const oldValue = this.attributes[key];
-        this.attributes[key] = value;
-        this[key] = value;
-        hasChanged = oldValue !== value;
+        hasChanged = this._setNestedAttribute(key, value);
       }
     }
 
@@ -118,12 +115,94 @@ class Model {
         this.emit(`change:${key}`, value, this);
       } else {
         for (const [attr, val] of Object.entries(key)) {
-          if (previousAttributes[attr] !== val) {
-            this.emit(`change:${attr}`, val, this);
+          // Get the final value that was actually set (after nested expansion)
+          const finalValue = this._getNestedValue(attr);
+          if (JSON.stringify(this._getNestedValue(attr, previousAttributes)) !== JSON.stringify(finalValue)) {
+            this.emit(`change:${attr}`, finalValue, this);
           }
         }
       }
     }
+  }
+
+  /**
+   * Set a nested attribute using dot notation
+   * @param {string} key - Attribute key (may contain dots)
+   * @param {*} value - Value to set
+   * @returns {boolean} - Whether the value changed
+   */
+  _setNestedAttribute(key, value) {
+    if (!key.includes('.')) {
+      // Simple attribute
+      const oldValue = this.attributes[key];
+      this.attributes[key] = value;
+      this[key] = value;
+      return oldValue !== value;
+    }
+
+    // Nested attribute with dot notation
+    const keys = key.split('.');
+    const topLevelKey = keys[0];
+    
+    // Ensure the top-level object exists
+    if (!this.attributes[topLevelKey] || typeof this.attributes[topLevelKey] !== 'object') {
+      this.attributes[topLevelKey] = {};
+    }
+    if (!this[topLevelKey] || typeof this[topLevelKey] !== 'object') {
+      this[topLevelKey] = {};
+    }
+
+    // Get the old value for comparison
+    const oldValue = this._getNestedValue(key);
+
+    // Navigate to the nested location and set the value
+    let attrTarget = this.attributes[topLevelKey];
+    let instanceTarget = this[topLevelKey];
+    
+    for (let i = 1; i < keys.length - 1; i++) {
+      const currentKey = keys[i];
+      
+      if (!attrTarget[currentKey] || typeof attrTarget[currentKey] !== 'object') {
+        attrTarget[currentKey] = {};
+      }
+      if (!instanceTarget[currentKey] || typeof instanceTarget[currentKey] !== 'object') {
+        instanceTarget[currentKey] = {};
+      }
+      
+      attrTarget = attrTarget[currentKey];
+      instanceTarget = instanceTarget[currentKey];
+    }
+
+    // Set the final value
+    const finalKey = keys[keys.length - 1];
+    attrTarget[finalKey] = value;
+    instanceTarget[finalKey] = value;
+
+    return JSON.stringify(oldValue) !== JSON.stringify(value);
+  }
+
+  /**
+   * Get a nested value using dot notation
+   * @param {string} key - Attribute key (may contain dots)
+   * @param {object} source - Source object (defaults to this.attributes)
+   * @returns {*} - The nested value
+   */
+  _getNestedValue(key, source = this.attributes) {
+    if (!key.includes('.')) {
+      return source[key];
+    }
+
+    const keys = key.split('.');
+    let current = source;
+    
+    for (const k of keys) {
+      if (current == null || typeof current !== 'object') {
+        return undefined;
+      }
+      current = current[k];
+    }
+    
+    return current;
   }
 
   getData() {

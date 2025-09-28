@@ -99,9 +99,6 @@ class ListView extends View {
   async onInit() {
     // Initial render will happen automatically
     this._initCollection(this.options.collection || this.options.Collection);
-    if (this.collection && this.collection.isEmpty() && this.collection.restEnabled) {
-      await this.collection.fetch();
-    }
   }
 
 
@@ -456,6 +453,13 @@ class ListView extends View {
     }
 
     return this;
+  }
+
+  async onAfterMount() {
+      await super.onAfterMount();
+      if (this.collection && !this.collection.lastFetchTime) {
+          this.collection.fetch();
+      }
   }
 
   /**
