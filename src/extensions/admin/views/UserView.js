@@ -159,16 +159,6 @@ class UserView extends View {
                 {
                     key: 'title',
                     label: 'Title'
-                },
-                {
-                    key: 'actions',
-                    label: 'Actions',
-                    width: '100px',
-                    template: `
-                        <button class="btn btn-sm btn-outline-primary" data-action="view-event" data-id="{{id}}">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                    `
                 }
             ]
         });

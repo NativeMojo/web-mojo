@@ -68,7 +68,7 @@ class FormBuilder {
                  class="{{inputClass}}{{#error}} is-invalid{{/error}}"
                  value="{{fieldValue}}" {{#placeholder}}placeholder="{{placeholder}}"{{/placeholder}}
                  {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}}
-                 {{#readonly}}readonly{{/readonly}} data-change-action="validate-field" {{{attrs}}}>
+                 {{#readonly}}readonly{{/readonly}} {{{attrs}}}>
           {{#help}}<div class="{{helpClass}}">{{help}}</div>{{/help}}
           {{#error}}<div class="{{errorClass}}">{{error}}</div>{{/error}}
         </div>
@@ -86,7 +86,7 @@ class FormBuilder {
                    class="{{inputClass}}{{#error}} is-invalid{{/error}}"
                    value="{{fieldValue}}" {{#placeholder}}placeholder="{{placeholder}}"{{/placeholder}}
                    {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}}
-                   {{#readonly}}readonly{{/readonly}} data-change-action="validate-field"
+                   {{#readonly}}readonly{{/readonly}}
                    data-field-type="password" {{{attrs}}}>
             {{#showToggle}}
             <button type="button" class="btn btn-outline-secondary"
@@ -129,7 +129,7 @@ class FormBuilder {
           <textarea id="{{fieldId}}" name="{{name}}" class="{{inputClass}}{{#error}} is-invalid{{/error}}"
                     rows="{{rows}}" {{#placeholder}}placeholder="{{placeholder}}"{{/placeholder}}
                     {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}}
-                    {{#readonly}}readonly{{/readonly}} data-change-action="validate-field" {{{attrs}}}>{{fieldValue}}</textarea>
+                    {{#readonly}}readonly{{/readonly}} {{{attrs}}}>{{fieldValue}}</textarea>
           {{#help}}<div class="{{helpClass}}">{{help}}</div>{{/help}}
           {{#error}}<div class="{{errorClass}}">{{error}}</div>{{/error}}
         </div>
@@ -145,7 +145,7 @@ class FormBuilder {
           {{#searchInput}}{{{searchInput}}}{{/searchInput}}
           <select id="{{fieldId}}" name="{{name}}" class="{{inputClass}}{{#error}} is-invalid{{/error}}"
                   {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}}
-                  {{#multiple}}multiple{{/multiple}} data-change-action="validate-field" {{{attrs}}}>
+                  {{#multiple}}multiple{{/multiple}} {{{attrs}}}>
             {{{optionsHTML}}}
           </select>
           {{#help}}<div class="{{helpClass}}">{{help}}</div>{{/help}}
@@ -159,7 +159,7 @@ class FormBuilder {
             <input type="checkbox" id="{{fieldId}}" name="{{name}}"
                    class="form-check-input{{#error}} is-invalid{{/error}}" value="{{value}}"
                    {{#checked}}checked{{/checked}} {{#required}}required{{/required}}
-                     {{#disabled}}disabled{{/disabled}} data-change-action="validate-field" {{{attrs}}}>
+                     {{#disabled}}disabled{{/disabled}} {{{attrs}}}>
               <label class="form-check-label" for="{{fieldId}}">{{label}}</label>
             </div>
             {{#help}}<div class="{{helpClass}}">{{help}}</div>{{/help}}
@@ -256,7 +256,7 @@ class FormBuilder {
             <input type="radio" id="{{fieldId}}_{{value}}" name="{{name}}" value="{{value}}"
                    class="form-check-input{{#error}} is-invalid{{/error}}" {{#checked}}checked{{/checked}}
                    {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}}
-                   data-change-action="validate-field" {{{attrs}}}>
+                   {{{attrs}}}>
             <label class="form-check-label" for="{{fieldId}}_{{value}}">{{text}}</label>
           </div>
           {{/options}}
@@ -319,10 +319,15 @@ class FormBuilder {
         <div class="btn-group btn-group-{{size}}" role="group">
           {{#options}}
           <button type="button" class="{{buttonClass}} {{#active}}active{{/active}}"
+                  {{^action}}
                   data-action="select-button-option"
+                  {{/action}}
+                  {{#action}}
+                  data-action='{{action}}'
+                  {{/action}}
                   data-field="{{fieldName}}"
                   data-value="{{value}}">
-            {{label}}
+            {{#icon}}<i class="{{icon}} me-1"></i> {{/icon}} {{label}}
           </button>
           {{/options}}
         </div>
@@ -339,6 +344,30 @@ class FormBuilder {
             {{/fields}}
           </div>
         </div>
+      `,
+
+      color: `
+        <div class="mojo-form-control">
+          {{#label}}
+          <label for="{{fieldId}}" class="{{labelClass}}">
+            {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}
+          </label>
+          {{/label}}
+          <div class="d-flex align-items-center gap-2">
+            <input type="color" id="{{fieldId}}" name="{{name}}"
+                   class="{{inputClass}}{{#error}} is-invalid{{/error}}"
+                   value="{{fieldValue}}"
+                   {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}}
+                   {{#readonly}}readonly{{/readonly}} {{{attrs}}}>
+            <button type="button" class="btn-sm text-muted border-0 bg-transparent p-1"
+                    data-action="clear-color" data-field="{{name}}"
+                    title="Clear color">
+              <i class="bi bi-x fs-5"></i>
+            </button>
+          </div>
+          {{#help}}<div class="{{helpClass}}">{{help}}</div>{{/help}}
+          {{#error}}<div class="{{errorClass}}">{{error}}</div>{{/error}}
+        </div>
       `
     };
   }
@@ -352,10 +381,7 @@ class FormBuilder {
     const buttonsHTML = this.buildButtonsHTML();
 
     return `
-      <form class="${this.options.formClass}"
-            method="${this.options.formMethod}"
-            ${this.options.formAction ? `action="${this.options.formAction}"` : ''}
-            novalidate>
+      <form class="${this.options.formClass}" novalidate>
         ${fieldsHTML}
         ${buttonsHTML}
       </form>
@@ -586,6 +612,7 @@ class FormBuilder {
     const { type, columns, class: fieldClass = '' } = field;
 
     let fieldHTML = '';
+    console.log('buildFieldHTML - Processing field type:', type, 'for field:', field.name);
     switch (type) {
       case 'text':
         fieldHTML = this.renderTextField(field);
@@ -1274,7 +1301,7 @@ class FormBuilder {
               value="${this.escapeHtml(radioValue)}"
               ${checked}
               ${disabled ? 'disabled' : ''}
-              data-change-action="validate-field"
+
               ${attrs}
             >
             <label class="form-check-label" for="${radioId}">
@@ -1489,7 +1516,45 @@ class FormBuilder {
    * @returns {string} Field HTML
    */
   renderColorField(field) {
-    return this.renderInputField(field, 'color');
+    const {
+      name,
+      label,
+      value = '',
+      placeholder = '',
+      required = false,
+      disabled = false,
+      readonly = false,
+      class: fieldClass = '',
+      attributes = {},
+      help = field.helpText || field.help || ''
+    } = field;
+
+    const inputClass = `${this.options.inputClass} ${fieldClass}`.trim();
+    const error = this.errors[name];
+    const fieldValue = (this.getFieldValue(name) ?? value);
+
+    const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
+    const fieldId = this.getFieldId(name);
+
+    const context = {
+      labelClass: this.options.labelClass,
+      inputClass: inputClass,
+      helpClass: this.options.helpClass,
+      errorClass: this.options.errorClass,
+      fieldId,
+      name,
+      fieldValue: this.escapeHtml(fieldValue),
+      label: label ? this.escapeHtml(label) : null,
+      placeholder: placeholder ? this.escapeHtml(placeholder) : null,
+      help: help ? this.escapeHtml(help) : null,
+      error: error ? this.escapeHtml(error) : null,
+      required,
+      disabled,
+      readonly,
+      attrs
+    };
+
+    return Mustache.render(this.templates.color, context);
   }
 
   /**
@@ -1750,7 +1815,7 @@ class FormBuilder {
                  placeholder="${this.escapeHtml(placeholder)}"
                  ${disabled ? 'disabled' : ''}
                  ${readonly ? 'readonly' : ''}
-                 data-change-action="validate-field">
+
           <input type="hidden" name="${name}" value="${this.escapeHtml(fieldValue)}">
           <small class="form-text text-muted">This will be enhanced with TagInput component</small>
         </div>
@@ -1813,7 +1878,7 @@ class FormBuilder {
                  placeholder="${this.escapeHtml(placeholder)}"
                  ${disabled ? 'disabled' : ''}
                  ${readonly ? 'readonly' : ''}
-                 data-change-action="validate-field">
+
           <input type="hidden" name="${name}" value="${this.escapeHtml(fieldValue)}">
           <small class="form-text text-muted">This will be enhanced with CollectionSelect component</small>
         </div>
@@ -1877,7 +1942,7 @@ class FormBuilder {
                  ${disabled ? 'disabled' : ''}
                  ${readonly ? 'readonly' : ''}
                  ${required ? 'required' : ''}
-                 data-change-action="validate-field">
+
           <small class="form-text text-muted">This will be enhanced with Easepick DatePicker</small>
         </div>
         ${help ? `<div class="${this.options.helpClass}">${this.escapeHtml(help)}</div>` : ''}
@@ -1957,7 +2022,7 @@ class FormBuilder {
                      ${disabled ? 'disabled' : ''}
                      ${readonly ? 'readonly' : ''}
                      ${required ? 'required' : ''}
-                     data-change-action="validate-field">
+
             </div>
             <div class="col-auto d-flex align-items-center">
               <span class="text-muted">${this.escapeHtml(separator.trim())}</span>
@@ -1974,7 +2039,7 @@ class FormBuilder {
                      ${disabled ? 'disabled' : ''}
                      ${readonly ? 'readonly' : ''}
                      ${required ? 'required' : ''}
-                     data-change-action="validate-field">
+
             </div>
           </div>
           <small class="form-text text-muted">This will be enhanced with Easepick DateRangePicker</small>
@@ -2032,6 +2097,7 @@ class FormBuilder {
       options: field.options.map(option => ({
         value: option.value,
         label: option.label,
+        action: option.action,
         active: option.value === selectedValue,
         buttonClass: this.getButtonClass(option.value === selectedValue, field.variant)
       }))

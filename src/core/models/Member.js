@@ -60,7 +60,6 @@ const MemberForms = {
                 name: 'metadata.role',
                 type: 'text',
                 label: 'Role',
-                required: true,
                 placeholder: 'Enter role'
             },
             {

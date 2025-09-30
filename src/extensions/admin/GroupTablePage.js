@@ -4,7 +4,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { GroupList, GroupForms } from '@core/models/Group.js';
+import { GroupList, GroupForms, Group } from '@core/models/Group.js';
 import GroupView from './views/GroupView.js';
 
 class GroupTablePage extends TablePage {
@@ -42,7 +42,10 @@ class GroupTablePage extends TablePage {
                 {
                     key: 'kind',
                     label: 'Kind',
-                    filter: { type: "text" }
+                    filter: {
+                        type: "select",
+                        options: Group.GroupKindOptions
+                    }
                 },
                 {
                     key: 'name',
@@ -60,6 +63,18 @@ class GroupTablePage extends TablePage {
                     className: 'text-muted fs-8',
                     formatter: "epoch|datetime",
                     visibility: 'lg'
+                }
+            ],
+
+            filters: [
+                {
+                    key: 'is_active',
+                    label: 'Active',
+                    type: 'select',
+                    options: [
+                        { label: 'Active', value: true },
+                        { label: 'Inactive', value: false }
+                    ]
                 }
             ],
 

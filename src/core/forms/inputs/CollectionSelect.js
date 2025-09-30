@@ -183,6 +183,9 @@ class CollectionSelectView extends View {
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.handleInputEvents = this.handleInputEvents.bind(this);
 
+  }
+
+  onInit() {
     if (this.collection) {
       this.setupCollection();
     }
@@ -228,17 +231,19 @@ class CollectionSelectView extends View {
 
   async loadSelectedItem() {
     try {
+      if (!this.selectedValue || this.selectedValue == '0') return;
+      if (this.selectedLabel) return;
       const selectedModel = this.collection?.get(this.selectedValue);
       if (selectedModel) {
         this.selectedLabel = selectedModel.get(this.labelField);
-        this.render();
+        this.render(false);
         return;
       }
 
       let model = await this.collection.fetchOne(this.selectedValue);
       if (model) {
         this.selectedLabel = model.get(this.labelField, `${model.constructor.name} #${model.id}`);
-        this.render();
+        this.render(false);
       }
     } catch (error) {
       console.error('Error loading selected item:', error);

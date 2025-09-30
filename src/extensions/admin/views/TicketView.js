@@ -1,7 +1,7 @@
 import View from '@core/View.js';
 import DataView from '@core/views/data/DataView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
-import { Ticket } from '@core/models/Tickets.js';
+import { Ticket, TicketForms } from '@core/models/Tickets.js';
 import ChatView from '@core/views/chat/ChatView.js';
 import TicketNoteAdapter from '../adapters/TicketNoteAdapter.js';
 import Dialog from '@core/views/feedback/Dialog.js';
@@ -144,15 +144,7 @@ class TicketView extends View {
             title: `Edit Ticket #${this.model.get('id')} - ${this.model.get('title')}`,
             model: this.model,
             size: 'lg',
-            fields: [
-                { name: 'title', label: 'Title', type: 'text', required: true },
-                { name: 'description', label: 'Description', type: 'textarea', rows: 4 },
-                { name: 'status', label: 'Status', type: 'select',
-                  options: ['open', 'in_progress', 'pending', 'resolved', 'closed'] },
-                { name: 'priority', label: 'Priority', type: 'select',
-                  options: ['low', 'normal', 'high', 'urgent'] },
-                { name: 'assignee_id', label: 'Assignee', type: 'user_select' }
-            ]
+            fields: TicketForms.edit.fields
         });
         if (resp) {
             this.render(); // Re-render to show updated data in header

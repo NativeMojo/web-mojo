@@ -278,5 +278,6 @@ const GroupForms = {
 
 Group.EDIT_FORM = GroupForms.edit;
 Group.CREATE_FORM = GroupForms.create;
-
+Group.GroupKindOptions = GroupKindOptions;
+Group.GroupKinds = GroupKinds;
 export { Group, GroupList, GroupForms };

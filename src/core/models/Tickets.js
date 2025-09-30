@@ -52,7 +52,7 @@ const TicketForms = {
             { name: 'description', type: 'textarea', label: 'Description', required: false, cols: 12 },
             { name: "category", type: "select", label: "Category", options: TicketCategoriesOptions, cols: 12 },
             { name: 'priority', type: 'number', label: 'Priority', value: 5, cols: 6 },
-            { name: 'status', type: 'select', label: 'Status', value: 'open', options: ['open', 'in_progress', 'resolved', 'closed'], cols: 6 },
+            { name: 'status', type: 'select', label: 'Status', value: 'open', options: ["new", "open", "paused", "resolved", "qa", "ignored"], cols: 6 },
             { type: 'collection', name: 'assignee', label: 'Assignee', Collection: UserList, labelField: 'display_name', valueField: 'id', cols: 12 },
             { type: 'collection', name: 'incident', label: 'Incident', Collection: IncidentList, labelField: 'title', valueField: 'id', cols: 12 },
         ]
@@ -64,7 +64,7 @@ const TicketForms = {
             { name: 'description', type: 'textarea', label: 'Description', required: false, cols: 12 },
             { name: "category", type: "select", label: "Category", options: TicketCategoriesOptions, cols: 12 },
             { name: 'priority', type: 'number', label: 'Priority', cols: 6 },
-            { name: 'status', type: 'select', label: 'Status', options: ['open', 'in_progress', 'resolved', 'closed'], cols: 6 },
+            { name: 'status', type: 'select', label: 'Status', options: ["new", "open", "paused", "resolved", "qa", "ignored"], cols: 6 },
             { type: 'collection', name: 'assignee', label: 'Assignee', Collection: UserList, labelField: 'display_name', valueField: 'id', cols: 12 },
             { type: 'collection', name: 'incident', label: 'Incident', Collection: IncidentList, labelField: 'title', valueField: 'id', cols: 12 },
         ]

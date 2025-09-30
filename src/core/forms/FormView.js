@@ -18,7 +18,7 @@ class FormView extends View {
       fields,
       model = null,
       data = {},
-      defaults = {},
+      defaults = null,
       errors = {},
       fileHandling = 'base64', // 'base64' | 'multipart'
       autosaveModelField = false, // Auto-save model on field changes
@@ -33,7 +33,7 @@ class FormView extends View {
 
     // Store data sources
     this.model = model;
-    this.defaults = defaults;
+    this.defaults = defaults || data;
     this._originalData = data;
     this.errors = errors;
     this.loading = false;
@@ -41,6 +41,8 @@ class FormView extends View {
     this.autosaveModelField = autosaveModelField;
     this.customComponents = new Map();
     this.fieldStatusManagers = new Map(); // Track field status managers
+    this.saveTimeouts = new Map(); // Debouncing timeouts for autosave
+    this.isSaving = false; // Prevent save loops
 
     // Prepare combined data for FormBuilder
     this.data = this.prepareFormData();
@@ -100,6 +102,18 @@ class FormView extends View {
 
     // Initialize form components
     this.initializeFormComponents();
+
+    // Add generic change handlers for all form inputs
+    this.initializeChangeHandlers();
+
+    // Prevent form submission on Enter key
+    const form = this.getFormElement();
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        return false;
+      });
+    }
   }
 
   /**
@@ -108,16 +122,24 @@ class FormView extends View {
   populateFormValues() {
     if (!this.element || !this.formConfig?.fields) return;
 
-    this.formConfig.fields.forEach(field => {
-      if (field.type === 'group' && field.fields) {
-        // Handle group fields
-        field.fields.forEach(groupField => {
-          this.populateFieldValue(groupField);
-        });
-      } else {
-        this.populateFieldValue(field);
-      }
-    });
+    // Disable autosave during form population
+    this._isPopulating = true;
+
+    try {
+      this.formConfig.fields.forEach(field => {
+        if (field.type === 'group' && field.fields) {
+          // Handle group fields
+          field.fields.forEach(groupField => {
+            this.populateFieldValue(groupField);
+          });
+        } else {
+          this.populateFieldValue(field);
+        }
+      });
+    } finally {
+      // Always re-enable autosave
+      this._isPopulating = false;
+    }
   }
 
   /**
@@ -190,7 +212,61 @@ class FormView extends View {
       const fieldName = container.getAttribute('data-field');
 
       if (componentType && fieldName) {
-        console.log(`Found ${componentType} component for field: ${fieldName}`);
+
+      }
+    });
+  }
+
+  /**
+   * Initialize generic change handlers for all form inputs
+   */
+  initializeChangeHandlers() {
+    if (!this.element) return;
+
+    // Add change listeners to all form inputs that don't already have specific handlers
+    const inputs = this.element.querySelectorAll('input:not([data-action]), select:not([data-action]), textarea:not([data-action])');
+
+    inputs.forEach(input => {
+      // Skip inputs that already have specific handlers or are handled by custom components
+      if (input.hasAttribute('data-component') || input.classList.contains('form-check-input')) {
+        return;
+      }
+
+      // Add change event listener
+      input.addEventListener('change', (event) => {
+        // Skip autosave during form population
+        if (this._isPopulating) return;
+
+        const fieldName = input.name;
+        if (fieldName) {
+          let value = input.value;
+
+          // Handle different input types
+          if (input.type === 'checkbox') {
+            value = input.checked;
+          } else if (input.type === 'radio') {
+            // Only process if this radio is checked
+            if (!input.checked) return;
+          } else if (input.multiple && input.selectedOptions) {
+            // Handle multi-select
+            value = Array.from(input.selectedOptions).map(opt => opt.value);
+          }
+
+          this.handleFieldChange(fieldName, value);
+        }
+      });
+
+      // Also add input event for text inputs for more responsive autosave
+      if (input.type === 'text' || input.type === 'email' || input.type === 'url' || input.tagName === 'TEXTAREA') {
+        input.addEventListener('input', (event) => {
+          // Skip autosave during form population
+          if (this._isPopulating) return;
+
+          const fieldName = input.name;
+          if (fieldName) {
+            this.handleFieldChange(fieldName, input.value);
+          }
+        });
       }
     });
   }
@@ -225,7 +301,7 @@ class FormView extends View {
         });
 
       } catch (error) {
-        console.error('Failed to initialize TagInput:', error);
+        // TagInput initialization failed
       }
     });
   }
@@ -245,7 +321,7 @@ class FormView extends View {
         // Get Collection class from field config
         const fieldConfig = this.getFormFieldConfig(fieldName);  // this.formConfig.fields.find(f => f.name === fieldName);
         if (!fieldConfig || !fieldConfig.Collection) {
-          console.warn(`CollectionSelect field ${fieldName} missing Collection class`);
+
           return;
         }
 
@@ -262,6 +338,11 @@ class FormView extends View {
           containerId: null // We'll mount directly
         });
 
+        let value = MOJOUtils.getContextData(this.data, fieldName);
+        if (value) {
+            collectionSelect.setFormValue(value);
+        }
+
         // Replace placeholder with CollectionSelect
         collectionSelect.render(true, placeholder);
 
@@ -274,7 +355,7 @@ class FormView extends View {
         });
 
       } catch (error) {
-        console.error('Failed to initialize CollectionSelect:', error);
+        // CollectionSelect initialization failed
       }
     });
   }
@@ -309,7 +390,7 @@ class FormView extends View {
         });
 
       } catch (error) {
-        console.error('Failed to initialize DatePicker:', error);
+        // DatePicker initialization failed
       }
     });
   }
@@ -344,7 +425,7 @@ class FormView extends View {
         });
 
       } catch (error) {
-        console.error('Failed to initialize DateRangePicker:', error);
+        // DateRangePicker initialization failed
       }
     });
   }
@@ -371,38 +452,51 @@ class FormView extends View {
   }
 
   /**
-   * Handle saving individual field changes to the model
+   * Handle saving individual field changes to the model with debouncing
    * @param {string} fieldName - Name of the field being saved
    * @param {*} value - New value to save
    */
   async handleFieldSave(fieldName, value) {
-    if (!this.model) return;
+    if (!this.model || this.isSaving) return;
+
+    // Clear any existing timeout for this field
+    if (this.saveTimeouts.has(fieldName)) {
+      clearTimeout(this.saveTimeouts.get(fieldName));
+    }
 
     const statusManager = this.getFieldStatusManager(fieldName);
+    statusManager.showStatus('saving');
 
-    try {
-      // Show saving state
-      statusManager.showStatus('saving');
+    // Debounce the save - wait 300ms before actually saving
+    const timeoutId = setTimeout(async () => {
+      try {
+        this.isSaving = true;
+        this.saveTimeouts.delete(fieldName);
 
-      // Mark as form-driven change to prevent sync back
-      this._isFormDrivenChange = true;
+        // Mark as form-driven change to prevent sync back
+        this._isFormDrivenChange = true;
 
-      // Save to model (this will trigger API call if model has save method)
-      if (typeof this.model.save === 'function') {
-        await this.model.save({ [fieldName]: value });
-      } else {
-        // Just set on model if no save method
-        this.model.set(fieldName, value);
+        // Save to model (this will trigger API call if model has save method)
+        if (typeof this.model.save === 'function') {
+          await this.model.save({ [fieldName]: value });
+        } else {
+          // Just set on model if no save method
+          this.model.set(fieldName, value);
+        }
+
+        // Show success (auto-hides after 2.5s)
+        statusManager.showStatus('saved');
+
+      } catch (error) {
+        // Field save error
+        // Show error (auto-hides after 6s)
+        statusManager.showStatus('error', { message: error.message });
+      } finally {
+        this.isSaving = false;
       }
+    }, 300);
 
-      // Show success (auto-hides after 2.5s)
-      statusManager.showStatus('saved');
-
-    } catch (error) {
-      console.error('Field save error:', error);
-      // Show error (auto-hides after 6s)
-      statusManager.showStatus('error', { message: error.message });
-    }
+    this.saveTimeouts.set(fieldName, timeoutId);
   }
 
   /**
@@ -435,7 +529,7 @@ class FormView extends View {
   }
 
   /**
-   * Get reason why a field is considered changed (for debugging)
+   * Get reason why a field is considered changed
    * @param {*} newValue - New value from form
    * @param {*} originalValue - Original value from model
    * @returns {string} Reason for change
@@ -572,6 +666,26 @@ class FormView extends View {
   }
 
   /**
+   * Handle clear color action
+   */
+  async onActionClearColor(event, element) {
+    const fieldName = element.getAttribute('data-field');
+    if (!fieldName) return;
+
+    // Clear the color input value
+    const colorInput = this.element.querySelector(`input[name="${fieldName}"]`);
+    if (colorInput) {
+      colorInput.value = '';
+
+      // Trigger field change handling (for autosave if enabled)
+      this.handleFieldChange(fieldName, '');
+
+      // Update the field to hide the clear button
+      await this.updateField(fieldName);
+    }
+  }
+
+  /**
    * Handle button group selection
    */
   async onActionSelectButtonOption(event, element) {
@@ -673,10 +787,10 @@ class FormView extends View {
     const fieldName = element.name;
     if (fieldName) {
       const value = element.value;
-      
+
       // Use handleFieldChange for consistent processing
       this.handleFieldChange(fieldName, value);
-      
+
       // Validate the field
       this.validateField(fieldName);
     }
@@ -689,10 +803,10 @@ class FormView extends View {
     const fieldName = element.getAttribute('data-field');
     if (fieldName) {
       const value = element.checked;
-      
+
       // Use handleFieldChange for consistent processing
       this.handleFieldChange(fieldName, value);
-      
+
       // Emit specific switch events for backward compatibility
       this.emit('switch:toggle', {
         field: fieldName,
@@ -723,7 +837,7 @@ class FormView extends View {
           const ImageCropView = window.MOJO?.plugins?.ImageCropView;
 
           if (!ImageCropView) {
-            console.warn('ImageCropView not available. Load lightbox extension for image cropping.');
+            // ImageCropView not available
             return;
           }
 
@@ -768,7 +882,7 @@ class FormView extends View {
             element.value = ''; // Clear the input
           }
         } catch (error) {
-          console.error('Error during image cropping:', error);
+          // Error during image cropping
           // Fall back to normal image handling
           this.data[fieldName] = file;
           await this.updateImagePreview(fieldName, previewUrl);
@@ -823,7 +937,7 @@ class FormView extends View {
   async onChangeRangeChanged(event, element) {
     const fieldName = element.name;
     const value = element.value;
-    
+
     // Update display target if specified
     const targetId = element.getAttribute('data-target');
     if (targetId) {
@@ -916,7 +1030,7 @@ class FormView extends View {
    * Handle file drop errors
    */
   async onFileDropError(error, event, files) {
-    console.error('File drop error:', error.message);
+    // File drop error
     this.showError(`File upload error: ${error.message}`);
 
     this.emit('file:error', {
@@ -1009,7 +1123,7 @@ class FormView extends View {
           try {
               data[textarea.name] = JSON.parse(textarea.value);
           } catch (e) {
-              console.warn(`Invalid JSON in field ${textarea.name}:`, textarea.value);
+              // Invalid JSON in field
               data[textarea.name] = textarea.value; // Keep as string if invalid
           }
       });
@@ -1020,7 +1134,7 @@ class FormView extends View {
           try {
             data[key] = await this.fileToBase64(value);
           } catch (error) {
-            console.error(`Failed to convert file ${key} to base64:`, error);
+            // Failed to convert file to base64
             data[key] = null;
           }
         } else if (value instanceof FileList) {
@@ -1029,7 +1143,7 @@ class FormView extends View {
             try {
               base64Files.push(await this.fileToBase64(value[i]));
             } catch (error) {
-              console.error(`Failed to convert file ${key}[${i}] to base64:`, error);
+              // Failed to convert file to base64
               base64Files.push(null);
             }
           }
@@ -1042,6 +1156,9 @@ class FormView extends View {
   }
 
   _onModelChange() {
+    // Don't sync during save operations to prevent loops
+    if (this.isSaving) return;
+
     // Always update internal data
     this.data = this.prepareFormData();
 
@@ -1122,7 +1239,7 @@ class FormView extends View {
   getFieldCurrentValue(fieldElement, fieldConfig) {
     switch (fieldConfig.type) {
       case 'checkbox':
-        return fieldElement.checked;
+      case 'toggle':
       case 'switch':
         return fieldElement.checked;
       case 'radio':
@@ -1146,6 +1263,7 @@ class FormView extends View {
   setFieldValue(fieldElement, fieldConfig, newValue) {
     switch (fieldConfig.type) {
       case 'checkbox':
+      case 'toggle':
       case 'switch':
         fieldElement.checked = Boolean(newValue);
         break;
@@ -1234,7 +1352,7 @@ class FormView extends View {
       }
 
     } catch (error) {
-      console.error('Form submission error:', error);
+      // Form submission error
 
       return {
         success: false,
@@ -1261,7 +1379,7 @@ class FormView extends View {
     const changes = this.getChangedData(formData);
 
     if (!changes || Object.keys(changes).length === 0) {
-      console.log('No changes detected, skipping save');
+      // No changes detected
       return {
         success: true,
         message: 'No changes to save',
@@ -1269,8 +1387,7 @@ class FormView extends View {
       };
     }
 
-    console.log('Saving changed data via model:', changes);
-    console.log('Data type:', changes instanceof FormData ? 'FormData (multipart)' : 'Object (JSON/base64)');
+
 
     try {
       // Mark this as a form-driven change to prevent sync back
@@ -1278,11 +1395,11 @@ class FormView extends View {
 
       // Model.save with only changed data
       const result = await this.model.save(changes);
-      console.log('Model save result:', result);
+
 
       return result;
     } catch (error) {
-      console.error('Model save error:', error);
+      // Model save error
       throw error;
     }
   }
@@ -1297,23 +1414,20 @@ class FormView extends View {
 
     // Get original data from model
     const originalData = this.getOriginalModelData();
-    console.log('=== Change Detection ===');
-    console.log('Original model data:', originalData);
-    console.log('Current form data:', currentData instanceof FormData ? '[FormData object]' : currentData);
+
 
     let changes;
     if (currentData instanceof FormData) {
       // Handle FormData comparison
-      console.log('Comparing FormData...');
+
       changes = this.getChangedFormData(currentData, originalData);
     } else {
       // Handle Object comparison
-      console.log('Comparing Object data...');
+
       changes = this.getChangedObjectData(currentData, originalData);
     }
 
-    console.log('Changes detected:', changes instanceof FormData ? '[FormData with changes]' : changes);
-    console.log('=== End Change Detection ===');
+
     return changes;
   }
 
@@ -1346,9 +1460,9 @@ class FormView extends View {
       if (value instanceof File) {
         // Check if file has actual content
         if (value.size === 0 || value.name === '' || value.name === 'blob') {
-          console.log(`  - ${key}: Empty file field (no change)`);
+
         } else {
-          console.log(`  - ${key}: File upload detected (${value.name}, ${value.size} bytes)`);
+
           changedData.set(key, value);
           hasChanges = true;
         }
@@ -1356,11 +1470,11 @@ class FormView extends View {
         // Compare text values
         const originalValue = originalData[key];
         if (value !== originalValue && value !== String(originalValue)) {
-          console.log(`  - ${key}: "${originalValue}" → "${value}"`);
+
           changedData.set(key, value);
           hasChanges = true;
         } else {
-          console.log(`  - ${key}: unchanged ("${value}")`);
+
         }
       }
     }
@@ -1437,7 +1551,7 @@ class FormView extends View {
     }
 
     // For switches and checkboxes, perform a strict boolean comparison
-    if (fieldType === 'switch' || fieldType === 'checkbox') {
+    if (fieldType === 'switch' || fieldType === 'checkbox' || fieldType === 'toggle') {
       const newBool = !!newValue;
       const originalBool = !!originalValue;
       return newBool !== originalBool;
@@ -1558,7 +1672,7 @@ class FormView extends View {
    * Show error message
    */
   showError(message) {
-    console.error('Form error:', message);
+    // Form error
 
     this.emit('error', { message, form: this });
 
@@ -1608,7 +1722,7 @@ class FormView extends View {
     const dropZone = this.element.querySelector(`[data-field="${fieldName}"].image-drop-zone`);
 
     if (!dropZone) {
-      console.warn(`Could not find drop zone for field: ${fieldName}`);
+      // Drop zone not found for field
       return;
     }
 
@@ -1930,29 +2044,170 @@ class FieldStatusManager {
   }
 
   /**
-   * Find existing status container or create one
+   * Find existing status container or create one based on field type
    */
   findOrCreateStatusContainer() {
-    // Look for existing status container
-    let container = this.fieldElement.parentElement.querySelector('.field-status');
-    
+    // Look for existing status container (check parent and labels)
+    let container = this.fieldElement.parentElement.querySelector('.field-status-label-inline');
+
+    // Also check within the field's label
     if (!container) {
-      // Create status container if it doesn't exist
-      container = document.createElement('div');
-      container.className = 'field-status';
-      container.innerHTML = `
-        <div class="spinner-border spinner-border-sm text-primary d-none" data-status="saving" role="status">
-          <span class="visually-hidden">Saving...</span>
-        </div>
-        <i class="bi bi-check-circle text-success d-none" data-status="saved"></i>
-        <i class="bi bi-exclamation-circle text-danger d-none" data-status="error"></i>
-      `;
-      
-      // Insert after the field element
+      const label = this.findFieldLabel();
+      if (label) {
+        container = label.querySelector('.field-status-label-inline');
+      }
+    }
+
+    if (!container) {
+      container = this.createStatusContainer();
+    }
+
+    return container;
+  }
+
+  /**
+   * Create appropriate status container based on field type
+   */
+  createStatusContainer() {
+    const fieldType = this.getFieldType();
+    const placement = this.getPlacementStrategy(fieldType);
+
+    const container = document.createElement('div');
+
+    // Since we only use label-inline now, simplify
+    return this.createLabelInlineContainer(container);
+  }
+
+  /**
+   * Determine field type from element
+   */
+  getFieldType() {
+    const tagName = this.fieldElement.tagName.toLowerCase();
+    const type = this.fieldElement.type?.toLowerCase();
+    const classes = this.fieldElement.className;
+
+    if (type === 'checkbox' || classes.includes('form-check-input') || classes.includes('form-switch')) {
+      return 'toggle';
+    } else if (tagName === 'select') {
+      return 'select';
+    } else if (tagName === 'textarea') {
+      return 'textarea';
+    } else if (tagName === 'input') {
+      return 'input';
+    }
+
+    return 'input'; // default
+  }
+
+  /**
+   * Determine placement strategy for field type
+   */
+  getPlacementStrategy(fieldType) {
+    // Use label-inline for all field types - cleanest approach
+    return 'label-inline';
+  }
+
+  /**
+   * Create inline label status container (for all input types)
+   */
+  createLabelInlineContainer(container) {
+    container.className = 'field-status-label-inline';
+    container.innerHTML = this.getStatusHTML();
+
+    // Find the associated label
+    const label = this.findFieldLabel();
+    if (label) {
+      // Insert status container at the end of the label
+      label.appendChild(container);
+    } else {
+      // Fallback to parent element if no label found
       this.fieldElement.parentElement.appendChild(container);
     }
-    
+
     return container;
+  }
+
+  /**
+   * Find the label associated with any field type
+   */
+  findFieldLabel() {
+    // Try to find label by 'for' attribute matching field id
+    if (this.fieldElement.id) {
+      const label = document.querySelector(`label[for="${this.fieldElement.id}"]`);
+      if (label) return label;
+    }
+
+    // Look for label as sibling (common in Bootstrap form-check)
+    const label = this.fieldElement.parentElement.querySelector('label');
+    if (label) return label;
+
+    // Look for label as parent (less common)
+    const parentLabel = this.fieldElement.closest('label');
+    if (parentLabel) return parentLabel;
+
+    return null;
+  }
+
+  /**
+   * Create input overlay container (for text inputs/selects)
+   */
+  createInputOverlayContainer(container) {
+    container.className = 'field-status-overlay';
+    container.innerHTML = this.getStatusHTML();
+
+    // Make parent position relative if not already
+    const parent = this.fieldElement.parentElement;
+    if (getComputedStyle(parent).position === 'static') {
+      parent.style.position = 'relative';
+    }
+
+    parent.appendChild(container);
+    return container;
+  }
+
+  /**
+   * Create full overlay container (for textareas/large inputs)
+   */
+  createFullOverlayContainer(container) {
+    container.className = 'field-status-full-overlay d-none';
+    container.innerHTML = `
+      <div class="saving-indicator">
+        <div class="spinner-border spinner-border-sm text-primary" role="status">
+          <span class="visually-hidden">Saving...</span>
+        </div>
+        <span class="ms-2">Saving...</span>
+      </div>
+      <div class="success-indicator d-none">
+        <i class="bi bi-check-circle text-success"></i>
+        <span class="ms-2">Saved</span>
+      </div>
+      <div class="error-indicator d-none">
+        <i class="bi bi-exclamation-circle text-danger"></i>
+        <span class="ms-2">Error saving</span>
+      </div>
+    `;
+
+    // Make parent position relative if not already
+    const parent = this.fieldElement.parentElement;
+    if (getComputedStyle(parent).position === 'static') {
+      parent.style.position = 'relative';
+    }
+
+    parent.appendChild(container);
+    return container;
+  }
+
+  /**
+   * Get standard status HTML for simple containers
+   */
+  getStatusHTML() {
+    return `
+      <div class="spinner-border spinner-border-sm text-primary d-none" data-status="saving" role="status">
+        <span class="visually-hidden">Saving...</span>
+      </div>
+      <i class="bi bi-check-circle text-success d-none" data-status="saved"></i>
+      <i class="bi bi-exclamation-circle text-danger d-none" data-status="error"></i>
+    `;
   }
 
   /**
@@ -1963,16 +2218,24 @@ class FieldStatusManager {
   showStatus(type, options = {}) {
     // Clear any existing timeouts for this field
     this.clearTimeout(type);
-    
+
+    // Since we only use label-inline now, always use standard status
+    this.showStandardStatus(type, options);
+  }
+
+  /**
+   * Show status for standard containers (right-side, input-overlay)
+   */
+  showStandardStatus(type, options = {}) {
     // Hide all status indicators
     this.hideAllStatuses();
-    
+
     // Show the requested status
     const indicator = this.statusContainer.querySelector(`[data-status="${type}"]`);
     if (indicator) {
       indicator.classList.remove('d-none');
       indicator.classList.add('d-inline-block', 'show');
-      
+
       // Set auto-hide timeout for temporary states
       if (type === 'saved') {
         this.setTimeout(type, () => this.hideStatus(type), 2500);
@@ -1987,6 +2250,45 @@ class FieldStatusManager {
   }
 
   /**
+   * Show status for full overlay containers (textareas)
+   */
+  showFullOverlayStatus(type, options = {}) {
+    // Hide all indicators first
+    const indicators = this.statusContainer.querySelectorAll('.saving-indicator, .success-indicator, .error-indicator');
+    indicators.forEach(ind => ind.classList.add('d-none'));
+
+    // Show the container
+    this.statusContainer.classList.remove('d-none');
+
+    // Show specific indicator
+    let indicatorClass;
+    switch (type) {
+      case 'saving':
+        indicatorClass = '.saving-indicator';
+        break;
+      case 'saved':
+        indicatorClass = '.success-indicator';
+        this.setTimeout(type, () => this.hideStatus(type), 2500);
+        break;
+      case 'error':
+        indicatorClass = '.error-indicator';
+        if (options.message) {
+          const errorSpan = this.statusContainer.querySelector('.error-indicator span');
+          if (errorSpan) errorSpan.textContent = options.message;
+        }
+        this.setTimeout(type, () => this.hideStatus(type), 6000);
+        break;
+    }
+
+    if (indicatorClass) {
+      const indicator = this.statusContainer.querySelector(indicatorClass);
+      if (indicator) {
+        indicator.classList.remove('d-none');
+      }
+    }
+  }
+
+  /**
    * Hide a specific status indicator
    * @param {string} type - Status type to hide
    */
@@ -1995,7 +2297,7 @@ class FieldStatusManager {
     if (indicator) {
       indicator.classList.remove('show');
       indicator.classList.add('hide');
-      
+
       // Actually hide after animation
       setTimeout(() => {
         indicator.classList.add('d-none');

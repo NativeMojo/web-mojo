@@ -170,6 +170,7 @@ export class View {
   }
 
   canRender() {
+      if (this.isRendering) return false;
       // Optional render throttling
       if (this.options.renderCooldown > 0 && now - this.lastRenderTime < this.options.renderCooldown) {
         View._warn(`View ${this.id}: Render called too quickly, cooldown active`);
@@ -310,8 +311,9 @@ export class View {
       } else if (!this.containerId && this.parent) {
           // append to parent
           this.parent.element.appendChild(this.element);
-      } else if (!this.containerId && !this.parent) {
+      } else if (!this.containerId && !this.parent && this.options.allowAppendToBody) {
           // append to body
+          console.log("APPENDING TO BODY!!!!");
           document.body.appendChild(this.element);
       } else {
           // there is a containerId but no container

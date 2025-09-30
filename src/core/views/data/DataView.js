@@ -531,6 +531,21 @@ class DataView extends View {
    * @returns {string} CSS classes
    */
   getColumnClasses(field) {
+      let classes = this.getColumnSizeClasses(field);
+      if (field.justify == "right") {
+        classes += ` d-flex justify-content-end`;
+      } else if (field.justify == "center") {
+        classes += ` d-flex justify-content-center`;
+      }
+      return classes;
+  }
+
+  /**
+   * Generate column size classes based on configuration
+   * @param {object} field - Field definition
+   * @returns {string} CSS classes
+   */
+  getColumnSizeClasses(field) {
     // JSON objects and nested DataViews always use full width for better display
     if (field.type === 'array' || field.type === 'object' || field.type === 'dataview') {
       return 'col-12';
@@ -575,7 +590,7 @@ class DataView extends View {
 
     return `
       <div class="${colClasses}">
-        <div class="${this.dataViewOptions.itemClass}" data-field="${field.name}">
+        <div class="${this.dataViewOptions.itemClass} ${field.className}" data-field="${field.name}">
           ${this.buildLabelHTML(label, field)}
           ${this.buildValueHTML(value, field)}
         </div>

@@ -106,7 +106,7 @@ class TableView extends ListView {
 
     // Build template with Mustache variables
     this.template = this.buildTableTemplate();
-    
+
     // Listen for collection changes to update totals
     this.setupCollectionListeners();
   }
@@ -184,18 +184,18 @@ class TableView extends ListView {
       if (column.footer_total) {
         const safeKey = `col_${totalColumnIndex}`;
         const cell = this.element.querySelector(`[data-total-column="${safeKey}"]`);
-        
+
         if (cell && totals[safeKey]) {
           const formatter = this.parseColumnKey(column.key).formatter || column.formatter;
           let displayValue;
-          
+
           if (formatter && typeof formatter === 'string') {
             // Use DataFormatter if available
             displayValue = this.formatValue(totals[safeKey].value, formatter);
           } else {
             displayValue = totals[safeKey].value;
           }
-          
+
           cell.textContent = displayValue;
         }
         totalColumnIndex++;
@@ -224,24 +224,24 @@ class TableView extends ListView {
     }
 
     const totals = {};
-    
+
     this.footerTotalColumns.forEach((column, totalColumnIndex) => {
       const { fieldKey, formatter } = this.parseColumnKey(column.key);
       let sum = 0;
-      
+
       // Sum values from all items in collection
       this.collection.forEach(model => {
         const value = model.get ? model.get(fieldKey) : model[fieldKey];
         const numValue = parseFloat(value) || 0;
         sum += numValue;
       });
-      
+
       // Debug logging
       console.log(`Footer total for ${column.key}: ${sum} (from ${this.collection.length} items)`);
-      
+
       // Use safe key for Mustache (avoid special characters)
       const safeKey = `col_${totalColumnIndex}`;
-      
+
       // Store total with formatter info
       totals[safeKey] = {
         value: sum,
@@ -250,7 +250,7 @@ class TableView extends ListView {
         originalKey: column.key
       };
     });
-    
+
     return totals;
   }
 
@@ -261,12 +261,11 @@ class TableView extends ListView {
     this.filters = {};
     this.columns.forEach(column => {
       if (column.filter) {
-        this.filters[column.key] = column.filter;
+        const { fieldKey } = this.parseColumnKey(column.key);
+        this.filters[fieldKey] = column.filter;
       }
     });
   }
-
-
 
   isSelectable() {
       return this.batchActions && this.batchActions.length > 0 && this.selectionMode == 'multiple';
@@ -587,14 +586,13 @@ class TableView extends ListView {
       return `
         <span class="badge bg-primary me-1 mb-1 py-1 px-2 position-relative" style="font-size: 0.75rem;">
           <i class="bi bi-${icon} me-1" style="font-size: 0.65rem;"></i>
-          <small>${label}: ${displayValue}</small>
 
           <button type="button" class="btn btn-link text-white p-0 ms-1"
                   style="font-size: 0.65rem; line-height: 1;"
                   data-action="edit-filter"
                   data-filter="${key}"
                   title="Edit filter">
-            <i class="bi bi-pencil"></i>
+            ${label}: ${displayValue}
           </button>
 
           <button type="button" class="btn-close btn-close-white ms-1"
@@ -720,19 +718,19 @@ class TableView extends ListView {
     let totalColumnIndex = 0;
     this.columns.forEach((column, index) => {
       const responsiveClasses = this.getResponsiveClasses(column.visibility);
-      
+
       if (column.footer_total) {
         // Use safe key for Mustache template
         const safeKey = `col_${totalColumnIndex}`;
         const formatter = this.parseColumnKey(column.key).formatter || column.formatter;
-        
+
         let cellContent;
         if (formatter && typeof formatter === 'string') {
           cellContent = `{{{footerTotals.${safeKey}.value|${formatter}}}}`;
         } else {
           cellContent = `{{footerTotals.${safeKey}.value}}`;
         }
-        
+
         footerCells += `<td class="table-footer-total ${responsiveClasses}" data-total-column="${safeKey}">${cellContent}</td>`;
         totalColumnIndex++;
       } else if (index === 0) {
@@ -1222,16 +1220,16 @@ class TableView extends ListView {
       } else if (this.element.msRequestFullscreen) {
         await this.element.msRequestFullscreen();
       }
-      
+
       this.isFullscreen = true;
       this.element.classList.add('table-fullscreen');
       this.updateFullscreenButton();
-      
+
       // Listen for fullscreen change events
       this.setupFullscreenListeners();
-      
+
       this.emit('table:fullscreen:enter');
-      
+
     } catch (error) {
       console.warn('Could not enter fullscreen:', error);
     }
@@ -1251,13 +1249,13 @@ class TableView extends ListView {
       } else if (document.msExitFullscreen) {
         await document.msExitFullscreen();
       }
-      
+
       this.isFullscreen = false;
       this.element.classList.remove('table-fullscreen');
       this.updateFullscreenButton();
-      
+
       this.emit('table:fullscreen:exit');
-      
+
     } catch (error) {
       console.warn('Could not exit fullscreen:', error);
     }
@@ -1269,7 +1267,7 @@ class TableView extends ListView {
   updateFullscreenButton() {
     const button = this.element?.querySelector('.btn-fullscreen');
     const icon = button?.querySelector('i');
-    
+
     if (button && icon) {
       if (this.isFullscreen) {
         icon.className = 'bi bi-fullscreen-exit';
@@ -1653,7 +1651,7 @@ class TableView extends ListView {
     this.searchValue = this.getActiveFilters().search || '';
     this.footerTotals = this.calculateFooterTotals();
     console.log('Setting footerTotals before render:', this.footerTotals);
-    
+
     return super.render(force, container);
   }
 
@@ -1836,7 +1834,42 @@ class TableView extends ListView {
     if (!this.collection?.params) {
       return {};
     }
-    const { start, size, sort, ...filters } = this.collection.params;
+    const { start, size, sort, ...allParams } = this.collection.params;
+    const filters = {};
+
+    // Reconstruct daterange filters from their component parts
+    const processedKeys = new Set();
+
+    // First pass: identify and process daterange filters
+    const allFilterConfigs = this.getAllAvailableFilters();
+    allFilterConfigs.forEach(filterDef => {
+      if (filterDef.config.type === 'daterange') {
+        const key = filterDef.key;
+        const startName = filterDef.config.startName || `${key}_start`;
+        const endName = filterDef.config.endName || `${key}_end`;
+        const fieldName = filterDef.config.fieldName || key;
+
+        // Check if this daterange filter is active
+        if (allParams[startName] || allParams[endName]) {
+          filters[key] = {
+            start: allParams[startName] || '',
+            end: allParams[endName] || ''
+          };
+
+          processedKeys.add(startName);
+          processedKeys.add(endName);
+          processedKeys.add(fieldName);
+        }
+      }
+    });
+
+    // Second pass: add remaining filters
+    Object.keys(allParams).forEach(paramKey => {
+      if (!processedKeys.has(paramKey)) {
+        filters[paramKey] = allParams[paramKey];
+      }
+    });
+
     return filters;
   }
 
@@ -1846,10 +1879,32 @@ class TableView extends ListView {
   setFilter(key, value) {
     if (!this.collection) return;
 
-    if (value === null || value === undefined || value === '') {
-      delete this.collection.params[key];
+    const filterConfig = this.getFilterConfig(key);
+
+    // Handle daterange filters specially
+    if (filterConfig && filterConfig.type === 'daterange') {
+      const startName = filterConfig.startName || `${key}_start`;
+      const endName = filterConfig.endName || `${key}_end`;
+      const fieldName = filterConfig.fieldName || key;
+
+      // Always remove old values first
+      delete this.collection.params[startName];
+      delete this.collection.params[endName];
+      delete this.collection.params[fieldName];
+
+      // Set new values if provided and not empty
+      if (value && typeof value === 'object' && (value.start || value.end)) {
+        if (value.start) this.collection.params[startName] = value.start;
+        if (value.end) this.collection.params[endName] = value.end;
+        this.collection.params[fieldName] = key;
+      }
     } else {
-      this.collection.params[key] = value;
+      // Handle regular filters
+      if (value === null || value === undefined || value === '') {
+        delete this.collection.params[key];
+      } else {
+        this.collection.params[key] = value;
+      }
     }
   }
 
@@ -1862,9 +1917,10 @@ class TableView extends ListView {
     // Add column-based filters
     this.columns.forEach(column => {
       if (column.filter) {
+        const { fieldKey } = this.parseColumnKey(column.key);
         filters.push({
-          key: column.key,
-          label: column.filter.label || column.label || column.key,
+          key: fieldKey,
+          label: column.filter.label || column.label || fieldKey,
           type: column.filter.type,
           config: column.filter
         });
@@ -1891,7 +1947,10 @@ class TableView extends ListView {
    */
   getFilterConfig(filterKey) {
     // Check column filters first
-    const column = this.columns.find(col => col.key === filterKey);
+    const column = this.columns.find(col => {
+      const { fieldKey } = this.parseColumnKey(col.key);
+      return fieldKey === filterKey;
+    });
     if (column && column.filter) {
       return column.filter;
     }
@@ -1932,6 +1991,12 @@ class TableView extends ListView {
 
     const filter = this.filters[key] ||
                   this.additionalFilters.find(f => (f.name || f.key) === key);
+
+    if (filter && filter.type === 'daterange' && typeof value === 'object') {
+      const start = value.start || '';
+      const end = value.end || '';
+      return `${start} to ${end}`;
+    }
 
     if (filter && filter.type === 'select' && filter.options) {
       if (typeof filter.options[0] === 'object') {
@@ -2080,6 +2145,7 @@ class TableView extends ListView {
     const result = await Dialog.showForm({
       title: `Edit ${this.getFilterLabel(filterKey)} Filter`,
       size: 'md',
+      data: {filter_value: currentValue},
       fields: [this.buildFilterDialogField(filterConfig, currentValue)]
     });
 

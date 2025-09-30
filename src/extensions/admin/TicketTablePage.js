@@ -34,7 +34,7 @@ class TicketTablePage extends TablePage {
                     editableOptions: {
                       type: "select",
                       options: [
-                        "new", "opened", "paused", "declined"
+                          "new", "open", "paused", "resolved", "qa", "ignored"
                       ]
                     }
                 },
@@ -50,7 +50,7 @@ class TicketTablePage extends TablePage {
                     }
                 },
                 { key: 'assignee.display_name', label: 'Assignee', sortable: true, formatter: "default('Unassigned')" },
-                { key: 'incident', label: 'Incident ID', sortable: true },
+                { key: 'incident.id', label: 'Incident ID', sortable: true },
                 { key: 'created', label: 'Created', sortable: true, formatter: 'datetime' }
             ],
 

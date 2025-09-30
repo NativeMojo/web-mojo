@@ -390,6 +390,16 @@
     --bs-pagination-disabled-color: var(--bs-secondary, #6c757d);
 }
 
+.btn-link {
+    text-decoration: none;
+}
+
+.btn-link:hover {
+    text-decoration: underline;
+    background-color: transparent;
+    border-color: none;
+}
+
 /* Badges that use bg-primary */
 .badge.bg-primary {
     --bs-badge-color: #fff;
@@ -1075,6 +1085,7 @@
 
 .mojo-form-control {
     margin-bottom: 1rem;
+    position: relative;
 }
 
 .mojo-form-control .form-label {
@@ -1184,10 +1195,55 @@
    Field Status Indicators
    ======================================================================== */
 
-/* Field status container */
+/* Field status containers */
 .field-status {
     display: inline-block;
     margin-left: 8px;
+}
+
+/* Label inline status (for toggles/checkboxes) */
+.field-status-label-inline {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 0.875rem;
+    vertical-align: middle;
+}
+
+/* Input overlay status (for text inputs/selects) */
+.field-status-overlay {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    z-index: 10;
+    pointer-events: none;
+}
+
+/* Full overlay status (for textareas) */
+.field-status-full-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(var(--bs-body-bg-rgb), 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    border-radius: var(--bs-border-radius);
+}
+
+.field-status-full-overlay .saving-indicator,
+.field-status-full-overlay .success-indicator,
+.field-status-full-overlay .error-indicator {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .field-status [data-status] {

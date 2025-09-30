@@ -25,10 +25,9 @@ class LogTablePage extends TablePage {
             // Column definitions
             columns: [
                 {
-                    key: 'created',
+                    key: 'created|epoch|datetime',
                     label: 'Timestamp',
                     sortable: true,
-                    formatter: "epoch|datetime",
                     filter: {
                         name: "created",
                         type: 'daterange',

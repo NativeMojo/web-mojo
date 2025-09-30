@@ -639,6 +639,11 @@ class WebApp {
         }
     }
 
+    async confirm(message, title = 'Confirm', options = {}) {
+        const Dialog = (await import('./views/feedback/Dialog.js')).default;
+        return await Dialog.confirm(message, title, options);
+    }
+
     /**
      * Setup browser focus/blur tracking
      */
@@ -682,7 +687,7 @@ class WebApp {
 
         // Listen for visibility changes
         document.addEventListener('visibilitychange', handleVisibilityChange);
-        
+
         // Listen for window focus/blur
         window.addEventListener('focus', handleFocus);
         window.addEventListener('blur', handleBlur);
