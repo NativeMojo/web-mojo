@@ -299,10 +299,10 @@ class DateRangePicker extends View {
       config.setup = (picker) => {
         picker.on('select', (e) => {
           const { start, end } = e.detail;
-          this.handleRangeChange(
-            start ? this.formatDate(start, this.format) : '',
-            end ? this.formatDate(end, this.format) : ''
-          );
+          // Easepick returns DateTime objects, convert to local date strings
+          const startDate = start ? this.normalizeDateFromPicker(start) : '';
+          const endDate = end ? this.normalizeDateFromPicker(end) : '';
+          this.handleRangeChange(startDate, endDate);
         });
 
         picker.on('clear', () => {
@@ -431,17 +431,69 @@ class DateRangePicker extends View {
   // ========================================
 
   /**
+   * Normalize date from Easepick DateTime object
+   * Easepick DateTime objects may have timezone issues, so extract the date components directly
+   */
+  normalizeDateFromPicker(dateObj) {
+    if (!dateObj) return '';
+    
+    // If it's an Easepick DateTime object, it has a toJSDate() method
+    if (typeof dateObj.toJSDate === 'function') {
+      const jsDate = dateObj.toJSDate();
+      return this.formatDate(jsDate, this.format);
+    }
+    
+    // If it has getFullYear/getMonth/getDate methods (like DateTime)
+    if (typeof dateObj.getFullYear === 'function') {
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      
+      switch (this.format) {
+        case 'YYYY-MM-DD':
+          return `${year}-${month}-${day}`;
+        case 'MM/DD/YYYY':
+          return `${month}/${day}/${year}`;
+        case 'DD/MM/YYYY':
+          return `${day}/${month}/${year}`;
+        default:
+          return `${year}-${month}-${day}`;
+      }
+    }
+    
+    // Fallback to formatDate
+    return this.formatDate(dateObj, this.format);
+  }
+
+  /**
    * Format date for different contexts
    */
   formatDate(date, format = this.format) {
     if (!date) return '';
     
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return '';
+    let year, month, day, d;
+    
+    // If date is a YYYY-MM-DD string, parse it manually to avoid timezone issues
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      const parts = date.split('-');
+      year = parseInt(parts[0]);
+      month = String(parseInt(parts[1])).padStart(2, '0');
+      day = String(parseInt(parts[2])).padStart(2, '0');
+    } else {
+      // Handle Date objects or other string formats
+      if (date instanceof Date) {
+        d = date;
+      } else {
+        d = new Date(date);
+      }
+      
+      if (isNaN(d.getTime())) return '';
 
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
+      // Use getFullYear, getMonth, getDate (local time methods)
+      year = d.getFullYear();
+      month = String(d.getMonth() + 1).padStart(2, '0');
+      day = String(d.getDate()).padStart(2, '0');
+    }
     
     switch (format) {
       case 'YYYY-MM-DD':
@@ -453,7 +505,8 @@ class DateRangePicker extends View {
       case 'MMM DD, YYYY': {
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        return `${monthNames[d.getMonth()]} ${day}, ${year}`;
+        const monthIndex = parseInt(month) - 1;
+        return `${monthNames[monthIndex]} ${day}, ${year}`;
       }
       default:
         return `${year}-${month}-${day}`;
@@ -466,6 +519,24 @@ class DateRangePicker extends View {
   formatForOutput(date) {
     if (!date) return '';
     
+    // If date is already a string in YYYY-MM-DD format, don't re-parse it
+    // to avoid timezone issues
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      switch (this.outputFormat) {
+        case 'epoch':
+          // For epoch, we need to parse but use local midnight
+          const parts = date.split('-');
+          const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+          return Math.floor(d.getTime() / 1000).toString();
+        case 'iso':
+          return new Date(date + 'T00:00:00').toISOString();
+        case 'date':
+        default:
+          return date; // Already in the correct format
+      }
+    }
+    
+    // For Date objects or other formats, parse and convert
     const d = new Date(date);
     if (isNaN(d.getTime())) return '';
 
@@ -540,8 +611,11 @@ class DateRangePicker extends View {
     const combinedInput = this.name ? this.element?.querySelector(`[name="${this.name}"]`) : null;
     const fieldNameInput = this.fieldName ? this.element?.querySelector(`[name="${this.fieldName}"]`) : null;
 
-    if (startInput) startInput.value = this.currentStartDate ? this.formatForOutput(this.currentStartDate) : '';
-    if (endInput) endInput.value = this.currentEndDate ? this.formatForOutput(this.currentEndDate) : '';
+    const startValue = this.currentStartDate ? this.formatForOutput(this.currentStartDate) : '';
+    const endValue = this.currentEndDate ? this.formatForOutput(this.currentEndDate) : '';
+    
+    if (startInput) startInput.value = startValue;
+    if (endInput) endInput.value = endValue;
     if (combinedInput) combinedInput.value = this.getDisplayValue();
     if (fieldNameInput) fieldNameInput.value = this.name || '';
   }

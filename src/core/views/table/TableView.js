@@ -1845,12 +1845,12 @@ class TableView extends ListView {
     allFilterConfigs.forEach(filterDef => {
       if (filterDef.config.type === 'daterange') {
         const key = filterDef.key;
-        const startName = filterDef.config.startName || `${key}_start`;
-        const endName = filterDef.config.endName || `${key}_end`;
-        const fieldName = filterDef.config.fieldName || key;
+        const startName = filterDef.config.startName || 'dr_start';
+        const endName = filterDef.config.endName || 'dr_end';
+        const fieldName = filterDef.config.fieldName || 'dr_field';
 
-        // Check if this daterange filter is active
-        if (allParams[startName] || allParams[endName]) {
+        // Check if this daterange filter is active for this specific key
+        if (allParams[fieldName] === key && (allParams[startName] || allParams[endName])) {
           filters[key] = {
             start: allParams[startName] || '',
             end: allParams[endName] || ''
@@ -1883,9 +1883,9 @@ class TableView extends ListView {
 
     // Handle daterange filters specially
     if (filterConfig && filterConfig.type === 'daterange') {
-      const startName = filterConfig.startName || `${key}_start`;
-      const endName = filterConfig.endName || `${key}_end`;
-      const fieldName = filterConfig.fieldName || key;
+      const startName = filterConfig.startName || 'dr_start';
+      const endName = filterConfig.endName || 'dr_end';
+      const fieldName = filterConfig.fieldName || 'dr_field';
 
       // Always remove old values first
       delete this.collection.params[startName];
@@ -2043,7 +2043,7 @@ class TableView extends ListView {
     const result = await Dialog.showForm({
       title: `${currentValue !== undefined && currentValue !== '' ? 'Edit' : 'Add'} ${this.getFilterLabel(filterKey)} Filter`,
       size: 'md',
-      fields: [this.buildFilterDialogField(filterConfig, currentValue)]
+      fields: [this.buildFilterDialogField(filterConfig, currentValue, filterKey)]
     });
 
     if (result) {
@@ -2057,7 +2057,7 @@ class TableView extends ListView {
   /**
    * Build filter dialog field configuration
    */
-  buildFilterDialogField(filterConfig, currentValue) {
+  buildFilterDialogField(filterConfig, currentValue, filterKey) {
     const field = {
       name: 'filter_value',
       label: filterConfig.label,
@@ -2067,6 +2067,15 @@ class TableView extends ListView {
 
     // Set current value appropriately based on filter type
     if (filterConfig.type === 'daterange') {
+      // Apply defaults for daterange
+      field.startName = field.startName || 'dr_start';
+      field.endName = field.endName || 'dr_end';
+      field.fieldName = field.fieldName || 'dr_field';
+      field.format = field.format || 'YYYY-MM-DD';
+      field.displayFormat = field.displayFormat || 'MMM DD, YYYY';
+      field.separator = field.separator || ' to ';
+      field.label = field.label || 'Date Range';
+
       // Handle daterange current values
       if (currentValue && typeof currentValue === 'object') {
         field.startDate = currentValue.start || '';
@@ -2083,8 +2092,8 @@ class TableView extends ListView {
   extractFilterValue(filterConfig, formResult) {
     if (filterConfig.type === 'daterange') {
       // Extract start/end values based on naming convention
-      const startName = filterConfig.startName || 'filter_value_start';
-      const endName = filterConfig.endName || 'filter_value_end';
+      const startName = filterConfig.startName || 'dr_start';
+      const endName = filterConfig.endName || 'dr_end';
 
       const result = {
         start: formResult[startName],
@@ -2146,7 +2155,7 @@ class TableView extends ListView {
       title: `Edit ${this.getFilterLabel(filterKey)} Filter`,
       size: 'md',
       data: {filter_value: currentValue},
-      fields: [this.buildFilterDialogField(filterConfig, currentValue)]
+      fields: [this.buildFilterDialogField(filterConfig, currentValue, filterKey)]
     });
 
     if (result) {

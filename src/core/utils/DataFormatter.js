@@ -978,22 +978,28 @@ class DataFormatter {
    * @param {*} value - Status value
    * @param {Object} icons - Icon mapping
    * @param {Object} colors - Color mapping
+   * @param {boolean} noIcons - Whether to include icons
+   * @param {boolean} noText - Whether to include text
    * @returns {string} Status HTML
    */
-  status(value, icons = {}, colors = {}) {
+  status(value, icons = {}, colors = {}, noIcons = false, noText = false) {
     const status = String(value).toLowerCase();
 
     const defaultIcons = {
-      'active': '✓',
-      'inactive': '✗',
-      'pending': '⏳',
-      'success': '✓',
-      'error': '✗',
-      'warning': '⚠'
+      'active': 'bi bi-check-circle-fill',
+      'approved': 'bi bi-check-circle-fill',
+      'declined': 'bi bi-x-circle-fill',
+      'inactive': 'bi bi-pause-circle-fill',
+      'pending': 'bi bi-clock-fill',
+      'success': 'bi bi-check-circle-fill',
+      'error': 'bi bi-exclamation-triangle-fill',
+      'warning': 'bi bi-exclamation-triangle-fill'
     };
 
     const defaultColors = {
       'active': 'success',
+      "approved": "success",
+      "declined": "danger",
       'inactive': 'secondary',
       'pending': 'warning',
       'success': 'success',
@@ -1001,10 +1007,19 @@ class DataFormatter {
       'warning': 'warning'
     };
 
-    const icon = icons[status] || defaultIcons[status] || '';
+    const iconClass = icons[status] || defaultIcons[status] || '';
     const color = colors[status] || defaultColors[status] || 'secondary';
 
-    return `<span class="text-${color}">${icon}${icon ? ' ' : ''}${value}</span>`;
+    let icon = '';
+    if (!noIcons && iconClass) {
+      icon = `<i class="${iconClass}"></i>`;
+    }
+    let text = '';
+    if (!noText) {
+      text = value;
+    }
+
+    return `<span class="text-${color}">${icon}${icon ? ' ' : ''}${text}</span>`;
   }
 
   /**
@@ -1014,8 +1029,9 @@ class DataFormatter {
    * @param {string} falseText - Text for false
    * @returns {string} Boolean text
    */
-  boolean(value, trueText = 'True', falseText = 'False') {
-    return value ? trueText : falseText;
+  boolean(value, trueText = 'True', falseText = 'False', colored = false) {
+    const text = value ? trueText : falseText;
+    return colored ? `<span class="text-${value ? 'success' : 'danger'}">${text}</span>` : text;
   }
 
   /**

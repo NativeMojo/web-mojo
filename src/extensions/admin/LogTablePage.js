@@ -29,15 +29,8 @@ class LogTablePage extends TablePage {
                     label: 'Timestamp',
                     sortable: true,
                     filter: {
-                        name: "created",
                         type: 'daterange',
-                        startName: 'dr_start',
-                        endName: 'dr_end',
-                        fieldName: 'dr_field',
-                        label: 'Date Range',
-                        format: 'YYYY-MM-DD',
-                        displayFormat: 'MMM DD, YYYY',
-                        separator: ' to '
+
                     }
                 },
                 {
