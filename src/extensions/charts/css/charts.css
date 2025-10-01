@@ -1260,6 +1260,12 @@
     font-weight: 600;
 }
 
+.mini-chart-tooltip-label {
+    font-size: 0.6875rem;
+    opacity: 0.8;
+    margin-bottom: 0.125rem;
+}
+
 [data-theme="dark"] .mini-chart-tooltip {
     background: rgba(255, 255, 255, 0.9);
     color: #212529;

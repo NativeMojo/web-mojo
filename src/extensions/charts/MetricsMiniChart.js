@@ -1,45 +1,13 @@
 /**
- * MetricsMiniChart - Metrics display with integrated mini sparkline
- * Shows a metric value with label and a small trend chart
- * Supports the same /api/metrics/fetch API as MetricsChart
+ * MetricsMiniChart - MiniChart with API integration
+ * Extends MiniChart to add /api/metrics/fetch support (same API as MetricsChart)
  */
 
-import View from '@core/View.js';
 import MiniChart from './MiniChart.js';
 
-export default class MetricsMiniChart extends View {
+export default class MetricsMiniChart extends MiniChart {
   constructor(options = {}) {
-    super({
-      className: 'metrics-mini-chart',
-      ...options
-    });
-
-    // Metric data
-    this.label = options.label || '';
-    this.value = options.value || 0;
-    this.data = options.data || [];
-    this.trend = options.trend; // 'up', 'down', or auto-calculate
-    this.trendValue = options.trendValue; // Percentage change
-    
-    // Chart configuration
-    this.chartType = options.chartType || 'line';
-    this.chartWidth = options.chartWidth || 100;
-    this.chartHeight = options.chartHeight || 40;
-    this.chartColor = options.chartColor || 'rgba(54, 162, 235, 1)';
-    this.fill = options.fill !== false;
-    this.smoothing = options.smoothing || 0.3;
-    
-    // Formatting
-    this.valueFormatter = options.valueFormatter || null;
-    this.suffix = options.suffix || '';
-    this.prefix = options.prefix || '';
-    
-    // Styling
-    this.variant = options.variant || 'default'; // 'default', 'success', 'danger', 'warning', 'info'
-    this.size = options.size || 'md'; // 'sm', 'md', 'lg'
-    
-    // Layout
-    this.layout = options.layout || 'horizontal'; // 'horizontal' or 'vertical'
+    super(options);
     
     // API configuration (matching MetricsChart)
     this.endpoint = options.endpoint || '/api/metrics/fetch';
@@ -65,126 +33,20 @@ export default class MetricsMiniChart extends View {
     if (this.slugs && !Array.isArray(this.slugs)) {
       this.slugs = [this.slugs];
     }
-    
-    // Create mini chart instance
-    this.miniChart = null;
-  }
-
-  getTemplate() {
-    const sizeClass = `metrics-mini-chart-${this.size}`;
-    const variantClass = this.variant !== 'default' ? `metrics-mini-chart-${this.variant}` : '';
-    const layoutClass = `metrics-mini-chart-${this.layout}`;
-    
-    return `
-      <div class="metrics-mini-chart-container ${sizeClass} ${variantClass} ${layoutClass}">
-        <div class="metrics-info">
-          <div class="metrics-label">${this.escapeHtml(this.label)}</div>
-          <div class="metrics-value-row">
-            <div class="metrics-value" data-ref="value">
-              ${this.formatValue(this.value)}
-            </div>
-            ${this.renderTrendBadge()}
-          </div>
-        </div>
-        <div class="metrics-chart" data-container="chart"></div>
-      </div>
-    `;
-  }
-
-  async onInit() {
-    // Create mini chart
-    this.miniChart = new MiniChart({
-      chartType: this.chartType,
-      data: this.data,
-      width: this.chartWidth,
-      height: this.chartHeight,
-      color: this.getChartColor(),
-      fillColor: this.getFillColor(),
-      fill: this.fill,
-      smoothing: this.smoothing,
-      animate: true
-    });
-    
-    this.addChild(this.miniChart, 'chart');
-    
-    // Setup auto-refresh if configured
-    if (this.refreshInterval && this.endpoint) {
-      this.startAutoRefresh();
-    }
   }
 
   async onAfterRender() {
     await super.onAfterRender();
     
-    // Fetch initial data if endpoint provided
-    if (this.endpoint && this.data.length === 0) {
+    // Fetch initial data if endpoint provided and no data
+    if (this.endpoint && (!this.data || this.data.length === 0)) {
       await this.fetchData();
     }
-  }
-
-  renderTrendBadge() {
-    if (!this.trend && this.trendValue === undefined) {
-      return '';
+    
+    // Setup auto-refresh if configured
+    if (this.refreshInterval && this.endpoint) {
+      this.startAutoRefresh();
     }
-    
-    const trend = this.trend || (this.trendValue > 0 ? 'up' : 'down');
-    const trendIcon = trend === 'up' ? 'bi-arrow-up' : 'bi-arrow-down';
-    const trendClass = trend === 'up' ? 'trend-up' : 'trend-down';
-    const trendValueStr = this.trendValue !== undefined 
-      ? `${Math.abs(this.trendValue)}%` 
-      : '';
-    
-    return `
-      <span class="metrics-trend ${trendClass}">
-        <i class="bi ${trendIcon}"></i>
-        ${trendValueStr}
-      </span>
-    `;
-  }
-
-  getChartColor() {
-    // Return color based on variant
-    const colorMap = {
-      success: 'rgba(75, 192, 192, 1)',
-      danger: 'rgba(255, 99, 132, 1)',
-      warning: 'rgba(255, 206, 86, 1)',
-      info: 'rgba(54, 162, 235, 1)',
-      default: this.chartColor
-    };
-    
-    return colorMap[this.variant] || this.chartColor;
-  }
-
-  getFillColor() {
-    const color = this.getChartColor();
-    // Convert to fill with low opacity
-    return color.replace(/[\d.]+\)$/, '0.1)');
-  }
-
-  formatValue(value) {
-    let formatted = value;
-    
-    if (this.valueFormatter) {
-      // Use custom formatter
-      if (typeof this.valueFormatter === 'function') {
-        formatted = this.valueFormatter(value);
-      } else if (this.dataFormatter) {
-        formatted = this.dataFormatter.pipe(value, this.valueFormatter);
-      }
-    } else {
-      // Default formatting
-      if (typeof value === 'number') {
-        formatted = value.toLocaleString();
-      }
-    }
-    
-    return `${this.prefix}${formatted}${this.suffix}`;
-  }
-
-  escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
   }
 
   buildApiParams() {
@@ -278,23 +140,11 @@ export default class MetricsMiniChart extends View {
       return typeof val === 'number' ? val : (parseFloat(val) || 0);
     });
     
+    // Update labels (for tooltips)
+    this.labels = labels || null;
+    
     // Update chart data
     this.setData(sanitizedValues);
-    
-    // Calculate current value (latest data point)
-    const currentValue = sanitizedValues[sanitizedValues.length - 1] || 0;
-    this.setValue(currentValue);
-    
-    // Auto-calculate trend if we have at least 2 data points
-    if (sanitizedValues.length >= 2) {
-      const firstValue = sanitizedValues[0];
-      const lastValue = sanitizedValues[sanitizedValues.length - 1];
-      
-      if (firstValue !== 0) {
-        this.trendValue = parseFloat(((lastValue - firstValue) / firstValue * 100).toFixed(1));
-        this.trend = this.trendValue >= 0 ? 'up' : 'down';
-      }
-    }
   }
 
   setQuickRange(range) {
@@ -340,52 +190,20 @@ export default class MetricsMiniChart extends View {
   }
 
   // Public API
-  setValue(value) {
-    this.value = value;
-    const valueElement = this.element?.querySelector('[data-ref="value"]');
-    if (valueElement) {
-      valueElement.textContent = this.formatValue(value);
-    }
+  setGranularity(granularity) {
+    this.granularity = granularity;
+    return this.fetchData();
   }
 
-  setData(data) {
-    this.data = data;
-    if (this.miniChart) {
-      this.miniChart.setData(data);
-    }
-    
-    // Auto-calculate trend if not set
-    if (data.length >= 2 && this.trendValue === undefined) {
-      const first = typeof data[0] === 'object' ? data[0].value : data[0];
-      const last = typeof data[data.length - 1] === 'object' ? data[data.length - 1].value : data[data.length - 1];
-      
-      if (first !== 0) {
-        this.trendValue = ((last - first) / first * 100).toFixed(1);
-        this.trend = this.trendValue > 0 ? 'up' : 'down';
-      }
-    }
+  setDateRange(startDate, endDate) {
+    this.dateStart = new Date(startDate);
+    this.dateEnd = new Date(endDate);
+    return this.fetchData();
   }
 
-  setLabel(label) {
-    this.label = label;
-    const labelElement = this.element?.querySelector('.metrics-label');
-    if (labelElement) {
-      labelElement.textContent = label;
-    }
-  }
-
-  setVariant(variant) {
-    if (this.element) {
-      this.element.querySelector('.metrics-mini-chart-container')
-        ?.classList.remove(`metrics-mini-chart-${this.variant}`);
-      this.element.querySelector('.metrics-mini-chart-container')
-        ?.classList.add(`metrics-mini-chart-${variant}`);
-    }
-    this.variant = variant;
-    
-    if (this.miniChart) {
-      this.miniChart.setColor(this.getChartColor());
-    }
+  setMetrics(slugs) {
+    this.slugs = Array.isArray(slugs) ? slugs : [slugs];
+    return this.fetchData();
   }
 
   refresh() {
