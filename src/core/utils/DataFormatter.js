@@ -85,6 +85,7 @@ class DataFormatter {
     this.register('icon', this.icon.bind(this));
     this.register('avatar', this.avatar.bind(this));
     this.register('image', this.image.bind(this));
+    this.register('tooltip', this.tooltip.bind(this));
 
     // Utility formatters
     this.register('default', this.default.bind(this));
@@ -154,13 +155,14 @@ class DataFormatter {
    * Process pipe string
    * @param {*} value - Value to format
    * @param {string} pipeString - Pipe string (e.g., "date('YYYY-MM-DD')|uppercase")
+   * @param {object} context - Optional context for resolving variables in formatter arguments
    * @returns {*} Formatted value
    */
-  pipe(value, pipeString) {
+  pipe(value, pipeString, context = null) {
     if (!pipeString) return value;
 
     // Split by pipe and process each formatter
-    const pipes = this.parsePipeString(pipeString);
+    const pipes = this.parsePipeString(pipeString, context);
 
     return pipes.reduce((currentValue, pipe) => {
       return this.apply(pipe.name, currentValue, ...pipe.args);
@@ -170,14 +172,15 @@ class DataFormatter {
   /**
    * Parse pipe string into formatter calls
    * @param {string} pipeString - Pipe string
+   * @param {object} context - Optional context for resolving variables
    * @returns {Array} Array of {name, args} objects
    */
-  parsePipeString(pipeString) {
+  parsePipeString(pipeString, context = null) {
     const pipes = [];
     const tokens = pipeString.split('|').map(s => s.trim());
 
     for (const token of tokens) {
-      const parsed = this.parseFormatter(token);
+      const parsed = this.parseFormatter(token, context);
       if (parsed) {
         pipes.push(parsed);
       }
@@ -188,26 +191,41 @@ class DataFormatter {
 
   /**
    * Parse individual formatter with arguments
+   * Supports both syntaxes:
+   *   - Parentheses: formatter('arg1', 'arg2', 3)
+   *   - Colon: formatter:'arg1':'arg2':3
+   * 
    * @param {string} token - Formatter token
+   * @param {object} context - Optional context for resolving variables
    * @returns {Object} {name, args} object
    */
-  parseFormatter(token) {
-    // Match formatter with optional arguments
-    const match = token.match(/^([a-zA-Z_]\w*)\s*(?:\((.*)\))?$/);
-    if (!match) return null;
+  parseFormatter(token, context = null) {
+    // Try parentheses syntax first: formatter(arg1, arg2)
+    const parenMatch = token.match(/^([a-zA-Z_]\w*)\s*\((.*)\)$/);
+    if (parenMatch) {
+      const [, name, argsString] = parenMatch;
+      const args = argsString ? this.parseArguments(argsString, context) : [];
+      return { name, args };
+    }
 
-    const [, name, argsString] = match;
-    const args = argsString ? this.parseArguments(argsString) : [];
+    // Try colon syntax: formatter:arg1:arg2
+    const colonMatch = token.match(/^([a-zA-Z_]\w*)(?::(.+))?$/);
+    if (colonMatch) {
+      const [, name, argsString] = colonMatch;
+      const args = argsString ? this.parseColonArguments(argsString, context) : [];
+      return { name, args };
+    }
 
-    return { name, args };
+    return null;
   }
 
   /**
-   * Parse formatter arguments
+   * Parse formatter arguments (comma-separated, parentheses syntax)
    * @param {string} argsString - Arguments string
+   * @param {object} context - Optional context for resolving variables
    * @returns {Array} Parsed arguments
    */
-  parseArguments(argsString) {
+  parseArguments(argsString, context = null) {
     const args = [];
     let current = '';
     let inQuotes = false;
@@ -232,7 +250,7 @@ class DataFormatter {
         depth--;
         current += char;
       } else if (!inQuotes && depth === 0 && char === ',') {
-        args.push(this.parseValue(current.trim()));
+        args.push(this.parseValue(current.trim(), context));
         current = '';
       } else {
         current += char;
@@ -240,7 +258,46 @@ class DataFormatter {
     }
 
     if (current.trim()) {
-      args.push(this.parseValue(current.trim()));
+      args.push(this.parseValue(current.trim(), context));
+    }
+
+    return args;
+  }
+
+  /**
+   * Parse formatter arguments (colon-separated syntax)
+   * Handles quoted strings with colons inside them
+   * @param {string} argsString - Arguments string
+   * @param {object} context - Optional context for resolving variables
+   * @returns {Array} Parsed arguments
+   */
+  parseColonArguments(argsString, context = null) {
+    const args = [];
+    let current = '';
+    let inQuotes = false;
+    let quoteChar = null;
+
+    for (let i = 0; i < argsString.length; i++) {
+      const char = argsString[i];
+
+      if (!inQuotes && (char === '"' || char === "'")) {
+        inQuotes = true;
+        quoteChar = char;
+        current += char;
+      } else if (inQuotes && char === quoteChar && argsString[i - 1] !== '\\') {
+        inQuotes = false;
+        quoteChar = null;
+        current += char;
+      } else if (!inQuotes && char === ':') {
+        args.push(this.parseValue(current.trim(), context));
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+
+    if (current.trim()) {
+      args.push(this.parseValue(current.trim(), context));
     }
 
     return args;
@@ -249,10 +306,11 @@ class DataFormatter {
   /**
    * Parse a single value
    * @param {string} value - Value string
+   * @param {object} context - Optional context for resolving variables
    * @returns {*} Parsed value
    */
-  parseValue(value) {
-    // Remove quotes if present
+  parseValue(value, context = null) {
+    // Remove quotes if present - quoted strings are always literals
     if ((value.startsWith('"') && value.endsWith('"')) ||
         (value.startsWith("'") && value.endsWith("'"))) {
       return value.slice(1, -1);
@@ -274,11 +332,45 @@ class DataFormatter {
       try {
         return JSON.parse(value);
       } catch (e) {
-        // Not valid JSON, return as string
+        // Not valid JSON, continue
       }
     }
 
+    // Try to resolve from context if available
+    // This allows: {{value|tooltip:title:'top'}} where title is a context variable
+    if (context && this.isIdentifier(value)) {
+      // Try direct property access
+      if (context.hasOwnProperty && context.hasOwnProperty(value)) {
+        return context[value];
+      }
+      // Try get() method (for Models/Views)
+      if (context.get && typeof context.get === 'function') {
+        const contextValue = context.get(value);
+        if (contextValue !== undefined) {
+          return contextValue;
+        }
+      }
+      // Try getContextValue() method
+      if (context.getContextValue && typeof context.getContextValue === 'function') {
+        const contextValue = context.getContextValue(value);
+        if (contextValue !== undefined) {
+          return contextValue;
+        }
+      }
+    }
+
+    // Fall back to treating as literal string
     return value;
+  }
+
+  /**
+   * Check if a value is a valid identifier (variable name)
+   * @param {string} value - Value to check
+   * @returns {boolean} True if valid identifier
+   */
+  isIdentifier(value) {
+    // Valid JavaScript identifier: starts with letter/underscore, contains letters/numbers/underscores
+    return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(value);
   }
 
   // ============= Date/Time Formatters =============
@@ -1113,6 +1205,29 @@ class DataFormatter {
     const allClasses = `${baseClasses} ${classes}`.trim();
 
     return `<img src="${url}" class="${allClasses}" style="${sizeStyle}" alt="${alt}" />`;
+  }
+
+  /**
+   * Tooltip formatter - wraps value with Bootstrap tooltip
+   * Usage: 
+   *   {{value|tooltip:'Tooltip text'}}
+   *   {{value|tooltip:'Help text':top}}
+   *   {{value|tooltip:'Info':bottom:html}}
+   * 
+   * @param {*} value - Value to display
+   * @param {string} text - Tooltip text content
+   * @param {string} placement - Tooltip placement: top, bottom, left, right (default: top)
+   * @param {string} html - 'html' to allow HTML in tooltip (default: text only)
+   * @returns {string} HTML with tooltip
+   */
+  tooltip(value, text = '', placement = 'top', html = '') {
+    if (value === null || value === undefined) return '';
+    
+    const displayValue = this.escapeHtml(String(value));
+    const tooltipText = html === 'html' ? text : this.escapeHtml(text);
+    const dataAttr = html === 'html' ? 'data-bs-html="true"' : '';
+    
+    return `<span data-bs-toggle="tooltip" data-bs-placement="${placement}" ${dataAttr} data-bs-title="${tooltipText}">${displayValue}</span>`;
   }
 
   /**

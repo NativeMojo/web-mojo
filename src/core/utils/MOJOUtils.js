@@ -47,9 +47,9 @@ class MOJOUtils {
     // Get the raw value
     const value = this.getNestedValue(context, field);
 
-    // Apply pipes if present
+    // Apply pipes if present, passing context for variable resolution
     if (pipes) {
-      return dataFormatter.pipe(value, pipes);
+      return dataFormatter.pipe(value, pipes, context);
     }
 
     return value;
@@ -624,9 +624,9 @@ class DataWrapper {
       value = undefined;
     }
 
-    // Apply pipes if present
+    // Apply pipes if present, passing root context for variable resolution
     if (pipes && value !== undefined) {
-      return dataFormatter.pipe(value, pipes);
+      return dataFormatter.pipe(value, pipes, this._rootContext || this._data);
     }
 
     return value;

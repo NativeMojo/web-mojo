@@ -1,4 +1,4 @@
 <h1>Hello {{name|uppercase}}!</h1>
 <p>Your email is: {{{email|email}}}</p>
-<p>Age: {{age}}</p>
+<p>Age: {{{age|tooltip:'Hello'}}}</p>
 <p>HTML is escaped: {{htmlContent}}</p>

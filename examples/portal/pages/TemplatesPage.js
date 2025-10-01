@@ -3,7 +3,7 @@
  * Demonstrates all features of the MOJO Mustache implementation
  */
 
-import { Page, MOJOUtils } from 'web-mojo';
+import { Page, MOJOUtils } from '/src/index.js';
 
 class TemplatesPage extends Page {
     constructor(options = {}) {
@@ -387,12 +387,32 @@ if (example) {
             // Clear any previous errors
             outputRendered.classList.remove('text-danger');
 
+            // Initialize Bootstrap tooltips
+            this.initializeTooltips(outputRendered);
+
         } catch (error) {
             outputRendered.innerHTML = `<div class="alert alert-danger">
                 <i class="bi bi-exclamation-triangle me-2"></i>
                 Error: ${this.escapeHtml(error.message)}
             </div>`;
             outputHtml.textContent = 'Error: ' + error.message;
+        }
+    }
+
+    initializeTooltips(container) {
+        // Dispose existing tooltips first
+        const existingTooltips = container.querySelectorAll('[data-bs-toggle="tooltip"]');
+        existingTooltips.forEach(element => {
+            const tooltip = window.bootstrap?.Tooltip?.getInstance(element);
+            if (tooltip) {
+                tooltip.dispose();
+            }
+        });
+
+        // Initialize new tooltips
+        if (window.bootstrap?.Tooltip) {
+            const tooltipTriggerList = container.querySelectorAll('[data-bs-toggle="tooltip"]');
+            [...tooltipTriggerList].map(tooltipTriggerEl => new window.bootstrap.Tooltip(tooltipTriggerEl));
         }
     }
 
