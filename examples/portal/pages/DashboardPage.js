@@ -3,6 +3,7 @@
  */
 
 import { Page } from 'web-mojo';
+import MiniChart from '@ext/charts/MiniChart.js';
 
 class DashboardPage extends Page {
     static pageName = 'dashboard';
@@ -54,6 +55,30 @@ class DashboardPage extends Page {
                 }
             ]
         };
+        const miniChart = new MiniChart({
+          containerId: 'mini-chart-1',
+          chartType: 'line',
+          showTooltip: true,
+          data: [10, 25, 15, 35, 28, 40, 35],
+          height: 40,
+          color: 'rgba(54, 162, 235, 1)',
+          fill: true,
+          smoothing: 0.3
+        });
+
+        this.addChild(miniChart);
+
+        const miniChart2 = new MiniChart({
+          containerId: 'mini-chart-2',
+          chartType: 'bar',
+          data: Array.from({length: 22}, () => Math.floor(Math.random() * 40) + 10),
+          height: 40,
+          color: 'rgba(54, 162, 235, 1)',
+          fill: true,
+          smoothing: 0.3
+        });
+
+        this.addChild(miniChart2);
     }
 
     async onEnter() {

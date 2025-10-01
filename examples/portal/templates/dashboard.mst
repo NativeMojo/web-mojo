@@ -26,6 +26,9 @@
                         <i class="bi bi-arrow-up"></i> {{data.revenueChange}}%
                     </small>
                 </div>
+                <div data-container="mini-chart-1">
+test
+                </div>
             </div>
         </div>
         <div class="col-md-3">
@@ -53,6 +56,9 @@
                     <small class="text-danger">
                         <i class="bi bi-arrow-down"></i> {{data.usersChange}}%
                     </small>
+                </div>
+                <div data-container="mini-chart-2">
+test
                 </div>
             </div>
         </div>
