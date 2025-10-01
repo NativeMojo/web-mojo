@@ -51,7 +51,7 @@ class FormView extends View {
     this.formConfig = formConfig || { fields: fields || [] };
     this.formBuilder = new FormBuilder({
       ...this.formConfig,
-      structureOnly: true, // Only generate structure, FormView will control values
+      data: this.data, // Pass data so field.value defaults work
       errors
     });
   }
@@ -69,7 +69,8 @@ class FormView extends View {
       if (this.model.attributes && typeof this.model.attributes === 'object') {
         Object.assign(formData, this.model.attributes);
       } else if (typeof this.model.toJSON === 'function') {
-        Object.assign(formData, this.model.toJSON());
+        const modelData = this.model.toJSON();
+        Object.assign(formData, modelData);
       } else if (typeof this.model === 'object' && this.model.constructor === Object) {
         Object.assign(formData, this.model);
       }
@@ -153,7 +154,11 @@ class FormView extends View {
 
     // Use MOJOUtils to handle nested properties like 'permissions.manage_users'
     const value = MOJOUtils.getContextData(this.data, fieldConfig.name);
-    this.setFieldValue(fieldElement, fieldConfig, value);
+    
+    // Only set value if we have actual data - don't overwrite field defaults with undefined
+    if (value !== undefined && value !== null) {
+      this.setFieldValue(fieldElement, fieldConfig, value);
+    }
   }
 
   /**
@@ -178,10 +183,7 @@ class FormView extends View {
     const imageFields = this.element.querySelectorAll('.image-drop-zone.droppable');
 
     if (imageFields.length > 0) {
-      // Apply FileDropMixin to this FormView
-      applyFileDropMixin(FormView);
-
-      // Enable file drop functionality
+      // Enable file drop functionality (mixin already applied at module level)
       this.enableFileDrop({
         acceptedTypes: ['image/*'],
         maxFileSize: 10 * 1024 * 1024, // 10MB
@@ -226,7 +228,10 @@ class FormView extends View {
     // Add change listeners to all form inputs that don't already have specific handlers
     const inputs = this.element.querySelectorAll('input:not([data-action]), select:not([data-action]), textarea:not([data-action])');
 
+    console.log('FormView: initializeChangeHandlers - found', inputs.length, 'inputs');
+
     inputs.forEach(input => {
+      console.log('FormView: Processing input:', input.type, input.name, input.getAttribute('data-change-action'));
       // Skip inputs that already have specific handlers or are handled by custom components
       if (input.hasAttribute('data-component') || input.classList.contains('form-check-input')) {
         return;
@@ -250,6 +255,16 @@ class FormView extends View {
           } else if (input.multiple && input.selectedOptions) {
             // Handle multi-select
             value = Array.from(input.selectedOptions).map(opt => opt.value);
+          } else if (input.type === 'file') {
+            // Handle file inputs (including images)
+            const changeAction = input.getAttribute('data-change-action');
+            if (changeAction === 'image-selected') {
+              this.onChangeImageSelected(event, input);
+              return; // Don't call handleFieldChange for images
+            } else if (changeAction === 'file-selected') {
+              this.onChangeFileSelected(event, input);
+              return; // Don't call handleFieldChange for files
+            }
           }
 
           this.handleFieldChange(fieldName, value);
@@ -636,12 +651,27 @@ class FormView extends View {
    * Handle image upload click
    */
   async onActionClickImageUpload(event, element) {
+    console.log('FormView: onActionClickImageUpload called');
+    console.log('FormView: element:', element);
+    
     const fieldId = element.getAttribute('data-field-id');
-    if (!fieldId) return;
+    console.log('FormView: fieldId:', fieldId);
+    
+    if (!fieldId) {
+      console.error('FormView: No fieldId attribute found');
+      return;
+    }
 
     const fileInput = this.element.querySelector(`#${fieldId}`);
+    console.log('FormView: fileInput:', fileInput);
+    
     if (fileInput && !fileInput.disabled) {
       fileInput.click();
+      console.log('FormView: fileInput.click() called');
+    } else if (!fileInput) {
+      console.error('FormView: fileInput not found for fieldId:', fieldId);
+    } else {
+      console.log('FormView: fileInput is disabled');
     }
   }
 
@@ -820,24 +850,41 @@ class FormView extends View {
    * Handle image selection
    */
   async onChangeImageSelected(event, element) {
+    console.log('FormView: onChangeImageSelected called');
+    console.log('FormView: element:', element);
+    console.log('FormView: element.files:', element.files);
+    
     const fieldName = element.getAttribute('data-field');
     const file = element.files[0];
 
+    console.log('FormView: fieldName:', fieldName);
+    console.log('FormView: file:', file);
+
     if (fieldName && file) {
+      console.log('FormView: fieldName and file exist, processing...');
+      
       // Find the field configuration to check for imageSize
       const fieldConfig = this.findFieldConfig(fieldName);
+      console.log('FormView: fieldConfig:', fieldConfig);
 
       // Create temporary preview URL
       const previewUrl = URL.createObjectURL(file);
+      console.log('FormView: previewUrl created:', previewUrl);
 
       // Check if image cropping is required
       if (fieldConfig && fieldConfig.imageSize) {
+        console.log('FormView: Image cropping is required, imageSize:', fieldConfig.imageSize);
         try {
           // Check if lightbox extension is available for image cropping
           const ImageCropView = window.MOJO?.plugins?.ImageCropView;
+          console.log('FormView: ImageCropView available?', !!ImageCropView);
 
           if (!ImageCropView) {
-            // ImageCropView not available
+            // ImageCropView not available - fall back to normal handling without cropping
+            console.log('FormView: ImageCropView not available, falling back to normal handling');
+            this.data[fieldName] = file;
+            await this.updateImagePreview(fieldName, previewUrl);
+            this.emit('image:selected', { field: fieldName, file: file, form: this });
             return;
           }
 
@@ -883,7 +930,9 @@ class FormView extends View {
           }
         } catch (error) {
           // Error during image cropping
+          console.error('FormView: Error during image cropping:', error);
           // Fall back to normal image handling
+          console.log('FormView: Falling back to normal image handling after error');
           this.data[fieldName] = file;
           await this.updateImagePreview(fieldName, previewUrl);
 
@@ -901,15 +950,22 @@ class FormView extends View {
         }
       } else {
         // Normal image handling without cropping
+        console.log('FormView: Normal image handling (no cropping)');
         this.data[fieldName] = file;
+        console.log('FormView: File stored in this.data[' + fieldName + ']');
+        
         await this.updateImagePreview(fieldName, previewUrl);
+        console.log('FormView: updateImagePreview completed');
 
         this.emit('image:selected', {
           field: fieldName,
           file: file,
           form: this
         });
+        console.log('FormView: image:selected event emitted');
       }
+    } else {
+      console.log('FormView: Missing fieldName or file - not processing');
     }
   }
 
@@ -1117,6 +1173,38 @@ class FormView extends View {
         data[checkbox.name] = checkbox.checked;
       });
 
+      // Convert number fields to actual numbers
+      const numberInputs = form.querySelectorAll('input[type="number"]');
+      numberInputs.forEach(input => {
+        if (input.name && data[input.name] !== undefined && data[input.name] !== '') {
+          const num = Number(data[input.name]);
+          if (!isNaN(num)) {
+            data[input.name] = num;
+          }
+        }
+      });
+
+      // Convert select fields with numeric values based on field config
+      this.formConfig.fields?.forEach(field => {
+        if (field.type === 'select' && field.name && data[field.name] !== undefined) {
+          const fieldConfig = this.getFormFieldConfig(field.name);
+          // Check if all option values are numeric
+          if (fieldConfig?.options && Array.isArray(fieldConfig.options)) {
+            const allNumeric = fieldConfig.options.every(opt => {
+              const val = typeof opt === 'object' ? opt.value : opt;
+              return val === '' || !isNaN(Number(val));
+            });
+            
+            if (allNumeric && data[field.name] !== '') {
+              const num = Number(data[field.name]);
+              if (!isNaN(num)) {
+                data[field.name] = num;
+              }
+            }
+          }
+        }
+      });
+
       // Handle JSON fields
       const jsonFields = form.querySelectorAll('[data-field-type="json"]');
       jsonFields.forEach(textarea => {
@@ -1126,6 +1214,15 @@ class FormView extends View {
               // Invalid JSON in field
               data[textarea.name] = textarea.value; // Keep as string if invalid
           }
+      });
+
+      // Handle custom components (TagInput, CollectionSelect, DatePicker, etc.)
+      this.customComponents.forEach((component, fieldName) => {
+        if (component.getFormValue) {
+          data[fieldName] = component.getFormValue();
+        } else if (component.getValue) {
+          data[fieldName] = component.getValue();
+        }
       });
 
       // Convert files to base64 and add to data
@@ -2349,6 +2446,9 @@ class FieldStatusManager {
     this.timeouts.clear();
   }
 }
+
+// Apply FileDropMixin to FormView class
+applyFileDropMixin(FormView);
 
 export default FormView;
 export { FormView };

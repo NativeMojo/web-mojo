@@ -659,10 +659,10 @@ class WebApp {
 
             if (wasFocused !== this.isFocused) {
                 if (this.isFocused) {
-                    console.log('🔥 Browser gained focus');
+                    // console.log('🔥 Browser gained focus');
                     this.events.emit('browser:focus');
                 } else {
-                    console.log('💤 Browser lost focus');
+                    // console.log('💤 Browser lost focus');
                     this.events.emit('browser:blur');
                 }
             }
@@ -672,7 +672,7 @@ class WebApp {
         const handleFocus = () => {
             if (!this.isFocused) {
                 this.isFocused = true;
-                console.log('🔥 Browser gained focus');
+                // console.log('🔥 Browser gained focus');
                 this.events.emit('browser:focus');
             }
         };
@@ -680,7 +680,7 @@ class WebApp {
         const handleBlur = () => {
             if (this.isFocused) {
                 this.isFocused = false;
-                console.log('💤 Browser lost focus');
+                // console.log('💤 Browser lost focus');
                 this.events.emit('browser:blur');
             }
         };

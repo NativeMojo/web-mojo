@@ -30,7 +30,6 @@ class LogTablePage extends TablePage {
                     sortable: true,
                     filter: {
                         type: 'daterange',
-
                     }
                 },
                 {

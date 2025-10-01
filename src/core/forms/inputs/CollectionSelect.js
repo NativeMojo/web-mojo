@@ -536,6 +536,10 @@ class CollectionSelectView extends View {
   }
 
   getValue() {
+    // Return null if value is 0 or '0' (no selection)
+    if (this.selectedValue === 0 || this.selectedValue === '0') {
+      return null;
+    }
     return this.selectedValue;
   }
 
@@ -564,6 +568,10 @@ class CollectionSelectView extends View {
 
   // FormBuilder integration
   getFormValue() {
+    // Return null if value is 0 or '0' (no selection)
+    if (this.selectedValue === 0 || this.selectedValue === '0') {
+      return null;
+    }
     return this.selectedValue;
   }
 

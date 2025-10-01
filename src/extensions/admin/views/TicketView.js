@@ -16,9 +16,9 @@ class TicketView extends View {
         this.model = options.model || new Ticket(options.data || {});
 
         this.template = `
-            <div class="ticket-view-container">
+            <div class="ticket-view-container d-flex flex-column h-100">
                 <!-- Ticket Header -->
-                <div class="d-flex justify-content-between align-items-start mb-4">
+                <div class="d-flex justify-content-between align-items-start mb-3 flex-shrink-0">
                     <!-- Left Side: Primary Identity -->
                     <div class="d-flex align-items-center gap-3">
                         <div class="avatar-placeholder rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
@@ -60,60 +60,21 @@ class TicketView extends View {
                     </div>
                 </div>
 
-                <!-- Content Area -->
-                <div class="row">
-                    <div class="col-lg-8">
-                        <!-- Description Section -->
-                        <div class="mb-4">
-                            <h5 class="border-bottom pb-2 mb-3">Description</h5>
-                            <div class="border rounded p-3 bg-light">
-                                {{#model.description}}
-                                    {{{model.description}}}
-                                {{/model.description}}
-                                {{^model.description}}
-                                    <em class="text-muted">No description provided</em>
-                                {{/model.description}}
-                            </div>
-                        </div>
-
-                        <!-- Activity & Notes Section -->
-                        <div>
-                            <h5 class="border-bottom pb-2 mb-3">Activity & Notes</h5>
-                            <div data-container="chat-view"></div>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-4">
-                        <!-- Details Sidebar -->
-                        <div class="border rounded p-3 bg-light">
-                            <h5 class="mb-3">Ticket Details</h5>
-                            <div data-container="details-view"></div>
-                        </div>
-                    </div>
-                </div>
+                <!-- Chat View (Full height) -->
+                <div class="flex-grow-1" style="min-height: 0;" data-container="chat-view"></div>
             </div>
         `;
     }
 
     async onInit() {
-        // Details View
-        this.detailsView = new DataView({
-            containerId: 'details-view',
-            model: this.model,
-            fields: [
-                { name: 'assignee.display_name', label: 'Assignee' },
-                { name: 'incident', label: 'Incident' },
-                { name: 'created', label: 'Created', format: 'datetime' },
-                { name: 'modified', label: 'Last Updated', format: 'datetime' },
-            ]
-        });
-        this.addChild(this.detailsView);
-
-        // Chat View
+        // Chat View with compact theme (Option 4)
         const adapter = new TicketNoteAdapter(this.model.get('id'));
         this.chatView = new ChatView({
             containerId: 'chat-view',
             adapter: adapter,
+            theme: 'compact', // Use compact admin-style theme
+            currentUserId: this.getCurrentUserId(),
+            inputPlaceholder: 'Add a note...',
             inputButtonText: 'Add Note'
         });
         this.addChild(this.chatView);
@@ -136,6 +97,16 @@ class TicketView extends View {
             }
         });
         this.addChild(ticketMenu);
+    }
+
+    /**
+     * Get current user ID for chat message positioning
+     * @returns {number|null}
+     */
+    getCurrentUserId() {
+        // Get from WebApp state or wherever your app stores current user
+        const currentUser = window.app?.state?.user;
+        return currentUser?.id || null;
     }
 
     // Context Menu Action Handlers

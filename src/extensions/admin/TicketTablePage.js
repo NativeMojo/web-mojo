@@ -20,14 +20,13 @@ class TicketTablePage extends TablePage {
             itemViewClass: TicketView,
 
             viewDialogOptions: {
-                header: false,
-                size: 'xl'
+                header: false
             },
 
             // Column definitions
             columns: [
                 { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },
-                { key: 'title', label: 'Title', sortable: true, editable: true },
+                { key: 'title', label: 'Title', sortable: true},
                 {
                     key: 'status', label: 'Status', sortable: true,
                     editable: true,

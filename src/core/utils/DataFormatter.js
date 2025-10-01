@@ -76,6 +76,8 @@ class DataFormatter {
     this.register('url', this.url.bind(this));
     this.register('badge', this.badge.bind(this));
     this.register('status', this.status.bind(this));
+    this.register('status_text', this.status_text.bind(this));
+    this.register('status_icon', this.status_icon.bind(this));
     this.register('boolean', this.boolean.bind(this));
     this.register('bool', this.boolean.bind(this));
     this.register('yesno', (v) => this.boolean(v, 'Yes', 'No'));
@@ -973,6 +975,18 @@ class DataFormatter {
     return 'secondary';
   }
 
+  status(value) {
+      return this._status(value);
+  }
+
+  status_icon(value) {
+      return this._status(value, {}, {}, false, true);
+  }
+
+  status_text(value) {
+      return this._status(value, {}, {}, true, false);
+  }
+
   /**
    * Format status
    * @param {*} value - Status value
@@ -982,7 +996,7 @@ class DataFormatter {
    * @param {boolean} noText - Whether to include text
    * @returns {string} Status HTML
    */
-  status(value, icons = {}, colors = {}, noIcons = false, noText = false) {
+  _status(value, icons = {}, colors = {}, noIcons = false, noText = false) {
     const status = String(value).toLowerCase();
 
     const defaultIcons = {

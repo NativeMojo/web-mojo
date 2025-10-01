@@ -1121,7 +1121,8 @@ class FormBuilder {
 
     const inputClass = `form-select ${fieldClass}`.trim();
     const error = this.errors[name];
-    const fieldValue = (this.getFieldValue(name) ?? value);
+    const dataValue = this.getFieldValue(name);
+    const fieldValue = (dataValue ?? value);
 
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
     const fieldId = this.getFieldId(name);
@@ -1764,7 +1765,8 @@ class FormBuilder {
     if (this.structureOnly) {
       return '';
     }
-    return MOJOUtils.getContextData(this.data, name);
+    const value = MOJOUtils.getContextData(this.data, name);
+    return value;
   }
 
   /**

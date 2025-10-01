@@ -137,10 +137,9 @@ export class EventDelegate {
   hideDropdown(element) {
     const dropdownMenu = element.closest('.dropdown-menu');
     const dropdown = dropdownMenu.closest('.dropdown');
-    // if (dropdown) {
-    //   const hideEvent = new Event('hide.bs.dropdown', { bubbles: true });
-    //   dropdown.dispatchEvent(hideEvent);
-    // }
+    if (!dropdown) {
+        return;
+    }
 
     const dropdownBtn = dropdown.querySelector('[data-bs-toggle="dropdown"]');
     if (dropdownBtn && window.bootstrap?.Dropdown) {

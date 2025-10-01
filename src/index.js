@@ -7,6 +7,7 @@ import '@core/css/core.css';
 import '@core/css/portal.css';
 import '@core/css/table.css';
 import '@core/css/toast.css';
+import '@core/css/chat.css';
 
 // Version info
 export {
@@ -62,6 +63,9 @@ export { default as SimpleSearchView } from '@core/views/navigation/SimpleSearch
 export { default as DataView } from '@core/views/data/DataView.js';
 export { default as FormView } from '@core/forms/FormView.js';
 export { default as FilePreviewView } from '@core/views/data/FilePreviewView.js';
+export { default as ChatView } from '@core/views/chat/ChatView.js';
+export { default as ChatMessageView } from '@core/views/chat/ChatMessageView.js';
+export { default as ChatInputView } from '@core/views/chat/ChatInputView.js';
 
 // Services, utils, mixins
 export { default as FileUpload } from '@core/services/FileUpload.js';

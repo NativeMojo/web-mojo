@@ -3,7 +3,7 @@ import { TicketNote, TicketNoteList } from '@core/models/Tickets.js';
 class TicketNoteAdapter {
     constructor(ticketId) {
         this.ticketId = ticketId;
-        this.collection = new TicketNoteList({ params: { parent: this.ticketId } });
+        this.collection = new TicketNoteList({ params: { parent: this.ticketId, sort: 'created' } });
     }
 
     async fetch() {
@@ -16,6 +16,7 @@ class TicketNoteAdapter {
             id: note.get('id'),
             type: 'user_comment', // Ticket notes are always user comments
             author: {
+                id: note.get('user.id'),
                 name: note.get('user.display_name') || 'System',
                 avatarUrl: note.get('user.avatar.url')
             },
