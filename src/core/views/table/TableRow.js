@@ -40,20 +40,56 @@ class TableRow extends ListViewItem {
 
   /**
    * Get responsive CSS classes for column visibility
-   * @param {string} visibility - Bootstrap breakpoint (sm, md, lg, xl, xxl)
+   * @param {string|object} visibility - Bootstrap breakpoint or config object
+   *   - String: 'md' = show at md and up (hide below)
+   *   - Object: { hide: 'md' } = hide at md and up (show below)
+   *   - Object: { show: 'md', hide: 'lg' } = show from md to lg only
    * @returns {string} Bootstrap responsive display classes
    */
   getResponsiveClasses(visibility) {
     if (!visibility) return ''; // Always visible if no visibility specified
 
     const validBreakpoints = ['sm', 'md', 'lg', 'xl', 'xxl'];
-    if (!validBreakpoints.includes(visibility)) {
-      console.warn(`Invalid visibility breakpoint: ${visibility}. Valid options are: ${validBreakpoints.join(', ')}`);
-      return '';
+    
+    // Legacy string format: show at breakpoint and up
+    if (typeof visibility === 'string') {
+      if (!validBreakpoints.includes(visibility)) {
+        console.warn(`Invalid visibility breakpoint: ${visibility}. Valid options are: ${validBreakpoints.join(', ')}`);
+        return '';
+      }
+      return `d-none d-${visibility}-table-cell`;
+    }
+    
+    // Object format for more control
+    if (typeof visibility === 'object') {
+      const classes = [];
+      
+      // Hide at breakpoint and up
+      if (visibility.hide) {
+        if (!validBreakpoints.includes(visibility.hide)) {
+          console.warn(`Invalid hide breakpoint: ${visibility.hide}. Valid options are: ${validBreakpoints.join(', ')}`);
+          return '';
+        }
+        classes.push(`d-table-cell d-${visibility.hide}-none`);
+      }
+      
+      // Show at breakpoint and up (optionally combined with hide)
+      if (visibility.show) {
+        if (!validBreakpoints.includes(visibility.show)) {
+          console.warn(`Invalid show breakpoint: ${visibility.show}. Valid options are: ${validBreakpoints.join(', ')}`);
+          return '';
+        }
+        if (!visibility.hide) {
+          classes.push(`d-none d-${visibility.show}-table-cell`);
+        } else {
+          classes.push(`d-${visibility.show}-table-cell`);
+        }
+      }
+      
+      return classes.join(' ');
     }
 
-    // Hide on smaller screens, show at breakpoint and up using table-cell display
-    return `d-none d-${visibility}-table-cell`;
+    return '';
   }
 
   /**
