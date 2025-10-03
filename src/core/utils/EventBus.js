@@ -92,7 +92,7 @@ class EventBus {
       const index = this.listeners[event].indexOf(callback);
       if (index !== -1) {
         this.listeners[event].splice(index, 1);
-        
+
         // Clean up empty arrays
         if (this.listeners[event].length === 0) {
           delete this.listeners[event];
@@ -105,7 +105,7 @@ class EventBus {
       const index = this.onceListeners[event].indexOf(callback);
       if (index !== -1) {
         this.onceListeners[event].splice(index, 1);
-        
+
         // Clean up empty arrays
         if (this.onceListeners[event].length === 0) {
           delete this.onceListeners[event];
@@ -132,7 +132,7 @@ class EventBus {
     }
 
     const listeners = [];
-    
+
     // Collect regular listeners
     if (this.listeners[event]) {
       listeners.push(...this.listeners[event]);
@@ -163,10 +163,17 @@ class EventBus {
     // Call all listeners
     listeners.forEach(callback => {
       try {
-        callback(data, event);
+        if (callback(data, event)) {
+            if (event.stopPropagation) {
+                event.stopPropagation();
+            }
+            if (event.preventDefault) {
+                event.preventDefault();
+            }
+        }
       } catch (error) {
         console.error(`Error in event listener for '${event}':`, error);
-        
+
         // Emit error event
         this.emitError(error, event, callback);
       }
@@ -275,7 +282,7 @@ class EventBus {
    */
   namespace(namespace) {
     const prefixEvent = (event) => `${namespace}:${event}`;
-    
+
     return {
       on: (event, callback) => this.on(prefixEvent(event), callback),
       once: (event, callback) => this.once(prefixEvent(event), callback),
@@ -296,20 +303,20 @@ class EventBus {
     }
 
     const originalEmit = this.emit;
-    
+
     this.emit = (event, data) => {
       try {
         const result = middleware(event, data);
-        
+
         // If middleware returns false, cancel the event
         if (result === false) {
           return this;
         }
-        
+
         // If middleware returns modified data, use it
         const finalData = result !== undefined ? result : data;
         return originalEmit.call(this, event, finalData);
-        
+
       } catch (error) {
         console.error('Error in event middleware:', error);
         return originalEmit.call(this, event, data);
@@ -350,7 +357,7 @@ class EventBus {
   waitFor(event, timeout = null) {
     return new Promise((resolve, reject) => {
       let timeoutId = null;
-      
+
       const cleanup = () => {
         if (timeoutId) {
           clearTimeout(timeoutId);
@@ -423,7 +430,7 @@ class EventBus {
         lastEmission: null
       };
     }
-    
+
     this.eventStats[event].count++;
     this.eventStats[event].lastEmission = Date.now();
   }
@@ -456,12 +463,12 @@ class EventBus {
     if (!stats.firstEmission || !stats.lastEmission) {
       return 0;
     }
-    
+
     const durationMs = stats.lastEmission - stats.firstEmission;
     if (durationMs === 0) {
       return 0;
     }
-    
+
     const durationMinutes = durationMs / (1000 * 60);
     return Math.round((stats.count / durationMinutes) * 100) / 100;
   }
@@ -500,15 +507,15 @@ class EventBus {
     console.group('[EventBus] Debug Information');
     console.log('Debug Mode:', this.debugMode);
     console.log('Max Listeners:', this.maxListeners);
-    
+
     const stats = this.getStats();
     console.log('Total Events:', stats.totalEvents);
     console.log('Total Listeners:', stats.totalListeners);
-    
+
     if (Object.keys(this.eventStats).length > 0) {
       console.log('Top Events:', this.getTopEvents(5));
     }
-    
+
     console.groupEnd();
     return this;
   }

@@ -10,7 +10,16 @@ import { MetricsChart } from '@ext/charts/index.js';
 class AdminHeaderView extends View {
   constructor(options = {}) {
     super({
+      title: 'Dashboard',
       ...options,
+      headerActions: [
+          {
+              label: 'Export',
+              icon: 'bi-download',
+              action: 'export',
+              buttonClass: 'btn-primary'
+          }
+      ],
       className: 'admin-header-section'
     });
 

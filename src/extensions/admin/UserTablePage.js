@@ -40,7 +40,7 @@ class UserTablePage extends TablePage {
                     sortable: false
                 },
                 {
-                    key: 'display_name',
+                    key: 'display_name|tooltip:model.email',
                     label: 'Display Name',
                 },
                 {

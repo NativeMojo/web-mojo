@@ -20,6 +20,7 @@ class TableRow extends ListViewItem {
     super({
       tagName: 'tr',
       className: 'table-row',
+      enableTooltips: true,
       ...options
     });
 
@@ -29,7 +30,7 @@ class TableRow extends ListViewItem {
     this.contextMenu = options.contextMenu || null;
     this.batchActions = options.batchActions || null;
     this.tableView = options.tableView || options.listView || null;
-    
+
     // Inline editing state
     this.editingCells = new Set(); // Track which cells are being edited
 
@@ -82,7 +83,7 @@ class TableRow extends ListViewItem {
       const editableClass = column.editable ? 'editable-cell' : '';
       const combinedClasses = [cellClass, responsiveClasses, editableClass].filter(c => c).join(' ');
       const cellContent = this.buildCellTemplate(column);
-      
+
       // Determine cell action
       let cellAction = column.action;
       if (!cellAction && column.editable) {
@@ -129,12 +130,12 @@ class TableRow extends ListViewItem {
        if (column.template) {
          return column.template;
        }
-       
+
        // For editable cells, wrap content in a span for easy replacement
        if (column.editable) {
          return `<span class="cell-content" data-field="${column.key}">{{{${path}}}}</span>`;
        }
-       
+
        return `{{{${path}}}}`;
    }
 
@@ -298,15 +299,15 @@ class TableRow extends ListViewItem {
    */
   async onActionEditCell(event, element) {
     event.stopPropagation();
-    
+
     const columnKey = element.getAttribute('data-column');
     const column = this.columns.find(col => col.key === columnKey);
-    
+
     if (!column || !column.editable) return;
-    
+
     // Don't enter edit mode if already editing this cell
     if (this.editingCells.has(columnKey)) return;
-    
+
     await this.enterEditMode(columnKey, column, element);
   }
 
@@ -408,22 +409,22 @@ class TableRow extends ListViewItem {
   async enterEditMode(columnKey, column, cellElement) {
     const contentSpan = cellElement.querySelector('.cell-content');
     if (!contentSpan) return;
-    
+
     this.editingCells.add(columnKey);
     const currentValue = this.model.get ? this.model.get(columnKey) : this.model[columnKey];
-    
+
     // Create editor based on column configuration
     const editor = this.createCellEditor(column, currentValue);
-    
+
     // Replace content with editor
     const originalContent = contentSpan.innerHTML;
     contentSpan.style.display = 'none';
-    
+
     const editorContainer = document.createElement('div');
     editorContainer.className = 'cell-editor';
     editorContainer.innerHTML = editor;
     cellElement.appendChild(editorContainer);
-    
+
     // Focus the input
     const input = editorContainer.querySelector('input, select, .form-check-input');
     if (input) {
@@ -432,14 +433,14 @@ class TableRow extends ListViewItem {
         input.select();
       }
     }
-    
+
     // Store original content for cancel
     editorContainer.dataset.originalContent = originalContent;
     editorContainer.dataset.columnKey = columnKey;
-    
+
     // Set up event listeners
     this.setupEditorEvents(editorContainer, columnKey, column);
-    
+
     this.emit('cell:edit', {
       row: this,
       model: this.model,
@@ -453,7 +454,7 @@ class TableRow extends ListViewItem {
    */
   createCellEditor(column, currentValue) {
     const options = column.editableOptions || {};
-    
+
     switch (options.type) {
       case 'select':
         return this.createSelectEditor(options, currentValue);
@@ -473,11 +474,11 @@ class TableRow extends ListViewItem {
   createTextEditor(options, currentValue) {
     const placeholder = options.placeholder || '';
     const inputType = options.inputType || 'text';
-    
+
     return `
       <div class="d-flex gap-1 align-items-center">
-        <input type="${inputType}" 
-               class="form-control form-control-sm cell-input" 
+        <input type="${inputType}"
+               class="form-control form-control-sm cell-input"
                value="${this.escapeHtml(currentValue || '')}"
                placeholder="${placeholder}">
         <button type="button" class="btn btn-sm btn-success cell-save" title="Save">
@@ -496,10 +497,10 @@ class TableRow extends ListViewItem {
   createTextareaEditor(options, currentValue) {
     const placeholder = options.placeholder || '';
     const rows = options.rows || 2;
-    
+
     return `
       <div class="d-flex gap-1">
-        <textarea class="form-control form-control-sm cell-input" 
+        <textarea class="form-control form-control-sm cell-input"
                   rows="${rows}"
                   placeholder="${placeholder}">${this.escapeHtml(currentValue || '')}</textarea>
         <div class="d-flex flex-column gap-1">
@@ -520,7 +521,7 @@ class TableRow extends ListViewItem {
   createSelectEditor(options, currentValue) {
     const optionsArray = options.options || [];
     let optionsHtml = '';
-    
+
     optionsArray.forEach(option => {
       if (typeof option === 'string') {
         const selected = option === currentValue ? 'selected' : '';
@@ -530,7 +531,7 @@ class TableRow extends ListViewItem {
         optionsHtml += `<option value="${option.value}" ${selected}>${option.label || option.value}</option>`;
       }
     });
-    
+
     return `
       <div class="d-flex gap-1 align-items-center">
         <select class="form-select form-select-sm cell-input">
@@ -552,7 +553,7 @@ class TableRow extends ListViewItem {
   createSwitchEditor(options, currentValue) {
     const checked = currentValue ? 'checked' : '';
     const switchType = options.type === 'switch' ? 'form-switch' : '';
-    
+
     return `
       <div class="d-flex gap-2 align-items-center">
         <div class="form-check ${switchType}">
@@ -577,7 +578,7 @@ class TableRow extends ListViewItem {
     const input = editorContainer.querySelector('.cell-input');
     const saveBtn = editorContainer.querySelector('.cell-save');
     const cancelBtn = editorContainer.querySelector('.cell-cancel');
-    
+
     // Save on Enter (for text inputs)
     if (input && (input.type === 'text' || input.type === 'email' || input.type === 'number')) {
       input.addEventListener('keydown', (e) => {
@@ -590,19 +591,19 @@ class TableRow extends ListViewItem {
         }
       });
     }
-    
+
     // Save on change for selects and checkboxes (if auto-save enabled)
     if (input && (input.type === 'checkbox' || input.tagName === 'SELECT') && column.autoSave !== false) {
       input.addEventListener('change', () => {
         this.saveCellEdit(editorContainer, columnKey, column);
       });
     }
-    
+
     // Button events
     saveBtn?.addEventListener('click', () => {
       this.saveCellEdit(editorContainer, columnKey, column);
     });
-    
+
     cancelBtn?.addEventListener('click', () => {
       this.cancelCellEdit(editorContainer, columnKey);
     });
@@ -614,9 +615,9 @@ class TableRow extends ListViewItem {
   async saveCellEdit(editorContainer, columnKey, column) {
     const input = editorContainer.querySelector('.cell-input');
     if (!input) return;
-    
+
     let newValue;
-    
+
     // Extract value based on input type
     if (input.type === 'checkbox') {
       newValue = input.checked;
@@ -625,9 +626,9 @@ class TableRow extends ListViewItem {
     } else {
       newValue = input.value;
     }
-    
+
     const oldValue = this.model.get ? this.model.get(columnKey) : this.model[columnKey];
-    
+
     // Save to model and backend
     try {
       if (this.model.save) {
@@ -636,10 +637,10 @@ class TableRow extends ListViewItem {
         // Fallback for models without save method
         this.model[columnKey] = newValue;
       }
-      
+
       // Exit edit mode
       this.exitEditMode(editorContainer, columnKey, newValue);
-      
+
       // Emit save event
       this.emit('cell:save', {
         row: this,
@@ -648,7 +649,7 @@ class TableRow extends ListViewItem {
         oldValue: oldValue,
         newValue: newValue
       });
-      
+
     } catch (error) {
       // Show error and keep in edit mode
       console.error('Failed to save cell edit:', error);
@@ -660,7 +661,7 @@ class TableRow extends ListViewItem {
         newValue: newValue,
         error: error
       });
-      
+
       // Could show an error message in the UI
       editorContainer.classList.add('saving-error');
       setTimeout(() => editorContainer.classList.remove('saving-error'), 3000);
@@ -673,7 +674,7 @@ class TableRow extends ListViewItem {
   cancelCellEdit(editorContainer, columnKey) {
     const originalContent = editorContainer.dataset.originalContent;
     this.exitEditMode(editorContainer, columnKey, null, originalContent);
-    
+
     this.emit('cell:cancel', {
       row: this,
       model: this.model,
@@ -687,26 +688,26 @@ class TableRow extends ListViewItem {
   exitEditMode(editorContainer, columnKey, newValue = null, originalContent = null) {
     const cellElement = editorContainer.closest('td');
     const contentSpan = cellElement.querySelector('.cell-content');
-    
+
     if (contentSpan) {
       if (newValue !== null) {
         // Update display with new value (with proper formatting if needed)
         const column = this.columns.find(col => col.key === columnKey);
         let displayValue = newValue;
-        
+
         if (column && column.formatter && typeof column.formatter === 'string') {
           displayValue = dataFormatter.pipe(newValue, column.formatter);
         }
-        
+
         contentSpan.innerHTML = this.escapeHtml(displayValue);
       } else if (originalContent) {
         // Restore original content on cancel
         contentSpan.innerHTML = originalContent;
       }
-      
+
       contentSpan.style.display = '';
     }
-    
+
     // Remove editor
     editorContainer.remove();
     this.editingCells.delete(columnKey);

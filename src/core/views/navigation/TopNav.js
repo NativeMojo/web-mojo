@@ -4,6 +4,7 @@
  */
 
 import View from '@core/View.js';
+import GroupSelectorButton from '@core/views/navigation/GroupSelectorButton.js';
 
 class TopNav extends View {
     constructor(options = {}) {
@@ -32,10 +33,12 @@ class TopNav extends View {
         });
 
         // Display mode configuration
-        this.displayMode = options.displayMode || 'both'; // 'menu' | 'page' | 'both'
+        // 'menu' | 'page' | 'both' | 'group' | 'group_page_titles'
+        this.displayMode = options.displayMode || 'both';
         this.showPageIcon = options.showPageIcon !== false;
         this.showPageDescription = options.showPageDescription || false;
         this.showBreadcrumbs = options.showBreadcrumbs || false;
+        this.groupIcon = options.groupIcon || 'bi-building';
 
         // Current page tracking
         this.currentPage = null;
@@ -55,8 +58,18 @@ class TopNav extends View {
         this.userMenu = options.userMenu || this.findMenuItem('user');
         if (this.userMenu) this.userMenu.id = "user";
         this.loginMenu = options.loginMenu || this.findMenuItem('login');
+        
         // Setup page event listeners
         this.setupPageListeners();
+        
+        // Setup group event listeners for group display modes
+        this.setupGroupListeners();
+        
+        // Store reference to group selector for click-to-open functionality
+        this.groupSelectorButton = null;
+        
+        // Track current group for display modes
+        this.currentGroup = null;
     }
 
     findMenuItem(id) {
@@ -122,6 +135,25 @@ class TopNav extends View {
                 </button>
                 {{/data.showSidebarToggle}}
 
+                {{#data.showGroupInfo}}
+                <div class="navbar-brand d-flex align-items-center">
+                    {{#data.groupIcon}}<i class="{{data.groupIcon}} me-2"></i>{{/data.groupIcon}}
+                    <div>
+                        <span class="topnav-group-name" 
+                              role="button" 
+                              tabindex="0"
+                              data-action="open-group-selector"
+                              style="cursor: pointer;">
+                            {{data.currentGroupName}}
+                        </span>
+                        {{#data.showPageTitle}}
+                        <span class="text-muted mx-2">|</span>
+                        <span>{{data.currentPageName}}</span>
+                        {{/data.showPageTitle}}
+                    </div>
+                </div>
+                {{/data.showGroupInfo}}
+
                 {{#data.showPageInfo}}
                 <div class="navbar-brand d-flex align-items-center">
                     {{#data.currentPageIcon}}<i class="{{data.currentPageIcon}} me-2"></i>{{/data.currentPageIcon}}
@@ -134,12 +166,12 @@ class TopNav extends View {
                 </div>
                 {{/data.showPageInfo}}
 
-                {{^data.showPageInfo}}
+                {{#data.showBrand}}
                 <a class="navbar-brand" href="{{data.brandRoute}}">
                     {{#data.brandIcon}}<i class="{{data.brandIcon}} me-2"></i>{{/data.brandIcon}}
                     {{data.brand}}
                 </a>
-                {{/data.showPageInfo}}
+                {{/data.showBrand}}
 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#{{data.navbarId}}">
                     <span class="navbar-toggler-icon"></span>
@@ -162,6 +194,10 @@ class TopNav extends View {
                     {{#data.hasRightItems}}
                     <div class="navbar-nav ms-auto">
                         {{#data.rightItems}}
+                        {{#isGroupSelector}}
+                        <div data-container="group-selector-{{id}}"></div>
+                        {{/isGroupSelector}}
+                        {{^isGroupSelector}}
                         {{#isDropdown}}
                         <div class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -199,6 +235,7 @@ class TopNav extends View {
                         </a>
                         {{/isButton}}
                         {{/isDropdown}}
+                        {{/isGroupSelector}}
                         {{/data.rightItems}}
                     </div>
                     {{/data.hasRightItems}}
@@ -213,7 +250,15 @@ class TopNav extends View {
     async onBeforeRender() {
         await super.onBeforeRender();
 
+        const app = this.getApp();
+        // Use cached currentGroup or fall back to app.activeGroup
+        const activeGroup = this.currentGroup || app?.activeGroup;
+
+        // Determine what to show based on display mode
+        const showGroupInfo = this.displayMode === 'group' || this.displayMode === 'group_page_titles';
+        const showPageTitle = this.displayMode === 'group_page_titles';
         const showPageInfo = this.displayMode === 'page' || this.displayMode === 'both';
+        const showBrand = !showGroupInfo && !showPageInfo;
         const showNavItems = this.displayMode === 'menu' || this.displayMode === 'both';
 
         // Filter navItems based on permissions
@@ -227,6 +272,7 @@ class TopNav extends View {
             brand: this.config.brand,
             brandIcon: this.config.brandIcon,
             brandRoute: this.config.brandRoute,
+            showBrand: showBrand,
 
             // Navbar configuration
             navbarId: `navbar-${this.id}`,
@@ -238,6 +284,12 @@ class TopNav extends View {
             // Right items
             rightItems: rightItems,
             hasRightItems: rightItems.length > 0,
+
+            // Group display
+            showGroupInfo: showGroupInfo,
+            showPageTitle: showPageTitle,
+            currentGroupName: activeGroup?.get?.('name') || activeGroup?.name || 'Select Group',
+            groupIcon: this.groupIcon,
 
             // Page display
             showPageInfo: showPageInfo,
@@ -266,8 +318,41 @@ class TopNav extends View {
                 processedItem.items = this.filterItemsByPermissions(item.items);
             }
 
-            // Determine item type
-            if (processedItem.items && processedItem.items.length > 0) {
+            // Check for group selector type
+            if (item.type === 'group-selector') {
+                processedItem.isGroupSelector = true;
+                processedItem.isDropdown = false;
+                processedItem.isButton = false;
+                
+                // Create group selector button with smart defaults
+                // Only pass through explicitly provided options
+                const groupSelectorOptions = {
+                    containerId: `group-selector-${item.id || 'default'}`
+                };
+                
+                // Only add options if explicitly provided (allow auto-detection to work)
+                if (item.Collection !== undefined) groupSelectorOptions.Collection = item.Collection;
+                if (item.collection !== undefined) groupSelectorOptions.collection = item.collection;
+                if (item.currentGroup !== undefined) groupSelectorOptions.currentGroup = item.currentGroup;
+                if (item.buttonClass !== undefined) groupSelectorOptions.buttonClass = item.buttonClass;
+                if (item.buttonIcon !== undefined) groupSelectorOptions.buttonIcon = item.buttonIcon;
+                if (item.defaultText !== undefined) groupSelectorOptions.defaultText = item.defaultText;
+                if (item.itemTemplate !== undefined) groupSelectorOptions.itemTemplate = item.itemTemplate;
+                if (item.searchFields !== undefined) groupSelectorOptions.searchFields = item.searchFields;
+                if (item.headerText !== undefined) groupSelectorOptions.headerText = item.headerText;
+                if (item.searchPlaceholder !== undefined) groupSelectorOptions.searchPlaceholder = item.searchPlaceholder;
+                if (item.autoSetActiveGroup !== undefined) groupSelectorOptions.autoSetActiveGroup = item.autoSetActiveGroup;
+                if (item.onGroupSelected !== undefined) groupSelectorOptions.onGroupSelected = item.onGroupSelected;
+                
+                const groupSelector = new GroupSelectorButton(groupSelectorOptions);
+                
+                // Store reference for click-to-open functionality
+                this.groupSelectorButton = groupSelector;
+                
+                // Add as child view
+                this.addChild(groupSelector);
+                
+            } else if (processedItem.items && processedItem.items.length > 0) {
                 // Dropdown menu
                 processedItem.isDropdown = true;
                 processedItem.isButton = false;
@@ -298,6 +383,28 @@ class TopNav extends View {
         // Use global MOJO event bus if available
         this.getApp().events.on(["page:show", "page:hide", "page:denied"], (data) => {
             this.onPageChanged(data);
+        });
+    }
+
+    /**
+     * Setup listeners for group change events
+     */
+    setupGroupListeners() {
+        const app = this.getApp();
+        if (!app?.events) return;
+
+        // Listen for group changes and re-render if showing group info
+        app.events.on(['group:changed', 'group:loaded'], (data) => {
+            // Update our reference to current group
+            if (data?.group) {
+                this.currentGroup = data.group;
+            }
+            
+            if (this.displayMode === 'group' || this.displayMode === 'group_page_titles') {
+                if (this.mounted) {
+                    this.render();
+                }
+            }
         });
     }
 
@@ -393,6 +500,27 @@ class TopNav extends View {
     onActionLogout() {
         // Implement logout functionality here
         this.getApp().events.emit("auth:logout", {action: "logout"});
+    }
+
+    /**
+     * Handle open group selector action (from clicking group name in brand)
+     */
+    async onActionOpenGroupSelector(event) {
+        // If we have a group selector button, trigger its dialog
+        if (this.groupSelectorButton) {
+            await this.groupSelectorButton.onActionShowSelector(event);
+            return true;
+        }
+
+        // If no group selector in rightItems, create a temporary one
+        const { GroupList } = await import('@core/models/Group.js');
+        const tempSelector = new GroupSelectorButton({
+            Collection: GroupList,
+            currentGroup: this.getApp()?.activeGroup
+        });
+        
+        await tempSelector.onActionShowSelector(event);
+        return true;
     }
 
     /**

@@ -647,30 +647,33 @@ class TableView extends ListView {
 
     // Column headers
     this.columns.forEach(column => {
+      // Parse column key to get field name without pipes/formatters
+      const { fieldKey } = this.parseColumnKey(column.key);
+      
       const sortable = this.sortable && column.sortable !== false;
-      const currentSort = this.getSortBy() === column.key ? this.getSortDirection() : null;
+      const currentSort = this.getSortBy() === fieldKey ? this.getSortDirection() : null;
       const sortIcon = this.getSortIcon(currentSort);
-      const label = column.label || column.title || column.key;
+      const label = column.label || column.title || fieldKey;
       const responsiveClasses = this.getResponsiveClasses(column.visibility);
 
       const sortDropdown = sortable ? `
         <div class="dropdown d-inline-block ms-2">
           <button class="btn btn-sm btn-link p-0 text-decoration-none" type="button"
                   data-bs-toggle="dropdown" aria-expanded="false"
-                  data-column="${column.key}">
+                  data-column="${fieldKey}">
             ${sortIcon}
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
             <li><a class="dropdown-item ${currentSort === 'asc' ? 'active' : ''}"
-                   data-action="sort" data-field="${column.key}" data-direction="asc">
+                   data-action="sort" data-field="${fieldKey}" data-direction="asc">
                 <i class="bi bi-sort-alpha-down me-2"></i>Sort A-Z
                 </a></li>
             <li><a class="dropdown-item ${currentSort === 'desc' ? 'active' : ''}"
-                   data-action="sort" data-field="${column.key}" data-direction="desc">
+                   data-action="sort" data-field="${fieldKey}" data-direction="desc">
                 <i class="bi bi-sort-alpha-down-alt me-2"></i>Sort Z-A
                 </a></li>
             <li><a class="dropdown-item ${currentSort === null ? 'active' : ''}"
-                   data-action="sort" data-field="${column.key}" data-direction="none">
+                   data-action="sort" data-field="${fieldKey}" data-direction="none">
                 <i class="bi bi-x-circle me-2"></i>No Sort
                 </a></li>
           </ul>
@@ -1585,18 +1588,21 @@ class TableView extends ListView {
     // Update all sort dropdown buttons
     this.columns.forEach(column => {
       if (this.sortable && column.sortable !== false) {
-        const dropdown = this.element.querySelector(`[data-bs-toggle="dropdown"][data-column="${column.key}"]`);
+        // Parse the column key to get just the field name (without pipes/formatters)
+        const { fieldKey } = this.parseColumnKey(column.key);
+        
+        const dropdown = this.element.querySelector(`[data-bs-toggle="dropdown"][data-column="${fieldKey}"]`);
         if (dropdown) {
-          const isSorted = currentSortField === column.key;
+          const isSorted = currentSortField === fieldKey;
           const sortIcon = this.getSortIcon(isSorted ? currentSortDir : null);
           dropdown.innerHTML = sortIcon;
 
           // Update dropdown menu items
           const dropdownMenu = dropdown.nextElementSibling;
           if (dropdownMenu) {
-            const ascItem = dropdownMenu.querySelector(`[data-field="${column.key}"][data-direction="asc"]`);
-            const descItem = dropdownMenu.querySelector(`[data-field="${column.key}"][data-direction="desc"]`);
-            const noneItem = dropdownMenu.querySelector(`[data-field="${column.key}"][data-direction="none"]`);
+            const ascItem = dropdownMenu.querySelector(`[data-field="${fieldKey}"][data-direction="asc"]`);
+            const descItem = dropdownMenu.querySelector(`[data-field="${fieldKey}"][data-direction="desc"]`);
+            const noneItem = dropdownMenu.querySelector(`[data-field="${fieldKey}"][data-direction="none"]`);
 
             if (ascItem) {
               ascItem.classList.toggle('active', isSorted && currentSortDir === 'asc');
@@ -1605,7 +1611,7 @@ class TableView extends ListView {
               descItem.classList.toggle('active', isSorted && currentSortDir === 'desc');
             }
             if (noneItem) {
-              noneItem.classList.toggle('active', !isSorted || currentSortField !== column.key);
+              noneItem.classList.toggle('active', !isSorted || currentSortField !== fieldKey);
             }
           }
         }
@@ -1644,15 +1650,12 @@ class TableView extends ListView {
   }
 
   /**
-   * Override render to set data properties before rendering
+   * Override onBeforeRender to set data properties before rendering
    */
-  async render(force, container) {
+  async onBeforeRender() {
     // Set properties that Mustache needs
     this.searchValue = this.getActiveFilters().search || '';
     this.footerTotals = this.calculateFooterTotals();
-    console.log('Setting footerTotals before render:', this.footerTotals);
-
-    return super.render(force, container);
   }
 
   /**

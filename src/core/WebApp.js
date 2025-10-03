@@ -252,6 +252,16 @@ class WebApp {
         return this.pageCache.get(pageName);
     }
 
+    getPagePermissions(pageName) {
+        if (this.pageCache.has(pageName)) {
+            return this.pageCache.get(pageName).permissions;
+        }
+        const pageInfo = this.pageClasses.get(pageName);
+        const { PageClass, constructorOptions } = pageInfo;
+        if (!constructorOptions) return null;
+        return constructorOptions.permissions;
+    }
+
     /**
      * Get or create page instance (with caching)
      */

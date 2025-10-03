@@ -277,6 +277,190 @@ nav.topnav-shadow-dark {
 }
 
 /* ========================================================================
+   Page Header Styling
+   ======================================================================== */
+
+.page-header {
+    background-color: var(--bs-body-bg);
+    border-bottom: 1px solid var(--bs-border-color);
+    padding: 16px 16px;
+}
+
+/* When page header is enabled, adjust portal-content layout */
+.portal-content:has([data-container="page-header"]) {
+    padding: 0;
+}
+
+[data-container="page-content"] {
+    padding: 16px;
+}
+
+.page-header-content {
+    max-width: 100%;
+}
+
+.page-header-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.page-header-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.page-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bs-primary-bg-subtle);
+    color: var(--bs-primary);
+    border-radius: 8px;
+}
+
+.page-title-group {
+    flex: 1;
+    min-width: 0;
+}
+
+.page-header .page-title {
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.2;
+    color: var(--bs-heading-color);
+}
+
+.page-header .page-description {
+    margin: 0.5rem 0 0 0;
+    line-height: 1.5;
+}
+
+/* Size variants */
+/* Small */
+.page-header-sm .page-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+}
+
+.page-header-sm .page-title-group .page-title {
+    font-size: 1.25rem;
+}
+
+.page-header-sm .page-title-group .page-description {
+    font-size: 0.875rem;
+}
+
+/* Medium (default) */
+.page-header-md .page-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.25rem;
+}
+
+.page-header-md .page-title-group .page-title {
+    font-size: 1.5rem;
+}
+
+.page-header-md .page-title-group .page-description {
+    font-size: 0.95rem;
+}
+
+/* Large */
+.page-header-lg .page-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 1.5rem;
+}
+
+.page-header-lg .page-title-group .page-title {
+    font-size: 1.75rem;
+}
+
+.page-header-lg .page-title-group .page-description {
+    font-size: 1rem;
+}
+
+/* Extra Large */
+.page-header-xl .page-icon {
+    width: 56px;
+    height: 56px;
+    font-size: 1.75rem;
+}
+
+.page-header-xl .page-title-group .page-title {
+    font-size: 2rem;
+}
+
+.page-header-xl .page-title-group .page-description {
+    font-size: 1.1rem;
+}
+
+.page-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* Minimal style */
+.page-header-minimal {
+    padding: 0.75rem 0;
+}
+
+.page-header-minimal .page-title-group .page-title {
+    font-size: 1.5rem;
+    font-weight: 500;
+}
+
+/* Breadcrumb style */
+.page-header-breadcrumb .breadcrumb {
+    margin-bottom: 0.5rem;
+    background-color: transparent;
+    padding: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .page-header-main {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .page-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    /* Scale down on mobile */
+    .page-header-xl .page-title-group .page-title {
+        font-size: 1.75rem;
+    }
+
+    .page-header-lg .page-title-group .page-title {
+        font-size: 1.5rem;
+    }
+
+    .page-header-md .page-title-group .page-title {
+        font-size: 1.25rem;
+    }
+
+    .page-header-sm .page-title-group .page-title {
+        font-size: 1.1rem;
+    }
+}
+
+/* Dark theme adjustments */
+[data-bs-theme="dark"] .page-header {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ========================================================================
    MOJO Custom Sidebar Component
    ======================================================================== */
 
@@ -2402,6 +2586,18 @@ nav.topnav-shadow-dark {
     box-shadow: var(--bs-box-shadow);
 }
 
+/* Sticky search header in modal dialogs */
+.modal-body .simple-search-view > div:first-child {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: var(--bs-body-bg);
+}
+
+[data-bs-theme="dark"] .modal-body .simple-search-view > div:first-child {
+    background-color: var(--bs-body-bg);
+}
+
 .collapse-sidebar .simple-search-view {
     background-color: var(--mojo-topnav-bg) !important;
 }
@@ -2438,6 +2634,32 @@ nav.topnav-shadow-dark {
     width: 24px;
     height: 24px;
     border-radius: 50%;
+}
+
+/* ========================================================================
+   Group Selector Button (TopNav)
+   ======================================================================== */
+
+/* Enforce single line for nav-item containing group selector */
+.navbar-nav .nav-item button[data-action="show-selector"] {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 250px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.navbar-nav .nav-item button[data-action="show-selector"] .group-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .navbar-nav .nav-item button[data-action="show-selector"] {
+        max-width: 150px;
+    }
 }
 
 /* ========================================================================

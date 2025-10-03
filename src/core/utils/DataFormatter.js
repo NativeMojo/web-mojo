@@ -338,23 +338,39 @@ class DataFormatter {
 
     // Try to resolve from context if available
     // This allows: {{value|tooltip:title:'top'}} where title is a context variable
+    // Also supports dot notation: {{value|tooltip:model.email}}
     if (context && this.isIdentifier(value)) {
-      // Try direct property access
-      if (context.hasOwnProperty && context.hasOwnProperty(value)) {
-        return context[value];
+      // For simple identifiers, try direct property access
+      if (!value.includes('.')) {
+        if (context.hasOwnProperty && context.hasOwnProperty(value)) {
+          return context[value];
+        }
       }
-      // Try get() method (for Models/Views)
+      
+      // Try get() method (for Models/Views) - handles dot notation
       if (context.get && typeof context.get === 'function') {
         const contextValue = context.get(value);
         if (contextValue !== undefined) {
           return contextValue;
         }
       }
-      // Try getContextValue() method
+      // Try getContextValue() method - handles dot notation
       if (context.getContextValue && typeof context.getContextValue === 'function') {
         const contextValue = context.getContextValue(value);
         if (contextValue !== undefined) {
           return contextValue;
+        }
+      }
+      
+      // For dot notation on plain objects, use MOJOUtils
+      if (value.includes('.')) {
+        // Import MOJOUtils if needed for nested property access
+        const MOJOUtils = window.MOJOUtils || (typeof require !== 'undefined' ? require('./MOJOUtils.js').default : null);
+        if (MOJOUtils) {
+          const contextValue = MOJOUtils.getNestedValue(context, value);
+          if (contextValue !== undefined) {
+            return contextValue;
+          }
         }
       }
     }
@@ -364,13 +380,14 @@ class DataFormatter {
   }
 
   /**
-   * Check if a value is a valid identifier (variable name)
+   * Check if a value is a valid identifier (variable name or dot-notation path)
    * @param {string} value - Value to check
-   * @returns {boolean} True if valid identifier
+   * @returns {boolean} True if valid identifier or path
    */
   isIdentifier(value) {
-    // Valid JavaScript identifier: starts with letter/underscore, contains letters/numbers/underscores
-    return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(value);
+    // Valid JavaScript identifier or dot notation path
+    // Examples: "email", "model.email", "user.profile.name"
+    return /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/.test(value);
   }
 
   // ============= Date/Time Formatters =============
@@ -1214,7 +1231,7 @@ class DataFormatter {
    *   {{value|tooltip:'Help text':top}}
    *   {{value|tooltip:'Info':bottom:html}}
    * 
-   * @param {*} value - Value to display
+   * @param {*} value - Value to display (not escaped, works with formatter chains)
    * @param {string} text - Tooltip text content
    * @param {string} placement - Tooltip placement: top, bottom, left, right (default: top)
    * @param {string} html - 'html' to allow HTML in tooltip (default: text only)
@@ -1223,7 +1240,8 @@ class DataFormatter {
   tooltip(value, text = '', placement = 'top', html = '') {
     if (value === null || value === undefined) return '';
     
-    const displayValue = this.escapeHtml(String(value));
+    // Don't escape value - it may be HTML from previous formatters in the chain
+    const displayValue = String(value);
     const tooltipText = html === 'html' ? text : this.escapeHtml(text);
     const dataAttr = html === 'html' ? 'data-bs-html="true"' : '';
     

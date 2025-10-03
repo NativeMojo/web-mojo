@@ -41,6 +41,14 @@ const app = new PortalApp({
     debug: true,
     basePath: '/examples/portal',
 
+    showPageHeader: true,
+    pageHeader: {
+        style: 'default', // 'default' | 'minimal' | 'breadcrumb'
+        showIcon: true,
+        showDescription: true,
+        showBreadcrumbs: false
+    },
+
     // Layout configuration
     layout: 'portal',
     container: '#app',
@@ -175,6 +183,7 @@ const app = new PortalApp({
            name: "group_default",
            groupKind: "any",
            className: 'sidebar sidebar-light sidebar-global',
+           header: "<div class='pt-3 text-center fs-5 fw-bold'><i class='bi bi-wrench pe-2'></i> <span class='collapsed-hidden'>Group</span></div>",
            items: [
                {
                    text: 'Dashboard',
@@ -234,7 +243,7 @@ const app = new PortalApp({
         brandIcon: 'bi-lightning-charge',
         brandRoute: '?page=home',
         // theme: 'navbar-dark bg-primary',
-        displayMode: 'both',
+        displayMode: 'group',
         theme: "dark",
         shadow: "dark",
         showSidebarToggle: true,
@@ -253,6 +262,10 @@ const app = new PortalApp({
         // ],
         // Right items (user menu, notifications, etc)
         rightItems: [
+            // {
+            //     type: 'group-selector',
+            //     id: 'group-selector',
+            // },
             {
                 icon: 'bi-cloud-upload',
                 action: 'test-upload',
@@ -330,6 +343,15 @@ app.registerPage('file-drop', FileDropPage);
 app.registerPage('simple', Page, {
     id: 'simple',
     title: "Simple",
+    icon: 'bi bi-circle',
+    headerActions: [
+        {
+            label: 'Export',
+            icon: 'bi-download',
+            action: 'export',
+            buttonClass: 'btn-primary'
+        }
+    ],
     template: '<div class="fs-5 mt-4 text-center">Simple page</div>'
 });
 app.registerPage('group_simple', Page, {

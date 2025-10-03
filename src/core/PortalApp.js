@@ -7,6 +7,7 @@
 import WebApp from '@core/WebApp.js';
 import TopNav from '@core/views/navigation/TopNav.js';
 import Sidebar from '@core/views/navigation/Sidebar.js';
+import PageHeader from '@core/views/navigation/PageHeader.js';
 import DeniedPage from '@core/pages/DeniedPage.js';
 import TokenManager from '@core/services/TokenManager.js';
 import {User} from '@core/models/User.js';
@@ -39,10 +40,15 @@ export default class PortalApp extends WebApp {
             this.topbarConfig = config.topnav;
         }
 
+        // Page header configuration
+        this.showPageHeader = config.showPageHeader || false;
+        this.pageHeaderConfig = config.pageHeader || {};
+
         // Portal components
         this.sidebar = null;
         this.topbar = null;
         this.topnav = null; // Legacy reference
+        this.pageHeader = null;
         this.tokenManager = new TokenManager();
 
         // Active group management
@@ -183,6 +189,9 @@ export default class PortalApp extends WebApp {
                     await this.activeUser.member.fetchForGroup(group.id);
                 }
 
+                // Emit event that group was loaded
+                this.events.emit('group:loaded', { group: this.activeGroup });
+
                 console.log('Loaded active group:', group.get('name'));
             } catch (error) {
                 console.warn('Failed to load active group:', error);
@@ -198,6 +207,7 @@ export default class PortalApp extends WebApp {
                             const fallbackGroup = new Group({ id: storedGroupId });
                             await fallbackGroup.fetch();
                             this.activeGroup = fallbackGroup;
+                            this.events.emit('group:loaded', { group: this.activeGroup });
                             console.log('Fell back to stored active group:', fallbackGroup.get('name'));
                         } catch (fallbackError) {
                             console.warn('Fallback to stored group also failed:', fallbackError);
@@ -346,14 +356,26 @@ export default class PortalApp extends WebApp {
         const showSidebar = this.sidebarConfig && Object.keys(this.sidebarConfig).length > 0;
         const showTopbar = this.topbarConfig && Object.keys(this.topbarConfig).length > 0;
 
+        // If page header is enabled, wrap content in two containers
+        const contentMarkup = this.showPageHeader ? `
+            <div class="portal-content" id="portal-content">
+                <div id="page-header"></div>
+                <div id="page-container">
+                    <!-- Pages render here -->
+                </div>
+            </div>
+        ` : `
+            <div class="portal-content" id="page-container">
+                <!-- Pages render here -->
+            </div>
+        `;
+
         container.innerHTML = `
             <div class="portal-layout hide-sidebar">
                 ${showSidebar ? '<div id="portal-sidebar"></div>' : ''}
                 <div class="portal-body">
                     ${showTopbar ? '<div id="portal-topnav"></div>' : ''}
-                    <div class="portal-content" id="page-container">
-                        <!-- Pages render here -->
-                    </div>
+                    ${contentMarkup}
                 </div>
             </div>
         `;
@@ -377,6 +399,7 @@ export default class PortalApp extends WebApp {
     async setupPortalComponents() {
         await this.setupSidebar();
         await this.setupTopbar();
+        await this.setupPageHeader();
         this.setupPortalEvents();
     }
 
@@ -417,6 +440,28 @@ export default class PortalApp extends WebApp {
 
         // Legacy support
         this.topnav = this.topbar;
+    }
+
+    /**
+     * Setup page header component
+     */
+    async setupPageHeader() {
+        if (!this.showPageHeader) return;
+
+        this.pageHeader = new PageHeader({
+            containerId: 'page-header',
+            style: this.pageHeaderConfig.style || 'default',
+            showIcon: this.pageHeaderConfig.showIcon !== false,
+            showDescription: this.pageHeaderConfig.showDescription !== false,
+            showBreadcrumbs: this.pageHeaderConfig.showBreadcrumbs || false,
+            ...this.pageHeaderConfig
+        });
+
+        // Render into the portal-content container
+        const headerContainer = document.getElementById('page-header');
+        if (headerContainer) {
+            await this.pageHeader.render(true, headerContainer);
+        }
     }
 
     /**
@@ -515,8 +560,8 @@ export default class PortalApp extends WebApp {
             this.getPortalContainer().classList.add('hide-sidebar');
         }
 
-        if (result && this.currentPageInstance) {
-            this.updateNavigation(this.currentPageInstance);
+        if (this.currentPage) {
+            this.updateNavigation(this.currentPage);
         }
 
         return result;
@@ -534,6 +579,11 @@ export default class PortalApp extends WebApp {
         // Update topbar active state
         if (this.topbar && this.topbar.setActivePage) {
             this.topbar.setActivePage(page.route);
+        }
+
+        // Update page header
+        if (this.pageHeader) {
+            this.pageHeader.setPage(page);
         }
 
         this.events.emit('portal:page-changed', { page });

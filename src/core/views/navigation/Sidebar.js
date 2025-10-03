@@ -24,7 +24,7 @@ class Sidebar extends View {
         this.isCollapsed = false;
         this.sidebarTheme = options.theme || 'sidebar-light';
         this.customView = null;
-
+        if (this.options.groupHeader) this.groupHeader = this.options.groupHeader;
         // Apply sidebar theme
         if (this.sidebarTheme) {
             this.addClass(this.sidebarTheme);
@@ -41,6 +41,13 @@ class Sidebar extends View {
             this.setupResponsiveBehavior();
         }
     }
+
+    groupHeader = `
+    <div class="sidebar-group-header py-3" data-action="show-group-search">
+        <div class='text-center fs-5 px-1 collapsed-hidden'>{{group.name}}</div>
+        <div class='text-center fs-6 collapsed-hidden'>kind: {{group.kind}}</div>
+    </div>
+    `;
 
     /**
      * Initialize sidebar and auto-switch to correct menu based on current route
@@ -394,13 +401,7 @@ class Sidebar extends View {
     }
 
     getGroupHeader() {
-        return `
-        <div class="sidebar-group-header py-3" data-action="show-group-search">
-        <div class='text-center text-muted fs-7 collapsed-hidden'>active group</div>
-            <div class='text-center fs-5 px-1 collapsed-hidden'>{{group.name}}</div>
-            <div class='text-center fs-6 collapsed-hidden'>kind: {{group.kind}}</div>
-        </div>
-        `;
+        return this.groupHeader;
     }
 
     /**

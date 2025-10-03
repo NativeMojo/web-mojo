@@ -3,7 +3,7 @@ import { TicketNote, TicketNoteList } from '@core/models/Tickets.js';
 class TicketNoteAdapter {
     constructor(ticketId) {
         this.ticketId = ticketId;
-        this.collection = new TicketNoteList({ params: { parent: this.ticketId, sort: 'created' } });
+        this.collection = new TicketNoteList({ params: { parent: this.ticketId, sort: 'created', size: 100} });
     }
 
     async fetch() {

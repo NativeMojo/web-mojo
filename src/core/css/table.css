@@ -119,19 +119,6 @@
     margin-bottom: 1.5rem;
 }
 
-.page-title {
-    font-size: 1.75rem;
-    font-weight: 600;
-    color: var(--bs-emphasis-color);
-    margin-bottom: 0.5rem;
-}
-
-.page-description {
-    font-size: 0.95rem;
-    color: var(--bs-secondary-color);
-    margin-bottom: 0;
-}
-
 /* MOJO Custom Table Container */
 .table-container {
     position: relative;

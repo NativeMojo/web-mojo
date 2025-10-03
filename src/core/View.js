@@ -38,6 +38,7 @@ export class View {
     this.debug           = opts.debug ?? false;
     this.app           = opts.app ?? null;
     this.cacheTemplate = opts.cacheTemplate ?? true;
+    this.enableTooltips = opts.enableTooltips ?? false;  // Auto-initialize Bootstrap tooltips after render
 
     // keep original options
     this.options = { ...opts };
@@ -396,10 +397,20 @@ export class View {
 
   bindEvents() {
       this.events.bind(this.element);
+      
+      // Initialize tooltips if enabled
+      if (this.enableTooltips) {
+          this.initializeTooltips();
+      }
   }
 
   unbindEvents() {
       this.events.unbind();
+      
+      // Cleanup tooltips if enabled
+      if (this.enableTooltips) {
+          this.disposeTooltips();
+      }
   }
 
   // ---------------------------------------------
@@ -597,6 +608,33 @@ export class View {
       }
       if (!el) return false; // no element with that id
       return this.element.contains(el);
+  }
+
+  /**
+   * Initialize Bootstrap tooltips in this view's element
+   * Called automatically in bindEvents() if enableTooltips is true
+   */
+  initializeTooltips() {
+      if (!this.element || !window.bootstrap?.Tooltip) return;
+
+      const tooltipTriggerList = this.element.querySelectorAll('[data-bs-toggle="tooltip"]');
+      [...tooltipTriggerList].map(tooltipTriggerEl => new window.bootstrap.Tooltip(tooltipTriggerEl));
+  }
+
+  /**
+   * Dispose all Bootstrap tooltips in this view's element
+   * Called automatically in unbindEvents() if enableTooltips is true
+   */
+  disposeTooltips() {
+      if (!this.element || !window.bootstrap?.Tooltip) return;
+
+      const tooltipElements = this.element.querySelectorAll('[data-bs-toggle="tooltip"]');
+      tooltipElements.forEach(element => {
+          const tooltip = window.bootstrap.Tooltip.getInstance(element);
+          if (tooltip) {
+              tooltip.dispose();
+          }
+      });
   }
 
   /**
