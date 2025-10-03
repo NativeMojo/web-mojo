@@ -231,11 +231,24 @@ export default class MiniChart extends View {
     let min = this.minValue !== undefined ? this.minValue : Math.min(...values);
     let max = this.maxValue !== undefined ? this.maxValue : Math.max(...values);
 
-    // Add padding to range
+    // Handle zero-range cases
     const range = max - min;
     if (range === 0) {
-      min = min - 1;
-      max = max + 1;
+      if (this.chartType === 'bar') {
+        // For bar charts with all zeros, keep baseline at 0
+        if (min === 0) {
+          min = 0;
+          max = 1;
+        } else {
+          // For constant non-zero values, add a small symmetric range
+          min = min - 1;
+          max = max + 1;
+        }
+      } else {
+        // For line charts, add a small symmetric range
+        min = min - 1;
+        max = max + 1;
+      }
     }
 
     return { min, max };

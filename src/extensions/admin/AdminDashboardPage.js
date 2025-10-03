@@ -4,7 +4,7 @@
 
 import Page from '@core/Page.js';
 import View from '@core/View.js';
-import { MetricsChart } from '@ext/charts/index.js';
+import { MetricsChart, MetricsMiniChart, MetricsMiniChartWidget } from '@ext/charts/index.js';
 
 // Embedded HeaderView for dashboard statistics
 class AdminHeaderView extends View {
@@ -44,79 +44,19 @@ class AdminHeaderView extends View {
       <div class="admin-stats-header mb-4">
         <div class="row">
           <div class="col-xl-3 col-lg-6 col-12 mb-3">
-            <div class="card h-100 border-0 shadow-sm">
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                  <div>
-                    <h6 class="card-title text-muted mb-2">Active Users</h6>
-                    <h3 class="mb-1 fw-bold">{{stats.user_activity_day}}</h3>
-                    <span class="badge bg-success-subtle text-success">
-                      {{stats.total_users|compact}}
-                    </span>
-                  </div>
-                  <div class="text-primary">
-                    <i class="bi bi-people fs-2"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <div data-container="user_activity_day"></div>
           </div>
 
           <div class="col-xl-3 col-lg-6 col-12 mb-3">
-            <div class="card h-100 border-0 shadow-sm">
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                  <div>
-                    <h6 class="card-title text-muted mb-2">Active Groups</h6>
-                    <h3 class="mb-1 fw-bold">{{stats.group_activity_day}}</h3>
-                    <span class="badge bg-info-subtle text-info">
-                    {{stats.total_groups|compact}}
-                    </span>
-                  </div>
-                  <div class="text-info">
-                    <i class="bi bi-collection fs-2"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <div data-container="group_activity_day"></div>
           </div>
 
           <div class="col-xl-3 col-lg-6 col-12 mb-3">
-            <div class="card h-100 border-0 shadow-sm">
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                  <div>
-                    <h6 class="card-title text-muted mb-2">API Requests</h6>
-                    <h3 class="mb-1 fw-bold">{{stats.api_calls|compact}}</h3>
-                    <span class="badge bg-success-subtle text-success">
-                      <i class="bi bi-arrow-up"></i> {{stats.apiChange}}
-                    </span>
-                  </div>
-                  <div class="text-success">
-                    <i class="bi bi-graph-up fs-2"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <div data-container="api_activity_day"></div>
           </div>
 
           <div class="col-xl-3 col-lg-6 col-12 mb-3">
-            <div class="card h-100 border-0 shadow-sm">
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                  <div>
-                    <h6 class="card-title text-muted mb-2">Incidents</h6>
-                    <h3 class="mb-1 fw-bold">{{stats.incidents|compact}}</h3>
-                    <span class="badge {{stats.incidentsBadgeClass}}">
-                      <i class="bi bi-{{stats.incidentsIconClass}}"></i> {{stats.incidentsChange}}
-                    </span>
-                  </div>
-                  <div class="text-danger">
-                    <i class="bi bi-exclamation-triangle fs-2"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <div data-container="incident_activity_day"></div>
           </div>
         </div>
       </div>
@@ -126,6 +66,100 @@ class AdminHeaderView extends View {
   async onInit() {
     // TODO: Replace with actual API calls to fetch real statistics
     // this.loadStats();
+    // slug: user_activity_day, group_activity_day
+    this.userActivity = new MetricsMiniChartWidget({
+      icon: "bi bi-people fs-2",
+      title: 'User Activity',
+      subtitle: '{{now_value}}',
+      background: "#5388D6",
+      textColor: "#FFFFFF",
+      granularity: 'days',
+      slugs: ['user_activity_day'],
+      account: 'global',
+      chartType: 'bar',
+      showTooltip: true,
+      showXAxis: true,
+      height: 50,
+      chartWidth: '100%',
+      color: 'rgba(245, 245, 255, 0.8)',
+      fill: true,
+      fillColor: 'rgba(245, 245, 255, 0.6)',
+      smoothing: 0.3,
+      showTrending: true,
+      containerId: 'user_activity_day'
+    });
+    this.addChild(this.userActivity);
+
+    this.groupActivity = new MetricsMiniChartWidget({
+        icon: "bi bi-collection fs-2",
+        title: 'Group Activity',
+        subtitle: '{{now_value}}',
+        background: "#1f6a7a",
+        textColor: "#FFFFFF",
+      granularity: 'days',
+      slugs: ['group_activity_day'],
+      account: 'global',
+      chartType: 'bar',
+      showTooltip: true,
+      showXAxis: true,
+      height: 50,
+      chartWidth: '100%',
+      color: 'rgba(245, 245, 255, 0.8)',
+      fill: true,
+      fillColor: 'rgba(245, 245, 255, 0.6)',
+      smoothing: 0.3,
+      showTrending: true,
+      containerId: 'group_activity_day'
+    });
+    this.addChild(this.groupActivity);
+
+    this.apiActivity = new MetricsMiniChartWidget({
+        icon: "bi bi-graph-up fs-2",
+        title: 'API Requests',
+        subtitle: '{{now_value}}',
+        background: "#50A079",
+        textColor: "#FFFFFF",
+      endpoint: '/api/metrics/fetch',
+      granularity: 'days',
+      slugs: ['api_calls'],
+      account: 'global',
+      chartType: 'line',
+      showTooltip: true,
+      showXAxis: true,
+      height: 50,
+      chartWidth: '100%',
+      color: 'rgba(245, 245, 255, 0.8)',
+      fill: true,
+      fillColor: 'rgba(245, 245, 255, 0.6)',
+      smoothing: 0.3,
+      showTrending: true,
+      containerId: 'api_activity_day'
+    });
+    this.addChild(this.apiActivity);
+
+    this.incidentActivity = new MetricsMiniChartWidget({
+        icon: "bi bi-exclamation-triangle fs-2",
+        title: 'Incidents',
+        subtitle: '{{now_value}}',
+        background: "#B14545",
+        textColor: "#FFFFFF",
+      endpoint: '/api/metrics/fetch',
+      granularity: 'days',
+      slugs: ['incidents'],
+      account: 'incident',
+      chartType: 'line',
+      showTooltip: true,
+      showXAxis: true,
+      height: 50,
+      chartWidth: '100%',
+      color: 'rgba(245, 245, 255, 0.8)',
+      fill: true,
+      fillColor: 'rgba(245, 245, 255, 0.6)',
+      smoothing: 0.3,
+      showTrending: true,
+      containerId: 'incident_activity_day'
+    });
+    this.addChild(this.incidentActivity);
   }
 
   async onBeforeRender() {
@@ -218,7 +252,7 @@ export default class AdminDashboardPage extends Page {
 
         <!-- Stats Header -->
         <div data-container="admin-header"></div>
-
+        <div data-container="example-chart"></div>
         <!-- Charts Section -->
         <div class="row">
           <!-- Full Width API Metrics Chart -->

@@ -257,6 +257,7 @@ class WebApp {
             return this.pageCache.get(pageName).permissions;
         }
         const pageInfo = this.pageClasses.get(pageName);
+        if (!pageInfo) return null;
         const { PageClass, constructorOptions } = pageInfo;
         if (!constructorOptions) return null;
         return constructorOptions.permissions;
