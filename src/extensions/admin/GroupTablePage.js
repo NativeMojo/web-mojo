@@ -117,9 +117,40 @@ class GroupTablePage extends TablePage {
                 bordered: false,
                 hover: true,
                 responsive: false
+            },
+            tableViewOptions: {
+                toolbarButtons: [
+                    {
+                        label: 'Add Multiple',
+                        icon: 'bi bi-plus-circle',
+                        action: 'add-multiple',
+                        className: 'btn-success'
+                    }
+                ],
             }
         });
     }
+
+    async onActionAddMultiple() {
+        // Implement logic to add multiple groups
+        const data = await this.getApp().showForm({
+                    title: "Select Members",
+                    fields: [
+                        {
+                            type: 'collectionmultiselect',
+                            name: 'member_ids',
+                            Collection: GroupList,
+                            collectionParams: {
+                                is_active: true
+                            },
+                            labelField: 'name',
+                            valueField: 'id'
+                        }
+                    ]
+                });
+                console.log(data);
+    }
+
 }
 
 export default GroupTablePage;

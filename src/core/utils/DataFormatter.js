@@ -93,6 +93,7 @@ class DataFormatter {
 
     // Utility formatters
     this.register('default', this.default.bind(this));
+    this.register('equals', this.equals.bind(this));
     this.register('json', this.json.bind(this));
     this.register('raw', (v) => v);
     this.register('custom', (v, fn) => typeof fn === 'function' ? fn(v) : v);
@@ -1308,6 +1309,33 @@ class DataFormatter {
    */
   default(value, defaultValue = '') {
     return value === null || value === undefined || value === '' ? defaultValue : value;
+  }
+
+  /**
+   * Compare value and return one of two results based on equality
+   * Useful for conditional CSS classes, text, or any conditional output
+   * 
+   * @param {*} value - Value to compare
+   * @param {*} compareValue - Value to compare against
+   * @param {*} trueResult - Result if values are equal
+   * @param {*} falseResult - Result if values are not equal (optional, defaults to empty string)
+   * @returns {*} trueResult or falseResult
+   * 
+   * @example
+   * // CSS classes
+   * {{status|equals:1:'text-success':'text-secondary'}}
+   * {{model.state|equals:'active':'badge-success':'badge-secondary'}}
+   * 
+   * // Text output
+   * {{role|equals:'admin':'Administrator':'User'}}
+   * 
+   * // Numbers
+   * {{count|equals:0:'No items':'Has items'}}
+   */
+  equals(value, compareValue, trueResult, falseResult = '') {
+    // Handle loose equality for common cases (1 == '1', true == 'true', etc.)
+    // eslint-disable-next-line eqeqeq
+    return value == compareValue ? trueResult : falseResult;
   }
 
   /**

@@ -9,7 +9,7 @@ import FormBuilder from './FormBuilder.js';
 import applyFileDropMixin from '@core/mixins/FileDropMixin.js';
 import MOJOUtils from '@core/utils/MOJOUtils.js';
 
-import { TagInput, CollectionSelect, DatePicker, DateRangePicker } from './inputs/index.js';
+import { TagInput, CollectionSelect, CollectionMultiSelect, DatePicker, DateRangePicker } from './inputs/index.js';
 
 class FormView extends View {
   constructor(options = {}) {
@@ -181,6 +181,7 @@ class FormView extends View {
     this.initializeCustomComponents();
     this.initializeTagInputs();
     this.initializeCollectionSelects();
+    this.initializeCollectionMultiSelects();
     this.initializeDatePickers();
     this.initializeDateRangePickers();
     this.initializePasswordFields();
@@ -215,6 +216,7 @@ class FormView extends View {
     // Initialize enhanced input components
     this.initializeTagInputs();
     this.initializeCollectionSelects();
+    this.initializeCollectionMultiSelects();
     this.initializeDatePickers();
     this.initializeDateRangePickers();
 
@@ -383,6 +385,59 @@ class FormView extends View {
 
       } catch (error) {
         // CollectionSelect initialization failed
+      }
+    });
+  }
+
+  /**
+   * Initialize CollectionMultiSelect components
+   */
+  initializeCollectionMultiSelects() {
+    const collectionMultiSelectPlaceholders = this.element.querySelectorAll('[data-field-type="collectionmultiselect"]');
+
+    collectionMultiSelectPlaceholders.forEach(placeholder => {
+      try {
+        const fieldName = placeholder.getAttribute('data-field-name');
+        const configData = placeholder.getAttribute('data-field-config');
+        const config = JSON.parse(configData);
+
+        // Get Collection class from field config
+        const fieldConfig = this.getFormFieldConfig(fieldName);
+        if (!fieldConfig || !fieldConfig.Collection) {
+          return;
+        }
+
+        // Create collection instance
+        const collection = new fieldConfig.Collection();
+        if (fieldConfig.collectionParams) {
+          collection.params = {...collection.params, ...fieldConfig.collectionParams};
+        }
+
+        // Create CollectionMultiSelect component
+        const collectionMultiSelect = new CollectionMultiSelect({
+          ...config,
+          collection,
+          containerId: null // We'll mount directly
+        });
+
+        let value = MOJOUtils.getContextData(this.data, fieldName);
+        if (value) {
+          collectionMultiSelect.setFormValue(value);
+        }
+
+        // Replace placeholder with CollectionMultiSelect
+        collectionMultiSelect.render(true, placeholder);
+
+        // Store reference for cleanup
+        this.customComponents.set(fieldName, collectionMultiSelect);
+
+        // Listen for changes
+        collectionMultiSelect.on('change', (data) => {
+          this.handleFieldChange(fieldName, data.value);
+        });
+
+      } catch (error) {
+        console.error('CollectionMultiSelect initialization failed:', error);
       }
     });
   }

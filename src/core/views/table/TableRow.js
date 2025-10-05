@@ -50,7 +50,7 @@ class TableRow extends ListViewItem {
     if (!visibility) return ''; // Always visible if no visibility specified
 
     const validBreakpoints = ['sm', 'md', 'lg', 'xl', 'xxl'];
-    
+
     // Legacy string format: show at breakpoint and up
     if (typeof visibility === 'string') {
       if (!validBreakpoints.includes(visibility)) {
@@ -59,11 +59,11 @@ class TableRow extends ListViewItem {
       }
       return `d-none d-${visibility}-table-cell`;
     }
-    
+
     // Object format for more control
     if (typeof visibility === 'object') {
       const classes = [];
-      
+
       // Hide at breakpoint and up
       if (visibility.hide) {
         if (!validBreakpoints.includes(visibility.hide)) {
@@ -72,7 +72,7 @@ class TableRow extends ListViewItem {
         }
         classes.push(`d-table-cell d-${visibility.hide}-none`);
       }
-      
+
       // Show at breakpoint and up (optionally combined with hide)
       if (visibility.show) {
         if (!validBreakpoints.includes(visibility.show)) {
@@ -85,7 +85,7 @@ class TableRow extends ListViewItem {
           classes.push(`d-${visibility.show}-table-cell`);
         }
       }
-      
+
       return classes.join(' ');
     }
 
@@ -219,6 +219,7 @@ class TableRow extends ListViewItem {
       } else if (typeof action === 'object') {
         return `
           <button class="btn btn-sm ${action.class || 'btn-outline-primary'}"
+                  data-id="${this.model.id}"
                   data-action="${action.action}"
                   title="${action.label || ''}">
             ${action.icon ? `<i class="${action.icon}"></i>` : ''}

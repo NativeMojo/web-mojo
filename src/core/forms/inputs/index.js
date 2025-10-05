@@ -6,6 +6,7 @@
 // Import all input components
 import TagInput from './TagInput.js';
 import CollectionSelect from './CollectionSelect.js';
+import CollectionMultiSelect from './CollectionMultiSelect.js';
 import DatePicker from './DatePicker.js';
 import DateRangePicker from './DateRangePicker.js';
 
@@ -13,6 +14,7 @@ import DateRangePicker from './DateRangePicker.js';
 export {
   TagInput,
   CollectionSelect,
+  CollectionMultiSelect,
   DatePicker,
   DateRangePicker
 };
@@ -25,12 +27,14 @@ export { CollectionSelect as CollectionSelectView };
 export default {
   TagInput,
   CollectionSelect,
+  CollectionMultiSelect,
   DatePicker,
   DateRangePicker,
   
   // Legacy aliases
   TagInputView: TagInput,
-  CollectionSelectView: CollectionSelect
+  CollectionSelectView: CollectionSelect,
+  CollectionMultiSelectView: CollectionMultiSelect
 };
 
 // Input type registry for FormBuilder integration
@@ -38,6 +42,8 @@ export const INPUT_TYPES = {
   tag: TagInput,
   tags: TagInput,
   collection: CollectionSelect,
+  collectionmultiselect: CollectionMultiSelect,
+  'collection-multiselect': CollectionMultiSelect,
   datepicker: DatePicker,
   daterange: DateRangePicker
 };

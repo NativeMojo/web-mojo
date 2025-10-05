@@ -402,6 +402,35 @@ dataFormatter.pipe(date, 'date:"MMM DD, YYYY"|uppercase');
 {{price|currency|default:'Free'}}           <!-- Chain with other formatters -->
 ```
 
+#### `equals` - Conditional output based on equality
+```html
+<!-- CSS classes based on state -->
+{{status|equals:1:'text-success':'text-secondary'}}
+<!-- Output: 'text-success' if status === 1, otherwise 'text-secondary' -->
+
+{{model.state|equals:'active':'badge-success':'badge-secondary'}}
+<!-- Output: 'badge-success' if state === 'active', otherwise 'badge-secondary' -->
+
+<!-- Text output -->
+{{role|equals:'admin':'Administrator':'User'}}
+<!-- Output: 'Administrator' if role === 'admin', otherwise 'User' -->
+
+<!-- Numbers -->
+{{count|equals:0:'No items':'Has items'}}
+<!-- Output: 'No items' if count === 0, otherwise 'Has items' -->
+
+<!-- Works with any type (uses loose equality) -->
+{{value|equals:true:'Yes':'No'}}
+{{id|equals:'123':'Match':'No match'}}
+
+<!-- Common use cases -->
+<span class="{{is_active|equals:true:'text-success':'text-danger'}}">
+  {{is_active|equals:true:'Active':'Inactive'}}
+</span>
+
+<i class="bi {{priority|equals:1:'bi-star-fill text-warning':'bi-star'}}"></i>
+```
+
 #### `json` - Format as JSON
 ```html
 {{data|json}}                               <!-- Compact JSON -->
@@ -763,6 +792,7 @@ Both properties are supported in DataView and TableView for consistency:
 | `tooltip` | Tooltip | `{{val\|tooltip:'Help text'}}` |
 | **Utility** |
 | `default` | Fallback value | `{{val\|default:'N/A'}}` |
+| `equals` | Conditional output | `{{state\|equals:1:'active':'inactive'}}` |
 | `json` | JSON string | `{{data\|json:2}}` |
 | `raw` | Pass-through | `{{html\|raw}}` |
 | `iter` | To iterable | `{{obj\|iter}}` |

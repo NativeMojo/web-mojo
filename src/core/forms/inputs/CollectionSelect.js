@@ -7,6 +7,7 @@
  */
 
 import { View } from '@core/View.js';
+import MOJOUtils from '@core/utils/MOJOUtils.js';
 
 /**
  * CollectionDropdownView - Child component for dropdown results only
@@ -59,14 +60,19 @@ class CollectionDropdownView extends View {
   }
 
   async getViewData() {
-    const items = this.collection ? this.collection.toJSON().map((item, index) => ({
-      ...item,
-      labelField: item[this.labelField],
-      valueField: item[this.valueField],
-      isSelected: item[this.valueField] == this.selectedValue,
-      isFocused: index === this.focusedIndex,
-      index
-    })) : [];
+    const items = this.collection ? this.collection.toJSON().map((item, index) => {
+      const labelValue = MOJOUtils.getNestedValue(item, this.labelField);
+      const fieldValue = MOJOUtils.getNestedValue(item, this.valueField);
+      
+      return {
+        ...item,
+        labelField: labelValue,
+        valueField: fieldValue,
+        isSelected: fieldValue == this.selectedValue,
+        isFocused: index === this.focusedIndex,
+        index
+      };
+    }) : [];
 
     return {
       loading: this.loading,
@@ -170,8 +176,9 @@ class CollectionSelectView extends View {
     this.errorMessage = '';
 
     if (this.selectedValue && typeof this.selectedValue === 'object') {
-      this.selectedLabel = this.selectedValue[this.labelField] || '';
-      this.selectedValue = this.selectedValue[this.valueField] || '0';
+      // Support dot notation in labelField and valueField
+      this.selectedLabel = MOJOUtils.getNestedValue(this.selectedValue, this.labelField) || '';
+      this.selectedValue = MOJOUtils.getNestedValue(this.selectedValue, this.valueField) || '0';
     }
 
     // Internal
@@ -245,14 +252,16 @@ class CollectionSelectView extends View {
       if (this.selectedLabel) return;
       const selectedModel = this.collection?.get(this.selectedValue);
       if (selectedModel) {
-        this.selectedLabel = selectedModel.get(this.labelField);
+        // Support dot notation in labelField
+        this.selectedLabel = this.getFieldValue(selectedModel, this.labelField);
         this.render(false);
         return;
       }
 
       let model = await this.collection.fetchOne(this.selectedValue);
       if (model) {
-        this.selectedLabel = model.get(this.labelField, `${model.constructor.name} #${model.id}`);
+        // Support dot notation in labelField
+        this.selectedLabel = this.getFieldValue(model, this.labelField) || `${model.constructor.name} #${model.id}`;
         this.render(false);
       }
     } catch (error) {
@@ -590,8 +599,9 @@ class CollectionSelectView extends View {
     let newLabel = '';
 
     if (newValue && typeof newValue === 'object') {
-        newLabel = newValue[this.labelField] || '';
-        newValue = newValue[this.valueField];
+        // Support dot notation in labelField and valueField
+        newLabel = MOJOUtils.getNestedValue(newValue, this.labelField) || '';
+        newValue = MOJOUtils.getNestedValue(newValue, this.valueField);
     }
 
     newValue = newValue || '0';
@@ -615,6 +625,30 @@ class CollectionSelectView extends View {
     } else {
         this.render();
     }
+  }
+
+  /**
+   * Helper method to get field value from model or plain object with dot notation support
+   * @param {Object|Model} item - The item to get value from
+   * @param {string} fieldPath - The field path (supports dot notation)
+   * @returns {*} The field value
+   */
+  getFieldValue(item, fieldPath) {
+    if (!item || !fieldPath) return undefined;
+
+    // If item has a get() method (Model instance), try using it first
+    if (typeof item.get === 'function') {
+      // Try to get the value using Model's get() method
+      const value = item.get(fieldPath);
+      // If get() returns undefined and path has dots, fall back to MOJOUtils
+      if (value === undefined && fieldPath.includes('.')) {
+        return MOJOUtils.getNestedValue(item, fieldPath);
+      }
+      return value;
+    }
+
+    // For plain objects, use MOJOUtils for dot notation support
+    return MOJOUtils.getNestedValue(item, fieldPath);
   }
 
 }

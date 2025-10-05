@@ -701,6 +701,10 @@ class FormBuilder {
       case 'collection':
         fieldHTML = this.renderCollectionField(field);
         break;
+      case 'collectionmultiselect':
+      case 'collection-multiselect':
+        fieldHTML = this.renderCollectionMultiSelectField(field);
+        break;
       case 'datepicker':
         fieldHTML = this.renderDatePickerField(field);
         break;
@@ -1863,6 +1867,7 @@ class FormBuilder {
       maxItems = 10,
       emptyFetch = false,
       debounceMs = 300,
+      requiresActiveGroup = false,
       help = field.helpText || field.help || ''
     } = field;
 
@@ -1887,7 +1892,8 @@ class FormBuilder {
                debounceMs,
                disabled,
                readonly,
-               required
+               required,
+               requiresActiveGroup
              })}'>
           <input type="text"
                  id="${fieldId}"
@@ -1899,6 +1905,62 @@ class FormBuilder {
 
           <input type="hidden" name="${name}" value="${this.escapeHtml(fieldValue)}">
           <small class="form-text text-muted">This will be enhanced with CollectionSelect component</small>
+        </div>
+        ${help ? `<div class="${this.options.helpClass}">${this.escapeHtml(help)}</div>` : ''}
+        ${error ? `<div class="${this.options.errorClass}">${this.escapeHtml(error)}</div>` : ''}
+      </div>
+    `;
+  }
+
+  /**
+   * Render collection multiselect field
+   * @param {Object} field - Field configuration
+   * @returns {string} Field HTML
+   */
+  renderCollectionMultiSelectField(field) {
+    const {
+      name,
+      label,
+      value = [],
+      required = false,
+      disabled = false,
+      Collection: _Collection,
+      collectionParams = {},
+      labelField = 'name',
+      valueField = 'id',
+      excludeIds = [],
+      size = 8,
+      maxHeight = null,
+      showSelectAll = true,
+      requiresActiveGroup = false,
+      help = field.helpText || field.help || ''
+    } = field;
+
+    const fieldId = this.getFieldId(name);
+    const error = this.errors[name];
+    const fieldValue = this.getFieldValue(name) ?? value;
+
+    return `
+      <div class="mojo-form-control">
+        ${label ? `<label class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}</label>` : ''}
+        <div class="collection-multiselect-placeholder"
+             data-field-name="${name}"
+             data-field-type="collectionmultiselect"
+             data-field-config='${JSON.stringify({
+               name,
+               value: fieldValue,
+               labelField,
+               valueField,
+               excludeIds,
+               size,
+               maxHeight,
+               showSelectAll,
+               disabled,
+               required,
+               requiresActiveGroup
+             })}'>
+          <input type="hidden" name="${name}" value="${this.escapeHtml(JSON.stringify(fieldValue))}">
+          <small class="form-text text-muted">This will be enhanced with CollectionMultiSelect component</small>
         </div>
         ${help ? `<div class="${this.options.helpClass}">${this.escapeHtml(help)}</div>` : ''}
         ${error ? `<div class="${this.options.errorClass}">${this.escapeHtml(error)}</div>` : ''}

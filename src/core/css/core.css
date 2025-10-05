@@ -1349,3 +1349,15 @@
         }
     }
 }
+
+/* =================================================================
+   Collection Multi-Select
+   ================================================================= */
+
+.collection-multiselect-list .hover-bg:hover {
+    background-color: rgba(13, 110, 253, 0.08);
+}
+
+[data-bs-theme="dark"] .collection-multiselect-list .hover-bg:hover {
+    background-color: rgba(13, 110, 253, 0.15);
+}

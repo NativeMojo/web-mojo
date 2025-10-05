@@ -80,6 +80,9 @@ class TableView extends ListView {
 
     this.options.addButtonLabel = options.addButtonLabel || 'Add';
 
+    // Custom toolbar buttons
+    this.toolbarButtons = options.toolbarButtons || [];
+
     // Table display options
     this.tableOptions = {
       striped: true,
@@ -152,7 +155,7 @@ class TableView extends ListView {
     if (!visibility) return ''; // Always visible if no visibility specified
 
     const validBreakpoints = ['sm', 'md', 'lg', 'xl', 'xxl'];
-    
+
     // Legacy string format: show at breakpoint and up
     if (typeof visibility === 'string') {
       if (!validBreakpoints.includes(visibility)) {
@@ -161,11 +164,11 @@ class TableView extends ListView {
       }
       return `d-none d-${visibility}-table-cell`;
     }
-    
+
     // Object format for more control
     if (typeof visibility === 'object') {
       const classes = [];
-      
+
       // Hide at breakpoint and up
       if (visibility.hide) {
         if (!validBreakpoints.includes(visibility.hide)) {
@@ -174,7 +177,7 @@ class TableView extends ListView {
         }
         classes.push(`d-table-cell d-${visibility.hide}-none`);
       }
-      
+
       // Show at breakpoint and up (optionally combined with hide)
       if (visibility.show) {
         if (!validBreakpoints.includes(visibility.show)) {
@@ -187,7 +190,7 @@ class TableView extends ListView {
           classes.push(`d-${visibility.show}-table-cell`);
         }
       }
-      
+
       return classes.join(' ');
     }
 
@@ -466,6 +469,48 @@ class TableView extends ListView {
     //   buttons.push(`<div class="vr mx-2"></div>`);
     // }
 
+    // Render custom toolbar buttons
+    if (this.toolbarButtons && this.toolbarButtons.length > 0) {
+      this.toolbarButtons.forEach((button, index) => {
+        const {
+          label = 'Button',
+          icon = '',
+          action = '',
+          handler = null,
+          variant = 'outline-secondary',
+          title = label,
+          className = '',
+          permissions = null
+        } = button;
+
+        // Check permissions if specified
+        if (permissions && !this.checkPermissions(permissions)) {
+          return;
+        }
+
+        const iconHtml = icon ? `<i class="${icon} me-1"></i>` : '';
+        const labelHtml = `<span class="d-none d-lg-inline">${label}</span>`;
+        
+        // Use handler if provided, otherwise use action for data-action attribute
+        let dataAttrs = '';
+        if (handler) {
+          dataAttrs = `data-action="custom-toolbar-button" data-button-index="${index}"`;
+        } else if (action) {
+          dataAttrs = `data-action="${action}"`;
+        }
+        
+        const btnClass = `btn btn-sm btn-${variant} ${className}`.trim();
+
+        buttons.push(`
+          <button class="${btnClass}"
+                  ${dataAttrs}
+                  title="${title}">
+            ${iconHtml}${labelHtml}
+          </button>
+        `);
+      });
+    }
+
     return buttons.join('');
   }
 
@@ -685,7 +730,7 @@ class TableView extends ListView {
     this.columns.forEach(column => {
       // Parse column key to get field name without pipes/formatters
       const { fieldKey } = this.parseColumnKey(column.key);
-      
+
       const sortable = this.sortable && column.sortable !== false;
       const currentSort = this.getSortBy() === fieldKey ? this.getSortDirection() : null;
       const sortIcon = this.getSortIcon(currentSort);
@@ -1419,6 +1464,9 @@ class TableView extends ListView {
         if (this.options.addRequiresActiveUser) {
             result.user = this.getApp().activeUser.id;
         }
+        if (this.options.addFormDefaults) {
+            Object.assign(result, this.options.addFormDefaults);
+        }
         await model.save(result);
         if (this.collection) {
           this.collection.add(model);
@@ -1626,7 +1674,7 @@ class TableView extends ListView {
       if (this.sortable && column.sortable !== false) {
         // Parse the column key to get just the field name (without pipes/formatters)
         const { fieldKey } = this.parseColumnKey(column.key);
-        
+
         const dropdown = this.element.querySelector(`[data-bs-toggle="dropdown"][data-column="${fieldKey}"]`);
         if (dropdown) {
           const isSorted = currentSortField === fieldKey;
@@ -2327,6 +2375,18 @@ class TableView extends ListView {
   async onActionClearSelection(event, element) {
     this.clearSelection();
     this.updateBatchActionsPanel();
+  }
+
+  /**
+   * Handle custom toolbar button with handler function
+   */
+  async onActionCustomToolbarButton(event, element) {
+    const buttonIndex = parseInt(element.getAttribute('data-button-index'), 10);
+    const button = this.toolbarButtons[buttonIndex];
+    
+    if (button && typeof button.handler === 'function') {
+      await button.handler.call(this, event, element);
+    }
   }
 }
 
