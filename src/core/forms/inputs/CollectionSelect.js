@@ -156,6 +156,7 @@ class CollectionSelectView extends View {
     this.debounceMs = options.debounceMs || 1000;
     this.name = options.name || 'collection_select';
     this.emptyFetch = options.emptyFetch !== false;
+    this.requiresActiveGroup = options.requiresActiveGroup || false;
 
     // State
     this.selectedValue = options.value || '0';
@@ -195,6 +196,15 @@ class CollectionSelectView extends View {
     this.defaultParams = { ...this.collection.params };
     this.collection.params.size = this.maxItems;
     this.defaultParams.size = this.maxItems;
+
+    // Add active group filter if required
+    if (this.requiresActiveGroup) {
+      const app = this.getApp();
+      if (app && app.activeGroup && app.activeGroup.id) {
+        this.collection.params.group = app.activeGroup.id;
+        this.defaultParams.group = app.activeGroup.id;
+      }
+    }
 
     this.collection.on('fetch:start', () => {
       this.loading = true;

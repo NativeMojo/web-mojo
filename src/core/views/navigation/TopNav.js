@@ -58,16 +58,16 @@ class TopNav extends View {
         this.userMenu = options.userMenu || this.findMenuItem('user');
         if (this.userMenu) this.userMenu.id = "user";
         this.loginMenu = options.loginMenu || this.findMenuItem('login');
-        
+
         // Setup page event listeners
         this.setupPageListeners();
-        
+
         // Setup group event listeners for group display modes
         this.setupGroupListeners();
-        
+
         // Store reference to group selector for click-to-open functionality
         this.groupSelectorButton = null;
-        
+
         // Track current group for display modes
         this.currentGroup = null;
     }
@@ -139,8 +139,8 @@ class TopNav extends View {
                 <div class="navbar-brand d-flex align-items-center">
                     {{#data.groupIcon}}<i class="{{data.groupIcon}} me-2"></i>{{/data.groupIcon}}
                     <div>
-                        <span class="topnav-group-name" 
-                              role="button" 
+                        <span class="topnav-group-name"
+                              role="button"
                               tabindex="0"
                               data-action="open-group-selector"
                               style="cursor: pointer;">
@@ -323,13 +323,13 @@ class TopNav extends View {
                 processedItem.isGroupSelector = true;
                 processedItem.isDropdown = false;
                 processedItem.isButton = false;
-                
+
                 // Create group selector button with smart defaults
                 // Only pass through explicitly provided options
                 const groupSelectorOptions = {
                     containerId: `group-selector-${item.id || 'default'}`
                 };
-                
+
                 // Only add options if explicitly provided (allow auto-detection to work)
                 if (item.Collection !== undefined) groupSelectorOptions.Collection = item.Collection;
                 if (item.collection !== undefined) groupSelectorOptions.collection = item.collection;
@@ -343,15 +343,15 @@ class TopNav extends View {
                 if (item.searchPlaceholder !== undefined) groupSelectorOptions.searchPlaceholder = item.searchPlaceholder;
                 if (item.autoSetActiveGroup !== undefined) groupSelectorOptions.autoSetActiveGroup = item.autoSetActiveGroup;
                 if (item.onGroupSelected !== undefined) groupSelectorOptions.onGroupSelected = item.onGroupSelected;
-                
+
                 const groupSelector = new GroupSelectorButton(groupSelectorOptions);
-                
+
                 // Store reference for click-to-open functionality
                 this.groupSelectorButton = groupSelector;
-                
+
                 // Add as child view
                 this.addChild(groupSelector);
-                
+
             } else if (processedItem.items && processedItem.items.length > 0) {
                 // Dropdown menu
                 processedItem.isDropdown = true;
@@ -381,7 +381,7 @@ class TopNav extends View {
      */
     setupPageListeners() {
         // Use global MOJO event bus if available
-        this.getApp().events.on(["page:show", "page:hide", "page:denied"], (data) => {
+        this.getApp().events.on("page:show", (data) => {
             this.onPageChanged(data);
         });
     }
@@ -399,7 +399,7 @@ class TopNav extends View {
             if (data?.group) {
                 this.currentGroup = data.group;
             }
-            
+
             if (this.displayMode === 'group' || this.displayMode === 'group_page_titles') {
                 if (this.mounted) {
                     this.render();
@@ -518,7 +518,7 @@ class TopNav extends View {
             Collection: GroupList,
             currentGroup: this.getApp()?.activeGroup
         });
-        
+
         await tempSelector.onActionShowSelector(event);
         return true;
     }

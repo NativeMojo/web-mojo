@@ -6,12 +6,17 @@ The **DataFormatter** is MOJO's powerful, centralized utility for formatting and
 
 - [Overview](#overview)
 - [Basic Usage](#basic-usage)
-- [Built-in Formatters](#built-in-formatters)
 - [Pipe Syntax](#pipe-syntax)
+- [Built-in Formatters](#built-in-formatters)
+  - [Date & Time](#date--time-formatters)
+  - [Numbers](#number-formatters)
+  - [Strings](#string-formatters)
+  - [HTML & Web](#html--web-formatters)
+  - [Utility](#utility-formatters)
+  - [Text & Content](#text--content-formatters)
 - [Custom Formatters](#custom-formatters)
 - [Integration Patterns](#integration-patterns)
 - [Best Practices](#best-practices)
-- [Troubleshooting](#troubleshooting)
 
 ## Overview
 
@@ -45,8 +50,8 @@ import dataFormatter from '../utils/DataFormatter.js';
 const formatted = dataFormatter.apply('date', '2024-01-15', 'MMM DD, YYYY');
 // Result: "Jan 15, 2024"
 
-// Format currency
-const price = dataFormatter.apply('currency', 1234.56, '$', 2);
+// Format currency (from cents)
+const price = dataFormatter.apply('currency', 123456, '$', 2);
 // Result: "$1,234.56"
 
 // Format percentage
@@ -54,397 +59,431 @@ const rate = dataFormatter.apply('percent', 0.1234, 1);
 // Result: "12.3%"
 ```
 
-### Pipe Syntax (Recommended)
+## Pipe Syntax
+
+The pipe syntax allows chaining multiple formatters. MOJO supports **two parameter styles**:
+
+### Colon Style (Preferred) ⭐
+
+```html
+<!-- Single parameter -->
+{{value|truncate:50}}
+
+<!-- Multiple parameters -->
+{{price|currency:'$':2}}
+
+<!-- Complex parameters -->
+{{active|yesnoicon:'bi bi-unlock-fill text-success':'bi bi-lock-fill text-danger'}}
+
+<!-- Context variables -->
+{{value|tooltip:model.description:'top'}}
+```
+
+### Parentheses Style (Legacy, Still Supported)
+
+```html
+<!-- Single parameter -->
+{{value|truncate(50)}}
+
+<!-- Multiple parameters -->
+{{price|currency('$', 2)}}
+
+<!-- Complex parameters -->
+{{active|yesnoicon('bi bi-unlock-fill text-success', 'bi bi-lock-fill text-danger')}}
+```
+
+### Chaining Pipes
+
+```html
+<!-- Chain multiple formatters -->
+{{email|lowercase|truncate:30|default:'No email'}}
+
+<!-- Complex chain -->
+{{created|epoch|datetime:'MMM DD, YYYY':'h:mm A'}}
+```
+
+### In JavaScript
 
 ```js
-// Chain multiple formatters
-const result = dataFormatter.pipe(1234.56, 'currency($,2)|uppercase');
-// Result: "$1,234.56" (then uppercased if applicable)
+// Single formatter
+dataFormatter.pipe(value, 'currency');
 
-// Complex formatting chain
-const processed = dataFormatter.pipe(
-    'john.doe@example.com', 
-    'email|badge(primary)'
-);
-// Result: Email link with primary badge styling
+// Chained formatters
+dataFormatter.pipe(value, 'lowercase|truncate:30|default:"N/A"');
+
+// Complex formatting
+dataFormatter.pipe(date, 'date:"MMM DD, YYYY"|uppercase');
 ```
 
 ## Built-in Formatters
 
 ### Date & Time Formatters
 
-#### `date(value, format)`
-Formats dates with customizable patterns.
-
-```js
-const date = '2024-01-15';
-
-dataFormatter.apply('date', date, 'MM/DD/YYYY');     // "01/15/2024"
-dataFormatter.apply('date', date, 'MMM DD, YYYY');   // "Jan 15, 2024"
-dataFormatter.apply('date', date, 'dddd, MMMM D');   // "Monday, January 15"
-dataFormatter.apply('date', date, 'YYYY-MM-DD');     // "2024-01-15"
+#### `date` - Format dates with custom patterns
+```html
+<!-- Template examples -->
+{{created_at|date:'YYYY-MM-DD'}}           <!-- 2025-10-04 -->
+{{created_at|date:'MMM DD, YYYY'}}         <!-- Oct 04, 2025 -->
+{{created_at|date:'dddd, MMMM D'}}         <!-- Saturday, October 4 -->
 ```
 
-**Format Tokens:**
-- `YYYY` - 4-digit year (2024)
-- `YY` - 2-digit year (24)
-- `MMMM` - Full month (January)
-- `MMM` - Short month (Jan)
-- `MM` - Zero-padded month (01)
-- `M` - Month number (1)
-- `dddd` - Full weekday (Monday)
-- `ddd` - Short weekday (Mon)
-- `DD` - Zero-padded day (01)
-- `D` - Day number (1)
+**Format Tokens:** `YYYY` (year), `MM` (month), `DD` (day), `MMM` (short month), `MMMM` (full month), `ddd` (short weekday), `dddd` (full weekday)
 
-#### `time(value, format)`
-Formats time values.
-
-```js
-const time = '14:30:00';
-
-dataFormatter.apply('time', time, 'HH:mm');          // "14:30"
-dataFormatter.apply('time', time, 'h:mm A');         // "2:30 PM"
-dataFormatter.apply('time', time, 'HH:mm:ss');       // "14:30:00"
+#### `time` - Format time values
+```html
+{{timestamp|time:'HH:mm'}}                 <!-- 14:30 -->
+{{timestamp|time:'h:mm A'}}                <!-- 2:30 PM -->
+{{timestamp|time:'HH:mm:ss'}}              <!-- 14:30:45 -->
 ```
 
-#### `datetime(value, format)`
-Combines date and time formatting.
+**Format Tokens:** `HH` (24h), `hh` (12h), `mm` (minutes), `ss` (seconds), `A` (AM/PM), `a` (am/pm)
 
-```js
-const datetime = '2024-01-15T14:30:00Z';
-
-dataFormatter.apply('datetime', datetime, 'MMM DD, YYYY h:mm A');
-// Result: "Jan 15, 2024 2:30 PM"
+#### `datetime` - Combined date and time
+```html
+{{created|datetime:'MM/DD/YYYY':'h:mm A'}} <!-- 10/04/2025 2:30 PM -->
+{{created|datetime:'MMM DD':'HH:mm'}}      <!-- Oct 04 14:30 -->
 ```
 
-#### `relative(value, options)`
-Human-friendly relative time.
-
-```js
-const now = new Date();
-const yesterday = new Date(now - 24 * 60 * 60 * 1000);
-
-dataFormatter.apply('relative', yesterday);           // "1 day ago"
-dataFormatter.apply('fromNow', yesterday);            // Alias for relative
+#### `datetime_tz` - Date/time with timezone
+```html
+{{created|datetime_tz:'MM/DD/YYYY':'h:mm A':{timeZone:'America/New_York'}}}
+<!-- 10/04/2025 2:30 PM EST -->
 ```
 
-#### `iso(value)`
-ISO 8601 format.
-
-```js
-dataFormatter.apply('iso', new Date());               // "2024-01-15T14:30:00.000Z"
+#### `relative` (alias: `fromNow`) - Relative time
+```html
+{{created|relative}}                        <!-- 2 hours ago -->
+{{created|relative:true}}                   <!-- 2h ago (short format) -->
 ```
+
+#### `iso` - ISO 8601 format
+```html
+{{date|iso}}                                <!-- 2025-10-04T14:30:00.000Z -->
+{{date|iso:true}}                           <!-- 2025-10-04 (date only) -->
+```
+
+#### `epoch` - Convert seconds to milliseconds
+```html
+{{timestamp|epoch|datetime}}                <!-- Converts epoch seconds to ms, then formats -->
+```
+
+---
 
 ### Number Formatters
 
-#### `number(value, decimals, locale)`
-General number formatting with locale support.
-
-```js
-dataFormatter.apply('number', 1234.5678, 2);         // "1,234.57"
-dataFormatter.apply('number', 1234.5678, 0);         // "1,235"
-dataFormatter.apply('number', 1234.5678, 2, 'de-DE'); // "1.234,57"
+#### `number` - Format numbers with locale
+```html
+{{value|number:2}}                          <!-- 1,234.57 -->
+{{value|number:0}}                          <!-- 1,235 -->
+{{value|number:2:'de-DE'}}                  <!-- 1.234,57 (German) -->
 ```
 
-#### `currency(value, symbol, decimals)`
-Currency formatting.
+#### `currency` - Format cents as currency
+```html
+{{price_cents|currency}}                    <!-- $12.35 (from 1235 cents) -->
+{{price_cents|currency:'€':2}}              <!-- €12.35 -->
+{{price_cents|currency:'$':0}}              <!-- $12 -->
+```
+**Note:** Automatically divides by 100 to convert cents to dollars/euros.
 
-```js
-dataFormatter.apply('currency', 1234.56);            // "$1,234.56"
-dataFormatter.apply('currency', 1234.56, '€');       // "€1,234.56"
-dataFormatter.apply('currency', 1234.56, '$', 0);    // "$1,235"
+#### `percent` - Format as percentage
+```html
+{{ratio|percent}}                           <!-- 12% (from 0.12) -->
+{{ratio|percent:2}}                         <!-- 12.34% (from 0.1234) -->
+{{ratio|percent:1:false}}                   <!-- 12.3 (no multiply by 100) -->
 ```
 
-#### `percent(value, decimals)`
-Percentage formatting.
-
-```js
-dataFormatter.apply('percent', 0.1234);              // "12.34%"
-dataFormatter.apply('percent', 0.1234, 1);           // "12.3%"
-dataFormatter.apply('percent', 1.234);               // "123.40%" (handles >1 values)
+#### `filesize` - Format bytes as file size
+```html
+{{bytes|filesize}}                          <!-- 1.2 MB -->
+{{bytes|filesize:true:1}}                   <!-- 1.2 MiB (binary units) -->
+{{bytes|filesize:false:2}}                  <!-- 1.23 MB (2 decimals) -->
 ```
 
-#### `filesize(value, unit)`
-File size formatting.
-
-```js
-dataFormatter.apply('filesize', 1024);               // "1.00 KB"
-dataFormatter.apply('filesize', 1048576);            // "1.00 MB"
-dataFormatter.apply('filesize', 1048576, 'binary');  // Uses binary units (1024)
+#### `ordinal` - Add ordinal suffix
+```html
+{{rank|ordinal}}                            <!-- 1st, 2nd, 3rd, 4th -->
+{{rank|ordinal:true}}                       <!-- st, nd, rd, th (suffix only) -->
 ```
 
-#### `ordinal(value)`
-Ordinal numbers (1st, 2nd, 3rd, etc.).
-
-```js
-dataFormatter.apply('ordinal', 1);                   // "1st"
-dataFormatter.apply('ordinal', 22);                  // "22nd"
-dataFormatter.apply('ordinal', 103);                 // "103rd"
+#### `compact` - Compact number notation
+```html
+{{views|compact}}                           <!-- 1.2K, 3.4M, 5.6B -->
+{{views|compact:2}}                         <!-- 1.23K (2 decimals) -->
 ```
 
-#### `compact(value, locale)`
-Compact number notation.
-
-```js
-dataFormatter.apply('compact', 1234567);             // "1.2M"
-dataFormatter.apply('compact', 1234);                // "1.2K"
-dataFormatter.apply('compact', 12345678901);         // "12B"
-```
+---
 
 ### String Formatters
 
-#### Text Transformation
-
-```js
-dataFormatter.apply('uppercase', 'hello world');     // "HELLO WORLD"
-dataFormatter.apply('lowercase', 'HELLO WORLD');     // "hello world"
-dataFormatter.apply('capitalize', 'hello world');    // "Hello World"
+#### `uppercase` / `upper` - Convert to uppercase
+```html
+{{name|uppercase}}                          <!-- HELLO WORLD -->
 ```
 
-#### `truncate(value, length, suffix)`
-Truncate long text.
-
-```js
-dataFormatter.apply('truncate', 'This is a long text', 10);
-// Result: "This is a..."
-
-dataFormatter.apply('truncate', 'Short', 10);        // "Short" (unchanged)
+#### `lowercase` / `lower` - Convert to lowercase
+```html
+{{name|lowercase}}                          <!-- hello world -->
 ```
 
-#### `slug(value)`
-URL-friendly slugs.
-
-```js
-dataFormatter.apply('slug', 'Hello World!');         // "hello-world"
-dataFormatter.apply('slug', 'Special @#$ Characters'); // "special-characters"
+#### `capitalize` / `caps` - Capitalize words
+```html
+{{title|capitalize}}                        <!-- Hello World (all words) -->
+{{title|capitalize:false}}                  <!-- Hello world (first letter only) -->
 ```
 
-#### `initials(value)`
-Extract initials from names.
-
-```js
-dataFormatter.apply('initials', 'John Doe');         // "JD"
-dataFormatter.apply('initials', 'Mary Jane Watson');  // "MJW"
+#### `truncate` - Truncate to length
+```html
+{{description|truncate:50}}                 <!-- Long text... (max 50 chars) -->
+{{description|truncate:100:'…'}}            <!-- Long text… (custom suffix) -->
 ```
 
-#### `mask(value, pattern)`
-Mask sensitive data.
-
-```js
-dataFormatter.apply('mask', '1234567890', '***-***-****');
-// Result: "123-456-7890" (if pattern allows) or masked version
+#### `truncate_middle` - Truncate in middle
+```html
+{{hash|truncate_middle:16}}                 <!-- abcd1234***xyz9876 (8+8 chars) -->
+{{hash|truncate_middle:8:'...'}}            <!-- abcd...9876 (custom middle) -->
 ```
 
-### Text & Content Formatters
-
-#### `plural(count, singular, plural, includeCount)`
-Format pluralization based on count.
-
-```js
-dataFormatter.apply('plural', 1, 'item');           // "1 item"
-dataFormatter.apply('plural', 5, 'item');           // "5 items"
-dataFormatter.apply('plural', 2, 'child', 'children'); // "2 children"
-dataFormatter.apply('plural', 1, 'item', null, false); // "item"
+#### `slug` - Create URL-friendly slug
+```html
+{{title|slug}}                              <!-- hello-world -->
+{{title|slug:'_'}}                          <!-- hello_world (custom separator) -->
 ```
 
-#### `list(array, options)`
-Format arrays as human-readable lists.
-
-```js
-dataFormatter.apply('list', ['Apple', 'Banana', 'Orange']);
-// "Apple, Banana, and Orange"
-
-dataFormatter.apply('list', ['A', 'B'], { conjunction: 'or' });
-// "A or B"
-
-dataFormatter.apply('list', ['A', 'B', 'C', 'D'], { limit: 2 });
-// "A, B, and 2 others"
+#### `initials` - Extract initials
+```html
+{{name|initials}}                           <!-- JD (2 initials default) -->
+{{name|initials:3}}                         <!-- JDS (3 initials) -->
 ```
 
-#### `duration(milliseconds, options)`
-Format durations in human-readable format.
-
-```js
-dataFormatter.apply('duration', 7230000);           // "2 hours 30 seconds"
-dataFormatter.apply('duration', 3661000, { short: true }); // "1h1m1s"
-dataFormatter.apply('duration', 90000, { precision: 1 }); // "1 minute"
+#### `mask` - Mask sensitive data
+```html
+{{ssn|mask}}                                <!-- ******7890 (show last 4) -->
+{{ssn|mask:'*':6}}                          <!-- ****567890 (show last 6) -->
+{{password|mask:'•':0}}                     <!-- •••••••••• (mask all) -->
 ```
 
-#### `hash(value, length, prefix, suffix)`
-Format long strings/IDs with truncation.
-
-```js
-dataFormatter.apply('hash', 'abc123def456ghi789', 8); // "abc123de..."
-dataFormatter.apply('hash', 'user-12345', 6, '#', ''); // "#user-1"
-dataFormatter.apply('hash', 'short');                // "short"
+#### `hex` / `tohex` - Encode as hexadecimal
+```html
+{{value|hex}}                               <!-- 48656c6c6f -->
+{{value|hex:true}}                          <!-- 48656C6C6F (uppercase) -->
+{{value|hex:true:true}}                     <!-- 0x48656C6C6F (with prefix) -->
 ```
 
-#### `stripHtml(html)`
-Strip HTML tags from text.
-
-```js
-dataFormatter.apply('stripHtml', '<p>Hello <b>World</b></p>'); // "Hello World"
-dataFormatter.apply('stripHtml', 'Plain text');      // "Plain text"
+#### `unhex` / `fromhex` - Decode hexadecimal
+```html
+{{hex_value|unhex}}                         <!-- Hello (from 48656c6c6f) -->
 ```
 
-#### `highlight(text, searchTerm, className)`
-Highlight search terms in text.
-
-```js
-dataFormatter.apply('highlight', 'Hello World', 'World');
-// "Hello <mark class="highlight">World</mark>"
-
-dataFormatter.apply('highlight', 'JavaScript is fun', 'script', 'search-hit');
-// "Java<mark class="search-hit">Script</mark> is fun"
-```
+---
 
 ### HTML & Web Formatters
 
-#### `email(value)`
-Format email as clickable link.
+#### `email` - Format as mailto link
+```html
+{{email|email}}                             
+<!-- <a href="mailto:user@example.com">user@example.com</a> -->
 
-```js
-dataFormatter.apply('email', 'user@example.com');
-// Result: '<a href="mailto:user@example.com">user@example.com</a>'
+{{email|email:{subject:'Hello'}}}
+<!-- With subject parameter -->
 ```
 
-#### `phone(value)`
-Format phone numbers.
-
-```js
-dataFormatter.apply('phone', '1234567890');          // "(123) 456-7890"
-dataFormatter.apply('phone', '+1234567890');         // "+1 (234) 567-890"
+#### `phone` - Format phone number
+```html
+{{phone|phone}}                             <!-- (123) 456-7890 -->
+{{phone|phone:'US':true}}                   <!-- With tel: link -->
+{{phone|phone:false}}                       <!-- (123) 456-7890 (no link) -->
 ```
 
-#### `url(value, text)`
-Format URLs as clickable links.
+#### `url` - Format as clickable link
+```html
+{{website|url}}                             
+<!-- <a href="..." target="_blank">https://example.com</a> -->
 
-```js
-dataFormatter.apply('url', 'https://example.com');
-// Result: '<a href="https://example.com" target="_blank">https://example.com</a>'
+{{website|url:'Visit Site'}}
+<!-- <a href="..." target="_blank">Visit Site</a> -->
 
-dataFormatter.apply('url', 'https://example.com', 'Visit Site');
-// Result: '<a href="https://example.com" target="_blank">Visit Site</a>'
+{{website|url:'Click Here':false}}
+<!-- Same window (no target="_blank") -->
 ```
 
-#### `badge(value, type, className)`
-Bootstrap badge formatting.
-
-```js
-dataFormatter.apply('badge', 'Active');              // Default badge
-dataFormatter.apply('badge', 'Success', 'success');  // Green badge
-dataFormatter.apply('badge', 'Error', 'danger');     // Red badge
+#### `badge` - Create Bootstrap badge
+```html
+{{status|badge}}                            <!-- Auto-detects color based on value -->
+{{status|badge:'success'}}                  <!-- <span class="badge bg-success">Active</span> -->
+{{tags|badge}}                              <!-- Works with arrays: multiple badges -->
 ```
 
-#### `status(value, config)`
-Status indicators with colors and icons.
+**Auto-detected colors:**
+- `success`: active, complete, done, success, approved, verified, enabled
+- `danger`: error, failed, rejected, disabled, deleted, blocked
+- `warning`: pending, warning, waiting, processing
+- `info`: info, information, new
 
-```js
-const status = dataFormatter.apply('status', 'active');
-// Result: Badge with appropriate color and icon based on status
+#### `status` - Status with icon and color
+```html
+{{status|status}}                           
+<!-- <span class="text-success"><i class="bi bi-check-circle-fill"></i> Active</span> -->
 ```
 
-#### `boolean(value, trueText, falseText)`
-Boolean formatting.
-
-```js
-dataFormatter.apply('boolean', true);                // "true"
-dataFormatter.apply('boolean', true, 'Yes', 'No');   // "Yes"
-dataFormatter.apply('yesno', false);                 // "No" (built-in alias)
+#### `status_text` - Status text only (no icon)
+```html
+{{status|status_text}}                      <!-- <span class="text-success">Active</span> -->
 ```
 
-#### `icon(value, className)`
-Bootstrap icon formatting.
-
-```js
-dataFormatter.apply('icon', 'home');                 // '<i class="bi bi-home"></i>'
-dataFormatter.apply('icon', 'user', 'text-primary'); // Colored icon
+#### `status_icon` - Status icon only (no text)
+```html
+{{status|status_icon}}                      <!-- <i class="bi bi-check-circle-fill text-success"></i> -->
 ```
 
-#### `avatar(value, size, className)`
-Avatar/profile image formatting.
-
-```js
-dataFormatter.apply('avatar', 'path/to/image.jpg');
-dataFormatter.apply('avatar', 'John Doe', 40);       // Generates initials avatar
+#### `boolean` / `bool` - Format boolean
+```html
+{{active|boolean}}                          <!-- True / False -->
+{{active|boolean:'Yes':'No'}}               <!-- Yes / No -->
+{{active|boolean:'Yes':'No':true}}          <!-- <span class="text-success">Yes</span> -->
 ```
+
+#### `yesno` - Shorthand for Yes/No boolean
+```html
+{{active|yesno}}                            <!-- Yes / No -->
+```
+
+#### `yesnoicon` - Boolean as icon
+```html
+{{active|yesnoicon}}                        
+<!-- <i class="bi bi-check-circle-fill text-success"></i> -->
+
+{{active|yesnoicon:'bi bi-unlock-fill text-success':'bi bi-lock-fill text-danger'}}
+<!-- Custom icons for true/false -->
+```
+
+#### `icon` - Map value to icon
+```html
+{{type|icon:{pdf:'bi-file-pdf',doc:'bi-file-word'}}}
+<!-- <i class="bi-file-pdf"></i> -->
+```
+
+#### `avatar` - Create avatar image
+```html
+{{user.photo|avatar}}                       <!-- Default medium size -->
+{{user.photo|avatar:'lg'}}                  <!-- Large avatar -->
+{{user.photo|avatar:'sm':'rounded-circle':'User Name'}}
+<!-- Size, classes, alt text -->
+```
+
+**Sizes:** `xs` (1.5rem), `sm` (2.5rem), `md` (3.5rem), `lg` (4rem), `xl` (5rem)
+
+#### `image` - Create image with renditions
+```html
+{{photo|image}}                             <!-- Default thumbnail rendition -->
+{{photo|image:'large':'img-fluid':'Alt text'}}
+<!-- Rendition, classes, alt text -->
+```
+
+#### `tooltip` - Add Bootstrap tooltip
+```html
+{{value|tooltip:'Help text'}}               
+<!-- Tooltip on top (default) -->
+
+{{value|tooltip:model.description:'bottom'}}
+<!-- Uses context variable for tooltip text -->
+
+{{value|tooltip:'<b>HTML</b> text':'top':'html'}}
+<!-- HTML tooltip -->
+```
+
+---
 
 ### Utility Formatters
 
-#### `default(value, defaultValue)`
-Provide fallback values.
-
-```js
-dataFormatter.apply('default', null, 'N/A');         // "N/A"
-dataFormatter.apply('default', '', 'Empty');         // "Empty"
-dataFormatter.apply('default', 'Valid', 'N/A');      // "Valid"
+#### `default` - Provide fallback value
+```html
+{{name|default:'N/A'}}                      <!-- Returns 'N/A' if name is null/undefined/'' -->
+{{price|currency|default:'Free'}}           <!-- Chain with other formatters -->
 ```
 
-#### `json(value, indent)`
-JSON formatting.
-
-```js
-const obj = { name: 'John', age: 30 };
-dataFormatter.apply('json', obj);                    // Compact JSON
-dataFormatter.apply('json', obj, 2);                 // Pretty-printed
+#### `json` - Format as JSON
+```html
+{{data|json}}                               <!-- Compact JSON -->
+{{data|json:4}}                             <!-- Pretty-printed with 4-space indent -->
 ```
 
-#### `raw(value)`
-Pass-through (no formatting).
-
-```js
-dataFormatter.apply('raw', '<b>HTML</b>');           // "<b>HTML</b>" (unchanged)
+#### `raw` - Pass through unchanged
+```html
+{{html|raw}}                                <!-- No escaping or formatting -->
 ```
 
-## Pipe Syntax
-
-### Basic Pipes
-
-The pipe syntax allows chaining multiple formatters:
-
-```js
-// Single pipe
-dataFormatter.pipe(1234.56, 'currency');            // "$1,234.56"
-
-// Multiple pipes
-dataFormatter.pipe('john doe', 'capitalize|truncate(10)');
-// Result: "John Doe"
-
-// Complex chain
-dataFormatter.pipe(
-    new Date(), 
-    'date(MMM DD, YYYY)|uppercase|default(No Date)'
-);
+#### `iter` - Convert to iterable array
+```html
+{{#object|iter}}
+  {{key}}: {{value}}
+{{/object|iter}}
+<!-- Converts objects to [{key, value}, ...] for loops -->
 ```
 
-### Pipe with Parameters
-
-```js
-// Parameters in parentheses
-dataFormatter.pipe(1234.56, 'currency($,0)');       // "$1,235"
-
-// Multiple parameters
-dataFormatter.pipe('Long text here', 'truncate(10,...)'); // "Long text..."
-
-// String parameters (quoted)
-dataFormatter.pipe(0.1234, "percent(1)");           // "12.3%"
+#### `keys` - Extract object keys
+```html
+{{permissions|keys}}                        <!-- Array of keys -->
+{{permissions|keys|badge}}                  <!-- Badge for each key -->
 ```
 
-### Common Pipe Patterns
-
-```js
-// Safe formatting with defaults
-const safeFormat = (value, pipe) => 
-    dataFormatter.pipe(value, `${pipe}|default(N/A)`);
-
-// Currency with fallback
-safeFormat(null, 'currency');                       // "N/A"
-safeFormat(100, 'currency');                        // "$100.00"
-
-// Date with relative fallback
-dataFormatter.pipe(date, 'date(MMM DD)|default(relative)');
+#### `values` - Extract object values
+```html
+{{data|values}}                             <!-- Array of values -->
 ```
+
+---
+
+### Text & Content Formatters
+
+#### `plural` - Format pluralization
+```html
+{{count|plural:'item'}}                     <!-- 1 item, 5 items -->
+{{count|plural:'child':'children'}}         <!-- 2 children (custom plural) -->
+{{count|plural:'item':'items':false}}       <!-- items (without count) -->
+```
+
+#### `list` - Format array as list
+```html
+{{tags|list}}                               <!-- item1, item2, and item3 -->
+{{tags|list:{conjunction:'or'}}}            <!-- item1, item2, or item3 -->
+{{tags|list:{limit:2}}}                     <!-- item1, item2, and 3 others -->
+```
+
+#### `duration` - Format time duration
+```html
+{{milliseconds|duration}}                   <!-- 2 hours 30 minutes -->
+{{milliseconds|duration:{short:true}}}      <!-- 2h30m -->
+{{milliseconds|duration:{precision:1}}}     <!-- 2 hours (single unit) -->
+```
+
+#### `hash` - Truncate long IDs
+```html
+{{id|hash}}                                 <!-- abcd1234... (8 chars + ...) -->
+{{id|hash:12:'#':''}}                       <!-- #abcd1234efgh (custom prefix, no suffix) -->
+```
+
+#### `stripHtml` - Remove HTML tags
+```html
+{{html|stripHtml}}                          <!-- Plain text only -->
+```
+
+#### `highlight` - Highlight search terms
+```html
+{{text|highlight:'search'}}                 
+<!-- Text with <mark class="highlight">search</mark> highlighted -->
+
+{{text|highlight:searchTerm:'custom-class'}}
+<!-- Custom highlight class -->
+```
+
+#### `pre` - Preformatted code block
+```html
+{{code|pre}}                                
+<!-- <pre class="bg-light p-2 rounded border">code</pre> -->
+```
+
+---
 
 ## Custom Formatters
 
@@ -461,9 +500,9 @@ dataFormatter.register('repeat', (value, times = 2, separator = ' ') => {
     return Array(times).fill(value).join(separator);
 });
 
-// Usage
-dataFormatter.apply('reverse', 'hello');             // "olleh"
-dataFormatter.apply('repeat', 'Hi', 3, '-');         // "Hi-Hi-Hi"
+// Usage in templates
+{{text|reverse}}
+{{text|repeat:3:'-'}}
 ```
 
 ### Complex Custom Formatters
@@ -482,56 +521,79 @@ dataFormatter.register('taskStatus', (value, showIcon = true) => {
     
     return `<span class="badge bg-${status.color}">${icon}${status.text}</span>`;
 });
-
-// Usage
-dataFormatter.apply('taskStatus', 'complete');       // Badge with icon
-dataFormatter.apply('taskStatus', 'pending', false); // Badge without icon
 ```
+
+---
 
 ## Integration Patterns
 
 ### In Templates (Mustache)
 
 ```html
-<!-- Simple formatting -->
-<p>Price: {{price|currency}}</p>
-<p>Date: {{date|date(MMM DD, YYYY)}}</p>
+<!-- DataView field formatters -->
+<div class="data-view">
+  {{#fields}}
+    <div>
+      <label>{{label}}</label>
+      <div>{{value|format}}</div>
+    </div>
+  {{/fields}}
+</div>
 
-<!-- With defaults -->
-<p>Status: {{status|badge|default(Unknown)}}</p>
+<!-- TableView column formatters -->
+<table>
+  {{#rows}}
+    <tr>
+      <td>{{created|date:'MMM DD, YYYY'}}</td>
+      <td>{{amount|currency}}</td>
+      <td>{{status|badge}}</td>
+    </tr>
+  {{/rows}}
+</table>
 
-<!-- Complex chains -->
-<p>Email: {{email|email|default(No email provided)}}</p>
+<!-- Complex chains with defaults -->
+<p>{{user.email|email|default:'No email provided'}}</p>
+<p>{{user.phone|phone|default:'—'}}</p>
 ```
 
-### In Views
+### In DataView
+
+Both `format` and `formatter` properties are supported:
 
 ```js
-class MyView extends View {
-    async onInit() {
-        // Format data before rendering
-        this.formattedPrice = dataFormatter.apply('currency', this.price);
-        this.formattedDate = dataFormatter.apply('date', this.date, 'MMM DD');
-    }
-    
-    // Method for dynamic formatting
-    formatValue(value, formatter) {
-        return dataFormatter.pipe(value, formatter);
-    }
-}
+const profileView = new DataView({
+    model: this.model,
+    fields: [
+        { key: 'created', label: 'Created', format: 'datetime' },      // ✅ Works
+        { key: 'email', label: 'Email', formatter: 'email' },          // ✅ Also works
+        { key: 'amount', label: 'Amount', format: 'currency' },
+        { key: 'status', label: 'Status', formatter: 'badge' }
+    ]
+});
+```
+
+### In TableView
+
+Both `formatter` and `format` properties are supported:
+
+```js
+this.tableView = new TableView({
+    collection: collection,
+    columns: [
+        { key: 'created', label: 'Date', formatter: 'datetime', sortable: true },  // ✅ Works
+        { key: 'email', label: 'Email', format: 'email' },                         // ✅ Also works
+        { key: 'amount', label: 'Amount', formatter: 'currency' },
+        { key: 'status', label: 'Status', format: 'badge' }
+    ]
+});
 ```
 
 ### In Charts (Correct Usage)
 
 ```js
-// ❌ WRONG - Don't pass formatter strings to chart options
+// ✅ CORRECT - Use Chart.js callbacks, not MOJO formatter strings
 const chart = new SeriesChart({
-    yAxis: { formatter: 'currency:USD' }  // This breaks the chart!
-});
-
-// ✅ CORRECT - Format data beforehand or use proper Chart.js callbacks
-const chart = new SeriesChart({
-    data: processedData,
+    data: chartData,
     chartOptions: {
         scales: {
             y: {
@@ -553,37 +615,47 @@ const chart = new SeriesChart({
         }
     }
 });
-```
 
-### In Data Processing
-
-```js
-// Format arrays of data
-const formatData = (items, formatters) => {
-    return items.map(item => {
-        const formatted = {};
-        Object.keys(formatters).forEach(key => {
-            formatted[key] = dataFormatter.pipe(item[key], formatters[key]);
-        });
-        return { ...item, ...formatted };
-    });
-};
-
-// Usage
-const users = [
-    { name: 'john doe', email: 'john@example.com', salary: 50000 }
-];
-
-const formatted = formatData(users, {
-    name: 'capitalize',
-    email: 'email',
-    salary: 'currency'
+// ❌ WRONG - Don't pass MOJO formatter strings to chart config
+const chart = new SeriesChart({
+    yAxis: { formatter: 'currency' }  // This breaks the chart!
 });
 ```
 
+### In Views
+
+```js
+class MyView extends View {
+    async onInit() {
+        // Format data before rendering
+        this.formattedPrice = dataFormatter.apply('currency', this.price);
+        this.formattedDate = dataFormatter.apply('date', this.date, 'MMM DD');
+    }
+    
+    // Method for dynamic formatting
+    formatValue(value, formatter) {
+        return dataFormatter.pipe(value, formatter);
+    }
+}
+```
+
+---
+
 ## Best Practices
 
-### 1. Use the Singleton Instance
+### 1. Use Colon Syntax in Templates
+
+```html
+<!-- ✅ Preferred - Cleaner, more readable -->
+{{value|truncate:50}}
+{{price|currency:'$':2}}
+
+<!-- ✅ Still supported - Legacy style -->
+{{value|truncate(50)}}
+{{price|currency('$', 2)}}
+```
+
+### 2. Use the Singleton Instance
 
 ```js
 // ✅ Good - Use the singleton
@@ -594,141 +666,116 @@ import { DataFormatter } from '../utils/DataFormatter.js';
 const formatter = new DataFormatter();
 ```
 
-### 2. Handle Null/Undefined Values
+### 3. Handle Null/Undefined Values
 
-```js
-// ✅ Good - Use defaults for safety
-dataFormatter.pipe(value, 'currency|default(N/A)');
-
-// ✅ Good - Check before formatting
-if (value != null) {
-    formatted = dataFormatter.apply('currency', value);
-}
+```html
+<!-- ✅ Good - Use defaults for safety -->
+{{value|currency|default:'N/A'}}
+{{name|default:'Unknown'}}
 ```
 
-### 3. Consistent Formatting Patterns
+### 4. Consistent Formatting Patterns
 
 ```js
 // ✅ Good - Establish app-wide patterns
 const APP_FORMATS = {
-    money: 'currency($,2)',
-    shortDate: 'date(MMM DD)',
-    longDate: 'date(dddd, MMMM DD, YYYY)',
-    percent: 'percent(1)'
+    money: 'currency',
+    shortDate: 'date:"MMM DD"',
+    longDate: 'date:"dddd, MMMM DD, YYYY"',
+    percent: 'percent:1'
 };
 
 // Use throughout the app
 dataFormatter.pipe(value, APP_FORMATS.money);
 ```
 
-### 4. Error Handling
-
-```js
-// ✅ Good - Formatters handle errors gracefully
-const result = dataFormatter.apply('date', invalidDate);
-// Returns original value if formatting fails
-
-// ✅ Good - Add additional safety
-const safeFormat = (value, formatter, fallback = 'N/A') => {
-    try {
-        const result = dataFormatter.pipe(value, formatter);
-        return result || fallback;
-    } catch (error) {
-        console.warn('Formatting error:', error);
-        return fallback;
-    }
-};
-```
-
-### 5. Performance Considerations
+### 5. Format Data Once
 
 ```js
 // ✅ Good - Format once, use many times
-const formattedData = data.map(item => ({
-    ...item,
-    formattedPrice: dataFormatter.apply('currency', item.price),
-    formattedDate: dataFormatter.apply('date', item.date, 'MMM DD')
-}));
-
-// ❌ Avoid - Formatting in render loops
-// Don't format the same value repeatedly
-```
-
-## Troubleshooting
-
-### Common Issues
-
-#### Issue: "Formatter 'xyz' not found"
-
-```js
-// Check available formatters
-console.log(dataFormatter.list());
-
-// Register missing formatter
-dataFormatter.register('xyz', (value) => /* custom logic */);
-```
-
-#### Issue: Charts not displaying data
-
-```js
-// ❌ Wrong - Don't use formatter strings in chart config
-xAxis: { formatter: 'category' }
-
-// ✅ Correct - Use Chart.js callbacks
-chartOptions: {
-    scales: {
-        x: {
-            type: 'category'  // Chart.js native option
-        }
-    }
+async onInit() {
+    this.formattedData = this.data.map(item => ({
+        ...item,
+        displayPrice: dataFormatter.apply('currency', item.price),
+        displayDate: dataFormatter.apply('date', item.date, 'MMM DD')
+    }));
 }
+
+// ❌ Avoid - Formatting in render loops repeatedly
 ```
 
-#### Issue: Pipe syntax not working
+### 6. Use Both `format` and `formatter`
+
+Both properties are supported in DataView and TableView for consistency:
 
 ```js
-// ✅ Check syntax
-dataFormatter.pipe(value, 'formatter1|formatter2(param)');
-
-// Common syntax errors:
-// - Missing quotes around strings: 'truncate(Hello)' ❌ vs 'truncate("Hello")' ✅
-// - Wrong parameter separators: 'currency($;2)' ❌ vs 'currency($,2)' ✅
+// ✅ Both work - use whichever you prefer
+{ key: 'created', format: 'datetime' }
+{ key: 'created', formatter: 'datetime' }
 ```
 
-#### Issue: Template formatting not working
+---
 
-```html
-<!-- ✅ Make sure pipe filter is enabled in template engine -->
-<p>{{value|currency}}</p>
+## Complete Formatter Reference
 
-<!-- If not working, format in the view: -->
-<!-- View: this.formattedValue = dataFormatter.apply('currency', value) -->
-<p>{{formattedValue}}</p>
-```
+### Quick Reference Table
 
-### Debugging
-
-```js
-// Enable debug mode (if available)
-dataFormatter.debug = true;
-
-// Test formatters in console
-console.log(dataFormatter.apply('currency', 1234.56));
-console.log(dataFormatter.pipe(1234.56, 'currency($,0)|uppercase'));
-
-// List all available formatters
-console.table(dataFormatter.list());
-```
-
-### Performance Monitoring
-
-```js
-// Monitor formatter performance
-const startTime = performance.now();
-const result = dataFormatter.pipe(largeDataSet, 'complexFormatter');
-const endTime = performance.now();
-console.log(`Formatting took ${endTime - startTime} milliseconds`);
-```
+| Formatter | Purpose | Example |
+|-----------|---------|---------|
+| **Date/Time** |
+| `date` | Format dates | `{{date\|date:'MMM DD, YYYY'}}` |
+| `time` | Format times | `{{time\|time:'h:mm A'}}` |
+| `datetime` | Date + time | `{{dt\|datetime:'MM/DD':'HH:mm'}}` |
+| `datetime_tz` | With timezone | `{{dt\|datetime_tz:'MM/DD':'HH:mm':{timeZone:'America/New_York'}}}` |
+| `relative` | Relative time | `{{date\|relative}}` → "2 hours ago" |
+| `iso` | ISO 8601 | `{{date\|iso}}` → "2025-10-04T14:30:00Z" |
+| `epoch` | Seconds to ms | `{{secs\|epoch}}` |
+| **Numbers** |
+| `number` | Format numbers | `{{val\|number:2}}` → "1,234.57" |
+| `currency` | Format cents | `{{cents\|currency}}` → "$12.35" |
+| `percent` | Percentage | `{{val\|percent:1}}` → "12.3%" |
+| `filesize` | File sizes | `{{bytes\|filesize}}` → "1.2 MB" |
+| `ordinal` | Ordinals | `{{num\|ordinal}}` → "1st, 2nd" |
+| `compact` | Compact numbers | `{{num\|compact}}` → "1.2K, 3.4M" |
+| **Strings** |
+| `uppercase` | To uppercase | `{{text\|uppercase}}` |
+| `lowercase` | To lowercase | `{{text\|lowercase}}` |
+| `capitalize` | Capitalize | `{{text\|capitalize}}` |
+| `truncate` | Truncate text | `{{text\|truncate:50}}` |
+| `truncate_middle` | Middle truncate | `{{hash\|truncate_middle:16}}` |
+| `slug` | URL slug | `{{title\|slug}}` → "hello-world" |
+| `initials` | Extract initials | `{{name\|initials}}` → "JD" |
+| `mask` | Mask data | `{{ssn\|mask}}` → "******7890" |
+| `hex` | To hexadecimal | `{{val\|hex}}` |
+| `unhex` | From hexadecimal | `{{hex\|unhex}}` |
+| **HTML/Web** |
+| `email` | Mailto link | `{{email\|email}}` |
+| `phone` | Phone link | `{{phone\|phone}}` |
+| `url` | Hyperlink | `{{url\|url:'Text'}}` |
+| `badge` | Bootstrap badge | `{{status\|badge}}` |
+| `status` | Status indicator | `{{status\|status}}` |
+| `boolean` | Boolean text | `{{bool\|boolean:'Yes':'No'}}` |
+| `yesno` | Yes/No | `{{bool\|yesno}}` |
+| `yesnoicon` | Boolean icon | `{{bool\|yesnoicon}}` |
+| `icon` | Value to icon | `{{type\|icon:{...}}}` |
+| `avatar` | Avatar image | `{{photo\|avatar:'md'}}` |
+| `image` | Image tag | `{{photo\|image:'thumbnail'}}` |
+| `tooltip` | Tooltip | `{{val\|tooltip:'Help text'}}` |
+| **Utility** |
+| `default` | Fallback value | `{{val\|default:'N/A'}}` |
+| `json` | JSON string | `{{data\|json:2}}` |
+| `raw` | Pass-through | `{{html\|raw}}` |
+| `iter` | To iterable | `{{obj\|iter}}` |
+| `keys` | Object keys | `{{obj\|keys}}` |
+| `values` | Object values | `{{obj\|values}}` |
+| **Text/Content** |
+| `plural` | Pluralize | `{{n\|plural:'item'}}` |
+| `list` | Array to list | `{{arr\|list}}` |
+| `duration` | Duration | `{{ms\|duration}}` |
+| `hash` | Truncate IDs | `{{id\|hash:8}}` |
+| `stripHtml` | Remove HTML | `{{html\|stripHtml}}` |
+| `highlight` | Highlight text | `{{text\|highlight:'term'}}` |
+| `pre` | Code block | `{{code\|pre}}` |
 
 ---
 
@@ -736,11 +783,11 @@ console.log(`Formatting took ${endTime - startTime} milliseconds`);
 
 The DataFormatter provides a robust, consistent way to format data throughout your MOJO application. Key takeaways:
 
-1. **Use the singleton instance** for consistency
-2. **Leverage pipe syntax** for readable, chainable formatting
-3. **Always provide defaults** for user-facing data
-4. **Format data in views**, not in chart configurations
-5. **Register custom formatters** for app-specific needs
-6. **Handle errors gracefully** with fallbacks
+1. **Use colon syntax** (`:`) for cleaner, more readable templates
+2. **Use the singleton instance** for consistency
+3. **Both `format` and `formatter`** properties work in DataView and TableView
+4. **Always provide defaults** for user-facing data
+5. **Format data in views**, not in chart configurations
+6. **Register custom formatters** for app-specific needs
 
 The formatter is designed to be safe, fast, and extensible - making it perfect for everything from simple text transformation to complex data presentation in dashboards and reports.

@@ -140,7 +140,8 @@ class DataView extends View {
           name: key,
           label: this.formatLabel(key),
           type: fieldType,
-          format: formatter
+          format: formatter,
+          formatter: formatter  // Alias for consistency with TableView
         };
       });
     }
@@ -456,20 +457,22 @@ class DataView extends View {
    */
   getFieldValue(field) {
     let value;
-
+    let key = field.name || field.key;
     // Get raw value from data source
     if (this.model && typeof this.model.get === 'function') {
       // For models, get raw value first, then apply formatting separately
       // This ensures we don't break pipe chains by concatenating strings
-      value = this.model.get(field.name);
+      value = this.model.get(key);
     } else {
       // Plain object access
-      value = this.getData()[field.name];
+      value = this.getData()[key];
     }
 
     // Apply formatting using DataFormatter pipe system if specified
-    if (field.format) {
-      value = dataFormatter.pipe(value, field.format);
+    // Support both 'format' and 'formatter' for consistency with TableView
+    const formatString = field.format || field.formatter;
+    if (formatString) {
+      value = dataFormatter.pipe(value, formatString);
     }
 
     // Handle empty values
@@ -639,7 +642,9 @@ class DataView extends View {
 
     // If a custom format is specified, we trust the DataFormatter.
     // However, we must determine if the output is intended to be HTML or plain text.
-    if (field.format) {
+    // Support both 'format' and 'formatter' for consistency with TableView
+    const formatString = field.format || field.formatter;
+    if (formatString) {
       // A list of formatters known to produce safe HTML output.
       // A list of formatters known to produce safe HTML output.
       // A list of formatters known to produce safe HTML output.
@@ -649,7 +654,7 @@ class DataView extends View {
       ];
 
       // Parse the pipe string to find the last formatter applied.
-      const pipes = dataFormatter.parsePipeString(field.format);
+      const pipes = dataFormatter.parsePipeString(formatString);
       const lastFormatter = pipes.length > 0 ? pipes[pipes.length - 1].name.toLowerCase() : null;
 
       // If the last formatter is in our safe list, render the HTML directly.
@@ -1014,13 +1019,15 @@ class DataView extends View {
     const field = this.getField(fieldName);
     if (field) {
       field.format = format;
+      field.formatter = format;  // Keep both in sync
     } else {
       // Create new field if it doesn't exist
       this.fields.push({
         name: fieldName,
         label: this.formatLabel(fieldName),
         type: this.inferFieldType(this.getData()[fieldName], fieldName),
-        format: format
+        format: format,
+        formatter: format  // Keep both in sync
       });
     }
     return this;
@@ -1037,8 +1044,10 @@ class DataView extends View {
     if (field) {
       if (field.format) {
         field.format += `|${formatter}`;
+        field.formatter = field.format;  // Keep both in sync
       } else {
         field.format = formatter;
+        field.formatter = formatter;  // Keep both in sync
       }
     }
     return this;
@@ -1053,7 +1062,9 @@ class DataView extends View {
     const field = this.getField(fieldName);
     if (field) {
       const data = this.getData();
-      field.format = this.inferFormatter(data[fieldName], fieldName, field.type);
+      const inferred = this.inferFormatter(data[fieldName], fieldName, field.type);
+      field.format = inferred;
+      field.formatter = inferred;  // Keep both in sync
     }
     return this;
   }
@@ -1070,8 +1081,10 @@ class DataView extends View {
 
     const targetValue = value !== null ? value : this.getData()[fieldName];
 
-    if (field.format && targetValue != null) {
-      return dataFormatter.pipe(targetValue, field.format);
+    // Support both 'format' and 'formatter' for consistency with TableView
+    const formatString = field.format || field.formatter;
+    if (formatString && targetValue != null) {
+      return dataFormatter.pipe(targetValue, formatString);
     }
 
     return targetValue;
@@ -1096,8 +1109,9 @@ class DataView extends View {
   getFieldFormats() {
     const formats = {};
     this.fields.forEach(field => {
-      if (field.format) {
-        formats[field.name] = field.format;
+      const formatString = field.format || field.formatter;
+      if (formatString) {
+        formats[field.name] = formatString;
       }
     });
     return formats;

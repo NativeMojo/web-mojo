@@ -50,7 +50,7 @@ class FormView extends View {
     // Form configuration
     this.formConfig = formConfig || { fields: fields || [] };
     this.formBuilder = new FormBuilder({
-      ...this.formConfig,
+      ...this.getFormConfig(),
       data: this.data, // Pass data so field.value defaults work
       errors
     });
@@ -82,6 +82,18 @@ class FormView extends View {
     }
 
     return formData;
+  }
+
+  getFormConfig() {
+    const config = { ...this.formConfig };
+    const app = this.getApp();
+
+    config.fields = this.formConfig.fields.filter(field => {
+      if (!field.permissions) return true;
+      return app.activeUser?.hasPermission(field.permissions);
+    });
+
+    return config;
   }
 
   /**
@@ -154,7 +166,7 @@ class FormView extends View {
 
     // Use MOJOUtils to handle nested properties like 'permissions.manage_users'
     const value = MOJOUtils.getContextData(this.data, fieldConfig.name);
-    
+
     // Only set value if we have actual data - don't overwrite field defaults with undefined
     if (value !== undefined && value !== null) {
       this.setFieldValue(fieldElement, fieldConfig, value);
@@ -653,10 +665,10 @@ class FormView extends View {
   async onActionClickImageUpload(event, element) {
     console.log('FormView: onActionClickImageUpload called');
     console.log('FormView: element:', element);
-    
+
     const fieldId = element.getAttribute('data-field-id');
     console.log('FormView: fieldId:', fieldId);
-    
+
     if (!fieldId) {
       console.error('FormView: No fieldId attribute found');
       return;
@@ -664,7 +676,7 @@ class FormView extends View {
 
     const fileInput = this.element.querySelector(`#${fieldId}`);
     console.log('FormView: fileInput:', fileInput);
-    
+
     if (fileInput && !fileInput.disabled) {
       fileInput.click();
       console.log('FormView: fileInput.click() called');
@@ -853,7 +865,7 @@ class FormView extends View {
     console.log('FormView: onChangeImageSelected called');
     console.log('FormView: element:', element);
     console.log('FormView: element.files:', element.files);
-    
+
     const fieldName = element.getAttribute('data-field');
     const file = element.files[0];
 
@@ -862,7 +874,7 @@ class FormView extends View {
 
     if (fieldName && file) {
       console.log('FormView: fieldName and file exist, processing...');
-      
+
       // Find the field configuration to check for imageSize
       const fieldConfig = this.findFieldConfig(fieldName);
       console.log('FormView: fieldConfig:', fieldConfig);
@@ -953,7 +965,7 @@ class FormView extends View {
         console.log('FormView: Normal image handling (no cropping)');
         this.data[fieldName] = file;
         console.log('FormView: File stored in this.data[' + fieldName + ']');
-        
+
         await this.updateImagePreview(fieldName, previewUrl);
         console.log('FormView: updateImagePreview completed');
 
@@ -1194,7 +1206,7 @@ class FormView extends View {
               const val = typeof opt === 'object' ? opt.value : opt;
               return val === '' || !isNaN(Number(val));
             });
-            
+
             if (allNumeric && data[field.name] !== '') {
               const num = Number(data[field.name]);
               if (!isNaN(num)) {
@@ -1803,7 +1815,7 @@ class FormView extends View {
   async updateField(_fieldName) {
     // Re-create FormBuilder with updated data
     this.formBuilder = new FormBuilder({
-      ...this.formConfig,
+      ...this.getFormConfig(),
       data: this.data,
       errors: this.errors
     });
@@ -1944,7 +1956,7 @@ class FormView extends View {
   async updateConfig(newConfig) {
     this.formConfig = { ...this.formConfig, ...newConfig };
     this.formBuilder = new FormBuilder({
-      ...this.formConfig,
+      ...this.getFormConfig(),
       data: this.data,
       errors: this.errors
     });

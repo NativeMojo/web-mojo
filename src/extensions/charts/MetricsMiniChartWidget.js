@@ -53,6 +53,9 @@ export default class MetricsMiniChartWidget extends View {
 
     // Trending options/state
     this.showTrending = !!options.showTrending;
+    this.trendRange = options.trendRange ?? null;   // e.g. 4 => compare last 2 vs prev 2
+    this.trendOffset = options.trendOffset ?? 0;    // e.g. 1 => skip most recent incomplete bucket
+    this.prevTrendOffset = options.prevTrendOffset ?? 0; // e.g. 7 => align previous window to same day last week
     this.total = 0;
     this.lastValue = 0;
     this.prevValue = 0;
@@ -129,7 +132,7 @@ export default class MetricsMiniChartWidget extends View {
           template: `
         <div class="d-flex justify-content-between align-items-start mb-2">
           <div class="me-3">
-            <h6 class="card-title mb-1" style="${this.textColor ? `color: ${this.textColor}` : ''}">{{title}}</h6>
+            <h6 class="card-title mb-1" style="${this.textColor ? `color: ${this.textColor}` : ''}">${this.title}</h6>
             <div class="card-subtitle" style="${this.textColor ? `color: ${this.textColor}` : ''}">${this.subtitle}</div>
               {{#hasTrending}}
                 <div class="small mt-1 fw-semibold {{trendingClass}}"  style="${this.textColor ? `color: ${this.textColor}` : ''}">
@@ -178,21 +181,62 @@ export default class MetricsMiniChartWidget extends View {
     // Compute total
     this.header.title = this.title;
     this.header.total = nums.reduce((a, b) => a + b, 0);
-    this.header.now_value = nums[nums.length - 1];
+    const offset = Math.max(0, parseInt(this.trendOffset || 0, 10) || 0);
+    const endIndex = Math.max(0, nums.length - 1 - offset);
+    this.header.now_value = nums[endIndex];
 
-    // Compute trending based on last vs previous value
-    if (nums.length >= 2) {
-      const last = nums[nums.length - 1];
-      const prev = nums[nums.length - 2];
+    // Compute trending using windowed sums with optional offset
+    let hasTrend = false;
+    let lastSum = 0;
+    let prevSum = 0;
 
-      this.header.lastValue = last;
-      this.header.prevValue = prev;
+    const k = (this.trendRange && this.trendRange >= 2) ? Math.max(1, Math.floor(this.trendRange / 2)) : 1;
+
+    if (endIndex >= 0) {
+      const lastEnd = endIndex;
+      const lastStart = lastEnd - (k - 1);
+      let prevStart, prevEnd;
+      if (this.prevTrendOffset && this.prevTrendOffset > 0) {
+        prevStart = lastStart - this.prevTrendOffset;
+        prevEnd = lastEnd - this.prevTrendOffset;
+      } else {
+        prevEnd = lastStart - 1;
+        prevStart = prevEnd - (k - 1);
+      }
+
+      if (lastStart >= 0 && prevStart >= 0) {
+        // Sum helper
+        const sumRange = (arr, s, e) => {
+          let sum = 0;
+          for (let i = s; i <= e; i++) sum += arr[i] || 0;
+          return sum;
+        };
+
+        lastSum = sumRange(nums, lastStart, lastEnd);
+        prevSum = sumRange(nums, prevStart, prevEnd);
+        hasTrend = true;
+      }
+    }
+
+    // Fallback to single-point comparison if not enough data for windows
+    if (!hasTrend) {
+      const prevIndex = endIndex - (this.prevTrendOffset && this.prevTrendOffset > 0 ? this.prevTrendOffset : 1);
+      if (prevIndex >= 0) {
+        lastSum = nums[endIndex];
+        prevSum = nums[prevIndex];
+        hasTrend = true;
+      }
+    }
+
+    if (hasTrend) {
+      this.header.lastValue = lastSum;
+      this.header.prevValue = prevSum;
 
       let percent = 0;
-      if (prev === 0) {
-        percent = last > 0 ? 100 : 0;
+      if (prevSum === 0) {
+        percent = lastSum > 0 ? 100 : 0;
       } else {
-        percent = ((last - prev) / Math.abs(prev)) * 100;
+        percent = ((lastSum - prevSum) / Math.abs(prevSum)) * 100;
       }
 
       this.header.trendingPercent = percent;
@@ -243,5 +287,12 @@ export default class MetricsMiniChartWidget extends View {
       this.chart.off('metrics:loaded', this.onChildMetricsLoaded, this);
     }
     await super.onBeforeDestroy();
+  }
+
+  refresh() {
+    if (this.chart) {
+        this.chart.account = this.account;
+        this.chart.refresh();
+    }
   }
 }

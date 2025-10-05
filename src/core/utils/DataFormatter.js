@@ -69,6 +69,10 @@ class DataFormatter {
     this.register('slug', this.slug.bind(this));
     this.register('initials', this.initials.bind(this));
     this.register('mask', this.mask.bind(this));
+    this.register('hex', this.hex.bind(this));
+    this.register('tohex', this.hex.bind(this));
+    this.register('unhex', this.unhex.bind(this));
+    this.register('fromhex', this.unhex.bind(this));
 
     // HTML/Web formatters
     this.register('email', this.email.bind(this));
@@ -194,7 +198,7 @@ class DataFormatter {
    * Supports both syntaxes:
    *   - Parentheses: formatter('arg1', 'arg2', 3)
    *   - Colon: formatter:'arg1':'arg2':3
-   * 
+   *
    * @param {string} token - Formatter token
    * @param {object} context - Optional context for resolving variables
    * @returns {Object} {name, args} object
@@ -342,11 +346,11 @@ class DataFormatter {
     if (context && this.isIdentifier(value)) {
       // For simple identifiers, try direct property access
       if (!value.includes('.')) {
-        if (context.hasOwnProperty && context.hasOwnProperty(value)) {
+        if (Object.prototype.hasOwnProperty.call(context, value)) {
           return context[value];
         }
       }
-      
+
       // Try get() method (for Models/Views) - handles dot notation
       if (context.get && typeof context.get === 'function') {
         const contextValue = context.get(value);
@@ -361,7 +365,7 @@ class DataFormatter {
           return contextValue;
         }
       }
-      
+
       // For dot notation on plain objects, use MOJOUtils
       if (value.includes('.')) {
         // Import MOJOUtils if needed for nested property access
@@ -532,7 +536,7 @@ class DataFormatter {
             if (tz2 && tz2.value && !/^GMT[+-]/i.test(tz2.value)) {
               abbr = tz2.value;
             }
-          } catch (e) {}
+          } catch (e) { void 0; }
         }
         // Collapse long names like "Eastern Daylight Time" to initials "EDT"
         if (abbr && /\s/.test(abbr)) {
@@ -1226,11 +1230,11 @@ class DataFormatter {
 
   /**
    * Tooltip formatter - wraps value with Bootstrap tooltip
-   * Usage: 
+   * Usage:
    *   {{value|tooltip:'Tooltip text'}}
    *   {{value|tooltip:'Help text':top}}
    *   {{value|tooltip:'Info':bottom:html}}
-   * 
+   *
    * @param {*} value - Value to display (not escaped, works with formatter chains)
    * @param {string} text - Tooltip text content
    * @param {string} placement - Tooltip placement: top, bottom, left, right (default: top)
@@ -1239,12 +1243,12 @@ class DataFormatter {
    */
   tooltip(value, text = '', placement = 'top', html = '') {
     if (value === null || value === undefined) return '';
-    
+
     // Don't escape value - it may be HTML from previous formatters in the chain
     const displayValue = String(value);
     const tooltipText = html === 'html' ? text : this.escapeHtml(text);
     const dataAttr = html === 'html' ? 'data-bs-html="true"' : '';
-    
+
     return `<span data-bs-toggle="tooltip" data-bs-placement="${placement}" ${dataAttr} data-bs-title="${tooltipText}">${displayValue}</span>`;
   }
 
@@ -1458,6 +1462,85 @@ class DataFormatter {
     const escapedTerm = String(searchTerm).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(`(${escapedTerm})`, 'gi');
     return String(text).replace(regex, `<mark class="${className}">$1</mark>`);
+  }
+
+  /**
+   * Encode a value as a hex string.
+   * - Strings are encoded as UTF-8 bytes, then hex-encoded
+   * - Numbers are converted to base-16 (padded to even length)
+   * - Uint8Array/ArrayBuffer/number[] are treated as bytes
+   *
+   * @param {*} value - The value to encode
+   * @param {boolean} uppercase - Uppercase hex letters (A-F)
+   * @param {boolean} withPrefix - Prefix with '0x'
+   * @returns {string} Hex string
+   */
+  hex(value, uppercase = false, withPrefix = false) {
+    if (value === null || value === undefined) return '';
+
+    let hexStr = '';
+
+    const toHexFromBytes = (bytes) =>
+      Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+
+    if (typeof value === 'number') {
+      let hex = Math.abs(Math.trunc(value)).toString(16);
+      if (hex.length % 2) hex = '0' + hex;
+      hexStr = hex;
+    } else if (value instanceof Uint8Array) {
+      hexStr = toHexFromBytes(value);
+    } else if (value instanceof ArrayBuffer) {
+      hexStr = toHexFromBytes(new Uint8Array(value));
+    } else if (Array.isArray(value) && value.every(n => typeof n === 'number')) {
+      hexStr = toHexFromBytes(Uint8Array.from(value.map(n => n & 0xFF)));
+    } else {
+      // Treat everything else as string and encode to UTF-8
+      const enc = new TextEncoder();
+      const bytes = enc.encode(String(value));
+      hexStr = toHexFromBytes(bytes);
+    }
+
+    if (uppercase) hexStr = hexStr.toUpperCase();
+    return (withPrefix ? '0x' : '') + hexStr;
+  }
+
+  /**
+   * Decode a hex string into UTF-8 text.
+   * Accepts optional '0x' prefix and ignores whitespace.
+   *
+   * @param {string} value - Hex string
+   * @returns {string} Decoded UTF-8 string (or original value on parse error)
+   */
+  unhex(value) {
+    if (value === null || value === undefined) return '';
+
+    let str = String(value).trim();
+    if (str.startsWith('0x') || str.startsWith('0X')) str = str.slice(2);
+    str = str.replace(/\s+/g, '');
+
+    if (str.length === 0) return '';
+
+    // If odd length, pad with leading zero
+    if (str.length % 2 !== 0) str = '0' + str;
+
+    const bytes = new Uint8Array(str.length / 2);
+    for (let i = 0; i < str.length; i += 2) {
+      const byte = parseInt(str.slice(i, i + 2), 16);
+      if (Number.isNaN(byte)) {
+        return String(value);
+      }
+      bytes[i / 2] = byte;
+    }
+
+    try {
+      const dec = new TextDecoder();
+      return dec.decode(bytes);
+    } catch (e) {
+      // Fallback if TextDecoder is unavailable
+      let text = '';
+      for (const b of bytes) text += String.fromCharCode(b);
+      return text;
+    }
   }
 
   json(value, indent = 2) {

@@ -222,6 +222,123 @@ class UserFormView extends FormView {
 }
 ```
 
+#### Auto-Generated Select Options
+
+FormBuilder can automatically generate options from numeric ranges:
+
+```javascript
+// Basic numeric range (1-24)
+{
+  type: 'select',
+  name: 'hour',
+  label: 'Hour',
+  start: 1,
+  end: 24,
+  step: 1
+}
+// Generates: 1, 2, 3, ..., 24
+
+// Zero-padded numbers (for time)
+{
+  type: 'select',
+  name: 'minute',
+  label: 'Minute',
+  start: 0,
+  end: 45,
+  step: 15,
+  format: 'padded'  // or 'pad'
+}
+// Generates: 00, 15, 30, 45
+
+// Ordinal numbers (1st, 2nd, 3rd)
+{
+  type: 'select',
+  name: 'day',
+  label: 'Day of Month',
+  start: 1,
+  end: 31,
+  step: 1,
+  format: 'ordinal'
+}
+// Generates: 1st, 2nd, 3rd, 4th, ..., 31st
+
+// With suffix (percentages)
+{
+  type: 'select',
+  name: 'discount',
+  label: 'Discount',
+  start: 0,
+  end: 100,
+  step: 10,
+  suffix: '%'
+}
+// Generates: 0%, 10%, 20%, ..., 100%
+
+// With prefix (years)
+{
+  type: 'select',
+  name: 'year',
+  label: 'Year',
+  start: 2020,
+  end: 2030,
+  step: 1,
+  prefix: 'Year '
+}
+// Generates: Year 2020, Year 2021, ..., Year 2030
+
+// Custom formatter function
+{
+  type: 'select',
+  name: 'month',
+  label: 'Month',
+  start: 1,
+  end: 12,
+  step: 1,
+  format: (v) => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][v-1]
+}
+// Generates: Jan, Feb, Mar, ..., Dec
+
+// Combine manual and auto-generated options
+{
+  type: 'select',
+  name: 'hour',
+  label: 'Start Hour',
+  options: [{ label: 'All Day', value: 0 }],  // Manual option first
+  start: 1,
+  end: 24,
+  step: 1
+}
+// Generates: All Day, 1, 2, 3, ..., 24
+
+// Real-world example: Age selector
+{
+  type: 'select',
+  name: 'age',
+  label: 'Age',
+  options: [{ label: 'Select your age', value: '' }],
+  start: 18,
+  end: 100,
+  step: 1,
+  suffix: ' years old'
+}
+// Generates: Select your age, 18 years old, 19 years old, ..., 100 years old
+```
+
+**Auto-Generation Parameters:**
+- `start` - Starting value (inclusive)
+- `end` - Ending value (inclusive)
+- `step` - Increment value (default: 1)
+- `format` - Format type: `'padded'`, `'ordinal'`, or custom function
+- `prefix` - Text to prepend to each label
+- `suffix` - Text to append to each label
+
+**Notes:**
+- Auto-generated options are appended after any manually specified `options`
+- Supports both ascending (start < end) and descending (start > end) ranges
+- Custom formatter functions receive the numeric value and return a string label
+- The numeric value is used for form submission, the formatted string is displayed
+
 ### Checkbox and Radio Fields
 
 ```javascript

@@ -1116,7 +1116,14 @@ class FormBuilder {
       searchable = false,
       class: fieldClass = '',
       attributes = {},
-      help = field.helpText || field.help || ''
+      help = field.helpText || field.help || '',
+      // Auto-generation parameters
+      start = field.start,
+      end = field.end,
+      step = field.step,
+      format = field.format,
+      prefix = field.prefix,
+      suffix = field.suffix
     } = field;
 
     const inputClass = `form-select ${fieldClass}`.trim();
@@ -1127,9 +1134,18 @@ class FormBuilder {
     const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
     const fieldId = this.getFieldId(name);
 
+    // Generate options automatically if start/end are provided
+    let generatedOptions = [...options];
+    if (start !== undefined && end !== undefined) {
+      const stepValue = step !== undefined ? step : 1;
+      const autoOptions = this.generateSelectOptions(start, end, stepValue, { format, prefix, suffix });
+      // Append auto-generated options after any manually specified ones
+      generatedOptions = [...generatedOptions, ...autoOptions];
+    }
+
     let optionsHTML = '';
-    if (Array.isArray(options)) {
-      optionsHTML = options.map(option => {
+    if (Array.isArray(generatedOptions)) {
+      optionsHTML = generatedOptions.map(option => {
         if (typeof option === 'string') {
           const selected = option === fieldValue ? 'selected' : '';
           return `<option value="${this.escapeHtml(option)}" ${selected}>${this.escapeHtml(option)}</option>`;
@@ -2121,6 +2137,92 @@ class FormBuilder {
       return `btn btn-${activeVariant}`;
     }
     return `btn btn-${variant}`;
+  }
+
+  /**
+   * Generate select options automatically from numeric range or patterns
+   * Supports multiple generation modes:
+   * - Numeric ranges: start, end, step
+   * - Formatting: format function, prefix, suffix
+   * 
+   * @param {number} start - Start value (inclusive)
+   * @param {number} end - End value (inclusive)
+   * @param {number} step - Step increment (default: 1)
+   * @param {Object} options - Additional options
+   * @param {Function|string} options.format - Format function or preset ('padded', 'ordinal')
+   * @param {string} options.prefix - Prefix for label
+   * @param {string} options.suffix - Suffix for label
+   * @returns {Array} Array of option objects {value, label}
+   * 
+   * @example
+   * // Hours 1-24
+   * generateSelectOptions(1, 24, 1)
+   * 
+   * // Minutes in 15-min increments with padding
+   * generateSelectOptions(0, 45, 15, { format: 'padded' })
+   * 
+   * // Days with ordinal suffix
+   * generateSelectOptions(1, 31, 1, { format: 'ordinal' })
+   * 
+   * // Years with prefix
+   * generateSelectOptions(2020, 2030, 1, { prefix: 'Year ' })
+   * 
+   * // Percentages
+   * generateSelectOptions(0, 100, 10, { suffix: '%' })
+   * 
+   * // Custom formatter
+   * generateSelectOptions(1, 12, 1, { 
+   *   format: (v) => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+   *                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][v-1] 
+   * })
+   */
+  generateSelectOptions(start, end, step = 1, options = {}) {
+    const { format, prefix = '', suffix = '' } = options;
+    const results = [];
+
+    // Determine direction (ascending or descending)
+    const increment = start <= end ? Math.abs(step) : -Math.abs(step);
+    
+    // Generate options
+    for (let i = start; start <= end ? i <= end : i >= end; i += increment) {
+      let label = String(i);
+      
+      // Apply formatting
+      if (typeof format === 'function') {
+        label = format(i);
+      } else if (format === 'padded' || format === 'pad') {
+        // Pad with zeros to match end value length
+        const maxLength = String(Math.max(Math.abs(start), Math.abs(end))).length;
+        label = String(i).padStart(maxLength, '0');
+      } else if (format === 'ordinal') {
+        label = this.formatOrdinal(i);
+      }
+      
+      // Apply prefix/suffix
+      label = `${prefix}${label}${suffix}`;
+      
+      results.push({
+        value: i,
+        label: label
+      });
+    }
+    
+    return results;
+  }
+
+  /**
+   * Format number with ordinal suffix (1st, 2nd, 3rd, etc.)
+   * @param {number} num - Number to format
+   * @returns {string} Formatted ordinal string
+   */
+  formatOrdinal(num) {
+    const j = num % 10;
+    const k = num % 100;
+    
+    if (j === 1 && k !== 11) return num + 'st';
+    if (j === 2 && k !== 12) return num + 'nd';
+    if (j === 3 && k !== 13) return num + 'rd';
+    return num + 'th';
   }
 
   /**

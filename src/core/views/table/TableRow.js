@@ -154,11 +154,13 @@ class TableRow extends ListViewItem {
    buildCellTemplate(column) {
        // Build path for Mustache to access the value
        const path = `model.${column.key}`;
-       if (column.formatter) {
+       // Support both 'formatter' and 'format' for consistency with DataView
+       const formatter = column.formatter || column.format;
+       if (formatter) {
          // For string formatters that are pipe expressions
-         if (typeof column.formatter === 'string') {
-           return `{{{${path}|${column.formatter}}}}`;
-         } else if (typeof column.formatter === 'function') {
+         if (typeof formatter === 'string') {
+           return `{{{${path}|${formatter}}}}`;
+         } else if (typeof formatter === 'function') {
            return `<span data-formatter="${column.key}">{{${path}}}</span>`;
          }
        }
