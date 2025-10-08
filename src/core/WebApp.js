@@ -122,7 +122,6 @@ class WebApp {
         } else {
             window.__app__ = this;
         }
-        console.log(`WebApp initialized: ${this.name} v${this.version}`);
     }
 
     /**
@@ -135,8 +134,6 @@ class WebApp {
         }
 
         try {
-            console.log(`Starting ${this.name}...`);
-
             // Setup global REST configuration
             // this.setupRest();
             // Setup page container
@@ -146,17 +143,13 @@ class WebApp {
             this.validateDefaultRoute();
 
             // Setup router
-            console.log('Setting up router...');
             await this.setupRouter();
-
 
             // Mark as started
             this.isStarted = true;
 
             // Emit app ready event
             this.events.emit('app:ready', { app: this });
-
-            console.log(`✅ ${this.name} started successfully`);
         } catch (error) {
             console.error(`Failed to start ${this.name}:`, error);
             this.showError('Failed to start application');
@@ -239,7 +232,7 @@ class WebApp {
             // Register route with router
             this.router.addRoute(route, pageName);
 
-            console.log(`📝 Registered route: "${route}" -> ${pageName}`);
+
         }
 
         return this;
@@ -443,7 +436,7 @@ class WebApp {
             return;
         }
 
-        console.log('🧭 WebApp.navigate:', { route, query, options });
+
 
         // Build full path with query parameters
         let fullPath = route;

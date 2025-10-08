@@ -114,10 +114,25 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: false,  // Keep console logs for debugging
-        drop_debugger: true,  // Remove debugger statements
-        pure_funcs: ['console.debug'],  // Remove console.debug calls
-        passes: 2  // Run compression twice for better optimization
+        // Keep warn/error/assert, strip other console calls in library output
+        drop_console: false,
+        drop_debugger: true,
+        pure_funcs: [
+          'console.log',
+          'console.info',
+          'console.debug',
+          'console.trace',
+          'console.dir',
+          'console.dirxml',
+          'console.group',
+          'console.groupCollapsed',
+          'console.groupEnd',
+          'console.time',
+          'console.timeEnd',
+          'console.timeLog',
+          'console.table'
+        ],
+        passes: 2
       },
       format: {
         comments: 'some',  // Preserve important comments (licenses, etc.)

@@ -9,6 +9,10 @@ import '@core/css/table.css';
 import '@core/css/toast.css';
 import '@core/css/chat.css';
 
+import ConsoleSilencer from '@core/utils/ConsoleSilencer.js';
+// Reduce console noise globally: errors only by default (suppress logs, info, and warnings)
+ConsoleSilencer.install({ level: 'error' });
+
 // Version info
 export {
   VERSION_INFO,
@@ -78,6 +82,8 @@ export { default as EventBus } from '@core/utils/EventBus.js';
 export { default as dataFormatter } from '@core/utils/DataFormatter.js';
 export { default as MustacheFormatter } from '@core/utils/MustacheFormatter.js';
 export { default as MOJOUtils, DataWrapper } from '@core/utils/MOJOUtils.js';
+export { default as ConsoleSilencer } from '@core/utils/ConsoleSilencer.js';
+export { installConsoleSilencer } from '@core/utils/ConsoleSilencer.js';
 
 // Additional views
 export { default as ProgressView } from '@core/views/feedback/ProgressView.js';

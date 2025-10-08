@@ -2,7 +2,7 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-sm-10 col-md-8 col-lg-6 col-xl-5">
-                <div class="card shadow-lg border-0">
+                <div class="card {{data.shadow}} border-0">
                     <div class="card-body p-4 p-md-5">
                         <!-- Logo and Header -->
                         <div class="text-center mb-4">

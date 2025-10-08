@@ -16,7 +16,6 @@ import {Member} from '@core/models/Member.js';
 import NotFoundPage from '@core/pages/NotFoundPage.js';
 import ToastService from '@core/services/ToastService.js';
 import Dialog from '@core/views/feedback/Dialog.js';
-import DataFormatter from '@core/utils/DataFormatter.js';
 
 export default class PortalApp extends WebApp {
     constructor(config = {}) {
@@ -103,7 +102,7 @@ export default class PortalApp extends WebApp {
             await this.checkActiveGroup();
         }
 
-        console.log('Setting up router...');
+
         await this.setupRouter();
 
         // Mark as started
@@ -112,7 +111,7 @@ export default class PortalApp extends WebApp {
         // Emit app ready event
         this.events.emit('app:ready', { app: this });
 
-        console.log(`${this.title} portal ready`);
+
     }
 
     async checkAuthStatus() {
@@ -192,7 +191,7 @@ export default class PortalApp extends WebApp {
                 // Emit event that group was loaded
                 this.events.emit('group:loaded', { group: this.activeGroup });
 
-                console.log('Loaded active group:', group.get('name'));
+
             } catch (error) {
                 console.warn('Failed to load active group:', error);
                 // If URL group failed, try to clear it and fall back to stored group
@@ -208,7 +207,7 @@ export default class PortalApp extends WebApp {
                             await fallbackGroup.fetch();
                             this.activeGroup = fallbackGroup;
                             this.events.emit('group:loaded', { group: this.activeGroup });
-                            console.log('Fell back to stored active group:', fallbackGroup.get('name'));
+
                         } catch (fallbackError) {
                             console.warn('Fallback to stored group also failed:', fallbackError);
                             this.clearActiveGroupId();
@@ -252,7 +251,7 @@ export default class PortalApp extends WebApp {
         }
 
         this.router.updateUrl({group:group.id}, { replace: true });
-        console.log('Active group set to:', group ? group.get('name') : 'none');
+
         return this;
     }
 
@@ -319,7 +318,7 @@ export default class PortalApp extends WebApp {
      * Get storage key for active group ID
      */
     getActiveGroupStorageKey() {
-        return `mojo_active_group_id`;
+        return `active_group_id`;
     }
 
     /**
@@ -327,7 +326,7 @@ export default class PortalApp extends WebApp {
      */
     setPortalProfile(profile) {
         try {
-            localStorage.setItem('mojo_portal_profile', profile);
+            localStorage.setItem('portal_profile', profile);
         } catch (error) {
             console.warn('Failed to save portal profile:', error);
         }
@@ -599,7 +598,7 @@ export default class PortalApp extends WebApp {
             this.topbar.setUser(user);
         }
 
-        console.log("Active user set:", user);
+
         this.events.emit('portal:user-changed', { user });
     }
 
@@ -690,7 +689,7 @@ export default class PortalApp extends WebApp {
                     name: 'new_password', type: 'password', label: 'New Password', required: true,
                     showToggle: true,
                     passwordUsage: 'new',           // sets autocomplete to 'new-password'
-                    showToggle: true,               // default, can omit
+
                     strengthMeter: true,
                     capsLockWarning: true,
                     attributes: {
@@ -702,7 +701,7 @@ export default class PortalApp extends WebApp {
                     name: 'confirm_password', type: 'password', label: 'Confirm Password', required: true,
                     showToggle: true,
                     passwordUsage: 'new',           // sets autocomplete to 'new-password'
-                    showToggle: true,               // default, can omit
+
                     strengthMeter: true,
                     capsLockWarning: true,
                     attributes: {
@@ -753,9 +752,7 @@ export default class PortalApp extends WebApp {
         }
 
         try {
-            if (this.activeUser?.attributes) {
-                console.log('activeUser.attributes:', this.activeUser.attributes);
-            }
+
 
             // Show profile edit form with automatic model saving
             const result = await Dialog.showModelForm({
@@ -879,7 +876,7 @@ export default class PortalApp extends WebApp {
             });
 
             if (result && result.success) {
-                console.log('Profile saved successfully:', result);
+
 
                 // Update active user with new data from model
                 // (model should already be updated by save operation)
@@ -888,7 +885,7 @@ export default class PortalApp extends WebApp {
                 this.showSuccess('Profile updated successfully!');
             } else if (result && !result.success) {
                 // Error case - already handled by Dialog.showForm
-                console.log('Profile save failed:', result);
+
             }
 
         } catch (error) {

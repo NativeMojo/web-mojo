@@ -41,6 +41,29 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    // Use Terser to strip non-critical console calls in production builds
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        // Remove noisy console calls but keep warn/error/assert
+        pure_funcs: [
+          'console.log',
+          'console.info',
+          'console.debug',
+          'console.trace',
+          'console.dir',
+          'console.dirxml',
+          'console.group',
+          'console.groupCollapsed',
+          'console.groupEnd',
+          'console.time',
+          'console.timeEnd',
+          'console.timeLog',
+          'console.table'
+        ],
+        drop_debugger: true
+      }
+    }
   },
 
   // Preview server (for production builds)

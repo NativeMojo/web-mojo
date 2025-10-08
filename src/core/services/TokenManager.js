@@ -177,8 +177,8 @@ class Token {
 
 export default class TokenManager {
     constructor() {
-        this.tokenKey = 'mojo_auth_token';
-        this.refreshTokenKey = 'mojo_auth_refresh_token';
+        this.tokenKey = 'access_token';
+        this.refreshTokenKey = 'refresh_token';
         this.tokenInstance = null;
     }
 

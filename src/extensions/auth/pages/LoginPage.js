@@ -50,6 +50,7 @@ export default class LoginPage extends Page {
             password: '',
             rememberMe: true,
             loginIcon: this.options.pageIcon,
+            shaodw: "shadow-lg",
             // UI state
             isLoading: false,
             error: null,

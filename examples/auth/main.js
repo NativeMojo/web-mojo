@@ -48,7 +48,10 @@ async function initAuthPortal() {
                 privacyUrl: "/examples/auth/privacy.html",
                 messages: {
                     loginTitle: `Login`,
-                    // loginSubtitle: 'Sign in to continue to your account',
+                    registerTitle: 'Create Account',
+                    registerSubtitle: 'Join us today',
+                    forgotTitle: 'Reset Password',
+                    forgotSubtitle: "We'll send you reset instructions",
                 },
             },
             features: {

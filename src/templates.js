@@ -1,6 +1,6 @@
 /**
  * Auto-generated template module
- * Generated: 2025-10-05T05:04:12.597Z
+ * Generated: 2025-10-08T02:36:46.044Z
  * Contains all framework templates compiled as JavaScript strings
  */
 
@@ -12,13 +12,13 @@ templates['extensions/auth/pages/ForgotPasswordPage.mst'] = `<div class="auth-pa
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-sm-8 col-md-8 col-lg-6 col-xl-5">
-                <div class="card shadow-lg border-0">
+                <div class="card {{shadow}} border-0">
                     <div class="card-body p-4 p-md-5">
                         <!-- Header -->
                         <div class="text-center mb-4">
                             {{#logoUrl}}<img src="{{logoUrl}}" alt="{{title}}" class="mb-3" style="max-height: 60px;">{{/logoUrl}}
-                            <h2 class="h3 mb-2">{{messages.forgotTitle}}</h2>
-                            <p class="text-muted">{{messages.forgotSubtitle}}</p>
+                            <h2 class="h3 mb-2">{{forgotTitle}}</h2>
+                            <p class="text-muted">{{forgotSubtitle}}</p>
                         </div>
 
                         <!-- Error Alert -->
@@ -108,7 +108,7 @@ templates['extensions/auth/pages/LoginPage.mst'] = `<div class="auth-page min-vh
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-sm-10 col-md-8 col-lg-6 col-xl-5">
-                <div class="card shadow-lg border-0">
+                <div class="card {{data.shadow}} border-0">
                     <div class="card-body p-4 p-md-5">
                         <!-- Logo and Header -->
                         <div class="text-center mb-4">
@@ -282,7 +282,7 @@ templates['extensions/auth/pages/RegisterPage.mst'] = `<div class="auth-page reg
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-sm-10 col-md-8 col-lg-6 col-xl-5">
-                <div class="card shadow-lg border-0">
+                <div class="card {{shadow}} border-0">
                     <div class="card-body p-4 p-md-5">
                         <!-- Logo and Header -->
                         <div class="text-center mb-4">
