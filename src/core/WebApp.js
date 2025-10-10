@@ -148,6 +148,8 @@ class WebApp {
             // Mark as started
             this.isStarted = true;
 
+            this.router.allowPopState = false;
+
             // Emit app ready event
             this.events.emit('app:ready', { app: this });
         } catch (error) {

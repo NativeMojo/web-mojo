@@ -11,7 +11,7 @@ import '@core/css/chat.css';
 
 import ConsoleSilencer from '@core/utils/ConsoleSilencer.js';
 // Reduce console noise globally: errors only by default (suppress logs, info, and warnings)
-ConsoleSilencer.install({ level: 'error' });
+ConsoleSilencer.install({ level: 'warn' });
 
 // Version info
 export {

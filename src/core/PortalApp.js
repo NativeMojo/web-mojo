@@ -26,6 +26,7 @@ export default class PortalApp extends WebApp {
         // Portal-specific configuration (clean flat structure)
         if (config.sidebar && config.sidebar.menus) {
             this.sidebarConfig.menus = config.sidebar.menus;
+            this.sidebarConfig.groupSelectorMode = config.sidebar.groupSelectorMode || "inline";
         } else if (config.sidebar.menu) {
             this.sidebarConfig.menu = config.sidebar.menu;
         } else if (config.sidebar.items) {

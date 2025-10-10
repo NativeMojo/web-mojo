@@ -6,6 +6,7 @@
 import View from '@core/View.js';
 import SimpleSearchView from './SimpleSearchView.js';
 import {GroupList} from '@core/models/Group.js';
+import Dialog from '@core/views/feedback/Dialog.js';
 
 
 class Sidebar extends View {
@@ -25,6 +26,12 @@ class Sidebar extends View {
         this.sidebarTheme = options.theme || 'sidebar-light';
         this.customView = null;
         if (this.options.groupHeader) this.groupHeader = this.options.groupHeader;
+        
+        // Group selector configuration
+        // 'inline' (default) - replaces sidebar view
+        // 'dialog' - opens in a modal dialog like TopNav
+        this.groupSelectorMode = options.groupSelectorMode || 'inline';
+        this.groupSelectorDialog = null;
         // Apply sidebar theme
         if (this.sidebarTheme) {
             this.addClass(this.sidebarTheme);
@@ -94,19 +101,86 @@ class Sidebar extends View {
     }
 
     showGroupSearch() {
-        this.setClass('sidebar');
-        this.showSearch = true;
-        this.render();
+        if (this.groupSelectorMode === 'dialog') {
+            this.showGroupSearchDialog();
+        } else {
+            // Inline mode (default)
+            this.setClass('sidebar');
+            this.showSearch = true;
+            this.render();
+        }
     }
 
     hideGroupSearch() {
-        this.setClass('sidebar');
-        this.showSearch = false;
-        this.render();
+        if (this.groupSelectorMode === 'dialog') {
+            if (this.groupSelectorDialog) {
+                this.groupSelectorDialog.hide();
+            }
+        } else {
+            // Inline mode
+            this.setClass('sidebar');
+            this.showSearch = false;
+            this.render();
+        }
     }
 
     onActionShowGroupSearch() {
         this.showGroupSearch();
+    }
+
+    /**
+     * Show group selector in a dialog (like TopNav)
+     */
+    async showGroupSearchDialog() {
+        // Create or reuse collection instance (like GroupSelectorButton does)
+        const collection = new GroupList();
+        
+        // Create SimpleSearchView instance matching GroupSelectorButton pattern
+        const searchView = new SimpleSearchView({
+            Collection: GroupList,
+            collection: collection,  // Pass the collection instance
+            itemTemplate: `
+            <div class="p-3 border-bottom">
+                <div class="fw-semibold text-dark">{{name}}</div>
+                <small class="text-muted">#{{id}}  {{kind}}</small>
+            </div>
+            `,
+            searchFields: ['name'],
+            headerText: "Select Group",
+            searchPlaceholder: "Search groups...",
+            headerIcon: "bi-building",
+            showExitButton: false
+        });
+
+        // Create dialog
+        this.groupSelectorDialog = new Dialog({
+            title: "Select Group",
+            body: searchView,
+            size: 'md',
+            scrollable: true,
+            noBodyPadding: true,
+            buttons: [],
+            closeButton: true
+        });
+
+        // Listen for item selection
+        searchView.on('item:selected', (evt) => {
+            console.log(evt);
+            this.getApp().setActiveGroup(evt.model);
+            if (this.groupSelectorDialog) {
+                this.groupSelectorDialog.hide();
+            }
+        });
+
+        // Clean up dialog reference when closed
+        this.groupSelectorDialog.on('hidden', () => {
+            this.groupSelectorDialog.destroy();
+            this.groupSelectorDialog = null;
+        });
+
+        // Render and show the dialog
+        await this.groupSelectorDialog.render(true, document.body);
+        this.groupSelectorDialog.show();
     }
 
     /**

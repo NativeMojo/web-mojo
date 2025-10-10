@@ -840,9 +840,6 @@ class UserView extends View {
     }
   }
 
-  async getViewData() {
-    return this.model?.toJSON() || {};
-  }
 }
 ```
 
@@ -862,11 +859,6 @@ class ListView extends View {
     }
   }
 
-  async getViewData() {
-    return {
-      items: this.collection?.toJSON() || []
-    };
-  }
 }
 ```
 

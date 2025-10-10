@@ -65,7 +65,11 @@ class Router {
 
   // Private methods
   handlePopState(_event) {
-    this.handleCurrentLocation();
+    if (this.allowPopState) {
+        this.handleCurrentLocation();
+    } else {
+        console.warn('PopStateEvent is not allowed');
+    }
   }
 
   async handleCurrentLocation() {

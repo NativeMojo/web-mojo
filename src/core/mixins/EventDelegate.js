@@ -82,17 +82,17 @@ export class EventDelegate {
 
     const onKeyDown = (event) => {
       if (event.target.matches('[data-filter="search"]')) return;
-      const el = event.target.closest('[data-change-action]');
+      const el = event.target.closest('[data-keydown-action]') || event.target.closest('[data-change-action]');
       if (!el || !this.shouldHandle(el, event)) return;
       let changeKeys = ["Enter"];
       if (el.getAttribute('data-change-keys')) {
           changeKeys = el.getAttribute('data-change-keys').split(',').map(key => key.trim());
       }
-      if (changeKeys.includes(event.key)) {
-        event.preventDefault();
-        const action = el.getAttribute('data-change-action');
+      if (changeKeys.includes('*') || changeKeys.includes(event.key)) {
+        const action = el.getAttribute('data-keydown-action') || el.getAttribute('data-change-action');
         this.dispatch(action, event, el).then((handled) => {
           if (handled) {
+            event.preventDefault();
             event.stopPropagation();
             event.handledByChild = true;
           }

@@ -66,6 +66,7 @@ const app = new PortalApp({
 
     // Sidebar configuration with one collapsible menu
     sidebar: {
+        groupSelectorMode: 'dialog',
         menus: [{
             name: "default",
             className: 'sidebar sidebar-dark',
@@ -183,7 +184,7 @@ const app = new PortalApp({
            name: "group_default",
            groupKind: "any",
            className: 'sidebar sidebar-light sidebar-global',
-           header: "<div class='pt-3 text-center fs-5 fw-bold'><i class='bi bi-wrench pe-2'></i> <span class='collapsed-hidden'>Group</span></div>",
+           // header: "<div class='pt-3 text-center fs-5 fw-bold'><i class='bi bi-wrench pe-2'></i> <span class='collapsed-hidden'>Group</span></div>",
            items: [
                {
                    text: 'Dashboard',
