@@ -326,6 +326,15 @@ class WebApp {
                 pageInstance = page;
                 pageName = page.pageName;
             }
+
+            this.events.emit('page:showing', {
+                page: pageInstance,
+                pageName: pageInstance.pageName,
+                params,
+                query,
+                fromRouter
+            });
+
             const oldPage = this.currentPage;
             if (!pageInstance) {
                 this._show404(pageName, params, query, fromRouter);

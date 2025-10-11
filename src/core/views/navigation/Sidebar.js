@@ -26,7 +26,7 @@ class Sidebar extends View {
         this.sidebarTheme = options.theme || 'sidebar-light';
         this.customView = null;
         if (this.options.groupHeader) this.groupHeader = this.options.groupHeader;
-        
+
         // Group selector configuration
         // 'inline' (default) - replaces sidebar view
         // 'dialog' - opens in a modal dialog like TopNav
@@ -134,7 +134,7 @@ class Sidebar extends View {
     async showGroupSearchDialog() {
         // Create or reuse collection instance (like GroupSelectorButton does)
         const collection = new GroupList();
-        
+
         // Create SimpleSearchView instance matching GroupSelectorButton pattern
         const searchView = new SimpleSearchView({
             Collection: GroupList,
@@ -944,7 +944,7 @@ class Sidebar extends View {
     setupRouteListeners() {
         const app = this.getApp();
         if (app && app.events) {
-            app.events.on(["page:show", "page:hide", "page:denied"], (data) => {
+            app.events.on(["page:showing", "page:hide", "page:denied"], (data) => {
                 this.onRouteChanged(data);
             });
             app.events.on("group:changed", (data) => {
@@ -1083,13 +1083,31 @@ class Sidebar extends View {
 
                     // Initialize Bootstrap tooltip with better config
                     if (window.bootstrap && window.bootstrap.Tooltip) {
-                        const tooltip = new window.bootstrap.Tooltip(link, {
+                        // Extract custom theme/size if specified
+                        const theme = link.getAttribute('data-tooltip-theme');
+                        const size = link.getAttribute('data-tooltip-size');
+
+                        // Build custom class list
+                        let customClass = '';
+                        if (theme) customClass += `tooltip-${theme} `;
+                        if (size) customClass += `tooltip-${size}`;
+
+                        // Build options object
+                        const tooltipOptions = {
                             placement: 'right',
                             container: 'body',
                             trigger: 'hover',
                             delay: { show: 500, hide: 100 },
                             fallbackPlacements: ['top', 'bottom', 'left']
-                        });
+                        };
+
+                        // Only add customClass if it has a value
+                        const trimmedClass = customClass.trim();
+                        if (trimmedClass) {
+                            tooltipOptions.customClass = trimmedClass;
+                        }
+
+                        const tooltip = new window.bootstrap.Tooltip(link, tooltipOptions);
 
                         // Store tooltip instance for better management
                         link._tooltipInstance = tooltip;

@@ -618,7 +618,26 @@ export class View {
       if (!this.element || !window.bootstrap?.Tooltip) return;
 
       const tooltipTriggerList = this.element.querySelectorAll('[data-bs-toggle="tooltip"]');
-      [...tooltipTriggerList].map(tooltipTriggerEl => new window.bootstrap.Tooltip(tooltipTriggerEl));
+      [...tooltipTriggerList].map(tooltipTriggerEl => {
+          // Extract custom options from data attributes
+          const theme = tooltipTriggerEl.getAttribute('data-tooltip-theme');
+          const size = tooltipTriggerEl.getAttribute('data-tooltip-size');
+          
+          // Build custom class list
+          let customClass = '';
+          if (theme) customClass += `tooltip-${theme} `;
+          if (size) customClass += `tooltip-${size}`;
+          
+          // Build options object - only include customClass if it has a value
+          const options = {};
+          const trimmedClass = customClass.trim();
+          if (trimmedClass) {
+              options.customClass = trimmedClass;
+          }
+          
+          // Initialize tooltip with custom options
+          return new window.bootstrap.Tooltip(tooltipTriggerEl, options);
+      });
   }
 
   /**

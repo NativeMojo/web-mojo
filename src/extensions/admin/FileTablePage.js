@@ -16,11 +16,11 @@ class FileTablePage extends TablePage {
             pageName: 'Manage Files',
             router: "admin/files",
             Collection: FileList,
-            
+
             formCreate: FileForms.create,
             formEdit: FileForms.edit,
             itemViewClass: FileView,
-            
+
             viewDialogOptions: {
                 header: false,
                 size: 'xl'
@@ -106,6 +106,86 @@ class FileTablePage extends TablePage {
         });
     }
 
+    /**
+     * Override the default add action to handle file uploads
+     * This ensures both button clicks and drag-drop use the same upload flow
+     */
+    async onActionAdd(event, element) {
+        const Dialog = (await import('@core/views/feedback/Dialog.js')).default;
+
+        // Show file selection dialog
+        const formData = await Dialog.showForm({
+            title: 'Upload File',
+            size: 'md',
+            fields: [
+                {
+                    type: 'file',
+                    name: 'file',
+                    label: 'Select File',
+                    required: true,
+                    accept: '*/*',
+                    help: 'Choose a file to upload (max 100MB)'
+                },
+                {
+                    type: 'text',
+                    name: 'description',
+                    label: 'Description (optional)',
+                    placeholder: 'Enter a description for this file',
+                    cols: 12
+                }
+            ]
+        });
+
+        // User cancelled the dialog
+        if (!formData) {
+            return;
+        }
+
+        // Extract the file from form data
+        const file = formData.file;
+        
+        if (!file || !(file instanceof File)) {
+            this.showError('No file selected');
+            return;
+        }
+
+        console.log(`File Selected: ${file.name} (${file.type}) (${file.size} bytes)`);
+
+        try {
+            // Create new File model instance
+            const fileModel = new File();
+            let extra = {};
+            if (this.options.requiresGroup && this.getApp().activeGroup) {
+                extra.group = this.getApp().activeGroup.id;
+            }
+
+            // Start upload with progress tracking (same as drag-drop)
+            const upload = fileModel.upload({
+                file: file,
+                name: file.name,
+                description: formData.description || `File uploaded on ${new Date().toLocaleDateString()}`,
+                showToast: true,
+                onProgress: (progressInfo) => {
+                    console.log(`Upload progress: ${progressInfo.percentage}%`);
+                },
+                onComplete: (result) => {
+                    console.log('Upload completed:', result);
+                    this.refresh();
+                },
+                onError: (error) => {
+                    console.error('Upload failed:', error);
+                    this.showError('Upload failed: ' + error.message);
+                },
+                ...extra
+            });
+
+            await upload;
+        } catch (error) {
+            console.error('Error starting file upload:', error);
+            this.showError('Failed to start file upload: ' + error.message);
+        }
+    }
+
     async onFileDrop(files, event, validation) {
         const file = files[0];
         console.log(`File Dropped: ${file.name} (${file.type}) (${file.size} bytes)`);
@@ -113,6 +193,10 @@ class FileTablePage extends TablePage {
         try {
             // Create new File model instance
             const fileModel = new File();
+            let extra = {};
+            if (this.options.requiresGroup && this.getApp().activeGroup) {
+                extra.group = this.getApp().activeGroup.id;
+            }
 
             // Start upload with progress tracking
             const upload = fileModel.upload({
@@ -130,7 +214,8 @@ class FileTablePage extends TablePage {
                 onError: (error) => {
                     console.error('Upload failed:', error);
                     this.showError('Upload failed: ' + error.message);
-                }
+                },
+                ...extra
             });
 
             await upload;

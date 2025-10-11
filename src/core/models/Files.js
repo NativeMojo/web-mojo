@@ -264,53 +264,16 @@ class FileList extends Collection {
 
 const FileForms = {
     create: {
-        title: 'Add File Backend',
+        title: 'Add File',
         fields: [
-            {
-                name: 'backend_url',
-                type: 'text',
-                label: 'Backend URL',
-                required: true,
-                placeholder: 's3://<bucket_name>/<optional folder>',
-                help: 'Format: <service>://<path>. Valid services: s3, gcs, azure, local',
-                cols: 12,
-            },
-            {
-                name: 'settings',
-                type: 'textarea',
-                label: 'Settings (JSON)',
-                default: '{\n\t"aws_key": "value",\n\t"aws_secret": "value2",\n\t"aws_region": "value3"\n}',
-                rows: 10,
-                cols: 12,
-            },
+
         ],
     },
 
     edit: {
         title: 'Edit File Backend',
         fields: [
-            {
-                name: 'name',
-                type: 'text',
-                label: 'Display Name',
-                placeholder: 'Enter Display Name',
-                cols: 12,
-            },
-            {
-                name: 'backend_url',
-                type: 'text',
-                label: 'Backend URL',
-                placeholder: 'Enter Backend URL (s3://<bucket_name>/<optional folder>)',
-                help: 'Format: <service>://<path>. Valid services: s3, gcs, azure, local',
-                cols: 12,
-            },
-            {
-                name: 'settings',
-                type: 'textarea',
-                label: 'Settings (JSON)',
-                rows: 10,
-                cols: 12,
-            },
+
         ],
     },
 };

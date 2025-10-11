@@ -182,7 +182,7 @@ class TopNav extends View {
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                         {{#data.navItems}}
                         <li class="nav-item">
-                            <a class="nav-link {{#active}}active{{/active}}" href="{{route}}">
+                            <a class="nav-link {{#active}}active{{/active}}" href="{{route}}" {{#tooltip}}data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="{{tooltip}}"{{/tooltip}}>
                                 {{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}
                                 {{text}}
                             </a>
@@ -223,13 +223,13 @@ class TopNav extends View {
                         {{/isDropdown}}
                         {{^isDropdown}}
                         {{#isButton}}
-                        <button class="{{buttonClass}}" data-action="{{action}}" data-id="{{id}}">
+                        <button class="{{buttonClass}}" data-action="{{action}}" data-id="{{id}}" {{#tooltip}}data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="{{tooltip}}"{{/tooltip}}>
                             {{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}
                             {{label}}
                         </button>
                         {{/isButton}}
                         {{^isButton}}
-                        <a class="nav-link" href="{{href}}" {{#action}}data-action="{{action}}"{{/action}}>
+                        <a class="nav-link" href="{{href}}" {{#action}}data-action="{{action}}"{{/action}} {{#tooltip}}data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="{{tooltip}}"{{/tooltip}}>
                             {{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}
                             {{label}}
                         </a>
@@ -374,6 +374,16 @@ class TopNav extends View {
 
             return processedItem;
         });
+    }
+
+    /**
+     * Initialize tooltips after rendering
+     */
+    async onAfterRender() {
+        await super.onAfterRender();
+        
+        // Initialize Bootstrap tooltips
+        this.initializeTooltips();
     }
 
     /**
@@ -606,6 +616,15 @@ class TopNav extends View {
             // If no permissions required or no user, show the item
             return true;
         });
+    }
+
+    /**
+     * Cleanup before destroying the view
+     */
+    async onBeforeDestroy() {
+        // Dispose tooltips before destroying
+        this.disposeTooltips();
+        await super.onBeforeDestroy();
     }
 
 }

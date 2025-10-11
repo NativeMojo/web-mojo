@@ -271,11 +271,13 @@ const app = new PortalApp({
                 icon: 'bi-cloud-upload',
                 action: 'test-upload',
                 buttonClass: 'btn btn-link',
+                tooltip: "Test File Upload Progress",
                 title: 'Test File Upload Progress'
             },
             {
                 icon: 'bi-bell',
                 action: 'notifications',
+                tooltip: "View Notifications",
                 buttonClass: 'btn btn-link'
             },
             {
@@ -284,6 +286,7 @@ const app = new PortalApp({
                 action: 'admin-menu',
                 buttonClass: 'btn btn-link',
                 permissions: "view_admin",
+                tooltip: "Vieew Admin Menu",
                 handler: async (action, event, el) => {
                     console.log("ADMIN CLICKED");
                     app.sidebar.setActiveMenu("admin");
