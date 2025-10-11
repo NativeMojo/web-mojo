@@ -22,16 +22,19 @@ export default class PortalApp extends WebApp {
         // Pass core WebApp config through
         super(config);
 
-        this.sidebarConfig = {};
+        this.sidebarConfig = config.sidebar;
         // Portal-specific configuration (clean flat structure)
-        if (config.sidebar && config.sidebar.menus) {
-            this.sidebarConfig.menus = config.sidebar.menus;
-            this.sidebarConfig.groupSelectorMode = config.sidebar.groupSelectorMode || "inline";
-        } else if (config.sidebar.menu) {
-            this.sidebarConfig.menu = config.sidebar.menu;
-        } else if (config.sidebar.items) {
-            this.sidebarConfig.menu = config.sidebar;
-        }
+        // if (config.sidebar && config.sidebar.menus) {
+        //     this.sidebarConfig.menus = config.sidebar.menus;
+        //     this.sidebarConfig.groupSelectorMode = config.sidebar.groupSelectorMode || "inline";
+        //     if (config.sidebar.groupHeader) {
+        //         this.sidebarConfig.groupHeader = config.sidebar.groupHeader;
+        //     }
+        // } else if (config.sidebar.menu) {
+        //     this.sidebarConfig.menu = config.sidebar.menu;
+        // } else if (config.sidebar.items) {
+        //     this.sidebarConfig.menu = config.sidebar;
+        // }
 
         this.topbarConfig = config.topbar || {};
 

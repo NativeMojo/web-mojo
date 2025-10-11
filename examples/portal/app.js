@@ -235,7 +235,19 @@ const app = new PortalApp({
                    <div class="text-muted" style="font-size: 0.75em;">${VERSION_INFO.buildTime.split('T')[0]}</div>
                </div>
            `
-        }]
+        }],
+        groupHeader: `
+        <div class="sidebar-group-header py-3" data-action="show-group-search">
+            <div class='text-center fs-5 px-1 collapsed-hidden'>{{group.name}}</div>
+            <div class='text-center fs-6 collapsed-hidden'>kind: {{group.kind}}</div>
+        </div>
+        {{#group.parent}}
+        <div data-action="show-group-parent">
+            <div class="fs-8 text-center text-muted">Parent Group:</div>
+            <div class='text-center fs-7 px-1 collapsed-hidden'>{{group.parent.name}}</div>
+        </div>
+        {{/group.parent}}
+        `
     },
 
     // Topbar configuration
