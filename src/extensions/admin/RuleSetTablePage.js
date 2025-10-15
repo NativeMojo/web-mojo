@@ -10,7 +10,7 @@ class RuleSetTablePage extends TablePage {
             pageName: 'Rule Engine',
             router: "admin/rulesets",
             Collection: RuleSetList,
-            itemViewClass: RuleSetView,
+            itemView: RuleSetView,
             viewDialogOptions: {
                 header: false,
                 size: 'xl'
@@ -21,8 +21,7 @@ class RuleSetTablePage extends TablePage {
                 { key: 'name', label: 'Name', sortable: true },
                 { key: 'category', label: 'Category', sortable: true, formatter: 'badge' },
                 { key: 'priority', label: 'Priority', sortable: true },
-                { key: 'match_by', label: 'Match Logic', formatter: (v) => v === 0 ? 'ALL' : 'ANY' },
-                { key: 'is_active', label: 'Status', formatter: "boolean|badge('Active:success,Inactive:secondary')" },
+                { key: 'match_by', label: 'Match Logic', formatter: (v) => v === 0 ? 'ALL' : 'ANY' }
             ],
 
             selectable: true,

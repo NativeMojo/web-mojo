@@ -1154,7 +1154,8 @@ class FormBuilder {
           const selected = option === fieldValue ? 'selected' : '';
           return `<option value="${this.escapeHtml(option)}" ${selected}>${this.escapeHtml(option)}</option>`;
         } else if (option && typeof option === 'object') {
-          const selected = option.value === fieldValue ? 'selected' : '';
+          // Use loose equality (==) to handle string/number type coercion
+          const selected = option.value == fieldValue ? 'selected' : '';
           return `<option value="${this.escapeHtml(option.value)}" ${selected}>${this.escapeHtml(option.label || option.text || option.value)}</option>`;
         }
         return '';

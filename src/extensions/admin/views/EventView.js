@@ -5,6 +5,7 @@
 import View from '@core/View.js';
 import TabView from '@core/views/navigation/TabView.js';
 import DataView from '@core/views/data/DataView.js';
+import StackTraceView from '@core/views/data/StackTraceView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import { IncidentEvent } from '@core/models/Incident.js';
 import Dialog from '@core/views/feedback/Dialog.js';
@@ -70,23 +71,25 @@ class EventView extends View {
             ]
         });
 
-        // Metadata Tab
-        this.metadataView = new View({
-            model: this.model,
-            template: `<pre class="bg-light p-3 border rounded"><code>{{{model.metadata|json}}}</code></pre>`
-        });
-
         const tabs = { 'Overview': this.overviewView };
-        if (this.model.get('metadata') && Object.keys(this.model.get('metadata')).length > 0) {
-            tabs['Metadata'] = this.metadataView;
-        }
-
-        if (this.model.get('metadata.stack_trace')) {
-            this.stackTraceView = new View({
-                model: this.model,
-                template: `<pre class="bg-dark text-white p-3 border rounded">{{{model.metadata.stack_trace}}}</pre>`
+        
+        const metadata = this.model.get('metadata') || {};
+        
+        // Add Stack Trace tab if present
+        if (metadata.stack_trace) {
+            this.stackTraceView = new StackTraceView({
+                stackTrace: metadata.stack_trace
             });
             tabs['Stack Trace'] = this.stackTraceView;
+        }
+        
+        // Add Metadata tab if there's metadata
+        if (Object.keys(metadata).length > 0) {
+            this.metadataView = new View({
+                model: this.model,
+                template: `<pre class="bg-light p-3 border rounded"><code>{{{model.metadata|json}}}</code></pre>`
+            });
+            tabs['Metadata'] = this.metadataView;
         }
 
         this.tabView = new TabView({

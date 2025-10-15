@@ -1,6 +1,6 @@
 /**
  * Auto-generated template module
- * Generated: 2025-10-13T21:29:04.114Z
+ * Generated: 2025-10-15T16:35:20.379Z
  * Contains all framework templates compiled as JavaScript strings
  */
 

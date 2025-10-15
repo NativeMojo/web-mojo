@@ -5,8 +5,10 @@
 import View from '@core/View.js';
 import TabView from '@core/views/navigation/TabView.js';
 import DataView from '@core/views/data/DataView.js';
+import TableView from '@core/views/table/TableView.js';
+import StackTraceView from '@core/views/data/StackTraceView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
-import { Incident, IncidentForms } from '@core/models/Incident.js';
+import { Incident, IncidentForms, IncidentEventList } from '@core/models/Incident.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 import IncidentHistoryAdapter from '../adapters/IncidentHistoryAdapter.js';
 import ChatView from '@core/views/chat/ChatView.js';
@@ -79,15 +81,48 @@ class IncidentView extends View {
             ]
         });
 
+        // Events Tab
+        const eventsCollection = new IncidentEventList({
+            params: { incident: this.model.get('id') }
+        });
+        this.eventsView = new TableView({
+            collection: eventsCollection,
+            hideActivePillNames: ['incident'],
+            columns: [
+                { key: 'id', label: 'ID', width: '70px', sortable: true },
+                { key: 'created', label: 'Date', formatter: 'datetime', sortable: true, width: '180px' },
+                { key: 'category', label: 'Category', formatter: 'badge', sortable: true },
+                { key: 'title', label: 'Title', sortable: true },
+                { key: 'level', label: 'Level', sortable: true, width: '80px' },
+            ],
+            showAdd: false,
+            actions: ['view'],
+            paginated: true,
+            size: 10
+        });
+
         // History & Comments Tab
         const adapter = new IncidentHistoryAdapter(this.model.get('id'));
         this.historyView = new ChatView({ adapter });
 
         const tabs = { 
             'Overview': this.overviewView,
+            'Events': this.eventsView,
             'History & Comments': this.historyView
         };
-        if (this.model.get('metadata') && Object.keys(this.model.get('metadata')).length > 0) {
+        
+        const metadata = this.model.get('metadata') || {};
+        
+        // Add Stack Trace tab if present
+        if (metadata.stack_trace) {
+            this.stackTraceView = new StackTraceView({
+                stackTrace: metadata.stack_trace
+            });
+            tabs['Stack Trace'] = this.stackTraceView;
+        }
+        
+        // Add Metadata tab if there's metadata
+        if (Object.keys(metadata).length > 0) {
             this.metadataView = new View({
                 model: this.model,
                 template: `<pre class="bg-light p-3 border rounded"><code>{{{model.metadata|json}}}</code></pre>`

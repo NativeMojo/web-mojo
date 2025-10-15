@@ -1458,7 +1458,8 @@ class FormView extends View {
             option.selected = newValue.includes(option.value);
           });
         } else {
-          fieldElement.value = newValue || '';
+          // Use nullish coalescing to preserve falsy values like 0
+          fieldElement.value = newValue ?? '';
         }
         break;
       case 'file':

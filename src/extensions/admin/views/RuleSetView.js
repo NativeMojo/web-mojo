@@ -3,7 +3,7 @@ import TabView from '@core/views/navigation/TabView.js';
 import DataView from '@core/views/data/DataView.js';
 import TableView from '@core/views/table/TableView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
-import { RuleSet, RuleList } from '@core/models/Incident.js';
+import { RuleSet, RuleList, BundleByOptions, MatchByOptions } from '@core/models/Incident.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 
 class RuleSetView extends View {
@@ -36,21 +36,40 @@ class RuleSetView extends View {
     }
 
     async onInit() {
+        // Get labels for current values
+        const matchByValue = this.model.get('match_by');
+        const matchByOption = MatchByOptions.find(opt => opt.value === matchByValue);
+        const matchByLabel = matchByOption ? matchByOption.label : String(matchByValue);
+        
+        const bundleByValue = this.model.get('bundle_by');
+        const bundleByOption = BundleByOptions.find(opt => opt.value === bundleByValue);
+        const bundleByLabel = bundleByOption ? bundleByOption.label : String(bundleByValue);
+        
         // Config Tab
         this.configView = new DataView({
             model: this.model,
             className: "p-3",
             columns: 2,
             fields: [
-                { name: 'id', label: 'RuleSet ID' },
-                { name: 'name', label: 'Name' },
-                { name: 'category', label: 'Category' },
-                { name: 'priority', label: 'Priority' },
-                { name: 'match_by', label: 'Match Logic', format: (v) => v === 0 ? 'ALL' : 'ANY' },
-                { name: 'bundle_by', label: 'Bundle By' },
-                { name: 'bundle_minutes', label: 'Bundle Minutes' },
-                { name: 'handler', label: 'Handler' },
-                { name: 'is_active', label: 'Status', format: 'boolean' },
+                { name: 'id', label: 'RuleSet ID', cols: 6 },
+                { name: 'priority', label: 'Priority', cols: 6 },
+                { name: 'name', label: 'Name', cols: 12 },
+                { name: 'category', label: 'Category', formatter: 'badge', cols: 6 },
+                { name: 'is_active', label: 'Status', formatter: 'boolean', cols: 6 },
+                { 
+                    name: 'match_by', 
+                    label: 'Match Logic',
+                    template: matchByLabel,
+                    cols: 12
+                },
+                { 
+                    name: 'bundle_by', 
+                    label: 'Bundle By',
+                    template: bundleByLabel,
+                    cols: 12
+                },
+                { name: 'bundle_minutes', label: 'Bundle Minutes', cols: 6 },
+                { name: 'handler', label: 'Handler', cols: 12 },
             ]
         });
 
@@ -64,12 +83,23 @@ class RuleSetView extends View {
                 { key: 'id', label: 'ID', width: '70px' },
                 { key: 'name', label: 'Name' },
                 { key: 'field_name', label: 'Field' },
-                { key: 'comparator', label: 'Comparator' },
+                { key: 'comparator', label: 'Comparator', width: '120px' },
                 { key: 'value', label: 'Value' },
-                { key: 'value_type', label: 'Type' },
+                { key: 'value_type', label: 'Type', width: '100px' },
             ],
             showAdd: true,
-            actions: ['edit', 'delete']
+            clickAction: 'edit',
+            actions: ['edit', 'delete'],
+            contextMenu: [
+                { label: 'Edit Rule', action: 'edit', icon: 'bi-pencil' },
+                { label: 'Duplicate Rule', action: 'duplicate', icon: 'bi-files' },
+                { divider: true },
+                { label: 'Delete Rule', action: 'delete', icon: 'bi-trash', danger: true }
+            ],
+            // Pass the parent ID so new rules get associated with this ruleset
+            defaultData: {
+                parent: this.model.get('id')
+            }
         });
 
         this.tabView = new TabView({
@@ -96,6 +126,84 @@ class RuleSetView extends View {
             }
         });
         this.addChild(contextMenu);
+    }
+
+    /**
+     * Action handler: Edit RuleSet
+     */
+    async onActionEditRuleset() {
+        const resp = await Dialog.showModelForm({
+            title: `Edit RuleSet - ${this.model.get('name')}`,
+            model: this.model,
+            formConfig: RuleSet.EDIT_FORM,
+        });
+        if (resp) {
+            await this.render();
+        }
+    }
+
+    /**
+     * Action handler: Disable/Enable RuleSet
+     */
+    async onActionDisableRuleset() {
+        const isActive = this.model.get('is_active');
+        const newStatus = !isActive;
+        
+        try {
+            this.model.set('is_active', newStatus);
+            await this.model.save();
+            await this.render();
+            
+            Dialog.showToast({
+                message: `RuleSet ${newStatus ? 'enabled' : 'disabled'} successfully`,
+                type: 'success'
+            });
+        } catch (error) {
+            Dialog.showToast({
+                message: `Failed to update RuleSet: ${error.message}`,
+                type: 'error'
+            });
+        }
+    }
+
+    /**
+     * Action handler: Delete RuleSet
+     */
+    async onActionDeleteRuleset() {
+        const confirmed = await Dialog.confirm({
+            title: 'Delete RuleSet',
+            message: `Are you sure you want to delete the ruleset "${this.model.get('name')}"? This action cannot be undone.`,
+            confirmText: 'Delete',
+            confirmClass: 'btn-danger'
+        });
+
+        if (confirmed) {
+            try {
+                await this.model.destroy();
+                
+                Dialog.showToast({
+                    message: 'RuleSet deleted successfully',
+                    type: 'success'
+                });
+                
+                // Close the dialog
+                const dialog = this.element?.closest('.modal');
+                if (dialog) {
+                    const bsModal = bootstrap.Modal.getInstance(dialog);
+                    if (bsModal) {
+                        bsModal.hide();
+                    }
+                }
+                
+                // Emit event to parent to refresh the table
+                this.emit('ruleset:deleted', { model: this.model });
+            } catch (error) {
+                Dialog.showToast({
+                    message: `Failed to delete RuleSet: ${error.message}`,
+                    type: 'error'
+                });
+            }
+        }
     }
 }
 

@@ -92,7 +92,7 @@ class IncidentTablePage extends TablePage {
                 { label: "Resolve", icon: "bi bi-check-circle", action: "resolve" },
                 { label: "Pause", icon: "bi bi-pause-circle", action: "pause" },
                 { label: "Ignore", icon: "bi bi-x-circle", action: "ignore" },
-                { label: "Change Status", icon: "bi bi-arrow-repeat", action: "status" }
+                { label: "Merge", icon: "bi bi-merge", action: "merge" }
             ],
 
             // Table display options
@@ -146,6 +146,39 @@ class IncidentTablePage extends TablePage {
         const result = await app.confirm(`Are you sure you want to ignore ${selected.length} incidents?`);
         if (!result) return;
         await Promise.all(selected.map(item => item.model.save({status: 'ignored'})));
+        this.tableView.collection.fetch();
+    }
+
+    async onActionBatchMerge(_event, _element) {
+        const selected = this.tableView.getSelectedItems();
+        if (!selected.length) return;
+
+        const app = this.getApp();
+        const result = await app.showForm({
+            title: `Merge ${selected.length} incidents`,
+            fields: [
+                {
+                    name: 'merge',
+                    type: 'select',
+                    label: 'Select Parent Incident',
+                    options: selected.map(item => ({value: item.model.id, label: item.model.id})),
+                    required: true
+                }
+            ]
+        });
+        if (!result) return;
+
+        // Find the parent model from selected items
+        const parentModel = selected.find(item => item.model.id == result.merge)?.model;
+        if (!parentModel) return;
+
+        // Get list of all IDs to merge (excluding the parent)
+        const mergeIds = selected
+            .map(item => item.model.id)
+            .filter(id => id != result.merge);
+
+        // Save the merge operation to the parent model
+        await parentModel.save({ merge: mergeIds });
         this.tableView.collection.fetch();
     }
 }

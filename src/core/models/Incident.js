@@ -173,7 +173,7 @@ const IncidentForms = {
 class IncidentRuleSet extends Model {
     constructor(data = {}) {
         super(data, {
-            endpoint: '/api/event/ruleset',
+            endpoint: '/api/incident/event/ruleset',
         });
     }
 }
@@ -182,7 +182,7 @@ class IncidentRuleSetList extends Collection {
     constructor(options = {}) {
         super({
             ModelClass: IncidentRuleSet,
-            endpoint: '/api/event/ruleset',
+            endpoint: '/api/incident/event/ruleset',
             size: 10,
             ...options,
         });
@@ -192,7 +192,7 @@ class IncidentRuleSetList extends Collection {
 class IncidentRule extends Model {
     constructor(data = {}) {
         super(data, {
-            endpoint: '/api/event/ruleset/rule',
+            endpoint: '/api/incident/event/ruleset/rule',
         });
     }
 }
@@ -201,7 +201,7 @@ class IncidentRuleList extends Collection {
     constructor(options = {}) {
         super({
             ModelClass: IncidentRule,
-            endpoint: '/api/event/ruleset/rule',
+            endpoint: '/api/incident/event/ruleset/rule',
             size: 10,
             ...options,
         });
@@ -249,10 +249,51 @@ export {
 /* =========================
  * RuleSet
  * ========================= */
+
+// Bundle By Options
+const BundleByOptions = [
+    { value: 0, label: 'No Bundling' },
+    { value: 1, label: 'By Hostname' },
+    { value: 2, label: 'By Model Name' },
+    { value: 3, label: 'By Model Name + ID' },
+    { value: 4, label: 'By Source IP' },
+    { value: 5, label: 'By Hostname + Model Name' },
+    { value: 6, label: 'By Hostname + Model Name + ID' },
+    { value: 7, label: 'By Source IP + Model Name' },
+    { value: 8, label: 'By Source IP + Model Name + ID' },
+    { value: 9, label: 'By Source IP + Hostname' }
+];
+
+// Match By Options  
+const MatchByOptions = [
+    { value: 0, label: 'ALL (must match all rules)' },
+    { value: 1, label: 'ANY (match any rule)' }
+];
+
+// Comparator Options
+const ComparatorOptions = [
+    { value: '==', label: 'Equal (==)' },
+    { value: 'eq', label: 'Equal (eq)' },
+    { value: '>', label: 'Greater Than (>)' },
+    { value: '>=', label: 'Greater Than or Equal (>=)' },
+    { value: '<', label: 'Less Than (<)' },
+    { value: '<=', label: 'Less Than or Equal (<=)' },
+    { value: 'contains', label: 'Contains' },
+    { value: 'regex', label: 'Regular Expression' }
+];
+
+// Value Type Options
+const ValueTypeOptions = [
+    { value: 'str', label: 'String' },
+    { value: 'int', label: 'Integer' },
+    { value: 'float', label: 'Float' },
+    { value: 'bool', label: 'Boolean' }
+];
+
 class RuleSet extends Model {
     constructor(data = {}) {
         super(data, {
-            endpoint: '/api/event/ruleset',
+            endpoint: '/api/incident/event/ruleset',
         });
     }
 }
@@ -261,11 +302,145 @@ class RuleSetList extends Collection {
     constructor(options = {}) {
         super({
             ModelClass: RuleSet,
-            endpoint: '/api/event/ruleset',
+            endpoint: '/api/incident/event/ruleset',
             ...options,
         });
     }
 }
+
+const RuleSetForms = {
+    create: {
+        title: 'Create RuleSet',
+        size: 'lg',
+        fields: [
+            {
+                name: 'name',
+                type: 'text',
+                label: 'Name',
+                required: true,
+                placeholder: 'Enter ruleset name',
+                cols: 12
+            },
+            {
+                name: 'category',
+                type: 'text',
+                label: 'Category',
+                required: true,
+                placeholder: 'e.g., ossec, auth, api_error',
+                cols: 6
+            },
+            {
+                name: 'priority',
+                type: 'number',
+                label: 'Priority',
+                value: 10,
+                required: true,
+                cols: 6
+            },
+            {
+                name: 'match_by',
+                type: 'select',
+                label: 'Match Logic',
+                value: 0,
+                options: MatchByOptions,
+                cols: 12
+            },
+            {
+                name: 'bundle_by',
+                type: 'select',
+                label: 'Bundle By',
+                value: 0,
+                options: BundleByOptions,
+                cols: 12
+            },
+            {
+                name: 'bundle_minutes',
+                type: 'number',
+                label: 'Bundle Minutes',
+                value: 10,
+                placeholder: 'Time window for bundling',
+                cols: 12
+            },
+            {
+                name: 'handler',
+                type: 'text',
+                label: 'Handler',
+                placeholder: 'e.g., email://user@company.com, task://name',
+                cols: 12
+            },
+            {
+                name: 'is_active',
+                type: 'switch',
+                label: 'Is Active',
+                value: true,
+                cols: 6
+            }
+        ]
+    },
+    edit: {
+        title: 'Edit RuleSet',
+        size: 'lg',
+        fields: [
+            {
+                name: 'name',
+                type: 'text',
+                label: 'Name',
+                required: true,
+                placeholder: 'Enter ruleset name',
+                cols: 12
+            },
+            {
+                name: 'category',
+                type: 'text',
+                label: 'Category',
+                required: true,
+                placeholder: 'e.g., ossec, auth, api_error',
+                cols: 6
+            },
+            {
+                name: 'priority',
+                type: 'number',
+                label: 'Priority',
+                required: true,
+                cols: 6
+            },
+            {
+                name: 'match_by',
+                type: 'select',
+                label: 'Match Logic',
+                options: MatchByOptions,
+                cols: 12
+            },
+            {
+                name: 'bundle_by',
+                type: 'select',
+                label: 'Bundle By',
+                options: BundleByOptions,
+                cols: 12
+            },
+            {
+                name: 'bundle_minutes',
+                type: 'number',
+                label: 'Bundle Minutes',
+                placeholder: 'Time window for bundling',
+                cols: 12
+            },
+            {
+                name: 'handler',
+                type: 'text',
+                label: 'Handler',
+                placeholder: 'e.g., email://user@company.com, task://name',
+                cols: 12
+            },
+            {
+                name: 'is_active',
+                type: 'switch',
+                label: 'Is Active',
+                cols: 6
+            }
+        ]
+    }
+};
 
 /* =========================
  * Rule
@@ -273,7 +448,7 @@ class RuleSetList extends Collection {
 class Rule extends Model {
     constructor(data = {}) {
         super(data, {
-            endpoint: '/api/event/ruleset/rule',
+            endpoint: '/api/incident/event/ruleset/rule',
         });
     }
 }
@@ -282,10 +457,129 @@ class RuleList extends Collection {
     constructor(options = {}) {
         super({
             ModelClass: Rule,
-            endpoint: '/api/event/ruleset/rule',
+            endpoint: '/api/incident/event/ruleset/rule',
             ...options,
         });
     }
 }
 
-export { RuleSet, RuleSetList, Rule, RuleList, IncidentStats };
+const RuleForms = {
+    create: {
+        title: 'Create Rule',
+        fields: [
+            {
+                name: 'name',
+                type: 'text',
+                label: 'Name',
+                required: true,
+                placeholder: 'Enter rule name',
+                cols: 12
+            },
+            {
+                name: 'field_name',
+                type: 'text',
+                label: 'Field Name',
+                required: true,
+                placeholder: 'e.g., level, source_ip, rule_id',
+                cols: 12
+            },
+            {
+                name: 'comparator',
+                type: 'select',
+                label: 'Comparator',
+                required: true,
+                options: ComparatorOptions,
+                cols: 6
+            },
+            {
+                name: 'value_type',
+                type: 'select',
+                label: 'Value Type',
+                required: true,
+                options: ValueTypeOptions,
+                value: 'str',
+                cols: 6
+            },
+            {
+                name: 'value',
+                type: 'text',
+                label: 'Value',
+                required: true,
+                placeholder: 'Enter comparison value',
+                cols: 12
+            }
+        ]
+    },
+    edit: {
+        title: 'Edit Rule',
+        fields: [
+            {
+                name: 'name',
+                type: 'text',
+                label: 'Name',
+                required: true,
+                placeholder: 'Enter rule name',
+                cols: 12
+            },
+            {
+                name: 'field_name',
+                type: 'text',
+                label: 'Field Name',
+                required: true,
+                placeholder: 'e.g., level, source_ip, rule_id',
+                cols: 12
+            },
+            {
+                name: 'comparator',
+                type: 'select',
+                label: 'Comparator',
+                required: true,
+                options: ComparatorOptions,
+                cols: 6
+            },
+            {
+                name: 'value_type',
+                type: 'select',
+                label: 'Value Type',
+                required: true,
+                options: ValueTypeOptions,
+                cols: 6
+            },
+            {
+                name: 'value',
+                type: 'text',
+                label: 'Value',
+                required: true,
+                placeholder: 'Enter comparison value',
+                cols: 12
+            }
+        ]
+    }
+};
+
+// Attach forms to models
+RuleSet.EDIT_FORM = RuleSetForms.edit;
+RuleSet.ADD_FORM = RuleSetForms.create;
+RuleSet.CREATE_FORM = RuleSetForms.create; // Alias for compatibility
+RuleSet.BundleByOptions = BundleByOptions;
+RuleSet.MatchByOptions = MatchByOptions;
+
+Rule.EDIT_FORM = RuleForms.edit;
+Rule.ADD_FORM = RuleForms.create;
+Rule.CREATE_FORM = RuleForms.create; // Alias for compatibility
+Rule.ComparatorOptions = ComparatorOptions;
+Rule.ValueTypeOptions = ValueTypeOptions;
+
+export { 
+    RuleSet, 
+    RuleSetList, 
+    RuleSetForms,
+    Rule, 
+    RuleList, 
+    RuleForms,
+    IncidentStats,
+    BundleByOptions,
+    MatchByOptions,
+    ComparatorOptions,
+    ValueTypeOptions
+};

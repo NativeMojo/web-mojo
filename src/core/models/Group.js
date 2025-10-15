@@ -277,7 +277,8 @@ const GroupForms = {
 };
 
 Group.EDIT_FORM = GroupForms.edit;
-Group.CREATE_FORM = GroupForms.create;
+Group.ADD_FORM = GroupForms.create;
+Group.CREATE_FORM = GroupForms.create; // Alias for compatibility
 Group.GroupKindOptions = GroupKindOptions;
 Group.GroupKinds = GroupKinds;
 export { Group, GroupList, GroupForms };
