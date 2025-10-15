@@ -683,8 +683,7 @@ const EmailTemplateForms = {
       { name: 'name', type: 'text', label: 'Name', required: true, cols: 12 },
       { name: 'subject_template', type: 'text', label: 'Subject Template', cols: 12 },
       { name: 'html_template', type: 'textarea', label: 'HTML Template', rows: 8, cols: 12 },
-      { name: 'text_template', type: 'textarea', label: 'Text Template', rows: 6, cols: 12 },
-      { name: 'metadata', type: 'json', label: 'Metadata (JSON)', rows: 4, cols: 12, help: 'Optional JSON metadata' }
+      { name: 'text_template', type: 'textarea', label: 'Text Template', rows: 6, cols: 12 }
     ]
   },
   edit: {
@@ -693,8 +692,7 @@ const EmailTemplateForms = {
       { name: 'name', type: 'text', label: 'Name', required: true, cols: 12 },
       { name: 'subject_template', type: 'text', label: 'Subject Template', cols: 12 },
       { name: 'html_template', type: 'textarea', label: 'HTML Template', rows: 8, cols: 12 },
-      { name: 'text_template', type: 'textarea', label: 'Text Template', rows: 6, cols: 12 },
-      { name: 'metadata', type: 'json', label: 'Metadata (JSON)', rows: 4, cols: 12 }
+      { name: 'text_template', type: 'textarea', label: 'Text Template', rows: 6, cols: 12 }
     ]
   }
 };

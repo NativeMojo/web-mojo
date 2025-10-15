@@ -1041,6 +1041,14 @@ class FormView extends View {
    */
   async onChangeFileSelected(event, element) {
     const files = Array.from(element.files);
+    
+    // Store the file(s) in this.data so getFormData() can access them
+    if (element.multiple) {
+      this.data[element.name] = element.files; // Store as FileList for multiple
+    } else {
+      this.data[element.name] = files[0] || null; // Store single File object
+    }
+    
     this.emit('file:selected', {
       field: element.name,
       files: files,
@@ -1416,6 +1424,13 @@ class FormView extends View {
       case 'file':
       case 'image':
         return null; // Don't sync file fields
+      case 'json':
+        // Parse JSON string back to object
+        try {
+          return fieldElement.value ? JSON.parse(fieldElement.value) : null;
+        } catch (e) {
+          return fieldElement.value; // Return raw string if invalid JSON
+        }
       default:
         return fieldElement.value;
     }
@@ -1449,6 +1464,20 @@ class FormView extends View {
       case 'file':
       case 'image':
         // Don't programmatically set file fields
+        break;
+      case 'json':
+        // Convert objects to formatted JSON strings
+        if (typeof newValue === 'object' && newValue !== null) {
+          try {
+            fieldElement.value = JSON.stringify(newValue, null, 2);
+          } catch (e) {
+            fieldElement.value = '{}';
+          }
+        } else if (typeof newValue === 'string') {
+          fieldElement.value = newValue;
+        } else {
+          fieldElement.value = String(newValue || '');
+        }
         break;
       default:
         fieldElement.value = newValue || '';

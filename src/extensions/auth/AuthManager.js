@@ -301,7 +301,7 @@ export default class AuthManager {
      * Reset password with a token from an email link
      * @param {string} token - Reset token
      * @param {string} newPassword - New password
-     * @returns {Promise<object>} Reset result
+     * @returns {Promise<object>} Reset result with tokens
      */
     async resetPasswordWithToken(token, newPassword) {
         const payload = {
@@ -311,8 +311,22 @@ export default class AuthManager {
         const response = await this.app.rest.POST('/api/auth/password/reset/token', payload);
 
         if (response.success && response.data.status) {
-            this.emit('resetPasswordSuccess');
-            return { success: true, message: response.data.data?.message };
+            const { access_token, refresh_token, user } = response.data.data;
+
+            // Store tokens and log user in
+            this.tokenManager.setTokens(access_token, refresh_token, true);
+
+            // Set auth state
+            const userInfo = this.tokenManager.getUserInfo();
+            this.setAuthState({ ...user, ...userInfo });
+
+            // Schedule refresh
+            if (this.config.autoRefresh) {
+                this.scheduleTokenRefresh();
+            }
+
+            this.emit('resetPasswordSuccess', this.user);
+            return { success: true, user: this.user };
         }
 
         const message = response.data?.error || response.message || 'Failed to reset password.';
@@ -325,7 +339,7 @@ export default class AuthManager {
      * @param {string} email - User's email
      * @param {string} code - The verification code
      * @param {string} newPassword - New password
-     * @returns {Promise<object>} Reset result
+     * @returns {Promise<object>} Reset result with tokens
      */
     async resetPasswordWithCode(email, code, newPassword) {
         const payload = {
@@ -336,8 +350,22 @@ export default class AuthManager {
         const response = await this.app.rest.POST('/api/auth/password/reset/code', payload);
 
         if (response.success && response.data.status) {
-            this.emit('resetPasswordSuccess');
-            return { success: true, message: response.data.data?.message };
+            const { access_token, refresh_token, user } = response.data.data;
+
+            // Store tokens and log user in
+            this.tokenManager.setTokens(access_token, refresh_token, true);
+
+            // Set auth state
+            const userInfo = this.tokenManager.getUserInfo();
+            this.setAuthState({ ...user, ...userInfo });
+
+            // Schedule refresh
+            if (this.config.autoRefresh) {
+                this.scheduleTokenRefresh();
+            }
+
+            this.emit('resetPasswordSuccess', this.user);
+            return { success: true, user: this.user };
         }
 
         const message = response.data?.error || response.message || 'Failed to reset password.';

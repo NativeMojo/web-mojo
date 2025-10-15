@@ -11,7 +11,6 @@ import applyFileDropMixin from '@core/mixins/FileDropMixin.js';
 class FileTablePage extends TablePage {
     constructor(options = {}) {
         super({
-            ...options,
             name: 'admin_files',
             pageName: 'Manage Files',
             router: "admin/files",
@@ -49,7 +48,7 @@ class FileTablePage extends TablePage {
                     formatter: "filesize"
                 },
                 {
-                    key: 'group',
+                    key: 'group.name',
                     label: 'Group',
                     formatter: "default('No Group')"
                 },
@@ -94,7 +93,8 @@ class FileTablePage extends TablePage {
                 bordered: false,
                 hover: true,
                 responsive: false
-            }
+            },
+            ...options,
         });
 
         // Enable file drop support
@@ -111,6 +111,7 @@ class FileTablePage extends TablePage {
      * This ensures both button clicks and drag-drop use the same upload flow
      */
     async onActionAdd(event, element) {
+        event.preventDefault();
         const Dialog = (await import('@core/views/feedback/Dialog.js')).default;
 
         // Show file selection dialog
@@ -143,7 +144,7 @@ class FileTablePage extends TablePage {
 
         // Extract the file from form data
         const file = formData.file;
-        
+
         if (!file || !(file instanceof File)) {
             this.showError('No file selected');
             return;

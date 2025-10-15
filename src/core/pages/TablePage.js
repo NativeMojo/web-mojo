@@ -41,6 +41,9 @@ class TablePage extends Page {
     // our default collection query
     this.defaultQuery = options.defaultQuery || {};
 
+    // Group field configuration - defaults to "group"
+    this.groupField = options.groupField || 'group';
+
     // Store configuration for TableView
     // Map legacy property names to new ones
     this.tableViewConfig = {
@@ -386,8 +389,8 @@ class TablePage extends Page {
   async onEnter() {
     await super.onEnter();
 
-    if (this.options.requiresGroup && !this.query.group && this.getApp().activeGroup) {
-      this.query.group = this.getApp().activeGroup.id;
+    if (this.options.requiresGroup && !this.query[this.groupField] && this.getApp().activeGroup) {
+      this.query[this.groupField] = this.getApp().activeGroup.id;
     }
 
     this.applyQueryToCollection();
@@ -479,7 +482,7 @@ class TablePage extends Page {
 
   async onGroupChange(group) {
       if (!group || !this.collection || !this.options.requiresGroup) return;
-      this.query.group = group.id;
+      this.query[this.groupField] = group.id;
       this.applyQueryToCollection();
       if (this.collection && this.collection.restEnabled) {
         await this.collection.fetch();

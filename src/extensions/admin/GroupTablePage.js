@@ -24,6 +24,11 @@ class GroupTablePage extends TablePage {
                 header: false
             },
 
+            defaultQuery: {
+                sort: '-id',
+                is_active: 1,
+            },
+
             // Column definitions
             columns: [
                 {
@@ -32,6 +37,11 @@ class GroupTablePage extends TablePage {
                     width: '60px',
                     sortable: true,
                     class: 'text-muted'
+                },
+                {
+                    key: 'is_active|yesnoicon',
+                    label: 'Enabled',
+                    visibility: 'lg'
                 },
                 {
                     label: 'Avatar',
@@ -84,6 +94,11 @@ class GroupTablePage extends TablePage {
                     action: 'edit',
                     label: "Edit Group"
                 },
+                {
+                    icon: 'bi-bullseye',
+                    action: 'make-active',
+                    label: "Make Active Group"
+                }
             ],
 
             // Table features
@@ -121,24 +136,9 @@ class GroupTablePage extends TablePage {
         });
     }
 
-    async onActionAddMultiple() {
-        // Implement logic to add multiple groups
-        const data = await this.getApp().showForm({
-                    title: "Select Members",
-                    fields: [
-                        {
-                            type: 'collectionmultiselect',
-                            name: 'member_ids',
-                            Collection: GroupList,
-                            collectionParams: {
-                                is_active: true
-                            },
-                            labelField: 'name',
-                            valueField: 'id'
-                        }
-                    ]
-                });
-                console.log(data);
+    onActionMakeActive(event, element) {
+        const item = this.collection.get(element.dataset.id);
+        this.getApp().setActiveGroup(item);
     }
 
 }

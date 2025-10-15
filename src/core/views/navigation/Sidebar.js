@@ -558,7 +558,10 @@ class Sidebar extends View {
         let anyGroupMenu = null;
         if (group._.kind) {
             for (const [menuName, menuConfig] of this.menus) {
-                if (menuConfig.groupKind === group._.kind) {
+                // Check if groupKind matches
+                const matches = this._groupKindMatches(menuConfig.groupKind, group._.kind);
+
+                if (matches) {
                     targetMenu = menuConfig;
                     break;
                 } else if (menuConfig.groupKind === 'any') {
@@ -571,6 +574,25 @@ class Sidebar extends View {
             return anyGroupMenu;
         }
         return targetMenu;
+    }
+
+    /**
+     * Check if a groupKind matches the group's kind
+     * Supports both single string and array of strings
+     * @param {string|string[]} groupKind - Single kind or array of kinds
+     * @param {string} kind - The group's kind to match
+     * @returns {boolean} True if matches
+     */
+    _groupKindMatches(groupKind, kind) {
+        if (!groupKind || !kind) return false;
+
+        // Handle array of kinds
+        if (Array.isArray(groupKind)) {
+            return groupKind.includes(kind);
+        }
+
+        // Handle single kind string
+        return groupKind === kind;
     }
 
     showMenuForGroup(group) {
@@ -750,6 +772,14 @@ class Sidebar extends View {
                  }
              }
 
+             // Check requiresGroupKind - skip item if group kind doesn't match
+             if (processedItem.requiresGroupKind) {
+                 const groupKind = activeGroup?._.kind || activeGroup?.kind;
+                 if (!groupKind || !this._groupKindMatches(processedItem.requiresGroupKind, groupKind)) {
+                     return null; // Will be filtered out
+                 }
+             }
+
              if (processedItem.kind === 'label') {
                 processedItem.isLabel = true;
                 if (!processedItem.id) {
@@ -783,6 +813,14 @@ class Sidebar extends View {
                      // Check permissions for child items
                      if (processedChild.permissions && activeUser) {
                          if (!activeUser.hasPermission(processedChild.permissions)) {
+                             return null; // Will be filtered out
+                         }
+                     }
+
+                     // Check requiresGroupKind for child items
+                     if (processedChild.requiresGroupKind) {
+                         const groupKind = activeGroup?._.kind || activeGroup?.kind;
+                         if (!groupKind || !this._groupKindMatches(processedChild.requiresGroupKind, groupKind)) {
                              return null; // Will be filtered out
                          }
                      }
@@ -944,7 +982,7 @@ class Sidebar extends View {
     setupRouteListeners() {
         const app = this.getApp();
         if (app && app.events) {
-            app.events.on(["page:showing", "page:hide", "page:denied"], (data) => {
+            app.events.on(["page:showing"], (data) => {
                 this.onRouteChanged(data);
             });
             app.events.on("group:changed", (data) => {

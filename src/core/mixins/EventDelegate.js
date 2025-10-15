@@ -14,6 +14,10 @@ export class EventDelegate {
       const actionEl = event.target.closest('[data-action]');
       if (actionEl && this.shouldHandle(actionEl, event)) {
         const action = actionEl.getAttribute('data-action');
+        
+        // Hide any tooltips on the clicked element
+        this.hideTooltip(actionEl);
+        
         const handled = await this.dispatch(action, event, actionEl);
         if (handled) {
           event.preventDefault();
@@ -30,6 +34,10 @@ export class EventDelegate {
           if (href && href !== '#' && !href.startsWith('#') &&
               (this.view.isExternalLink(href) || navEl.hasAttribute('data-external'))) return;
         }
+        
+        // Hide any tooltips on the clicked element before navigation
+        this.hideTooltip(navEl);
+        
         event.preventDefault();
         event.stopPropagation();
         event.handledByChild = true;
@@ -145,6 +153,29 @@ export class EventDelegate {
     if (dropdownBtn && window.bootstrap?.Dropdown) {
       const dropdownInstance = window.bootstrap.Dropdown.getInstance(dropdownBtn);
       dropdownInstance?.hide();
+    }
+  }
+
+  hideTooltip(element) {
+    // Hide tooltip on the clicked element
+    if (element && window.bootstrap?.Tooltip) {
+      const tooltip = window.bootstrap.Tooltip.getInstance(element);
+      if (tooltip) {
+        tooltip.hide();
+      }
+    }
+  }
+
+  hideAllTooltips() {
+    // Hide all visible tooltips in the document
+    if (window.bootstrap?.Tooltip) {
+      const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+      tooltips.forEach(el => {
+        const tooltip = window.bootstrap.Tooltip.getInstance(el);
+        if (tooltip) {
+          tooltip.hide();
+        }
+      });
     }
   }
 

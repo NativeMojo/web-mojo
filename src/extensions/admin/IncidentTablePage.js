@@ -25,6 +25,11 @@ class IncidentTablePage extends TablePage {
                 size: 'xl'
             },
 
+            defaultQuery: {
+                sort: '-id',
+                status: "new",
+            },
+
             // Column definitions
             columns: [
                 {
@@ -33,6 +38,13 @@ class IncidentTablePage extends TablePage {
                     width: '60px',
                     sortable: true,
                     class: 'text-muted'
+                },
+                {
+                    key: 'status', label: "Status",
+                    filter: {
+                        type: 'select',
+                        options: ["new", "open", "paused", "resolved", "qa", "ignored"],
+                    }
                 },
                 {
                     key: 'created',
@@ -76,13 +88,11 @@ class IncidentTablePage extends TablePage {
             // Batch actions
             batchBarLocation: 'top',
             batchActions: [
-                { label: "Resolve", icon: "bi bi-check-circle", action: "batch-resolve" },
-                { label: "Close", icon: "bi bi-x-circle", action: "batch-close" },
-                { label: "Assign", icon: "bi bi-person-plus", action: "batch-assign" },
-                { label: "Set Priority", icon: "bi bi-flag", action: "batch-priority" },
-                { label: "Change State", icon: "bi bi-arrow-repeat", action: "batch-state" },
-                { label: "Export", icon: "bi bi-download", action: "batch-export" },
-                { label: "Delete", icon: "bi bi-trash", action: "batch-delete" }
+                { label: "Open", icon: "bi bi-folder2-open", action: "open" },
+                { label: "Resolve", icon: "bi bi-check-circle", action: "resolve" },
+                { label: "Pause", icon: "bi bi-pause-circle", action: "pause" },
+                { label: "Ignore", icon: "bi bi-x-circle", action: "ignore" },
+                { label: "Change Status", icon: "bi bi-arrow-repeat", action: "status" }
             ],
 
             // Table display options
@@ -93,6 +103,50 @@ class IncidentTablePage extends TablePage {
                 responsive: false
             }
         });
+    }
+
+    async onActionBatchResolve(event, element) {
+        const selected = this.tableView.getSelectedItems();
+        if (!selected.length) return;
+
+        const app = this.getApp();
+        const result = await app.confirm(`Are you sure you want to close ${selected.length} incidents?`);
+        if (!result) return;
+        await Promise.all(selected.map(item => item.model.save({status: 'resolved'})));
+        this.tableView.collection.fetch();
+    }
+
+    async onActionBatchOpen(event, element) {
+        const selected = this.tableView.getSelectedItems();
+        if (!selected.length) return;
+
+        const app = this.getApp();
+        const result = await app.confirm(`Are you sure you want to open ${selected.length} incidents?`);
+        if (!result) return;
+        await Promise.all(selected.map(item => item.model.save({status: 'open'})));
+        this.tableView.collection.fetch();
+    }
+
+    async onActionBatchPause(event, element) {
+        const selected = this.tableView.getSelectedItems();
+        if (!selected.length) return;
+
+        const app = this.getApp();
+        const result = await app.confirm(`Are you sure you want to pause ${selected.length} incidents?`);
+        if (!result) return;
+        await Promise.all(selected.map(item => item.model.save({status: 'paused'})));
+        this.tableView.collection.fetch();
+    }
+
+    async onActionBatchIgnore(event, element) {
+        const selected = this.tableView.getSelectedItems();
+        if (!selected.length) return;
+
+        const app = this.getApp();
+        const result = await app.confirm(`Are you sure you want to ignore ${selected.length} incidents?`);
+        if (!result) return;
+        await Promise.all(selected.map(item => item.model.save({status: 'ignored'})));
+        this.tableView.collection.fetch();
     }
 }
 

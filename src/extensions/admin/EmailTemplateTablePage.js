@@ -27,6 +27,10 @@ class EmailTemplateTablePage extends TablePage {
                 scrollable: true
             },
 
+            formDialogConfig: {             // Dialog options for forms
+                size: 'xl',
+            },
+
             // Table columns
             columns: [
                 { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },

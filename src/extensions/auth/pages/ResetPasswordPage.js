@@ -74,9 +74,9 @@ export default class ResetPasswordPage extends Page {
         // Set page title
         document.title = `${ResetPasswordPage.title} - ${this.authConfig.ui.title}`;
 
-        // Extract reset token from URL parameters
+        // Extract reset token from URL parameters (support both 'token' and 'login_token')
         const urlParams = new URLSearchParams(window.location.search);
-        this.resetToken = urlParams.get('token') || '';
+        this.resetToken = urlParams.get('token') || urlParams.get('login_token') || '';
 
         if (!this.resetToken) {
             // No token provided, show error
@@ -217,15 +217,15 @@ export default class ResetPasswordPage extends Page {
         if (response.success) {
             await this.updateData({
                 success: true,
-                successMessage: response.message || 'Password reset successful! You can now log in.',
+                successMessage: 'Password reset successful! Logging you in...',
                 isLoading: false
             }, true);
 
-            // Redirect to login after delay
+            // User is now authenticated, redirect to home/dashboard
             setTimeout(() => {
-                this.getApp().showSuccess('Password reset complete. Please log in.');
-                this.getApp().navigate('/login');
-            }, 3000);
+                this.getApp().showSuccess('Password reset complete. Welcome back!');
+                this.getApp().navigate('/');
+            }, 2000);
         } else {
             await this.updateData({
                 error: response.message || 'Password reset failed. Please try again.',

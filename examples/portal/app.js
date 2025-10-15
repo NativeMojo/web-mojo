@@ -18,9 +18,8 @@ import FormDialogsPage from './pages/FormDialogsPage.js';
 import ChartsPage from './pages/ChartsPage.js';
 import ImagePage from './pages/ImagePage.js';
 import FileDropPage from './pages/FileDropPage.js';
-
 import ImageViewer from '/src/extensions/lightbox/ImageViewer.js';
-import { registerAdminPages } from '/src/admin.js';
+import { registerAdminPages, FileTablePage } from '/src/admin.js';
 
 // Detect page reloads
 if (window.performance && window.performance.navigation.type === 1) {
@@ -191,6 +190,11 @@ const app = new PortalApp({
                    route: '?page=group_simple',
                    icon: 'bi-input-cursor-text'
                },
+               {
+             		icon: "bi-folder-fill",
+             		text:"Files",
+             		route: "?page=group/files"
+              	},
                {
                    spacer: true
                },
@@ -382,6 +386,18 @@ app.registerPage('noperms', Page, {
     permissions: ['not_real_permission'],
     template: '<div class="fs-5 mt-4 text-center">Simple page</div>'
 });
+
+app.registerPage("group/files", FileTablePage, {
+    requiresGroup: true,
+    permissions: ["manage_group", "manage_groups"],
+    tableViewOptions: {
+        hideActivePillNames: ["group"],
+        showAdd: true,
+        addRequiresActiveGroup: true,
+        addRequiresActiveUser: false
+    },
+});
+
 
 // Register admin pages
 try {

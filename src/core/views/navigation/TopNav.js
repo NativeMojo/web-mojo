@@ -28,6 +28,7 @@ class TopNav extends View {
         super({
             tagName: 'nav',
             className: navbarClass,
+            enableTooltips: true,
             style: 'position: relative; z-index: 1030;',
             ...options
         });
@@ -377,16 +378,6 @@ class TopNav extends View {
     }
 
     /**
-     * Initialize tooltips after rendering
-     */
-    async onAfterRender() {
-        await super.onAfterRender();
-        
-        // Initialize Bootstrap tooltips
-        this.initializeTooltips();
-    }
-
-    /**
      * Setup listeners for page change events
      */
     setupPageListeners() {
@@ -616,15 +607,6 @@ class TopNav extends View {
             // If no permissions required or no user, show the item
             return true;
         });
-    }
-
-    /**
-     * Cleanup before destroying the view
-     */
-    async onBeforeDestroy() {
-        // Dispose tooltips before destroying
-        this.disposeTooltips();
-        await super.onBeforeDestroy();
     }
 
 }

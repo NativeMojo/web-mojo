@@ -99,7 +99,11 @@ export default class ForgotPasswordPage extends Page {
 
         if (response.success) {
             await this.updateData({ step: 'success', isLoading: false }, true);
-            setTimeout(() => this.getApp().navigate('/login'), 3000);
+            // User is now authenticated, redirect to home/dashboard
+            setTimeout(() => {
+                this.getApp().showSuccess('Password reset complete. Welcome back!');
+                this.getApp().navigate('/');
+            }, 2000);
         } else {
             await this.updateData({ error: response.message, isLoading: false }, true);
         }
