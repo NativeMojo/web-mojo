@@ -30,31 +30,47 @@ class UserTablePage extends TablePage {
                 {
                     key: 'id',
                     label: 'ID',
-                    width: '60px',
                     sortable: true,
                     class: 'text-muted'
                 },
+                // {
+                //     label: 'Avatar',
+                //     key: 'avatar|avatar("sm")',
+                //     sortable: false,
+                //     visibility: 'md'
+                // },
                 {
-                    label: 'Avatar',
-                    key: 'avatar|avatar("sm")',
-                    sortable: false
-                },
-                {
-                    key: 'display_name|tooltip:model.email',
+                    key: 'display_name|tooltip:model.username',
                     label: 'Display Name',
                 },
                 {
-                    key: 'username',
-                    label: 'Username',
+                    label: 'Info',
+                    key: 'permissions.manage_users',
+                    template: `
+                    {{#model.permissions.manage_users}}{{{model.permissions.manage_users|yesnoicon('bi bi-person-gear text-danger')|tooltip('Manage Users')}}} {{/model.permissions.manage_users}}
+                    {{#model.permissions.manage_groups}}{{{model.permissions.manage_groups|yesnoicon('bi bi-building-gear text-primary')|tooltip('Manage Groups')}}} {{/model.permissions.manage_groups}}
+                    {{#model.permissions.view_global}}{{{model.permissions.view_global|yesnoicon('bi bi-globe text-secondary')|tooltip('View Global Menu')}}} {{/model.permissions.view_global}}
+                    {{#model.permissions.view_admin}}{{{model.permissions.view_admin|yesnoicon('bi bi-wrench text-secondary')|tooltip('View Admin Menu')}}} {{/model.permissions.view_admin}}
+                    `,
+                    sortable: false,
                 },
                 {
                     key: 'email',
                     label: 'Email',
+                    visibility: 'xl',
+                    className: 'text-muted fs-8',
                 },
+                // {
+                //     key: 'username',
+                //     label: 'Username',
+                //     visibility: 'xl',
+                //     className: 'text-muted fs-8',
+                // },
                 {
                     key: 'last_activity',
                     label: 'Last Activity',
-                    formatter: "epoch|datetime"
+                    formatter: "relative",
+                    className: 'text-muted fs-8',
                 }
             ],
 

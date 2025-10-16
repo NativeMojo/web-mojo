@@ -458,6 +458,19 @@ class DataView extends View {
   getFieldValue(field) {
     let value;
     let key = field.name || field.key;
+    let formatString = field.format || field.formatter;
+
+    // Check if the name field contains a pipe (e.g., 'is_tor|status_text')
+    // This allows inline formatter syntax in the name field
+    if (key && key.includes('|')) {
+      const parts = key.split('|');
+      key = parts[0].trim();
+      // If no explicit formatter was set, use the one from the name
+      if (!formatString) {
+        formatString = parts.slice(1).join('|').trim();
+      }
+    }
+
     // Get raw value from data source
     if (this.model && typeof this.model.get === 'function') {
       // For models, get raw value first, then apply formatting separately
@@ -470,7 +483,6 @@ class DataView extends View {
 
     // Apply formatting using DataFormatter pipe system if specified
     // Support both 'format' and 'formatter' for consistency with TableView
-    const formatString = field.format || field.formatter;
     if (formatString) {
       value = dataFormatter.pipe(value, formatString);
     }
@@ -640,30 +652,13 @@ class DataView extends View {
       return String(value);
     }
 
-    // If a custom format is specified, we trust the DataFormatter.
-    // However, we must determine if the output is intended to be HTML or plain text.
+    // If a custom format is specified, trust the DataFormatter output.
     // Support both 'format' and 'formatter' for consistency with TableView
     const formatString = field.format || field.formatter;
     if (formatString) {
-      // A list of formatters known to produce safe HTML output.
-      // A list of formatters known to produce safe HTML output.
-      // A list of formatters known to produce safe HTML output.
-      const htmlSafeFormatters = [
-        'badge', 'email', 'url', 'icon', 'status',
-        'image', 'avatar', 'phone', 'highlight', 'pre'
-      ];
-
-      // Parse the pipe string to find the last formatter applied.
-      const pipes = dataFormatter.parsePipeString(formatString);
-      const lastFormatter = pipes.length > 0 ? pipes[pipes.length - 1].name.toLowerCase() : null;
-
-      // If the last formatter is in our safe list, render the HTML directly.
-      if (lastFormatter && htmlSafeFormatters.includes(lastFormatter)) {
-        return String(value);
-      }
-
-      // Otherwise, escape the output for security.
-      return this.escapeHtml(String(value));
+      // If a formatter is explicitly specified, render its output as HTML
+      // The DataFormatter is responsible for proper escaping when needed
+      return String(value);
     }
 
     // No custom format - apply DataView's default type-specific HTML formatting

@@ -15,22 +15,21 @@ class GeoLocatedIPTablePage extends TablePage {
             pageName: 'GeoIP Cache',
             router: "admin/system/geoip",
             Collection: GeoLocatedIPList,
-            
-            itemViewClass: GeoIPView,
+
+            itemView: GeoIPView,
             viewDialogOptions: {
                 header: false,
-                size: 'lg'
+                size: 'xl'
             },
 
             // Column definitions
             columns: [
-                { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },
                 { key: 'ip_address', label: 'IP Address', sortable: true },
                 { key: 'city', label: 'City', sortable: true, formatter: "default('—')" },
                 { key: 'region', label: 'Region', sortable: true, formatter: "default('—')" },
                 { key: 'country_name', label: 'Country', sortable: true, formatter: "default('—')" },
-                { key: 'provider', label: 'Provider', sortable: true },
-                { key: 'is_expired', label: 'Expired', formatter: "boolean|badge" }
+                { key: 'isp', label: 'ISP', sortable: true, formatter: "default('—')" },
+                { key: 'threat_level', label: 'Threat', formatter: "default('—')"}
             ],
 
             // Table features
@@ -39,6 +38,10 @@ class GeoLocatedIPTablePage extends TablePage {
             sortable: true,
             filterable: true,
             paginated: true,
+
+            // Actions
+            // actions: ['view', 'edit', 'delete'],
+            clickAction: 'view',
 
             // Toolbar
             showRefresh: true,

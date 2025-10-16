@@ -34,23 +34,16 @@ class GroupTablePage extends TablePage {
                 {
                     key: 'id',
                     label: 'ID',
-                    width: '60px',
                     sortable: true,
                     class: 'text-muted'
                 },
+
                 {
-                    key: 'is_active|yesnoicon',
-                    label: 'Enabled',
-                    visibility: 'lg'
+                    key: 'name',
+                    label: 'Display Name'
                 },
                 {
-                    label: 'Avatar',
-                    key: 'avatar|avatar("sm", "rounded")',
-                    sortable: false,
-                    visibility: 'lg'
-                },
-                {
-                    key: 'kind',
+                    key: 'kind|badge',
                     label: 'Kind',
                     filter: {
                         type: "select",
@@ -58,20 +51,29 @@ class GroupTablePage extends TablePage {
                     }
                 },
                 {
-                    key: 'name',
-                    label: 'Display Name'
+                    key: 'is_active|yesnoicon',
+                    label: 'Enabled',
+                    visibility: 'lg'
                 },
                 {
                     key: 'parent.name',
                     label: 'Parent',
-                    formatter: "default('No Parent')",
-                    visibility: 'md'
+                    formatter: "default('-')",
+                    visibility: 'md',
+                    class: 'text-muted fs-8'
                 },
                 {
                     key: 'created',
                     label: 'Created',
                     className: 'text-muted fs-8',
                     formatter: "epoch|datetime",
+                    visibility: 'lg'
+                },
+                {
+                    key: 'last_activity',
+                    label: 'Activity',
+                    className: 'text-muted fs-8',
+                    formatter: "relative",
                     visibility: 'lg'
                 }
             ],

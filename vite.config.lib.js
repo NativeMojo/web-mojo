@@ -48,7 +48,9 @@ export default defineConfig({
         path.resolve(__dirname, 'src/lightbox.js'),
         path.resolve(__dirname, 'src/charts.js'),
         path.resolve(__dirname, 'src/docit.js'),
-        path.resolve(__dirname, 'src/admin.js')
+        path.resolve(__dirname, 'src/admin.js'),
+        path.resolve(__dirname, 'src/map.js'),
+        path.resolve(__dirname, 'src/timeline.js')
       ],
       name: 'MOJO',
       // Generate multiple formats

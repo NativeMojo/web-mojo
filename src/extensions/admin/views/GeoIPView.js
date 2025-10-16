@@ -3,7 +3,9 @@
  */
 
 import View from '@core/View.js';
+import TabView from '@core/views/navigation/TabView.js';
 import DataView from '@core/views/data/DataView.js';
+import MapView from '@ext/map/MapView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import { GeoLocatedIP } from '@core/models/System.js';
 import Dialog from '@core/views/feedback/Dialog.js';
@@ -44,40 +46,113 @@ class GeoIPView extends View {
                     </div>
                 </div>
 
-                <!-- Body -->
-                <div data-container="geoip-data-view"></div>
+                <!-- Tabs -->
+                <div data-container="geoip-tabs"></div>
             </div>
         `;
     }
 
     async onInit() {
-        // DataView for all details
-        this.dataView = new DataView({
-            containerId: 'geoip-data-view',
+        // Location Details Tab
+        this.detailsView = new DataView({
             model: this.model,
-            className: "p-3 border rounded",
+            className: "p-3",
             showEmptyValues: true,
             emptyValueText: '—',
             columns: 2,
             fields: [
-                { name: 'id', label: 'ID' },
-                { name: 'subnet', label: 'Subnet' },
-                { name: 'country_code', label: 'Country Code' },
-                { name: 'region', label: 'Region' },
-                { name: 'city', label: 'City' },
-                { name: 'postal_code', label: 'Postal Code' },
-                { name: 'latitude', label: 'Latitude' },
-                { name: 'longitude', label: 'Longitude' },
-                { name: 'timezone', label: 'Timezone' },
-                { name: 'created', label: 'Created', format: 'datetime' },
-                { name: 'modified', label: 'Last Modified', format: 'datetime' },
-                { name: 'expires_at', label: 'Expires', format: 'datetime' },
+                { name: 'ip_address', label: 'IP Address', cols: 4 },
+                { name: 'subnet', label: 'Subnet', cols: 4 },
+                { name: 'country_name', label: 'Country', cols: 4 },
+                { name: 'country_code', label: 'Country Code', cols: 4 },
+                { name: 'region', label: 'Region', cols: 4 },
+                { name: 'city', label: 'City', cols: 4 },
+                { name: 'postal_code', label: 'Postal Code', cols: 4 },
+                { name: 'timezone', label: 'Timezone', cols: 4 },
+                { name: 'latitude', label: 'Latitude', cols: 4 },
+                { name: 'longitude', label: 'Longitude', cols: 4 },
             ]
         });
-        this.addChild(this.dataView);
+
+        // Security & Network Tab
+        this.securityView = new DataView({
+            model: this.model,
+            className: "p-3",
+            showEmptyValues: true,
+            emptyValueText: '—',
+            columns: 2,
+            fields: [
+                { name: 'threat_level', label: 'Threat Level', cols: 4 },
+                { name: 'is_tor', label: 'TOR Exit Node', cols: 4 },
+                { name: 'is_vpn', label: 'VPN', formatter: 'yesnoicon', cols: 4 },
+                { name: 'is_proxy', label: 'Proxy', formatter: 'yesnoicon', cols: 4 },
+                { name: 'is_cloud', label: 'Cloud Provider', formatter: 'yesnoicon', cols: 4 },
+                { name: 'is_datacenter', label: 'Datacenter', formatter: 'yesnoicon', cols: 4 },
+                { name: 'asn', label: 'ASN', cols: 4 },
+                { name: 'asn_org', label: 'ASN Organization', cols: 4 },
+                { name: 'isp', label: 'ISP', cols: 4 },
+                { name: 'connection_type', label: 'Connection Type', cols: 6 },
+            ]
+        });
+
+        // Metadata Tab
+        this.metadataView = new DataView({
+            model: this.model,
+            className: "p-3",
+            showEmptyValues: true,
+            emptyValueText: '—',
+            columns: 2,
+            fields: [
+                { name: 'id', label: 'Record ID', cols: 6 },
+                { name: 'provider', label: 'Data Provider', formatter: 'capitalize', cols: 6 },
+                { name: 'created', label: 'Created', formatter: 'datetime', cols: 6 },
+                { name: 'modified', label: 'Last Modified', formatter: 'datetime', cols: 6 },
+                { name: 'expires_at', label: 'Expires', formatter: 'datetime', cols: 12 },
+            ]
+        });
+
+        const tabs = {
+            'Location': this.detailsView,
+            'Security': this.securityView,
+            'Metadata': this.metadataView
+        };
+
+        // Add Map tab if coordinates exist
+        if (this.hasCoordinates) {
+            const lat = this.model.get('latitude');
+            const lng = this.model.get('longitude');
+            const city = this.model.get('city') || 'Unknown';
+            const region = this.model.get('region') || '';
+            const country = this.model.get('country_name') || '';
+
+            const locationStr = [city, region, country].filter(Boolean).join(', ');
+
+            this.mapView = new MapView({
+                markers: [{
+                    lat: lat,
+                    lng: lng,
+                    popup: `<strong>${this.model.get('ip_address')}</strong><br>${locationStr}`
+                }],
+                tileLayer: "light",
+                zoom: 4,
+                height: 450
+            });
+            tabs['Map'] = this.mapView;
+        }
+
+        this.tabView = new TabView({
+            containerId: 'geoip-tabs',
+            tabs: tabs,
+            activeTab: this.hasCoordinates ? 'Map' : 'Location'
+        });
+        this.addChild(this.tabView);
 
         // ContextMenu
         const menuItems = [
+            { label: 'Edit Location', action: 'edit-location', icon: 'bi-geo-alt' },
+            { label: 'Edit Security', action: 'edit-security', icon: 'bi-shield-lock' },
+            { label: 'Edit Network', action: 'edit-network', icon: 'bi-diagram-3' },
+            { type: 'divider' },
             { label: 'Refresh Geolocation', action: 'refresh-geoip', icon: 'bi-arrow-clockwise' },
         ];
 
@@ -106,9 +181,48 @@ class GeoIPView extends View {
         this.addChild(geoIPMenu);
     }
 
+    async onActionEditLocation() {
+        const resp = await Dialog.showModelForm({
+            title: `Edit Location - ${this.model.get('ip_address')}`,
+            model: this.model,
+            formConfig: GeoLocatedIP.EDIT_LOCATION_FORM,
+        });
+
+        if (resp) {
+            await this.render();
+            this.getApp()?.toast?.success('Location updated successfully');
+        }
+    }
+
+    async onActionEditSecurity() {
+        const resp = await Dialog.showModelForm({
+            title: `Edit Security - ${this.model.get('ip_address')}`,
+            model: this.model,
+            formConfig: GeoLocatedIP.EDIT_SECURITY_FORM,
+        });
+
+        if (resp) {
+            await this.render();
+            this.getApp()?.toast?.success('Security settings updated successfully');
+        }
+    }
+
+    async onActionEditNetwork() {
+        const resp = await Dialog.showModelForm({
+            title: `Edit Network - ${this.model.get('ip_address')}`,
+            model: this.model,
+            formConfig: GeoLocatedIP.EDIT_NETWORK_FORM,
+        });
+
+        if (resp) {
+            await this.render();
+            this.getApp()?.toast?.success('Network information updated successfully');
+        }
+    }
+
     async onActionRefreshGeoip() {
         // Placeholder for refresh logic, e.g., a POST request to a refresh endpoint
-        console.log("Refreshing GeoIP for:", this.model.get('ip_address'));
+        await this.model.save({ refresh: true });
         this.getApp()?.toast?.info('Refresh request sent for ' + this.model.get('ip_address'));
     }
 
