@@ -171,7 +171,7 @@ class SimpleSearchView extends View {
         this.loading = false;
         this.hasSearched = false;
         this.searchTimer = null;
-        this.debounceMs = options.debounceMs || 800;
+        this.debounceMs = options.debounceMs || 300;
 
         // Create results child view
         this.resultsView = new ResultsView({

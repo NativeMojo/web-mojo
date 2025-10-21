@@ -40,11 +40,11 @@ class RuleSetView extends View {
         const matchByValue = this.model.get('match_by');
         const matchByOption = MatchByOptions.find(opt => opt.value === matchByValue);
         const matchByLabel = matchByOption ? matchByOption.label : String(matchByValue);
-        
+
         const bundleByValue = this.model.get('bundle_by');
         const bundleByOption = BundleByOptions.find(opt => opt.value === bundleByValue);
         const bundleByLabel = bundleByOption ? bundleByOption.label : String(bundleByValue);
-        
+
         // Config Tab
         this.configView = new DataView({
             model: this.model,
@@ -56,14 +56,14 @@ class RuleSetView extends View {
                 { name: 'name', label: 'Name', cols: 12 },
                 { name: 'category', label: 'Category', formatter: 'badge', cols: 6 },
                 { name: 'is_active', label: 'Status', formatter: 'boolean', cols: 6 },
-                { 
-                    name: 'match_by', 
+                {
+                    name: 'match_by',
                     label: 'Match Logic',
                     template: matchByLabel,
                     cols: 12
                 },
-                { 
-                    name: 'bundle_by', 
+                {
+                    name: 'bundle_by',
                     label: 'Bundle By',
                     template: bundleByLabel,
                     cols: 12
@@ -79,6 +79,7 @@ class RuleSetView extends View {
         });
         this.rulesView = new TableView({
             collection: rulesCollection,
+            hideActivePillNames: ['parent'],
             columns: [
                 { key: 'id', label: 'ID', width: '70px' },
                 { key: 'name', label: 'Name' },
@@ -97,7 +98,7 @@ class RuleSetView extends View {
                 { label: 'Delete Rule', action: 'delete', icon: 'bi-trash', danger: true }
             ],
             // Pass the parent ID so new rules get associated with this ruleset
-            defaultData: {
+            addFormDefaults: {
                 parent: this.model.get('id')
             }
         });
@@ -148,12 +149,12 @@ class RuleSetView extends View {
     async onActionDisableRuleset() {
         const isActive = this.model.get('is_active');
         const newStatus = !isActive;
-        
+
         try {
             this.model.set('is_active', newStatus);
             await this.model.save();
             await this.render();
-            
+
             Dialog.showToast({
                 message: `RuleSet ${newStatus ? 'enabled' : 'disabled'} successfully`,
                 type: 'success'
@@ -180,12 +181,12 @@ class RuleSetView extends View {
         if (confirmed) {
             try {
                 await this.model.destroy();
-                
+
                 Dialog.showToast({
                     message: 'RuleSet deleted successfully',
                     type: 'success'
                 });
-                
+
                 // Close the dialog
                 const dialog = this.element?.closest('.modal');
                 if (dialog) {
@@ -194,7 +195,7 @@ class RuleSetView extends View {
                         bsModal.hide();
                     }
                 }
-                
+
                 // Emit event to parent to refresh the table
                 this.emit('ruleset:deleted', { model: this.model });
             } catch (error) {

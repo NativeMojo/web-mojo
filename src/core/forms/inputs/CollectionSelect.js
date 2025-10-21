@@ -63,7 +63,7 @@ class CollectionDropdownView extends View {
     const items = this.collection ? this.collection.toJSON().map((item, index) => {
       const labelValue = MOJOUtils.getNestedValue(item, this.labelField);
       const fieldValue = MOJOUtils.getNestedValue(item, this.valueField);
-      
+
       return {
         ...item,
         labelField: labelValue,
@@ -159,7 +159,7 @@ class CollectionSelectView extends View {
     this.valueField = options.valueField || 'id';
     this.maxItems = options.maxItems || 10;
     this.placeholder = options.placeholder || 'Search...';
-    this.debounceMs = options.debounceMs || 1000;
+    this.debounceMs = options.debounceMs || 400;
     this.name = options.name || 'collection_select';
     this.emptyFetch = options.emptyFetch !== false;
     this.requiresActiveGroup = options.requiresActiveGroup || false;
