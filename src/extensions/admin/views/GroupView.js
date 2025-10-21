@@ -101,7 +101,12 @@ class GroupView extends View {
                 { key: 'user.display_name', label: 'User', sortable: true },
                 { key: 'user.email', label: 'Email', sortable: true },
                 { key: 'created', label: 'Date Joined', formatter: 'date', sortable: true }
-            ]
+            ],
+            showAdd: true,
+            addButtonLabel: "Invite",
+            onAdd: async (event) => {
+                this.onInviteClick(event);
+            }
         });
 
         // Create Children (sub-groups) table
@@ -195,6 +200,39 @@ class GroupView extends View {
         // This would typically involve closing the current dialog and opening a new one for the parent.
         // The parent TablePage would need to handle this event.
         this.emit('view-parent-group', { groupId: parentId });
+    }
+
+    async onInviteClick(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const app = this.getApp();
+        const data = await app.showForm({
+            title: "Invite User To " + this.model.get("name"),
+            fields: [
+                {
+                    type: 'email',
+                    name: 'email',
+                    label: 'Email',
+                    required: true,
+                    columns: 12
+                }
+            ]
+        });
+
+        if (data && data.email) {
+            app.showLoading();
+            const resp = await app.rest.POST('/api/group/member/invite', {
+                group: this.model.id,
+                email: data.email
+            });
+            app.hideLoading();
+            if (resp.success) {
+                app.toast.success("User invited successfully");
+                this.membersView.collection.fetch();
+            } else {
+                app.toast.error("Failed to invite user");
+            }
+        }
     }
 }
 

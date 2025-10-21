@@ -216,15 +216,15 @@ const app = new PortalApp({
            `
         },
         {
-           name: "admin",
+           name: "system",
            className: 'sidebar sidebar-light sidebar-admin',
-           header: "<div class='pt-3 text-center fs-5 fw-bold'><i class='bi bi-wrench pe-2'></i> <span class='collapsed-hidden'>Admin</span></div>",
+           header: "<div class='pt-3 text-center fs-5 fw-bold'><i class='bi bi-wrench pe-2'></i> <span class='collapsed-hidden'>System</span></div>",
            items: [
                {
                    spacer: true
                },
                {
-                   text: 'Exit Admin',
+                   text: 'Exit Menu',
                    action: 'exit_admin',
                    icon: 'bi-arrow-bar-left',
                    handler: async (action, event, el) => {
@@ -297,15 +297,15 @@ const app = new PortalApp({
                 buttonClass: 'btn btn-link'
             },
             {
-                id: "admin",
+                id: "system",
                 icon: 'bi-wrench',
-                action: 'admin-menu',
+                action: 'system-menu',
                 buttonClass: 'btn btn-link',
                 permissions: "view_admin",
-                tooltip: "Vieew Admin Menu",
+                tooltip: "View System Menu",
                 handler: async (action, event, el) => {
                     console.log("ADMIN CLICKED");
-                    app.sidebar.setActiveMenu("admin");
+                    app.sidebar.setActiveMenu("system");
                 }
             },
             {

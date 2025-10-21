@@ -23,6 +23,7 @@ class UserTablePage extends TablePage {
 
             defaultQuery: {
                 sort: '-last_activity',
+                is_active: true
             },
 
             // Column definitions
@@ -47,6 +48,7 @@ class UserTablePage extends TablePage {
                     label: 'Info',
                     key: 'permissions.manage_users',
                     template: `
+                    {{^model.is_active}}<span class="text-danger">DISABLED</span> {{/model.is_active}}
                     {{#model.permissions.manage_users}}{{{model.permissions.manage_users|yesnoicon('bi bi-person-gear text-danger')|tooltip('Manage Users')}}} {{/model.permissions.manage_users}}
                     {{#model.permissions.manage_groups}}{{{model.permissions.manage_groups|yesnoicon('bi bi-building-gear text-primary')|tooltip('Manage Groups')}}} {{/model.permissions.manage_groups}}
                     {{#model.permissions.view_global}}{{{model.permissions.view_global|yesnoicon('bi bi-globe text-secondary')|tooltip('View Global Menu')}}} {{/model.permissions.view_global}}
@@ -71,6 +73,44 @@ class UserTablePage extends TablePage {
                     label: 'Last Activity',
                     formatter: "relative",
                     className: 'text-muted fs-8',
+                }
+            ],
+
+            filters: [
+                {
+                    key: 'is_active',
+                    label: 'Active',
+                    type: 'boolean',
+                    defaultValue: true,
+                },
+                {
+                    key: 'email',
+                    label: 'Email',
+                    type: 'text',
+                    defaultValue: '',
+                },
+                {
+                    key: 'username',
+                    label: 'Username',
+                    type: 'text',
+                    defaultValue: '',
+                },
+                {
+                    key: 'locations__ip_address',
+                    label: 'IP Address',
+                    type: 'text',
+                    defaultValue: '',
+                },
+                {
+                    key: 'last_activity',
+                    type: 'daterange',
+                    startName: 'dr_start',
+                    endName: 'dr_end',
+                    fieldName: 'dr_field',
+                    label: 'Date Range',
+                    format: 'YYYY-MM-DD',
+                    displayFormat: 'MMM DD, YYYY',
+                    separator: ' to '
                 }
             ],
 
@@ -114,18 +154,6 @@ class UserTablePage extends TablePage {
                 }
             ],
 
-            batchBarLocation: 'top',
-            batchActions: [
-                {
-                    icon: 'bi-x-circle',
-                    action: 'disable-users',
-                    label: "Disable Users",
-                    handler: async (items, event, el) => {
-                        console.log("ADMIN CLICKED", items, this)
-                    }
-                }
-            ],
-
             // Table display options (for HTML table styling)
             tableOptions: {
                 striped: true,
@@ -137,6 +165,8 @@ class UserTablePage extends TablePage {
     }
 
     async onActionEditPermissions(event, element) {
+
+        event.preventDefault();
         const item = this.collection.get(element.dataset.id);
         const result = await Dialog.showModelForm({
           model: item,
@@ -144,7 +174,6 @@ class UserTablePage extends TablePage {
           title: `Edit Permissions for "${item._.username}"`,
           fields: UserForms.permissions.fields
         });
-        console.log(result);
     }
 
     async onActionChangePassword(event, element) {
@@ -222,7 +251,6 @@ class UserTablePage extends TablePage {
         }
         return false;
     }
-
 
 }
 

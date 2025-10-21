@@ -9,7 +9,7 @@ import FormBuilder from './FormBuilder.js';
 import applyFileDropMixin from '@core/mixins/FileDropMixin.js';
 import MOJOUtils from '@core/utils/MOJOUtils.js';
 
-import { TagInput, CollectionSelect, CollectionMultiSelect, DatePicker, DateRangePicker } from './inputs/index.js';
+import { TagInput, CollectionSelect, CollectionMultiSelect, DatePicker, DateRangePicker, ComboInput } from './inputs/index.js';
 
 class FormView extends View {
   constructor(options = {}) {
@@ -88,10 +88,15 @@ class FormView extends View {
     const config = { ...this.formConfig };
     const app = this.getApp();
 
-    config.fields = this.formConfig.fields.filter(field => {
-      if (!field.permissions) return true;
-      return app.activeUser?.hasPermission(field.permissions);
-    });
+    // Handle case where fields might not be defined
+    if (this.formConfig.fields && Array.isArray(this.formConfig.fields)) {
+      config.fields = this.formConfig.fields.filter(field => {
+        if (!field.permissions) return true;
+        return app.activeUser?.hasPermission(field.permissions);
+      });
+    } else {
+      config.fields = [];
+    }
 
     return config;
   }
@@ -219,6 +224,7 @@ class FormView extends View {
     this.initializeCollectionMultiSelects();
     this.initializeDatePickers();
     this.initializeDateRangePickers();
+    this.initializeComboInputs();
 
     // Find containers for other custom components
     const componentContainers = this.element.querySelectorAll('[data-component]');
@@ -508,6 +514,57 @@ class FormView extends View {
 
       } catch (error) {
         // DateRangePicker initialization failed
+      }
+    });
+  }
+
+  /**
+   * Initialize ComboInput components
+   */
+  initializeComboInputs() {
+    const comboPlaceholders = this.element.querySelectorAll('[data-field-type="combo"]');
+
+    comboPlaceholders.forEach(placeholder => {
+      try {
+        const fieldName = placeholder.getAttribute('data-field-name');
+        const configData = placeholder.getAttribute('data-field-config');
+        const config = JSON.parse(configData);
+
+        // Create ComboInput component
+        const comboInput = new ComboInput({
+          ...config,
+          containerId: null // We'll mount directly
+        });
+
+        let value = MOJOUtils.getContextData(this.data, fieldName);
+        if (value) {
+          comboInput.setValue(value);
+        }
+
+        // Replace placeholder with ComboInput
+        comboInput.render(true, placeholder);
+
+        // Store reference for cleanup
+        this.customComponents.set(fieldName, comboInput);
+
+        // Listen for changes
+        comboInput.on('change', (data) => {
+          this.handleFieldChange(fieldName, data.value);
+        });
+
+        // Listen for selection with metadata
+        comboInput.on('select', (data) => {
+          // Emit additional event with metadata for custom handling
+          this.emit('field:select', { 
+            field: fieldName, 
+            value: data.value, 
+            option: data.option,
+            meta: data.meta 
+          });
+        });
+
+      } catch (error) {
+        console.error('ComboInput initialization failed:', error);
       }
     });
   }

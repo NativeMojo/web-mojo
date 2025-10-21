@@ -1646,6 +1646,7 @@ class Dialog extends View {
       submitText = 'Save',
       cancelText = 'Cancel',
       model,
+      fields,
       ...dialogOptions
     } = options;
 
@@ -1661,7 +1662,8 @@ class Dialog extends View {
       data: options.data,
       defaults: options.defaults,
       formConfig: {
-        fields: formConfig.fields || options.fields,
+        // Support both formConfig.fields and direct fields parameter
+        fields: fields || formConfig.fields || [],
         ...formConfig,
         submitButton: false,
         resetButton: false

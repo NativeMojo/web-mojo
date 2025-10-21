@@ -24,6 +24,11 @@ class EventTablePage extends TablePage {
                 size: 'lg'
             },
 
+            defaultQuery: {
+                sort: '-id',
+                category__not: "ossec",
+            },
+
             // Column definitions
             columns: [
                 { key: 'created', label: 'Timestamp', sortable: true, formatter: 'datetime' },
@@ -57,6 +62,14 @@ class EventTablePage extends TablePage {
                     }
                 },
                 { key: 'model_name', label: 'Related Model', sortable: true }
+            ],
+
+            filters: [
+                {
+                    key: 'category__not',
+                    label: 'Not Category',
+                    filter: {type:"text"}
+                },
             ],
 
             // Table features

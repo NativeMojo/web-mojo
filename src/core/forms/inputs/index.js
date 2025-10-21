@@ -9,6 +9,7 @@ import CollectionSelect from './CollectionSelect.js';
 import CollectionMultiSelect from './CollectionMultiSelect.js';
 import DatePicker from './DatePicker.js';
 import DateRangePicker from './DateRangePicker.js';
+import ComboInput from './ComboInput.js';
 
 // Named exports
 export {
@@ -16,7 +17,8 @@ export {
   CollectionSelect,
   CollectionMultiSelect,
   DatePicker,
-  DateRangePicker
+  DateRangePicker,
+  ComboInput
 };
 
 // Legacy aliases for backward compatibility
@@ -30,6 +32,7 @@ export default {
   CollectionMultiSelect,
   DatePicker,
   DateRangePicker,
+  ComboInput,
   
   // Legacy aliases
   TagInputView: TagInput,
@@ -45,7 +48,10 @@ export const INPUT_TYPES = {
   collectionmultiselect: CollectionMultiSelect,
   'collection-multiselect': CollectionMultiSelect,
   datepicker: DatePicker,
-  daterange: DateRangePicker
+  daterange: DateRangePicker,
+  combo: ComboInput,
+  combobox: ComboInput,
+  autocomplete: ComboInput
 };
 
 // Factory function for creating inputs by type

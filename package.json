@@ -1,6 +1,6 @@
 {
     "name": "web-mojo",
-    "version": "2.1.940",
+    "version": "2.1.964",
     "description": "WEB-MOJO - A lightweight JavaScript framework for building data-driven web applications",
     "type": "module",
     "main": "./dist/index.cjs.js",
@@ -77,7 +77,7 @@
         "build:lib": "npm run generate:models && npm run build:templates && vite build --config vite.config.lib.js",
         "build:loader": "vite build --config vite.config.loader.js",
         "build:lib:watch": "vite build --config vite.config.lib.js --watch",
-        "build:css": "cp src/core/css/core.css dist/core.css && cp src/core/css/portal.css dist/portal.css && cp src/core/css/table.css dist/table.css && cp src/core/css/toast.css dist/toast.css && cp src/core/css/chat.css dist/chat.css && cp src/extensions/auth/css/auth.css dist/auth.css && cp src/extensions/lightbox/css/lightbox.css dist/lightbox.css && cp src/extensions/charts/css/charts.css dist/charts.css && cp src/extensions/admin/css/admin.css dist/admin.css && cp src/extensions/docit/styles/docit.css dist/docit.css && cp src/extensions/timeline/timeline.css dist/timeline.css",
+        "build:css": "cp src/core/css/core.css dist/core.css && cp src/core/css/portal.css dist/portal.css && cp src/core/css/table.css dist/table.css && cp src/core/css/toast.css dist/toast.css && cp src/core/css/chat.css dist/chat.css && cp src/extensions/auth/css/auth.css dist/auth.css && cp src/extensions/lightbox/css/lightbox.css dist/lightbox.css && cp src/extensions/charts/css/charts.css dist/charts.css && cp src/extensions/admin/css/admin.css dist/admin.css && cp src/extensions/docit/styles/docit.css dist/docit.css",
         "build:dist": "npm run clean && npm run generate:models && npm run build:templates && npm run build:lib && npm run build:loader && npm run build:css",
         "build:watch": "vite build --watch",
         "clean": "rm -rf dist",

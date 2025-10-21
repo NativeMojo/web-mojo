@@ -70,6 +70,14 @@ class IncidentTablePage extends TablePage {
                 }
             ],
 
+            filters: [
+                {
+                    key: 'category__not',
+                    label: 'Not Category',
+                    filter: {type:"text"}
+                },
+            ],
+
             // Table features
             selectable: true,
             searchable: true,

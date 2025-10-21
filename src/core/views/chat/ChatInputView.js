@@ -11,7 +11,7 @@ class ChatInputView extends View {
             className: 'chat-input-view',
             ...options
         });
-        
+
         this.placeholder = options.placeholder || 'Type a message...';
         this.buttonText = options.buttonText || 'Send';
         this.attachments = []; // Array of uploaded file data
@@ -23,9 +23,9 @@ class ChatInputView extends View {
             <div class="chat-input-container">
                 <div class="chat-input-attachments" data-container="attachments"></div>
                 <div class="chat-input-wrapper">
-                    <textarea 
-                        class="chat-input form-control" 
-                        placeholder="${this.placeholder}" 
+                    <textarea
+                        class="chat-input form-control"
+                        placeholder="${this.placeholder}"
                         rows="1"></textarea>
                     <button class="chat-send-btn btn btn-primary" data-action="send-message" type="button">
                         <i class="bi bi-send-fill"></i>
@@ -33,7 +33,7 @@ class ChatInputView extends View {
                 </div>
                 <div class="chat-input-footer">
                     <small class="text-muted">
-                        <i class="bi bi-paperclip"></i> 
+                        <i class="bi bi-paperclip"></i>
                         Drag & drop files to attach
                     </small>
                 </div>
@@ -51,7 +51,7 @@ class ChatInputView extends View {
             dragOverClass: 'drag-over',
             dragActiveClass: 'drag-active'
         });
-        
+
         // Auto-resize textarea as user types and handle Enter key
         const textarea = this.element.querySelector('.chat-input');
         if (textarea) {
@@ -87,11 +87,11 @@ class ChatInputView extends View {
     async uploadFile(file) {
         const fileModel = new File();
         const uploadId = Date.now() + Math.random();
-        
+
         // Add preview immediately
         this.addFilePreview(uploadId, file, 0);
         this.pendingUploads.set(uploadId, { file, fileModel });
-        
+
         try {
             const result = await fileModel.upload({
                 file: file,
@@ -99,14 +99,10 @@ class ChatInputView extends View {
                     this.updateFileProgress(uploadId, progress);
                 },
                 onComplete: (uploadResult) => {
-                    this.handleUploadComplete(uploadId, uploadResult);
+                    this.handleUploadComplete(uploadId, fileModel);
                 }
             });
-            
-            // If upload completes synchronously
-            if (result && result.success) {
-                this.handleUploadComplete(uploadId, result.data);
-            }
+
         } catch (error) {
             console.error('File upload failed:', error);
             this.handleUploadError(uploadId, error);
@@ -122,7 +118,7 @@ class ChatInputView extends View {
     addFilePreview(uploadId, file, progress) {
         const container = this.element.querySelector('[data-container="attachments"]');
         if (!container) return;
-        
+
         const preview = document.createElement('div');
         preview.className = 'attachment-preview';
         preview.dataset.uploadId = uploadId;
@@ -141,7 +137,7 @@ class ChatInputView extends View {
                 <i class="bi bi-x"></i>
             </button>
         `;
-        
+
         container.appendChild(preview);
     }
 
@@ -165,15 +161,15 @@ class ChatInputView extends View {
      * @param {string} uploadId - Upload ID
      * @param {Object} result - Upload result data (contains file.id)
      */
-    handleUploadComplete(uploadId, result) {
+    handleUploadComplete(uploadId, fileModel) {
         // Store the file data with its ID
         this.attachments.push({
-            id: result.id || result.file?.id || result,
-            name: result.name || this.pendingUploads.get(uploadId)?.file.name,
+            id: fileModel.id,
+            name: fileModel.get("name"),
             uploadId: uploadId
         });
         this.pendingUploads.delete(uploadId);
-        
+
         const preview = this.element.querySelector(`[data-upload-id="${uploadId}"]`);
         if (preview) {
             preview.classList.add('upload-complete');
@@ -191,11 +187,11 @@ class ChatInputView extends View {
      */
     handleUploadError(uploadId, error) {
         this.pendingUploads.delete(uploadId);
-        
+
         const preview = this.element.querySelector(`[data-upload-id="${uploadId}"]`);
         if (preview) {
             preview.classList.add('upload-error');
-            preview.querySelector('.attachment-info').innerHTML += 
+            preview.querySelector('.attachment-info').innerHTML +=
                 `<span class="text-danger ms-2">Upload failed</span>`;
         }
     }
@@ -205,10 +201,10 @@ class ChatInputView extends View {
      */
     async onActionRemoveAttachment(event, element) {
         const uploadId = element.dataset.uploadId;
-        
+
         // Remove from pending uploads
         this.pendingUploads.delete(uploadId);
-        
+
         // Remove from completed attachments
         const preview = this.element.querySelector(`[data-upload-id="${uploadId}"]`);
         if (preview) {
@@ -225,24 +221,24 @@ class ChatInputView extends View {
     async onActionSendMessage(event, element) {
         const textarea = this.element.querySelector('.chat-input');
         const text = textarea.value.trim();
-        
+
         // Don't send if empty and no attachments
         if (!text && this.attachments.length === 0) {
             return;
         }
-        
+
         // Don't send if uploads are pending
         if (this.pendingUploads.size > 0) {
             // TODO: Show message that uploads are in progress
             return;
         }
-        
+
         // Emit event with message data
         this.emit('message:send', {
             text: text,
             files: this.attachments
         });
-        
+
         // Note: Don't clear here - let the parent ChatView call clearInput() after successful send
     }
 
@@ -255,12 +251,12 @@ class ChatInputView extends View {
             textarea.value = '';
             textarea.style.height = 'auto';
         }
-        
+
         const container = this.element.querySelector('[data-container="attachments"]');
         if (container) {
             container.innerHTML = '';
         }
-        
+
         this.attachments = [];
         this.pendingUploads.clear();
     }

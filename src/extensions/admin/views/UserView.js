@@ -389,10 +389,26 @@ class UserView extends View {
         }
     }
     async onActionResetPassword() { console.log("TODO: reset password") }
-    async onActionDeactivateUser() { console.log("TODO: deactivate user") }
-    async onActionActivateUser() { console.log("TODO: activate user") }
 
+    async onActionDeactivateUser() {
+        const res = await Dialog.confirm("Are you sure you want to disable this user?");
+        if (res) {
+            await this.model.save({ is_active: false });
+            this.getApp().toast.success("Member disable");
+        } else {
+            this.getApp().toast.error("Member disable failed");
+        }
+    }
 
+    async onActionActivateUser() {
+        const res = await Dialog.confirm("Are you sure you want to enable this user?");
+        if (res) {
+            await this.model.save({ is_active: true });
+            this.getApp().toast.success("Member enabled");
+        } else {
+            this.getApp().toast.error("Member enable failed");
+        }
+    }
 
     // Action handlers for table interactions
     async onActionViewGroup(action, event, element) {

@@ -87,6 +87,7 @@ class Model {
   set(key, value, options = {}) {
     const previousAttributes = JSON.parse(JSON.stringify(this.attributes)); // Deep copy
     let hasChanged = false;
+    if (key === undefined || key === null) return;
 
     if (typeof key === 'object') {
       // Set multiple attributes
@@ -143,7 +144,7 @@ class Model {
     // Nested attribute with dot notation
     const keys = key.split('.');
     const topLevelKey = keys[0];
-    
+
     // Ensure the top-level object exists
     if (!this.attributes[topLevelKey] || typeof this.attributes[topLevelKey] !== 'object') {
       this.attributes[topLevelKey] = {};
@@ -158,17 +159,17 @@ class Model {
     // Navigate to the nested location and set the value
     let attrTarget = this.attributes[topLevelKey];
     let instanceTarget = this[topLevelKey];
-    
+
     for (let i = 1; i < keys.length - 1; i++) {
       const currentKey = keys[i];
-      
+
       if (!attrTarget[currentKey] || typeof attrTarget[currentKey] !== 'object') {
         attrTarget[currentKey] = {};
       }
       if (!instanceTarget[currentKey] || typeof instanceTarget[currentKey] !== 'object') {
         instanceTarget[currentKey] = {};
       }
-      
+
       attrTarget = attrTarget[currentKey];
       instanceTarget = instanceTarget[currentKey];
     }
@@ -194,14 +195,14 @@ class Model {
 
     const keys = key.split('.');
     let current = source;
-    
+
     for (const k of keys) {
       if (current == null || typeof current !== 'object') {
         return undefined;
       }
       current = current[k];
     }
-    
+
     return current;
   }
 
@@ -332,7 +333,7 @@ class Model {
       if (response.success) {
         if (response.data.status) {
           this.originalAttributes = { ...this.attributes };
-          this.set(response.data.data);
+          if (response.data.data) this.set(response.data.data);
           this.errors = {};
         } else {
           this.errors = response.data;

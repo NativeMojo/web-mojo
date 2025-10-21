@@ -717,6 +717,11 @@ class FormBuilder {
       case 'buttongroup':
         fieldHTML = this.renderButtonGroupField(field);
         break;
+      case 'combo':
+      case 'combobox':
+      case 'autocomplete':
+        fieldHTML = this.renderComboField(field);
+        break;
       default:
         console.warn(`Unknown field type: ${type}`);
         fieldHTML = this.renderTextField(field);
@@ -2200,6 +2205,69 @@ class FormBuilder {
       return `btn btn-${activeVariant}`;
     }
     return `btn btn-${variant}`;
+  }
+
+  /**
+   * Render combo input field (editable select/autocomplete)
+   * @param {Object} field - Field configuration
+   * @returns {string} Field HTML
+   */
+  renderComboField(field) {
+    const {
+      name,
+      label,
+      value = '',
+      placeholder = 'Select or type...',
+      options = [],
+      required = false,
+      disabled = false,
+      readonly = false,
+      allowCustom = true,
+      showDescription = true,
+      minChars = 0,
+      maxSuggestions = 10,
+      help = field.helpText || field.help || ''
+    } = field;
+
+    const fieldId = this.getFieldId(name);
+    const error = this.errors[name];
+    const fieldValue = (this.getFieldValue(name) ?? value);
+
+    return `
+      <div class="mojo-form-control">
+        ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}</label>` : ''}
+        <div class="combo-input-placeholder"
+             data-field-name="${name}"
+             data-field-type="combo"
+             data-field-config='${JSON.stringify({
+               name,
+               value: fieldValue,
+               placeholder,
+               options,
+               allowCustom,
+               showDescription,
+               minChars,
+               maxSuggestions,
+               disabled,
+               readonly,
+               required
+             })}'>
+          <input type="text"
+                 id="${fieldId}"
+                 name="${name}_display"
+                 class="${this.options.inputClass}${error ? ' is-invalid' : ''}"
+                 placeholder="${this.escapeHtml(placeholder)}"
+                 value="${this.escapeHtml(fieldValue)}"
+                 ${disabled ? 'disabled' : ''}
+                 ${readonly ? 'readonly' : ''}
+                 ${required ? 'required' : ''}>
+          <input type="hidden" name="${name}" value="${this.escapeHtml(fieldValue)}">
+          <small class="form-text text-muted">This will be enhanced with ComboInput component</small>
+        </div>
+        ${help ? `<div class="${this.options.helpClass}">${this.escapeHtml(help)}</div>` : ''}
+        ${error ? `<div class="${this.options.errorClass}">${this.escapeHtml(error)}</div>` : ''}
+      </div>
+    `;
   }
 
   /**

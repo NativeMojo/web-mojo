@@ -22,7 +22,7 @@
  */
 
 import ListViewItem from '@core/views/list/ListViewItem.js';
-import dataFormatter from '@utils/DataFormatter.js';
+import dataFormatter from '@core/utils/DataFormatter.js';
 
 class TimelineViewItem extends ListViewItem {
     constructor(options = {}) {

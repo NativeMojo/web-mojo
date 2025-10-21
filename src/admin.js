@@ -110,73 +110,66 @@ import UserTablePageClass from '@ext/admin/UserTablePage.js';
  * @param {WebApp} app - The WebApp instance to register pages to
  * @returns {void}
  */
-export function registerAdminPages(app, addToMenu = true) {
+export function registerSystemPages(app, addToMenu = true) {
     // Register all admin pages with consistent naming
-    app.registerPage('admin/dashboard', AdminDashboardPageClass, {permissions: ["view_admin"]});
-    app.registerPage('admin/jobs', JobsAdminPageClass, {permissions: ["view_jobs", "manage_jobs"]});
-    app.registerPage('admin/users', UserTablePageClass, {permissions: ["manage_users"]});
-    app.registerPage('admin/groups', GroupTablePageClass, {permissions: ["manage_groups"]});
-    app.registerPage('admin/members', MemberTablePageClass, {permissions: ["manage_members"]});
-    app.registerPage('admin/s3buckets', S3BucketTablePageClass, {permissions: ["manage_aws"]});
-    app.registerPage('admin/filemanagers', FileManagerTablePageClass, {permissions: ["manage_files"]});
-    app.registerPage('admin/files', FileTablePageClass, {permissions: ["manage_files"]});
-    app.registerPage('admin/incidents', IncidentTablePageClass, {permissions: ["view_incidents"]});
-    app.registerPage('admin/events', EventTablePageClass, {permissions: ["view_incidents"]});
-    app.registerPage('admin/logs', LogTablePageClass, {permissions: ["view_logs"]});
-    app.registerPage('admin/user/devices', UserDeviceTablePageClass, {permissions: ["manage_users"]});
-    app.registerPage('admin/user/device-locations', UserDeviceLocationTablePageClass, {permissions: ["manage_users"]});
-    app.registerPage('admin/system/geoip', GeoLocatedIPTablePageClass, {permissions: ["manage_users"]});
-    app.registerPage('admin/email/mailboxes', EmailMailboxTablePageClass, {permissions: ["manage_aws"]});
-    app.registerPage('admin/email/domains', EmailDomainTablePageClass, {permissions: ["manage_aws"]});
-    app.registerPage('admin/email/sent', SentMessageTablePageClass, {permissions: ["manage_aws"]});
-    app.registerPage('admin/email/templates', EmailTemplateTablePageClass, {permissions: ["manage_aws"]});
-    app.registerPage('admin/incident-dashboard', IncidentDashboardPageClass, { permissions: ["view_incidents"] });
-    app.registerPage('admin/rulesets', RuleSetTablePageClass, { permissions: ["manage_incidents"] });
-    app.registerPage('admin/tickets', TicketTablePageClass, { permissions: ["manage_incidents"] });
-    app.registerPage('admin/metrics/permissions', MetricsPermissionsTablePageClass, { permissions: ["manage_metrics"] });
-    app.registerPage('admin/push/dashboard', PushDashboardPageClass, { permissions: ["manage_users"] });
-    app.registerPage('admin/push/configs', PushConfigTablePageClass, { permissions: ["manage_users"] });
-    app.registerPage('admin/push/templates', PushTemplateTablePageClass, { permissions: ["manage_users"] });
-    app.registerPage('admin/push/deliveries', PushDeliveryTablePageClass, { permissions: ["manage_users"] });
-    app.registerPage('admin/push/devices', PushDeviceTablePageClass, { permissions: ["manage_users"] });
+    app.registerPage('system/dashboard', AdminDashboardPageClass, {permissions: ["view_admin"]});
+    app.registerPage('system/jobs', JobsAdminPageClass, {permissions: ["view_jobs", "manage_jobs"]});
+    app.registerPage('system/users', UserTablePageClass, {permissions: ["manage_users"]});
+    app.registerPage('system/groups', GroupTablePageClass, {permissions: ["manage_groups"]});
+    app.registerPage('system/members', MemberTablePageClass, {permissions: ["manage_members"]});
+    app.registerPage('system/s3buckets', S3BucketTablePageClass, {permissions: ["manage_aws"]});
+    app.registerPage('system/filemanagers', FileManagerTablePageClass, {permissions: ["manage_files"]});
+    app.registerPage('system/files', FileTablePageClass, {permissions: ["manage_files"]});
+    app.registerPage('system/incidents', IncidentTablePageClass, {permissions: ["view_incidents"]});
+    app.registerPage('system/events', EventTablePageClass, {permissions: ["view_incidents"]});
+    app.registerPage('system/logs', LogTablePageClass, {permissions: ["view_logs"]});
+    app.registerPage('system/user/devices', UserDeviceTablePageClass, {permissions: ["manage_users"]});
+    app.registerPage('system/user/device-locations', UserDeviceLocationTablePageClass, {permissions: ["manage_users"]});
+    app.registerPage('system/system/geoip', GeoLocatedIPTablePageClass, {permissions: ["manage_users"]});
+    app.registerPage('system/email/mailboxes', EmailMailboxTablePageClass, {permissions: ["manage_aws"]});
+    app.registerPage('system/email/domains', EmailDomainTablePageClass, {permissions: ["manage_aws"]});
+    app.registerPage('system/email/sent', SentMessageTablePageClass, {permissions: ["manage_aws"]});
+    app.registerPage('system/email/templates', EmailTemplateTablePageClass, {permissions: ["manage_aws"]});
+    app.registerPage('system/incident-dashboard', IncidentDashboardPageClass, { permissions: ["view_incidents"] });
+    app.registerPage('system/rulesets', RuleSetTablePageClass, { permissions: ["manage_incidents"] });
+    app.registerPage('system/tickets', TicketTablePageClass, { permissions: ["manage_incidents"] });
+    app.registerPage('system/metrics/permissions', MetricsPermissionsTablePageClass, { permissions: ["manage_metrics"] });
+    app.registerPage('system/push/dashboard', PushDashboardPageClass, { permissions: ["manage_users"] });
+    app.registerPage('system/push/configs', PushConfigTablePageClass, { permissions: ["manage_users"] });
+    app.registerPage('system/push/templates', PushTemplateTablePageClass, { permissions: ["manage_users"] });
+    app.registerPage('system/push/deliveries', PushDeliveryTablePageClass, { permissions: ["manage_users"] });
+    app.registerPage('system/push/devices', PushDeviceTablePageClass, { permissions: ["manage_users"] });
 
     // Check if sidebar exists and has an admin menu config
     if (addToMenu && app.sidebar && app.sidebar.getMenuConfig) {
-        const adminMenuConfig = app.sidebar.getMenuConfig('admin');
+        const adminMenuConfig = app.sidebar.getMenuConfig('system');
         if (adminMenuConfig && adminMenuConfig.items) {
             // Add admin pages to sidebar menu
             const adminMenuItems = [
                 {
                     text: 'Dashboard',
-                    route: '?page=admin/dashboard',
+                    route: '?page=system/dashboard',
                     icon: 'bi-speedometer2',
                     permissions: ["view_admin"]
                 },
                 {
                     text: 'Jobs Management',
-                    route: '?page=admin/jobs',
+                    route: '?page=system/jobs',
                     icon: 'bi-gear-wide-connected',
                     permissions: ["view_jobs", "manage_jobs"]
                 },
                 {
                     text: 'Users',
-                    route: '?page=admin/users',
+                    route: '?page=system/users',
                     icon: 'bi-people',
                     permissions: ["manage_users"]
                 },
                 {
                     text: 'Groups',
-                    route: '?page=admin/groups',
+                    route: '?page=system/groups',
                     icon: 'bi-diagram-3',
                     permissions: ["manage_groups"]
                 },
-                {
-                    text: 'Members',
-                    route: '?page=admin/members',
-                    icon: 'bi-person-badge',
-                    permissions: ["manage_groups"]
-                },
-
                 {
                     text: 'Incidents & Tickets',
                     route: null,
@@ -185,31 +178,31 @@ export function registerAdminPages(app, addToMenu = true) {
                     children: [
                         {
                             text: 'Dashboard',
-                            route: '?page=admin/incident-dashboard',
+                            route: '?page=system/incident-dashboard',
                             icon: 'bi-bar-chart-line',
                             permissions: ["view_incidents"]
                         },
                         {
                             text: 'Incidents',
-                            route: '?page=admin/incidents',
+                            route: '?page=system/incidents',
                             icon: 'bi-exclamation-triangle',
                             permissions: ["view_incidents"]
                         },
                         {
                             text: 'Tickets',
-                            route: '?page=admin/tickets',
+                            route: '?page=system/tickets',
                             icon: 'bi-ticket-detailed',
                             permissions: ["manage_incidents"]
                         },
                         {
                             text: 'Events',
-                            route: '?page=admin/events',
+                            route: '?page=system/events',
                             icon: 'bi-bell',
                             permissions: ["view_incidents"]
                         },
                         {
                             text: 'Rule Engine',
-                            route: '?page=admin/rulesets',
+                            route: '?page=system/rulesets',
                             icon: 'bi-gear-wide-connected',
                             permissions: ["manage_incidents"]
                         },
@@ -223,31 +216,31 @@ export function registerAdminPages(app, addToMenu = true) {
                     children: [
                         {
                             text: 'Logs',
-                            route: '?page=admin/logs',
+                            route: '?page=system/logs',
                             icon: 'bi-journal-text',
                             permissions: ["view_logs"]
                         },
                         {
                             text: 'User Devices',
-                            route: '?page=admin/user/devices',
+                            route: '?page=system/user/devices',
                             icon: 'bi-phone',
                             permissions: ["manage_users"]
                         },
                         {
                             text: 'Device Locations',
-                            route: '?page=admin/user/device-locations',
+                            route: '?page=system/user/device-locations',
                             icon: 'bi-geo-alt',
                             permissions: ["manage_users"]
                         },
                         {
                             text: 'GeoIP Cache',
-                            route: '?page=admin/system/geoip',
+                            route: '?page=system/system/geoip',
                             icon: 'bi-globe',
                             permissions: ["manage_users"]
                         },
                         {
                             text: 'Metrics Permissions',
-                            route: '?page=admin/metrics/permissions',
+                            route: '?page=system/metrics/permissions',
                             icon: 'bi-bar-chart-line',
                             permissions: ["manage_metrics"]
                         }
@@ -261,19 +254,19 @@ export function registerAdminPages(app, addToMenu = true) {
                     children: [
                         {
                             text: 'S3 Buckets',
-                            route: '?page=admin/s3buckets',
+                            route: '?page=system/s3buckets',
                             icon: 'bi-bucket',
                             permissions: ["manage_aws"]
                         },
                         {
                             text: 'Storage Backends',
-                            route: '?page=admin/filemanagers',
+                            route: '?page=system/filemanagers',
                             icon: 'bi-hdd-stack',
                             permissions: ["manage_aws"]
                         },
                         {
                             text: 'Files',
-                            route: '?page=admin/files',
+                            route: '?page=system/files',
                             icon: 'bi-file-earmark',
                             permissions: ["manage_files"]
                         },
@@ -285,11 +278,11 @@ export function registerAdminPages(app, addToMenu = true) {
                     icon: 'bi-broadcast',
                     permissions: ["manage_users"],
                     children: [
-                        { text: 'Dashboard', route: '?page=admin/push/dashboard', icon: 'bi-bar-chart-line' },
-                        { text: 'Configurations', route: '?page=admin/push/configs', icon: 'bi-gear' },
-                        { text: 'Templates', route: '?page=admin/push/templates', icon: 'bi-file-earmark-text' },
-                        { text: 'Deliveries', route: '?page=admin/push/deliveries', icon: 'bi-send' },
-                        { text: 'Devices', route: '?page=admin/push/devices', icon: 'bi-phone' },
+                        { text: 'Dashboard', route: '?page=system/push/dashboard', icon: 'bi-bar-chart-line' },
+                        { text: 'Configurations', route: '?page=system/push/configs', icon: 'bi-gear' },
+                        { text: 'Templates', route: '?page=system/push/templates', icon: 'bi-file-earmark-text' },
+                        { text: 'Deliveries', route: '?page=system/push/deliveries', icon: 'bi-send' },
+                        { text: 'Devices', route: '?page=system/push/devices', icon: 'bi-phone' },
                     ]
                 },
                 {
@@ -300,25 +293,25 @@ export function registerAdminPages(app, addToMenu = true) {
                     children: [
                         {
                             text: 'Domains',
-                            route: '?page=admin/email/domains',
+                            route: '?page=system/email/domains',
                             icon: 'bi-globe',
                             permissions: ["manage_aws"]
                         },
                         {
                             text: 'Mailboxes',
-                            route: '?page=admin/email/mailboxes',
+                            route: '?page=system/email/mailboxes',
                             icon: 'bi-inbox',
                             permissions: ["manage_aws"]
                         },
                         {
                             text: 'Sent',
-                            route: '?page=admin/email/sent',
+                            route: '?page=system/email/sent',
                             icon: 'bi-send-check',
                             permissions: ["manage_aws"]
                         },
                         {
                             text: 'Templates',
-                            route: '?page=admin/email/templates',
+                            route: '?page=system/email/templates',
                             icon: 'bi-file-text',
                             permissions: ["manage_aws"]
                         }
@@ -328,9 +321,9 @@ export function registerAdminPages(app, addToMenu = true) {
 
             // Add items to existing admin menu
             adminMenuConfig.items.unshift(...adminMenuItems);
-            console.log('Added admin menu items to sidebar');
         }
     }
 
-    console.log('Registered 27 admin pages to WebApp');
 }
+
+export { registerSystemPages as registerAdminPages };

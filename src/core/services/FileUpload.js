@@ -81,7 +81,7 @@ class FileUpload {
             } catch (error) {
                 throw new Error(`Failed to initiate upload: ${error.message}`);
             }
-            
+
             if (this.cancelled) {
                 throw new Error('Upload cancelled');
             }
@@ -98,7 +98,7 @@ class FileUpload {
             } catch (error) {
                 throw new Error(`File upload failed: ${error.message}`);
             }
-            
+
             if (this.cancelled) {
                 throw new Error('Upload cancelled');
             }
@@ -113,8 +113,8 @@ class FileUpload {
             }
 
             // Handle success
-            this._onComplete(result);
-            return result;
+            this._onComplete(this.fileModel);
+            return this.fileModel;
 
         } catch (error) {
             if (error.message !== 'Upload cancelled') {
@@ -257,17 +257,17 @@ class FileUpload {
     async _completeUpload() {
         try {
             const response = await this.fileModel.save({ action: 'mark_as_completed' });
-            
+
             if (!response) {
                 throw new Error('No response from upload completion API');
             }
-            
+
             // Check server response format (prefer server errors over HTTP errors)
             if (response.data && !response.data.status) {
                 const errorMessage = response.data.error || 'Failed to mark upload as completed';
                 throw new Error(errorMessage);
             }
-            
+
             return response;
         } catch (error) {
             // Re-throw with more context

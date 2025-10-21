@@ -264,7 +264,7 @@ const BundleByOptions = [
     { value: 9, label: 'By Source IP + Hostname' }
 ];
 
-// Match By Options  
+// Match By Options
 const MatchByOptions = [
     { value: 0, label: 'ALL (must match all rules)' },
     { value: 1, label: 'ANY (match any rule)' }
@@ -288,6 +288,28 @@ const ValueTypeOptions = [
     { value: 'int', label: 'Integer' },
     { value: 'float', label: 'Float' },
     { value: 'bool', label: 'Boolean' }
+];
+
+// Common Event Fields for ComboInput
+const CommonEventFields = [
+    { value: 'level', label: 'Level', description: 'Event level (error, warning, info, debug)', meta: { type: 'str' } },
+    { value: 'source_ip', label: 'Source IP Address', description: 'IP address of the event source', meta: { type: 'str' } },
+    { value: 'rule_id', label: 'Rule ID', description: 'Numeric rule identifier', meta: { type: 'int' } },
+    { value: 'hostname', label: 'Hostname', description: 'Hostname where event occurred', meta: { type: 'str' } },
+    { value: 'component', label: 'Component', description: 'System component name', meta: { type: 'str' } },
+    { value: 'component_id', label: 'Component ID', description: 'Component identifier', meta: { type: 'str' } },
+    { value: 'category', label: 'Category', description: 'Event category (ossec, auth, api_error, etc.)', meta: { type: 'str' } },
+    { value: 'description', label: 'Description', description: 'Event description text', meta: { type: 'str' } },
+    { value: 'details', label: 'Details', description: 'Additional event details', meta: { type: 'str' } },
+    { value: 'alert_id', label: 'Alert ID', description: 'Numeric alert identifier', meta: { type: 'int' } },
+    { value: 'severity', label: 'Severity', description: 'Numeric severity level', meta: { type: 'int' } },
+    { value: 'user', label: 'User', description: 'Username associated with event', meta: { type: 'str' } },
+    { value: 'action', label: 'Action', description: 'Action that triggered the event', meta: { type: 'str' } },
+    { value: 'status', label: 'Status', description: 'Status value or code', meta: { type: 'str' } },
+    { value: 'status_code', label: 'Status Code', description: 'Numeric status code (e.g., HTTP status)', meta: { type: 'int' } },
+    { value: 'message', label: 'Message', description: 'Event message text', meta: { type: 'str' } },
+    { value: 'path', label: 'Path', description: 'File path or URL path', meta: { type: 'str' } },
+    { value: 'method', label: 'Method', description: 'HTTP method or function name', meta: { type: 'str' } }
 ];
 
 class RuleSet extends Model {
@@ -420,9 +442,22 @@ const RuleSetForms = {
             },
             {
                 name: 'bundle_minutes',
-                type: 'number',
+                type: 'select',
                 label: 'Bundle Minutes',
                 placeholder: 'Time window for bundling',
+                "options": [
+                  {"value": 0, "label": "Disabled - don't bundle by time"},
+                  {"value": 5, "label": "5 minutes"},
+                  {"value": 10, "label": "10 minutes"},
+                  {"value": 15, "label": "15 minutes"},
+                  {"value": 30, "label": "30 minutes"},
+                  {"value": 60, "label": "1 hour"},
+                  {"value": 120, "label": "2 hours"},
+                  {"value": 360, "label": "6 hours"},
+                  {"value": 720, "label": "12 hours"},
+                  {"value": 1440, "label": "1 day"},
+                  {"value": null, "label": "No limit - bundle forever"}
+                ],
                 cols: 12
             },
             {
@@ -477,10 +512,14 @@ const RuleForms = {
             },
             {
                 name: 'field_name',
-                type: 'text',
+                type: 'combo',
                 label: 'Field Name',
                 required: true,
-                placeholder: 'e.g., level, source_ip, rule_id',
+                placeholder: 'Select or enter field name...',
+                options: CommonEventFields,
+                allowCustom: true,
+                showDescription: true,
+                help: 'Select a common field or type a custom field name',
                 cols: 12
             },
             {
@@ -523,10 +562,14 @@ const RuleForms = {
             },
             {
                 name: 'field_name',
-                type: 'text',
+                type: 'combo',
                 label: 'Field Name',
                 required: true,
-                placeholder: 'e.g., level, source_ip, rule_id',
+                placeholder: 'Select or enter field name...',
+                options: CommonEventFields,
+                allowCustom: true,
+                showDescription: true,
+                help: 'Select a common field or type a custom field name',
                 cols: 12
             },
             {
@@ -570,16 +613,17 @@ Rule.CREATE_FORM = RuleForms.create; // Alias for compatibility
 Rule.ComparatorOptions = ComparatorOptions;
 Rule.ValueTypeOptions = ValueTypeOptions;
 
-export { 
-    RuleSet, 
-    RuleSetList, 
+export {
+    RuleSet,
+    RuleSetList,
     RuleSetForms,
-    Rule, 
-    RuleList, 
+    Rule,
+    RuleList,
     RuleForms,
     IncidentStats,
     BundleByOptions,
     MatchByOptions,
     ComparatorOptions,
-    ValueTypeOptions
+    ValueTypeOptions,
+    CommonEventFields
 };

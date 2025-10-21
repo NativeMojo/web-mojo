@@ -56,6 +56,7 @@ class UserList extends Collection {
 
 User.PERMISSIONS = [
     { name: "manage_users", label: "Manage Users" },
+    { name: "view_users", label: "View Users" },
     { name: "view_groups", label: "View Groups" },
     { name: "manage_groups", label: "Manage Groups" },
     { name: "view_metrics", label: "View System Metrics" },
@@ -107,7 +108,7 @@ const UserForms = {
     },
     permissions: {
         title: 'Edit Permissions',
-        fields: User.PERMISSIONS_FIELDS
+        fields: User.PERMISSION_FIELDS
     }
 };
 
@@ -126,29 +127,10 @@ const UserDataView = {
                 columns: 4
             },
             {
-                name: 'username',
-                label: 'Username',
-                type: 'text',
-                format: 'lowercase',
-                columns: 4
-            },
-            {
                 name: 'last_login',
                 label: 'Last Login',
                 type: 'datetime',
                 format: 'relative',
-                columns: 4
-            },
-            {
-                name: 'email',
-                label: 'Email',
-                type: 'email',
-                columns: 4
-            },
-            {
-                name: 'display_name',
-                label: 'Display Name',
-                type: 'text',
                 columns: 4
             },
             {
@@ -159,16 +141,37 @@ const UserDataView = {
                 columns: 4
             },
             {
+                name: 'username',
+                label: 'Username',
+                type: 'text',
+                format: 'lowercase',
+                columns: 4
+            },
+            {
+                name: 'display_name',
+                label: 'Display Name',
+                type: 'text',
+                columns: 4
+            },
+
+            {
+                name: 'email',
+                label: 'Email',
+                type: 'email',
+                columns: 12
+            },
+
+            {
                 name: 'org.name',
                 label: 'Organization',
                 type: 'text',
-                columns: 4
+                columns: 6
             },
             {
                 name: 'phone_number',
                 label: 'Phone Number',
                 type: 'text',
-                columns: 4
+                columns: 6
             }
         ]
     },
