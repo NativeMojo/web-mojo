@@ -309,6 +309,12 @@ const CommonEventFields = [
     { value: 'status_code', label: 'Status Code', description: 'Numeric status code (e.g., HTTP status)', meta: { type: 'int' } },
     { value: 'message', label: 'Message', description: 'Event message text', meta: { type: 'str' } },
     { value: 'path', label: 'Path', description: 'File path or URL path', meta: { type: 'str' } },
+    { value: 'title', label: 'Title', description: 'OSSEC Title', meta: { type: 'str' } },
+    { value: 'country_code', label: 'Country Code', description: 'Country code associated with event', meta: { type: 'str' } },
+    { value: 'region', label: 'Region', description: 'Region associated with event', meta: { type: 'str' } },
+    { value: 'city', label: 'City', description: 'City associated with event', meta: { type: 'str' } },
+    { value: 'http_user_agent', label: 'HTTP User Agent', description: 'User agent string associated with event', meta: { type: 'str' } },
+    { value: 'request_path', label: 'Request Path', description: 'Request path associated with event', meta: { type: 'str' } },
     { value: 'method', label: 'Method', description: 'HTTP method or function name', meta: { type: 'str' } }
 ];
 

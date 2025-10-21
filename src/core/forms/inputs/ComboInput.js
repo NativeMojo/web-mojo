@@ -699,6 +699,11 @@ class ComboInput extends View {
    * Get form value (for FormView integration)
    */
   getFormValue() {
+    // If allowCustom is enabled and user has typed a value that hasn't been committed,
+    // return the typed value instead of the last committed value
+    if (this.allowCustom && this.inputValue && this.inputValue !== this.getDisplayValue(this.currentValue)) {
+      return this.inputValue;
+    }
     return this.currentValue;
   }
 
