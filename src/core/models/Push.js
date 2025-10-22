@@ -71,8 +71,7 @@ const PushConfigForms = {
         fields: [
             { name: 'name', label: 'Name', required: true },
             { type: 'collection', name: 'group', label: 'Group (optional)', Collection: GroupList, labelField: 'name', valueField: 'id' },
-            { name: 'fcm_sender_id', label: 'FCM Sender ID' },
-            { name: 'fcm_server_key', label: 'FCM Server Key', type: "textarea" },
+            { name: 'fcm_service_account', label: 'Service Account', type: "textarea", rows: 10},
         ]
     },
     edit: {
@@ -80,8 +79,7 @@ const PushConfigForms = {
         fields: [
             { name: 'name', label: 'Name', required: true },
             { type: 'collection', name: 'group', label: 'Group (optional)', Collection: GroupList, labelField: 'name', valueField: 'id' },
-            { name: 'fcm_sender_id', label: 'FCM Sender ID' },
-            { name: 'fcm_server_key', label: 'FCM Server Key', type: "textarea" },
+            { name: 'fcm_service_account', label: 'Service Account', type: "textarea", rows: 10},
             { name: 'is_active', label: 'Is Active', type: 'switch', value: true },
         ]
     }
