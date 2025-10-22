@@ -16,9 +16,7 @@ class PushConfigTablePage extends TablePage {
                 { key: 'id', label: 'ID', width: '70px' },
                 { key: 'name', label: 'Name' },
                 { key: 'group.name', label: 'Group', formatter: "default('Default')" },
-                { key: 'fcm_enabled', label: 'FCM', format: 'boolean' },
-                { key: 'apns_enabled', label: 'APNS', format: 'boolean' },
-                { key: 'test_mode', label: 'Test Mode', format: 'boolean' },
+                { key: 'fcm_sender_id', label: 'Project ID' },
                 { key: 'is_active', label: 'Active', format: 'boolean' },
             ],
 
@@ -28,13 +26,13 @@ class PushConfigTablePage extends TablePage {
             showRefresh: true,
             showAdd: true,
             showExport: true,
-
+            actions: ["edit", "delete"],
             tableOptions: {
                 pageSizes: [10, 25, 50],
                 defaultPageSize: 25,
                 emptyMessage: 'No push configurations found.',
                 emptyIcon: 'bi-gear',
-                actions: ["edit", "delete"],
+
             }
         });
     }

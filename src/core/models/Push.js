@@ -66,18 +66,23 @@ class PushDeliveryList extends Collection {
 // Forms
 // =========================
 const PushConfigForms = {
+    create: {
+        title: 'Create Push Configuration',
+        fields: [
+            { name: 'name', label: 'Name', required: true },
+            { type: 'collection', name: 'group', label: 'Group (optional)', Collection: GroupList, labelField: 'name', valueField: 'id' },
+            { name: 'fcm_sender_id', label: 'FCM Sender ID' },
+            { name: 'fcm_server_key', label: 'FCM Server Key', type: "textarea" },
+        ]
+    },
     edit: {
         title: 'Edit Push Configuration',
         fields: [
             { name: 'name', label: 'Name', required: true },
             { type: 'collection', name: 'group', label: 'Group (optional)', Collection: GroupList, labelField: 'name', valueField: 'id' },
-            { name: 'fcm_enabled', label: 'FCM Enabled', type: 'switch' },
             { name: 'fcm_sender_id', label: 'FCM Sender ID' },
-            { name: 'apns_enabled', label: 'APNS Enabled', type: 'switch' },
-            { name: 'default_sound', label: 'Default Sound' },
-            { name: 'default_badge_count', label: 'Default Badge Count', type: 'number' },
-            { name: 'test_mode', label: 'Test Mode', type: 'switch' },
-            { name: 'is_active', label: 'Is Active', type: 'switch' },
+            { name: 'fcm_server_key', label: 'FCM Server Key', type: "textarea" },
+            { name: 'is_active', label: 'Is Active', type: 'switch', value: true },
         ]
     }
 };
