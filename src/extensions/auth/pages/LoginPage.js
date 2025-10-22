@@ -55,7 +55,7 @@ export default class LoginPage extends Page {
             isLoading: false,
             error: null,
             showPassword: false,
-            version: VERSION,
+            version: this.getApp().version,
             // Feature availability
             passkeySupported: this.getApp().auth?.isPasskeySupported?.() || false,
             // Config data for template

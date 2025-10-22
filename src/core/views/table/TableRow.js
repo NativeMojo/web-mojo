@@ -302,12 +302,17 @@ class TableRow extends ListViewItem {
           const value = this.model.get ? this.model.get(column.key) : this.model[column.key];
           const context = {
             value,
-            row: this.model,
+            row: this.model,  // deprecate this
+            model: this.model,
             column,
             table: this.tableView,
             index: this.index
           };
-          cell.innerHTML = column.formatter(value, context);
+          try {
+            cell.innerHTML = column.formatter(value, context);
+          } catch (error) {
+            console.error(`Error formatting cell for column ${column.key}:`, error);
+          }
         }
       }
 

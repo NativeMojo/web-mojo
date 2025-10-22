@@ -370,6 +370,7 @@ class FormView extends View {
         const collectionSelect = new CollectionSelect({
           ...config,
           collection,
+          defaultParams: fieldConfig.defaultParams || null, // Can be dict or callback
           containerId: null // We'll mount directly
         });
 
@@ -423,6 +424,7 @@ class FormView extends View {
         const collectionMultiSelect = new CollectionMultiSelect({
           ...config,
           collection,
+          defaultParams: fieldConfig.defaultParams || null, // Can be dict or callback
           containerId: null // We'll mount directly
         });
 

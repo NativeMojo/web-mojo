@@ -90,6 +90,7 @@ class CollectionMultiSelectView extends View {
     // Collection options
     this.collection = options.collection;
     this.collectionParams = options.collectionParams || {};
+    this.defaultParams = options.defaultParams || null; // Can be dict or callback
     this.labelField = options.labelField || 'name';
     this.valueField = options.valueField || 'id';
     this.excludeIds = options.excludeIds || [];
@@ -123,6 +124,17 @@ class CollectionMultiSelectView extends View {
     // Apply collection params if provided
     if (this.collectionParams && Object.keys(this.collectionParams).length > 0) {
       this.collection.params = { ...this.collection.params, ...this.collectionParams };
+    }
+
+    // Apply defaultParams (dict or callback)
+    if (this.defaultParams) {
+      const extraParams = typeof this.defaultParams === 'function' 
+        ? this.defaultParams() 
+        : this.defaultParams;
+      
+      if (extraParams && typeof extraParams === 'object') {
+        this.collection.params = { ...this.collection.params, ...extraParams };
+      }
     }
 
     // Apply requiresActiveGroup filter if needed

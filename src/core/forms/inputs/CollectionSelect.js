@@ -185,6 +185,7 @@ class CollectionSelectView extends View {
     this.searchTimer = null;
     this.dropdownView = null;
     this.defaultParams = {};
+    this.defaultParamsOption = options.defaultParams || null; // Can be dict or callback
 
     // Bind methods
     this.handleDocumentClick = this.handleDocumentClick.bind(this);
@@ -203,6 +204,18 @@ class CollectionSelectView extends View {
     this.defaultParams = { ...this.collection.params };
     this.collection.params.size = this.maxItems;
     this.defaultParams.size = this.maxItems;
+
+    // Merge defaultParams from options (dict or callback)
+    if (this.defaultParamsOption) {
+      const extraParams = typeof this.defaultParamsOption === 'function' 
+        ? this.defaultParamsOption() 
+        : this.defaultParamsOption;
+      
+      if (extraParams && typeof extraParams === 'object') {
+        Object.assign(this.defaultParams, extraParams);
+        Object.assign(this.collection.params, extraParams);
+      }
+    }
 
     // Add active group filter if required
     if (this.requiresActiveGroup) {

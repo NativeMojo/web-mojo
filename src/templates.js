@@ -1,6 +1,6 @@
 /**
  * Auto-generated template module
- * Generated: 2025-10-22T03:55:04.823Z
+ * Generated: 2025-10-22T19:50:14.530Z
  * Contains all framework templates compiled as JavaScript strings
  */
 
@@ -267,9 +267,11 @@ templates['extensions/auth/pages/LoginPage.mst'] = `<div class="auth-page min-vh
                     {{#data.privacyUrl}}
                         <small><a href="{{data.privacyUrl}}" target="_blank" rel="noopener noreferrer">Privacy Policy</a></small>
                     {{/data.privacyUrl}}
+                    {{#data.showVersion}}
                     <div class="text-muted text-center mt-3">
                         <small>version {{data.version}}</small>
                     </div>
+                    {{/data.showVersion}}
                 </div>
             </div>
         </div>

@@ -161,9 +161,11 @@
                     {{#data.privacyUrl}}
                         <small><a href="{{data.privacyUrl}}" target="_blank" rel="noopener noreferrer">Privacy Policy</a></small>
                     {{/data.privacyUrl}}
+                    {{#data.showVersion}}
                     <div class="text-muted text-center mt-3">
                         <small>version {{data.version}}</small>
                     </div>
+                    {{/data.showVersion}}
                 </div>
             </div>
         </div>

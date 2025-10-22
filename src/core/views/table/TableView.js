@@ -490,7 +490,7 @@ class TableView extends ListView {
 
         const iconHtml = icon ? `<i class="${icon} me-1"></i>` : '';
         const labelHtml = `<span class="d-none d-lg-inline">${label}</span>`;
-        
+
         // Use handler if provided, otherwise use action for data-action attribute
         let dataAttrs = '';
         if (handler) {
@@ -498,7 +498,7 @@ class TableView extends ListView {
         } else if (action) {
           dataAttrs = `data-action="${action}"`;
         }
-        
+
         const btnClass = `btn btn-sm btn-${variant} ${className}`.trim();
 
         buttons.push(`
@@ -1240,7 +1240,7 @@ class TableView extends ListView {
 
     if (confirmed) {
       await event.model.destroy();
-      this.collection.remove(event.model);
+      this.collection.fetch();
     }
   }
 
@@ -2383,7 +2383,7 @@ class TableView extends ListView {
   async onActionCustomToolbarButton(event, element) {
     const buttonIndex = parseInt(element.getAttribute('data-button-index'), 10);
     const button = this.toolbarButtons[buttonIndex];
-    
+
     if (button && typeof button.handler === 'function') {
       await button.handler.call(this, event, element);
     }
