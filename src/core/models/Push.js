@@ -91,7 +91,15 @@ const PushTemplateForms = {
         fields: [
             { name: 'name', label: 'Name', required: true },
             { name: 'category', label: 'Category', required: true },
-            { type: 'collection', name: 'group', label: 'Group (optional)', Collection: GroupList, labelField: 'name', valueField: 'id' },
+            { 
+                type: 'collection', 
+                name: 'group', 
+                label: 'Group (optional)', 
+                Collection: GroupList, 
+                labelField: 'name', 
+                valueField: 'id',
+                defaultParams: { is_active: true } // Example: filter to active groups only
+            },
             { name: 'title_template', label: 'Title Template', required: true },
             { name: 'body_template', label: 'Body Template', type: 'textarea', required: true },
             { name: 'action_url', label: 'Action URL' },

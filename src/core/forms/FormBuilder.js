@@ -1938,6 +1938,9 @@ class FormBuilder {
       size = 8,
       maxHeight = null,
       showSelectAll = true,
+      enableSearch = false,
+      searchPlaceholder = 'Search...',
+      searchDebounce = 400,
       requiresActiveGroup = false,
       help = field.helpText || field.help || ''
     } = field;
@@ -1961,6 +1964,9 @@ class FormBuilder {
                size,
                maxHeight,
                showSelectAll,
+               enableSearch,
+               searchPlaceholder,
+               searchDebounce,
                disabled,
                required,
                requiresActiveGroup

@@ -25,6 +25,14 @@ class CollectionMultiSelectView extends View {
           </label>
           {{/label}}
 
+          {{#enableSearch}}
+            <input type="text" 
+                   class="form-control form-control-sm mb-2" 
+                   placeholder="{{searchPlaceholder}}"
+                   value="{{searchValue}}"
+                   data-change-action="search-input" />
+          {{/enableSearch}}
+
           {{#loading}}
             <div class="text-center py-3">
               <div class="spinner-border spinner-border-sm" role="status">
@@ -100,6 +108,9 @@ class CollectionMultiSelectView extends View {
     this.size = options.size || 8;
     this.maxHeight = options.maxHeight || (this.size * 42); // ~42px per item
     this.showSelectAll = options.showSelectAll !== false;
+    this.enableSearch = options.enableSearch || false;
+    this.searchPlaceholder = options.searchPlaceholder || 'Search...';
+    this.searchDebounce = options.searchDebounce || 400;
 
     // State
     this.selectedValues = Array.isArray(options.value) ? options.value : [];
@@ -107,6 +118,8 @@ class CollectionMultiSelectView extends View {
     this.items = [];
     this.lastClickedIndex = -1;
     this.fieldId = options.fieldId || `field_${this.name}`;
+    this.searchValue = '';
+    this.searchTimer = null;
   }
 
   onInit() {
@@ -334,6 +347,44 @@ class CollectionMultiSelectView extends View {
       value: this.selectedValues,
       name: this.name
     });
+  }
+
+  /**
+   * Handle search input with debouncing
+   * Event handler for data-change-action="search-input"
+   */
+  async onChangeSearchInput(event, element) {
+    this.searchValue = element.value;
+
+    // Clear existing timer
+    if (this.searchTimer) {
+      clearTimeout(this.searchTimer);
+    }
+
+    // Debounce the search
+    this.searchTimer = setTimeout(() => {
+      this.performSearch();
+    }, this.searchDebounce);
+  }
+
+  /**
+   * Perform search on collection
+   */
+  async performSearch() {
+    if (!this.collection) return;
+
+    try {
+      const searchParams = { ...this.collection.params };
+      if (this.searchValue && this.searchValue.trim()) {
+        searchParams.search = this.searchValue.trim();
+      } else {
+        // Remove search param if search is cleared
+        delete searchParams.search;
+      }
+      await this.collection.updateParams(searchParams, true);
+    } catch (error) {
+      console.error('Search error:', error);
+    }
   }
 
   /**
