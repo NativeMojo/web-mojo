@@ -150,7 +150,7 @@ class WebSocketClient {
 
     // Emit specific event types
     if (data?.type) {
-      this.emit(data.type, data);
+      this.emit(`message:${data.type}`, data);
     }
 
     // Always emit generic message event
