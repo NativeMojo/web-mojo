@@ -53,6 +53,12 @@ class SearchView extends View {
  */
 class ListItemsView extends View {
   constructor(options = {}) {
+    // Build item template based on whether custom template is provided
+    const hasCustomTemplate = !!options.customItemTemplate;
+    const itemContentTemplate = hasCustomTemplate 
+      ? `{{{customContent}}}` 
+      : `<span {{#disabled}}class="text-muted"{{/disabled}}>{{label}}</span>`;
+
     super({
       tagName: 'div',
       className: 'collection-multiselect-items',
@@ -95,7 +101,7 @@ class ListItemsView extends View {
                      data-index="{{index}}">
                   <i class="bi {{#selected}}bi-check-square-fill text-primary{{/selected}}{{^selected}}bi-square{{/selected}} me-2" 
                      style="font-size: 1.1rem;"></i>
-                  <span {{#disabled}}class="text-muted"{{/disabled}}>{{label}}</span>
+                  ${itemContentTemplate}
                 </div>
               {{/items}}
             </div>
@@ -121,6 +127,7 @@ class ListItemsView extends View {
     this.unselectedCount = options.unselectedCount || 0;
     this.allSelected = options.allSelected || false;
     this.noneSelected = options.noneSelected || true;
+    this.customItemTemplate = options.customItemTemplate || null;
     this.lastClickedIndex = -1;
   }
 
@@ -190,6 +197,7 @@ class CollectionMultiSelectView extends View {
     this.valueField = options.valueField || 'id';
     this.excludeIds = options.excludeIds || []; // Server-side filtering (deprecated)
     this.ignoreIds = options.ignoreIds || [];   // Client-side filtering
+    this.itemTemplate = options.itemTemplate || null; // Custom mustache template for items
     
     // Params
     this.collectionParams = options.collectionParams || {};
@@ -318,7 +326,8 @@ class CollectionMultiSelectView extends View {
       totalCount,
       unselectedCount,
       allSelected: selectedCount === totalCount && totalCount > 0,
-      noneSelected: selectedCount === 0
+      noneSelected: selectedCount === 0,
+      customItemTemplate: this.itemTemplate
     });
 
     this.listView.on('toggle', (data) => {
@@ -370,13 +379,43 @@ class CollectionMultiSelectView extends View {
       return true;
     });
 
-    this.items = models.map((model, index) => ({
-      label: this.getFieldValue(model, this.labelField),
-      value: this.getFieldValue(model, this.valueField),
-      index,
-      selected: this.selectedValues.some(v => v == this.getFieldValue(model, this.valueField)),
-      disabled: this.disabled
-    }));
+    this.items = models.map((model, index) => {
+      const modelData = model.toJSON ? model.toJSON() : model;
+      const value = this.getFieldValue(model, this.valueField);
+      
+      const item = {
+        label: this.getFieldValue(model, this.labelField),
+        value,
+        index,
+        selected: this.selectedValues.some(v => v == value),
+        disabled: this.disabled,
+        model: modelData // All model data nested under 'model' context
+      };
+
+      // Render custom template if provided
+      if (this.itemTemplate) {
+        item.customContent = this.renderItemTemplate(item);
+      }
+
+      return item;
+    });
+  }
+
+  // Render custom item template
+  renderItemTemplate(itemData) {
+    if (!this.itemTemplate) return '';
+    
+    try {
+      const Mustache = window.Mustache || this.constructor.Mustache;
+      if (!Mustache) {
+        console.warn('Mustache not available for item template rendering');
+        return itemData.label;
+      }
+      return Mustache.render(this.itemTemplate, itemData);
+    } catch (error) {
+      console.error('Error rendering item template:', error);
+      return itemData.label;
+    }
   }
 
   // Get field value (supports dot notation)

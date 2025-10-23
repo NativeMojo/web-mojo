@@ -722,6 +722,9 @@ class FormBuilder {
       case 'autocomplete':
         fieldHTML = this.renderComboField(field);
         break;
+      case 'tabset':
+        fieldHTML = this.renderTabsetField(field);
+        break;
       default:
         console.warn(`Unknown field type: ${type}`);
         fieldHTML = this.renderTextField(field);
@@ -2274,6 +2277,75 @@ class FormBuilder {
         </div>
         ${help ? `<div class="${this.options.helpClass}">${this.escapeHtml(help)}</div>` : ''}
         ${error ? `<div class="${this.options.errorClass}">${this.escapeHtml(error)}</div>` : ''}
+      </div>
+    `;
+  }
+
+  /**
+   * Render a tabset field consisting of Bootstrap nav tabs and tab panes.
+   * Each pane's fields are rendered using existing field rendering,
+   * wrapped in a row so column layouts work as expected.
+   * @param {Object} field - Tabset configuration
+   * @param {Array} field.tabs - Array of tabs: [{ label, fields }]
+   * @param {string} [field.name] - Optional name used to generate stable IDs
+   * @param {string} [field.navClass] - CSS classes for the tabs nav
+   * @param {string} [field.contentClass] - CSS classes for the tab content container
+   * @returns {string} HTML
+   */
+  renderTabsetField(field) {
+    const {
+      tabs = [],
+      name = `tabset-${Date.now()}`,
+      navClass = 'nav nav-tabs mb-3',
+      contentClass = 'tab-content'
+    } = field;
+
+    const safe = String(name).toLowerCase().replace(/[^a-z0-9]/g, '-');
+
+    const nav = tabs.map((t, i) => {
+      const id = `${safe}-pane-${i}`;
+      const isActive = i === 0;
+      return `
+        <li class="nav-item" role="presentation">
+          <button class="nav-link ${isActive ? 'active' : ''}"
+                  id="${id}-tab"
+                  data-bs-toggle="tab"
+                  data-bs-target="#${id}"
+                  type="button"
+                  role="tab"
+                  aria-controls="${id}"
+                  aria-selected="${isActive}">
+            ${this.escapeHtml(t.label || `Tab ${i + 1}`)}
+          </button>
+        </li>
+      `;
+    }).join('');
+
+    const panes = tabs.map((t, i) => {
+      const id = `${safe}-pane-${i}`;
+      const isActive = i === 0;
+      const fieldsHTML = (t.fields || []).map(f => this.buildFieldHTML(f)).join('');
+      return `
+        <div class="tab-pane fade ${isActive ? 'show active' : ''}"
+             id="${id}"
+             role="tabpanel"
+             aria-labelledby="${id}-tab"
+             data-tab-index="${i}">
+          <div class="row">
+            ${fieldsHTML}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="mojo-form-tabset">
+        <ul class="${navClass}" role="tablist">
+          ${nav}
+        </ul>
+        <div class="${contentClass}">
+          ${panes}
+        </div>
       </div>
     `;
   }

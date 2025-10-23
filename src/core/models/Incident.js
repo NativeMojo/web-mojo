@@ -113,11 +113,74 @@ const IncidentForms = {
     create: {
         title: 'Create Incident',
         fields: [
-            { name: 'title', type: 'text', label: 'Title', required: true, cols: 12 },
-            { name: 'details', type: 'textarea', label: 'Details', required: true, cols: 12 },
-            { name: 'priority', type: 'number', label: 'Priority', value: 5, cols: 6 },
-            { name: 'state', type: 'select', label: 'State', value: 'open', options: ['open', 'investigating', 'resolved', 'closed'], cols: 6 },
-            { name: 'category', type: 'text', label: 'Category', value: 'manual', cols: 12 },
+            {
+              type: 'tabset',
+              name: 'settingsTabs',
+              tabs: [
+                {
+                  label: 'General',
+                  fields: [
+                      {
+                          name: 'title',
+                          type: 'text',
+                          label: 'Title',
+                          required: true,
+                          columns: 12
+                      },
+                      {
+                          name: 'details',
+                          type: 'textarea',
+                          label: 'Details',
+                          required: true,
+                          columns: 12
+                      },
+
+                  ]
+                },
+                {
+                  label: 'Advanced',
+                  fields: [
+                      {
+                          name: 'priority',
+                          type: 'select',
+                          label: 'Priority',
+                          options: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
+                          value: 5,
+                          columns: 6
+                      },
+                      {
+                          name: 'status',
+                          type: 'select',
+                          label: 'Status',
+                          value: 'open',
+                          options: ['open', 'investigating', 'resolved', 'closed', "paused", "ignored"],
+                          columns: 6
+                      },
+                      {
+                          name: 'category',
+                          type: 'text',
+                          label: 'Category',
+                          value: 'manual',
+                          columns: 6
+                      },
+                  ]
+                },
+                {
+                  label: 'Metadata',
+                  fields: [
+                      {
+                          name: 'metadata',
+                          type: 'json',
+                          label: 'Metadata',
+                          value: { "example": "hello world" },
+                          rows: 15,
+                          columns: 12
+                      }
+                  ]
+                }
+              ]
+            },
+
         ]
     },
     edit: {

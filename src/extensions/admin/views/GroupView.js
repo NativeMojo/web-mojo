@@ -255,6 +255,12 @@ class GroupView extends View {
                     required: true,
                     Collection: GroupList,
                     labelField: 'name',
+                    itemTemplate: `
+                    <div class="ms-2">
+                    <div class="fs-7">{{model.name}}</div>
+                    <div class="fs-8 text-muted">{{model.kind}}</div>
+                    </div>
+                    `,
                     valueField: 'id',
                     enableSearch: true,
                     searchPlaceholder: 'Search groups...',

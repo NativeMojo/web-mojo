@@ -425,6 +425,7 @@ class FormView extends View {
           ...config,
           collection,
           defaultParams: fieldConfig.defaultParams || null, // Can be dict or callback
+          itemTemplate: fieldConfig.itemTemplate || null, // Custom item template
           containerId: null // We'll mount directly
         });
 
@@ -1859,17 +1860,49 @@ class FormView extends View {
   }
 
   /**
-   * Focus first error field
+   * Focus first error
+   * If the invalid field is inside a hidden tab pane, activate that tab first.
    */
   focusFirstError() {
     const form = this.getFormElement();
     if (!form) return;
 
     const firstInvalid = form.querySelector(':invalid');
-    if (firstInvalid) {
-      firstInvalid.focus();
-      firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (!firstInvalid) return;
+
+    // If inside a Bootstrap tab pane and not active, activate the corresponding tab
+    const tabPane = firstInvalid.closest('.tab-pane');
+    if (tabPane && !tabPane.classList.contains('active')) {
+      const tabId = tabPane.id;
+
+      // Find the tab trigger button (support aria-controls or data-bs-target)
+      const trigger = form.querySelector(`[role="tab"][aria-controls="${tabId}"], [data-bs-target="#${tabId}"]`);
+      if (trigger) {
+        // Prefer Bootstrap API if available
+        const bsTab = window.bootstrap?.Tab?.getOrCreateInstance
+          ? window.bootstrap.Tab.getOrCreateInstance(trigger)
+          : null;
+
+        if (bsTab && typeof bsTab.show === 'function') {
+          bsTab.show();
+        } else {
+          // Fallback: manually toggle classes
+          const navLinks = form.querySelectorAll('[role="tab"].nav-link');
+          navLinks.forEach(link => {
+            const isActive = link === trigger;
+            link.classList.toggle('active', isActive);
+            link.setAttribute('aria-selected', isActive ? 'true' : 'false');
+          });
+
+          const panes = form.querySelectorAll('.tab-pane');
+          panes.forEach(p => p.classList.remove('show', 'active'));
+          tabPane.classList.add('show', 'active');
+        }
+      }
     }
+
+    firstInvalid.focus();
+    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   /**
