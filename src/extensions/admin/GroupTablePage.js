@@ -133,7 +133,15 @@ class GroupTablePage extends TablePage {
                 striped: true,
                 bordered: false,
                 hover: true,
-                responsive: false
+                responsive: false,
+                toolbarButtons: [
+                    {
+                        label: 'Add Multiple',
+                        icon: 'bi bi-plus-circle',
+                        action: 'add-multiple',
+                        className: 'btn-success'
+                    }
+                ],
             },
         });
     }

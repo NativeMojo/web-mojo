@@ -106,7 +106,7 @@ class GroupView extends View {
             addButtonLabel: "Invite",
             onAdd: async (event) => {
                 this.onInviteClick(event);
-            }
+            },
         });
 
         // Create Children (sub-groups) table
@@ -120,7 +120,16 @@ class GroupView extends View {
                 { key: 'name', label: 'Name', sortable: true },
                 { key: 'kind', label: 'Kind', formatter: 'badge' },
                 { key: 'created', label: 'Created', formatter: 'date', sortable: true }
-            ]
+            ],
+
+            toolbarButtons: [
+                {
+                    label: 'Add Multiple',
+                    icon: 'bi bi-plus-circle',
+                    action: 'add-multiple',
+                    className: 'btn-success'
+                }
+            ],
         });
 
         // Create Logs table
@@ -234,6 +243,36 @@ class GroupView extends View {
             }
         }
     }
+
+
+    async onActionAddMultiple() {
+        const data = await Dialog.showForm({
+            title: "Select Members",
+            fields: [
+                {
+                    name: 'group_ids',
+                    type: 'collectionmultiselect',
+                    required: true,
+                    Collection: GroupList,
+                    labelField: 'name',
+                    valueField: 'id',
+                    enableSearch: true,
+                    searchPlaceholder: 'Search groups...',
+                    defaultParams: {
+                        is_active: true,
+                        size: 100,
+                        group: this.model.id
+                    }
+                },
+            ]
+        });
+        if (data) {
+            console.warn(data);
+            this.getApp().toast.warning("This is only for testing");
+        }
+
+    }
+
 }
 
 Group.VIEW_CLASS = GroupView;

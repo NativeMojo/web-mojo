@@ -1354,12 +1354,146 @@
    Collection Multi-Select
    ================================================================= */
 
-.collection-multiselect-list .hover-bg:hover {
-    background-color: rgba(13, 110, 253, 0.08);
+.collection-multiselect-view {
+    width: 100%;
 }
 
-[data-bs-theme="dark"] .collection-multiselect-list .hover-bg:hover {
-    background-color: rgba(13, 110, 253, 0.15);
+/* Action buttons */
+.collection-multiselect-actions {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+}
+
+.collection-multiselect-actions .btn-link {
+    color: var(--bs-primary);
+    transition: all 0.2s ease;
+}
+
+.collection-multiselect-actions .btn-link:hover:not(:disabled) {
+    color: var(--bs-primary);
+    transform: translateY(-1px);
+}
+
+.collection-multiselect-actions .btn-link:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.collection-multiselect-actions .btn-link:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* List container */
+.collection-multiselect-list {
+    background: var(--bs-body-bg);
+}
+
+/* List items */
+.collection-multiselect-item {
+    user-select: none;
+    transition: background-color 0.15s ease-in-out;
+    border-bottom: 1px solid transparent;
+}
+
+.collection-multiselect-item:not(:last-child) {
+    border-bottom-color: var(--bs-border-color);
+}
+
+.collection-multiselect-item.clickable {
+    cursor: pointer;
+}
+
+.collection-multiselect-item.clickable:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.06);
+}
+
+.collection-multiselect-item.clickable:active {
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+.collection-multiselect-item i {
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+}
+
+.collection-multiselect-item.clickable:hover i {
+    transform: scale(1.1);
+}
+
+/* Dark mode */
+[data-bs-theme="dark"] .collection-multiselect-item.clickable:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.12);
+}
+
+[data-bs-theme="dark"] .collection-multiselect-item.clickable:active {
+    background-color: rgba(var(--bs-primary-rgb), 0.18);
+}
+
+/* Empty state */
+.collection-multiselect-empty {
+    background: var(--bs-light);
+    border-style: dashed !important;
+}
+
+[data-bs-theme="dark"] .collection-multiselect-empty {
+    background: var(--bs-gray-900);
+}
+
+/* Smooth scrollbar */
+.collection-multiselect-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.collection-multiselect-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.collection-multiselect-list::-webkit-scrollbar-thumb {
+    background: var(--bs-gray-400);
+    border-radius: 3px;
+}
+
+.collection-multiselect-list::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-gray-500);
+}
+
+[data-bs-theme="dark"] .collection-multiselect-list::-webkit-scrollbar-thumb {
+    background: var(--bs-gray-600);
+}
+
+[data-bs-theme="dark"] .collection-multiselect-list::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-gray-500);
+}
+
+/* Animations */
+@keyframes multiselect-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.collection-multiselect-item {
+    animation: multiselect-fade-in 0.2s ease;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .collection-multiselect-item,
+    .collection-multiselect-item i,
+    .collection-multiselect-actions .btn-link {
+        transition: none;
+        animation: none;
+    }
+
+    .collection-multiselect-actions .btn-link:hover:not(:disabled) {
+        transform: none;
+    }
 }
 
 /* =================================================================

@@ -19,7 +19,10 @@ import ChartsPage from './pages/ChartsPage.js';
 import ImagePage from './pages/ImagePage.js';
 import FileDropPage from './pages/FileDropPage.js';
 import ImageViewer from '/src/extensions/lightbox/ImageViewer.js';
+import ConsoleSilencer from '/src/core/utils/ConsoleSilencer.js';
 import { registerAdminPages, FileTablePage } from '/src/admin.js';
+
+ConsoleSilencer.setLevel('debug');
 
 // Detect page reloads
 if (window.performance && window.performance.navigation.type === 1) {

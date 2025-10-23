@@ -1,17 +1,154 @@
 /**
- * CollectionMultiSelectView - A checkbox list component for multi-selecting items from a Collection
- *
- * Features:
- * - Scrollable checkbox list (no dropdown)
- * - Loads from Collection with optional filters
- * - Supports excludeIds to filter out items
- * - Clean, simple UI for forms and dialogs
- * - Returns array of selected IDs
+ * CollectionMultiSelect - MVC multi-select component
+ * 
+ * Architecture:
+ * - CollectionMultiSelectView (parent) - Coordinates child views
+ * - SearchView (child) - Search input with live search
+ * - ListItemsView (child) - Checkbox list display
  */
 
 import { View } from '@core/View.js';
 import MOJOUtils from '@core/utils/MOJOUtils.js';
 
+/**
+ * SearchView - Search input child view
+ */
+class SearchView extends View {
+  constructor(options = {}) {
+    super({
+      tagName: 'div',
+      className: 'collection-multiselect-search',
+      template: `
+        <input type="text" 
+               class="form-control form-control-sm mb-2" 
+               placeholder="{{placeholder}}"
+               data-change-action="search"
+               data-filter="live-search"
+               data-filter-debounce="{{debounce}}" />
+      `,
+      ...options
+    });
+
+    this.placeholder = options.placeholder || 'Search...';
+    this.debounce = options.debounce || 400;
+  }
+
+  async onChangeSearch(event, element) {
+    const searchValue = element.value.trim();
+    this.emit('search', searchValue);
+  }
+
+  getValue() {
+    return this.element?.querySelector('input')?.value || '';
+  }
+
+  clear() {
+    const input = this.element?.querySelector('input');
+    if (input) input.value = '';
+  }
+}
+
+/**
+ * ListItemsView - Checkbox list child view
+ */
+class ListItemsView extends View {
+  constructor(options = {}) {
+    super({
+      tagName: 'div',
+      className: 'collection-multiselect-items',
+      template: `
+        {{#loading}}
+          <div class="text-center py-3">
+            <div class="spinner-border spinner-border-sm" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        {{/loading}}
+
+        {{^loading}}
+          {{#items.length}}
+            {{#showSelectAll}}
+              <div class="collection-multiselect-actions d-flex justify-content-between align-items-center mb-2 py-1">
+                <button type="button" 
+                        class="btn btn-link btn-sm text-decoration-none p-0 {{#allSelected}}text-muted{{/allSelected}}" 
+                        data-action="select-all"
+                        {{#allSelected}}disabled{{/allSelected}}>
+                  <i class="bi bi-check-square me-1"></i>
+                  SELECT {{#unselectedCount}}({{unselectedCount}}){{/unselectedCount}}
+                </button>
+                <button type="button" 
+                        class="btn btn-link btn-sm text-decoration-none p-0 {{#noneSelected}}text-muted{{/noneSelected}}" 
+                        data-action="deselect-all"
+                        {{#noneSelected}}disabled{{/noneSelected}}>
+                  DESELECT {{#selectedCount}}({{selectedCount}}){{/selectedCount}}
+                  <i class="bi bi-square ms-1"></i>
+                </button>
+              </div>
+            {{/showSelectAll}}
+            
+            <div class="collection-multiselect-list border rounded" 
+                 style="max-height: {{maxHeight}}px; overflow-y: auto;">
+              {{#items}}
+                <div class="collection-multiselect-item d-flex align-items-center py-2 px-3 {{^disabled}}clickable{{/disabled}}" 
+                     data-action="{{^disabled}}toggle{{/disabled}}"
+                     data-value="{{value}}"
+                     data-index="{{index}}">
+                  <i class="bi {{#selected}}bi-check-square-fill text-primary{{/selected}}{{^selected}}bi-square{{/selected}} me-2" 
+                     style="font-size: 1.1rem;"></i>
+                  <span {{#disabled}}class="text-muted"{{/disabled}}>{{label}}</span>
+                </div>
+              {{/items}}
+            </div>
+          {{/items.length}}
+
+          {{^items.length}}
+            <div class="collection-multiselect-empty text-muted text-center py-4 border rounded">
+              <i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>
+              <div>No items available</div>
+            </div>
+          {{/^items.length}}
+        {{/loading}}
+      `,
+      ...options
+    });
+
+    this.items = options.items || [];
+    this.loading = options.loading || false;
+    this.maxHeight = options.maxHeight || 336;
+    this.showSelectAll = options.showSelectAll !== false;
+    this.selectedCount = options.selectedCount || 0;
+    this.totalCount = options.totalCount || 0;
+    this.unselectedCount = options.unselectedCount || 0;
+    this.allSelected = options.allSelected || false;
+    this.noneSelected = options.noneSelected || true;
+    this.lastClickedIndex = -1;
+  }
+
+  handleActionToggle(event, element) {
+    const value = element.getAttribute('data-value');
+    const index = parseInt(element.getAttribute('data-index'), 10);
+    this.emit('toggle', { value, index, shiftKey: event.shiftKey });
+    this.lastClickedIndex = index;
+  }
+
+  async handleActionSelectAll(event) {
+    event.preventDefault();
+    this.emit('select-all');
+  }
+
+  async handleActionDeselectAll(event) {
+    event.preventDefault();
+    this.emit('deselect-all');
+  }
+
+  updateState(state) {
+    Object.assign(this, state);
+  }
+}
+
+/**
+ * CollectionMultiSelectView - Parent coordinator view
+ */
 class CollectionMultiSelectView extends View {
   constructor(options = {}) {
     super({
@@ -24,58 +161,9 @@ class CollectionMultiSelectView extends View {
             {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}
           </label>
           {{/label}}
-
-          {{#enableSearch}}
-            <input type="text" 
-                   class="form-control form-control-sm mb-2" 
-                   placeholder="{{searchPlaceholder}}"
-                   value="{{searchValue}}"
-                   data-change-action="search-input" />
-          {{/enableSearch}}
-
-          {{#loading}}
-            <div class="text-center py-3">
-              <div class="spinner-border spinner-border-sm" role="status">
-                <span class="visually-hidden">Loading...</span>
-              </div>
-            </div>
-          {{/loading}}
-
-          {{^loading}}
-            {{#items.length}}
-              <div class="collection-multiselect-list border rounded p-3" style="max-height: {{maxHeight}}px; overflow-y: auto; background: #fff;">
-                {{#items}}
-                  <div class="d-flex align-items-center mb-2 py-1 px-2 rounded {{^disabled}}hover-bg{{/disabled}}" 
-                       style="cursor: {{^disabled}}pointer{{/disabled}}{{#disabled}}not-allowed{{/disabled}}; user-select: none; transition: background-color 0.15s;"
-                       data-action="{{^disabled}}toggle-item{{/disabled}}"
-                       data-value="{{value}}"
-                       data-index="{{index}}"
-                       {{#disabled}}data-disabled="true"{{/disabled}}>
-                    <i class="bi {{#isSelected}}bi-check-square-fill text-primary{{/isSelected}}{{^isSelected}}bi-square{{/isSelected}} me-2" 
-                       style="font-size: 1.25rem;"></i>
-                    <span {{#disabled}}class="text-muted"{{/disabled}}>{{label}}</span>
-                  </div>
-                {{/items}}
-              </div>
-
-              {{#showSelectAll}}
-                <div class="mt-2">
-                  <button type="button" class="btn btn-sm btn-outline-secondary me-2" data-action="select-all">
-                    Select All
-                  </button>
-                  <button type="button" class="btn btn-sm btn-outline-secondary" data-action="deselect-all">
-                    Deselect All
-                  </button>
-                </div>
-              {{/showSelectAll}}
-            {{/items.length}}
-
-            {{^items.length}}
-              <div class="text-muted text-center py-3 border rounded">
-                No items available
-              </div>
-            {{/^items.length}}
-          {{/loading}}
+          
+          <div class="collection-multiselect-search-container"></div>
+          <div class="collection-multiselect-list-container"></div>
 
           {{#help}}
             <div class="form-text">{{help}}</div>
@@ -88,6 +176,7 @@ class CollectionMultiSelectView extends View {
       ...options
     });
 
+    // Basic config
     this.name = options.name || 'collection_multiselect';
     this.label = options.label || '';
     this.help = options.help || '';
@@ -95,18 +184,22 @@ class CollectionMultiSelectView extends View {
     this.required = options.required || false;
     this.disabled = options.disabled || false;
 
-    // Collection options
+    // Collection
     this.collection = options.collection;
-    this.collectionParams = options.collectionParams || {};
-    this.defaultParams = options.defaultParams || null; // Can be dict or callback
     this.labelField = options.labelField || 'name';
     this.valueField = options.valueField || 'id';
-    this.excludeIds = options.excludeIds || [];
+    this.excludeIds = options.excludeIds || []; // Server-side filtering (deprecated)
+    this.ignoreIds = options.ignoreIds || [];   // Client-side filtering
+    
+    // Params
+    this.collectionParams = options.collectionParams || {};
+    this.defaultParamsOption = options.defaultParams || null;
+    this.baseParams = {};
     this.requiresActiveGroup = options.requiresActiveGroup || false;
 
-    // UI options
+    // UI
     this.size = options.size || 8;
-    this.maxHeight = options.maxHeight || (this.size * 42); // ~42px per item
+    this.maxHeight = options.maxHeight || (this.size * 42);
     this.showSelectAll = options.showSelectAll !== false;
     this.enableSearch = options.enableSearch || false;
     this.searchPlaceholder = options.searchPlaceholder || 'Search...';
@@ -116,10 +209,10 @@ class CollectionMultiSelectView extends View {
     this.selectedValues = Array.isArray(options.value) ? options.value : [];
     this.loading = false;
     this.items = [];
-    this.lastClickedIndex = -1;
-    this.fieldId = options.fieldId || `field_${this.name}`;
-    this.searchValue = '';
-    this.searchTimer = null;
+
+    // Child views
+    this.searchView = null;
+    this.listView = null;
   }
 
   onInit() {
@@ -129,309 +222,274 @@ class CollectionMultiSelectView extends View {
   }
 
   setupCollection() {
-    if (!this.collection) {
-      console.warn('CollectionMultiSelect: No collection provided');
-      return;
-    }
+    // Store base params
+    this.baseParams = { ...this.collection.params };
 
-    // Apply collection params if provided
-    if (this.collectionParams && Object.keys(this.collectionParams).length > 0) {
-      this.collection.params = { ...this.collection.params, ...this.collectionParams };
+    // Apply collectionParams
+    if (Object.keys(this.collectionParams).length > 0) {
+      Object.assign(this.baseParams, this.collectionParams);
+      Object.assign(this.collection.params, this.collectionParams);
     }
 
     // Apply defaultParams (dict or callback)
-    if (this.defaultParams) {
-      const extraParams = typeof this.defaultParams === 'function' 
-        ? this.defaultParams() 
-        : this.defaultParams;
+    if (this.defaultParamsOption) {
+      const extraParams = typeof this.defaultParamsOption === 'function' 
+        ? this.defaultParamsOption() 
+        : this.defaultParamsOption;
       
-      if (extraParams && typeof extraParams === 'object') {
-        this.collection.params = { ...this.collection.params, ...extraParams };
+      if (extraParams) {
+        Object.assign(this.baseParams, extraParams);
+        Object.assign(this.collection.params, extraParams);
       }
     }
 
-    // Apply requiresActiveGroup filter if needed
+    // Active group filter
     if (this.requiresActiveGroup) {
       const app = this.getApp();
-      if (app && app.activeGroup && app.activeGroup.id) {
+      if (app?.activeGroup?.id) {
+        this.baseParams.group = app.activeGroup.id;
         this.collection.params.group = app.activeGroup.id;
       }
     }
 
-    // Listen for collection fetch events
+    // Collection events
     this.collection.on('fetch:start', () => {
       this.loading = true;
-      this.render(false);
+      this.updateListView();
     });
 
     this.collection.on('fetch:end', () => {
       this.loading = false;
-      this.updateItems();
-      this.render(false);
+      this.buildItems();
+      this.updateListView();
     });
 
-    // If collection already has data, use it
+    // Use existing data if available
     if (!this.collection.isEmpty()) {
-      this.updateItems();
+      this.buildItems();
     }
   }
 
-  onAfterMount() {
-    // Fetch collection data after component is mounted
-    if (this.collection && this.collection.isEmpty()) {
+  async onAfterRender() {
+    await super.onAfterRender();
+
+    // Create child views
+    if (this.enableSearch) {
+      this.createSearchView();
+    }
+    this.createListView();
+
+    // Fetch if empty
+    if (this.collection?.isEmpty()) {
       this.collection.fetch();
     }
   }
 
+  createSearchView() {
+    const container = this.element?.querySelector('.collection-multiselect-search-container');
+    if (!container) return;
 
-
-  /**
-   * Update items array from collection
-   */
-  updateItems() {
-    // Filter out excluded IDs
-    const filteredModels = this.collection.models.filter(model => {
-      const modelId = this.getFieldValue(model, this.valueField);
-      return !this.excludeIds.some(id => id == modelId);
+    this.searchView = new SearchView({
+      placeholder: this.searchPlaceholder,
+      debounce: this.searchDebounce
     });
 
-    this.items = filteredModels.map((model, index) => {
-      const labelValue = this.getFieldValue(model, this.labelField);
-      const fieldValue = this.getFieldValue(model, this.valueField);
-
-      return {
-        label: labelValue,
-        value: fieldValue,
-        index: index,
-        isSelected: this.selectedValues.some(v => v == fieldValue),
-        disabled: this.disabled
-      };
+    this.searchView.on('search', (searchValue) => {
+      this.handleSearch(searchValue);
     });
+
+    this.searchView.render(true, container);
   }
 
-  /**
-   * Get field value from model or object, supporting dot notation
-   */
-  getFieldValue(item, fieldPath) {
-    if (!item || !fieldPath) return undefined;
+  createListView() {
+    const container = this.element?.querySelector('.collection-multiselect-list-container');
+    if (!container) return;
 
-    // Try model.get() first if it's a model
-    if (typeof item.get === 'function') {
-      const value = item.get(fieldPath);
-      if (value === undefined && fieldPath.includes('.')) {
-        return MOJOUtils.getNestedValue(item, fieldPath);
-      }
-      return value;
+    const selectedCount = this.selectedValues.length;
+    const totalCount = this.items.length;
+    const unselectedCount = totalCount - selectedCount;
+
+    this.listView = new ListItemsView({
+      items: this.items,
+      loading: this.loading,
+      maxHeight: this.maxHeight,
+      showSelectAll: this.showSelectAll,
+      selectedCount,
+      totalCount,
+      unselectedCount,
+      allSelected: selectedCount === totalCount && totalCount > 0,
+      noneSelected: selectedCount === 0
+    });
+
+    this.listView.on('toggle', (data) => {
+      this.handleToggle(data);
+    });
+
+    this.listView.on('select-all', () => {
+      this.selectAll();
+    });
+
+    this.listView.on('deselect-all', () => {
+      this.deselectAll();
+    });
+
+    this.listView.render(true, container);
+  }
+
+  updateListView() {
+    if (this.listView) {
+      const selectedCount = this.selectedValues.length;
+      const totalCount = this.items.length;
+      const unselectedCount = totalCount - selectedCount;
+
+      this.listView.updateState({
+        items: this.items,
+        loading: this.loading,
+        selectedCount,
+        totalCount,
+        unselectedCount,
+        allSelected: selectedCount === totalCount && totalCount > 0,
+        noneSelected: selectedCount === 0
+      });
+      this.listView.render(false);
     }
-
-    // Otherwise use getNestedValue for plain objects
-    return MOJOUtils.getNestedValue(item, fieldPath);
   }
 
-  /**
-   * Handle item toggle with shift-click range selection support
-   */
-  handleActionToggleItem(event, element) {
-    const value = element.getAttribute('data-value');
-    const clickedIndex = parseInt(element.getAttribute('data-index'), 10);
-    
-    // Convert value to match the type in selectedValues (handle numeric IDs)
-    const numValue = Number(value);
-    const typedValue = !isNaN(numValue) && String(numValue) === value ? numValue : value;
-
-    // Handle shift-click for range selection
-    if (event.shiftKey && this.lastClickedIndex !== -1 && this.lastClickedIndex !== clickedIndex) {
-      // Determine if we're selecting or deselecting based on the clicked item's current state
-      const isCurrentlySelected = this.selectedValues.some(v => v == typedValue);
-      const shouldSelect = !isCurrentlySelected;
+  // Build items array from collection
+  buildItems() {
+    const models = this.collection.models.filter(model => {
+      const id = this.getFieldValue(model, this.valueField);
+      if (id == null) return false;
       
-      // Apply selection/deselection to range between lastClickedIndex and clickedIndex
-      const start = Math.min(this.lastClickedIndex, clickedIndex);
-      const end = Math.max(this.lastClickedIndex, clickedIndex);
+      // Filter out excludeIds (legacy support)
+      if (this.excludeIds.includes(id)) return false;
+      
+      // Filter out ignoreIds (client-side filtering)
+      if (this.ignoreIds.some(ignoreId => ignoreId == id)) return false;
+      
+      return true;
+    });
+
+    this.items = models.map((model, index) => ({
+      label: this.getFieldValue(model, this.labelField),
+      value: this.getFieldValue(model, this.valueField),
+      index,
+      selected: this.selectedValues.some(v => v == this.getFieldValue(model, this.valueField)),
+      disabled: this.disabled
+    }));
+  }
+
+  // Get field value (supports dot notation)
+  getFieldValue(item, field) {
+    if (!item || !field) return undefined;
+    
+    if (typeof item.get === 'function') {
+      return item.get(field) ?? MOJOUtils.getNestedValue(item, field);
+    }
+    
+    return MOJOUtils.getNestedValue(item, field);
+  }
+
+  // Handle search
+  handleSearch(searchValue) {
+    const params = { ...this.baseParams };
+    if (searchValue) {
+      params.search = searchValue;
+    }
+    this.collection.updateParams(params, true);
+  }
+
+  // Handle item toggle
+  handleToggle({ value, index, shiftKey }) {
+    // Shift-click range selection
+    if (shiftKey && this.listView.lastClickedIndex >= 0) {
+      const start = Math.min(this.listView.lastClickedIndex, index);
+      const end = Math.max(this.listView.lastClickedIndex, index);
+      const shouldSelect = !this.items[index].selected;
       
       for (let i = start; i <= end; i++) {
         const item = this.items[i];
-        if (item && !item.disabled) {
-          const itemNumValue = Number(item.value);
-          const itemTypedValue = !isNaN(itemNumValue) && String(itemNumValue) === String(item.value) ? itemNumValue : item.value;
-          
+        if (!item.disabled) {
           if (shouldSelect) {
-            // Add to selection if not already selected
-            if (!this.selectedValues.some(v => v == itemTypedValue)) {
-              this.selectedValues.push(itemTypedValue);
+            if (!this.selectedValues.includes(item.value)) {
+              this.selectedValues.push(item.value);
             }
-            item.isSelected = true;
           } else {
-            // Remove from selection
-            this.selectedValues = this.selectedValues.filter(v => v != itemTypedValue);
-            item.isSelected = false;
+            this.selectedValues = this.selectedValues.filter(v => v != item.value);
           }
+          item.selected = shouldSelect;
         }
       }
     } else {
       // Normal toggle
-      const isCurrentlySelected = this.selectedValues.some(v => v == typedValue);
-      
-      if (isCurrentlySelected) {
-        // Remove from selection
-        this.selectedValues = this.selectedValues.filter(v => v != typedValue);
+      const item = this.items[index];
+      if (item.selected) {
+        this.selectedValues = this.selectedValues.filter(v => v != value);
+        item.selected = false;
       } else {
-        // Add to selection
-        this.selectedValues.push(typedValue);
-      }
-
-      // Update the item state
-      const item = this.items.find(i => i.value == value);
-      if (item) {
-        item.isSelected = !isCurrentlySelected;
+        this.selectedValues.push(value);
+        item.selected = true;
       }
     }
 
-    // Remember last clicked index for shift-click
-    this.lastClickedIndex = clickedIndex;
-
-    // Re-render to update the icons
-    this.render(false);
-
-    // Emit change event for form handling
-    this.emit('change', {
-      value: this.selectedValues,
-      name: this.name
-    });
+    this.updateListView();
+    this.emit('change', { value: this.selectedValues, name: this.name });
   }
 
-  /**
-   * Select all items
-   */
-  async handleActionSelectAll(event, element) {
-    event.preventDefault();
-
-    // Select all non-disabled items
-    this.selectedValues = this.items
-      .filter(item => !item.disabled)
-      .map(item => item.value);
-
-    // Update items state
-    this.items.forEach(item => {
-      if (!item.disabled) {
-        item.isSelected = true;
-      }
-    });
-
-    // Re-render to update icons
-    this.render(false);
-
-    this.emit('change', {
-      value: this.selectedValues,
-      name: this.name
-    });
+  // Select all
+  selectAll() {
+    this.selectedValues = this.items.filter(i => !i.disabled).map(i => i.value);
+    this.items.forEach(i => { if (!i.disabled) i.selected = true; });
+    this.updateListView();
+    this.emit('change', { value: this.selectedValues, name: this.name });
   }
 
-  /**
-   * Deselect all items
-   */
-  async handleActionDeselectAll(event, element) {
-    event.preventDefault();
-
+  // Deselect all
+  deselectAll() {
     this.selectedValues = [];
-
-    // Update items state
-    this.items.forEach(item => {
-      item.isSelected = false;
-    });
-
-    // Re-render to update icons
-    this.render(false);
-
-    this.emit('change', {
-      value: this.selectedValues,
-      name: this.name
-    });
+    this.items.forEach(i => i.selected = false);
+    this.updateListView();
+    this.emit('change', { value: this.selectedValues, name: this.name });
   }
 
-  /**
-   * Handle search input with debouncing
-   * Event handler for data-change-action="search-input"
-   */
-  async onChangeSearchInput(event, element) {
-    this.searchValue = element.value;
-
-    // Clear existing timer
-    if (this.searchTimer) {
-      clearTimeout(this.searchTimer);
+  async onBeforeDestroy() {
+    await super.onBeforeDestroy();
+    
+    if (this.searchView) {
+      this.searchView.destroy();
     }
-
-    // Debounce the search
-    this.searchTimer = setTimeout(() => {
-      this.performSearch();
-    }, this.searchDebounce);
-  }
-
-  /**
-   * Perform search on collection
-   */
-  async performSearch() {
-    if (!this.collection) return;
-
-    try {
-      const searchParams = { ...this.collection.params };
-      if (this.searchValue && this.searchValue.trim()) {
-        searchParams.search = this.searchValue.trim();
-      } else {
-        // Remove search param if search is cleared
-        delete searchParams.search;
-      }
-      await this.collection.updateParams(searchParams, true);
-    } catch (error) {
-      console.error('Search error:', error);
+    if (this.listView) {
+      this.listView.destroy();
     }
   }
 
-  /**
-   * Get the current selected values
-   */
-  getValue() {
-    return this.selectedValues;
-  }
-
-  /**
-   * Set the selected values
-   */
+  // Public API
+  getValue() { return this.selectedValues; }
+  
   setValue(values) {
     this.selectedValues = Array.isArray(values) ? values : [];
-    this.updateItems();
-    this.render();
+    this.buildItems();
+    this.updateListView();
   }
 
-  /**
-   * Set the excluded IDs
-   */
   setExcludeIds(ids) {
     this.excludeIds = Array.isArray(ids) ? ids : [];
-    this.updateItems();
-    this.render();
+    this.buildItems();
+    this.updateListView();
   }
 
-  /**
-   * Refresh the collection
-   */
+  setIgnoreIds(ids) {
+    this.ignoreIds = Array.isArray(ids) ? ids : [];
+    this.buildItems();
+    this.updateListView();
+  }
+
   async refresh() {
     await this.collection.fetch();
   }
 
-  /**
-   * Get form value for form submission
-   */
-  getFormValue() {
-    return this.selectedValues;
-  }
-
-  /**
-   * Set form value from form data
-   */
-  setFormValue(value) {
-    this.setValue(value);
-  }
+  getFormValue() { return this.selectedValues; }
+  setFormValue(value) { this.setValue(value); }
 }
 
 export default CollectionMultiSelectView;
