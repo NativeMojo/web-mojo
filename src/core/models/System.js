@@ -39,11 +39,16 @@ const GeoIPForms = {
                     { value: 'critical', label: 'Critical' }
                 ]
             },
+            { name: 'is_threat', label: 'Threat', type: 'switch', cols: 6 },
+            { name: 'is_suspicious', label: 'Suspicious', type: 'switch', cols: 6 },
+            { name: 'is_known_attacker', label: 'Known Attacker', type: 'switch', cols: 6 },
+            { name: 'is_known_abuser', label: 'Known Abuser', type: 'switch', cols: 6 },
+            { name: 'risk_score', label: 'Risk Score', type: 'number', cols: 6 },
             { name: 'is_tor', label: 'TOR Exit Node', type: 'switch', cols: 6 },
             { name: 'is_vpn', label: 'VPN', type: 'switch', cols: 6 },
             { name: 'is_proxy', label: 'Proxy', type: 'switch', cols: 6 },
             { name: 'is_cloud', label: 'Cloud Provider', type: 'switch', cols: 6 },
-            { name: 'is_datacenter', label: 'Datacenter', type: 'switch', cols: 6 },
+            { name: 'is_datacenter', label: 'Datacenter', type: 'switch', cols: 6 }
         ]
     },
     editNetwork: {
@@ -55,6 +60,9 @@ const GeoIPForms = {
             { name: 'isp', label: 'ISP', type: 'text', cols: 12 },
             { name: 'connection_type', label: 'Connection Type', type: 'text', cols: 6 },
             { name: 'provider', label: 'Provider', type: 'text', cols: 6 },
+            { name: 'is_mobile', label: 'Mobile Connection', type: 'switch', cols: 6 },
+            { name: 'mobile_carrier', label: 'Mobile Carrier', type: 'text', cols: 6 },
+            { name: 'last_seen', label: 'Last Seen', type: 'datetime', cols: 12 }
         ]
     }
 };

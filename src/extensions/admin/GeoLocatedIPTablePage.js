@@ -4,7 +4,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { GeoLocatedIPList } from '@core/models/System.js';
+import { GeoLocatedIPList, GeoLocatedIP } from '@core/models/System.js';
 import GeoIPView from './views/GeoIPView.js';
 
 class GeoLocatedIPTablePage extends TablePage {
@@ -45,7 +45,7 @@ class GeoLocatedIPTablePage extends TablePage {
 
             // Toolbar
             showRefresh: true,
-            showAdd: false,
+            showAdd: true,
             showExport: true,
 
             // Empty state
@@ -57,8 +57,36 @@ class GeoLocatedIPTablePage extends TablePage {
                 bordered: false,
                 hover: true,
                 responsive: false
+            },
+            tableViewOptions: {
+                addButtonLabel: "Lookup IP",
+                onAdd: (evt) => {
+                    evt.preventDefault();
+                    // Implement the logic for adding a new record
+                    this.onLookup();
+                }
             }
         });
+    }
+
+    async onLookup() {
+        // Implement the logic for adding a new record
+        const data = await this.getApp().showForm({
+            title: "Lookup IP",
+            fields: [
+                {
+                    name: 'ip',
+                    type: 'text',
+                    required: true
+                }
+            ]
+        });
+        if (data && data.ip) {
+            const model = await GeoLocatedIP.lookup(data.ip);
+            if (model) {
+                this.tableView._onRowView({ model });
+            }
+        }
     }
 }
 

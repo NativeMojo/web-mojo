@@ -33,6 +33,7 @@ class TableView extends ListView {
       itemClass: options.itemClass || TableRow,
       selectionMode: options.selectable ? 'multiple' : 'none',
       emptyMessage: options.emptyMessage || 'No data available',
+      addButtonIcon: options.addButtonIcon || 'bi bi-plus-circle',
       ...options
     };
 
@@ -421,7 +422,7 @@ class TableView extends ListView {
         <button class="btn btn-sm btn-success btn-add"
                 data-action="add"
                 title="${this.options.addButtonLabel}">
-          <i class="bi bi-plus-circle me-1"></i>
+          <i class="${this.options.addButtonIcon} me-1"></i>
           <span class="d-none d-lg-inline">${this.options.addButtonLabel}</span>
         </button>
       `);

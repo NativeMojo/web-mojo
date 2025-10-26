@@ -104,6 +104,8 @@ import TicketTablePageClass from '@ext/admin/TicketTablePage.js';
 import UserDeviceLocationTablePageClass from '@ext/admin/UserDeviceLocationTablePage.js';
 import UserDeviceTablePageClass from '@ext/admin/UserDeviceTablePage.js';
 import UserTablePageClass from '@ext/admin/UserTablePage.js';
+import PhoneNumberTablePageClass from '@ext/admin/PhoneNumberTablePage.js';
+import SMSTablePageClass from '@ext/admin/SMSTablePage.js';
 
 /**
  * Register all admin pages to a WebApp instance
@@ -139,6 +141,8 @@ export function registerSystemPages(app, addToMenu = true) {
     app.registerPage('system/push/templates', PushTemplateTablePageClass, { permissions: ["manage_users"] });
     app.registerPage('system/push/deliveries', PushDeliveryTablePageClass, { permissions: ["manage_users"] });
     app.registerPage('system/push/devices', PushDeviceTablePageClass, { permissions: ["manage_users"] });
+    app.registerPage('system/phonehub/numbers', PhoneNumberTablePageClass, { permissions: ["manage_users"] });
+    app.registerPage('system/phonehub/sms', SMSTablePageClass, { permissions: ["manage_users"] });
 
     // Check if sidebar exists and has an admin menu config
     if (addToMenu && app.sidebar && app.sidebar.getMenuConfig) {
@@ -314,6 +318,26 @@ export function registerSystemPages(app, addToMenu = true) {
                             route: '?page=system/email/templates',
                             icon: 'bi-file-text',
                             permissions: ["manage_aws"]
+                        }
+                    ]
+                },
+                {
+                    text: 'Phone Hub',
+                    route: null,
+                    icon: 'bi-telephone',
+                    permissions: ["manage_users"],
+                    children: [
+                        {
+                            text: 'Numbers',
+                            route: '?page=system/phonehub/numbers',
+                            icon: 'bi-collection',
+                            permissions: ["manage_users"]
+                        },
+                        {
+                            text: 'SMS',
+                            route: '?page=system/phonehub/sms',
+                            icon: 'bi-chat-dots',
+                            permissions: ["manage_users"]
                         }
                     ]
                 }

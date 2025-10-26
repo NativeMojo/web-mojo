@@ -5,9 +5,12 @@
 import View from '@core/View.js';
 import TabView from '@core/views/navigation/TabView.js';
 import DataView from '@core/views/data/DataView.js';
+import TableView from '@core/views/table/TableView.js';
 import MapView from '@ext/map/MapView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import { GeoLocatedIP } from '@core/models/System.js';
+import { IncidentEventList } from '@core/models/Incident.js';
+import { LogList } from '@core/models/Log.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 
 class GeoIPView extends View {
@@ -32,17 +35,43 @@ class GeoIPView extends View {
                         <div>
                             <h3 class="mb-1">{{model.ip_address}}</h3>
                             <div class="text-muted small">
-                                {{model.country_name|default('Unknown Location')}}
+                                {{model.city|default('Unknown Location')}}, {{model.country_name|default('Unknown Location')}}
                             </div>
                             <div class="text-muted small mt-1">
-                                Provider: {{model.provider|capitalize}}
+                                ISP: {{model.isp|capitalize}}
                             </div>
                         </div>
                     </div>
 
-                    <!-- Right Side: Actions -->
-                    <div class="d-flex align-items-center gap-4">
-                        <div data-container="geoip-context-menu"></div>
+                    <!-- Right Side: Risk Summary + Actions -->
+                    <div class="d-flex align-items-start gap-4">
+                        <!-- Risk summary -->
+                        <div class="text-end">
+                            <div class="d-flex align-items-baseline justify-content-end gap-2">
+                                <span class="text-muted">Risk:</span>
+                                <span class="fw-bold fs-4
+                                    {{#model.is_threat}} text-danger {{/model.is_threat}}
+                                    {{#model.is_suspicious}} text-warning {{/model.is_suspicious}}
+                                    {{^model.is_threat}}{{^model.is_suspicious}} text-success {{/model.is_suspicious}}{{/model.is_threat}}
+                                ">{{#model.threat_level}}{{model.threat_level|capitalize}}{{/model.threat_level}}{{^model.threat_level}}Unknown{{/model.threat_level}}</span>
+                            </div>
+                            <div class="mt-1 small d-flex align-items-center justify-content-end gap-2">
+                                <span class="text-muted">Score:</span>
+                                <span class="fw-semibold">{{model.risk_score|default('—')}}</span>
+                            </div>
+                            <div class="mt-1 d-flex align-items-center justify-content-end gap-2">
+                                <i class="bi bi-shield-lock {{#model.is_tor}}fs-4 text-success{{/model.is_tor}}{{^model.is_tor}}text-muted{{/model.is_tor}}" data-bs-toggle="tooltip" title="TOR exit"></i>
+                                <i class="bi bi-shield {{#model.is_vpn}}fs-4 text-success{{/model.is_vpn}}{{^model.is_vpn}}text-muted{{/model.is_vpn}}" data-bs-toggle="tooltip" title="VPN detected"></i>
+                                <i class="bi bi-cloud {{#model.is_cloud}}fs-4 text-success{{/model.is_cloud}}{{^model.is_cloud}}text-muted{{/model.is_cloud}}" data-bs-toggle="tooltip" title="Cloud provider"></i>
+                                <i class="bi bi-hdd-stack {{#model.is_datacenter}}fs-4 text-success{{/model.is_datacenter}}{{^model.is_datacenter}}text-muted{{/model.is_datacenter}}" data-bs-toggle="tooltip" title="Datacenter"></i>
+                                <i class="bi bi-phone {{#model.is_mobile}}fs-4 text-success{{/model.is_mobile}}{{^model.is_mobile}}text-muted{{/model.is_mobile}}" data-bs-toggle="tooltip" title="Mobile connection"></i>
+                                <i class="bi bi-diagram-3 {{#model.is_proxy}}fs-4 text-success{{/model.is_proxy}}{{^model.is_proxy}}text-muted{{/model.is_proxy}}" data-bs-toggle="tooltip" title="Proxy"></i>
+                            </div>
+                        </div>
+                        <!-- Actions: context menu aligned to top (not vertically centered) -->
+                        <div class="d-flex align-items-start">
+                            <div data-container="geoip-context-menu"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -74,26 +103,44 @@ class GeoIPView extends View {
             ]
         });
 
-        // Security & Network Tab
-        this.securityView = new DataView({
-            model: this.model,
-            className: "p-3",
-            showEmptyValues: true,
-            emptyValueText: '—',
-            columns: 2,
-            fields: [
-                { name: 'threat_level', label: 'Threat Level', cols: 4 },
-                { name: 'is_tor', label: 'TOR Exit Node', cols: 4 },
-                { name: 'is_vpn', label: 'VPN', formatter: 'yesnoicon', cols: 4 },
-                { name: 'is_proxy', label: 'Proxy', formatter: 'yesnoicon', cols: 4 },
-                { name: 'is_cloud', label: 'Cloud Provider', formatter: 'yesnoicon', cols: 4 },
-                { name: 'is_datacenter', label: 'Datacenter', formatter: 'yesnoicon', cols: 4 },
-                { name: 'asn', label: 'ASN', cols: 4 },
-                { name: 'asn_org', label: 'ASN Organization', cols: 4 },
-                { name: 'isp', label: 'ISP', cols: 4 },
-                { name: 'connection_type', label: 'Connection Type', cols: 6 },
-            ]
-        });
+        // Network Tab
+                this.networkView = new DataView({
+                    model: this.model,
+                    className: "p-3",
+                    showEmptyValues: true,
+                    emptyValueText: '—',
+                    columns: 2,
+                    fields: [
+                        { name: 'is_tor', label: 'TOR Exit Node', formatter: 'yesnoicon', cols: 4 },
+                        { name: 'is_vpn', label: 'VPN', formatter: 'yesnoicon', cols: 4 },
+                        { name: 'is_proxy', label: 'Proxy', formatter: 'yesnoicon', cols: 4 },
+                        { name: 'is_cloud', label: 'Cloud Provider', formatter: 'yesnoicon', cols: 4 },
+                        { name: 'is_datacenter', label: 'Datacenter', formatter: 'yesnoicon', cols: 4 },
+                        { name: 'is_mobile', label: 'Mobile', formatter: 'yesnoicon', cols: 4 },
+                        { name: 'mobile_carrier', label: 'Mobile Carrier', cols: 8 },
+                        { name: 'asn', label: 'ASN', cols: 4 },
+                        { name: 'asn_org', label: 'ASN Organization', cols: 8 },
+                        { name: 'isp', label: 'ISP', cols: 12 },
+                        { name: 'connection_type', label: 'Connection Type', cols: 6 }
+                    ]
+                });
+
+                // Risk & Reputation Tab
+                this.riskView = new DataView({
+                    model: this.model,
+                    className: "p-3",
+                    showEmptyValues: true,
+                    emptyValueText: '—',
+                    columns: 2,
+                    fields: [
+                        { name: 'threat_level', label: 'Threat Level', cols: 6 },
+                        { name: 'risk_score', label: 'Risk Score', cols: 6 },
+                        { name: 'is_threat', label: 'Threat', formatter: 'yesnoicon', cols: 6 },
+                        { name: 'is_suspicious', label: 'Suspicious', formatter: 'yesnoicon', cols: 6 },
+                        { name: 'is_known_attacker', label: 'Known Attacker', formatter: 'yesnoicon', cols: 6 },
+                        { name: 'is_known_abuser', label: 'Known Abuser', formatter: 'yesnoicon', cols: 6 }
+                    ]
+                });
 
         // Metadata Tab
         this.metadataView = new DataView({
@@ -107,13 +154,82 @@ class GeoIPView extends View {
                 { name: 'provider', label: 'Data Provider', formatter: 'capitalize', cols: 6 },
                 { name: 'created', label: 'Created', formatter: 'datetime', cols: 6 },
                 { name: 'modified', label: 'Last Modified', formatter: 'datetime', cols: 6 },
-                { name: 'expires_at', label: 'Expires', formatter: 'datetime', cols: 12 },
+                { name: 'last_seen', label: 'Last Seen', formatter: 'datetime', cols: 6 },
+                { name: 'expires_at', label: 'Expires', formatter: 'datetime', cols: 6 }
+            ]
+        });
+
+        // Create Events table with IncidentEventList collection
+        const eventsCollection = new IncidentEventList({
+            params: {
+                size: 5,
+                source_ip: this.model.get("ip_address")
+            }
+        });
+        this.eventsView = new TableView({
+            collection: eventsCollection,
+            hideActivePillNames: ['source_ip'],
+            columns: [
+                { key: 'id', label: 'ID', sortable: true, width: '40px' },
+                { key: 'created', label: 'Date', formatter: 'datetime', sortable: true, width: '150px' },
+                { key: 'category|badge', label: 'Category' },
+                { key: 'title', label: 'Title' }
+            ]
+        });
+
+        // Create Logs table with LogList collection
+        const logsCollection = new LogList({
+            params: {
+                size: 5,
+                ip: this.model.get('ip_address')
+            }
+        });
+        this.logsView = new TableView({
+            collection: logsCollection,
+            permissions: 'view_logs',
+            hideActivePillNames: ['ip'],
+            columns: [
+                {
+                    key: 'created',
+                    label: 'Timestamp',
+                    sortable: true,
+                    formatter: "epoch|datetime",
+                    filter: {
+                        name: "created",
+                        type: 'daterange',
+                        startName: 'dr_start',
+                        endName: 'dr_end',
+                        fieldName: 'dr_field',
+                        label: 'Date Range',
+                        format: 'YYYY-MM-DD',
+                        displayFormat: 'MMM DD, YYYY',
+                        separator: ' to '
+                    }
+                },
+                {
+                    key: 'level',
+                    label: 'Level',
+                    sortable: true,
+                    filter: {
+                        type: 'select',
+                        options: [
+                            { value: 'info', label: 'Info' },
+                            { value: 'warning', label: 'Warning' },
+                            { value: 'error', label: 'Error' }
+                        ]
+                    }
+                },
+                { key: 'kind', label: 'Kind', filter: { type: 'text' } },
+                { name: 'log', label: 'Log' }
             ]
         });
 
         const tabs = {
             'Location': this.detailsView,
-            'Security': this.securityView,
+            'Network': this.networkView,
+            'Risk & Reputation': this.riskView,
+            'Events': this.eventsView,
+            'Logs': this.logsView,
             'Metadata': this.metadataView
         };
 
@@ -181,6 +297,23 @@ class GeoIPView extends View {
         this.addChild(geoIPMenu);
     }
 
+    async onAfterRender() {
+        await super.onAfterRender();
+
+        // Initialize Bootstrap tooltips for header icons/badges
+        if (window.bootstrap && window.bootstrap.Tooltip && this.element) {
+            const tooltipTriggerList = this.element.querySelectorAll('[data-bs-toggle="tooltip"]');
+            tooltipTriggerList.forEach(el => {
+                // Dispose any existing instance (in case of re-render)
+                const existing = window.bootstrap.Tooltip.getInstance(el);
+                if (existing && typeof existing.dispose === 'function') {
+                    existing.dispose();
+                }
+                new window.bootstrap.Tooltip(el);
+            });
+        }
+    }
+
     async onActionEditLocation() {
         const resp = await Dialog.showModelForm({
             title: `Edit Location - ${this.model.get('ip_address')}`,
@@ -224,6 +357,12 @@ class GeoIPView extends View {
         // Placeholder for refresh logic, e.g., a POST request to a refresh endpoint
         await this.model.save({ refresh: true });
         this.getApp()?.toast?.info('Refresh request sent for ' + this.model.get('ip_address'));
+    }
+
+    async onActionThreatAnalysis() {
+        // Placeholder for refresh logic, e.g., a POST request to a refresh endpoint
+        await this.model.save({ threat_analysis: true });
+        this.getApp()?.toast?.info('Requesting threat analysis for ' + this.model.get('ip_address'));
     }
 
     async onActionViewOnMap() {
