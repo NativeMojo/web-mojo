@@ -1430,13 +1430,15 @@ class TableView extends ListView {
    * Handle add action
    */
   async onActionAdd(event, element) {
-    this.emit('table:add', { event });
-
-    // Check for custom handler first
+    // Check for custom handler first - if provided, just emit event and let handler deal with it
     if (this.options.onAdd) {
+      this.emit('table:add', { event });
       await this.options.onAdd(event);
       return;
     }
+
+    // Emit event for external listeners
+    this.emit('table:add', { event });
 
     const ModelClass = this.getModelClass();
     if (!ModelClass) {

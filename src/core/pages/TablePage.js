@@ -242,10 +242,12 @@ class TablePage extends Page {
     });
 
     // Table action events
-    this.tableView.on('table:add', async () => {
-      if (this.tableViewConfig.onAdd) {
-        await this.tableViewConfig.onAdd();
-      }
+    // Note: TableView will call options.onAdd if provided, but we still listen to the event
+    // for backwards compatibility and to support event-based patterns
+    this.tableView.on('table:add', async ({ event }) => {
+      // The handler was already called by TableView if options.onAdd is set,
+      // but we keep this listener for external code that might listen to 'table:add'
+      // We don't call this.tableViewConfig.onAdd here to avoid double execution
     });
 
     this.tableView.on('table:export', async ({ data }) => {

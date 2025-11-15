@@ -16,9 +16,14 @@ class FileTablePage extends TablePage {
             router: "admin/files",
             Collection: FileList,
 
-            formCreate: FileForms.create,
+            // Don't use formCreate - we have custom file upload handling
             formEdit: FileForms.edit,
             itemViewClass: FileView,
+            
+            // Custom add handler for file uploads
+            onAdd: async (event) => {
+                await this.handleFileUpload(event);
+            },
 
             viewDialogOptions: {
                 header: false,
@@ -107,11 +112,11 @@ class FileTablePage extends TablePage {
     }
 
     /**
-     * Override the default add action to handle file uploads
+     * Handle file upload via file picker
      * Opens native file picker and uses same upload flow as drag-drop
      */
-    async onActionAdd(event, element) {
-        event.preventDefault();
+    async handleFileUpload(event) {
+        if (event) event.preventDefault();
 
         // Create hidden file input element
         const fileInput = document.createElement('input');
@@ -127,8 +132,6 @@ class FileTablePage extends TablePage {
             if (!file) {
                 return;
             }
-
-            console.log(`File Selected: ${file.name} (${file.type}) (${file.size} bytes)`);
 
             // Validate file size (same as FileDropMixin config)
             const maxSize = 100 * 1024 * 1024; // 100MB
