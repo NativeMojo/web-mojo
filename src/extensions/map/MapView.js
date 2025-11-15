@@ -1,12 +1,12 @@
 /**
  * MapView - Interactive map component using Leaflet
- * 
+ *
  * Features:
  * - Display single or multiple markers
  * - Auto-zoom to fit markers
  * - Customizable marker popups
  * - Support for different tile layers
- * 
+ *
  * @example
  * const mapView = new MapView({
  *   markers: [
@@ -32,9 +32,22 @@ class MapView extends View {
         this.height = options.height || 400;
         this.showZoomControl = options.showZoomControl !== false;
         this.tileLayer = options.tileLayer || 'osm'; // 'osm', 'satellite', 'terrain'
-        
+        this.showLeafletBranding = options.showLeafletBranding === true;
+        this.showLayerControl = options.showLayerControl === true;
+        this.layerOptions = options.layerOptions || {
+            osm: 'OSM',
+            satellite: 'Satellite',
+            terrain: 'Terrain',
+            dark: 'Dark',
+            light: 'Light',
+            watercolor: 'Watercolor',
+            bw: 'B/W',
+            streets: 'Streets'
+        };
+
         this.map = null;
         this.leafletMarkers = [];
+        this._tileLayer = null;
 
         this.template = `
             <div class="map-container">
@@ -83,49 +96,49 @@ class MapView extends View {
                 attribution: '© OpenStreetMap contributors',
                 maxZoom: 19
             },
-            
+
             // Satellite imagery
             satellite: {
                 url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
                 attribution: '© Esri',
                 maxZoom: 19
             },
-            
+
             // Terrain and topographic
             terrain: {
                 url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
                 attribution: '© OpenTopoMap contributors',
                 maxZoom: 17
             },
-            
+
             // Dark mode styles
             dark: {
                 url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
                 attribution: '© OpenStreetMap contributors © CARTO',
                 maxZoom: 20
             },
-            
+
             // Light/minimal styles
             light: {
                 url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
                 attribution: '© OpenStreetMap contributors © CARTO',
                 maxZoom: 20
             },
-            
+
             // Watercolor artistic style
             watercolor: {
                 url: 'https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg',
                 attribution: '© Stadia Maps © Stamen Design © OpenStreetMap contributors',
                 maxZoom: 16
             },
-            
+
             // Black and white
             bw: {
                 url: 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
                 attribution: '© OpenStreetMap contributors © CARTO',
                 maxZoom: 20
             },
-            
+
             // Streets with labels
             streets: {
                 url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
@@ -158,13 +171,45 @@ class MapView extends View {
             zoom: this.zoom,
             zoomControl: this.showZoomControl
         });
+        // Optionally hide Leaflet branding/prefix (removes Leaflet link/flag in attribution control)
+        if (this.map && this.map.attributionControl && this.showLeafletBranding === false) {
+            try { this.map.attributionControl.setPrefix(''); } catch (e) {}
+        }
 
         // Add tile layer
         const tileConfig = this.getTileLayerUrl();
-        window.L.tileLayer(tileConfig.url, {
+        this._tileLayer = window.L.tileLayer(tileConfig.url, {
             attribution: tileConfig.attribution,
             maxZoom: tileConfig.maxZoom
         }).addTo(this.map);
+
+        // Optional built-in tile layer selector UI
+        if (this.showLayerControl) {
+            const container = mapElement.parentElement || this.element.querySelector('.map-container');
+            if (container) {
+                container.style.position = container.style.position || 'relative';
+                const selector = document.createElement('select');
+                selector.className = 'form-select form-select-sm';
+                selector.style.position = 'absolute';
+                selector.style.top = '8px';
+                selector.style.right = '8px';
+                selector.style.zIndex = '1000';
+                selector.style.maxWidth = '180px';
+                selector.setAttribute('aria-label', 'Map tile layer');
+
+                // Populate options
+                Object.entries(this.layerOptions || {}).forEach(([key, label]) => {
+                    const opt = document.createElement('option');
+                    opt.value = key;
+                    opt.textContent = label;
+                    if (key === this.tileLayer) opt.selected = true;
+                    selector.appendChild(opt);
+                });
+
+                selector.addEventListener('change', () => this.setTileLayer(selector.value));
+                container.appendChild(selector);
+            }
+        }
 
         // Add markers
         this.addMarkers(this.markers);
@@ -188,11 +233,11 @@ class MapView extends View {
 
         markers.forEach(markerData => {
             const { lat, lng, popup, icon } = markerData;
-            
+
             if (!lat || !lng) return;
 
             const markerOptions = {};
-            
+
             // Custom icon if provided
             if (icon) {
                 markerOptions.icon = window.L.icon(icon);
@@ -219,11 +264,11 @@ class MapView extends View {
     updateMarkers(newMarkers) {
         // Clear existing markers
         this.clearMarkers();
-        
+
         // Add new markers
         this.markers = newMarkers;
         this.addMarkers(newMarkers);
-        
+
         // Fit bounds if multiple markers
         if (newMarkers.length > 1) {
             this.fitBounds();
@@ -249,12 +294,53 @@ class MapView extends View {
         this.map.setZoom(zoom);
     }
 
+    setTileLayer(key) {
+        if (!this.map) return;
+        // Resolve tile layer config using the same logic as getTileLayerUrl
+        const original = this.tileLayer;
+        this.tileLayer = key || this.tileLayer;
+        const tileConfig = this.getTileLayerUrl();
+        try {
+            if (this._tileLayer) {
+                this.map.removeLayer(this._tileLayer);
+            }
+        } catch (e) {
+            // ignore if layer already removed
+        }
+        this._tileLayer = window.L.tileLayer(tileConfig.url, {
+            attribution: tileConfig.attribution,
+            maxZoom: tileConfig.maxZoom
+        }).addTo(this.map);
+        // Keep property in sync
+        this.tileLayer = key || original;
+
+        // Nudge map to ensure proper redraw
+        setTimeout(() => {
+            try { this.map.invalidateSize(); } catch (e) {}
+        }, 150);
+    }
+
     async onBeforeDestroy() {
         if (this.map) {
             this.map.remove();
             this.map = null;
         }
         await super.onBeforeDestroy();
+    }
+
+    static async showAsDialog(options = {}) {
+        const view = new MapView(options);
+        const dopts = options.dialogOptions || {};
+        const dialogOptions = {
+            title: "Map View",
+            header: true,
+            body: view,
+            size: 'lg',
+            centered: false,
+            ...dopts
+        }
+        await view.init();
+        await view.getApp().showDialog(dialogOptions);
     }
 }
 

@@ -1,213 +1,119 @@
 <!doctype html>
 <html lang="en">
     <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Sign In Portal</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        <title>Auth Example – mountAuth</title>
 
-        <!-- Bootstrap CSS -->
-        <link
-            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-            rel="stylesheet"
-        />
-        <link
-            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
-            rel="stylesheet"
-        />
-
-        <!-- MOJO Auth CSS -->
+        <!-- Simple Auth CSS (no framework required) -->
         <link rel="stylesheet" href="/src/extensions/auth/css/auth.css" />
 
         <style>
-            /* Demo bar styling */
-            .demo-bar {
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(10px);
-                border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-                padding: 0.5rem 0;
-                z-index: 1050;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                font-size: 0.85rem;
+            /* Optional full-page background for the example (can be customized) */
+            :root {
+                --auth-gradient-start: #475569;
+                --auth-gradient-end: #334155;
             }
-            body.auth-panel-dark .demo-bar {
-                background: rgba(26, 32, 44, 0.95);
-                border-bottom-color: rgba(255, 255, 255, 0.2);
-                color: white;
+            html,
+            body {
+                height: 100%;
             }
-            body.auth-panel-dark .demo-bar .text-muted {
-                color: rgba(255, 255, 255, 0.7) !important;
+            body {
+                margin: 0;
+                min-height: 100%;
+                display: grid;
+                place-items: center;
+                background: linear-gradient(
+                    135deg,
+                    var(--auth-gradient-start),
+                    var(--auth-gradient-end)
+                );
+            }
+            /* Center the card responsively */
+            #auth-root {
+                width: 100%;
+                max-width: 480px;
+                padding: 1rem;
+                box-sizing: border-box;
+            }
+            /* Optional footer info for the example */
+            .example-footer {
+                margin-top: 1rem;
+                text-align: center;
+                color: rgba(255, 255, 255, 0.75);
+                font:
+                    12px/1.2 system-ui,
+                    -apple-system,
+                    Segoe UI,
+                    Roboto,
+                    Helvetica,
+                    Arial,
+                    sans-serif;
+            }
+            .example-footer a {
+                color: rgba(255, 255, 255, 0.9);
+                text-decoration: underline;
             }
         </style>
     </head>
-    <body class="auth-bg-light auth-panel-light">
-        <!-- Fixed Demo Bar -->
-        <div id="demo-bar" class="demo-bar fixed-top" style="display: none">
-            <div class="container-fluid px-3">
-                <div class="row align-items-center">
-                    <div class="col-lg-4">
-                        <small class="text-muted me-3">
-                            <i class="bi bi-gear-fill me-1"></i>
-                            <strong>Demo Mode</strong>
-                        </small>
-                    </div>
-                    <div class="col-lg-8 text-lg-end">
-                        <div class="d-flex justify-content-end align-items-center flex-wrap gap-2">
-                            <!-- Background Theme Dropdown -->
-                            <div class="btn-group btn-group-sm">
-                                <button
-                                    type="button"
-                                    class="btn btn-outline-secondary dropdown-toggle"
-                                    data-bs-toggle="dropdown"
-                                >
-                                    <i class="bi bi-image-fill me-1"></i>
-                                    <span id="bg-theme-label">Light BG</span>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end" id="bg-theme-selector">
-                                    <li>
-                                        <a
-                                            class="dropdown-item active"
-                                            href="#"
-                                            data-theme="auth-bg-light"
-                                            >Light</a
-                                        >
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#" data-theme="auth-bg-dark"
-                                            >Dark</a
-                                        >
-                                    </li>
-                                    <li>
-                                        <a
-                                            class="dropdown-item"
-                                            href="#"
-                                            data-theme="auth-bg-gradient"
-                                            >Gradient</a
-                                        >
-                                    </li>
-                                </ul>
-                            </div>
-                            <!-- Panel Theme Dropdown -->
-                            <div class="btn-group btn-group-sm">
-                                <button
-                                    type="button"
-                                    class="btn btn-outline-secondary dropdown-toggle"
-                                    data-bs-toggle="dropdown"
-                                >
-                                    <i class="bi bi-card-heading me-1"></i>
-                                    <span id="panel-theme-label">Light Panel</span>
-                                </button>
-                                <ul
-                                    class="dropdown-menu dropdown-menu-end"
-                                    id="panel-theme-selector"
-                                >
-                                    <li>
-                                        <a
-                                            class="dropdown-item active"
-                                            href="#"
-                                            data-theme="auth-panel-light"
-                                            >Light</a
-                                        >
-                                    </li>
-                                    <li>
-                                        <a
-                                            class="dropdown-item"
-                                            href="#"
-                                            data-theme="auth-panel-dark"
-                                            >Dark</a
-                                        >
-                                    </li>
-                                    <li>
-                                        <a
-                                            class="dropdown-item"
-                                            href="#"
-                                            data-theme="auth-panel-translucent"
-                                            >Translucent</a
-                                        >
-                                    </li>
-                                </ul>
-                            </div>
-                            <button
-                                type="button"
-                                class="btn btn-primary btn-sm"
-                                id="demo-register-btn"
-                            >
-                                <i class="bi bi-person-plus me-1"></i>Try Register
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <body>
+        <noscript> This page requires JavaScript to render the authentication UI. </noscript>
+
+        <!-- mountAuth will render into this element -->
+        <div id="auth-root"></div>
+
+        <div class="example-footer">
+            Example usage of mountAuth. You can pass URL params like
+            <code>?apiBase=/api&redirect=/portal/&brand=MyApp&theme=light</code>.
         </div>
 
-        <div id="app">
-            <div id="page-container">
-                <!-- The loader script will inject the loader here -->
-            </div>
-        </div>
+        <script type="module">
+            // Import the new Simple Auth module
+            // Using package import path
+            import { mountAuth } from "web-mojo/auth";
+            const PROD_BASE = "api/";
+            const DEV_API = "http://0.0.0.0:9009/api";
+            const API_BASE = window.location.hostname === "localhost" ? DEV_API : PROD_BASE;
+            const REDIRECT = "/examples/portal/";
+            // Read config from URL params or set sensible defaults
+            const params = new URLSearchParams(location.search);
+            const redirect =
+                params.get("redirect") || params.get("next") || params.get("returnTo") || REDIRECT;
+            const apiBase = params.get("apiBase") || API_BASE;
+            const brand = params.get("brand") || "MOJO Auth";
+            const logo = params.get("logo") || null;
+            const theme = params.get("theme") || "light";
 
-        <!-- Bootstrap JS -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+            // Optional: restrict final redirects to trusted origins to avoid open-redirects.
+            // For the example, we'll leave it undefined. In production, consider something like:
+            // const allowRedirectOrigins = [location.origin];
 
-        <!-- MOJO Loader -->
-        <script src="https://unpkg.com/web-mojo/dist/loader.umd.js"></script>
-        <script>
-            // Global function to hide loader is now called by main.js, but we need to show the demo bar
-            const originalHideLoader = window.hideInitialLoader;
-            window.hideInitialLoader = function () {
-                originalHideLoader();
-                // Show demo bar
-                setTimeout(() => {
-                    const demoBar = document.getElementById("demo-bar");
-                    if (demoBar) {
-                        demoBar.style.display = "block";
-                        document.body.classList.add("demo-mode");
-                    }
-                }, 100);
-            };
-
-            // Theme switching functionality
-            function handleThemeSelection(selectorId, prefix, labelId) {
-                const selector = document.getElementById(selectorId);
-                selector.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    const link = e.target.closest("[data-theme]");
-                    if (!link) return;
-
-                    const theme = link.dataset.theme;
-
-                    // Remove previous theme classes with the same prefix
-                    const classesToRemove = Array.from(document.body.classList).filter((c) =>
-                        c.startsWith(prefix),
-                    );
-                    document.body.classList.remove(...classesToRemove);
-
-                    // Add new theme class
-                    document.body.classList.add(theme);
-
-                    // Update active state in dropdown
-                    selector
-                        .querySelectorAll(".dropdown-item")
-                        .forEach((item) => item.classList.remove("active"));
-                    link.classList.add("active");
-
-                    // Update label
-                    document.getElementById(labelId).textContent =
-                        link.textContent + (prefix === "auth-bg-" ? " BG" : " Panel");
-                });
-            }
-
-            handleThemeSelection("bg-theme-selector", "auth-bg-", "bg-theme-label");
-            handleThemeSelection("panel-theme-selector", "auth-panel-", "panel-theme-label");
-
-            document.addEventListener("click", (e) => {
-                if (e.target.closest("#demo-register-btn")) {
-                    e.preventDefault();
-                    window.mojoApp?.navigate("/register");
-                }
+            // Mount the full UI. On success, it redirects to onSuccessRedirect.
+            mountAuth(document.getElementById("auth-root"), {
+                baseURL: apiBase,
+                onSuccessRedirect: redirect,
+                // allowRedirectOrigins,
+                branding: {
+                    title: brand,
+                    logoUrl: logo,
+                    subtitle: "Sign in to your account",
+                },
+                theme,
+                // Example provider hooks (optional/future-ready). Add your own logic here:
+                // providers: {
+                //   google: {
+                //     onClick: ({ showMessage, redirect }) => {
+                //       showMessage('Starting Google sign-in...', 'info');
+                //       // TODO: Start OAuth flow and on success call redirect()
+                //     },
+                //   },
+                //   passkey: {
+                //     onClick: ({ showMessage }) => {
+                //       showMessage('Passkey flow not yet implemented.', 'info');
+                //     },
+                //   },
+                // },
             });
         </script>
-
-        <!-- Auth Portal -->
-        <script type="module" src="./main.js"></script>
     </body>
 </html>

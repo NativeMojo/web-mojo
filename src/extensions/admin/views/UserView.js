@@ -61,7 +61,7 @@ class UserView extends View {
                     {{{model.avatar|avatar('md','rounded-circle')}}}
                     <div>
                         <h3 class="mb-0">{{model.display_name|default('Unnamed User')}}</h3>
-                        <a href="mailto:{{model.email}}" class="text-decoration-none text-body">{{model.email}}</a>
+                        <a href="mailto:{{model.email}}" class="text-decoration-none text-body">{{model.email}}</a>{{{model.email|clipboard}}}
                         {{#model.phone_number}}
                             <div class="text-muted small mt-1">{{{model.phone_number|phone(false)}}}</div>
                         {{/model.phone_number}}

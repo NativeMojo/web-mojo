@@ -23,18 +23,26 @@ export default defineConfig({
 
   // Module resolution
   resolve: {
-    alias: {
-      // Legacy aliases (will be removed after restructure)
-      '@': path.resolve(__dirname, 'src'),
-      '@components': path.resolve(__dirname, 'src/components'),
-      '@models': path.resolve(__dirname, 'src/models'),
-      '@pages': path.resolve(__dirname, 'src/pages'),
-      '@utils': path.resolve(__dirname, 'src/utils'),
+    alias: [
+      // Package-style import aliases for examples and dev (put subpaths first)
+      { find: 'web-mojo/charts', replacement: path.resolve(__dirname, 'src/extensions/charts/index.js') },
+      { find: 'web-mojo/lightbox', replacement: path.resolve(__dirname, 'src/extensions/lightbox/index.js') },
+      { find: 'web-mojo/map', replacement: path.resolve(__dirname, 'src/extensions/map/index.js') },
+      { find: 'web-mojo/admin', replacement: path.resolve(__dirname, 'src/extensions/admin/index.js') },
+      { find: 'web-mojo/auth', replacement: path.resolve(__dirname, 'src/extensions/auth/index.js') },
+      { find: 'web-mojo', replacement: path.resolve(__dirname, 'src/index.js') },
 
       // New aliases for clearer boundaries
-      '@core': path.resolve(__dirname, 'src/core'),
-      '@ext': path.resolve(__dirname, 'src/extensions')
-    }
+      { find: '@core', replacement: path.resolve(__dirname, 'src/core') },
+      { find: '@ext', replacement: path.resolve(__dirname, 'src/extensions') },
+
+      // Legacy aliases (will be removed after restructure)
+      { find: '@', replacement: path.resolve(__dirname, 'src') },
+      { find: '@components', replacement: path.resolve(__dirname, 'src/components') },
+      { find: '@models', replacement: path.resolve(__dirname, 'src/models') },
+      { find: '@pages', replacement: path.resolve(__dirname, 'src/pages') },
+      { find: '@utils', replacement: path.resolve(__dirname, 'src/utils') }
+    ]
   },
 
   // Build configuration

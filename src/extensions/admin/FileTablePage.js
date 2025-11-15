@@ -108,83 +108,89 @@ class FileTablePage extends TablePage {
 
     /**
      * Override the default add action to handle file uploads
-     * This ensures both button clicks and drag-drop use the same upload flow
+     * Opens native file picker and uses same upload flow as drag-drop
      */
     async onActionAdd(event, element) {
         event.preventDefault();
-        const Dialog = (await import('@core/views/feedback/Dialog.js')).default;
 
-        // Show file selection dialog
-        const formData = await Dialog.showForm({
-            title: 'Upload File',
-            size: 'md',
-            fields: [
-                {
-                    type: 'file',
-                    name: 'file',
-                    label: 'Select File',
-                    required: true,
-                    accept: '*/*',
-                    help: 'Choose a file to upload (max 100MB)'
-                },
-                {
-                    type: 'text',
-                    name: 'description',
-                    label: 'Description (optional)',
-                    placeholder: 'Enter a description for this file',
-                    cols: 12
-                }
-            ]
-        });
+        // Create hidden file input element
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '*/*';
+        fileInput.multiple = false;
+        fileInput.style.display = 'none';
 
-        // User cancelled the dialog
-        if (!formData) {
-            return;
-        }
-
-        // Extract the file from form data
-        const file = formData.file;
-
-        if (!file || !(file instanceof File)) {
-            this.showError('No file selected');
-            return;
-        }
-
-        console.log(`File Selected: ${file.name} (${file.type}) (${file.size} bytes)`);
-
-        try {
-            // Create new File model instance
-            const fileModel = new File();
-            let extra = {};
-            if (this.options.requiresGroup && this.getApp().activeGroup) {
-                extra.group = this.getApp().activeGroup.id;
+        // Handle file selection
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            
+            if (!file) {
+                return;
             }
 
-            // Start upload with progress tracking (same as drag-drop)
-            const upload = fileModel.upload({
-                file: file,
-                name: file.name,
-                description: formData.description || `File uploaded on ${new Date().toLocaleDateString()}`,
-                showToast: true,
-                onProgress: (progressInfo) => {
-                    console.log(`Upload progress: ${progressInfo.percentage}%`);
-                },
-                onComplete: (result) => {
-                    console.log('Upload completed:', result);
-                    this.refresh();
-                },
-                onError: (error) => {
-                    console.error('Upload failed:', error);
-                    this.showError('Upload failed: ' + error.message);
-                },
-                ...extra
-            });
+            console.log(`File Selected: ${file.name} (${file.type}) (${file.size} bytes)`);
 
-            await upload;
-        } catch (error) {
-            console.error('Error starting file upload:', error);
-            this.showError('Failed to start file upload: ' + error.message);
-        }
+            // Validate file size (same as FileDropMixin config)
+            const maxSize = 100 * 1024 * 1024; // 100MB
+            if (file.size > maxSize) {
+                this.showError(`File size (${this._formatFileSize(file.size)}) exceeds maximum (${this._formatFileSize(maxSize)})`);
+                return;
+            }
+
+            // Use the same upload flow as drag-drop
+            try {
+                const fileModel = new File();
+                let extra = {};
+                if (this.options.requiresGroup && this.getApp().activeGroup) {
+                    extra.group = this.getApp().activeGroup.id;
+                }
+
+                const upload = fileModel.upload({
+                    file: file,
+                    name: file.name,
+                    description: `File uploaded on ${new Date().toLocaleDateString()}`,
+                    showToast: true,
+                    onProgress: (progressInfo) => {
+                        console.log(`Upload progress: ${progressInfo.percentage}%`);
+                    },
+                    onComplete: (result) => {
+                        console.log('Upload completed:', result);
+                        this.refresh();
+                    },
+                    onError: (error) => {
+                        console.error('Upload failed:', error);
+                        this.showError('Upload failed: ' + error.message);
+                    },
+                    ...extra
+                });
+
+                await upload;
+            } catch (error) {
+                console.error('Error starting file upload:', error);
+                this.showError('Failed to start file upload: ' + error.message);
+            } finally {
+                // Clean up file input
+                fileInput.remove();
+            }
+        });
+
+        // Trigger file picker
+        document.body.appendChild(fileInput);
+        fileInput.click();
+    }
+
+    /**
+     * Format file size for display
+     * @param {number} bytes - File size in bytes
+     * @returns {string} Formatted file size
+     * @private
+     */
+    _formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
     async onFileDrop(files, event, validation) {

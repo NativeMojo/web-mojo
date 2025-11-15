@@ -1270,3 +1270,322 @@
     background: rgba(255, 255, 255, 0.9);
     color: #212529;
 }
+
+/* ==========================================================================
+   Circular Progress Component
+   ========================================================================== */
+
+/* Container */
+.circular-progress {
+    display: inline-block;
+    font-family: var(--bs-font-sans-serif, system-ui, sans-serif);
+}
+
+.circular-progress-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease;
+}
+
+.circular-progress-container:hover {
+    transform: scale(1.02);
+}
+
+/* SVG */
+.circular-progress-svg {
+    display: block;
+    overflow: visible;
+    margin: 0 auto;
+}
+
+.circular-progress-bar,
+.circular-progress-segment {
+    transition: stroke-dashoffset 0.6s ease-out;
+}
+
+/* Center content overlay */
+.circular-progress-center {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    pointer-events: none;
+}
+
+.circular-progress-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.125rem;
+    max-width: 70%;
+}
+
+/* Value display */
+.circular-progress-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--chart-text, #212529);
+    white-space: nowrap;
+}
+
+.circular-progress-label {
+    font-size: 0.625rem;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--chart-text-muted, #6c757d);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    white-space: nowrap;
+}
+
+/* Icon display */
+.circular-progress-content i {
+    font-size: 1.5rem;
+    color: var(--chart-text, #212529);
+    line-height: 1;
+}
+
+/* Size variants */
+.circular-progress-container.circular-progress-xs .circular-progress-value {
+    font-size: 0.625rem;
+}
+
+.circular-progress-container.circular-progress-xs .circular-progress-label {
+    font-size: 0.4rem;
+}
+
+.circular-progress-container.circular-progress-xs .circular-progress-content i {
+    font-size: 0.75rem;
+}
+
+.circular-progress-container.circular-progress-sm .circular-progress-value {
+    font-size: 0.875rem;
+}
+
+.circular-progress-container.circular-progress-sm .circular-progress-label {
+    font-size: 0.5rem;
+}
+
+.circular-progress-container.circular-progress-sm .circular-progress-content i {
+    font-size: 1rem;
+}
+
+.circular-progress-container.circular-progress-md .circular-progress-value {
+    font-size: 1.125rem;
+}
+
+.circular-progress-container.circular-progress-md .circular-progress-label {
+    font-size: 0.5625rem;
+}
+
+.circular-progress-container.circular-progress-md .circular-progress-content i {
+    font-size: 1.25rem;
+}
+
+.circular-progress-container.circular-progress-lg .circular-progress-value {
+    font-size: 1.5rem;
+}
+
+.circular-progress-container.circular-progress-lg .circular-progress-label {
+    font-size: 0.6875rem;
+}
+
+.circular-progress-container.circular-progress-lg .circular-progress-content i {
+    font-size: 1.75rem;
+}
+
+.circular-progress-container.circular-progress-xl .circular-progress-value {
+    font-size: 2.25rem;
+}
+
+.circular-progress-container.circular-progress-xl .circular-progress-label {
+    font-size: 0.8125rem;
+}
+
+.circular-progress-container.circular-progress-xl .circular-progress-content i {
+    font-size: 2.5rem;
+}
+
+/* Variant colors */
+.circular-progress-container.circular-progress-success .circular-progress-value {
+    color: #198754;
+}
+
+.circular-progress-container.circular-progress-success .circular-progress-content i {
+    color: #198754;
+}
+
+.circular-progress-container.circular-progress-danger .circular-progress-value {
+    color: #dc3545;
+}
+
+.circular-progress-container.circular-progress-danger .circular-progress-content i {
+    color: #dc3545;
+}
+
+.circular-progress-container.circular-progress-warning .circular-progress-value {
+    color: #ffc107;
+}
+
+.circular-progress-container.circular-progress-warning .circular-progress-content i {
+    color: #ffc107;
+}
+
+.circular-progress-container.circular-progress-info .circular-progress-value {
+    color: #0dcaf0;
+}
+
+.circular-progress-container.circular-progress-info .circular-progress-content i {
+    color: #0dcaf0;
+}
+
+/* Clickable state */
+.circular-progress-clickable .circular-progress-container {
+    cursor: pointer;
+    transition:
+        transform 0.15s ease,
+        filter 0.15s ease;
+}
+
+.circular-progress-clickable .circular-progress-container:hover {
+    transform: scale(1.05);
+    filter: brightness(1.1);
+}
+
+.circular-progress-clickable .circular-progress-container:active {
+    transform: scale(0.98);
+}
+
+/* Shadow variant */
+.circular-progress-shadow .circular-progress-container {
+    filter: drop-shadow(0 0.25rem 0.5rem rgba(0, 0, 0, 0.15));
+}
+
+/* Theme: Shadowed */
+.circular-progress-theme-shadowed .circular-progress-svg {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.circular-progress-theme-shadowed circle[class*="progress"] {
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.2)) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
+}
+
+.circular-progress-theme-shadowed .circular-progress-svg circle:not([class]) {
+    /* Track circle - shadow effect */
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* Theme: Dark */
+.circular-progress-theme-dark {
+    background: #1f2937;
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+
+.circular-progress-theme-dark .circular-progress-value,
+.circular-progress-theme-dark .circular-progress-label {
+    color: #e5e7eb;
+}
+
+/* Theme: Light */
+.circular-progress-theme-light {
+    background: #ffffff;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.circular-progress-theme-light .circular-progress-value,
+.circular-progress-theme-light .circular-progress-label {
+    color: #111827;
+}
+
+/* Pulse animation */
+@keyframes circular-progress-pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .circular-progress-value {
+    color: var(--chart-text, #ffffff);
+}
+
+[data-theme="dark"] .circular-progress-label {
+    color: var(--chart-text-muted, #adb5bd);
+}
+
+[data-theme="dark"] .circular-progress-content i {
+    color: var(--chart-text, #ffffff);
+}
+
+[data-theme="dark"] .circular-progress-success .circular-progress-value,
+[data-theme="dark"] .circular-progress-success .circular-progress-content i {
+    color: #75b798;
+}
+
+[data-theme="dark"] .circular-progress-danger .circular-progress-value,
+[data-theme="dark"] .circular-progress-danger .circular-progress-content i {
+    color: #ea868f;
+}
+
+[data-theme="dark"] .circular-progress-warning .circular-progress-value,
+[data-theme="dark"] .circular-progress-warning .circular-progress-content i {
+    color: #ffda6a;
+}
+
+[data-theme="dark"] .circular-progress-info .circular-progress-value,
+[data-theme="dark"] .circular-progress-info .circular-progress-content i {
+    color: #6edff6;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .circular-progress-bar,
+    .circular-progress-segment,
+    .circular-progress-container {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .circular-progress-container {
+        outline: 2px solid currentColor;
+        outline-offset: 2px;
+    }
+}
+
+/* Focus styles for accessibility */
+.circular-progress-clickable .circular-progress-container:focus {
+    outline: 2px solid var(--bs-primary, #0d6efd);
+    outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+    .circular-progress-container {
+        break-inside: avoid;
+    }
+
+    .circular-progress-clickable .circular-progress-container {
+        cursor: default;
+    }
+}

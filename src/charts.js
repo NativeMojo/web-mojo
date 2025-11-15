@@ -13,6 +13,7 @@ export { default as MetricsChart } from '@ext/charts/MetricsChart.js';
 export { default as MiniChart } from '@ext/charts/MiniChart.js';
 export { default as MetricsMiniChart } from '@ext/charts/MetricsMiniChart.js';
 export { default as MetricsMiniChartWidget } from '@ext/charts/MetricsMiniChartWidget.js';
+export { default as CircularProgress } from '@ext/charts/CircularProgress.js';
 // Convenience
 export { default as WebApp } from '@core/WebApp.js';
 

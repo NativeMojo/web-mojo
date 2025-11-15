@@ -156,6 +156,11 @@ dataFormatter.pipe(date, 'date:"MMM DD, YYYY"|uppercase');
 {{created|relative:true}}                   <!-- 2h ago (short format) -->
 ```
 
+#### `relative_short` - Compact relative time
+```html
+{{created|relative_short}}                  <!-- 2h, 3d, now -->
+```
+
 #### `iso` - ISO 8601 format
 ```html
 {{date|iso}}                                <!-- 2025-10-04T14:30:00.000Z -->
@@ -320,6 +325,25 @@ dataFormatter.pipe(date, 'date:"MMM DD, YYYY"|uppercase');
 - `warning`: pending, warning, waiting, processing
 - `info`: info, information, new
 
+#### `badgeClass` - Get Bootstrap badge class (class only, no HTML)
+```html
+<!-- Basic usage: compute bg-* class and compose your own badge -->
+<span class="badge {{status|badgeClass}}">{{status}}</span>
+<!-- Auto-detects: bg-success, bg-warning, bg-danger, bg-info, etc. -->
+
+<!-- Force a specific type (skips auto-detection) -->
+<span class="badge {{role|badgeClass:'info'}}">{{role}}</span>
+<!-- Yields: bg-info -->
+
+<!-- In loops (e.g., tags array) -->
+{{#tags}}
+  <span class="badge {{.|badgeClass}}">{{.}}</span>
+{{/tags}}
+
+<!-- Combine with other classes -->
+<span class="badge text-uppercase {{priority|badgeClass}}">{{priority}}</span>
+```
+
 #### `status` - Status with icon and color
 ```html
 {{status|status}}                           
@@ -392,7 +416,31 @@ dataFormatter.pipe(date, 'date:"MMM DD, YYYY"|uppercase');
 <!-- HTML tooltip -->
 ```
 
+#### `clipboard` - Copy value with a clipboard button
+```html
+{{{model.phone_number|clipboard}}}
+<!-- Renders the value with a small clipboard icon button; clicking copies the value to the clipboard -->
+
+{{{secret|clipboard:'icon-only'}}}
+<!-- Icon-only button (no inline text) -->
+```
+
+Notes:
+- Returns HTML; use triple braces {{{...}}} in templates.
+- The rendered button uses MOJO’s action system (data-action="copy-to-clipboard") and is handled automatically by views; no extra wiring needed.
+- Uses Bootstrap Icons for the clipboard/check icons.
+
+#### `linkify` - Convert URLs/emails in text to links
+```html
+{{{comment|linkify}}}                       
+<!-- Turns http://, https://, www. and emails into links -->
+
+{{{notes|linkify:{target:'_self', emails:false}}}}
+<!-- Custom options (open in same tab, URLs only) -->
+```
+
 ---
+
 
 ### Utility Formatters
 
@@ -461,6 +509,12 @@ dataFormatter.pipe(date, 'date:"MMM DD, YYYY"|uppercase');
 {{data|values}}                             <!-- Array of values -->
 ```
 
+#### `custom` - Apply a custom function
+```js
+// JavaScript usage only (templates cannot pass functions)
+dataFormatter.apply('custom', value, (v) => v.toUpperCase());
+```
+
 ---
 
 ### Text & Content Formatters
@@ -504,6 +558,21 @@ dataFormatter.pipe(date, 'date:"MMM DD, YYYY"|uppercase');
 
 {{text|highlight:searchTerm:'custom-class'}}
 <!-- Custom highlight class -->
+```
+
+#### `nl2br` - Convert newlines to line breaks
+```html
+{{{text|nl2br}}}                            
+<!-- Converts \n to <br> and escapes HTML -->
+```
+
+#### `code` - Code block with optional language
+```html
+{{{model.output|code}}}                     
+<!-- Renders a pre/code block with default styling -->
+
+{{{model.output|code:'python'}}}
+<!-- Adds class language-python for syntax highlighters -->
 ```
 
 #### `pre` - Preformatted code block
@@ -757,6 +826,7 @@ Both properties are supported in DataView and TableView for consistency:
 | `datetime` | Date + time | `{{dt\|datetime:'MM/DD':'HH:mm'}}` |
 | `datetime_tz` | With timezone | `{{dt\|datetime_tz:'MM/DD':'HH:mm':{timeZone:'America/New_York'}}}` |
 | `relative` | Relative time | `{{date\|relative}}` → "2 hours ago" |
+| `relative_short` | Compact relative | `{{date\|relative_short}}` → "2h" |
 | `iso` | ISO 8601 | `{{date\|iso}}` → "2025-10-04T14:30:00Z" |
 | `epoch` | Seconds to ms | `{{secs\|epoch}}` |
 | **Numbers** |
@@ -782,6 +852,7 @@ Both properties are supported in DataView and TableView for consistency:
 | `phone` | Phone link | `{{phone\|phone}}` |
 | `url` | Hyperlink | `{{url\|url:'Text'}}` |
 | `badge` | Bootstrap badge | `{{status\|badge}}` |
+| `badgeClass` | Badge class only | `{{val\|badgeClass}}` → "bg-success" |
 | `status` | Status indicator | `{{status\|status}}` |
 | `boolean` | Boolean text | `{{bool\|boolean:'Yes':'No'}}` |
 | `yesno` | Yes/No | `{{bool\|yesno}}` |
@@ -790,6 +861,8 @@ Both properties are supported in DataView and TableView for consistency:
 | `avatar` | Avatar image | `{{photo\|avatar:'md'}}` |
 | `image` | Image tag | `{{photo\|image:'thumbnail'}}` |
 | `tooltip` | Tooltip | `{{val\|tooltip:'Help text'}}` |
+| `linkify` | Linkify URLs/emails | `{{{text\|linkify}}}` |
+| `clipboard` | Copy with button | `{{{val\|clipboard}}}` |
 | **Utility** |
 | `default` | Fallback value | `{{val\|default:'N/A'}}` |
 | `equals` | Conditional output | `{{state\|equals:1:'active':'inactive'}}` |
@@ -798,6 +871,7 @@ Both properties are supported in DataView and TableView for consistency:
 | `iter` | To iterable | `{{obj\|iter}}` |
 | `keys` | Object keys | `{{obj\|keys}}` |
 | `values` | Object values | `{{obj\|values}}` |
+| `custom` | Custom function (JS) | `dataFormatter.apply('custom', value, fn)` |
 | **Text/Content** |
 | `plural` | Pluralize | `{{n\|plural:'item'}}` |
 | `list` | Array to list | `{{arr\|list}}` |

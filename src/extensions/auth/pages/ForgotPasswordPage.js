@@ -1,133 +1,36 @@
 /**
- * ForgotPasswordPage - Simplified password reset page for MOJO Auth
- * Handles password reset request via email, supporting both 'link' and 'code' methods.
+ * Deprecated: Legacy ForgotPasswordPage has been removed.
+ *
+ * The old auth pages (ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage) are no longer used.
+ * Use the new Simple Auth (KISS) module instead:
+ *
+ *   import { mountAuth, createAuthClient } from 'web-mojo/auth';
+ *
+ *   // Mount full UI (sign in + forgot/reset flows) and redirect on success:
+ *   mountAuth(document.getElementById('auth-root'), {
+ *     baseURL: '/api',
+ *     onSuccessRedirect: '/',
+ *     branding: { title: 'My App', logoUrl: null, subtitle: 'Sign in to your account' },
+ *     theme: 'light'
+ *   });
+ *
+ *   // Or use the low-level client if you have your own HTML:
+ *   const auth = createAuthClient({ baseURL: '/api' });
+ *   await auth.forgot({ email, method: 'code' }); // or 'link'
+ *
+ * This module intentionally throws on use to prevent accidental reliance on legacy APIs.
  */
-import Page from '@core/Page.js';
+const DEPRECATION_MESSAGE =
+  'ForgotPasswordPage is removed. Use mountAuth() or createAuthClient() from "web-mojo/auth".';
 
-export default class ForgotPasswordPage extends Page {
-    static pageName = 'auth-forgot-password';
-    static title = 'Forgot Password';
-    static icon = 'bi-key';
-    static route = 'forgot-password';
+export default class ForgotPasswordPage {
+  static pageName = 'forgot-password';
+  static title = 'Forgot Password';
+  static route = '/forgot-password';
 
-    constructor(options = {}) {
-        super({ ...options, template: options.template });
-        this.authConfig = options.authConfig || {
-            passwordResetMethod: 'code',
-            ui: { title: 'My App' },
-            features: {}
-        };
-    }
-
-    async onInit() {
-        this.data = {
-            ...this.authConfig.ui,
-            ...this.authConfig.features,
-            passwordResetMethod: this.authConfig.passwordResetMethod,
-            step: 'email', // 'email', 'code', 'link_sent', 'success'
-            isLoading: false,
-            error: null,
-            email: '' // Store email across steps
-        };
-    }
-
-    async onEnter() {
-        document.title = `${ForgotPasswordPage.title} - ${this.authConfig.ui.title}`;
-        this.updateData({
-            step: 'email',
-            isLoading: false,
-            error: null,
-            email: ''
-        });
-    }
-
-    /**
-     * Gets data from the currently visible form.
-     * @param {string} formSelector - The CSS selector for the form.
-     * @returns {object} An object containing the form data.
-     */
-    getFormData(formSelector) {
-        const form = this.element.querySelector(formSelector);
-        if (!form) return {};
-        const formData = new FormData(form);
-        return Object.fromEntries(formData.entries());
-    }
-
-    /**
-     * Handles the initial request to reset a password.
-     */
-    async onActionRequestReset() {
-        const { email } = this.getFormData('#form-request-reset');
-        await this.updateData({ isLoading: true, error: null, email }, true);
-
-        if (!email) {
-            return this.updateData({ error: 'Please enter your email address', isLoading: false }, true);
-        }
-
-        const auth = this.getApp().auth;
-        const resetMethod = this.authConfig.passwordResetMethod || 'code';
-        const response = await auth.forgotPassword(email, resetMethod);
-
-        if (resetMethod === 'link') {
-            await this.updateData({ step: 'link_sent', isLoading: false }, true);
-            if (!response.success) console.error('Forgot password (link) error:', response.message);
-        } else {
-            if (response.success) {
-                await this.updateData({ step: 'code', isLoading: false }, true);
-            } else {
-                await this.updateData({ error: response.message, isLoading: false }, true);
-            }
-        }
-    }
-
-    /**
-     * Handles the final password reset using a verification code.
-     */
-    async onActionResetWithCode() {
-        const { code, new_password, confirm_password } = this.getFormData('#form-reset-with-code');
-        await this.updateData({ isLoading: true, error: null }, true);
-
-        if (!code || !new_password) {
-            return this.updateData({ error: 'Please enter the code and your new password', isLoading: false }, true);
-        }
-        if (new_password !== confirm_password) {
-            return this.updateData({ error: 'Passwords do not match', isLoading: false }, true);
-        }
-
-        const auth = this.getApp().auth;
-        const response = await auth.resetPasswordWithCode(this.data.email, code, new_password);
-
-        if (response.success) {
-            await this.updateData({ step: 'success', isLoading: false }, true);
-            // User is now authenticated, redirect to home/dashboard
-            setTimeout(() => {
-                this.getApp().showSuccess('Password reset complete. Welcome back!');
-                this.getApp().navigate('/');
-            }, 2000);
-        } else {
-            await this.updateData({ error: response.message, isLoading: false }, true);
-        }
-    }
-
-    async onActionBackToLogin() {
-        this.getApp().navigate('/login');
-    }
-
-    // --- Template Getters for State ---
-
-    get isStepEmail() {
-        return this.data.step === 'email';
-    }
-
-    get isStepCode() {
-        return this.data.step === 'code';
-    }
-
-    get isStepLinkSent() {
-        return this.data.step === 'link_sent';
-    }
-
-    get isStepSuccess() {
-        return this.data.step === 'success';
-    }
+  constructor() {
+    throw new Error(DEPRECATION_MESSAGE);
+  }
 }
+
+export { ForgotPasswordPage };

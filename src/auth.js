@@ -1,28 +1,19 @@
 /**
- * MOJO Auth Extension - Entry (2.1.0)
+ * Simple Auth package entry (KISS)
+ * Exposes:
+ *  - mountAuth(container, options)
+ *  - createAuthClient({ baseURL, ... })
+ *
+ * This replaces the legacy AuthApp/AuthManager API.
  */
 
-// Bundle auth CSS
-import '@ext/auth/css/auth.css';
+export { mountAuth, createAuthClient } from '@ext/auth/index.js';
 
+// Optional default export for convenience: import Auth from 'web-mojo/auth';
+import * as SimpleAuth from '@ext/auth/index.js';
+export default SimpleAuth;
 
-
-export { default as AuthApp } from '@ext/auth/AuthApp.js';
-export { default as AuthManager } from '@ext/auth/AuthManager.js';
-
-// Auth Pages
-export { default as LoginPage } from '@ext/auth/pages/LoginPage.js';
-export { default as RegisterPage } from '@ext/auth/pages/RegisterPage.js';
-export { default as ForgotPasswordPage } from '@ext/auth/pages/ForgotPasswordPage.js';
-export { default as ResetPasswordPage } from '@ext/auth/pages/ResetPasswordPage.js';
-
-// Auth Plugins
-export { default as PasskeyPlugin } from '@ext/auth/plugins/PasskeyPlugin.js';
-
-// Convenience
-export { default as WebApp } from '@core/WebApp.js';
-
-// Version info passthrough
+// Version info passthrough (kept for tooling and diagnostics)
 export {
   VERSION_INFO,
   VERSION,

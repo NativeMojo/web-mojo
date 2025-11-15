@@ -459,6 +459,7 @@ class DataView extends View {
     let value;
     let key = field.name || field.key;
     let formatString = field.format || field.formatter;
+    if (!key) return null;
 
     // Check if the name field contains a pipe (e.g., 'is_tor|status_text')
     // This allows inline formatter syntax in the name field

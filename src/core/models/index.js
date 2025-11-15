@@ -8,7 +8,7 @@
  *   import { User, Job, Email } from 'web-mojo/models';
  *   import { UserList, JobForms } from 'web-mojo/models';
  * 
- * Generated on: 2025-10-23T18:18:59.903Z
+ * Generated on: 2025-11-15T20:16:25.376Z
  */
 
 // AWS model exports
@@ -50,6 +50,14 @@ export { default as Member } from './Member.js';
 // Metrics model exports
 export * from './Metrics.js';
 export { default as Metrics } from './Metrics.js';
+
+// Passkeys model exports
+export * from './Passkeys.js';
+export { default as Passkeys } from './Passkeys.js';
+
+// Phonehub model exports
+export * from './Phonehub.js';
+export { default as Phonehub } from './Phonehub.js';
 
 // Push model exports
 export * from './Push.js';

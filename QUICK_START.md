@@ -236,7 +236,7 @@ MOJO's power comes from its extensions. Here's how to add them:
 ### Authentication System
 
 ```javascript
-import { AuthApp } from 'web-mojo/auth';
+import { mountAuth } from 'web-mojo/auth';
 
 const authApp = new AuthApp({
     api: {
@@ -632,7 +632,7 @@ class SwipeablePage extends Page {
 ```javascript
 // Use tree shaking with modern bundlers
 import { WebApp, Page } from 'web-mojo';
-import { AuthApp } from 'web-mojo/auth'; // Only if needed
+import { mountAuth } from 'web-mojo/auth'; // Standalone auth UI (see docs/AuthPage.md)
 
 // Your app code...
 ```

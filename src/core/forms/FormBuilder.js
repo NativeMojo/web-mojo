@@ -6,6 +6,7 @@
 
 import Mustache from '@core/utils/mustache.js';
 import MOJOUtils from '@core/utils/MOJOUtils.js';
+import { FormPlugins } from '@core/forms/FormPlugins.js';
 
 class FormBuilder {
     constructor(config = {}) {
@@ -27,6 +28,8 @@ class FormBuilder {
             if (groupField.cols && !groupField.columns) {
               groupField.columns = groupField.cols;
               delete groupField.cols;
+            } else if (!groupField.columns) {
+              groupField.columns = 12;
             }
           });
         }
@@ -56,6 +59,7 @@ class FormBuilder {
    * Initialize field templates
    */
   initializeTemplates() {
+    FormPlugins.onFormBuilderInit?.(this);
     this.templates = {
       input: `
         <div class="mojo-form-control">
@@ -594,10 +598,12 @@ class FormBuilder {
     }).join('');
 
     return `
-      <div class="mojo-form-group ${colClass} ${groupClass}">
-        ${title ? `<div class="${titleClass}">${this.escapeHtml(title)}</div>` : ''}
-        <div class="row">
-          ${fieldsHTML}
+      <div class="${colClass}">
+        <div class="mojo-form-group ${groupClass}">
+          ${title ? `<div class="${titleClass}">${this.escapeHtml(title)}</div>` : ''}
+          <div class="row">
+            ${fieldsHTML}
+          </div>
         </div>
       </div>
     `;
@@ -612,8 +618,23 @@ class FormBuilder {
     const { type, columns, class: fieldClass = '' } = field;
 
     let fieldHTML = '';
-    console.log('buildFieldHTML - Processing field type:', type, 'for field:', field.name);
-    switch (type) {
+    // If a plugin registered a custom renderer for this field type, use it
+    const customRenderer = (FormPlugins && typeof FormPlugins.getRenderer === 'function')
+      ? FormPlugins.getRenderer(type)
+      : null;
+    if (typeof customRenderer === 'function') {
+      try {
+        const custom = customRenderer(this, field);
+        if (custom !== undefined && custom !== null) {
+          fieldHTML = String(custom);
+        }
+      } catch (err) {
+        console.error('FormPlugins custom renderer error:', err);
+      }
+    }
+    if (!fieldHTML) {
+      console.log('buildFieldHTML - Processing field type:', type, 'for field:', field.name);
+      switch (type) {
       case 'text':
         fieldHTML = this.renderTextField(field);
         break;
@@ -729,6 +750,7 @@ class FormBuilder {
         console.warn(`Unknown field type: ${type}`);
         fieldHTML = this.renderTextField(field);
     }
+    }
 
     // Wrap field in column - handle auto-sizing columns
     let colClass;
@@ -746,7 +768,9 @@ class FormBuilder {
    * @returns {string} Unique field ID
    */
   getFieldId(name) {
-    return `field_${name}_${Date.now()}`;
+    // Replace dots, spaces, and special characters with underscores for valid HTML IDs
+    const safeName = name.replace(/[.\s\[\]]/g, '_');
+    return `field_${safeName}`;
   }
 
   /**

@@ -64,11 +64,12 @@ Feature-rich packages that extend core functionality:
 Complete authentication system with JWT tokens:
 
 ```javascript
-import { AuthApp, LoginPage } from 'web-mojo/auth';
+import { mountAuth } from 'web-mojo/auth';
 
-const app = new AuthApp({
-  api: { baseURL: 'https://api.example.com' },
-  loginRedirect: '/dashboard'
+// See docs/AuthPage.md for details.
+mountAuth(document.getElementById('auth-root'), {
+  baseURL: 'https://api.example.com',
+  onSuccessRedirect: '/dashboard',
 });
 ```
 
@@ -174,16 +175,17 @@ app.start();
 ### Authentication Flow
 
 ```javascript
-import { AuthApp } from 'web-mojo/auth';
-import { WebApp } from 'web-mojo';
+import { mountAuth } from 'web-mojo/auth';
 
-// Auth portal
-const authApp = new AuthApp({
-  api: { baseURL: 'https://api.example.com' },
-  ui: {
+// Auth portal (standalone). See docs/AuthPage.md for details.
+mountAuth(document.getElementById('auth-root'), {
+  baseURL: 'https://api.example.com',
+  onSuccessRedirect: '/portal/',
+  branding: {
     title: 'Acme Corp',
-    logoUrl: '/assets/logo.png'
-  }
+    logoUrl: '/assets/logo.png',
+    subtitle: 'Sign in to your account',
+  },
 });
 
 // Main app (after authentication)
@@ -433,10 +435,11 @@ export default {
 // Bundle all CSS automatically
 import 'web-mojo'; // Includes core CSS
 
-// Or import specific stylesheets
+// Simple Auth CSS is included by the module (no extra import required).
+// For theming details, see docs/AuthPage.md.
+// If you need manual CSS, you can use: /src/extensions/auth/css/auth.css
 import 'web-mojo/css/core';
 import 'web-mojo/css/portal';
-import 'web-mojo/css/auth';
 ```
 
 ## 🔄 Migration from 2.0.x
@@ -447,9 +450,9 @@ import 'web-mojo/css/auth';
 import WebApp from '/src/core/WebApp.js';
 import AuthApp from '/src/auth/AuthApp.js';
 
-// New (2.1.0)
+// New (2.1.0+)
 import { WebApp } from 'web-mojo';
-import { AuthApp } from 'web-mojo/auth';
+import { mountAuth } from 'web-mojo/auth'; // See docs/AuthPage.md
 ```
 
 ### CSS Updates

@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Multi-Segment CircularProgress - MOJO Charts</title>
+
+        <!-- Bootstrap CSS -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+            rel="stylesheet"
+        />
+
+        <!-- MOJO Charts CSS -->
+        <link href="/src/extensions/charts/css/charts.css" rel="stylesheet" />
+
+        <style>
+            body {
+                padding: 2rem;
+                background: #f8f9fa;
+            }
+
+            .demo-section {
+                background: white;
+                border-radius: 0.5rem;
+                padding: 2rem;
+                margin-bottom: 2rem;
+                box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            }
+
+            .demo-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 2rem;
+                align-items: center;
+                justify-items: center;
+            }
+
+            .demo-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 1rem;
+            }
+
+            .demo-label {
+                font-size: 0.875rem;
+                color: #6c757d;
+                text-align: center;
+            }
+
+            .legend {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                margin-top: 1rem;
+            }
+
+            .legend-item {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-size: 0.875rem;
+            }
+
+            .legend-color {
+                width: 16px;
+                height: 16px;
+                border-radius: 0.25rem;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container-fluid">
+            <header class="mb-4">
+                <h1 class="display-4">Multi-Segment Progress</h1>
+                <p class="lead">Show multiple progress segments in a single circular indicator</p>
+                <nav>
+                    <a href="./index.html" class="btn btn-outline-primary btn-sm">← Back to Main</a>
+                    <a href="./realtime.html" class="btn btn-outline-secondary btn-sm"
+                        >Real-time →</a
+                    >
+                </nav>
+            </header>
+
+            <!-- Task Completion -->
+            <section class="demo-section">
+                <h2 class="h4 mb-3">Task Status</h2>
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-center">
+                            <div id="task-status"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="legend">
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #198754"></div>
+                                <span>Completed (30%)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #ffc107"></div>
+                                <span>In Progress (45%)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #dc3545"></div>
+                                <span>Failed (10%)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #e9ecef"></div>
+                                <span>Remaining (15%)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Storage Usage -->
+            <section class="demo-section">
+                <h2 class="h4 mb-3">Storage Distribution</h2>
+                <div class="demo-grid">
+                    <div class="demo-item">
+                        <div id="storage-1"></div>
+                        <div class="demo-label">Documents & Media</div>
+                        <div class="legend">
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #0d6efd"></div>
+                                <span>Documents (25%)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #6f42c1"></div>
+                                <span>Images (30%)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #d63384"></div>
+                                <span>Videos (20%)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="demo-item">
+                        <div id="storage-2"></div>
+                        <div class="demo-label">System Resources</div>
+                        <div class="legend">
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #198754"></div>
+                                <span>Free (40%)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #ffc107"></div>
+                                <span>Used (45%)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #dc3545"></div>
+                                <span>Critical (15%)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Budget Allocation -->
+            <section class="demo-section">
+                <h2 class="h4 mb-3">Budget Allocation</h2>
+                <div class="demo-grid">
+                    <div class="demo-item">
+                        <div id="budget-1"></div>
+                        <div class="demo-label">Quarterly Spending</div>
+                        <div class="legend">
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #0d6efd"></div>
+                                <span>Marketing (35%)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #198754"></div>
+                                <span>Development (40%)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #ffc107"></div>
+                                <span>Operations (20%)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="demo-item">
+                        <div id="budget-2"></div>
+                        <div class="demo-label">Project Progress</div>
+                        <div class="legend">
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #198754"></div>
+                                <span>Phase 1 (50%)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #0dcaf0"></div>
+                                <span>Phase 2 (30%)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Arc Segments -->
+            <section class="demo-section">
+                <h2 class="h4 mb-3">Arc Style with Segments</h2>
+                <div class="demo-grid">
+                    <div class="demo-item">
+                        <div id="arc-segments-1"></div>
+                        <div class="demo-label">Gauge Style (90° gap)</div>
+                    </div>
+
+                    <div class="demo-item">
+                        <div id="arc-segments-2"></div>
+                        <div class="demo-label">Half Circle (180° gap)</div>
+                    </div>
+
+                    <div class="demo-item">
+                        <div id="arc-segments-3"></div>
+                        <div class="demo-label">Custom Rotation</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Progress Steps -->
+            <section class="demo-section">
+                <h2 class="h4 mb-3">Progress Steps Indicator</h2>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-center">
+                            <div id="steps-progress"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Onboarding Process</h5>
+                        <div class="legend">
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #198754"></div>
+                                <span><strong>✓</strong> Account Created (20%)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #198754"></div>
+                                <span><strong>✓</strong> Profile Setup (20%)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #0dcaf0"></div>
+                                <span><strong>→</strong> Email Verified (20%)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #e9ecef"></div>
+                                <span>Payment Setup (20%)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: #e9ecef"></div>
+                                <span>Complete Tour (20%)</span>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-primary btn-sm" id="nextStepBtn">
+                                Complete Current Step
+                            </button>
+                            <button class="btn btn-secondary btn-sm" id="resetStepsBtn">
+                                Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- With Labels -->
+            <section class="demo-section">
+                <h2 class="h4 mb-3">Segments with Center Labels</h2>
+                <div class="demo-grid">
+                    <div class="demo-item">
+                        <div id="label-segments-1"></div>
+                        <div class="demo-label">Total with Label</div>
+                    </div>
+
+                    <div class="demo-item">
+                        <div id="label-segments-2"></div>
+                        <div class="demo-label">Fraction Format</div>
+                    </div>
+
+                    <div class="demo-item">
+                        <div id="label-segments-3"></div>
+                        <div class="demo-label">Custom Content</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+        <!-- MOJO Charts Module -->
+        <script type="module">
+            import { CircularProgress } from "web-mojo/charts";
+
+            // Task Status
+            const taskStatus = new CircularProgress({
+                size: "xl",
+                segments: [
+                    { value: 30, color: "#198754" },
+                    { value: 45, color: "#ffc107" },
+                    { value: 10, color: "#dc3545" },
+                ],
+                segmentGap: 3,
+                showValue: false,
+                containerId: "task-status",
+            });
+            await taskStatus.render();
+            // Storage 1
+            const storage1 = new CircularProgress({
+                size: "lg",
+                segments: [
+                    { value: 25, color: "#0d6efd" },
+                    { value: 30, color: "#6f42c1" },
+                    { value: 20, color: "#d63384" },
+                ],
+                segmentGap: 2,
+                label: "USED",
+                valueFormatter: () => "75%",
+                containerId: "storage-1",
+            });
+            await storage1.render();
+            // Storage 2
+            const storage2 = new CircularProgress({
+                size: "lg",
+                segments: [
+                    { value: 40, color: "#198754" },
+                    { value: 45, color: "#ffc107" },
+                    { value: 15, color: "#dc3545" },
+                ],
+                segmentGap: 2,
+                showValue: false,
+                containerId: "storage-2",
+            });
+            await storage2.render();
+            // Budget 1
+            const budget1 = new CircularProgress({
+                size: "lg",
+                segments: [
+                    { value: 35, color: "#0d6efd" },
+                    { value: 40, color: "#198754" },
+                    { value: 20, color: "#ffc107" },
+                ],
+                segmentGap: 3,
+                label: "SPENT",
+                valueFormatter: () => "95%",
+                containerId: "budget-1",
+            });
+            await budget1.render();
+            // Budget 2
+            const budget2 = new CircularProgress({
+                size: "lg",
+                segments: [
+                    { value: 50, color: "#198754" },
+                    { value: 30, color: "#0dcaf0" },
+                ],
+                segmentGap: 3,
+                valueFormatter: () => "80%",
+                label: "DONE",
+                containerId: "budget-2",
+            });
+            await budget2.render();
+            // Arc Segments 1
+            const arcSegments1 = new CircularProgress({
+                size: "lg",
+                gap: 90,
+                rotation: -90,
+                segments: [
+                    { value: 25, color: "#198754" },
+                    { value: 30, color: "#ffc107" },
+                    { value: 20, color: "#dc3545" },
+                ],
+                segmentGap: 2,
+                valueFormatter: () => "75%",
+                containerId: "arc-segments-1",
+            });
+            await arcSegments1.render();
+            // Arc Segments 2
+            const arcSegments2 = new CircularProgress({
+                size: "lg",
+                gap: 180,
+                rotation: 180,
+                segments: [
+                    { value: 30, color: "#0d6efd" },
+                    { value: 25, color: "#6f42c1" },
+                    { value: 15, color: "#d63384" },
+                ],
+                segmentGap: 2,
+                valueFormatter: () => "70%",
+                containerId: "arc-segments-2",
+            });
+            await arcSegments2.render();
+            // Arc Segments 3
+            const arcSegments3 = new CircularProgress({
+                size: "lg",
+                gap: 90,
+                rotation: 0,
+                segments: [
+                    { value: 35, color: "#198754" },
+                    { value: 30, color: "#0dcaf0" },
+                ],
+                segmentGap: 4,
+                valueFormatter: () => "65%",
+                containerId: "arc-segments-3",
+            });
+            await arcSegments3.render();
+            // Progress Steps
+            let currentStep = 2;
+            const stepsProgress = new CircularProgress({
+                size: "xl",
+                segments: [
+                    { value: 20, color: "#198754" }, // Complete
+                    { value: 20, color: "#198754" }, // Complete
+                    { value: 20, color: "#0dcaf0" }, // Current
+                ],
+                segmentGap: 2,
+                valueFormatter: () => `${currentStep + 1}/5`,
+                label: "STEPS",
+                containerId: "steps-progress",
+            });
+            await stepsProgress.render();
+            // Step controls
+            document.getElementById("nextStepBtn").addEventListener("click", () => {
+                if (currentStep < 4) {
+                    currentStep++;
+                    const newSegments = [];
+                    for (let i = 0; i < currentStep; i++) {
+                        newSegments.push({
+                            value: 20,
+                            color: i === currentStep - 1 ? "#0dcaf0" : "#198754",
+                        });
+                    }
+                    stepsProgress.segments = newSegments;
+                    stepsProgress.valueFormatter = () => `${currentStep + 1}/5`;
+                    stepsProgress.renderProgress();
+                    stepsProgress.renderCenterContent();
+                }
+            });
+
+            document.getElementById("resetStepsBtn").addEventListener("click", () => {
+                currentStep = 2;
+                stepsProgress.segments = [
+                    { value: 20, color: "#198754" },
+                    { value: 20, color: "#198754" },
+                    { value: 20, color: "#0dcaf0" },
+                ];
+                stepsProgress.valueFormatter = () => `${currentStep + 1}/5`;
+                stepsProgress.renderProgress();
+                stepsProgress.renderCenterContent();
+            });
+
+            // Label Segments 1
+            const labelSegments1 = new CircularProgress({
+                size: "lg",
+                segments: [
+                    { value: 40, color: "#0d6efd" },
+                    { value: 30, color: "#6f42c1" },
+                    { value: 15, color: "#d63384" },
+                ],
+                segmentGap: 2,
+                label: "TOTAL",
+                valueFormatter: () => "85%",
+                containerId: "label-segments-1",
+            });
+            await labelSegments1.render();
+            // Label Segments 2
+            const labelSegments2 = new CircularProgress({
+                size: "lg",
+                segments: [
+                    { value: 8, color: "#198754" },
+                    { value: 5, color: "#ffc107" },
+                ],
+                min: 0,
+                max: 20,
+                segmentGap: 3,
+                valueFormat: "fraction",
+                label: "TASKS",
+                containerId: "label-segments-2",
+            });
+            await labelSegments2.render();
+            // Label Segments 3
+            const labelSegments3 = new CircularProgress({
+                size: "lg",
+                segments: [
+                    { value: 45, color: "#0d6efd" },
+                    { value: 25, color: "#198754" },
+                ],
+                segmentGap: 2,
+                labelHtml:
+                    '<div style="font-size: 1.5rem;">⭐</div><div style="font-size: 0.75rem; margin-top: 0.25rem;">70%</div>',
+                containerId: "label-segments-3",
+            });
+            await labelSegments3.render();
+        </script>
+    </body>
+</html>

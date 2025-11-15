@@ -1,192 +1,35 @@
-<div class="auth-page register-page min-vh-100 d-flex align-items-center py-4">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-sm-10 col-md-8 col-lg-6 col-xl-5">
-                <div class="card {{shadow}} border-0">
-                    <div class="card-body p-4 p-md-5">
-                        <!-- Logo and Header -->
-                        <div class="text-center mb-4">
-                            {{#logoUrl}}
-                            <img src="{{logoUrl}}" alt="{{title}}" class="mb-3" style="max-height: 60px;">
-                            {{/logoUrl}}
-                            <h2 class="h3 mb-2">{{messages.registerTitle}}</h2>
-                            <p class="text-muted">{{messages.registerSubtitle}}</p>
-                        </div>
+<!--
+  Deprecated Template: RegisterPage.mst
 
-                        <!-- Error Alert -->
-                        {{#error}}
-                        <div class="alert alert-danger d-flex align-items-center alert-dismissible fade show" role="alert">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            <div>{{error}}</div>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                        {{/error}}
+  This legacy template has been removed in favor of the Simple Auth (KISS) module.
 
-                        <!-- Registration Form -->
-                        <form data-action="register" novalidate>
-                            <!-- Name Field -->
-                            <div class="mb-3">
-                                <label for="registerName" class="form-label">
-                                    <i class="bi bi-person me-1"></i>Full Name
-                                </label>
-                                <input
-                                    type="text"
-                                    class="form-control form-control-lg"
-                                    id="registerName"
-                                    placeholder="Enter your full name"
-                                    value="{{name}}"
-                                    data-field="name"
-                                    data-change-action="updateField"
-                                    data-filter="live-search"
-                                    data-action-keydown="handleKeyPress"
-                                    autocomplete="name"
-                                    required
-                                    autofocus
-                                    {{#isLoading}}disabled{{/isLoading}}>
-                            </div>
+  Do not use this template. It remains only to make deprecation explicit if loaded accidentally.
 
-                            <!-- Email Field -->
-                            <div class="mb-3">
-                                <label for="registerEmail" class="form-label">
-                                    <i class="bi bi-envelope me-1"></i>Email Address
-                                </label>
-                                <input
-                                    type="email"
-                                    class="form-control form-control-lg"
-                                    id="registerEmail"
-                                    placeholder="name@example.com"
-                                    value="{{email}}"
-                                    data-field="email"
-                                    data-change-action="updateField"
-                                    data-filter="live-search"
-                                    data-action-keydown="handleKeyPress"
-                                    autocomplete="email"
-                                    required
-                                    {{#isLoading}}disabled{{/isLoading}}>
-                            </div>
+  Replacement:
+    - Use `mountAuth(container, { baseURL, onSuccessRedirect, ... })` from `web-mojo/auth`
+    - Or use `createAuthClient({ baseURL })` if you provide your own HTML.
 
-                            <!-- Password Field -->
-                            <div class="mb-3">
-                                <label for="registerPassword" class="form-label">
-                                    <i class="bi bi-lock me-1"></i>Password
-                                </label>
-                                <div class="input-group">
-                                    <input
-                                        type="{{#showPassword}}text{{/showPassword}}{{^showPassword}}password{{/showPassword}}"
-                                        class="form-control form-control-lg"
-                                        id="registerPassword"
-                                        placeholder="Create a strong password"
-                                        value="{{password}}"
-                                        data-field="password"
-                                        data-change-action="updateField"
-                                        data-filter="live-search"
-                                        data-action-keydown="handleKeyPress"
-                                        autocomplete="new-password"
-                                        required
-                                        {{#isLoading}}disabled{{/isLoading}}>
-                                    <button
-                                        class="btn btn-outline-secondary"
-                                        type="button"
-                                        data-password-field="password"
-                                        data-action="togglePassword"
-                                        {{#isLoading}}disabled{{/isLoading}}>
-                                        <i class="bi bi-eye{{#showPassword}}-slash{{/showPassword}}"></i>
-                                    </button>
-                                </div>
+  Example:
+    <div id="auth-root"></div>
+    <script type="module">
+      import { mountAuth } from 'web-mojo/auth';
+      const params = new URLSearchParams(location.search);
+      const redirect = params.get('redirect') || '/';
+      const apiBase = params.get('apiBase') || '/api';
+      mountAuth(document.getElementById('auth-root'), {
+        baseURL: apiBase,
+        onSuccessRedirect: redirect,
+        branding: { title: 'My App', subtitle: 'Sign in to your account' },
+        theme: 'light'
+      });
+    </script>
+-->
 
-                                <!-- Password Strength Indicator -->
-                                {{#passwordStrength}}
-                                <div class="mt-2">
-                                    <div class="progress" style="height: 4px;">
-                                        <div class="progress-bar
-                                            {{#passwordStrength.weak}}bg-danger{{/passwordStrength.weak}}
-                                            {{#passwordStrength.fair}}bg-warning{{/passwordStrength.fair}}
-                                            {{#passwordStrength.good}}bg-info{{/passwordStrength.good}}
-                                            {{#passwordStrength.strong}}bg-success{{/passwordStrength.strong}}"
-                                        role="progressbar"
-                                        style="width:
-                                            {{#passwordStrength.weak}}25%{{/passwordStrength.weak}}
-                                            {{#passwordStrength.fair}}50%{{/passwordStrength.fair}}
-                                            {{#passwordStrength.good}}75%{{/passwordStrength.good}}
-                                            {{#passwordStrength.strong}}100%{{/passwordStrength.strong}}">
-                                        </div>
-                                    </div>
-                                    <small class="text-muted mt-1">
-                                        Password strength: {{passwordStrength}}
-                                    </small>
-                                </div>
-                                {{/passwordStrength}}
-                            </div>
-
-                            <!-- Confirm Password Field -->
-                            <div class="mb-3">
-                                <label for="registerConfirmPassword" class="form-label">
-                                    <i class="bi bi-lock-fill me-1"></i>Confirm Password
-                                </label>
-                                <div class="input-group">
-                                    <input
-                                        type="{{#showConfirmPassword}}text{{/showConfirmPassword}}{{^showConfirmPassword}}password{{/showConfirmPassword}}"
-                                        class="form-control form-control-lg {{^passwordMatch}}is-invalid{{/passwordMatch}}"
-                                        id="registerConfirmPassword"
-                                        placeholder="Re-enter your password"
-                                        value="{{confirmPassword}}"
-                                        data-field="confirmPassword"
-                                        data-change-action="updateField"
-                                        data-filter="live-search"
-                                        data-action-keydown="handleKeyPress"
-                                        autocomplete="new-password"
-                                        required
-                                        {{#isLoading}}disabled{{/isLoading}}>
-                                    <button
-                                        class="btn btn-outline-secondary"
-                                        type="button"
-                                        data-password-field="confirmPassword"
-                                        data-action="togglePassword"
-                                        {{#isLoading}}disabled{{/isLoading}}>
-                                        <i class="bi bi-eye{{#showConfirmPassword}}-slash{{/showConfirmPassword}}"></i>
-                                    </button>
-                                </div>
-                                {{^passwordMatch}}
-                                <div class="invalid-feedback">
-                                    Passwords do not match
-                                </div>
-                                {{/passwordMatch}}
-                            </div>
-
-                            <!-- Register Button -->
-                            <button
-                                type="submit"
-                                class="btn btn-primary btn-lg w-100 mb-3"
-                                {{#isLoading}}disabled{{/isLoading}}>
-                                {{#isLoading}}
-                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                Creating account...
-                                {{/isLoading}}
-                                {{^isLoading}}
-                                <i class="bi bi-person-plus me-2"></i>Create Account
-                                {{/isLoading}}
-                            </button>
-                        </form>
-
-                        <!-- Login Link -->
-                        <div class="text-center mt-4">
-                            <p class="mb-0">
-                                Already have an account?
-                                <a href="#" class="text-decoration-none fw-semibold" data-action="login">
-                                    Sign in
-                                </a>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Security Notice -->
-                <div class="text-center mt-3">
-                    <small class="text-muted">
-                        <i class="bi bi-shield-check me-1"></i>Your information is secure and encrypted
-                    </small>
-                </div>
-            </div>
-        </div>
+<div style="max-width: 720px; margin: 3rem auto; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;">
+  <div style="padding: 1rem; border: 1px solid #f0ad4e; background: #fcf8e3; color: #8a6d3b; border-radius: 6px;">
+    <strong>Deprecated:</strong> RegisterPage.mst is no longer supported.
+    <div style="margin-top: .5rem;">
+      Please use <code>mountAuth</code> from <code>web-mojo/auth</code> to render the authentication UI.
     </div>
+  </div>
 </div>

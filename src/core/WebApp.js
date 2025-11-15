@@ -654,6 +654,18 @@ class WebApp {
         }
     }
 
+    async showDialog(options = {}) {
+        try {
+            const Dialog = (await import('./views/feedback/Dialog.js')).default;
+            return await Dialog.showDialog(options);
+        } catch (e) {
+            if (typeof window !== 'undefined' && window?.console) {
+                console.error('[WebApp] showDialog failed:', e);
+            }
+            throw e;
+        }
+    }
+
     async confirm(message, title = 'Confirm', options = {}) {
         const Dialog = (await import('./views/feedback/Dialog.js')).default;
         return await Dialog.confirm(message, title, options);

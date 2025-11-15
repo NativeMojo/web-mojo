@@ -1,323 +1,362 @@
 /**
- * MOJO Authentication System CSS
- * Complete styling for MOJO Framework authentication pages
+ * Simple Auth CSS (KISS)
+ * Aligns visuals with the new mountAuth UI.
  *
- * @version 2.0.0
- * @license MIT
- * @repository https://github.com/your-org/mojo-framework
- *
- * Usage in external projects:
- * <link rel="stylesheet" href="node_modules/mojo-framework/src/css/auth.css">
- *
- * Or via CDN:
- * <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mojo-framework/css/auth.css">
- *
- * Or import in CSS:
- * @import url('path/to/mojo/src/css/auth.css');
+ * Scope: Mostly scoped to .auth-container subtree to avoid leaking styles globally.
+ * You can override CSS variables below to theme.
  */
 
-/* ==========================================================================
-   CSS Custom Properties - Easy Theming for External Projects
-   ========================================================================== */
-
-/* ==========================================================================
-   CSS Custom Properties & Theming System
-   ========================================================================== */
-
+/* Root Variables */
 :root {
-    /* Default Theme: Light Background, Light Panel */
+    --auth-primary: #3b82f6;
+    --auth-primary-hover: #2563eb;
+    --auth-surface: #ffffff;
+    --auth-text: #111827;
+    --auth-muted: #6b7280;
+    --auth-border: #e5e7eb;
+    --auth-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    --auth-shadow-hover: 0 15px 50px rgba(0, 0, 0, 0.15);
 
-    /* Background Variables */
-    --mojo-auth-bg: #f4f7f6;
+    /* Accent/gradient */
+    --auth-gradient-start: #475569;
+    --auth-gradient-end: #334155;
 
-    /* Panel Variables */
-    --mojo-auth-panel-bg: #ffffff;
-    --mojo-auth-panel-border: rgba(0, 0, 0, 0.1);
-    --mojo-auth-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    --mojo-auth-panel-text: var(--bs-body-color);
-    --mojo-auth-panel-text-muted: var(--bs-secondary-color);
-    --mojo-auth-panel-input-bg: var(--bs-body-bg);
-    --mojo-auth-panel-input-border: var(--bs-border-color);
-    --mojo-auth-panel-input-color: var(--bs-body-color);
-    --mojo-auth-panel-hr-bg: var(--bs-body-bg);
+    /* Radii and spacing */
+    --auth-radius: 12px;
+    --auth-field-radius: 8px;
 
-    /* Brand & Accent Colors */
-    --mojo-auth-primary: #667eea;
-    --mojo-auth-primary-dark: #5a6fd4;
-    --mojo-auth-secondary: #764ba2;
-
-    /* Layout variables */
-    --mojo-auth-border-radius: var(--bs-border-radius-lg, 1rem);
-    --mojo-auth-card-padding: 2rem;
-    --mojo-auth-transition: all 0.2s ease;
+    /* Spinner */
+    --auth-spinner-size: 1rem;
+    --auth-spinner-color: var(--auth-primary);
 }
 
-/* ==========================================================================
-   BACKGROUND THEMES (Apply to <body>)
-   ========================================================================== */
-
-body.auth-bg-light {
-    --mojo-auth-bg: #f4f7f6;
+/* Container */
+.auth-container {
+    width: 100%;
+    max-width: 420px;
+    margin: 3rem auto;
+    animation: auth-fade-in 0.4s ease-in;
+    color: var(--auth-text);
 }
 
-body.auth-bg-dark {
-    --mojo-auth-bg: #1a202c;
-}
-
-body.auth-bg-gradient {
-    --mojo-auth-bg: linear-gradient(
-        135deg,
-        var(--mojo-auth-primary) 0%,
-        var(--mojo-auth-secondary) 100%
-    );
-}
-
-/* ==========================================================================
-   PANEL THEMES (Apply to <body>)
-   ========================================================================== */
-
-/* Light Panel (Default) */
-body.auth-panel-light {
-    --mojo-auth-panel-bg: #ffffff;
-    --mojo-auth-panel-border: rgba(0, 0, 0, 0.1);
-    --mojo-auth-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    --mojo-auth-panel-text: var(--bs-body-color);
-    --mojo-auth-panel-text-muted: var(--bs-secondary-color);
-    --mojo-auth-panel-input-bg: var(--bs-body-bg);
-    --mojo-auth-panel-input-border: var(--bs-border-color);
-    --mojo-auth-panel-input-color: var(--bs-body-color);
-    --mojo-auth-panel-hr-bg: var(--bs-body-bg);
-}
-
-/* Dark Panel */
-body.auth-panel-dark {
-    --mojo-auth-panel-bg: #2d3748;
-    --mojo-auth-panel-border: rgba(255, 255, 255, 0.15);
-    --mojo-auth-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-    --mojo-auth-panel-text: #f7fafc;
-    --mojo-auth-panel-text-muted: #a0aec0;
-    --mojo-auth-panel-input-bg: #1a202c;
-    --mojo-auth-panel-input-border: #4a5568;
-    --mojo-auth-panel-input-color: #f7fafc;
-    --mojo-auth-panel-hr-bg: #2d3748;
-}
-
-/* Translucent Panel */
-body.auth-panel-translucent {
-    --mojo-auth-panel-bg: rgba(255, 255, 255, 0.85);
-    --mojo-auth-panel-border: rgba(255, 255, 255, 0.2);
-    --mojo-auth-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    --mojo-auth-panel-text: #2d3748;
-    --mojo-auth-panel-text-muted: #4a5568;
-    --mojo-auth-panel-input-bg: rgba(255, 255, 255, 0.7);
-    --mojo-auth-panel-input-border: rgba(0, 0, 0, 0.1);
-    --mojo-auth-panel-input-color: #2d3748;
-    --mojo-auth-panel-hr-bg: transparent;
-}
-
-body.auth-bg-dark.auth-panel-translucent,
-body.auth-bg-gradient.auth-panel-translucent {
-    --mojo-auth-panel-bg: rgba(45, 55, 72, 0.75);
-    --mojo-auth-panel-border: rgba(255, 255, 255, 0.1);
-    --mojo-auth-panel-text: #f7fafc;
-    --mojo-auth-panel-text-muted: #a0aec0;
-    --mojo-auth-panel-input-bg: rgba(26, 32, 44, 0.7);
-    --mojo-auth-panel-input-border: rgba(255, 255, 255, 0.2);
-    --mojo-auth-panel-input-color: #f7fafc;
-    --mojo-auth-panel-hr-bg: transparent;
-}
-
-/* ==========================================================================
-   Auth Page Foundation
-   ========================================================================== */
-
-.auth-page {
-    background: var(--mojo-auth-bg);
-    min-height: 100vh;
-    font-family: var(--bs-font-sans-serif);
-    transition: background 0.3s ease-in-out;
-}
-
-/* ==========================================================================
-   Card Container
-   ========================================================================== */
-
-.auth-page .card {
-    background: var(--mojo-auth-panel-bg) !important;
-    border: 1px solid var(--mojo-auth-panel-border);
-    border-radius: var(--mojo-auth-border-radius);
-    box-shadow: var(--mojo-auth-panel-shadow);
-    color: var(--mojo-auth-panel-text);
-    backdrop-filter: blur(10px);
+/* Card */
+.auth-card {
+    background: var(--auth-surface);
+    border-radius: var(--auth-radius);
+    box-shadow: var(--auth-shadow);
+    padding: 2rem;
     transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        background 0.3s ease,
-        border 0.3s ease;
+        box-shadow 0.25s ease,
+        transform 0.2s ease;
 }
-
-.auth-page .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-}
-
-.auth-page .card-body {
-    position: relative;
-    padding: var(--mojo-auth-card-padding);
-}
-
-/* ==========================================================================
-   Form Controls & Elements
-   ========================================================================== */
-
-.auth-page .form-label {
-    font-weight: 500;
-    color: var(--mojo-auth-panel-text);
-}
-
-.auth-page .form-text {
-    color: var(--mojo-auth-panel-text-muted);
-}
-
-.auth-page .form-control {
-    background-color: var(--mojo-auth-panel-input-bg);
-    border: 1px solid var(--mojo-auth-panel-input-border);
-    color: var(--mojo-auth-panel-input-color);
-    border-radius: var(--bs-border-radius);
-    transition: var(--mojo-auth-transition);
-}
-
-.auth-page .form-control::placeholder {
-    color: var(--mojo-auth-panel-text-muted);
-    opacity: 0.7;
-}
-
-.auth-page .form-control:focus,
-.auth-page .form-check-input:focus {
-    border-color: var(--mojo-auth-primary);
-    box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
-    outline: none;
-}
-
-.auth-page .text-muted {
-    color: var(--mojo-auth-panel-text-muted) !important;
-}
-
-/* Dividers */
-.auth-page .position-relative hr {
-    border-color: var(--mojo-auth-panel-border);
-    opacity: 0.75;
-}
-
-.auth-page .position-relative .position-absolute {
-    background: var(--mojo-auth-panel-hr-bg);
-    color: var(--mojo-auth-panel-text-muted);
-    padding: 0 1rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-}
-
-/* ==========================================================================
-   Buttons & Links
-   ========================================================================== */
-
-.auth-page .btn-primary {
-    background: linear-gradient(
-        135deg,
-        var(--mojo-auth-primary) 0%,
-        var(--mojo-auth-secondary) 100%
-    );
-    border: none;
-    border-radius: var(--bs-border-radius);
-    font-weight: 500;
-    transition: var(--mojo-auth-transition);
-}
-
-.auth-page .btn-primary:hover:not(:disabled) {
-    background: linear-gradient(
-        135deg,
-        var(--mojo-auth-primary-dark) 0%,
-        var(--mojo-auth-secondary) 100%
-    );
+.auth-card:hover {
+    box-shadow: var(--auth-shadow-hover);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
-.auth-page a {
-    color: var(--mojo-auth-primary);
+/* Header */
+.auth-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+.auth-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--auth-primary);
+    margin: 0 0 0.25rem 0;
+}
+.auth-subtitle {
+    color: var(--auth-muted);
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+/* Status Messages */
+.auth-container .alert {
+    border-radius: 8px;
+    padding: 0.875rem 1rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.9rem;
+    border: 1px solid transparent;
+    animation: auth-slide-down 0.3s ease;
+}
+.auth-container .alert-success {
+    background-color: #d1f4e0;
+    border-color: #a3e3c4;
+    color: #0f5132;
+}
+.auth-container .alert-danger {
+    background-color: #f8d7da;
+    border-color: #f1aeb5;
+    color: #842029;
+}
+.auth-container .alert-info {
+    background-color: #cfe2ff;
+    border-color: #9ec5fe;
+    color: #084298;
+}
+
+/* Forms */
+.auth-container .form-label {
+    display: block;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-size: 0.92rem;
+}
+
+.auth-container .form-control {
+    width: 100%;
+    border-radius: var(--auth-field-radius);
+    border: 2px solid #e5e7eb;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.95rem;
+    line-height: 1.25rem;
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+    background: #fff;
+    color: #111827;
+    outline: none;
+    box-sizing: border-box;
+}
+.auth-container .form-control::placeholder {
+    color: #9ca3af;
+}
+.auth-container .form-control:focus {
+    border-color: var(--auth-primary);
+    box-shadow: 0 0 0 0.15rem rgba(59, 130, 246, 0.25);
+}
+
+/* Form check */
+.auth-container .form-check {
+    padding-left: 1.75rem;
+    margin-bottom: 0.75rem;
+    position: relative;
+}
+.auth-container .form-check-input {
+    width: 1.1rem;
+    height: 1.1rem;
+    position: absolute;
+    left: 0;
+    top: 0.15rem;
+    margin: 0;
+    appearance: none;
+    border: 2px solid var(--auth-border);
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+}
+.auth-container .form-check-input:checked {
+    background-color: var(--auth-primary);
+    border-color: var(--auth-primary);
+    box-shadow: inset 0 0 0 2px #fff;
+}
+.auth-container .form-check-label {
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: #374151;
+}
+
+/* Buttons */
+.auth-container .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    padding: 0.7rem 1.1rem;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid transparent;
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease,
+        color 0.2s ease;
+    text-decoration: none;
+    background: #f9fafb;
+    color: #111827;
+}
+.auth-container .btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none !important;
+}
+.auth-container .btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.auth-container .btn-primary {
+    background: linear-gradient(135deg, var(--auth-gradient-start), var(--auth-gradient-end));
+    color: #fff;
+    border: none;
+}
+.auth-container .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--auth-primary-hover), var(--auth-gradient-end));
+    box-shadow: 0 5px 15px rgba(59, 130, 246, 0.35);
+}
+
+.auth-container .btn-outline-primary {
+    background: transparent;
+    color: var(--auth-primary);
+    border-color: var(--auth-primary);
+}
+.auth-container .btn-outline-primary:hover:not(:disabled) {
+    background: rgba(59, 130, 246, 0.08);
+    color: var(--auth-primary-hover);
+}
+
+.auth-container .btn-outline-secondary {
+    background: transparent;
+    color: #374151;
+    border-color: #9ca3af;
+}
+.auth-container .btn-outline-secondary:hover:not(:disabled) {
+    background: #f3f4f6;
+    color: #111827;
+}
+
+.auth-container .btn-link {
+    background: transparent;
+    border: none;
+    color: var(--auth-primary);
+    padding: 0;
+    font-weight: 500;
+}
+.auth-container .btn-link:hover {
+    color: var(--auth-primary-hover);
+    text-decoration: underline;
+}
+
+/* Spinner */
+@keyframes auth-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+.auth-container .spinner-border {
+    display: inline-block;
+    width: var(--auth-spinner-size);
+    height: var(--auth-spinner-size);
+    border: 0.15em solid rgba(0, 0, 0, 0.1);
+    border-right-color: var(--auth-spinner-color);
+    border-radius: 50%;
+    animation: auth-spin 0.75s linear infinite;
+}
+
+/* Utility layout helpers (minimal set) */
+.auth-container .w-100 {
+    width: 100%;
+}
+.auth-container .mb-2 {
+    margin-bottom: 0.5rem;
+}
+.auth-container .mb-3 {
+    margin-bottom: 0.75rem;
+}
+.auth-container .mb-4 {
+    margin-bottom: 1rem;
+}
+.auth-container .text-center {
+    text-align: center;
+}
+.auth-container .small {
+    font-size: 0.875rem;
+}
+.auth-container .px-3 {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+.auth-container .d-grid {
+    display: grid;
+}
+.auth-container .gap-2 {
+    gap: 0.5rem;
+}
+
+/* Divider "OR" (works even without a utility framework) */
+.auth-container .position-relative {
+    position: relative;
+}
+.auth-container .position-absolute {
+    position: absolute;
+}
+.auth-container .top-50 {
+    top: 50%;
+}
+.auth-container .start-50 {
+    left: 50%;
+}
+.auth-container .translate-middle {
+    transform: translate(-50%, -50%);
+}
+
+/* Links */
+.auth-container a {
+    color: var(--auth-primary);
     text-decoration: none;
     transition: color 0.2s ease;
 }
-
-.auth-page a:hover {
-    color: var(--mojo-auth-primary-dark);
+.auth-container a:hover {
+    color: var(--auth-primary-hover);
     text-decoration: underline;
 }
 
-/* ==========================================================================
-   Footer Links
-   ========================================================================== */
-
-.auth-footer-links a {
-    color: var(--mojo-auth-panel-text-muted);
-    text-decoration: none;
-    transition: all 0.2s ease;
+/* View transitions */
+.auth-container .auth-view {
+    animation: auth-fade-in 0.25s ease;
 }
 
-.auth-footer-links a:hover {
-    color: var(--mojo-auth-primary);
-    text-decoration: underline;
-}
-
-body.auth-panel-dark .auth-footer-links a {
-    opacity: 0.8;
-}
-
-body.auth-panel-dark .auth-footer-links a:hover {
-    opacity: 1;
-}
-
-/* ==========================================================================
-   Alerts
-   ========================================================================== */
-
-body.auth-panel-dark .alert-danger {
-    background-color: rgba(220, 53, 69, 0.2);
-    color: #f8d7da;
-}
-
-body.auth-panel-dark .alert-success {
-    background-color: rgba(25, 135, 84, 0.2);
-    color: #d1e7dd;
-}
-
-/* ==========================================================================
-   (Remaining styles are mostly theme-agnostic and are left as is)
-   ========================================================================== */
-
-/* ... (other styles like password strength, responsive design, etc.) ... */
-.auth-page .form-check-input:checked {
-    background-color: var(--mojo-auth-primary);
-    border-color: var(--mojo-auth-primary);
-}
-
-.auth-page .progress {
-    background-color: #e9ecef;
-    border-radius: 2px;
-    height: 4px;
-}
-
-.auth-page .alert {
-    border-radius: var(--bs-border-radius);
-    border: none;
-    box-shadow: var(--bs-box-shadow-sm);
-}
-
-@media (max-width: 768px) {
-    .auth-page {
-        padding: 1rem 0;
+/* Animations */
+@keyframes auth-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
     }
-    .auth-page .card {
-        margin: 0 1rem;
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
+@keyframes auth-slide-down {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Accessibility */
+.auth-container *:focus-visible {
+    outline: 2px solid var(--auth-primary);
+    outline-offset: 2px;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+    .auth-card {
+        padding: 1.5rem;
+    }
+    .auth-title {
+        font-size: 1.5rem;
+    }
+    .auth-subtitle {
+        font-size: 0.9rem;
+    }
+}
+
+/* Optional full-page background helper (use on host page if desired)
+   Example:
+     body {
+       background: linear-gradient(135deg, var(--auth-gradient-start), var(--auth-gradient-end));
+       min-height: 100vh;
+       display: grid;
+       place-items: center;
+     }
+*/

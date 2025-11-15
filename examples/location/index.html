@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Location Example – Address Autocomplete + Dialogs</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+        <!-- Optional: Bootstrap for nicer default styles (FormBuilder emits Bootstrap classes) -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+        <style>
+            :root {
+                --bg1: #0f172a;
+                --bg2: #1e293b;
+            }
+            html,
+            body {
+                height: 100%;
+            }
+            body {
+                margin: 0;
+                min-height: 100%;
+                background: linear-gradient(135deg, var(--bg1), var(--bg2));
+                display: grid;
+                place-items: start center;
+                padding: 2rem 1rem;
+                color: #111827;
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+                    sans-serif;
+            }
+            .page {
+                width: 100%;
+                max-width: 940px;
+            }
+            .card {
+                border-radius: 12px;
+                box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
+                overflow: hidden;
+            }
+            .card-header {
+                background: #0ea5e9;
+                color: #fff;
+            }
+            .header-title {
+                margin: 0;
+                font-weight: 700;
+                letter-spacing: 0.2px;
+            }
+            .loc-actions .btn + .btn {
+                margin-left: 0.5rem;
+            }
+            /* Suggestion dropdown (used by the plugin helper) */
+            .loc-suggest {
+                font-size: 0.95rem;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="page">
+            <div class="card">
+                <div class="card-header">
+                    <h1 class="h5 header-title mb-0">Location Services Example</h1>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">
+                        This example demonstrates the pluggable form Location plugin. It registers
+                        an <code>address</code> field type, wires autocomplete, fetches place
+                        details, and can show dialogs with a map preview.
+                    </p>
+
+                    <div id="form-root" class="mb-3"></div>
+
+                    <div class="loc-actions d-flex align-items-center">
+                        <button id="btn-pick" class="btn btn-primary">
+                            <i class="bi bi-geo-alt-fill me-1"></i>
+                            Pick Location (Dialog)
+                        </button>
+                        <button id="btn-details" class="btn btn-outline-secondary">
+                            <i class="bi bi-card-list me-1"></i>
+                            Show Details + Map
+                        </button>
+                    </div>
+
+                    <hr class="my-4" />
+
+                    <div class="small text-muted">
+                        Tip: Start typing your address into the "Address" field to see autocomplete
+                        suggestions. Selecting a suggestion will populate city/state/ZIP and
+                        coordinates automatically. You can also open the "Pick Location" dialog to
+                        search and select a place, then have the form fields filled in for you.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script type="module">
+            // Source imports: adjust to 'web-mojo/...' if you're using the built package.
+            import FormView from "/src/core/forms/FormView.js";
+            import { registerLocationPlugin } from "/src/extensions/map/location/LocationPlugin.js";
+            import {
+                showLocationPickerDialog,
+                showLocationDetailsDialog,
+            } from "/src/extensions/map/location/LocationDialogs.js";
+            import LocationClient from "/src/extensions/map/location/LocationClient.js";
+            import rest from "/src/core/Rest.js";
+
+            // Configure REST base URL for local API server; endpoints are under /api
+            rest.configure({ baseURL: "http://localhost:9009" });
+
+            // 1) Register the Location plugin
+            //    It remains opt-in; nothing happens until this is imported and called.
+            registerLocationPlugin({
+                basePath: "/api", // Optional prefix for endpoints (works with core Rest baseURL)
+                registerFieldType: true, // Provide the 'address' field type
+                fieldTypeName: "address",
+                // Optional: customize mapping from API -> form fields
+                mapping: {
+                    address1: "address1",
+                    city: "city",
+                    state_code: "state",
+                    postal_code: "postal_code",
+                    country_code: "country",
+                    latitude: "lat",
+                    longitude: "lng",
+                    formatted_address: "formatted_address",
+                    place_id: "place_id",
+                },
+            });
+
+            // 2) Build a form using FormView + FormBuilder.
+            //    Note the "address" type below: this is provided by the plugin we just registered.
+            const formConfig = {
+                fields: [
+                    {
+                        name: "address1",
+                        type: "address",
+                        label: "Address",
+                        placeholder: "Start typing an address",
+                        columns: 12,
+                    },
+
+                    { name: "city", type: "text", label: "City", columns: 6 },
+                    { name: "state", type: "text", label: "State", columns: 3 },
+                    { name: "postal_code", type: "text", label: "ZIP", columns: 3 },
+
+                    { name: "country", type: "text", label: "Country", columns: 6 },
+                    { name: "formatted_address", type: "text", label: "Formatted", columns: 6 },
+
+                    // Hidden fields populated by the plugin/details
+                    { name: "place_id", type: "hidden" },
+                    { name: "lat", type: "hidden" },
+                    { name: "lng", type: "hidden" },
+                ],
+                options: {
+                    formClass: "needs-validation",
+                    groupClass: "row g-3 mb-1",
+                },
+            };
+
+            const form = new FormView({ formConfig });
+            await form.render(true, document.getElementById("form-root"));
+
+            // Helper to set a field value and emit events so FormView tracks changes.
+            function setFormField(name, value) {
+                const el = form.element.querySelector(`[name="${name}"], #${name}`);
+                if (el) {
+                    el.value = value ?? "";
+                    el.dispatchEvent(new Event("input", { bubbles: true }));
+                    el.dispatchEvent(new Event("change", { bubbles: true }));
+                }
+            }
+
+            // 3) Hook up "Pick Location" dialog
+            const btnPick = document.getElementById("btn-pick");
+            btnPick?.addEventListener("click", async () => {
+                const picked = await showLocationPickerDialog({
+                    title: "Pick a Location",
+                    height: 260,
+                    tileLayer: "osm",
+                });
+                if (!picked) return;
+
+                // Apply a common mapping from details -> form fields
+                setFormField("formatted_address", picked.formatted_address || "");
+                setFormField("address1", picked.address1 || "");
+                setFormField("city", picked.city || "");
+                setFormField("state", picked.state || picked.state_code || "");
+                setFormField("postal_code", picked.postal_code || "");
+                setFormField("country", picked.country || picked.country_code || "");
+                setFormField("place_id", picked.place_id || "");
+                setFormField("lat", String(picked.latitude ?? ""));
+                setFormField("lng", String(picked.longitude ?? ""));
+            });
+
+            // 4) Hook up "Show Details + Map" dialog
+            const client = new LocationClient({ basePath: "/api" });
+            const btnDetails = document.getElementById("btn-details");
+            btnDetails?.addEventListener("click", async () => {
+                const placeId = form.element.querySelector('[name="place_id"]')?.value?.trim();
+                const formatted = form.element
+                    .querySelector('[name="formatted_address"]')
+                    ?.value?.trim();
+                const address1 = form.element.querySelector('[name="address1"]')?.value?.trim();
+                const city = form.element.querySelector('[name="city"]')?.value?.trim();
+                const state = form.element.querySelector('[name="state"]')?.value?.trim();
+                const postal = form.element.querySelector('[name="postal_code"]')?.value?.trim();
+
+                // If we already have a place_id, let the dialog fetch and render details.
+                if (placeId) {
+                    await showLocationDetailsDialog({
+                        client,
+                        place_id: placeId,
+                        title: "Location Details",
+                    });
+                    return;
+                }
+
+                // Otherwise, try to geocode the current address fields to get coordinates for the map.
+                const parts = [address1, city, state, postal].filter(Boolean).join(", ");
+                if (!parts) {
+                    // Fallback: show whatever we have (no map)
+                    await showLocationDetailsDialog({
+                        details: { formatted_address: formatted || "(No address provided)" },
+                        title: "Location Details",
+                    });
+                    return;
+                }
+
+                try {
+                    const geo = await client.geocode(parts);
+                    const details = {
+                        formatted_address: geo?.formatted_address || formatted || parts,
+                        latitude: geo?.latitude,
+                        longitude: geo?.longitude,
+                    };
+                    await showLocationDetailsDialog({ details, title: "Location Details" });
+                } catch {
+                    await showLocationDetailsDialog({
+                        details: { formatted_address: formatted || parts },
+                        title: "Location Details",
+                    });
+                }
+            });
+        </script>
+
+        <!-- Optional: Bootstrap Icons for nicer buttons (used in labels/icons above) -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+            rel="stylesheet"
+        />
+    </body>
+</html>

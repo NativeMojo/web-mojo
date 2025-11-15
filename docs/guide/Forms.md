@@ -974,7 +974,144 @@ const formConfig = {
 }
 ```
 
+### Tabsets
+
+Organize form fields into tabbed interfaces using Bootstrap nav tabs. Each tab can contain multiple fields with support for column layouts.
+
+#### Basic Tabset
+
+```javascript
+{
+  type: 'tabset',
+  name: 'settingsTabs',
+  tabs: [
+    {
+      label: 'General',
+      fields: [
+        {
+          name: 'title',
+          type: 'text',
+          label: 'Title',
+          required: true,
+          columns: 12
+        },
+        {
+          name: 'description',
+          type: 'textarea',
+          label: 'Description',
+          columns: 12
+        }
+      ]
+    },
+    {
+      label: 'Advanced',
+      fields: [
+        {
+          name: 'priority',
+          type: 'select',
+          label: 'Priority',
+          options: ['Low', 'Medium', 'High'],
+          columns: 6
+        },
+        {
+          name: 'status',
+          type: 'select',
+          label: 'Status',
+          options: ['Draft', 'Published', 'Archived'],
+          columns: 6
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### Tabset with Custom Styling
+
+```javascript
+{
+  type: 'tabset',
+  name: 'userTabs',
+  navClass: 'nav nav-pills mb-4',  // Use pills instead of tabs
+  contentClass: 'tab-content border-0',
+  tabs: [
+    {
+      label: 'Profile',
+      fields: [
+        {
+          type: 'text',
+          name: 'firstName',
+          label: 'First Name',
+          columns: 6
+        },
+        {
+          type: 'text',
+          name: 'lastName',
+          label: 'Last Name',
+          columns: 6
+        },
+        {
+          type: 'email',
+          name: 'email',
+          label: 'Email',
+          columns: 12
+        }
+      ]
+    },
+    {
+      label: 'Settings',
+      fields: [
+        {
+          type: 'switch',
+          name: 'notifications',
+          label: 'Enable Notifications',
+          columns: 12
+        },
+        {
+          type: 'switch',
+          name: 'publicProfile',
+          label: 'Public Profile',
+          columns: 12
+        }
+      ]
+    },
+    {
+      label: 'Metadata',
+      fields: [
+        {
+          type: 'json',
+          name: 'metadata',
+          label: 'JSON Metadata',
+          rows: 10,
+          columns: 12
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Configuration Options:**
+
+- `name` (string, optional): Unique identifier for the tabset. Used to generate stable IDs for tab navigation. Defaults to `tabset-{timestamp}`.
+- `tabs` (array, required): Array of tab configurations, each containing:
+  - `label` (string): Display text for the tab button
+  - `fields` (array): Array of field configurations to render in the tab pane
+- `navClass` (string, optional): CSS classes for the tabs navigation. Defaults to `'nav nav-tabs mb-3'`.
+- `contentClass` (string, optional): CSS classes for the tab content container. Defaults to `'tab-content'`.
+
+**Features:**
+
+- First tab is automatically active on load
+- Fields within tabs support all standard field types and features
+- Column layouts work normally within tab panes (wrapped in Bootstrap row)
+- Tab switching uses Bootstrap's built-in tab JavaScript
+- Fully accessible with ARIA attributes
+- **Automatic validation handling**: When form validation fails, FormView automatically switches to the tab containing the first invalid field and focuses it
+
 ## Complete Examples
+</text>
+
 
 ### User Registration Form
 
@@ -1299,6 +1436,212 @@ const contactForm = {
     class: 'btn btn-primary'
   }
 };
+```
+
+### Settings Form with Tabsets
+
+```javascript
+const settingsForm = {
+  title: 'Application Settings',
+  formClass: 'settings-form',
+  useRowLayout: true,
+  
+  fields: [
+    {
+      type: 'tabset',
+      name: 'settingsTabs',
+      tabs: [
+        {
+          label: 'General',
+          fields: [
+            {
+              type: 'text',
+              name: 'appName',
+              label: 'Application Name',
+              required: true,
+              columns: 6
+            },
+            {
+              type: 'text',
+              name: 'appVersion',
+              label: 'Version',
+              required: true,
+              columns: 6
+            },
+            {
+              type: 'textarea',
+              name: 'description',
+              label: 'Description',
+              rows: 4,
+              columns: 12,
+              help: 'Brief description of your application'
+            },
+            {
+              type: 'select',
+              name: 'environment',
+              label: 'Environment',
+              required: true,
+              options: ['development', 'staging', 'production'],
+              columns: 6
+            },
+            {
+              type: 'select',
+              name: 'logLevel',
+              label: 'Log Level',
+              options: ['debug', 'info', 'warn', 'error'],
+              value: 'info',
+              columns: 6
+            }
+          ]
+        },
+        {
+          label: 'Security',
+          fields: [
+            {
+              type: 'switch',
+              name: 'enableAuth',
+              label: 'Enable Authentication',
+              value: true,
+              columns: 12
+            },
+            {
+              type: 'switch',
+              name: 'require2FA',
+              label: 'Require Two-Factor Authentication',
+              columns: 12
+            },
+            {
+              type: 'number',
+              name: 'sessionTimeout',
+              label: 'Session Timeout (minutes)',
+              required: true,
+              min: 5,
+              max: 1440,
+              value: 30,
+              columns: 6,
+              inputGroup: {
+                append: 'min'
+              }
+            },
+            {
+              type: 'number',
+              name: 'maxLoginAttempts',
+              label: 'Max Login Attempts',
+              min: 3,
+              max: 10,
+              value: 5,
+              columns: 6
+            },
+            {
+              type: 'text',
+              name: 'allowedDomains',
+              label: 'Allowed Domains',
+              columns: 12,
+              help: 'Comma-separated list of allowed domains'
+            }
+          ]
+        },
+        {
+          label: 'Notifications',
+          fields: [
+            {
+              type: 'switch',
+              name: 'emailNotifications',
+              label: 'Email Notifications',
+              value: true,
+              columns: 12
+            },
+            {
+              type: 'email',
+              name: 'notificationEmail',
+              label: 'Notification Email',
+              required: true,
+              columns: 12,
+              inputGroup: {
+                prepend: '<i class="bi bi-envelope"></i>'
+              }
+            },
+            {
+              type: 'switch',
+              name: 'slackNotifications',
+              label: 'Slack Notifications',
+              columns: 12
+            },
+            {
+              type: 'url',
+              name: 'slackWebhook',
+              label: 'Slack Webhook URL',
+              columns: 12,
+              placeholder: 'https://hooks.slack.com/...'
+            }
+          ]
+        },
+        {
+          label: 'Advanced',
+          fields: [
+            {
+              type: 'json',
+              name: 'customConfig',
+              label: 'Custom Configuration',
+              rows: 12,
+              columns: 12,
+              help: 'JSON object for advanced configuration options',
+              value: {
+                "feature_flags": {
+                  "new_ui": true,
+                  "beta_features": false
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  
+  submitButton: {
+    text: 'Save Settings',
+    class: 'btn btn-primary'
+  },
+  
+  cancelButton: {
+    text: 'Cancel',
+    class: 'btn btn-secondary'
+  }
+};
+
+// Using with FormView
+class SettingsFormView extends FormView {
+  constructor(options = {}) {
+    super({
+      ...options,
+      formConfig: settingsForm
+    });
+  }
+  
+  async handleFormSubmit(event) {
+    event.preventDefault();
+    
+    // Validate form
+    if (!this.validate()) {
+      // If validation fails, FormView automatically switches
+      // to the tab containing the first invalid field
+      this.focusFirstError();
+      return;
+    }
+    
+    try {
+      const formData = await this.getFormData();
+      
+      // Save settings
+      await this.model.save(formData);
+      
+      this.showSuccess('Settings saved successfully');
+    } catch (error) {
+      this.showError(`Failed to save settings: ${error.message}`);
+    }
+  }
+}
 ```
 
 ## Best Practices

@@ -8,6 +8,7 @@ import View from '@core/View.js';
 import FormBuilder from './FormBuilder.js';
 import applyFileDropMixin from '@core/mixins/FileDropMixin.js';
 import MOJOUtils from '@core/utils/MOJOUtils.js';
+import { FormPlugins } from '@core/forms/FormPlugins.js';
 
 import { TagInput, CollectionSelect, CollectionMultiSelect, DatePicker, DateRangePicker, ComboInput } from './inputs/index.js';
 
@@ -30,6 +31,9 @@ class FormView extends View {
       className: 'form-view',
       ...viewOptions
     });
+
+    // Notify plugins this FormView is initializing
+    FormPlugins.onFormViewInit?.(this);
 
     // Store data sources
     this.model = model;
@@ -132,6 +136,9 @@ class FormView extends View {
         return false;
       });
     }
+
+    // Allow plugins to run after the form renders and initializes
+    FormPlugins.onFormViewAfterRender?.(this);
   }
 
   /**
@@ -225,6 +232,25 @@ class FormView extends View {
     this.initializeDatePickers();
     this.initializeDateRangePickers();
     this.initializeComboInputs();
+
+    // Give plugins a chance to initialize fields (autocomplete, masks, etc.)
+    try {
+      const visitFields = (fields = []) => {
+        fields.forEach(f => {
+          if (f && f.type === 'group' && Array.isArray(f.fields)) {
+            visitFields(f.fields);
+          } else if (f && f.name) {
+            const el = this.element.querySelector(`[name="${f.name}"], #${f.id || f.name}`);
+            if (el) {
+              FormPlugins.onFieldInit?.(this, el, f);
+            }
+          }
+        });
+      };
+      visitFields(this.formConfig?.fields || []);
+    } catch (err) {
+      console.warn('FormPlugins.onFieldInit error:', err);
+    }
 
     // Find containers for other custom components
     const componentContainers = this.element.querySelectorAll('[data-component]');
@@ -591,6 +617,9 @@ class FormView extends View {
 
     // Emit change event
     this.emit('field:change', { field: fieldName, value });
+
+    // Notify plugins of the field change
+    FormPlugins.onFieldChange?.(this, fieldName, value);
   }
 
   /**

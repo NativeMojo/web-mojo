@@ -10,3 +10,4 @@ export { default as MetricsChart } from './MetricsChart.js';
 export { default as MiniChart } from './MiniChart.js';
 export { default as MetricsMiniChart } from './MetricsMiniChart.js';
 export { default as MetricsMiniChartWidget } from './MetricsMiniChartWidget.js';
+export { default as CircularProgress } from './CircularProgress.js';

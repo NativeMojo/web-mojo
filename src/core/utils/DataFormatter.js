@@ -40,6 +40,7 @@ class DataFormatter {
     this.register('datatime_tz', this.datetime_tz.bind(this)); // Alias for common typo
     this.register('relative', this.relative.bind(this));
     this.register('fromNow', this.relative.bind(this)); // Alias
+    this.register('relative_short', this.relative_short.bind(this)); // Alias for short relative time
     this.register('iso', this.iso.bind(this));
     this.register('epoch', (v) => {
       if (v === null || v === undefined || v === '') return v;
@@ -79,6 +80,7 @@ class DataFormatter {
     this.register('phone', this.phone.bind(this));
     this.register('url', this.url.bind(this));
     this.register('badge', this.badge.bind(this));
+    this.register('badgeClass', this.badgeClass.bind(this));
     this.register('status', this.status.bind(this));
     this.register('status_text', this.status_text.bind(this));
     this.register('status_icon', this.status_icon.bind(this));
@@ -90,6 +92,8 @@ class DataFormatter {
     this.register('avatar', this.avatar.bind(this));
     this.register('image', this.image.bind(this));
     this.register('tooltip', this.tooltip.bind(this));
+    this.register('linkify', this.linkify.bind(this));
+    this.register('clipboard', this.clipboard.bind(this));
 
     // Utility formatters
     this.register('default', this.default.bind(this));
@@ -118,7 +122,76 @@ class DataFormatter {
     this.register('hash', this.hash.bind(this));
     this.register('stripHtml', this.stripHtml.bind(this));
     this.register('highlight', this.highlight.bind(this));
+    this.register('nl2br', this.nl2br.bind(this));
+    this.register('code', this.code.bind(this));
     this.register('pre', (v) => `<pre class="bg-light p-2 rounded border">${this.escapeHtml(String(v))}</pre>`);
+  }
+
+  relative_short(value) {
+    return this.relative(value, true);
+  }
+
+  linkify(value, options = {}) {
+    if (value === null || value === undefined) return '';
+    const text = String(value);
+    const escaped = this.escapeHtml(text);
+    const defaults = { urls: true, emails: true, target: '_blank', rel: 'noopener noreferrer' };
+    const opts = (options && typeof options === 'object') ? { ...defaults, ...options } : defaults;
+
+    let result = escaped;
+
+    // URLs: http(s):// and www.
+    if (opts.urls !== false) {
+      const urlRegex = /(^|\s)((?:https?:\/\/|www\.)[^\s<]+)/gi;
+      result = result.replace(urlRegex, (match, prefix, url) => {
+        const href = url.startsWith('www.') ? `https://${url}` : url;
+        return `${prefix}<a href="${href}" target="${opts.target}" rel="${opts.rel}">${url}</a>`;
+      });
+    }
+
+    // Emails
+    if (opts.emails !== false) {
+      const emailRegex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
+      result = result.replace(emailRegex, (email) => `<a href="mailto:${email}">${email}</a>`);
+    }
+
+    return result;
+  }
+
+  clipboard(value, mode = 'text') {
+    if (value === null || value === undefined) return '';
+    const text = String(value);
+    const escapedText = this.escapeHtml(text);
+    const showText = mode !== 'icon-only';
+
+    const buttonHtml = `
+        <button type="button"
+                class="btn btn-sm btn-outline-secondary ms-1 p-0 border-0 bg-transparent"
+                title="Copy"
+                data-bs-toggle="tooltip"
+                data-action="copy-to-clipboard"
+                data-clipboard="${escapedText}">
+          <i class="bi bi-clipboard"></i>
+        </button>`.trim();
+
+    return `
+        <span class="mojo-clipboard d-inline-flex align-items-center">
+          ${showText ? `<span class="font-monospace">${escapedText}</span>` : ''}
+          ${buttonHtml}
+        </span>
+      `;
+  }
+
+  nl2br(value) {
+    if (value === null || value === undefined) return '';
+    return this.escapeHtml(String(value)).replace(/\r\n|\r|\n/g, '<br>');
+  }
+
+  code(value, lang = '') {
+    if (value === null || value === undefined) return '';
+    const language = lang ? `language-${this.escapeHtml(String(lang))}` : '';
+    const content = this.escapeHtml(String(value));
+    return `<pre class="bg-light p-2 rounded border"><code class="${language}">${content}</code></pre>`;
   }
 
   /**

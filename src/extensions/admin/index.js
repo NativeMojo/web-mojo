@@ -19,3 +19,4 @@ export { default as PushTemplateTablePage } from './PushTemplateTablePage.js';
 export { default as PushDeliveryTablePage } from './PushDeliveryTablePage.js';
 export { default as PushDeviceTablePage } from './PushDeviceTablePage.js';
 export { default as PushDashboardPage } from './PushDashboardPage.js';
+export { default as PhoneNumberTablePage } from './PhoneNumberTablePage.js';

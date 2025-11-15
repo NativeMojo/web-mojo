@@ -34,7 +34,7 @@ export { default as TicketTablePage } from '@ext/admin/TicketTablePage.js';
 export { default as UserDeviceLocationTablePage } from '@ext/admin/UserDeviceLocationTablePage.js';
 export { default as UserDeviceTablePage } from '@ext/admin/UserDeviceTablePage.js';
 export { default as UserTablePage } from '@ext/admin/UserTablePage.js';
-
+export { default as PhoneNumberTablePage } from '@ext/admin/PhoneNumberTablePage.js';
 // Admin Views
 export { default as DeviceView } from '@ext/admin/views/DeviceView.js';
 export { default as EmailTemplateView } from '@ext/admin/views/EmailTemplateView.js';
@@ -55,6 +55,7 @@ export { default as PushDeviceView } from '@ext/admin/views/PushDeviceView.js';
 export { default as RuleSetView } from '@ext/admin/views/RuleSetView.js';
 export { default as TicketView } from '@ext/admin/views/TicketView.js';
 export { default as UserView } from '@ext/admin/views/UserView.js';
+export { default as PhoneNumberView } from '@ext/admin/views/PhoneNumberView.js';
 
 // Admin Components
 export { default as RunnerDetailsView } from '@ext/admin/RunnerDetailsView.js';

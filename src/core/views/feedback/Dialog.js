@@ -330,9 +330,13 @@ class Dialog extends View {
       if (this.size.startsWith('fullscreen')) {
         // Fullscreen or responsive fullscreen
         dialogClasses.push(`modal-${this.size}`);
-      } else if (['sm', 'lg', 'xl'].includes(this.size)) {
+      } else if (['sm', 'lg', 'xl', 'xxl'].includes(this.size)) {
         // Standard sizes
         dialogClasses.push(`modal-${this.size}`);
+        // Auto fullscreen on small screens for large sizes
+        if (['lg', 'xl', 'xxl'].includes(this.size)) {
+          dialogClasses.push('modal-fullscreen-sm-down');
+        }
       }
     }
 

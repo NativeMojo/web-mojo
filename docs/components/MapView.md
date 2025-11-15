@@ -48,7 +48,7 @@ MapView uses Leaflet, a lightweight open-source JavaScript library for mobile-fr
 ### Single Marker Map
 
 ```js
-import MapView from '@ext/map/MapView.js';
+import {MapView} from 'web-mojo/map';
 
 const mapView = new MapView({
     markers: [
@@ -84,9 +84,8 @@ await mapView.render(container);
 ### In a Dialog with TabView
 
 ```js
-import { Dialog } from '@core/Dialog.js';
-import TabView from '@core/views/TabView.js';
-import MapView from '@ext/map/MapView.js';
+import { Dialog, TabView } from 'web-mojo';
+import {MapView} from 'web-mojo/map';
 
 const mapView = new MapView({
     markers: [{ lat: 37.422, lng: -122.084, popup: 'Mountain View, CA' }],
@@ -118,22 +117,22 @@ Dialog.show({
 const mapView = new MapView({
     // Markers array (required for auto-centering)
     markers: [],
-    
+
     // Manual center point [lat, lng]
     center: null,
-    
+
     // Initial zoom level (1-20)
     zoom: 13,
-    
+
     // Map height in pixels
     height: 400,
-    
+
     // Show zoom controls
     showZoomControl: true,
-    
+
     // Tile layer style
     tileLayer: 'osm', // 'osm', 'satellite', 'dark', 'light', 'terrain', 'streets', 'watercolor', 'bw'
-    
+
     // Standard View options
     className: 'map-view',
     containerId: 'map-container'
@@ -313,7 +312,7 @@ mapView.fitBounds();
 ### Dynamic Marker Updates
 
 ```js
-import MapView from '@ext/map/MapView.js';
+import {MapView} from 'web-mojo/map';
 
 class LocationTracker extends View {
     async onInit() {
@@ -323,17 +322,17 @@ class LocationTracker extends View {
             height: 400,
             tileLayer: 'dark'
         });
-        
+
         this.addChild('map', this.mapView);
     }
-    
+
     async updateLocation(lat, lng, label) {
         const marker = {
             lat,
             lng,
             popup: `<strong>${label}</strong><br>${new Date().toLocaleTimeString()}`
         };
-        
+
         this.mapView.updateMarkers([marker]);
     }
 }
@@ -342,8 +341,8 @@ class LocationTracker extends View {
 ### GeoIP Visualization
 
 ```js
-import MapView from '@ext/map/MapView.js';
-import TabView from '@core/views/TabView.js';
+import {MapView} from 'web-mojo/map';
+import {TabView} from 'web-mojo';
 
 class GeoIPView extends View {
     async onInit() {
@@ -352,9 +351,9 @@ class GeoIPView extends View {
         const lng = this.model.get('longitude');
         const city = this.model.get('city');
         const country = this.model.get('country');
-        
+
         const location = `${city}, ${country}`;
-        
+
         this.mapView = new MapView({
             markers: [{
                 lat,
@@ -365,17 +364,17 @@ class GeoIPView extends View {
             height: 450,
             tileLayer: 'satellite'
         });
-        
+
         const tabs = {
             'Location': this.createLocationView(),
             'Map': this.mapView,
             'Metadata': this.createMetadataView()
         };
-        
+
         this.tabView = new TabView({ tabs });
         this.addChild('tabs', this.tabView);
     }
-    
+
     get template() {
         return '<div data-container="tabs"></div>';
     }
@@ -417,7 +416,7 @@ for (const mapView of mapViews) {
 ### Responsive Map in TablePage ItemView
 
 ```js
-import MapView from '@ext/map/MapView.js';
+import {MapView} from 'web-mojo/map';
 
 class LocationTablePage extends TablePage {
     constructor() {
@@ -434,7 +433,7 @@ class LocationMapView extends View {
         const lat = this.model.get('latitude');
         const lng = this.model.get('longitude');
         const name = this.model.get('name');
-        
+
         this.mapView = new MapView({
             markers: [{
                 lat,
@@ -445,10 +444,10 @@ class LocationMapView extends View {
             height: 400,
             tileLayer: 'streets'
         });
-        
+
         this.addChild('map', this.mapView);
     }
-    
+
     get template() {
         return `
             <div class="p-3">

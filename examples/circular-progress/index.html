@@ -1,0 +1,1034 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>CircularProgress Component - MOJO Charts</title>
+
+        <!-- Bootstrap CSS -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+            rel="stylesheet"
+        />
+
+        <!-- MOJO Charts CSS -->
+        <link href="/src/extensions/charts/css/charts.css" rel="stylesheet" />
+
+        <style>
+            body {
+                padding: 2rem;
+                background: #f8f9fa;
+            }
+
+            .demo-section {
+                background: white;
+                border-radius: 0.5rem;
+                padding: 2rem;
+                margin-bottom: 2rem;
+                box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            }
+
+            .demo-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 2rem;
+                align-items: center;
+                justify-items: center;
+            }
+
+            .demo-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 1rem;
+            }
+
+            .demo-label {
+                font-size: 0.875rem;
+                color: #6c757d;
+                text-align: center;
+            }
+
+            code {
+                background: #f8f9fa;
+                padding: 0.125rem 0.375rem;
+                border-radius: 0.25rem;
+                font-size: 0.875rem;
+            }
+
+            .code-example {
+                background: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 0.375rem;
+                padding: 1rem;
+                margin-bottom: 1.5rem;
+                font-family: "Courier New", monospace;
+                font-size: 0.875rem;
+                overflow-x: auto;
+            }
+
+            .code-example pre {
+                margin: 0;
+                white-space: pre;
+            }
+
+            .controls {
+                background: #f8f9fa;
+                padding: 1rem;
+                border-radius: 0.375rem;
+                margin-top: 1rem;
+            }
+
+            .demo-section-dark {
+                background: #1a1d23;
+                border-radius: 0.5rem;
+                padding: 2rem;
+                margin-bottom: 2rem;
+                box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
+            }
+
+            .demo-section-dark h2 {
+                color: #e9ecef;
+            }
+
+            .demo-section-dark .demo-label {
+                color: #adb5bd;
+            }
+
+            .demo-section-dark .circular-progress-value,
+            .demo-section-dark .circular-progress-label {
+                color: #e9ecef !important;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container-fluid">
+            <header class="mb-4">
+                <h1 class="display-4">CircularProgress Component</h1>
+                <p class="lead">Modern circular progress indicators with SVG</p>
+                <nav>
+                    <a href="../index.html" class="btn btn-outline-primary btn-sm"
+                        >← Back to Examples</a
+                    >
+                    <a href="./segments.html" class="btn btn-outline-secondary btn-sm"
+                        >Multi-Segment →</a
+                    >
+                    <a href="./realtime.html" class="btn btn-outline-secondary btn-sm"
+                        >Real-time →</a
+                    >
+                </nav>
+            </header>
+
+            <!-- Basic Examples -->
+            <section class="demo-section">
+                <h2 class="h4 mb-3">Basic Progress</h2>
+                <div class="code-example">
+                    <pre>
+const progress = new CircularProgress({
+  value: 75,
+  size: "md",
+  containerId: 'progress-container'
+});
+await progress.render();</pre
+                    >
+                </div>
+                <div class="demo-grid">
+                    <div class="demo-item">
+                        <div id="progress-0"></div>
+                        <div class="demo-label">0%</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="progress-25"></div>
+                        <div class="demo-label">25%</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="progress-50"></div>
+                        <div class="demo-label">50%</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="progress-75"></div>
+                        <div class="demo-label">75%</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="progress-100"></div>
+                        <div class="demo-label">100%</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Size Variants -->
+            <section class="demo-section">
+                <h2 class="h4 mb-3">Size Variants</h2>
+                <div class="code-example">
+                    <pre>
+const progress = new CircularProgress({
+  value: 65,
+  size: "xs", // 'xs', 'sm', 'md', 'lg', 'xl', or number
+  containerId: 'progress-container'
+});
+await progress.render();</pre
+                    >
+                </div>
+                <div class="demo-grid">
+                    <div class="demo-item">
+                        <div id="size-xs"></div>
+                        <div class="demo-label">Extra Small <code>xs</code></div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="size-sm"></div>
+                        <div class="demo-label">Small <code>sm</code></div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="size-md"></div>
+                        <div class="demo-label">Medium <code>md</code></div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="size-lg"></div>
+                        <div class="demo-label">Large <code>lg</code></div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="size-xl"></div>
+                        <div class="demo-label">Extra Large <code>xl</code></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Color Variants -->
+            <section class="demo-section">
+                <h2 class="h4 mb-3">Color Variants</h2>
+                <div class="code-example">
+                    <pre>
+const progress = new CircularProgress({
+  value: 75,
+  color: "#28a745", // Custom hex color
+  containerId: 'progress-container'
+});
+await progress.render();</pre
+                    >
+                </div>
+                <div class="demo-grid">
+                    <div class="demo-item">
+                        <div id="variant-default"></div>
+                        <div class="demo-label">Default</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="variant-success"></div>
+                        <div class="demo-label">Success</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="variant-warning"></div>
+                        <div class="demo-label">Warning</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="variant-danger"></div>
+                        <div class="demo-label">Danger</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="variant-info"></div>
+                        <div class="demo-label">Info</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Gradients -->
+            <section class="demo-section">
+                <h2 class="h4 mb-3">Gradient Colors</h2>
+                <div class="code-example">
+                    <pre>
+const progress = new CircularProgress({
+  value: 75,
+  gradientColors: ['#667eea', '#764ba2'],
+  containerId: 'progress-container'
+});
+await progress.render();</pre
+                    >
+                </div>
+                <div class="demo-grid">
+                    <div class="demo-item">
+                        <div id="gradient-1"></div>
+                        <div class="demo-label">Blue to Cyan</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="gradient-2"></div>
+                        <div class="demo-label">Purple to Pink</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="gradient-3"></div>
+                        <div class="demo-label">Green to Yellow</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="gradient-4"></div>
+                        <div class="demo-label">Red to Orange</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Custom Range -->
+            <section class="demo-section">
+                <h2 class="h4 mb-3">Custom Value Ranges</h2>
+                <div class="code-example">
+                    <pre>
+const progress = new CircularProgress({
+  value: 5,
+  min: 0,
+  max: 10,
+  containerId: 'progress-container'
+});
+await progress.render();</pre
+                    >
+                </div>
+                <div class="demo-grid">
+                    <div class="demo-item">
+                        <div id="range-fraction"></div>
+                        <div class="demo-label">Fraction Format <code>8/10</code></div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="range-value"></div>
+                        <div class="demo-label">Value Only <code>1500</code></div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="range-custom"></div>
+                        <div class="demo-label">Custom Format</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Arc Styles -->
+            <section class="demo-section">
+                <h2 class="h4 mb-3">Arc Styles (Gap)</h2>
+                <p class="text-muted">Create gauge-style indicators with gap angles</p>
+                <div class="code-example">
+                    <pre>
+const progress = new CircularProgress({
+  value: 75,
+  gap: 90, // Gap in degrees (creates arc)
+  containerId: 'progress-container'
+});
+await progress.render();</pre
+                    >
+                </div>
+                <div class="demo-grid">
+                    <div class="demo-item">
+                        <div id="arc-45"></div>
+                        <div class="demo-label">45° Gap</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="arc-90"></div>
+                        <div class="demo-label">90° Gap (3/4 circle)</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="arc-180"></div>
+                        <div class="demo-label">180° Gap (half circle)</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Rotation -->
+            <section class="demo-section">
+                <h2 class="h4 mb-3">Rotation Angles</h2>
+                <p class="text-muted">Change where the progress starts</p>
+                <div class="code-example">
+                    <pre>
+const progress = new CircularProgress({
+  value: 75,
+  rotation: 0, // Starting angle in degrees
+  containerId: 'progress-container'
+});
+await progress.render();</pre
+                    >
+                </div>
+                <div class="demo-grid">
+                    <div class="demo-item">
+                        <div id="rotate-0"></div>
+                        <div class="demo-label">0° (Right)</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="rotate-90"></div>
+                        <div class="demo-label">90° (Bottom)</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="rotate-180"></div>
+                        <div class="demo-label">180° (Left)</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="rotate-270"></div>
+                        <div class="demo-label">270° (Top)</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Icons -->
+            <section class="demo-section">
+                <h2 class="h4 mb-3">With Icons</h2>
+                <div class="code-example">
+                    <pre>
+const progress = new CircularProgress({
+  value: 75,
+  icon: "bi-check-circle-fill", // Bootstrap icon class
+  showValue: false,
+  containerId: 'progress-container'
+});
+await progress.render();</pre
+                    >
+                </div>
+                <div class="demo-grid">
+                    <div class="demo-item">
+                        <div id="icon-check"></div>
+                        <div class="demo-label">Complete</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="icon-upload"></div>
+                        <div class="demo-label">Upload</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="icon-download"></div>
+                        <div class="demo-label">Download</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="icon-heart"></div>
+                        <div class="demo-label">Likes</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Labels -->
+            <section class="demo-section">
+                <h2 class="h4 mb-3">With Labels</h2>
+                <div class="code-example">
+                    <pre>
+const progress = new CircularProgress({
+  value: 75,
+  label: "Storage",
+  containerId: 'progress-container'
+});
+await progress.render();</pre
+                    >
+                </div>
+                <div class="demo-grid">
+                    <div class="demo-item">
+                        <div id="label-1"></div>
+                        <div class="demo-label">Upload Progress</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="label-2"></div>
+                        <div class="demo-label">Tasks Complete</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="label-3"></div>
+                        <div class="demo-label">Storage Used</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Interactive -->
+            <section class="demo-section">
+                <h2 class="h4 mb-3">Interactive Demo</h2>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-center mb-3">
+                            <div id="interactive-progress"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="controls">
+                            <div class="mb-3">
+                                <label for="valueSlider" class="form-label"
+                                    >Value: <span id="valueDisplay">75</span>%</label
+                                >
+                                <input
+                                    type="range"
+                                    class="form-range"
+                                    id="valueSlider"
+                                    min="0"
+                                    max="100"
+                                    value="75"
+                                />
+                            </div>
+                            <div class="mb-3">
+                                <label for="sizeSelect" class="form-label">Size</label>
+                                <select class="form-select" id="sizeSelect">
+                                    <option value="xs">Extra Small (40px)</option>
+                                    <option value="sm">Small (60px)</option>
+                                    <option value="md" selected>Medium (80px)</option>
+                                    <option value="lg">Large (120px)</option>
+                                    <option value="xl">Extra Large (180px)</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="colorPicker" class="form-label">Color</label>
+                                <input
+                                    type="color"
+                                    class="form-control form-control-color"
+                                    id="colorPicker"
+                                    value="#0d6efd"
+                                />
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        id="shadowCheck"
+                                    />
+                                    <label class="form-check-label" for="shadowCheck"
+                                        >Drop Shadow</label
+                                    >
+                                </div>
+                                <div class="form-check">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        id="clickableCheck"
+                                    />
+                                    <label class="form-check-label" for="clickableCheck"
+                                        >Clickable (with tooltip)</label
+                                    >
+                                </div>
+                            </div>
+                            <button class="btn btn-primary btn-sm" id="animateBtn">
+                                Animate to 100%
+                            </button>
+                            <button class="btn btn-secondary btn-sm" id="resetBtn">Reset</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Theme Examples -->
+            <section class="demo-section">
+                <h2 class="h4 mb-3">Theme Variants</h2>
+                <div class="code-example">
+                    <pre>
+const progress = new CircularProgress({
+  value: 75,
+  theme: "3d", // 'basic', '3d', 'dark', 'light'
+  containerId: 'progress-container'
+});
+await progress.render();</pre
+                    >
+                </div>
+                <div class="demo-grid">
+                    <div class="demo-item">
+                        <div id="theme-basic"></div>
+                        <div class="demo-label">Basic (Default)</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="theme-shadowed"></div>
+                        <div class="demo-label">Shadowed</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="theme-dark"></div>
+                        <div class="demo-label">Dark Theme</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="theme-light"></div>
+                        <div class="demo-label">Light Theme</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dark Theme Examples -->
+            <section class="demo-section-dark">
+                <h2 class="h4 mb-3">Dark Theme Examples</h2>
+                <div
+                    class="code-example"
+                    style="background: #2d3238; border-color: #495057; color: #e9ecef"
+                >
+                    <pre style="color: #e9ecef">
+const progress = new CircularProgress({
+  value: 85,
+  color: "#28a745",
+  textColor: "#e9ecef", // Light text for dark backgrounds
+  containerId: 'progress-container'
+});
+await progress.render();</pre
+                    >
+                </div>
+                <div class="demo-grid">
+                    <div class="demo-item">
+                        <div id="dark-progress-1"></div>
+                        <div class="demo-label">Success</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="dark-progress-2"></div>
+                        <div class="demo-label">Info</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="dark-progress-3"></div>
+                        <div class="demo-label">Warning</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="dark-progress-4"></div>
+                        <div class="demo-label">Custom Colors</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="dark-progress-5"></div>
+                        <div class="demo-label">With Icon</div>
+                    </div>
+                    <div class="demo-item">
+                        <div id="dark-progress-6"></div>
+                        <div class="demo-label">With Label</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+        <!-- MOJO Charts Module -->
+        <script type="module">
+            import { CircularProgress } from "web-mojo/charts";
+
+            // Basic Examples
+            const progress0 = new CircularProgress({
+                value: 0,
+                size: "md",
+                containerId: "progress-0",
+            });
+            await progress0.render();
+
+            const progress25 = new CircularProgress({
+                value: 25,
+                size: "md",
+                containerId: "progress-25",
+            });
+            await progress25.render();
+
+            const progress50 = new CircularProgress({
+                value: 50,
+                size: "md",
+                containerId: "progress-50",
+            });
+            await progress50.render();
+
+            const progress75 = new CircularProgress({
+                value: 75,
+                size: "md",
+                containerId: "progress-75",
+            });
+            await progress75.render();
+
+            const progress100 = new CircularProgress({
+                value: 100,
+                size: "md",
+                containerId: "progress-100",
+            });
+            await progress100.render();
+
+            // Size Variants
+            const sizeXs = new CircularProgress({ value: 65, size: "xs", containerId: "size-xs" });
+            await sizeXs.render();
+
+            const sizeSm = new CircularProgress({ value: 65, size: "sm", containerId: "size-sm" });
+            await sizeSm.render();
+
+            const sizeMd = new CircularProgress({ value: 65, size: "md", containerId: "size-md" });
+            await sizeMd.render();
+
+            const sizeLg = new CircularProgress({ value: 65, size: "lg", containerId: "size-lg" });
+            await sizeLg.render();
+
+            const sizeXl = new CircularProgress({ value: 65, size: "xl", containerId: "size-xl" });
+            await sizeXl.render();
+
+            // Color Variants
+            const variantDefault = new CircularProgress({
+                value: 70,
+                variant: "default",
+                containerId: "variant-default",
+            });
+            await variantDefault.render();
+
+            const variantSuccess = new CircularProgress({
+                value: 70,
+                variant: "success",
+                containerId: "variant-success",
+            });
+            await variantSuccess.render();
+
+            const variantWarning = new CircularProgress({
+                value: 70,
+                variant: "warning",
+                containerId: "variant-warning",
+            });
+            await variantWarning.render();
+
+            const variantDanger = new CircularProgress({
+                value: 70,
+                variant: "danger",
+                containerId: "variant-danger",
+            });
+            await variantDanger.render();
+
+            const variantInfo = new CircularProgress({
+                value: 70,
+                variant: "info",
+                containerId: "variant-info",
+            });
+            await variantInfo.render();
+
+            // Gradients
+            const gradient1 = new CircularProgress({
+                value: 80,
+                gradientColors: ["#0d6efd", "#00d4ff"],
+                size: "lg",
+                containerId: "gradient-1",
+            });
+            await gradient1.render();
+
+            const gradient2 = new CircularProgress({
+                value: 80,
+                gradientColors: ["#6f42c1", "#d63384"],
+                size: "lg",
+                containerId: "gradient-2",
+            });
+            await gradient2.render();
+
+            const gradient3 = new CircularProgress({
+                value: 80,
+                gradientColors: ["#198754", "#ffc107"],
+                size: "lg",
+                containerId: "gradient-3",
+            });
+            await gradient3.render();
+
+            const gradient4 = new CircularProgress({
+                value: 80,
+                gradientColors: ["#dc3545", "#fd7e14"],
+                size: "lg",
+                containerId: "gradient-4",
+            });
+            await gradient4.render();
+
+            // Custom Ranges
+            const rangeFraction = new CircularProgress({
+                value: 8,
+                min: 0,
+                max: 10,
+                valueFormat: "fraction",
+                size: "lg",
+                containerId: "range-fraction",
+            });
+            await rangeFraction.render();
+
+            const rangeValue = new CircularProgress({
+                value: 1500,
+                min: 0,
+                max: 5000,
+                valueFormat: "value",
+                size: "lg",
+                containerId: "range-value",
+            });
+            await rangeValue.render();
+
+            const rangeCustom = new CircularProgress({
+                value: 42.5,
+                min: 0,
+                max: 100,
+                valueFormatter: (v) => `${v.toFixed(1)}°C`,
+                label: "TEMP",
+                size: "lg",
+                containerId: "range-custom",
+            });
+            await rangeCustom.render();
+            // Arc Styles
+            const arc45 = new CircularProgress({
+                value: 75,
+                gap: 45,
+                size: "lg",
+                containerId: "arc-45",
+            });
+            await arc45.render();
+
+            const arc90 = new CircularProgress({
+                value: 75,
+                gap: 90,
+                size: "lg",
+                containerId: "arc-90",
+            });
+            await arc90.render();
+
+            const arc180 = new CircularProgress({
+                value: 75,
+                gap: 180,
+                size: "lg",
+                containerId: "arc-180",
+            });
+            await arc180.render();
+
+            // Rotation
+            const rotate0 = new CircularProgress({
+                value: 75,
+                rotation: 0,
+                size: "lg",
+                containerId: "rotate-0",
+            });
+            await rotate0.render();
+
+            const rotate90 = new CircularProgress({
+                value: 75,
+                rotation: 90,
+                size: "lg",
+                containerId: "rotate-90",
+            });
+            await rotate90.render();
+
+            const rotate180 = new CircularProgress({
+                value: 75,
+                rotation: 180,
+                size: "lg",
+                containerId: "rotate-180",
+            });
+            await rotate180.render();
+
+            const rotate270 = new CircularProgress({
+                value: 75,
+                rotation: 270,
+                size: "lg",
+                containerId: "rotate-270",
+            });
+            await rotate270.render();
+
+            // Icons
+            const iconCheck = new CircularProgress({
+                value: 100,
+                icon: "bi bi-check-lg",
+                variant: "success",
+                size: "lg",
+                containerId: "icon-check",
+            });
+            await iconCheck.render();
+
+            const iconUpload = new CircularProgress({
+                value: 65,
+                icon: "bi bi-cloud-upload",
+                variant: "info",
+                size: "lg",
+                containerId: "icon-upload",
+            });
+            await iconUpload.render();
+
+            const iconDownload = new CircularProgress({
+                value: 45,
+                icon: "bi bi-cloud-download",
+                variant: "warning",
+                size: "lg",
+                containerId: "icon-download",
+            });
+            await iconDownload.render();
+
+            const iconHeart = new CircularProgress({
+                value: 88,
+                icon: "bi bi-heart-fill",
+                variant: "danger",
+                size: "lg",
+                containerId: "icon-heart",
+            });
+            await iconHeart.render();
+
+            // Labels
+            const label1 = new CircularProgress({
+                value: 75,
+                label: "UPLOAD",
+                size: "lg",
+                containerId: "label-1",
+            });
+            await label1.render();
+
+            const label2 = new CircularProgress({
+                value: 8,
+                min: 0,
+                max: 10,
+                valueFormat: "fraction",
+                label: "TASKS",
+                variant: "success",
+                size: "lg",
+                containerId: "label-2",
+            });
+            await label2.render();
+
+            const label3 = new CircularProgress({
+                value: 89,
+                label: "STORAGE",
+                variant: "warning",
+                size: "lg",
+                containerId: "label-3",
+            });
+            await label3.render();
+
+            // Interactive Demo
+            const interactiveProgress = new CircularProgress({
+                value: 75,
+                size: "xl",
+                shadow: false,
+                clickable: false,
+                containerId: "interactive-progress",
+            });
+            await interactiveProgress.render();
+
+            // Interactive Controls
+            const valueSlider = document.getElementById("valueSlider");
+            const valueDisplay = document.getElementById("valueDisplay");
+            const sizeSelect = document.getElementById("sizeSelect");
+            const colorPicker = document.getElementById("colorPicker");
+            const shadowCheck = document.getElementById("shadowCheck");
+            const clickableCheck = document.getElementById("clickableCheck");
+            const animateBtn = document.getElementById("animateBtn");
+            const resetBtn = document.getElementById("resetBtn");
+
+            valueSlider.addEventListener("input", (e) => {
+                const value = parseInt(e.target.value);
+                valueDisplay.textContent = value;
+                interactiveProgress.setValue(value, false);
+            });
+
+            sizeSelect.addEventListener("change", (e) => {
+                interactiveProgress.setSize(e.target.value);
+            });
+
+            colorPicker.addEventListener("change", (e) => {
+                interactiveProgress.setColor(e.target.value);
+            });
+
+            shadowCheck.addEventListener("change", (e) => {
+                interactiveProgress.shadow = e.target.checked;
+                const container = interactiveProgress.element.querySelector(
+                    ".circular-progress-container",
+                );
+                if (e.target.checked) {
+                    container.parentElement.classList.add("circular-progress-shadow");
+                } else {
+                    container.parentElement.classList.remove("circular-progress-shadow");
+                }
+            });
+
+            clickableCheck.addEventListener("change", (e) => {
+                interactiveProgress.clickable = e.target.checked;
+                interactiveProgress.tooltip = e.target.checked ? "Click me!" : null;
+                const container = interactiveProgress.element.querySelector(
+                    ".circular-progress-container",
+                );
+                if (e.target.checked) {
+                    container.parentElement.classList.add("circular-progress-clickable");
+                    interactiveProgress.setupClickHandler();
+                    interactiveProgress.setupTooltip();
+                } else {
+                    container.parentElement.classList.remove("circular-progress-clickable");
+                }
+            });
+
+            animateBtn.addEventListener("click", () => {
+                interactiveProgress.animateTo(100, 2000);
+                valueSlider.value = 100;
+                valueDisplay.textContent = "100";
+            });
+
+            resetBtn.addEventListener("click", () => {
+                interactiveProgress.setValue(75);
+                valueSlider.value = 75;
+                valueDisplay.textContent = "75";
+            });
+
+            // Listen to click events
+            interactiveProgress.on("progress:clicked", (data) => {
+                console.log("Progress clicked:", data);
+            });
+
+            // Theme Examples
+            const themeBasic = new CircularProgress({
+                value: 75,
+                size: "lg",
+                theme: "basic",
+                containerId: "theme-basic",
+            });
+            await themeBasic.render();
+
+            const themeShadowed = new CircularProgress({
+                value: 75,
+                size: "lg",
+                theme: "shadowed",
+                containerId: "theme-shadowed",
+            });
+            await themeShadowed.render();
+
+            const themeDark = new CircularProgress({
+                value: 75,
+                size: "lg",
+                theme: "dark",
+                containerId: "theme-dark",
+            });
+            await themeDark.render();
+
+            const themeLight = new CircularProgress({
+                value: 75,
+                size: "lg",
+                theme: "light",
+                containerId: "theme-light",
+            });
+            await themeLight.render();
+
+            // Dark Theme Examples
+            const darkProgress1 = new CircularProgress({
+                value: 85,
+                size: "lg",
+                color: "#28a745",
+                textColor: "#e9ecef",
+                containerId: "dark-progress-1",
+            });
+            await darkProgress1.render();
+
+            const darkProgress2 = new CircularProgress({
+                value: 60,
+                size: "lg",
+                color: "#17a2b8",
+                textColor: "#e9ecef",
+                containerId: "dark-progress-2",
+            });
+            await darkProgress2.render();
+
+            const darkProgress3 = new CircularProgress({
+                value: 45,
+                size: "lg",
+                color: "#ffc107",
+                textColor: "#e9ecef",
+                containerId: "dark-progress-3",
+            });
+            await darkProgress3.render();
+
+            const darkProgress4 = new CircularProgress({
+                value: 70,
+                size: "lg",
+                color: "#e83e8c",
+                backgroundColor: "#495057",
+                textColor: "#f8f9fa",
+                containerId: "dark-progress-4",
+            });
+            await darkProgress4.render();
+
+            const darkProgress5 = new CircularProgress({
+                value: 90,
+                size: "lg",
+                color: "#20c997",
+                icon: "bi-check-circle-fill",
+                textColor: "#e9ecef",
+                containerId: "dark-progress-5",
+            });
+            await darkProgress5.render();
+
+            const darkProgress6 = new CircularProgress({
+                value: 55,
+                size: "lg",
+                color: "#6610f2",
+                label: "Storage",
+                textColor: "#e9ecef",
+                containerId: "dark-progress-6",
+            });
+            await darkProgress6.render();
+        </script>
+    </body>
+</html>

@@ -118,7 +118,7 @@ Use package imports for external consumers:
 import { View, Page, WebApp, Dialog } from 'web-mojo';
 
 // ✅ Extension packages
-import { AuthApp, LoginPage } from 'web-mojo/auth';
+import { mountAuth, createAuthClient } from 'web-mojo/auth';
 import { LightboxViewer } from 'web-mojo/lightbox';
 import { MetricsChart } from 'web-mojo/charts';
 
@@ -606,7 +606,7 @@ import AuthManager from '@ext/auth/AuthManager.js';
 
 // ✅ In external apps  
 import { View, User } from 'web-mojo';
-import { AuthApp } from 'web-mojo/auth';
+import { mountAuth } from 'web-mojo/auth';
 import { User, Job } from 'web-mojo/models';
 
 // ❌ Never in extensions

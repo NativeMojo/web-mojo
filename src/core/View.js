@@ -173,6 +173,7 @@ export class View {
   canRender() {
       if (this.isRendering) return false;
       // Optional render throttling
+      const now = Date.now();
       if (this.options.renderCooldown > 0 && now - this.lastRenderTime < this.options.renderCooldown) {
         View._warn(`View ${this.id}: Render called too quickly, cooldown active`);
         return false;
@@ -716,6 +717,39 @@ export class View {
     }
     // Fallback to browser alert if no app or helper available
     alert(`Warning: ${message}`);
+  }
+
+  // Default action: copy value from data-clipboard to clipboard
+  async onActionCopyToClipboard(event, element) {
+    try {
+      const carrier = element?.closest('[data-clipboard]') || element;
+      const text = carrier?.getAttribute('data-clipboard') || '';
+      // Consider handled even if empty to avoid bubbling
+      if (!text) return true;
+
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+
+      // Visual feedback: temporarily swap icon to a checkmark
+      const icon = element.querySelector('i');
+      const originalClass = icon && icon.className;
+      if (icon) {
+        icon.className = 'bi bi-check';
+        setTimeout(() => { icon.className = originalClass; }, 1000);
+      }
+      return true;
+    } catch (err) {
+      console.warn('Copy to clipboard failed:', err);
+      return true;
+    }
   }
 
   static _genId() { return `view_${Math.random().toString(36).substr(2, 9)}`; }
