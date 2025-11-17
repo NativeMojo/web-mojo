@@ -769,6 +769,9 @@ class FormBuilder {
    */
   getFieldId(name) {
     // Replace dots, spaces, and special characters with underscores for valid HTML IDs
+    if (!name) {
+        return `field_${Math.random().toString(36).substr(2, 9)}`;
+    }
     const safeName = name.replace(/[.\s\[\]]/g, '_');
     return `field_${safeName}`;
   }
@@ -2379,7 +2382,7 @@ class FormBuilder {
    * Supports multiple generation modes:
    * - Numeric ranges: start, end, step
    * - Formatting: format function, prefix, suffix
-   * 
+   *
    * @param {number} start - Start value (inclusive)
    * @param {number} end - End value (inclusive)
    * @param {number} step - Step increment (default: 1)
@@ -2388,27 +2391,27 @@ class FormBuilder {
    * @param {string} options.prefix - Prefix for label
    * @param {string} options.suffix - Suffix for label
    * @returns {Array} Array of option objects {value, label}
-   * 
+   *
    * @example
    * // Hours 1-24
    * generateSelectOptions(1, 24, 1)
-   * 
+   *
    * // Minutes in 15-min increments with padding
    * generateSelectOptions(0, 45, 15, { format: 'padded' })
-   * 
+   *
    * // Days with ordinal suffix
    * generateSelectOptions(1, 31, 1, { format: 'ordinal' })
-   * 
+   *
    * // Years with prefix
    * generateSelectOptions(2020, 2030, 1, { prefix: 'Year ' })
-   * 
+   *
    * // Percentages
    * generateSelectOptions(0, 100, 10, { suffix: '%' })
-   * 
+   *
    * // Custom formatter
-   * generateSelectOptions(1, 12, 1, { 
-   *   format: (v) => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-   *                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][v-1] 
+   * generateSelectOptions(1, 12, 1, {
+   *   format: (v) => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+   *                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][v-1]
    * })
    */
   generateSelectOptions(start, end, step = 1, options = {}) {
@@ -2417,11 +2420,11 @@ class FormBuilder {
 
     // Determine direction (ascending or descending)
     const increment = start <= end ? Math.abs(step) : -Math.abs(step);
-    
+
     // Generate options
     for (let i = start; start <= end ? i <= end : i >= end; i += increment) {
       let label = String(i);
-      
+
       // Apply formatting
       if (typeof format === 'function') {
         label = format(i);
@@ -2432,16 +2435,16 @@ class FormBuilder {
       } else if (format === 'ordinal') {
         label = this.formatOrdinal(i);
       }
-      
+
       // Apply prefix/suffix
       label = `${prefix}${label}${suffix}`;
-      
+
       results.push({
         value: i,
         label: label
       });
     }
-    
+
     return results;
   }
 
@@ -2453,7 +2456,7 @@ class FormBuilder {
   formatOrdinal(num) {
     const j = num % 10;
     const k = num % 100;
-    
+
     if (j === 1 && k !== 11) return num + 'st';
     if (j === 2 && k !== 12) return num + 'nd';
     if (j === 3 && k !== 13) return num + 'rd';
