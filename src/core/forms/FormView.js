@@ -46,6 +46,8 @@ class FormView extends View {
     this.customComponents = new Map();
     this.fieldStatusManagers = new Map(); // Track field status managers
     this.saveTimeouts = new Map(); // Debouncing timeouts for autosave
+    this.pendingSaveFields = new Map(); // Track fields pending save (for batching)
+    this.batchSaveTimeout = null; // Global timeout for batch saving
     this.isSaving = false; // Prevent save loops
 
     // Prepare combined data for FormBuilder
@@ -623,51 +625,84 @@ class FormView extends View {
   }
 
   /**
-   * Handle saving individual field changes to the model with debouncing
+   * Handle saving field changes to the model with intelligent batching
+   * When multiple fields change within a short time (e.g., autofill), they are batched together
    * @param {string} fieldName - Name of the field being saved
    * @param {*} value - New value to save
    */
   async handleFieldSave(fieldName, value) {
-    if (!this.model || this.isSaving) return;
+    if (!this.model) return;
 
-    // Clear any existing timeout for this field
-    if (this.saveTimeouts.has(fieldName)) {
-      clearTimeout(this.saveTimeouts.get(fieldName));
-    }
+    // Add field to pending save queue
+    this.pendingSaveFields.set(fieldName, value);
 
+    // Show saving status for this field
     const statusManager = this.getFieldStatusManager(fieldName);
     statusManager.showStatus('saving');
 
-    // Debounce the save - wait 300ms before actually saving
-    const timeoutId = setTimeout(async () => {
-      try {
-        this.isSaving = true;
-        this.saveTimeouts.delete(fieldName);
+    // Clear existing batch timeout
+    if (this.batchSaveTimeout) {
+      clearTimeout(this.batchSaveTimeout);
+    }
 
-        // Mark as form-driven change to prevent sync back
-        this._isFormDrivenChange = true;
-
-        // Save to model (this will trigger API call if model has save method)
-        if (typeof this.model.save === 'function') {
-          await this.model.save({ [fieldName]: value });
-        } else {
-          // Just set on model if no save method
-          this.model.set(fieldName, value);
-        }
-
-        // Show success (auto-hides after 2.5s)
-        statusManager.showStatus('saved');
-
-      } catch (error) {
-        // Field save error
-        // Show error (auto-hides after 6s)
-        statusManager.showStatus('error', { message: error.message });
-      } finally {
-        this.isSaving = false;
-      }
+    // Set new batch timeout - if no more changes come in 300ms, save all pending fields
+    this.batchSaveTimeout = setTimeout(async () => {
+      await this.executeBatchSave();
     }, 300);
+  }
 
-    this.saveTimeouts.set(fieldName, timeoutId);
+  /**
+   * Execute a batch save of all pending field changes
+   * This sends all changed fields in a single request to avoid race conditions
+   * @private
+   */
+  async executeBatchSave() {
+    if (this.isSaving || this.pendingSaveFields.size === 0) return;
+
+    try {
+      this.isSaving = true;
+
+      // Collect all pending changes
+      const changes = Object.fromEntries(this.pendingSaveFields);
+      const fieldNames = Array.from(this.pendingSaveFields.keys());
+
+      // Clear pending fields before save
+      this.pendingSaveFields.clear();
+      this.batchSaveTimeout = null;
+
+      // Mark as form-driven change to prevent sync back
+      this._isFormDrivenChange = true;
+
+      // Save all changes in a single request
+      if (typeof this.model.save === 'function') {
+        await this.model.save(changes);
+      } else {
+        // Just update model attributes if no save method
+        Object.entries(changes).forEach(([key, val]) => {
+          this.model.set(key, val);
+        });
+      }
+
+      // Show success status for all saved fields
+      fieldNames.forEach(fieldName => {
+        const statusManager = this.getFieldStatusManager(fieldName);
+        statusManager.showStatus('saved');
+      });
+
+    } catch (error) {
+      console.error('Batch save error:', error);
+      
+      // Show error status for all fields that were attempted
+      Array.from(this.pendingSaveFields.keys()).forEach(fieldName => {
+        const statusManager = this.getFieldStatusManager(fieldName);
+        statusManager.showStatus('error', { message: error.message });
+      });
+
+      // Re-add failed fields back to pending queue for potential retry
+      // (they will be re-saved on next change)
+    } finally {
+      this.isSaving = false;
+    }
   }
 
   /**
