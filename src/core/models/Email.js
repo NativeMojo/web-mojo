@@ -682,18 +682,50 @@ const EmailTemplateForms = {
     fields: [
       { name: 'name', type: 'text', label: 'Name', required: true, cols: 12 },
       { name: 'subject_template', type: 'text', label: 'Subject Template', cols: 12 },
-      { name: 'html_template', type: 'textarea', label: 'HTML Template', rows: 8, cols: 12 },
-      { name: 'text_template', type: 'textarea', label: 'Text Template', rows: 6, cols: 12 }
+      {
+        type: 'tabset',
+        name: 'settingsTabs',
+        tabs: [
+            {
+                label: 'HTML',
+                fields: [
+                    { name: 'html_template', type: 'textarea', label: 'HTML Template', rows: 16, cols: 12 },
+                ],
+            },
+            {
+                label: 'TEXT',
+                fields: [
+                    { name: 'text_template', type: 'textarea', label: 'Text Template', rows: 16, cols: 12 }
+                ]
+            }
+        ]
+      }
     ]
   },
   edit: {
-    title: 'Edit Email Template',
-    fields: [
-      { name: 'name', type: 'text', label: 'Name', required: true, cols: 12 },
-      { name: 'subject_template', type: 'text', label: 'Subject Template', cols: 12 },
-      { name: 'html_template', type: 'textarea', label: 'HTML Template', rows: 8, cols: 12 },
-      { name: 'text_template', type: 'textarea', label: 'Text Template', rows: 6, cols: 12 }
-    ]
+      title: 'Edit Email Template',
+      fields: [
+        { name: 'name', type: 'text', label: 'Name', required: true, cols: 12 },
+        { name: 'subject_template', type: 'text', label: 'Subject Template', cols: 12 },
+        {
+          type: 'tabset',
+          name: 'settingsTabs',
+          tabs: [
+              {
+                  label: 'HTML',
+                  fields: [
+                      { name: 'html_template', type: 'textarea', label: 'HTML Template', rows: 16, cols: 12 },
+                  ],
+              },
+              {
+                  label: 'TEXT',
+                  fields: [
+                      { name: 'text_template', type: 'textarea', label: 'Text Template', rows: 16, cols: 12 }
+                  ]
+              }
+          ]
+        }
+      ]
   }
 };
 

@@ -28,7 +28,7 @@ class EmailTemplateTablePage extends TablePage {
             },
 
             formDialogConfig: {             // Dialog options for forms
-                size: 'xl',
+                size: 'fullscreen',
             },
 
             // Table columns

@@ -1192,6 +1192,11 @@ class TableView extends ListView {
         ...this.getFormDialogConfig(ModelClass)
       });
 
+      if (!result.success || !result?.result?.data.success) {
+        Dialog.showError(result?.result?.data?.error || 'An error occurred');
+        return;
+      }
+
     } else {
       // Fallback to basic form if no config provided
       // Using statically imported FormView
@@ -1204,7 +1209,11 @@ class TableView extends ListView {
       });
 
       if (result) {
-        await event.model.save(result);
+        const resp = await event.model.save(result);
+        if (!resp.data?.status) {
+            Dialog.showError(resp.data.error || 'An error occurred');
+            return;
+        }
         await this.refresh();
       }
     }
@@ -1470,7 +1479,11 @@ class TableView extends ListView {
         if (this.options.addFormDefaults) {
             Object.assign(result, this.options.addFormDefaults);
         }
-        await model.save(result);
+        const resp = await model.save(result);
+        if (!resp?.data.status) {
+            Dialog.showError(resp.error || 'An error occurred');
+            return;
+        }
         if (this.collection) {
           this.collection.add(model);
         }
@@ -1490,7 +1503,11 @@ class TableView extends ListView {
       });
 
       if (result) {
-        await model.save(result);
+        const resp = await model.save(result);
+        if (!resp?.data.status) {
+            Dialog.showError(resp.data.error || 'An error occurred');
+            return;
+        }
         if (this.collection) {
           this.collection.add(model);
         }
