@@ -2123,10 +2123,22 @@ class FormView extends View {
         if (field.name === fieldName) {
           return field;
         }
-        // Search in group fields
-        if (field.type === 'group' && field.fields) {
+        
+        // Search in nested field structures
+        // Groups: { type: 'group', fields: [...] }
+        if (field.fields && Array.isArray(field.fields)) {
           const found = searchInFields(field.fields);
           if (found) return found;
+        }
+        
+        // Tabsets: { type: 'tabset', tabs: [{ fields: [...] }] }
+        if (field.tabs && Array.isArray(field.tabs)) {
+          for (const tab of field.tabs) {
+            if (tab.fields && Array.isArray(tab.fields)) {
+              const found = searchInFields(tab.fields);
+              if (found) return found;
+            }
+          }
         }
       }
       return null;

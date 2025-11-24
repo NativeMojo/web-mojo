@@ -1192,8 +1192,8 @@ class TableView extends ListView {
         ...this.getFormDialogConfig(ModelClass)
       });
 
-      if (!result.success || !result?.result?.data.success) {
-        Dialog.showError(result?.result?.data?.error || 'An error occurred');
+      if (!result.success || !result?.result?.data.status) {
+        Dialog.showError(result?.result?.data?.error || result?.result?.message || "An error occurred");
         return;
       }
 
@@ -1481,7 +1481,7 @@ class TableView extends ListView {
         }
         const resp = await model.save(result);
         if (!resp?.data.status) {
-            Dialog.showError(resp.error || 'An error occurred');
+            Dialog.showError(resp?.data.error || 'An error occurred');
             return;
         }
         if (this.collection) {

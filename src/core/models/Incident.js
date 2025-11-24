@@ -465,6 +465,13 @@ const RuleSetForms = {
                 label: 'Is Active',
                 value: true,
                 cols: 6
+            },
+            {
+                name: 'bundle_by_rule_set',
+                type: 'switch',
+                label: 'Bundle by Rule Set',
+                value: true,
+                cols: 6
             }
         ]
     },
@@ -540,6 +547,14 @@ const RuleSetForms = {
                 name: 'is_active',
                 type: 'switch',
                 label: 'Is Active',
+                value: true,
+                cols: 6
+            },
+            {
+                name: 'bundle_by_rule_set',
+                type: 'switch',
+                label: 'Bundle by Rule Set',
+                value: true,
                 cols: 6
             }
         ]

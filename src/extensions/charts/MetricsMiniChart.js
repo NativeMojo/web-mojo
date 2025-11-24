@@ -8,7 +8,7 @@ import MiniChart from './MiniChart.js';
 export default class MetricsMiniChart extends MiniChart {
   constructor(options = {}) {
     super(options);
-    
+
     // API configuration (matching MetricsChart)
     this.endpoint = options.endpoint || '/api/metrics/fetch';
     this.account = options.account || 'global';
@@ -18,17 +18,17 @@ export default class MetricsMiniChart extends MiniChart {
     this.dateStart = options.dateStart || null;
     this.dateEnd = options.dateEnd || null;
     this.defaultDateRange = options.defaultDateRange || '24h';
-    
+
     // State
     this.isLoading = false;
     this.lastFetch = null;
     this.refreshInterval = options.refreshInterval;
-    
+
     // Initialize date range if missing
     if (!this.dateStart || !this.dateEnd) {
       this.setQuickRange(this.defaultDateRange);
     }
-    
+
     // Normalize slugs to array
     if (this.slugs && !Array.isArray(this.slugs)) {
       this.slugs = [this.slugs];
@@ -37,12 +37,12 @@ export default class MetricsMiniChart extends MiniChart {
 
   async onAfterRender() {
     await super.onAfterRender();
-    
+
     // Fetch initial data if endpoint provided and no data
     if (this.endpoint && (!this.data || this.data.length === 0)) {
-      await this.fetchData();
+      this.fetchData();
     }
-    
+
     // Setup auto-refresh if configured
     if (this.refreshInterval && this.endpoint) {
       this.startAutoRefresh();
@@ -84,18 +84,18 @@ export default class MetricsMiniChart extends MiniChart {
 
   async fetchData() {
     if (!this.endpoint) return;
-    
+
     this.isLoading = true;
-    
+
     try {
       const rest = this.getApp()?.rest;
       if (!rest) {
         throw new Error('No REST client available');
       }
-      
+
       const params = this.buildApiParams();
       const response = await rest.GET(this.endpoint, params);
-      
+
       // Handle Rest standardized response
       if (!response.success) {
         throw new Error(response.message || 'Network error');
@@ -103,16 +103,16 @@ export default class MetricsMiniChart extends MiniChart {
       if (!response.data?.status) {
         throw new Error(response.data?.error || 'Server error');
       }
-      
+
       const metricsData = response.data.data;
       this.processMetricsData(metricsData);
       this.lastFetch = new Date();
-      
+
       // Re-render to show updated values
       await this.render();
-      
+
       this.emit('metrics:loaded', { chart: this, data: metricsData, params });
-      
+
     } catch (error) {
       console.error('Failed to fetch metrics:', error);
       this.emit('metrics:error', { chart: this, error });
@@ -124,25 +124,25 @@ export default class MetricsMiniChart extends MiniChart {
   processMetricsData(metricsData) {
     // Expecting: { labels: [...], data: { metric_slug: [values...] } }
     const { data: metrics, labels } = metricsData;
-    
+
     if (!metrics) return;
-    
+
     // Get the first (or only) metric's data
     const metricKeys = Object.keys(metrics);
     if (metricKeys.length === 0) return;
-    
+
     const metricSlug = metricKeys[0];
     const values = metrics[metricSlug];
-    
+
     // Sanitize values
     const sanitizedValues = values.map(val => {
       if (val === null || val === undefined || val === '') return 0;
       return typeof val === 'number' ? val : (parseFloat(val) || 0);
     });
-    
+
     // Update labels (for tooltips)
     this.labels = labels || null;
-    
+
     // Update chart data
     this.setData(sanitizedValues);
   }
@@ -176,7 +176,7 @@ export default class MetricsMiniChart extends MiniChart {
     if (this.refreshTimer) {
       clearInterval(this.refreshTimer);
     }
-    
+
     this.refreshTimer = setInterval(() => {
       this.fetchData();
     }, this.refreshInterval);

@@ -251,7 +251,7 @@ export default class MetricsMiniChartWidget extends View {
 
       const sign = percent > 0 ? '+' : '';
       this.header.trendingLabel = `${sign}${percent.toFixed(1)}%`;
-      this.header.hasTrending = true;
+      this.header.hasTrending = this.showTrending;
     } else {
       this.header.hasTrending = false;
     }
@@ -291,7 +291,7 @@ export default class MetricsMiniChartWidget extends View {
 
   refresh() {
     if (this.chart) {
-        this.chart.account = this.account;
+        if (this.account) this.chart.account = this.account;
         this.chart.refresh();
     }
   }

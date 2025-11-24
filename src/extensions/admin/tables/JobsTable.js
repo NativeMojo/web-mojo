@@ -119,6 +119,13 @@ export default class JobsTable extends TableView {
                     icon: 'bi-download'
                 }
             ],
+            filters: [
+                {
+                    key: 'func',
+                    label: 'Function',
+                    type: "text",
+                }
+            ],
             batchActions: [
                 {
                     label: 'Cancel Selected',

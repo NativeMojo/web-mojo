@@ -61,7 +61,13 @@ class EventTablePage extends TablePage {
                         type: "text"
                     }
                 },
-                { key: 'model_name', label: 'Related Model', sortable: true }
+                {
+                    key: 'metadata.server', label: 'Server',
+                    sortable: true,
+                    filter: {
+                        type: "text"
+                    }
+                },
             ],
 
             filters: [

@@ -51,24 +51,26 @@ class RuleSetView extends View {
             className: "p-3",
             columns: 2,
             fields: [
-                { name: 'id', label: 'RuleSet ID', cols: 6 },
-                { name: 'priority', label: 'Priority', cols: 6 },
-                { name: 'name', label: 'Name', cols: 12 },
-                { name: 'category', label: 'Category', formatter: 'badge', cols: 6 },
-                { name: 'is_active', label: 'Status', formatter: 'boolean', cols: 6 },
+                { name: 'name', label: 'Name', cols: 4 },
+                { name: 'category', label: 'Category', formatter: 'badge', cols: 4 },
+                { name: 'is_active', label: 'Is Active', formatter: 'yesno_icon', cols: 4 },
+                { name: 'priority', label: 'Priority', cols: 4 },
+                { name: 'id', label: 'RuleSet ID', cols: 4 },
+
                 {
                     name: 'match_by',
                     label: 'Match Logic',
                     template: matchByLabel,
-                    cols: 12
+                    cols: 4
                 },
                 {
                     name: 'bundle_by',
                     label: 'Bundle By',
                     template: bundleByLabel,
-                    cols: 12
+                    cols: 4
                 },
-                { name: 'bundle_minutes', label: 'Bundle Minutes', cols: 6 },
+                { name: 'bundle_minutes', label: 'Bundle Minutes', cols: 4 },
+                { name: 'bundle_by_rule_set', label: 'Bundle By Rule Set', formatter: 'yesno_icon', cols: 4 },
                 { name: 'handler', label: 'Handler', cols: 12 },
             ]
         });
