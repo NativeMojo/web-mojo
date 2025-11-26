@@ -586,11 +586,11 @@ class FormView extends View {
         // Listen for selection with metadata
         comboInput.on('select', (data) => {
           // Emit additional event with metadata for custom handling
-          this.emit('field:select', { 
-            field: fieldName, 
-            value: data.value, 
+          this.emit('field:select', {
+            field: fieldName,
+            value: data.value,
             option: data.option,
-            meta: data.meta 
+            meta: data.meta
           });
         });
 
@@ -604,6 +604,9 @@ class FormView extends View {
    * Handle field changes from custom components
    */
   handleFieldChange(fieldName, value) {
+    // Skip autosave during form population or field revert
+    if (this._isPopulating) return;
+
     // Update internal data
     this.data[fieldName] = value;
 
@@ -659,12 +662,12 @@ class FormView extends View {
   async executeBatchSave() {
     if (this.isSaving || this.pendingSaveFields.size === 0) return;
 
+    // Collect all pending changes BEFORE clearing
+    const changes = Object.fromEntries(this.pendingSaveFields);
+    const fieldNames = Array.from(this.pendingSaveFields.keys());
+
     try {
       this.isSaving = true;
-
-      // Collect all pending changes
-      const changes = Object.fromEntries(this.pendingSaveFields);
-      const fieldNames = Array.from(this.pendingSaveFields.keys());
 
       // Clear pending fields before save
       this.pendingSaveFields.clear();
@@ -675,7 +678,26 @@ class FormView extends View {
 
       // Save all changes in a single request
       if (typeof this.model.save === 'function') {
-        await this.model.save(changes);
+        const resp = await this.model.save(changes);
+        
+        // Check if save was successful
+        if (!resp || !resp.success || (resp.data && !resp.data.status)) {
+          const errorMsg = resp?.data?.error || resp?.error || resp?.message || 'Save failed';
+          
+          // Show error toast
+          this.getApp()?.toast?.error(errorMsg);
+          
+          // Revert fields to their original values
+          this.revertFields(fieldNames);
+          
+          // Show error status for all fields
+          fieldNames.forEach(fieldName => {
+            const statusManager = this.getFieldStatusManager(fieldName);
+            statusManager.showStatus('error', { message: errorMsg });
+          });
+          
+          return; // Exit early, don't show success
+        }
       } else {
         // Just update model attributes if no save method
         Object.entries(changes).forEach(([key, val]) => {
@@ -683,7 +705,7 @@ class FormView extends View {
         });
       }
 
-      // Show success status for all saved fields
+      // Show success status for all saved fields (only if we didn't return early)
       fieldNames.forEach(fieldName => {
         const statusManager = this.getFieldStatusManager(fieldName);
         statusManager.showStatus('saved');
@@ -691,17 +713,63 @@ class FormView extends View {
 
     } catch (error) {
       console.error('Batch save error:', error);
-      
+
+      // Show error toast
+      this.getApp()?.toast?.error(error.message || 'An error occurred while saving');
+
+      // Revert fields to their original values
+      this.revertFields(fieldNames);
+
       // Show error status for all fields that were attempted
-      Array.from(this.pendingSaveFields.keys()).forEach(fieldName => {
+      fieldNames.forEach(fieldName => {
         const statusManager = this.getFieldStatusManager(fieldName);
         statusManager.showStatus('error', { message: error.message });
       });
-
-      // Re-add failed fields back to pending queue for potential retry
-      // (they will be re-saved on next change)
     } finally {
       this.isSaving = false;
+    }
+  }
+
+  /**
+   * Revert form fields to their original model values
+   * Called when save fails to keep UI in sync with server state
+   * @param {Array<string>} fieldNames - Names of fields to revert
+   * @private
+   */
+  revertFields(fieldNames) {
+    if (!this.model) return;
+
+    // Temporarily disable autosave during revert
+    const wasPopulating = this._isPopulating;
+    this._isPopulating = true;
+
+    try {
+      fieldNames.forEach(fieldName => {
+        // Get original value from model
+        const originalValue = this.model.get(fieldName);
+        
+        // Update internal data
+        this.data[fieldName] = originalValue;
+        
+        // Find the field element and revert its value
+        const fieldElement = this.element?.querySelector(`[name="${fieldName}"]`);
+        if (fieldElement) {
+          const fieldConfig = this.getFormFieldConfig(fieldName);
+          if (fieldConfig) {
+            this.setFieldValue(fieldElement, fieldConfig, originalValue);
+          } else {
+            // Fallback if no config found
+            if (fieldElement.type === 'checkbox') {
+              fieldElement.checked = Boolean(originalValue);
+            } else {
+              fieldElement.value = originalValue ?? '';
+            }
+          }
+        }
+      });
+    } finally {
+      // Re-enable autosave
+      this._isPopulating = wasPopulating;
     }
   }
 
@@ -1165,14 +1233,14 @@ class FormView extends View {
    */
   async onChangeFileSelected(event, element) {
     const files = Array.from(element.files);
-    
+
     // Store the file(s) in this.data so getFormData() can access them
     if (element.multiple) {
       this.data[element.name] = element.files; // Store as FileList for multiple
     } else {
       this.data[element.name] = files[0] || null; // Store single File object
     }
-    
+
     this.emit('file:selected', {
       field: element.name,
       files: files,
@@ -2123,14 +2191,14 @@ class FormView extends View {
         if (field.name === fieldName) {
           return field;
         }
-        
+
         // Search in nested field structures
         // Groups: { type: 'group', fields: [...] }
         if (field.fields && Array.isArray(field.fields)) {
           const found = searchInFields(field.fields);
           if (found) return found;
         }
-        
+
         // Tabsets: { type: 'tabset', tabs: [{ fields: [...] }] }
         if (field.tabs && Array.isArray(field.tabs)) {
           for (const tab of field.tabs) {

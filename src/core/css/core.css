@@ -1759,3 +1759,147 @@
         transition: none;
     }
 }
+
+/* ============================================
+   GroupSearchView - Hierarchical Tree Styles
+   ============================================ */
+
+.group-search-view .tree-item-wrapper {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.group-search-view .tree-indent {
+    position: relative;
+    flex-shrink: 0;
+    align-self: stretch;
+}
+
+.group-search-view .tree-connector,
+.group-search-view .tree-connector-last {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+}
+
+/* Vertical line (├ has full height, └ only to middle) */
+.group-search-view .tree-connector::before {
+    content: "";
+    position: absolute;
+    left: 12px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--bs-border-color);
+}
+
+.group-search-view .tree-connector-last::before {
+    content: "";
+    position: absolute;
+    left: 12px;
+    top: 0;
+    height: 50%;
+    width: 2px;
+    background: var(--bs-border-color);
+}
+
+/* Horizontal line (── part) */
+.group-search-view .tree-connector::after,
+.group-search-view .tree-connector-last::after {
+    content: "";
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    width: 35px;
+    height: 2px;
+    background: var(--bs-border-color);
+}
+
+.group-search-view .tree-item-expand {
+    flex-shrink: 0;
+    width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.group-search-view .tree-expand-btn {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: var(--bs-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s ease;
+}
+
+.group-search-view .tree-expand-btn:hover {
+    color: var(--bs-primary);
+}
+
+.group-search-view .tree-expand-btn i {
+    font-size: 0.875rem;
+}
+
+.group-search-view .tree-expand-spacer {
+    display: inline-block;
+    width: 24px;
+}
+
+.group-search-view .tree-item-body {
+    min-width: 0;
+}
+
+.group-search-view .tree-item-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+}
+
+.group-search-view .tree-item-name {
+    font-weight: 500;
+    color: var(--bs-body-color);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.group-search-view .tree-item-kind {
+    font-size: 0.75rem;
+    color: var(--bs-secondary);
+    background: var(--bs-secondary-bg);
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    flex-shrink: 0;
+}
+
+.group-search-view .simple-search-item {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.group-search-view .simple-search-item:hover {
+    background-color: var(--bs-light);
+}
+
+.group-search-view .simple-search-item .bi-chevron-right {
+    opacity: 0.5;
+}
+
+.group-search-view .simple-search-item:hover .bi-chevron-right {
+    opacity: 1;
+}

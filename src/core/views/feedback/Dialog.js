@@ -39,14 +39,14 @@ class Dialog extends View {
   static fixAllBackdropStacking() {
     const backdrops = document.querySelectorAll('.modal-backdrop');
     const openDialogs = Dialog._openDialogs;
-    
+
     if (backdrops.length === 0 || openDialogs.length === 0) return;
-    
+
     // Sort dialogs by z-index to get correct stacking order
-    const sortedDialogs = [...openDialogs].sort((a, b) => 
+    const sortedDialogs = [...openDialogs].sort((a, b) =>
       (a._dialogZIndex || 0) - (b._dialogZIndex || 0)
     );
-    
+
     // Set backdrop z-indices to create proper stacking
     // Each backdrop should cover all previous modals but stay below its own modal
     backdrops.forEach((backdrop, index) => {
@@ -54,11 +54,11 @@ class Dialog extends View {
         const dialog = sortedDialogs[index];
         const backdropZIndex = dialog._dialogZIndex - 5;
         backdrop.style.zIndex = backdropZIndex;
-        
+
         // Move backdrop to correct container
         const fullscreenElement = document.querySelector('.table-fullscreen');
         const targetContainer = fullscreenElement || document.body;
-        
+
         if (backdrop.parentNode !== targetContainer) {
           targetContainer.appendChild(backdrop);
         }
@@ -91,7 +91,7 @@ class Dialog extends View {
           if (!this._busyIndicator) {
               const zIndexBase = this.getFullscreenAwareZIndex();
               const busyZIndex = zIndexBase.modal + 1000; // Higher than any modal
-              
+
               this._busyIndicator = document.createElement('div');
               this._busyIndicator.className = 'mojo-busy-indicator';
               this._busyIndicator.innerHTML = `
@@ -188,14 +188,14 @@ class Dialog extends View {
     this.title = options.title || '';
     this.titleId = `${this.modalId}-label`;
 
-    // Size options: sm, md (default), lg, xl, fullscreen, auto
+    // Size options: sm, md (default), lg, xl, xxl, fullscreen, auto
     // Or responsive fullscreen: fullscreen-sm-down, fullscreen-md-down, etc.
     // 'auto' enables dynamic sizing based on content dimensions
     this.size = options.size || '';
 
     // Layout options
     this.centered = options.centered !== undefined ? options.centered : false;
-    this.scrollable = options.scrollable !== undefined ? options.scrollable : false;
+    this.scrollable = options.scrollable !== undefined ? options.scrollable : true; // Default to true for better max-height behavior
     // Auto-sizing: dynamically size modal based on content dimensions
     // Can be enabled with autoSize: true or size: 'auto'
     // Waits for modal animation to complete before measuring content
@@ -221,6 +221,7 @@ class Dialog extends View {
     // Auto-sizing constraints - only used when autoSize is enabled
     this.minWidth = options.minWidth || 300;        // Minimum modal width (px)
     this.minHeight = options.minHeight || 200;      // Minimum modal height (px)
+    if (options.maxHeight) this.maxHeight = options.maxHeight;
     this.maxWidthPercent = options.maxWidthPercent || 0.9;  // Max width as % of viewport
     this.maxHeightPercent = options.maxHeightPercent || 0.8; // Max height as % of viewport
 
@@ -347,7 +348,11 @@ class Dialog extends View {
 
     // Add scrollable class
     if (this.scrollable) {
-      dialogClasses.push('modal-dialog-scrollable');
+      if (!this.maxHeight) {
+          dialogClasses.push('modal-dialog-scrollable');
+      } else {
+          dialogClasses.push('overflow-hidden');
+      }
     }
 
     return `
@@ -613,6 +618,12 @@ class Dialog extends View {
     // Apply auto-sizing after rendering if enabled
     if (this.autoSize) {
       this.setupAutoSizing();
+    } else if (this.maxHeight) {
+      const modalBody = this.element.querySelector('.modal-body');
+      if (modalBody) {
+        modalBody.style.maxHeight = `${this.maxHeight}px`;
+        // modalBody.style.overflowY = 'auto';
+      }
     }
   }
 
@@ -689,13 +700,13 @@ class Dialog extends View {
         return;
       }
 
-      // Store original styles for restoration
+      // Store original styles and classes for restoration
       const originalStyles = {
         dialogMaxWidth: modalDialog.style.maxWidth,
         dialogWidth: modalDialog.style.width,
         contentWidth: modalContent.style.width,
         contentMaxHeight: modalContent.style.maxHeight,
-        bodyOverflow: modalBody.style.overflowY
+        hadScrollableClass: modalDialog.classList.contains('modal-dialog-scrollable')
       };
 
       // Temporarily remove size constraints to measure natural content size
@@ -716,7 +727,7 @@ class Dialog extends View {
         window.innerWidth * this.maxWidthPercent,
         window.innerWidth - viewportMargin
       );
-      const maxHeight = Math.min(
+      let maxHeight = Math.min(
         window.innerHeight * this.maxHeightPercent,
         window.innerHeight - viewportMargin
       );
@@ -724,19 +735,26 @@ class Dialog extends View {
       // Calculate optimal dimensions with padding for content
       let optimalWidth = Math.max(this.minWidth, Math.ceil(contentRect.width + 20));
       let optimalHeight = Math.max(this.minHeight, Math.ceil(contentRect.height));
-
+      if (this.maxHeight) {
+        maxHeight = Math.min(this.maxHeight, maxHeight);
+        modalDialog.style.maxHeight = `${maxHeight}px`;
+      }
       // Apply viewport constraints
       optimalWidth = Math.min(optimalWidth, maxWidth);
       const heightExceedsMax = contentRect.height > maxHeight;
 
       // Apply the calculated size
       modalDialog.style.maxWidth = `${optimalWidth}px`;
+
       modalDialog.style.width = `${optimalWidth}px`;
 
-      // Handle height overflow with scrolling
+      // Handle height overflow with scrolling - use Bootstrap's scrollable class
       if (heightExceedsMax) {
+        // Add Bootstrap's modal-dialog-scrollable class for proper max-height behavior
+        if (!modalDialog.classList.contains('modal-dialog-scrollable')) {
+          modalDialog.classList.add('modal-dialog-scrollable');
+        }
         modalContent.style.maxHeight = `${maxHeight}px`;
-        modalBody.style.overflowY = 'auto';
         optimalHeight = maxHeight;
       }
 
@@ -769,7 +787,11 @@ class Dialog extends View {
         modalDialog.style.width = this._originalStyles.dialogWidth || '';
         modalContent.style.width = this._originalStyles.contentWidth || '';
         modalContent.style.maxHeight = this._originalStyles.contentMaxHeight || '';
-        modalBody.style.overflowY = this._originalStyles.bodyOverflow || '';
+
+        // Restore scrollable class state
+        if (!this._originalStyles.hadScrollableClass && modalDialog.classList.contains('modal-dialog-scrollable')) {
+          modalDialog.classList.remove('modal-dialog-scrollable');
+        }
 
         // Clear stored dimensions
         delete this.autoSizedWidth;
@@ -792,11 +814,11 @@ class Dialog extends View {
       const zIndexBase = Dialog.getFullscreenAwareZIndex();
       const newZIndex = zIndexBase.modal + (stackIndex * 20);
       this.element.style.zIndex = newZIndex;
-      
+
       // Store z-index on this dialog for later reference
       this._dialogZIndex = newZIndex;
       this._backdropZIndex = newZIndex - 10; // Ensure backdrop covers previous modals
-      
+
       Dialog._openDialogs.push(this);
 
       if (this.onShow) this.onShow(e);
@@ -812,7 +834,7 @@ class Dialog extends View {
       setTimeout(() => {
         Dialog.fixAllBackdropStacking();
       }, 50);
-      
+
       if (this.onShown) this.onShown(e);
       this.emit('shown', {
         dialog: this,
@@ -858,7 +880,7 @@ class Dialog extends View {
       // and properly manage backdrop stacking
       if (Dialog._openDialogs.length > 0) {
         document.body.classList.add('modal-open');
-        
+
         setTimeout(() => { // Let Bootstrap finish its hide animation
           Dialog.fixAllBackdropStacking();
         }, 50);

@@ -15,7 +15,7 @@ class ResultsView extends View {
         super({
             className: 'search-results-view flex-grow-1 overflow-auto d-flex flex-column',
             template: `
-                <div class="flex-grow-1 overflow-auto">
+                <div id="results-container" class="flex-grow-1 overflow-auto">
                 {{#data.loading}}
                     <div class="text-center p-4">
                         <div class="spinner-border spinner-border-sm text-muted" role="status">
@@ -90,14 +90,24 @@ class ResultsView extends View {
             this.parentView.clearSearch();
         }
     }
+
+    async onAfterRender() {
+        if (this.parentView && this.parentView.maxHeight) {
+            const container = this.element.querySelector('#results-container');
+            if (container) {
+                container.style.maxHeight = `${this.parentView.maxHeight}px`;
+            }
+        }
+    }
 }
 
 class SimpleSearchView extends View {
     constructor(options = {}) {
         super({
-            className: 'simple-search-view h-100 d-flex flex-column',
+            className: 'simple-search-view d-flex flex-column',
             template: `
                 <div class="p-3 border-bottom bg-light">
+                    {{#data.headerText}}
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <h6 class="text-muted fw-semibold mb-0">
                             {{#data.headerIcon}}<i class="{{data.headerIcon}} me-2"></i>{{/data.headerIcon}}
@@ -113,6 +123,7 @@ class SimpleSearchView extends View {
                         </button>
                         {{/data.showExitButton}}
                     </div>
+                    {{/data.headerText}}
                     <div class="position-relative">
                         <input type="text"
                                class="form-control form-control-sm pe-5"
@@ -153,7 +164,8 @@ class SimpleSearchView extends View {
         this.collectionParams = { size: 25, ...options.collectionParams };
 
         // UI text configuration
-        this.headerText = options.headerText || 'Select Item';
+        if (options.headerText === undefined) this.headerText = 'Select Item';
+        this.headerText = options.headerText;
         this.headerIcon = options.headerIcon || 'bi bi-list';
         this.searchPlaceholder = options.searchPlaceholder || 'Search...';
         this.loadingText = options.loadingText || 'Loading items...';
@@ -172,6 +184,11 @@ class SimpleSearchView extends View {
         this.hasSearched = false;
         this.searchTimer = null;
         this.debounceMs = options.debounceMs || 300;
+        if (options.maxHeight) {
+            this.maxHeight = options.maxHeight;
+        } else {
+            this.addClass('h-100');
+        }
 
         // Create results child view
         this.resultsView = new ResultsView({
@@ -500,7 +517,6 @@ class SimpleSearchView extends View {
                 await this.resultsView.render(true, container);
             }
         }
-
         // Update results view after main render
         this.updateResultsView();
     }

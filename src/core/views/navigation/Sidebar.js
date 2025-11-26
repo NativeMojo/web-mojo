@@ -4,7 +4,7 @@
  */
 
 import View from '@core/View.js';
-import SimpleSearchView from './SimpleSearchView.js';
+import GroupSearchView from './GroupSearchView.js';
 import {GroupList} from '@core/models/Group.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 
@@ -76,7 +76,7 @@ class Sidebar extends View {
         // Initialize tooltips for nav items
         this.initializeTooltips();
 
-        this.searchView = new SimpleSearchView({
+        this.searchView = new GroupSearchView({
             noAppend: true,
             showExitButton: true,
             headerText: "Select Group",
@@ -135,30 +135,32 @@ class Sidebar extends View {
         // Create or reuse collection instance (like GroupSelectorButton does)
         const collection = new GroupList();
 
-        // Create SimpleSearchView instance matching GroupSelectorButton pattern
-        const searchView = new SimpleSearchView({
+        // Create GroupSearchView instance matching GroupSelectorButton pattern
+        const searchView = new GroupSearchView({
             Collection: GroupList,
             collection: collection,  // Pass the collection instance
-            itemTemplate: `
-            <div class="p-3 border-bottom">
-                <div class="fw-semibold text-dark">{{name}}</div>
-                <small class="text-muted">#{{id}}  {{kind}}</small>
-            </div>
-            `,
             searchFields: ['name'],
-            headerText: "Select Group",
+            headerText: null,
             searchPlaceholder: "Search groups...",
-            headerIcon: "bi-building",
-            showExitButton: false
+            headerIcon: null,
+            maxHeight: Math.min(600, window.innerHeight - 200),
+            showExitButton: false,
+            showKind: true,              // Show kind badges (default: true)
+            parentField: 'parent',       // Field containing parent object
+            kindField: 'kind',           // Field containing kind/type
+            autoExpandRoot: true,        // Auto-expand root items (default: true)
+            autoExpandAll: false,        // Auto-expand all nodes (default: false)
+            indentSize: 20,             // Pixels per level (default: 20)
+            showLines: true,
         });
 
         // Create dialog
         this.groupSelectorDialog = new Dialog({
-            title: "Select Group",
             body: searchView,
             size: 'md',
-            scrollable: true,
+            header: null,
             noBodyPadding: true,
+            scrollable: false,
             buttons: [],
             closeButton: true
         });
