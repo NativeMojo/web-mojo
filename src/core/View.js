@@ -425,6 +425,7 @@ export class View {
   }
 
   renderTemplateString(template, context, partials) {
+    // Mustache.render now auto-wraps context to enable pipe formatters
     return Mustache.render(template, context, partials);
   }
 

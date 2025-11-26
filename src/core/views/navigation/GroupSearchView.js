@@ -1,10 +1,66 @@
 /**
  * GroupSearchView - Hierarchical tree-view search component
  * Extends SimpleSearchView to support parent/child relationships
- * Displays items in a collapsible tree structure based on parent property
+ * Displays items in a nested tree structure based on parent property
  */
 
 import SimpleSearchView from './SimpleSearchView.js';
+import View from '../../View.js';
+
+/**
+ * TreeResultsView - Custom results view for nested tree rendering
+ */
+class TreeResultsView extends View {
+    constructor(options = {}) {
+        super({
+            className: 'search-results-view flex-grow-1 overflow-auto d-flex flex-column',
+            template: `
+                <div id="results-container" class="flex-grow-1 overflow-auto">
+                {{#data.loading}}
+                    <div class="text-center p-4">
+                        <div class="spinner-border spinner-border-sm text-muted" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <div class="mt-2 small text-muted">{{data.loadingText}}</div>
+                    </div>
+                {{/data.loading}}
+
+                {{^data.loading}}
+                    <div class="tree-root">
+                        {{{data.treeHtml}}}
+                    </div>
+
+                    {{#data.showNoResults}}
+                        <div class="text-center p-4">
+                            <i class="bi bi-search text-muted mb-2" style="font-size: 1.5rem;"></i>
+                            <div class="text-muted small">{{data.noResultsText}}</div>
+                            <button type="button" class="btn btn-link btn-sm mt-2 p-0" data-action="clear-search">
+                                Clear search
+                            </button>
+                        </div>
+                    {{/data.showNoResults}}
+
+                    {{#data.showEmpty}}
+                        <div class="text-center p-4">
+                            <i class="bi bi-folder2-open text-muted mb-2" style="font-size: 1.5rem;"></i>
+                            <div class="text-muted small">{{data.emptyText}}</div>
+                        </div>
+                    {{/data.showEmpty}}
+                {{/data.loading}}
+                </div>
+
+                {{#data.showResultsCount}}
+                <div class="border-top bg-light p-2 text-center">
+                    <small class="text-muted">
+                        {{data.filteredCount}} of {{data.totalCount}}
+                    </small>
+                </div>
+                {{/data.showResultsCount}}
+            `,
+            ...options
+        });
+    }
+}
 
 class GroupSearchView extends SimpleSearchView {
     constructor(options = {}) {
@@ -17,17 +73,19 @@ class GroupSearchView extends SimpleSearchView {
         this.showKind = options.showKind !== undefined ? options.showKind : true;
         this.parentField = options.parentField || 'parent';
         this.kindField = options.kindField || 'kind';
-        this.expandedNodes = new Set(); // Track which nodes are expanded
         this.treeData = []; // Processed hierarchical data
-        this.flattenedItems = []; // Flattened tree for display
-        
-        // Auto-expand options
-        this.autoExpandRoot = options.autoExpandRoot !== undefined ? options.autoExpandRoot : true;
-        this.autoExpandAll = options.autoExpandAll || false;
         
         // Visual customization
-        this.indentSize = options.indentSize || 20; // pixels per level
         this.showLines = options.showLines !== undefined ? options.showLines : true;
+        
+        // Replace the results view with our tree version
+        if (this.resultsView) {
+            this.removeChild(this.resultsView);
+        }
+        this.resultsView = new TreeResultsView({
+            parentView: this
+        });
+        this.addChild(this.resultsView);
     }
 
     /**
@@ -43,14 +101,12 @@ class GroupSearchView extends SimpleSearchView {
         
         // First pass: add all items and extract parent objects
         items.forEach(item => {
-            // Add the item itself
             if (!itemsById.has(item.id)) {
                 itemsById.set(item.id, {
                     ...item,
                     children: [],
                     level: 0,
-                    hasChildren: false,
-                    isExpanded: false
+                    hasChildren: false
                 });
             }
             
@@ -61,8 +117,7 @@ class GroupSearchView extends SimpleSearchView {
                     ...parentObj,
                     children: [],
                     level: 0,
-                    hasChildren: false,
-                    isExpanded: false
+                    hasChildren: false
                 });
             }
         });
@@ -71,30 +126,15 @@ class GroupSearchView extends SimpleSearchView {
 
         // Build parent-child relationships
         itemsById.forEach((treeItem, itemId) => {
-            // Find the original item to get parent reference
             const originalItem = items.find(i => i.id === itemId) || treeItem;
             const parentId = originalItem[this.parentField]?.id;
 
             if (parentId && itemsById.has(parentId)) {
-                // Has a parent - add to parent's children
                 const parent = itemsById.get(parentId);
                 parent.children.push(treeItem);
                 parent.hasChildren = true;
-                
-                // Auto-expand if configured
-                if (this.autoExpandAll || (this.autoExpandRoot && parent.level === 0)) {
-                    this.expandedNodes.add(parent.id);
-                    parent.isExpanded = true;
-                }
             } else {
-                // No parent or parent not in list - this is a root item
                 rootItems.push(treeItem);
-                
-                // Auto-expand root items
-                if (this.autoExpandRoot) {
-                    this.expandedNodes.add(treeItem.id);
-                    treeItem.isExpanded = true;
-                }
             }
         });
 
@@ -102,38 +142,17 @@ class GroupSearchView extends SimpleSearchView {
         const calculateLevels = (nodes, level = 0) => {
             nodes.forEach(node => {
                 node.level = level;
-                node.isExpanded = this.expandedNodes.has(node.id);
                 if (node.children.length > 0) {
-                    // Sort children by name
                     node.children.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
                     calculateLevels(node.children, level + 1);
                 }
             });
         };
 
-        // Sort root items by name
         rootItems.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
         calculateLevels(rootItems);
 
         return rootItems;
-    }
-
-    /**
-     * Flatten tree structure for rendering
-     */
-    flattenTree(nodes, result = []) {
-        nodes.forEach((node, index) => {
-            // Mark if this is the last child
-            node._isLastChild = index === nodes.length - 1;
-            result.push(node);
-            
-            // Only add children if node is expanded
-            if (node.isExpanded && node.children.length > 0) {
-                this.flattenTree(node.children, result);
-            }
-        });
-        
-        return result;
     }
 
     /**
@@ -143,104 +162,101 @@ class GroupSearchView extends SimpleSearchView {
         if (!this.collection) {
             this.filteredItems = [];
             this.treeData = [];
-            this.flattenedItems = [];
             return;
         }
 
+        // Server-side filtering is handled in performSearch() (from parent class)
         const items = this.collection.toJSON();
-
-        // Apply search filter first
-        let filteredItems = items;
-        if (this.searchValue && this.searchValue.trim()) {
-            const searchTerm = this.searchValue.toLowerCase().trim();
-            filteredItems = items.filter(item => {
-                return this.searchFields.some(field => {
-                    const value = this.getNestedValue(item, field);
-                    return value && value.toString().toLowerCase().includes(searchTerm);
-                });
-            });
-        }
-
-        // Build tree from filtered items
-        this.treeData = this.buildTreeHierarchy(filteredItems);
+        this.treeData = this.buildTreeHierarchy(items);
         
-        // Flatten for display
-        this.flattenedItems = this.flattenTree(this.treeData);
-        
-        // Set filteredItems to flattened tree for compatibility with parent class
-        this.filteredItems = this.flattenedItems;
+        // For compatibility with parent class counting
+        this.filteredItems = items;
 
         this.updateResultsView();
     }
 
     /**
-     * Toggle node expansion
+     * Override updateResultsView to render nested tree structure
      */
-    toggleNode(itemId) {
-        if (this.expandedNodes.has(itemId)) {
-            this.expandedNodes.delete(itemId);
-        } else {
-            this.expandedNodes.add(itemId);
-        }
+    updateResultsView() {
+        if (!this.resultsView) return;
+
+        const hasItems = this.collection && this.collection.length() > 0;
+        const hasSearchValue = this.searchValue && this.searchValue.length > 0;
+
+        // Build nested HTML from tree data
+        const treeHtml = this.renderTreeNodes(this.treeData);
         
-        // Rebuild tree with new expansion state
-        this.updateFilteredItems();
+        console.log('GroupSearchView updateResultsView:', {
+            hasItems,
+            treeDataLength: this.treeData?.length,
+            treeHtmlLength: treeHtml?.length,
+            collectionLength: this.collection?.length()
+        });
+
+        this.resultsView.data = {
+            loading: this.loading,
+            treeHtml: treeHtml,
+            showEmpty: !this.loading && !hasItems,
+            showNoResults: !this.loading && hasItems && this.treeData.length === 0 && hasSearchValue,
+            showResultsCount: !this.loading && hasItems,
+            filteredCount: this.filteredItems.length,
+            totalCount: this.collection?.restEnabled
+                ? (this.collection?.meta?.count || 0)
+                : (this.collection?.length() || 0),
+
+            // UI text
+            loadingText: this.loadingText,
+            noResultsText: this.noResultsText,
+            emptyText: this.emptyText,
+        };
+
+        this.resultsView.render();
     }
 
     /**
-     * Handle expand/collapse button clicks
+     * Render tree nodes recursively as nested HTML
      */
-    async handleActionToggleNode(event, element) {
-        event.preventDefault();
-        event.stopPropagation();
-        
-        const itemId = parseInt(element.getAttribute('data-item-id'));
-        if (!isNaN(itemId)) {
-            this.toggleNode(itemId);
-        }
-    }
+    renderTreeNodes(nodes) {
+        if (!nodes || nodes.length === 0) return '';
 
-    /**
-     * Get tree-specific item template
-     */
-    getDefaultItemTemplate() {
-        return `
-            <div class="tree-item-content">
-                <div class="tree-item-name">{{name}}</div>
-                {{#showKind}}
-                <div class="tree-item-kind">{{kind}}</div>
-                {{/showKind}}
-            </div>
-        `;
-    }
-
-    /**
-     * Process item template with tree structure
-     */
-    processItemTemplate(item) {
-        const indent = item.level * this.indentSize;
-        const hasChildren = item.hasChildren;
-        const isExpanded = item.isExpanded;
-        
-        // Build expand/collapse icon
-        let expandIcon = '';
-        if (hasChildren) {
-            const iconClass = isExpanded ? 'bi-chevron-down' : 'bi-chevron-right';
-            expandIcon = `
-                <button class="tree-expand-btn" 
-                        type="button"
-                        data-action="toggle-node" 
-                        data-item-id="${item.id}"
-                        aria-label="${isExpanded ? 'Collapse' : 'Expand'}">
-                    <i class="bi ${iconClass}"></i>
-                </button>
+        let html = '';
+        nodes.forEach((node, index) => {
+            const isLast = index === nodes.length - 1;
+            const hasChildren = node.children && node.children.length > 0;
+            
+            // Render the item content
+            const itemContent = this.renderItemContent(node);
+            
+            // Build nested structure
+            html += `
+                <div class="tree-node${isLast ? ' tree-node-last' : ''}">
+                    <div class="tree-node-item" data-action="select-item" data-item-id="${node.id}">
+                        <span class="tree-node-dot"></span>
+                        <div class="tree-node-content">
+                            ${itemContent}
+                        </div>
+                        <i class="bi bi-chevron-right tree-node-chevron"></i>
+                    </div>
+                    ${hasChildren ? `
+                        <div class="tree-node-children${this.showLines ? ' tree-lines' : ''}">
+                            ${this.renderTreeNodes(node.children)}
+                        </div>
+                    ` : ''}
+                </div>
             `;
-        } else {
-            expandIcon = '<span class="tree-expand-spacer"></span>';
-        }
+        });
 
-        // Process the base template
+        return html;
+    }
+
+    /**
+     * Render item content from template
+     */
+    renderItemContent(item) {
         let content = this.itemTemplate;
+        
+        // Replace template variables
         content = content.replace(/\{\{(\w+)\}\}/g, (match, prop) => {
             if (prop === 'showKind') {
                 return this.showKind ? 'true' : '';
@@ -255,84 +271,49 @@ class GroupSearchView extends SimpleSearchView {
             content = content.replace(/\{\{#showKind\}\}.*?\{\{\/showKind\}\}/gs, '');
         }
 
-        // Build tree lines with proper connectors
-        let treeConnector = '';
-        if (this.showLines && item.level > 0) {
-            // Determine if this is the last child in its parent
-            const isLastChild = item._isLastChild || false;
-            const connectorClass = isLastChild ? 'tree-connector-last' : 'tree-connector';
-            treeConnector = `<span class="${connectorClass}"></span>`;
-        }
+        return content;
+    }
 
-        // Wrap in tree structure
+    /**
+     * Get tree-specific item template
+     */
+    getDefaultItemTemplate() {
         return `
-            <div class="tree-item-wrapper" data-tree-level="${item.level}">
-                <div class="tree-indent" style="width: ${indent}px;">
-                    ${treeConnector}
-                </div>
-                <div class="tree-item-expand">
-                    ${expandIcon}
-                </div>
-                <div class="tree-item-body flex-grow-1">
-                    ${content}
-                </div>
-            </div>
+            <div class="tree-item-name">{{name}}</div>
+            {{#showKind}}
+            <div class="tree-item-kind">{{kind}}</div>
+            {{/showKind}}
         `;
     }
 
-    /**
-     * Expand all nodes
-     */
-    expandAll() {
-        const expandRecursive = (nodes) => {
-            nodes.forEach(node => {
-                if (node.hasChildren) {
-                    this.expandedNodes.add(node.id);
-                    expandRecursive(node.children);
-                }
-            });
-        };
-        
-        expandRecursive(this.treeData);
-        this.updateFilteredItems();
-    }
+
 
     /**
-     * Collapse all nodes
+     * Handle item selection - override to use data-item-id
      */
-    collapseAll() {
-        this.expandedNodes.clear();
-        this.updateFilteredItems();
-    }
+    async handleActionSelectItem(event, element) {
+        const itemId = parseInt(element.getAttribute('data-item-id'));
+        if (isNaN(itemId)) return;
 
-    /**
-     * Expand to specific node (and all parents)
-     */
-    expandToNode(nodeId) {
-        // Find node in tree and expand all parents
-        const findAndExpandParents = (nodes, targetId, parents = []) => {
-            for (const node of nodes) {
-                if (node.id === targetId) {
-                    // Found it - expand all parents
-                    parents.forEach(parent => {
-                        this.expandedNodes.add(parent.id);
-                    });
-                    this.expandedNodes.add(node.id);
-                    return true;
-                }
-                
-                if (node.children.length > 0) {
-                    if (findAndExpandParents(node.children, targetId, [...parents, node])) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        };
-
-        if (findAndExpandParents(this.treeData, nodeId)) {
-            this.updateFilteredItems();
+        // Find item in tree
+        const item = this.findItemById(itemId);
+        if (item) {
+            this.emit('itemSelected', item);
         }
+    }
+
+    /**
+     * Find item by ID in tree
+     */
+    findItemById(id, nodes = this.treeData) {
+        for (const node of nodes) {
+            if (node.id === id) return node;
+            if (node.children && node.children.length > 0) {
+                const found = this.findItemById(id, node.children);
+                if (found) return found;
+            }
+        }
+        return null;
     }
 
     /**
@@ -346,23 +327,9 @@ class GroupSearchView extends SimpleSearchView {
      * Get children of a specific node
      */
     getNodeChildren(nodeId) {
-        const findNode = (nodes, targetId) => {
-            for (const node of nodes) {
-                if (node.id === targetId) {
-                    return node.children;
-                }
-                if (node.children.length > 0) {
-                    const found = findNode(node.children, targetId);
-                    if (found) return found;
-                }
-            }
-            return null;
-        };
-
-        return findNode(this.treeData, nodeId) || [];
+        const node = this.findItemById(nodeId);
+        return node ? node.children : [];
     }
-
-
 }
 
 export default GroupSearchView;

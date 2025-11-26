@@ -2579,6 +2579,284 @@ nav.topnav-shadow-dark {
     color: var(--bs-primary) !important;
 }
 
+/* ====================================
+   Parent/Selected Group Bars in Sidebar
+   ==================================== */
+
+/* Parent Bar - Shows parent group with option to navigate up */
+.sidebar-parent-bar {
+    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.parent-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.parent-label {
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 9px;
+    opacity: 0.5;
+}
+
+.parent-name {
+    font-weight: 600;
+}
+
+.parent-expand {
+    font-size: 10px;
+}
+
+/* Selected Group Row - Current active group */
+.sidebar-selected-group-row {
+    padding: 14px 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.selected-group-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.selected-group-name {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+
+.selected-group-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+}
+
+.selected-group-kind {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.selected-group-chevron {
+    font-size: 14px;
+    transition: all 0.2s ease;
+    padding: 4px;
+}
+
+/* Dark Sidebar Theme */
+.sidebar-dark .sidebar-parent-bar {
+    background: rgba(0, 0, 0, 0.25);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-dark .sidebar-parent-bar:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.sidebar-dark .parent-info {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.sidebar-dark .sidebar-parent-bar:hover .parent-info {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.sidebar-dark .parent-expand {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.sidebar-dark .sidebar-selected-group-row {
+    border-bottom: 2px solid rgba(52, 177, 176, 0.3);
+}
+
+.sidebar-dark .sidebar-selected-group-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-dark .selected-group-name {
+    color: #ffffff;
+}
+
+.sidebar-dark .selected-group-kind {
+    background: rgba(52, 177, 176, 0.25);
+    color: #5dd4d3;
+}
+
+.sidebar-dark .selected-group-chevron {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.sidebar-dark .sidebar-selected-group-row:hover .selected-group-chevron {
+    color: rgba(255, 255, 255, 0.9);
+    transform: scale(1.1);
+}
+
+/* Light Sidebar Theme */
+.sidebar-light .sidebar-parent-bar {
+    background: rgba(0, 0, 0, 0.04);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.sidebar-light .sidebar-parent-bar:hover {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.sidebar-light .parent-info {
+    color: rgba(0, 0, 0, 0.6);
+}
+
+.sidebar-light .sidebar-parent-bar:hover .parent-info {
+    color: rgba(0, 0, 0, 0.8);
+}
+
+.sidebar-light .parent-expand {
+    color: rgba(0, 0, 0, 0.4);
+}
+
+.sidebar-light .sidebar-selected-group-row {
+    border-bottom: 2px solid rgba(13, 110, 253, 0.3);
+}
+
+.sidebar-light .sidebar-selected-group-row:hover {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.sidebar-light .selected-group-name {
+    color: #212529;
+}
+
+.sidebar-light .selected-group-kind {
+    background: rgba(13, 110, 253, 0.15);
+    color: #0a58ca;
+}
+
+.sidebar-light .selected-group-chevron {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+.sidebar-light .sidebar-selected-group-row:hover .selected-group-chevron {
+    color: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
+}
+
+/* Clean Sidebar Theme */
+.sidebar-clean .sidebar-parent-bar {
+    background: rgba(0, 0, 0, 0.02);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.sidebar-clean .sidebar-parent-bar:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.sidebar-clean .parent-info {
+    color: rgba(0, 0, 0, 0.55);
+}
+
+.sidebar-clean .sidebar-parent-bar:hover .parent-info {
+    color: rgba(0, 0, 0, 0.75);
+}
+
+.sidebar-clean .parent-expand {
+    color: rgba(0, 0, 0, 0.35);
+}
+
+.sidebar-clean .sidebar-selected-group-row {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-clean .sidebar-selected-group-row:hover {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+.sidebar-clean .selected-group-name {
+    color: #212529;
+}
+
+.sidebar-clean .selected-group-kind {
+    background: rgba(108, 117, 125, 0.15);
+    color: #495057;
+}
+
+.sidebar-clean .selected-group-chevron {
+    color: rgba(0, 0, 0, 0.4);
+}
+
+.sidebar-clean .sidebar-selected-group-row:hover .selected-group-chevron {
+    color: rgba(0, 0, 0, 0.7);
+    transform: scale(1.1);
+}
+
+/* Gradient Sidebar Theme */
+.sidebar-gradient .sidebar-parent-bar {
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-gradient .sidebar-parent-bar:hover {
+    background: rgba(0, 0, 0, 0.25);
+}
+
+.sidebar-gradient .parent-info {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.sidebar-gradient .sidebar-parent-bar:hover .parent-info {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.sidebar-gradient .parent-expand {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.sidebar-gradient .sidebar-selected-group-row {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.sidebar-gradient .sidebar-selected-group-row:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-gradient .selected-group-name {
+    color: #ffffff;
+}
+
+.sidebar-gradient .selected-group-kind {
+    background: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.sidebar-gradient .selected-group-chevron {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.sidebar-gradient .sidebar-selected-group-row:hover .selected-group-chevron {
+    color: rgba(255, 255, 255, 0.95);
+    transform: scale(1.1);
+}
+
 .simple-search-view {
     background-color: var(--bs-body-bg);
     color: var(--bs-body-color);

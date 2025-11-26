@@ -259,19 +259,9 @@ class SimpleSearchView extends View {
             return;
         }
 
-        const items = this.collection.toJSON();
-
-        if (!this.searchValue || !this.searchValue.trim()) {
-            this.filteredItems = items;
-        } else {
-            const searchTerm = this.searchValue.toLowerCase().trim();
-            this.filteredItems = items.filter(item => {
-                return this.searchFields.some(field => {
-                    const value = this.getNestedValue(item, field);
-                    return value && value.toString().toLowerCase().includes(searchTerm);
-                });
-            });
-        }
+        // Server-side filtering is handled in performSearch()
+        // Just use the collection's items directly - they're already filtered by the server
+        this.filteredItems = this.collection.toJSON();
 
         this.updateResultsView();
     }

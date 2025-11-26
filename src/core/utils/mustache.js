@@ -4,6 +4,8 @@
  * Based on mustache.js logic-less templates
  */
 
+import MOJOUtils from './MOJOUtils.js';
+
 // Utility functions
 const objectToString = Object.prototype.toString;
 const isArray = Array.isArray || function(obj) {
@@ -598,6 +600,13 @@ const Mustache = {
     if (typeof template !== 'string') {
       throw new TypeError('Invalid template! Template should be a "string"');
     }
+
+    // Auto-wrap context to enable pipe formatters if not already wrapped
+    // This ensures pipes work everywhere without requiring manual wrapping
+    if (view && typeof view === 'object' && !view.getContextValue && typeof view.toJSON !== 'function') {
+      view = MOJOUtils.wrapData(view);
+    }
+
     return defaultWriter.render(template, view, partials, config);
   }
 };

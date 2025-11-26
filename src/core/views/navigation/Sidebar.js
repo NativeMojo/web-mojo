@@ -5,7 +5,7 @@
 
 import View from '@core/View.js';
 import GroupSearchView from './GroupSearchView.js';
-import {GroupList} from '@core/models/Group.js';
+import {GroupList, Group} from '@core/models/Group.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 
 
@@ -50,11 +50,25 @@ class Sidebar extends View {
     }
 
     groupHeader = `
-    <div class="sidebar-group-header py-3" data-action="show-group-search">
-        <div class='text-center fs-5 px-1 collapsed-hidden'>{{group.name}}</div>
-        <div class='text-center fs-6 collapsed-hidden'>kind: {{group.kind}}</div>
-    </div>
-    `;
+        {{#group.parent}}
+        <div class="sidebar-parent-bar" data-action="select-group-parent">
+            <div class="parent-info">
+                <span class="parent-label">{{group.parent.kind}}:</span>
+                <span class="parent-name collapsed-hidden">{{group.parent.name}}</span>
+            </div>
+            <i class="bi bi-chevron-down parent-expand collapsed-hidden"></i>
+        </div>
+        {{/group.parent}}
+        <div class="sidebar-selected-group-row" data-action="show-group-search">
+            <div class="selected-group-info">
+                <div class='selected-group-name collapsed-hidden'>{{group.name}}</div>
+                <div class='selected-group-meta collapsed-hidden'>
+                    <span class="selected-group-kind">{{group.kind}}</span>
+                </div>
+            </div>
+            <i class="bi bi-chevron-down selected-group-chevron collapsed-hidden"></i>
+        </div>
+        `;
 
     /**
      * Initialize sidebar and auto-switch to correct menu based on current route
@@ -126,6 +140,19 @@ class Sidebar extends View {
 
     onActionShowGroupSearch() {
         this.showGroupSearch();
+    }
+
+    async onActionSelectGroupParent() {
+        // select-group-parent
+        const group = this.getApp().activeGroup;
+        const result = await Dialog.confirm(`Are you sure you want to navigate to the '${group.get("parent.name")}'?`);
+        if (result) {
+            this.getApp().showLoading();
+            let parent = new Group({id: group.get("parent.id")});
+            await parent.fetch();
+            this.getApp().setActiveGroup(parent);
+            this.getApp().hideLoading();
+        }
     }
 
     /**

@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tree - Lines from First Character</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding: 40px;
+            background: #f5f5f5;
+            line-height: 1.5;
+        }
+        h1 {
+            margin-bottom: 10px;
+        }
+        p.intro {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .mockup {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .mockup-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        .description {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 16px;
+        }
+
+        /* ================================================
+           Base tree styles
+           ================================================ */
+        .tree {
+            font-size: 14px;
+            --line-color: #ccc;
+            --indent: 24px;
+        }
+        .tree-item {
+            position: relative;
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .tree-item:hover {
+            background: #f5f7fa;
+        }
+        .tree-item-name {
+            flex: 1;
+        }
+        .tree-item-kind {
+            font-size: 11px;
+            color: #888;
+            background: #eee;
+            padding: 2px 8px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            margin-left: 12px;
+        }
+
+        /* ================================================
+           VERSION 1: Vertical line drops from first char
+           Horizontal branch to children
+           ================================================ */
+        .v1 .tree-item {
+            padding-left: 8px;
+        }
+        .v1 .level-1 { margin-left: calc(var(--indent) * 1); }
+        .v1 .level-2 { margin-left: calc(var(--indent) * 2); }
+        .v1 .level-3 { margin-left: calc(var(--indent) * 3); }
+
+        /* Parent items that have children - vertical line going down */
+        .v1 .has-children::after {
+            content: "";
+            position: absolute;
+            left: 12px;
+            top: 100%;
+            width: 2px;
+            height: var(--line-height, 0);
+            background: var(--line-color);
+        }
+
+        /* Children - horizontal line coming from left */
+        .v1 .level-1::before,
+        .v1 .level-2::before,
+        .v1 .level-3::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            height: 2px;
+            background: var(--line-color);
+        }
+        .v1 .level-1::before {
+            left: calc(var(--indent) * -1 + 12px);
+            width: calc(var(--indent) - 12px);
+        }
+        .v1 .level-2::before {
+            left: calc(var(--indent) * -1 + 12px);
+            width: calc(var(--indent) - 12px);
+        }
+        .v1 .level-3::before {
+            left: calc(var(--indent) * -1 + 12px);
+            width: calc(var(--indent) - 12px);
+        }
+
+        /* ================================================
+           VERSION 2: Using wrapper divs for line segments
+           More control over line positioning
+           ================================================ */
+        .v2 {
+            --indent: 28px;
+        }
+        .v2 .row {
+            display: flex;
+            align-items: stretch;
+            min-height: 44px;
+        }
+        .v2 .lines {
+            display: flex;
+            flex-shrink: 0;
+        }
+        .v2 .seg {
+            width: var(--indent);
+            position: relative;
+        }
+        /* Vertical line through segment */
+        .v2 .seg.vert::before {
+            content: "";
+            position: absolute;
+            left: 4px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--line-color);
+        }
+        /* Vertical line stops at middle (last child) */
+        .v2 .seg.vert-half::before {
+            content: "";
+            position: absolute;
+            left: 4px;
+            top: 0;
+            height: 50%;
+            width: 2px;
+            background: var(--line-color);
+        }
+        /* Horizontal branch */
+        .v2 .seg.branch::after {
+            content: "";
+            position: absolute;
+            left: 4px;
+            top: 50%;
+            right: 0;
+            height: 2px;
+            background: var(--line-color);
+        }
+        .v2 .tree-item {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* ================================================
+           VERSION 3: Simpler - just indent + left border
+           Line comes down, small gap, then child
+           ================================================ */
+        .v3 {
+            --indent: 20px;
+        }
+        .v3 .tree-item {
+            margin-left: 0;
+        }
+        .v3 .level-1 { padding-left: calc(var(--indent) * 1 + 8px); }
+        .v3 .level-2 { padding-left: calc(var(--indent) * 2 + 8px); }
+        .v3 .level-3 { padding-left: calc(var(--indent) * 3 + 8px); }
+
+        .v3 .level-1,
+        .v3 .level-2,
+        .v3 .level-3 {
+            position: relative;
+        }
+        .v3 .level-1::before {
+            content: "";
+            position: absolute;
+            left: calc(var(--indent) * 0 + 4px);
+            top: 0;
+            bottom: 50%;
+            width: 2px;
+            background: var(--line-color);
+        }
+        .v3 .level-1::after {
+            content: "";
+            position: absolute;
+            left: calc(var(--indent) * 0 + 4px);
+            top: 50%;
+            width: calc(var(--indent) - 4px);
+            height: 2px;
+            background: var(--line-color);
+        }
+        /* Continue line if not last */
+        .v3 .level-1.continue::before {
+            bottom: 0;
+        }
+
+        /* ================================================
+           VERSION 4: Nested containers approach
+           Each parent wraps its children
+           ================================================ */
+        .v4 {
+            --indent: 24px;
+        }
+        .v4 .node {
+            position: relative;
+        }
+        .v4 .node-content {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .v4 .node-content:hover {
+            background: #f5f7fa;
+        }
+        .v4 .node-children {
+            margin-left: var(--indent);
+            position: relative;
+        }
+        /* Vertical line from parent down through children */
+        .v4 .node-children::before {
+            content: "";
+            position: absolute;
+            left: calc(var(--indent) * -1 + 4px);
+            top: -22px;
+            bottom: 22px;
+            width: 2px;
+            background: var(--line-color);
+        }
+        /* Horizontal connector to each child */
+        .v4 .node-children > .node > .node-content::before {
+            content: "";
+            position: absolute;
+            left: calc(var(--indent) * -1 + 4px);
+            top: 50%;
+            width: calc(var(--indent) - 8px);
+            height: 2px;
+            background: var(--line-color);
+        }
+        .v4 .node-children > .node > .node-content {
+            position: relative;
+        }
+        .v4 .tree-item-name {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tree Lines from First Character</h1>
+    <p class="intro">Different implementations where the vertical line drops down from under the first character of the parent name.</p>
+
+    <!-- VERSION 1 -->
+    <div class="mockup">
+        <div class="mockup-title">Version 1: CSS Pseudo-elements on Items</div>
+        <div class="description">Uses ::before for horizontal branch, ::after for vertical drop. Requires JS to calculate line heights.</div>
+        <div class="tree v1">
+            <div class="tree-item level-0 has-children" style="--line-height: 132px;">
+                <span class="tree-item-name">Acme Corporation</span>
+                <span class="tree-item-kind">Company</span>
+            </div>
+            <div class="tree-item level-1 has-children" style="--line-height: 88px;">
+                <span class="tree-item-name">Engineering</span>
+                <span class="tree-item-kind">Department</span>
+            </div>
+            <div class="tree-item level-2">
+                <span class="tree-item-name">Frontend Team</span>
+                <span class="tree-item-kind">Team</span>
+            </div>
+            <div class="tree-item level-2">
+                <span class="tree-item-name">Backend Team</span>
+                <span class="tree-item-kind">Team</span>
+            </div>
+            <div class="tree-item level-1">
+                <span class="tree-item-name">Design</span>
+                <span class="tree-item-kind">Department</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- VERSION 2 -->
+    <div class="mockup">
+        <div class="mockup-title">Version 2: Line Segment Divs</div>
+        <div class="description">Each row has explicit line segment divs. Most control, generates more HTML.</div>
+        <div class="tree v2">
+            <div class="row">
+                <div class="lines"></div>
+                <div class="tree-item">
+                    <span class="tree-item-name">Acme Corporation</span>
+                    <span class="tree-item-kind">Company</span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="lines">
+                    <div class="seg vert branch"></div>
+                </div>
+                <div class="tree-item">
+                    <span class="tree-item-name">Engineering</span>
+                    <span class="tree-item-kind">Department</span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="lines">
+                    <div class="seg vert"></div>
+                    <div class="seg vert branch"></div>
+                </div>
+                <div class="tree-item">
+                    <span class="tree-item-name">Frontend Team</span>
+                    <span class="tree-item-kind">Team</span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="lines">
+                    <div class="seg vert"></div>
+                    <div class="seg vert-half branch"></div>
+                </div>
+                <div class="tree-item">
+                    <span class="tree-item-name">Backend Team</span>
+                    <span class="tree-item-kind">Team</span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="lines">
+                    <div class="seg vert-half branch"></div>
+                </div>
+                <div class="tree-item">
+                    <span class="tree-item-name">Design</span>
+                    <span class="tree-item-kind">Department</span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="lines"></div>
+                <div class="tree-item">
+                    <span class="tree-item-name">Beta Industries</span>
+                    <span class="tree-item-kind">Company</span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="lines">
+                    <div class="seg vert-half branch"></div>
+                </div>
+                <div class="tree-item">
+                    <span class="tree-item-name">Operations</span>
+                    <span class="tree-item-kind">Department</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VERSION 4: Nested -->
+    <div class="mockup">
+        <div class="mockup-title">Version 4: Nested Container Structure</div>
+        <div class="description">Children are nested inside parent divs. Lines drawn on container. Most semantic, natural hierarchy.</div>
+        <div class="tree v4">
+            <div class="node">
+                <div class="node-content">
+                    <span class="tree-item-name">Acme Corporation</span>
+                    <span class="tree-item-kind">Company</span>
+                </div>
+                <div class="node-children">
+                    <div class="node">
+                        <div class="node-content">
+                            <span class="tree-item-name">Engineering</span>
+                            <span class="tree-item-kind">Department</span>
+                        </div>
+                        <div class="node-children">
+                            <div class="node">
+                                <div class="node-content">
+                                    <span class="tree-item-name">Frontend Team</span>
+                                    <span class="tree-item-kind">Team</span>
+                                </div>
+                            </div>
+                            <div class="node">
+                                <div class="node-content">
+                                    <span class="tree-item-name">Backend Team</span>
+                                    <span class="tree-item-kind">Team</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="node">
+                        <div class="node-content">
+                            <span class="tree-item-name">Design</span>
+                            <span class="tree-item-kind">Department</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="node">
+                <div class="node-content">
+                    <span class="tree-item-name">Beta Industries</span>
+                    <span class="tree-item-kind">Company</span>
+                </div>
+                <div class="node-children">
+                    <div class="node">
+                        <div class="node-content">
+                            <span class="tree-item-name">Operations</span>
+                            <span class="tree-item-kind">Department</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

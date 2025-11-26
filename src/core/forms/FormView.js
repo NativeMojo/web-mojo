@@ -154,18 +154,36 @@ class FormView extends View {
 
     try {
       this.formConfig.fields.forEach(field => {
-        if (field.type === 'group' && field.fields) {
-          // Handle group fields
-          field.fields.forEach(groupField => {
-            this.populateFieldValue(groupField);
-          });
-        } else {
-          this.populateFieldValue(field);
-        }
+        this.populateFieldRecursive(field);
       });
     } finally {
       // Always re-enable autosave
       this._isPopulating = false;
+    }
+  }
+
+  /**
+   * Recursively populate a field and its nested fields
+   * Handles groups, tabsets, and regular fields
+   */
+  populateFieldRecursive(field) {
+    if (field.type === 'group' && field.fields) {
+      // Handle group fields
+      field.fields.forEach(groupField => {
+        this.populateFieldRecursive(groupField);
+      });
+    } else if (field.type === 'tabset' && field.tabs) {
+      // Handle tabset fields - iterate through tabs and their fields
+      field.tabs.forEach(tab => {
+        if (tab.fields && Array.isArray(tab.fields)) {
+          tab.fields.forEach(tabField => {
+            this.populateFieldRecursive(tabField);
+          });
+        }
+      });
+    } else {
+      // Handle regular field
+      this.populateFieldValue(field);
     }
   }
 

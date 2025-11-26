@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Tree View Style Mockups</title>
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                padding: 40px;
+                background: #f5f5f5;
+                line-height: 1.5;
+            }
+            h1 {
+                margin-bottom: 40px;
+            }
+            h2 {
+                margin-top: 40px;
+                margin-bottom: 16px;
+                padding-bottom: 8px;
+                border-bottom: 1px solid #ddd;
+            }
+            .mockup {
+                background: white;
+                border-radius: 8px;
+                padding: 20px;
+                margin-bottom: 30px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+            .mockup-title {
+                font-weight: 600;
+                margin-bottom: 16px;
+                color: #333;
+            }
+            .description {
+                font-size: 14px;
+                color: #666;
+                margin-bottom: 16px;
+                padding: 10px;
+                background: #f9f9f9;
+                border-radius: 4px;
+            }
+
+            /* Base tree styles */
+            .tree {
+                font-size: 14px;
+            }
+            .tree-item {
+                padding: 8px 12px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                border-radius: 4px;
+            }
+            .tree-item:hover {
+                background: #f0f0f0;
+            }
+            .tree-item-name {
+                flex: 1;
+            }
+            .tree-item-kind {
+                font-size: 11px;
+                color: #888;
+                background: #eee;
+                padding: 2px 8px;
+                border-radius: 3px;
+                text-transform: uppercase;
+            }
+
+            /* ================================================
+           STYLE A: Classic ASCII Tree (like terminal)
+           ================================================ */
+            .style-a .tree-prefix {
+                font-family: monospace;
+                color: #999;
+                white-space: pre;
+                margin-right: 8px;
+            }
+
+            /* ================================================
+           STYLE B: Indent Only (clean, no lines)
+           ================================================ */
+            .style-b .level-0 {
+                padding-left: 0;
+            }
+            .style-b .level-1 {
+                padding-left: 24px;
+            }
+            .style-b .level-2 {
+                padding-left: 48px;
+            }
+            .style-b .level-3 {
+                padding-left: 72px;
+            }
+
+            /* ================================================
+           STYLE C: Left Border Accent
+           ================================================ */
+            .style-c .tree-item {
+                border-left: 3px solid transparent;
+                margin-left: 0;
+                border-radius: 0;
+            }
+            .style-c .level-0 {
+                padding-left: 12px;
+                border-left-color: #0d6efd;
+            }
+            .style-c .level-1 {
+                padding-left: 36px;
+                border-left-color: #6c757d;
+            }
+            .style-c .level-2 {
+                padding-left: 60px;
+                border-left-color: #adb5bd;
+            }
+            .style-c .level-3 {
+                padding-left: 84px;
+                border-left-color: #dee2e6;
+            }
+
+            /* ================================================
+           STYLE D: Continuous Vertical Lines
+           ================================================ */
+            .style-d .tree-row {
+                display: flex;
+                align-items: stretch;
+            }
+            .style-d .tree-lines {
+                display: flex;
+            }
+            .style-d .line-segment {
+                width: 24px;
+                position: relative;
+            }
+            .style-d .line-segment.has-line::before {
+                content: "";
+                position: absolute;
+                left: 11px;
+                top: 0;
+                bottom: 0;
+                width: 2px;
+                background: #ddd;
+            }
+            .style-d .line-segment.has-branch::after {
+                content: "";
+                position: absolute;
+                left: 11px;
+                top: 50%;
+                width: 12px;
+                height: 2px;
+                background: #ddd;
+            }
+            .style-d .line-segment.is-last::before {
+                bottom: 50%;
+            }
+            .style-d .tree-item {
+                flex: 1;
+            }
+
+            /* ================================================
+           STYLE E: Dot Leaders
+           ================================================ */
+            .style-e .tree-item {
+                position: relative;
+            }
+            .style-e .level-1::before,
+            .style-e .level-2::before,
+            .style-e .level-3::before {
+                content: "";
+                position: absolute;
+                left: 8px;
+                top: 50%;
+                height: 2px;
+                background: repeating-linear-gradient(
+                    to right,
+                    #ccc 0px,
+                    #ccc 2px,
+                    transparent 2px,
+                    transparent 6px
+                );
+            }
+            .style-e .level-1 {
+                padding-left: 32px;
+            }
+            .style-e .level-1::before {
+                width: 16px;
+            }
+            .style-e .level-2 {
+                padding-left: 56px;
+            }
+            .style-e .level-2::before {
+                width: 40px;
+            }
+            .style-e .level-3 {
+                padding-left: 80px;
+            }
+            .style-e .level-3::before {
+                width: 64px;
+            }
+
+            /* ================================================
+           STYLE F: Nested Cards
+           ================================================ */
+            .style-f .tree-group {
+                margin-left: 16px;
+                padding-left: 12px;
+                border-left: 2px solid #e9ecef;
+            }
+            .style-f .tree-group:first-child {
+                margin-left: 0;
+                padding-left: 0;
+                border-left: none;
+            }
+            .style-f .tree-item {
+                margin: 4px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Tree View Style Mockups</h1>
+        <p>
+            Different approaches for displaying hierarchical group data. Click to see which feels
+            best.
+        </p>
+
+        <!-- STYLE A: Classic ASCII -->
+        <div class="mockup">
+            <div class="mockup-title">Style A: Classic ASCII Tree</div>
+            <div class="description">
+                Traditional terminal-style tree with ASCII characters. Clear hierarchy, familiar
+                pattern.
+            </div>
+            <div class="tree style-a">
+                <div class="tree-item">
+                    <span class="tree-prefix">──</span>
+                    <span class="tree-item-name">Acme Corporation</span>
+                    <span class="tree-item-kind">Company</span>
+                </div>
+                <div class="tree-item">
+                    <span class="tree-prefix">│ ├──</span>
+                    <span class="tree-item-name">Engineering</span>
+                    <span class="tree-item-kind">Department</span>
+                </div>
+                <div class="tree-item">
+                    <span class="tree-prefix">│ │ ├──</span>
+                    <span class="tree-item-name">Frontend Team</span>
+                    <span class="tree-item-kind">Team</span>
+                </div>
+                <div class="tree-item">
+                    <span class="tree-prefix">│ │ └──</span>
+                    <span class="tree-item-name">Backend Team</span>
+                    <span class="tree-item-kind">Team</span>
+                </div>
+                <div class="tree-item">
+                    <span class="tree-prefix">│ └──</span>
+                    <span class="tree-item-name">Design</span>
+                    <span class="tree-item-kind">Department</span>
+                </div>
+                <div class="tree-item">
+                    <span class="tree-prefix">──</span>
+                    <span class="tree-item-name">Beta Industries</span>
+                    <span class="tree-item-kind">Company</span>
+                </div>
+                <div class="tree-item">
+                    <span class="tree-prefix"> └──</span>
+                    <span class="tree-item-name">Operations</span>
+                    <span class="tree-item-kind">Department</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STYLE B: Indent Only -->
+        <div class="mockup">
+            <div class="mockup-title">Style B: Clean Indent (No Lines)</div>
+            <div class="description">
+                Simple indentation without any visual connectors. Minimal and modern.
+            </div>
+            <div class="tree style-b">
+                <div class="tree-item level-0">
+                    <span class="tree-item-name">Acme Corporation</span>
+                    <span class="tree-item-kind">Company</span>
+                </div>
+                <div class="tree-item level-1">
+                    <span class="tree-item-name">Engineering</span>
+                    <span class="tree-item-kind">Department</span>
+                </div>
+                <div class="tree-item level-2">
+                    <span class="tree-item-name">Frontend Team</span>
+                    <span class="tree-item-kind">Team</span>
+                </div>
+                <div class="tree-item level-2">
+                    <span class="tree-item-name">Backend Team</span>
+                    <span class="tree-item-kind">Team</span>
+                </div>
+                <div class="tree-item level-1">
+                    <span class="tree-item-name">Design</span>
+                    <span class="tree-item-kind">Department</span>
+                </div>
+                <div class="tree-item level-0">
+                    <span class="tree-item-name">Beta Industries</span>
+                    <span class="tree-item-kind">Company</span>
+                </div>
+                <div class="tree-item level-1">
+                    <span class="tree-item-name">Operations</span>
+                    <span class="tree-item-kind">Department</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STYLE C: Left Border Accent -->
+        <div class="mockup">
+            <div class="mockup-title">Style C: Left Border Accent</div>
+            <div class="description">
+                Colored left border indicates depth. Color fades with depth level.
+            </div>
+            <div class="tree style-c">
+                <div class="tree-item level-0">
+                    <span class="tree-item-name">Acme Corporation</span>
+                    <span class="tree-item-kind">Company</span>
+                </div>
+                <div class="tree-item level-1">
+                    <span class="tree-item-name">Engineering</span>
+                    <span class="tree-item-kind">Department</span>
+                </div>
+                <div class="tree-item level-2">
+                    <span class="tree-item-name">Frontend Team</span>
+                    <span class="tree-item-kind">Team</span>
+                </div>
+                <div class="tree-item level-2">
+                    <span class="tree-item-name">Backend Team</span>
+                    <span class="tree-item-kind">Team</span>
+                </div>
+                <div class="tree-item level-1">
+                    <span class="tree-item-name">Design</span>
+                    <span class="tree-item-kind">Department</span>
+                </div>
+                <div class="tree-item level-0">
+                    <span class="tree-item-name">Beta Industries</span>
+                    <span class="tree-item-kind">Company</span>
+                </div>
+                <div class="tree-item level-1">
+                    <span class="tree-item-name">Operations</span>
+                    <span class="tree-item-kind">Department</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STYLE D: Continuous Vertical Lines -->
+        <div class="mockup">
+            <div class="mockup-title">Style D: Continuous Vertical Lines</div>
+            <div class="description">
+                Clean CSS-drawn lines that continue through the hierarchy. Modern take on tree
+                lines.
+            </div>
+            <div class="tree style-d">
+                <div class="tree-row">
+                    <div class="tree-lines"></div>
+                    <div class="tree-item">
+                        <span class="tree-item-name">Acme Corporation</span>
+                        <span class="tree-item-kind">Company</span>
+                    </div>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-lines">
+                        <div class="line-segment has-line has-branch"></div>
+                    </div>
+                    <div class="tree-item">
+                        <span class="tree-item-name">Engineering</span>
+                        <span class="tree-item-kind">Department</span>
+                    </div>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-lines">
+                        <div class="line-segment has-line"></div>
+                        <div class="line-segment has-line has-branch"></div>
+                    </div>
+                    <div class="tree-item">
+                        <span class="tree-item-name">Frontend Team</span>
+                        <span class="tree-item-kind">Team</span>
+                    </div>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-lines">
+                        <div class="line-segment has-line"></div>
+                        <div class="line-segment has-branch is-last"></div>
+                    </div>
+                    <div class="tree-item">
+                        <span class="tree-item-name">Backend Team</span>
+                        <span class="tree-item-kind">Team</span>
+                    </div>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-lines">
+                        <div class="line-segment has-branch is-last"></div>
+                    </div>
+                    <div class="tree-item">
+                        <span class="tree-item-name">Design</span>
+                        <span class="tree-item-kind">Department</span>
+                    </div>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-lines"></div>
+                    <div class="tree-item">
+                        <span class="tree-item-name">Beta Industries</span>
+                        <span class="tree-item-kind">Company</span>
+                    </div>
+                </div>
+                <div class="tree-row">
+                    <div class="tree-lines">
+                        <div class="line-segment has-branch is-last"></div>
+                    </div>
+                    <div class="tree-item">
+                        <span class="tree-item-name">Operations</span>
+                        <span class="tree-item-kind">Department</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STYLE E: Dot Leaders -->
+        <div class="mockup">
+            <div class="mockup-title">Style E: Dot Leaders</div>
+            <div class="description">
+                Subtle dotted lines leading to each item. Light and unobtrusive.
+            </div>
+            <div class="tree style-e">
+                <div class="tree-item level-0">
+                    <span class="tree-item-name">Acme Corporation</span>
+                    <span class="tree-item-kind">Company</span>
+                </div>
+                <div class="tree-item level-1">
+                    <span class="tree-item-name">Engineering</span>
+                    <span class="tree-item-kind">Department</span>
+                </div>
+                <div class="tree-item level-2">
+                    <span class="tree-item-name">Frontend Team</span>
+                    <span class="tree-item-kind">Team</span>
+                </div>
+                <div class="tree-item level-2">
+                    <span class="tree-item-name">Backend Team</span>
+                    <span class="tree-item-kind">Team</span>
+                </div>
+                <div class="tree-item level-1">
+                    <span class="tree-item-name">Design</span>
+                    <span class="tree-item-kind">Department</span>
+                </div>
+                <div class="tree-item level-0">
+                    <span class="tree-item-name">Beta Industries</span>
+                    <span class="tree-item-kind">Company</span>
+                </div>
+                <div class="tree-item level-1">
+                    <span class="tree-item-name">Operations</span>
+                    <span class="tree-item-kind">Department</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- STYLE F: Nested Groups -->
+        <div class="mockup">
+            <div class="mockup-title">Style F: Nested Groups with Border</div>
+            <div class="description">
+                Each level is visually grouped with a left border. Shows containment clearly.
+            </div>
+            <div class="tree style-f">
+                <div class="tree-group">
+                    <div class="tree-item">
+                        <span class="tree-item-name">Acme Corporation</span>
+                        <span class="tree-item-kind">Company</span>
+                    </div>
+                    <div class="tree-group">
+                        <div class="tree-item">
+                            <span class="tree-item-name">Engineering</span>
+                            <span class="tree-item-kind">Department</span>
+                        </div>
+                        <div class="tree-group">
+                            <div class="tree-item">
+                                <span class="tree-item-name">Frontend Team</span>
+                                <span class="tree-item-kind">Team</span>
+                            </div>
+                            <div class="tree-item">
+                                <span class="tree-item-name">Backend Team</span>
+                                <span class="tree-item-kind">Team</span>
+                            </div>
+                        </div>
+                        <div class="tree-item">
+                            <span class="tree-item-name">Design</span>
+                            <span class="tree-item-kind">Department</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="tree-group">
+                    <div class="tree-item">
+                        <span class="tree-item-name">Beta Industries</span>
+                        <span class="tree-item-kind">Company</span>
+                    </div>
+                    <div class="tree-group">
+                        <div class="tree-item">
+                            <span class="tree-item-name">Operations</span>
+                            <span class="tree-item-kind">Department</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

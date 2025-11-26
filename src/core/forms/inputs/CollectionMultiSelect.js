@@ -134,8 +134,53 @@ class ListItemsView extends View {
   handleActionToggle(event, element) {
     const value = element.getAttribute('data-value');
     const index = parseInt(element.getAttribute('data-index'), 10);
-    this.emit('toggle', { value, index, shiftKey: event.shiftKey });
+    this.emit('toggle', { value, index, shiftKey: event.shiftKey, element });
     this.lastClickedIndex = index;
+  }
+
+  /**
+   * Update just the checkbox icon for a specific item without re-rendering
+   */
+  updateItemCheckbox(element, selected) {
+    const icon = element.querySelector('i.bi');
+    if (icon) {
+      if (selected) {
+        icon.classList.remove('bi-square');
+        icon.classList.add('bi-check-square-fill', 'text-primary');
+      } else {
+        icon.classList.remove('bi-check-square-fill', 'text-primary');
+        icon.classList.add('bi-square');
+      }
+    }
+  }
+
+  /**
+   * Update the select/deselect all buttons based on current counts
+   */
+  updateActionButtons() {
+    const selectAllBtn = this.element?.querySelector('[data-action="select-all"]');
+    const deselectAllBtn = this.element?.querySelector('[data-action="deselect-all"]');
+    
+    if (selectAllBtn) {
+      const countSpan = selectAllBtn.querySelector('span') || selectAllBtn;
+      if (this.allSelected) {
+        selectAllBtn.classList.add('text-muted');
+        selectAllBtn.disabled = true;
+      } else {
+        selectAllBtn.classList.remove('text-muted');
+        selectAllBtn.disabled = false;
+      }
+    }
+    
+    if (deselectAllBtn) {
+      if (this.noneSelected) {
+        deselectAllBtn.classList.add('text-muted');
+        deselectAllBtn.disabled = true;
+      } else {
+        deselectAllBtn.classList.remove('text-muted');
+        deselectAllBtn.disabled = false;
+      }
+    }
   }
 
   async handleActionSelectAll(event) {
@@ -406,12 +451,8 @@ class CollectionMultiSelectView extends View {
     if (!this.itemTemplate) return '';
     
     try {
-      const Mustache = window.Mustache || this.constructor.Mustache;
-      if (!Mustache) {
-        console.warn('Mustache not available for item template rendering');
-        return itemData.label;
-      }
-      return Mustache.render(this.itemTemplate, itemData);
+      // Use renderTemplateString which includes DataFormatter pipe support
+      return this.renderTemplateString(this.itemTemplate, itemData);
     } catch (error) {
       console.error('Error rendering item template:', error);
       return itemData.label;
@@ -439,13 +480,14 @@ class CollectionMultiSelectView extends View {
   }
 
   // Handle item toggle
-  handleToggle({ value, index, shiftKey }) {
+  handleToggle({ value, index, shiftKey, element }) {
     // Shift-click range selection
     if (shiftKey && this.listView.lastClickedIndex >= 0) {
       const start = Math.min(this.listView.lastClickedIndex, index);
       const end = Math.max(this.listView.lastClickedIndex, index);
       const shouldSelect = !this.items[index].selected;
       
+      // For shift-click, we need to update multiple items - do a full re-render
       for (let i = start; i <= end; i++) {
         const item = this.items[i];
         if (!item.disabled) {
@@ -459,8 +501,9 @@ class CollectionMultiSelectView extends View {
           item.selected = shouldSelect;
         }
       }
+      this.updateListView();
     } else {
-      // Normal toggle
+      // Normal toggle - update just the clicked item's DOM
       const item = this.items[index];
       if (item.selected) {
         this.selectedValues = this.selectedValues.filter(v => v != value);
@@ -469,9 +512,20 @@ class CollectionMultiSelectView extends View {
         this.selectedValues.push(value);
         item.selected = true;
       }
+      
+      // Update just the checkbox icon, not the entire list
+      if (element && this.listView) {
+        this.listView.updateItemCheckbox(element, item.selected);
+        
+        // Update counts and action buttons state
+        this.listView.selectedCount = this.selectedValues.length;
+        this.listView.unselectedCount = this.items.length - this.selectedValues.length;
+        this.listView.allSelected = this.selectedValues.length === this.items.length && this.items.length > 0;
+        this.listView.noneSelected = this.selectedValues.length === 0;
+        this.listView.updateActionButtons();
+      }
     }
 
-    this.updateListView();
     this.emit('change', { value: this.selectedValues, name: this.name });
   }
 

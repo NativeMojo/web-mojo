@@ -1764,94 +1764,121 @@
    GroupSearchView - Hierarchical Tree Styles
    ============================================ */
 
-.group-search-view .tree-item-wrapper {
+/* Tree root container */
+.group-search-view .tree-root {
+    padding: 8px 0;
+}
+
+/* Each tree node */
+.group-search-view .tree-node {
+    position: relative;
+}
+
+/* The clickable item row */
+.group-search-view .tree-node-item {
     display: flex;
     align-items: center;
+    padding: 10px 12px;
+    cursor: pointer;
+    border-radius: 4px;
     position: relative;
 }
 
-.group-search-view .tree-indent {
-    position: relative;
+.group-search-view .tree-node-item:hover {
+    background: var(--bs-tertiary-bg);
+}
+
+/* Small dot before each item */
+.group-search-view .tree-node-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--bs-border-color);
     flex-shrink: 0;
-    align-self: stretch;
+    margin-right: 10px;
 }
 
-.group-search-view .tree-connector,
-.group-search-view .tree-connector-last {
+/* Item content area */
+.group-search-view .tree-node-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Chevron on the right */
+.group-search-view .tree-node-chevron {
+    color: var(--bs-secondary);
+    opacity: 0.5;
+    flex-shrink: 0;
+}
+
+.group-search-view .tree-node-item:hover .tree-node-chevron {
+    opacity: 1;
+}
+
+/* Children container with left border line */
+.group-search-view .tree-node-children {
+    margin-left: 15px;
+    padding-left: 18px;
+    position: relative;
+}
+
+/* Vertical line for children - use pseudo element to control positioning */
+.group-search-view .tree-node-children.tree-lines {
+    border-left: none;
+}
+
+/* Vertical line - drawn on each child node, not the container */
+/* This way each segment is independent and stops at the right place */
+.group-search-view .tree-node-children.tree-lines > .tree-node > .tree-node-item::before {
+    content: "";
     position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 100%;
+    left: -19px;
+    top: -50%;
     height: 100%;
-    display: block;
+    width: 2px;
+    background: var(--bs-border-color);
     pointer-events: none;
 }
 
-/* Vertical line (├ has full height, └ only to middle) */
-.group-search-view .tree-connector::before {
+/* Horizontal line from vertical to dot */
+.group-search-view .tree-node-children.tree-lines > .tree-node > .tree-node-item::after {
     content: "";
     position: absolute;
-    left: 12px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: var(--bs-border-color);
-}
-
-.group-search-view .tree-connector-last::before {
-    content: "";
-    position: absolute;
-    left: 12px;
-    top: 0;
-    height: 50%;
-    width: 2px;
-    background: var(--bs-border-color);
-}
-
-/* Horizontal line (── part) */
-.group-search-view .tree-connector::after,
-.group-search-view .tree-connector-last::after {
-    content: "";
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    width: 35px;
+    left: -19px;
+    top: 48%;
+    width: 34px;
     height: 2px;
     background: var(--bs-border-color);
 }
 
-.group-search-view .tree-item-expand {
-    flex-shrink: 0;
-    width: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* First child - extend line up to parent */
+.group-search-view
+    .tree-node-children.tree-lines
+    > .tree-node:first-child
+    > .tree-node-item::before {
+    top: -20px;
+    height: calc(50% + 20px);
 }
 
-.group-search-view .tree-expand-btn {
-    background: none;
-    border: none;
-    padding: 4px;
-    cursor: pointer;
-    color: var(--bs-secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: color 0.15s ease;
+/* Last child - line only goes to middle */
+.group-search-view
+    .tree-node-children.tree-lines
+    > .tree-node:last-child
+    > .tree-node-item::before {
+    top: -50%;
+    height: 100%;
 }
 
-.group-search-view .tree-expand-btn:hover {
-    color: var(--bs-primary);
-}
-
-.group-search-view .tree-expand-btn i {
-    font-size: 0.875rem;
-}
-
-.group-search-view .tree-expand-spacer {
-    display: inline-block;
-    width: 24px;
+/* Only child - line from parent to middle only */
+.group-search-view
+    .tree-node-children.tree-lines
+    > .tree-node:only-child
+    > .tree-node-item::before {
+    top: -20px;
+    height: calc(50% + 20px);
 }
 
 .group-search-view .tree-item-body {
