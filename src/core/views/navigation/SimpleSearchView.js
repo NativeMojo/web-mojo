@@ -31,7 +31,7 @@ class ResultsView extends View {
                              data-action="select-item"
                              data-item-index="{{index}}">
                             {{{itemContent}}}
-                            <i class="bi bi-chevron-right position-absolute end-0 top-50 translate-middle-y me-3 text-muted"></i>
+
                         </div>
                     {{/data.items}}
 

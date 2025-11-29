@@ -216,33 +216,18 @@
 
 .chat-input {
     flex: 1;
-    border: 1px solid #ced4da;
-    border-radius: 20px;
-    padding: 10px 15px;
     resize: none;
     max-height: 150px;
     font-size: 0.9rem;
-    transition: border-color 0.15s ease;
-}
-
-.chat-input:focus {
-    outline: none;
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
 }
 
 .chat-send-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     flex-shrink: 0;
+    min-width: 80px;
 }
 
-.chat-send-btn i {
+.chat-send-btn i,
+.chat-send-btn .spinner-border {
     font-size: 1rem;
 }
 

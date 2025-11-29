@@ -195,7 +195,7 @@ class Dialog extends View {
 
     // Layout options
     this.centered = options.centered !== undefined ? options.centered : false;
-    this.scrollable = options.scrollable !== undefined ? options.scrollable : true; // Default to true for better max-height behavior
+    this.scrollable = options.scrollable !== undefined ? options.scrollable : false;
     // Auto-sizing: dynamically size modal based on content dimensions
     // Can be enabled with autoSize: true or size: 'auto'
     // Waits for modal animation to complete before measuring content

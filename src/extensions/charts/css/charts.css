@@ -1073,6 +1073,23 @@
     justify-content: space-between;
 }
 
+.metrics-mini-chart-subtitle {
+    margin-top: calc(-0.5 * var(--bs-card-title-spacer-y));
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
+.metrics-mini-chart-subtitle span.subtitle-label {
+    font-size: 0.6rem;
+    padding-right: 10px;
+}
+
+.metrics-mini-chart-trending-text {
+    margin-top: 3px;
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
 /* Metrics Info Section */
 .metrics-info {
     flex: 1;
@@ -1587,5 +1604,147 @@
 
     .circular-progress-clickable .circular-progress-container {
         cursor: default;
+    }
+}
+
+/* ==========================================================================
+   MetricsMiniChartWidget Settings Popover
+   ========================================================================== */
+
+.metrics-chart-settings-popover {
+    --bs-popover-max-width: 280px;
+    --bs-popover-border-color: var(--chart-border);
+    --bs-popover-header-bg: var(--bs-light, #f8f9fa);
+    --bs-popover-body-padding-x: 1rem;
+    --bs-popover-body-padding-y: 0.75rem;
+}
+
+[data-theme="dark"] .metrics-chart-settings-popover {
+    --bs-popover-bg: var(--chart-bg);
+    --bs-popover-header-bg: var(--bs-dark, #2b3035);
+    --bs-popover-border-color: var(--chart-border);
+}
+
+.metrics-chart-settings-content {
+    padding: 0;
+}
+
+.metrics-chart-settings-content h6 {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--chart-text);
+    margin-bottom: 0.5rem;
+}
+
+.metrics-chart-settings-content .form-label {
+    font-weight: 600;
+    color: var(--chart-text);
+}
+
+.metrics-chart-settings-content .form-select,
+.metrics-chart-settings-content .form-control {
+    font-size: 0.875rem;
+}
+
+.metrics-chart-settings-content .form-select:focus,
+.metrics-chart-settings-content .form-control:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Floating actions container - top right corner */
+.metrics-chart-actions {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 10;
+    display: flex;
+    gap: 0.25rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+}
+
+.metrics-mini-chart-widget:hover .metrics-chart-actions {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Action buttons */
+.metrics-chart-actions .metrics-refresh-btn,
+.metrics-chart-actions .metrics-settings-btn {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border-radius: 0.2rem;
+    background: rgba(255, 255, 255, 0.9);
+    transition: all 0.15s ease;
+}
+
+.metrics-chart-actions .metrics-refresh-btn:hover,
+.metrics-chart-actions .metrics-settings-btn:hover {
+    transform: scale(1.25);
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.metrics-chart-actions .metrics-refresh-btn i,
+.metrics-chart-actions .metrics-settings-btn i {
+    font-size: 0.7rem;
+}
+
+/* Override for colored background cards */
+.metrics-mini-chart-widget .card[style*="background"] .metrics-chart-actions .metrics-refresh-btn,
+.metrics-mini-chart-widget .card[style*="background"] .metrics-chart-actions .metrics-settings-btn {
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.metrics-mini-chart-widget
+    .card[style*="background"]
+    .metrics-chart-actions
+    .metrics-refresh-btn:hover,
+.metrics-mini-chart-widget
+    .card[style*="background"]
+    .metrics-chart-actions
+    .metrics-settings-btn:hover {
+    background: rgba(0, 0, 0, 0.25);
+}
+
+/* Refresh button spin animation */
+.metrics-chart-actions .metrics-refresh-btn i.spin {
+    animation: spin-refresh 1s linear infinite;
+}
+
+@keyframes spin-refresh {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Add shadow effect on card hover */
+.metrics-mini-chart-widget .card {
+    transition: all 0.2s ease;
+}
+
+.metrics-mini-chart-widget:hover .card {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    transform: translateY(-2px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 575.98px) {
+    .metrics-chart-settings-popover {
+        --bs-popover-max-width: 240px;
+    }
+
+    .metrics-chart-settings-content h6 {
+        font-size: 0.8125rem;
     }
 }

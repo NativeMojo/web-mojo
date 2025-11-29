@@ -1192,6 +1192,8 @@ class TableView extends ListView {
         ...this.getFormDialogConfig(ModelClass)
       });
 
+      if (!result) return;  // Cancelled
+
       if (!result.success || !result?.result?.data.status) {
         Dialog.showError(result?.result?.data?.error || result?.result?.message || "An error occurred");
         return;

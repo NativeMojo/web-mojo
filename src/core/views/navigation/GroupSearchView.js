@@ -1,66 +1,10 @@
 /**
  * GroupSearchView - Hierarchical tree-view search component
  * Extends SimpleSearchView to support parent/child relationships
- * Displays items in a nested tree structure based on parent property
+ * Displays items in a tree structure based on parent property
  */
 
 import SimpleSearchView from './SimpleSearchView.js';
-import View from '../../View.js';
-
-/**
- * TreeResultsView - Custom results view for nested tree rendering
- */
-class TreeResultsView extends View {
-    constructor(options = {}) {
-        super({
-            className: 'search-results-view flex-grow-1 overflow-auto d-flex flex-column',
-            template: `
-                <div id="results-container" class="flex-grow-1 overflow-auto">
-                {{#data.loading}}
-                    <div class="text-center p-4">
-                        <div class="spinner-border spinner-border-sm text-muted" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <div class="mt-2 small text-muted">{{data.loadingText}}</div>
-                    </div>
-                {{/data.loading}}
-
-                {{^data.loading}}
-                    <div class="tree-root">
-                        {{{data.treeHtml}}}
-                    </div>
-
-                    {{#data.showNoResults}}
-                        <div class="text-center p-4">
-                            <i class="bi bi-search text-muted mb-2" style="font-size: 1.5rem;"></i>
-                            <div class="text-muted small">{{data.noResultsText}}</div>
-                            <button type="button" class="btn btn-link btn-sm mt-2 p-0" data-action="clear-search">
-                                Clear search
-                            </button>
-                        </div>
-                    {{/data.showNoResults}}
-
-                    {{#data.showEmpty}}
-                        <div class="text-center p-4">
-                            <i class="bi bi-folder2-open text-muted mb-2" style="font-size: 1.5rem;"></i>
-                            <div class="text-muted small">{{data.emptyText}}</div>
-                        </div>
-                    {{/data.showEmpty}}
-                {{/data.loading}}
-                </div>
-
-                {{#data.showResultsCount}}
-                <div class="border-top bg-light p-2 text-center">
-                    <small class="text-muted">
-                        {{data.filteredCount}} of {{data.totalCount}}
-                    </small>
-                </div>
-                {{/data.showResultsCount}}
-            `,
-            ...options
-        });
-    }
-}
 
 class GroupSearchView extends SimpleSearchView {
     constructor(options = {}) {
@@ -74,18 +18,10 @@ class GroupSearchView extends SimpleSearchView {
         this.parentField = options.parentField || 'parent';
         this.kindField = options.kindField || 'kind';
         this.treeData = []; // Processed hierarchical data
+        this.flattenedItems = []; // Flattened tree for display
         
         // Visual customization
         this.showLines = options.showLines !== undefined ? options.showLines : true;
-        
-        // Replace the results view with our tree version
-        if (this.resultsView) {
-            this.removeChild(this.resultsView);
-        }
-        this.resultsView = new TreeResultsView({
-            parentView: this
-        });
-        this.addChild(this.resultsView);
     }
 
     /**
@@ -156,107 +92,107 @@ class GroupSearchView extends SimpleSearchView {
     }
 
     /**
+     * Flatten tree structure for rendering
+     * Tracks ancestor "last child" flags for proper line rendering
+     */
+    flattenTree(nodes, result = [], ancestorLastFlags = []) {
+        nodes.forEach((node, index) => {
+            node._isLastChild = index === nodes.length - 1;
+            node._ancestorLastFlags = [...ancestorLastFlags];
+            
+            // Check if this node is the last descendant in its branch
+            // (all ancestors are last children AND this node is last child with no children)
+            const allAncestorsLast = ancestorLastFlags.every(flag => flag);
+            node._isLastDescendant = allAncestorsLast && node._isLastChild && 
+                (!node.children || node.children.length === 0);
+            
+            result.push(node);
+            
+            if (node.children && node.children.length > 0) {
+                const newFlags = [...ancestorLastFlags, node._isLastChild];
+                this.flattenTree(node.children, result, newFlags);
+            }
+        });
+        
+        return result;
+    }
+
+    /**
+     * Second pass: compute which vertical lines should continue for each item
+     * 
+     * Vertical line at segment s shows if there are more siblings coming at level s+1
+     * We need to look ahead until we find an item at level s+1 or shallower
+     */
+    computeVerticalLines(flatList) {
+        for (let i = 0; i < flatList.length; i++) {
+            const item = flatList[i];
+            item._continueVertical = [];
+            
+            for (let s = 0; s < item.level; s++) {
+                // Look ahead to find next item at level s+1 or shallower
+                let foundSibling = false;
+                for (let j = i + 1; j < flatList.length; j++) {
+                    const futureItem = flatList[j];
+                    if (futureItem.level === s + 1) {
+                        // Found a sibling at this level - vertical should continue
+                        foundSibling = true;
+                        break;
+                    } else if (futureItem.level <= s) {
+                        // Went back to ancestor level or shallower - no more siblings
+                        break;
+                    }
+                    // Keep searching if futureItem.level > s+1 (still in deeper subtree)
+                }
+                item._continueVertical[s] = foundSibling;
+            }
+        }
+    }
+
+    /**
      * Update filtered items with tree structure
      */
     updateFilteredItems() {
         if (!this.collection) {
             this.filteredItems = [];
             this.treeData = [];
+            this.flattenedItems = [];
             return;
         }
 
         // Server-side filtering is handled in performSearch() (from parent class)
         const items = this.collection.toJSON();
         this.treeData = this.buildTreeHierarchy(items);
+        this.flattenedItems = this.flattenTree(this.treeData);
         
-        // For compatibility with parent class counting
-        this.filteredItems = items;
+        // Second pass: compute vertical line continuation
+        this.computeVerticalLines(this.flattenedItems);
+        
+        // Set filteredItems to flattened tree for parent class compatibility
+        this.filteredItems = this.flattenedItems;
 
         this.updateResultsView();
     }
 
     /**
-     * Override updateResultsView to render nested tree structure
+     * Get tree-specific item template
      */
-    updateResultsView() {
-        if (!this.resultsView) return;
-
-        const hasItems = this.collection && this.collection.length() > 0;
-        const hasSearchValue = this.searchValue && this.searchValue.length > 0;
-
-        // Build nested HTML from tree data
-        const treeHtml = this.renderTreeNodes(this.treeData);
-        
-        console.log('GroupSearchView updateResultsView:', {
-            hasItems,
-            treeDataLength: this.treeData?.length,
-            treeHtmlLength: treeHtml?.length,
-            collectionLength: this.collection?.length()
-        });
-
-        this.resultsView.data = {
-            loading: this.loading,
-            treeHtml: treeHtml,
-            showEmpty: !this.loading && !hasItems,
-            showNoResults: !this.loading && hasItems && this.treeData.length === 0 && hasSearchValue,
-            showResultsCount: !this.loading && hasItems,
-            filteredCount: this.filteredItems.length,
-            totalCount: this.collection?.restEnabled
-                ? (this.collection?.meta?.count || 0)
-                : (this.collection?.length() || 0),
-
-            // UI text
-            loadingText: this.loadingText,
-            noResultsText: this.noResultsText,
-            emptyText: this.emptyText,
-        };
-
-        this.resultsView.render();
+    getDefaultItemTemplate() {
+        return `
+            <div class="tree-item-content">
+                <div class="tree-item-name">{{name}}</div>
+                {{#showKind}}
+                <div class="tree-item-kind">{{kind}}</div>
+                {{/showKind}}
+            </div>
+        `;
     }
 
     /**
-     * Render tree nodes recursively as nested HTML
+     * Process item template with tree structure
      */
-    renderTreeNodes(nodes) {
-        if (!nodes || nodes.length === 0) return '';
-
-        let html = '';
-        nodes.forEach((node, index) => {
-            const isLast = index === nodes.length - 1;
-            const hasChildren = node.children && node.children.length > 0;
-            
-            // Render the item content
-            const itemContent = this.renderItemContent(node);
-            
-            // Build nested structure
-            html += `
-                <div class="tree-node${isLast ? ' tree-node-last' : ''}">
-                    <div class="tree-node-item" data-action="select-item" data-item-id="${node.id}">
-                        <span class="tree-node-dot"></span>
-                        <div class="tree-node-content">
-                            ${itemContent}
-                        </div>
-                        <i class="bi bi-chevron-right tree-node-chevron"></i>
-                    </div>
-                    ${hasChildren ? `
-                        <div class="tree-node-children${this.showLines ? ' tree-lines' : ''}">
-                            ${this.renderTreeNodes(node.children)}
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-        });
-
-        return html;
-    }
-
-    /**
-     * Render item content from template
-     */
-    renderItemContent(item) {
+    processItemTemplate(item) {
+        // Process the base template
         let content = this.itemTemplate;
-        
-        // Replace template variables
         content = content.replace(/\{\{(\w+)\}\}/g, (match, prop) => {
             if (prop === 'showKind') {
                 return this.showKind ? 'true' : '';
@@ -271,49 +207,45 @@ class GroupSearchView extends SimpleSearchView {
             content = content.replace(/\{\{#showKind\}\}.*?\{\{\/showKind\}\}/gs, '');
         }
 
-        return content;
-    }
-
-    /**
-     * Get tree-specific item template
-     */
-    getDefaultItemTemplate() {
-        return `
-            <div class="tree-item-name">{{name}}</div>
-            {{#showKind}}
-            <div class="tree-item-kind">{{kind}}</div>
-            {{/showKind}}
-        `;
-    }
-
-
-
-    /**
-     * Handle item selection - override to use data-item-id
-     */
-    async handleActionSelectItem(event, element) {
-        const itemId = parseInt(element.getAttribute('data-item-id'));
-        if (isNaN(itemId)) return;
-
-        // Find item in tree
-        const item = this.findItemById(itemId);
-        if (item) {
-            this.emit('itemSelected', item);
-        }
-    }
-
-    /**
-     * Find item by ID in tree
-     */
-    findItemById(id, nodes = this.treeData) {
-        for (const node of nodes) {
-            if (node.id === id) return node;
-            if (node.children && node.children.length > 0) {
-                const found = this.findItemById(id, node.children);
-                if (found) return found;
+        // Build tree line segments
+        // For an item at level N, we need N segments (one for each ancestor level)
+        let lineSegments = '';
+        if (this.showLines && item.level > 0) {
+            for (let i = 0; i < item.level; i++) {
+                const isLastSegment = (i === item.level - 1);
+                
+                if (isLastSegment) {
+                    // This segment connects directly to this item
+                    // Use _isLastChild to determine if this is └ or ├
+                    const segClass = item._isLastChild ? 'tree-seg tree-seg-last' : 'tree-seg tree-seg-mid';
+                    lineSegments += `<span class="${segClass}"></span>`;
+                } else {
+                    // Ancestor segment - vertical line continues if next item is deeper than this level
+                    const continueVertical = item._continueVertical && item._continueVertical[i];
+                    if (continueVertical) {
+                        lineSegments += `<span class="tree-seg tree-seg-vert"></span>`;
+                    } else {
+                        lineSegments += `<span class="tree-seg"></span>`;
+                    }
+                }
             }
         }
-        return null;
+
+        // Classes for the wrapper
+        const hasChildren = item.hasChildren ? ' has-children' : '';
+        const isLastChild = item._isLastChild ? ' is-last-child' : '';
+
+        // Wrap in tree structure
+        return `
+            <div class="tree-item-wrapper${hasChildren}${isLastChild}" data-tree-level="${item.level}">
+                <div class="tree-lines">
+                    ${lineSegments}
+                </div>
+                <div class="tree-item-body flex-grow-1">
+                    ${content}
+                </div>
+            </div>
+        `;
     }
 
     /**
@@ -327,8 +259,20 @@ class GroupSearchView extends SimpleSearchView {
      * Get children of a specific node
      */
     getNodeChildren(nodeId) {
-        const node = this.findItemById(nodeId);
-        return node ? node.children : [];
+        const findNode = (nodes, targetId) => {
+            for (const node of nodes) {
+                if (node.id === targetId) {
+                    return node.children;
+                }
+                if (node.children.length > 0) {
+                    const found = findNode(node.children, targetId);
+                    if (found) return found;
+                }
+            }
+            return null;
+        };
+
+        return findNode(this.treeData, nodeId) || [];
     }
 }
 

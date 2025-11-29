@@ -1764,121 +1764,107 @@
    GroupSearchView - Hierarchical Tree Styles
    ============================================ */
 
-/* Tree root container */
-.group-search-view .tree-root {
-    padding: 8px 0;
+/* Hide chevron in group search - it's a nav tree, not a menu */
+.group-search-view .bi-chevron-right {
+    display: none !important;
 }
 
-/* Each tree node */
-.group-search-view .tree-node {
-    position: relative;
-}
-
-/* The clickable item row */
-.group-search-view .tree-node-item {
+/* Tree item wrapper - flat list with visual hierarchy */
+.group-search-view .tree-item-wrapper {
     display: flex;
     align-items: center;
-    padding: 10px 12px;
-    cursor: pointer;
-    border-radius: 4px;
     position: relative;
 }
 
-.group-search-view .tree-node-item:hover {
-    background: var(--bs-tertiary-bg);
-}
-
-/* Small dot before each item */
-.group-search-view .tree-node-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--bs-border-color);
-    flex-shrink: 0;
-    margin-right: 10px;
-}
-
-/* Item content area */
-.group-search-view .tree-node-content {
-    flex: 1;
-    min-width: 0;
+/* Container for tree line segments */
+.group-search-view .tree-lines {
     display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-/* Chevron on the right */
-.group-search-view .tree-node-chevron {
-    color: var(--bs-secondary);
-    opacity: 0.5;
     flex-shrink: 0;
+    align-self: stretch;
 }
 
-.group-search-view .tree-node-item:hover .tree-node-chevron {
-    opacity: 1;
-}
-
-/* Children container with left border line */
-.group-search-view .tree-node-children {
-    margin-left: 15px;
-    padding-left: 18px;
+/* Each segment is a fixed width column */
+.group-search-view .tree-seg {
+    width: 24px;
     position: relative;
+    align-self: stretch;
 }
 
-/* Vertical line for children - use pseudo element to control positioning */
-.group-search-view .tree-node-children.tree-lines {
-    border-left: none;
-}
-
-/* Vertical line - drawn on each child node, not the container */
-/* This way each segment is independent and stops at the right place */
-.group-search-view .tree-node-children.tree-lines > .tree-node > .tree-node-item::before {
+/* Vertical line segment - continues through (for ancestors that aren't last) */
+.group-search-view .tree-seg-vert::before {
     content: "";
     position: absolute;
-    left: -19px;
-    top: -50%;
-    height: 100%;
+    left: 12px;
+    top: 0;
+    bottom: 0;
     width: 2px;
     background: var(--bs-border-color);
-    pointer-events: none;
 }
 
-/* Horizontal line from vertical to dot */
-.group-search-view .tree-node-children.tree-lines > .tree-node > .tree-node-item::after {
+/* Vertical line segment ending - only draws top half (for last item in branch) */
+.group-search-view .tree-seg-vert-end::before {
     content: "";
     position: absolute;
-    left: -19px;
-    top: 48%;
-    width: 34px;
+    left: 12px;
+    top: 0;
+    height: 50%;
+    width: 2px;
+    background: var(--bs-border-color);
+}
+
+/* Middle segment - vertical line full height + horizontal branch */
+.group-search-view .tree-seg-mid::before {
+    content: "";
+    position: absolute;
+    left: 12px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--bs-border-color);
+}
+.group-search-view .tree-seg-mid::after {
+    content: "";
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    width: 12px;
     height: 2px;
     background: var(--bs-border-color);
 }
 
-/* First child - extend line up to parent */
-.group-search-view
-    .tree-node-children.tree-lines
-    > .tree-node:first-child
-    > .tree-node-item::before {
-    top: -20px;
-    height: calc(50% + 20px);
+/* Last segment - vertical line stops at middle + horizontal branch */
+.group-search-view .tree-seg-last::before {
+    content: "";
+    position: absolute;
+    left: 12px;
+    top: 0;
+    height: 50%;
+    width: 2px;
+    background: var(--bs-border-color);
+}
+.group-search-view .tree-seg-last::after {
+    content: "";
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    width: 12px;
+    height: 2px;
+    background: var(--bs-border-color);
 }
 
-/* Last child - line only goes to middle */
-.group-search-view
-    .tree-node-children.tree-lines
-    > .tree-node:last-child
-    > .tree-node-item::before {
-    top: -50%;
-    height: 100%;
+/* Bold text for parents with children */
+.group-search-view .tree-item-wrapper.has-children .tree-item-name {
+    font-weight: 600;
 }
 
-/* Only child - line from parent to middle only */
-.group-search-view
-    .tree-node-children.tree-lines
-    > .tree-node:only-child
-    > .tree-node-item::before {
-    top: -20px;
-    height: calc(50% + 20px);
+/* Hover state - highlight text */
+.group-search-view .simple-search-item:hover .tree-item-name {
+    color: var(--bs-primary);
+}
+
+.group-search-view .simple-search-item:hover .tree-item-kind {
+    background: var(--bs-primary);
+    color: white;
 }
 
 .group-search-view .tree-item-body {
@@ -1917,16 +1903,9 @@
 .group-search-view .simple-search-item {
     cursor: pointer;
     transition: background-color 0.15s ease;
+    /*border: 1px dotted #efefef;*/
 }
 
 .group-search-view .simple-search-item:hover {
     background-color: var(--bs-light);
-}
-
-.group-search-view .simple-search-item .bi-chevron-right {
-    opacity: 0.5;
-}
-
-.group-search-view .simple-search-item:hover .bi-chevron-right {
-    opacity: 1;
 }

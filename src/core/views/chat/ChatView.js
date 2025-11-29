@@ -194,11 +194,13 @@ class ChatView extends View {
                 }
             });
             
-            // Clear input
+            // Clear input (this also resets busy state)
             this.inputView.clearInput();
             
         } catch (error) {
             console.error('Failed to send message:', error);
+            // Reset busy state on error
+            this.inputView.setBusy(false);
             // TODO: Show error feedback to user
         }
     }

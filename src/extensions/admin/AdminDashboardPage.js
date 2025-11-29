@@ -70,7 +70,7 @@ class AdminHeaderView extends View {
     this.userActivity = new MetricsMiniChartWidget({
       icon: "bi bi-people fs-2",
       title: 'User Activity',
-      subtitle: '{{now_value}}',
+      subtitle: '{{now_value}} <span class="subtitle-label">{{now_label}}</span>',
       background: "#5388D6",
       textColor: "#FFFFFF",
       granularity: 'days',
@@ -88,6 +88,8 @@ class AdminHeaderView extends View {
       fillColor: 'rgba(245, 245, 255, 0.6)',
       smoothing: 0.3,
       showTrending: true,
+      showSettings: true,
+      showDateRange: true,
       containerId: 'user_activity_day'
     });
     this.addChild(this.userActivity);
@@ -95,7 +97,7 @@ class AdminHeaderView extends View {
     this.groupActivity = new MetricsMiniChartWidget({
         icon: "bi bi-collection fs-2",
         title: 'Group Activity',
-        subtitle: '{{now_value}}',
+        subtitle: '{{now_value}} <span class="subtitle-label">{{now_label}}</span>',
         background: "#1f6a7a",
         textColor: "#FFFFFF",
       granularity: 'days',
@@ -120,7 +122,7 @@ class AdminHeaderView extends View {
     this.apiActivity = new MetricsMiniChartWidget({
         icon: "bi bi-graph-up fs-2",
         title: 'API Requests',
-        subtitle: '{{now_value}}',
+        subtitle: '{{now_value}} <span class="subtitle-label">{{now_label}}</span> {{total}} <span class="subtitle-label">Total</span>',
         background: "#50A079",
         textColor: "#FFFFFF",
       endpoint: '/api/metrics/fetch',
@@ -146,7 +148,7 @@ class AdminHeaderView extends View {
     this.incidentActivity = new MetricsMiniChartWidget({
         icon: "bi bi-exclamation-triangle fs-2",
         title: 'Incidents',
-        subtitle: '{{now_value}}',
+        subtitle: '{{now_value}} <span class="subtitle-label">{{now_label}}</span> {{total}} <span class="subtitle-label">Total</span>',
         background: "#B14545",
         textColor: "#FFFFFF",
       endpoint: '/api/metrics/fetch',

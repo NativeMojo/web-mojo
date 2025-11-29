@@ -26,9 +26,10 @@ class ChatInputView extends View {
                     <textarea
                         class="chat-input form-control"
                         placeholder="${this.placeholder}"
-                        rows="1"></textarea>
+                        rows="2"></textarea>
                     <button class="chat-send-btn btn btn-primary" data-action="send-message" type="button">
                         <i class="bi bi-send-fill"></i>
+                        <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                     </button>
                 </div>
                 <div class="chat-input-footer">
@@ -233,6 +234,9 @@ class ChatInputView extends View {
             return;
         }
 
+        // Show busy state
+        this.setBusy(true);
+
         // Emit event with message data
         this.emit('message:send', {
             text: text,
@@ -240,6 +244,26 @@ class ChatInputView extends View {
         });
 
         // Note: Don't clear here - let the parent ChatView call clearInput() after successful send
+    }
+
+    /**
+     * Set busy state (show/hide spinner)
+     * @param {boolean} busy - Whether to show busy state
+     */
+    setBusy(busy) {
+        const button = this.element.querySelector('.chat-send-btn');
+        const icon = button.querySelector('.bi-send-fill');
+        const spinner = button.querySelector('.spinner-border');
+
+        if (busy) {
+            button.disabled = true;
+            icon.classList.add('d-none');
+            spinner.classList.remove('d-none');
+        } else {
+            button.disabled = false;
+            icon.classList.remove('d-none');
+            spinner.classList.add('d-none');
+        }
     }
 
     /**
@@ -259,6 +283,9 @@ class ChatInputView extends View {
 
         this.attachments = [];
         this.pendingUploads.clear();
+        
+        // Reset busy state
+        this.setBusy(false);
     }
 
     /**

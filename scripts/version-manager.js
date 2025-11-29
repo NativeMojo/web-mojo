@@ -46,6 +46,30 @@ class VersionManager {
         return newVersion;
     }
 
+    async incrementMinor() {
+        const currentVersion = await this.getCurrentVersion();
+        const { major, minor } = this.parseVersion(currentVersion);
+        const newMinor = minor + 1;
+        const newVersion = this.formatVersion(major, newMinor, 0);
+
+        console.log(`🔄 Incrementing minor version: ${currentVersion} → ${newVersion}`);
+
+        await this.updateVersion(newVersion);
+        return newVersion;
+    }
+
+    async incrementMajor() {
+        const currentVersion = await this.getCurrentVersion();
+        const { major } = this.parseVersion(currentVersion);
+        const newMajor = major + 1;
+        const newVersion = this.formatVersion(newMajor, 0, 0);
+
+        console.log(`🔄 Incrementing major version: ${currentVersion} → ${newVersion}`);
+
+        await this.updateVersion(newVersion);
+        return newVersion;
+    }
+
     async updateVersion(newVersion) {
         // Update package.json
         await this.updatePackageJson(newVersion);
@@ -244,8 +268,16 @@ export default VERSION_INFO;
         return watcher;
     }
 
-    async manualIncrement() {
-        return await this.incrementRevision();
+    async manualIncrement(type = 'revision') {
+        switch (type) {
+            case 'major':
+                return await this.incrementMajor();
+            case 'minor':
+                return await this.incrementMinor();
+            case 'revision':
+            default:
+                return await this.incrementRevision();
+        }
     }
 }
 
@@ -256,9 +288,19 @@ async function main() {
     if (args.includes('--watch')) {
         const manager = new VersionManager();
         await manager.startWatcher();
-    } else if (args.includes('--increment')) {
+    } else if (args.includes('--major')) {
         const manager = new VersionManager();
-        const version = await manager.manualIncrement();
+        const version = await manager.manualIncrement('major');
+        console.log(`New version: ${version}`);
+        process.exit(0);
+    } else if (args.includes('--minor')) {
+        const manager = new VersionManager();
+        const version = await manager.manualIncrement('minor');
+        console.log(`New version: ${version}`);
+        process.exit(0);
+    } else if (args.includes('--increment') || args.includes('--revision')) {
+        const manager = new VersionManager();
+        const version = await manager.manualIncrement('revision');
         console.log(`New version: ${version}`);
         process.exit(0);
     } else if (args.includes('--init')) {
@@ -273,18 +315,25 @@ async function main() {
 🔧 MOJO Version Manager
 
 Usage:
-  node scripts/version-manager.js --watch     Start file watcher
-  node scripts/version-manager.js --increment Increment version once
-  node scripts/version-manager.js --init      Initialize version file
+  node scripts/version-manager.js --watch      Start file watcher
+  node scripts/version-manager.js --major      Increment major version (x.0.0)
+  node scripts/version-manager.js --minor      Increment minor version (2.x.0)
+  node scripts/version-manager.js --increment  Increment revision (2.0.x)
+  node scripts/version-manager.js --init       Initialize version file
 
 Options:
   --watch      Watch src/ directory and auto-increment on changes
+  --major      Manually increment major version (resets minor and revision to 0)
+  --minor      Manually increment minor version (resets revision to 0)
   --increment  Manually increment revision number
+  --revision   Alias for --increment
   --init       Create/update version.js with current version
 
 Examples:
   npm run version:watch      # Start watching for changes
-  npm run version:increment  # Bump version manually
+  npm run version:increment  # Bump revision (2.0.x)
+  node scripts/version-manager.js --minor  # Bump minor (2.x.0)
+  node scripts/version-manager.js --major  # Bump major (x.0.0)
   npm run version:init       # Initialize version system
 `);
         process.exit(0);
