@@ -58,6 +58,24 @@ class SettingsView extends View {
     this.showDateRange = options.showDateRange;
   }
   
+  formatDateForInput(date) {
+    if (!date) return '';
+    
+    // If it's already a string in YYYY-MM-DD format, return it
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return date;
+    }
+    
+    // Convert Date object to YYYY-MM-DD
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d.getTime())) return '';
+    
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  
   getTemplate() {
     return `
       <div style="min-width: 220px;">
@@ -83,8 +101,8 @@ class SettingsView extends View {
         
         ${this.showDateRange ? `
         <label class="form-label small mb-1">Date Range</label>
-        <input type="date" class="form-control form-control-sm mb-1" data-setting="dateStart" value="${this.dateStart || ''}" />
-        <input type="date" class="form-control form-control-sm mb-2" data-setting="dateEnd" value="${this.dateEnd || ''}" />
+        <input type="date" class="form-control form-control-sm mb-1" data-setting="dateStart" value="${this.formatDateForInput(this.dateStart)}" />
+        <input type="date" class="form-control form-control-sm mb-2" data-setting="dateEnd" value="${this.formatDateForInput(this.dateEnd)}" />
         ` : ''}
         
         <div class="d-grid gap-2">
@@ -124,7 +142,6 @@ export default class MetricsMiniChartWidget extends View {
     // Display config
     this.icon = options.icon || null;
     this.title = options.title || '';
-    // Subtitle is injected RAW into the template string so Mustache parses its tokens
     this.subtitle = options.subtitle || '';
     this.background = options.background || null;
     this.textColor = options.textColor || null;
@@ -133,27 +150,26 @@ export default class MetricsMiniChartWidget extends View {
     this.showSettings = options.showSettings || false;
     this.settingsKey = options.settingsKey || null;
     this.showDateRange = options.showDateRange || false;
-    this.showRefresh = options.showRefresh !== false; // Enabled by default
-    this._pendingSettings = null; // Store pending settings until Apply is clicked
+    this.showRefresh = options.showRefresh !== false;
 
     // Trending options/state
     this.showTrending = !!options.showTrending;
-    this.trendRange = options.trendRange ?? null;   // e.g. 4 => compare last 2 vs prev 2
-    this.trendOffset = options.trendOffset ?? 0;    // e.g. 1 => skip most recent incomplete bucket
-    this.prevTrendOffset = options.prevTrendOffset ?? 0; // e.g. 7 => align previous window to same day last week
+    this.trendRange = options.trendRange ?? null;
+    this.trendOffset = options.trendOffset ?? 0;
+    this.prevTrendOffset = options.prevTrendOffset ?? 0;
     this.total = 0;
     this.lastValue = 0;
     this.prevValue = 0;
     this.trendingPercent = 0;
-    this.trendingUp = null; // null means unknown
+    this.trendingUp = null;
     this.hasTrending = false;
     this.trendingClass = 'metrics-mini-chart-trending-text';
     this.trendingIcon = '';
     this.trendingLabel = '';
 
-    // Chart config (we'll forward these to the child MetricsMiniChart)
+    // Chart config
     this.chartOptions = {
-      endpoint: options.endpoint, // defaults inside MetricsMiniChart
+      endpoint: options.endpoint,
       account: options.account,
       granularity: options.granularity,
       slugs: options.slugs,
@@ -162,8 +178,6 @@ export default class MetricsMiniChartWidget extends View {
       dateEnd: options.dateEnd,
       defaultDateRange: options.defaultDateRange,
       refreshInterval: options.refreshInterval,
-
-      // Visuals and interactions
       chartType: options.chartType || 'line',
       showTooltip: options.showTooltip !== undefined ? options.showTooltip : true,
       showXAxis: options.showXAxis || false,
@@ -175,22 +189,16 @@ export default class MetricsMiniChartWidget extends View {
       smoothing: options.smoothing ?? 0.3,
       strokeWidth: options.strokeWidth,
       barGap: options.barGap,
-
-      // Optional formatters and templates
       valueFormat: options.valueFormat,
       labelFormat: options.labelFormat,
       tooltipFormatter: options.tooltipFormatter,
       tooltipTemplate: options.tooltipTemplate,
-
-      // Crosshair and axis styling overrides (optional passthroughs)
       showCrosshair: options.showCrosshair,
       crosshairColor: options.crosshairColor,
       crosshairWidth: options.crosshairWidth,
       xAxisColor: options.xAxisColor,
       xAxisWidth: options.xAxisWidth,
       xAxisDashed: options.xAxisDashed,
-
-      // Other rendering params
       padding: options.padding,
       minValue: options.minValue,
       maxValue: options.maxValue,
@@ -210,16 +218,16 @@ export default class MetricsMiniChartWidget extends View {
     // Create and register the child chart
     this.chart = new MetricsMiniChart({
       ...this.chartOptions,
-      containerId: 'chart' // mount inside our template container
+      containerId: 'chart'
     });
-
     this.addChild(this.chart);
 
-      this.header = new View({
-          containerId: 'chart-header',
-          title: this.title,
-          icon: this.icon,
-          template: `
+    // Create header view
+    this.header = new View({
+      containerId: 'chart-header',
+      title: this.title,
+      icon: this.icon,
+      template: `
         <div class="d-flex justify-content-between align-items-start mb-2">
           <div class="flex-grow-1">
             <h6 class="card-title mb-1" style="${this.textColor ? `color: ${this.textColor}` : ''}">${this.title}</h6>
@@ -232,16 +240,32 @@ export default class MetricsMiniChartWidget extends View {
           </div>
           ${this.icon ? `<i class="${this.icon} fs-4 flex-shrink-0" aria-hidden="true" style="${this.textColor ? `color: ${this.textColor}` : ''}"></i>` : ''}
         </div>`
-      });
-
+    });
     this.addChild(this.header);
 
-    // Listen for data load events to compute totals/trending and refresh the widget UI
+    // Create settings view as a child if enabled
+    if (this.showSettings) {
+      this.settingsView = new SettingsView({
+        containerId: 'settings',
+        granularity: this.chartOptions.granularity,
+        chartType: this.chartOptions.chartType,
+        dateStart: this.chartOptions.dateStart,
+        dateEnd: this.chartOptions.dateEnd,
+        showDateRange: this.showDateRange
+      });
+      
+      // Listen for settings events
+      this.settingsView.on('settings:apply', (data) => this._handleSettingsApply(data));
+      this.settingsView.on('settings:cancel', () => this._handleSettingsCancel());
+      
+      this.addChild(this.settingsView);
+    }
+
+    // Listen for data load events
     if (this.chart?.on) {
       this.chart.on('metrics:loaded', this.onChildMetricsLoaded, this);
     }
 
-    // If the chart already has data (e.g., provided via options), compute immediately
     this.updateFromChartData({ render: false });
   }
 
@@ -249,25 +273,13 @@ export default class MetricsMiniChartWidget extends View {
     await super.onAfterRender();
 
     // Initialize popover if settings are enabled
-    if (this.showSettings) {
+    if (this.showSettings && this.settingsView) {
       this._initSettingsPopover();
     }
   }
 
   onChildMetricsLoaded() {
     this.updateFromChartData({ render: true });
-    
-    // Reinitialize popover after chart updates (in case DOM was re-rendered)
-    // Skip if we just applied settings (to avoid double initialization)
-    if (this.showSettings && this.isMounted() && !this._skipNextPopoverInit) {
-      // Small delay to ensure DOM is ready
-      setTimeout(() => {
-        this._initSettingsPopover();
-      }, 100);
-    }
-    
-    // Reset flag
-    this._skipNextPopoverInit = false;
   }
 
   updateFromChartData({ render = true } = {}) {
@@ -275,8 +287,7 @@ export default class MetricsMiniChartWidget extends View {
     if (!values || values.length === 0) {
       this.total = 0;
       this.hasTrending = false;
-      // Refresh the view to ensure subtitle using {{total}} updates to 0
-        this.header.title = this.title;
+      this.header.title = this.title;
       if (render) this.render();
       return;
     }
@@ -319,7 +330,6 @@ export default class MetricsMiniChartWidget extends View {
       }
 
       if (lastStart >= 0 && prevStart >= 0) {
-        // Sum helper
         const sumRange = (arr, s, e) => {
           let sum = 0;
           for (let i = s; i <= e; i++) sum += arr[i] || 0;
@@ -356,9 +366,9 @@ export default class MetricsMiniChartWidget extends View {
       this.header.trendingPercent = percent;
       this.header.trendingUp = percent >= 0;
       if (!this.textColor) {
-          this.header.trendingClass = this.header.trendingUp ? 'text-success' : 'text-danger';
+        this.header.trendingClass = this.header.trendingUp ? 'text-success' : 'text-danger';
       } else {
-          this.header.trendingClass = '';
+        this.header.trendingClass = '';
       }
 
       this.header.trendingIcon = this.header.trendingUp ? 'bi bi-arrow-up' : 'bi bi-arrow-down';
@@ -371,19 +381,13 @@ export default class MetricsMiniChartWidget extends View {
     }
 
     if (render) {
-      // Re-render to update the UI (subtitle with {{total}} and trending block)
       this.header.render();
     }
   }
 
-  /**
-   * Update labels based on current granularity
-   * @private
-   */
   _updateGranularityLabels() {
     const granularity = this.chartOptions.granularity || 'days';
     
-    // Mapping for "now" label (current/most recent bucket)
     const nowLabels = {
       'hours': 'This Hour',
       'days': 'Today',
@@ -392,7 +396,6 @@ export default class MetricsMiniChartWidget extends View {
       'years': 'This Year'
     };
     
-    // Mapping for "total" label (sum of all buckets in range)
     const totalLabels = {
       'hours': 'Total (24h)',
       'days': 'Total (Period)',
@@ -409,7 +412,6 @@ export default class MetricsMiniChartWidget extends View {
     const styles = [];
     if (this.background) styles.push(`background: ${this.background}`);
     if (this.textColor) styles.push(`color: ${this.textColor}`);
-    // Ensure inner elements inherit text color
     styles.push('border: 0');
     return styles.join('; ');
   }
@@ -425,7 +427,7 @@ export default class MetricsMiniChartWidget extends View {
             </button>
           ` : ''}
           ${this.showSettings ? `
-            <button class="btn btn-link p-0 text-muted metrics-settings-btn" type="button" data-settings-trigger style="${this.textColor ? `color: ${this.textColor} !important` : ''}">
+            <button class="btn btn-link p-0 text-muted metrics-settings-btn" type="button" data-action="toggle-settings" style="${this.textColor ? `color: ${this.textColor} !important` : ''}">
               <i class="bi bi-gear-fill"></i>
             </button>
           ` : ''}
@@ -434,19 +436,13 @@ export default class MetricsMiniChartWidget extends View {
         <div class="card-body p-3">
           <div data-container="chart-header"></div>
           <div data-container="chart"></div>
+          <div data-container="settings" style="display: none;"></div>
         </div>
       </div>
     `;
   }
 
   async onBeforeDestroy() {
-    // Clean up settings view
-    if (this._settingsView) {
-      await this._settingsView.destroy();
-      this._settingsView = null;
-    }
-    
-    // Dispose of popover
     if (this._settingsPopover) {
       this._settingsPopover.dispose();
       this._settingsPopover = null;
@@ -459,66 +455,34 @@ export default class MetricsMiniChartWidget extends View {
   }
 
   /**
-   * Initialize settings popover
+   * Toggle settings popover
+   */
+  async onActionToggleSettings(event, element) {
+    if (!this._settingsPopover) {
+      this._initSettingsPopover();
+    }
+    this._settingsPopover?.toggle();
+  }
+
+  /**
+   * Initialize settings popover (once)
    * @private
    */
   _initSettingsPopover() {
-    const button = this.element.querySelector('[data-settings-trigger]');
-    if (!button) return;
+    const button = this.element.querySelector('[data-action="toggle-settings"]');
+    if (!button || !this.settingsView || !this.settingsView.element) return;
 
-    // Clean up existing
-    if (this._settingsView) {
-      this._settingsView.destroy();
-      this._settingsView = null;
-    }
-    if (this._settingsPopover) {
-      this._settingsPopover.dispose();
-      this._settingsPopover = null;
-    }
+    if (this._settingsPopover) return; // Already initialized
 
-    // Remove any existing event listeners
-    if (this._popoverShownHandler) {
-      button.removeEventListener('shown.bs.popover', this._popoverShownHandler);
-    }
-
-    // Create settings view
-    this._settingsView = new SettingsView({
-      granularity: this.chartOptions.granularity,
-      chartType: this.chartOptions.chartType,
-      dateStart: this.chartOptions.dateStart,
-      dateEnd: this.chartOptions.dateEnd,
-      showDateRange: this.showDateRange
-    });
-
-    // Listen for apply/cancel events
-    this._settingsView.on('settings:apply', (data) => this._handleSettingsApply(data));
-    this._settingsView.on('settings:cancel', () => this._handleSettingsCancel());
-
-    // Render the settings view
-    this._settingsView.render();
-
-    // Create handler for shown event
-    this._popoverShownHandler = () => {
-      const popoverBody = document.querySelector('.popover.show .popover-body');
-      if (popoverBody && this._settingsView) {
-        popoverBody.innerHTML = '';
-        popoverBody.appendChild(this._settingsView.element);
-        this._settingsView.bindEvents();
-      }
-    };
-
-    // Create popover using placeholder content
+    // Initialize popover with settings view's element
     this._settingsPopover = new bootstrap.Popover(button, {
-      content: '<div>Loading...</div>',
+      content: this.settingsView.element,
       html: true,
       placement: 'bottom',
-      trigger: 'click',
+      trigger: 'manual',
       sanitize: false,
       customClass: 'metrics-chart-settings-popover'
     });
-
-    // Attach event listener (not once, so it works every time)
-    button.addEventListener('shown.bs.popover', this._popoverShownHandler);
   }
 
   /**
@@ -526,7 +490,6 @@ export default class MetricsMiniChartWidget extends View {
    * @private
    */
   async _handleSettingsApply(data) {
-    // Hide popover first
     if (this._settingsPopover) {
       this._settingsPopover.hide();
     }
@@ -535,7 +498,7 @@ export default class MetricsMiniChartWidget extends View {
     let granularityChanged = false;
     let datesExplicitlySet = false;
 
-    // Check if dates were explicitly changed
+    // Check if dates were explicitly changed by user in the form
     if ((data.dateStart && data.dateStart !== this.chartOptions.dateStart) || 
         (data.dateEnd && data.dateEnd !== this.chartOptions.dateEnd)) {
       datesExplicitlySet = true;
@@ -558,6 +521,7 @@ export default class MetricsMiniChartWidget extends View {
 
     // Apply dates or auto-adjust based on granularity
     if (datesExplicitlySet) {
+      // User explicitly set dates in the form
       if (data.dateStart) {
         this.chartOptions.dateStart = new Date(data.dateStart);
         this.chart.dateStart = new Date(data.dateStart);
@@ -567,8 +531,8 @@ export default class MetricsMiniChartWidget extends View {
         this.chart.dateEnd = new Date(data.dateEnd);
       }
       hasChanges = true;
-    } else if (granularityChanged) {
-      // Auto-adjust date range for new granularity
+    } else if (granularityChanged && (this.chartOptions.dateStart || this.chartOptions.dateEnd)) {
+      // Only auto-adjust if dates were already set (don't set them for the first time)
       const endDate = new Date();
       let startDate;
       
@@ -603,15 +567,7 @@ export default class MetricsMiniChartWidget extends View {
     // Save and refresh if changes were made
     if (hasChanges) {
       this._saveSettings();
-      this._skipNextPopoverInit = true;
       await this.chart.refresh();
-      
-      // Reinitialize popover after refresh
-      setTimeout(() => {
-        if (this.showSettings && this.isMounted()) {
-          this._initSettingsPopover();
-        }
-      }, 150);
     }
   }
 
@@ -629,7 +585,6 @@ export default class MetricsMiniChartWidget extends View {
    * Handle refresh button click
    */
   async onActionRefreshChart(event, element) {
-    // Add spinning animation
     const icon = element.querySelector('i');
     if (icon) {
       icon.classList.add('spin');
@@ -640,7 +595,6 @@ export default class MetricsMiniChartWidget extends View {
       await this.chart.refresh();
     }
     
-    // Remove spinning animation
     if (icon) {
       icon.classList.remove('spin');
     }
@@ -648,15 +602,11 @@ export default class MetricsMiniChartWidget extends View {
 
   refresh() {
     if (this.chart) {
-        if (this.account) this.chart.account = this.account;
-        this.chart.refresh();
+      if (this.account) this.chart.account = this.account;
+      this.chart.refresh();
     }
   }
 
-  /**
-   * Load settings from localStorage
-   * @private
-   */
   _loadSettings() {
     if (!this.settingsKey) return;
 
@@ -664,7 +614,7 @@ export default class MetricsMiniChartWidget extends View {
       const stored = localStorage.getItem(`metrics-chart-${this.settingsKey}`);
       if (stored) {
         const settings = JSON.parse(stored);
-
+        
         if (settings.granularity) {
           this.chartOptions.granularity = settings.granularity;
         }
@@ -683,10 +633,6 @@ export default class MetricsMiniChartWidget extends View {
     }
   }
 
-  /**
-   * Save settings to localStorage
-   * @private
-   */
   _saveSettings() {
     if (!this.settingsKey) return;
 
@@ -697,7 +643,7 @@ export default class MetricsMiniChartWidget extends View {
         dateStart: this.chartOptions.dateStart,
         dateEnd: this.chartOptions.dateEnd
       };
-
+      
       localStorage.setItem(`metrics-chart-${this.settingsKey}`, JSON.stringify(settings));
     } catch (error) {
       console.error('Failed to save chart settings:', error);

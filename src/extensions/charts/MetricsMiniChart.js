@@ -17,15 +17,15 @@ export default class MetricsMiniChart extends MiniChart {
     this.category = options.category || null;
     this.dateStart = options.dateStart || null;
     this.dateEnd = options.dateEnd || null;
-    this.defaultDateRange = options.defaultDateRange || '24h';
+    this.defaultDateRange = options.defaultDateRange || null;
 
     // State
     this.isLoading = false;
     this.lastFetch = null;
     this.refreshInterval = options.refreshInterval;
 
-    // Initialize date range if missing
-    if (!this.dateStart || !this.dateEnd) {
+    // ONLY initialize date range if defaultDateRange is explicitly provided
+    if (this.defaultDateRange && !this.dateStart && !this.dateEnd) {
       this.setQuickRange(this.defaultDateRange);
     }
 
