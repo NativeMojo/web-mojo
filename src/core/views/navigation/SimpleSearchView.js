@@ -375,14 +375,28 @@ class SimpleSearchView extends View {
         }
 
         const item = this.filteredItems[itemIndex];
-        const model = this.collection ? this.collection.get(item.id) : null;
+        let model = this.collection ? this.collection.get(item.id) : null;
+        if  (!model) {
+            model = new this.collection.ModelClass({ id: item.id });
+            const app = this.getApp();
+            app.showLoading();
+            model.fetch().then(() => {
+                app.hideLoading();
+                this.emit('item:selected', {
+                    item: item,
+                    model: model,
+                    index: itemIndex
+                });
+            });
+            return;
+        } else {
+            this.emit('item:selected', {
+                item: item,
+                model: model,
+                index: itemIndex
+            });
+        }
 
-        // Emit selection event
-        this.emit('item:selected', {
-            item: item,
-            model: model,
-            index: itemIndex
-        });
     }
 
     /**

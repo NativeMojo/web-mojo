@@ -38,6 +38,8 @@ class DataFormatter {
     this.register('datetime', this.datetime.bind(this));
     this.register('datetime_tz', this.datetime_tz.bind(this));
     this.register('datatime_tz', this.datetime_tz.bind(this)); // Alias for common typo
+    this.register('date_range', this.date_range.bind(this));
+    this.register('datetime_range', this.datetime_range.bind(this));
     this.register('relative', this.relative.bind(this));
     this.register('fromNow', this.relative.bind(this)); // Alias
     this.register('relative_short', this.relative_short.bind(this)); // Alias for short relative time
@@ -57,6 +59,15 @@ class DataFormatter {
     this.register('filesize', this.filesize.bind(this));
     this.register('ordinal', this.ordinal.bind(this));
     this.register('compact', this.compact.bind(this));
+    
+    // Math formatters
+    this.register('add', this.add.bind(this));
+    this.register('subtract', this.subtract.bind(this));
+    this.register('multiply', this.multiply.bind(this));
+    this.register('divide', this.divide.bind(this));
+    this.register('sub', this.subtract.bind(this)); // Alias
+    this.register('mult', this.multiply.bind(this)); // Alias
+    this.register('div', this.divide.bind(this)); // Alias
 
     // String formatters
     this.register('uppercase', (v) => String(v).toUpperCase());
@@ -723,6 +734,43 @@ class DataFormatter {
   }
 
   /**
+   * Format date range
+   * @param {*} startValue - Start date (required)
+   * @param {*} endValue - End date (defaults to now)
+   * @param {string} format - Date format (defaults to 'MM/DD/YYYY')
+   * @returns {string} Formatted date range (e.g., "01/01/2025 - 01/31/2025")
+   */
+  date_range(startValue, endValue = null, format = 'MM/DD/YYYY') {
+    if (!startValue) return '';
+    
+    const endVal = endValue || new Date();
+    const startStr = this.date(startValue, format);
+    const endStr = this.date(endVal, format);
+    
+    if (!startStr || !endStr) return '';
+    return `${startStr} - ${endStr}`;
+  }
+
+  /**
+   * Format datetime range
+   * @param {*} startValue - Start datetime (required)
+   * @param {*} endValue - End datetime (defaults to now)
+   * @param {string} dateFormat - Date format (defaults to 'MM/DD/YYYY')
+   * @param {string} timeFormat - Time format (defaults to 'HH:mm')
+   * @returns {string} Formatted datetime range (e.g., "01/01/2025 14:30 - 01/31/2025 16:45")
+   */
+  datetime_range(startValue, endValue = null, dateFormat = 'MM/DD/YYYY', timeFormat = 'HH:mm') {
+    if (!startValue) return '';
+    
+    const endVal = endValue || new Date();
+    const startStr = this.datetime(startValue, dateFormat, timeFormat);
+    const endStr = this.datetime(endVal, dateFormat, timeFormat);
+    
+    if (!startStr || !endStr) return '';
+    return `${startStr} - ${endStr}`;
+  }
+
+  /**
    * Format relative time
    * @param {*} value - Date value
    * @param {boolean} short - Use short format
@@ -944,6 +992,58 @@ class DataFormatter {
     }
 
     return String(num);
+  }
+
+  /**
+   * Add numbers
+   * @param {*} value - First number
+   * @param {*} addend - Number to add
+   * @returns {number} Sum
+   */
+  add(value, addend) {
+    const num1 = parseFloat(value);
+    const num2 = parseFloat(addend);
+    if (isNaN(num1) || isNaN(num2)) return value;
+    return num1 + num2;
+  }
+
+  /**
+   * Subtract numbers
+   * @param {*} value - First number
+   * @param {*} subtrahend - Number to subtract
+   * @returns {number} Difference
+   */
+  subtract(value, subtrahend) {
+    const num1 = parseFloat(value);
+    const num2 = parseFloat(subtrahend);
+    if (isNaN(num1) || isNaN(num2)) return value;
+    return num1 - num2;
+  }
+
+  /**
+   * Multiply numbers
+   * @param {*} value - First number
+   * @param {*} multiplier - Number to multiply by
+   * @returns {number} Product
+   */
+  multiply(value, multiplier) {
+    const num1 = parseFloat(value);
+    const num2 = parseFloat(multiplier);
+    if (isNaN(num1) || isNaN(num2)) return value;
+    return num1 * num2;
+  }
+
+  /**
+   * Divide numbers
+   * @param {*} value - Dividend
+   * @param {*} divisor - Divisor
+   * @returns {number} Quotient
+   */
+  divide(value, divisor) {
+    const num1 = parseFloat(value);
+    const num2 = parseFloat(divisor);
+    if (isNaN(num1) || isNaN(num2) || num2 === 0) return value;
+    return num1 / num2;
   }
 
   // ============= String Formatters =============
@@ -1476,18 +1576,47 @@ class DataFormatter {
   }
 
   /**
-   * Format duration in milliseconds to human-readable format
-   * @param {number} milliseconds - Duration in milliseconds
-   * @param {Object} options - Formatting options
+   * Format duration to human-readable format
+   * @param {number} value - Duration value
+   * @param {string} unit - Input unit: 'ms', 's', 'm', 'h', 'd' (defaults to 'ms')
+   * @param {boolean} short - Use short format (e.g., '1h30m' vs '1 hour 30 minutes')
+   * @param {number} precision - Max number of units to show (defaults to 2)
    * @returns {string} Formatted duration string
    */
-  duration(milliseconds, options = {}) {
-    const { short = false, precision = 2 } = options;
+  duration(value, unit = 'ms', short = false, precision = 2) {
+    if (value === null || value === undefined) return '';
 
-    if (milliseconds === null || milliseconds === undefined) return '';
+    const num = parseFloat(value);
+    if (isNaN(num)) return String(value);
 
-    const ms = parseInt(milliseconds);
-    if (isNaN(ms)) return String(milliseconds);
+    // Convert input to milliseconds
+    let ms;
+    switch (unit) {
+      case 's':
+      case 'sec':
+      case 'seconds':
+        ms = num * 1000;
+        break;
+      case 'm':
+      case 'min':
+      case 'minutes':
+        ms = num * 60000;
+        break;
+      case 'h':
+      case 'hr':
+      case 'hours':
+        ms = num * 3600000;
+        break;
+      case 'd':
+      case 'day':
+      case 'days':
+        ms = num * 86400000;
+        break;
+      case 'ms':
+      case 'milliseconds':
+      default:
+        ms = num;
+    }
 
     const units = [
       { name: 'day', short: 'd', value: 86400000 },
@@ -1503,12 +1632,12 @@ class DataFormatter {
     const parts = [];
     let remaining = absMs;
 
-    for (const unit of units) {
-      if (remaining >= unit.value) {
-        const count = Math.floor(remaining / unit.value);
-        remaining = remaining % unit.value;
+    for (const u of units) {
+      if (remaining >= u.value) {
+        const count = Math.floor(remaining / u.value);
+        remaining = remaining % u.value;
 
-        const unitName = short ? unit.short : (count === 1 ? unit.name : unit.name + 's');
+        const unitName = short ? u.short : (count === 1 ? u.name : u.name + 's');
         parts.push(short ? `${count}${unitName}` : `${count} ${unitName}`);
 
         if (parts.length >= precision) break;
