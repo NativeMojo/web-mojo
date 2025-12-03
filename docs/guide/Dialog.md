@@ -1,1196 +1,602 @@
 # Dialog - Modal Interactions
 
-## Overview
+MOJO provides a powerful Dialog system for modal interactions, confirmations, forms, and alerts.
 
-Dialog is a powerful modal component built on Bootstrap 5 that provides rich interactive dialogs for user interactions. It extends the View component, giving it full lifecycle management and event handling capabilities.
+## Recommended Usage (For LLM Agents)
 
-## Key Features
+**IMPORTANT**: Always use the helper methods listed below. They are simpler, cleaner, and handle all the complexity for you.
 
-- **Bootstrap 5 Integration**: Full Bootstrap modal functionality with all sizes and options
-- **Context Menus**: Header dropdown menus with permission-based filtering and custom styling
-- **View Integration**: Accept View instances as content with proper lifecycle management
-- **Static Helper Methods**: Pre-built dialogs for common scenarios (confirm, prompt, forms)
-- **Async Content**: Support for asynchronous content loading
-- **Event System**: Rich event handling with MOJO's action system
-- **Flexible Configuration**: Extensive customization options
+### Best Practice: Use from View
 
-## Basic Usage
+If you're inside a View, use the WebApp helper methods:
 
-### 1. Simple Dialog
+```javascript
+class MyView extends View {
+  async onActionDelete() {
+    // Confirm dialog
+    const confirmed = await this.getApp().confirm('Delete this item?');
+    if (confirmed) {
+      // Delete the item
+    }
+  }
+  
+  async onActionEdit() {
+    // Show form dialog
+    const result = await this.getApp().showForm({
+      title: 'Edit User',
+      fields: [
+        { name: 'name', label: 'Name', type: 'text', required: true },
+        { name: 'email', label: 'Email', type: 'email', required: true }
+      ]
+    });
+    
+    if (result) {
+      // User clicked Submit, data is in result
+      console.log(result.name, result.email);
+    }
+  }
+  
+  async onActionShowInfo() {
+    // Info message
+    await this.getApp().showInfo('Your changes have been saved.');
+  }
+}
+```
+
+### Alternative: Use Static Helpers
+
+If you're not in a View context, use the Dialog static helpers:
 
 ```javascript
 import { Dialog } from 'web-mojo';
 
-// Create a basic dialog
-const dialog = new Dialog({
+// Confirm
+const confirmed = await Dialog.confirm('Are you sure?');
+
+// Prompt for input
+const name = await Dialog.prompt('Enter your name:');
+
+// Alert
+await Dialog.alert('Operation completed successfully!', { type: 'success' });
+
+// Show form
+const data = await Dialog.showForm({
+  title: 'User Details',
+  fields: [
+    { name: 'username', label: 'Username', type: 'text' }
+  ]
+});
+```
+
+## Common Dialog Methods
+
+### 1. Confirmation Dialog
+
+**From View:**
+```javascript
+const confirmed = await this.getApp().confirm('Delete this user?', {
+  title: 'Confirm Delete',
+  confirmText: 'Delete',
+  cancelText: 'Cancel',
+  confirmClass: 'btn-danger'
+});
+
+if (confirmed) {
+  // User clicked Delete
+}
+```
+
+**Static Helper:**
+```javascript
+const confirmed = await Dialog.confirm('Are you sure?', {
+  title: 'Confirm Action',
+  confirmText: 'Yes',
+  cancelText: 'No',
+  confirmClass: 'btn-primary'
+});
+```
+
+### 2. Alert Dialog
+
+**From View:**
+```javascript
+// Success alert
+await this.getApp().showSuccess('Data saved successfully!');
+
+// Error alert
+await this.getApp().showError('Failed to save data.');
+
+// Info alert
+await this.getApp().showInfo('Processing your request...');
+
+// Warning alert
+await this.getApp().showWarning('This action cannot be undone.');
+```
+
+**Static Helper:**
+```javascript
+await Dialog.alert('Hello World!', {
   title: 'Welcome',
-  body: '<p>Welcome to our application!</p>',
-  buttons: [
-    { text: 'OK', action: 'ok', class: 'btn btn-primary' }
-  ]
+  type: 'success', // 'success', 'error', 'warning', 'info'
+  okText: 'Got it'
 });
-
-// Show the dialog
-document.body.appendChild(dialog.element);
-await dialog.mount();
-dialog.show();
 ```
 
-### 2. Dialog with View Content
+### 3. Prompt Dialog
 
+**From View:**
 ```javascript
-import { UserFormView } from '../views/UserFormView.js';
+// Not available on WebApp - use static helper
+const name = await Dialog.prompt('Enter your name:', 'John Doe', {
+  title: 'User Name',
+  placeholder: 'Your name',
+  inputType: 'text'
+});
 
-const formView = new UserFormView({ model: user });
+if (name) {
+  console.log('User entered:', name);
+}
+```
 
-const dialog = new Dialog({
-  title: 'Edit User',
-  body: formView,  // View instance as content
+### 4. Form Dialog
+
+**From View:**
+```javascript
+const result = await this.getApp().showForm({
+  title: 'Create User',
   size: 'lg',
-  buttons: [
-    { text: 'Cancel', action: 'cancel', class: 'btn btn-secondary' },
-    { text: 'Save', action: 'save', class: 'btn btn-primary' }
+  submitText: 'Create',
+  cancelText: 'Cancel',
+  fields: [
+    {
+      name: 'username',
+      label: 'Username',
+      type: 'text',
+      required: true,
+      placeholder: 'Enter username'
+    },
+    {
+      name: 'email',
+      label: 'Email',
+      type: 'email',
+      required: true
+    },
+    {
+      name: 'role',
+      label: 'Role',
+      type: 'select',
+      options: [
+        { value: 'admin', label: 'Administrator' },
+        { value: 'user', label: 'User' }
+      ]
+    }
   ]
 });
 
-// Handle dialog actions
-dialog.on('action:save', async () => {
-  const data = formView.getFormData();
-  await user.save(data);
-  dialog.hide();
-});
-
-dialog.show();
+if (result) {
+  // User clicked Submit
+  console.log(result.username, result.email, result.role);
+}
 ```
 
-## API Reference
-
-### Constructor Options
-
+**Static Helper:**
 ```javascript
-const dialog = new Dialog({
-  // Content
-  title: 'Dialog Title',           // Modal title
-  body: 'Content or View',         // String, HTML, or View instance
-  footer: 'Footer content',        // String, HTML, or View instance
-  buttons: [],                     // Array of button configurations
-
-  // Context Menu
-  contextMenu: {                   // Header context menu configuration
-    icon: 'bi-three-dots-vertical', // Trigger button icon
-    buttonClass: 'btn btn-link',     // Trigger button styling
-    items: [                         // Menu items array
-      {
-        id: 'save',
-        icon: 'bi-save',
-        action: 'save-document',
-        label: 'Save Document',
-        permissions: 'edit_content'  // Optional permission check
-      },
-      { type: 'divider' },          // Visual separator
-      {
-        id: 'help',
-        icon: 'bi-question-circle',
-        href: '/help',               // External link
-        label: 'Help',
-        target: '_blank'
-      }
-    ]
-  },
-
-  // Layout
-  size: 'lg',                      // 'sm', 'lg', 'xl', 'fullscreen', etc.
-  centered: true,                  // Vertically center the modal
-  scrollable: true,                // Make body scrollable for long content
-
-  // Behavior
-  backdrop: true,                  // true, false, or 'static'
-  keyboard: true,                  // Close on Escape key
-  focus: true,                     // Focus modal when shown
-  autoShow: false,                 // Show immediately after creation
-
-  // Styling
-  fade: true,                      // Fade animation
-  className: 'custom-modal',       // Additional CSS classes
-  bodyClass: 'custom-body',        // Body container classes
-  footerClass: 'custom-footer',    // Footer container classes
-
-  // Events
-  onShow: () => {},                // Called when showing
-  onShown: () => {},               // Called after shown
-  onHide: () => {},                // Called when hiding
-  onHidden: () => {},              // Called after hidden
-
-  // Header customization
-  header: true,                    // Show header
-  headerContent: '<custom>',       // Custom header HTML
-  closeButton: true                // Show close button
+const result = await Dialog.showForm({
+  title: 'Edit Settings',
+  fields: [
+    { name: 'api_key', label: 'API Key', type: 'text' }
+  ]
 });
 ```
 
-### Instance Methods
+### 5. Model Form Dialog
 
-#### `show()`
-Display the dialog.
-
+**From View:**
 ```javascript
-dialog.show();
+const user = new User({ id: 123 });
+await user.fetch();
+
+const result = await this.getApp().showModelForm({
+  model: user,
+  title: 'Edit User',
+  fields: ['name', 'email', 'phone']
+});
+
+if (result) {
+  // Model was updated and saved
+}
 ```
 
-#### `hide()`
-Hide the dialog.
-
+**Static Helper:**
 ```javascript
-dialog.hide();
-```
-
-#### `toggle()`
-Toggle dialog visibility.
-
-```javascript
-dialog.toggle();
-```
-
-#### `update(options)`
-Update dialog configuration.
-
-```javascript
-dialog.update({
-  title: 'New Title',
-  body: 'Updated content'
+const result = await Dialog.showModelForm({
+  model: myModel,
+  fields: ['field1', 'field2']
 });
 ```
 
-### Button Configuration
+### 6. Custom Dialog
 
+**From View:**
+```javascript
+const result = await this.getApp().showDialog({
+  title: 'Choose Option',
+  body: '<p>Select an action:</p>',
+  buttons: [
+    { text: 'Option 1', value: 'opt1', class: 'btn-primary' },
+    { text: 'Option 2', value: 'opt2', class: 'btn-secondary' },
+    { text: 'Cancel', value: null, class: 'btn-outline-secondary' }
+  ]
+});
+
+if (result === 'opt1') {
+  // User chose Option 1
+}
+```
+
+**Static Helper:**
+```javascript
+const choice = await Dialog.showDialog({
+  title: 'Select Action',
+  body: 'What would you like to do?',
+  buttons: [
+    { text: 'Save', value: 'save', class: 'btn-success' },
+    { text: 'Delete', value: 'delete', class: 'btn-danger' },
+    { text: 'Cancel', value: null }
+  ]
+});
+```
+
+## WebApp Dialog Methods (Preferred in Views)
+
+When you're in a View and have access to `this.getApp()`, use these methods:
+
+| Method | Purpose | Returns |
+|--------|---------|---------|
+| `confirm(message, options)` | Yes/No confirmation | `Promise<boolean>` |
+| `showSuccess(message, title)` | Success alert | `Promise<void>` |
+| `showError(message, title)` | Error alert | `Promise<void>` |
+| `showInfo(message, title)` | Info alert | `Promise<void>` |
+| `showWarning(message, title)` | Warning alert | `Promise<void>` |
+| `showForm(options)` | Form dialog | `Promise<object \| null>` |
+| `showModelForm(options)` | Model editing dialog | `Promise<object \| null>` |
+| `showDialog(options)` | Custom dialog | `Promise<any>` |
+| `showLoading(message)` | Show busy indicator | `Promise<void>` |
+| `hideLoading()` | Hide busy indicator | `Promise<void>` |
+
+## Dialog Static Methods (Use When Not in View)
+
+| Method | Purpose | Returns |
+|--------|---------|---------|
+| `Dialog.confirm(message, options)` | Yes/No confirmation | `Promise<boolean>` |
+| `Dialog.alert(message, options)` | Alert message | `Promise<void>` |
+| `Dialog.prompt(message, defaultValue, options)` | Text input | `Promise<string \| null>` |
+| `Dialog.showForm(options)` | Form dialog | `Promise<object \| null>` |
+| `Dialog.showModelForm(options)` | Model editing dialog | `Promise<object \| null>` |
+| `Dialog.showDialog(options)` | Custom dialog | `Promise<any>` |
+| `Dialog.showCode(options)` | Code display dialog | `Promise<void>` |
+| `Dialog.showData(options)` | Data table dialog | `Promise<void>` |
+| `Dialog.showBusy(message, options)` | Show busy overlay | `void` |
+| `Dialog.hideBusy()` | Hide busy overlay | `void` |
+
+## Common Options
+
+### Dialog Size
+```javascript
+size: 'sm'  // Small
+size: 'md'  // Medium (default)
+size: 'lg'  // Large
+size: 'xl'  // Extra large
+```
+
+### Buttons Configuration
 ```javascript
 buttons: [
   {
-    text: 'Save',              // Button text
-    action: 'save',            // Action name (triggers action:save event)
-    class: 'btn btn-primary',  // CSS classes
-    value: 'save-data',        // Value returned by static methods
-    dismiss: true,             // Auto-dismiss dialog
-    disabled: false,           // Button state
-    attributes: {              // Additional HTML attributes
-      'data-id': '123'
-    }
+    text: 'Save',
+    value: 'save',        // Return value when clicked
+    class: 'btn-primary', // Bootstrap button class
+    action: 'save',       // Triggers onActionSave if in Dialog class
+    dismiss: false        // Set true to auto-close dialog
   }
 ]
 ```
 
-## Context Menus
-
-Context menus provide a dropdown menu in the dialog header, replacing the standard close button with a more flexible action menu.
-
-### Basic Context Menu
-
+### Form Fields
 ```javascript
-const dialog = new Dialog({
-  title: 'Document Editor',
-  body: documentContent,
-  contextMenu: {
-    items: [
-      {
-        id: 'save',
-        icon: 'bi-save',
-        action: 'save-document',
-        label: 'Save Document'
-      },
-      {
-        id: 'print',
-        icon: 'bi-printer',
-        action: 'print-document',
-        label: 'Print'
-      },
-      {
-        type: 'divider'
-      },
-      {
-        id: 'close',
-        icon: 'bi-x-lg',
-        action: 'close-dialog',
-        label: 'Close'
-      }
-    ]
-  }
-});
-
-// Handle context menu actions
-dialog.onActionSaveDocument = async () => {
-  await saveDocument();
-  showSuccessMessage('Document saved!');
-};
-
-dialog.onActionPrintDocument = async () => {
-  window.print();
-};
-
-dialog.onActionCloseDialog = async () => {
-  dialog.hide();
-};
-```
-
-### Advanced Context Menu with Permissions
-
-```javascript
-const dialog = new Dialog({
-  title: 'Admin Panel',
-  body: adminContent,
-  contextMenu: {
-    icon: 'bi-gear-fill',                    // Custom trigger icon
-    buttonClass: 'btn btn-outline-light',   // Custom styling
-    items: [
-      {
-        id: 'admin-settings',
-        icon: 'bi-wrench',
-        action: 'open-admin-settings',
-        label: 'Admin Settings',
-        permissions: 'view_admin'            // Requires permission
-      },
-      {
-        id: 'manage-users',
-        icon: 'bi-people',
-        action: 'manage-users',
-        label: 'Manage Users',
-        permissions: 'manage_users'
-      },
-      {
-        type: 'divider'
-      },
-      {
-        id: 'help',
-        icon: 'bi-question-circle',
-        href: 'https://docs.example.com/admin',
-        label: 'Admin Documentation',
-        target: '_blank'                     // External link
-      },
-      {
-        id: 'feedback',
-        icon: 'bi-chat-square-text',
-        action: 'send-feedback',
-        label: 'Send Feedback',
-        'data-section': 'admin'              // Custom data attributes
-      }
-    ]
-  }
-});
-
-// Permission-based actions
-dialog.onActionOpenAdminSettings = async () => {
-  showAdminSettings();
-};
-
-dialog.onActionManageUsers = async (event, element) => {
-  const section = element.getAttribute('data-section');
-  openUserManagement(section);
-};
-```
-
-### Context Menu Item Types
-
-#### Action Items
-Trigger dialog action handlers via the event system:
-
-```javascript
-{
-  id: 'unique-id',
-  icon: 'bi-icon-name',
-  action: 'kebab-case-action',    // Calls onActionKebabCaseAction()
-  label: 'Display Text',
-  permissions: 'permission_name'  // Optional permission check
-}
-```
-
-#### External Links
-Navigate to external URLs:
-
-```javascript
-{
-  id: 'help-link',
-  icon: 'bi-question-circle',
-  href: 'https://help.example.com',
-  label: 'Help Documentation',
-  target: '_blank'                // Optional: open in new tab
-}
-```
-
-#### Visual Dividers
-Separate menu sections:
-
-```javascript
-{
-  type: 'divider'
-}
-```
-
-### Permission System Integration
-
-Context menus automatically filter items based on user permissions:
-
-```javascript
-// Set up permission system (example)
-window.getApp = () => ({
-  activeUser: {
-    hasPermission: (permission) => {
-      // Your permission checking logic
-      return userPermissions.includes(permission);
-    }
-  }
-});
-
-// Context menu items are automatically filtered
-const dialog = new Dialog({
-  contextMenu: {
-    items: [
-      {
-        action: 'admin-action',
-        label: 'Admin Only',
-        permissions: 'admin_access'    // Only shown if user has permission
-      },
-      {
-        action: 'user-action',
-        label: 'All Users'            // Always shown
-      }
-    ]
-  }
-});
-```
-
-### Context Menu Styling
-
-The context menu button automatically adapts to the modal's theme:
-
-```javascript
-// Default styling - inherits header colors
-const dialog = new Dialog({
-  contextMenu: {
-    items: [...]  // Uses default mojo-modal-context-menu-btn styling
-  }
-});
-
-// Custom styling
-const dialog = new Dialog({
-  className: 'modal-info',  // Modal theme affects button color
-  contextMenu: {
-    icon: 'bi-gear-fill',                    // Custom trigger icon
-    buttonClass: 'btn btn-outline-light',   // Override button styling
-    items: [...]
-  }
-});
-```
-
-### Common Context Menu Patterns
-
-#### Document/Content Actions
-```javascript
-const dialog = new Dialog({
-  title: 'Document Editor',
-  body: documentEditor,
-  contextMenu: {
-    items: [
-      {
-        id: 'save',
-        icon: 'bi-save',
-        action: 'save-document',
-        label: 'Save',
-        permissions: 'edit_content'
-      },
-      {
-        id: 'save-as',
-        icon: 'bi-save2',
-        action: 'save-as-document',
-        label: 'Save As...',
-        permissions: 'edit_content'
-      },
-      {
-        type: 'divider'
-      },
-      {
-        id: 'export-pdf',
-        icon: 'bi-file-pdf',
-        action: 'export-pdf',
-        label: 'Export as PDF'
-      },
-      {
-        id: 'share',
-        icon: 'bi-share',
-        action: 'share-document',
-        label: 'Share Document'
-      },
-      {
-        type: 'divider'
-      },
-      {
-        id: 'close',
-        icon: 'bi-x-lg',
-        action: 'close-dialog',
-        label: 'Close'
-      }
-    ]
-  }
-});
-```
-
-#### Administrative Actions
-```javascript
-const dialog = new Dialog({
-  title: 'User Management',
-  body: userManagementView,
-  contextMenu: {
-    items: [
-      {
-        id: 'add-user',
-        icon: 'bi-person-plus',
-        action: 'add-user',
-        label: 'Add User',
-        permissions: 'create_users'
-      },
-      {
-        id: 'bulk-import',
-        icon: 'bi-upload',
-        action: 'bulk-import-users',
-        label: 'Bulk Import',
-        permissions: 'import_users'
-      },
-      {
-        type: 'divider'
-      },
-      {
-        id: 'export-users',
-        icon: 'bi-download',
-        action: 'export-users',
-        label: 'Export Users'
-      },
-      {
-        id: 'audit-log',
-        icon: 'bi-clock-history',
-        action: 'view-audit-log',
-        label: 'View Audit Log',
-        permissions: 'view_audit'
-      }
-    ]
-  }
-});
-```
-
-#### Settings and Configuration
-```javascript
-const dialog = new Dialog({
-  title: 'Application Settings',
-  body: settingsView,
-  contextMenu: {
-    icon: 'bi-gear',
-    items: [
-      {
-        id: 'reset-defaults',
-        icon: 'bi-arrow-clockwise',
-        action: 'reset-to-defaults',
-        label: 'Reset to Defaults'
-      },
-      {
-        id: 'export-config',
-        icon: 'bi-box-arrow-up',
-        action: 'export-configuration',
-        label: 'Export Configuration',
-        permissions: 'export_settings'
-      },
-      {
-        id: 'import-config',
-        icon: 'bi-box-arrow-in-down',
-        action: 'import-configuration',
-        label: 'Import Configuration',
-        permissions: 'import_settings'
-      },
-      {
-        type: 'divider'
-      },
-      {
-        id: 'help',
-        icon: 'bi-question-circle',
-        href: '/help/settings',
-        label: 'Settings Help',
-        target: '_blank'
-      }
-    ]
-  }
-});
-```
-
-### Context Menu Best Practices
-
-#### 1. Logical Grouping
-Use dividers to group related actions:
-
-```javascript
-contextMenu: {
-  items: [
-    // Primary actions
-    { action: 'save', label: 'Save' },
-    { action: 'save-as', label: 'Save As...' },
-
-    { type: 'divider' },
-
-    // Secondary actions
-    { action: 'export', label: 'Export' },
-    { action: 'share', label: 'Share' },
-
-    { type: 'divider' },
-
-    // Navigation/exit
-    { action: 'close', label: 'Close' }
-  ]
-}
-```
-
-#### 2. Permission-Based Filtering
-Structure permissions hierarchically:
-
-```javascript
-contextMenu: {
-  items: [
-    // Always visible
-    { action: 'view-details', label: 'View Details' },
-
-    // Edit permissions
-    {
-      action: 'edit',
-      label: 'Edit',
-      permissions: 'edit_content'
-    },
-    {
-      action: 'delete',
-      label: 'Delete',
-      permissions: 'delete_content'  // Requires higher permission
-    },
-
-    // Admin only
-    {
-      action: 'admin-settings',
-      label: 'Admin Settings',
-      permissions: 'admin_access'
-    }
-  ]
-}
-```
-
-#### 3. Consistent Icon Usage
-Use consistent icons for similar actions across your app:
-
-```javascript
-// Define icon constants
-const ICONS = {
-  SAVE: 'bi-save',
-  EDIT: 'bi-pencil',
-  DELETE: 'bi-trash',
-  SETTINGS: 'bi-gear',
-  HELP: 'bi-question-circle',
-  CLOSE: 'bi-x-lg'
-};
-
-contextMenu: {
-  items: [
-    { action: 'save', icon: ICONS.SAVE, label: 'Save' },
-    { action: 'edit', icon: ICONS.EDIT, label: 'Edit' },
-    { action: 'delete', icon: ICONS.DELETE, label: 'Delete' }
-  ]
-}
-```
-
-#### 4. Action Handler Naming
-Use consistent naming patterns for action handlers:
-
-```javascript
-// Context menu actions
-contextMenu: {
-  items: [
-    { action: 'save-document', label: 'Save' },
-    { action: 'export-pdf', label: 'Export PDF' },
-    { action: 'share-link', label: 'Share Link' }
-  ]
-}
-
-// Corresponding handlers
-dialog.onActionSaveDocument = async () => { /* ... */ };
-dialog.onActionExportPdf = async () => { /* ... */ };
-dialog.onActionShareLink = async () => { /* ... */ };
-```
-
-#### 5. Graceful Degradation
-Handle missing permissions gracefully:
-
-```javascript
-contextMenu: {
-  items: [
-    // Always include basic actions
-    { action: 'view', label: 'View Details' },
-    { action: 'refresh', label: 'Refresh' },
-
-    // Optional actions based on permissions
-    { action: 'edit', label: 'Edit', permissions: 'edit' },
-    { action: 'admin', label: 'Admin', permissions: 'admin' },
-
-    // Always include close option
-    { type: 'divider' },
-    { action: 'close', label: 'Close' }
-  ]
-}
-
-// If no items pass permission checks, regular close button is shown
-```
-
-## Static Helper Methods
-
-### `Dialog.confirm(message, options)`
-Show a confirmation dialog.
-
-```javascript
-const result = await Dialog.confirm('Are you sure you want to delete this item?');
-if (result) {
-  // User clicked Yes/OK
-  await deleteItem();
-}
-
-// With custom options
-const confirmed = await Dialog.confirm(
-  'This action cannot be undone. Continue?',
+fields: [
   {
-    title: 'Confirm Deletion',
-    confirmText: 'Delete',
-    cancelText: 'Keep',
-    confirmClass: 'btn btn-danger',
-    size: 'sm'
+    name: 'username',
+    label: 'Username',
+    type: 'text',        // text, email, password, select, textarea, number, date, etc.
+    required: true,
+    placeholder: 'Enter username',
+    value: 'default',
+    options: []          // For select fields: [{ value: 'a', label: 'Option A' }]
   }
-);
+]
 ```
 
-### `Dialog.prompt(message, defaultValue, options)`
-Show a prompt dialog for user input.
+## Complete Examples
+
+### Example 1: Delete Confirmation in View
 
 ```javascript
-const name = await Dialog.prompt('Enter your name:', 'John Doe');
-if (name) {
-  console.log('User entered:', name);
-}
-
-// With validation
-const email = await Dialog.prompt(
-  'Enter your email:',
-  '',
-  {
-    title: 'Email Required',
-    placeholder: 'user@example.com',
-    validator: (value) => {
-      if (!value.includes('@')) {
-        return 'Please enter a valid email address';
+class UserListView extends View {
+  async onActionDeleteUser(event, element) {
+    const userId = element.dataset.id;
+    
+    const confirmed = await this.getApp().confirm(
+      'Are you sure you want to delete this user? This cannot be undone.',
+      {
+        title: 'Delete User',
+        confirmText: 'Delete',
+        confirmClass: 'btn-danger'
       }
-      return null; // Valid
+    );
+    
+    if (confirmed) {
+      const user = new User({ id: userId });
+      await user.destroy();
+      await this.getApp().showSuccess('User deleted successfully.');
+      await this.refresh();
     }
   }
-);
-```
-
-### `Dialog.showForm(formView, options)`
-Show a form dialog with a View instance.
-
-```javascript
-const formView = new UserFormView({ model: user });
-const result = await Dialog.showForm(formView, {
-  title: 'Edit User',
-  size: 'lg',
-  submitText: 'Save User',
-  cancelText: 'Cancel'
-});
-
-if (result) {
-  // User submitted the form
-  const formData = result;
-  console.log('Form data:', formData);
 }
 ```
 
-### `Dialog.showDialog(options)`
-Show a custom dialog with button handling.
+### Example 2: Edit Form in View
 
 ```javascript
-const result = await Dialog.showDialog({
-  title: 'Choose Action',
-  body: 'What would you like to do?',
-  buttons: [
-    { text: 'Edit', value: 'edit', class: 'btn btn-primary' },
-    { text: 'Delete', value: 'delete', class: 'btn btn-danger' },
-    { text: 'Cancel', value: null, class: 'btn btn-secondary' }
-  ]
-});
-
-switch (result) {
-  case 'edit':
-    // Handle edit
-    break;
-  case 'delete':
-    // Handle delete
-    break;
-  default:
-    // User cancelled
-    break;
+class ProductView extends View {
+  async onActionEdit() {
+    const product = this.model; // Assuming view has a model
+    
+    const result = await this.getApp().showModelForm({
+      model: product,
+      title: 'Edit Product',
+      size: 'lg',
+      fields: ['name', 'description', 'price', 'category']
+    });
+    
+    if (result) {
+      // Model was saved
+      await this.getApp().showSuccess('Product updated!');
+      this.render(); // Re-render view
+    }
+  }
 }
 ```
 
-### `Dialog.showCode(options)`
-Show a code display dialog with syntax highlighting.
+### Example 3: Custom Multi-Choice Dialog
 
 ```javascript
-const jsCode = `
-function hello() {
-  console.log('Hello, World!');
+class DashboardView extends View {
+  async onActionExport() {
+    const format = await this.getApp().showDialog({
+      title: 'Export Data',
+      body: '<p>Choose export format:</p>',
+      size: 'sm',
+      buttons: [
+        { text: 'CSV', value: 'csv', class: 'btn-primary' },
+        { text: 'JSON', value: 'json', class: 'btn-secondary' },
+        { text: 'Excel', value: 'xlsx', class: 'btn-success' },
+        { text: 'Cancel', value: null, class: 'btn-outline-secondary' }
+      ]
+    });
+    
+    if (format) {
+      await this.exportData(format);
+    }
+  }
 }
-`;
-
-await Dialog.showCode({
-  code: jsCode,
-  language: 'javascript',
-  title: 'Example Code',
-  size: 'lg'
-});
 ```
 
-## Advanced Usage
+### Example 4: Loading Indicator
 
-### 1. Async Content Loading
+```javascript
+class DataView extends View {
+  async onActionRefresh() {
+    await this.getApp().showLoading('Refreshing data...');
+    
+    try {
+      await this.collection.fetch();
+      await this.render();
+      await this.getApp().showSuccess('Data refreshed!');
+    } catch (error) {
+      await this.getApp().showError('Failed to refresh data.');
+    } finally {
+      await this.getApp().hideLoading();
+    }
+  }
+}
+```
+
+### Example 5: Complex Form with Validation
+
+```javascript
+class SettingsView extends View {
+  async onActionEditSettings() {
+    const result = await this.getApp().showForm({
+      title: 'API Settings',
+      size: 'lg',
+      submitText: 'Save Settings',
+      fields: [
+        {
+          name: 'api_url',
+          label: 'API URL',
+          type: 'url',
+          required: true,
+          placeholder: 'https://api.example.com'
+        },
+        {
+          name: 'api_key',
+          label: 'API Key',
+          type: 'password',
+          required: true
+        },
+        {
+          name: 'timeout',
+          label: 'Timeout (seconds)',
+          type: 'number',
+          value: 30,
+          min: 1,
+          max: 300
+        },
+        {
+          name: 'env',
+          label: 'Environment',
+          type: 'select',
+          options: [
+            { value: 'dev', label: 'Development' },
+            { value: 'staging', label: 'Staging' },
+            { value: 'prod', label: 'Production' }
+          ]
+        }
+      ]
+    });
+    
+    if (result) {
+      // Save settings
+      await this.saveSettings(result);
+      await this.getApp().showSuccess('Settings saved!');
+    }
+  }
+}
+```
+
+## Quick Reference for LLM Agents
+
+### When to Use Each Method
+
+| Scenario | Use This |
+|----------|----------|
+| Confirm yes/no | `this.getApp().confirm()` or `Dialog.confirm()` |
+| Show success message | `this.getApp().showSuccess()` |
+| Show error message | `this.getApp().showError()` |
+| Show info message | `this.getApp().showInfo()` |
+| Show warning | `this.getApp().showWarning()` |
+| Get text input | `Dialog.prompt()` |
+| Show form | `this.getApp().showForm()` |
+| Edit model | `this.getApp().showModelForm()` |
+| Custom dialog | `this.getApp().showDialog()` |
+| Show loading | `this.getApp().showLoading()` |
+| Hide loading | `this.getApp().hideLoading()` |
+
+### Common Patterns
+
+**Pattern: Delete with confirmation**
+```javascript
+const confirmed = await this.getApp().confirm('Delete?', {
+  confirmText: 'Delete',
+  confirmClass: 'btn-danger'
+});
+if (confirmed) await item.destroy();
+```
+
+**Pattern: Edit with form**
+```javascript
+const data = await this.getApp().showForm({ title: 'Edit', fields: [...] });
+if (data) await model.save(data);
+```
+
+**Pattern: Loading operation**
+```javascript
+await this.getApp().showLoading('Processing...');
+try {
+  await someAsyncOperation();
+  await this.getApp().showSuccess('Done!');
+} finally {
+  await this.getApp().hideLoading();
+}
+```
+
+**Pattern: Error handling**
+```javascript
+try {
+  await riskyOperation();
+} catch (error) {
+  await this.getApp().showError(error.message);
+}
+```
+
+## Advanced: Direct Dialog Class
+
+**NOTE**: Only use this if helper methods don't meet your needs. This is more complex.
 
 ```javascript
 import { Dialog } from 'web-mojo';
 
 const dialog = new Dialog({
-  title: 'Loading...',
-  body: async () => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Return View or HTML
-    return new DataTableView({
-      collection: await loadUserData()
-    });
-  },
-  size: 'xl'
-});
-
-dialog.show();
-```
-
-### 2. Custom Event Handling
-
-```javascript
-const dialog = new Dialog({
-  title: 'Custom Actions',
-  body: '<p>Choose an action:</p>',
-  contextMenu: {
-    items: [
-      {
-        id: 'action1',
-        icon: 'bi-1-circle',
-        action: 'custom-action-1',
-        label: 'Custom Action 1'
-      },
-      {
-        id: 'action2',
-        icon: 'bi-2-circle',
-        action: 'custom-action-2',
-        label: 'Custom Action 2'
-      }
-    ]
-  },
+  title: 'Custom Dialog',
+  body: '<p>Custom content</p>',
+  size: 'lg',
   buttons: [
-    { text: 'Close', action: 'close', class: 'btn btn-secondary' }
+    { text: 'OK', class: 'btn-primary', dismiss: true }
   ]
 });
 
-// Handle context menu actions
-dialog.onActionCustomAction1 = async (event, element) => {
-  console.log('Custom action 1 triggered from context menu');
-  // Perform custom processing
-  await performCustomAction1();
-};
-
-dialog.onActionCustomAction2 = async (event, element) => {
-  console.log('Custom action 2 triggered from context menu');
-  await performCustomAction2();
-};
-
-dialog.show();
+await dialog.show();
 ```
 
-### 3. Dialog with Validation
+## Form Field Types
 
+| Type | Description | Example |
+|------|-------------|---------|
+| `text` | Text input | `{ name: 'name', type: 'text' }` |
+| `email` | Email input | `{ name: 'email', type: 'email' }` |
+| `password` | Password input | `{ name: 'password', type: 'password' }` |
+| `number` | Number input | `{ name: 'age', type: 'number', min: 0 }` |
+| `date` | Date picker | `{ name: 'birthdate', type: 'date' }` |
+| `textarea` | Multi-line text | `{ name: 'notes', type: 'textarea', rows: 4 }` |
+| `select` | Dropdown | `{ name: 'role', type: 'select', options: [...] }` |
+| `checkbox` | Checkbox | `{ name: 'active', type: 'checkbox' }` |
+| `radio` | Radio buttons | `{ name: 'plan', type: 'radio', options: [...] }` |
+
+## Tips for LLM Agents
+
+1. **Always use helper methods first** - They're simpler and handle edge cases
+2. **In Views, use `this.getApp()`** - It's the cleanest approach
+3. **Outside Views, use `Dialog.*` static methods** - Second best option
+4. **Await all dialog methods** - They return Promises
+5. **Check return values** - `null` means user cancelled
+6. **Use appropriate alert types** - showSuccess, showError, showInfo, showWarning
+7. **For forms, use showForm()** - Don't build forms manually
+8. **For confirmations, use confirm()** - Don't use custom dialogs
+
+## Common Mistakes to Avoid
+
+❌ **Don't do this:**
 ```javascript
+// Too complex, manual dialog
 const dialog = new Dialog({
-  title: 'Enter Details',
-  body: `
-    <form id="details-form">
-      <div class="mb-3">
-        <label class="form-label">Name</label>
-        <input type="text" class="form-control" name="name" required>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Email</label>
-        <input type="email" class="form-control" name="email" required>
-      </div>
-    </form>
-  `,
-  buttons: [
-    { text: 'Cancel', action: 'cancel' },
-    { text: 'Submit', action: 'submit', class: 'btn btn-primary' }
-  ]
+  title: 'Are you sure?',
+  body: 'Delete this?',
+  buttons: [...]
 });
-
-dialog.on('action:submit', (event) => {
-  const form = dialog.element.querySelector('#details-form');
-  if (!form.checkValidity()) {
-    event.preventDefault(); // Don't close dialog
-    form.reportValidity(); // Show validation messages
-    return;
-  }
-
-  const formData = new FormData(form);
-  const data = Object.fromEntries(formData);
-
-  console.log('Form submitted:', data);
-  // Dialog will close automatically
-});
-
-dialog.show();
+await dialog.show();
 ```
 
-### 4. Multi-Step Dialog
-
+✅ **Do this instead:**
 ```javascript
-class WizardDialog extends Dialog {
-  constructor(options = {}) {
-    super({
-      title: 'Setup Wizard',
-      size: 'lg',
-      buttons: [
-        { text: 'Previous', action: 'prev', class: 'btn btn-secondary' },
-        { text: 'Next', action: 'next', class: 'btn btn-primary' },
-        { text: 'Finish', action: 'finish', class: 'btn btn-success' }
-      ],
-      ...options
-    });
-
-    this.currentStep = 0;
-    this.steps = options.steps || [];
-  }
-
-  async buildBody() {
-    const step = this.steps[this.currentStep];
-    return `
-      <div class="modal-body">
-        <div class="progress mb-3">
-          <div class="progress-bar" style="width: ${(this.currentStep + 1) / this.steps.length * 100}%"></div>
-        </div>
-        <h5>Step ${this.currentStep + 1}: ${step.title}</h5>
-        ${step.content}
-      </div>
-    `;
-  }
-
-  async handleActionNext() {
-    if (this.currentStep < this.steps.length - 1) {
-      this.currentStep++;
-      await this.render();
-    }
-  }
-
-  async handleActionPrev() {
-    if (this.currentStep > 0) {
-      this.currentStep--;
-      await this.render();
-    }
-  }
-}
-
-// Usage
-const wizard = new WizardDialog({
-  steps: [
-    { title: 'Welcome', content: '<p>Welcome to the wizard!</p>' },
-    { title: 'Settings', content: '<p>Configure your settings...</p>' },
-    { title: 'Complete', content: '<p>Setup complete!</p>' }
-  ]
-});
-
-wizard.show();
+const confirmed = await this.getApp().confirm('Delete this?');
 ```
 
-## Events
-
-### Dialog Events
+❌ **Don't do this:**
 ```javascript
-dialog.on('show', () => {
-  console.log('Dialog is about to show');
-});
-
-dialog.on('shown', () => {
-  console.log('Dialog is now visible');
-});
-
-dialog.on('hide', () => {
-  console.log('Dialog is about to hide');
-});
-
-dialog.on('hidden', () => {
-  console.log('Dialog is now hidden');
-});
-
-dialog.on('hidePrevented', () => {
-  console.log('Dialog hide was prevented');
-});
+// Forgetting to await
+this.getApp().showSuccess('Saved!'); // BUG: not awaited
 ```
 
-### Action Events
-Action events are automatically generated from button actions:
-
+✅ **Do this instead:**
 ```javascript
-// Button with action: 'save'
-dialog.on('action:save', (event, element) => {
-  // Handle save action
-  event.preventDefault(); // Prevent auto-close if needed
-});
-
-// Button with action: 'delete'
-dialog.on('action:delete', async (event, element) => {
-  // Handle delete action
-  await performDelete();
-  // Dialog closes automatically
-});
+await this.getApp().showSuccess('Saved!');
 ```
 
-## Best Practices
+## Summary for LLMs
 
-### 1. Memory Management
-Always clean up dialogs when done:
+**Priority 1**: Use `this.getApp().showX()` methods when in a View
+**Priority 2**: Use `Dialog.showX()` static methods when not in a View
+**Priority 3**: Only use `new Dialog()` constructor for truly custom needs
 
-```javascript
-// For temporary dialogs
-const dialog = new Dialog({ /* options */ });
-dialog.show();
-
-dialog.on('hidden', () => {
-  dialog.destroy(); // Clean up resources
-});
-```
-
-### 2. Accessibility
-Ensure proper ARIA attributes:
-
-```javascript
-const dialog = new Dialog({
-  title: 'Important Message',
-  attributes: {
-    'aria-describedby': 'dialog-description',
-    'role': 'alertdialog' // For important messages
-  },
-  body: '<p id="dialog-description">This is important information.</p>'
-});
-```
-
-### 3. Error Handling
-Handle errors gracefully:
-
-```javascript
-dialog.on('action:save', async (event, element) => {
-  try {
-    event.preventDefault(); // Don't auto-close
-
-    const button = element;
-    button.disabled = true;
-    button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
-
-    await saveData();
-
-    dialog.hide();
-    showSuccessMessage('Data saved successfully!');
-
-  } catch (error) {
-    showErrorMessage('Failed to save: ' + error.message);
-  } finally {
-    button.disabled = false;
-    button.innerHTML = 'Save';
-  }
-});
-```
-
-### 4. Responsive Design
-Use appropriate sizes for different screen sizes:
-
-```javascript
-const dialog = new Dialog({
-  title: 'Responsive Dialog',
-  body: content,
-  size: window.innerWidth < 768 ? 'fullscreen-md-down' : 'lg'
-});
-```
-
-## Integration with Other Components
-
-### With Views
-```javascript
-import { View, Dialog } from 'web-mojo';
-import { User } from 'web-mojo/models';
-
-class EditUserView extends View {
-  async handleActionEdit(event, element) {
-    const userId = element.getAttribute('data-id');
-    const user = await User.find(userId);
-
-    const formView = new UserFormView({ model: user });
-    const dialog = new Dialog({
-      title: 'Edit User',
-      body: formView,
-      size: 'lg',
-      contextMenu: {
-        items: [
-          {
-            id: 'reset-form',
-            icon: 'bi-arrow-clockwise',
-            action: 'reset-form',
-            label: 'Reset Form'
-          },
-          {
-            id: 'save-draft',
-            icon: 'bi-save2',
-            action: 'save-draft',
-            label: 'Save Draft',
-            permissions: 'save_drafts'
-          },
-          {
-            type: 'divider'
-          },
-          {
-            id: 'user-history',
-            icon: 'bi-clock-history',
-            action: 'view-user-history',
-            label: 'View History',
-            'data-user-id': userId
-          }
-        ]
-      },
-      buttons: [
-        { text: 'Cancel', class: 'btn btn-secondary', dismiss: true },
-        { text: 'Save User', class: 'btn btn-primary', action: 'save-user' }
-      ]
-    });
-
-    // Context menu handlers
-    dialog.onActionResetForm = async () => {
-      formView.reset();
-    };
-
-    dialog.onActionSaveDraft = async () => {
-      const draftData = formView.getFormData();
-      await user.saveDraft(draftData);
-      this.showSuccess('Draft saved');
-    };
-
-    dialog.onActionViewUserHistory = async (event, element) => {
-      const userId = element.getAttribute('data-user-id');
-      await this.showUserHistory(userId);
-    };
-
-    // Button handlers
-    dialog.onActionSaveUser = async () => {
-      const formData = formView.getFormData();
-      await user.save(formData);
-      dialog.hide();
-      await this.refresh();
-    };
-
-    dialog.show();
-  }
-}
-```
-
-### With Tables
-```javascript
-import { Table, Dialog } from 'web-mojo';
-
-class UsersTable extends TableView {
-  async handleActionDelete(event, element) {
-    const itemId = element.getAttribute('data-id');
-    const item = this.collection.get(itemId);
-
-    const confirmed = await Dialog.confirm(
-      `Are you sure you want to delete "${item.get('name')}"?`,
-      {
-        title: 'Confirm Deletion',
-        confirmText: 'Delete',
-        confirmClass: 'btn btn-danger'
-      }
-    );
-
-    if (confirmed) {
-      await this.handleDeleteItem(item);
-    }
-  }
-}
-```
-
-### With Forms
-```javascript
-import { View, Dialog } from 'web-mojo';
-
-class UserFormView extends View {
-  async handleActionSave(event, element) {
-    if (!this.validate()) {
-      const dialog = new Dialog({
-        title: 'Form Validation',
-        body: '<p>Please fix the form errors before saving.</p>',
-        contextMenu: {
-          items: [
-            {
-              id: 'highlight-errors',
-              icon: 'bi-exclamation-triangle',
-              action: 'highlight-errors',
-              label: 'Highlight Errors'
-            },
-            {
-              id: 'reset-form',
-              icon: 'bi-arrow-clockwise',
-              action: 'reset-form',
-              label: 'Reset Form'
-            }
-          ]
-        },
-        buttons: [
-          { text: 'OK', class: 'btn btn-primary', dismiss: true }
-        ]
-      });
-
-      dialog.onActionHighlightErrors = async () => {
-        this.highlightValidationErrors();
-        dialog.hide();
-      };
-
-      dialog.onActionResetForm = async () => {
-        this.reset();
-        dialog.hide();
-      };
-
-      dialog.show();
-      return;
-    }
-
-    const confirmed = await Dialog.confirm(
-      'Save changes to this user?',
-      { title: 'Confirm Save' }
-    );
-
-    if (confirmed) {
-      await this.model.save(this.getFormData());
-    }
-  }
-}
-```
-
----
-
-The Dialog component provides a powerful and flexible foundation for all modal interactions in your MOJO application, from simple confirmations to complex multi-step wizards.
+All methods are async and return Promises. Always await them.

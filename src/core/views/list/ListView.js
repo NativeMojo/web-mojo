@@ -144,6 +144,10 @@ class ListView extends View {
 
     this.collection = collection;
 
+    if (this.options.defaultQuery && !this.options.collectionParams) {
+        this.collection.params = {...this.options.defaultQuery, ...this.collection.params};
+    }
+
     if (this.options.collectionParams) {
         this.collection.params = {...this.options.collectionParams, ...this.collection.params};
     }

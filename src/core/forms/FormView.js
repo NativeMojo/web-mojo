@@ -11,6 +11,7 @@ import MOJOUtils from '@core/utils/MOJOUtils.js';
 import { FormPlugins } from '@core/forms/FormPlugins.js';
 
 import { TagInput, CollectionSelect, CollectionMultiSelect, DatePicker, DateRangePicker, ComboInput } from './inputs/index.js';
+import MultiSelectDropdown from './inputs/MultiSelectDropdown.js';
 
 class FormView extends View {
   constructor(options = {}) {
@@ -212,6 +213,7 @@ class FormView extends View {
     this.initializeImageFields();
     this.initializeCustomComponents();
     this.initializeTagInputs();
+    this.initializeMultiSelectDropdowns();
     this.initializeCollectionSelects();
     this.initializeCollectionMultiSelects();
     this.initializeDatePickers();
@@ -383,6 +385,57 @@ class FormView extends View {
 
       } catch (error) {
         // TagInput initialization failed
+      }
+    });
+  }
+
+  /**
+   * Initialize MultiSelectDropdown components
+   */
+  initializeMultiSelectDropdowns() {
+    const multiselectPlaceholders = this.element.querySelectorAll('[data-field-type="multiselect"]');
+
+    multiselectPlaceholders.forEach(placeholder => {
+      try {
+        const fieldName = placeholder.getAttribute('data-field-name');
+        const configData = placeholder.getAttribute('data-field-config');
+        const config = JSON.parse(configData);
+
+        // Get field configuration to retrieve options
+        const fieldConfig = this.getFormFieldConfig(fieldName);
+        if (!fieldConfig) {
+          return;
+        }
+
+        // Create MultiSelectDropdown component
+        const multiselect = new MultiSelectDropdown({
+          ...config,
+          options: fieldConfig.options || [],
+          placeholder: fieldConfig.placeholder || config.placeholder || 'Select...',
+          label: fieldConfig.label,
+          containerId: null // We'll mount directly
+        });
+
+        // Set initial value - prioritize config.value (which may be an array), then this.data
+        let value = config.value ?? MOJOUtils.getContextData(this.data, fieldName);
+        
+        if (value) {
+          multiselect.setFormValue(value);
+        }
+
+        // Replace placeholder with MultiSelectDropdown
+        multiselect.render(true, placeholder);
+
+        // Store reference for cleanup
+        this.customComponents.set(fieldName, multiselect);
+
+        // Listen for changes
+        multiselect.on('change', (data) => {
+          this.handleFieldChange(fieldName, data.value);
+        });
+
+      } catch (error) {
+        console.error('MultiSelectDropdown initialization failed:', error);
       }
     });
   }

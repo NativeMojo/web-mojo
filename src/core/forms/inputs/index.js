@@ -7,6 +7,7 @@
 import TagInput from './TagInput.js';
 import CollectionSelect from './CollectionSelect.js';
 import CollectionMultiSelect from './CollectionMultiSelect.js';
+import MultiSelectDropdown from './MultiSelectDropdown.js';
 import DatePicker from './DatePicker.js';
 import DateRangePicker from './DateRangePicker.js';
 import ComboInput from './ComboInput.js';
@@ -16,6 +17,7 @@ export {
   TagInput,
   CollectionSelect,
   CollectionMultiSelect,
+  MultiSelectDropdown,
   DatePicker,
   DateRangePicker,
   ComboInput
@@ -30,6 +32,7 @@ export default {
   TagInput,
   CollectionSelect,
   CollectionMultiSelect,
+  MultiSelectDropdown,
   DatePicker,
   DateRangePicker,
   ComboInput,
@@ -47,6 +50,7 @@ export const INPUT_TYPES = {
   collection: CollectionSelect,
   collectionmultiselect: CollectionMultiSelect,
   'collection-multiselect': CollectionMultiSelect,
+  multiselect: MultiSelectDropdown,
   datepicker: DatePicker,
   daterange: DateRangePicker,
   combo: ComboInput,

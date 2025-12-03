@@ -35,6 +35,13 @@ class TicketTablePage extends TablePage {
                       options: [
                           "new", "open", "paused", "resolved", "qa", "ignored"
                       ]
+                    },
+                    filter: {
+                      type: "multiselect",
+                      placeHolder: "Select Status",
+                      options: [
+                          "new", "open", "paused", "resolved", "qa", "ignored"
+                      ]
                     }
                 },
                 { key: 'priority', label: 'Priority', sortable: true },
@@ -43,6 +50,13 @@ class TicketTablePage extends TablePage {
                     editable: true,
                     editableOptions: {
                       type: "select",
+                      options: [
+                          ... Object.keys(TicketCategories)
+                      ]
+                    },
+                    filter: {
+                      type: "multiselect",
+                      placeHolder: "Select Category",
                       options: [
                           ... Object.keys(TicketCategories)
                       ]

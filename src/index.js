@@ -84,6 +84,7 @@ export { default as MustacheFormatter } from '@core/utils/MustacheFormatter.js';
 export { default as MOJOUtils, DataWrapper } from '@core/utils/MOJOUtils.js';
 export { default as ConsoleSilencer } from '@core/utils/ConsoleSilencer.js';
 export { installConsoleSilencer } from '@core/utils/ConsoleSilencer.js';
+export { default as DjangoLookups, parseFilterKey, formatFilterDisplay, LOOKUPS } from '@core/utils/DjangoLookups.js';
 
 // Additional views
 export { default as ProgressView } from '@core/views/feedback/ProgressView.js';

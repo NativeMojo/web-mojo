@@ -633,7 +633,6 @@ class FormBuilder {
       }
     }
     if (!fieldHTML) {
-      console.log('buildFieldHTML - Processing field type:', type, 'for field:', field.name);
       switch (type) {
       case 'text':
         fieldHTML = this.renderTextField(field);
@@ -667,6 +666,9 @@ class FormBuilder {
         break;
       case 'select':
         fieldHTML = this.renderSelectField(field);
+        break;
+      case 'multiselect':
+        fieldHTML = this.renderMultiSelectField(field);
         break;
       case 'checkbox':
         fieldHTML = this.renderCheckboxField(field);
@@ -1225,6 +1227,66 @@ class FormBuilder {
     };
 
     return Mustache.render(this.templates.select, context);
+  }
+
+  /**
+   * Render multiselect dropdown field
+   * @param {Object} field - Field configuration
+   * @returns {string} Field HTML
+   */
+  renderMultiSelectField(field) {
+    const {
+      name,
+      label,
+      options = [],
+      value = [],
+      required = false,
+      disabled = false,
+      maxHeight = 300,
+      help = field.helpText || field.help || ''
+    } = field;
+    
+    // Support both placeholder and placeHolder (capital H)
+    const placeholder = field.placeholder || field.placeHolder || 'Select...';
+
+    const fieldId = this.getFieldId(name);
+    const error = this.errors[name];
+    // Prioritize field.value (which may be an array set by buildFilterDialogField) over data lookup
+    const fieldValue = field.value ?? this.getFieldValue(name) ?? value;
+
+    // Create placeholder div that will be replaced with MultiSelectDropdown component
+    return `
+      <div class="mojo-form-control">
+        ${label ? `<label class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}</label>` : ''}
+        <div class="multiselect-placeholder"
+             data-field-name="${name}"
+             data-field-type="multiselect"
+             data-field-config='${JSON.stringify({
+               name,
+               value: fieldValue,
+               placeholder,
+               maxHeight,
+               disabled,
+               required
+             })}'>
+          <input type="hidden" name="${name}" value="${this.escapeHtml(JSON.stringify(fieldValue))}">
+          <select class="form-select${error ? ' is-invalid' : ''}" 
+                  multiple 
+                  ${disabled ? 'disabled' : ''}
+                  ${required ? 'required' : ''}>
+            ${options.map(opt => {
+              const optValue = typeof opt === 'string' ? opt : opt.value;
+              const optLabel = typeof opt === 'string' ? opt : (opt.label || opt.value);
+              const selected = Array.isArray(fieldValue) && fieldValue.includes(optValue) ? 'selected' : '';
+              return `<option value="${this.escapeHtml(optValue)}" ${selected}>${this.escapeHtml(optLabel)}</option>`;
+            }).join('')}
+          </select>
+          <small class="form-text text-muted">This will be enhanced with MultiSelectDropdown component</small>
+        </div>
+        ${help ? `<div class="${this.options.helpClass}">${this.escapeHtml(help)}</div>` : ''}
+        ${error ? `<div class="${this.options.errorClass}">${this.escapeHtml(error)}</div>` : ''}
+      </div>
+    `;
   }
 
   /**
@@ -2351,7 +2413,15 @@ class FormBuilder {
     const panes = tabs.map((t, i) => {
       const id = `${safe}-pane-${i}`;
       const isActive = i === 0;
-      const fieldsHTML = (t.fields || []).map(f => this.buildFieldHTML(f)).join('');
+      
+      // Handle groups and regular fields properly
+      const fieldsHTML = (t.fields || []).map(f => {
+        if (f.type === 'group') {
+          return this.buildGroupHTML(f);
+        }
+        return this.buildFieldHTML(f);
+      }).join('');
+      
       return `
         <div class="tab-pane fade ${isActive ? 'show active' : ''}"
              id="${id}"

@@ -1,49 +1,12 @@
-# FormBuilder Guide
+# Forms - FormView and FormBuilder
 
-The FormBuilder is a powerful, Bootstrap 5-integrated component for dynamically generating forms in MOJO applications. It provides a declarative approach to form creation with automatic validation, model binding, and event handling.
+MOJO provides a powerful form system through `FormView` and `FormBuilder` for creating dynamic, validated forms with automatic model binding and autosave capabilities.
 
-## Table of Contents
+## Recommended Usage (For LLM Agents)
 
-- [Basic Usage](#basic-usage)
-- [Field Types](#field-types)
-- [Input Groups](#input-groups)
-- [Section Headers](#section-headers)
-- [Model Integration](#model-integration)
-- [Validation](#validation)
-- [Event Handling](#event-handling)
-- [Layout & Styling](#layout--styling)
-- [Advanced Features](#advanced-features)
-- [Complete Examples](#complete-examples)
+**IMPORTANT**: Use `FormView` for all form creation. It handles rendering, validation, submission, and model binding automatically.
 
-## Basic Usage
-
-### Creating a Form
-
-```javascript
-import { FormBuilder } from 'web-mojo';
-
-const formConfig = {
-  fields: [
-    {
-      type: 'text',
-      name: 'firstName',
-      label: 'First Name',
-      required: true
-    },
-    {
-      type: 'email',
-      name: 'email',
-      label: 'Email Address',
-      required: true
-    }
-  ]
-};
-
-const formBuilder = new FormBuilder(formConfig);
-await formBuilder.mount(document.getElementById('form-container'));
-```
-
-### Using with FormView
+### Quick Start
 
 ```javascript
 import { FormView } from 'web-mojo';
@@ -51,157 +14,164 @@ import { FormView } from 'web-mojo';
 class UserFormView extends FormView {
   constructor(options = {}) {
     super({
+      ...options,
       formConfig: {
         fields: [
-          {
-            type: 'text',
-            name: 'name',
-            label: 'Full Name',
-            required: true
-          },
-          {
-            type: 'email',
-            name: 'email',
-            label: 'Email',
-            required: true
-          }
+          { type: 'text', name: 'name', label: 'Name', required: true },
+          { type: 'email', name: 'email', label: 'Email', required: true },
+          { type: 'select', name: 'role', label: 'Role', options: [
+            { value: 'admin', label: 'Administrator' },
+            { value: 'user', label: 'User' }
+          ]}
         ]
-      },
-      ...options
+      }
+    });
+  }
+}
+
+// Use in a dialog
+const formView = new UserFormView();
+const result = await Dialog.showForm({
+  title: 'Create User',
+  body: formView
+});
+
+if (result) {
+  console.log(result); // { name: '...', email: '...', role: '...' }
+}
+```
+
+## FormView with Model Binding and AutoSave
+
+**This is the most powerful feature** - automatic model synchronization and saving on field changes:
+
+```javascript
+import { FormView, Model } from 'web-mojo';
+
+class User extends Model {
+  static endpoint = '/api/users';
+}
+
+class UserFormView extends FormView {
+  constructor(options = {}) {
+    super({
+      ...options,
+      model: options.model, // Pass the model instance
+      fileHandling: true,   // Enable file uploads
+      formConfig: {
+        fields: [
+          { type: 'text', name: 'name', label: 'Full Name', required: true },
+          { type: 'email', name: 'email', label: 'Email', required: true },
+          { type: 'tel', name: 'phone', label: 'Phone' },
+          { type: 'select', name: 'role', label: 'Role', options: [
+            { value: 'admin', label: 'Administrator' },
+            { value: 'user', label: 'User' }
+          ]},
+          { type: 'checkbox', name: 'active', label: 'Active Account', value: true },
+          { type: 'image', name: 'avatar', label: 'Profile Picture', size: 'md' }
+        ],
+        submitButton: { text: 'Save User', class: 'btn-primary' },
+        resetButton: { text: 'Cancel', class: 'btn-secondary' }
+      }
+    });
+  }
+}
+
+// Usage with existing model
+const user = new User({ id: 123 });
+await user.fetch();
+
+const formView = new UserFormView({ model: user });
+this.addChild(formView);
+```
+
+### AutoSave Feature
+
+Enable autosave to save changes to the model automatically on field change:
+
+```javascript
+class QuickEditFormView extends FormView {
+  constructor(options = {}) {
+    super({
+      ...options,
+      model: options.model,
+      autosaveModelField: true,  // Enable autosave (CONSTRUCTOR option, not formConfig)
+      fileHandling: true,
+      formConfig: {
+        fields: [
+          { type: 'text', name: 'title', label: 'Title' },
+          { type: 'textarea', name: 'description', label: 'Description', rows: 4 },
+          { type: 'number', name: 'price', label: 'Price', min: 0 }
+        ],
+        submitButton: false,   // Hide submit button (autosave handles it)
+        resetButton: false     // Hide reset button
+      }
     });
   }
 }
 ```
 
-## Field Types
+**How AutoSave Works:**
+- User edits a field (triggers `change` event)
+- Form waits 300ms (hardcoded debounce delay)
+- Multiple field changes within 300ms are batched together
+- Only changed fields are sent to server via `model.save()`
+- Visual indicator shows saving/saved/error status
+- Model automatically updates on successful save
+
+## All Field Types
 
 ### Text Input Fields
 
 ```javascript
-// Basic text field
-{
-  type: 'text',
-  name: 'firstName',
-  label: 'First Name',
-  placeholder: 'Enter your first name',
-  required: true
-}
+// Basic text
+{ type: 'text', name: 'username', label: 'Username', required: true, placeholder: 'Enter username' }
 
-// Email field with validation
-{
-  type: 'email',
-  name: 'email',
-  label: 'Email Address',
-  required: true
-}
+// Email with validation
+{ type: 'email', name: 'email', label: 'Email', required: true }
 
-// Password field
-{
-  type: 'password',
-  name: 'password',
-  label: 'Password',
-  required: true,
-  minLength: 8
-}
-
-// Password field with show/hide toggle
-{
-  type: 'password',
-  name: 'password',
-  label: 'Password',
-  required: true,
-  showToggle: true,
-  attributes: {
-    autocomplete: 'new-password'
-  }
-}
-
-// Number field
-{
-  type: 'number',
-  name: 'age',
-  label: 'Age',
-  min: 18,
-  max: 100
-}
+// Password with toggle visibility
+{ type: 'password', name: 'password', label: 'Password', required: true, showToggle: true, minLength: 8 }
 
 // Phone number
-{
-  type: 'tel',
-  name: 'phone',
-  label: 'Phone Number',
-  pattern: '[0-9]{3}-[0-9]{3}-[0-9]{4}'
-}
+{ type: 'tel', name: 'phone', label: 'Phone', placeholder: '(555) 555-5555' }
 
-// URL field
-{
-  type: 'url',
-  name: 'website',
-  label: 'Website',
-  placeholder: 'https://example.com'
-}
+// URL
+{ type: 'url', name: 'website', label: 'Website', placeholder: 'https://example.com' }
 
-// Password field with custom toggle styling
-{
-  type: 'password',
-  name: 'secure_password',
-  label: 'Secure Password',
-  required: true,
-  showToggle: true,
-  help: 'Password must be at least 8 characters',
-  attributes: {
-    autocomplete: 'current-password',
-    minlength: '8'
-  }
-}
+// Search
+{ type: 'search', name: 'query', label: 'Search', placeholder: 'Search...' }
 
-// Search field
-{
-  type: 'search',
-  name: 'query',
-  label: 'Search',
-  placeholder: 'Type to search...'
-}
+// Number with min/max
+{ type: 'number', name: 'age', label: 'Age', min: 0, max: 120, step: 1 }
+
+// Hex (for blockchain addresses, hashes, etc.)
+{ type: 'hex', name: 'address', label: 'Wallet Address', hexType: 'address', allowPrefix: true }
 ```
 
-### Textarea Fields
+### Textarea
 
 ```javascript
-{
-  type: 'textarea',
-  name: 'description',
-  label: 'Description',
-  rows: 4,
-  maxLength: 500,
-  help: 'Maximum 500 characters'
-}
+// Basic textarea
+{ type: 'textarea', name: 'description', label: 'Description', rows: 4, maxLength: 500 }
+
+// JSON editor
+{ type: 'json', name: 'metadata', label: 'Metadata', rows: 10, help: 'Enter valid JSON' }
 ```
 
-### Select Fields
+### Select Dropdowns
 
 ```javascript
-// Simple select
+// Basic select
 {
   type: 'select',
   name: 'country',
   label: 'Country',
+  required: true,
   options: [
-    'United States',
-    'Canada',
-    'United Kingdom',
-    'Australia'
-  ]
-}
-
-// Select with value/label pairs
-{
-  type: 'select',
-  name: 'status',
-  label: 'Status',
-  options: [
-    { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
-    { value: 'pending', label: 'Pending' }
+    { value: 'us', label: 'United States' },
+    { value: 'ca', label: 'Canada' },
+    { value: 'uk', label: 'United Kingdom' }
   ]
 }
 
@@ -211,192 +181,133 @@ class UserFormView extends FormView {
   name: 'interests',
   label: 'Interests',
   multiple: true,
-  size: 4,
+  size: 5,
   options: [
-    'Technology',
-    'Sports',
-    'Music',
-    'Travel',
-    'Reading'
+    { value: 'tech', label: 'Technology' },
+    { value: 'sports', label: 'Sports' },
+    { value: 'music', label: 'Music' }
   ]
 }
+
+// Auto-generated numeric options
+{
+  type: 'select',
+  name: 'quantity',
+  label: 'Quantity',
+  start: 1,
+  end: 100,
+  step: 1
+}
+
+// Auto-generated with custom formatting
+{
+  type: 'select',
+  name: 'price',
+  label: 'Price',
+  start: 0,
+  end: 1000,
+  step: 50,
+  format: (val) => `$${val} USD`  // Custom format function
+}
 ```
 
-#### Auto-Generated Select Options
+### Multi-Select Dropdown
 
-FormBuilder can automatically generate options from numeric ranges:
+Use `multiselect` for a Bootstrap dropdown with checkboxes (no search, simple and clean):
 
 ```javascript
-// Basic numeric range (1-24)
+// Basic multiselect
 {
-  type: 'select',
-  name: 'hour',
-  label: 'Hour',
-  start: 1,
-  end: 24,
-  step: 1
+  type: 'multiselect',
+  name: 'status',
+  label: 'Status',
+  placeholder: 'Select statuses...',
+  options: [
+    { value: 'new', label: 'New' },
+    { value: 'open', label: 'Open' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'resolved', label: 'Resolved' }
+  ]
 }
-// Generates: 1, 2, 3, ..., 24
 
-// Zero-padded numbers (for time)
+// With default values
 {
-  type: 'select',
-  name: 'minute',
-  label: 'Minute',
-  start: 0,
-  end: 45,
-  step: 15,
-  format: 'padded'  // or 'pad'
+  type: 'multiselect',
+  name: 'tags',
+  label: 'Tags',
+  value: ['important', 'urgent'],  // Pre-selected values
+  options: [
+    { value: 'important', label: 'Important' },
+    { value: 'urgent', label: 'Urgent' },
+    { value: 'bug', label: 'Bug' },
+    { value: 'feature', label: 'Feature' }
+  ]
 }
-// Generates: 00, 15, 30, 45
 
-// Ordinal numbers (1st, 2nd, 3rd)
+// With custom height
 {
-  type: 'select',
-  name: 'day',
-  label: 'Day of Month',
-  start: 1,
-  end: 31,
-  step: 1,
-  format: 'ordinal'
+  type: 'multiselect',
+  name: 'categories',
+  label: 'Categories',
+  maxHeight: 400,  // Max height for dropdown list
+  options: [...]
 }
-// Generates: 1st, 2nd, 3rd, 4th, ..., 31st
-
-// With suffix (percentages)
-{
-  type: 'select',
-  name: 'discount',
-  label: 'Discount',
-  start: 0,
-  end: 100,
-  step: 10,
-  suffix: '%'
-}
-// Generates: 0%, 10%, 20%, ..., 100%
-
-// With prefix (years)
-{
-  type: 'select',
-  name: 'year',
-  label: 'Year',
-  start: 2020,
-  end: 2030,
-  step: 1,
-  prefix: 'Year '
-}
-// Generates: Year 2020, Year 2021, ..., Year 2030
-
-// Custom formatter function
-{
-  type: 'select',
-  name: 'month',
-  label: 'Month',
-  start: 1,
-  end: 12,
-  step: 1,
-  format: (v) => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][v-1]
-}
-// Generates: Jan, Feb, Mar, ..., Dec
-
-// Combine manual and auto-generated options
-{
-  type: 'select',
-  name: 'hour',
-  label: 'Start Hour',
-  options: [{ label: 'All Day', value: 0 }],  // Manual option first
-  start: 1,
-  end: 24,
-  step: 1
-}
-// Generates: All Day, 1, 2, 3, ..., 24
-
-// Real-world example: Age selector
-{
-  type: 'select',
-  name: 'age',
-  label: 'Age',
-  options: [{ label: 'Select your age', value: '' }],
-  start: 18,
-  end: 100,
-  step: 1,
-  suffix: ' years old'
-}
-// Generates: Select your age, 18 years old, 19 years old, ..., 100 years old
 ```
 
-**Auto-Generation Parameters:**
-- `start` - Starting value (inclusive)
-- `end` - Ending value (inclusive)
-- `step` - Increment value (default: 1)
-- `format` - Format type: `'padded'`, `'ordinal'`, or custom function
-- `prefix` - Text to prepend to each label
-- `suffix` - Text to append to each label
+**Features:**
+- Clean Bootstrap dropdown with checkboxes
+- Shows "3 selected" or single item name in button
+- No search (KISS principle - for short lists only)
+- Perfect for table filters and forms
 
-**Notes:**
-- Auto-generated options are appended after any manually specified `options`
-- Supports both ascending (start < end) and descending (start > end) ranges
-- Custom formatter functions receive the numeric value and return a string label
-- The numeric value is used for form submission, the formatted string is displayed
-
-### Checkbox and Radio Fields
+### Checkboxes and Radios
 
 ```javascript
 // Single checkbox
-{
-  type: 'checkbox',
-  name: 'newsletter',
-  label: 'Subscribe to newsletter',
-  value: true
-}
+{ type: 'checkbox', name: 'terms_accepted', label: 'I accept the terms', value: true }
+
+// Switch (styled checkbox)
+{ type: 'switch', name: 'notifications', label: 'Enable Notifications', value: true, size: 'lg' }
 
 // Radio buttons
 {
   type: 'radio',
-  name: 'gender',
-  label: 'Gender',
+  name: 'plan',
+  label: 'Subscription Plan',
+  required: true,
+  inline: true,
   options: [
-    { value: 'male', label: 'Male' },
-    { value: 'female', label: 'Female' },
-    { value: 'other', label: 'Other' }
+    { value: 'free', label: 'Free' },
+    { value: 'pro', label: 'Pro ($9/mo)' },
+    { value: 'enterprise', label: 'Enterprise' }
   ]
-}
-
-// Switch (Bootstrap toggle)
-{
-  type: 'switch',
-  name: 'notifications',
-  label: 'Enable Notifications',
-  value: false
 }
 ```
 
-### Date and Time Fields
+### Date and Time
 
 ```javascript
 // Date picker
-{
-  type: 'date',
-  name: 'birthdate',
-  label: 'Birth Date'
-}
+{ type: 'date', name: 'birthdate', label: 'Birth Date', required: true }
 
-// DateTime picker
-{
-  type: 'datetime-local',
-  name: 'appointment',
-  label: 'Appointment Time'
-}
+// DateTime local
+{ type: 'datetime-local', name: 'appointment', label: 'Appointment Time' }
 
 // Time picker
+{ type: 'time', name: 'reminder_time', label: 'Reminder Time' }
+
+// Date range picker (custom component)
 {
-  type: 'time',
-  name: 'meetingTime',
-  label: 'Meeting Time'
+  type: 'daterange',
+  name: 'report_period',
+  label: 'Report Period',
+  startName: 'start_date',
+  endName: 'end_date',
+  required: true
 }
 ```
 
-### File Upload Fields
+### File Uploads
 
 ```javascript
 // Basic file upload
@@ -407,24 +318,32 @@ FormBuilder can automatically generate options from numeric ranges:
   accept: '.pdf,.doc,.docx'
 }
 
-// Image upload with preview
+// Image upload with preview and cropping
 {
   type: 'image',
-  name: 'avatar',
+  name: 'profile_pic',
   label: 'Profile Picture',
-  accept: 'image/*'
+  size: 'md',              // xs, sm, md, lg, xl (display size)
+  imageSize: 'md',         // Enable cropping by setting imageSize
+  accept: 'image/*',
+  help: 'Click to upload or drag & drop'
+}
+
+// Multiple file upload
+{
+  type: 'file',
+  name: 'attachments',
+  label: 'Attachments',
+  multiple: true,
+  accept: '*'
 }
 ```
 
-### Other Field Types
+### Advanced Field Types
 
 ```javascript
 // Color picker
-{
-  type: 'color',
-  name: 'favoriteColor',
-  label: 'Favorite Color'
-}
+{ type: 'color', name: 'theme_color', label: 'Theme Color', value: '#0d6efd' }
 
 // Range slider
 {
@@ -433,1242 +352,815 @@ FormBuilder can automatically generate options from numeric ranges:
   label: 'Volume',
   min: 0,
   max: 100,
-  step: 1,
-  value: 50
+  step: 5,
+  value: 50,
+  showValue: true
 }
 
 // Hidden field
+{ type: 'hidden', name: 'user_id', value: '123' }
+
+// Tag input (multiple tags)
 {
-  type: 'hidden',
-  name: 'userId',
-  value: '12345'
+  type: 'tag',
+  name: 'tags',
+  label: 'Tags',
+  placeholder: 'Add tags...',
+  maxItems: 10,
+  value: ['javascript', 'web']
 }
 
-// Collection select (searchable dropdown)
+// Collection select (auto-fetches from API)
 {
   type: 'collection',
-  name: 'parentGroup',
-  label: 'Parent Group',
-  Collection: GroupCollection,  // Collection class
-  labelField: 'name',          // Field to display in dropdown
-  valueField: 'id',            // Field to use as value
-  maxItems: 10,                // Max items to show in dropdown
-  placeholder: 'Search groups...',
-  debounceMs: 300,             // Search debounce delay
-  defaultParams: {             // Default collection parameters
-    status: 'active',
-    type: 'group'
-  }
+  name: 'category_id',
+  label: 'Category',
+  Collection: CategoryCollection,
+  labelField: 'name',
+  valueField: 'id',
+  defaultParams: { status: 'active' }
 }
 
-// Or with pre-instantiated collection
+// Collection multi-select
 {
-  type: 'collection',
-  name: 'userId',
-  label: 'User',
-  collection: userCollection,   // Collection instance
-  labelField: 'fullName',
+  type: 'collectionmultiselect',
+  name: 'tags',
+  label: 'Tags',
+  Collection: TagCollection,
+  labelField: 'name',
   valueField: 'id',
   maxItems: 5
 }
+
+// Combo input (text + select)
+{
+  type: 'combo',
+  name: 'custom_status',
+  label: 'Status',
+  options: ['Active', 'Pending', 'Inactive'],
+  allowCustom: true
+}
 ```
 
-### Collection Field Features
+## Input Groups (Icons and Addons)
 
-The collection field type provides a searchable dropdown interface that:
-
-- **Auto-fetches data**: Uses the collection's search parameters and fetch method
-- **Debounced search**: Prevents excessive API calls during typing
-- **Keyboard navigation**: Arrow keys, Enter, and Escape support  
-- **Flexible display**: Customize which fields show as label and value
-- **Parameter preservation**: Maintains default collection params during search
-- **Form integration**: Seamlessly integrates with FormBuilder validation and data collection
-
-## Input Groups
-
-Input groups allow you to add text, icons, or buttons before or after form controls using Bootstrap 5's input-group component.
-
-### Basic Input Groups
+Add icons, text, or buttons before/after inputs:
 
 ```javascript
-// Prepend text
+// Prepend icon
 {
-  type: 'number',
-  name: 'price',
-  label: 'Price',
-  inputGroup: {
-    prepend: '$'
-  }
+  type: 'text',
+  name: 'username',
+  label: 'Username',
+  inputGroup: { prepend: '<i class="bi bi-person"></i>' }
 }
 
 // Append text
 {
-  type: 'text',
+  type: 'number',
   name: 'weight',
   label: 'Weight',
-  inputGroup: {
-    append: 'lbs'
-  }
+  inputGroup: { append: 'lbs' }
 }
 
 // Both prepend and append
 {
   type: 'number',
-  name: 'percentage',
-  label: 'Completion',
-  inputGroup: {
-    prepend: 'Progress:',
-    append: '%'
-  }
-}
-```
-
-### Input Groups with Icons
-
-```javascript
-// Icon prepend (Bootstrap Icons)
-{
-  type: 'text',
-  name: 'website',
-  label: 'Website',
-  inputGroup: {
-    prepend: '<i class="bi bi-globe"></i>'
-  }
+  name: 'price',
+  label: 'Price',
+  inputGroup: { prepend: '$', append: 'USD' }
 }
 
-// Multiple icons
-{
-  type: 'text',
-  name: 'username',
-  label: 'Username',
-  inputGroup: {
-    prepend: '<i class="bi bi-person"></i>',
-    append: '<i class="bi bi-check-circle text-success"></i>'
-  }
-}
-```
-
-### Input Groups with Select and Textarea
-
-```javascript
-// Select with input group
-{
-  type: 'select',
-  name: 'currency',
-  label: 'Amount',
-  inputGroup: {
-    append: 'Currency'
-  },
-  options: [
-    { value: 'USD', label: '$' },
-    { value: 'EUR', label: '€' },
-    { value: 'GBP', label: '£' }
-  ]
-}
-
-// Textarea with input group
-{
-  type: 'textarea',
-  name: 'message',
-  label: 'Message',
-  rows: 3,
-  inputGroup: {
-    prepend: '<i class="bi bi-chat-dots"></i>'
-  }
-}
-```
-
-### Shorthand Syntax
-
-```javascript
-// String shorthand (automatically becomes prepend)
-{
-  type: 'text',
-  name: 'amount',
-  label: 'Amount',
-  inputGroup: '$'  // Same as { prepend: '$' }
-}
-```
-
-## Section Headers
-
-Create visual section breaks and organize your forms with header fields.
-
-### Basic Headers
-
-```javascript
-{
-  type: 'header',
-  text: 'Personal Information',
-  level: 3  // Creates <h3>
-}
-```
-
-### Styled Headers
-
-```javascript
-{
-  type: 'header',
-  text: 'Contact Details',
-  level: 4,
-  className: 'text-primary border-bottom pb-2 mb-3'
-}
-
-{
-  type: 'header',
-  text: 'Account Settings',
-  level: 3,
-  className: 'bg-light p-2 rounded',
-  id: 'account-section'
-}
-```
-
-### Complete Form with Sections
-
-```javascript
-const formConfig = {
-  fields: [
-    {
-      type: 'header',
-      text: 'Personal Information',
-      level: 3
-    },
-    {
-      type: 'text',
-      name: 'firstName',
-      label: 'First Name',
-      required: true
-    },
-    {
-      type: 'text',
-      name: 'lastName',
-      label: 'Last Name',
-      required: true
-    },
-    
-    {
-      type: 'header',
-      text: 'Contact Details',
-      level: 3,
-      className: 'mt-4'
-    },
-    {
-      type: 'email',
-      name: 'email',
-      label: 'Email Address',
-      required: true
-    },
-    {
-      type: 'tel',
-      name: 'phone',
-      label: 'Phone Number',
-      inputGroup: {
-        prepend: '<i class="bi bi-telephone"></i>'
-      }
-    }
-  ]
-};
-```
-
-## Model Integration
-
-### Binding to Models
-
-```javascript
-import { User } from 'web-mojo/models';
-
-const user = new User({ name: 'John Doe', email: 'john@example.com' });
-
-const formBuilder = new FormBuilder({
-  model: user,
-  fields: [
-    {
-      type: 'text',
-      name: 'name',
-      label: 'Name'
-    },
-    {
-      type: 'email',
-      name: 'email', 
-      label: 'Email'
-    }
-  ]
-});
-
-// Form will be pre-populated with user data
-await formBuilder.mount(container);
-```
-
-### Syncing Form Data to Model
-
-```javascript
-// Get form data
-const formData = formBuilder.getValues();
-
-// Sync to model
-formBuilder.syncToModel();
-
-// Save model
-await user.save();
-```
-
-## Validation
-
-### HTML5 Validation
-
-```javascript
+// Shorthand for common cases
 {
   type: 'email',
   name: 'email',
   label: 'Email',
-  required: true  // Built-in HTML5 validation
-}
-
-{
-  type: 'text',
-  name: 'username',
-  label: 'Username',
-  required: true,
-  minLength: 3,
-  maxLength: 20,
-  pattern: '[a-zA-Z0-9_]+',
-  help: 'Only letters, numbers, and underscores allowed'
+  inputGroup: '@'  // Automatically prepends @
 }
 ```
 
-### Custom Validation
+## Form Sections and Organization
+
+### Section Headers
 
 ```javascript
-// Check form validity
-const isValid = formBuilder.validate();
-
-// Set custom errors
-formBuilder.errors.email = 'This email is already taken';
-await formBuilder.render(); // Re-render to show errors
-
-// Clear errors
-formBuilder.clearAllErrors();
-```
-
-## Event Handling
-
-### Form Events
-
-```javascript
-const formBuilder = new FormBuilder(config);
-
-// Listen for form submission
-formBuilder.on('submit', async (data) => {
-  console.log('Form submitted:', data);
-  
-  try {
-    await saveUser(data);
-    console.log('User saved successfully');
-  } catch (error) {
-    formBuilder.showError('email', 'Email already exists');
-  }
-});
-
-// Listen for form changes
-formBuilder.on('change', (data) => {
-  console.log('Form data changed:', data);
-});
-
-// Listen for validation
-formBuilder.on('validate', (isValid) => {
-  console.log('Form is valid:', isValid);
-});
-```
-
-### Using with FormView
-
-```javascript
-class UserFormView extends FormView {
-  constructor(options = {}) {
-    super({
-      formConfig: {
-        fields: [/* ... */]
-      },
-      ...options
-    });
-  }
-
-  async onAfterMount() {
-    await super.onAfterMount();
+formConfig: {
+  fields: [
+    { type: 'header', text: 'Personal Information', level: 3 },
+    { type: 'text', name: 'name', label: 'Name' },
+    { type: 'email', name: 'email', label: 'Email' },
     
-    // Listen for form events
-    this.on('form:submit', this.handleFormSubmit.bind(this));
-    this.on('form:change', this.handleFormChange.bind(this));
-  }
-
-  async handleFormSubmit(data) {
-    try {
-      this.setLoading(true);
-      await this.model.save(data);
-      this.emit('user-saved', this.model);
-    } catch (error) {
-      this.setFieldError('email', 'Email already exists');
-    } finally {
-      this.setLoading(false);
-    }
-  }
-}
-```
-
-## Layout & Styling
-
-### Column Layout
-
-```javascript
-const formConfig = {
-  useRowLayout: true,
-  rowClass: 'row g-3',
-  defaultColSize: 6,
-  fields: [
-    {
-      type: 'text',
-      name: 'firstName',
-      label: 'First Name',
-      col: 6  // Half width
-    },
-    {
-      type: 'text', 
-      name: 'lastName',
-      label: 'Last Name',
-      col: 6  // Half width
-    },
-    {
-      type: 'email',
-      name: 'email',
-      label: 'Email',
-      col: 12  // Full width
-    }
+    { type: 'header', text: 'Account Settings', level: 3, className: 'mt-4' },
+    { type: 'password', name: 'password', label: 'Password' },
+    { type: 'checkbox', name: 'active', label: 'Active' }
   ]
-};
-```
-
-### Responsive Columns
-
-```javascript
-{
-  type: 'text',
-  name: 'address',
-  label: 'Address',
-  col: {
-    xs: 12,    // Full width on mobile
-    md: 8      // 8/12 width on desktop
-  }
-}
-
-// Or string format
-{
-  type: 'text',
-  name: 'city',
-  label: 'City', 
-  col: 'col-12 col-md-6 col-lg-4'
-}
-```
-
-### Custom Field Classes
-
-```javascript
-{
-  type: 'text',
-  name: 'specialField',
-  label: 'Special Field',
-  class: 'form-control-lg',  // Large input
-  colClass: 'mb-4'           // Extra bottom margin
-}
-```
-
-### Form-wide Configuration
-
-```javascript
-const formConfig = {
-  formClass: 'my-custom-form',
-  fieldWrapper: 'form-group mb-4',
-  labelClass: 'form-label fw-bold',
-  inputClass: 'form-control form-control-sm',
-  errorClass: 'invalid-feedback d-block',
-  submitButton: {
-    text: 'Save Changes',
-    class: 'btn btn-primary btn-lg'
-  },
-  fields: [/* ... */]
-};
-```
-
-## Advanced Features
-
-### Field Groups
-
-```javascript
-{
-  type: 'group',
-  label: 'Address Information',
-  class: 'border p-3 rounded',
-  fields: [
-    {
-      type: 'text',
-      name: 'street',
-      label: 'Street Address'
-    },
-    {
-      type: 'text',
-      name: 'city',
-      label: 'City',
-      col: 6
-    },
-    {
-      type: 'text',
-      name: 'zipCode',
-      label: 'ZIP Code',
-      col: 6
-    }
-  ]
-}
-```
-
-### Custom HTML Fields
-
-```javascript
-{
-  type: 'html',
-  content: '<div class="alert alert-info">Please fill out all required fields.</div>'
 }
 ```
 
 ### Dividers
 
 ```javascript
-{
-  type: 'divider',
-  class: 'my-4'
-}
+{ type: 'divider', class: 'my-4' }
 ```
 
-### Dynamic Field Attributes
+### Field Groups
 
 ```javascript
 {
-  type: 'text',
-  name: 'username',
-  label: 'Username',
-  attributes: {
-    'data-validation': 'username',
-    'autocomplete': 'username',
-    'spellcheck': 'false'
-  }
-}
-```
-
-### Help Text
-
-```javascript
-{
-  type: 'password',
-  name: 'password',
-  label: 'Password',
-  help: 'Must be at least 8 characters with uppercase, lowercase, and numbers',
-  helpText: 'Same as help property'  // Alternative
+  type: 'group',
+  label: 'Billing Address',
+  class: 'border rounded p-3',
+  fields: [
+    { type: 'text', name: 'street', label: 'Street', columns: 12 },
+    { type: 'text', name: 'city', label: 'City', columns: 6 },
+    { type: 'text', name: 'state', label: 'State', columns: 3 },
+    { type: 'text', name: 'zip', label: 'ZIP', columns: 3 }
+  ]
 }
 ```
 
 ### Tabsets
 
-Organize form fields into tabbed interfaces using Bootstrap nav tabs. Each tab can contain multiple fields with support for column layouts.
-
-#### Basic Tabset
-
 ```javascript
 {
   type: 'tabset',
-  name: 'settingsTabs',
-  tabs: [
-    {
-      label: 'General',
-      fields: [
-        {
-          name: 'title',
-          type: 'text',
-          label: 'Title',
-          required: true,
-          columns: 12
-        },
-        {
-          name: 'description',
-          type: 'textarea',
-          label: 'Description',
-          columns: 12
-        }
-      ]
-    },
-    {
-      label: 'Advanced',
-      fields: [
-        {
-          name: 'priority',
-          type: 'select',
-          label: 'Priority',
-          options: ['Low', 'Medium', 'High'],
-          columns: 6
-        },
-        {
-          name: 'status',
-          type: 'select',
-          label: 'Status',
-          options: ['Draft', 'Published', 'Archived'],
-          columns: 6
-        }
-      ]
-    }
-  ]
-}
-```
-
-#### Tabset with Custom Styling
-
-```javascript
-{
-  type: 'tabset',
-  name: 'userTabs',
-  navClass: 'nav nav-pills mb-4',  // Use pills instead of tabs
-  contentClass: 'tab-content border-0',
+  name: 'user_settings',
+  navClass: 'nav-pills',
   tabs: [
     {
       label: 'Profile',
       fields: [
-        {
-          type: 'text',
-          name: 'firstName',
-          label: 'First Name',
-          columns: 6
-        },
-        {
-          type: 'text',
-          name: 'lastName',
-          label: 'Last Name',
-          columns: 6
-        },
-        {
-          type: 'email',
-          name: 'email',
-          label: 'Email',
-          columns: 12
-        }
+        { type: 'text', name: 'name', label: 'Name' },
+        { type: 'email', name: 'email', label: 'Email' }
       ]
     },
     {
-      label: 'Settings',
+      label: 'Preferences',
       fields: [
-        {
-          type: 'switch',
-          name: 'notifications',
-          label: 'Enable Notifications',
-          columns: 12
-        },
-        {
-          type: 'switch',
-          name: 'publicProfile',
-          label: 'Public Profile',
-          columns: 12
-        }
-      ]
-    },
-    {
-      label: 'Metadata',
-      fields: [
-        {
-          type: 'json',
-          name: 'metadata',
-          label: 'JSON Metadata',
-          rows: 10,
-          columns: 12
-        }
+        { type: 'checkbox', name: 'notifications', label: 'Email Notifications' },
+        { type: 'select', name: 'theme', label: 'Theme', options: [
+          { value: 'light', label: 'Light' },
+          { value: 'dark', label: 'Dark' }
+        ]}
       ]
     }
   ]
 }
 ```
 
-**Configuration Options:**
+## Responsive Layout
 
-- `name` (string, optional): Unique identifier for the tabset. Used to generate stable IDs for tab navigation. Defaults to `tabset-{timestamp}`.
-- `tabs` (array, required): Array of tab configurations, each containing:
-  - `label` (string): Display text for the tab button
-  - `fields` (array): Array of field configurations to render in the tab pane
-- `navClass` (string, optional): CSS classes for the tabs navigation. Defaults to `'nav nav-tabs mb-3'`.
-- `contentClass` (string, optional): CSS classes for the tab content container. Defaults to `'tab-content'`.
-
-**Features:**
-
-- First tab is automatically active on load
-- Fields within tabs support all standard field types and features
-- Column layouts work normally within tab panes (wrapped in Bootstrap row)
-- Tab switching uses Bootstrap's built-in tab JavaScript
-- Fully accessible with ARIA attributes
-- **Automatic validation handling**: When form validation fails, FormView automatically switches to the tab containing the first invalid field and focuses it
-
-## Complete Examples
-</text>
-
-
-### User Registration Form
+Use Bootstrap's grid system for responsive forms:
 
 ```javascript
-const registrationForm = {
-  formClass: 'registration-form',
-  useRowLayout: true,
+formConfig: {
+  useRowLayout: true,        // Enable row-based layout
+  rowClass: 'g-3',          // Bootstrap gutter class
+  defaultColSize: 12,       // Default column width
   fields: [
-    {
-      type: 'header',
-      text: 'Create Your Account',
-      level: 2,
-      className: 'text-center mb-4'
-    },
+    { type: 'text', name: 'first_name', label: 'First Name', columns: 6 },
+    { type: 'text', name: 'last_name', label: 'Last Name', columns: 6 },
+    { type: 'email', name: 'email', label: 'Email', columns: 12 },
     
-    {
-      type: 'header',
-      text: 'Personal Information',
-      level: 4,
-      className: 'text-primary border-bottom pb-1 mb-3'
-    },
-    
+    // Responsive columns
     {
       type: 'text',
-      name: 'firstName',
-      label: 'First Name',
-      required: true,
-      col: 6
-    },
-    
-    {
-      type: 'text',
-      name: 'lastName', 
-      label: 'Last Name',
-      required: true,
-      col: 6
-    },
-    
-    {
-      type: 'email',
-      name: 'email',
-      label: 'Email Address',
-      required: true,
-      inputGroup: {
-        prepend: '<i class="bi bi-envelope"></i>'
-      }
-    },
-    
-    {
-      type: 'tel',
-      name: 'phone',
-      label: 'Phone Number',
-      inputGroup: {
-        prepend: '<i class="bi bi-telephone"></i>'
-      }
-    },
-    
-    {
-      type: 'header',
-      text: 'Account Security',
-      level: 4,
-      className: 'text-primary border-bottom pb-1 mb-3 mt-4'
-    },
-    
-    {
-      type: 'text',
-      name: 'username',
-      label: 'Username',
-      required: true,
-      minLength: 3,
-      maxLength: 20,
-      pattern: '[a-zA-Z0-9_]+',
-      help: 'Only letters, numbers, and underscores',
-      inputGroup: {
-        prepend: '@'
-      }
-    },
-    
-    {
-      type: 'password',
-      name: 'password',
-      label: 'Password',
-      required: true,
-      minLength: 8,
-      help: 'At least 8 characters',
-      col: 6
-    },
-    
-    {
-      type: 'password',
-      name: 'confirmPassword',
-      label: 'Confirm Password',
-      required: true,
-      col: 6
-    },
-    
-    {
-      type: 'header',
-      text: 'Preferences',
-      level: 4,
-      className: 'text-primary border-bottom pb-1 mb-3 mt-4'
-    },
-    
-    {
-      type: 'select',
-      name: 'country',
-      label: 'Country',
-      required: true,
-      options: [
-        { value: '', label: 'Select Country' },
-        { value: 'US', label: 'United States' },
-        { value: 'CA', label: 'Canada' },
-        { value: 'UK', label: 'United Kingdom' }
-      ]
-    },
-    
-    {
-      type: 'checkbox',
-      name: 'newsletter',
-      label: 'Subscribe to newsletter'
-    },
-    
-    {
-      type: 'checkbox',
-      name: 'terms',
-      label: 'I agree to the Terms of Service',
-      required: true
-    },
-    
-    {
-      type: 'divider',
-      class: 'my-4'
-    }
-  ],
-  
-  submitButton: {
-    text: 'Create Account',
-    class: 'btn btn-primary btn-lg w-100'
-  }
-};
-```
-
-### Product Form with Pricing
-
-```javascript
-const productForm = {
-  fields: [
-    {
-      type: 'header',
-      text: 'Product Information',
-      level: 3
-    },
-    
-    {
-      type: 'text',
-      name: 'name',
-      label: 'Product Name',
-      required: true
-    },
-    
-    {
-      type: 'textarea',
-      name: 'description',
-      label: 'Description',
-      rows: 4,
-      maxLength: 1000
-    },
-    
-    {
-      type: 'header',
-      text: 'Pricing & Inventory',
-      level: 3,
-      className: 'mt-4'
-    },
-    
-    {
-      type: 'number',
-      name: 'price',
-      label: 'Price',
-      required: true,
-      min: 0,
-      step: 0.01,
-      inputGroup: {
-        prepend: '$',
-        append: 'USD'
-      },
-      col: 6
-    },
-    
-    {
-      type: 'number',
-      name: 'comparePrice',
-      label: 'Compare at Price',
-      min: 0,
-      step: 0.01,
-      inputGroup: {
-        prepend: '$'
-      },
-      col: 6,
-      help: 'Optional - shows savings'
-    },
-    
-    {
-      type: 'number',
-      name: 'inventory',
-      label: 'Stock Quantity',
-      required: true,
-      min: 0,
-      inputGroup: {
-        append: 'units'
-      }
-    },
-    
-    {
-      type: 'select',
-      name: 'category',
-      label: 'Category',
-      required: true,
-      options: [
-        { value: '', label: 'Select Category' },
-        { value: 'electronics', label: 'Electronics' },
-        { value: 'clothing', label: 'Clothing' },
-        { value: 'books', label: 'Books' },
-        { value: 'home', label: 'Home & Garden' }
-      ]
-    },
-    
-    {
-      type: 'switch',
-      name: 'active',
-      label: 'Product Active',
-      value: true
+      name: 'city',
+      label: 'City',
+      columns: { xs: 12, md: 6, lg: 4 }  // Full width on mobile, half on tablet, third on desktop
     }
   ]
-};
+}
 ```
 
-### Contact Form with Input Groups
+## Complete Example: User Profile Form with AutoSave
 
 ```javascript
-const contactForm = {
-  fields: [
-    {
-      type: 'header',
-      text: 'Get in Touch',
-      level: 2,
-      className: 'text-center mb-4'
-    },
-    
-    {
-      type: 'text',
-      name: 'name',
-      label: 'Full Name',
-      required: true,
-      inputGroup: {
-        prepend: '<i class="bi bi-person"></i>'
-      }
-    },
-    
-    {
-      type: 'email',
-      name: 'email',
-      label: 'Email Address',
-      required: true,
-      inputGroup: {
-        prepend: '<i class="bi bi-envelope"></i>'
-      }
-    },
-    
-    {
-      type: 'text',
-      name: 'website',
-      label: 'Website',
-      inputGroup: {
-        prepend: 'https://',
-        append: '<i class="bi bi-globe text-muted"></i>'
-      }
-    },
-    
-    {
-      type: 'select',
-      name: 'subject',
-      label: 'Subject',
-      required: true,
-      inputGroup: {
-        prepend: '<i class="bi bi-chat-dots"></i>'
-      },
-      options: [
-        { value: '', label: 'Select a topic' },
-        { value: 'general', label: 'General Inquiry' },
-        { value: 'support', label: 'Technical Support' },
-        { value: 'sales', label: 'Sales Question' },
-        { value: 'feedback', label: 'Feedback' }
-      ]
-    },
-    
-    {
-      type: 'textarea',
-      name: 'message',
-      label: 'Message',
-      required: true,
-      rows: 5,
-      maxLength: 2000,
-      inputGroup: {
-        prepend: '<i class="bi bi-chat-text"></i>'
-      }
-    },
-    
-    {
-      type: 'range',
-      name: 'priority',
-      label: 'Priority Level',
-      min: 1,
-      max: 5,
-      value: 3,
-      help: '1 = Low, 5 = Urgent'
-    }
-  ],
-  
-  submitButton: {
-    text: 'Send Message',
-    class: 'btn btn-primary'
-  }
-};
-```
+import { FormView, Model } from 'web-mojo';
 
-### Settings Form with Tabsets
+class User extends Model {
+  static endpoint = '/api/users';
+}
 
-```javascript
-const settingsForm = {
-  title: 'Application Settings',
-  formClass: 'settings-form',
-  useRowLayout: true,
-  
-  fields: [
-    {
-      type: 'tabset',
-      name: 'settingsTabs',
-      tabs: [
-        {
-          label: 'General',
-          fields: [
-            {
-              type: 'text',
-              name: 'appName',
-              label: 'Application Name',
-              required: true,
-              columns: 6
-            },
-            {
-              type: 'text',
-              name: 'appVersion',
-              label: 'Version',
-              required: true,
-              columns: 6
-            },
-            {
-              type: 'textarea',
-              name: 'description',
-              label: 'Description',
-              rows: 4,
-              columns: 12,
-              help: 'Brief description of your application'
-            },
-            {
-              type: 'select',
-              name: 'environment',
-              label: 'Environment',
-              required: true,
-              options: ['development', 'staging', 'production'],
-              columns: 6
-            },
-            {
-              type: 'select',
-              name: 'logLevel',
-              label: 'Log Level',
-              options: ['debug', 'info', 'warn', 'error'],
-              value: 'info',
-              columns: 6
-            }
-          ]
-        },
-        {
-          label: 'Security',
-          fields: [
-            {
-              type: 'switch',
-              name: 'enableAuth',
-              label: 'Enable Authentication',
-              value: true,
-              columns: 12
-            },
-            {
-              type: 'switch',
-              name: 'require2FA',
-              label: 'Require Two-Factor Authentication',
-              columns: 12
-            },
-            {
-              type: 'number',
-              name: 'sessionTimeout',
-              label: 'Session Timeout (minutes)',
-              required: true,
-              min: 5,
-              max: 1440,
-              value: 30,
-              columns: 6,
-              inputGroup: {
-                append: 'min'
-              }
-            },
-            {
-              type: 'number',
-              name: 'maxLoginAttempts',
-              label: 'Max Login Attempts',
-              min: 3,
-              max: 10,
-              value: 5,
-              columns: 6
-            },
-            {
-              type: 'text',
-              name: 'allowedDomains',
-              label: 'Allowed Domains',
-              columns: 12,
-              help: 'Comma-separated list of allowed domains'
-            }
-          ]
-        },
-        {
-          label: 'Notifications',
-          fields: [
-            {
-              type: 'switch',
-              name: 'emailNotifications',
-              label: 'Email Notifications',
-              value: true,
-              columns: 12
-            },
-            {
-              type: 'email',
-              name: 'notificationEmail',
-              label: 'Notification Email',
-              required: true,
-              columns: 12,
-              inputGroup: {
-                prepend: '<i class="bi bi-envelope"></i>'
-              }
-            },
-            {
-              type: 'switch',
-              name: 'slackNotifications',
-              label: 'Slack Notifications',
-              columns: 12
-            },
-            {
-              type: 'url',
-              name: 'slackWebhook',
-              label: 'Slack Webhook URL',
-              columns: 12,
-              placeholder: 'https://hooks.slack.com/...'
-            }
-          ]
-        },
-        {
-          label: 'Advanced',
-          fields: [
-            {
-              type: 'json',
-              name: 'customConfig',
-              label: 'Custom Configuration',
-              rows: 12,
-              columns: 12,
-              help: 'JSON object for advanced configuration options',
-              value: {
-                "feature_flags": {
-                  "new_ui": true,
-                  "beta_features": false
-                }
-              }
-            }
-          ]
-        }
-      ]
-    }
-  ],
-  
-  submitButton: {
-    text: 'Save Settings',
-    class: 'btn btn-primary'
-  },
-  
-  cancelButton: {
-    text: 'Cancel',
-    class: 'btn btn-secondary'
-  }
-};
-
-// Using with FormView
-class SettingsFormView extends FormView {
+class UserProfileFormView extends FormView {
   constructor(options = {}) {
     super({
       ...options,
-      formConfig: settingsForm
+      model: options.model,
+      autosaveModelField: true,  // Enable autosave (constructor option)
+      fileHandling: true,
+      formConfig: {
+        fields: [
+          // Section: Personal Info
+          { type: 'header', text: 'Personal Information', level: 4 },
+          
+          { 
+            type: 'text', 
+            name: 'first_name', 
+            label: 'First Name', 
+            required: true,
+            columns: 6
+          },
+          { 
+            type: 'text', 
+            name: 'last_name', 
+            label: 'Last Name', 
+            required: true,
+            columns: 6
+          },
+          {
+            type: 'email',
+            name: 'email',
+            label: 'Email Address',
+            required: true,
+            inputGroup: { prepend: '<i class="bi bi-envelope"></i>' }
+          },
+          {
+            type: 'tel',
+            name: 'phone',
+            label: 'Phone',
+            inputGroup: { prepend: '<i class="bi bi-telephone"></i>' }
+          },
+          
+          // Section: Profile
+          { type: 'header', text: 'Profile', level: 4, className: 'mt-4' },
+          
+          {
+            type: 'image',
+            name: 'avatar',
+            label: 'Profile Picture',
+            size: 'lg',
+            imageSize: 'lg'
+          },
+          {
+            type: 'textarea',
+            name: 'bio',
+            label: 'Bio',
+            rows: 4,
+            maxLength: 500,
+            help: 'Tell us about yourself'
+          },
+          
+          // Section: Settings
+          { type: 'header', text: 'Settings', level: 4, className: 'mt-4' },
+          
+          {
+            type: 'select',
+            name: 'timezone',
+            label: 'Timezone',
+            options: [
+              { value: 'America/New_York', label: 'Eastern Time' },
+              { value: 'America/Chicago', label: 'Central Time' },
+              { value: 'America/Denver', label: 'Mountain Time' },
+              { value: 'America/Los_Angeles', label: 'Pacific Time' }
+            ]
+          },
+          {
+            type: 'switch',
+            name: 'email_notifications',
+            label: 'Email Notifications',
+            value: true
+          },
+          {
+            type: 'switch',
+            name: 'is_public',
+            label: 'Public Profile',
+            value: false
+          }
+        ],
+        submitButton: false,  // AutoSave handles saving
+        resetButton: false
+      }
+    });
+  }
+}
+
+// Usage in a View
+class ProfilePage extends Page {
+  async onInit() {
+    const user = new User({ id: this.currentUserId });
+    await user.fetch();
+    
+    this.profileForm = new UserProfileFormView({
+      containerId: 'profile-form',
+      model: user
+    });
+    
+    this.addChild(this.profileForm);
+  }
+}
+```
+
+## Form Submission and Validation
+
+### Standard Form Submission
+
+```javascript
+class ContactFormView extends FormView {
+  constructor(options = {}) {
+    super({
+      ...options,
+      formConfig: {
+        fields: [
+          { type: 'text', name: 'name', label: 'Name', required: true },
+          { type: 'email', name: 'email', label: 'Email', required: true },
+          { type: 'textarea', name: 'message', label: 'Message', required: true, rows: 5 }
+        ],
+        submitButton: { text: 'Send Message', class: 'btn-primary' }
+      }
     });
   }
   
   async handleFormSubmit(event) {
     event.preventDefault();
     
-    // Validate form
+    const formData = await this.getFormData();
+    
+    // Validate
     if (!this.validate()) {
-      // If validation fails, FormView automatically switches
-      // to the tab containing the first invalid field
-      this.focusFirstError();
-      return;
+      return { success: false, error: 'Please fix validation errors' };
     }
     
+    // Submit to API
     try {
-      const formData = await this.getFormData();
+      const rest = this.getApp().rest;
+      const response = await rest.POST('/api/contact', formData);
       
-      // Save settings
-      await this.model.save(formData);
-      
-      this.showSuccess('Settings saved successfully');
+      if (response.success) {
+        await this.getApp().showSuccess('Message sent successfully!');
+        this.reset(); // Clear form
+        return { success: true };
+      } else {
+        return { success: false, error: response.message };
+      }
     } catch (error) {
-      this.showError(`Failed to save settings: ${error.message}`);
+      return { success: false, error: error.message };
     }
   }
 }
 ```
 
-## Best Practices
+### Validation
 
-### 1. Form Organization
-- Use headers to organize related fields into logical sections
-- Keep forms focused and avoid overwhelming users
-- Group related fields using consistent column layouts
+HTML5 validation is automatic. Add these attributes:
 
-### 2. Input Groups
-- Use input groups to provide context and improve usability
-- Keep prepend/append text short and meaningful
-- Use icons consistently throughout your application
+```javascript
+{
+  type: 'text',
+  name: 'username',
+  label: 'Username',
+  required: true,          // Field is required
+  minLength: 3,            // Minimum length
+  maxLength: 20,           // Maximum length
+  pattern: '^[a-zA-Z0-9]+$', // Regex pattern
+  help: 'Alphanumeric characters only'
+}
 
-### 3. Validation
-- Provide immediate feedback with HTML5 validation
-- Use help text to guide users before they make mistakes
-- Clear, specific error messages when validation fails
+{
+  type: 'number',
+  name: 'age',
+  label: 'Age',
+  min: 18,                 // Minimum value
+  max: 100,                // Maximum value
+  step: 1                  // Increment step
+}
 
-### 4. Accessibility
-- Always provide labels for form fields
-- Use proper field types for better mobile experience
-- Ensure sufficient color contrast for error states
+{
+  type: 'email',
+  name: 'email',
+  label: 'Email',
+  required: true           // Validates email format
+}
+```
 
-### 5. Performance
-- Only create FormBuilder instances when needed
-- Properly destroy forms when views are cleaned up
-- Use model binding to reduce data synchronization code
+## Common FormView Patterns
 
-This comprehensive guide covers all aspects of the FormBuilder component, from basic usage to advanced features like input groups and section headers. The component is designed to work seamlessly with Bootstrap 5 and the MOJO framework's patterns.
+### Pattern 1: Create New Record
+
+```javascript
+class CreateUserView extends FormView {
+  constructor(options = {}) {
+    super({
+      ...options,
+      formConfig: {
+        fields: [
+          { type: 'text', name: 'name', label: 'Name', required: true },
+          { type: 'email', name: 'email', label: 'Email', required: true }
+        ]
+      }
+    });
+  }
+  
+  async handleFormSubmit(event) {
+    event.preventDefault();
+    
+    const data = await this.getFormData();
+    if (!this.validate()) return { success: false };
+    
+    const user = new User();
+    const result = await user.save(data);
+    
+    if (result.success) {
+      await this.getApp().showSuccess('User created!');
+      return { success: true, data: result.data };
+    } else {
+      return { success: false, error: result.message };
+    }
+  }
+}
+```
+
+### Pattern 2: Edit Existing Record with AutoSave
+
+```javascript
+class EditUserView extends FormView {
+  constructor(options = {}) {
+    super({
+      ...options,
+      model: options.model,       // Pass existing model
+      autosaveModelField: true,   // Enable autosave (constructor option)
+      formConfig: {
+        fields: [
+          { type: 'text', name: 'name', label: 'Name', required: true },
+          { type: 'email', name: 'email', label: 'Email', required: true },
+          { type: 'checkbox', name: 'active', label: 'Active' }
+        ],
+        submitButton: false  // Not needed with autosave
+      }
+    });
+  }
+}
+
+// Usage
+const user = new User({ id: 123 });
+await user.fetch();
+const editForm = new EditUserView({ model: user });
+```
+
+### Pattern 3: Multi-Step Form with Tabs
+
+```javascript
+class RegistrationFormView extends FormView {
+  constructor(options = {}) {
+    super({
+      ...options,
+      formConfig: {
+        fields: [
+          {
+            type: 'tabset',
+            name: 'registration',
+            tabs: [
+              {
+                label: 'Account',
+                fields: [
+                  { type: 'text', name: 'username', label: 'Username', required: true },
+                  { type: 'email', name: 'email', label: 'Email', required: true },
+                  { type: 'password', name: 'password', label: 'Password', required: true, showToggle: true }
+                ]
+              },
+              {
+                label: 'Profile',
+                fields: [
+                  { type: 'text', name: 'first_name', label: 'First Name', required: true },
+                  { type: 'text', name: 'last_name', label: 'Last Name', required: true },
+                  { type: 'image', name: 'avatar', label: 'Profile Picture', size: 'md' }
+                ]
+              },
+              {
+                label: 'Preferences',
+                fields: [
+                  { type: 'switch', name: 'notifications', label: 'Email Notifications', value: true },
+                  { type: 'select', name: 'theme', label: 'Theme', options: [
+                    { value: 'light', label: 'Light' },
+                    { value: 'dark', label: 'Dark' }
+                  ]}
+                ]
+              }
+            ]
+          }
+        ],
+        submitButton: { text: 'Create Account', class: 'btn-primary' }
+      }
+    });
+  }
+}
+```
+
+### Pattern 4: Form in Dialog
+
+```javascript
+// In a View
+async onActionCreateUser() {
+  const formView = new CreateUserFormView();
+  
+  const result = await this.getApp().showForm({
+    title: 'Create New User',
+    size: 'lg',
+    body: formView
+  });
+  
+  if (result) {
+    // User clicked submit and form was valid
+    await this.usersTable.refresh();
+  }
+}
+```
+
+### Pattern 5: Inline Editing with AutoSave
+
+```javascript
+class ProductCardView extends View {
+  async onInit() {
+    this.quickEditForm = new FormView({
+      containerId: 'quick-edit',
+      model: this.model,
+      autosaveModelField: true,  // Enable autosave
+      fileHandling: true,
+      formConfig: {
+        fields: [
+          { type: 'text', name: 'name', label: 'Product Name' },
+          { type: 'number', name: 'price', label: 'Price', inputGroup: { prepend: '$' } },
+          { type: 'checkbox', name: 'featured', label: 'Featured' }
+        ],
+        submitButton: false,
+        resetButton: false
+      }
+    });
+    
+    this.addChild(this.quickEditForm);
+  }
+}
+```
+
+## Form Configuration Options
+
+### Complete FormConfig
+
+```javascript
+formConfig: {
+  // Fields array (required)
+  fields: [...],
+  
+  // Buttons (optional)
+  submitButton: {
+    text: 'Submit',
+    class: 'btn-primary',
+    icon: '<i class="bi bi-check"></i>'
+  },
+  resetButton: {
+    text: 'Reset',
+    class: 'btn-secondary'
+  },
+  cancelButton: {
+    text: 'Cancel',
+    class: 'btn-outline-secondary'
+  },
+  
+  // Set to false to hide buttons
+  submitButton: false,
+  resetButton: false
+}
+```
+
+**Note**: Layout and styling options (formClass, fieldWrapper, labelClass, etc.) are handled by FormBuilder internally and not directly configurable through FormView's formConfig.
+
+## Field Configuration Options
+
+Every field type supports:
+
+```javascript
+{
+  type: 'text',              // Field type (required)
+  name: 'field_name',        // Field name (required)
+  label: 'Field Label',      // Display label
+  value: 'default',          // Default value
+  placeholder: 'Enter...',   // Placeholder text
+  required: true,            // HTML5 required validation
+  disabled: false,           // Disable field
+  readonly: false,           // Read-only field
+  help: 'Help text',         // Help text below field
+  class: 'custom-class',     // Custom CSS classes
+  columns: 6,                // Column width (1-12) or object { xs: 12, md: 6 }
+  inputGroup: {...},         // Input group addon
+  attributes: {              // Custom HTML attributes
+    'data-custom': 'value',
+    'autocomplete': 'off'
+  }
+}
+```
+
+## Working with Models
+
+### Binding Form to Model
+
+```javascript
+const user = new User({ id: 123 });
+await user.fetch();
+
+const formView = new FormView({
+  model: user,              // Bind to model
+  formConfig: {
+    fields: [
+      { type: 'text', name: 'name', label: 'Name' },
+      { type: 'email', name: 'email', label: 'Email' }
+    ]
+  }
+});
+
+// Form automatically populates with model data
+```
+
+### AutoSave with Model
+
+```javascript
+const formView = new FormView({
+  model: user,
+  autosaveModelField: true,  // Automatically saves changes to model
+  formConfig: {
+    fields: [...]
+  }
+});
+
+// When user edits field:
+// 1. Form detects change event
+// 2. Waits 300ms (hardcoded debounce)
+// 3. Batches multiple changes if within 300ms window
+// 4. Calls model.save({ field: newValue })
+// 5. Shows saving indicator
+// 6. Shows success/error status
+```
+
+### Manual Model Save
+
+```javascript
+class UserFormView extends FormView {
+  async handleSubmit(event) {
+    event.preventDefault();
+    
+    const formData = await this.getFormData();
+    
+    if (!this.validate()) {
+      return { success: false };
+    }
+    
+    // Save to model
+    const result = await this.model.save(formData);
+    
+    if (result.success) {
+      await this.getApp().showSuccess('User updated!');
+      return { success: true, data: result.data };
+    } else {
+      return { success: false, error: result.message };
+    }
+  }
+}
+```
+
+## Common Field Examples
+
+### Login Form
+
+```javascript
+fields: [
+  {
+    type: 'email',
+    name: 'email',
+    label: 'Email',
+    required: true,
+    inputGroup: { prepend: '<i class="bi bi-person"></i>' }
+  },
+  {
+    type: 'password',
+    name: 'password',
+    label: 'Password',
+    required: true,
+    showToggle: true,
+    inputGroup: { prepend: '<i class="bi bi-lock"></i>' }
+  },
+  {
+    type: 'checkbox',
+    name: 'remember_me',
+    label: 'Remember me',
+    value: false
+  }
+]
+```
+
+### Product Form
+
+```javascript
+fields: [
+  { type: 'text', name: 'name', label: 'Product Name', required: true, col: 12 },
+  { type: 'textarea', name: 'description', label: 'Description', rows: 4, col: 12 },
+  { 
+    type: 'number', 
+    name: 'price', 
+    label: 'Price', 
+    min: 0, 
+    step: 0.01,
+    inputGroup: { prepend: '$', append: 'USD' },
+    col: 6
+  },
+  { 
+    type: 'number', 
+    name: 'stock', 
+    label: 'Stock Quantity', 
+    min: 0,
+    col: 6
+  },
+  {
+    type: 'select',
+    name: 'category',
+    label: 'Category',
+    required: true,
+    options: [
+      { value: 'electronics', label: 'Electronics' },
+      { value: 'clothing', label: 'Clothing' },
+      { value: 'food', label: 'Food' }
+    ],
+    col: 6
+  },
+  {
+    type: 'checkbox',
+    name: 'featured',
+    label: 'Featured Product',
+    col: 6
+  },
+  {
+    type: 'image',
+    name: 'image',
+    label: 'Product Image',
+    size: 'lg',
+    col: 12
+  }
+]
+```
+
+### Settings Form with Sections
+
+```javascript
+fields: [
+  { type: 'header', text: 'General Settings', level: 3 },
+  { type: 'text', name: 'site_name', label: 'Site Name', required: true },
+  { type: 'email', name: 'admin_email', label: 'Admin Email', required: true },
+  
+  { type: 'divider', class: 'my-4' },
+  
+  { type: 'header', text: 'Display Options', level: 3 },
+  { type: 'switch', name: 'dark_mode', label: 'Dark Mode', value: false },
+  { type: 'select', name: 'items_per_page', label: 'Items Per Page', options: [
+    { value: '10', label: '10' },
+    { value: '25', label: '25' },
+    { value: '50', label: '50' },
+    { value: '100', label: '100' }
+  ]},
+  
+  { type: 'divider', class: 'my-4' },
+  
+  { type: 'header', text: 'Advanced', level: 3 },
+  { type: 'json', name: 'custom_config', label: 'Custom Configuration', rows: 8 }
+]
+```
+
+## Tips for LLM Agents
+
+1. **Always use FormView** - Don't build forms manually with HTML
+2. **Use autosave for inline editing** - Set `autoSave: true` in formConfig
+3. **Bind to models when editing** - Pass `model: myModel` to FormView
+4. **Use field types correctly** - email for emails, number for numbers, etc.
+5. **Add validation** - Use required, min, max, pattern, minLength, maxLength
+6. **Use input groups for icons** - Makes forms more professional
+7. **Organize with headers and dividers** - Improves UX
+8. **Use responsive columns** - `col: { xs: 12, md: 6 }` for mobile-first
+9. **Hide buttons with autosave** - Set `submitButton: false` when using autoSave
+10. **Handle errors properly** - Return `{ success: false, error: '...' }` from handleFormSubmit
+
+## Quick Reference
+
+| Need | Use This |
+|------|----------|
+| Create form | `new FormView({ formConfig: {...} })` |
+| Bind to model | `new FormView({ model: myModel, formConfig: {...} })` |
+| Auto-save changes | `new FormView({ model: myModel, autosaveModelField: true, ... })` |
+| Text input | `{ type: 'text', name: '...', label: '...' }` |
+| Email | `{ type: 'email', ... }` |
+| Password | `{ type: 'password', showToggle: true, ... }` |
+| Dropdown | `{ type: 'select', options: [...], ... }` |
+| Multi-select | `{ type: 'multiselect', options: [...], ... }` |
+| Checkbox | `{ type: 'checkbox', ... }` |
+| File upload | `{ type: 'file', accept: '...', ... }` |
+| Image upload | `{ type: 'image', size: 'md', cropAndScale: true, ... }` |
+| Date picker | `{ type: 'date', ... }` |
+| Add section | `{ type: 'header', text: '...', level: 3 }` |
+| Add divider | `{ type: 'divider' }` |
+| Responsive layout | `formConfig: { useRowLayout: true }` |
+| Column width | `{ columns: 6 }` or `{ columns: { xs: 12, md: 6 } }` |
+
+## Import
+
+```javascript
+import { FormView } from 'web-mojo';
+```
+
+Always use `FormView` from the framework package, not internal paths!

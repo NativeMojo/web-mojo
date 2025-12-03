@@ -24,6 +24,7 @@ import Mustache from '@core/utils/mustache.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 import FormView from '@core/forms/FormView.js';
 import dataFormatter from '@core/utils/DataFormatter.js';
+import { parseFilterKey, formatFilterDisplay } from '@core/utils/DjangoLookups.js';
 
 class TableView extends ListView {
   constructor(options = {}) {
@@ -660,9 +661,10 @@ class TableView extends ListView {
       return '';
     }
 
-    const pills = filterEntries.map(([key, value]) => {
-      const label = this.getFilterLabel(key);
-      const displayValue = this.getFilterDisplayValue(key, value);
+    const pills = filterEntries.map(([paramKey, value]) => {
+      const { field } = parseFilterKey(paramKey);
+      const label = this.getFilterLabel(field);
+      const displayText = formatFilterDisplay(paramKey, value, label);
       const icon = 'filter'; // search won't appear as pill anymore
 
       return `
@@ -672,15 +674,15 @@ class TableView extends ListView {
           <button type="button" class="btn btn-link text-white p-0 ms-1"
                   style="font-size: 0.65rem; line-height: 1;"
                   data-action="edit-filter"
-                  data-filter="${key}"
+                  data-filter="${paramKey}"
                   title="Edit filter">
-            ${label}: ${displayValue}
+            ${displayText}
           </button>
 
           <button type="button" class="btn-close btn-close-white ms-1"
                   style="font-size: 0.6rem; width: 0.5rem; height: 0.5rem;"
                   data-action="remove-filter"
-                  data-filter="${key}"
+                  data-filter="${paramKey}"
                   title="Remove filter">
           </button>
         </span>
@@ -2008,10 +2010,29 @@ class TableView extends ListView {
         this.collection.params[fieldName] = key;
       }
     } else {
-      // Handle regular filters
-      if (value === null || value === undefined || value === '') {
-        delete this.collection.params[key];
+      // Parse key to get field and lookup
+      const { field, lookup } = parseFilterKey(key);
+      
+      // Clear old values - remove both base field and variants
+      delete this.collection.params[key];
+      delete this.collection.params[field];
+      delete this.collection.params[`${field}__in`];
+      
+      if (!value || (Array.isArray(value) && value.length === 0)) {
+        return; // Cleared
+      }
+      
+      // Smart param generation for multiselect fields
+      if (Array.isArray(value)) {
+        if (value.length === 1) {
+          // Single value from array - use simple key (no __in)
+          this.collection.params[field] = value[0];
+        } else {
+          // Multiple values - use __in lookup
+          this.collection.params[`${field}__in`] = value.join(',');
+        }
       } else {
+        // Single value - use key as-is (may include lookup like __gte)
         this.collection.params[key] = value;
       }
     }
@@ -2158,6 +2179,7 @@ class TableView extends ListView {
     if (result) {
       // Extract the new filter value
       const newFilterValue = this.extractFilterValue(filterConfig, result);
+      // Use the filter key for setFilter (it will handle the lookup internally)
       this.setFilter(filterKey, newFilterValue);
       await this.applyFilters();
     }
@@ -2171,7 +2193,9 @@ class TableView extends ListView {
       name: 'filter_value',
       label: filterConfig.label,
       value: currentValue,
-      ...filterConfig
+      ...filterConfig,
+      // Ensure placeholder is passed through (support both casings)
+      placeholder: filterConfig.placeholder || filterConfig.placeHolder
     };
 
     // Set current value appropriately based on filter type
@@ -2189,6 +2213,28 @@ class TableView extends ListView {
       if (currentValue && typeof currentValue === 'object') {
         field.startDate = currentValue.start || '';
         field.endDate = currentValue.end || '';
+      }
+    } else if (filterConfig.type === 'multiselect') {
+      // Convert comma-separated string to array for multiselect
+      let valueArray = [];
+      if (currentValue) {
+        if (Array.isArray(currentValue)) {
+          valueArray = currentValue;
+        } else if (typeof currentValue === 'string') {
+          // Split by comma and trim whitespace
+          valueArray = currentValue.split(',').map(v => v.trim()).filter(v => v);
+        }
+      }
+      
+      field.value = valueArray;
+      
+      // Ensure placeholder is set (support both casings)
+      if (!field.placeholder && !field.placeHolder) {
+        if (filterConfig.placeholder || filterConfig.placeHolder) {
+          field.placeholder = filterConfig.placeholder || filterConfig.placeHolder;
+        } else if (filterConfig.label) {
+          field.placeholder = `Select ${filterConfig.label}...`;
+        }
       }
     }
 
@@ -2210,6 +2256,11 @@ class TableView extends ListView {
       };
 
       return result;
+    }
+
+    if (filterConfig.type === 'multiselect') {
+      // Return array as-is for multiselect
+      return formResult.filter_value;
     }
 
     return formResult.filter_value;
@@ -2249,11 +2300,19 @@ class TableView extends ListView {
    */
   async onActionEditFilter(event, element) {
     const filterKey = element.getAttribute('data-filter');
-    const filterConfig = this.getFilterConfig(filterKey);
-    const currentValue = this.getActiveFilters()[filterKey];
+    
+    // Parse the key to get the base field (handles lookup keys like status__in)
+    const { field } = parseFilterKey(filterKey);
+    
+    // Try to get filter config using the parsed field name first, then original key
+    let filterConfig = this.getFilterConfig(field) || this.getFilterConfig(filterKey);
+    
+    // Get current value - could be under filterKey or field
+    const activeFilters = this.getActiveFilters();
+    const currentValue = activeFilters[filterKey] || activeFilters[field];
 
     if (!filterConfig) {
-      console.warn('No filter config found for key:', filterKey);
+      console.warn('No filter config found for key:', filterKey, 'or field:', field);
       return;
     }
 
@@ -2261,10 +2320,10 @@ class TableView extends ListView {
 
     // Show mini dialog for this specific filter
     const result = await Dialog.showForm({
-      title: `Edit ${this.getFilterLabel(filterKey)} Filter`,
+      title: `Edit ${this.getFilterLabel(field)} Filter`,
       size: 'md',
       data: {filter_value: currentValue},
-      fields: [this.buildFilterDialogField(filterConfig, currentValue, filterKey)]
+      fields: [this.buildFilterDialogField(filterConfig, currentValue, field)]
     });
 
     if (result) {
@@ -2280,6 +2339,11 @@ class TableView extends ListView {
    */
   async onActionRemoveFilter(event, element) {
     const filterKey = element.getAttribute('data-filter');
+    
+    // Parse to get the base field (handles lookup keys like status__in)
+    const { field } = parseFilterKey(filterKey);
+    
+    // Clear the filter using the original key
     this.setFilter(filterKey, null);
 
     // If removing search filter, clear search inputs
@@ -2295,7 +2359,7 @@ class TableView extends ListView {
     // Update filter pills after removing
     this.updateFilterPills();
 
-    this.emit('filter:remove', { key: filterKey });
+    this.emit('filter:remove', { key: filterKey, field });
     this.emit('params-changed');
   }
 

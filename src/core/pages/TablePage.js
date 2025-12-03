@@ -204,18 +204,18 @@ class TablePage extends Page {
       }
     });
 
-    // Listen for table events (these also emit params-changed, but keep for backwards compatibility)
-    this.tableView.on('table:search', ({ searchTerm }) => {
-      // params-changed will handle URL sync
-    });
+    // // Listen for table events (these also emit params-changed, but keep for backwards compatibility)
+    // this.tableView.on('table:search', ({ searchTerm }) => {
+    //   // params-changed will handle URL sync
+    // });
 
-    this.tableView.on('table:sort', ({ field }) => {
-      // params-changed will handle URL sync
-    });
+    // this.tableView.on('table:sort', ({ field }) => {
+    //   // params-changed will handle URL sync
+    // });
 
-    this.tableView.on('table:page', ({ page }) => {
-      // params-changed will handle URL sync
-    });
+    // this.tableView.on('table:page', ({ page }) => {
+    //   // params-changed will handle URL sync
+    // });
 
     // Filter events - params-changed will handle URL sync
     this.tableView.on('filter:edit', async ({ key }) => {
@@ -224,20 +224,20 @@ class TablePage extends Page {
 
     // Row action events
     this.tableView.on('row:view', async ({ model }) => {
-      if (this.tableViewConfig.onItemView) {
-        await this.tableViewConfig.onItemView(model);
+      if (this.onItemView) {
+        await this.onItemView(model);
       }
     });
 
     this.tableView.on('row:edit', async ({ model }) => {
-      if (this.tableViewConfig.onItemEdit) {
-        await this.tableViewConfig.onItemEdit(model);
+      if (this.onItemEdit) {
+        await this.onItemEdit(model);
       }
     });
 
     this.tableView.on('row:delete', async ({ model }) => {
-      if (this.tableViewConfig.onItemDelete) {
-        await this.tableViewConfig.onItemDelete(model);
+      if (this.onItemDelete) {
+        await this.onItemDelete(model);
       }
     });
 
