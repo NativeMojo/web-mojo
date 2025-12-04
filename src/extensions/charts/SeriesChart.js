@@ -6,6 +6,29 @@
 import BaseChart from './BaseChart.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 
+const DEFAULT_CHART_COLORS = [
+  'rgba(52, 152, 219, 0.85)',  // Belize Hole
+  'rgba(231, 76, 60, 0.85)',   // Alizarin
+  'rgba(46, 204, 113, 0.85)',  // Emerald
+  'rgba(241, 196, 15, 0.85)',  // Sunflower
+  'rgba(155, 89, 182, 0.85)',  // Amethyst
+  'rgba(230, 126, 34, 0.85)',  // Carrot
+  'rgba(26, 188, 156, 0.85)',  // Turquoise
+  'rgba(52, 73, 94, 0.85)',    // Wet asphalt
+  'rgba(243, 156, 18, 0.85)',  // Orange
+  'rgba(142, 68, 173, 0.85)',  // Wisteria
+  'rgba(39, 174, 96, 0.85)',   // Nephritis
+  'rgba(41, 128, 185, 0.85)',  // Peter River
+  'rgba(192, 57, 43, 0.85)',   // Pomegranate
+  'rgba(127, 140, 141, 0.85)', // Asbestos
+  'rgba(22, 160, 133, 0.85)',  // Green Sea
+  'rgba(211, 84, 0, 0.85)',    // Pumpkin
+  'rgba(44, 62, 80, 0.85)',    // Midnight Blue
+  'rgba(214, 69, 65, 0.85)',   // Valencia
+  'rgba(149, 165, 166, 0.85)', // Concrete
+  'rgba(52, 232, 158, 0.85)'   // Mint
+];
+
 
 export default class SeriesChart extends BaseChart {
   constructor(options = {}) {
@@ -44,21 +67,48 @@ export default class SeriesChart extends BaseChart {
 
 
     // Color scheme for multiple datasets
-    this.colors = options.colors || [
-      'rgba(54, 162, 235, 0.8)',   // Blue
-      'rgba(255, 99, 132, 0.8)',   // Red
-      'rgba(75, 192, 192, 0.8)',   // Green
-      'rgba(255, 206, 86, 0.8)',   // Yellow
-      'rgba(153, 102, 255, 0.8)',  // Purple
-      'rgba(255, 159, 64, 0.8)',   // Orange
-      'rgba(199, 199, 199, 0.8)',  // Grey
-      'rgba(83, 102, 255, 0.8)'    // Indigo
-    ];
+    const providedColors = Array.isArray(options.colors) && options.colors.length
+      ? options.colors
+      : DEFAULT_CHART_COLORS;
+    this.colors = [...providedColors];
 
 
 
     // Process tooltip formatters
     this.tooltipFormatters = options.tooltip || {};
+  }
+
+  getColor(index) {
+    this.ensureColorPool(index + 1);
+    return this.colors[index];
+  }
+
+  ensureColorPool(count) {
+    if (this.colors.length >= count) return;
+
+    while (this.colors.length < count) {
+      const nextIndex = this.colors.length;
+      const hue = (nextIndex * 37) % 360;
+      const color = `hsla(${hue}, 70%, 55%, 0.85)`;
+      this.colors.push(color);
+    }
+  }
+
+  withAlpha(color, alpha = 0.4) {
+    if (!color) return color;
+    const rgbaMatch = color.match(/rgba?\(([^)]+)\)/i);
+    if (rgbaMatch) {
+      const parts = rgbaMatch[1].split(',').map(part => part.trim());
+      const [r, g, b] = parts;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+    const hslaMatch = color.match(/hsla?\(([^)]+)\)/i);
+    if (hslaMatch) {
+      const parts = hslaMatch[1].split(',').map(part => part.trim());
+      const [h, s, l] = parts;
+      return `hsla(${h}, ${s}, ${l}, ${alpha})`;
+    }
+    return color;
   }
 
   async getTemplate() {
@@ -167,13 +217,17 @@ export default class SeriesChart extends BaseChart {
       values.push(yValue);
     });
 
+    this.ensureColorPool(1);
+    const baseColor = this.getColor(0);
+    const backgroundAlpha = this.chartType === 'line' ? 0.25 : 0.65;
+
     return {
       labels,
       datasets: [{
         label: this.title || 'Data',
         data: values,
-        backgroundColor: this.colors[0].replace('0.8', '0.6'),
-        borderColor: this.colors[0],
+        backgroundColor: this.withAlpha(baseColor, backgroundAlpha),
+        borderColor: baseColor,
         borderWidth: 2,
         tension: this.chartType === 'line' ? this.tension : 0,
         fill: this.chartType === 'line' ? this.fill : false,
@@ -186,15 +240,27 @@ export default class SeriesChart extends BaseChart {
     // Already in Chart.js format, just apply our styling
     const processedData = { ...data };
 
-    processedData.datasets = processedData.datasets.map((dataset, index) => ({
-      ...dataset,
-      backgroundColor: dataset.backgroundColor || this.colors[index % this.colors.length].replace('0.8', '0.6'),
-      borderColor: dataset.borderColor || this.colors[index % this.colors.length],
-      borderWidth: dataset.borderWidth || 2,
-      tension: this.chartType === 'line' ? (dataset.tension ?? this.tension) : 0,
-      fill: this.chartType === 'line' ? (dataset.fill ?? this.fill) : false,
-      stepped: this.chartType === 'line' ? (dataset.stepped ?? this.stepped) : false
-    }));
+    if (!processedData.datasets) {
+      processedData.datasets = [];
+      return processedData;
+    }
+
+    const datasetCount = processedData.datasets.length;
+    this.ensureColorPool(datasetCount);
+    const backgroundAlpha = this.chartType === 'line' ? 0.25 : 0.65;
+
+    processedData.datasets = processedData.datasets.map((dataset, index) => {
+      const baseColor = dataset.borderColor || this.getColor(index);
+      return {
+        ...dataset,
+        backgroundColor: dataset.backgroundColor || this.withAlpha(baseColor, backgroundAlpha),
+        borderColor: baseColor,
+        borderWidth: dataset.borderWidth || 2,
+        tension: this.chartType === 'line' ? (dataset.tension ?? this.tension) : 0,
+        fill: this.chartType === 'line' ? (dataset.fill ?? this.fill) : false,
+        stepped: this.chartType === 'line' ? (dataset.stepped ?? this.stepped) : false
+      };
+    });
 
     return processedData;
   }
@@ -202,13 +268,17 @@ export default class SeriesChart extends BaseChart {
   processSeriesData(data) {
     const labels = data.labels || [];
     const datasets = [];
+    const count = data.series?.length || 0;
+    this.ensureColorPool(count);
+    const backgroundAlpha = this.chartType === 'line' ? 0.25 : 0.65;
 
     data.series.forEach((series, index) => {
+      const baseColor = series.borderColor || this.getColor(index);
       datasets.push({
         label: series.name || series.label || `Series ${index + 1}`,
         data: series.data || [],
-        backgroundColor: series.backgroundColor || this.colors[index % this.colors.length].replace('0.8', '0.6'),
-        borderColor: series.borderColor || this.colors[index % this.colors.length],
+        backgroundColor: series.backgroundColor || this.withAlpha(baseColor, backgroundAlpha),
+        borderColor: baseColor,
         borderWidth: series.borderWidth || 2,
         tension: this.chartType === 'line' ? (series.tension ?? this.tension) : 0,
         fill: this.chartType === 'line' ? (series.fill ?? this.fill) : false,

@@ -12,16 +12,7 @@ export default class MetricsChart extends SeriesChart {
       ...options,
       chartType: options.chartType || 'line',
       title: options.title || 'Metrics',
-      colors: options.colors || [
-        'rgba(54, 162, 235, 0.8)',   // Blue
-        'rgba(255, 99, 132, 0.8)',   // Red
-        'rgba(75, 192, 192, 0.8)',   // Green
-        'rgba(255, 206, 86, 0.8)',   // Yellow
-        'rgba(153, 102, 255, 0.8)',  // Purple
-        'rgba(255, 159, 64, 0.8)',   // Orange
-        'rgba(199, 199, 199, 0.8)',  // Grey
-        'rgba(83, 102, 255, 0.8)'    // Indigo
-      ],
+      colors: options.colors,
       yAxis: options.yAxis || { label: 'Count', beginAtZero: true },
       tooltip: options.tooltip || { y: 'number' },
       width: options.width,
@@ -255,7 +246,10 @@ export default class MetricsChart extends SeriesChart {
     const { data: metricsData, labels } = data;
     const datasets = [];
 
-    Object.keys(metricsData).forEach((metric, index) => {
+    const metricKeys = Object.keys(metricsData || {});
+    this.ensureColorPool(metricKeys.length);
+
+    metricKeys.forEach((metric, index) => {
       const values = metricsData[metric];
 
       const sanitizedValues = values.map(val => {
@@ -263,11 +257,14 @@ export default class MetricsChart extends SeriesChart {
         return typeof val === 'number' ? val : (parseFloat(val) || 0);
       });
 
+      const baseColor = this.getColor(index);
+      const backgroundAlpha = this.chartType === 'line' ? 0.25 : 0.65;
+
       datasets.push({
         label: this.formatMetricLabel(metric),
         data: sanitizedValues,
-        backgroundColor: this.colors[index % this.colors.length].replace('0.8', '0.6'),
-        borderColor: this.colors[index % this.colors.length],
+        backgroundColor: this.withAlpha(baseColor, backgroundAlpha),
+        borderColor: baseColor,
         borderWidth: 2,
         tension: this.chartType === 'line' ? 0.4 : 0,
         fill: false,

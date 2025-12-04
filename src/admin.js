@@ -6,61 +6,72 @@
 import '@ext/admin/css/admin.css';
 
 // Admin Pages
-export { default as AdminDashboardPage } from '@ext/admin/AdminDashboardPage.js';
-export { default as EmailDomainTablePage } from '@ext/admin/EmailDomainTablePage.js';
-export { default as EmailMailboxTablePage } from '@ext/admin/EmailMailboxTablePage.js';
-export { default as EmailTemplateTablePage } from '@ext/admin/EmailTemplateTablePage.js';
-export { default as EventTablePage } from '@ext/admin/EventTablePage.js';
-export { default as FileManagerTablePage } from '@ext/admin/FileManagerTablePage.js';
-export { default as FileTablePage } from '@ext/admin/FileTablePage.js';
-export { default as GeoLocatedIPTablePage } from '@ext/admin/GeoLocatedIPTablePage.js';
-export { default as GroupTablePage } from '@ext/admin/GroupTablePage.js';
-export { default as IncidentDashboardPage } from '@ext/admin/IncidentDashboardPage.js';
-export { default as IncidentTablePage } from '@ext/admin/IncidentTablePage.js';
-export { default as JobsAdminPage } from '@ext/admin/JobsAdminPage.js';
-export { default as LogTablePage } from '@ext/admin/LogTablePage.js';
-export { default as MemberTablePage } from '@ext/admin/MemberTablePage.js';
-export { default as MetricsPermissionsTablePage } from '@ext/admin/MetricsPermissionsTablePage.js';
-export { default as PushConfigTablePage } from '@ext/admin/PushConfigTablePage.js';
-export { default as PushDashboardPage } from '@ext/admin/PushDashboardPage.js';
-export { default as PushDeliveryTablePage } from '@ext/admin/PushDeliveryTablePage.js';
-export { default as PushDeviceTablePage } from '@ext/admin/PushDeviceTablePage.js';
-export { default as PushTemplateTablePage } from '@ext/admin/PushTemplateTablePage.js';
-export { default as RuleSetTablePage } from '@ext/admin/RuleSetTablePage.js';
-export { default as S3BucketTablePage } from '@ext/admin/S3BucketTablePage.js';
-export { default as SentMessageTablePage } from '@ext/admin/SentMessageTablePage.js';
-export { default as TaskManagementPage } from '@ext/admin/TaskManagementPage.js';
-export { default as TicketTablePage } from '@ext/admin/TicketTablePage.js';
-export { default as UserDeviceLocationTablePage } from '@ext/admin/UserDeviceLocationTablePage.js';
-export { default as UserDeviceTablePage } from '@ext/admin/UserDeviceTablePage.js';
-export { default as UserTablePage } from '@ext/admin/UserTablePage.js';
-export { default as PhoneNumberTablePage } from '@ext/admin/PhoneNumberTablePage.js';
+export { default as AdminDashboardPage } from '@ext/admin/account/AdminDashboardPage.js';
+export { default as UserTablePage } from '@ext/admin/account/users/UserTablePage.js';
+export { default as MemberTablePage } from '@ext/admin/account/users/MemberTablePage.js';
+export { default as GroupTablePage } from '@ext/admin/account/groups/GroupTablePage.js';
+export { default as UserDeviceTablePage } from '@ext/admin/account/devices/UserDeviceTablePage.js';
+export { default as UserDeviceLocationTablePage } from '@ext/admin/account/devices/UserDeviceLocationTablePage.js';
+export { default as GeoLocatedIPTablePage } from '@ext/admin/account/devices/GeoLocatedIPTablePage.js';
+
+export { default as IncidentDashboardPage } from '@ext/admin/incidents/IncidentDashboardPage.js';
+export { default as IncidentTablePage } from '@ext/admin/incidents/IncidentTablePage.js';
+export { default as EventTablePage } from '@ext/admin/incidents/EventTablePage.js';
+export { default as TicketTablePage } from '@ext/admin/incidents/TicketTablePage.js';
+export { default as RuleSetTablePage } from '@ext/admin/incidents/RuleSetTablePage.js';
+
+export { default as EmailDomainTablePage } from '@ext/admin/messaging/email/EmailDomainTablePage.js';
+export { default as EmailMailboxTablePage } from '@ext/admin/messaging/email/EmailMailboxTablePage.js';
+export { default as EmailTemplateTablePage } from '@ext/admin/messaging/email/EmailTemplateTablePage.js';
+export { default as SentMessageTablePage } from '@ext/admin/messaging/email/SentMessageTablePage.js';
+export { default as PhoneNumberTablePage } from '@ext/admin/messaging/sms/PhoneNumberTablePage.js';
+export { default as SMSTablePage } from '@ext/admin/messaging/sms/SMSTablePage.js';
+export { default as PushDashboardPage } from '@ext/admin/messaging/push/PushDashboardPage.js';
+export { default as PushConfigTablePage } from '@ext/admin/messaging/push/PushConfigTablePage.js';
+export { default as PushTemplateTablePage } from '@ext/admin/messaging/push/PushTemplateTablePage.js';
+export { default as PushDeliveryTablePage } from '@ext/admin/messaging/push/PushDeliveryTablePage.js';
+export { default as PushDeviceTablePage } from '@ext/admin/messaging/push/PushDeviceTablePage.js';
+
+export { default as JobsAdminPage } from '@ext/admin/jobs/JobsAdminPage.js';
+export { default as TaskManagementPage } from '@ext/admin/jobs/TaskManagementPage.js';
+
+export { default as LogTablePage } from '@ext/admin/monitoring/LogTablePage.js';
+export { default as MetricsPermissionsTablePage } from '@ext/admin/monitoring/MetricsPermissionsTablePage.js';
+
+export { default as FileManagerTablePage } from '@ext/admin/storage/FileManagerTablePage.js';
+export { default as FileTablePage } from '@ext/admin/storage/FileTablePage.js';
+export { default as S3BucketTablePage } from '@ext/admin/storage/S3BucketTablePage.js';
+
 // Admin Views
-export { default as DeviceView } from '@ext/admin/views/DeviceView.js';
-export { default as EmailTemplateView } from '@ext/admin/views/EmailTemplateView.js';
-export { default as EmailView } from '@ext/admin/views/EmailView.js';
-export { default as EventView } from '@ext/admin/views/EventView.js';
-export { default as FileView } from '@ext/admin/views/FileView.js';
-export { default as GeoIPView } from '@ext/admin/views/GeoIPView.js';
-export { default as GroupView } from '@ext/admin/views/GroupView.js';
-export { default as IncidentView } from '@ext/admin/views/IncidentView.js';
-export { default as JobDetailsView } from '@ext/admin/views/JobDetailsView.js';
-export { default as JobHealthView } from '@ext/admin/views/JobHealthView.js';
-export { default as JobStatsView } from '@ext/admin/views/JobStatsView.js';
-export { default as LogView } from '@ext/admin/views/LogView.js';
-export { default as MemberView } from '@ext/admin/views/MemberView.js';
-export { default as MetricsPermissionsView } from '@ext/admin/views/MetricsPermissionsView.js';
-export { default as PushDeliveryView } from '@ext/admin/views/PushDeliveryView.js';
-export { default as PushDeviceView } from '@ext/admin/views/PushDeviceView.js';
-export { default as RuleSetView } from '@ext/admin/views/RuleSetView.js';
-export { default as TicketView } from '@ext/admin/views/TicketView.js';
-export { default as UserView } from '@ext/admin/views/UserView.js';
-export { default as PhoneNumberView } from '@ext/admin/views/PhoneNumberView.js';
+export { default as DeviceView } from '@ext/admin/account/devices/DeviceView.js';
+export { default as GeoIPView } from '@ext/admin/account/devices/GeoIPView.js';
+export { default as GroupView } from '@ext/admin/account/groups/GroupView.js';
+export { default as MemberView } from '@ext/admin/account/users/MemberView.js';
+export { default as UserView } from '@ext/admin/account/users/UserView.js';
+
+export { default as IncidentView } from '@ext/admin/incidents/IncidentView.js';
+export { default as EventView } from '@ext/admin/incidents/EventView.js';
+export { default as TicketView } from '@ext/admin/incidents/TicketView.js';
+export { default as RuleSetView } from '@ext/admin/incidents/RuleSetView.js';
+
+export { default as EmailTemplateView } from '@ext/admin/messaging/email/EmailTemplateView.js';
+export { default as EmailView } from '@ext/admin/messaging/email/EmailView.js';
+export { default as PhoneNumberView } from '@ext/admin/messaging/sms/PhoneNumberView.js';
+export { default as PushDeliveryView } from '@ext/admin/messaging/push/PushDeliveryView.js';
+export { default as PushDeviceView } from '@ext/admin/messaging/push/PushDeviceView.js';
+
+export { default as JobDetailsView } from '@ext/admin/jobs/JobDetailsView.js';
+export { default as JobHealthView } from '@ext/admin/jobs/JobHealthView.js';
+export { default as JobStatsView } from '@ext/admin/jobs/JobStatsView.js';
+
+export { default as LogView } from '@ext/admin/monitoring/LogView.js';
+export { default as MetricsPermissionsView } from '@ext/admin/monitoring/MetricsPermissionsView.js';
+
+export { default as FileView } from '@ext/admin/storage/FileView.js';
 
 // Admin Components
-export { default as RunnerDetailsView } from '@ext/admin/RunnerDetailsView.js';
-export { default as TaskDetailsView } from '@ext/admin/TaskDetailsView.js';
-
+export { default as RunnerDetailsView } from '@ext/admin/jobs/RunnerDetailsView.js';
+export { default as TaskDetailsView } from '@ext/admin/jobs/TaskDetailsView.js';
 // Convenience
 export { default as WebApp } from '@core/WebApp.js';
 
@@ -77,36 +88,41 @@ export {
 
 
 // Import all admin page classes for the register function
-import AdminDashboardPageClass from '@ext/admin/AdminDashboardPage.js';
-import EmailDomainTablePageClass from '@ext/admin/EmailDomainTablePage.js';
-import EmailMailboxTablePageClass from '@ext/admin/EmailMailboxTablePage.js';
-import EmailTemplateTablePageClass from '@ext/admin/EmailTemplateTablePage.js';
-import EventTablePageClass from '@ext/admin/EventTablePage.js';
-import FileManagerTablePageClass from '@ext/admin/FileManagerTablePage.js';
-import FileTablePageClass from '@ext/admin/FileTablePage.js';
-import GeoLocatedIPTablePageClass from '@ext/admin/GeoLocatedIPTablePage.js';
-import GroupTablePageClass from '@ext/admin/GroupTablePage.js';
-import IncidentDashboardPageClass from '@ext/admin/IncidentDashboardPage.js';
-import IncidentTablePageClass from '@ext/admin/IncidentTablePage.js';
-import JobsAdminPageClass from '@ext/admin/JobsAdminPage.js';
-import LogTablePageClass from '@ext/admin/LogTablePage.js';
-import MemberTablePageClass from '@ext/admin/MemberTablePage.js';
-import MetricsPermissionsTablePageClass from '@ext/admin/MetricsPermissionsTablePage.js';
-import PushConfigTablePageClass from '@ext/admin/PushConfigTablePage.js';
-import PushDashboardPageClass from '@ext/admin/PushDashboardPage.js';
-import PushDeliveryTablePageClass from '@ext/admin/PushDeliveryTablePage.js';
-import PushDeviceTablePageClass from '@ext/admin/PushDeviceTablePage.js';
-import PushTemplateTablePageClass from '@ext/admin/PushTemplateTablePage.js';
-import RuleSetTablePageClass from '@ext/admin/RuleSetTablePage.js';
-import S3BucketTablePageClass from '@ext/admin/S3BucketTablePage.js';
-import SentMessageTablePageClass from '@ext/admin/SentMessageTablePage.js';
-import TaskManagementPageClass from '@ext/admin/TaskManagementPage.js';
-import TicketTablePageClass from '@ext/admin/TicketTablePage.js';
-import UserDeviceLocationTablePageClass from '@ext/admin/UserDeviceLocationTablePage.js';
-import UserDeviceTablePageClass from '@ext/admin/UserDeviceTablePage.js';
-import UserTablePageClass from '@ext/admin/UserTablePage.js';
-import PhoneNumberTablePageClass from '@ext/admin/PhoneNumberTablePage.js';
-import SMSTablePageClass from '@ext/admin/SMSTablePage.js';
+import AdminDashboardPageClass from '@ext/admin/account/AdminDashboardPage.js';
+import UserTablePageClass from '@ext/admin/account/users/UserTablePage.js';
+import MemberTablePageClass from '@ext/admin/account/users/MemberTablePage.js';
+import GroupTablePageClass from '@ext/admin/account/groups/GroupTablePage.js';
+import UserDeviceTablePageClass from '@ext/admin/account/devices/UserDeviceTablePage.js';
+import UserDeviceLocationTablePageClass from '@ext/admin/account/devices/UserDeviceLocationTablePage.js';
+import GeoLocatedIPTablePageClass from '@ext/admin/account/devices/GeoLocatedIPTablePage.js';
+
+import IncidentDashboardPageClass from '@ext/admin/incidents/IncidentDashboardPage.js';
+import IncidentTablePageClass from '@ext/admin/incidents/IncidentTablePage.js';
+import EventTablePageClass from '@ext/admin/incidents/EventTablePage.js';
+import TicketTablePageClass from '@ext/admin/incidents/TicketTablePage.js';
+import RuleSetTablePageClass from '@ext/admin/incidents/RuleSetTablePage.js';
+
+import EmailDomainTablePageClass from '@ext/admin/messaging/email/EmailDomainTablePage.js';
+import EmailMailboxTablePageClass from '@ext/admin/messaging/email/EmailMailboxTablePage.js';
+import EmailTemplateTablePageClass from '@ext/admin/messaging/email/EmailTemplateTablePage.js';
+import SentMessageTablePageClass from '@ext/admin/messaging/email/SentMessageTablePage.js';
+import PhoneNumberTablePageClass from '@ext/admin/messaging/sms/PhoneNumberTablePage.js';
+import SMSTablePageClass from '@ext/admin/messaging/sms/SMSTablePage.js';
+import PushDashboardPageClass from '@ext/admin/messaging/push/PushDashboardPage.js';
+import PushConfigTablePageClass from '@ext/admin/messaging/push/PushConfigTablePage.js';
+import PushTemplateTablePageClass from '@ext/admin/messaging/push/PushTemplateTablePage.js';
+import PushDeliveryTablePageClass from '@ext/admin/messaging/push/PushDeliveryTablePage.js';
+import PushDeviceTablePageClass from '@ext/admin/messaging/push/PushDeviceTablePage.js';
+
+import JobsAdminPageClass from '@ext/admin/jobs/JobsAdminPage.js';
+import TaskManagementPageClass from '@ext/admin/jobs/TaskManagementPage.js';
+
+import LogTablePageClass from '@ext/admin/monitoring/LogTablePage.js';
+import MetricsPermissionsTablePageClass from '@ext/admin/monitoring/MetricsPermissionsTablePage.js';
+
+import FileManagerTablePageClass from '@ext/admin/storage/FileManagerTablePage.js';
+import FileTablePageClass from '@ext/admin/storage/FileTablePage.js';
+import S3BucketTablePageClass from '@ext/admin/storage/S3BucketTablePage.js';
 
 /**
  * Register all admin pages to a WebApp instance

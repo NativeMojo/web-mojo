@@ -89,10 +89,28 @@ class ComboBox extends View {
   }
   
   async onInit() {
+    // onInit is for creating children, not DOM manipulation
+    await super.onInit();
+  }
+  
+  async onAfterRender() {
+    await super.onAfterRender();
+    
+    // Now DOM is ready, we can query elements
     this.input = this.element.querySelector('.combobox-input');
     this.dropdown = this.element.querySelector('.combobox-dropdown');
     this.dropdownItems = this.element.querySelector('[data-region="dropdown-items"]');
     this.noMatchDiv = this.element.querySelector('.combobox-no-match');
+    
+    // Set initial value if it was set before render
+    if (this.value && this.input) {
+      const option = this.options.find(opt => opt.value === this.value);
+      if (option) {
+        this.input.value = option.label || option.value;
+      } else if (this.allowCustom) {
+        this.input.value = this.value;
+      }
+    }
     
     // Render initial items
     this.renderItems();
@@ -283,6 +301,11 @@ class ComboBox extends View {
   
   setValue(value) {
     this.value = value;
+    
+    // If input doesn't exist yet (before onAfterRender), just store the value
+    if (!this.input) {
+      return;
+    }
     
     // Find the option to get the label
     const option = this.options.find(opt => opt.value === value);
