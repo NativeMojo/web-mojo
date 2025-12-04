@@ -85,6 +85,7 @@ class MetricsCountryMapView extends View {
             const slugsArray = Array.isArray(this.slugs) ? this.slugs : [this.slugs];
             params['slugs[]'] = slugsArray;
         }
+
         const response = await rest.GET(this.endpoint, params);
         if (!response.success || !response.data?.status) {
             throw new Error(response.data?.error || 'Metrics API error');
@@ -228,27 +229,27 @@ class MetricsCountryMapView extends View {
                 ['linear'],
                 ['get', 'intensity'],
                 0,
-                'rgba(32, 201, 151, 0.2)',
+                'rgba(32, 201, 151, 0.6)',
                 1,
-                'rgba(255, 193, 7, 0.85)'
+                'rgba(255, 193, 7, 0.95)'
             ],
             'line-width': [
                 'interpolate',
                 ['linear'],
                 ['get', 'intensity'],
                 0,
+                1.75,
                 1,
-                1,
-                5
+                6
             ],
             'line-opacity': [
                 'interpolate',
                 ['linear'],
                 ['get', 'intensity'],
                 0,
-                0.2,
+                0.45,
                 1,
-                0.9
+                0.95
             ]
         };
 
@@ -264,6 +265,7 @@ class MetricsCountryMapView extends View {
         this.statusEl.textContent = message || '';
         this.statusEl.style.display = message ? 'block' : 'none';
     }
+
 }
 
 export default MetricsCountryMapView;

@@ -30,7 +30,7 @@ export default class JobHealthView extends View {
                                         <i class="bi bi-circle-fill fs-4 {{healthStatusClass}}"></i>
                                     </div>
                                     <div>
-                                        <h5 class="mb-1">System Health: {{health.overall_status|capitalize}}</h5>
+                                        <h5 class="mb-1">Service Health: {{health.overall_status|capitalize}}</h5>
                                         <small class="text-muted d-block">
                                             Workers: {{health.runners.active}}/{{health.runners.total}} active
                                         </small>

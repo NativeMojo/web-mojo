@@ -4,18 +4,53 @@
  */
 
 import Page from '@core/Page.js';
-import TabView from '@core/views/navigation/TabView.js';
+import View from '@core/View.js';
+import TableView from '@core/views/table/TableView.js';
 import Dialog from '@core/views/feedback/Dialog.js';
-import { Job, JobsEngineStats } from '@core/models/Job.js';
-import { JobRunner, JobRunnerForms } from '@core/models/JobRunner.js';
-import { MetricsChart } from '@ext/charts/index.js';
+import { Job, JobList, JobsEngineStats } from '@core/models/Job.js';
+import { JobRunner, JobRunnerForms, JobRunnerList } from '@core/models/JobRunner.js';
+import { MetricsChart, MetricsMiniChartWidget } from '@ext/charts/index.js';
 
 // Import component views
 import JobStatsView from './JobStatsView.js';
 import JobHealthView from './JobHealthView.js';
-import JobsTable from './tables/JobsTable.js';
-import RunnersTable from './tables/RunnersTable.js';
-import ScheduledJobsTable from './tables/ScheduledJobsTable.js';
+import JobDetailsView from './JobDetailsView.js';
+
+class JobMetricsModalView extends View {
+    constructor(options = {}) {
+        super({
+            className: 'job-metrics-modal-view',
+            ...options
+        });
+
+        this.template = `
+            <div data-container="job-metrics-modal-chart" style="min-height:320px;"></div>
+        `;
+    }
+
+    async onInit() {
+        this.chart = new MetricsChart({
+            containerId: 'job-metrics-modal-chart',
+            title: '<i class="bi bi-graph-up me-2"></i> Job Channel Metrics',
+            endpoint: '/api/metrics/fetch',
+            height: 320,
+            granularity: 'hours',
+            category: 'jobs_channels',
+            account: 'global',
+            chartType: 'bar',
+            showDateRange: true,
+            yAxis: {
+                label: 'Count',
+                beginAtZero: true
+            },
+            tooltip: {
+                y: 'number:0'
+            }
+        });
+
+        this.addChild(this.chart);
+    }
+}
 
 export default class JobsAdminPage extends Page {
     constructor(options = {}) {
@@ -40,7 +75,7 @@ export default class JobsAdminPage extends Page {
                         <p class="text-muted mb-0">{{pageSubtitle}}</p>
                         <small class="text-info">
                             <i class="bi bi-arrow-clockwise me-1"></i>
-                            Auto-refresh: {{refreshRateSeconds}}s | Last updated: {{lastUpdated}}
+                            Auto-refresh: {{refreshRateLabel}} | Last updated: {{lastUpdated}}
                         </small>
                     </div>
                     <div class="btn-group" role="group">
@@ -85,28 +120,106 @@ export default class JobsAdminPage extends Page {
                     </div>
                 </div>
 
-                <!-- Job Stats -->
                 <div data-container="job-stats"></div>
 
-                <!-- Job Health -->
-                <div class="row">
-                    <div class="col-12">
-                        <div data-container="job-health"></div>
-                    </div>
-                    <div class="col-12">
-                        <div class="mb-3" data-container="job-metrics"></div>
+                <div class="row mb-4 g-3 align-items-stretch">
+                    <div class="col-lg-6" data-container="jobs-published-chart"></div>
+                    <div class="col-lg-6 position-relative">
+                        <div data-container="jobs-failed-chart"></div>
+                        <button class="btn btn-link btn-sm text-decoration-none position-absolute top-0 end-0"
+                                data-action="open-job-metrics-modal">
+                            <i class="bi bi-graph-up"></i> Channel Metrics
+                        </button>
                     </div>
                 </div>
 
-                <!-- Job Tables -->
-                <div class="card border shadow">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="bi bi-list-task me-2"></i>Job Management
-                        </h5>
+                <div class="row">
+                    <div class="col-xxl-6 col-lg-6 mb-4">
+                        <div data-container="job-health"></div>
+                    </div>
+                    <div class="col-xxl-6 col-lg-6 mb-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-cpu me-2"></i>Job Runners</h5>
+                                <small class="text-muted">Heartbeat &amp; status</small>
+                            </div>
+                            <div class="card-body p-0" data-container="runner-table"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-xl-6 mb-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-play-circle me-2"></i>Running Jobs</h5>
+                                <small class="text-muted">Currently executing</small>
+                            </div>
+                            <div class="card-body p-0" data-container="running-jobs-table"></div>
+                        </div>
+                    </div>
+                    <div class="col-xl-6 mb-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-hourglass-split me-2"></i>Pending Jobs</h5>
+                                <small class="text-muted">Waiting in queue</small>
+                            </div>
+                            <div class="card-body p-0" data-container="pending-jobs-table"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-xl-6 mb-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Scheduled Jobs</h5>
+                            </div>
+                            <div class="card-body p-0" data-container="scheduled-jobs-table"></div>
+                        </div>
+                    </div>
+                    <div class="col-xl-6 mb-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-bug me-2"></i>Failed Jobs</h5>
+                                <small class="text-muted">Latest errors</small>
+                            </div>
+                            <div class="card-body p-0" data-container="failed-jobs-table"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-5">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-tools me-2"></i>Operations</h5>
+                        <button class="btn btn-outline-secondary btn-sm" data-action="view-all-jobs">
+                            <i class="bi bi-table"></i> View All Jobs
+                        </button>
                     </div>
                     <div class="card-body">
-                        <div data-container="job-tables"></div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn btn-outline-primary" data-action="run-simple-job">
+                                <i class="bi bi-play-circle me-2"></i>Run Simple Job
+                            </button>
+                            <button class="btn btn-outline-primary" data-action="run-test-jobs">
+                                <i class="bi bi-robot me-2"></i>Run Test Jobs
+                            </button>
+                            <button class="btn btn-outline-warning" data-action="clear-stuck">
+                                <i class="bi bi-wrench me-2"></i>Clear Stuck
+                            </button>
+                            <button class="btn btn-outline-warning" data-action="clear-channel">
+                                <i class="bi bi-eraser me-2"></i>Clear Channel
+                            </button>
+                            <button class="btn btn-outline-danger" data-action="purge-jobs">
+                                <i class="bi bi-trash me-2"></i>Purge Jobs
+                            </button>
+                            <button class="btn btn-outline-info" data-action="cleanup-consumers">
+                                <i class="bi bi-people me-2"></i>Cleanup Consumers
+                            </button>
+                            <button class="btn btn-outline-secondary" data-action="runner-broadcast">
+                                <i class="bi bi-wifi me-2"></i>Broadcast Command
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -129,39 +242,315 @@ export default class JobsAdminPage extends Page {
         });
         this.addChild(this.jobHealthView);
 
-        this.jobTablesView = new TabView({
-            containerId: 'job-tables',
-            tabs: {
-                'Jobs': new JobsTable(),
-                'Runners': new RunnersTable(),
-                'Scheduled': new ScheduledJobsTable()
+        this.jobsPublishedChart = new MetricsMiniChartWidget({
+            containerId: 'jobs-published-chart',
+            icon: 'bi bi-upload',
+            title: 'Jobs Published',
+            subtitle: '{{now_value}} {{now_label}}',
+            granularity: 'days',
+            slugs: ['jobs.published'],
+            account: 'global',
+            chartType: 'line',
+            height: 90,
+            showSettings: true,
+            showTrending: true,
+            showDateRange: false
+        });
+        this.addChild(this.jobsPublishedChart);
+
+        this.jobsFailedChart = new MetricsMiniChartWidget({
+            containerId: 'jobs-failed-chart',
+            icon: 'bi bi-exclamation-octagon',
+            title: 'Jobs Failed',
+            subtitle: '{{now_value}} {{now_label}}',
+            granularity: 'days',
+            slugs: ['jobs.failed'],
+            account: 'global',
+            chartType: 'line',
+            height: 90,
+            showSettings: true,
+            showTrending: true,
+            showDateRange: false
+        });
+        this.addChild(this.jobsFailedChart);
+
+        this.runningJobsTable = new TableView({
+            containerId: 'running-jobs-table',
+            Collection: JobList,
+            collectionParams: {
+                size: 5,
+                sort: '-created',
+                status: 'running'
             },
-            activeTab: 'Jobs'
+            searchable: true,
+            filterable: false,
+            paginated: true,
+            itemView: JobDetailsView,
+            hideActivePills: ['status'],
+            viewDialogOptions: {
+                title: 'Job Details',
+                size: 'xl',
+                scrollable: true
+            },
+            tableOptions: {
+                striped: false,
+                hover: true,
+                size: 'sm'
+            },
+            columns: [
+                {
+                    key: 'id',
+                    label: 'Job',
+                    template: `
+                        <div class="fw-semibold font-monospace">{{model.id|truncate_middle(12)}}</div>
+                        <div class="text-muted small">{{model.channel}} &middot; {{model.func|truncate_middle(28)|default('n/a')}}</div>
+                    `
+                },
+                {
+                    key: 'runner_id',
+                    label: 'Runner',
+                    template: `
+                        <span class="font-monospace">{{model.runner_id|truncate_middle(12)|default('n/a')}}</span>
+                    `
+                },
+                {
+                    key: 'status',
+                    label: 'State',
+                    formatter: (value, context) => {
+                        const job = context.row;
+                        const badgeClass = job.getStatusBadgeClass ? job.getStatusBadgeClass() : 'bg-secondary';
+                        const icon = job.getStatusIcon ? job.getStatusIcon() : 'bi-question';
+                        return `<span class="badge ${badgeClass}"><i class="${icon} me-1"></i>${value.toUpperCase()}</span>`;
+                    }
+                },
+                {
+                    key: 'created',
+                    label: 'Started',
+                    formatter: 'datetime'
+                }
+            ]
         });
-        this.addChild(this.jobTablesView);
+        this.addChild(this.runningJobsTable);
 
-        // Create API Metrics Chart
-        this.jobMetricsChart = new MetricsChart({
-          title: `<i class="bi bi-graph-up me-2"></i> Job Metrics`,
-          endpoint: '/api/metrics/fetch',
-          height: 100,
-          granularity: 'hours',
-          category: 'jobs_channels',
-          account: 'global',
-          chartType: 'bar',
-          showDateRange: false,
-          yAxis: {
-            label: 'Count',
-            beginAtZero: true
-          },
-          tooltip: {
-            y: 'number'
-          },
-          containerId: 'job-metrics'
+        this.pendingJobsTable = new TableView({
+            containerId: 'pending-jobs-table',
+            Collection: JobList,
+            collectionParams: {
+                size: 5,
+                sort: '-created',
+                status: 'pending',
+                run_at__isnull: true
+            },
+            searchable: true,
+            filterable: false,
+            paginated: true,
+            selectable: true,
+            batchBarLocation: 'top',
+            batchActions: [
+                {
+                    icon: 'bi-x-circle-fill',
+                    label: 'Cancel Jobs',
+                    action: "cancel-jobs"
+                }
+            ],
+            itemView: JobDetailsView,
+            hideActivePills: ['status'],
+            viewDialogOptions: {
+                title: 'Job Details',
+                size: 'xl',
+                scrollable: true
+            },
+            tableOptions: {
+                striped: false,
+                hover: true,
+                size: 'sm'
+            },
+            columns: [
+                {
+                    key: 'id',
+                    label: 'Job',
+                    template: `
+                        <div class="fw-semibold font-monospace">{{model.id|truncate_middle(12)}}</div>
+                        <div class="text-muted small">{{model.channel}} &middot; {{model.func|truncate_middle(28)|default('n/a')}}</div>
+                    `
+                },
+                {
+                    key: 'priority',
+                    label: 'Priority',
+                    formatter: (value = 0) => {
+                        const badge = value >= 8 ? 'bg-danger' : value >= 5 ? 'bg-warning' : 'bg-secondary';
+                        return `<span class="badge ${badge}">${value}</span>`;
+                    }
+                },
+                {
+                    key: 'modified',
+                    label: 'Queued',
+                    formatter: 'relative'
+                }
+            ]
         });
-        this.addChild(this.jobMetricsChart);
+        this.pendingJobsTable.on("action:batch-cancel-jobs", async (action, event, element) => {
+            const items = this.pendingJobsTable.getSelectedItems();
+            await Promise.all(items.map(item => item.model.cancel()));
+            this.getApp().toast.success("Jobs cancelled successfully");
+            this.pendingJobsTable.collection.fetch();
+        });
+        this.addChild(this.pendingJobsTable);
 
-        await this.jobStats.fetch();
+        this.failedJobsTable = new TableView({
+            containerId: 'failed-jobs-table',
+            Collection: JobList,
+            collectionParams: {
+                size: 5,
+                sort: '-finished_at',
+                status: 'failed'
+            },
+            searchable: true,
+            filterable: false,
+            paginated: true,
+            itemView: JobDetailsView,
+            viewDialogOptions: {
+                title: 'Job Details',
+                size: 'xl',
+                scrollable: true
+            },
+            hideActivePills: ['status'],
+            tableOptions: {
+                striped: false,
+                hover: true,
+                size: 'sm'
+            },
+            columns: [
+                {
+                    key: 'id',
+                    label: 'Job',
+                    template: `
+                        <div class="fw-semibold font-monospace">{{model.id|truncate_middle(12)}}</div>
+                        <div class="text-muted small">{{model.channel}} &middot; {{model.func|truncate_middle(28)|default('n/a')}}</div>
+                    `
+                },
+                {
+                    key: 'last_error',
+                    label: 'Error',
+                    template: `
+                        <div class="text-danger small">{{model.last_error|truncate(80)|default('Unknown error')}}</div>
+                    `
+                },
+                {
+                    key: 'modified',
+                    label: 'Failed',
+                    formatter: 'relative'
+                }
+            ]
+        });
+        this.addChild(this.failedJobsTable);
+
+        this.scheduledJobsTable = new TableView({
+            containerId: 'scheduled-jobs-table',
+            Collection: JobList,
+            collectionParams: {
+                size: 5,
+                sort: 'run_at',
+                run_at__isnull: false,
+                status: 'pending'
+            },
+            searchable: true,
+            filterable: false,
+            paginated: true,
+            itemView: JobDetailsView,
+            hideActivePills: ['status'],
+            viewDialogOptions: {
+                title: 'Job Details',
+                size: 'xl',
+                scrollable: true
+            },
+            tableOptions: {
+                striped: false,
+                hover: true,
+                size: 'sm'
+            },
+            columns: [
+                {
+                    key: 'id',
+                    label: 'Job',
+                    formatter: 'truncate_middle(12)'
+                },
+                {
+                    key: 'run_at',
+                    label: 'Scheduled For',
+                    formatter: 'datetime'
+                },
+                {
+                    key: 'channel',
+                    label: 'Channel',
+                    formatter: 'badge'
+                }
+            ],
+            selectable: true,
+            batchBarLocation: 'top',
+            batchActions: [
+                {
+                    icon: 'bi-x-circle-fill',
+                    label: 'Cancel Jobs',
+                    action: "cancel-jobs"
+                }
+            ],
+        });
+        this.scheduledJobsTable.on("action:batch-cancel-jobs", async (action, event, element) => {
+            const items = this.scheduledJobsTable.getSelectedItems();
+            await Promise.all(items.map(item => item.model.cancel()));
+            this.getApp().toast.success("Jobs cancelled successfully");
+            this.scheduledJobsTable.collection.fetch();
+        });
+        this.addChild(this.scheduledJobsTable);
+
+        this.runnersTable = new TableView({
+            containerId: 'runner-table',
+            Collection: JobRunnerList,
+            searchable: true,
+            filterable: false,
+            paginated: true,
+            tableOptions: {
+                striped: false,
+                hover: true,
+                size: 'sm'
+            },
+            columns: [
+                {
+                    key: 'runner_id',
+                    label: 'Runner',
+                    formatter: 'truncate_middle(16)'
+                },
+                {
+                    key: 'alive',
+                    label: 'Status',
+                    formatter: (value) => {
+                        const isAlive = value === true;
+                        const badgeClass = isAlive ? 'bg-success' : 'bg-danger';
+                        const icon = isAlive ? 'bi-check-circle-fill' : 'bi-x-octagon-fill';
+                        const text = isAlive ? 'ALIVE' : 'DEAD';
+                        return `<span class="badge ${badgeClass}"><i class="${icon} me-1"></i>${text}</span>`;
+                    }
+                },
+                {
+                    key: 'last_heartbeat',
+                    label: 'Heartbeat',
+                    formatter: (value) => {
+                        if (!value) return 'Never';
+                        const heartbeatTime = new Date(value);
+                        const now = new Date();
+                        const diffMs = now - heartbeatTime;
+                        const diffSeconds = Math.floor(diffMs / 1000);
+                        if (diffSeconds < 60) return `${diffSeconds}s ago`;
+                        if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
+                        return `${Math.floor(diffSeconds / 3600)}h ago`;
+                    }
+                }
+            ]
+        });
+        this.addChild(this.runnersTable);
+
+        await this.refreshData();
 
     }
 
@@ -180,17 +569,33 @@ export default class JobsAdminPage extends Page {
 
     async refreshData() {
         try {
-            // Refresh stats and health
-            await this.jobStats.fetch();
+            const tasks = [
+                this.jobStats.fetch()
+            ];
 
-            // Refresh active table
-            const activeTab = this.jobTablesView?.getActiveTab();
-            if (activeTab) {
-                const activeTable = this.jobTablesView.getTab(activeTab);
-                if (activeTable?.collection?.fetch) {
-                    await activeTable.collection.fetch();
-                }
+            if (this.jobsPublishedChart) {
+                tasks.push(this.jobsPublishedChart.refresh());
             }
+            if (this.jobsFailedChart) {
+                tasks.push(this.jobsFailedChart.refresh());
+            }
+            if (this.runningJobsTable?.collection?.fetch) {
+                tasks.push(this.runningJobsTable.collection.fetch());
+            }
+            if (this.pendingJobsTable?.collection?.fetch) {
+                tasks.push(this.pendingJobsTable.collection.fetch());
+            }
+            if (this.failedJobsTable?.collection?.fetch) {
+                tasks.push(this.failedJobsTable.collection.fetch());
+            }
+            if (this.scheduledJobsTable?.collection?.fetch) {
+                tasks.push(this.scheduledJobsTable.collection.fetch());
+            }
+            if (this.runnersTable?.collection?.fetch) {
+                tasks.push(this.runnersTable.collection.fetch());
+            }
+
+            await Promise.all(tasks);
 
             this.lastUpdated = new Date().toLocaleString();
             this.updateHeaderTimestamp();
@@ -203,15 +608,20 @@ export default class JobsAdminPage extends Page {
     updateHeaderTimestamp() {
         const timestampElement = this.element?.querySelector('.text-info');
         if (timestampElement) {
+            const rateLabel = this.refreshRate === 0 ? 'Off' : `${this.refreshRate / 1000}s`;
             timestampElement.innerHTML = `
                 <i class="bi bi-arrow-clockwise me-1"></i>
-                Auto-refresh: ${this.refreshRate / 1000}s | Last updated: ${this.lastUpdated}
+                Auto-refresh: ${rateLabel} | Last updated: ${this.lastUpdated}
             `;
         }
     }
 
     get refreshRateSeconds() {
         return this.refreshRate / 1000;
+    }
+
+    get refreshRateLabel() {
+        return this.refreshRate === 0 ? 'Off' : `${this.refreshRateSeconds}s`;
     }
 
     // Action handlers
@@ -222,7 +632,6 @@ export default class JobsAdminPage extends Page {
             element.disabled = true;
 
             await this.refreshData();
-            await this.render();
 
         } catch (error) {
             console.error('Failed to refresh jobs dashboard:', error);
@@ -468,5 +877,27 @@ export default class JobsAdminPage extends Page {
 
     getHealth() {
         return this.jobHealthView?.health || {};
+    }
+
+    async onActionOpenJobMetricsModal() {
+        const modalView = new JobMetricsModalView();
+        await Dialog.showDialog({
+            title: '<i class="bi bi-graph-up me-2"></i>Job Channel Metrics',
+            body: modalView,
+            size: 'xl',
+            scrollable: true,
+            buttons: [
+                { text: 'Close', class: 'btn-secondary', dismiss: true }
+            ]
+        });
+    }
+
+    async onActionViewAllJobs() {
+        const router = this.getApp()?.router;
+        if (router) {
+            router.navigateTo('/admin/jobs/table');
+        } else {
+            this.getApp()?.toast?.info('Router unavailable.');
+        }
     }
 }

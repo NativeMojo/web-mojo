@@ -455,7 +455,7 @@ class TablePage extends Page {
       this.tableView.setFilter(filterKey, result.filter_value);
 
       if (this.collection.restEnabled) {
-        await this.collection.fetch();
+        this.collection.fetch();
       }
       await this.tableView.render();
       this.syncUrl();
@@ -487,7 +487,7 @@ class TablePage extends Page {
       this.query[this.groupField] = group.id;
       this.applyQueryToCollection();
       if (this.collection && this.collection.restEnabled) {
-        await this.collection.fetch();
+        this.collection.fetch();
       }
   }
 

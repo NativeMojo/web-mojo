@@ -303,7 +303,7 @@ class IncidentDashboardPage extends Page {
             title: '<i class="bi bi-geo-alt me-2"></i> Incidents by Country',
             endpoint: '/api/metrics/fetch',
             account: 'incident',
-            category: 'incident_by_country',
+            category: 'incidents_by_country',
             granularity: 'days',
             chartType: 'line',
             showDateRange: false,
@@ -326,7 +326,7 @@ class IncidentDashboardPage extends Page {
             containerId: 'events-country-map',
             category: 'incident_events_by_country',
             account: 'incident',
-            maxCountries: 15,
+            maxCountries: 20,
             metricLabel: 'Events',
             height: 360,
             mapStyle: 'dark'

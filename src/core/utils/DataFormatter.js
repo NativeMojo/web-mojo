@@ -78,6 +78,7 @@ class DataFormatter {
     this.register('caps', this.capitalize.bind(this));
     this.register('truncate', this.truncate.bind(this));
     this.register('truncate_middle', this.truncate_middle.bind(this));
+    this.register('truncate_front', this.truncate_front.bind(this));
     this.register('slug', this.slug.bind(this));
     this.register('initials', this.initials.bind(this));
     this.register('mask', this.mask.bind(this));
@@ -1075,6 +1076,21 @@ class DataFormatter {
     const str = String(value);
     if (str.length <= length) return str;
     return str.substring(0, length) + suffix;
+  }
+
+  /**
+   * Truncate keeping only the end of the string
+   * @param {*} value - String value
+   * @param {number} length - Characters to keep at the end
+   * @param {string} prefix - Text to prepend when truncating
+   * @returns {string} Truncated string
+   */
+  truncate_front(value, length = 8, prefix = '...') {
+    const str = String(value);
+    if (str.length <= length) {
+      return str;
+    }
+    return `${prefix}${str.slice(-length)}`;
   }
 
   /**
