@@ -11,6 +11,7 @@ import MultiSelectDropdown from './MultiSelectDropdown.js';
 import DatePicker from './DatePicker.js';
 import DateRangePicker from './DateRangePicker.js';
 import ComboInput from './ComboInput.js';
+import ComboBox from './ComboBox.js';
 
 // Named exports
 export {
@@ -20,7 +21,8 @@ export {
   MultiSelectDropdown,
   DatePicker,
   DateRangePicker,
-  ComboInput
+  ComboInput,
+  ComboBox
 };
 
 // Legacy aliases for backward compatibility
@@ -36,6 +38,7 @@ export default {
   DatePicker,
   DateRangePicker,
   ComboInput,
+  ComboBox,
   
   // Legacy aliases
   TagInputView: TagInput,
@@ -53,9 +56,9 @@ export const INPUT_TYPES = {
   multiselect: MultiSelectDropdown,
   datepicker: DatePicker,
   daterange: DateRangePicker,
-  combo: ComboInput,
-  combobox: ComboInput,
-  autocomplete: ComboInput
+  combo: ComboBox,
+  combobox: ComboBox,
+  autocomplete: ComboBox
 };
 
 // Factory function for creating inputs by type

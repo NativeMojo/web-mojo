@@ -2317,52 +2317,44 @@ class FormBuilder {
       name,
       label,
       value = '',
-      placeholder = 'Select or type...',
-      options = [],
       required = false,
       disabled = false,
-      readonly = false,
-      allowCustom = true,
-      showDescription = true,
-      minChars = 0,
-      maxSuggestions = 10,
+      maxHeight = 300,
       help = field.helpText || field.help || ''
     } = field;
+    
+    // Support both placeholder and placeHolder (capital H)
+    const placeholder = field.placeholder || field.placeHolder || 'Type or select...';
+    const allowCustom = field.allowCustom !== false; // Default: true
 
     const fieldId = this.getFieldId(name);
     const error = this.errors[name];
-    const fieldValue = (this.getFieldValue(name) ?? value);
+    // Prioritize field.value over data lookup
+    const fieldValue = field.value ?? this.getFieldValue(name) ?? value;
 
+    // Create placeholder div that will be replaced with ComboBox component
     return `
       <div class="mojo-form-control">
-        ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}</label>` : ''}
-        <div class="combo-input-placeholder"
+        ${label ? `<label class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}</label>` : ''}
+        <div class="combobox-placeholder"
              data-field-name="${name}"
-             data-field-type="combo"
+             data-field-type="combobox"
              data-field-config='${JSON.stringify({
                name,
                value: fieldValue,
                placeholder,
-               options,
+               maxHeight,
                allowCustom,
-               showDescription,
-               minChars,
-               maxSuggestions,
                disabled,
-               readonly,
                required
              })}'>
-          <input type="text"
-                 id="${fieldId}"
-                 name="${name}_display"
-                 class="${this.options.inputClass}${error ? ' is-invalid' : ''}"
-                 placeholder="${this.escapeHtml(placeholder)}"
+          <input type="text" 
+                 class="form-control${error ? ' is-invalid' : ''}"
                  value="${this.escapeHtml(fieldValue)}"
+                 placeholder="${this.escapeHtml(placeholder)}"
                  ${disabled ? 'disabled' : ''}
-                 ${readonly ? 'readonly' : ''}
                  ${required ? 'required' : ''}>
-          <input type="hidden" name="${name}" value="${this.escapeHtml(fieldValue)}">
-          <small class="form-text text-muted">This will be enhanced with ComboInput component</small>
+          <small class="form-text text-muted">This will be enhanced with ComboBox component</small>
         </div>
         ${help ? `<div class="${this.options.helpClass}">${this.escapeHtml(help)}</div>` : ''}
         ${error ? `<div class="${this.options.errorClass}">${this.escapeHtml(error)}</div>` : ''}

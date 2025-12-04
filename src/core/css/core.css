@@ -1254,6 +1254,71 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
 }
 
 /* ==============================================
+   ComboBox (Autocomplete) Styles
+   ============================================== */
+
+.combobox-container {
+    position: relative;
+    width: 100%;
+}
+
+.combobox-input {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+.combobox-toggle {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    padding: 0.375rem 0.75rem;
+}
+
+.combobox-toggle i {
+    transition: transform 0.2s ease-in-out;
+}
+
+.combobox-container:has(.combobox-dropdown.show) .combobox-toggle i {
+    transform: rotate(180deg);
+}
+
+.combobox-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    margin-top: 0.125rem;
+}
+
+.combobox-dropdown.show {
+    display: block;
+}
+
+.combobox-item {
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.combobox-item.active {
+    background-color: var(--bs-primary);
+    color: white;
+}
+
+.combobox-item:hover:not(.active) {
+    background-color: var(--bs-light);
+}
+
+.combobox-no-match {
+    padding: 0.5rem 1rem;
+    text-align: center;
+    font-style: italic;
+}
+
+/* ==============================================
    Modal Context Menu Button Styles
    ============================================== */
 

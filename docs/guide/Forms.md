@@ -235,7 +235,7 @@ Use `multiselect` for a Bootstrap dropdown with checkboxes (no search, simple an
   type: 'multiselect',
   name: 'tags',
   label: 'Tags',
-  value: ['important', 'urgent'],  // Pre-selected values
+  value: ['important', 'urgent'],  // Pre-selected values (array)
   options: [
     { value: 'important', label: 'Important' },
     { value: 'urgent', label: 'Urgent' },
@@ -244,21 +244,157 @@ Use `multiselect` for a Bootstrap dropdown with checkboxes (no search, simple an
   ]
 }
 
-// With custom height
+// With custom height and display options
 {
   type: 'multiselect',
   name: 'categories',
   label: 'Categories',
-  maxHeight: 400,  // Max height for dropdown list
+  placeholder: 'Select Categories',
+  maxHeight: 400,  // Max height for dropdown list (default: 300)
+  showSelectedLabels: true,  // Show item names in button (default: true)
+  maxLabelsToShow: 3,  // Show up to 3 labels, then "X selected" (default: 3)
   options: [...]
 }
 ```
 
 **Features:**
 - Clean Bootstrap dropdown with checkboxes
-- Shows "3 selected" or single item name in button
+- Smart button text display:
+  - 0 items: Shows placeholder (muted gray)
+  - 1-3 items: Shows comma-separated labels (e.g., "Open, Paused, Resolved")
+  - 4+ items: Shows count (e.g., "4 selected")
+- "Done" button to close dropdown
+- Supports both `placeholder` and `placeHolder` property names
 - No search (KISS principle - for short lists only)
 - Perfect for table filters and forms
+- Works seamlessly with Django-style lookups in TableView filters
+
+**Django-Style Lookup Integration:**
+
+When used in TableView filters, multiselect automatically generates smart filter parameters:
+- Single selection: `status=open` (simple key-value)
+- Multiple selections: `status__in=open,paused,resolved` (Django `__in` lookup)
+
+```javascript
+// In TableView filter configuration
+filters: [
+  {
+    key: 'status',  // Will become status__in for multiple values
+    label: 'Status',
+    type: 'multiselect',
+    placeholder: 'Select Status',
+    options: [
+      { value: 'open', label: 'Open' },
+      { value: 'paused', label: 'Paused' },
+      { value: 'resolved', label: 'Resolved' }
+    ]
+  }
+]
+
+// Filter pills show human-readable text:
+// "Status in 'open', 'paused', 'resolved'"
+// Or for single value: "Status is 'open'"
+```
+
+**Supported Options:**
+- `name` (string, required): Field name
+- `label` (string): Display label
+- `placeholder` or `placeHolder` (string): Placeholder text when no items selected
+- `value` (array): Pre-selected values (must be array, e.g., `['item1', 'item2']`)
+- `options` (array, required): List of `{ value, label }` objects
+- `maxHeight` (number): Maximum height of dropdown in pixels (default: 300)
+- `showSelectedLabels` (boolean): Show item labels in button (default: true)
+- `maxLabelsToShow` (number): Max labels before switching to count (default: 3)
+- `required` (boolean): Field is required
+- `disabled` (boolean): Field is disabled
+
+### ComboBox (Autocomplete Input)
+
+Use `combobox` (or `combo`, `autocomplete`) for a text input with dropdown suggestions. Perfect for fields where you want to provide suggestions but also allow free-form input.
+
+```javascript
+// Basic combobox - allows custom values
+{
+  type: 'combobox',
+  name: 'country',
+  label: 'Country',
+  placeholder: 'Type or select...',
+  options: [
+    { value: 'USA', label: 'United States' },
+    { value: 'CAN', label: 'Canada' },
+    { value: 'MEX', label: 'Mexico' },
+    { value: 'GBR', label: 'United Kingdom' },
+    { value: 'DEU', label: 'Germany' },
+    { value: 'FRA', label: 'France' },
+    { value: 'JPN', label: 'Japan' }
+  ]
+}
+
+// Strict selection - no custom values allowed
+{
+  type: 'combobox',
+  name: 'status',
+  label: 'Status',
+  placeholder: 'Select status...',
+  allowCustom: false,  // Restricts to dropdown options only
+  options: [
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+    { value: 'pending', label: 'Pending' }
+  ]
+}
+
+// With custom dropdown height
+{
+  type: 'combobox',
+  name: 'city',
+  label: 'City',
+  placeholder: 'Type city name...',
+  maxHeight: 250,  // Max height for dropdown list (default: 300)
+  options: [
+    { value: 'NYC', label: 'New York' },
+    { value: 'LA', label: 'Los Angeles' },
+    { value: 'CHI', label: 'Chicago' }
+  ]
+}
+```
+
+**Features:**
+- Text input with dropdown suggestions
+- Click/focus shows all suggestions
+- Type to filter suggestions in real-time (case-insensitive)
+- Click suggestion or press Enter to select
+- Keyboard navigation:
+  - Arrow Up/Down to navigate suggestions
+  - Enter to select highlighted suggestion
+  - Escape to close dropdown
+  - Tab to close and move to next field
+- Chevron icon rotates when dropdown is open
+- Bootstrap dropdown for consistency
+- Supports both `placeholder` and `placeHolder` property names
+- Optional: `allowCustom: false` to restrict to suggestions only
+
+**Supported Options:**
+- `name` (string, required): Field name
+- `label` (string): Display label
+- `placeholder` or `placeHolder` (string): Placeholder text (default: "Type or select...")
+- `value` (string): Initial value
+- `options` (array, required): List of `{ value, label }` objects
+- `allowCustom` (boolean): Allow typing custom values (default: true)
+- `maxHeight` (number): Maximum height of dropdown in pixels (default: 300)
+- `required` (boolean): Field is required
+- `disabled` (boolean): Field is disabled
+
+**When to Use:**
+- Country/state/city selectors where custom input might be needed
+- Product search with suggestions
+- User mentions or tagging
+- Any field with common values but custom input allowed
+- When you need autocomplete but don't want the complexity of server-side search
+
+**ComboBox vs Multi-Select:**
+- **ComboBox**: Single value, text input with autocomplete, allows custom values
+- **Multi-Select**: Multiple values, checkbox list, no custom values, no typing
 
 ### Checkboxes and Radios
 
@@ -368,6 +504,36 @@ Use `multiselect` for a Bootstrap dropdown with checkboxes (no search, simple an
   placeholder: 'Add tags...',
   maxItems: 10,
   value: ['javascript', 'web']
+}
+
+// ComboBox (autocomplete input with suggestions)
+{
+  type: 'combobox',
+  name: 'country',
+  label: 'Country',
+  placeholder: 'Type or select...',
+  allowCustom: true,  // Allow typing custom values (default: true)
+  options: [
+    { value: 'USA', label: 'United States' },
+    { value: 'CAN', label: 'Canada' },
+    { value: 'MEX', label: 'Mexico' },
+    { value: 'GBR', label: 'United Kingdom' },
+    { value: 'DEU', label: 'Germany' }
+  ]
+}
+
+// ComboBox with restricted values only
+{
+  type: 'combobox',
+  name: 'status',
+  label: 'Status',
+  placeholder: 'Select status...',
+  allowCustom: false,  // Must select from dropdown
+  options: [
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+    { value: 'pending', label: 'Pending' }
+  ]
 }
 
 // Collection select (auto-fetches from API)

@@ -70,7 +70,7 @@ class AdminHeaderView extends View {
     this.userActivity = new MetricsMiniChartWidget({
       icon: "bi bi-people fs-2",
       title: 'User Activity',
-      subtitle: '{{now_value}} <span class="subtitle-label">{{now_label}}</span>',
+      subtitle: '{{now_value}} <span class="subtitle-label">{{now_label}}</span> {{total_users}} <span class="subtitle-label">Total</span>',
       background: "#5388D6",
       textColor: "#FFFFFF",
       granularity: 'days',
@@ -97,7 +97,7 @@ class AdminHeaderView extends View {
     this.groupActivity = new MetricsMiniChartWidget({
         icon: "bi bi-collection fs-2",
         title: 'Group Activity',
-        subtitle: '{{now_value}} <span class="subtitle-label">{{now_label}}</span>',
+        subtitle: '{{now_value}} <span class="subtitle-label">{{now_label}}</span> {{total_groups}} <span class="subtitle-label">Total</span>',
         background: "#1f6a7a",
         textColor: "#FFFFFF",
       granularity: 'days',
@@ -173,10 +173,7 @@ class AdminHeaderView extends View {
   }
 
   async onBeforeRender() {
-    await Promise.all([
-      this.loadStats(),
-      this.loadValues()
-    ]);
+
   }
 
   prepareStatsForTemplate() {
@@ -184,6 +181,7 @@ class AdminHeaderView extends View {
     // const isDecreasing = this.stats.incidentsChange.startsWith('-');
     // this.stats.incidentsBadgeClass = isDecreasing ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning';
     // this.stats.incidentsIconClass = isDecreasing ? 'arrow-down' : 'arrow-up';
+
   }
 
   async loadValues() {
@@ -194,6 +192,14 @@ class AdminHeaderView extends View {
         });
         if (response.success && response.data.status) {
           Object.assign(this.stats, response.data.data);
+        }
+        if (this.groupActivity) {
+            this.groupActivity.header.total_groups = this.stats.total_groups || 0;
+            this.groupActivity.header.render();
+        }
+        if (this.userActivity) {
+            this.userActivity.header.total_users = this.stats.total_users || 0;
+            this.userActivity.header.render();
         }
       } catch (error) {
         console.error('Failed to load admin stats:', error);
@@ -398,13 +404,14 @@ export default class AdminDashboardPage extends Page {
 
       // Refresh all charts
       const promises = [
-        this.headerView?.loadStats(),
+        this.headerView?.loadValues(),
         this.apiMetricsChart?.refresh(),
         this.systemEventsChart?.refresh(),
         this.systemIncidentsChart?.refresh()
       ].filter(Boolean);
 
       await Promise.allSettled(promises);
+
 
       // Update last updated time
       this.lastUpdated = new Date().toLocaleString();
@@ -507,5 +514,9 @@ export default class AdminDashboardPage extends Page {
 
   getStats() {
     return this.headerView?.stats || {};
+  }
+
+  async onAfterRender() {
+    this.headerView?.loadValues();
   }
 }

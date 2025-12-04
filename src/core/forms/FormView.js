@@ -10,7 +10,7 @@ import applyFileDropMixin from '@core/mixins/FileDropMixin.js';
 import MOJOUtils from '@core/utils/MOJOUtils.js';
 import { FormPlugins } from '@core/forms/FormPlugins.js';
 
-import { TagInput, CollectionSelect, CollectionMultiSelect, DatePicker, DateRangePicker, ComboInput } from './inputs/index.js';
+import { TagInput, CollectionSelect, CollectionMultiSelect, DatePicker, DateRangePicker, ComboInput, ComboBox } from './inputs/index.js';
 import MultiSelectDropdown from './inputs/MultiSelectDropdown.js';
 
 class FormView extends View {
@@ -214,6 +214,7 @@ class FormView extends View {
     this.initializeCustomComponents();
     this.initializeTagInputs();
     this.initializeMultiSelectDropdowns();
+    this.initializeComboBoxes();
     this.initializeCollectionSelects();
     this.initializeCollectionMultiSelects();
     this.initializeDatePickers();
@@ -436,6 +437,56 @@ class FormView extends View {
 
       } catch (error) {
         console.error('MultiSelectDropdown initialization failed:', error);
+      }
+    });
+  }
+
+  /**
+   * Initialize ComboBox components (autocomplete dropdowns)
+   */
+  initializeComboBoxes() {
+    const comboboxPlaceholders = this.element.querySelectorAll('[data-field-type="combobox"]');
+
+    comboboxPlaceholders.forEach(placeholder => {
+      try {
+        const fieldName = placeholder.getAttribute('data-field-name');
+        const configData = placeholder.getAttribute('data-field-config');
+        const config = JSON.parse(configData);
+
+        // Get field configuration to retrieve options
+        const fieldConfig = this.getFormFieldConfig(fieldName);
+        if (!fieldConfig) {
+          return;
+        }
+
+        // Create ComboBox component
+        const combobox = new ComboBox({
+          ...config,
+          options: fieldConfig.options || [],
+          placeholder: fieldConfig.placeholder || config.placeholder || 'Type or select...',
+          containerId: null // We'll mount directly
+        });
+
+        // Set initial value - prioritize config.value, then this.data
+        let value = config.value ?? MOJOUtils.getContextData(this.data, fieldName);
+        
+        if (value) {
+          combobox.setFormValue(value);
+        }
+
+        // Replace placeholder with ComboBox
+        combobox.render(true, placeholder);
+
+        // Store reference for cleanup
+        this.customComponents.set(fieldName, combobox);
+
+        // Listen for changes
+        combobox.on('change', (data) => {
+          this.handleFieldChange(fieldName, data.value);
+        });
+
+      } catch (error) {
+        console.error('ComboBox initialization failed:', error);
       }
     });
   }
