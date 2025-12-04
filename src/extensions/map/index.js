@@ -11,6 +11,7 @@
 // Core map views
 export { default as MapView } from './MapView.js';
 export { default as MapLibreView } from './MapLibreView.js';
+export { default as MetricsCountryMapView } from './MetricsCountryMapView.js';
 
 // Location API client and helpers
 export { default as LocationClient } from './location/LocationClient.js';
@@ -22,6 +23,7 @@ export { registerLocationPlugin, LocationFormPlugin } from './location/LocationP
 // Optional default namespace export for convenience
 import MapViewNS from './MapView.js';
 import MapLibreViewNS from './MapLibreView.js';
+import MetricsCountryMapViewNS from './MetricsCountryMapView.js';
 import LocationClientNS from './location/LocationClient.js';
 import useLocationAutocompleteNS from './location/useLocationAutocomplete.js';
 import LocationDetailsViewNS from './location/LocationDetailsView.js';
@@ -31,6 +33,7 @@ import { registerLocationPlugin as registerLocationPluginNS, LocationFormPlugin 
 export default {
   MapView: MapViewNS,
   MapLibreView: MapLibreViewNS,
+  MetricsCountryMapView: MetricsCountryMapViewNS,
   LocationClient: LocationClientNS,
   useLocationAutocomplete: useLocationAutocompleteNS,
   LocationDetailsView: LocationDetailsViewNS,

@@ -39,9 +39,13 @@ class MapLibreView extends View {
         this.bearing = options.bearing || 0; // 0-360 degrees (rotation)
         this.mapStyle = options.style || 'streets'; // 'streets', 'satellite', 'dark', 'light', 'terrain'
         this.showNavigationControl = options.showNavigationControl !== false;
+        this.autoFitBounds = options.autoFitBounds !== false;
         
         this.map = null;
         this.mapMarkers = [];
+        this.pendingMarkers = [...this.markers];
+        this.lineSources = options.lineSources || [];
+        this.pendingLineData = new Map();
 
         this.template = `
             <div class="maplibre-container">
@@ -183,37 +187,43 @@ class MapLibreView extends View {
 
         // Wait for map to load before adding markers
         this.map.on('load', () => {
-            this.addMarkers(this.markers);
-
-            // Auto-fit bounds if multiple markers
-            if (this.markers.length > 1) {
-                this.fitBounds();
-            }
+            const initialMarkers = this.pendingMarkers.length ? this.pendingMarkers : this.markers;
+            this.updateMarkers(initialMarkers);
+            this.lineSources.forEach(source => this.addLineSource(source));
+            this.pendingLineData.forEach(source => this.addLineSource(source));
+            this.pendingLineData.clear();
         });
     }
 
     addMarkers(markers) {
-        if (!this.map || !Array.isArray(markers)) return;
+        if (!this.map || !Array.isArray(markers)) {
+            this.pendingMarkers = Array.isArray(markers) ? markers : [];
+            return;
+        }
 
         markers.forEach(markerData => {
-            const { lng, lat, popup, color, icon } = markerData;
+            const { lng, lat, popup, color, icon, size } = markerData;
             
             if (!lng || !lat) return;
 
             // Create marker element
             const el = document.createElement('div');
             el.className = 'maplibre-marker';
-            el.style.width = '30px';
-            el.style.height = '30px';
+            const markerSize = Number(size) || 30;
+            el.style.width = `${markerSize}px`;
+            el.style.height = `${markerSize}px`;
             el.style.borderRadius = '50%';
             el.style.backgroundColor = color || '#3b82f6';
             el.style.border = '3px solid white';
             el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
             el.style.cursor = 'pointer';
+            el.style.display = 'flex';
+            el.style.alignItems = 'center';
+            el.style.justifyContent = 'center';
 
             // Optional icon
             if (icon) {
-                el.innerHTML = `<i class="${icon}" style="line-height: 24px; text-align: center; color: white;"></i>`;
+                el.innerHTML = `<i class="${icon}" style="color: white;"></i>`;
             }
 
             // Create marker
@@ -248,19 +258,19 @@ class MapLibreView extends View {
     }
 
     updateMarkers(newMarkers) {
-        // Clear existing markers
+        const markers = Array.isArray(newMarkers) ? newMarkers : [];
+        this.markers = markers;
+        this.pendingMarkers = markers;
+        if (!this.map) return;
+
         this.clearMarkers();
-        
-        // Add new markers
-        this.markers = newMarkers;
-        this.addMarkers(newMarkers);
-        
-        // Fit bounds if multiple markers
-        if (newMarkers.length > 1) {
+        this.addMarkers(markers);
+
+        if (this.autoFitBounds && markers.length > 1) {
             this.fitBounds();
-        } else if (newMarkers.length === 1) {
+        } else if (markers.length === 1 && this.map) {
             this.map.flyTo({
-                center: [newMarkers[0].lng, newMarkers[0].lat],
+                center: [markers[0].lng, markers[0].lat],
                 zoom: this.zoom
             });
         }
@@ -271,6 +281,72 @@ class MapLibreView extends View {
             marker.remove();
         });
         this.mapMarkers = [];
+    }
+
+    addLineSource({ id, data, paint, layout }) {
+        if (!id || !data) return;
+
+        const sourceId = `${id}-source`;
+
+        if (!this.map) {
+            this.pendingLineData.set(id, { id, data, paint, layout });
+            return;
+        }
+
+        if (this.map.getLayer(id)) {
+            this.map.removeLayer(id);
+        }
+        if (this.map.getSource(sourceId)) {
+            this.map.removeSource(sourceId);
+        }
+
+        this.map.addSource(sourceId, {
+            type: 'geojson',
+            data
+        });
+
+        this.map.addLayer({
+            id,
+            type: 'line',
+            source: sourceId,
+            paint: {
+                'line-color': '#3b82f6',
+                'line-width': 2,
+                'line-opacity': 0.6,
+                ...paint
+            },
+            layout: {
+                'line-cap': 'round',
+                'line-join': 'round',
+                ...layout
+            }
+        });
+    }
+
+    updateLineSource(id, { data, paint, layout } = {}) {
+        if (!id || !data) return;
+        const sourceId = `${id}-source`;
+        if (!this.map) {
+            this.pendingLineData.set(id, { id, data, paint, layout });
+            return;
+        }
+        if (this.map.getSource(sourceId)) {
+            this.map.getSource(sourceId).setData(data);
+            if (paint || layout) {
+                if (paint) {
+                    Object.entries(paint).forEach(([key, value]) => {
+                        this.map.setPaintProperty(id, key, value);
+                    });
+                }
+                if (layout) {
+                    Object.entries(layout).forEach(([key, value]) => {
+                        this.map.setLayoutProperty(id, key, value);
+                    });
+                }
+            }
+        } else {
+            this.addLineSource({ id, data, paint, layout });
+        }
     }
 
     setView(lng, lat, zoom = null) {

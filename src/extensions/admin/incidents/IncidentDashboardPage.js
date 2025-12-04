@@ -12,6 +12,7 @@ import {
 import {
     TicketList
 } from '@core/models/Tickets.js';
+import { MetricsCountryMapView } from '@ext/map/index.js';
 
 class IncidentDashboardHeader extends View {
     constructor(options = {}) {
@@ -136,6 +137,23 @@ class IncidentDashboardPage extends Page {
                     <div class="col-xl-6 col-lg-12" data-container="events-widget"></div>
                     <div class="col-xl-6 col-lg-12" data-container="incidents-widget"></div>
                 </div>
+
+
+                <div class="row g-4 mt-1">
+                    <div class="col-12">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header border-0 bg-transparent d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h6 class="mb-0 text-uppercase small text-muted">Global Event Hotspots</h6>
+                                    <span class="text-muted small">Clusters sized by total events</span>
+                                </div>
+                                <span class="badge bg-info-subtle text-info">Interactive</span>
+                            </div>
+                            <div class="card-body p-0" data-container="events-country-map"></div>
+                        </div>
+                    </div>
+                </div>
+
 
                 <div class="row g-4 mt-1">
                     <div class="col-lg-6">
@@ -263,11 +281,12 @@ class IncidentDashboardPage extends Page {
             endpoint: '/api/metrics/fetch',
             account: 'incident',
             category: 'incident_events_by_country',
-            granularity: 'hours',
-            chartType: 'bar',
+            granularity: 'days',
+            chartType: 'line',
             showDateRange: false,
             showMetricsFilter: false,
             height: 220,
+            maxDatasets: 10,
             colors: [
                 'rgba(32, 201, 151, 0.85)'
             ],
@@ -285,11 +304,12 @@ class IncidentDashboardPage extends Page {
             endpoint: '/api/metrics/fetch',
             account: 'incident',
             category: 'incident_by_country',
-            granularity: 'hours',
-            chartType: 'bar',
+            granularity: 'days',
+            chartType: 'line',
             showDateRange: false,
             showMetricsFilter: false,
             height: 220,
+            maxDatasets: 10,
             colors: [
                 'rgba(255, 193, 7, 0.85)'
             ],
@@ -301,6 +321,17 @@ class IncidentDashboardPage extends Page {
             containerId: 'incidents-by-country-chart'
         });
         this.addChild(this.incidentsByCountryChart);
+
+        this.eventsCountryMap = new MetricsCountryMapView({
+            containerId: 'events-country-map',
+            category: 'incident_events_by_country',
+            account: 'incident',
+            maxCountries: 15,
+            metricLabel: 'Events',
+            height: 360,
+            mapStyle: 'dark'
+        });
+        this.addChild(this.eventsCountryMap);
 
         const myTicketsCollection = new TicketList({
             params: {
@@ -349,6 +380,7 @@ class IncidentDashboardPage extends Page {
             this.incidentsWidget?.refresh(),
             this.eventsByCountryChart?.refresh(),
             this.incidentsByCountryChart?.refresh(),
+            this.eventsCountryMap?.refresh(),
             this.myTicketsTable?.collection?.fetch(),
             this.highPriorityIncidentsTable?.collection?.fetch()
         ].filter(Boolean);

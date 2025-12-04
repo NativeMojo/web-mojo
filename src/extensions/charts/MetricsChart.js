@@ -58,6 +58,10 @@ export default class MetricsChart extends SeriesChart {
       { value: 'incidents', label: 'Incidents' }
     ];
 
+    // Dataset limiting (useful for charts with many categories e.g., countries)
+    this.maxDatasets = Number.isFinite(options.maxDatasets) ? options.maxDatasets : null;
+    this.groupRemainingLabel = options.groupRemainingLabel || 'Other';
+
     // State
     this.isLoading = false;
     this.lastFetch = null;
@@ -244,25 +248,49 @@ export default class MetricsChart extends SeriesChart {
   processMetricsData(data) {
     // Expecting: { labels: [...], data: { metric_slug: [values...] } }
     const { data: metricsData, labels } = data;
-    const datasets = [];
+    const metricEntries = Object.entries(metricsData || {});
 
-    const metricKeys = Object.keys(metricsData || {});
-    this.ensureColorPool(metricKeys.length);
-
-    metricKeys.forEach((metric, index) => {
-      const values = metricsData[metric];
-
+    const rankedEntries = metricEntries.map(([metric, values]) => {
       const sanitizedValues = values.map(val => {
         if (val === null || val === undefined || val === '') return 0;
         return typeof val === 'number' ? val : (parseFloat(val) || 0);
       });
+      const total = sanitizedValues.reduce((sum, val) => sum + val, 0);
+      return { metric, values: sanitizedValues, total };
+    });
 
+    rankedEntries.sort((a, b) => b.total - a.total);
+
+    let visibleEntries = rankedEntries;
+    let otherEntry = null;
+
+    if (this.maxDatasets && this.maxDatasets > 0 && rankedEntries.length > this.maxDatasets) {
+      visibleEntries = rankedEntries.slice(0, this.maxDatasets);
+      const remaining = rankedEntries.slice(this.maxDatasets);
+
+      const otherValues = labels.map((_, index) =>
+        remaining.reduce((sum, entry) => sum + (entry.values[index] || 0), 0)
+      );
+
+      otherEntry = {
+        metric: this.groupRemainingLabel,
+        values: otherValues,
+        total: otherValues.reduce((sum, val) => sum + val, 0),
+        isGrouped: true
+      };
+    }
+
+    const datasets = [];
+    const allEntries = otherEntry ? [...visibleEntries, otherEntry] : visibleEntries;
+
+    this.ensureColorPool(allEntries.length);
+    const backgroundAlpha = this.chartType === 'line' ? 0.25 : 0.65;
+
+    allEntries.forEach((entry, index) => {
       const baseColor = this.getColor(index);
-      const backgroundAlpha = this.chartType === 'line' ? 0.25 : 0.65;
-
       datasets.push({
-        label: this.formatMetricLabel(metric),
-        data: sanitizedValues,
+        label: this.formatMetricLabel(entry.metric),
+        data: entry.values,
         backgroundColor: this.withAlpha(baseColor, backgroundAlpha),
         borderColor: baseColor,
         borderWidth: 2,
