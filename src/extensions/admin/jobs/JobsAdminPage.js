@@ -126,10 +126,6 @@ export default class JobsAdminPage extends Page {
                     <div class="col-lg-6" data-container="jobs-published-chart"></div>
                     <div class="col-lg-6 position-relative">
                         <div data-container="jobs-failed-chart"></div>
-                        <button class="btn btn-link btn-sm text-decoration-none position-absolute top-0 end-0"
-                                data-action="open-job-metrics-modal">
-                            <i class="bi bi-graph-up"></i> Channel Metrics
-                        </button>
                     </div>
                 </div>
 

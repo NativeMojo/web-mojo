@@ -2211,8 +2211,37 @@ class TableView extends ListView {
 
       // Handle daterange current values
       if (currentValue && typeof currentValue === 'object') {
-        field.startDate = currentValue.start || '';
-        field.endDate = currentValue.end || '';
+        const normalizeDateValue = (val) => {
+          if (!val && val !== 0) return '';
+          if (val instanceof Date && !isNaN(val)) {
+            return val.toISOString().slice(0, 10);
+          }
+
+          const str = String(val).trim();
+          if (!str) return '';
+
+          // Numeric timestamps (seconds or milliseconds)
+          if (/^-?\d+$/.test(str)) {
+            const num = Number(str);
+            const ms = str.length <= 10 ? num * 1000 : num;
+            const date = new Date(ms);
+            if (!isNaN(date)) {
+              return date.toISOString().slice(0, 10);
+            }
+          }
+
+          // ISO or other parseable formats
+          const date = new Date(str);
+          if (!isNaN(date)) {
+            return date.toISOString().slice(0, 10);
+          }
+
+          // Fallback: return original string
+          return str;
+        };
+
+        field.startDate = normalizeDateValue(currentValue.start || currentValue.from || currentValue.begin || '');
+        field.endDate = normalizeDateValue(currentValue.end || currentValue.to || currentValue.finish || '');
       }
     } else if (filterConfig.type === 'multiselect') {
       // Convert comma-separated string to array for multiselect
@@ -2316,13 +2345,20 @@ class TableView extends ListView {
       return;
     }
 
-    // Using statically imported Dialog
+    // Prepare initial form data
+    const formData = { filter_value: currentValue };
+    if (filterConfig.type === 'daterange' && currentValue && typeof currentValue === 'object') {
+      const startName = filterConfig.startName || 'dr_start';
+      const endName = filterConfig.endName || 'dr_end';
+      formData[startName] = currentValue.start || '';
+      formData[endName] = currentValue.end || '';
+    }
 
     // Show mini dialog for this specific filter
     const result = await Dialog.showForm({
       title: `Edit ${this.getFilterLabel(field)} Filter`,
       size: 'md',
-      data: {filter_value: currentValue},
+      data: formData,
       fields: [this.buildFilterDialogField(filterConfig, currentValue, field)]
     });
 

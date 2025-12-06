@@ -149,6 +149,25 @@ export function formatFilterDisplay(paramKey, value, label) {
   const { field, lookup } = parseFilterKey(paramKey);
   const lookupDef = LOOKUPS[lookup];
   
+  // Handle object-based values (e.g., daterange payloads)
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const hasStart = value.start !== undefined && value.start !== null && value.start !== '';
+    const hasEnd = value.end !== undefined && value.end !== null && value.end !== '';
+
+    if (hasStart || hasEnd) {
+      if (hasStart && hasEnd) {
+        return `${label} between '${value.start}' and '${value.end}'`;
+      }
+      if (hasStart) {
+        return `${label} from '${value.start}'`;
+      }
+      return `${label} until '${value.end}'`;
+    }
+
+    // Fallback to JSON if it's some other object shape
+    return `${label} is '${JSON.stringify(value)}'`;
+  }
+
   // Convert array to comma-separated string if needed
   const valueStr = Array.isArray(value) ? value.join(',') : String(value);
   

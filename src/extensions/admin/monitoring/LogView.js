@@ -71,6 +71,7 @@ class LogView extends View {
                 { name: 'duid', label: 'Device ID', template: '<a href="#" data-action="view-device">{{model.duid|truncate_middle(32)}}</a>' },
                 { name: 'model_name', label: 'Related Model' },
                 { name: 'model_id', label: 'Related Model ID' },
+                { name: 'user_agent', label: 'User Agent', columns: 12 },
             ]
         });
 
@@ -104,10 +105,11 @@ class LogView extends View {
         this.tabView = new TabView({
             containerId: 'log-tabs',
             tabs: {
-                'Overview': this.overviewView,
-                'Log Content': this.logContentView,
+                'Log': this.logContentView,
+                'Details': this.overviewView,
+
             },
-            activeTab: 'Overview'
+            activeTab: 'Log'
         });
         this.addChild(this.tabView);
 

@@ -49,7 +49,10 @@ class IncidentTablePage extends TablePage {
                 {
                     key: 'created',
                     label: 'Created',
-                    formatter: "epoch|datetime"
+                    formatter: "epoch|datetime",
+                    filter: {
+                        type: 'daterange',
+                    }
                 },
                 {
                     key: 'scope',

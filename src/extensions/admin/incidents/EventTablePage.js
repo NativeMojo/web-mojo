@@ -31,7 +31,13 @@ class EventTablePage extends TablePage {
 
             // Column definitions
             columns: [
-                { key: 'created', label: 'Timestamp', sortable: true, formatter: 'datetime' },
+                {
+                    key: 'created', label: 'Timestamp',
+                    sortable: true, formatter: 'datetime',
+                    filter: {
+                        type: 'daterange',
+                    }
+                },
                 {
                     key: 'level', label: 'Level',
                     sortable: true, formatter: 'badge',

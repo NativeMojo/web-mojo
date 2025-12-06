@@ -352,18 +352,48 @@ class Collection {
     downloadParams.download_format = format;
 
     // Provide a default filename and content type
-    const filename = `export-${this.getModelName().toLowerCase()}.${format}`;
+    const baseName = `export-${this.getModelName().toLowerCase()}`;
+    const rangeSuffix = this._buildDateRangeSuffix(downloadParams);
+    const filename = `${baseName}${rangeSuffix}.${format}`;
     const contentTypes = {
       json: 'application/json',
       csv: 'text/csv'
     };
     const acceptHeader = contentTypes[format] || '*/*';
+    downloadParams.filename = filename;
 
     return this.rest.download(url, downloadParams, {
       ...options,
       filename,
       headers: { 'Accept': acceptHeader }
     });
+  }
+
+  _buildDateRangeSuffix(params = {}) {
+    const hasStart = params.dr_start;
+    const hasEnd = params.dr_end;
+
+    if (!hasStart && !hasEnd) {
+      return '';
+    }
+
+    const sanitize = (value) => {
+      if (!value) return '';
+      return String(value).replace(/[^\dA-Za-z_-]/g, '-');
+    };
+
+    const parts = [];
+    const field = params.dr_field || 'daterange';
+    parts.push(sanitize(field));
+
+    if (hasStart) {
+      parts.push(`from-${sanitize(params.dr_start)}`);
+    }
+    if (hasEnd) {
+      parts.push(`to-${sanitize(params.dr_end)}`);
+    }
+
+    return `-${parts.filter(Boolean).join('-')}`;
   }
 
   /**

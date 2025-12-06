@@ -316,14 +316,16 @@ class DateRangePicker extends View {
         picker.on('hide', () => {
           this.emit('picker:hide');
         });
+
+        picker.on('ready', () => {
+          this.applyInitialRange(picker);
+        });
       };
 
       this.picker = new window.easepick.create(config);
 
-      // Set initial value if provided
-      if (this.currentStartDate && this.currentEndDate) {
-        this.picker.setDateRange(this.currentStartDate, this.currentEndDate);
-      }
+      // Apply initial range immediately as well (in case ready already fired)
+      this.applyInitialRange(this.picker);
 
     } catch (error) {
       console.error('Failed to initialize Easepick range picker:', error);
@@ -652,8 +654,10 @@ class DateRangePicker extends View {
     this.currentStartDate = startDate;
     this.currentEndDate = endDate;
     
-    if (this.picker && this.easepickLoaded) {
-      this.picker.setDateRange(startDate || null, endDate || null);
+      if (this.picker && this.easepickLoaded) {
+        const start = this.normalizeDateValue(startDate);
+        const end = this.normalizeDateValue(endDate);
+        this.picker.setDateRange(start || null, end || null);
     } else if (this.useNative) {
       const startInput = this.element?.querySelector(`[name="${this.name}_start"]`);
       const endInput = this.element?.querySelector(`[name="${this.name}_end"]`);
@@ -669,6 +673,44 @@ class DateRangePicker extends View {
     
     this.updateHiddenInputs();
     this.emit('range:set', { startDate, endDate });
+  }
+
+  applyInitialRange(picker) {
+    if (!picker || !(this.currentStartDate || this.currentEndDate)) {
+      return;
+    }
+    const start = this.normalizeDateValue(this.currentStartDate);
+    const end = this.normalizeDateValue(this.currentEndDate);
+    if (start || end) {
+      picker.setDateRange(start || null, end || null);
+    }
+  }
+
+  normalizeDateValue(value) {
+    if (!value && value !== 0) return null;
+    if (value instanceof Date) {
+      return isNaN(value) ? null : value;
+    }
+    const str = String(value).trim();
+    if (!str) return null;
+
+    // YYYY-MM-DD -> treat as local date (no timezone shift)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+      const [year, month, day] = str.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      return isNaN(date) ? null : date;
+    }
+
+    // Numeric timestamp (seconds or milliseconds)
+    if (/^-?\d+$/.test(str)) {
+      const num = Number(str);
+      const ms = str.length <= 10 ? num * 1000 : num;
+      const date = new Date(ms);
+      return isNaN(date) ? null : date;
+    }
+
+    const date = new Date(str);
+    return isNaN(date) ? null : date;
   }
 
   /**
