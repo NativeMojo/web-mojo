@@ -23,6 +23,11 @@ class TicketTablePage extends TablePage {
                 header: false
             },
 
+            defaultQuery: {
+                sort: '-priority',
+                status: "open"
+            },
+
             // Column definitions
             columns: [
                 { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },

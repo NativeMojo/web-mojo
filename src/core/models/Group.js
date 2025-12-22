@@ -238,6 +238,7 @@ const GroupForms = {
                         name: 'metadata.timezone',
                         label: 'Timezone',
                         columns: 6,
+                        value: 'America/Los_Angeles',
                         options: [
                             { value: 'America/New_York', text: 'Eastern Time' },
                             { value: 'America/Chicago', text: 'Central Time' },

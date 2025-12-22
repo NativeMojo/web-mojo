@@ -1981,6 +1981,18 @@ class TableView extends ListView {
       }
     });
 
+    // Normalize single-value vs multi-value filters where both exist (e.g., field and field__in)
+    Object.keys(filters).forEach(key => {
+      if (filters.hasOwnProperty(key)) {
+        const inKey = `${key}__in`;
+        if (filters.hasOwnProperty(inKey)) {
+          // Prefer __in when explicitly provided; remove the base key to avoid duplicate pills
+          delete filters[key];
+          filters[inKey] = filters[inKey];
+        }
+      }
+    });
+
     return filters;
   }
 

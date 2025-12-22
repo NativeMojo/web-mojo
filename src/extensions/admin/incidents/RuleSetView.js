@@ -23,7 +23,7 @@ class RuleSetView extends View {
                         <div class="fs-1 text-primary"><i class="bi bi-gear-wide-connected"></i></div>
                         <div>
                             <h3 class="mb-1">{{model.name}}</h3>
-                            <div class="text-muted small">Category: {{model.category}} | Priority: {{model.priority}}</div>
+                            <div class="text-muted small">Scope: {{model.category}} | Priority: {{model.priority}}</div>
                         </div>
                     </div>
                     <div data-container="ruleset-context-menu"></div>
@@ -52,7 +52,7 @@ class RuleSetView extends View {
             columns: 2,
             fields: [
                 { name: 'name', label: 'Name', cols: 4 },
-                { name: 'category', label: 'Category', formatter: 'badge', cols: 4 },
+                { name: 'category', label: 'Scope', formatter: 'badge', cols: 4 },
                 { name: 'is_active', label: 'Is Active', formatter: 'yesno_icon', cols: 4 },
                 { name: 'priority', label: 'Priority', cols: 4 },
                 { name: 'id', label: 'RuleSet ID', cols: 4 },

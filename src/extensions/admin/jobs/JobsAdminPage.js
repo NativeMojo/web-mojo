@@ -84,8 +84,8 @@ export default class JobsAdminPage extends Page {
                             <i class="bi bi-arrow-clockwise"></i> Refresh
                         </button>
                         <button type="button" class="btn btn-outline-primary btn-sm"
-                                data-action="export-data" title="Export Data">
-                            <i class="bi bi-download"></i> Export
+                                data-action="view-all-jobs" title="View All Jobs">
+                            <i class="bi bi-table"></i> View All
                         </button>
                         <div class="dropdown">
                             <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
@@ -185,12 +185,9 @@ export default class JobsAdminPage extends Page {
                     </div>
                 </div>
 
-                <div class="card shadow-sm mb-5">
+                    <div class="card shadow-sm mb-5">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="bi bi-tools me-2"></i>Operations</h5>
-                        <button class="btn btn-outline-secondary btn-sm" data-action="view-all-jobs">
-                            <i class="bi bi-table"></i> View All Jobs
-                        </button>
                     </div>
                     <div class="card-body">
                         <div class="d-flex flex-wrap gap-2">
@@ -889,11 +886,105 @@ export default class JobsAdminPage extends Page {
     }
 
     async onActionViewAllJobs() {
-        const router = this.getApp()?.router;
-        if (router) {
-            router.navigateTo('/admin/jobs/table');
-        } else {
-            this.getApp()?.toast?.info('Router unavailable.');
-        }
+        const jobList = new JobList({
+            params: {
+                sort: '-created',
+                size: 25
+            }
+        });
+
+        const view = new TableView({
+            collection: jobList,
+            fetchOnMount: true,
+            columns: [
+                {
+                    key: 'id',
+                    label: 'Job',
+                    template: `
+                        <div class="fw-semibold font-monospace">{{model.id}}</div>
+                        <div class="text-muted small">{{model.func|default('Unknown')}}</div>
+                    `
+                },
+                {
+                    key: 'channel',
+                    label: 'Channel',
+                    formatter: 'badge'
+                },
+                {
+                    key: 'status',
+                    label: 'Status',
+                    formatter: (value, context) => {
+                        const job = context.row;
+                        const badgeClass = job.getStatusBadgeClass ? job.getStatusBadgeClass() : 'bg-secondary';
+                        const icon = job.getStatusIcon ? job.getStatusIcon() : 'bi-question';
+                        return `<span class="badge ${badgeClass}"><i class="${icon} me-1"></i>${value?.toUpperCase() || 'UNKNOWN'}</span>`;
+                    }
+                },
+                {
+                    key: 'created',
+                    label: 'Created',
+                    formatter: 'datetime'
+                },
+                {
+                    key: 'finished_at',
+                    label: 'Finished',
+                    formatter: 'datetime'
+                },
+                {
+                    key: 'duration_ms',
+                    label: 'Duration',
+                    formatter: 'duration'
+                }
+            ],
+            filters: [
+                {
+                    key: 'func__icontains',
+                    label: 'Function',
+                    type: 'text'
+                },
+                {
+                    key: 'status',
+                    label: 'Status',
+                    type: 'select',
+                    options: [
+                        { label: 'Pending', value: 'pending' },
+                        { label: 'Running', value: 'running' },
+                        { label: 'Completed', value: 'completed' },
+                        { label: 'Failed', value: 'failed' },
+                        { label: 'Canceled', value: 'canceled' },
+                        { label: 'Expired', value: 'expired' }
+                    ]
+                },
+                {
+                    key: 'channel',
+                    label: 'Channel',
+                    type: 'text'
+                }
+            ],
+            itemView: JobDetailsView,
+            viewDialogOptions: {
+                title: 'Job Details',
+                size: 'xl',
+                scrollable: true
+            },
+            searchable: true,
+            filterable: true,
+            paginated: true,
+            tableOptions: {
+                striped: true,
+                hover: true,
+                responsive: true
+            }
+        });
+
+        await this.getApp().showDialog({
+            title: '<i class="bi bi-table me-2"></i>All Jobs',
+            body: view,
+            size: 'xl',
+            scrollable: true,
+            buttons: [
+                { text: 'Close', class: 'btn-secondary', dismiss: true }
+            ]
+        });
     }
 }

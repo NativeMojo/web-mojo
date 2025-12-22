@@ -106,6 +106,66 @@ class EventTablePage extends TablePage {
                     label: 'Not Category',
                     filter: {type:"text"}
                 },
+                {
+                    key: 'metadata__http_url__icontains',
+                    label: 'URL Contains',
+                    filter: {type:"text"}
+                },
+                {
+                    key: 'metadata__http_path__icontains',
+                    label: 'Path Contains',
+                    filter: {type:"text"}
+                },
+                {
+                    key: 'metadata__http_query_string__icontains',
+                    label: 'Query String Contains',
+                    filter: {type:"text"}
+                },
+                {
+                    key: 'metadata__rule_id',
+                    label: 'Rule ID',
+                    filter: {type:"text"}
+                },
+                {
+                    key: 'metadata__country_code',
+                    label: 'Country',
+                    filter: {type:"text"}
+                },
+                {
+                    key: 'metadata__region',
+                    label: 'Region',
+                    filter: {type:"text"}
+                },
+                {
+                    key: 'metadata__city__icontains',
+                    label: 'City',
+                    filter: {type:"text"}
+                },
+                {
+                    key: 'metadata__http_status',
+                    label: 'HTTP Status',
+                    filter: {type:"text"}
+                },
+                {
+                    key: 'model_name',
+                    label: 'Model Name',
+                    filter: {type:"text"}
+                },
+                {
+                    key: 'model_id',
+                    label: 'Model ID',
+                    filter: {type:"text"}
+                },
+                {
+                    key: 'metadata__user_email',
+                    label: 'User Email',
+                    filter: {type:"text"}
+                },
+                {
+                    key: 'metadata__http_user_agent__icontains',
+                    label: 'User Agent Contains',
+                    filter: {type:"text"}
+                },
             ],
 
             // Table features

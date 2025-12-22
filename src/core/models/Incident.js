@@ -381,6 +381,18 @@ const CommonEventFields = [
     { value: 'method', label: 'Method', description: 'HTTP method or function name', meta: { type: 'str' } }
 ];
 
+const CommonScopeOptions = [
+    { value: 'global', label: 'Global' },
+    { value: 'account', label: 'Account' },
+    { value: 'incident', label: 'Incident' },
+    { value: 'ossec', label: 'OSSEC' },
+    { value: 'fileman', label: 'File Manager' },
+    { value: 'metrics', label: 'Metrics' },
+    { value: 'jobs', label: 'Jobs' },
+    { value: 'realtime', label: 'Realtime' },
+    { value: 'aws', label: 'AWS' }
+];
+
 class RuleSet extends Model {
     constructor(data = {}) {
         super(data, {
@@ -414,9 +426,10 @@ const RuleSetForms = {
             },
             {
                 name: 'category',
-                type: 'text',
-                label: 'Category',
+                type: 'combo',
+                label: 'Scope',
                 required: true,
+                options: CommonScopeOptions,
                 placeholder: 'e.g., ossec, auth, api_error',
                 cols: 6
             },
@@ -489,8 +502,9 @@ const RuleSetForms = {
             },
             {
                 name: 'category',
-                type: 'text',
-                label: 'Category',
+                type: 'combo',
+                label: 'Scope',
+                options: CommonScopeOptions,
                 required: true,
                 placeholder: 'e.g., ossec, auth, api_error',
                 cols: 6
@@ -604,7 +618,17 @@ const RuleForms = {
                 allowCustom: true,
                 showDescription: true,
                 help: 'Select a common field or type a custom field name',
-                cols: 12
+                cols: 8
+            },
+            {
+                name: 'index',
+                type: 'select',
+                label: 'Index',
+                required: true,
+                start: 0,
+                end: 14,
+                step: 1,
+                cols: 4
             },
             {
                 name: 'comparator',
@@ -625,7 +649,7 @@ const RuleForms = {
             },
             {
                 name: 'value',
-                type: 'text',
+                type: 'textarea',
                 label: 'Value',
                 required: true,
                 placeholder: 'Enter comparison value',
@@ -709,5 +733,6 @@ export {
     MatchByOptions,
     ComparatorOptions,
     ValueTypeOptions,
-    CommonEventFields
+    CommonEventFields,
+    CommonScopeOptions
 };

@@ -19,7 +19,7 @@ class RuleSetTablePage extends TablePage {
             columns: [
                 { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },
                 { key: 'name', label: 'Name', sortable: true },
-                { key: 'category', label: 'Category', sortable: true, formatter: 'badge' },
+                { key: 'category', label: 'Scope', sortable: true, formatter: 'badge' },
                 { key: 'priority', label: 'Priority', sortable: true },
                 { key: 'match_by', label: 'Match Logic', formatter: (v) => v === 0 ? 'ALL' : 'ANY' }
             ],

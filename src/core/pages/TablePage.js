@@ -22,6 +22,7 @@ import Page from '@core/Page.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 import TableView from '@core/views/table/TableView.js';
 import Collection from '@core/Collection.js';
+import { parseFilterKey } from '@core/utils/DjangoLookups.js';
 
 class TablePage extends Page {
   constructor(options = {}) {
@@ -295,6 +296,14 @@ class TablePage extends Page {
 
     // Update collection params
     if (Object.keys(params).length > 0) {
+      // Deduplicate simple + __in filters (prefer __in / not_in when both are present)
+      Object.keys(params).forEach(key => {
+        const { field, lookup } = parseFilterKey(key);
+        if ((lookup === 'in' || lookup === 'not_in') && params.hasOwnProperty(field)) {
+          delete params[field];
+        }
+      });
+
       this.collection.setParams({
         ...this.collection.params,
         ...params
