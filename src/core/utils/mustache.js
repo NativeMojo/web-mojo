@@ -17,8 +17,16 @@ const isFunction = function(obj) {
 };
 
 const isObject = function(obj) {
-  return obj != null && typeof obj === 'object';
+  return obj !== null && typeof obj === 'object';
 };
+
+// Access DataFormatter without async imports so Mustache remains synchronous.
+function getDataFormatter() {
+  if (typeof window === 'undefined') return null;
+  if (window.MOJO?.dataFormatter) return window.MOJO.dataFormatter;
+  if (window.dataFormatter) return window.dataFormatter;
+  return null;
+}
 
 const escapeHtml = function(string) {
   const entityMap = {
@@ -122,7 +130,17 @@ class Context {
       let actualName = name.substring(1);
       let shouldIterate = false;
 
-      // Check for |iter suffix for array iteration
+      // Support pipe formatting on dot-prefixed lookups, e.g. ".title|upper"
+      // We split pipes here so the lookup remains "current context only" while still
+      // allowing DataFormatter-style pipe transforms in templates.
+      let pipeString = null;
+      const pipeIndex = actualName.indexOf('|');
+      if (pipeIndex !== -1) {
+        pipeString = actualName.substring(pipeIndex + 1).trim();
+        actualName = actualName.substring(0, pipeIndex).trim();
+      }
+
+      // Check for |iter suffix for array iteration (only applies to the base name)
       if (actualName.endsWith('|iter')) {
         actualName = actualName.substring(0, actualName.length - 5); // Remove '|iter'
         shouldIterate = true;
@@ -152,6 +170,20 @@ class Context {
           value = this.view[actualName];
           if (isFunction(value)) {
             value = value.call(this.view);
+          }
+        }
+
+        // If pipes were provided, apply them before any boolean "existence check"
+        // conversions for arrays/objects. This keeps ".items|iter" behavior intact
+        // while allowing ".title|upper" style formatting.
+        if (pipeString && value !== undefined) {
+          try {
+            const formatter = getDataFormatter();
+            if (formatter && typeof formatter.pipe === 'function') {
+              value = formatter.pipe(value, pipeString, this);
+            }
+          } catch (e) {
+            // If formatting fails, fall back to the raw value
           }
         }
 

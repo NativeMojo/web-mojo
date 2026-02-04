@@ -209,8 +209,12 @@ class Dialog extends View {
     // Content
     this.header = options.header !== undefined ? options.header : true;
     this.headerContent = options.headerContent || null;
+    this.headerView = null; // Will hold View instance if headerContent is a View
     this.closeButton = options.closeButton !== undefined ? options.closeButton : true;
     this.contextMenu = options.contextMenu || null;
+
+    // Handle different header content types (support View instances)
+    this._processHeaderContent(this.headerContent);
 
     // Enhanced body handling - support View, Promise<View>, or function returning View
     this.body = options.body || options.content || '';
@@ -284,6 +288,38 @@ class Dialog extends View {
       }
     } else {
       this.body = body;
+    }
+  }
+
+  /**
+   * Process header content to detect and handle View instances
+   */
+  _processHeaderContent(headerContent) {
+    if (headerContent instanceof View) {
+      this.headerView = headerContent;
+      this.headerContent = null;
+      this.addChild(this.headerView);
+    } else if (typeof headerContent === 'function') {
+      // Support lazy View creation
+      try {
+        const result = headerContent();
+        if (result instanceof View) {
+          this.headerView = result;
+          this.headerContent = null;
+          this.addChild(this.headerView);
+        } else if (result instanceof Promise) {
+          // Mark for async processing
+          this.headerPromise = result;
+          this.headerContent = '<div class="text-center"><div class="spinner-border spinner-border-sm"></div></div>';
+        } else {
+          this.headerContent = result;
+        }
+      } catch (error) {
+        console.error('Error processing headerContent function:', error);
+        this.headerContent = headerContent;
+      }
+    } else {
+      this.headerContent = headerContent;
     }
   }
 
@@ -372,6 +408,15 @@ class Dialog extends View {
   async buildHeader() {
     if (!this.header) {
       return '';
+    }
+
+    // If we have a View instance as header content
+    if (this.headerView) {
+      this.headerView.replaceById = true;
+      return `<div class="modal-header" data-view-container="header">
+        <!-- View will be mounted here -->
+        <div id="${this.headerView.id}"></div>
+      </div>`;
     }
 
     if (this.headerContent) {
@@ -1056,6 +1101,9 @@ class Dialog extends View {
    */
   async onBeforeDestroy() {
     // Clean up child views
+    if (this.headerView) {
+      await this.headerView.destroy();
+    }
     if (this.bodyView) {
       await this.bodyView.destroy();
     }
@@ -1065,6 +1113,8 @@ class Dialog extends View {
 
     await super.onBeforeDestroy();
 
+    // Dispose Bootstrap modal instance (defensive: destroy() also disposes, but
+    // onBeforeDestroy can be called from parent lifecycle paths as well)
     if (this.modal) {
       this.modal.dispose();
       this.modal = null;

@@ -327,6 +327,12 @@ class WebApp {
                 pageName = page.pageName;
             }
 
+            const oldPage = this.currentPage;
+            if (!pageInstance) {
+                this._show404(pageName, params, query, fromRouter);
+                return; // Keep current URL, don't update router/history
+            }
+
             this.events.emit('page:showing', {
                 page: pageInstance,
                 pageName: pageInstance.pageName,
@@ -334,12 +340,6 @@ class WebApp {
                 query,
                 fromRouter
             });
-
-            const oldPage = this.currentPage;
-            if (!pageInstance) {
-                this._show404(pageName, params, query, fromRouter);
-                return; // Keep current URL, don't update router/history
-            }
 
             // 2. PERMISSION CHECK
             if (!pageInstance.canEnter()) {

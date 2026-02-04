@@ -2,6 +2,156 @@
 
 MOJO provides a powerful Dialog system for modal interactions, confirmations, forms, and alerts.
 
+## Header Customization (Title, Custom Header Content, Context Menus)
+
+The `Dialog` header supports a few simple customization paths:
+
+### 1) Standard Title Header (default)
+
+If you pass `title`, the header renders a Bootstrap modal header with a title. Depending on options, it will also include either a close button or a context menu.
+
+```javascript
+await this.getApp().showDialog({
+  title: 'My Dialog',
+  body: '<p>Hello</p>'
+});
+```
+
+### 2) Custom Header Content (full control)
+
+If you set `headerContent`, the dialog will render exactly what you provide inside `.modal-header`. This is the easiest way to fully customize layout, add extra buttons, custom markup, etc.
+
+You can also provide `headerContent` as a `View` instance (recommended if you want dynamic header state, actions, or a more complex header layout).
+
+Example: `headerContent` as a `View`
+
+```javascript
+import { View, Dialog } from 'web-mojo';
+
+class DialogHeaderView extends View {
+  constructor(options = {}) {
+    super(options);
+    this.title = options.title || 'Header Title';
+    this.count = options.count || 0;
+  }
+
+  async getTemplate() {
+    return `
+      <div class="d-flex w-100 align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-info-circle"></i>
+          <h5 class="modal-title m-0">${this.title}</h5>
+          <span class="badge text-bg-secondary">${this.count}</span>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-action="header-increment">
+            +1
+          </button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+      </div>
+    `;
+  }
+
+  async onActionHeaderIncrement() {
+    this.count += 1;
+    await this.render();
+  }
+}
+
+await Dialog.showDialog({
+  headerContent: new DialogHeaderView({ title: 'Custom Header', count: 3 }),
+  body: '<p>Body content</p>'
+});
+```
+
+```javascript
+await this.getApp().showDialog({
+  headerContent: `
+    <div class="d-flex w-100 align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-info-circle"></i>
+        <h5 class="modal-title m-0">Custom Header</h5>
+      </div>
+
+      <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-action="header-help">
+          Help
+        </button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+    </div>
+  `,
+  body: '<p>Body content</p>'
+});
+```
+
+Notes:
+- When you use `headerContent`, you are responsible for including a close button if you want one.
+- Prefer `data-action="..."` on header buttons so they flow through the standard action system.
+- If you provide a `View` as `headerContent`, it will be mounted into the dialog header area.
+
+### 3) Header Context Menu (three-dots dropdown)
+
+If you provide `contextMenu.items` (and at least one item passes permission checks), the header will show a dropdown trigger (defaults to a three-dots icon) instead of the standard close button.
+
+```javascript
+await this.getApp().showDialog({
+  title: 'With Context Menu',
+  body: '<p>Body content</p>',
+  contextMenu: {
+    icon: 'bi-three-dots-vertical', // optional (default shown)
+    buttonClass: 'btn btn-link p-1 mojo-modal-context-menu-btn', // optional
+    items: [
+      { label: 'Refresh', icon: 'bi bi-arrow-clockwise', action: 'refresh' },
+      { type: 'divider' },
+      { label: 'Open Docs', icon: 'bi bi-box-arrow-up-right', href: 'https://example.com', target: '_blank' }
+    ]
+  }
+});
+```
+
+Context menu item types:
+- Divider:
+  - `{ type: 'divider' }`
+- Action item (triggers the dialog action system):
+  - `{ label, icon?, action, ... }`
+- Link item:
+  - `{ label, icon?, href, target? }`
+
+Passing data attributes to action items:
+- Any `data-*` keys on the item are rendered onto the dropdown element.
+
+```javascript
+await this.getApp().showDialog({
+  title: 'Item Actions',
+  body: '<p>Body content</p>',
+  contextMenu: {
+    items: [
+      { label: 'Duplicate', icon: 'bi bi-files', action: 'duplicate-item', 'data-id': '123' },
+      { label: 'Archive', icon: 'bi bi-archive', action: 'archive-item', 'data-id': '123' }
+    ]
+  }
+});
+```
+
+Permission-based items:
+- Items may include `permissions`. If the permission system is available, items that fail permission checks are filtered out.
+- If *no* items remain after filtering, the header falls back to the standard close button (if enabled).
+
+```javascript
+await this.getApp().showDialog({
+  title: 'Admin Tools',
+  body: '<p>Body content</p>',
+  contextMenu: {
+    items: [
+      { label: 'Admin Only Action', icon: 'bi bi-shield-lock', action: 'admin-action', permissions: 'admin' }
+    ]
+  }
+});
+```
+
 ## Recommended Usage (For LLM Agents)
 
 **IMPORTANT**: Always use the helper methods listed below. They are simpler, cleaner, and handle all the complexity for you.
