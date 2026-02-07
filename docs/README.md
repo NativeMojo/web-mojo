@@ -1,6 +1,6 @@
-# MOJO Framework Documentation
+# WEB-MOJO Framework Documentation
 
-**Welcome to the MOJO documentation!** This guide covers the complete framework for building modern web applications.
+**Welcome to the WEB-MOJO documentation!** This guide covers the complete framework for building modern web applications.
 
 ## 📖 Browse Documentation
 
@@ -88,7 +88,7 @@ This documentation is structured for easy navigation and understanding:
 - **Common Pitfalls** - Each major doc has a "Common Pitfalls" section with warnings
 - **Cross-References** - All docs link to related documentation
 
-### Essential Reading for Understanding MOJO
+### Essential Reading for Understanding WEB-MOJO
 
 **Start here:**
 1. **`core/View.md`** - Base component architecture, lifecycle, rendering

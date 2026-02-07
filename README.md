@@ -1,17 +1,37 @@
-# MOJO Framework 2.1.0
+# WEB-MOJO Framework 2.1.0
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Version](https://img.shields.io/badge/version-2.1.0-green.svg)](https://github.com/yourusername/web-mojo)
+[![Version](https://img.shields.io/badge/version-2.1.0-green.svg)](https://www.npmjs.com/package/web-mojo)
+[![npm](https://img.shields.io/npm/dm/web-mojo.svg)](https://www.npmjs.com/package/web-mojo)
 
-**MOJO** is a modern, lightweight JavaScript framework for building data-driven web applications. Built with a **core + extensions** architecture, MOJO provides maximum flexibility while maintaining clean boundaries and optimal performance.
+**WEB-MOJO** is a modern, lightweight JavaScript framework for building data-driven web applications. Built with a **core + extensions** architecture, WEB-MOJO provides maximum flexibility while maintaining clean boundaries and optimal performance.
 
-## ✨ What's New in 2.1.0
+> **Part of the MOJO Framework Family** - WEB-MOJO is the browser-based framework. See our other MOJO frameworks for native mobile and desktop applications.
 
-🏗️ **Core + Extensions Architecture** - Clean separation with plugin system
-📦 **Subpath Exports** - Import exactly what you need
-⚡ **Lazy Loading** - Reduced bundle sizes with dynamic imports
-🔌 **Plugin System** - Extensions enhance core without dependencies
-🎯 **Tree Shaking** - Optimized builds with modern bundlers
+## 📚 Documentation
+
+**📖 [View Full Documentation](https://nativemojo.com/web-mojo/)**
+
+Complete guides covering:
+- **Core Concepts** - View, Model, Collection, Templates, Events
+- **Features** - Location, Maps, Admin tools, Tab navigation
+- **Components** - Charts, File upload, DataView, and more
+- **Best Practices** - KISS principles, common pitfalls, optimization
+
+---
+
+## ✨ Key Features
+
+🏗️ **Core + Extensions Architecture** - Clean separation with plugin system  
+📦 **Subpath Exports** - Import exactly what you need  
+⚡ **Lazy Loading** - Reduced bundle sizes with dynamic imports  
+🔌 **Plugin System** - Extensions enhance core without dependencies  
+🎯 **Tree Shaking** - Optimized builds with modern bundlers  
+🎨 **Mustache Templates** - Logic-less templates with 70+ formatters  
+📊 **Data-Driven** - Model and Collection classes with REST API integration  
+🎭 **Event Delegation** - Convention-based event handling  
+
+---
 
 ## 🚀 Quick Start
 
@@ -29,8 +49,16 @@ import { WebApp, Page, View } from 'web-mojo';
 
 // Create a simple page
 class HomePage extends Page {
-  getTemplate() {
-    return '<h1>Welcome to MOJO!</h1>';
+  constructor(options = {}) {
+    super({
+      template: `
+        <div class="home">
+          <h1>Welcome to WEB-MOJO!</h1>
+          <p>Building modern web apps made simple.</p>
+        </div>
+      `,
+      ...options
+    });
   }
 }
 
@@ -44,454 +72,355 @@ app.registerPage('home', HomePage);
 app.start();
 ```
 
-## 📦 Architecture Overview
+### With Data Models
 
-MOJO 2.1.0 uses a **core + extensions** architecture:
+```javascript
+import { View, Model } from 'web-mojo';
+
+class User extends Model {
+  urlRoot = '/api/users';
+}
+
+class UserProfileView extends View {
+  template = `
+    <div class="profile">
+      <h2>{{model.name}}</h2>
+      <p>{{model.email}}</p>
+      <p>Member since: {{model.created_at|date}}</p>
+    </div>
+  `;
+}
+
+// Usage
+const user = new User({ id: 123 });
+await user.fetch();
+
+const view = new UserProfileView({ model: user });
+await view.render();
+await view.mount(document.body);
+```
+
+---
+
+## 📦 Architecture
+
+WEB-MOJO uses a **core + extensions** architecture:
 
 ### Core Package (`web-mojo`)
+
 The stable runtime and building blocks:
-- **WebApp** & **PortalApp** - Application containers
-- **View** & **Page** - Component system
-- **Model** & **Collection** - Data layer
-- **Router** - URL routing
+
+- **WebApp** & **PortalApp** - Application containers with routing
+- **View** & **Page** - Component system with lifecycle hooks
+- **Model** & **Collection** - Data layer with REST API integration
+- **Router** - URL routing and navigation
 - **Dialog** - Modal system
-- **Essential services** - File upload, events, utilities
+- **Templates** - Mustache templating with 70+ data formatters
+- **Events** - Convention-based event delegation
+- **Essential utilities** - File upload, geolocation, utilities
 
 ### Extensions
+
 Feature-rich packages that extend core functionality:
 
 #### 🔐 Authentication (`web-mojo/auth`)
-Complete authentication system with JWT tokens:
-
-```javascript
-import { mountAuth } from 'web-mojo/auth';
-
-// See docs/AuthPage.md for details.
-mountAuth(document.getElementById('auth-root'), {
-  baseURL: 'https://api.example.com',
-  onSuccessRedirect: '/dashboard',
-});
-```
+Complete authentication system with JWT tokens, login/register forms, and session management.
 
 #### 🖼️ Lightbox (`web-mojo/lightbox`)
-Image and PDF viewers with editing capabilities:
-
-```javascript
-import 'web-mojo/lightbox'; // Auto-registers plugins
-
-// Core can now use lightbox features
-import { Dialog } from 'web-mojo';
-// Dialog automatically gets image cropping when lightbox is loaded
-```
+Image and PDF viewers with editing capabilities including cropping and annotation.
 
 #### 📊 Charts (`web-mojo/charts`)
-Interactive charts built on Chart.js:
-
-```javascript
-import { PieChart, SeriesChart } from 'web-mojo/charts';
-
-const chart = new PieChart({
-  data: salesData,
-  container: '#chart'
-});
-```
+Interactive charts built on Chart.js with PieChart, SeriesChart, and more.
 
 #### 📚 Documentation (`web-mojo/docit`)
-Documentation portal system:
+Full-featured documentation portal system with markdown editing and syntax highlighting.
 
-```javascript
-import { DocItApp } from 'web-mojo/docit';
-
-const docs = new DocItApp({
-  books: ['user-guide', 'api-docs']
-});
-```
+#### 🗺️ Maps (`web-mojo/map`)
+MapLibre GL integration with geolocation tracking and custom controls.
 
 #### ⚡ Loader (`web-mojo/loader`)
-Beautiful loading animations:
+Beautiful loading animations and progress indicators.
 
-```html
-<script src="web-mojo/loader"></script>
-<script>
-  // Your app initialization
-  // Call hideInitialLoader() when ready
-</script>
+---
+
+## 🎯 Core Concepts
+
+### Views - Component System
+
+Views are the building blocks of your UI with a complete lifecycle:
+
+```javascript
+import { View } from 'web-mojo';
+
+class TodoView extends View {
+  template = `
+    <div class="todo {{#completed}}completed{{/completed}}">
+      <input type="checkbox" {{#completed}}checked{{/completed}} data-action="change:toggle">
+      <span>{{title}}</span>
+      <button data-action="click:remove">×</button>
+    </div>
+  `;
+  
+  toggle() {
+    this.model.set('completed', !this.model.get('completed'));
+    this.model.save();
+  }
+  
+  remove() {
+    this.model.destroy();
+  }
+}
 ```
 
-## 🎯 Usage Examples
+**[→ View Documentation](https://nativemojo.com/web-mojo/#core/View.md)**
 
-### Portal Application
+### Models - Data Layer
+
+Models manage your data with built-in REST API integration:
+
+```javascript
+import { Model } from 'web-mojo';
+
+class Todo extends Model {
+  urlRoot = '/api/todos';
+  
+  defaults() {
+    return {
+      title: '',
+      completed: false,
+      created_at: new Date()
+    };
+  }
+  
+  validate(attrs) {
+    if (!attrs.title || attrs.title.trim() === '') {
+      return 'Title is required';
+    }
+  }
+}
+
+// Usage
+const todo = new Todo({ title: 'Learn WEB-MOJO' });
+await todo.save(); // POST /api/todos
+
+todo.set('completed', true);
+await todo.save(); // PUT /api/todos/123
+```
+
+**[→ Model Documentation](https://nativemojo.com/web-mojo/#core/Model.md)**
+
+### Templates - Mustache with Formatters
+
+Logic-less templates with powerful data formatting:
+
+```javascript
+template = `
+  <div class="user-card">
+    <h3>{{model.name|uppercase}}</h3>
+    <p>{{model.email|lowercase}}</p>
+    <p>Joined: {{model.created_at|date:'MMM dd, YYYY'}}</p>
+    <p>Revenue: {{model.total_revenue|currency}}</p>
+    
+    {{#model.is_active|bool}}
+      <span class="badge-success">Active</span>
+    {{/model.is_active|bool}}
+  </div>
+`;
+```
+
+**70+ built-in formatters** for dates, numbers, text, HTML, and more!
+
+**[→ Templates Documentation](https://nativemojo.com/web-mojo/#core/Templates.md)**
+
+### Events - Convention-Based
+
+Clean event handling with data attributes:
+
+```javascript
+class ButtonView extends View {
+  template = `
+    <button data-action="click:handleClick">Click Me</button>
+    <input data-action="input:handleInput" placeholder="Type here">
+  `;
+  
+  handleClick(e) {
+    console.log('Button clicked!');
+  }
+  
+  handleInput(e) {
+    console.log('Input value:', e.target.value);
+  }
+}
+```
+
+**[→ Events Documentation](https://nativemojo.com/web-mojo/#core/Events.md)**
+
+---
+
+## 🏗️ Portal Applications
+
+Build admin portals and dashboards with PortalApp:
 
 ```javascript
 import { PortalApp, Page } from 'web-mojo';
-import 'web-mojo/lightbox'; // Enable image features
 
 const app = new PortalApp({
   name: 'Admin Portal',
   sidebar: {
     menus: [{
+      title: 'Main',
       items: [
         { text: 'Dashboard', route: 'dashboard', icon: 'bi-speedometer2' },
-        { text: 'Users', route: 'users', icon: 'bi-people' }
+        { text: 'Users', route: 'users', icon: 'bi-people' },
+        { text: 'Settings', route: 'settings', icon: 'bi-gear' }
       ]
     }]
   }
 });
 
-class DashboardPage extends Page {
-  constructor(options = {}) {
-    super({
-      title: 'Dashboard',
-      template: `
-        <div class="row">
-          <div class="col-md-6">
-            <div class="card">
-              <div class="card-body">
-                <h5>Welcome to MOJO</h5>
-                <p>{{message}}</p>
-                <button class="btn btn-primary" data-action="show-dialog">
-                  Open Dialog
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      `,
-      ...options
-    });
-  }
-
-
-  async onActionShowDialog() {
-    const { Dialog } = await import('web-mojo');
-    Dialog.showInfo('Hello from MOJO!');
-  }
-}
-
 app.registerPage('dashboard', DashboardPage);
+app.registerPage('users', UsersPage);
 app.start();
 ```
 
-### Authentication Flow
+---
 
-```javascript
-import { mountAuth } from 'web-mojo/auth';
+## 📖 Documentation Structure
 
-// Auth portal (standalone). See docs/AuthPage.md for details.
-mountAuth(document.getElementById('auth-root'), {
-  baseURL: 'https://api.example.com',
-  onSuccessRedirect: '/portal/',
-  branding: {
-    title: 'Acme Corp',
-    logoUrl: '/assets/logo.png',
-    subtitle: 'Sign in to your account',
-  },
-});
+Our documentation is organized for easy navigation:
 
-// Main app (after authentication)
-const mainApp = new WebApp({
-  name: 'Acme Portal',
-  api: {
-    baseURL: 'https://api.example.com',
-    token: localStorage.getItem('auth_token')
-  }
-});
+- **[Core Concepts](https://nativemojo.com/web-mojo/#core/View.md)** - View, Model, Collection, Templates, Events
+- **[Features](https://nativemojo.com/web-mojo/#features/Location.md)** - Location, Maps, Admin, Tabs
+- **[Components](https://nativemojo.com/web-mojo/#components/Charts.md)** - UI components and widgets
+- **[API Reference](https://nativemojo.com/web-mojo/)** - Complete API documentation
 
-// Handle successful login
-authApp.events.on('auth:login', (user) => {
-  window.location.href = '/dashboard';
-});
-```
+### Essential Reading
 
-### Data Management
+**Start here:**
+1. [View Basics](https://nativemojo.com/web-mojo/#core/View.md) - Component system
+2. [Templates](https://nativemojo.com/web-mojo/#core/Templates.md) - Templating with common pitfalls
+3. [Model](https://nativemojo.com/web-mojo/#core/Model.md) - Data layer
 
-```javascript
-import { Model, Collection, View } from 'web-mojo';
+**Then explore:**
+4. [Child Views](https://nativemojo.com/web-mojo/#core/ViewChildViews.md) - Component composition
+5. [Collection](https://nativemojo.com/web-mojo/#core/Collection.md) - Working with lists
+6. [Events](https://nativemojo.com/web-mojo/#core/Events.md) - Event handling
 
-// Define models
-class User extends Model {
-  static endpoint = '/api/users';
-}
-
-class UserList extends Collection {
-  model = User;
-  endpoint = '/api/users';
-}
-
-// Create views
-class UserTableView extends View {
-  constructor(options = {}) {
-    super({
-      template: `
-        <table class="table">
-          <thead>
-            <tr><th>Name</th><th>Email</th><th>Actions</th></tr>
-          </thead>
-          <tbody>
-            {{#users}}
-            <tr>
-              <td>{{name}}</td>
-              <td>{{email}}</td>
-              <td>
-                <button class="btn btn-sm btn-primary"
-                        data-action="edit-user"
-                        data-user-id="{{id}}">Edit</button>
-              </td>
-            </tr>
-            {{/users}}
-          </tbody>
-        </table>
-      `,
-      ...options
-    });
-
-    this.collection = new UserList();
-  }
-
-  async onMount() {
-    await this.collection.fetch();
-    this.render();
-  }
-
-  async onActionEditUser(action, event, element) {
-    const userId = element.dataset.userId;
-    const user = this.collection.get(userId);
-
-    const { Dialog } = await import('web-mojo');
-    Dialog.showModelForm(user, {
-      title: 'Edit User',
-      fields: ['name', 'email']
-    });
-  }
-}
-```
-
-## 🛠️ Development
-
-### Project Structure
-```
-web-mojo/
-├── src/
-│   ├── index.js              # Core entry point
-│   ├── auth.js               # Auth extension entry
-│   ├── lightbox.js           # Lightbox extension entry
-│   ├── charts.js             # Charts extension entry
-│   ├── docit.js              # DocIt extension entry
-│   ├── loader.js             # Loader entry
-│   ├── core/                 # Core framework
-│   │   ├── View.js
-│   │   ├── Page.js
-│   │   ├── WebApp.js
-│   │   ├── PortalApp.js
-│   │   ├── models/
-│   │   ├── views/
-│   │   ├── services/
-│   │   └── utils/
-│   └── extensions/           # Extension packages
-│       ├── auth/
-│       ├── lightbox/
-│       ├── charts/
-│       └── docit/
-├── examples/                 # Live examples
-└── dist/                     # Built packages
-```
-
-### Building from Source
-
-```bash
-# Install dependencies
-npm install
-
-# Build all packages
-npm run build:lib
-
-# Development server
-npm run dev
-
-# Watch mode
-npm run dev:watch
-```
-
-### Import Aliases (Development)
-When developing the framework itself:
-
-```javascript
-// Use aliases for clean imports
-import View from '@core/View.js';
-import AuthApp from '@ext/auth/AuthApp.js';
-import { PieChart } from '@ext/charts/PieChart.js';
-```
-
-## 📋 API Reference
-
-### WebApp
-Main application container with routing and page management.
-
-```javascript
-const app = new WebApp({
-  name: 'My App',           // App name
-  container: '#app',        // DOM container
-  debug: true,              // Debug mode
-  api: {                    // API configuration
-    baseURL: 'https://api.example.com',
-    token: 'jwt-token'
-  }
-});
-
-// Register pages
-app.registerPage('home', HomePage);
-app.registerPage('users', UserListPage);
-
-// Navigation
-await app.navigate('users');
-await app.navigate('user/123');
-
-// Start app
-await app.start();
-```
-
-### PortalApp
-Extended WebApp with built-in sidebar and top navigation.
-
-```javascript
-const app = new PortalApp({
-  // All WebApp options plus:
-  sidebar: {
-    menus: [{
-      name: 'main',
-      items: [
-        { text: 'Home', route: 'home', icon: 'bi-house' },
-        {
-          text: 'Admin',
-          icon: 'bi-gear',
-          children: [
-            { text: 'Users', route: 'users' },
-            { text: 'Settings', route: 'settings' }
-          ]
-        }
-      ]
-    }]
-  },
-  topbar: {
-    brand: 'My Portal',
-    rightItems: [
-      { icon: 'bi-bell', action: 'notifications' }
-    ]
-  }
-});
-```
-
-### View Component System
-
-```javascript
-class MyView extends View {
-  constructor(options = {}) {
-    super({
-      className: 'my-view',
-      template: `
-        <div>
-          <h3>{{title}}</h3>
-          <button data-action="click-me">Click Me</button>
-          <div data-region="content"></div>
-        </div>
-      `,
-      ...options
-    });
-  }
-
-  // Lifecycle hooks
-  async onMount() { /* Called when mounted to DOM */ }
-  async onUnmount() { /* Called when removed */ }
-
-  // Event handlers
-  async onActionClickMe(action, event, element) {
-    this.showRegion('content', new AnotherView());
-  }
-
-  // Custom events
-  onCustomEvent(data) { /* Handle custom events */ }
-}
-```
-
-## 🔧 Configuration
-
-### Vite Integration
-For modern build tools:
-
-```javascript
-// vite.config.js
-export default {
-  optimizeDeps: {
-    exclude: ['web-mojo']
-  },
-  ssr: {
-    noExternal: ['web-mojo']
-  }
-}
-```
-
-### CSS Imports
-```javascript
-// Bundle all CSS automatically
-import 'web-mojo'; // Includes core CSS
-
-// Simple Auth CSS is included by the module (no extra import required).
-// For theming details, see docs/AuthPage.md.
-// If you need manual CSS, you can use: /src/extensions/auth/css/auth.css
-import 'web-mojo/css/core';
-import 'web-mojo/css/portal';
-```
-
-## 🔄 Migration from 2.0.x
-
-### Import Changes
-```javascript
-// Old (2.0.x)
-import WebApp from '/src/core/WebApp.js';
-import AuthApp from '/src/auth/AuthApp.js';
-
-// New (2.1.0+)
-import { WebApp } from 'web-mojo';
-import { mountAuth } from 'web-mojo/auth'; // See docs/AuthPage.md
-```
-
-### CSS Updates
-```html
-<!-- Old -->
-<link href="/src/css/core.css" rel="stylesheet" />
-
-<!-- New -->
-<link href="/dist/core.css" rel="stylesheet" />
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes following our coding standards
-4. Add tests for new functionality
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-### Development Setup
-```bash
-git clone https://github.com/yourusername/web-mojo.git
-cd web-mojo
-npm install
-npm run dev
-```
-
-## 📄 License
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
-## 🙋 Support
-
-- 📖 **Documentation**: [Full docs and examples](./docs/)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/yourusername/web-mojo/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/yourusername/web-mojo/discussions)
+**Advanced:**
+7. [Advanced Views](https://nativemojo.com/web-mojo/#core/AdvancedViews.md) - Canvas, WebGL, optimization
 
 ---
 
-Built with ❤️ by the MOJO Framework Team
+## 🎨 Philosophy
+
+WEB-MOJO follows these core principles:
+
+### KISS - Keep It Simple, Stupid
+- Simple patterns over complex abstractions
+- Readable code over clever code
+- Convention over configuration
+
+### Model-First Approach
+- Use models directly in templates
+- Avoid custom data structures
+- Let formatters handle presentation
+
+### Logic-Less Templates
+- Business logic in views, not templates
+- Formatters for display formatting
+- View methods for computed values
+
+**[→ Read More About Our Philosophy](https://nativemojo.com/web-mojo/#core/Templates.md)**
+
+---
+
+## 🛠️ Development
+
+### Prerequisites
+
+- Node.js 18+ 
+- npm or yarn
+
+### Setup
+
+```bash
+# Clone repository
+git clone https://github.com/NativeMojo/web-mojo.git
+cd web-mojo
+
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Run tests
+npm test
+```
+
+### Project Structure
+
+```
+web-mojo/
+├── src/
+│   ├── core/           # Core framework
+│   ├── extensions/     # Extensions (auth, charts, etc.)
+│   └── styles/         # CSS styles
+├── docs/               # Documentation
+│   ├── core/          # Core concept docs
+│   ├── features/      # Feature docs
+│   └── components/    # Component docs
+├── examples/          # Example projects
+└── tests/             # Test suites
+```
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please:
+
+1. Read our [Contributing Guide](CONTRIBUTING.md)
+2. Check [existing issues](https://github.com/NativeMojo/web-mojo/issues)
+3. Follow our coding standards
+4. Write tests for new features
+5. Update documentation
+
+### Documentation Contributions
+
+Documentation improvements are especially welcome! Ensure:
+- ✅ Examples are tested and working
+- ✅ Common pitfalls are documented
+- ✅ Cross-references are updated
+- ✅ KISS principles are followed
+
+---
+
+## 📝 License
+
+Apache 2.0 - See [LICENSE](LICENSE) file
+
+---
+
+## 🔗 Links
+
+- **[Documentation](https://nativemojo.com/web-mojo/)** - Complete framework documentation
+- **[NPM Package](https://www.npmjs.com/package/web-mojo)** - Install from npm
+- **[GitHub Repository](https://github.com/NativeMojo/web-mojo)** - Source code
+- **[Issues](https://github.com/NativeMojo/web-mojo/issues)** - Report bugs
+- **[Examples](./examples/)** - Working example projects
+
+---
+
+## 🌟 Community
+
+- **Website:** [nativemojo.com](https://nativemojo.com)
+- **Discussions:** [GitHub Discussions](https://github.com/NativeMojo/web-mojo/discussions)
+- **Issues:** [GitHub Issues](https://github.com/NativeMojo/web-mojo/issues)
+
+---
+
+**Built with ❤️ by the NativeMojo team**
