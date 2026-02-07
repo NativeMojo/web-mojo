@@ -55,6 +55,12 @@ MOJO's template engine provides:
 
 ## Data Formatting with Pipes
 
+Pipes apply formatters to the resolved value:
+
+- `{{value|formatter}}`
+- `{{value|formatter:arg1:arg2}}`
+- `{{value|formatter1|formatter2}}` (chained)
+
 ### Basic Pipe Syntax
 
 Use the pipe (`|`) operator to format data:
@@ -323,6 +329,23 @@ MOJO provides special `|iter` syntax for iterating over arrays and objects:
 ```
 
 ## Template Context and Data Access
+
+## Model Values + Pipes (Common Pattern)
+
+When a `View` exposes a `model` (typically as `this.model`), templates can read model fields and apply formatters using pipe syntax, including formatter arguments.
+
+```/dev/null/example.md#L1-12
+<div>
+  <div><strong>Name:</strong> {{model.name|uppercase}}</div>
+  <div><strong>Revenue:</strong> {{model.total_revenue|currency}}</div>
+  <div><strong>When:</strong> {{model.created_at|datetime}}</div>
+  <div><strong>Status:</strong> {{{model.is_active|yesno_icon:'bi bi-check':'bi bi-x'}}}</div>
+</div>
+```
+
+Notes:
+- Pipes can be chained: `{{model.name|trim|uppercase}}`
+- Dot notation works alongside pipes: `{{model.user.profile.name|uppercase}}`
 
 ### Context Hierarchy
 

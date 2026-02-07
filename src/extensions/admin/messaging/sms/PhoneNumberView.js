@@ -204,6 +204,24 @@ class PhoneNumberView extends View {
       this.getApp()?.toast?.error?.(e.message || 'Delete failed');
     }
   }
+
+  static async show(phone_number) {
+      const model = await PhoneNumber.lookup(phone_number);
+      if (model) {
+          const view = new PhoneNumberView({ model });
+          const dialog = new Dialog({
+              header: false,
+              size: 'lg',
+              body: view,
+              buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }]
+          });
+          await dialog.render(true, document.body);
+          dialog.show();
+          return dialog;
+      }
+      Dialog.alert({ message: `Could not find phone data for number: ${phone_number}`, type: 'warning' });
+      return null;
+  }
 }
 
 PhoneNumberView.MODEL_CLASS = PhoneNumber;

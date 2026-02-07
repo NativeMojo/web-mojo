@@ -2,9 +2,51 @@
 
 ## Overview
 
+A `View` is the base building block for UI in MOJO. Views render Mustache templates using the **View instance (`this`) as the template context**, and they commonly work with a `Model` (single record) or `Collection` (list of records).
+
+This guide expands on how `View`, `Model`, and templates work together:
+
+- `View.setModel(model)` subscribes to model change events and automatically re-renders when the model changes.
+- `Model.get(key)` supports **dot-notation** and **pipe formatting** (e.g. `"user.name|uppercase"`), and is exposed to templates via Mustache lookups.
+- In templates, you can either:
+  - bind view properties directly (recommended for most UI state), or
+  - read from `model` (including pipes/args) through template lookups (see below).
+
 View is the foundational component of the MOJO framework. Every visual element in your application extends from View, providing a consistent structure for UI components with automatic event handling, template rendering, lifecycle management, and parent-child relationships.
 
+## Model + Pipes in Templates (and Auto Re-render)
+
+When a view has a model (typically `this.model`), templates can format model values directly using pipes and formatter arguments.
+
+Examples:
+
+```/dev/null/example.js#L1-14
+<div class="row g-2">
+  <div class="col-12">
+    <strong>Name:</strong> {{model.name|uppercase}}
+  </div>
+
+  <div class="col-12">
+    <strong>Revenue:</strong> {{model.total_revenue|currency}}
+  </div>
+
+  <div class="col-12">
+    <strong>Status:</strong> {{{model.is_active|yesno_icon:'bi bi-check':'bi bi-x'}}}
+  </div>
+</div>
+```
+
+How it ties together:
+- `Model.get(...)` supports dot notation and pipes (including arguments), so template lookups like `{{model.user.profile.name|uppercase}}` work.
+- `View.setModel(model)` listens for model `"change"` events and calls `render()` when the view is mounted, so `model.set(...)` / `model.save()` updates naturally flow back into the UI.
+
 ## Key Features
+
+- **Mustache Context = View Instance**: templates render with the view (`this`) as the root context.
+- **Model-aware rendering**: `setModel()` wires `change` listeners and triggers `render()` when the model changes.
+- **Model data access with formatting**: `Model.get()` supports dot notation and pipe syntax via `MOJOUtils.getContextData(...)`.
+- **Action handling**: use `data-action="..."` in templates and implement `onActionXxx()` handlers.
+- **Composable UI**: build complex pages using child views and containers.
 
 - **Event Delegation**: Automatic handling of click, change, and keyboard events
 - **Template Rendering**: Mustache template integration with data binding
@@ -487,6 +529,91 @@ class MyView extends View {
 ## Advanced Usage
 
 ### 1. Data-Driven View with Model
+
+A `Model` represents one resource (record). A `View` can hold a model as `this.model` and re-render automatically whenever the model changes.
+
+#### How `View.setModel()` works
+- Unsubscribes from the previous model’s `"change"` event (if any)
+- Subscribes to the new model’s `"change"` event
+- Re-renders when the model changes (if the view is mounted)
+
+This is the key behavior:
+
+```/dev/null/example.js#L1-34
+// View.setModel() subscribes to model changes
+setModel(model = {}) {
+    let isDiff = model !== this.model;
+    if (!isDiff) return this;
+    if (this.model && this.model.off) {
+        this.model.off("change", this._onModelChange, this);
+    }
+    this.model = model;
+    if (this.model && this.model.on) {
+        this.model.on("change", this._onModelChange, this);
+    }
+    if (isDiff ) {
+        this._onModelChange();
+    }
+    return this;
+}
+```
+
+#### How `Model.get()` helps templates
+`Model.get(key)` supports:
+- dot notation: `user.profile.name`
+- pipes: `total|currency`
+- both together: `user.profile.name|uppercase`
+
+Under the hood `Model.get()` delegates to `MOJOUtils.getContextData(...)`, so formatting and nested access work consistently:
+
+```/dev/null/example.js#L1-18
+get(key) {
+  // Use MOJOUtils for all attribute access with pipes and dot notation
+  return MOJOUtils.getContextData(this.attributes, key);
+}
+```
+
+#### Practical pattern (recommended)
+Expose a few **view properties** for easy template access, and keep model operations in actions.
+
+```javascript
+class UserProfileView extends View {
+  constructor(options = {}) {
+    super({
+      template: `
+        <div class="user-profile">
+          <h1>{{title}}</h1>
+
+          <div class="mb-2">
+            <strong>Name:</strong> {{model.name}}
+          </div>
+
+          <div class="mb-2">
+            <strong>Email:</strong> {{model.email}}
+          </div>
+
+          <button class="btn btn-primary" data-action="edit-profile">Edit</button>
+        </div>
+      `,
+      ...options
+    });
+
+    this.title = 'User Profile';
+    if (options.model) this.setModel(options.model);
+  }
+
+  async onActionEditProfile() {
+    // Update model, then save; change events will re-render the view
+    this.model.set('name', 'Updated Name');
+    await this.model.save();
+  }
+}
+```
+
+Notes:
+- `{{model.name}}` works because the `View` exposes `model`, and Mustache resolves properties through the context chain.
+- When you call `this.model.set(...)`, a `"change"` event is emitted; if the view is mounted, it will re-render automatically via `setModel()` wiring.
+- Prefer keeping UI-only state (like `title`, `loading`, toggles) as direct view properties (`this.title = ...`) rather than storing them on the model.
 
 ```javascript
 class UserProfileView extends View {
