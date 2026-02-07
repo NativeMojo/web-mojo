@@ -1,21 +1,29 @@
 /**
  * LocationClient - minimal client for Location & Address API
  *
- * Endpoints (default paths align with docs/dev/location.md):
+ * Endpoints (default paths):
  *  - POST /location/address/validate
- *  - GET  /location/address/suggestions   ?input=...&session_token=...
- *  - GET  /location/address/place-details ?place_id=...&session_token=...
+ *  - GET  /location/address/suggestions     ?input=...&session_token=...
+ *  - GET  /location/address/place-details   ?place_id=...&session_token=...
  *  - POST /location/address/geocode
  *  - GET  /location/address/reverse-geocode ?lat=...&lng=...
- *  - GET  /location/timezone              ?lat=...&lng=...
+ *  - GET  /location/timezone                ?lat=...&lng=...
  *
- * This client is framework-agnostic and can be used in any app.
+ * This client is framework-friendly and can be used anywhere in a MOJO app.
  *
- * Example:
+ * Examples:
+ *
+ *   // Zero-config defaults (uses basePath '/api')
  *   import LocationClient from '@ext/map/location/LocationClient.js';
- *   const loc = new LocationClient({ baseURL: '/api', authHeader: 'Bearer ...' });
- *   const { data } = await loc.autocomplete('1600 Amphitheatre');
- *   const details = await loc.placeDetails({ place_id: data[0].place_id });
+ *   const loc = new LocationClient();
+ *   const res = await loc.autocomplete('1600 Amphitheatre');
+ *   const details = await loc.placeDetails({ place_id: res?.data?.[0]?.place_id });
+ *
+ *   // Custom base path (still works with core Rest base URL configuration)
+ *   const loc2 = new LocationClient({ basePath: '/api' });
+ *
+ *   // Optional auth header (if your API requires auth)
+ *   loc2.setAuthHeader(() => `Bearer ${token}`);
  */
 import rest from '@core/Rest.js';
 export default class LocationClient {

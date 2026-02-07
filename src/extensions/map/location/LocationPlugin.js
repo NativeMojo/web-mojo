@@ -48,7 +48,7 @@ export class LocationFormPlugin {
    * @param {number} [options.debounceMs=200] - Typing debounce for autocomplete
    */
   constructor({
-    basePath = '',
+    basePath = '/api',
     mapping,
     registerFieldType = true,
     fieldTypeName = 'address',

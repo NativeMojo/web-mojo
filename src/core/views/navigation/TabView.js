@@ -1,13 +1,15 @@
 /**
- * TabView - Simple tabbed interface component for MOJO framework
- * Displays multiple views in a tabbed interface with clean navigation
+ * TabView - Responsive tabbed interface component with smooth transitions
+ * Displays multiple views in a tabbed interface with automatic responsive adaptation
  *
  * Features:
- * - Simple tab-based navigation
+ * - Responsive tab navigation with automatic dropdown mode
+ * - Smooth fade transitions between tabs (Bootstrap compatible)
  * - Child view management with proper mounting/unmounting
  * - Bootstrap 5 styling
  * - Keyboard navigation support
  * - Event-driven tab switching
+ * - ResizeObserver for efficient responsive detection
  *
  * Example Usage:
  * ```javascript
@@ -17,7 +19,11 @@
  *     'Settings': new UserSettingsView({ data: settings }),
  *     'Activity': new UserActivityView({ data: activity })
  *   },
- *   activeTab: 'Profile' // Optional: set initial active tab
+ *   activeTab: 'Profile',        // Optional: set initial active tab
+ *   enableTransitions: true,     // Optional: enable fade transitions (default: true)
+ *   transitionDuration: 150,     // Optional: transition duration in ms (default: 150)
+ *   enableResponsive: true,      // Optional: enable responsive mode (default: true)
+ *   dropdownStyle: 'select'      // Optional: 'select' or 'button' (default: 'select')
  * });
  * ```
  */
@@ -35,6 +41,8 @@ class TabView extends View {
       enableResponsive,
       tabPadding,
       dropdownStyle, // 'button' (default) or 'select'
+      enableTransitions, // Enable fade transitions (default: true)
+      transitionDuration, // Transition duration in ms (default: 150, Bootstrap default)
       ...viewOptions
     } = options;
 
@@ -52,6 +60,10 @@ class TabView extends View {
     // CSS classes
     this.tabsClass = tabsClass || 'nav nav-tabs mb-3';
     this.contentClass = contentClass || 'tab-content';
+
+    // Transition configuration
+    this.enableTransitions = enableTransitions !== false; // Default to enabled
+    this.transitionDuration = transitionDuration || 150; // Bootstrap default
 
     // Responsive configuration
     this.dropdownStyle = dropdownStyle || 'select'; // 'button' or 'select'
@@ -388,31 +400,96 @@ class TabView extends View {
     const activeTabId = this.getTabId(activeTabLabel);
     const previousTabId = previousTabLabel ? this.getTabId(previousTabLabel) : null;
 
-    // Hide previous tab pane
-    if (previousTabId) {
-      const prevPane = this.element.querySelector(`#${previousTabId}`);
+    const activePane = this.element.querySelector(`#${activeTabId}`);
+    const prevPane = previousTabId ? this.element.querySelector(`#${previousTabId}`) : null;
+
+    // Handle transitions if enabled
+    if (this.enableTransitions) {
+      // Start fade-out transition for previous pane
+      if (prevPane && prevPane.classList.contains('show')) {
+        // Remove 'show' to trigger fade-out (but keep 'active' so it stays visible during transition)
+        prevPane.classList.remove('show');
+        
+        // Wait for fade-out transition to complete
+        await new Promise(resolve => {
+          const duration = this._getTransitionDuration(prevPane) || this.transitionDuration;
+          setTimeout(resolve, duration);
+        });
+        
+        // Now remove 'active' to fully hide the pane
+        prevPane.classList.remove('active');
+      }
+
+      // Mount the active tab's view before showing it (prevents flash of empty content)
+      const activeView = this.tabs[activeTabLabel];
+      if (activeView) {
+        const container = this.element.querySelector(`[data-container="${activeTabId}-content"]`);
+        if (container && !activeView.isMounted()) {
+          await activeView.render(true, container);
+        }
+      }
+
+      // Start fade-in transition for active pane
+      if (activePane) {
+        // Add 'active' to make it the active pane (but not visible yet)
+        activePane.classList.add('active');
+        
+        // Force reflow to ensure the 'active' class is applied before 'show'
+        // This is necessary for CSS transitions to work properly
+        void activePane.offsetHeight;
+        
+        // Add 'show' to trigger fade-in transition
+        activePane.classList.add('show');
+      }
+    } else {
+      // No transitions - instant switch
       if (prevPane) {
         prevPane.classList.remove('show', 'active');
       }
-    }
 
-    // Show active tab pane
-    const activePane = this.element.querySelector(`#${activeTabId}`);
-    if (activePane) {
-      activePane.classList.add('show', 'active');
-    }
-
-    // Mount the active tab's view
-    const activeView = this.tabs[activeTabLabel];
-    if (activeView) {
-      const container = this.element.querySelector(`[data-container="${activeTabId}-content"]`);
-      if (container && !activeView.isMounted()) {
-        await activeView.render(true, container);
+      // Mount the active tab's view
+      const activeView = this.tabs[activeTabLabel];
+      if (activeView) {
+        const container = this.element.querySelector(`[data-container="${activeTabId}-content"]`);
+        if (container && !activeView.isMounted()) {
+          await activeView.render(true, container);
+        }
       }
-      if (activeView.onTabActivated) {
-        await activeView.onTabActivated();
+
+      if (activePane) {
+        activePane.classList.add('show', 'active');
       }
     }
+
+    // Call onTabActivated hook after the view is mounted and visible
+    if (activeView && activeView.onTabActivated) {
+      await activeView.onTabActivated();
+    }
+  }
+
+  /**
+   * Get CSS transition duration for an element
+   * @param {HTMLElement} element - Element to check
+   * @returns {number} Transition duration in milliseconds
+   * @private
+   */
+  _getTransitionDuration(element) {
+    if (!element || typeof window === 'undefined' || !window.getComputedStyle) {
+      return 0;
+    }
+
+    const computedStyle = window.getComputedStyle(element);
+    const duration = computedStyle.transitionDuration || '0s';
+    
+    // Parse duration (can be in seconds or milliseconds)
+    const matches = duration.match(/^([0-9.]+)(m?s)$/);
+    if (!matches) return 0;
+    
+    const value = parseFloat(matches[1]);
+    const unit = matches[2];
+    
+    // Convert to milliseconds
+    return unit === 's' ? value * 1000 : value;
   }
 
   /**
