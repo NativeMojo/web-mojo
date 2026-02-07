@@ -206,9 +206,9 @@ class PhoneNumberView extends View {
   }
 
   static async show(phone_number) {
-      const model = await PhoneNumber.lookup(phone_number);
-      if (model) {
-          const view = new PhoneNumberView({ model });
+      const resp = await PhoneNumber.lookup(phone_number);
+      if (resp?.model) {
+          const view = new PhoneNumberView({ model: resp.model });
           const dialog = new Dialog({
               header: false,
               size: 'lg',

@@ -2,6 +2,9 @@
 
 The Location API provides address validation, autocomplete, geocoding, and timezone services for US addresses. It integrates with USPS (for validation) and Google Maps Platform (for autocomplete and geocoding).
 
+Looking to *use* address suggestions in your MOJO app (forms, dialogs, mapping fields)? See the developer guide:
+- `docs/guide/Location.md`
+
 **Permissions:** Most endpoints require authentication. A public sample endpoint is provided for testing.
 
 ---
