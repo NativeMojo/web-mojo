@@ -1,244 +1,597 @@
-# MOJO Framework Development Guide for AI
+# WEB-MOJO Framework Guide for AI Agents
 
-You are an expert web developer specializing in the MOJO framework - a modern, component-based JavaScript framework for building web applications. Use this comprehensive guide to help developers build robust web applications using MOJO's architecture and patterns.
+You are an expert web developer specializing in WEB-MOJO - a modern, component-based JavaScript framework for building data-driven web applications.
 
-## Framework Overview
+> **Part of the MOJO Framework Family** - WEB-MOJO is the browser-based framework. Use this guide to build robust web applications using WEB-MOJO's architecture and patterns.
 
-MOJO is a lightweight, event-driven framework built around these core principles:
-- **Component-based architecture** with hierarchical parent-child relationships
-- **Event-driven programming** with automatic action handling
-- **Declarative templates** using Mustache templating
-- **RESTful data management** with Models and Collections
-- **Page-based routing** for single-page applications
-- **Lifecycle management** with automatic cleanup
+---
 
+## 📚 Documentation
 
-: Use PascalCase for class files (UserView.js, HomePage.js)
-- **Class naming**: Match filename (class UserView extends View)
-- **Action naming**: Use kebab-case in HTML (data-action="my-action")
-- **Container naming**: Use `data-container="name"` for child view containers
-- **Template structure**: Keep templates focused and readable
-- **Error handling**: Always provide user feedback for operations
-- **Async patterns**: Use async/await consistently with proper error handling
-- **State management**: Use WebApp state for global data, local state for component data
+**Human-Readable Portal:** https://nativemojo.com/web-mojo/
 
-The core to the framework is the View class, which is responsible for rendering the UI and handling user interactions.
+**AI Agent Documentation (Raw Markdown - Read These):**
 
-- We use a custom version of Mustache to render templates.
-  We use this in conjunction with DataFormatter to provide robust template rendering.
-- **KEEP IT SIMPLE.**
-- We are using Bootstrap 5.3 and Bootstrap Icons.
-- Try not to overcomplicate things.
-- Try to keep your code clean and readable.
-- Do not write examples, tests, or documentation without explicit instructions.
-- All Framework code is in src
-- All Example code is in examples
-- All Documentation code is in docs/guide/
-- DO NOT use getViewData or get method on a view,  We pass in the view as the context to Mustache.render.
+### Core Concepts (Read Before Starting)
+- **Views:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/core/View.md
+- **Templates:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/core/Templates.md ⚠️ **READ PITFALLS SECTION**
+- **Models:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/core/Model.md
+- **Collections:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/core/Collection.md
+- **Events:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/core/Events.md
 
+### Advanced Topics (Read When Needed)
+- **Child Views:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/core/ViewChildViews.md
+- **Advanced Views:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/core/AdvancedViews.md
 
-## Technical Patterns & Best Practices
+### When to Read What
+- **Building a view?** → Read View.md + Templates.md
+- **Working with data?** → Read Model.md or Collection.md
+- **Adding child components?** → Read ViewChildViews.md
+- **Complex patterns (Canvas/WebGL)?** → Read AdvancedViews.md
+- **Event handling?** → Read Events.md
 
-### Models and Collections
+**⚠️ CRITICAL: Always read Templates.md "Common Pitfalls" section to avoid mistakes!**
 
-- Model = a single resource (CRUD, events, validation, dirty tracking)
-- Collection = an ordered set of Models (fetch lists, paging, add/remove, parsing)
+---
 
-##### Related source:
+## 🎯 Core Principles (Quick Reference)
 
-- core Model: src/core/Model.js
-- core Collection: src/core/Collection.js
-- example model & collection: src/core/models/Group.js
+### KISS - Keep It Simple, Stupid
+- Simple patterns over complex abstractions
+- Readable code over clever code
+- Convention over configuration
+- Let the framework handle complexity
 
-### View Patterns
-- **View Instance = Mustache Context**: The view (`this`) is passed to templates
-- **Data Exposure**: Use `this.property = value` to expose data to templates
-- **Child Views**: Use `addChild(childView)` with `containerId: 'container-name'`
-- **Direct Rendering**: Use `view.render(true, container)` to mount directly to container
-- **Template Containers**: Use `data-container="name"` in templates
+### Model-First Approach
+- Use models directly in templates: `{{model.property}}`
+- Avoid creating custom data structures
+- Let formatters handle presentation: `{{model.price|currency}}`
+- View methods only for complex computations
 
-### Action Handling System
-- **Action Naming**: Use kebab-case in templates: `data-action="restart"`, `data-action="crop-complete"`
-- **Handler Methods**: Framework converts kebab-case to camelCase method names
-- **Handler Patterns**: For `data-action="restart"`, framework calls:
-  1. `view.onActionRestart(event, element)` - preferred pattern
-  2. `view.handleActionRestart(event, element)` - alternative pattern
-  3. `view.onActionDefault(action,event, element)` - catch-all fallback
-- **Handler Arguments**: All handlers receive `(event, element)` parameters
-- **Method Signature**: `async onActionRestart(event, element) { /* implementation */ }`
+### Logic-Less Templates
+- Business logic in views, not templates
+- Formatters for display formatting
+- View methods for computed values
+- View instance IS the Mustache context
 
-```html
-<!-- ✅ Template action usage -->
-<button data-action="save-draft">Save Draft</button>
-<button data-action="delete-item" data-id="123">Delete</button>
-```
+### Component Architecture
+- Views are the building blocks
+- Parent-child hierarchies via `addChild()`
+- Event delegation with `data-action` attributes
+- Lifecycle hooks for initialization and cleanup
 
-```js
-// ✅ Handler implementation
-async onActionSaveDraft(event, element) {
-    // Handle save draft action
-}
+---
 
-async onActionDeleteItem(event, element) {
-    const itemId = element.getAttribute('data-id');
-    // Handle delete with item ID
-}
+## ⚡ Critical Rules (Must Follow)
 
-// ✅ Catch-all handler
-async onActionDefault(action, event, element) {
-    console.log('Unhandled action:', action);
-}
-```
+### ❌ DO NOT
+- **NO `getViewData()` or `get()` on views** - View instance IS the context passed to Mustache
+- **NO `data-action` on `<form>` elements** - Use on submit button with `type="button"`
+- **NO fetching data in `onAfterRender` or `onAfterMount`** - Causes re-render loops
+- **NO manual render/mount when using `addChild()`** - Framework handles it
+- **NO formatters in Chart.js config** - Use callbacks instead
+- **NO missing `containerId` for child views** - Required for mounting
+- **NO complex template logic** - Keep templates simple, logic in views
+- **NO direct DOM manipulation outside lifecycle hooks** - Use framework patterns
+- **NO manual event binding** - Use `data-action` attributes
 
-### DataFormatter Usage
+### ✅ DO
+- **USE `onInit()`** - For child views and initial setup (called once, lazy)
+- **USE `data-action="action-name"`** - For all user interactions
+- **USE `{{property|formatter}}`** - For data formatting in templates
+- **USE View instance properties** - `this.property = value` exposes to templates
+- **USE `addChild(childView)`** - With `containerId` for child components
+- **USE triple braces `{{{html}}}`** - When formatters return HTML
+- **USE Bootstrap 5.3** - For styling and components
+- **USE Bootstrap Icons** - For icons
 
-see docs/guide/DataFormatter.md 
+---
 
-#### Easily called from model instance:
+## 🏗️ Framework Architecture
+
+### Core Components
+
+**View** - Base component class
+- Lifecycle hooks: `onInit`, `onBeforeRender`, `onAfterRender`, `onBeforeMount`, `onAfterMount`, `onBeforeDestroy`
+- Template rendering with Mustache
+- Event delegation via `data-action`
+- Child view composition
+
+**Model** - Single resource with CRUD operations
+- REST API integration
+- Validation and dirty tracking
+- Event emitter (change, sync, destroy events)
+- Automatic serialization
+
+**Collection** - Ordered set of Models
+- Fetch lists with pagination
+- Query and filter methods
+- Bulk operations
+- Model lifecycle management
+
+**Templates** - Mustache with 70+ formatters
+- View instance as context
+- Pipe syntax for formatters: `{{value|formatter:arg}}`
+- Partials via `getPartials()`
+- Logic-less by design
+
+**EventDelegate** - Convention-based event handling
+- `data-action="action-name"` in templates
+- `onAction[ActionName](event, element)` handlers
+- Automatic kebab-case to camelCase conversion
+- Catch-all `onActionDefault(action, event, element)`
+
+---
+
+## 📝 Common Patterns
+
+### View Setup Pattern
 
 ```javascript
-let model = new Transaction({id:1});
-await Transaction.fetch();
-// easily pipe values to a formatter
-let amount = model.get("total_amount|currency")
+import { View } from 'web-mojo';
 
+class UserProfileView extends View {
+  constructor(options = {}) {
+    super({
+      template: `
+        <div class="profile">
+          <h2>{{model.name}}</h2>
+          <p>{{model.email}}</p>
+          <p>Member since: {{model.created_at|date}}</p>
+          <button data-action="edit-profile">Edit</button>
+        </div>
+      `,
+      ...options
+    });
+  }
+  
+  async onInit() {
+    await super.onInit();
+    // Initialize child views
+    // Setup initial state
+    // Called once before first render
+  }
+  
+  async onBeforeRender() {
+    await super.onBeforeRender();
+    // Prepare data before each render
+  }
+  
+  async onAfterRender() {
+    await super.onAfterRender();
+    // DOM is ready, query elements
+    // Initialize plugins
+    // NO DATA FETCHING HERE
+  }
+  
+  async onActionEditProfile(event, element) {
+    // Handle edit action
+  }
+}
+```
+
+### Child Views Pattern
+
+```javascript
+class ParentView extends View {
+  template = `
+    <div>
+      <div data-container="header"></div>
+      <div data-container="content"></div>
+    </div>
+  `;
+  
+  async onInit() {
+    await super.onInit();
+    
+    // Create and add child views
+    this.headerView = new HeaderView({ 
+      model: this.model,
+      containerId: 'header' // Maps to data-container="header"
+    });
+    this.addChild(this.headerView);
+    
+    this.contentView = new ContentView({ 
+      model: this.model,
+      containerId: 'content'
+    });
+    this.addChild(this.contentView);
+    
+    // Framework handles render/mount automatically
+  }
+}
 ```
 
 ### Template Patterns
 
-- use triple '{{{VARIABLE}}}' when return HTML
-- use '|' for piping and you can chain multiple times
-- use ':' for formatter variables
-
 ```html
-<!-- ✅ Direct property access -->
-<h1>{{pageTitle}}</h1>
-<p>{{stats.revenue|currency}}</p>
-<p>{{{stats.is_approved|yesno_icon:'bi bi-check':'bi bi-x'}}}</p>
+<!-- Property access -->
+<h1>{{title}}</h1>
+<p>{{description}}</p>
 
-<!-- ✅ Child view container -->
+<!-- Model data with formatters -->
+<p>{{model.price|currency}}</p>
+<p>{{model.created_at|date:'MMM dd, YYYY'}}</p>
+<p>{{model.description|truncate:100}}</p>
+
+<!-- Boolean checks (MUST use |bool) -->
+{{#model.is_active|bool}}
+  <span class="badge-success">Active</span>
+{{/model.is_active|bool}}
+
+<!-- Iteration (use {{.property}} for current item) -->
+{{#items}}
+  <div>{{.name}} - {{.price|currency}}</div>
+{{/items}}
+
+<!-- HTML output (use triple braces) -->
+{{{model.status|status}}}
+
+<!-- Event handling -->
+<button data-action="save-changes">Save</button>
+<button data-action="delete-item" data-id="{{model.id}}">Delete</button>
+
+<!-- Child view container -->
 <div data-container="chart-container"></div>
 ```
 
-### Rendering Patterns
-```js
-// ✅ View data exposure
-async onInit() {
-	// this is where you should lazy initialize any child views, etc.
-  // this is only called right before view usage
-  // ✅ Child view with auto-mounting
-  const childView = new MyView({ containerId: 'my-container' });
-  this.addChild(childView);
+### Model & Collection Pattern
+
+```javascript
+import { Model, Collection } from 'web-mojo';
+
+class User extends Model {
+  urlRoot = '/api/users';
+  
+  defaults() {
+    return {
+      name: '',
+      email: '',
+      is_active: true
+    };
+  }
+  
+  validate(attrs) {
+    if (!attrs.email) {
+      return 'Email is required';
+    }
+  }
 }
 
+class UserCollection extends Collection {
+  url = '/api/users';
+  model = User;
+}
+
+// Usage
+const users = new UserCollection();
+await users.fetch();
+
+const user = new User({ id: 123 });
+await user.fetch();
+user.set('name', 'John Doe');
+await user.save();
 ```
 
-// Anothe example of View overrides
+### Action Handler Patterns
 
-```js
-async onInit() {
-  // Create child views
-  // Setup initial state
+```javascript
+class MyView extends View {
+  // Pattern 1: Specific action handler (preferred)
+  async onActionSaveDraft(event, element) {
+    const formData = this.getFormData();
+    await this.model.save(formData);
+  }
+  
+  // Pattern 2: Alternative naming
+  async handleActionDeleteItem(event, element) {
+    const id = element.getAttribute('data-id');
+    await this.deleteItem(id);
+  }
+  
+  // Pattern 3: Catch-all for unhandled actions
+  async onActionDefault(action, event, element) {
+    console.log('Unhandled action:', action);
+  }
 }
+```
 
-async oBeforeRender() {
+### Form Handling Pattern
 
+```html
+<!-- ✅ CORRECT: button type="button" with data-action -->
+<form>
+  <input type="text" name="username" required>
+  <input type="email" name="email" required>
+  <button type="button" data-action="submit-form">Submit</button>
+</form>
+```
+
+```javascript
+async onActionSubmitForm(event, element) {
+  const form = element.closest('form');
+  
+  // Validate
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+  
+  // Get data
+  const formData = new FormData(form);
+  const data = Object.fromEntries(formData);
+  
+  // Save
+  this.model.set(data);
+  await this.model.save();
 }
+```
 
+---
+
+## 🎨 Template Formatters
+
+**70+ built-in formatters available via pipe syntax:**
+
+```javascript
+// Date & Time
+{{date|date}}                          // Jan 15, 2024
+{{date|date:'YYYY-MM-DD'}}            // 2024-01-15
+{{date|datetime}}                      // Jan 15, 2024 2:30 PM
+{{date|relative}}                      // 2 hours ago
+
+// Numbers
+{{count|number}}                       // 1,234
+{{price|currency}}                     // $19.99
+{{price|currency:'EUR'}}              // €19.99
+{{ratio|percent}}                      // 75%
+{{bytes|filesize}}                     // 1.2 MB
+
+// Text
+{{name|uppercase}}                     // JOHN DOE
+{{name|lowercase}}                     // john doe
+{{name|capitalize}}                    // John Doe
+{{text|truncate:50}}                   // Truncate to 50 chars...
+{{title|slug}}                         // my-blog-post
+
+// HTML (use triple braces)
+{{{html|nl2br}}}                      // Convert \n to <br>
+{{{email|email}}}                      // Clickable email link
+{{{url|url}}}                          // Clickable link
+{{{status|status}}}                    // Status badge with icon
+
+// Utility
+{{value|default:'None'}}               // Fallback value
+{{#items|bool}}Has items{{/items|bool}} // Boolean check
+{{#obj|iter}}{{.key}}: {{.value}}{{/obj|iter}} // Object iteration
+```
+
+**⚠️ Critical Formatter Pitfalls:**
+1. **Boolean checks NEED `|bool`** - Arrays/objects will iterate otherwise
+2. **HTML output NEEDS `{{{}}}`** - Double braces escape HTML
+3. **String args NEED quotes** - `{{date|date:'YYYY-MM-DD'}}`
+4. **Iterations NEED `{{.}}`** - `{{.name}}` not `{{name}}`
+5. **Objects NEED `|iter`** - To iterate key/value pairs
+
+---
+
+## 🗂️ Project Structure
+
+```
+web-mojo/
+├── src/
+│   ├── core/              # Core framework
+│   │   ├── View.js
+│   │   ├── Model.js
+│   │   ├── Collection.js
+│   │   └── ...
+│   ├── extensions/        # Extensions (auth, charts, maps, etc.)
+│   └── styles/           # CSS styles
+├── docs/                  # Documentation
+│   ├── core/             # Core concept docs
+│   ├── features/         # Feature docs
+│   └── components/       # Component docs
+├── examples/             # Example projects
+└── tests/                # Test suites
+```
+
+### File Naming Conventions
+
+- **Classes:** PascalCase (UserView.js, HomePage.js)
+- **Class names:** Match filename (class UserView extends View)
+- **Actions:** kebab-case in HTML (data-action="my-action")
+- **Handlers:** camelCase methods (onActionMyAction)
+- **Containers:** kebab-case (data-container="my-container")
+
+---
+
+## 🛠️ Development Guidelines
+
+### Code Style
+- **Keep It Simple** - Don't overcomplicate things
+- **Readable code** - Code should be self-documenting
+- **Bootstrap 5.3** - Use Bootstrap CSS as much as possible
+- **Bootstrap Icons** - Use for all icons
+- **Framework patterns** - Let WEB-MOJO handle complexity
+
+### What NOT to Write (Unless Asked)
+- ❌ Tests (unless explicitly requested)
+- ❌ Examples (unless explicitly requested)
+- ❌ Documentation (unless explicitly requested)
+
+### Directory Organization
+- **Framework code** → `src/`
+- **Example code** → `examples/`
+- **Documentation** → `docs/`
+- **Admin features** → `src/admin/`
+
+### Best Practices
+- **Child Views:** Use when part of template needs independent re-rendering
+- **Partials:** Use `getPartials()` for reusable template fragments
+- **Dialog:** Use `showDialog({body: view})` for modals
+- **State:** Use WebApp state for global, local state for components
+- **Async:** Use async/await consistently with proper error handling
+- **Errors:** Always provide user feedback for operations
+
+---
+
+## 🚨 Common Mistakes to Avoid
+
+### Template Mistakes
+```javascript
+// ❌ WRONG: Missing |bool on boolean check
+{{#users}}
+  <p>Has users</p>
+{{/users}}
+
+// ✅ CORRECT: Use |bool for boolean checks
+{{#users|bool}}
+  <p>Has users</p>
+{{/users|bool}}
+
+// ❌ WRONG: HTML escaped
+{{status|status}}
+
+// ✅ CORRECT: Use triple braces for HTML
+{{{status|status}}}
+
+// ❌ WRONG: Missing quotes on string arg
+{{date|date:YYYY-MM-DD}}
+
+// ✅ CORRECT: Wrap string args in quotes
+{{date|date:'YYYY-MM-DD'}}
+
+// ❌ WRONG: Missing {{.}} in iteration
+{{#users}}
+  <div>{{name}}</div>
+{{/users}}
+
+// ✅ CORRECT: Use {{.}} to access current item
+{{#users}}
+  <div>{{.name}}</div>
+{{/users}}
+```
+
+### View Mistakes
+```javascript
+// ❌ WRONG: Fetching in onAfterRender causes re-render
 async onAfterRender() {
-  // Only DOM access, no data fetching
-  // Cache DOM elements if needed
+  await super.onAfterRender();
+  await this.fetchData(); // NO!
 }
 
-// Follow-up fetches via actions
-async onActionRefreshChart(event, element) {
-  await this.fetchData();
+// ✅ CORRECT: Fetch in action or onInit
+async onInit() {
+  await super.onInit();
+  await this.fetchData(); // OK
 }
+
+async onActionRefresh(event, element) {
+  await this.fetchData(); // OK
+}
+
+// ❌ WRONG: Manual render/mount with addChild
+const child = new ChildView();
+this.addChild(child);
+await child.render(); // NO! Framework does this
+await child.mount(container); // NO!
+
+// ✅ CORRECT: Let framework handle it
+const child = new ChildView({ containerId: 'container' });
+this.addChild(child); // Framework renders/mounts
 ```
 
-### Rest Response Structure
-**IMPORTANT**: Understanding the Rest class response format is critical for proper error handling.
+### Form Mistakes
+```html
+<!-- ❌ WRONG: data-action on form -->
+<form data-action="submit-form">
+  <button type="submit">Submit</button>
+</form>
 
-The Rest class returns a standardized response object:
-```js
+<!-- ✅ CORRECT: data-action on button with type="button" -->
+<form>
+  <button type="button" data-action="submit-form">Submit</button>
+</form>
+```
+
+---
+
+## 🔧 REST Response Structure
+
+The Rest class returns standardized responses:
+
+```javascript
 {
-  success: boolean,    // HTTP level success (200-299) vs failure (400+, network errors)
+  success: boolean,    // HTTP success (200-299) vs failure (400+)
   status: number,      // HTTP status code (200, 404, 500, etc.)
   statusText: string,  // HTTP status text
   headers: object,     // Response headers
-  data: object,        // The actual server JSON response (your API data)
-  errors: object,      // HTTP level errors (network, parsing, etc.)
-  message: string      // HTTP level error message
+  data: object,        // Your API's JSON response
+  errors: object,      // HTTP errors
+  message: string      // HTTP error message
 }
 ```
 
-Your server responds with this format (stored in `response.data`):
-```js
+Your API response (in `response.data`):
+```javascript
 {
-  status: boolean,  // true for success, false for server/business logic errors
-  data: object,     // actual payload data
-  error: string,    // server error message if any
-  code: string      // server error code if any
+  status: boolean,  // Server success/failure
+  data: object,     // Actual payload
+  error: string,    // Server error message
+  code: string      // Server error code
 }
 ```
 
-**Error Handling Pattern**:
-```js
+**Error handling pattern:**
+```javascript
 const response = await rest.POST('/api/endpoint', data);
 
-// Check HTTP level first
+// Check HTTP level
 if (!response.success) {
-    // Network error, 500, etc.
-    throw new Error(response.message || 'Network error');
+  throw new Error(response.message || 'Network error');
 }
 
-// Check server application response
+// Check server response
 if (!response.data.status) {
-    // Business logic error, validation failure, etc.
-    throw new Error(response.data.error || 'Server error');
+  throw new Error(response.data.error || 'Server error');
 }
 
-// Success - use the actual data
+// Success - use the data
 const result = response.data.data;
 ```
 
-## ❌ Common Mistakes to Avoid
+---
 
-- **NO `get()` methods** in views (breaks framework pattern)
-- **NO manual render/mount** when using `addChild()`
-- **NO MOJO formatters** in Chart.js config (use callbacks instead)
-- **NO missing `containerId`** for child views
-- **NO `dataFormatter.apply()`** - use `pipe()` instead
-- **NO complex template logic** - keep templates simple, logic in views
-- **NO direct DOM manipulation** - use framework patterns
-- **NO incorrect action handlers** - use `onAction*` or `handleAction*` method naming
-- **NO manual event binding** - use `data-action` attributes instead
-- **NO onAfterMount**: This is not good, use onAfterRender so you have the rendered HTML vs just the mounted DOM element.
-- **NO Fetching of Data in onAfterRender or onAfterMount**: This is not good, as typically the data fetch will cause a re-render, which can lead to performance issues and unexpected behavior.
+## 📖 Additional Resources
 
-## Framework Integration Notes
+- **Main Documentation:** https://nativemojo.com/web-mojo/
+- **GitHub Repository:** https://github.com/NativeMojo/web-mojo
+- **NPM Package:** https://www.npmjs.com/package/web-mojo
 
-**USE onInit**: to build your child views and setup your initial state, this is only called once when the view is first used.
+---
 
-**Dev Server**: we are always running the dev server with browser console open to help with debugging.
-**Keep It Simple**: Follow the framework patterns, let MOJO handle the complexity!
-**Improve The Framework**: Let's improve the framework vs adding improvements to our examples or projects.
+## ⚡ Quick Troubleshooting
 
-When building forms in html:
- - never put data-action on the form element
- - use data-action on the submit button instead, but make the submit button a button type="button" to avoid triggering a form submission
+**Template not rendering?**
+- Check if property exists on view: `console.log(this)`
+- Model bound? Check `this.model`
+- Using `{{model.property}}` syntax?
 
-Use bootstrap 5 css as much as possible unless doing something unique then create our own css.
+**Formatter not working?**
+- Check spelling
+- Using correct syntax: `{{value|formatter}}`
+- String args in quotes: `{{date|date:'YYYY-MM-DD'}}`
 
-Use our Dialog where showDialog({body:view}) will show your view.
-Keep admin views and pages inside the src/admin folder.
+**Child view not showing?**
+- `containerId` matches `data-container` attribute?
+- Called `addChild()`?
+- Not calling manual render/mount?
 
-WE USE MUSTACHE for our templates.
-We should break out our templates into child views if we think that area of the template would need rendering when the entire template does not.
+**Action not firing?**
+- `data-action` attribute present?
+- Handler method exists: `onAction[ActionName]`?
+- Handler is async?
 
-Our Mustache version support built in data formatter via pipes. {{user.name|uppercase}} no need to call dataformatter directly
+---
 
-A views template renders with the view itself as the root context.
-Mustache Partials can easily be provided by just overriding the views getPartials function.
-
-IMPORTANT do not write tests or examples unless asked to.
+**Remember: When in doubt, read the full documentation at the URLs above. The Templates.md "Common Pitfalls" section is especially important!**
