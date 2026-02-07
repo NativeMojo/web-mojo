@@ -12,6 +12,8 @@ Key idea: the extension is a **Form plugin** that can do two separate things:
 1) **Register a field type** (so your `FormBuilder/FormView` understands `type: "address"`), and
 2) **Bind autocomplete behavior** to inputs (either those `type: "address"` fields, or any input that opts-in via an attribute).
 
+It also suppresses the browser’s native address autofill UI for this suggestion input by default (see “Browser autocomplete suppression” below).
+
 ---
 
 ## What you get
@@ -59,16 +61,21 @@ This enables sensible defaults:
 - Registers the `address` field type (so `type: "address"` works in `FormView` configs)
 - Auto-binds autocomplete to `type: "address"` fields after the form renders
 - Also binds to opt-in inputs using the default attribute selector (`data-location="address"`)
+- Suppresses browser autofill/autocomplete overlays on this suggestion input (see below)
 
 If you need to customize API paths, field mapping, or behavior tuning, pass options:
 
-```/dev/null/example.js#L1-28
+```/dev/null/example.js#L1-36
 import { registerLocationPlugin } from 'web-mojo/map';
 
 registerLocationPlugin({
   basePath: '/api',            // optional prefix for endpoints (works with core Rest baseURL)
   registerFieldType: true,     // registers a custom form field type
   fieldTypeName: 'address',    // default
+
+  // Browser autofill/autocomplete suppression (recommended for suggestion inputs)
+  suppressBrowserAutocomplete: true,      // default: true
+  autocompleteValue: 'new-password',      // default: 'new-password'
 
   // Map from API details keys -> your form field names
   mapping: {
@@ -93,6 +100,7 @@ What happens when you call `registerLocationPlugin(...)`:
 - The plugin becomes available to `FormView` and is invoked after forms render.
 - If `registerFieldType: true`, the plugin also registers a new **field type renderer** so you can use `type: "address"` in your form config.
 - Regardless of field type registration, the plugin can still bind to opt-in inputs via attributes (see “Alternate Usage” below).
+- If `suppressBrowserAutocomplete: true`, the plugin will set input attributes that discourage native browser address autofill UI from appearing and covering MOJO’s suggestions dropdown.
 
 ### 2) Use the `address` field type in your `FormView` config
 
@@ -248,6 +256,30 @@ Debounce delay (in milliseconds) between keystrokes before calling autocomplete.
 
 - Increase to reduce API traffic.
 - Decrease for a more responsive feel.
+
+#### Browser autocomplete suppression (recommended)
+
+Address autocomplete fields are **suggestion inputs**. In most apps you do not want the browser’s native autofill UI showing its own address dropdown (it can cover MOJO’s suggestion dropdown).
+
+These options control that behavior:
+
+#### `suppressBrowserAutocomplete` (boolean, default: `true`)
+When enabled, the plugin will set input attributes that discourage native browser autofill/autocomplete UI from appearing.
+
+This is applied in two places:
+- When the plugin renders the `address` field type (if `registerFieldType` is enabled), and
+- When the plugin binds to opt-in inputs found after render (attribute mode), so your custom markup also benefits.
+
+#### `autocompleteValue` (string, default: `'new-password'`)
+The value used for the input’s `autocomplete` attribute when suppression is enabled.
+
+Why the default is `'new-password'`:
+- Chrome often ignores `autocomplete="off"` for address-like fields.
+- For suggestion inputs, `'new-password'` is commonly effective at preventing the browser’s own overlay from appearing.
+
+If you prefer, you can set:
+- `autocompleteValue: 'off'` (may be ignored by some browsers)
+- or disable suppression entirely with `suppressBrowserAutocomplete: false`
 
 #### `mapping` (object)
 Maps keys returned by your **Place Details** response to your **form field names**.

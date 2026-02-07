@@ -54,7 +54,13 @@ export class LocationFormPlugin {
     fieldTypeName = 'address',
     attributeSelector = 'data-location',
     minChars = 3,
-    debounceMs = 200
+    debounceMs = 200,
+
+    // Browser autofill/autocomplete suppression (important for suggestion inputs)
+    // Chrome often ignores autocomplete="off" for address-like fields, so we default
+    // to a more reliable value.
+    suppressBrowserAutocomplete = true,
+    autocompleteValue = 'new-password'
   } = {}) {
     this.id = 'location';
     this.client = new LocationClient({ basePath });
@@ -76,6 +82,9 @@ export class LocationFormPlugin {
     this.minChars = minChars;
     this.debounceMs = debounceMs;
 
+    this.suppressBrowserAutocomplete = suppressBrowserAutocomplete !== false;
+    this.autocompleteValue = autocompleteValue || 'new-password';
+
     // Optional field type registration
     if (registerFieldType) {
       this.fieldTypes = {
@@ -89,11 +98,18 @@ export class LocationFormPlugin {
    * Leverages existing FormBuilder input rendering for consistency (text input).
    */
   renderAddressField(builder, field) {
+    const suppressAttrs = this.suppressBrowserAutocomplete
+      ? `autocomplete="${this.autocompleteValue}" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="search"`
+      : '';
+
     const f = {
       ...field,
       type: 'text',
       placeholder: field.placeholder || 'Start typing an address',
-      attrs: this.mergeAttrs(field.attrs, `${this.attributeSelector}="address" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="search" aria-autocomplete="list" role="combobox"`)
+      attrs: this.mergeAttrs(
+        field.attrs,
+        `${this.attributeSelector}="address" ${suppressAttrs} aria-autocomplete="list" role="combobox"`
+      )
     };
     // Prefer builder.renderTextField if available, otherwise fallback to generic input
     if (typeof builder.renderTextField === 'function') {
@@ -108,7 +124,7 @@ export class LocationFormPlugin {
       <div class="mojo-form-control">
         ${f.label ? `<label for="${id}" class="${builder.options?.labelClass || 'form-label'}">${f.label}</label>` : ''}
         <input type="text" id="${id}" name="${f.name}" class="${builder.options?.inputClass || 'form-control'}"
-               placeholder="${f.placeholder || ''}" ${this.attributeSelector}="address" />
+               placeholder="${f.placeholder || ''}" ${this.attributeSelector}="address" ${suppressAttrs} />
       </div>
     `;
   }
@@ -128,7 +144,7 @@ export class LocationFormPlugin {
    * Hook: called when FormView is initialized
    * You can read application config here if needed.
    */
-  onFormViewInit(formView) {
+  onFormViewInit(_formView) {
     // no-op by default
   }
 
@@ -146,7 +162,18 @@ export class LocationFormPlugin {
         // Ensure we don't double-bind if a field-level init already handled it
         if (inputEl.dataset && inputEl.dataset._locationBound === '1') return;
 
-        const name = inputEl.name || inputEl.getAttribute('id') || 'address1';
+        // Enforce suppression on any opt-in input (not just our field type renderer)
+        if (this.suppressBrowserAutocomplete) {
+          try {
+            inputEl.setAttribute('autocomplete', this.autocompleteValue);
+            inputEl.setAttribute('autocapitalize', 'off');
+            inputEl.setAttribute('autocorrect', 'off');
+            inputEl.setAttribute('spellcheck', 'false');
+            inputEl.setAttribute('inputmode', 'search');
+          } catch (e) {
+            // best-effort: some environments may block setting attributes
+          }
+        }
 
         let dispose;
         const rebind = () => {
@@ -158,8 +185,8 @@ export class LocationFormPlugin {
             debounceMs: this.debounceMs,
             onSelect: (_details) => {
               // Prevent immediate re-open by removing listeners during debounce window
-              try { inputEl.blur(); } catch {}
-              try { dispose && dispose(); } catch {}
+              try { inputEl.blur(); } catch (e) { /* best-effort */ }
+              try { dispose && dispose(); } catch (e) { /* best-effort */ }
               setTimeout(() => {
                 rebind();
               }, this.debounceMs + 50);
@@ -188,6 +215,19 @@ export class LocationFormPlugin {
         // Avoid double-binding
         if (fieldEl.dataset && fieldEl.dataset._locationBound === '1') return;
 
+        // Enforce suppression on field-type and attribute-bound inputs
+        if (this.suppressBrowserAutocomplete) {
+          try {
+            fieldEl.setAttribute('autocomplete', this.autocompleteValue);
+            fieldEl.setAttribute('autocapitalize', 'off');
+            fieldEl.setAttribute('autocorrect', 'off');
+            fieldEl.setAttribute('spellcheck', 'false');
+            fieldEl.setAttribute('inputmode', 'search');
+          } catch (e) {
+            // best-effort: some environments may block setting attributes
+          }
+        }
+
         let dispose;
         const rebind = () => {
           dispose = useLocationAutocomplete(formView, {
@@ -198,8 +238,8 @@ export class LocationFormPlugin {
             debounceMs: this.debounceMs,
             onSelect: (_details) => {
               // Prevent immediate re-open by removing listeners during debounce window
-              try { fieldEl.blur(); } catch {}
-              try { dispose && dispose(); } catch {}
+              try { fieldEl.blur(); } catch (e) { /* best-effort */ }
+              try { dispose && dispose(); } catch (e) { /* best-effort */ }
               setTimeout(() => {
                 rebind();
               }, this.debounceMs + 50);
