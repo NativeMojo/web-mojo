@@ -417,7 +417,7 @@
             <button class="mobile-menu-toggle" onclick="toggleSidebar()">
                 <i class="bi bi-list"></i>
             </button>
-            <a href="#" class="doc-logo" onclick="loadDoc('core/View.md'); return false;">
+            <a href="#" class="doc-logo" onclick="loadDoc('README.md'); return false;">
                 <i class="bi bi-fire"></i>
                 <span>WEB-MOJO</span>
             </a>
@@ -461,55 +461,39 @@
 
         <script>
             // Documentation structure
+            // Documentation structure
             const docStructure = {
-                "Getting Started": [{ title: "Quick Start", path: "../QuickStart.md" }],
+                "Getting Started": [{ title: "📖 Introduction", path: "README.md" }],
                 "Core Concepts": {
                     Views: [
                         { title: "View Basics", path: "core/View.md" },
                         { title: "Child Views", path: "core/ViewChildViews.md" },
-                        { title: "Advanced Patterns", path: "core/AdvancedViews.md" },
-                        { title: "Templates", path: "core/Templates.md" },
+                        { title: "Advanced Views", path: "core/AdvancedViews.md" },
                     ],
-                    "Data Layer": [
+                    "Templates & Data": [
+                        { title: "Templates", path: "core/Templates.md" },
                         { title: "Models", path: "core/Model.md" },
                         { title: "Collections", path: "core/Collection.md" },
                     ],
-                    Events: [
-                        { title: "Events System", path: "core/Events.md" },
-                        { title: "Event Delegate", path: "EventDelegate.md" },
-                    ],
+                    Events: [{ title: "Events System", path: "core/Events.md" }],
                 },
                 Features: [
-                    { title: "Authentication", path: "Auth.md" },
-                    { title: "Router", path: "Router.md" },
-                    { title: "Forms", path: "Forms.md" },
-                    { title: "Dialogs", path: "Dialog.md" },
-                    { title: "REST API", path: "Rest.md" },
-                    { title: "Admin", path: "features/Admin.md" },
-                    { title: "Passkeys", path: "Passkeys.md" },
+                    { title: "Admin Tools", path: "features/Admin.md" },
+                    { title: "Location Services", path: "features/Location.md" },
+                    { title: "Location API", path: "features/Location_API.md" },
+                    { title: "Maps", path: "features/Map.md" },
+                    { title: "Tab Navigation", path: "features/TabView.md" },
                 ],
                 Components: [
-                    { title: "Lists & Tables", path: "lists-and-tables.md" },
-                    { title: "Table View", path: "Table.md" },
-                    { title: "Table Page", path: "TablePage.md" },
-                    { title: "Table Context Menu", path: "TableContextMenu.md" },
-                    { title: "Tab View", path: "features/TabView.md" },
-                    { title: "Circular Progress", path: "CircularProgress.md" },
-                    { title: "Toast", path: "Toast.md" },
-                    { title: "Sidebar & TopNav", path: "SidebarTopnav.md" },
-                    { title: "Active Group", path: "ActiveGroup.md" },
-                ],
-                Utilities: [
-                    { title: "Data Formatter", path: "DataFormatter.md" },
-                    { title: "Utils", path: "Utils.md" },
-                    { title: "WebApp", path: "WebApp.md" },
-                    { title: "Page", path: "Page.md" },
-                    { title: "Lifecycle", path: "LifeCycle.md" },
-                ],
-                Extensions: [
-                    { title: "Map", path: "features/Map.md" },
-                    { title: "Location", path: "features/Location.md" },
-                    { title: "Location API", path: "features/Location_API.md" },
+                    { title: "Charts", path: "components/Charts.md" },
+                    { title: "Data View", path: "components/DataView.md" },
+                    { title: "File Upload", path: "components/FileUpload.md" },
+                    { title: "File View", path: "components/FileView.md" },
+                    { title: "Image Fields", path: "components/ImageFields.md" },
+                    { title: "LightBox", path: "components/LightBox.md" },
+                    { title: "Map View", path: "components/MapView.md" },
+                    { title: "MapLibre View", path: "components/MapLibreView.md" },
+                    { title: "Timeline View", path: "components/TimelineView.md" },
                 ],
             };
 
@@ -696,7 +680,7 @@
             renderSidebar(docStructure, "sidebar");
 
             // Load initial doc (from hash or default)
-            const initialDoc = window.location.hash.slice(1) || "core/View.md";
+            const initialDoc = window.location.hash.slice(1) || "README.md";
             loadDoc(initialDoc);
 
             // Handle browser back/forward
