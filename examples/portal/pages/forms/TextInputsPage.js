@@ -7,8 +7,9 @@ import { Page, FormView } from 'web-mojo';
  */
 class TextInputsPage extends Page {
   static pageName = 'forms/text-inputs';
-  static title = 'Text Inputs';
+  static title = 'Text Input Types';
   static icon = 'bi-input-cursor-text';
+  static description = 'Explore all 8 text-based input types with examples and validation patterns';
   async onInit() {
     await super.onInit();
     
@@ -108,16 +109,6 @@ class TextInputsPage extends Page {
   getTemplate() {
     return `
       <div class="text-inputs-page">
-        <div class="mb-4">
-          <h2 class="h3 mb-2">
-            <i class="bi bi-input-cursor-text me-2 text-primary"></i>
-            Text Input Types
-          </h2>
-          <p class="text-muted">
-            MOJO supports 8 different text-based input types, each with specific validation and behavior
-          </p>
-        </div>
-        
         <!-- Quick Reference Table -->
         <div class="card mb-4">
           <div class="card-header">

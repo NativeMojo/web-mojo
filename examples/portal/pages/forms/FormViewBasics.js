@@ -9,6 +9,7 @@ class FormViewBasics extends Page {
   static pageName = 'forms/formview-basics';
   static title = 'FormView Basics';
   static icon = 'bi-file-earmark-code';
+  static description = 'Learn the fundamentals of creating forms with MOJO\'s FormView component';
   async onInit() {
     await super.onInit();
     
@@ -93,16 +94,6 @@ class FormViewBasics extends Page {
   getTemplate() {
     return `
       <div class="forms-basics-page">
-        <div class="mb-4">
-          <h2 class="h3 mb-2">
-            <i class="bi bi-file-earmark-code me-2 text-primary"></i>
-            FormView Basics
-          </h2>
-          <p class="text-muted">
-            Learn the fundamentals of creating forms with MOJO's FormView component
-          </p>
-        </div>
-        
         <!-- Introduction -->
         <div class="card mb-4">
           <div class="card-body">
