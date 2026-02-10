@@ -1,6 +1,6 @@
 {
     "name": "web-mojo",
-    "version": "2.2.35",
+    "version": "2.2.38",
     "description": "WEB-MOJO - A lightweight JavaScript framework for building data-driven web applications",
     "type": "module",
     "main": "./dist/index.cjs.js",

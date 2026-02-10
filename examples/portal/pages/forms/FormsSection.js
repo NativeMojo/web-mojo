@@ -30,8 +30,10 @@ class FormsSection extends Page {
     }
     
     // Create and render the overview page
-    this.overviewView = new FormsOverview();
-    this.addChild('overview', this.overviewView, '#forms-content-area');
+    this.overviewView = new FormsOverview({
+      containerId: 'forms-content-area'
+    });
+    this.addChild(this.overviewView);
   }
   
   getTemplate() {

@@ -46,7 +46,8 @@ class FormViewBasics extends Page {
       }
     });
     
-    this.addChild('contactForm', this.contactForm, '#contact-form-container');
+    this.contactForm.containerId = 'contact-form-container';
+    this.addChild(this.contactForm);
     
     // Create a form with validation
     this.validationForm = new FormView({
@@ -87,7 +88,8 @@ class FormViewBasics extends Page {
       }
     });
     
-    this.addChild('validationForm', this.validationForm, '#validation-form-container');
+    this.validationForm.containerId = 'validation-form-container';
+    this.addChild(this.validationForm);
   }
   
   getTemplate() {

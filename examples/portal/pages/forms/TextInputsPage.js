@@ -102,7 +102,8 @@ class TextInputsPage extends Page {
       }
     });
     
-    this.addChild('textInputsForm', this.textInputsForm, '#text-inputs-form');
+    this.textInputsForm.containerId = 'text-inputs-form';
+    this.addChild(this.textInputsForm);
   }
   
   getTemplate() {
