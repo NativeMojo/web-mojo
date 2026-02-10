@@ -47,7 +47,7 @@ class FormsOverview extends View {
                 </h3>
                 <p class="text-muted">Create your first form in seconds:</p>
                 
-                <pre class="bg-dark text-light p-3 rounded"><code>import FormView from '@core/forms/FormView.js';
+                <pre class="bg-dark text-light p-3 rounded"><code class="text-light">import FormView from '@core/forms/FormView.js';
 
 const form = new FormView({
   containerId: 'form-container',
