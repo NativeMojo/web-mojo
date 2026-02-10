@@ -24,7 +24,7 @@ export const formsMenu = {
     {
       text: 'Getting Started',
       icon: 'bi-rocket-takeoff',
-      route: '/forms',
+      route: '?page=forms-section',
       description: 'Quick start guide'
     },
     {

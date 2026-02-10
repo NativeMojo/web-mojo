@@ -24,6 +24,7 @@ import ConsoleSilencer from '/src/core/utils/ConsoleSilencer.js';
 import { registerAdminPages, FileTablePage } from '/src/admin.js';
 import formsMenu from './menus/formsMenu.js';
 import FormsSection from './pages/forms/FormsSection.js';
+import FormViewBasics from './pages/forms/FormViewBasics.js';
 
 ConsoleSilencer.setLevel('debug');
 
@@ -366,7 +367,7 @@ app.registerPage('dashboard', DashboardPage);
 app.registerPage('charts', ChartsPage);
 app.registerPage('templates', TemplatesPage);
 app.registerPage('todos', TodosPage);
-app.registerPage('forms', FormsPage);
+app.registerPage('forms2', FormsPage);
 app.registerPage('form-inputs', FormInputsPage);
 app.registerPage('form-validation', FormValidationPage);
 app.registerPage('dialogs', DialogsPage);
@@ -375,6 +376,7 @@ app.registerPage('tabview', TabViewPage);
 app.registerPage('image', ImagePage);
 app.registerPage('file-drop', FileDropPage);
 app.registerPage('forms-section', FormsSection);
+app.registerPage('forms/formview-basics', FormViewBasics);
 app.registerPage('simple', Page, {
     id: 'simple',
     title: "Simple",
