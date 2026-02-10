@@ -7,11 +7,14 @@
 export const formsMenu = {
   name: 'forms',
   className: 'sidebar sidebar-dark sidebar-forms',
-  header: {
-    title: 'Forms',
-    icon: 'bi-ui-checks-grid',
-    subtitle: 'Components & Examples'
-  },
+  header: `
+    <div class="text-center pt-3">
+      <div class="fs-5 fw-bold sidebar-collapse-hide">
+        <i class="bi bi-ui-checks-grid me-2"></i>Forms
+      </div>
+      <div class="text-muted small sidebar-collapse-hide">Components & Examples</div>
+    </div>
+  `,
   items: [
     // Overview
     {
