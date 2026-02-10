@@ -1,4 +1,4 @@
-import View from '/src/core/views/View.js';
+import { View } from 'web-mojo';
 
 /**
  * FormsOverview - Landing page for forms documentation

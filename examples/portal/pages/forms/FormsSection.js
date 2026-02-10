@@ -1,4 +1,4 @@
-import Page from '@core/Page.js';
+import { Page } from 'web-mojo';
 import { formsMenu } from '../../menus/formsMenu.js';
 import FormsOverview from './FormsOverview.js';
 
