@@ -403,6 +403,9 @@ class TabView extends View {
     const activePane = this.element.querySelector(`#${activeTabId}`);
     const prevPane = previousTabId ? this.element.querySelector(`#${previousTabId}`) : null;
 
+    // Get the active view once at the top
+    const activeView = this.tabs[activeTabLabel];
+
     // Handle transitions if enabled
     if (this.enableTransitions) {
       // Start fade-out transition for previous pane
@@ -421,7 +424,6 @@ class TabView extends View {
       }
 
       // Mount the active tab's view before showing it (prevents flash of empty content)
-      const activeView = this.tabs[activeTabLabel];
       if (activeView) {
         const container = this.element.querySelector(`[data-container="${activeTabId}-content"]`);
         if (container && !activeView.isMounted()) {
@@ -448,7 +450,6 @@ class TabView extends View {
       }
 
       // Mount the active tab's view
-      const activeView = this.tabs[activeTabLabel];
       if (activeView) {
         const container = this.element.querySelector(`[data-container="${activeTabId}-content"]`);
         if (container && !activeView.isMounted()) {
