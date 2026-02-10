@@ -1,11 +1,14 @@
-import { View, FormView } from 'web-mojo';
+import { Page, FormView } from 'web-mojo';
 
 /**
  * TextInputsPage - Demonstrates all text input field types
  * 
  * Shows 8 different text input types: text, email, password, tel, url, search, number, hex
  */
-class TextInputsPage extends View {
+class TextInputsPage extends Page {
+  static pageName = 'forms/text-inputs';
+  static title = 'Text Inputs';
+  static icon = 'bi-input-cursor-text';
   async onInit() {
     await super.onInit();
     

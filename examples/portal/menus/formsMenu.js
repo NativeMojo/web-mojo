@@ -46,70 +46,37 @@ export const formsMenu = {
       text: 'Text Inputs',
       icon: 'bi-input-cursor-text',
       route: '/forms/text-inputs',
-      badge: '8 types',
-      children: [
-        { text: 'Text', route: '/forms/text-inputs#text' },
-        { text: 'Email', route: '/forms/text-inputs#email' },
-        { text: 'Password', route: '/forms/text-inputs#password' },
-        { text: 'Tel', route: '/forms/text-inputs#tel' },
-        { text: 'URL', route: '/forms/text-inputs#url' },
-        { text: 'Search', route: '/forms/text-inputs#search' },
-        { text: 'Number', route: '/forms/text-inputs#number' },
-        { text: 'Hex', route: '/forms/text-inputs#hex' }
-      ]
+      badge: '8 types'
     },
     {
       text: 'Text Areas',
       icon: 'bi-textarea-t',
       route: '/forms/text-areas',
-      badge: '3 types',
-      children: [
-        { text: 'Textarea', route: '/forms/text-areas#textarea' },
-        { text: 'HTML Preview', route: '/forms/text-areas#htmlpreview' },
-        { text: 'JSON Editor', route: '/forms/text-areas#json' }
-      ]
+      badge: '3 types'
     },
     {
       text: 'Selection Fields',
       icon: 'bi-ui-checks',
       route: '/forms/selection-fields',
-      badge: '4 types',
-      children: [
-        { text: 'Select', route: '/forms/selection-fields#select' },
-        { text: 'Checkbox', route: '/forms/selection-fields#checkbox' },
-        { text: 'Radio', route: '/forms/selection-fields#radio' },
-        { text: 'Toggle', route: '/forms/selection-fields#toggle' }
-      ]
+      badge: '4 types'
     },
     {
       text: 'Date & Time',
       icon: 'bi-calendar-event',
       route: '/forms/date-time',
-      badge: '3 types',
-      children: [
-        { text: 'Date', route: '/forms/date-time#date' },
-        { text: 'DateTime', route: '/forms/date-time#datetime' },
-        { text: 'Time', route: '/forms/date-time#time' }
-      ]
+      badge: '3 types'
     },
     {
       text: 'Files & Media',
       icon: 'bi-file-earmark-arrow-up',
       route: '/forms/files',
-      badge: '1 type',
-      children: [
-        { text: 'File Upload', route: '/forms/files#file' }
-      ]
+      badge: '1 type'
     },
     {
       text: 'Other Inputs',
       icon: 'bi-sliders',
       route: '/forms/other-inputs',
-      badge: '2 types',
-      children: [
-        { text: 'Color Picker', route: '/forms/other-inputs#color' },
-        { text: 'Range Slider', route: '/forms/other-inputs#range' }
-      ]
+      badge: '2 types'
     },
     
     // Advanced Components

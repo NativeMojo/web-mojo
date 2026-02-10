@@ -1,11 +1,14 @@
-import { View, FormView } from 'web-mojo';
+import { Page, FormView } from 'web-mojo';
 
 /**
  * FormViewBasics - Demonstrates core FormView concepts
  * 
  * Shows how to create forms, define fields, handle submissions, and work with models
  */
-class FormViewBasics extends View {
+class FormViewBasics extends Page {
+  static pageName = 'forms/formview-basics';
+  static title = 'FormView Basics';
+  static icon = 'bi-file-earmark-code';
   async onInit() {
     await super.onInit();
     
