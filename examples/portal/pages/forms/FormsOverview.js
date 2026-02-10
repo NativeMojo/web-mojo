@@ -9,18 +9,6 @@ class FormsOverview extends View {
   getTemplate() {
     return `
       <div class="forms-overview">
-        <!-- Hero Section -->
-        <div class="mb-4">
-          <h2 class="h3 mb-2">
-            <i class="bi bi-ui-checks-grid me-2 text-primary"></i>
-            WEB-MOJO Forms
-          </h2>
-          <p class="lead text-muted">
-            Build powerful, flexible forms with minimal code. Declarative configuration, 
-            built-in validation, and seamless model integration.
-          </p>
-        </div>
-        
         <!-- Quick Start -->
         <div class="card mb-4">
           <div class="card-header bg-white">

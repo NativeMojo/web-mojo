@@ -12,6 +12,7 @@ class FormsSection extends Page {
   static pageName = 'forms-section';
   static title = 'Forms Portal';
   static icon = 'bi-ui-checks-grid';
+  static description = 'Build powerful, flexible forms with minimal code. Declarative configuration, built-in validation, and seamless model integration.';
   async onInit() {
     await super.onInit();
     
