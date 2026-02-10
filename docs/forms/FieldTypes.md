@@ -1,1477 +1,358 @@
-# Field Types Reference
+# Field Types - Master Quick Reference
 
-This guide covers all basic field types available in WEB-MOJO forms. For advanced input components (TagInput, DatePicker, etc.), see the [inputs/ documentation](./inputs/README.md).
+Complete reference of all available field types in WEB-MOJO forms. Use this as a quick lookup guide to find the right field type for your needs.
 
-## Quick Reference
+---
 
-### Basic Input Fields
-| Field Type | Use Case | Key Options |
-|------------|----------|-------------|
-| `text` | Single-line text | `placeholder`, `maxlength`, `pattern` |
-| `email` | Email addresses | `placeholder`, validation |
-| `password` | Passwords | `showToggle`, `strengthMeter`, `autocomplete` |
-| `tel` | Phone numbers | `placeholder`, `pattern` |
-| `url` | URLs | `placeholder`, validation |
-| `search` | Search with live filtering | `debounce`, `data-filter` |
-| `hex` | Hexadecimal values | `hexType`, `allowPrefix`, `minLength` |
-| `number` | Numeric input | `min`, `max`, `step` |
-| `textarea` | Multi-line text | `rows`, `cols`, `maxlength` |
-| `htmlpreview` | HTML with preview | `rows`, sandboxed iframe |
-| `json` | JSON data | `rows`, auto-formatting |
+## How to Use This Guide
+
+- **Need quick lookup?** Use the tables below to find the field type you need
+- **Want detailed docs?** Click the links to detailed documentation:
+  - Basic/Native fields → [BasicTypes.md](./BasicTypes.md)
+  - Advanced components → [inputs/](./inputs/)
+
+---
+
+## All Field Types at a Glance
+
+### Text Input Fields
+
+| Type | Description | Key Features | Docs |
+|------|-------------|--------------|------|
+| `text` | Single-line text input | Placeholder, pattern validation | [BasicTypes](./BasicTypes.md#text---single-line-text) |
+| `email` | Email address input | Built-in email validation | [BasicTypes](./BasicTypes.md#email---email-address) |
+| `password` | Password input | Show/hide toggle, strength meter | [BasicTypes](./BasicTypes.md#password---password-input) |
+| `tel` | Phone number input | Mobile numeric keyboard | [BasicTypes](./BasicTypes.md#tel---phone-number) |
+| `url` | URL input | Built-in URL validation | [BasicTypes](./BasicTypes.md#url---url-input) |
+| `search` | Search input | Live filtering, debouncing | [BasicTypes](./BasicTypes.md#search---search-input) |
+| `hex` | Hexadecimal input | Color/string hex validation | [BasicTypes](./BasicTypes.md#hex---hexadecimal-input) |
+| `number` | Numeric input | Min/max, step, spinners | [BasicTypes](./BasicTypes.md#number---numeric-input) |
+| `textarea` | Multi-line text | Rows, character count | [BasicTypes](./BasicTypes.md#textarea---multi-line-text) |
+| `htmlpreview` | HTML editor | Live preview in dialog | [BasicTypes](./BasicTypes.md#htmlpreview---html-with-preview) |
+| `json` | JSON editor | Auto-formatting, validation | [BasicTypes](./BasicTypes.md#json---json-editor) |
 
 ### Selection Fields
-| Field Type | Use Case | Key Options |
-|------------|----------|-------------|
-| `select` | Dropdown selection | `options`, `multiple`, `searchable` |
-| `multiselect` | Multi-select dropdown | `options`, `maxHeight`, `placeholder` |
-| `checkbox` | Boolean/multi-choice | `checked`, `options`, `inline` |
-| `toggle` / `switch` | Toggle switch | `checked`, `size` |
-| `radio` | Single choice | `options`, `inline` |
-| `buttongroup` | Button-style selection | `options`, `size`, `variant` |
-| `checklistdropdown` | Dropdown with checkboxes | `options`, `buttonText` |
+
+| Type | Description | Key Features | Docs |
+|------|-------------|--------------|------|
+| `select` | Dropdown select | Single/multiple, searchable | [BasicTypes](./BasicTypes.md#select---dropdown) |
+| `checkbox` | Checkbox | Single boolean or multiple | [BasicTypes](./BasicTypes.md#checkbox---checkboxes) |
+| `radio` | Radio buttons | Single selection, inline layout | [BasicTypes](./BasicTypes.md#radio---radio-buttons) |
+| `toggle` / `switch` | Toggle switch | On/off with sizes | [BasicTypes](./BasicTypes.md#toggle--switch---toggle-switch) |
+| `multiselect` | Multi-select dropdown | Checkbox-style dropdown | [inputs/MultiSelectDropdown](./inputs/MultiSelectDropdown.md) |
+| `buttongroup` | Button-style selection | Icon buttons, variants | [BasicTypes](./BasicTypes.md#buttongroup---button-group-selection) |
+| `checklistdropdown` | Dropdown with checkboxes | Compact multi-select | [BasicTypes](./BasicTypes.md#checklistdropdown---checklist-dropdown) |
+| `combo` / `combobox` | Editable dropdown | Type or select, autocomplete | [inputs/ComboInput](./inputs/ComboInput.md) |
 
 ### File & Media Fields
-| Field Type | Use Case | Key Options |
-|------------|----------|-------------|
-| `file` | File uploads | `accept`, `multiple`, `fileMode` |
-| `image` | Image upload with preview | `size`, `allowDrop`, `placeholder` |
+
+| Type | Description | Key Features | Docs |
+|------|-------------|--------------|------|
+| `file` | Basic file upload | Multiple files, accept types | [BasicTypes](./BasicTypes.md#file---file-upload) |
+| `image` | Image upload | Preview, drag-drop, sizes | [BasicTypes](./BasicTypes.md#image---image-upload-with-preview) |
 
 ### Date & Time Fields
-| Field Type | Use Case | Key Options |
-|------------|----------|-------------|
-| `date` | Date picker | `min`, `max` |
-| `datetime-local` | Date & time | `min`, `max` |
-| `time` | Time picker | `min`, `max`, `step` |
 
-### Other Fields
-| Field Type | Use Case | Key Options |
-|------------|----------|-------------|
-| `color` | Color picker | `value` |
-| `range` | Slider | `min`, `max`, `step` |
-| `hidden` | Hidden values | `value` |
-| `combo` / `combobox` | Editable dropdown | `options`, `allowCustom` |
-| `tabset` | Tabbed field groups | `tabs` |
+| Type | Description | Key Features | Docs |
+|------|-------------|--------------|------|
+| `date` | Date picker (native) | Min/max date constraints | [BasicTypes](./BasicTypes.md#date---date-picker) |
+| `datetime-local` | Date & time picker | Native HTML5 picker | [BasicTypes](./BasicTypes.md#datetime-local---date--time) |
+| `time` | Time picker | 12/24 hour, step intervals | [BasicTypes](./BasicTypes.md#time---time-picker) |
+| `datepicker` | Enhanced date picker | Easepick library, themes | [inputs/DatePicker](./inputs/DatePicker.md) |
+| `daterange` | Date range picker | Start/end date selection | [inputs/DateRangePicker](./inputs/DateRangePicker.md) |
 
----
+### Advanced Input Components
 
-## Text Inputs
+| Type | Description | Key Features | Docs |
+|------|-------------|--------------|------|
+| `tag` / `tags` | Tag/chip input | Add/remove tags, validation | [inputs/TagInput](./inputs/TagInput.md) |
+| `collection` | Collection select | Fetch from API, search | [inputs/CollectionSelect](./inputs/CollectionSelect.md) |
+| `collectionmultiselect` | Multi-select collection | Multiple from API | [inputs/CollectionMultiSelect](./inputs/CollectionMultiSelect.md) |
 
-### `text` - Single Line Text
+### Structural & Display Fields
 
-**Basic Usage:**
-```javascript
-{
-  type: 'text',
-  name: 'username',
-  label: 'Username',
-  placeholder: 'Enter your username',
-  required: true
-}
-```
+| Type | Description | Key Features | Docs |
+|------|-------------|--------------|------|
+| `hidden` | Hidden input | Store values invisibly | [BasicTypes](./BasicTypes.md#hidden---hidden-field) |
+| `header` / `heading` | Section header | H1-H6 headings | [BasicTypes](./BasicTypes.md#header---section-header) |
+| `html` | Custom HTML | Inject custom markup | [BasicTypes](./BasicTypes.md#html---custom-html) |
+| `divider` | Horizontal divider | Separate form sections | [BasicTypes](./BasicTypes.md#divider---horizontal-divider) |
+| `button` | Custom button | Actions, custom styling | [BasicTypes](./BasicTypes.md#button---custom-button) |
+| `tabset` | Tabbed field groups | Organize fields in tabs | [BasicTypes](./BasicTypes.md#tabset---tabbed-field-groups) |
+| `group` | Field group | Organize related fields | [README](./README.md#form-groups) |
 
-**Options:**
-- `placeholder` - Hint text shown when empty
-- `maxlength` - Maximum number of characters
-- `pattern` - Regex pattern for validation (HTML5)
-- `autocomplete` - Browser autocomplete hint (e.g., `'username'`, `'off'`)
-- `readonly` - Make field read-only
-- `disabled` - Disable the field
+### Other Input Types
 
-**Advanced Example:**
-```javascript
-{
-  type: 'text',
-  name: 'account_id',
-  label: 'Account ID',
-  placeholder: 'ACC-XXXX',
-  pattern: 'ACC-[0-9]{4}',
-  maxlength: 8,
-  help: 'Format: ACC-1234',
-  required: true,
-  validation: {
-    custom: (value) => {
-      if (!value.startsWith('ACC-')) {
-        return 'Account ID must start with ACC-';
-      }
-      return true;
-    }
-  }
-}
-```
+| Type | Description | Key Features | Docs |
+|------|-------------|--------------|------|
+| `color` | Color picker | Hex color selection | [BasicTypes](./BasicTypes.md#color---color-picker) |
+| `range` | Slider | Min/max, step, live value | [BasicTypes](./BasicTypes.md#range---slider) |
 
 ---
 
-### `email` - Email Address
+## By Use Case
 
-**Basic Usage:**
-```javascript
-{
-  type: 'email',
-  name: 'email',
-  label: 'Email Address',
-  placeholder: 'you@example.com',
-  required: true
-}
-```
+### User Profile Forms
+- Name: `text`
+- Email: `email`
+- Phone: `tel`
+- Avatar: `image` (with preview)
+- Bio: `textarea`
+- Birthday: `date` or `datepicker`
+- Skills: `tag` or `multiselect`
+- Notifications: `toggle` switches
 
-**Features:**
-- Automatic email validation (HTML5)
-- Mobile keyboards show @ symbol
-- Supports `multiple` for comma-separated emails
+### Product/Content Forms
+- Title: `text`
+- SKU: `text` or `hex`
+- Price: `number`
+- Description: `textarea`
+- Category: `select`
+- Tags: `tag`
+- Featured Image: `image`
+- Documents: `file` (multiple)
+- Publish Date: `datepicker`
+- Status: `buttongroup` or `radio`
 
-**Multiple Emails:**
-```javascript
-{
-  type: 'email',
-  name: 'recipients',
-  label: 'Email Recipients',
-  placeholder: 'email1@example.com, email2@example.com',
-  multiple: true,
-  help: 'Separate multiple emails with commas'
-}
-```
+### Search & Filters
+- Search: `search`
+- Date Range: `daterange`
+- Categories: `checklistdropdown`
+- Status: `buttongroup`
+- Options: `multiselect`
 
----
+### Settings Forms
+- Enable Features: `toggle` switches
+- Theme: `radio` or `buttongroup`
+- Language: `select`
+- Timezone: `select` (searchable)
+- Color Scheme: `color`
 
-### `password` - Password Input
-
-**Basic Usage:**
-```javascript
-{
-  type: 'password',
-  name: 'password',
-  label: 'Password',
-  placeholder: 'Enter password',
-  required: true
-}
-```
-
-**Options:**
-- `autocomplete` - `'current-password'`, `'new-password'`
-- `minlength` - Minimum password length
-- `pattern` - Password complexity pattern
-
-**Password with Strength Requirements:**
-```javascript
-{
-  type: 'password',
-  name: 'new_password',
-  label: 'New Password',
-  minlength: 8,
-  pattern: '(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{8,}',
-  help: 'Must contain at least 8 characters, one uppercase, one lowercase, and one number',
-  autocomplete: 'new-password',
-  required: true
-}
-```
+### Data Entry Forms
+- JSON Config: `json`
+- HTML Content: `htmlpreview`
+- API Key: `hex`
+- Metadata: `json`
 
 ---
 
-### `tel` - Phone Number
+## By Data Type
 
-**Basic Usage:**
-```javascript
-{
-  type: 'tel',
-  name: 'phone',
-  label: 'Phone Number',
-  placeholder: '(555) 123-4567'
-}
-```
-
-**Features:**
-- Mobile keyboards show numeric keypad
-- No automatic validation (use `pattern`)
-
-**US Phone Format:**
-```javascript
-{
-  type: 'tel',
-  name: 'phone',
-  label: 'Phone',
-  placeholder: '(555) 123-4567',
-  pattern: '\\([0-9]{3}\\) [0-9]{3}-[0-9]{4}',
-  help: 'Format: (555) 123-4567'
-}
-```
+| Data Type | Recommended Field Type |
+|-----------|----------------------|
+| **Text** | `text`, `textarea` |
+| **Email** | `email` |
+| **Phone** | `tel` |
+| **URL** | `url` |
+| **Password** | `password` |
+| **Number** | `number` |
+| **Currency** | `number` (with step: 0.01) |
+| **Percentage** | `number` or `range` |
+| **Boolean** | `checkbox`, `toggle` |
+| **Single Choice** | `radio`, `select`, `buttongroup` |
+| **Multiple Choice** | `checkbox` (multiple), `multiselect`, `checklistdropdown` |
+| **Date** | `date`, `datepicker` |
+| **Time** | `time` |
+| **DateTime** | `datetime-local`, `datepicker` |
+| **Date Range** | `daterange` |
+| **Color** | `color`, `hex` |
+| **File** | `file`, `image` |
+| **Tags/Keywords** | `tag`, `multiselect` |
+| **JSON Object** | `json` |
+| **HTML** | `htmlpreview`, `textarea` |
+| **Hex String** | `hex` |
+| **Foreign Key** | `select`, `collection` |
+| **Many-to-Many** | `collectionmultiselect`, `multiselect` |
 
 ---
 
-### `url` - URL Input
+## Field Type Decision Tree
 
-**Basic Usage:**
-```javascript
-{
-  type: 'url',
-  name: 'website',
-  label: 'Website',
-  placeholder: 'https://example.com'
-}
 ```
-
-**Features:**
-- Automatic URL validation (HTML5)
-- Mobile keyboards show .com button
-
-**URL with Protocol Check:**
-```javascript
-{
-  type: 'url',
-  name: 'profile_url',
-  label: 'Profile URL',
-  placeholder: 'https://github.com/username',
-  validation: {
-    custom: (value) => {
-      if (value && !value.startsWith('https://')) {
-        return 'URL must use HTTPS';
-      }
-      return true;
-    }
-  }
-}
+Need user input?
+├─ Yes
+│  ├─ Text input?
+│  │  ├─ Single line → text, email, tel, url, password
+│  │  ├─ Multiple lines → textarea
+│  │  ├─ Formatted content → htmlpreview, json
+│  │  └─ With suggestions → combo
+│  │
+│  ├─ Selection?
+│  │  ├─ Single choice
+│  │  │  ├─ Few options (2-4) → radio, buttongroup
+│  │  │  ├─ Many options (5+) → select
+│  │  │  └─ From API → collection
+│  │  │
+│  │  └─ Multiple choice
+│  │     ├─ Few options (2-4) → checkbox (multiple)
+│  │     ├─ Many options (5+) → multiselect, checklistdropdown
+│  │     └─ From API → collectionmultiselect
+│  │
+│  ├─ Number input?
+│  │  ├─ Precise value → number
+│  │  └─ Range/relative → range (slider)
+│  │
+│  ├─ Date/Time?
+│  │  ├─ Simple date → date (native)
+│  │  ├─ Enhanced date → datepicker
+│  │  ├─ Date range → daterange
+│  │  ├─ Time only → time
+│  │  └─ Date + Time → datetime-local
+│  │
+│  ├─ File upload?
+│  │  ├─ Any file → file
+│  │  └─ Image with preview → image
+│  │
+│  ├─ Boolean (on/off)?
+│  │  ├─ Single option → checkbox, toggle
+│  │  └─ Multiple options → checkbox (multiple)
+│  │
+│  └─ Special data?
+│     ├─ Tags/keywords → tag
+│     ├─ JSON data → json
+│     ├─ HTML content → htmlpreview
+│     ├─ Hex color → hex (hexType: 'color'), color
+│     ├─ Hex string → hex (hexType: 'string')
+│     └─ Color picker → color
+│
+└─ No (display only)
+   ├─ Section header → header
+   ├─ Custom content → html
+   ├─ Separator → divider
+   ├─ Hidden value → hidden
+   └─ Action button → button
 ```
 
 ---
 
-### `number` - Numeric Input
-
-**Basic Usage:**
-```javascript
-{
-  type: 'number',
-  name: 'age',
-  label: 'Age',
-  min: 18,
-  max: 120
-}
-```
-
-**Options:**
-- `min` - Minimum value
-- `max` - Maximum value
-- `step` - Increment/decrement step (default: 1)
-- `placeholder` - Hint text
-
-**Decimal Numbers:**
-```javascript
-{
-  type: 'number',
-  name: 'price',
-  label: 'Price',
-  min: 0,
-  step: 0.01,
-  placeholder: '0.00',
-  help: 'Enter price in USD'
-}
-```
-
-**Integer Only:**
-```javascript
-{
-  type: 'number',
-  name: 'quantity',
-  label: 'Quantity',
-  min: 1,
-  max: 999,
-  step: 1,
-  required: true
-}
-```
-
----
-
-### `textarea` - Multi-line Text
-
-**Basic Usage:**
-```javascript
-{
-  type: 'textarea',
-  name: 'description',
-  label: 'Description',
-  rows: 5,
-  placeholder: 'Enter description'
-}
-```
-
-**Options:**
-- `rows` - Number of visible rows (default: 3)
-- `cols` - Number of columns (rarely used, prefer CSS)
-- `maxlength` - Maximum characters
-- `placeholder` - Hint text
-
-**Large Text Area:**
-```javascript
-{
-  type: 'textarea',
-  name: 'notes',
-  label: 'Notes',
-  rows: 10,
-  maxlength: 5000,
-  placeholder: 'Enter detailed notes here...',
-  help: 'Maximum 5000 characters'
-}
-```
-
----
-
-### `search` - Search Input
-
-**Basic Usage:**
-```javascript
-{
-  type: 'search',
-  name: 'query',
-  label: 'Search',
-  placeholder: 'Search...',
-  debounce: 300
-}
-```
-
-**Features:**
-- Automatic live search filtering
-- Debounced input (default: 300ms)
-- Custom data attributes for filtering
-
-**With Live Filtering:**
-```javascript
-{
-  type: 'search',
-  name: 'search_users',
-  label: 'Search Users',
-  placeholder: 'Type to search...',
-  debounce: 500,
-  attributes: {
-    'data-filter': 'live-search',
-    'data-change-action': 'filter-search',
-    'data-target': 'user-list'
-  }
-}
-```
-
----
-
-### `hex` - Hexadecimal Input
-
-**Basic Usage:**
-```javascript
-{
-  type: 'hex',
-  name: 'color_hex',
-  label: 'Hex Color',
-  hexType: 'color',
-  allowPrefix: true
-}
-```
-
-**Options:**
-- `hexType` - Validation type: `'color'`, `'color-short'`, `'string'`, `'any'`
-- `allowPrefix` - Allow `#` prefix (default: true)
-- `minLength` - Minimum hex length
-- `maxLength` - Maximum hex length
-
-**Hex Types:**
-
-**Color (6 digits):**
-```javascript
-{
-  type: 'hex',
-  name: 'brand_color',
-  label: 'Brand Color',
-  hexType: 'color',
-  allowPrefix: true,
-  placeholder: '#FF0000'
-}
-// Accepts: #FF0000 or FF0000
-```
-
-**Color Short (3 or 6 digits):**
-```javascript
-{
-  type: 'hex',
-  name: 'theme_color',
-  label: 'Theme Color',
-  hexType: 'color-short',
-  allowPrefix: true,
-  placeholder: '#F00 or #FF0000'
-}
-// Accepts: #F00, F00, #FF0000, FF0000
-```
-
-**General Hex String:**
-```javascript
-{
-  type: 'hex',
-  name: 'api_key',
-  label: 'API Key',
-  hexType: 'string',
-  allowPrefix: false,
-  minLength: 32,
-  maxLength: 32,
-  placeholder: 'ABCDEF1234567890...'
-}
-// Accepts: Any hex string (0-9, A-F) of specified length
-```
-
----
-
-### `json` - JSON Editor
-
-**Basic Usage:**
-```javascript
-{
-  type: 'json',
-  name: 'metadata',
-  label: 'Metadata',
-  rows: 8
-}
-```
-
-**Features:**
-- Automatic JSON formatting (pretty-print)
-- Object values automatically stringified
-- Validation on submission
-
-**With Default Object:**
-```javascript
-{
-  type: 'json',
-  name: 'config',
-  label: 'Configuration',
-  rows: 10,
-  value: {
-    api_url: 'https://api.example.com',
-    timeout: 5000,
-    retries: 3
-  },
-  help: 'JSON configuration object'
-}
-// Automatically formatted as:
-// {
-//   "api_url": "https://api.example.com",
-//   "timeout": 5000,
-//   "retries": 3
-// }
-```
-
----
-
-### `htmlpreview` - HTML with Preview
-
-**Basic Usage:**
-```javascript
-{
-  type: 'htmlpreview',
-  name: 'html_content',
-  label: 'HTML Content',
-  rows: 12,
-  help: 'Write HTML and click Preview to see it rendered'
-}
-```
-
-**Features:**
-- Textarea for HTML editing
-- Preview button in top-right corner
-- Opens sandboxed iframe in dialog
-- Useful for email templates, rich content
-
-**Email Template Example:**
-```javascript
-{
-  type: 'htmlpreview',
-  name: 'email_template',
-  label: 'Email Template',
-  rows: 15,
-  required: true,
-  help: 'Use HTML with inline styles for best email compatibility',
-  value: `
-<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; }
-    .header { background: #007bff; color: white; padding: 20px; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>Welcome!</h1>
-  </div>
-</body>
-</html>
-  `.trim()
-}
-```
-
----
-
-## Selection Inputs
-
-### `select` - Dropdown
-
-**Basic Usage:**
-```javascript
-{
-  type: 'select',
-  name: 'country',
-  label: 'Country',
-  options: [
-    { value: 'us', label: 'United States' },
-    { value: 'ca', label: 'Canada' },
-    { value: 'mx', label: 'Mexico' }
-  ],
-  required: true
-}
-```
-
-**Options Formats:**
-
-**Array of Objects:**
-```javascript
-options: [
-  { value: 'admin', label: 'Administrator' },
-  { value: 'user', label: 'Regular User' },
-  { value: 'guest', label: 'Guest' }
-]
-```
-
-**Array of Strings (value = label):**
-```javascript
-options: ['Small', 'Medium', 'Large', 'X-Large']
-```
-
-**Object (key = value, value = label):**
-```javascript
-options: {
-  'draft': 'Draft',
-  'pending': 'Pending Review',
-  'published': 'Published',
-  'archived': 'Archived'
-}
-```
-
-**Multi-Select:**
-```javascript
-{
-  type: 'select',
-  name: 'interests',
-  label: 'Interests',
-  multiple: true,
-  size: 5,
-  options: [
-    'Programming',
-    'Design',
-    'Marketing',
-    'Sales',
-    'Support'
-  ],
-  help: 'Hold Ctrl/Cmd to select multiple'
-}
-```
-
-**With Placeholder:**
-```javascript
-{
-  type: 'select',
-  name: 'department',
-  label: 'Department',
-  options: [
-    { value: '', label: '-- Select Department --' },
-    { value: 'eng', label: 'Engineering' },
-    { value: 'sales', label: 'Sales' },
-    { value: 'hr', label: 'Human Resources' }
-  ]
-}
-```
-
-**Searchable Select:**
-```javascript
-{
-  type: 'select',
-  name: 'country',
-  label: 'Country',
-  searchable: true, // Adds search input above select
-  options: [
-    { value: 'us', label: 'United States' },
-    { value: 'ca', label: 'Canada' },
-    { value: 'mx', label: 'Mexico' },
-    { value: 'uk', label: 'United Kingdom' },
-    // ... many more options
-  ]
-}
-```
-
-**Auto-Generate Numeric Options:**
-```javascript
-{
-  type: 'select',
-  name: 'birth_year',
-  label: 'Birth Year',
-  start: 1950,
-  end: 2010,
-  step: 1,
-  prefix: 'Year '
-}
-// Automatically generates options: Year 1950, Year 1951, ..., Year 2010
-```
-
-**With Formatting:**
-```javascript
-{
-  type: 'select',
-  name: 'day',
-  label: 'Day',
-  start: 1,
-  end: 31,
-  format: 'ordinal' // Formats as: 1st, 2nd, 3rd, 4th, ...
-}
-```
-
----
-
-### `checkbox` - Checkboxes
-
-**Single Checkbox (Boolean):**
-```javascript
-{
-  type: 'checkbox',
-  name: 'agree_terms',
-  label: 'I agree to the Terms of Service',
-  required: true
-}
-```
-
-**Multiple Checkboxes:**
-```javascript
-{
-  type: 'checkbox',
-  name: 'features',
-  label: 'Enabled Features',
-  options: [
-    { value: 'email', label: 'Email Notifications' },
-    { value: 'sms', label: 'SMS Notifications' },
-    { value: 'push', label: 'Push Notifications' }
-  ]
-}
-```
-
-**Pre-checked Values:**
-```javascript
-{
-  type: 'checkbox',
-  name: 'permissions',
-  label: 'Permissions',
-  options: ['read', 'write', 'delete'],
-  value: ['read', 'write'] // Pre-check read and write
-}
-```
-
-**Inline Layout:**
-```javascript
-{
-  type: 'checkbox',
-  name: 'hobbies',
-  label: 'Hobbies',
-  options: ['Reading', 'Sports', 'Music', 'Gaming'],
-  inline: true // Display horizontally
-}
-```
-
----
-
-### `radio` - Radio Buttons
-
-**Basic Usage:**
-```javascript
-{
-  type: 'radio',
-  name: 'subscription',
-  label: 'Subscription Plan',
-  options: [
-    { value: 'free', label: 'Free' },
-    { value: 'pro', label: 'Pro - $9/month' },
-    { value: 'enterprise', label: 'Enterprise - $49/month' }
-  ],
-  required: true
-}
-```
-
-**Pre-selected Value:**
-```javascript
-{
-  type: 'radio',
-  name: 'theme',
-  label: 'Theme',
-  options: ['Light', 'Dark', 'Auto'],
-  value: 'Auto' // Default selection
-}
-```
-
-**Inline Layout:**
-```javascript
-{
-  type: 'radio',
-  name: 'gender',
-  label: 'Gender',
-  options: ['Male', 'Female', 'Other', 'Prefer not to say'],
-  inline: true
-}
-```
-
----
-
-### `toggle` / `switch` - Toggle Switch
-
-**Basic Usage:**
-```javascript
-{
-  type: 'toggle',
-  name: 'email_notifications',
-  label: 'Enable Email Notifications',
-  value: true
-}
-```
-
-**Options:**
-- `size` - Switch size: `'sm'`, `'md'` (default), `'lg'`
-- `checked` / `value` - Initial state (boolean)
-
-**Different Sizes:**
-```javascript
-{
-  type: 'toggle',
-  name: 'dark_mode',
-  label: 'Dark Mode',
-  size: 'lg',
-  value: false
-}
-```
-
-**Multiple Toggles:**
-```javascript
-[
-  {
-    type: 'toggle',
-    name: 'notifications_email',
-    label: 'Email Notifications',
-    value: true,
-    colClass: 'col-12'
-  },
-  {
-    type: 'toggle',
-    name: 'notifications_sms',
-    label: 'SMS Notifications',
-    value: false,
-    colClass: 'col-12'
-  },
-  {
-    type: 'toggle',
-    name: 'notifications_push',
-    label: 'Push Notifications',
-    value: true,
-    colClass: 'col-12'
-  }
-]
-```
-
----
-
-### `multiselect` - Multi-Select Dropdown
-
-**Basic Usage:**
-```javascript
-{
-  type: 'multiselect',
-  name: 'skills',
-  label: 'Skills',
-  options: [
-    { value: 'js', label: 'JavaScript' },
-    { value: 'py', label: 'Python' },
-    { value: 'java', label: 'Java' },
-    { value: 'go', label: 'Go' }
-  ],
-  placeholder: 'Select skills...'
-}
-```
-
-**Options:**
-- `options` - Array of options (objects or strings)
-- `placeholder` - Placeholder text
-- `maxHeight` - Maximum dropdown height in pixels (default: 300)
-- `value` - Pre-selected values (array)
-
-**With Pre-selected Values:**
-```javascript
-{
-  type: 'multiselect',
-  name: 'permissions',
-  label: 'Permissions',
-  options: ['read', 'write', 'delete', 'admin'],
-  value: ['read', 'write'],
-  maxHeight: 200
-}
-```
-
----
-
-### `buttongroup` - Button Group Selection
-
-**Basic Usage:**
-```javascript
-{
-  type: 'buttongroup',
-  name: 'view_mode',
-  label: 'View Mode',
-  options: [
-    { value: 'grid', label: 'Grid', icon: 'bi-grid' },
-    { value: 'list', label: 'List', icon: 'bi-list' },
-    { value: 'table', label: 'Table', icon: 'bi-table' }
-  ],
-  value: 'grid'
-}
-```
-
-**Options:**
-- `options` - Array of button options
-- `size` - Button size: `'sm'`, `'md'`, `'lg'`
-- `variant` - Button style: `'outline-primary'`, `'outline-secondary'`, etc.
-- `value` - Selected button value
-
-**Styled Button Group:**
-```javascript
-{
-  type: 'buttongroup',
-  name: 'alignment',
-  label: 'Text Alignment',
-  size: 'sm',
-  variant: 'outline-secondary',
-  options: [
-    { value: 'left', label: 'Left', icon: 'bi-text-left' },
-    { value: 'center', label: 'Center', icon: 'bi-text-center' },
-    { value: 'right', label: 'Right', icon: 'bi-text-right' }
-  ]
-}
-```
-
----
-
-### `checklistdropdown` - Checklist Dropdown
-
-**Basic Usage:**
-```javascript
-{
-  type: 'checklistdropdown',
-  name: 'filters',
-  label: 'Filters',
-  buttonText: 'Select Filters',
-  buttonIcon: 'bi-filter',
-  options: [
-    { value: 'active', label: 'Active' },
-    { value: 'pending', label: 'Pending' },
-    { value: 'archived', label: 'Archived' }
-  ]
-}
-```
-
-**Options:**
-- `buttonText` - Dropdown button text
-- `buttonIcon` - Bootstrap icon class
-- `buttonClass` - Button CSS classes
-- `dropdownClass` - Dropdown menu CSS classes
-- `minWidth` - Minimum dropdown width
-
-**Custom Styling:**
-```javascript
-{
-  type: 'checklistdropdown',
-  name: 'status_filter',
-  buttonText: 'Filter by Status',
-  buttonIcon: 'bi-funnel',
-  buttonClass: 'btn btn-primary btn-sm dropdown-toggle',
-  minWidth: '250px',
-  options: [
-    { value: 'draft', label: 'Draft' },
-    { value: 'review', label: 'In Review' },
-    { value: 'published', label: 'Published' }
-  ]
-}
-```
-
----
-
-### `combo` / `combobox` / `autocomplete` - Editable Dropdown
-
-**Basic Usage:**
-```javascript
-{
-  type: 'combo',
-  name: 'country',
-  label: 'Country',
-  options: ['United States', 'Canada', 'Mexico', 'United Kingdom'],
-  placeholder: 'Type or select...',
-  allowCustom: true
-}
-```
-
-**Options:**
-- `options` - Array of options (strings or objects)
-- `placeholder` - Placeholder text
-- `allowCustom` - Allow user to enter custom values (default: true)
-- `maxHeight` - Maximum dropdown height
-
-**With Custom Values Disabled:**
-```javascript
-{
-  type: 'combobox',
-  name: 'state',
-  label: 'State',
-  options: [
-    { value: 'CA', label: 'California' },
-    { value: 'NY', label: 'New York' },
-    { value: 'TX', label: 'Texas' }
-  ],
-  allowCustom: false, // Only allow selection from list
-  placeholder: 'Select state...'
-}
-```
-
----
-
-## File Inputs
-
-### `file` - File Upload
-
-**Basic Usage:**
-```javascript
-{
-  type: 'file',
-  name: 'avatar',
-  label: 'Profile Picture',
-  accept: 'image/*'
-}
-```
-
-**Options:**
-- `accept` - File type filter (e.g., `'image/*'`, `'.pdf,.doc'`)
-- `multiple` - Allow multiple file selection
-- `fileMode` - `'base64'` (default) or `'multipart'`
-
-**Multiple Files:**
-```javascript
-{
-  type: 'file',
-  name: 'attachments',
-  label: 'Attachments',
-  multiple: true,
-  accept: '.pdf,.doc,.docx',
-  help: 'Upload PDF or Word documents'
-}
-```
-
-**Image Upload with Preview:**
-```javascript
-{
-  type: 'file',
-  name: 'photo',
-  label: 'Photo',
-  accept: 'image/jpeg,image/png',
-  fileMode: 'base64', // Embed as base64 in form data
-  help: 'JPEG or PNG only, max 5MB'
-}
-```
-
-**File Mode Comparison:**
-
-| Mode | Data Format | Use Case |
-|------|-------------|----------|
-| `base64` | Embedded in JSON | Small files, simple APIs |
-| `multipart` | FormData | Large files, standard uploads |
-
-**Multipart Example:**
-```javascript
-{
-  type: 'file',
-  name: 'document',
-  label: 'Document',
-  fileMode: 'multipart', // Use FormData for submission
-  accept: '.pdf'
-}
-```
-
-**Handling File Data:**
-```javascript
-// With base64 mode
-const formData = await form.getFormData();
-console.log(formData.avatar); // "data:image/png;base64,iVBORw0KG..."
-
-// With multipart mode
-const formData = await form.getFormData();
-formData.append('document', fileInput.files[0]);
-```
-
----
-
-### `image` - Image Upload with Preview
-
-**Basic Usage:**
-```javascript
-{
-  type: 'image',
-  name: 'profile_photo',
-  label: 'Profile Photo',
-  size: 'md'
-}
-```
-
-**Options:**
-- `size` - Preview size: `'xs'` (48px), `'sm'` (96px), `'md'` (150px), `'lg'` (200px), `'xl'` (300px)
-- `accept` - File types (default: `'image/*'`)
-- `allowDrop` - Enable drag & drop (default: true)
-- `placeholder` - Placeholder text
-
-**Size Options:**
-
-| Size | Dimensions | Use Case |
-|------|------------|----------|
-| `xs` | 48×48px | Thumbnails, icons |
-| `sm` | 96×96px | Small avatars |
-| `md` | 150×150px | Profile pictures |
-| `lg` | 200×200px | Featured images |
-| `xl` | 300×300px | Hero images |
-
-**Different Sizes:**
-```javascript
-{
-  type: 'image',
-  name: 'avatar',
-  label: 'Avatar',
-  size: 'sm',
-  accept: 'image/jpeg,image/png',
-  placeholder: 'Drop your avatar here'
-}
-```
-
-**Large Image Upload:**
-```javascript
-{
-  type: 'image',
-  name: 'banner',
-  label: 'Banner Image',
-  size: 'xl',
-  allowDrop: true,
-  help: 'Recommended: 1200x400px, max 5MB'
-}
-```
-
-**Features:**
-- Drag & drop support
-- Instant image preview
-- Remove button overlay
-- Responsive sizing
-- Supports renditions (automatic size selection)
-
-**Handling Renditions:**
-```javascript
-// The image field automatically selects appropriate rendition based on size
-{
-  type: 'image',
-  name: 'photo',
-  size: 'md'
-}
-
-// If value is an object with renditions, it will use:
-// xs: thumbnail_sm or square_sm
-// sm: thumbnail or thumbnail_sm
-// md: thumbnail_md or thumbnail
-// lg: thumbnail_lg or thumbnail_md
-// xl: original or thumbnail_lg
-```
-
----
-
-## Hidden & Special
-
-### `hidden` - Hidden Field
-
-**Basic Usage:**
-```javascript
-{
-  type: 'hidden',
-  name: 'user_id',
-  value: '12345'
-}
-```
-
-**Common Use Cases:**
-- IDs and foreign keys
-- CSRF tokens
-- Form state tracking
-
-**Example with Dynamic Value:**
-```javascript
-{
-  type: 'hidden',
-  name: 'csrf_token',
-  value: window.csrfToken || ''
-}
-```
-
----
-
-## Date & Time Inputs
-
-### `date` - Date Picker
-
-**Basic Usage:**
-```javascript
-{
-  type: 'date',
-  name: 'start_date',
-  label: 'Start Date',
-  required: true
-}
-```
-
-**With Min/Max:**
-```javascript
-{
-  type: 'date',
-  name: 'birth_date',
-  label: 'Birth Date',
-  min: '1900-01-01',
-  max: new Date().toISOString().split('T')[0], // Today
-  required: true
-}
-```
-
----
-
-### `datetime-local` - Date & Time
-
-**Basic Usage:**
-```javascript
-{
-  type: 'datetime-local',
-  name: 'meeting_time',
-  label: 'Meeting Time',
-  required: true
-}
-```
-
-**With Min (Now):**
-```javascript
-{
-  type: 'datetime-local',
-  name: 'appointment',
-  label: 'Appointment',
-  min: new Date().toISOString().slice(0, 16), // Current datetime
-  required: true
-}
-```
-
----
-
-### `time` - Time Picker
-
-**Basic Usage:**
-```javascript
-{
-  type: 'time',
-  name: 'alarm_time',
-  label: 'Alarm Time'
-}
-```
-
-**With Step (15-minute intervals):**
-```javascript
-{
-  type: 'time',
-  name: 'meeting_start',
-  label: 'Meeting Start',
-  step: 900, // 15 minutes in seconds
-  min: '09:00',
-  max: '17:00'
-}
-```
-
----
-
-## Other Input Types
-
-### `color` - Color Picker
-
-**Basic Usage:**
-```javascript
-{
-  type: 'color',
-  name: 'brand_color',
-  label: 'Brand Color',
-  value: '#007bff'
-}
-```
-
----
-
-### `range` - Slider
-
-**Basic Usage:**
-```javascript
-{
-  type: 'range',
-  name: 'volume',
-  label: 'Volume',
-  min: 0,
-  max: 100,
-  step: 1,
-  value: 50
-}
-```
-
-**With Live Display:**
-```javascript
-{
-  type: 'range',
-  name: 'brightness',
-  label: 'Brightness: <span id="brightness-value">50</span>%',
-  min: 0,
-  max: 100,
-  value: 50,
-  attributes: {
-    'oninput': "document.getElementById('brightness-value').textContent = this.value"
-  }
-}
-```
-
----
-
-### `tabset` - Tabbed Field Groups
-
-**Basic Usage:**
-```javascript
-{
-  type: 'tabset',
-  name: 'user_settings',
-  tabs: [
-    {
-      label: 'Profile',
-      fields: [
-        { type: 'text', name: 'username', label: 'Username', required: true },
-        { type: 'email', name: 'email', label: 'Email', required: true }
-      ]
-    },
-    {
-      label: 'Security',
-      fields: [
-        { type: 'password', name: 'current_password', label: 'Current Password' },
-        { type: 'password', name: 'new_password', label: 'New Password' }
-      ]
-    },
-    {
-      label: 'Preferences',
-      fields: [
-        { type: 'toggle', name: 'dark_mode', label: 'Dark Mode' },
-        { type: 'select', name: 'language', label: 'Language', options: ['English', 'Spanish', 'French'] }
-      ]
-    }
-  ]
-}
-```
-
-**Options:**
-- `tabs` - Array of tab objects with `label` and `fields`
-- `name` - Optional name for generating stable IDs
-- `navClass` - CSS classes for tabs navigation (default: `'nav nav-tabs mb-3'`)
-- `contentClass` - CSS classes for tab content container (default: `'tab-content'`)
-
-**With Groups Inside Tabs:**
-```javascript
-{
-  type: 'tabset',
-  name: 'product_config',
-  navClass: 'nav nav-pills mb-3',
-  tabs: [
-    {
-      label: 'Basic Info',
-      fields: [
-        { type: 'text', name: 'name', label: 'Product Name', columns: 12 },
-        {
-          type: 'group',
-          columns: 6,
-          fields: [
-            { type: 'text', name: 'sku', label: 'SKU' },
-            { type: 'number', name: 'price', label: 'Price', min: 0 }
-          ]
-        }
-      ]
-    },
-    {
-      label: 'Media',
-      fields: [
-        { type: 'image', name: 'featured_image', label: 'Featured Image', size: 'lg' },
-        { type: 'file', name: 'documents', label: 'Documents', multiple: true }
-      ]
-    },
-    {
-      label: 'Advanced',
-      fields: [
-        { type: 'json', name: 'metadata', label: 'Metadata', rows: 10 },
-        { type: 'textarea', name: 'notes', label: 'Internal Notes', rows: 5 }
-      ]
-    }
-  ]
-}
-```
-
-**Features:**
-- Bootstrap tab navigation
-- First tab active by default
-- Proper ARIA attributes for accessibility
-- Fields in tabs support all column layouts
-- Groups work inside tabs
-
----
-
-## Common Field Options
-
-All field types support these common options:
-
-### Layout Options
-- `label` - Field label text
-- `placeholder` - Hint text (text inputs)
-- `help` - Help text shown below field
-- `colClass` - Bootstrap column class (default: `'col-12'`)
-- `labelClass` - CSS class for label
-- `inputClass` - CSS class for input element
-
-### Validation Options
-- `required` - Make field required
-- `validation` - Custom validation (see [BestPractices.md](./BestPractices.md))
-- `pattern` - HTML5 pattern validation
-- `min` / `max` - Numeric/date constraints
-- `minlength` / `maxlength` - String length constraints
-
-### State Options
-- `value` - Initial/default value
-- `disabled` - Disable the field
-- `readonly` - Make field read-only
-
-### Accessibility Options
-- `id` - Custom field ID (auto-generated if omitted)
-- `attributes` - Additional HTML attributes
-
----
-
-## Grid Layout Examples
+## Common Patterns
 
 ### Two-Column Layout
 ```javascript
 fields: [
-  {
-    type: 'text',
-    name: 'first_name',
-    label: 'First Name',
-    colClass: 'col-md-6',
-    required: true
-  },
-  {
-    type: 'text',
-    name: 'last_name',
-    label: 'Last Name',
-    colClass: 'col-md-6',
-    required: true
-  }
-]
-```
-
-### Three-Column Layout
-```javascript
-fields: [
-  {
-    type: 'text',
-    name: 'city',
-    label: 'City',
-    colClass: 'col-md-4'
-  },
-  {
-    type: 'select',
-    name: 'state',
-    label: 'State',
-    colClass: 'col-md-4',
-    options: stateOptions
-  },
-  {
-    type: 'text',
-    name: 'zip',
-    label: 'ZIP Code',
-    colClass: 'col-md-4',
-    maxlength: 5
-  }
+  { type: 'text', name: 'first_name', label: 'First Name', columns: 6 },
+  { type: 'text', name: 'last_name', label: 'Last Name', columns: 6 }
 ]
 ```
 
 ### Responsive Layout
 ```javascript
-{
-  type: 'textarea',
-  name: 'bio',
-  label: 'Biography',
-  colClass: 'col-12 col-lg-8', // Full width on mobile, 2/3 on large screens
-  rows: 6
-}
+fields: [
+  { 
+    type: 'text', 
+    name: 'city', 
+    label: 'City',
+    columns: { xs: 12, md: 4 } // Full width mobile, 1/3 desktop
+  }
+]
+```
+
+### Grouped Fields
+```javascript
+fields: [
+  {
+    type: 'group',
+    title: 'Contact Information',
+    columns: 6,
+    fields: [
+      { type: 'email', name: 'email', label: 'Email' },
+      { type: 'tel', name: 'phone', label: 'Phone' }
+    ]
+  }
+]
+```
+
+### Tabbed Organization
+```javascript
+fields: [
+  {
+    type: 'tabset',
+    tabs: [
+      {
+        label: 'Basic',
+        fields: [/* basic fields */]
+      },
+      {
+        label: 'Advanced',
+        fields: [/* advanced fields */]
+      }
+    ]
+  }
+]
 ```
 
 ---
 
 ## Next Steps
 
-- **Advanced Inputs**: See [inputs/README.md](./inputs/README.md) for TagInput, DatePicker, etc.
-- **Best Practices**: See [BestPractices.md](./BestPractices.md) for patterns and tips
-- **FormView API**: See [FormView.md](./FormView.md) for complete component reference
-- **Getting Started**: See [README.md](./README.md) for quick start guide
+- **Basic Fields** - See [BasicTypes.md](./BasicTypes.md) for detailed docs on native HTML5 fields
+- **Advanced Components** - See [inputs/](./inputs/) for component-based inputs
+- **FormView API** - See [FormView.md](./FormView.md) for form lifecycle and methods
+- **Validation** - See [Validation.md](./Validation.md) for validation patterns
+- **Best Practices** - See [BestPractices.md](./BestPractices.md) for common patterns and pitfalls
 
 ---
 
-## Complete Example
+## Field Type Aliases
 
-Here's a comprehensive form using many field types:
+Some field types have multiple names for convenience:
 
-```javascript
-const formConfig = {
-  title: 'User Profile',
-  fields: [
-    // Hidden
-    { type: 'hidden', name: 'user_id', value: '12345' },
-    
-    // Personal Info
-    { type: 'text', name: 'username', label: 'Username', required: true, colClass: 'col-md-6' },
-    { type: 'email', name: 'email', label: 'Email', required: true, colClass: 'col-md-6' },
-    { type: 'password', name: 'password', label: 'Password', minlength: 8, colClass: 'col-md-6' },
-    { type: 'password', name: 'confirm_password', label: 'Confirm Password', colClass: 'col-md-6' },
-    
-    // Contact
-    { type: 'tel', name: 'phone', label: 'Phone', placeholder: '(555) 123-4567' },
-    { type: 'url', name: 'website', label: 'Website', placeholder: 'https://example.com' },
-    
-    // Profile
-    { type: 'file', name: 'avatar', label: 'Avatar', accept: 'image/*' },
-    { type: 'textarea', name: 'bio', label: 'Bio', rows: 4, maxlength: 500 },
-    
-    // Preferences
-    { type: 'select', name: 'country', label: 'Country', options: countryOptions, colClass: 'col-md-6' },
-    { type: 'select', name: 'timezone', label: 'Timezone', options: timezoneOptions, colClass: 'col-md-6' },
-    { type: 'radio', name: 'theme', label: 'Theme', options: ['Light', 'Dark', 'Auto'], value: 'Auto' },
-    
-    // Settings
-    { type: 'checkbox', name: 'notifications', label: 'Email Notifications', options: [
-      { value: 'marketing', label: 'Marketing emails' },
-      { value: 'updates', label: 'Product updates' }
-    ]},
-    { type: 'range', name: 'volume', label: 'Notification Volume', min: 0, max: 100, value: 50 },
-    
-    // Date
-    { type: 'date', name: 'birth_date', label: 'Birth Date', max: new Date().toISOString().split('T')[0] },
-    
-    // Agreement
-    { type: 'checkbox', name: 'terms', label: 'I agree to the Terms of Service', required: true }
-  ]
-};
-```
+| Primary Type | Aliases |
+|--------------|---------|
+| `toggle` | `switch` |
+| `combo` | `combobox`, `autocomplete` |
+| `tag` | `tags` |
+| `header` | `heading` |
+| `collection-multiselect` | `collectionmultiselect` |
+| `datetime` | `datetime-local` |
+
+---
+
+## Quick Comparison
+
+### Select vs MultiSelect vs ChecklistDropdown
+
+| Feature | select | multiselect | checklistdropdown |
+|---------|--------|-------------|-------------------|
+| Multiple selection | Optional | Yes | Yes |
+| Visual style | Native dropdown | Custom dropdown | Bootstrap dropdown |
+| Searchable | Optional | Built-in | No |
+| Use case | Simple selection | Elegant multi-select | Compact filters |
+
+### Date vs DatePicker
+
+| Feature | date (native) | datepicker (Easepick) |
+|---------|---------------|----------------------|
+| Browser support | All modern | All (with polyfill) |
+| Customization | Limited | Full themes |
+| Visual style | Browser default | Consistent |
+| Use case | Simple date input | Enhanced UX |
+
+### File vs Image
+
+| Feature | file | image |
+|---------|------|-------|
+| Preview | No | Yes (with sizes) |
+| Drag & drop | Browser default | Enhanced |
+| Remove button | No | Yes |
+| Use case | Any file type | Images specifically |
+
+### Checkbox vs Toggle
+
+| Feature | checkbox | toggle |
+|---------|----------|--------|
+| Visual style | Square checkbox | Switch toggle |
+| Use case | Forms, agreements | Settings, features |
+| Multiple | Yes | Typically single |
+
+---
+
+## Related Documentation
+
+- [README.md](./README.md) - Forms overview and quick start
+- [BasicTypes.md](./BasicTypes.md) - Native HTML5 field types
+- [inputs/](./inputs/) - Advanced component inputs
+- [FormView.md](./FormView.md) - FormView API reference
+- [FormBuilder.md](./FormBuilder.md) - FormBuilder API reference
+- [Validation.md](./Validation.md) - Validation system
+- [BestPractices.md](./BestPractices.md) - Patterns and pitfalls
