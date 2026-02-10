@@ -102,6 +102,25 @@ class FormDialogsPage extends Page {
                 </div>
               </div>
             </div>
+
+            <!-- HTML Preview Dialog -->
+            <div class="col-lg-6">
+              <div class="card h-100">
+                <div class="card-header">
+                  <h5 class="card-title mb-0">
+                    <i class="bi bi-code-square me-2"></i>
+                    HTML Preview Dialog
+                  </h5>
+                </div>
+                <div class="card-body">
+                  <p class="card-text">Test HTML preview field with live preview in sandboxed iframe.</p>
+                  <button class="btn btn-danger" data-action="show-html-preview-form">
+                    <i class="bi bi-eye me-2"></i>
+                    Open HTML Preview Form
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Results Display -->
@@ -516,6 +535,169 @@ class FormDialogsPage extends Page {
     } catch (error) {
       console.error('Advanced form error:', error);
       this.getApp().showError('Failed to show advanced form');
+    }
+  }
+
+  async onActionShowHtmlPreviewForm(action, event, element) {
+    try {
+      // Sample HTML email template
+      const sampleHtml = `<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .button {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #6c757d;
+        }
+        .feature-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🎉 Welcome to Our Platform!</h1>
+        </div>
+        <div class="content">
+            <h2>Hello there!</h2>
+            <p>We're thrilled to have you join our community. This is a sample HTML email template that demonstrates the power of the HTML preview feature.</p>
+            
+            <div class="feature-box">
+                <strong>✨ What you can do:</strong>
+                <ul>
+                    <li>Edit HTML in real-time</li>
+                    <li>Preview changes instantly</li>
+                    <li>Use full CSS styling</li>
+                    <li>Create beautiful emails</li>
+                </ul>
+            </div>
+            
+            <p>Click the button below to get started:</p>
+            <center>
+                <a href="#" class="button">Get Started Now</a>
+            </center>
+            
+            <p>If you have any questions, feel free to reach out to our support team.</p>
+            <p>Best regards,<br><strong>The Team</strong></p>
+        </div>
+        <div class="footer">
+            <p>© 2024 Your Company. All rights reserved.</p>
+            <p>123 Main Street, City, State 12345</p>
+        </div>
+    </div>
+</body>
+</html>`;
+
+      const formData = await Dialog.showForm({
+        title: 'HTML Email Template Editor',
+        size: 'xl',
+        defaults: {
+          template_name: 'Welcome Email',
+          template_type: 'email',
+          html_content: sampleHtml,
+          notes: 'This is a sample welcome email template with modern styling.'
+        },
+        fields: [
+          {
+            type: 'text',
+            name: 'template_name',
+            label: 'Template Name',
+            required: true,
+            placeholder: 'e.g., Welcome Email, Newsletter...',
+            help: 'A descriptive name for this HTML template',
+            columns: 6
+          },
+          {
+            type: 'select',
+            name: 'template_type',
+            label: 'Template Type',
+            required: true,
+            options: [
+              { value: 'email', text: 'Email Template' },
+              { value: 'newsletter', text: 'Newsletter' },
+              { value: 'notification', text: 'Notification' },
+              { value: 'marketing', text: 'Marketing' },
+              { value: 'other', text: 'Other' }
+            ],
+            help: 'Select the type of template',
+            columns: 6
+          },
+          {
+            type: 'htmlpreview',
+            name: 'html_content',
+            label: 'HTML Content',
+            required: true,
+            rows: 12,
+            placeholder: 'Enter your HTML code here...',
+            help: 'Write your HTML code and click the Preview button (eye icon) to see the rendered output in a popup',
+            columns: 12
+          },
+          {
+            type: 'textarea',
+            name: 'notes',
+            label: 'Template Notes',
+            placeholder: 'Optional notes about this template...',
+            rows: 3,
+            help: 'Internal notes or documentation about this template',
+            columns: 12
+          }
+        ]
+      });
+
+      if (formData) {
+        this.displayFormResult('HTML Preview Form', formData);
+        this.getApp().showSuccess('HTML template form submitted successfully!');
+      } else {
+        this.getApp().showInfo('HTML preview form was cancelled');
+      }
+    } catch (error) {
+      console.error('HTML preview form error:', error);
+      this.getApp().showError('Failed to show HTML preview form');
     }
   }
 

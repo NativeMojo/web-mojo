@@ -21,9 +21,9 @@ class EmailHtmlPreviewView extends View {
                             <i class="bi bi-arrow-clockwise"></i> Refresh
                         </button>
                     </div>
-                    <iframe 
+                    <iframe
                         id="email-preview-frame"
-                        class="border rounded w-100" 
+                        class="border rounded w-100"
                         style="height: 500px; background: white;"
                         sandbox="allow-same-origin"
                         frameborder="0"
@@ -44,10 +44,10 @@ class EmailHtmlPreviewView extends View {
         if (!iframe) return;
 
         const htmlContent = this.model.get('html_template') || '';
-        
+
         // Get iframe document
         const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-        
+
         // Write HTML content
         iframeDoc.open();
         iframeDoc.write(htmlContent);

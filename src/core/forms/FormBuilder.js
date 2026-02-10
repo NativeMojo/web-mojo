@@ -139,6 +139,33 @@ class FormBuilder {
         </div>
       `,
 
+      htmlpreview: `
+        <div class="mojo-form-control">
+          {{#label}}
+          <label for="{{fieldId}}" class="{{labelClass}}">
+            {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}
+          </label>
+          {{/label}}
+          <div class="position-relative">
+            <textarea id="{{fieldId}}" name="{{name}}" class="{{inputClass}}{{#error}} is-invalid{{/error}}"
+                      rows="{{rows}}" {{#placeholder}}placeholder="{{placeholder}}"{{/placeholder}}
+                      {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}}
+                      {{#readonly}}readonly{{/readonly}}
+                      data-field-type="htmlpreview" {{{attrs}}}>{{fieldValue}}</textarea>
+            <button type="button" class="btn btn-sm btn-outline-secondary position-absolute"
+                    style="top: 8px; right: 8px; z-index: 10;"
+                    data-action="preview-html"
+                    data-target="{{fieldId}}"
+                    title="Preview HTML"
+                    aria-label="Preview HTML">
+              <i class="bi bi-eye"></i> Preview
+            </button>
+          </div>
+          {{#help}}<div class="{{helpClass}}">{{help}}</div>{{/help}}
+          {{#error}}<div class="{{errorClass}}">{{error}}</div>{{/error}}
+        </div>
+      `,
+
       select: `
         <div class="mojo-form-control">
           {{#label}}
@@ -661,6 +688,9 @@ class FormBuilder {
       case 'textarea':
         fieldHTML = this.renderTextareaField(field);
         break;
+      case 'htmlpreview':
+        fieldHTML = this.renderHtmlPreviewField(field);
+        break;
       case 'json':
         fieldHTML = this.renderJsonField(field);
         break;
@@ -1073,6 +1103,55 @@ class FormBuilder {
     };
 
     return Mustache.render(this.templates.textarea, context);
+  }
+
+  /**
+   * Render HTML preview field (textarea with preview button)
+   * @param {Object} field - Field configuration
+   * @returns {string} Field HTML
+   */
+  renderHtmlPreviewField(field) {
+    const {
+      name,
+      label,
+      value = '',
+      placeholder = '',
+      required = false,
+      disabled = false,
+      readonly = false,
+      rows = 5,
+      class: fieldClass = '',
+      attributes = {},
+      help = field.helpText || field.help || ''
+    } = field;
+
+    const inputClass = `${this.options.inputClass} ${fieldClass}`.trim();
+    const error = this.errors[name];
+    const fieldValue = (this.getFieldValue(name) ?? value);
+
+    const attrs = Object.entries(attributes).map(([key, val]) => `${key}="${this.escapeHtml(val)}"`).join(' ');
+    const fieldId = this.getFieldId(name);
+
+    const context = {
+      labelClass: this.options.labelClass,
+      inputClass: inputClass,
+      helpClass: this.options.helpClass,
+      errorClass: this.options.errorClass,
+      fieldId,
+      name,
+      fieldValue: fieldValue, // Pass raw value to template for correct rendering
+      label: label ? this.escapeHtml(label) : null,
+      placeholder: placeholder ? this.escapeHtml(placeholder) : null,
+      help: help ? this.escapeHtml(help) : null,
+      error: error ? this.escapeHtml(error) : null,
+      rows: rows || 5,
+      required,
+      disabled,
+      readonly,
+      attrs
+    };
+
+    return Mustache.render(this.templates.htmlpreview, context);
   }
 
   /**

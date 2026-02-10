@@ -160,6 +160,17 @@ const app = new PortalApp({
                     ]
                 },
                 {
+                    text: 'Navigation',
+                    icon: 'bi-signpost-split',
+                    children: [
+                        {
+                            text: 'TabView',
+                            route: '?page=tabview',
+                            icon: 'bi-ui-checks-grid'
+                        }
+                    ]
+                },
+                {
                     text: 'Dialogs',
                     route: '?page=dialogs',
                     icon: 'bi-input-cursor-text'

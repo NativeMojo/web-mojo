@@ -1097,6 +1097,30 @@ class FormView extends View {
   }
 
   /**
+   * Handle HTML preview button click
+   */
+  async onActionPreviewHtml(event, element) {
+    event.preventDefault();
+    
+    const targetId = element.getAttribute('data-target');
+    if (!targetId) return;
+
+    const textarea = this.element.querySelector(`#${targetId}`);
+    if (!textarea) return;
+
+    const htmlContent = textarea.value || '';
+
+    // Dynamically import Dialog to avoid circular dependencies
+    const Dialog = (await import('@core/views/feedback/Dialog.js')).default;
+    
+    // Show HTML preview using Dialog.showHtmlPreview
+    Dialog.showHtmlPreview({
+      html: htmlContent,
+      title: 'HTML Preview'
+    });
+  }
+
+  /**
    * Handle button group selection
    */
   async onActionSelectButtonOption(event, element) {

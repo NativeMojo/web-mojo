@@ -1277,6 +1277,84 @@ class Dialog extends View {
 
 
   /**
+   * Static method to show HTML preview in a sandboxed iframe
+   */
+  static async showHtmlPreview(options = {}) {
+    const htmlContent = options.html || options.content || '';
+    const title = options.title || 'HTML Preview';
+    const size = options.size || 'lg';
+    const height = options.height || 500;
+
+    const previewHtml = `
+      <div class="html-preview-container">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <small class="text-muted">Preview (sandboxed)</small>
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-action="refresh-preview">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+          </button>
+        </div>
+        <iframe 
+          id="html-preview-frame"
+          class="border rounded w-100" 
+          style="height: ${height}px; background: white;"
+          sandbox="allow-same-origin"
+          frameborder="0"
+        ></iframe>
+      </div>
+    `;
+
+    const dialog = new Dialog({
+      title,
+      size,
+      scrollable: false,
+      body: previewHtml,
+      buttons: [
+        {
+          text: 'Close',
+          class: 'btn-secondary',
+          dismiss: true
+        }
+      ]
+    });
+
+    // Handle refresh action
+    dialog.on('action:refresh-preview', async (event) => {
+      const iframe = dialog.element.querySelector('#html-preview-frame');
+      if (!iframe) return;
+
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      iframeDoc.open();
+      iframeDoc.write(htmlContent);
+      iframeDoc.close();
+    });
+
+    // Mount to fullscreen element if it exists, otherwise body
+    const fullscreenElement = document.querySelector('.table-fullscreen');
+    const targetContainer = fullscreenElement || document.body;
+    await dialog.render(true, targetContainer);
+
+    // Render HTML in iframe after dialog is rendered
+    const iframe = dialog.element.querySelector('#html-preview-frame');
+    if (iframe) {
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      iframeDoc.open();
+      iframeDoc.write(htmlContent);
+      iframeDoc.close();
+    }
+
+    // Show the dialog
+    dialog.show();
+
+    // Clean up when hidden
+    dialog.on('hidden', () => {
+      dialog.destroy();
+      dialog.element.remove();
+    });
+
+    return dialog;
+  }
+
+  /**
    * Show a dialog with promise-based button handling
    * - If a button has a handler, it will be called. Return semantics:
    *   - true or undefined: resolve and close (with button.value || button.action || index)
