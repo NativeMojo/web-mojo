@@ -201,8 +201,8 @@ class FormsPage extends Page {
         `;
     }
 
-    async onBeforeRender() {
-        await super.onBeforeRender();
+    async onInit() {
+        await super.onInit();
 
         // Initialize all forms
         this.initializeProfileForm();
