@@ -37,24 +37,8 @@ class FormsSection extends Page {
   getTemplate() {
     return `
       <div class="forms-section">
-        <!-- Header -->
-        <div class="page-header mb-4">
-          <div class="d-flex align-items-center justify-content-between">
-            <div>
-              <h1 class="h2 mb-1">
-                <i class="bi bi-ui-checks-grid me-2 text-primary"></i>
-                Forms Documentation & Examples
-              </h1>
-              <p class="text-muted mb-0">
-                Interactive examples and live code demonstrations for WEB-MOJO forms
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Main Content Area -->
         <div id="forms-content-area">
-          <!-- Child pages render here -->
+          <!-- FormsOverview renders here -->
         </div>
       </div>
     `;

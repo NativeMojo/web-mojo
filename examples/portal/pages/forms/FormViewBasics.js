@@ -146,8 +146,8 @@ class FormViewBasics extends Page {
                   Code
                 </h5>
               </div>
-              <div class="card-body">
-                <pre class="mb-0"><code class="language-javascript">const contactForm = new FormView({
+              <div class="card-body bg-dark">
+                <pre class="mb-0 bg-dark"><code class="language-javascript text-light">const contactForm = new FormView({
   fields: [
     {
       name: 'name',
@@ -209,8 +209,8 @@ class FormViewBasics extends Page {
                   Code
                 </h5>
               </div>
-              <div class="card-body">
-                <pre class="mb-0"><code class="language-javascript">const validationForm = new FormView({
+              <div class="card-body bg-dark">
+                <pre class="mb-0 bg-dark"><code class="language-javascript text-light">const validationForm = new FormView({
   fields: [
     {
       name: 'username',
