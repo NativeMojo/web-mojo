@@ -142,14 +142,9 @@ const app = new PortalApp({
                     children: [
                         {
                             text: '📚 Forms Portal',
-                            action: 'open_forms_portal',
+                            route: '?page=forms-section',
                             icon: 'bi-ui-checks-grid',
-                            badge: 'NEW',
-                            handler: async (action, event, el) => {
-                                console.log("Opening Forms Portal");
-                                app.sidebar.setActiveMenu("forms");
-                                app.router.navigate('?page=forms-section');
-                            }
+                            badge: 'NEW'
                         },
                         { divider: true },
                         {
