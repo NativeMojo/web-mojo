@@ -10,17 +10,26 @@ Comprehensive documentation for WEB-MOJO's form system, covering FormBuilder, Fo
 ```
 docs/forms/
 ├── README.md                           # Overview & Quick Start
-├── 01-FormView.md                      # FormView component guide
-├── 02-FormBuilder.md                   # FormBuilder HTML generation
-├── 03-FieldTypes.md                    # All available field types
-├── 04-Validation.md                    # Form validation system
-├── 05-FileHandling.md                  # File uploads & image cropping
-├── 06-AdvancedInputs.md               # TagInput, DatePicker, etc.
-├── 07-Groups-and-Layout.md            # Form groups & responsive layout
-├── 08-FormEvents.md                   # Event system & hooks
-├── 09-AutoSave.md                     # Auto-save functionality
-├── 10-FormPlugins.md                  # Plugin system
-└── 11-BestPractices.md                # Patterns & common pitfalls
+├── FormView.md                         # FormView component guide
+├── FormBuilder.md                      # FormBuilder HTML generation
+├── FieldTypes.md                       # Basic field types reference
+├── Validation.md                       # Form validation system
+├── FileHandling.md                     # File uploads & base64 vs multipart
+├── Groups-and-Layout.md                # Form groups & responsive layout
+├── FormEvents.md                       # Event system & hooks
+├── AutoSave.md                         # Auto-save functionality
+├── FormPlugins.md                      # Plugin system
+├── BestPractices.md                    # Patterns & common pitfalls
+└── inputs/                             # Advanced input components
+    ├── README.md                       # Inputs overview & comparison
+    ├── TagInput.md                     # Tag/chip input component
+    ├── DatePicker.md                   # Enhanced date picker
+    ├── DateRangePicker.md              # Date range selection
+    ├── CollectionSelect.md             # Collection dropdown
+    ├── CollectionMultiSelect.md        # Multi-select from collection
+    ├── ComboInput.md                   # Autocomplete/combo input
+    ├── MultiSelectDropdown.md          # Multi-select with checkboxes
+    └── ImageField.md                   # Image upload with cropping
 ```
 
 ---
@@ -154,67 +163,57 @@ docs/forms/
 
 ---
 
-### 03-FieldTypes.md - Field Types Reference
-**Purpose:** Complete reference of all field types with examples
+### FieldTypes.md - Basic Field Types Reference
+**Purpose:** Complete reference of basic/native field types
 
 **Sections:**
 1. **Basic Text Inputs**
    - `text` - Text input
-   - `email` - Email input
-   - `password` - Password with show/hide
-   - `number` - Number input
+   - `email` - Email input with validation
+   - `password` - Password with show/hide toggle
+   - `number` - Number input with min/max
    - `tel` - Telephone input
-   - `url` - URL input
+   - `url` - URL input with validation
    - `search` - Search input with live filter
    - `hex` - Hexadecimal input with validation
 
 2. **Text Areas**
    - `textarea` - Multi-line text
    - `htmlpreview` - HTML with preview button
-   - `json` - JSON editor
+   - `json` - JSON editor with formatting
 
 3. **Selection Fields**
    - `select` - Dropdown select
-   - `multiselect` - Multiple selection dropdown
    - `checkbox` - Single checkbox
    - `switch` / `toggle` - Toggle switch
    - `radio` - Radio button group
-   - `checklistdropdown` - Dropdown with checkboxes
-   - `buttongroup` - Button group selector
 
-4. **Date & Time**
-   - `date` - Date picker (native)
-   - `datetime` - DateTime picker (native)
-   - `time` - Time picker (native)
-   - `datepicker` - Enhanced date picker
-   - `daterange` - Date range picker
+4. **Date & Time (Native)**
+   - `date` - Date picker (native HTML5)
+   - `datetime` - DateTime picker (native HTML5)
+   - `time` - Time picker (native HTML5)
 
-5. **File Uploads**
-   - `file` - File input
-   - `image` - Image upload with cropping
+5. **Basic File Uploads**
+   - `file` - Basic file input
 
-6. **Advanced Inputs**
-   - `tag` / `tags` - Tag input
-   - `collection` - Collection select
-   - `collectionmultiselect` - Collection multi-select
-   - `combo` / `combobox` / `autocomplete` - Combo input
+6. **Other Inputs**
    - `color` - Color picker
    - `range` - Range slider
 
 7. **Structural Elements**
    - `header` / `heading` - Section header
-   - `html` - Custom HTML
+   - `html` - Custom HTML block
    - `divider` - Horizontal divider
    - `button` - Custom button
    - `hidden` - Hidden field
-   - `group` - Field grouping (see Groups-and-Layout.md)
-   - `tabset` - Tabbed sections
+
+8. **Advanced Inputs**
+   - Note: For advanced components like TagInput, DatePicker, CollectionSelect, etc., see [inputs/](./inputs/README.md)
 
 **Each field type includes:**
 - Purpose and use case
-- Configuration options
+- All configuration options
 - Code example
-- Screenshot/diagram
 - Common patterns
 - Common pitfalls
 
@@ -315,61 +314,131 @@ docs/forms/
 
 ---
 
-### 06-AdvancedInputs.md - Advanced Input Components
-**Purpose:** Guide to complex input components
+### inputs/README.md - Advanced Inputs Overview
+**Purpose:** Overview and comparison of all advanced input components
 
 **Sections:**
-1. **TagInput**
-   - Creating tag fields
-   - Separators (comma, enter)
-   - Max tags
+1. **What are Advanced Inputs?**
+   - Component-based inputs vs basic fields
+   - When to use advanced inputs
+   - Common features
+
+2. **Available Components**
+   - Quick reference table
+   - Feature comparison
+   - Use case guide
+
+3. **Component List**
+   - **[TagInput](./TagInput.md)** - Tag/chip input for multi-value fields
+   - **[DatePicker](./DatePicker.md)** - Enhanced date selection
+   - **[DateRangePicker](./DateRangePicker.md)** - Select date ranges
+   - **[CollectionSelect](./CollectionSelect.md)** - Dropdown from collection/API
+   - **[CollectionMultiSelect](./CollectionMultiSelect.md)** - Multi-select from collection
+   - **[ComboInput](./ComboInput.md)** - Autocomplete/combo input
+   - **[MultiSelectDropdown](./MultiSelectDropdown.md)** - Multi-select with checkboxes
+   - **[ImageField](./ImageField.md)** - Image upload with cropping
+
+4. **Common Patterns**
+   - Using with FormView
+   - Standalone usage
+   - Event handling
    - Validation
-   - Custom styling
-   - Events
 
-2. **DatePicker**
-   - Enhanced date picking
-   - Format options
-   - Display format vs value format
-   - Localization
-   - Date ranges
-   - Min/max dates
-
-3. **DateRangePicker**
-   - Start and end dates
-   - Field naming
-   - Format options
-   - Separator
-   - Validation
-   - Presets
-
-4. **CollectionSelect**
-   - Binding to collections
-   - Display field
-   - Value field
-   - Filtering
-   - Search
+5. **Performance Considerations**
+   - Large datasets
    - Lazy loading
+   - Debouncing
 
-5. **CollectionMultiSelect**
-   - Multiple selection from collection
-   - Selected items display
-   - Remove items
-   - Maximum selections
+---
 
-6. **ComboInput / ComboBox**
-   - Autocomplete functionality
-   - Data sources
-   - Filtering
+### Individual Input Component Docs
+
+Each component in `inputs/` follows this structure:
+
+#### Template: inputs/[ComponentName].md
+
+**Sections:**
+1. **Overview**
+   - What it does
+   - When to use it
+   - Visual example/screenshot
+
+2. **Quick Start**
+   - Simplest usage
+   - Installation/imports
+
+3. **In FormView**
+   - Using as field type
+   - Configuration in formConfig
+   - Example
+
+4. **Standalone Usage**
+   - Direct instantiation
+   - Without FormView
+   - Example
+
+5. **Configuration Options**
+   - Complete API reference
+   - All properties with types
+   - Default values
+   - Required vs optional
+
+6. **Methods**
+   - Public API methods
+   - Method signatures
+   - Use cases
+
+7. **Events**
+   - All events emitted
+   - Event data structure
+   - Event examples
+
+8. **Examples**
+   - Basic usage
+   - With validation
+   - With model binding
+   - Custom styling
+   - Advanced patterns
+   - Real-world scenarios
+
+9. **Styling & Customization**
+   - CSS classes
    - Custom templates
-   - Keyboard navigation
+   - Theming
+   - Bootstrap integration
 
-7. **MultiSelectDropdown**
-   - Multiple selection UI
-   - Checkbox list
-   - Select all/none
-   - Filter/search
-   - Selected badges
+10. **Common Patterns**
+    - Real-world examples
+    - Best practices
+    - Copy-paste ready code
+
+11. **Common Pitfalls**
+    - ❌ What NOT to do
+    - Why it's wrong
+    - ✅ How to fix it
+    - ⚠️ Warning callouts
+
+12. **Performance**
+    - Optimization tips
+    - Large dataset handling
+    - Memory considerations
+
+13. **Accessibility**
+    - Keyboard navigation
+    - Screen reader support
+    - ARIA attributes
+
+14. **API Reference**
+    - Constructor options
+    - Properties
+    - Methods
+    - Events
+    - Type definitions
+
+15. **Related Documentation**
+    - Links to related inputs
+    - FormView integration
+    - External resources
 
 ---
 
@@ -639,24 +708,32 @@ docs/forms/
 ## Implementation Priority
 
 ### Phase 1: Core Documentation (Essential)
-1. README.md - Quick start and overview
-2. 01-FormView.md - Most commonly used
-3. 03-FieldTypes.md - Reference material
-4. 11-BestPractices.md - Prevent common mistakes
+1. **README.md** - Quick start and overview
+2. **FormView.md** - Most commonly used component
+3. **FieldTypes.md** - Basic field types reference
+4. **BestPractices.md** - Prevent common mistakes
 
 ### Phase 2: Intermediate Topics
-5. 04-Validation.md - Important for real apps
-6. 05-FileHandling.md - Common need
-7. 08-FormEvents.md - Essential for interactivity
+5. **Validation.md** - Important for real apps
+6. **FileHandling.md** - Common need
+7. **FormEvents.md** - Essential for interactivity
+8. **Groups-and-Layout.md** - Form organization
 
-### Phase 3: Advanced Topics
-8. 06-AdvancedInputs.md - Power users
-9. 07-Groups-and-Layout.md - Complex forms
-10. 09-AutoSave.md - Advanced feature
+### Phase 3: Advanced Input Components
+9. **inputs/README.md** - Overview of all advanced inputs
+10. **inputs/TagInput.md** - Most common advanced input
+11. **inputs/DatePicker.md** - Very common need
+12. **inputs/DateRangePicker.md** - Builds on DatePicker
+13. **inputs/ImageField.md** - File handling showcase
+14. **inputs/CollectionSelect.md** - Common pattern
+15. **inputs/CollectionMultiSelect.md** - Builds on CollectionSelect
+16. **inputs/ComboInput.md** - Autocomplete needs
+17. **inputs/MultiSelectDropdown.md** - Alternative multi-select
 
-### Phase 4: Extension & Polish
-11. 02-FormBuilder.md - Advanced/rare usage
-12. 10-FormPlugins.md - Extensibility
+### Phase 4: Advanced Features & Extensions
+18. **AutoSave.md** - Advanced feature
+19. **FormBuilder.md** - Internal implementation (rare usage)
+20. **FormPlugins.md** - Extensibility for power users
 
 ---
 
