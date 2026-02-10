@@ -4,6 +4,8 @@
  */
 
 import { Page } from 'web-mojo';
+import FormView from '@core/forms/FormView.js';
+import { TagInput } from '@core/forms/inputs/index.js';
 
 class FormsPage extends Page {
     static pageName = 'forms';
@@ -662,7 +664,7 @@ class FormsPage extends Page {
     }
 
     initializeTagInputDemo() {
-        this.tagInputDemo = new TagInputView({
+        this.tagInputDemo = new TagInput({
             name: 'skills',
             placeholder: 'Add skills...',
             maxTags: 20,
