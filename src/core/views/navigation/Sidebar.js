@@ -962,7 +962,7 @@ class Sidebar extends View {
 
         for (const item of config.items) {
             if ((item.action == action) && item.handler) {
-                item.handler(action, event, el);
+                item.handler(action, event, el, this.getApp());
                 return true;
             }
         }
