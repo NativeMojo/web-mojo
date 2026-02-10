@@ -109,9 +109,20 @@ export class View {
 
   setTemplate(tpl)     { this.template = tpl ?? ""; return this; }
 
-  addChild(childView) {
+  addChild(childView, options) {
     try {
       if (!childView || typeof childView !== "object") return this;
+      
+      // Allow overriding containerId and id via options
+      if (options) {
+        if (options.containerId || options.container) {
+          childView.containerId = options.containerId || options.container;
+        }
+        if (options.id) {
+          childView.id = options.id;
+        }
+      }
+      
       childView.parent = this;
       if (this.getApp()) childView.app = this.app;
       this.children[childView.id] = childView;
