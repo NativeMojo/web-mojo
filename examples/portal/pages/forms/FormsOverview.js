@@ -10,331 +10,325 @@ class FormsOverview extends View {
     return `
       <div class="forms-overview">
         <!-- Hero Section -->
-        <div class="card border-0 shadow-sm mb-4 bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-          <div class="card-body p-4 text-white">
-            <div class="row align-items-center">
-              <div class="col-md-8">
-                <h2 class="mb-3">
-                  <i class="bi bi-ui-checks-grid me-2"></i>
-                  WEB-MOJO Forms
-                </h2>
-                <p class="lead mb-3">
-                  Build powerful, flexible forms with minimal code. Declarative configuration, 
-                  built-in validation, and seamless model integration.
-                </p>
-                <div class="d-flex gap-2 flex-wrap">
-                  <span class="badge bg-white bg-opacity-25 px-3 py-2">30+ Field Types</span>
-                  <span class="badge bg-white bg-opacity-25 px-3 py-2">8 Advanced Components</span>
-                  <span class="badge bg-white bg-opacity-25 px-3 py-2">Bootstrap 5</span>
-                  <span class="badge bg-white bg-opacity-25 px-3 py-2">Model Integration</span>
-                </div>
-              </div>
-              <div class="col-md-4 text-center d-none d-md-block">
-                <i class="bi bi-file-earmark-code display-1 opacity-50"></i>
-              </div>
-            </div>
-          </div>
+        <div class="mb-4">
+          <h2 class="h3 mb-2">
+            <i class="bi bi-ui-checks-grid me-2 text-primary"></i>
+            WEB-MOJO Forms
+          </h2>
+          <p class="lead text-muted">
+            Build powerful, flexible forms with minimal code. Declarative configuration, 
+            built-in validation, and seamless model integration.
+          </p>
         </div>
         
         <!-- Quick Start -->
-        <div class="row mb-4">
-          <div class="col-12">
-            <div class="card">
-              <div class="card-body">
-                <h3 class="card-title">
-                  <i class="bi bi-rocket-takeoff text-primary me-2"></i>
-                  Quick Start
-                </h3>
-                <p class="text-muted">Create your first form in seconds:</p>
-                
-                <pre class="bg-dark text-light p-3 rounded"><code class="text-light d-block" style="background: none; padding: 0;">import FormView from '@core/forms/FormView.js';
-
-const form = new FormView({
-  containerId: 'form-container',
-  formConfig: {
-    fields: [
-      { type: 'text', name: 'username', label: 'Username', required: true },
-      { type: 'email', name: 'email', label: 'Email', required: true },
-      { type: 'password', name: 'password', label: 'Password', required: true }
-    ]
-  }
+        <div class="card mb-4">
+          <div class="card-header bg-white">
+            <h3 class="h5 mb-0">
+              <i class="bi bi-rocket-takeoff text-primary me-2"></i>
+              Quick Start
+            </h3>
+          </div>
+          <div class="card-body">
+            <p class="text-muted">Create your first form in seconds:</p>
+            
+            <pre class="bg-dark text-white p-3 rounded mb-3"><code class="text-white" style="background: none; padding: 0;">const form = new FormView({
+  fields: [
+    { type: 'text', name: 'username', label: 'Username', required: true },
+    { type: 'email', name: 'email', label: 'Email', required: true },
+    { type: 'password', name: 'password', label: 'Password', required: true }
+  ]
 });
 
-this.addChild(form);</code></pre>
+this.addChild(form, { containerId: 'form-container' });</code></pre>
 
-                <a href="#/forms/formview-basics" class="btn btn-primary">
-                  <i class="bi bi-arrow-right me-1"></i>
-                  Learn FormView Basics
-                </a>
-              </div>
-            </div>
+            <a href="?page=forms/formview-basics" class="btn btn-primary">
+              <i class="bi bi-arrow-right me-1"></i>
+              Learn FormView Basics
+            </a>
           </div>
         </div>
         
-        <!-- Main Categories -->
-        <div class="row mb-4 g-3">
-          <!-- Basic Fields -->
-          <div class="col-md-4">
-            <div class="card h-100 hover-shadow">
-              <div class="card-body">
-                <div class="d-flex align-items-center mb-3">
-                  <div class="bg-primary bg-opacity-10 rounded p-3 me-3">
-                    <i class="bi bi-input-cursor-text text-primary fs-3"></i>
-                  </div>
-                  <div>
-                    <h5 class="card-title mb-0">Basic Fields</h5>
-                    <small class="text-muted">20+ field types</small>
-                  </div>
-                </div>
-                <p class="card-text text-muted small">
-                  Native HTML5 inputs including text, email, password, select, checkbox, 
-                  radio, date, file, and more.
-                </p>
-                <a href="#/forms/text-inputs" class="btn btn-sm btn-outline-primary">
-                  Explore Fields <i class="bi bi-arrow-right ms-1"></i>
-                </a>
-              </div>
-            </div>
+        <!-- Field Types Quick Reference -->
+        <div class="card mb-4">
+          <div class="card-header bg-white">
+            <h3 class="h5 mb-0">
+              <i class="bi bi-list-ul text-primary me-2"></i>
+              Field Types Quick Reference
+            </h3>
           </div>
-          
-          <!-- Advanced Components -->
-          <div class="col-md-4">
-            <div class="card h-100 hover-shadow">
-              <div class="card-body">
-                <div class="d-flex align-items-center mb-3">
-                  <div class="bg-success bg-opacity-10 rounded p-3 me-3">
-                    <i class="bi bi-stars text-success fs-3"></i>
-                  </div>
-                  <div>
-                    <h5 class="card-title mb-0">Advanced Components</h5>
-                    <small class="text-muted">8 rich inputs</small>
-                  </div>
-                </div>
-                <p class="card-text text-muted small">
-                  Enhanced inputs like TagInput, DatePicker, CollectionSelect, and ImageField 
-                  with advanced functionality.
-                </p>
-                <a href="#/forms/tag-input" class="btn btn-sm btn-outline-success">
-                  See Components <i class="bi bi-arrow-right ms-1"></i>
-                </a>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Form Features -->
-          <div class="col-md-4">
-            <div class="card h-100 hover-shadow">
-              <div class="card-body">
-                <div class="d-flex align-items-center mb-3">
-                  <div class="bg-info bg-opacity-10 rounded p-3 me-3">
-                    <i class="bi bi-gear-wide-connected text-info fs-3"></i>
-                  </div>
-                  <div>
-                    <h5 class="card-title mb-0">Features & Patterns</h5>
-                    <small class="text-muted">Validation, layouts, etc.</small>
-                  </div>
-                </div>
-                <p class="card-text text-muted small">
-                  Form validation, file handling, responsive layouts, model integration, 
-                  and best practices.
-                </p>
-                <a href="#/forms/validation" class="btn btn-sm btn-outline-info">
-                  Learn Features <i class="bi bi-arrow-right ms-1"></i>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Field Type Quick Reference -->
-        <div class="row mb-4">
-          <div class="col-12">
-            <div class="card">
-              <div class="card-header bg-white">
-                <h4 class="mb-0">
-                  <i class="bi bi-list-ul text-primary me-2"></i>
-                  Field Types Quick Reference
-                </h4>
-              </div>
-              <div class="card-body">
-                <div class="row g-3">
-                  <!-- Text Inputs -->
-                  <div class="col-md-6 col-lg-4">
-                    <h6 class="fw-bold"><i class="bi bi-input-cursor text-primary me-2"></i>Text Inputs</h6>
-                    <div class="d-flex flex-wrap gap-1">
-                      <span class="badge bg-light text-dark border">text</span>
-                      <span class="badge bg-light text-dark border">email</span>
-                      <span class="badge bg-light text-dark border">password</span>
-                      <span class="badge bg-light text-dark border">tel</span>
-                      <span class="badge bg-light text-dark border">url</span>
-                      <span class="badge bg-light text-dark border">search</span>
-                      <span class="badge bg-light text-dark border">number</span>
-                      <span class="badge bg-light text-dark border">hex</span>
-                    </div>
-                  </div>
-                  
-                  <!-- Selection -->
-                  <div class="col-md-6 col-lg-4">
-                    <h6 class="fw-bold"><i class="bi bi-check2-square text-primary me-2"></i>Selection</h6>
-                    <div class="d-flex flex-wrap gap-1">
-                      <span class="badge bg-light text-dark border">select</span>
-                      <span class="badge bg-light text-dark border">checkbox</span>
-                      <span class="badge bg-light text-dark border">radio</span>
-                      <span class="badge bg-light text-dark border">toggle</span>
-                      <span class="badge bg-success text-white">multiselect</span>
-                      <span class="badge bg-success text-white">combo</span>
-                    </div>
-                  </div>
-                  
-                  <!-- Date/Time -->
-                  <div class="col-md-6 col-lg-4">
-                    <h6 class="fw-bold"><i class="bi bi-calendar text-primary me-2"></i>Date & Time</h6>
-                    <div class="d-flex flex-wrap gap-1">
-                      <span class="badge bg-light text-dark border">date</span>
-                      <span class="badge bg-light text-dark border">datetime</span>
-                      <span class="badge bg-light text-dark border">time</span>
-                      <span class="badge bg-success text-white">datepicker</span>
-                      <span class="badge bg-success text-white">daterange</span>
-                    </div>
-                  </div>
-                  
-                  <!-- Files -->
-                  <div class="col-md-6 col-lg-4">
-                    <h6 class="fw-bold"><i class="bi bi-file-earmark text-primary me-2"></i>Files & Media</h6>
-                    <div class="d-flex flex-wrap gap-1">
-                      <span class="badge bg-light text-dark border">file</span>
-                      <span class="badge bg-success text-white">image</span>
-                    </div>
-                  </div>
-                  
-                  <!-- Advanced -->
-                  <div class="col-md-6 col-lg-4">
-                    <h6 class="fw-bold"><i class="bi bi-tags text-primary me-2"></i>Advanced</h6>
-                    <div class="d-flex flex-wrap gap-1">
-                      <span class="badge bg-success text-white">tag</span>
-                      <span class="badge bg-success text-white">collection</span>
-                      <span class="badge bg-success text-white">collectionmultiselect</span>
-                    </div>
-                  </div>
-                  
-                  <!-- Other -->
-                  <div class="col-md-6 col-lg-4">
-                    <h6 class="fw-bold"><i class="bi bi-sliders text-primary me-2"></i>Other</h6>
-                    <div class="d-flex flex-wrap gap-1">
-                      <span class="badge bg-light text-dark border">textarea</span>
-                      <span class="badge bg-light text-dark border">color</span>
-                      <span class="badge bg-light text-dark border">range</span>
-                      <span class="badge bg-light text-dark border">hidden</span>
-                      <span class="badge bg-success text-white">htmlpreview</span>
-                      <span class="badge bg-success text-white">json</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="mt-3">
-                  <small class="text-muted">
-                    <i class="bi bi-info-circle me-1"></i>
-                    <span class="badge bg-light text-dark border">Native</span> = Basic HTML5 fields
-                    <span class="ms-2"><span class="badge bg-success text-white">Enhanced</span> = Advanced components</span>
-                  </small>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Real-World Examples -->
-        <div class="row mb-4">
-          <div class="col-12">
-            <h4 class="mb-3">
-              <i class="bi bi-code-square text-primary me-2"></i>
-              Real-World Examples
+          <div class="card-body">
+            
+            <!-- Basic Input Fields -->
+            <h4 class="h6 fw-bold mt-3 mb-2">
+              <i class="bi bi-input-cursor text-primary me-2"></i>
+              Basic Input Fields
             </h4>
-          </div>
-          
-          <div class="col-md-6 col-lg-4 mb-3">
-            <div class="card h-100">
-              <div class="card-body">
-                <h6 class="card-title">
-                  <i class="bi bi-person-circle text-primary me-2"></i>
-                  User Profile Form
-                </h6>
-                <p class="card-text text-muted small">
-                  Complete profile form with image upload, validation, and model binding.
-                </p>
-                <a href="#/forms/examples/profile" class="btn btn-sm btn-outline-primary w-100">
-                  View Example
-                </a>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Field Type</th>
+                    <th>Use Case</th>
+                    <th>Key Options</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>text</code></td>
+                    <td>Single-line text</td>
+                    <td><code>placeholder</code>, <code>maxlength</code>, <code>pattern</code></td>
+                  </tr>
+                  <tr>
+                    <td><code>email</code></td>
+                    <td>Email addresses</td>
+                    <td><code>placeholder</code>, validation</td>
+                  </tr>
+                  <tr>
+                    <td><code>password</code></td>
+                    <td>Passwords</td>
+                    <td><code>minlength</code>, <code>pattern</code>, <code>autocomplete</code></td>
+                  </tr>
+                  <tr>
+                    <td><code>tel</code></td>
+                    <td>Phone numbers</td>
+                    <td><code>placeholder</code>, <code>pattern</code></td>
+                  </tr>
+                  <tr>
+                    <td><code>url</code></td>
+                    <td>URLs</td>
+                    <td><code>placeholder</code>, validation</td>
+                  </tr>
+                  <tr>
+                    <td><code>search</code></td>
+                    <td>Search with live filtering</td>
+                    <td><code>debounce</code>, <code>data-filter</code></td>
+                  </tr>
+                  <tr>
+                    <td><code>number</code></td>
+                    <td>Numeric input</td>
+                    <td><code>min</code>, <code>max</code>, <code>step</code></td>
+                  </tr>
+                  <tr>
+                    <td><code>hex</code></td>
+                    <td>Hexadecimal values</td>
+                    <td><code>hexType</code>, <code>allowPrefix</code></td>
+                  </tr>
+                  <tr>
+                    <td><code>textarea</code></td>
+                    <td>Multi-line text</td>
+                    <td><code>rows</code>, <code>cols</code>, <code>maxlength</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Selection Fields -->
+            <h4 class="h6 fw-bold mt-4 mb-2">
+              <i class="bi bi-check2-square text-primary me-2"></i>
+              Selection Fields
+            </h4>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Field Type</th>
+                    <th>Use Case</th>
+                    <th>Key Options</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>select</code></td>
+                    <td>Dropdown selection</td>
+                    <td><code>options</code>, <code>multiple</code></td>
+                  </tr>
+                  <tr>
+                    <td><code>checkbox</code></td>
+                    <td>Boolean/multi-choice</td>
+                    <td><code>checked</code>, <code>options</code>, <code>inline</code></td>
+                  </tr>
+                  <tr>
+                    <td><code>radio</code></td>
+                    <td>Single choice</td>
+                    <td><code>options</code>, <code>inline</code></td>
+                  </tr>
+                  <tr>
+                    <td><code>toggle</code></td>
+                    <td>Toggle switch</td>
+                    <td><code>checked</code>, <code>size</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Date & Time -->
+            <h4 class="h6 fw-bold mt-4 mb-2">
+              <i class="bi bi-calendar text-primary me-2"></i>
+              Date & Time Fields
+            </h4>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Field Type</th>
+                    <th>Use Case</th>
+                    <th>Key Options</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>date</code></td>
+                    <td>Date picker</td>
+                    <td><code>min</code>, <code>max</code></td>
+                  </tr>
+                  <tr>
+                    <td><code>datetime-local</code></td>
+                    <td>Date & time</td>
+                    <td><code>min</code>, <code>max</code></td>
+                  </tr>
+                  <tr>
+                    <td><code>time</code></td>
+                    <td>Time picker</td>
+                    <td><code>min</code>, <code>max</code>, <code>step</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Files & Other -->
+            <div class="row mt-4">
+              <div class="col-md-6">
+                <h4 class="h6 fw-bold mb-2">
+                  <i class="bi bi-file-earmark text-primary me-2"></i>
+                  File Fields
+                </h4>
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Field Type</th>
+                        <th>Use Case</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><code>file</code></td>
+                        <td>File uploads</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              
+              <div class="col-md-6">
+                <h4 class="h6 fw-bold mb-2">
+                  <i class="bi bi-sliders text-primary me-2"></i>
+                  Other Inputs
+                </h4>
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Field Type</th>
+                        <th>Use Case</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><code>color</code></td>
+                        <td>Color picker</td>
+                      </tr>
+                      <tr>
+                        <td><code>range</code></td>
+                        <td>Slider</td>
+                      </tr>
+                      <tr>
+                        <td><code>hidden</code></td>
+                        <td>Hidden values</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div class="col-md-6 col-lg-4 mb-3">
-            <div class="card h-100">
-              <div class="card-body">
-                <h6 class="card-title">
-                  <i class="bi bi-arrow-right-circle text-success me-2"></i>
-                  Multi-Step Wizard
-                </h6>
-                <p class="card-text text-muted small">
-                  Multi-page form wizard with progress indicator and validation per step.
-                </p>
-                <a href="#/forms/examples/wizard" class="btn btn-sm btn-outline-success w-100">
-                  View Example
-                </a>
-              </div>
-            </div>
-          </div>
-          
-          <div class="col-md-6 col-lg-4 mb-3">
-            <div class="card h-100">
-              <div class="card-body">
-                <h6 class="card-title">
-                  <i class="bi bi-funnel text-info me-2"></i>
-                  Search & Filter Form
-                </h6>
-                <p class="card-text text-muted small">
-                  Advanced search form with date ranges, multi-select, and live filtering.
-                </p>
-                <a href="#/forms/examples/filters" class="btn btn-sm btn-outline-info w-100">
-                  View Example
-                </a>
-              </div>
+            
+            <!-- Advanced Components Note -->
+            <div class="alert alert-info mt-4 mb-0">
+              <h5 class="alert-heading">
+                <i class="bi bi-stars me-2"></i>
+                Advanced Components
+              </h5>
+              <p class="mb-2">
+                MOJO also includes enhanced components with richer functionality:
+              </p>
+              <ul class="mb-0">
+                <li><strong>TagInput</strong> - Tag/chip input with autocomplete</li>
+                <li><strong>DatePicker</strong> - Enhanced date picker with calendar UI</li>
+                <li><strong>DateRangePicker</strong> - Select date ranges</li>
+                <li><strong>MultiSelect</strong> - Multi-select dropdown</li>
+                <li><strong>ComboInput</strong> - Autocomplete/editable dropdown</li>
+                <li><strong>CollectionSelect</strong> - Select from API/Collection data</li>
+                <li><strong>ImageField</strong> - Image upload with preview</li>
+              </ul>
             </div>
           </div>
         </div>
         
-        <!-- Interactive Tools -->
-        <div class="row">
-          <div class="col-12">
-            <div class="card border-warning">
+        <!-- Navigation Cards -->
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="card h-100">
               <div class="card-body">
-                <div class="d-flex align-items-center mb-3">
-                  <i class="bi bi-box text-warning fs-2 me-3"></i>
-                  <div>
-                    <h5 class="card-title mb-1">Form Playground</h5>
-                    <p class="card-text text-muted mb-0">
-                      Interactive tool to build and test forms with live code generation
-                    </p>
-                  </div>
-                  <a href="#/forms/playground" class="btn btn-warning ms-auto">
-                    Open Playground <i class="bi bi-box-arrow-up-right ms-1"></i>
-                  </a>
-                </div>
+                <h5 class="card-title">
+                  <i class="bi bi-input-cursor-text text-primary me-2"></i>
+                  Text Inputs
+                </h5>
+                <p class="card-text text-muted small">
+                  Explore all 8 text input types with examples and validation patterns.
+                </p>
+                <a href="?page=forms/text-inputs" class="btn btn-sm btn-outline-primary">
+                  View Examples <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4">
+            <div class="card h-100">
+              <div class="card-body">
+                <h5 class="card-title">
+                  <i class="bi bi-check2-square text-success me-2"></i>
+                  Selection Fields
+                </h5>
+                <p class="card-text text-muted small">
+                  Learn about select, checkbox, radio, and toggle components.
+                </p>
+                <a href="?page=forms/selection-fields" class="btn btn-sm btn-outline-success">
+                  View Examples <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-md-4">
+            <div class="card h-100">
+              <div class="card-body">
+                <h5 class="card-title">
+                  <i class="bi bi-shield-check text-info me-2"></i>
+                  Validation
+                </h5>
+                <p class="card-text text-muted small">
+                  Built-in validators, custom rules, and async validation examples.
+                </p>
+                <a href="?page=forms/validation" class="btn btn-sm btn-outline-info">
+                  Learn More <i class="bi bi-arrow-right ms-1"></i>
+                </a>
               </div>
             </div>
           </div>
         </div>
       </div>
-      
-      <style>
-        .hover-shadow {
-          transition: box-shadow 0.2s;
-        }
-        .hover-shadow:hover {
-          box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-        }
-      </style>
     `;
   }
 }
