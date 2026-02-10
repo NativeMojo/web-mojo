@@ -960,14 +960,24 @@ class Sidebar extends View {
         const config = this.getCurrentMenuConfig();
         if (!config) return;
 
-        for (const item of config.items) {
-            if ((item.action == action) && item.handler) {
-                item.handler(action, event, el, this.getApp());
-                return true;
+        // Helper to recursively search for action in items and children
+        const findAndExecuteHandler = (items) => {
+            for (const item of items) {
+                if ((item.action == action) && item.handler) {
+                    item.handler(action, event, el, this.getApp());
+                    return true;
+                }
+                // Check children recursively
+                if (item.children && item.children.length > 0) {
+                    if (findAndExecuteHandler(item.children)) {
+                        return true;
+                    }
+                }
             }
-        }
+            return false;
+        };
 
-        return false;
+        return findAndExecuteHandler(config.items);
     }
 
     /**
