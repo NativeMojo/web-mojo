@@ -15,6 +15,7 @@ import FormInputsPage from './pages/FormInputsPage.js';
 import FormValidationPage from './pages/FormValidationPage.js';
 import DialogsPage from './pages/DialogsPage.js';
 import FormDialogsPage from './pages/FormDialogsPage.js';
+import TabViewPage from './pages/TabViewPage.js';
 import ChartsPage from './pages/ChartsPage.js';
 import ImagePage from './pages/ImagePage.js';
 import FileDropPage from './pages/FileDropPage.js';
@@ -360,6 +361,7 @@ app.registerPage('form-inputs', FormInputsPage);
 app.registerPage('form-validation', FormValidationPage);
 app.registerPage('dialogs', DialogsPage);
 app.registerPage('form-dialogs', FormDialogsPage);
+app.registerPage('tabview', TabViewPage);
 app.registerPage('image', ImagePage);
 app.registerPage('file-drop', FileDropPage);
 app.registerPage('simple', Page, {
