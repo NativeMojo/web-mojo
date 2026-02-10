@@ -25,6 +25,7 @@ import { registerAdminPages, FileTablePage } from '/src/admin.js';
 import formsMenu from './menus/formsMenu.js';
 import FormsSection from './pages/forms/FormsSection.js';
 import FormViewBasics from './pages/forms/FormViewBasics.js';
+import TextInputsPage from './pages/forms/TextInputsPage.js';
 
 ConsoleSilencer.setLevel('debug');
 
@@ -377,6 +378,7 @@ app.registerPage('image', ImagePage);
 app.registerPage('file-drop', FileDropPage);
 app.registerPage('forms-section', FormsSection);
 app.registerPage('forms/formview-basics', FormViewBasics);
+app.registerPage('forms/text-inputs', TextInputsPage);
 app.registerPage('simple', Page, {
     id: 'simple',
     title: "Simple",
