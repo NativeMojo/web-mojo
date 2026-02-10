@@ -16,6 +16,8 @@ class TabViewPage extends Page {
       tagName: 'div',
       className: 'tabview-page container-fluid py-4'
     });
+    
+    this.dynamicTabCounter = 3;
   }
 
   async renderTemplate() {
@@ -45,7 +47,7 @@ class TabViewPage extends Page {
             </div>
             <div class="card-body">
               <p class="text-muted">Simple tabbed interface with three tabs and smooth transitions.</p>
-              <div data-container="basic-tabs"></div>
+              <div id="basic-tabs-container"></div>
             </div>
           </div>
 
@@ -62,7 +64,7 @@ class TabViewPage extends Page {
                 This tab view has many tabs and will automatically switch to dropdown mode when space is limited.
                 <strong>Try resizing your browser window!</strong>
               </p>
-              <div data-container="responsive-tabs"></div>
+              <div id="responsive-tabs-container"></div>
             </div>
           </div>
 
@@ -84,7 +86,7 @@ class TabViewPage extends Page {
                   <i class="bi bi-dash-circle me-1"></i> Remove Last Tab
                 </button>
               </div>
-              <div data-container="dynamic-tabs"></div>
+              <div id="dynamic-tabs-container"></div>
             </div>
           </div>
 
@@ -98,7 +100,7 @@ class TabViewPage extends Page {
             </div>
             <div class="card-body">
               <p class="text-muted">TabView supports smooth fade transitions between tabs.</p>
-              <div data-container="transition-tabs"></div>
+              <div id="transition-tabs-container"></div>
             </div>
           </div>
 
@@ -115,12 +117,12 @@ class TabViewPage extends Page {
                 <div class="col-md-6 mb-3">
                   <h6>Button Style (Default)</h6>
                   <p class="text-muted small">Uses Bootstrap dropdown button</p>
-                  <div data-container="button-dropdown-tabs"></div>
+                  <div id="button-dropdown-tabs-container"></div>
                 </div>
                 <div class="col-md-6 mb-3">
                   <h6>Select Style</h6>
                   <p class="text-muted small">Uses native select element</p>
-                  <div data-container="select-dropdown-tabs"></div>
+                  <div id="select-dropdown-tabs-container"></div>
                 </div>
               </div>
             </div>
@@ -139,7 +141,7 @@ class TabViewPage extends Page {
                 Views can implement <code>onTabActivated()</code> to load data when the tab becomes active.
                 Check the console to see lifecycle events.
               </p>
-              <div data-container="lifecycle-tabs"></div>
+              <div id="lifecycle-tabs-container"></div>
               <div class="mt-3">
                 <h6>Event Log:</h6>
                 <div id="event-log" class="bg-light p-3 rounded" style="max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.85rem;">
@@ -165,7 +167,7 @@ class TabViewPage extends Page {
                 <button class="btn btn-info btn-sm me-2" data-action="api-get-labels">Get All Labels</button>
                 <button class="btn btn-warning btn-sm" data-action="api-get-mode">Get Nav Mode</button>
               </div>
-              <div data-container="api-tabs"></div>
+              <div id="api-tabs-container"></div>
               <div class="mt-3" id="api-result"></div>
             </div>
           </div>
@@ -174,24 +176,25 @@ class TabViewPage extends Page {
     `;
   }
 
-  async onAfterRender() {
-    await super.onAfterRender();
+  async onInit() {
+    await super.onInit();
     
-    // Initialize all tab examples
-    await this.initBasicTabs();
-    await this.initResponsiveTabs();
-    await this.initDynamicTabs();
-    await this.initTransitionTabs();
-    await this.initDropdownStyleTabs();
-    await this.initLifecycleTabs();
-    await this.initApiTabs();
+    // Initialize all tab examples as child views
+    this.initBasicTabs();
+    this.initResponsiveTabs();
+    this.initDynamicTabs();
+    this.initTransitionTabs();
+    this.initDropdownStyleTabs();
+    this.initLifecycleTabs();
+    this.initApiTabs();
   }
 
   // ===================================
   // Example 1: Basic Tabs
   // ===================================
-  async initBasicTabs() {
+  initBasicTabs() {
     const basicTabs = new TabView({
+      containerId: 'basic-tabs-container',
       tabs: {
         'Profile': new View({
           template: `
@@ -254,15 +257,15 @@ class TabViewPage extends Page {
       enableTransitions: true
     });
 
-    const container = this.element.querySelector('[data-container="basic-tabs"]');
-    await basicTabs.render(container);
+    this.addChild(basicTabs);
   }
 
   // ===================================
   // Example 2: Responsive Tabs
   // ===================================
-  async initResponsiveTabs() {
-    const responsiveTabs = new TabView({
+  initResponsiveTabs() {
+    this.responsiveTabs = new TabView({
+      containerId: 'responsive-tabs-container',
       tabs: {
         'Dashboard': new View({ template: '<div class="p-4"><h4>Dashboard</h4><p>Overview of your account metrics and statistics.</p></div>' }),
         'Analytics': new View({ template: '<div class="p-4"><h4>Analytics</h4><p>Detailed analytics and reporting tools.</p></div>' }),
@@ -279,19 +282,15 @@ class TabViewPage extends Page {
       enableTransitions: true
     });
 
-    const container = this.element.querySelector('[data-container="responsive-tabs"]');
-    await responsiveTabs.render(container);
-    
-    this.responsiveTabs = responsiveTabs;
+    this.addChild(this.responsiveTabs);
   }
 
   // ===================================
   // Example 3: Dynamic Tab Management
   // ===================================
-  async initDynamicTabs() {
-    this.dynamicTabCounter = 3;
-    
+  initDynamicTabs() {
     this.dynamicTabs = new TabView({
+      containerId: 'dynamic-tabs-container',
       tabs: {
         'Tab 1': new View({ template: '<div class="p-4"><h4>Tab 1</h4><p>This is the first tab.</p></div>' }),
         'Tab 2': new View({ template: '<div class="p-4"><h4>Tab 2</h4><p>This is the second tab.</p></div>' }),
@@ -301,15 +300,14 @@ class TabViewPage extends Page {
       enableTransitions: true
     });
 
-    const container = this.element.querySelector('[data-container="dynamic-tabs"]');
-    await this.dynamicTabs.render(container);
+    this.addChild(this.dynamicTabs);
   }
 
   async onActionAddDynamicTab() {
     this.dynamicTabCounter++;
     const newLabel = `Tab ${this.dynamicTabCounter}`;
     const newView = new View({
-      template: `<div class="p-4"><h4>${newLabel}</h4><p>This tab was added dynamically!</p></div>`
+      template: `<div class="p-4"><h4>${newLabel}</h4><p>This tab was added dynamically at ${new Date().toLocaleTimeString()}!</p></div>`
     });
     
     await this.dynamicTabs.addTab(newLabel, newView, true);
@@ -331,8 +329,9 @@ class TabViewPage extends Page {
   // ===================================
   // Example 4: Transition Effects
   // ===================================
-  async initTransitionTabs() {
+  initTransitionTabs() {
     const transitionTabs = new TabView({
+      containerId: 'transition-tabs-container',
       tabs: {
         'Fast (200ms)': new View({
           template: `
@@ -369,18 +368,6 @@ class TabViewPage extends Page {
               </div>
             </div>
           `
-        }),
-        'No Transition': new View({
-          template: `
-            <div class="p-4">
-              <h4>Instant Switch</h4>
-              <p>This demonstrates what it looks like with transitions disabled.</p>
-              <div class="alert alert-secondary">
-                <i class="bi bi-lightning-charge-fill me-2"></i>
-                Instant switching - no animation delay.
-              </div>
-            </div>
-          `
         })
       },
       activeTab: 'Normal (300ms)',
@@ -388,16 +375,16 @@ class TabViewPage extends Page {
       transitionDuration: 300
     });
 
-    const container = this.element.querySelector('[data-container="transition-tabs"]');
-    await transitionTabs.render(container);
+    this.addChild(transitionTabs);
   }
 
   // ===================================
   // Example 5: Dropdown Styles
   // ===================================
-  async initDropdownStyleTabs() {
+  initDropdownStyleTabs() {
     // Button style dropdown (default)
-    const buttonDropdown = new TabView({
+    this.buttonDropdown = new TabView({
+      containerId: 'button-dropdown-tabs-container',
       tabs: {
         'Option 1': new View({ template: '<div class="p-3"><h6>Option 1</h6><p>Button style dropdown navigation.</p></div>' }),
         'Option 2': new View({ template: '<div class="p-3"><h6>Option 2</h6><p>Uses Bootstrap dropdown button.</p></div>' }),
@@ -407,15 +394,11 @@ class TabViewPage extends Page {
       dropdownStyle: 'button'
     });
 
-    // Force to dropdown mode
-    await buttonDropdown.render();
-    await buttonDropdown.setNavigationMode('dropdown');
-    
-    const buttonContainer = this.element.querySelector('[data-container="button-dropdown-tabs"]');
-    buttonContainer.appendChild(buttonDropdown.element);
+    this.addChild(this.buttonDropdown);
 
     // Select style dropdown
-    const selectDropdown = new TabView({
+    this.selectDropdown = new TabView({
+      containerId: 'select-dropdown-tabs-container',
       tabs: {
         'Choice A': new View({ template: '<div class="p-3"><h6>Choice A</h6><p>Select style dropdown navigation.</p></div>' }),
         'Choice B': new View({ template: '<div class="p-3"><h6>Choice B</h6><p>Uses native select element.</p></div>' }),
@@ -425,19 +408,31 @@ class TabViewPage extends Page {
       dropdownStyle: 'select'
     });
 
-    await selectDropdown.render();
-    await selectDropdown.setNavigationMode('dropdown');
+    this.addChild(this.selectDropdown);
+  }
+
+  async onAfterMount() {
+    await super.onAfterMount();
     
-    const selectContainer = this.element.querySelector('[data-container="select-dropdown-tabs"]');
-    selectContainer.appendChild(selectDropdown.element);
+    // Force dropdown mode after mounting
+    if (this.buttonDropdown) {
+      await this.buttonDropdown.setNavigationMode('dropdown');
+    }
+    if (this.selectDropdown) {
+      await this.selectDropdown.setNavigationMode('dropdown');
+    }
   }
 
   // ===================================
   // Example 6: View Lifecycle
   // ===================================
-  async initLifecycleTabs() {
+  initLifecycleTabs() {
+    const page = this;
+    
     const logEvent = (message) => {
-      const logContainer = this.element.querySelector('#event-log');
+      const logContainer = page.element?.querySelector('#event-log');
+      if (!logContainer) return;
+      
       const timestamp = new Date().toLocaleTimeString();
       const entry = document.createElement('div');
       entry.className = 'mb-1';
@@ -467,7 +462,7 @@ class TabViewPage extends Page {
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        const dataDiv = this.element.querySelector('#dashboard-data');
+        const dataDiv = this.element?.querySelector('#dashboard-data');
         if (dataDiv) {
           dataDiv.innerHTML = `
             <i class="bi bi-check-circle-fill text-success me-2"></i>
@@ -500,7 +495,7 @@ class TabViewPage extends Page {
         
         await new Promise(resolve => setTimeout(resolve, 700));
         
-        const dataDiv = this.element.querySelector('#reports-data');
+        const dataDiv = this.element?.querySelector('#reports-data');
         if (dataDiv) {
           dataDiv.innerHTML = `
             <i class="bi bi-check-circle-fill text-success me-2"></i>
@@ -512,7 +507,8 @@ class TabViewPage extends Page {
       }
     }
 
-    const lifecycleTabs = new TabView({
+    this.lifecycleTabs = new TabView({
+      containerId: 'lifecycle-tabs-container',
       tabs: {
         'Dashboard': new DashboardView(),
         'Reports': new ReportsView(),
@@ -533,24 +529,31 @@ class TabViewPage extends Page {
       enableTransitions: true
     });
 
-    lifecycleTabs.on('tab:changed', (data) => {
+    this.lifecycleTabs.on('tab:changed', (data) => {
       logEvent(`<span class="text-primary"><strong>Event:</strong> tab:changed - "${data.previousTab}" → "${data.tab}"</span>`);
     });
 
-    const container = this.element.querySelector('[data-container="lifecycle-tabs"]');
-    await lifecycleTabs.render(container);
+    this.addChild(this.lifecycleTabs);
+  }
+
+  async onAfterRender() {
+    await super.onAfterRender();
     
-    // Clear log initially
-    const logContainer = this.element.querySelector('#event-log');
-    logContainer.innerHTML = '';
-    logEvent('<span class="text-success"><strong>System:</strong> Lifecycle demo initialized</span>');
+    // Initialize event log
+    const logContainer = this.element?.querySelector('#event-log');
+    if (logContainer) {
+      logContainer.innerHTML = '';
+      const timestamp = new Date().toLocaleTimeString();
+      logContainer.innerHTML = `<div class="text-success mb-1"><span class="text-muted">[${timestamp}]</span> <strong>System:</strong> Lifecycle demo initialized</div>`;
+    }
   }
 
   // ===================================
   // Example 7: API Methods
   // ===================================
-  async initApiTabs() {
+  initApiTabs() {
     this.apiTabs = new TabView({
+      containerId: 'api-tabs-container',
       tabs: {
         'Tab 1': new View({ template: '<div class="p-4"><h4>Tab 1</h4><p>First tab content</p></div>' }),
         'Tab 2': new View({ template: '<div class="p-4"><h4>Tab 2</h4><p>Second tab content</p></div>' }),
@@ -560,8 +563,7 @@ class TabViewPage extends Page {
       enableTransitions: true
     });
 
-    const container = this.element.querySelector('[data-container="api-tabs"]');
-    await this.apiTabs.render(container);
+    this.addChild(this.apiTabs);
   }
 
   async onActionApiShowTab2() {
@@ -585,28 +587,15 @@ class TabViewPage extends Page {
   }
 
   showApiResult(message, type = 'info') {
-    const resultDiv = this.element.querySelector('#api-result');
-    resultDiv.innerHTML = `
-      <div class="alert alert-${type} mb-0">
-        <i class="bi bi-code-slash me-2"></i>
-        ${message}
-      </div>
-    `;
-  }
-
-  async onBeforeDestroy() {
-    // Clean up any tab views we created
-    if (this.dynamicTabs) {
-      await this.dynamicTabs.destroy();
+    const resultDiv = this.element?.querySelector('#api-result');
+    if (resultDiv) {
+      resultDiv.innerHTML = `
+        <div class="alert alert-${type} mb-0">
+          <i class="bi bi-code-slash me-2"></i>
+          ${message}
+        </div>
+      `;
     }
-    if (this.apiTabs) {
-      await this.apiTabs.destroy();
-    }
-    if (this.responsiveTabs) {
-      await this.responsiveTabs.destroy();
-    }
-    
-    await super.onBeforeDestroy();
   }
 }
 
