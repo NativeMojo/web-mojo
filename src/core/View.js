@@ -109,14 +109,46 @@ export class View {
 
   setTemplate(tpl)     { this.template = tpl ?? ""; return this; }
 
-  addChild(childView) {
+  addChild(idOrChildView, childView, containerId) {
     try {
-      if (!childView || typeof childView !== "object") return this;
-      childView.parent = this;
-      if (this.getApp()) childView.app = this.app;
-      this.children[childView.id] = childView;
+      // Support both signatures:
+      // 1. addChild(childView) - old API
+      // 2. addChild(id, childView, containerId) - new API with explicit id and container
+      let id, view, container;
+      
+      if (arguments.length === 1) {
+        // Old API: addChild(childView)
+        view = idOrChildView;
+        id = view.id;
+        container = null;
+      } else {
+        // New API: addChild(id, childView, containerId)
+        id = idOrChildView;
+        view = childView;
+        container = containerId;
+        
+        // Strip # prefix if present (support both '#container' and 'container')
+        if (container && container.startsWith('#')) {
+          container = container.substring(1);
+        }
+        
+        // Set the containerId on the child view
+        if (container) {
+          view.containerId = container;
+        }
+        
+        // Override child's id if provided
+        if (id) {
+          view.id = id;
+        }
+      }
+      
+      if (!view || typeof view !== "object") return this;
+      view.parent = this;
+      if (this.getApp()) view.app = this.app;
+      this.children[view.id] = view;
     } catch (e) { View._warn("addChild error", e); }
-    return childView;
+    return childView || idOrChildView;
   }
 
   removeChild(idOrView) {
