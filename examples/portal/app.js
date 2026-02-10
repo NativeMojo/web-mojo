@@ -22,6 +22,8 @@ import FileDropPage from './pages/FileDropPage.js';
 import ImageViewer from '/src/extensions/lightbox/ImageViewer.js';
 import ConsoleSilencer from '/src/core/utils/ConsoleSilencer.js';
 import { registerAdminPages, FileTablePage } from '/src/admin.js';
+import formsMenu from './menus/formsMenu.js';
+import FormsSection from './pages/forms/FormsSection.js';
 
 ConsoleSilencer.setLevel('debug');
 
@@ -139,6 +141,18 @@ const app = new PortalApp({
                     icon: 'bi-input-cursor-text',
                     children: [
                         {
+                            text: '📚 Forms Portal',
+                            action: 'open_forms_portal',
+                            icon: 'bi-ui-checks-grid',
+                            badge: 'NEW',
+                            handler: async (action, event, el) => {
+                                console.log("Opening Forms Portal");
+                                app.sidebar.setActiveMenu("forms");
+                                app.router.navigate('?page=forms-section');
+                            }
+                        },
+                        { divider: true },
+                        {
                             text: 'Form Examples',
                             route: '?page=forms',
                             icon: 'bi-clipboard-data'
@@ -254,7 +268,8 @@ const app = new PortalApp({
                    <div class="text-muted" style="font-size: 0.75em;">${VERSION_INFO.buildTime.split('T')[0]}</div>
                </div>
            `
-        }]
+        },
+        formsMenu]
     },
 
     // Topbar configuration
@@ -364,6 +379,7 @@ app.registerPage('form-dialogs', FormDialogsPage);
 app.registerPage('tabview', TabViewPage);
 app.registerPage('image', ImagePage);
 app.registerPage('file-drop', FileDropPage);
+app.registerPage('forms-section', FormsSection);
 app.registerPage('simple', Page, {
     id: 'simple',
     title: "Simple",

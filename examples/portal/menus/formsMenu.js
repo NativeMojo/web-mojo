@@ -6,6 +6,7 @@
 
 export const formsMenu = {
   name: 'forms',
+  className: 'sidebar sidebar-dark sidebar-forms',
   header: {
     title: 'Forms',
     icon: 'bi-ui-checks-grid',
@@ -295,6 +296,20 @@ export const formsMenu = {
       text: 'Troubleshooting',
       icon: 'bi-question-circle',
       route: '/forms/troubleshooting'
+    },
+    
+    // Navigation
+    {
+      type: 'spacer'
+    },
+    {
+      text: 'Back to Main Menu',
+      action: 'exit_forms',
+      icon: 'bi-arrow-bar-left',
+      handler: async (action, event, el, app) => {
+        console.log("Exiting forms menu");
+        app.sidebar.setActiveMenu("default");
+      }
     }
   ]
 };

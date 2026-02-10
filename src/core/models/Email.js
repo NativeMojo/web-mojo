@@ -689,7 +689,7 @@ const EmailTemplateForms = {
             {
                 label: 'HTML',
                 fields: [
-                    { name: 'html_template', type: 'textarea', label: 'HTML Template', rows: 16, cols: 12 },
+                    { name: 'html_template', type: 'htmlpreview', label: 'HTML Template', rows: 16, cols: 12 },
                 ],
             },
             {

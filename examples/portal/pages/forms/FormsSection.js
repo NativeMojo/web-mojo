@@ -1,13 +1,17 @@
-import View from '@core/views/View.js';
+import Page from '@core/Page.js';
 import { formsMenu } from '../../menus/formsMenu.js';
+import FormsOverview from './FormsOverview.js';
 
 /**
  * FormsSection - Main container for forms documentation/examples
  * 
- * This view serves as the main container and router for all forms-related pages.
- * It automatically switches the sidebar to the forms menu and handles routing.
+ * This page serves as the main container for all forms-related pages.
+ * It automatically switches the sidebar to the forms menu.
  */
-class FormsSection extends View {
+class FormsSection extends Page {
+  static pageName = 'forms-section';
+  static title = 'Forms Portal';
+  static icon = 'bi-ui-checks-grid';
   async onInit() {
     await super.onInit();
     
@@ -15,14 +19,19 @@ class FormsSection extends View {
     const app = this.getApp();
     this.sidebar = app.sidebar;
     
-    // Switch to forms menu
+    // Add forms menu if not already present
     if (this.sidebar && !this.sidebar.hasMenu('forms')) {
       this.sidebar.addMenu(formsMenu);
     }
     
+    // Switch to forms menu
     if (this.sidebar) {
       await this.sidebar.setActiveMenu('forms');
     }
+    
+    // Create and render the overview page
+    this.overviewView = new FormsOverview();
+    this.addChild('overview', this.overviewView, '#forms-content-area');
   }
   
   getTemplate() {
@@ -51,32 +60,10 @@ class FormsSection extends View {
     `;
   }
   
-  async onAfterRender() {
-    await super.onAfterRender();
-    
-    // Set up route listener for sub-pages
-    const app = this.getApp();
-    const router = app?.router;
-    
-    if (router) {
-      this.routeListener = router.on('route', this.handleRouteChange.bind(this));
-    }
-  }
-  
-  async handleRouteChange(route) {
-    // Handle forms sub-routes
-    console.log('Forms route changed:', route);
-    
-    // Update active item in sidebar
-    if (this.sidebar) {
-      await this.sidebar.setActiveItemByRoute(route);
-    }
-  }
-  
   async onBeforeDestroy() {
-    // Clean up route listener
-    if (this.routeListener) {
-      this.routeListener.off();
+    // Switch back to default menu when leaving
+    if (this.sidebar) {
+      await this.sidebar.setActiveMenu('default');
     }
     
     await super.onBeforeDestroy();
