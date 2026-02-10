@@ -1,4 +1,4 @@
-import View from '@core/views/View.js';
+import View from '/src/core/views/View.js';
 
 /**
  * FormsOverview - Landing page for forms documentation
