@@ -73,7 +73,7 @@ class FormsPage extends Page {
                                 </h5>
                             </div>
                             <div class="card-body">
-                                <div data-container="profile-form"></div>
+                                <div id="profile-form"></div>
                             </div>
                         </div>
                     </div>
@@ -91,7 +91,7 @@ class FormsPage extends Page {
                                 </h5>
                             </div>
                             <div class="card-body">
-                                <div data-container="product-form"></div>
+                                <div id="product-form"></div>
                             </div>
                         </div>
                     </div>
@@ -109,7 +109,7 @@ class FormsPage extends Page {
                                 </h5>
                             </div>
                             <div class="card-body">
-                                <div data-container="settings-form"></div>
+                                <div id="settings-form"></div>
                             </div>
                         </div>
                     </div>
@@ -130,7 +130,7 @@ class FormsPage extends Page {
                                 <div class="row">
                                     <div class="col-md-6">
                                         <label class="form-label">Skills</label>
-                                        <div data-container="tag-input-demo"></div>
+                                        <div id="tag-input-demo"></div>
                                         <div class="form-text">Try typing: javascript,react,node (comma separated)</div>
                                     </div>
                                     <div class="col-md-6">
@@ -157,7 +157,7 @@ class FormsPage extends Page {
                                 </h5>
                             </div>
                             <div class="card-body">
-                                <div data-container="enhanced-form"></div>
+                                <div id="enhanced-form"></div>
                             </div>
                         </div>
                     </div>
