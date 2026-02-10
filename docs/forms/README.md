@@ -227,76 +227,139 @@ const form = new FormView({
 
 ## Documentation Guide
 
-### Core Documentation
+### 🚀 Start Here
 
-Start here if you're new to WEB-MOJO forms:
+**New to WEB-MOJO forms?** Start with these:
 
-1. **[FormView](./FormView.md)** - Complete FormView guide
-   - Constructor options
+1. **[FieldTypes.md](./FieldTypes.md)** ⭐ **Master Quick Reference**
+   - Complete table of ALL field types
+   - Use case guides
+   - Decision trees
+   - Field comparisons
+
+2. **[FormView.md](./FormView.md)** - FormView Component Guide
+   - Constructor options & data priority
    - Lifecycle methods
-   - Form methods (validate, getFormData, etc.)
-   - Model integration
-   - Event handling
+   - All form methods (validate, getFormData, setFieldValue, etc.)
+   - Model integration patterns
+   - File handling modes
+   - Event reference
 
-2. **[FieldTypes](./FieldTypes.md)** - Basic field types reference
-   - All basic field types (text, email, select, checkbox, etc.)
-   - Configuration options for each
-   - Examples and common patterns
+3. **[BestPractices.md](./BestPractices.md)** - Patterns & Common Pitfalls
+   - 5 proven design patterns
+   - 6 critical pitfalls with solutions
+   - Performance optimization
+   - Accessibility guidelines
+   - Security best practices
+   - Production checklist
 
-3. **[BestPractices](./BestPractices.md)** - Patterns & common pitfalls
-   - Recommended patterns
-   - What NOT to do
-   - Performance tips
-   - Security considerations
+### 📚 Field Type References
 
-### Intermediate Topics
+**Looking up specific field types?**
 
-Once you understand the basics:
+4. **[BasicTypes.md](./BasicTypes.md)** - Native HTML5 Fields
+   - Text inputs (text, email, password, number, tel, url, search, hex)
+   - Text areas (textarea, htmlpreview, json)
+   - Selection (select, checkbox, radio, toggle)
+   - Files (file)
+   - Date/time (date, datetime-local, time)
+   - Other (color, range, hidden)
+   - Structural (header, html, divider, button)
 
-4. **[Validation](./Validation.md)** - Form validation system
-   - Client-side validation
-   - Server-side validation
-   - Model validation
-   - Custom validators
+5. **[inputs/](./inputs/README.md)** - Advanced Components
+   - **Overview** - Component comparison tables, when to use each
+   - **[TagInput](./inputs/TagInput.md)** - Tag/chip input with autocomplete
+   - **[DatePicker](./inputs/DatePicker.md)** - Enhanced date picker (Easepick)
+   - **[DateRangePicker](./inputs/DateRangePicker.md)** - Date range selection
+   - **[MultiSelectDropdown](./inputs/MultiSelectDropdown.md)** - Multi-select with checkboxes
+   - **[ComboInput](./inputs/ComboInput.md)** - Editable dropdown/autocomplete
+   - **[CollectionSelect](./inputs/CollectionSelect.md)** - Single select from API
+   - **[CollectionMultiSelect](./inputs/CollectionMultiSelect.md)** - Multi-select from API
+   - **[ImageField](./inputs/ImageField.md)** - Image upload with preview & drag-drop
 
-5. **[FileHandling](./FileHandling.md)** - File uploads
-   - Base64 vs multipart modes
-   - Image cropping
-   - Drag & drop
-   - Server integration
+### 🔧 Core Features
 
-6. **[FormEvents](./FormEvents.md)** - Event system
-   - Form-level events
-   - Field-level events
-   - Component events
-   - Event patterns
+**Deep dives into specific functionality:**
 
-7. **[Groups-and-Layout](./Groups-and-Layout.md)** - Form organization
+6. **[Validation.md](./Validation.md)** - Validation System
+   - HTML5, FormView, and server-side validation
+   - Built-in validators (required, email, minLength, pattern, etc.)
+   - Custom validators (sync & async)
+   - Cross-field validation
+   - Validation timing (submit, blur, change)
+   - Server error integration
+   - Common patterns (password strength, credit cards, etc.)
+
+7. **[FileHandling.md](./FileHandling.md)** - File Uploads
+   - Base64 vs multipart modes (when to use each)
+   - File type restrictions
+   - Size validation
+   - Image dimension validation
+   - Progress tracking
+   - Server-side handling
+   - Security best practices
+
+8. **[FormBuilder.md](./FormBuilder.md)** - FormBuilder API
+   - HTML generation engine
+   - Constructor options
+   - Methods (buildFormHTML, buildFieldHTML, etc.)
+   - Responsive columns
    - Field groups
-   - Responsive layouts
-   - Multi-column forms
-   - Form sections
+   - Auto-generate options
+   - Custom field types
+   - When to use FormBuilder directly vs FormView
 
-### Advanced Input Components
+### 📖 Complete Documentation List
 
-Rich, interactive input components:
+| Document | Description | Lines |
+|----------|-------------|-------|
+| **Core** | | |
+| [README.md](./README.md) | This file - Overview & navigation | ~300 |
+| [FieldTypes.md](./FieldTypes.md) | Master quick reference for ALL field types | ~400 |
+| [FormView.md](./FormView.md) | FormView component complete guide | ~1,200 |
+| [FormBuilder.md](./FormBuilder.md) | FormBuilder API reference | ~400 |
+| [BestPractices.md](./BestPractices.md) | Patterns, pitfalls, checklists | ~1,000 |
+| **Features** | | |
+| [Validation.md](./Validation.md) | Complete validation system guide | ~500 |
+| [FileHandling.md](./FileHandling.md) | File upload modes & patterns | ~450 |
+| **Field Types** | | |
+| [BasicTypes.md](./BasicTypes.md) | Native HTML5 field types reference | ~1,300 |
+| **Advanced Inputs** | | |
+| [inputs/README.md](./inputs/README.md) | Advanced components overview | ~415 |
+| [inputs/TagInput.md](./inputs/TagInput.md) | Tag/chip input component | ~576 |
+| [inputs/DatePicker.md](./inputs/DatePicker.md) | Enhanced date picker | ~400 |
+| [inputs/DateRangePicker.md](./inputs/DateRangePicker.md) | Date range picker | ~213 |
+| [inputs/MultiSelectDropdown.md](./inputs/MultiSelectDropdown.md) | Multi-select dropdown | ~206 |
+| [inputs/ComboInput.md](./inputs/ComboInput.md) | Autocomplete/combo input | ~196 |
+| [inputs/CollectionSelect.md](./inputs/CollectionSelect.md) | Select from Collection/API | ~193 |
+| [inputs/CollectionMultiSelect.md](./inputs/CollectionMultiSelect.md) | Multi-select from API | ~212 |
+| [inputs/ImageField.md](./inputs/ImageField.md) | Image upload with preview | ~351 |
+| **Total** | **18 documents** | **~8,000+ lines** |
 
-8. **[inputs/](./inputs/README.md)** - Advanced inputs overview
-   - [TagInput](./inputs/TagInput.md) - Tag/chip input
-   - [DatePicker](./inputs/DatePicker.md) - Enhanced date picker
-   - [DateRangePicker](./inputs/DateRangePicker.md) - Date range selection
-   - [CollectionSelect](./inputs/CollectionSelect.md) - Dropdown from collection
-   - [CollectionMultiSelect](./inputs/CollectionMultiSelect.md) - Multi-select from collection
-   - [ComboInput](./inputs/ComboInput.md) - Autocomplete/combo
-   - [MultiSelectDropdown](./inputs/MultiSelectDropdown.md) - Multi-select with checkboxes
-   - [ImageField](./inputs/ImageField.md) - Image upload with cropping
+### 🎯 Find What You Need
 
-### Advanced Features
+**"I want to..."**
 
-Power user features:
+| Goal | See |
+|------|-----|
+| Create a simple form | [Quick Start](#quick-start) |
+| Find the right field type | [FieldTypes.md](./FieldTypes.md) |
+| Learn FormView API | [FormView.md](./FormView.md) |
+| Validate my form | [Validation.md](./Validation.md) |
+| Upload files | [FileHandling.md](./FileHandling.md) |
+| Use tags/chips | [inputs/TagInput.md](./inputs/TagInput.md) |
+| Better date picker | [inputs/DatePicker.md](./inputs/DatePicker.md) |
+| Select from API | [inputs/CollectionSelect.md](./inputs/CollectionSelect.md) |
+| Upload images | [inputs/ImageField.md](./inputs/ImageField.md) |
+| Avoid common mistakes | [BestPractices.md](./BestPractices.md) |
+| Understand HTML generation | [FormBuilder.md](./FormBuilder.md) |
 
-9. **[AutoSave](./AutoSave.md)** - Auto-save functionality
-   - Field-level auto-save
+### 📱 Quick Links
+
+- **[All Field Types](./FieldTypes.md)** - One-stop lookup for every field type
+- **[FormView API](./FormView.md)** - Complete FormView reference
+- **[Advanced Inputs](./inputs/README.md)** - Rich component overview
+- **[Best Practices](./BestPractices.md)** - Do's, don'ts, and checklists
    - Debouncing and batching
    - Save indicators
 
