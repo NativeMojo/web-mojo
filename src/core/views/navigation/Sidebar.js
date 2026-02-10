@@ -766,13 +766,22 @@ class Sidebar extends View {
          const activeUser = app?.activeUser;
          const activeGroup = app?.activeGroup;
 
-         // Helper function to update route with group parameter
+         // Helper function to normalize and update route with group parameter
          const updateRouteWithGroup = (route) => {
-             if (groupKind && activeGroup && activeGroup.id) {
-                 const separator = route.includes('?') ? '&' : '?';
-                 return `${route}${separator}group=${activeGroup.id}`;
+             let normalizedRoute = route;
+             
+             // Convert path format (/forms) to query string format (?page=forms)
+             if (route.startsWith('/') && !route.includes('?')) {
+                 const pageName = route.substring(1) || 'home';
+                 normalizedRoute = `?page=${pageName}`;
              }
-             return route;
+             
+             // Add group parameter if needed
+             if (groupKind && activeGroup && activeGroup.id) {
+                 const separator = normalizedRoute.includes('?') ? '&' : '?';
+                 return `${normalizedRoute}${separator}group=${activeGroup.id}`;
+             }
+             return normalizedRoute;
          };
 
          return items.map((item, index) => {
