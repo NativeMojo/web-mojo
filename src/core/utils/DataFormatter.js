@@ -59,7 +59,7 @@ class DataFormatter {
     this.register('filesize', this.filesize.bind(this));
     this.register('ordinal', this.ordinal.bind(this));
     this.register('compact', this.compact.bind(this));
-    
+
     // Math formatters
     this.register('add', this.add.bind(this));
     this.register('subtract', this.subtract.bind(this));
@@ -76,6 +76,7 @@ class DataFormatter {
     this.register('lower', (v) => String(v).toLowerCase());
     this.register('capitalize', this.capitalize.bind(this));
     this.register('caps', this.capitalize.bind(this));
+    this.register('replace', this.replace.bind(this));
     this.register('truncate', this.truncate.bind(this));
     this.register('truncate_middle', this.truncate_middle.bind(this));
     this.register('truncate_front', this.truncate_front.bind(this));
@@ -97,7 +98,7 @@ class DataFormatter {
     this.register('status_text', this.status_text.bind(this));
     this.register('status_icon', this.status_icon.bind(this));
     this.register('boolean', this.boolean.bind(this));
-    this.register('bool', this.boolean.bind(this));
+    this.register('bool', this.bool.bind(this));
     this.register('yesno', (v) => this.boolean(v, 'Yes', 'No'));
     this.register('yesnoicon', this.yesnoicon.bind(this));
     this.register('icon', this.icon.bind(this));
@@ -743,11 +744,11 @@ class DataFormatter {
    */
   date_range(startValue, endValue = null, format = 'MM/DD/YYYY') {
     if (!startValue) return '';
-    
+
     const endVal = endValue || new Date();
     const startStr = this.date(startValue, format);
     const endStr = this.date(endVal, format);
-    
+
     if (!startStr || !endStr) return '';
     return `${startStr} - ${endStr}`;
   }
@@ -762,11 +763,11 @@ class DataFormatter {
    */
   datetime_range(startValue, endValue = null, dateFormat = 'MM/DD/YYYY', timeFormat = 'HH:mm') {
     if (!startValue) return '';
-    
+
     const endVal = endValue || new Date();
     const startStr = this.datetime(startValue, dateFormat, timeFormat);
     const endStr = this.datetime(endVal, dateFormat, timeFormat);
-    
+
     if (!startStr || !endStr) return '';
     return `${startStr} - ${endStr}`;
   }
@@ -784,11 +785,13 @@ class DataFormatter {
     if (isNaN(date.getTime())) return String(value);
 
     const now = new Date();
-    const diffMs = now - date;
-    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMs = date - now; // Changed to support future dates
+    const absDiffMs = Math.abs(diffMs);
+    const diffSecs = Math.floor(absDiffMs / 1000);
     const diffMins = Math.floor(diffSecs / 60);
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
+    const isFuture = diffMs > 0;
 
     if (short) {
       if (diffDays > 365) return Math.floor(diffDays / 365) + 'y';
@@ -802,21 +805,43 @@ class DataFormatter {
 
     if (diffDays > 365) {
       const years = Math.floor(diffDays / 365);
-      return years + ' year' + (years > 1 ? 's' : '') + ' ago';
+      const prefix = isFuture ? 'in ' : '';
+      const suffix = isFuture ? '' : ' ago';
+      return prefix + years + ' year' + (years > 1 ? 's' : '') + suffix;
     }
     if (diffDays > 30) {
       const months = Math.floor(diffDays / 30);
-      return months + ' month' + (months > 1 ? 's' : '') + ' ago';
+      const prefix = isFuture ? 'in ' : '';
+      const suffix = isFuture ? '' : ' ago';
+      return prefix + months + ' month' + (months > 1 ? 's' : '') + suffix;
     }
     if (diffDays > 7) {
       const weeks = Math.floor(diffDays / 7);
-      return weeks + ' week' + (weeks > 1 ? 's' : '') + ' ago';
+      const prefix = isFuture ? 'in ' : '';
+      const suffix = isFuture ? '' : ' ago';
+      return prefix + weeks + ' week' + (weeks > 1 ? 's' : '') + suffix;
     }
-    if (diffDays === 1) return 'yesterday';
-    if (diffDays > 0) return diffDays + ' days ago';
-    if (diffHours > 0) return diffHours + ' hour' + (diffHours > 1 ? 's' : '') + ' ago';
-    if (diffMins > 0) return diffMins + ' minute' + (diffMins > 1 ? 's' : '') + ' ago';
-    if (diffSecs > 30) return diffSecs + ' seconds ago';
+    if (diffDays === 1) return isFuture ? 'tomorrow' : 'yesterday';
+    if (diffDays > 0) {
+      const prefix = isFuture ? 'in ' : '';
+      const suffix = isFuture ? '' : ' ago';
+      return prefix + diffDays + ' days' + suffix;
+    }
+    if (diffHours > 0) {
+      const prefix = isFuture ? 'in ' : '';
+      const suffix = isFuture ? '' : ' ago';
+      return prefix + diffHours + ' hour' + (diffHours > 1 ? 's' : '') + suffix;
+    }
+    if (diffMins > 0) {
+      const prefix = isFuture ? 'in ' : '';
+      const suffix = isFuture ? '' : ' ago';
+      return prefix + diffMins + ' minute' + (diffMins > 1 ? 's' : '') + suffix;
+    }
+    if (diffSecs > 30) {
+      const prefix = isFuture ? 'in ' : '';
+      const suffix = isFuture ? '' : ' ago';
+      return prefix + diffSecs + ' seconds' + suffix;
+    }
 
     return 'just now';
   }
@@ -1063,6 +1088,55 @@ class DataFormatter {
       return str.replace(/\b\w/g, c => c.toUpperCase());
     }
     return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  /**
+   * Replace occurrences in a string
+   * @param {*} value - String value
+   * @param {*} search - Search value (string or RegExp-ish string like "/_/g")
+   * @param {*} replacement - Replacement string
+   * @param {string} flags - Optional RegExp flags when search is a plain string
+   * @returns {string} Updated string
+   *
+   * Examples:
+   *  - {{model.name|replace:'_':''}}              // underscores removed (all occurrences)
+   *  - {{model.name|replace('_', '')}}           // parentheses syntax
+   *  - {{model.name|replace:'_':' ':'g'}}        // replace all underscores with spaces
+   *  - {{model.name|replace:'/[_-]+/g':' '}}     // regex form in a string
+   */
+  replace(value, search, replacement = '', flags = 'g') {
+    if (value === null || value === undefined) return '';
+    const str = String(value);
+
+    if (search === null || search === undefined || search === '') {
+      return str;
+    }
+
+    // If a real RegExp was passed in, use it directly.
+    if (search instanceof RegExp) {
+      return str.replace(search, String(replacement));
+    }
+
+    const searchStr = String(search);
+
+    // Support "/pattern/flags" style passed as a string.
+    // Note: this is intentionally simple and doesn't attempt to parse escaped slashes.
+    const regexLike = searchStr.match(/^\/(.+)\/([a-z]*)$/i);
+    if (regexLike) {
+      const [, pattern, rxFlags] = regexLike;
+      try {
+        return str.replace(new RegExp(pattern, rxFlags), String(replacement));
+      } catch (e) {
+        // Fall back to string replace below if regex construction fails
+      }
+    }
+
+    // Default: string replace. If flags includes 'g', replace all occurrences.
+    if (String(flags).includes('g')) {
+      return str.split(searchStr).join(String(replacement));
+    }
+
+    return str.replace(searchStr, String(replacement));
   }
 
   /**
@@ -1351,6 +1425,26 @@ class DataFormatter {
     return colored ? `<span class="text-${value ? 'success' : 'danger'}">${text}</span>` : text;
   }
 
+  bool(value) {
+    // Return false for null, undefined, 0, empty string
+    if (value === null || value === undefined || value === 0 || value === '') {
+      return false;
+    }
+
+    // Return false for empty arrays
+    if (Array.isArray(value) && value.length === 0) {
+      return false;
+    }
+
+    // Return false for empty objects (but not for other object types like Date, etc.)
+    if (value && typeof value === 'object' && value.constructor === Object && Object.keys(value).length === 0) {
+      return false;
+    }
+
+    // Return true for everything else
+    return true;
+  }
+
   /**
    * Format icon
    * @param {*} value - Icon key
@@ -1503,21 +1597,21 @@ class DataFormatter {
   /**
    * Compare value and return one of two results based on equality
    * Useful for conditional CSS classes, text, or any conditional output
-   * 
+   *
    * @param {*} value - Value to compare
    * @param {*} compareValue - Value to compare against
    * @param {*} trueResult - Result if values are equal
    * @param {*} falseResult - Result if values are not equal (optional, defaults to empty string)
    * @returns {*} trueResult or falseResult
-   * 
+   *
    * @example
    * // CSS classes
    * {{status|equals:1:'text-success':'text-secondary'}}
    * {{model.state|equals:'active':'badge-success':'badge-secondary'}}
-   * 
+   *
    * // Text output
    * {{role|equals:'admin':'Administrator':'User'}}
-   * 
+   *
    * // Numbers
    * {{count|equals:0:'No items':'Has items'}}
    */

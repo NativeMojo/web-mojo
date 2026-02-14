@@ -7,9 +7,39 @@ import { Page, FormView } from 'web-mojo';
  */
 class TextInputsPage extends Page {
   static pageName = 'forms/text-inputs';
-  static title = 'Text Input Types';
-  static icon = 'bi-input-cursor-text';
-  static description = 'Explore all 8 text-based input types with examples and validation patterns';
+  
+  constructor(options = {}) {
+    super({
+      title: 'Text Input Types',
+      icon: 'bi-input-cursor-text',
+      pageDescription: 'Explore all 8 text-based input types with examples and validation patterns',
+      ...options
+    });
+  }
+  
+  async onActionSubmitTextInputs(event, element) {
+    const isValid = await this.textInputsForm.validate();
+    if (isValid) {
+      const data = await this.textInputsForm.getFormData();
+      console.log('Text inputs submitted:', data);
+      
+      // Show the submitted data
+      const output = document.getElementById('output-display');
+      output.innerHTML = `
+        <div class="alert alert-success">
+          <h5 class="alert-heading">
+            <i class="bi bi-check-circle me-2"></i>
+            Form Submitted Successfully!
+          </h5>
+          <hr>
+          <pre class="mb-0"><code>${JSON.stringify(data, null, 2)}</code></pre>
+        </div>
+      `;
+      
+      this.getApp().toast.success('Form submitted successfully!');
+    }
+  }
+  
   async onInit() {
     await super.onInit();
     
@@ -80,27 +110,24 @@ class TextInputsPage extends Page {
           placeholder: '0x1A2B3C',
           help: 'Input for hexadecimal values',
           value: '0xFF'
+        },
+        {
+          name: 'api_key',
+          label: 'API Key (with Copy Button)',
+          type: 'text',
+          value: 'sk-1234567890abcdefghijklmnopqrstuvwxyz',
+          readonly: true,
+          showCopy: true,
+          help: 'Click the copy button to copy this API key'
+        },
+        {
+          type: 'button',
+          label: 'Submit All Fields',
+          action: 'submit-text-inputs',
+          buttonClass: 'btn-primary',
+          icon: 'bi-check-circle'
         }
-      ],
-      submitLabel: 'Submit All Fields',
-      onSubmit: async (data) => {
-        console.log('Text inputs submitted:', data);
-        
-        // Show the submitted data
-        const output = document.getElementById('output-display');
-        output.innerHTML = `
-          <div class="alert alert-success">
-            <h5 class="alert-heading">
-              <i class="bi bi-check-circle me-2"></i>
-              Form Submitted Successfully!
-            </h5>
-            <hr>
-            <pre class="mb-0"><code>${JSON.stringify(data, null, 2)}</code></pre>
-          </div>
-        `;
-        
-        return false; // Don't reset form
-      }
+      ]
     });
     
     this.addChild(this.textInputsForm, { containerId: 'text-inputs-form' });
@@ -109,6 +136,17 @@ class TextInputsPage extends Page {
   getTemplate() {
     return `
       <div class="text-inputs-page">
+        <!-- Page Header -->
+        <div class="mb-4">
+          <h1 class="h2">
+            <i class="bi bi-input-cursor-text me-2 text-primary"></i>
+            Text Input Types
+          </h1>
+          <p class="text-muted">
+            Explore all 8 text-based input types with examples and validation patterns
+          </p>
+        </div>
+        
         <!-- Quick Reference Table -->
         <div class="card mb-4">
           <div class="card-header">
@@ -226,7 +264,7 @@ class TextInputsPage extends Page {
                 </h5>
               </div>
               <div class="card-body bg-dark">
-                <pre class="mb-0 bg-dark"><code class="language-javascript text-light">const form = new FormView({
+                <pre class="mb-0 bg-dark text-light"><code class="text-light" style="background: none; padding: 0;">const form = new FormView({
   fields: [
     {
       name: 'email',

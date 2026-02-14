@@ -26,6 +26,24 @@ import formsMenu from './menus/formsMenu.js';
 import FormsSection from './pages/forms/FormsSection.js';
 import FormViewBasics from './pages/forms/FormViewBasics.js';
 import TextInputsPage from './pages/forms/TextInputsPage.js';
+import SelectionFieldsPage from './pages/forms/SelectionFieldsPage.js';
+import DateTimeFieldsPage from './pages/forms/DateTimeFieldsPage.js';
+import FileMediaFieldsPage from './pages/forms/FileMediaFieldsPage.js';
+import ValidationPage from './pages/forms/ValidationPage.js';
+import TextareaFieldsPage from './pages/forms/TextareaFieldsPage.js';
+import StructuralFieldsPage from './pages/forms/StructuralFieldsPage.js';
+import OtherInputsPage from './pages/forms/OtherInputsPage.js';
+import FormLayoutPage from './pages/forms/FormLayoutPage.js';
+import UserProfileExample from './pages/forms/examples/UserProfileExample.js';
+import MultiStepWizardExample from './pages/forms/examples/MultiStepWizardExample.js';
+import SearchFilterExample from './pages/forms/examples/SearchFilterExample.js';
+import TagInputPage from './pages/forms/advanced/TagInputPage.js';
+import DatePickerPage from './pages/forms/advanced/DatePickerPage.js';
+import DateRangePickerPage from './pages/forms/advanced/DateRangePickerPage.js';
+import MultiSelectPage from './pages/forms/advanced/MultiSelectPage.js';
+import ComboInputPage from './pages/forms/advanced/ComboInputPage.js';
+import CollectionSelectPage from './pages/forms/advanced/CollectionSelectPage.js';
+import ImageFieldPage from './pages/forms/advanced/ImageFieldPage.js';
 
 ConsoleSilencer.setLevel('debug');
 
@@ -48,13 +66,7 @@ const app = new PortalApp({
     debug: true,
     basePath: '/examples/portal',
 
-    showPageHeader: true,
-    pageHeader: {
-        style: 'default', // 'default' | 'minimal' | 'breadcrumb'
-        showIcon: true,
-        showDescription: true,
-        showBreadcrumbs: false
-    },
+    showPageHeader: false,
 
     // Layout configuration
     layout: 'portal',
@@ -384,6 +396,24 @@ app.registerPage('file-drop', FileDropPage);
 app.registerPage('forms-section', FormsSection);
 app.registerPage('forms/formview-basics', FormViewBasics);
 app.registerPage('forms/text-inputs', TextInputsPage);
+app.registerPage('forms/selection-fields', SelectionFieldsPage);
+app.registerPage('forms/date-time-fields', DateTimeFieldsPage);
+app.registerPage('forms/file-media-fields', FileMediaFieldsPage);
+app.registerPage('forms/validation', ValidationPage);
+app.registerPage('forms/textarea-fields', TextareaFieldsPage);
+app.registerPage('forms/structural-fields', StructuralFieldsPage);
+app.registerPage('forms/other-inputs', OtherInputsPage);
+app.registerPage('forms/layout', FormLayoutPage);
+app.registerPage('forms/examples/profile', UserProfileExample);
+app.registerPage('forms/examples/wizard', MultiStepWizardExample);
+app.registerPage('forms/examples/filters', SearchFilterExample);
+app.registerPage('forms/tag-input', TagInputPage);
+app.registerPage('forms/date-picker', DatePickerPage);
+app.registerPage('forms/date-range-picker', DateRangePickerPage);
+app.registerPage('forms/multiselect', MultiSelectPage);
+app.registerPage('forms/combo-input', ComboInputPage);
+app.registerPage('forms/collection-select', CollectionSelectPage);
+app.registerPage('forms/image-field', ImageFieldPage);
 app.registerPage('simple', Page, {
     id: 'simple',
     title: "Simple",

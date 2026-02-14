@@ -1,0 +1,154 @@
+/**
+ * WEB-MOJO Lite CSS
+ * ----------------
+ * Minimal "glue" styles intended to complement Bootstrap 5.3 + Bootstrap Icons.
+ *
+ * Goals:
+ * - Keep this file small and non-opinionated.
+ * - Provide small fixes/utility classes used by core "lite" components
+ *   (forms, tables, lists, dialogs) when Bootstrap is present.
+ *
+ * What this does NOT do:
+ * - It does not replace Bootstrap.
+ * - It does not include icon fonts.
+ */
+
+/* ---------- Base helpers ---------- */
+
+.mojo-hidden {
+  display: none !important;
+}
+
+.mojo-visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Prevent long tokens from blowing up layouts */
+.mojo-text-wrap {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* ---------- View containers ---------- */
+
+[data-container] {
+  min-width: 0; /* helps flexbox children shrink properly */
+}
+
+/* ---------- Forms (FormBuilder / FormView) ---------- */
+
+/* FormBuilder sometimes needs consistent spacing in custom wrappers */
+.mojo-form .form-text {
+  margin-top: 0.25rem;
+}
+
+/* Help/error blocks: keep alignment predictable */
+.mojo-form .invalid-feedback,
+.mojo-form .valid-feedback {
+  display: block;
+}
+
+/* Password strength bar (if present) should look sane with Bootstrap utilities */
+.mojo-password-strength {
+  margin-top: 0.25rem;
+}
+
+.mojo-password-strength .progress {
+  height: 0.5rem;
+}
+
+/* Image upload dropzones (if used) */
+.mojo-dropzone {
+  border: 1px dashed var(--bs-border-color, #dee2e6);
+  border-radius: var(--bs-border-radius, 0.375rem);
+  padding: 0.75rem;
+  background: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.mojo-dropzone.is-dragover {
+  border-color: var(--bs-primary, #0d6efd);
+  background: rgba(13, 110, 253, 0.06);
+}
+
+/* Make "clickable" areas obvious */
+.mojo-clickable {
+  cursor: pointer;
+}
+
+/* ---------- Tables ---------- */
+
+/* Fullscreen table mode is referenced in Dialog stacking logic.
+   This class exists here to provide minimal layout affordances. */
+.table-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--bs-body-bg, #fff);
+  overflow: auto;
+  padding: 1rem;
+}
+
+/* Keep table header visible when scrolling in fullscreen */
+.table-fullscreen thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bs-body-bg, #fff);
+}
+
+/* ---------- Lists ---------- */
+
+.mojo-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mojo-list > li + li {
+  margin-top: 0.5rem;
+}
+
+/* ---------- Dialog / overlays ---------- */
+
+/* Ensure view content embedded inside a Bootstrap modal can shrink properly */
+.modal-body .mojo-dialog-body {
+  min-width: 0;
+}
+
+/* Basic "busy" overlay container if used by dialogs */
+.mojo-busy-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+/* ---------- Small utilities ---------- */
+
+.mojo-prewrap {
+  white-space: pre-wrap;
+}
+
+/* Ensure code blocks in templates are readable with Bootstrap */
+.mojo-code {
+  font-family: var(--bs-font-monospace, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
+  font-size: 0.875em;
+}
+
+/* If you use status/highlight helpers, keep mark readable in both light/dark */
+mark.highlight,
+mark.mojo-highlight {
+  padding: 0.1em 0.25em;
+  border-radius: 0.25rem;
+}

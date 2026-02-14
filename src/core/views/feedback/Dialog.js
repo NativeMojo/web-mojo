@@ -217,7 +217,11 @@ class Dialog extends View {
     this._processHeaderContent(this.headerContent);
 
     // Enhanced body handling - support View, Promise<View>, or function returning View
-    this.body = options.body || options.content || '';
+    // Aliases supported (common mistakes): `message` and `view`
+    // Priority: body > view > message > content
+    // - `view` is intended to be a View instance (or function/promise returning one)
+    // - `message` is intended to be a string/HTML snippet
+    this.body = options.body ?? options.view ?? options.message ?? options.content ?? '';
     this.bodyView = null; // Will hold View instance if body is a View
     this.bodyClass = options.bodyClass || '';
     this.noBodyPadding = options.noBodyPadding || false; // Remove default modal-body padding
@@ -263,7 +267,8 @@ class Dialog extends View {
    * Process body content to detect and handle View instances
    */
   _processBodyContent(body) {
-    if (body && body.render) {
+    // Prefer robust View detection (View instances should end up in `bodyView`)
+    if (body instanceof View || (body && typeof body === 'object' && typeof body.render === 'function')) {
       this.bodyView = body;
       this.body = ''; // Clear string body
       this.addChild(this.bodyView); // Add as child for proper lifecycle
@@ -1380,7 +1385,11 @@ class Dialog extends View {
     const {
       title = 'Dialog',
       content,
-      body = content || '',
+      // Aliases supported (common mistakes): `message` and `view`
+      // Priority: body > view > message > content
+      body,
+      view,
+      message,
       size = 'md',
       centered = true,
       buttons = [
@@ -1390,10 +1399,12 @@ class Dialog extends View {
       ...dialogOptions
     } = options;
 
+    const resolvedBody = body ?? view ?? message ?? content ?? '';
+
     // Create the dialog (preserve original button action/dismiss attributes)
     const dialog = new Dialog({
       title,
-      body: body,
+      body: resolvedBody,
       size,
       centered,
       buttons,

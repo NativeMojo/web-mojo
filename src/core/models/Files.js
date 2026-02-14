@@ -38,6 +38,13 @@ const FileManagerForms = {
                 cols: 12,
             },
             {
+                name: 'use',
+                type: 'text',
+                label: 'Use',
+                placeholder: 'Enter User or Leave Blank',
+                cols: 12,
+            },
+            {
                 name: 'backend_url',
                 type: 'text',
                 label: 'Backend URL',
@@ -113,6 +120,13 @@ const FileManagerForms = {
                 cols: 12,
             },
             {
+                name: 'use',
+                type: 'text',
+                label: 'Use',
+                placeholder: 'Enter User or Leave Blank',
+                cols: 12,
+            },
+            {
                 name: 'backend_url',
                 type: 'text',
                 label: 'Backend URL',
@@ -137,6 +151,13 @@ const FileManagerForms = {
                 name: 'is_active',
                 type: 'switch',
                 label: 'Is Active',
+                default: true,
+                cols: 6,
+            },
+            {
+                name: 'is_public',
+                type: 'switch',
+                label: 'Is Public',
                 default: true,
                 cols: 6,
             }

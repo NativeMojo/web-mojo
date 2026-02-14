@@ -34,238 +34,142 @@ export const formsMenu = {
       description: 'FormView component essentials'
     },
     
-    // Basic Field Types
+    // Basic Inputs - Collapsible
     {
       type: 'divider'
     },
     {
-      type: 'label',
-      text: 'Basic Fields'
-    },
-    {
-      text: 'Text Inputs',
-      icon: 'bi-input-cursor-text',
-      route: '/forms/text-inputs',
-      badge: '8 types'
-    },
-    {
-      text: 'Text Areas',
-      icon: 'bi-textarea-t',
-      route: '/forms/text-areas',
-      badge: '3 types'
-    },
-    {
-      text: 'Selection Fields',
-      icon: 'bi-ui-checks',
-      route: '/forms/selection-fields',
-      badge: '4 types'
-    },
-    {
-      text: 'Date & Time',
-      icon: 'bi-calendar-event',
-      route: '/forms/date-time',
-      badge: '3 types'
-    },
-    {
-      text: 'Files & Media',
-      icon: 'bi-file-earmark-arrow-up',
-      route: '/forms/files',
-      badge: '1 type'
-    },
-    {
-      text: 'Other Inputs',
-      icon: 'bi-sliders',
-      route: '/forms/other-inputs',
-      badge: '2 types'
-    },
-    
-    // Advanced Components
-    {
-      type: 'divider'
-    },
-    {
-      type: 'label',
-      text: 'Advanced Components'
-    },
-    {
-      text: 'TagInput',
-      icon: 'bi-tags',
-      route: '/forms/tag-input',
-      badge: 'NEW',
-      description: 'Tag/chip input component'
-    },
-    {
-      text: 'DatePicker',
-      icon: 'bi-calendar3',
-      route: '/forms/date-picker',
-      badge: 'Enhanced',
-      description: 'Easepick date picker'
-    },
-    {
-      text: 'DateRangePicker',
-      icon: 'bi-calendar-range',
-      route: '/forms/date-range-picker',
-      description: 'Select date ranges'
-    },
-    {
-      text: 'MultiSelect',
-      icon: 'bi-check2-square',
-      route: '/forms/multiselect',
-      description: 'Multi-select dropdown'
-    },
-    {
-      text: 'ComboInput',
-      icon: 'bi-search',
-      route: '/forms/combo-input',
-      description: 'Autocomplete/editable dropdown'
-    },
-    {
-      text: 'CollectionSelect',
-      icon: 'bi-database',
-      route: '/forms/collection-select',
-      description: 'Select from API/Collection'
-    },
-    {
-      text: 'ImageField',
-      icon: 'bi-image',
-      route: '/forms/image-field',
-      description: 'Image upload with preview'
-    },
-    
-    // Form Features
-    {
-      type: 'divider'
-    },
-    {
-      type: 'label',
-      text: 'Features & Patterns'
-    },
-    {
-      text: 'Validation',
-      icon: 'bi-check-circle',
-      route: '/forms/validation',
+      text: 'Basic Inputs',
+      icon: 'bi-input-cursor',
       children: [
-        { text: 'Built-in Validators', route: '/forms/validation#builtin' },
-        { text: 'Custom Validators', route: '/forms/validation#custom' },
-        { text: 'Async Validation', route: '/forms/validation#async' },
-        { text: 'Cross-field Validation', route: '/forms/validation#crossfield' }
+        {
+          text: 'Text Inputs',
+          icon: 'bi-input-cursor-text',
+          route: '/forms/text-inputs',
+          badge: '8 types'
+        },
+        {
+          text: 'Multi-line Text',
+          icon: 'bi-textarea-t',
+          route: '/forms/textarea-fields',
+          badge: '3 types'
+        },
+        {
+          text: 'Selection Fields',
+          icon: 'bi-ui-checks',
+          route: '/forms/selection-fields',
+          badge: '8 types'
+        },
+        {
+          text: 'Date & Time',
+          icon: 'bi-calendar-event',
+          route: '/forms/date-time-fields',
+          badge: '5 types'
+        },
+        {
+          text: 'Files & Media',
+          icon: 'bi-file-earmark-arrow-up',
+          route: '/forms/file-media-fields',
+          badge: '2 types'
+        },
+        {
+          text: 'Structural Fields',
+          icon: 'bi-layers',
+          route: '/forms/structural-fields',
+          badge: '5 types'
+        },
+        {
+          text: 'Other Inputs',
+          icon: 'bi-palette',
+          route: '/forms/other-inputs',
+          badge: '2 types'
+        }
       ]
     },
+    
+    // Advanced Inputs - Collapsible
     {
-      text: 'File Handling',
-      icon: 'bi-cloud-upload',
-      route: '/forms/file-handling',
+      text: 'Advanced Inputs',
+      icon: 'bi-star',
       children: [
-        { text: 'Base64 Mode', route: '/forms/file-handling#base64' },
-        { text: 'Multipart Mode', route: '/forms/file-handling#multipart' },
-        { text: 'File Validation', route: '/forms/file-handling#validation' }
+        {
+          text: 'TagInput',
+          icon: 'bi-tags',
+          route: '/forms/tag-input'
+        },
+        {
+          text: 'DatePicker',
+          icon: 'bi-calendar3',
+          route: '/forms/date-picker'
+        },
+        {
+          text: 'DateRangePicker',
+          icon: 'bi-calendar-range',
+          route: '/forms/date-range-picker'
+        },
+        {
+          text: 'MultiSelect',
+          icon: 'bi-check2-square',
+          route: '/forms/multiselect'
+        },
+        {
+          text: 'ComboInput',
+          icon: 'bi-search',
+          route: '/forms/combo-input'
+        },
+        {
+          text: 'CollectionSelect',
+          icon: 'bi-database',
+          route: '/forms/collection-select'
+        },
+        {
+          text: 'ImageField',
+          icon: 'bi-image',
+          route: '/forms/image-field'
+        }
       ]
-    },
-    {
-      text: 'Form Layout',
-      icon: 'bi-grid',
-      route: '/forms/layout',
-      children: [
-        { text: 'Responsive Grid', route: '/forms/layout#grid' },
-        { text: 'Field Groups', route: '/forms/layout#groups' },
-        { text: 'Tabbed Forms', route: '/forms/layout#tabs' }
-      ]
-    },
-    {
-      text: 'Model Integration',
-      icon: 'bi-diagram-3',
-      route: '/forms/model-integration',
-      description: 'Forms with Models/Collections'
     },
     
-    // Examples & Patterns
+    // Features & Patterns - Collapsible
     {
-      type: 'divider'
-    },
-    {
-      type: 'label',
-      text: 'Real-World Examples'
-    },
-    {
-      text: 'User Profile Form',
-      icon: 'bi-person-circle',
-      route: '/forms/examples/profile'
-    },
-    {
-      text: 'Multi-Step Wizard',
-      icon: 'bi-arrow-right-circle',
-      route: '/forms/examples/wizard'
-    },
-    {
-      text: 'Search & Filter Form',
-      icon: 'bi-funnel',
-      route: '/forms/examples/filters'
-    },
-    {
-      text: 'Settings Form',
+      text: 'Features & Patterns',
       icon: 'bi-gear',
-      route: '/forms/examples/settings'
-    },
-    {
-      text: 'Login & Signup',
-      icon: 'bi-key',
-      route: '/forms/examples/auth'
+      children: [
+        {
+          text: 'Validation',
+          icon: 'bi-shield-check',
+          route: '/forms/validation'
+        },
+        {
+          text: 'Form Layout',
+          icon: 'bi-grid',
+          route: '/forms/layout'
+        },
+        {
+          text: 'File Handling',
+          icon: 'bi-cloud-upload',
+          route: '/forms/file-handling',
+          badge: 'Coming Soon'
+        },
+        {
+          text: 'Model Integration',
+          icon: 'bi-diagram-3',
+          route: '/forms/model-integration',
+          badge: 'Coming Soon'
+        }
+      ]
     },
     
-    // Testing & Playground
+    // Form Playground - Root Level
     {
       type: 'divider'
-    },
-    {
-      type: 'label',
-      text: 'Testing & Tools'
     },
     {
       text: 'Form Playground',
       icon: 'bi-box',
       route: '/forms/playground',
-      badge: 'Interactive',
+      badge: 'Coming Soon',
       description: 'Build & test forms live'
-    },
-    {
-      text: 'Field Type Tester',
-      icon: 'bi-gear-wide-connected',
-      route: '/forms/field-tester',
-      description: 'Test all field types'
-    },
-    {
-      text: 'Validation Tester',
-      icon: 'bi-shield-check',
-      route: '/forms/validation-tester',
-      description: 'Test validation rules'
-    },
-    
-    // Reference
-    {
-      type: 'spacer'
-    },
-    {
-      type: 'divider'
-    },
-    {
-      text: 'API Reference',
-      icon: 'bi-book',
-      route: '/forms/api-reference',
-      children: [
-        { text: 'FormView API', route: '/forms/api/formview' },
-        { text: 'FormBuilder API', route: '/forms/api/formbuilder' },
-        { text: 'Field Options', route: '/forms/api/field-options' }
-      ]
-    },
-    {
-      text: 'Best Practices',
-      icon: 'bi-award',
-      route: '/forms/best-practices'
-    },
-    {
-      text: 'Troubleshooting',
-      icon: 'bi-question-circle',
-      route: '/forms/troubleshooting'
     },
     
     // Navigation

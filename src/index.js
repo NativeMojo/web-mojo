@@ -66,6 +66,7 @@ export { default as TabView } from '@core/views/navigation/TabView.js';
 export { default as SimpleSearchView } from '@core/views/navigation/SimpleSearchView.js';
 export { default as DataView } from '@core/views/data/DataView.js';
 export { default as FormView } from '@core/forms/FormView.js';
+export { default as FormPage } from '@core/forms/FormPage.js';
 export { default as FilePreviewView } from '@core/views/data/FilePreviewView.js';
 export { default as ChatView } from '@core/views/chat/ChatView.js';
 export { default as ChatMessageView } from '@core/views/chat/ChatMessageView.js';

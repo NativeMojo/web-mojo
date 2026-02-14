@@ -48,6 +48,11 @@ class FileManagerTablePage extends TablePage {
                     formatter: "boolean|badge"
                 },
                 {
+                    key: 'is_public',
+                    label: 'Public',
+                    formatter: "boolean|badge"
+                },
+                {
                     key: 'backend_type',
                     label: 'Type',
                     formatter: "default('Unknown')"

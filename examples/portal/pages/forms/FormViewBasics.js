@@ -7,9 +7,36 @@ import { Page, FormView } from 'web-mojo';
  */
 class FormViewBasics extends Page {
   static pageName = 'forms/formview-basics';
-  static title = 'FormView Basics';
-  static icon = 'bi-file-earmark-code';
-  static description = 'Learn the fundamentals of creating forms with MOJO\'s FormView component';
+  
+  constructor(options = {}) {
+    super({
+      title: 'FormView Basics',
+      icon: 'bi-file-earmark-code',
+      pageDescription: 'Learn the fundamentals of creating forms with MOJO\'s FormView component',
+      ...options
+    });
+  }
+  
+  async onActionSubmitContactForm(event, element) {
+    const isValid = await this.contactForm.validate();
+    if (isValid) {
+      const data = await this.contactForm.getFormData();
+      console.log('Contact form submitted:', data);
+      this.getApp().toast.success(`Thank you, ${data.name}! Your message has been received.`);
+      this.contactForm.reset();
+    }
+  }
+  
+  async onActionSubmitValidationForm(event, element) {
+    const isValid = await this.validationForm.validate();
+    if (isValid) {
+      const data = await this.validationForm.getFormData();
+      console.log('Validation form submitted:', data);
+      this.getApp().toast.success('Account created successfully!');
+      this.validationForm.reset();
+    }
+  }
+  
   async onInit() {
     await super.onInit();
     
@@ -37,14 +64,15 @@ class FormViewBasics extends Page {
           required: true,
           placeholder: 'Your message here...',
           rows: 4
+        },
+        {
+          type: 'button',
+          label: 'Send Message',
+          action: 'submit-contact-form',
+          buttonClass: 'btn-primary',
+          icon: 'bi-send'
         }
-      ],
-      submitLabel: 'Send Message',
-      onSubmit: async (data) => {
-        console.log('Form submitted:', data);
-        alert(`Thank you, ${data.name}! Your message has been received.`);
-        return true; // Return true to indicate success
-      }
+      ]
     });
     
     this.addChild(this.contactForm, { containerId: 'contact-form-container' });
@@ -78,14 +106,15 @@ class FormViewBasics extends Page {
           min: 18,
           max: 120,
           help: 'Must be 18 or older'
+        },
+        {
+          type: 'button',
+          label: 'Create Account',
+          action: 'submit-validation-form',
+          buttonClass: 'btn-success',
+          icon: 'bi-person-check'
         }
-      ],
-      submitLabel: 'Create Account',
-      onSubmit: async (data) => {
-        console.log('Validation form submitted:', data);
-        alert('Account created successfully!');
-        return true;
-      }
+      ]
     });
     
     this.addChild(this.validationForm, { containerId: 'validation-form-container' });
@@ -94,6 +123,17 @@ class FormViewBasics extends Page {
   getTemplate() {
     return `
       <div class="forms-basics-page">
+        <!-- Page Header -->
+        <div class="mb-4">
+          <h1 class="h2">
+            <i class="bi bi-file-earmark-code me-2 text-primary"></i>
+            FormView Basics
+          </h1>
+          <p class="text-muted">
+            Learn the fundamentals of creating forms with MOJO's FormView component
+          </p>
+        </div>
+        
         <!-- Introduction -->
         <div class="card mb-4">
           <div class="card-body">
@@ -138,7 +178,7 @@ class FormViewBasics extends Page {
                 </h5>
               </div>
               <div class="card-body bg-dark">
-                <pre class="mb-0 bg-dark"><code class="language-javascript text-light">const contactForm = new FormView({
+                <pre class="mb-0 bg-dark text-light"><code class="text-light" style="background: none; padding: 0;">const contactForm = new FormView({
   fields: [
     {
       name: 'name',
@@ -201,7 +241,7 @@ class FormViewBasics extends Page {
                 </h5>
               </div>
               <div class="card-body bg-dark">
-                <pre class="mb-0 bg-dark"><code class="language-javascript text-light">const validationForm = new FormView({
+                <pre class="mb-0 bg-dark text-light"><code class="text-light" style="background: none; padding: 0;">const validationForm = new FormView({
   fields: [
     {
       name: 'username',

@@ -10,9 +10,16 @@ import FormsOverview from './FormsOverview.js';
  */
 class FormsSection extends Page {
   static pageName = 'forms-section';
-  static title = 'Forms Documentation';
-  static icon = 'bi-book';
-  static description = 'Build powerful, flexible forms with minimal code. Declarative configuration, built-in validation, and seamless model integration.';
+  
+  constructor(options = {}) {
+    super({
+      title: 'Forms Documentation',
+      icon: 'bi-book',
+      pageDescription: 'Build powerful, flexible forms with minimal code. Declarative configuration, built-in validation, and seamless model integration.',
+      ...options
+    });
+  }
+  
   async onInit() {
     await super.onInit();
     

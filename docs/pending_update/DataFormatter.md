@@ -243,6 +243,22 @@ dataFormatter.pipe(date, 'date:"MMM DD, YYYY"|uppercase');
 {{description|truncate:100:'…'}}            <!-- Long text… (custom suffix) -->
 ```
 
+#### `replace` - Replace occurrences in a string
+Replaces occurrences of `search` with `replacement`.
+
+- **Default behavior:** replaces **all** occurrences (global) when `search` is a plain string.
+- **Regex support:** you can pass a regex-like string in the form `'/pattern/flags'`.
+
+```html
+{{name|replace:'_':''}}                     <!-- remove all underscores -->
+{{name|replace:'_':' '}}                    <!-- replace all underscores with spaces -->
+
+{{name|replace('_', '')}}                   <!-- parentheses syntax also supported -->
+{{name|replace:'_':' ':'g'}}                <!-- explicit flags (string search) -->
+
+{{name|replace:'/[_-]+/g':' '}}             <!-- regex string form -->
+```
+
 #### `truncate_middle` - Truncate in middle
 ```html
 {{hash|truncate_middle:16}}                 <!-- abcd1234***xyz9876 (8+8 chars) -->

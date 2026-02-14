@@ -9,6 +9,18 @@ class FormsOverview extends View {
   getTemplate() {
     return `
       <div class="forms-overview">
+        <!-- Page Header -->
+        <div class="mb-4">
+          <h1 class="h2">
+            <i class="bi bi-book me-2 text-primary"></i>
+            Forms Documentation
+          </h1>
+          <p class="text-muted">
+            Build powerful, flexible forms with minimal code. Declarative configuration, 
+            built-in validation, and seamless model integration.
+          </p>
+        </div>
+        
         <!-- Quick Start -->
         <div class="card mb-4">
           <div class="card-header bg-white">
@@ -20,7 +32,7 @@ class FormsOverview extends View {
           <div class="card-body">
             <p class="text-muted">Create your first form in seconds:</p>
             
-            <pre class="bg-dark text-white p-3 rounded mb-3"><code class="text-white" style="background: none; padding: 0;">const form = new FormView({
+            <pre class="bg-dark text-light p-3 rounded mb-3"><code class="text-light" style="background: none; padding: 0;">const form = new FormView({
   fields: [
     { type: 'text', name: 'username', label: 'Username', required: true },
     { type: 'email', name: 'email', label: 'Email', required: true },
@@ -42,70 +54,80 @@ this.addChild(form, { containerId: 'form-container' });</code></pre>
           <div class="card-header bg-white">
             <h3 class="h5 mb-0">
               <i class="bi bi-list-ul text-primary me-2"></i>
-              Field Types Quick Reference
+              All Field Types at a Glance
             </h3>
           </div>
           <div class="card-body">
             
-            <!-- Basic Input Fields -->
+            <!-- Text Input Fields -->
             <h4 class="h6 fw-bold mt-3 mb-2">
               <i class="bi bi-input-cursor text-primary me-2"></i>
-              Basic Input Fields
+              Text Input Fields
             </h4>
             <div class="table-responsive">
               <table class="table table-sm table-hover">
                 <thead class="table-light">
                   <tr>
-                    <th>Field Type</th>
-                    <th>Use Case</th>
-                    <th>Key Options</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Key Features</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td><code>text</code></td>
-                    <td>Single-line text</td>
-                    <td><code>placeholder</code>, <code>maxlength</code>, <code>pattern</code></td>
+                    <td>Single-line text input</td>
+                    <td>Placeholder, pattern validation</td>
                   </tr>
                   <tr>
                     <td><code>email</code></td>
-                    <td>Email addresses</td>
-                    <td><code>placeholder</code>, validation</td>
+                    <td>Email address input</td>
+                    <td>Built-in email validation</td>
                   </tr>
                   <tr>
                     <td><code>password</code></td>
-                    <td>Passwords</td>
-                    <td><code>minlength</code>, <code>pattern</code>, <code>autocomplete</code></td>
+                    <td>Password input</td>
+                    <td>Show/hide toggle, strength meter</td>
                   </tr>
                   <tr>
                     <td><code>tel</code></td>
-                    <td>Phone numbers</td>
-                    <td><code>placeholder</code>, <code>pattern</code></td>
+                    <td>Phone number input</td>
+                    <td>Mobile numeric keyboard</td>
                   </tr>
                   <tr>
                     <td><code>url</code></td>
-                    <td>URLs</td>
-                    <td><code>placeholder</code>, validation</td>
+                    <td>URL input</td>
+                    <td>Built-in URL validation</td>
                   </tr>
                   <tr>
                     <td><code>search</code></td>
-                    <td>Search with live filtering</td>
-                    <td><code>debounce</code>, <code>data-filter</code></td>
+                    <td>Search input</td>
+                    <td>Live filtering, debouncing</td>
+                  </tr>
+                  <tr>
+                    <td><code>hex</code></td>
+                    <td>Hexadecimal input</td>
+                    <td>Color/string hex validation</td>
                   </tr>
                   <tr>
                     <td><code>number</code></td>
                     <td>Numeric input</td>
-                    <td><code>min</code>, <code>max</code>, <code>step</code></td>
-                  </tr>
-                  <tr>
-                    <td><code>hex</code></td>
-                    <td>Hexadecimal values</td>
-                    <td><code>hexType</code>, <code>allowPrefix</code></td>
+                    <td>Min/max, step, spinners</td>
                   </tr>
                   <tr>
                     <td><code>textarea</code></td>
                     <td>Multi-line text</td>
-                    <td><code>rows</code>, <code>cols</code>, <code>maxlength</code></td>
+                    <td>Rows, character count</td>
+                  </tr>
+                  <tr>
+                    <td><code>htmlpreview</code></td>
+                    <td>HTML editor</td>
+                    <td>Live preview in dialog</td>
+                  </tr>
+                  <tr>
+                    <td><code>json</code></td>
+                    <td>JSON editor</td>
+                    <td>Auto-formatting, validation</td>
                   </tr>
                 </tbody>
               </table>
@@ -120,37 +142,86 @@ this.addChild(form, { containerId: 'form-container' });</code></pre>
               <table class="table table-sm table-hover">
                 <thead class="table-light">
                   <tr>
-                    <th>Field Type</th>
-                    <th>Use Case</th>
-                    <th>Key Options</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Key Features</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td><code>select</code></td>
-                    <td>Dropdown selection</td>
-                    <td><code>options</code>, <code>multiple</code></td>
+                    <td>Dropdown select</td>
+                    <td>Single/multiple, searchable</td>
                   </tr>
                   <tr>
                     <td><code>checkbox</code></td>
-                    <td>Boolean/multi-choice</td>
-                    <td><code>checked</code>, <code>options</code>, <code>inline</code></td>
+                    <td>Checkbox</td>
+                    <td>Single boolean or multiple</td>
                   </tr>
                   <tr>
                     <td><code>radio</code></td>
-                    <td>Single choice</td>
-                    <td><code>options</code>, <code>inline</code></td>
+                    <td>Radio buttons</td>
+                    <td>Single selection, inline layout</td>
                   </tr>
                   <tr>
-                    <td><code>toggle</code></td>
+                    <td><code>toggle</code> / <code>switch</code></td>
                     <td>Toggle switch</td>
-                    <td><code>checked</code>, <code>size</code></td>
+                    <td>On/off with sizes</td>
+                  </tr>
+                  <tr>
+                    <td><code>multiselect</code></td>
+                    <td>Multi-select dropdown</td>
+                    <td>Checkbox-style dropdown</td>
+                  </tr>
+                  <tr>
+                    <td><code>buttongroup</code></td>
+                    <td>Button-style selection</td>
+                    <td>Icon buttons, variants</td>
+                  </tr>
+                  <tr>
+                    <td><code>checklistdropdown</code></td>
+                    <td>Dropdown with checkboxes</td>
+                    <td>Compact multi-select</td>
+                  </tr>
+                  <tr>
+                    <td><code>combo</code> / <code>combobox</code></td>
+                    <td>Editable dropdown</td>
+                    <td>Type or select, autocomplete</td>
                   </tr>
                 </tbody>
               </table>
             </div>
             
-            <!-- Date & Time -->
+            <!-- File & Media Fields -->
+            <h4 class="h6 fw-bold mt-4 mb-2">
+              <i class="bi bi-file-earmark text-primary me-2"></i>
+              File & Media Fields
+            </h4>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Key Features</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>file</code></td>
+                    <td>Basic file upload</td>
+                    <td>Multiple files, accept types</td>
+                  </tr>
+                  <tr>
+                    <td><code>image</code></td>
+                    <td>Image upload</td>
+                    <td>Preview, drag-drop, sizes</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Date & Time Fields -->
             <h4 class="h6 fw-bold mt-4 mb-2">
               <i class="bi bi-calendar text-primary me-2"></i>
               Date & Time Fields
@@ -159,106 +230,156 @@ this.addChild(form, { containerId: 'form-container' });</code></pre>
               <table class="table table-sm table-hover">
                 <thead class="table-light">
                   <tr>
-                    <th>Field Type</th>
-                    <th>Use Case</th>
-                    <th>Key Options</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Key Features</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td><code>date</code></td>
-                    <td>Date picker</td>
-                    <td><code>min</code>, <code>max</code></td>
+                    <td>Date picker (native)</td>
+                    <td>Min/max date constraints</td>
                   </tr>
                   <tr>
                     <td><code>datetime-local</code></td>
-                    <td>Date & time</td>
-                    <td><code>min</code>, <code>max</code></td>
+                    <td>Date & time picker</td>
+                    <td>Native HTML5 picker</td>
                   </tr>
                   <tr>
                     <td><code>time</code></td>
                     <td>Time picker</td>
-                    <td><code>min</code>, <code>max</code>, <code>step</code></td>
+                    <td>12/24 hour, step intervals</td>
+                  </tr>
+                  <tr>
+                    <td><code>datepicker</code></td>
+                    <td>Enhanced date picker</td>
+                    <td>Easepick library, themes</td>
+                  </tr>
+                  <tr>
+                    <td><code>daterange</code></td>
+                    <td>Date range picker</td>
+                    <td>Start/end date selection</td>
                   </tr>
                 </tbody>
               </table>
             </div>
             
-            <!-- Files & Other -->
-            <div class="row mt-4">
-              <div class="col-md-6">
-                <h4 class="h6 fw-bold mb-2">
-                  <i class="bi bi-file-earmark text-primary me-2"></i>
-                  File Fields
-                </h4>
-                <div class="table-responsive">
-                  <table class="table table-sm table-hover">
-                    <thead class="table-light">
-                      <tr>
-                        <th>Field Type</th>
-                        <th>Use Case</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td><code>file</code></td>
-                        <td>File uploads</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              
-              <div class="col-md-6">
-                <h4 class="h6 fw-bold mb-2">
-                  <i class="bi bi-sliders text-primary me-2"></i>
-                  Other Inputs
-                </h4>
-                <div class="table-responsive">
-                  <table class="table table-sm table-hover">
-                    <thead class="table-light">
-                      <tr>
-                        <th>Field Type</th>
-                        <th>Use Case</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td><code>color</code></td>
-                        <td>Color picker</td>
-                      </tr>
-                      <tr>
-                        <td><code>range</code></td>
-                        <td>Slider</td>
-                      </tr>
-                      <tr>
-                        <td><code>hidden</code></td>
-                        <td>Hidden values</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+            <!-- Advanced Input Components -->
+            <h4 class="h6 fw-bold mt-4 mb-2">
+              <i class="bi bi-stars text-primary me-2"></i>
+              Advanced Input Components
+            </h4>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Key Features</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>tag</code> / <code>tags</code></td>
+                    <td>Tag/chip input</td>
+                    <td>Add/remove tags, validation</td>
+                  </tr>
+                  <tr>
+                    <td><code>collection</code></td>
+                    <td>Collection select</td>
+                    <td>Fetch from API, search</td>
+                  </tr>
+                  <tr>
+                    <td><code>collectionmultiselect</code></td>
+                    <td>Multi-select collection</td>
+                    <td>Multiple from API</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
             
-            <!-- Advanced Components Note -->
-            <div class="alert alert-info mt-4 mb-0">
-              <h5 class="alert-heading">
-                <i class="bi bi-stars me-2"></i>
-                Advanced Components
-              </h5>
-              <p class="mb-2">
-                MOJO also includes enhanced components with richer functionality:
-              </p>
-              <ul class="mb-0">
-                <li><strong>TagInput</strong> - Tag/chip input with autocomplete</li>
-                <li><strong>DatePicker</strong> - Enhanced date picker with calendar UI</li>
-                <li><strong>DateRangePicker</strong> - Select date ranges</li>
-                <li><strong>MultiSelect</strong> - Multi-select dropdown</li>
-                <li><strong>ComboInput</strong> - Autocomplete/editable dropdown</li>
-                <li><strong>CollectionSelect</strong> - Select from API/Collection data</li>
-                <li><strong>ImageField</strong> - Image upload with preview</li>
-              </ul>
+            <!-- Structural & Display Fields -->
+            <h4 class="h6 fw-bold mt-4 mb-2">
+              <i class="bi bi-layout-text-sidebar text-primary me-2"></i>
+              Structural & Display Fields
+            </h4>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Key Features</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>hidden</code></td>
+                    <td>Hidden input</td>
+                    <td>Store values invisibly</td>
+                  </tr>
+                  <tr>
+                    <td><code>header</code> / <code>heading</code></td>
+                    <td>Section header</td>
+                    <td>H1-H6 headings</td>
+                  </tr>
+                  <tr>
+                    <td><code>html</code></td>
+                    <td>Custom HTML</td>
+                    <td>Inject custom markup</td>
+                  </tr>
+                  <tr>
+                    <td><code>divider</code></td>
+                    <td>Horizontal divider</td>
+                    <td>Separate form sections</td>
+                  </tr>
+                  <tr>
+                    <td><code>button</code></td>
+                    <td>Custom button</td>
+                    <td>Actions, custom styling</td>
+                  </tr>
+                  <tr>
+                    <td><code>tabset</code></td>
+                    <td>Tabbed field groups</td>
+                    <td>Organize fields in tabs</td>
+                  </tr>
+                  <tr>
+                    <td><code>group</code></td>
+                    <td>Field group</td>
+                    <td>Organize related fields</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Other Input Types -->
+            <h4 class="h6 fw-bold mt-4 mb-2">
+              <i class="bi bi-sliders text-primary me-2"></i>
+              Other Input Types
+            </h4>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Key Features</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>color</code></td>
+                    <td>Color picker</td>
+                    <td>Hex color selection</td>
+                  </tr>
+                  <tr>
+                    <td><code>range</code></td>
+                    <td>Slider</td>
+                    <td>Min/max, step, live value</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

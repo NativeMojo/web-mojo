@@ -68,11 +68,25 @@ class FormBuilder {
             {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}
           </label>
           {{/label}}
+          {{#showCopy}}
+          <div class="input-group">
+            <input type="{{type}}" id="{{fieldId}}" name="{{name}}"
+                   class="{{inputClass}}{{#error}} is-invalid{{/error}}"
+                   value="{{fieldValue}}" {{#placeholder}}placeholder="{{placeholder}}"{{/placeholder}}
+                   {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}}
+                   {{#readonly}}readonly{{/readonly}} {{{attrs}}}>
+            <button class="btn btn-outline-secondary" type="button" data-action="copy-to-clipboard" data-target="{{fieldId}}" title="Copy to clipboard">
+              <i class="bi bi-clipboard"></i>
+            </button>
+          </div>
+          {{/showCopy}}
+          {{^showCopy}}
           <input type="{{type}}" id="{{fieldId}}" name="{{name}}"
                  class="{{inputClass}}{{#error}} is-invalid{{/error}}"
                  value="{{fieldValue}}" {{#placeholder}}placeholder="{{placeholder}}"{{/placeholder}}
                  {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}}
                  {{#readonly}}readonly{{/readonly}} {{{attrs}}}>
+          {{/showCopy}}
           {{#help}}<div class="{{helpClass}}">{{help}}</div>{{/help}}
           {{#error}}<div class="{{errorClass}}">{{error}}</div>{{/error}}
         </div>
@@ -130,10 +144,23 @@ class FormBuilder {
             {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}
           </label>
           {{/label}}
+          {{#showCopy}}
+          <div class="position-relative">
+            <textarea id="{{fieldId}}" name="{{name}}" class="{{inputClass}}{{#error}} is-invalid{{/error}}"
+                      rows="{{rows}}" {{#placeholder}}placeholder="{{placeholder}}"{{/placeholder}}
+                      {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}}
+                      {{#readonly}}readonly{{/readonly}} {{{attrs}}}>{{fieldValue}}</textarea>
+            <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2" type="button" data-action="copy-to-clipboard" data-target="{{fieldId}}" title="Copy to clipboard">
+              <i class="bi bi-clipboard"></i>
+            </button>
+          </div>
+          {{/showCopy}}
+          {{^showCopy}}
           <textarea id="{{fieldId}}" name="{{name}}" class="{{inputClass}}{{#error}} is-invalid{{/error}}"
                     rows="{{rows}}" {{#placeholder}}placeholder="{{placeholder}}"{{/placeholder}}
                     {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}}
                     {{#readonly}}readonly{{/readonly}} {{{attrs}}}>{{fieldValue}}</textarea>
+          {{/showCopy}}
           {{#help}}<div class="{{helpClass}}">{{help}}</div>{{/help}}
           {{#error}}<div class="{{errorClass}}">{{error}}</div>{{/error}}
         </div>
@@ -152,14 +179,24 @@ class FormBuilder {
                       {{#required}}required{{/required}} {{#disabled}}disabled{{/disabled}}
                       {{#readonly}}readonly{{/readonly}}
                       data-field-type="htmlpreview" {{{attrs}}}>{{fieldValue}}</textarea>
-            <button type="button" class="btn btn-sm btn-outline-secondary position-absolute"
-                    style="top: 8px; right: 8px; z-index: 10;"
-                    data-action="preview-html"
-                    data-target="{{fieldId}}"
-                    title="Preview HTML"
-                    aria-label="Preview HTML">
-              <i class="bi bi-eye"></i> Preview
-            </button>
+            <div class="position-absolute d-flex gap-1" style="top: 8px; right: 8px; z-index: 10;">
+              {{#showCopy}}
+              <button type="button" class="btn btn-sm btn-outline-secondary"
+                      data-action="copy-to-clipboard"
+                      data-target="{{fieldId}}"
+                      title="Copy to clipboard"
+                      aria-label="Copy to clipboard">
+                <i class="bi bi-clipboard"></i>
+              </button>
+              {{/showCopy}}
+              <button type="button" class="btn btn-sm btn-outline-secondary"
+                      data-action="preview-html"
+                      data-target="{{fieldId}}"
+                      title="Preview HTML"
+                      aria-label="Preview HTML">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
           </div>
           {{#help}}<div class="{{helpClass}}">{{help}}</div>{{/help}}
           {{#error}}<div class="{{errorClass}}">{{error}}</div>{{/error}}
@@ -1031,7 +1068,8 @@ class FormBuilder {
       required,
       disabled,
       readonly,
-      attrs
+      attrs,
+      showCopy: !!field.showCopy
     };
 
     if (type === 'password' && (field.showToggle || field.strengthMeter || field.capsLockWarning)) {
@@ -1099,6 +1137,7 @@ class FormBuilder {
       required,
       disabled,
       readonly,
+      showCopy: !!field.showCopy,
       attrs
     };
 
@@ -1148,7 +1187,8 @@ class FormBuilder {
       required,
       disabled,
       readonly,
-      attrs
+      attrs,
+      showCopy: !!field.showCopy
     };
 
     return Mustache.render(this.templates.htmlpreview, context);
@@ -1334,36 +1374,33 @@ class FormBuilder {
     const fieldValue = field.value ?? this.getFieldValue(name) ?? value;
 
     // Create placeholder div that will be replaced with MultiSelectDropdown component
+    // Note: MultiSelectDropdown renders its own mojo-form-control wrapper and label,
+    // so we don't need to wrap it here like other field types
     return `
-      <div class="mojo-form-control">
-        ${label ? `<label class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}</label>` : ''}
-        <div class="multiselect-placeholder"
-             data-field-name="${name}"
-             data-field-type="multiselect"
-             data-field-config='${JSON.stringify({
-               name,
-               value: fieldValue,
-               placeholder,
-               maxHeight,
-               disabled,
-               required
-             })}'>
-          <input type="hidden" name="${name}" value="${this.escapeHtml(JSON.stringify(fieldValue))}">
-          <select class="form-select${error ? ' is-invalid' : ''}" 
-                  multiple 
-                  ${disabled ? 'disabled' : ''}
-                  ${required ? 'required' : ''}>
-            ${options.map(opt => {
-              const optValue = typeof opt === 'string' ? opt : opt.value;
-              const optLabel = typeof opt === 'string' ? opt : (opt.label || opt.value);
-              const selected = Array.isArray(fieldValue) && fieldValue.includes(optValue) ? 'selected' : '';
-              return `<option value="${this.escapeHtml(optValue)}" ${selected}>${this.escapeHtml(optLabel)}</option>`;
-            }).join('')}
-          </select>
-          <small class="form-text text-muted">This will be enhanced with MultiSelectDropdown component</small>
-        </div>
-        ${help ? `<div class="${this.options.helpClass}">${this.escapeHtml(help)}</div>` : ''}
-        ${error ? `<div class="${this.options.errorClass}">${this.escapeHtml(error)}</div>` : ''}
+      <div class="multiselect-placeholder"
+           data-field-name="${name}"
+           data-field-type="multiselect"
+           data-field-config='${JSON.stringify({
+             name,
+             value: fieldValue,
+             placeholder,
+             maxHeight,
+             disabled,
+             required
+           })}'>
+        <input type="hidden" name="${name}" value="${this.escapeHtml(JSON.stringify(fieldValue))}">
+        <select class="form-select${error ? ' is-invalid' : ''}" 
+                multiple 
+                ${disabled ? 'disabled' : ''}
+                ${required ? 'required' : ''}>
+          ${options.map(opt => {
+            const optValue = typeof opt === 'string' ? opt : opt.value;
+            const optLabel = typeof opt === 'string' ? opt : (opt.label || opt.value);
+            const selected = Array.isArray(fieldValue) && fieldValue.includes(optValue) ? 'selected' : '';
+            return `<option value="${this.escapeHtml(optValue)}" ${selected}>${this.escapeHtml(optLabel)}</option>`;
+          }).join('')}
+        </select>
+        <small class="form-text text-muted">This will be enhanced with MultiSelectDropdown component</small>
       </div>
     `;
   }

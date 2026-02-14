@@ -255,7 +255,7 @@ export default class FormValidationPage extends Page {
     `;
   }
 
-  async onAfterRender() {
+  async onInit() {
     await this.initializeForms();
   }
 

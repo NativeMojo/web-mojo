@@ -2533,6 +2533,51 @@ class FormView extends View {
   }
 
   /**
+   * Copy field value to clipboard
+   * @param {Event} event - Click event
+   * @param {HTMLElement} element - Button element with data-target
+   */
+  async onActionCopyToClipboard(event, element) {
+    event.preventDefault();
+
+    const targetId = element.getAttribute('data-target');
+    if (!targetId) return;
+
+    const input = this.element.querySelector('#' + targetId);
+    if (!input) return;
+
+    try {
+      // Copy to clipboard using Clipboard API
+      await navigator.clipboard.writeText(input.value);
+
+      // Visual feedback - change icon temporarily
+      const icon = element.querySelector('i');
+      if (icon) {
+        const originalClass = icon.className;
+        icon.className = 'bi bi-check2';
+        element.classList.add('btn-success');
+        element.classList.remove('btn-outline-secondary');
+
+        setTimeout(() => {
+          icon.className = originalClass;
+          element.classList.remove('btn-success');
+          element.classList.add('btn-outline-secondary');
+        }, 1500);
+      }
+
+      // Optional: Show toast notification if available
+      if (this.app && this.app.toast) {
+        this.app.toast.success('Copied to clipboard!');
+      }
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+      if (this.app && this.app.toast) {
+        this.app.toast.error('Failed to copy to clipboard');
+      }
+    }
+  }
+
+  /**
    * Compute a simple password strength score and associated UI metadata
    */
   computePasswordStrength(password = '') {

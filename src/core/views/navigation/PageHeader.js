@@ -145,6 +145,20 @@ class PageHeader extends View {
         const page = this.currentPage;
         const hasPage = !!page;
 
+        // Debug logging
+        if (page) {
+            console.log('PageHeader page:', {
+                title: page.title,
+                displayName: page.displayName,
+                name: page.name,
+                pageName: page.pageName,
+                icon: page.icon,
+                pageIcon: page.pageIcon,
+                pageDescription: page.pageDescription,
+                description: page.description
+            });
+        }
+
         // Get headerActions from page options, instance, or constructor.prototype
         const headerActions = page?.options?.headerActions ||
                              page?.headerActions || 
@@ -153,9 +167,9 @@ class PageHeader extends View {
 
         this.data = {
             hasPage,
-            pageTitle: page?.title || page?.name || '',
+            pageTitle: page?.title || page?.displayName || page?.name || page?.pageName || '',
             pageIcon: page?.icon || page?.pageIcon || '',
-            pageDescription: page?.description || '',
+            pageDescription: page?.pageDescription || page?.description || '',
             showIcon: this.showIcon,
             showDescription: this.showDescription,
             showBreadcrumbs: this.showBreadcrumbs,
@@ -164,15 +178,22 @@ class PageHeader extends View {
             hasActions: headerActions.length > 0,
             size: this.size
         };
+        
+        console.log('PageHeader data:', this.data);
     }
 
     /**
      * Set the current page to display
      */
-    setPage(page) {
+    async setPage(page) {
+        console.log('PageHeader.setPage called with:', page?.pageName || page?.name || 'no page');
         this.currentPage = page;
-        if (this.mounted) {
-            this.render();
+        // Always render if we have a page, even if not yet mounted
+        // This handles the case where setPage is called during initial app setup
+        if (page) {
+            console.log('PageHeader.setPage calling render()');
+            await this.render();
+            console.log('PageHeader.setPage render() complete');
         }
     }
 
