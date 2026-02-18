@@ -630,6 +630,18 @@ class WebApp {
         }
     }
 
+    async showModelView(model, options = {}) {
+        try {
+            const Dialog = (await import('./views/feedback/Dialog.js')).default;
+            return await Dialog.showModelView(model, options);
+        } catch (e) {
+            if (typeof window !== 'undefined' && window?.console) {
+                console.error('[WebApp] showModelForm failed:', e);
+            }
+            throw e;
+        }
+    }
+
     async showModelForm(options = {}) {
         try {
             const Dialog = (await import('./views/feedback/Dialog.js')).default;

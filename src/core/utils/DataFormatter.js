@@ -1344,8 +1344,8 @@ class DataFormatter {
    */
   inferBadgeType(text) {
     const lowered = text.toLowerCase();
-    if (['active', 'success', 'complete', 'completed', 'approved', 'done', 'true', 'on', 'yes'].includes(lowered)) return 'success';
-    if (['error', 'failed', 'rejected', 'deleted', 'cancelled', 'false', 'off', 'no', 'declined'].includes(lowered)) return 'danger';
+    if (['active', 'pass', 'success', 'complete', 'completed', 'approved', 'done', 'true', 'on', 'yes'].includes(lowered)) return 'success';
+    if (['error', 'failed', 'fail', 'rejected', 'deleted', 'cancelled', 'false', 'off', 'no', 'declined'].includes(lowered)) return 'danger';
     if (['warning', 'pending', 'review', 'processing', 'uploading'].includes(lowered)) return 'warning';
     if (['info', 'new', 'draft'].includes(lowered)) return 'info';
     if (['inactive', 'disabled', 'archived', 'suspended'].includes(lowered)) return 'secondary';
@@ -1431,7 +1431,15 @@ class DataFormatter {
       return false;
     }
 
-    // Return false for empty arrays
+    if (value === false || value === 'false') {
+      return false;
+    }
+
+    if (value === true || value === 'true') {
+      return true;
+    }
+
+      // Return false for empty arrays
     if (Array.isArray(value) && value.length === 0) {
       return false;
     }

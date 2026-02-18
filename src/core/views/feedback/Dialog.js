@@ -1298,9 +1298,9 @@ class Dialog extends View {
             <i class="bi bi-arrow-clockwise"></i> Refresh
           </button>
         </div>
-        <iframe 
+        <iframe
           id="html-preview-frame"
-          class="border rounded w-100" 
+          class="border rounded w-100"
           style="height: ${height}px; background: white;"
           sandbox="allow-same-origin"
           frameborder="0"
@@ -1795,6 +1795,20 @@ class Dialog extends View {
         }, 100);
       });
     });
+  }
+
+    static async showModelView(model, options) {
+        const modelClass = model.constructor;
+        const modelView = modelClass.VIEW_CLASS;
+        const viewInstance = new modelView({ model: model });
+        options = options || {};
+        return await Dialog.showDialog({
+            header: false,
+            body: viewInstance,
+            size: 'lg',
+            centered: false,
+            ...options
+        });
   }
 
   /**

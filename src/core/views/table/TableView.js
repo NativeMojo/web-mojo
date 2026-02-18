@@ -1150,7 +1150,7 @@ class TableView extends ListView {
 
     if (ViewClass) {
       // Use custom view class
-      const viewInstance = new ViewClass({ model: event.model });
+      const viewInstance = new ViewClass({ model: event.model, collection: this.collection });
       await Dialog.showDialog({
         header: false,
         body: viewInstance,
@@ -2024,16 +2024,16 @@ class TableView extends ListView {
     } else {
       // Parse key to get field and lookup
       const { field, lookup } = parseFilterKey(key);
-      
+
       // Clear old values - remove both base field and variants
       delete this.collection.params[key];
       delete this.collection.params[field];
       delete this.collection.params[`${field}__in`];
-      
+
       if (!value || (Array.isArray(value) && value.length === 0)) {
         return; // Cleared
       }
-      
+
       // Smart param generation for multiselect fields
       if (Array.isArray(value)) {
         if (value.length === 1) {
@@ -2266,9 +2266,9 @@ class TableView extends ListView {
           valueArray = currentValue.split(',').map(v => v.trim()).filter(v => v);
         }
       }
-      
+
       field.value = valueArray;
-      
+
       // Ensure placeholder is set (support both casings)
       if (!field.placeholder && !field.placeHolder) {
         if (filterConfig.placeholder || filterConfig.placeHolder) {
@@ -2341,13 +2341,13 @@ class TableView extends ListView {
    */
   async onActionEditFilter(event, element) {
     const filterKey = element.getAttribute('data-filter');
-    
+
     // Parse the key to get the base field (handles lookup keys like status__in)
     const { field } = parseFilterKey(filterKey);
-    
+
     // Try to get filter config using the parsed field name first, then original key
     let filterConfig = this.getFilterConfig(field) || this.getFilterConfig(filterKey);
-    
+
     // Get current value - could be under filterKey or field
     const activeFilters = this.getActiveFilters();
     const currentValue = activeFilters[filterKey] || activeFilters[field];
@@ -2387,10 +2387,10 @@ class TableView extends ListView {
    */
   async onActionRemoveFilter(event, element) {
     const filterKey = element.getAttribute('data-filter');
-    
+
     // Parse to get the base field (handles lookup keys like status__in)
     const { field } = parseFilterKey(filterKey);
-    
+
     // Clear the filter using the original key
     this.setFilter(filterKey, null);
 
