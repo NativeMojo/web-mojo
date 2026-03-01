@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login</title>
+    <link rel="stylesheet" href="login.css" />
+</head>
+<body>
+
+<!-- Full-screen auth overlay — shown during session check and post-login redirect -->
+<div id="ma-overlay" class="ma-overlay" aria-live="polite" aria-label="Authenticating">
+    <div class="ma-overlay-card">
+        <div class="ma-overlay-spinner"></div>
+        <p class="ma-overlay-title" id="ma-overlay-title">Checking session…</p>
+        <p class="ma-overlay-sub" id="ma-overlay-sub">Please wait</p>
+    </div>
+</div>
+
+<div class="ma-page">
+    <div class="ma-card">
+
+        <!-- Header — populated by JS from URL params or edit directly -->
+        <div class="ma-header" id="ma-header">
+            <h1 class="ma-title" id="ma-title">My App</h1>
+            <p class="ma-subtitle" id="ma-subtitle">Sign in to your account</p>
+        </div>
+
+        <!-- Status message — shown/hidden by JS -->
+        <div id="ma-message" class="ma-message" role="alert"></div>
+
+        <!-- ================================================================
+             VIEW: Sign In
+             ================================================================ -->
+        <div id="view-signin" class="ma-view is-active">
+
+            <form id="form-signin" novalidate>
+                <div class="ma-field">
+                    <label class="ma-label" for="signin-username">Email or Username</label>
+                    <input class="ma-input" type="text" id="signin-username"
+                           autocomplete="username" placeholder="you@example.com" required />
+                </div>
+                <div class="ma-field">
+                    <label class="ma-label" for="signin-password">Password</label>
+                    <div class="ma-input-wrap">
+                        <input class="ma-input" type="password" id="signin-password"
+                               autocomplete="current-password" placeholder="Enter password" required />
+                        <button type="button" class="ma-eye" aria-label="Show password" data-target="signin-password">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button class="ma-btn ma-btn-primary" type="submit" id="btn-signin">
+                    <span class="ma-btn-text">Sign In</span>
+                    <span class="ma-spinner"></span>
+                </button>
+            </form>
+
+            <!-- OAuth / Passkey — remove blocks you don't need -->
+            <div class="ma-divider">or</div>
+
+            <button class="ma-btn ma-btn-outline" type="button" id="btn-google">
+                <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+                    <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2v6h7.8c4.5-4.2 7.1-10.3 7.1-17.2z"/>
+                    <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.8-6c-2.1 1.4-4.8 2.3-8.1 2.3-6.2 0-11.5-4.2-13.4-9.9H2.6v6.2C6.5 42.7 14.7 48 24 48z"/>
+                    <path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.7-2.9-.7-4.6s.3-3.2.7-4.6v-6.2H2.6C1 16.5 0 20.1 0 24s1 7.5 2.6 10.8l8-6.2z"/>
+                    <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.5l6.8-6.8C35.9 2.1 30.5 0 24 0 14.7 0 6.5 5.3 2.6 13.2l8 6.2C12.5 13.7 17.8 9.5 24 9.5z"/>
+                </svg>
+                <span class="ma-btn-text">Continue with Google</span>
+                <span class="ma-spinner"></span>
+            </button>
+
+            <button class="ma-btn ma-btn-ghost" type="button" id="btn-passkey" style="display:none">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M6 20v-2a6 6 0 0 1 12 0v2"/>
+                    <line x1="12" y1="12" x2="12" y2="16"/>
+                </svg>
+                <span class="ma-btn-text">Sign in with Passkey</span>
+                <span class="ma-spinner"></span>
+            </button>
+
+            <div class="ma-footer-link">
+                <button type="button" id="link-forgot">Forgot password?</button>
+            </div>
+
+            <!-- Magic link request option -->
+            <div class="ma-footer-link">
+                <button type="button" id="link-magic">Email me a login link instead</button>
+            </div>
+        </div>
+
+        <!-- ================================================================
+             VIEW: Forgot Password
+             ================================================================ -->
+        <div id="view-forgot" class="ma-view">
+            <button class="ma-back" type="button" id="btn-back-signin">&#8592; Back</button>
+            <h2 style="margin:0 0 0.25rem;font-size:1.15rem;font-weight:700">Reset Your Password</h2>
+            <p class="ma-hint">Choose how you'd like to reset your password.</p>
+
+            <form id="form-forgot" novalidate>
+                <div class="ma-field">
+                    <label class="ma-label" for="forgot-email">Email Address</label>
+                    <input class="ma-input" type="email" id="forgot-email"
+                           autocomplete="email" placeholder="you@example.com" required />
+                </div>
+
+                <div class="ma-field">
+                    <label class="ma-label">Reset Method</label>
+                    <div class="ma-radio-group">
+                        <label class="ma-radio-label">
+                            <input type="radio" name="reset-method" value="code" checked /> Email me a code
+                        </label>
+                        <label class="ma-radio-label">
+                            <input type="radio" name="reset-method" value="link" /> Email me a link
+                        </label>
+                    </div>
+                </div>
+
+                <button class="ma-btn ma-btn-primary" type="submit" id="btn-forgot">
+                    <span class="ma-btn-text">Send Reset</span>
+                    <span class="ma-spinner"></span>
+                </button>
+            </form>
+        </div>
+
+        <!-- ================================================================
+             VIEW: Enter Reset Code
+             ================================================================ -->
+        <div id="view-reset-code" class="ma-view">
+            <button class="ma-back" type="button" id="btn-back-forgot">&#8592; Back</button>
+            <h2 style="margin:0 0 0.25rem;font-size:1.15rem;font-weight:700">Enter Reset Code</h2>
+            <p class="ma-hint">We sent a 6-digit code to <strong id="reset-email-display"></strong></p>
+
+            <form id="form-reset-code" novalidate>
+                <div class="ma-field">
+                    <label class="ma-label" for="reset-code">Reset Code</label>
+                    <input class="ma-input" type="text" id="reset-code"
+                           autocomplete="one-time-code" placeholder="123456"
+                           inputmode="numeric" pattern="\d*" required />
+                </div>
+                <div class="ma-field">
+                    <label class="ma-label" for="reset-password-new">New Password</label>
+                    <div class="ma-input-wrap">
+                        <input class="ma-input" type="password" id="reset-password-new"
+                               autocomplete="new-password" placeholder="Enter password" required />
+                        <button type="button" class="ma-eye" aria-label="Show password" data-target="reset-password-new">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="ma-field">
+                    <label class="ma-label" for="reset-password-confirm">Confirm Password</label>
+                    <div class="ma-input-wrap">
+                        <input class="ma-input" type="password" id="reset-password-confirm"
+                               autocomplete="new-password" placeholder="Enter password" required />
+                        <button type="button" class="ma-eye" aria-label="Show password" data-target="reset-password-confirm">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button class="ma-btn ma-btn-primary" type="submit" id="btn-reset-code">
+                    <span class="ma-btn-text">Reset Password</span>
+                    <span class="ma-spinner"></span>
+                </button>
+            </form>
+        </div>
+
+        <!-- ================================================================
+             VIEW: Set New Password (from magic reset link — pr: token)
+             ================================================================ -->
+        <div id="view-set-password" class="ma-view">
+            <h2 style="margin:0 0 0.25rem;font-size:1.15rem;font-weight:700">Set Your New Password</h2>
+            <p class="ma-hint">Choose a new password for your account.</p>
+
+            <form id="form-set-password" novalidate>
+                <div class="ma-field">
+                    <label class="ma-label" for="set-password-new">New Password</label>
+                    <div class="ma-input-wrap">
+                        <input class="ma-input" type="password" id="set-password-new"
+                               autocomplete="new-password" placeholder="Enter password" required />
+                        <button type="button" class="ma-eye" aria-label="Show password" data-target="set-password-new">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="ma-field">
+                    <label class="ma-label" for="set-password-confirm">Confirm Password</label>
+                    <div class="ma-input-wrap">
+                        <input class="ma-input" type="password" id="set-password-confirm"
+                               autocomplete="new-password" placeholder="Enter password" required />
+                        <button type="button" class="ma-eye" aria-label="Show password" data-target="set-password-confirm">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button class="ma-btn ma-btn-primary" type="submit" id="btn-set-password">
+                    <span class="ma-btn-text">Set Password</span>
+                    <span class="ma-spinner"></span>
+                </button>
+            </form>
+        </div>
+
+        <!-- ================================================================
+             VIEW: Request Magic Login Link
+             ================================================================ -->
+        <div id="view-magic" class="ma-view">
+            <button class="ma-back" type="button" id="btn-back-signin-magic">&#8592; Back</button>
+            <h2 style="margin:0 0 0.25rem;font-size:1.15rem;font-weight:700">Email Me a Login Link</h2>
+            <p class="ma-hint">We'll send a one-click login link to your inbox.</p>
+
+            <form id="form-magic" novalidate>
+                <div class="ma-field">
+                    <label class="ma-label" for="magic-email">Email Address</label>
+                    <input class="ma-input" type="email" id="magic-email"
+                           autocomplete="email" placeholder="you@example.com" required />
+                </div>
+
+                <button class="ma-btn ma-btn-primary" type="submit" id="btn-magic">
+                    <span class="ma-btn-text">Send Login Link</span>
+                    <span class="ma-spinner"></span>
+                </button>
+            </form>
+        </div>
+
+
+    </div><!-- /.ma-card -->
+</div><!-- /.ma-page -->
+
+
+<!-- mojo-auth — run `npm run build:mojo-auth` once to generate this file.
+     Vite serves dist/ as publicDir so it's available at /mojo-auth.umd.js -->
+<script src="/mojo-auth.umd.js"></script>
+
+<script>
+(function () {
+
+    // -------------------------------------------------------------------------
+    // Config — edit directly or override via URL params
+    // -------------------------------------------------------------------------
+    var API_BASE      = 'http://localhost:9009';   // your API base URL
+    var ON_SUCCESS    = '/examples/portal/';       // where to go after login
+
+    // Read config from URL params — useful for testing themes/branding
+    // e.g. ?theme=dark&title=Acme&logo=/logo.png&subtitle=Welcome+back
+    var params        = new URLSearchParams(location.search);
+    var paramRedirect = params.get('redirect') || params.get('next') || params.get('returnTo') || '';
+    var redirectTo    = (paramRedirect && paramRedirect.charAt(0) === '/') ? paramRedirect : ON_SUCCESS;
+
+    // Branding
+    var title    = params.get('title')    || 'My App';
+    var subtitle = params.get('subtitle') || 'Sign in to your account';
+    var logo     = params.get('logo')     || '';
+    var theme    = params.get('theme')    || '';   // dark | modern | corporate | ''
+
+    // Apply theme class to body
+    if (theme) document.body.classList.add('theme-' + theme);
+
+    // Apply branding
+    var titleEl    = document.getElementById('ma-title');
+    var subtitleEl = document.getElementById('ma-subtitle');
+    var headerEl   = document.getElementById('ma-header');
+    if (titleEl)    titleEl.textContent    = title;
+    if (subtitleEl) subtitleEl.textContent = subtitle;
+    if (logo && headerEl) {
+        var img = document.createElement('img');
+        img.src       = logo;
+        img.alt       = title;
+        img.className = 'ma-logo';
+        headerEl.insertBefore(img, headerEl.firstChild);
+    }
+
+    // -------------------------------------------------------------------------
+    // Init
+    // -------------------------------------------------------------------------
+    MojoAuth.init({ baseURL: API_BASE });
+
+    // -------------------------------------------------------------------------
+    // DOM refs
+    // -------------------------------------------------------------------------
+    var views = {
+        signin:      document.getElementById('view-signin'),
+        forgot:      document.getElementById('view-forgot'),
+        resetCode:   document.getElementById('view-reset-code'),
+        setPassword: document.getElementById('view-set-password'),
+        magic:       document.getElementById('view-magic')
+    };
+
+    var $ = function (id) { return document.getElementById(id); };
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+    function showView(name) {
+        Object.keys(views).forEach(function (k) {
+            views[k].classList.toggle('is-active', k === name);
+        });
+        hideMessage();
+        // Focus first input in the new view
+        setTimeout(function () {
+            var first = views[name] && views[name].querySelector('input, button');
+            if (first) first.focus();
+        }, 60);
+    }
+
+    function showMessage(text, type) {
+        // type: 'error' | 'success' | 'info'
+        var el = $('ma-message');
+        el.textContent = text;
+        el.className = 'ma-message is-visible is-' + (type || 'info');
+    }
+
+    function hideMessage() {
+        var el = $('ma-message');
+        el.className = 'ma-message';
+        el.textContent = '';
+    }
+
+    function setLoading(btn, loading) {
+        btn.classList.toggle('is-loading', !!loading);
+        btn.disabled = !!loading;
+    }
+
+    var overlay      = document.getElementById('ma-overlay');
+    var overlayTitle = document.getElementById('ma-overlay-title');
+    var overlaySub   = document.getElementById('ma-overlay-sub');
+
+    function showOverlay(title, sub) {
+        overlayTitle.textContent = title || 'Please wait…';
+        overlaySub.textContent   = sub   || '';
+        overlay.classList.add('is-visible');
+    }
+
+    function redirect() {
+        window.location.href = redirectTo;
+    }
+
+    function onAuthSuccess() {
+        showOverlay('Signed in!', 'Taking you there now…');
+        setTimeout(redirect, 800);
+    }
+
+    // -------------------------------------------------------------------------
+    // Session check — if already authenticated, redirect immediately.
+    // If token is expired but refresh token exists, try a silent refresh first.
+    // -------------------------------------------------------------------------
+    (function checkExistingSession() {
+        // Skip if this load is handling a URL token or OAuth callback
+        if (params.get('token') || (params.get('code') && params.get('state'))) return;
+
+        var refreshToken = MojoAuth.getRefreshToken();
+        if (!refreshToken) return;
+
+        // Always refresh server-side — confirms the session is still valid and not
+        // revoked, even if the access token hasn't expired yet client-side.
+        showOverlay('Checking session…', 'Verifying your credentials');
+        MojoAuth.refreshToken()
+            .then(function () {
+                showOverlay('Signed in!', 'Taking you there now…');
+                setTimeout(redirect, 800);
+            })
+            .catch(function () {
+                // Server rejected the refresh (revoked, disabled, expired) — clear and show login
+                MojoAuth.logout();
+                overlay.classList.remove('is-visible');
+            });
+    })();
+
+    // -------------------------------------------------------------------------
+    // URL token handling — runs on page load
+    // Handles both magic login (ml:) and password reset link (pr:) tokens
+    // -------------------------------------------------------------------------
+    (function handleURLTokens() {
+        var token = params.get('token');
+        if (!token) return;
+
+        if (token.indexOf('ml:') === 0) {
+            // Magic login token — log in directly
+            MojoAuth.loginWithMagicToken(token)
+                .then(function () {
+                    // Clean URL
+                    params.delete('token');
+                    var clean = params.toString()
+                        ? location.pathname + '?' + params.toString()
+                        : location.pathname;
+                    history.replaceState({}, '', clean);
+                    onAuthSuccess();
+                })
+                .catch(function (err) {
+                    params.delete('token');
+                    history.replaceState({}, '', location.pathname);
+                    showView('signin');
+                    showMessage(MojoAuth.getError(err) || 'Invalid or expired login link.', 'error');
+                });
+            return;
+        }
+
+        if (token.indexOf('pr:') === 0) {
+            // Password reset token — show set-password view
+            sessionStorage.setItem('ma_reset_token', token);
+            params.delete('token');
+            history.replaceState({}, '', params.toString()
+                ? location.pathname + '?' + params.toString()
+                : location.pathname);
+            showView('setPassword');
+            showMessage('Please set your new password.', 'info');
+            return;
+        }
+    })();
+
+    // OAuth callback — only trigger if BOTH ?code= AND ?state= are present.
+    // This page doubles as the OAuth callback target. If your callback lands
+    // on a separate URL, move this block to that page instead.
+    (function handleOAuthCallback() {
+        if (!params.get('code') || !params.get('state')) return;
+        var btn = $('btn-google');
+        setLoading(btn, true);
+        showMessage('Completing Google sign-in…', 'info');
+        MojoAuth.completeGoogleLogin()
+            .then(onAuthSuccess)
+            .catch(function (err) {
+                setLoading(btn, false);
+                showMessage(MojoAuth.getError(err) || 'Google sign-in failed.', 'error');
+            });
+    })();
+
+    // Restore in-progress code reset flow across page loads
+    (function restoreResetFlow() {
+        var email = sessionStorage.getItem('ma_reset_email');
+        if (!email) return;
+        $('reset-email-display').textContent = email;
+        showView('resetCode');
+    })();
+
+    // Show/hide passkey button based on browser support
+    if (MojoAuth.isPasskeySupported()) {
+        $('btn-passkey').style.display = '';
+    }
+
+    // -------------------------------------------------------------------------
+    // Sign In form
+    // -------------------------------------------------------------------------
+    $('form-signin').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var username = $('signin-username').value.trim();
+        var password = $('signin-password').value;
+        if (!username || !password) {
+            showMessage('Please enter your username and password.', 'error');
+            return;
+        }
+        var btn = $('btn-signin');
+        setLoading(btn, true);
+        hideMessage();
+        MojoAuth.login(username, password)
+            .then(function (data) {
+                if (data && data.mfa_required) {
+                    // MFA required — handle here if needed
+                    // data.mfa_token, data.mfa_methods available
+                    showMessage('MFA required — not yet implemented in this example.', 'info');
+                    setLoading(btn, false);
+                    return;
+                }
+                onAuthSuccess();
+            })
+            .catch(function (err) {
+                setLoading(btn, false);
+                showMessage(MojoAuth.getError(err) || 'Invalid credentials.', 'error');
+            });
+    });
+
+    // -------------------------------------------------------------------------
+    // Google OAuth
+    // -------------------------------------------------------------------------
+    $('btn-google').addEventListener('click', function () {
+        setLoading($('btn-google'), true);
+        MojoAuth.startGoogleLogin()
+            .catch(function (err) {
+                setLoading($('btn-google'), false);
+                showMessage(MojoAuth.getError(err) || 'Could not start Google sign-in.', 'error');
+            });
+    });
+
+    // -------------------------------------------------------------------------
+    // Passkey — uses the username already typed in the sign-in form.
+    // The backend requires a username to look up registered credentials.
+    // -------------------------------------------------------------------------
+    $('btn-passkey').addEventListener('click', function () {
+        var username = $('signin-username').value.trim();
+        if (!username) {
+            $('signin-username').focus();
+            showMessage('Enter your email or username first, then click Sign in with Passkey.', 'info');
+            return;
+        }
+        var btn = $('btn-passkey');
+        setLoading(btn, true);
+        hideMessage();
+        MojoAuth.loginWithPasskey(username)
+            .then(onAuthSuccess)
+            .catch(function (err) {
+                setLoading(btn, false);
+                showMessage(MojoAuth.getError(err) || 'Passkey authentication failed.', 'error');
+            });
+    });
+
+    // -------------------------------------------------------------------------
+    // Forgot password
+    // -------------------------------------------------------------------------
+    $('link-forgot').addEventListener('click', function () { showView('forgot'); });
+
+    $('form-forgot').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var email  = $('forgot-email').value.trim();
+        var method = document.querySelector('input[name="reset-method"]:checked').value;
+        if (!email) {
+            showMessage('Please enter your email address.', 'error');
+            return;
+        }
+        var btn = $('btn-forgot');
+        setLoading(btn, true);
+        hideMessage();
+
+        var action = method === 'code'
+            ? MojoAuth.forgotPasswordCode(email)
+            : MojoAuth.forgotPasswordLink(email);
+
+        action
+            .then(function () {
+                setLoading(btn, false);
+                if (method === 'code') {
+                    sessionStorage.setItem('ma_reset_email', email);
+                    $('reset-email-display').textContent = email;
+                    showView('resetCode');
+                    showMessage('Check your email for the reset code.', 'success');
+                } else {
+                    showMessage('Reset link sent! Check your email.', 'success');
+                }
+            })
+            .catch(function (err) {
+                setLoading(btn, false);
+                showMessage(MojoAuth.getError(err) || 'Something went wrong. Please try again.', 'error');
+            });
+    });
+
+    // -------------------------------------------------------------------------
+    // Reset with code
+    // -------------------------------------------------------------------------
+    $('form-reset-code').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var code     = $('reset-code').value.trim();
+        var newPass  = $('reset-password-new').value;
+        var confirm  = $('reset-password-confirm').value;
+        var email    = sessionStorage.getItem('ma_reset_email');
+
+        if (!email) {
+            showMessage('Session expired. Please restart the reset process.', 'error');
+            showView('forgot');
+            return;
+        }
+        if (!code || !newPass) {
+            showMessage('Please fill in all fields.', 'error');
+            return;
+        }
+        if (newPass !== confirm) {
+            showMessage('Passwords do not match.', 'error');
+            return;
+        }
+
+        var btn = $('btn-reset-code');
+        setLoading(btn, true);
+        hideMessage();
+        MojoAuth.resetWithCode(email, code, newPass)
+            .then(function () {
+                sessionStorage.removeItem('ma_reset_email');
+                onAuthSuccess();
+            })
+            .catch(function (err) {
+                setLoading(btn, false);
+                showMessage(MojoAuth.getError(err) || 'Invalid or expired code.', 'error');
+            });
+    });
+
+    // -------------------------------------------------------------------------
+    // Set password (from pr: reset link token)
+    // -------------------------------------------------------------------------
+    $('form-set-password').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var newPass = $('set-password-new').value;
+        var confirm = $('set-password-confirm').value;
+        var token   = sessionStorage.getItem('ma_reset_token');
+
+        if (!token) {
+            showMessage('Invalid or expired link. Please request a new one.', 'error');
+            showView('forgot');
+            return;
+        }
+        if (!newPass) {
+            showMessage('Please enter a new password.', 'error');
+            return;
+        }
+        if (newPass !== confirm) {
+            showMessage('Passwords do not match.', 'error');
+            return;
+        }
+
+        var btn = $('btn-set-password');
+        setLoading(btn, true);
+        hideMessage();
+        MojoAuth.resetWithToken(token, newPass)
+            .then(function () {
+                sessionStorage.removeItem('ma_reset_token');
+                onAuthSuccess();
+            })
+            .catch(function (err) {
+                setLoading(btn, false);
+                showMessage(MojoAuth.getError(err) || 'Invalid or expired link.', 'error');
+            });
+    });
+
+    // -------------------------------------------------------------------------
+    // Magic login link request
+    // -------------------------------------------------------------------------
+    $('link-magic').addEventListener('click', function () { showView('magic'); });
+
+    $('form-magic').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var email = $('magic-email').value.trim();
+        if (!email) {
+            showMessage('Please enter your email address.', 'error');
+            return;
+        }
+        var btn = $('btn-magic');
+        setLoading(btn, true);
+        hideMessage();
+        MojoAuth.sendMagicLink(email)
+            .then(function () {
+                setLoading(btn, false);
+                showMessage('Check your inbox — a login link is on its way.', 'success');
+            })
+            .catch(function (err) {
+                setLoading(btn, false);
+                showMessage(MojoAuth.getError(err) || 'Could not send login link.', 'error');
+            });
+    });
+
+    // -------------------------------------------------------------------------
+    // Password visibility toggle — attach directly to each .ma-eye button
+    // -------------------------------------------------------------------------
+    document.querySelectorAll('.ma-eye').forEach(function (eyeBtn) {
+        eyeBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var input = document.getElementById(eyeBtn.dataset.target);
+            if (!input) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                eyeBtn.setAttribute('aria-label', 'Hide password');
+                eyeBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+            } else {
+                input.type = 'password';
+                eyeBtn.setAttribute('aria-label', 'Show password');
+                eyeBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+            }
+        });
+    });
+
+    // -------------------------------------------------------------------------
+    // Navigation — back buttons
+    // -------------------------------------------------------------------------
+    $('btn-back-signin').addEventListener('click',       function () { showView('signin'); });
+    $('btn-back-forgot').addEventListener('click',       function () { showView('forgot'); });
+    $('btn-back-signin-magic').addEventListener('click', function () { showView('signin'); });
+
+}());
+</script>
+
+</body>
+</html>

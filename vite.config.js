@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import path from 'path'
+import fs from 'fs'
 import mojoTemplatesPlugin from './vite-plugin-templates.js'
 
 export default defineConfig({
@@ -105,6 +106,26 @@ export default defineConfig({
     // Auto-compile templates during development
     mojoTemplatesPlugin({
       watch: true  // Enable watching for template changes
-    })
+    }),
+    // Return 404 for non-existent HTML paths instead of looping through SPA fallback
+    {
+      name: 'no-spa-fallback',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          const url = req.url.split('?')[0];
+          // Only intercept HTML page requests (not assets)
+          if (!url.endsWith('.html') && !url.endsWith('/')) return next();
+          const filePath = path.join(server.config.root, url);
+          const indexPath = path.join(filePath, 'index.html');
+          const htmlPath = filePath.endsWith('/') ? indexPath : filePath;
+          if (!fs.existsSync(htmlPath) && !fs.existsSync(indexPath)) {
+            res.statusCode = 404;
+            res.end(`404 Not Found: ${url}`);
+            return;
+          }
+          next();
+        });
+      }
+    }
   ]
 })

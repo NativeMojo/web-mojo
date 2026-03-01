@@ -11,6 +11,7 @@ class User extends Model {
     }
 
     hasPermission(permission) {
+        if (this.get("is_superuser")) return true;
         if (Array.isArray(permission)) {
             return permission.some(p => this.hasPermission(p));
         }

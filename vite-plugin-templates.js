@@ -248,7 +248,8 @@ export default function mojoTemplatesPlugin(options = {}) {
       
       // Handle template file changes
       server.watcher.on('change', (file) => {
-        if (extensions.some(ext => file.endsWith(ext))) {
+        const inSourceDir = templateDirs.some(dir => file.startsWith(dir));
+        if (inSourceDir && extensions.some(ext => file.endsWith(ext))) {
           console.log(`[vite-plugin-templates] Template changed: ${path.relative(rootDir, file)}`);
           
           // Recompile templates
@@ -273,7 +274,8 @@ export default function mojoTemplatesPlugin(options = {}) {
       
       // Handle new template files
       server.watcher.on('add', (file) => {
-        if (extensions.some(ext => file.endsWith(ext))) {
+        const inSourceDir = templateDirs.some(dir => file.startsWith(dir));
+        if (inSourceDir && extensions.some(ext => file.endsWith(ext))) {
           console.log(`[vite-plugin-templates] New template added: ${path.relative(rootDir, file)}`);
           compileTemplates(rootDir);
           
@@ -294,7 +296,8 @@ export default function mojoTemplatesPlugin(options = {}) {
       
       // Handle deleted template files
       server.watcher.on('unlink', (file) => {
-        if (extensions.some(ext => file.endsWith(ext))) {
+        const inSourceDir = templateDirs.some(dir => file.startsWith(dir));
+        if (inSourceDir && extensions.some(ext => file.endsWith(ext))) {
           console.log(`[vite-plugin-templates] Template deleted: ${path.relative(rootDir, file)}`);
           compileTemplates(rootDir);
           
@@ -316,7 +319,9 @@ export default function mojoTemplatesPlugin(options = {}) {
     
     handleHotUpdate({ file, server }) {
       // If a template file changes, invalidate the templates module
-      if (extensions.some(ext => file.endsWith(ext))) {
+      const templateDirsAbs = sourceDirs.map(dir => path.join(rootDir, dir));
+      const inSourceDir = templateDirsAbs.some(dir => file.startsWith(dir));
+      if (inSourceDir && extensions.some(ext => file.endsWith(ext))) {
         const templateModule = server.moduleGraph.getModuleById(
           path.join(rootDir, outputFile)
         );

@@ -31,7 +31,7 @@ class ToastService {
 
     this.toasts = new Map(); // Track active toasts
     this.toastCounter = 0; // For unique IDs
-    
+
     this.init();
   }
 
@@ -47,7 +47,7 @@ class ToastService {
    */
   createContainer() {
     let container = document.getElementById(this.options.containerId);
-    
+
     if (!container) {
       container = document.createElement('div');
       container.id = this.options.containerId;
@@ -55,10 +55,10 @@ class ToastService {
       container.style.zIndex = '1070'; // Bootstrap toast z-index
       container.setAttribute('aria-live', 'polite');
       container.setAttribute('aria-atomic', 'true');
-      
+
       document.body.appendChild(container);
     }
-    
+
     this.container = container;
   }
 
@@ -77,7 +77,7 @@ class ToastService {
       'bottom-center': 'bottom-0 start-50 translate-middle-x p-3',
       'bottom-end': 'bottom-0 end-0 p-3'
     };
-    
+
     return positionMap[this.options.position] || positionMap['top-end'];
   }
 
@@ -103,7 +103,7 @@ class ToastService {
   error(message, options = {}) {
     return this.show(message, 'error', {
       icon: 'bi-exclamation-triangle-fill',
-      autohide: false, // Keep error toasts visible until manually dismissed
+      autohide: true, // Keep error toasts visible until manually dismissed
       ...options
     });
   }
@@ -152,7 +152,7 @@ class ToastService {
   show(message, type = 'info', options = {}) {
     // Enforce max toasts limit
     this.enforceMaxToasts();
-    
+
     const toastId = `toast-${++this.toastCounter}`;
     const config = {
       title: this.getDefaultTitle(type),
@@ -214,7 +214,7 @@ class ToastService {
   showView(view, type = 'info', options = {}) {
     // Enforce max toasts limit
     this.enforceMaxToasts();
-    
+
     const toastId = `toast-${++this.toastCounter}`;
     const config = {
       title: options.title || this.getDefaultTitle(type),
@@ -338,16 +338,16 @@ class ToastService {
    * Create toast header with title and icon
    */
   createToastHeader(config, _type) {
-    const iconHtml = config.icon ? 
+    const iconHtml = config.icon ?
       `<i class="${config.icon} toast-service-icon me-2"></i>` : '';
-    
-    const titleHtml = config.title ? 
+
+    const titleHtml = config.title ?
       `<strong class="me-auto">${iconHtml}${this.escapeHtml(config.title)}</strong>` : '';
 
-    const timeHtml = config.showTime ? 
+    const timeHtml = config.showTime ?
       `<small class="text-muted">${this.getTimeString()}</small>` : '';
 
-    const closeButton = config.dismissible ? 
+    const closeButton = config.dismissible ?
       `<button type="button" class="btn-close toast-service-close" data-bs-dismiss="toast" aria-label="Close"></button>` : '';
 
     if (!titleHtml && !timeHtml && !closeButton) {
@@ -367,9 +367,9 @@ class ToastService {
    * Create toast body with message
    */
   createToastBody(message, showIcon = false) {
-    const iconHtml = showIcon ? 
+    const iconHtml = showIcon ?
       `<i class="${this.getDefaultIcon('info')} toast-service-icon me-2"></i>` : '';
-    
+
     return `
       <div class="toast-body d-flex align-items-center">
         ${iconHtml}
@@ -411,12 +411,12 @@ class ToastService {
    */
   enforceMaxToasts() {
     const activeToasts = Array.from(this.toasts.values());
-    
+
     if (activeToasts.length >= this.options.maxToasts) {
       // Remove oldest toast
       const oldestId = this.toasts.keys().next().value;
       const oldest = this.toasts.get(oldestId);
-      
+
       if (oldest) {
         oldest.bootstrap.hide();
       }
@@ -428,7 +428,7 @@ class ToastService {
    */
   cleanup(toastId) {
     const toast = this.toasts.get(toastId);
-    
+
     if (toast) {
       // Dispose Bootstrap toast
       try {
@@ -436,12 +436,12 @@ class ToastService {
       } catch (e) {
         console.warn('Error disposing toast:', e);
       }
-      
+
       // Remove from DOM
       if (toast.element && toast.element.parentNode) {
         toast.element.parentNode.removeChild(toast.element);
       }
-      
+
       // Remove from tracking
       this.toasts.delete(toastId);
     }
@@ -452,7 +452,7 @@ class ToastService {
    */
   cleanupView(toastId) {
     const toast = this.toasts.get(toastId);
-    
+
     if (toast) {
       // Dispose view first if it exists
       if (toast.view && typeof toast.view.dispose === 'function') {
@@ -462,19 +462,19 @@ class ToastService {
           console.warn('Error disposing view in toast:', e);
         }
       }
-      
+
       // Dispose Bootstrap toast
       try {
         toast.bootstrap.dispose();
       } catch (e) {
         console.warn('Error disposing toast:', e);
       }
-      
+
       // Remove from DOM
       if (toast.element && toast.element.parentNode) {
         toast.element.parentNode.removeChild(toast.element);
       }
-      
+
       // Remove from tracking
       this.toasts.delete(toastId);
     }
@@ -502,9 +502,9 @@ class ToastService {
    * Get current time string
    */
   getTimeString() {
-    return new Date().toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date().toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   }
 
@@ -522,7 +522,7 @@ class ToastService {
    */
   dispose() {
     this.clearAll();
-    
+
     if (this.container && this.container.parentNode) {
       this.container.parentNode.removeChild(this.container);
     }
@@ -536,11 +536,11 @@ class ToastService {
       total: this.toasts.size,
       byType: {}
     };
-    
+
     this.toasts.forEach(toast => {
       stats.byType[toast.type] = (stats.byType[toast.type] || 0) + 1;
     });
-    
+
     return stats;
   }
 
@@ -549,7 +549,7 @@ class ToastService {
    */
   setOptions(newOptions) {
     this.options = { ...this.options, ...newOptions };
-    
+
     // Recreate container if position changed
     if (newOptions.position) {
       if (this.container) {
