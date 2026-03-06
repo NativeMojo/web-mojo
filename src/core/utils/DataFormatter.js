@@ -1309,7 +1309,10 @@ class DataFormatter {
   /**
    * Format as badge
    * @param {*} value - Badge text
-   * @param {string} type - Badge type
+   * @param {string} type - Badge type or value=type mapping string
+   *   Single type:   badge:danger
+   *   Auto-detect:   badge  (or badge:auto)
+   *   Value mapping:  badge:lock_engaged=danger,lock_released=success
    * @returns {string} Badge HTML
    */
   badge(value, type = 'auto') {
@@ -1319,6 +1322,19 @@ class DataFormatter {
     }
 
     const text = String(value);
+
+    // Check for value=type mapping syntax
+    // e.g. badge:lock_engaged=danger,lock_released=success
+    // Arrives as a single arg: "lock_engaged=danger,lock_released=success"
+    if (typeof type === 'string' && type.includes('=')) {
+      const mapping = Object.fromEntries(
+        type.split(',').map(pair => pair.split('=').map(s => s.trim()))
+      );
+      const badgeType = mapping[text] || mapping[text.toLowerCase()] || this.inferBadgeType(text);
+      const className = badgeType ? `bg-${badgeType}` : 'bg-secondary';
+      return `<span class="badge ${className}">${text}</span>`;
+    }
+
     const badgeType = type === 'auto' ? this.inferBadgeType(text) : type;
     const className = badgeType ? `bg-${badgeType}` : 'bg-secondary';
 

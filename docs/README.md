@@ -35,9 +35,12 @@ Framework features and modules:
 
 UI Components:
 
+- **[ListView](./components/ListView.md)** - Visual list component for collections
+- **[TableView](./components/TableView.md)** - Advanced data table with sorting, filtering, pagination
+- **[TablePage](./components/TablePage.md)** - Page wrapper for TableView with URL sync
 - **[Charts](./components/Charts.md)** - Chart.js integration
-- **[FileView](./components/FileView.md)** - File upload and management
 - **[DataView](./components/DataView.md)** - Data display component
+- **[FileView](./components/FileView.md)** - File upload and management
 - **[FileUpload](./components/FileUpload.md)** - File upload utilities
 - **[ImageFields](./components/ImageFields.md)** - Image field components
 - **[LightBox](./components/LightBox.md)** - Image lightbox viewer

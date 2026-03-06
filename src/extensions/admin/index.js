@@ -11,6 +11,8 @@ export { default as GroupTablePage } from './account/groups/GroupTablePage.js';
 export { default as UserDeviceTablePage } from './account/devices/UserDeviceTablePage.js';
 export { default as UserDeviceLocationTablePage } from './account/devices/UserDeviceLocationTablePage.js';
 export { default as GeoLocatedIPTablePage } from './account/devices/GeoLocatedIPTablePage.js';
+export { default as ApiKeyTablePage } from './account/api_keys/ApiKeyTablePage.js';
+export { default as ApiKeyView } from './account/api_keys/ApiKeyView.js';
 
 // Incidents
 export { default as IncidentDashboardPage } from './incidents/IncidentDashboardPage.js';

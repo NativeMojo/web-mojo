@@ -13,6 +13,7 @@ export { default as GroupTablePage } from '@ext/admin/account/groups/GroupTableP
 export { default as UserDeviceTablePage } from '@ext/admin/account/devices/UserDeviceTablePage.js';
 export { default as UserDeviceLocationTablePage } from '@ext/admin/account/devices/UserDeviceLocationTablePage.js';
 export { default as GeoLocatedIPTablePage } from '@ext/admin/account/devices/GeoLocatedIPTablePage.js';
+export { default as ApiKeyTablePage } from '@ext/admin/account/api_keys/ApiKeyTablePage.js';
 
 export { default as IncidentDashboardPage } from '@ext/admin/incidents/IncidentDashboardPage.js';
 export { default as IncidentTablePage } from '@ext/admin/incidents/IncidentTablePage.js';
@@ -46,6 +47,7 @@ export { default as S3BucketTablePage } from '@ext/admin/storage/S3BucketTablePa
 export { default as DeviceView } from '@ext/admin/account/devices/DeviceView.js';
 export { default as GeoIPView } from '@ext/admin/account/devices/GeoIPView.js';
 export { default as GroupView } from '@ext/admin/account/groups/GroupView.js';
+export { default as ApiKeyView } from '@ext/admin/account/api_keys/ApiKeyView.js';
 export { default as MemberView } from '@ext/admin/account/users/MemberView.js';
 export { default as UserView } from '@ext/admin/account/users/UserView.js';
 
@@ -95,6 +97,7 @@ import GroupTablePageClass from '@ext/admin/account/groups/GroupTablePage.js';
 import UserDeviceTablePageClass from '@ext/admin/account/devices/UserDeviceTablePage.js';
 import UserDeviceLocationTablePageClass from '@ext/admin/account/devices/UserDeviceLocationTablePage.js';
 import GeoLocatedIPTablePageClass from '@ext/admin/account/devices/GeoLocatedIPTablePage.js';
+import ApiKeyTablePageClass from '@ext/admin/account/api_keys/ApiKeyTablePage.js';
 
 import IncidentDashboardPageClass from '@ext/admin/incidents/IncidentDashboardPage.js';
 import IncidentTablePageClass from '@ext/admin/incidents/IncidentTablePage.js';
@@ -160,6 +163,7 @@ export function registerSystemPages(app, addToMenu = true) {
     app.registerPage('system/push/devices', PushDeviceTablePageClass, { permissions: ["manage_users"] });
     app.registerPage('system/phonehub/numbers', PhoneNumberTablePageClass, { permissions: ["manage_users"] });
     app.registerPage('system/phonehub/sms', SMSTablePageClass, { permissions: ["manage_users"] });
+    app.registerPage('system/api-keys', ApiKeyTablePageClass, { permissions: ["manage_groups", "manage_group"] });
 
     // Check if sidebar exists and has an admin menu config
     if (addToMenu && app.sidebar && app.sidebar.getMenuConfig) {
@@ -264,6 +268,12 @@ export function registerSystemPages(app, addToMenu = true) {
                             route: '?page=system/metrics/permissions',
                             icon: 'bi-bar-chart-line',
                             permissions: ["manage_metrics"]
+                        },
+                        {
+                            text: 'API Keys',
+                            route: '?page=system/api-keys',
+                            icon: 'bi-key',
+                            permissions: ["manage_groups", "manage_group"]
                         }
                     ]
                 },
