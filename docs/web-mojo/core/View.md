@@ -823,6 +823,249 @@ See [Templates.md](./Templates.md) for partials documentation.
 
 ---
 
+### renderTemplateString(template, context, partials)
+
+Renders an arbitrary Mustache template string against a given context object, without touching the view's own template or state. Useful for rendering sub-fragments or ad-hoc templates inside view methods.
+
+**Parameters:**
+- `template` - Mustache template string
+- `context` - The context object (used as Mustache data)
+- `partials` - Optional partials object
+
+**Returns:** `String` - Rendered HTML (synchronous)
+
+**Example:**
+```javascript
+const html = this.renderTemplateString(
+  '<p>Hello, {{name}}! You have {{count}} messages.</p>',
+  { name: 'Alice', count: 3 },
+  {}
+);
+// → '<p>Hello, Alice! You have 3 messages.</p>'
+```
+
+Pipe formatters work exactly as in normal templates:
+```javascript
+const badge = this.renderTemplateString(
+  '{{{status|status}}}',
+  { status: 'active' },
+  {}
+);
+```
+
+---
+
+### getContextValue(path)
+
+Resolves a dot-separated path (with optional pipe formatters) against the view instance. This is the method Mustache calls internally for every `{{token}}` in your template — override it for custom context resolution behaviour.
+
+**Parameters:**
+- `path` - Dot-separated path string, optionally with pipe formatters (e.g. `'model.price|currency'`)
+
+**Returns:** `any` - The resolved (and optionally formatted) value
+
+**Example:**
+```javascript
+// Resolves this.model.price through the 'currency' formatter
+const formatted = this.getContextValue('model.price|currency');
+// → '$49.99'
+
+// Resolves a nested view property
+const val = this.getContextValue('stats.totalUsers|number');
+```
+
+> ⚠️ You rarely need to call `getContextValue()` directly. It is called automatically by the Mustache rendering engine for every template token.
+
+---
+
+## Navigation Helpers
+
+These methods are called automatically by the [EventDelegate](../mixins/EventDelegate.md) when the user clicks links or elements with `data-page` attributes. They integrate with the app's router seamlessly.
+
+### handlePageNavigation(element)
+
+Navigate to a named page using the `data-page` attribute value. Delegates to `app.showPage()` or the router.
+
+```javascript
+// In a template:
+// <button data-page="users">Go to Users</button>
+
+// The EventDelegate calls this automatically on click.
+// You can also call it manually:
+await this.handlePageNavigation(element);
+```
+
+### handleHrefNavigation(element)
+
+Navigate using an anchor element's `href`, routing through the app's router instead of a full page reload. Handles hash, history, and param routing modes. External links and links with `data-external` are passed through unchanged.
+
+```javascript
+// <a href="/users/42">View User</a>
+// Clicking this calls handleHrefNavigation(anchorEl) automatically.
+await this.handleHrefNavigation(anchorEl);
+```
+
+### isExternalLink(href)
+
+Returns `true` if the href should be treated as an external link (i.e. not intercepted by the router).
+
+```javascript
+this.isExternalLink('https://example.com');   // true
+this.isExternalLink('mailto:hi@example.com'); // true
+this.isExternalLink('/users');                // false (internal)
+this.isExternalLink('#section');              // true (hash anchor)
+```
+
+### hrefToRoutePath(href)
+
+Converts an absolute or relative href into a router-relative path, stripping the app's `basePath` if present.
+
+```javascript
+// app.basePath = '/portal'
+this.hrefToRoutePath('/portal/users/42');
+// → '/users/42'
+```
+
+### findRouter()
+
+Returns the app's router instance, looking it up via `getApp()` or `window.MOJO.router`.
+
+```javascript
+const router = this.findRouter();
+if (router) {
+  await router.navigate('/dashboard');
+}
+```
+
+### getApp()
+
+Returns the application instance (`WebApp` or `PortalApp`). Searches known global references (`window.MOJO.app`, `window.__app__`, etc.) and caches the result on `this.app`.
+
+```javascript
+const app = this.getApp();
+
+// Show a notification
+await app.showSuccess('Saved successfully!');
+
+// Navigate
+await app.navigate('/users');
+
+// Access the REST client
+const resp = await app.rest.GET('/api/stats');
+```
+
+> **Best practice:** Prefer `this.getApp()` over `window.MOJO.app` directly — it handles all global reference variations and caches the result.
+
+---
+
+## Tooltip Methods
+
+### initializeTooltips()
+
+Initialises Bootstrap 5 tooltips on all elements within the view that have `data-bs-toggle="tooltip"`. Called automatically after each mount. Supports custom tooltip themes and sizes via `data-bs-custom-class`.
+
+```javascript
+// In a template:
+// <button data-bs-toggle="tooltip" title="Click to save">Save</button>
+
+// Called automatically — but you can call it manually after dynamic DOM changes:
+this.initializeTooltips();
+```
+
+Custom class data attributes are honoured:
+```html
+<span data-bs-toggle="tooltip"
+      data-bs-custom-class="tooltip-sm tooltip-dark"
+      title="Small dark tooltip">?</span>
+```
+
+### disposeTooltips()
+
+Disposes all active Bootstrap tooltip instances within the view. Called automatically in `onBeforeDestroy()`. Call manually before replacing large sections of DOM content to avoid memory leaks.
+
+```javascript
+// Before a major re-render that replaces DOM with tooltip elements:
+this.disposeTooltips();
+await this.render();
+// initializeTooltips() is called automatically after the next mount
+```
+
+---
+
+## Notification Methods
+
+These methods delegate to the app's dialog/notification system. They are convenience wrappers so views don't need a direct reference to the app for common feedback patterns.
+
+### showError(message)
+
+Show an error notification. Delegates to `app.showError()` if an app instance is available.
+
+```javascript
+async onActionSave(event, element) {
+  try {
+    await this.model.save();
+  } catch (err) {
+    this.showError('Failed to save: ' + err.message);
+  }
+}
+```
+
+### showSuccess(message)
+
+Show a success notification. Delegates to `app.showSuccess()`.
+
+```javascript
+async onActionSave(event, element) {
+  await this.model.save();
+  this.showSuccess('Changes saved successfully!');
+}
+```
+
+### showInfo(message)
+
+Show an informational notification. Delegates to `app.showInfo()`.
+
+```javascript
+this.showInfo('Your export is being prepared. You will be notified when it is ready.');
+```
+
+### showWarning(message)
+
+Show a warning notification. Delegates to `app.showWarning()`.
+
+```javascript
+if (unsavedChanges) {
+  this.showWarning('You have unsaved changes. Please save before leaving.');
+}
+```
+
+---
+
+## Built-in Action Handlers
+
+### onActionCopyToClipboard(event, element)
+
+Built-in handler for `data-action="copy-to-clipboard"`. Copies text to the clipboard and briefly swaps the element's icon to a checkmark as visual confirmation.
+
+The text to copy is read from (in priority order):
+1. `element.dataset.copy` — the `data-copy` attribute
+2. `element.dataset.value` — the `data-value` attribute
+3. `element.textContent` — the element's visible text
+
+```html
+<!-- Copy a specific value -->
+<button data-action="copy-to-clipboard" data-copy="{{model.api_key}}">
+  <i class="bi bi-clipboard"></i> Copy Key
+</button>
+
+<!-- Copy the element's text content -->
+<code data-action="copy-to-clipboard">npm install web-mojo</code>
+```
+
+The icon temporarily changes to `bi-clipboard-check` for 1.5 seconds then reverts.
+
+---
+
 ## Event Methods
 
 Views use the EventEmitter mixin:

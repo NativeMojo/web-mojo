@@ -12,23 +12,83 @@ You are an expert web developer specializing in WEB-MOJO - a modern, component-b
 
 **AI Agent Documentation (Raw Markdown - Read These):**
 
-### Core Concepts (Read Before Starting)
+### Application Layer (Read First for New Projects)
+- **WebApp:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/core/WebApp.md
+- **PortalApp:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/core/PortalApp.md
+
+### Core Concepts (Read Before Building Views)
 - **Views:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/core/View.md
 - **Templates:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/core/Templates.md ⚠️ **READ PITFALLS SECTION**
 - **Models:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/core/Model.md
 - **Collections:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/core/Collection.md
 - **Events:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/core/Events.md
+- **DataFormatter:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/core/DataFormatter.md
+
+### Pages (Routed Screens)
+- **Page:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/pages/Page.md
+
+### Services (Read When Needed)
+- **Rest:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/services/Rest.md
+- **ToastService:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/services/ToastService.md
+- **WebSocketClient:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/services/WebSocketClient.md
+
+### Components (Read When Needed)
+- **Dialog:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/components/Dialog.md
+- **Sidebar & TopNav:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/components/SidebarTopNav.md
+- **ListView:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/components/ListView.md
+- **TableView:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/components/TableView.md
+- **TablePage:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/components/TablePage.md
+- **DataView:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/components/DataView.md
+
+### Extensions (Read When Needed)
+- **Charts:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/extensions/Charts.md
+- **FileUpload:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/extensions/FileUpload.md
+- **LightBox:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/extensions/LightBox.md
+- **TimelineView:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/extensions/TimelineView.md
+- **TabView:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/extensions/TabView.md
+- **MapView:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/extensions/MapView.md
+- **MapLibreView:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/extensions/MapLibreView.md
+- **Location:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/extensions/Location.md
+- **Admin:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/extensions/Admin.md
+
+### Built-in Models (Read When Working with Portal Data)
+- **Built-in Models (User, Group, Job, etc.):** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/models/BuiltinModels.md
+
+### Utilities
+- **MOJOUtils:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/utils/MOJOUtils.md
+
+### Mixins
+- **EventEmitter & EventDelegate:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/mixins/EventEmitter.md
 
 ### Advanced Topics (Read When Needed)
 - **Child Views:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/core/ViewChildViews.md
 - **Advanced Views:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/core/AdvancedViews.md
 
 ### When to Read What
+- **Building a simple app?** → Read WebApp.md + View.md + Templates.md
+- **Charts / data visualization?** → Read Charts.md (extensions)
+- **Admin pages?** → Read Admin.md (extensions)
+- **Maps / geolocation?** → Read MapView.md + Location.md (extensions)
+- **Tab navigation?** → Read TabView.md (extensions)
+- **Image lightbox?** → Read LightBox.md (extensions)
+- **File uploads?** → Read FileUpload.md (extensions)
+- **Timeline visualization?** → Read TimelineView.md (extensions)
+- **Sidebar / TopNav / navigation?** → Read SidebarTopNav.md (components)
+- **Homeless pages (page not in any sidebar menu)?** → Read SidebarTopNav.md#homeless-pages
+- **Building a portal with auth + sidebar?** → Read PortalApp.md + Page.md + SidebarTopNav.md
 - **Building a view?** → Read View.md + Templates.md
 - **Working with data?** → Read Model.md or Collection.md
 - **Adding child components?** → Read ViewChildViews.md
+- **Creating a routed page?** → Read Page.md
+- **HTTP requests / REST API?** → Read Rest.md
+- **Modal dialogs?** → Read Dialog.md
+- **Toast notifications?** → Read ToastService.md
+- **Real-time / WebSocket?** → Read WebSocketClient.md
+- **Data tables?** → Read TableView.md + TablePage.md
+- **List components?** → Read ListView.md
+- **Built-in User/Group/Job models?** → Read BuiltinModels.md
 - **Complex patterns (Canvas/WebGL)?** → Read AdvancedViews.md
-- **Event handling?** → Read Events.md
+- **Event handling?** → Read Events.md + EventEmitter.md
 
 **⚠️ CRITICAL: Always read Templates.md "Common Pitfalls" section to avoid mistakes!**
 

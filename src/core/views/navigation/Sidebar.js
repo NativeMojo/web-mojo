@@ -1045,25 +1045,66 @@ class Sidebar extends View {
     /**
      * Handle route changed event - auto-switch menu and update active item
      */
+    /**
+     * Handle route changed event.
+     *
+     * Resolution order for "which menu to show":
+     *   1. The menu that contains the new route (autoSwitchToMenuForRoute).
+     *   2. The menu named by `page.sidebarMenu` (declared on the Page class).
+     *   3. The first non-group menu registered — prevents "last-menu-wins" default.
+     *
+     * Pages that don't belong to any menu are called "homeless" pages.
+     * Declare `sidebarMenu = 'menuName'` on the Page class to pin them to a menu:
+     *
+     *   class SettingsPage extends Page {
+     *     sidebarMenu = 'default';   // show 'default' sidebar on this page
+     *   }
+     */
     onRouteChanged(data) {
         if (data.page && data.page.route) {
             const route = data.page.route;
             if (this.activeMenuItem && this.routesMatch(route, this.activeMenuItem.route)) {
                 return;
             }
-            // First, try to auto-switch to correct menu for this route
-            const switchedMenu = this.autoSwitchToMenuForRoute(route);
 
-            // If no menu switch happened, still update active item
-            if (!switchedMenu) {
-                this.clearAllActiveStates();
-                this.setActiveItemByRoute(route);
-                this.updateActiveItem(route);
-            }
+            // 1. Try to auto-switch to the menu that contains this route
+            const switchedMenu = this.autoSwitchToMenuForRoute(route);
 
             if (switchedMenu) {
                 console.log(`Route changed to '${route}', auto-switched menu`);
+                return;
             }
+
+            // 2. "Homeless" page — route is not in any menu.
+            //    Check if the page class declares a preferred sidebarMenu name.
+            const preferredMenu = data.page.sidebarMenu || data.page.options?.sidebarMenu || null;
+            if (preferredMenu && this.menus.has(preferredMenu)) {
+                this._setActiveMenu(preferredMenu);
+                this.clearAllActiveStates();
+                this.render();
+                console.log(`Homeless route '${route}' — switched to page-declared sidebarMenu '${preferredMenu}'`);
+                return;
+            }
+
+            // 3. Fall back to the first non-group menu so we never
+            //    accidentally land on the last-registered menu.
+            let fallbackMenu = null;
+            for (const [menuName, menuConfig] of this.menus) {
+                if (!menuConfig.groupKind) {
+                    fallbackMenu = menuName;
+                    break;
+                }
+            }
+
+            if (fallbackMenu && this.activeMenuName !== fallbackMenu) {
+                this._setActiveMenu(fallbackMenu);
+                console.log(`Homeless route '${route}' — fell back to first non-group menu '${fallbackMenu}'`);
+            }
+
+            // Always clear active states and re-render for homeless pages
+            this.clearAllActiveStates();
+            this.updateActiveItem(route);
+            this.render();
         }
     }
 

@@ -91,10 +91,37 @@ class FileUpload {
                 throw new Error('Invalid upload response: missing upload URL');
             }
 
-            // Stage 2: Upload file to signed URL
+            // Normalise upload_url — the backend can return either:
+            //   • a plain string  → direct PUT with raw bytes (e.g. S3 signed URL)
+            //   • a config object → POST multipart/form-data (e.g. filesystem backend)
+            //     { upload_url: string, method: string, fields: object, headers: object }
+            let uploadConfig;
+            if (typeof uploadData.upload_url === 'string') {
+                uploadConfig = {
+                    url: uploadData.upload_url,
+                    method: 'PUT',
+                    fields: null,
+                    headers: {}
+                };
+            } else if (uploadData.upload_url && typeof uploadData.upload_url === 'object'
+                       && uploadData.upload_url.upload_url) {
+                uploadConfig = {
+                    url: uploadData.upload_url.upload_url,
+                    method: uploadData.upload_url.method || 'POST',
+                    fields: uploadData.upload_url.fields || null,
+                    headers: uploadData.upload_url.headers || {}
+                };
+            } else {
+                throw new Error(
+                    `Invalid upload response: unrecognised upload_url format. ` +
+                    `Server returned: ${JSON.stringify(uploadData.upload_url)}`
+                );
+            }
+
+            // Stage 2: Upload file to signed URL / endpoint
             let result;
             try {
-                result = await this._performUpload(uploadData.upload_url);
+                result = await this._performUpload(uploadConfig);
             } catch (error) {
                 throw new Error(`File upload failed: ${error.message}`);
             }
@@ -177,75 +204,98 @@ class FileUpload {
     }
 
     /**
-     * Upload file to signed URL with direct XHR control for cancellation
-     * @param {string} uploadUrl - Signed upload URL
+     * Upload file using the normalised upload config from _startUpload.
+     *
+     * Two dispatch paths:
+     *  - PUT  + raw bytes  → legacy plain-string upload_url, or any config with method PUT.
+     *                        Used by backends that issue a direct signed PUT URL (e.g. S3 signed URL).
+     *  - POST + FormData   → config object with method POST and optional fields dict.
+     *                        Used by the local filesystem backend and S3 presigned POST.
+     *                        fields are appended first, then the file as the "file" key,
+     *                        matching Django's request.FILES['file'] convention.
+     *                        Content-Type is intentionally NOT set manually so the browser
+     *                        can write the correct multipart boundary.
+     *
+     * @param {{ url: string, method: string, fields: object|null, headers: object }} uploadConfig
      * @returns {Promise} Upload result
      * @private
      */
-    async _performUpload(uploadUrl) {
+    async _performUpload(uploadConfig) {
         return new Promise((resolve, reject) => {
-            // Validate input
             if (!(this.options.file instanceof File)) {
                 reject(new Error('Only single File objects are supported'));
                 return;
             }
 
-            const xhr = new XMLHttpRequest();
-            this.uploadRequest = xhr; // Store XHR for cancellation
+            const { url, method, fields, headers } = uploadConfig;
+            const useFormData = method === 'POST' && fields !== null;
 
-            // Set up progress tracking
+            const xhr = new XMLHttpRequest();
+            this.uploadRequest = xhr;
+
+            // Progress tracking
             xhr.upload.onprogress = (event) => {
                 if (this.cancelled) return;
-
-                const progressInfo = {
+                this._onProgress({
                     progress: event.loaded / event.total,
                     loaded: event.loaded,
                     total: event.total,
                     percentage: Math.round((event.loaded / event.total) * 100)
-                };
-
-                this._onProgress(progressInfo);
+                });
             };
 
-            // Set up response handlers
             xhr.onload = () => {
                 if (xhr.status >= 200 && xhr.status < 300) {
-                    resolve({
-                        data: xhr.response,
-                        status: xhr.status,
-                        statusText: xhr.statusText,
-                        xhr: xhr
-                    });
+                    resolve({ data: xhr.response, status: xhr.status, statusText: xhr.statusText, xhr });
                 } else {
                     reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`));
                 }
             };
 
-            xhr.onerror = () => {
-                reject(new Error('Upload failed: Network error'));
-            };
+            xhr.onerror  = () => reject(new Error('Upload failed: Network error'));
+            xhr.ontimeout = () => reject(new Error('Upload timed out — file may be too large or connection too slow'));
+            xhr.onabort  = () => reject(new Error('Upload cancelled'));
 
-            xhr.ontimeout = () => {
-                reject(new Error('Upload failed: Timeout'));
-            };
-
-            xhr.onabort = () => {
-                reject(new Error('Upload cancelled'));
-            };
-
-            xhr.ontimeout = () => {
-                reject(new Error('Upload timeout - file may be too large or connection too slow'));
-            };
-
-            // Configure request - use PUT method with raw file data
-            xhr.open('PUT', uploadUrl);
-            xhr.setRequestHeader('Content-Type', this.options.file.type);
-
-            // Set timeout if specified (30 seconds default)
+            // Relative URLs must be prefixed with /api/ so Django's URL router picks them
+            // up correctly, then resolved through the REST service so they target the
+            // configured API host rather than the browser's current web host.
+            // Absolute URLs (http/https) are returned unchanged — needed for S3 etc.
+            let apiUrl = url;
+            if (url.startsWith('/') && !url.startsWith('/api/')) {
+                apiUrl = '/api' + url;
+            }
+            const resolvedUrl = this.fileModel.rest.buildUrl(apiUrl);
+            xhr.open(method, resolvedUrl);
             xhr.timeout = 30000;
 
-            // Send the raw file data
-            xhr.send(this.options.file);
+            if (useFormData) {
+                // POST multipart/form-data — filesystem backend and S3 presigned POST.
+                // Any extra headers from the config (e.g. x-amz-* for S3) are set here,
+                // but Content-Type is deliberately skipped so the browser sets the boundary.
+                for (const [key, value] of Object.entries(headers || {})) {
+                    if (key.toLowerCase() !== 'content-type') {
+                        xhr.setRequestHeader(key, value);
+                    }
+                }
+
+                const formData = new FormData();
+                for (const [key, value] of Object.entries(fields)) {
+                    formData.append(key, value);
+                }
+                // File must be last — required by S3 presigned POST policy; harmless for Django.
+                formData.append('file', this.options.file);
+                xhr.send(formData);
+
+            } else {
+                // PUT raw bytes — legacy / direct signed URL path.
+                xhr.setRequestHeader('Content-Type', this.options.file.type);
+                for (const [key, value] of Object.entries(headers || {})) {
+                    if (key.toLowerCase() !== 'content-type') {
+                        xhr.setRequestHeader(key, value);
+                    }
+                }
+                xhr.send(this.options.file);
+            }
         });
     }
 
