@@ -464,6 +464,12 @@
             // Documentation structure
             const docStructure = {
                 "Getting Started": [{ title: "📖 Introduction", path: "README.md" }],
+
+                "Application Layer": [
+                    { title: "WebApp", path: "core/WebApp.md" },
+                    { title: "PortalApp", path: "core/PortalApp.md" },
+                ],
+
                 "Core Concepts": {
                     Views: [
                         { title: "View Basics", path: "core/View.md" },
@@ -472,29 +478,53 @@
                     ],
                     "Templates & Data": [
                         { title: "Templates", path: "core/Templates.md" },
+                        { title: "DataFormatter", path: "core/DataFormatter.md" },
                         { title: "Models", path: "core/Model.md" },
                         { title: "Collections", path: "core/Collection.md" },
                     ],
                     Events: [{ title: "Events System", path: "core/Events.md" }],
                 },
-                Features: [
-                    { title: "Admin Tools", path: "features/Admin.md" },
-                    { title: "Location Services", path: "features/Location.md" },
-                    { title: "Location API", path: "features/Location_API.md" },
-                    { title: "Maps", path: "features/Map.md" },
-                    { title: "Tab Navigation", path: "features/TabView.md" },
+
+                Pages: [{ title: "Page", path: "pages/Page.md" }],
+
+                Services: [
+                    { title: "Rest (HTTP Client)", path: "services/Rest.md" },
+                    { title: "ToastService", path: "services/ToastService.md" },
+                    { title: "WebSocketClient", path: "services/WebSocketClient.md" },
                 ],
+
                 Components: [
-                    { title: "Charts", path: "components/Charts.md" },
-                    { title: "Data View", path: "components/DataView.md" },
-                    { title: "File Upload", path: "components/FileUpload.md" },
+                    { title: "Sidebar & TopNav", path: "components/SidebarTopNav.md" },
+                    { title: "Dialog", path: "components/Dialog.md" },
+                    { title: "ListView", path: "components/ListView.md" },
+                    { title: "TableView", path: "components/TableView.md" },
+                    { title: "TablePage", path: "components/TablePage.md" },
+                    { title: "DataView", path: "components/DataView.md" },
+                    { title: "DataView Quick Ref", path: "components/DataView-QuickReference.md" },
                     { title: "File View", path: "components/FileView.md" },
                     { title: "Image Fields", path: "components/ImageFields.md" },
-                    { title: "LightBox", path: "components/LightBox.md" },
-                    { title: "Map View", path: "components/MapView.md" },
-                    { title: "MapLibre View", path: "components/MapLibreView.md" },
-                    { title: "Timeline View", path: "components/TimelineView.md" },
                 ],
+
+                Extensions: [
+                    { title: "Charts", path: "extensions/Charts.md" },
+                    { title: "File Upload", path: "extensions/FileUpload.md" },
+                    { title: "LightBox", path: "extensions/LightBox.md" },
+                    { title: "Timeline View", path: "extensions/TimelineView.md" },
+                    { title: "Tab Navigation", path: "extensions/TabView.md" },
+                    { title: "MapView", path: "extensions/MapView.md" },
+                    { title: "MapLibre View", path: "extensions/MapLibreView.md" },
+                    { title: "Location Services", path: "extensions/Location.md" },
+                    { title: "Location API", path: "extensions/Location_API.md" },
+                    { title: "Map", path: "extensions/Map.md" },
+                    { title: "Admin Tools", path: "extensions/Admin.md" },
+                    { title: "Metrics Mini Chart", path: "extensions/metricsminichartwidget.md" },
+                ],
+
+                "Models & Data": [{ title: "Built-in Models", path: "models/BuiltinModels.md" }],
+
+                Utilities: [{ title: "MOJOUtils", path: "utils/MOJOUtils.md" }],
+
+                Mixins: [{ title: "EventEmitter & EventDelegate", path: "mixins/EventEmitter.md" }],
             };
 
             // Current state
@@ -626,14 +656,20 @@
                                 0,
                                 currentPath.lastIndexOf("/") + 1,
                             );
+                            const knownRoots = [
+                                "core/",
+                                "pages/",
+                                "services/",
+                                "components/",
+                                "extensions/",
+                                "models/",
+                                "utils/",
+                                "mixins/",
+                            ];
                             let newPath = href;
                             if (href.startsWith("./")) {
                                 newPath = basePath + href.substring(2);
-                            } else if (
-                                !href.startsWith("core/") &&
-                                !href.startsWith("features/") &&
-                                !href.startsWith("components/")
-                            ) {
+                            } else if (!knownRoots.some((root) => href.startsWith(root))) {
                                 newPath = basePath + href;
                             }
                             loadDoc(newPath);

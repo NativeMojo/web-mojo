@@ -13,9 +13,10 @@
 **📖 [View Full Documentation](https://nativemojo.com/web-mojo/)**
 
 Complete guides covering:
+- **Application Layer** - WebApp, PortalApp, Pages
 - **Core Concepts** - View, Model, Collection, Templates, Events
-- **Features** - Location, Maps, Admin tools, Tab navigation
-- **Components** - Charts, File upload, DataView, and more
+- **Components** - Sidebar, TopNav, Dialog, TableView, DataView, and more
+- **Extensions** - Charts, Maps, Admin tools, FileUpload, LightBox, TabView, and more
 - **Best Practices** - KISS principles, common pitfalls, optimization
 
 ---
@@ -287,27 +288,51 @@ app.start();
 
 ## 📖 Documentation Structure
 
-Our documentation is organized for easy navigation:
+Our documentation is organized into focused sections — browse online or click any link below:
 
-- **[Core Concepts](https://nativemojo.com/web-mojo/#core/View.md)** - View, Model, Collection, Templates, Events
-- **[Features](https://nativemojo.com/web-mojo/#features/Location.md)** - Location, Maps, Admin, Tabs
-- **[Components](https://nativemojo.com/web-mojo/#components/Charts.md)** - UI components and widgets
-- **[API Reference](https://nativemojo.com/web-mojo/)** - Complete API documentation
+### Application Layer
+- [WebApp](https://nativemojo.com/web-mojo/#core/WebApp.md) — routing, state, REST, EventBus
+- [PortalApp](https://nativemojo.com/web-mojo/#core/PortalApp.md) — auth, sidebar, topbar, groups
+- [Page](https://nativemojo.com/web-mojo/#pages/Page.md) — routed pages, `onEnter`/`onExit`, params
 
-### Essential Reading
+### Core Concepts
+- [View](https://nativemojo.com/web-mojo/#core/View.md) — component lifecycle, templates, actions
+- [Templates](https://nativemojo.com/web-mojo/#core/Templates.md) — Mustache + 70+ formatters ⚠️ read pitfalls
+- [Model](https://nativemojo.com/web-mojo/#core/Model.md) — data layer with REST integration
+- [Collection](https://nativemojo.com/web-mojo/#core/Collection.md) — lists, pagination, querying
+- [Events](https://nativemojo.com/web-mojo/#core/Events.md) — EventBus, EventEmitter, delegation
+- [DataFormatter](https://nativemojo.com/web-mojo/#core/DataFormatter.md) — all 80+ built-in formatters
 
-**Start here:**
-1. [View Basics](https://nativemojo.com/web-mojo/#core/View.md) - Component system
-2. [Templates](https://nativemojo.com/web-mojo/#core/Templates.md) - Templating with common pitfalls
-3. [Model](https://nativemojo.com/web-mojo/#core/Model.md) - Data layer
+### Services
+- [Rest](https://nativemojo.com/web-mojo/#services/Rest.md) — HTTP client: GET/POST/PUT/PATCH/DELETE, file upload
+- [ToastService](https://nativemojo.com/web-mojo/#services/ToastService.md) — Bootstrap 5 toast notifications
+- [WebSocketClient](https://nativemojo.com/web-mojo/#services/WebSocketClient.md) — auto-reconnect WebSocket
 
-**Then explore:**
-4. [Child Views](https://nativemojo.com/web-mojo/#core/ViewChildViews.md) - Component composition
-5. [Collection](https://nativemojo.com/web-mojo/#core/Collection.md) - Working with lists
-6. [Events](https://nativemojo.com/web-mojo/#core/Events.md) - Event handling
+### Components
+- [Sidebar & TopNav](https://nativemojo.com/web-mojo/#components/SidebarTopNav.md) — portal navigation, homeless pages
+- [Dialog](https://nativemojo.com/web-mojo/#components/Dialog.md) — modals, alerts, confirms, busy indicator
+- [TableView](https://nativemojo.com/web-mojo/#components/TableView.md) / [TablePage](https://nativemojo.com/web-mojo/#components/TablePage.md) — data tables
+- [ListView](https://nativemojo.com/web-mojo/#components/ListView.md) — list component for collections
+- [DataView](https://nativemojo.com/web-mojo/#components/DataView.md) — structured data display
 
-**Advanced:**
-7. [Advanced Views](https://nativemojo.com/web-mojo/#core/AdvancedViews.md) - Canvas, WebGL, optimization
+### Extensions
+- [Charts](https://nativemojo.com/web-mojo/#extensions/Charts.md) — Chart.js integration (SeriesChart, PieChart)
+- [Admin](https://nativemojo.com/web-mojo/#extensions/Admin.md) — pre-built admin pages and views
+- [TabView](https://nativemojo.com/web-mojo/#extensions/TabView.md) — tab navigation
+- [MapView](https://nativemojo.com/web-mojo/#extensions/MapView.md) / [MapLibreView](https://nativemojo.com/web-mojo/#extensions/MapLibreView.md) — maps
+- [Location](https://nativemojo.com/web-mojo/#extensions/Location.md) — geolocation services
+- [LightBox](https://nativemojo.com/web-mojo/#extensions/LightBox.md) — image lightbox
+- [FileUpload](https://nativemojo.com/web-mojo/#extensions/FileUpload.md) — file upload utilities
+- [TimelineView](https://nativemojo.com/web-mojo/#extensions/TimelineView.md) — timeline visualization
+
+### Essential Reading Order
+
+1. [View.md](https://nativemojo.com/web-mojo/#core/View.md) — understand the component lifecycle
+2. [Templates.md](https://nativemojo.com/web-mojo/#core/Templates.md) — learn Mustache + pipe formatters ⚠️ read the pitfalls!
+3. [Model.md](https://nativemojo.com/web-mojo/#core/Model.md) — connect to your REST API
+4. [Collection.md](https://nativemojo.com/web-mojo/#core/Collection.md) — work with lists of data
+5. [WebApp.md](https://nativemojo.com/web-mojo/#core/WebApp.md) — wire the app together
+6. [Page.md](https://nativemojo.com/web-mojo/#pages/Page.md) — create routed pages
 
 ---
 
@@ -366,15 +391,23 @@ npm test
 ```
 web-mojo/
 ├── src/
-│   ├── core/           # Core framework
-│   ├── extensions/     # Extensions (auth, charts, etc.)
-│   └── styles/         # CSS styles
-├── docs/               # Documentation
-│   ├── core/          # Core concept docs
-│   ├── features/      # Feature docs
-│   └── components/    # Component docs
-├── examples/          # Example projects
-└── tests/             # Test suites
+│   ├── core/              # Core framework (View, Model, Collection, Router…)
+│   ├── extensions/        # Optional extensions (charts, maps, admin, auth…)
+│   └── styles/            # CSS styles
+├── docs/
+│   └── web-mojo/          # Framework documentation (served on GitHub Pages)
+│       ├── core/          # WebApp, PortalApp, View, Model, Collection, Events…
+│       ├── pages/         # Page (routed screens)
+│       ├── services/      # Rest, ToastService, WebSocketClient
+│       ├── components/    # Sidebar & TopNav, Dialog, TableView, ListView…
+│       ├── extensions/    # Charts, Admin, Maps, LightBox, TabView, FileUpload…
+│       ├── models/        # Built-in models (User, Group, Job, Email…)
+│       ├── utils/         # MOJOUtils
+│       ├── mixins/        # EventEmitter & EventDelegate
+│       ├── README.md      # Documentation index
+│       └── index.html     # Interactive documentation portal
+├── examples/              # Working example projects
+└── tests/                 # Test suites
 ```
 
 ---
