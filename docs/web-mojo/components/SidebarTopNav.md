@@ -494,6 +494,39 @@ A right item becomes a **button** when `buttonClass` is provided.
 
 A right item becomes a **dropdown** when it has `items`.
 
+Dropdown `items` support four distinct entry types:
+
+| Shape | Renders as |
+|---|---|
+| `{ label, action?, icon? }` | Clickable `dropdown-item` |
+| `{ divider: true }` | `<hr class="dropdown-divider">` |
+| `{ header: 'Section name' }` | Bootstrap `dropdown-header` (non-clickable heading) |
+| `{ text: 'Any <strong>HTML</strong>' }` | `dropdown-item-text` — non-clickable, HTML rendered |
+
+Full example with all types:
+
+```js
+{
+  id: 'tools',
+  icon: 'bi-tools',
+  label: 'Tools',
+  permissions: ['admin_compliance', 'verify_tool_access'],
+  items: [
+    { text: 'Run as <strong>Admin</strong>' },          // raw HTML note
+    { header: 'IP Tools' },                              // section heading
+    { label: 'IP Lookup',         icon: 'bi-globe',        action: 'tool-ip-lookup' },
+    { label: 'Reverse IP (PTR)',  icon: 'bi-arrow-repeat', action: 'tool-reverse-ip-lookup' },
+    { label: 'Domain IP Lookup',  icon: 'bi-hdd-network',  action: 'tool-domain-ip-lookup' },
+    { divider: true },
+    { header: 'Domain Tools' },
+    { label: 'SSL Domain Lookup', icon: 'bi-shield-lock',  action: 'tool-ssl-domain-lookup' },
+    { label: 'Domain Lookup',     icon: 'bi-globe2',       action: 'tool-domain-lookup' },
+  ]
+}
+```
+
+> **`{ text }` renders raw HTML.** Never put user-supplied content there — it is inserted with `{{{triple braces}}}` and is not escaped.
+
 #### Link
 
 ```js

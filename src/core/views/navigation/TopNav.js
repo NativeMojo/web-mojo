@@ -210,14 +210,20 @@ class TopNav extends View {
                                 {{#divider}}
                                 <li><hr class="dropdown-divider"></li>
                                 {{/divider}}
-                                {{^divider}}
+                                {{#isHeader}}
+                                <li><h6 class="dropdown-header">{{header}}</h6></li>
+                                {{/isHeader}}
+                                {{#isHtml}}
+                                <li><span class="dropdown-item-text">{{{html}}}</span></li>
+                                {{/isHtml}}
+                                {{^divider}}{{^isHeader}}{{^isHtml}}
                                 <li>
                                     <a class="dropdown-item" role="button" {{#action}}data-action="{{action}}"{{/action}}>
                                         {{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}
                                         {{label}}
                                     </a>
                                 </li>
-                                {{/divider}}
+                                {{/isHtml}}{{/isHeader}}{{/divider}}
                                 {{/items}}
                             </ul>
                         </div>
@@ -314,9 +320,22 @@ class TopNav extends View {
         return this.filterItemsByPermissions(rightItems).map(item => {
             const processedItem = { ...item };
 
-            // Filter dropdown items by permissions if they exist
+            // Filter dropdown items by permissions and annotate special item types
             if (item.items) {
-                processedItem.items = this.filterItemsByPermissions(item.items);
+                processedItem.items = this.filterItemsByPermissions(item.items).map(subItem => {
+                    const processed = { ...subItem };
+                    if (subItem.divider) {
+                        // already handled by template
+                    } else if (subItem.header !== undefined) {
+                        // Category heading — renders as Bootstrap dropdown-header
+                        processed.isHeader = true;
+                    } else if (subItem.text !== undefined) {
+                        // Raw HTML text node — renders as non-interactive dropdown-item-text
+                        processed.isHtml = true;
+                        processed.html = subItem.text;
+                    }
+                    return processed;
+                });
             }
 
             // Check for group selector type
