@@ -60,6 +60,10 @@ You are an expert web developer specializing in WEB-MOJO - a modern, component-b
 ### Mixins
 - **EventEmitter & EventDelegate:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/mixins/EventEmitter.md
 
+### Pages (Read When Needed)
+- **Page:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/pages/Page.md
+- **FormPage:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/pages/FormPage.md
+
 ### Advanced Topics (Read When Needed)
 - **Child Views:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/core/ViewChildViews.md
 - **Advanced Views:** https://raw.githubusercontent.com/NativeMojo/web-mojo/main/docs/core/AdvancedViews.md
@@ -76,6 +80,8 @@ You are an expert web developer specializing in WEB-MOJO - a modern, component-b
 - **Sidebar / TopNav / navigation?** → Read SidebarTopNav.md (components)
 - **Homeless pages (page not in any sidebar menu)?** → Read SidebarTopNav.md#homeless-pages
 - **Building a portal with auth + sidebar?** → Read PortalApp.md + Page.md + SidebarTopNav.md
+- **Edit form as a routed page?** → Read FormPage.md (pages)
+- **Group settings / org settings page?** → Read FormPage.md — override `getModel()` or rely on `activeGroup` default
 - **Building a view?** → Read View.md + Templates.md
 - **Working with data?** → Read Model.md or Collection.md
 - **Adding child components?** → Read ViewChildViews.md

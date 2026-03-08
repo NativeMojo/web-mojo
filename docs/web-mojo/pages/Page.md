@@ -17,6 +17,7 @@
 - [Meta Tags](#meta-tags)
 - [Notifications](#notifications)
 - [Permissions](#permissions)
+- [Group Changes (`onGroupChange`)](#group-changes-ongroupchange)
 - [API Reference](#api-reference)
 - [Common Patterns](#common-patterns)
 - [Common Pitfalls](#common-pitfalls)
@@ -421,6 +422,222 @@ The default implementation checks `this.options.permissions` against `this.getAp
 
 ---
 
+## Group Changes (`onGroupChange`)
+
+### What it is
+
+`onGroupChange(group)` is a lifecycle hook called by `PortalApp.setActiveGroup()` on the currently active page whenever the user switches to a different group. It is defined as an empty stub in `Page` — override it in your subclass whenever the page displays group-scoped data.
+
+```js
+// In Page.js — empty stub, safe to call super on
+async onGroupChange(group) {}
+```
+
+```js
+// In your page subclass — override to react to group switches
+async onGroupChange(group) {
+  await super.onGroupChange(group); // always call super
+  // group  — the newly active Group model
+  // this.getApp().activeGroup is already set to this group
+}
+```
+
+You don't need to register anything. Simply override the method and it will be called automatically.
+
+### When to implement it
+
+Implement `onGroupChange` on any page that displays or operates on group-scoped data — i.e. any page where the content would become stale or incorrect if the user switches groups while it is visible.
+
+| Page type | What to do in `onGroupChange` |
+|---|---|
+| Dashboard showing group metrics | Re-fetch the metrics for the new group |
+| Table listing group members / resources | Re-fetch the collection filtered to the new group |
+| Settings form for the group | Recreate / rebind the form with the new group's data |
+| Chart showing group activity | Reload chart data for the new group |
+| Page that doesn't use group data | No `onGroupChange` needed |
+
+### Basic pattern
+
+This is an MVC framework — data lives in **Models** and **Collections**. The page's job in `onGroupChange` is to tell those models to re-fetch for the new group, then re-render.
+
+```js
+import { Collection } from 'web-mojo';
+import GroupSummary from '../models/GroupSummary.js';
+
+export default class GroupDashboardPage extends Page {
+  static pageName = 'group-dashboard';
+  static route    = '?page=group-dashboard';
+
+  async onInit() {
+    await super.onInit();
+    // Create model once — fetch it on each enter/group-change
+    this.summary = new GroupSummary();
+  }
+
+  async onEnter() {
+    await super.onEnter();
+    await this.summary.fetch({ group_id: this.getApp().activeGroup?.id });
+    await this.render();
+  }
+
+  async onGroupChange(group) {
+    await super.onGroupChange(group);
+    if (!group) return;
+    // Tell the model to re-fetch for the new group, then re-render
+    await this.summary.fetch({ group_id: group.id });
+    await this.render();
+  }
+}
+```
+
+> **Note:** `onEnter` and `onGroupChange` share the same fetch logic here. There is no magic `loadData()` method — that is just an ordinary method name you would choose yourself if you wanted to extract the shared logic. The framework provides `onEnter`, `onGroupChange`, Models, and Collections; how you organise your own methods is up to you.
+
+### Collection-based page
+
+```js
+import MemberCollection from '../models/MemberCollection.js';
+
+export default class MembersPage extends Page {
+  static pageName = 'members';
+  static route    = '?page=members';
+
+  async onInit() {
+    await super.onInit();
+    this.members = new MemberCollection();
+  }
+
+  async onEnter() {
+    await super.onEnter();
+    const group = this.getApp().activeGroup;
+    if (!group) return;
+    await this.members.fetch({ group_id: group.id });
+    await this.render();
+  }
+
+  async onGroupChange(group) {
+    await super.onGroupChange(group);
+    if (!group) return;
+    // Reset the collection and fetch for the new group
+    this.members.reset();
+    await this.members.fetch({ group_id: group.id });
+    await this.render();
+  }
+}
+```
+
+### Invalidating a cached model
+
+When you cache a model instance scoped to a group, swap it out in `onGroupChange` and re-fetch:
+
+```js
+async onGroupChange(group) {
+  await super.onGroupChange(group);
+  if (!group) return;
+
+  // Replace the model with one scoped to the new group
+  this.settings = new GroupSettings({ group_id: group.id });
+  await this.settings.fetch();
+  await this.render();
+}
+```
+
+### Coordinating with child views
+
+Child views that hold their own Models or Collections need to be told about the group change too. Call `setModel` / `setCollection` on them directly — they will re-render automatically:
+
+```js
+async onGroupChange(group) {
+  await super.onGroupChange(group);
+  if (!group) return;
+
+  // Re-fetch the page's own model
+  await this.summary.fetch({ group_id: group.id });
+  await this.render();
+
+  // Tell child views to update their own data
+  if (this.activityView) {
+    this.activityView.collection.reset();
+    await this.activityView.collection.fetch({ group_id: group.id });
+    await this.activityView.render();
+  }
+}
+```
+
+### Using the `group:changed` event bus alternative
+
+If your page is **not** the currently active page but still needs to react to group changes (e.g. a persistent sidebar view or a background data store), listen on the app event bus instead:
+
+```js
+async onInit() {
+  await super.onInit();
+
+  this.getApp().events.on('group:changed', async ({ group }) => {
+    if (!group) return;
+    await this.myCollection.fetch({ group_id: group.id });
+    await this.render();
+  });
+}
+```
+
+> Use `onGroupChange` (the hook) for the **active page**. Use `events.on('group:changed')` for views or services that live outside the page lifecycle. Remember to remove the listener in `onExit()` or `onBeforeDestroy()`.
+
+### Common Pitfalls
+
+#### ⚠️ Not guarding against a null group
+
+Always check that a group was actually provided before touching group-scoped Models or Collections:
+
+```js
+async onGroupChange(group) {
+  await super.onGroupChange(group);
+  if (!group) return;   // nothing to do without an active group
+  await this.members.fetch({ group_id: group.id });
+  await this.render();
+}
+```
+
+#### ⚠️ Skipping `await super.onGroupChange(group)`
+
+Always call super so the stub in `Page` can evolve without breaking your subclass:
+
+```js
+// ❌ WRONG
+async onGroupChange(group) {
+  await this.members.fetch({ group_id: group.id });
+}
+
+// ✅ CORRECT
+async onGroupChange(group) {
+  await super.onGroupChange(group);
+  await this.members.fetch({ group_id: group.id });
+}
+```
+
+#### ⚠️ Rapid group switching — debounce if fetches are slow
+
+`onGroupChange` is called fire-and-forget by `PortalApp`. If the user switches groups quickly and your fetch is slow, a previous fetch can resolve after a newer one. Guard with a simple flag:
+
+```js
+async onGroupChange(group) {
+  await super.onGroupChange(group);
+  if (!group || this._switching) return;
+  this._switching = true;
+  try {
+    this.members.reset();
+    await this.members.fetch({ group_id: group.id });
+    await this.render();
+  } finally {
+    this._switching = false;
+  }
+}
+```
+
+#### ⚠️ Forgetting `onGroupChange` on group-scoped pages
+
+If a page displays group-scoped data but has no `onGroupChange`, the user will see the previous group's data after switching — until they manually navigate away and back. This is the most common group-related bug in portal apps.
+
+---
+
 ## API Reference
 
 ### Instance Properties
@@ -447,6 +664,7 @@ The default implementation checks `this.options.permissions` against `this.getAp
 | `async onEnter()` | Called when this page becomes the active page |
 | `async onExit()` | Called when navigating away from this page |
 | `canEnter()` | Return `false` to block access — triggers the `'denied'` page |
+| `async onGroupChange(group)` | Called by `PortalApp` when the active group changes — implement on any page with group-scoped data |
 
 ### Navigation Methods
 
@@ -759,9 +977,11 @@ async onParams(params, query) {
 
 ## Related Documentation
 
+- **[FormPage](./FormPage.md)** — Page subclass that auto-manages a `FormView` child — the fastest way to build a model edit page
 - **[WebApp](../core/WebApp.md)** — Registers pages and drives the page lifecycle
 - **[PortalApp](../core/PortalApp.md)** — Extends WebApp with `onGroupChange()` callback on pages
 - **[View](../core/View.md)** — The base class Page extends
 - **[Router](../core/Router.md)** — Resolves URLs to page names and parameters
 - **[Events](../core/Events.md)** — EventBus patterns for cross-component communication
 - **[Templates](../core/Templates.md)** — Mustache templating with formatters
+- **[FormView](../forms/FormView.md)** — The form component managed by FormPage

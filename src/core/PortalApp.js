@@ -250,7 +250,7 @@ export default class PortalApp extends WebApp {
         });
 
         const page = this.getCurrentPage();
-        if (page && page.onGroupChange) {
+        if (page) {
             page.onGroupChange(group);
         }
 

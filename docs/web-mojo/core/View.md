@@ -433,7 +433,7 @@ class MyView extends View {
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `template` | String \| Function | `""` | Mustache template (required) |
+| `template` | String | Function | `""` | Mustache template (required) |
 | `className` | String | `"mojo-view"` | CSS class for root element |
 | `tagName` | String | `"div"` | HTML tag for root element |
 | `id` | String | Auto-generated | Element ID |

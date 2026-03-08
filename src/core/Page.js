@@ -134,6 +134,32 @@ class Page extends View {
   }
 
   /**
+   * Called by PortalApp.setActiveGroup() whenever the user switches to a different group.
+   *
+   * Override this on any page that displays group-scoped data so the page
+   * stays in sync when the active group changes.  Always call super first.
+   *
+   * This is an MVC framework — your override should tell your Models and
+   * Collections to re-fetch for the new group, then call this.render().
+   * There is no framework-provided loadData() method; organise your own
+   * fetch logic however you like.
+   *
+   * @param {Model} group - The newly active Group model.
+   *                        this.getApp().activeGroup is already set to this value.
+   *
+   * @example
+   * async onGroupChange(group) {
+   *   await super.onGroupChange(group);
+   *   if (!group) return;
+   *   await this.myCollection.fetch({ group_id: group.id });
+   *   await this.render();
+   * }
+   */
+  async onGroupChange(group) {
+    // Empty stub — override in subclasses that display group-scoped data.
+  }
+
+  /**
    * Get page metadata for display and events
    * @returns {object} Page metadata
    */

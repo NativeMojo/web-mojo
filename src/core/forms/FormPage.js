@@ -16,15 +16,7 @@ export default class FormPage extends Page {
 
     async onInit() {
         await super.onInit();
-        this.formView = new FormView({
-            containerId: 'form-view-container',
-            fields: this.options.fields,
-            autosaveModelField: true
-        });
-        this.addChild(this.formView);
-        if (this.getApp().activeGroup) {
-            this.formView.setModel(this.getApp().activeGroup);
-        }
+        await this.recreateFormView();
     }
 
     async onEnter() {
@@ -42,6 +34,15 @@ export default class FormPage extends Page {
         }
     }
 
+    async getModel() {
+        if (this.model) {
+            return this.model;
+        } else if (this.getApp().activeGroup) {
+            return this.getApp().activeGroup;
+        }
+        return null;
+    }
+
     async recreateFormView() {
         // Destroy old formView
         if (this.formView) {
@@ -57,10 +58,9 @@ export default class FormPage extends Page {
         });
         this.addChild(this.formView);
 
-        if (this.getApp().activeGroup) {
-            this.formView.setModel(this.getApp().activeGroup);
+        const model = await this.getModel();
+        if (model) {
+            this.formView.setModel(model);
         }
-
-        // await this.formView.render();
     }
 }
