@@ -61,7 +61,7 @@ TabView is a responsive tabbed interface component that automatically adapts to 
 
 **Import Path:**
 ```javascript
-import { TabView } from 'web-mojo/core';
+import { TabView } from 'web-mojo';
 ```
 
 ---
@@ -73,8 +73,8 @@ import { TabView } from 'web-mojo/core';
 TabView is part of the web-mojo core:
 
 ```javascript
-import { TabView } from 'web-mojo/core';
-import { View } from 'web-mojo/core';
+import { TabView } from 'web-mojo';
+import { View } from 'web-mojo';
 ```
 
 ### Basic Tabbed Interface
@@ -865,7 +865,7 @@ const profileView = new View({
 });
 
 // Method 2: Via model
-import { Model } from 'web-mojo/core';
+import { Model } from 'web-mojo';
 
 const userModel = new Model({
   name: 'John Doe',
@@ -1048,7 +1048,7 @@ Style dropdown button and menu:
 ### User Settings Interface
 
 ```javascript
-import { TabView, View } from 'web-mojo/core';
+import { TabView, View } from 'web-mojo';
 
 class ProfileSettingsView extends View {
   constructor(options) {

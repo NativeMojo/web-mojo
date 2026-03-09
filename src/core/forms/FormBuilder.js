@@ -233,7 +233,6 @@ class FormBuilder {
             {{#help}}<div class="{{helpClass}}">{{help}}</div>{{/help}}
             {{#error}}<div class="{{errorClass}}">{{error}}</div>{{/error}}
           </div>
-        </div>
       `,
 
       switch: `
