@@ -1,665 +1,1190 @@
 /**
- * RunnerDetailsView - Detailed runner information view for Dialog display
- * Shows comprehensive runner status, performance, tasks, and management actions
+ * RunnerDetailsView
+ *
+ * Tabbed runner inspector opened via RunnerDetailsView.show(runner).
+ * All tab view classes are internal to this module.
+ *
+ * Tabs:
+ *   Overview     — identity, channels, uptime (runner object only, no fetch)
+ *   System Info  — OS, CPU, memory, disk, network (GET /api/jobs/runners/sysinfo/<id>)
+ *   Running Jobs — jobs on this runner (GET /api/jobs/job?runner_id=&status=running)
+ *   Logs         — aggregated logs from running jobs (GET /api/jobs/logs?job_id=)
+ *   Actions      — ping, shutdown, broadcast, export
  */
 
 import View from '@core/View.js';
 import Dialog from '@core/views/feedback/Dialog.js';
+import TabView from '@core/views/navigation/TabView.js';
+import { JobRunner } from '@core/models/JobRunner.js';
 
-export default class RunnerDetailsView extends View {
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+function formatUptime(seconds) {
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h ${m}m`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+function formatDuration(seconds) {
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  if (seconds < 3600) return `${Math.round(seconds / 60)}m ${Math.round(seconds % 60)}s`;
+  return `${Math.round(seconds / 3600)}h ${Math.round((seconds % 3600) / 60)}m`;
+}
+
+function formatBytes(bytes) {
+  if (bytes == null) return 'N/A';
+  if (bytes >= 1e9) return (bytes / 1e9).toFixed(2) + ' GB';
+  if (bytes >= 1e6) return (bytes / 1e6).toFixed(2) + ' MB';
+  if (bytes >= 1e3) return (bytes / 1e3).toFixed(2) + ' KB';
+  return bytes + ' B';
+}
+
+function resourceBadgeClass(pct) {
+  if (pct >= 80) return 'bg-danger-subtle text-danger';
+  if (pct >= 60) return 'bg-warning-subtle text-warning';
+  return 'bg-success-subtle text-success';
+}
+
+function progressBarClass(pct) {
+  if (pct >= 80) return 'bg-danger';
+  if (pct >= 60) return 'bg-warning';
+  return 'bg-success';
+}
+
+function heartbeatAgeSec(isoString) {
+  if (!isoString) return null;
+  return (Date.now() - new Date(isoString).getTime()) / 1000;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RunnerOverviewTab
+// ─────────────────────────────────────────────────────────────────────────────
+
+class RunnerOverviewTab extends View {
   constructor(options = {}) {
-    super({
-      ...options,
-      className: 'mojo-runner-details-view'
-    });
+    super({ className: 'runner-overview-tab', ...options });
+    this.model = options.model || null;
+  }
 
-    this.runner = options.runner || null;
-    this.currentTasks = [];
-    this.logs = [];
-    this.metrics = null;
-    this.config = null;
+  async onBeforeRender() {
+    const r = this.model;
+    if (!r) return;
+
+    this.aliveBadgeClass = r.get('alive') ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger';
+    this.aliveIcon = r.get('alive') ? 'bi-check-circle-fill' : 'bi-x-circle-fill';
+    this.aliveText = r.get('alive') ? 'Alive' : 'Dead';
+
+    const started = r.get('started');
+    this.startedText = started ? new Date(started).toLocaleString() : 'N/A';
+
+    if (started) {
+      const sec = (Date.now() - new Date(started).getTime()) / 1000;
+      this.uptimeText = formatUptime(sec);
+    } else {
+      this.uptimeText = 'N/A';
+    }
+
+    const ageSec = heartbeatAgeSec(r.get('last_heartbeat'));
+    if (ageSec !== null) {
+      this.heartbeatText = new Date(r.get('last_heartbeat')).toLocaleString();
+      this.heartbeatAgeText = `${Math.round(ageSec)}s ago`;
+      this.heartbeatClass = ageSec < 30 ? 'text-success' : ageSec < 120 ? 'text-warning' : 'text-danger';
+    } else {
+      this.heartbeatText = 'N/A';
+      this.heartbeatAgeText = '';
+      this.heartbeatClass = 'text-muted';
+    }
+
+    const jobsProcessed = r.get('jobs_processed') || 0;
+    const jobsFailed = r.get('jobs_failed') || 0;
+    this.errorRate = (jobsProcessed > 0)
+      ? ((jobsFailed / jobsProcessed) * 100).toFixed(2) + '%'
+      : '0.00%';
   }
 
   async getTemplate() {
     return `
-      <div class="mojo-runner-details-container">
-        {{#runner}}
-        <!-- Runner Overview -->
-        <div class="card border-0 bg-light mb-3">
-          <div class="card-body">
-            <div class="row">
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label class="form-label fw-bold text-muted small">Hostname</label>
-                  <div class="h5 mb-0 font-monospace">{{hostname}}</div>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label fw-bold text-muted small">Status</label>
-                  <div>
-                    <span class="badge {{statusBadgeClass}} fs-6">
-                      <i class="bi {{statusIcon}}"></i> {{status|uppercase}}
-                    </span>
-                  </div>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label fw-bold text-muted small">Workers</label>
-                  <div class="h5 mb-0">
-                    {{#metrics.activeWorkers}}{{metrics.activeWorkers}}/{{/metrics.activeWorkers}}{{max_workers}} workers
-                    {{#metrics.workerUtilization}}
-                    <div class="progress mt-1" style="height: 6px;">
-                      <div class="progress-bar {{metrics.utilizationClass}}" style="width: {{metrics.workerUtilization}}%"></div>
-                    </div>
-                    {{/metrics.workerUtilization}}
-                  </div>
+      {{^model}}
+      <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>No runner data available.</div>
+      {{/model}}
+
+      {{#model}}
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 fw-semibold">
+            <i class="bi bi-info-circle text-primary me-2"></i>Identity
+          </h6>
+          <span class="badge {{aliveBadgeClass}}">
+            <i class="bi {{aliveIcon}} me-1"></i>{{aliveText}}
+          </span>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <table class="table table-sm table-borderless mb-0">
+                <tbody>
+                  <tr>
+                    <td class="text-muted small fw-semibold text-uppercase pe-3" style="width:38%;white-space:nowrap;font-size:0.72rem;">Runner ID</td>
+                    <td class="font-monospace small">{{model.runner_id}}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted small fw-semibold text-uppercase" style="font-size:0.72rem;">Started</td>
+                    <td class="small">{{startedText}}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted small fw-semibold text-uppercase" style="font-size:0.72rem;">Uptime</td>
+                    <td class="small fw-semibold">{{uptimeText}}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted small fw-semibold text-uppercase" style="font-size:0.72rem;">Heartbeat</td>
+                    <td class="small {{heartbeatClass}}">
+                      {{heartbeatText}}
+                      {{#heartbeatAgeText}}
+                      <span class="text-muted">({{heartbeatAgeText}})</span>
+                      {{/heartbeatAgeText}}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="col-md-6">
+              <table class="table table-sm table-borderless mb-0">
+                <tbody>
+                  <tr>
+                    <td class="text-muted small fw-semibold text-uppercase pe-3" style="width:38%;white-space:nowrap;font-size:0.72rem;">Jobs Done</td>
+                    <td class="small fw-bold text-success">{{model.jobs_processed|number}}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted small fw-semibold text-uppercase" style="font-size:0.72rem;">Jobs Failed</td>
+                    <td class="small fw-bold text-danger">{{model.jobs_failed|number}}</td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted small fw-semibold text-uppercase" style="font-size:0.72rem;">Error Rate</td>
+                    <td class="small">{{errorRate}}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {{#model.channels.length}}
+          <div class="mt-3 pt-3 border-top">
+            <div class="text-muted small fw-semibold text-uppercase mb-2" style="font-size:0.72rem;">Assigned Channels</div>
+            <div class="d-flex flex-wrap gap-2">
+              {{#model.channels}}
+              <span class="badge bg-primary-subtle text-primary px-3 py-2">
+                <i class="bi bi-circle-fill me-1" style="font-size:0.4rem;vertical-align:middle;"></i>{{.}}
+              </span>
+              {{/model.channels}}
+            </div>
+          </div>
+          {{/model.channels.length}}
+        </div>
+      </div>
+
+      <div class="alert alert-light border d-flex align-items-center gap-2 mb-0" style="font-size:0.83rem;">
+        <i class="bi bi-cpu text-primary flex-shrink-0"></i>
+        <span>CPU, memory, disk, and network detail is in the <strong>System Info</strong> tab.</span>
+      </div>
+      {{/model}}
+    `;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RunnerSysinfoTab
+// ─────────────────────────────────────────────────────────────────────────────
+
+class RunnerSysinfoTab extends View {
+  constructor(options = {}) {
+    super({ className: 'runner-sysinfo-tab', ...options });
+    this.model = options.model || null;
+    this.sysinfo = null;
+    this.sysinfoError = null;
+    this.loading = false;
+    this.loaded = false;
+  }
+
+  async onTabActivated() {
+    if (this.loaded) return;
+    this.loaded = true;
+    this.loading = true;
+    this.sysinfoError = null;
+    await this.render();
+    await this.loadSysinfo();
+    this.loading = false;
+    await this.render();
+  }
+
+  async loadSysinfo() {
+    try {
+      const resp = await this.getApp().rest.GET(
+        `/api/jobs/runners/sysinfo/${this.model.get('runner_id')}`
+      );
+      if (resp.success && resp.data) {
+        const payload = resp.data.data || resp.data;
+        if (payload && payload.status === 'error') {
+          this.sysinfoError = payload.error || 'Runner reported an error collecting sysinfo.';
+          return;
+        }
+        if (!resp.data.status) {
+          this.sysinfoError = resp.data.error || 'Could not load system info.';
+          return;
+        }
+        this.sysinfo = payload.result || payload;
+        this.enrichSysinfo();
+      } else {
+        this.sysinfoError = 'Could not load system info.';
+      }
+    } catch (e) {
+      this.sysinfoError = e.message || 'Request failed.';
+    }
+  }
+
+  enrichSysinfo() {
+    const s = this.sysinfo;
+    if (!s) return;
+
+    if (s.memory) {
+      s.memory.totalFmt     = formatBytes(s.memory.total);
+      s.memory.usedFmt      = formatBytes(s.memory.used);
+      s.memory.availableFmt = formatBytes(s.memory.available);
+      s.memory.barClass     = progressBarClass(s.memory.percent);
+      s.memory.badgeClass   = resourceBadgeClass(s.memory.percent);
+    }
+
+    if (s.disk) {
+      s.disk.totalFmt   = formatBytes(s.disk.total);
+      s.disk.usedFmt    = formatBytes(s.disk.used);
+      s.disk.freeFmt    = formatBytes(s.disk.free);
+      s.disk.barClass   = progressBarClass(s.disk.percent);
+      s.disk.badgeClass = resourceBadgeClass(s.disk.percent);
+    }
+
+    if (s.network) {
+      s.network.bytesRecvFmt = formatBytes(s.network.bytes_recv);
+      s.network.bytesSentFmt = formatBytes(s.network.bytes_sent);
+      s.network.errClass     = (s.network.errin > 0 || s.network.errout > 0)
+        ? 'text-danger fw-bold' : 'text-success';
+      s.network.dropClass    = (s.network.dropin > 0 || s.network.dropout > 0)
+        ? 'text-warning fw-bold' : 'text-success';
+    }
+
+    const cpuPct = s.cpu_load || 0;
+    s.cpuLoadBarClass   = progressBarClass(cpuPct);
+    s.cpuLoadBadgeClass = resourceBadgeClass(cpuPct);
+
+    if (s.cpu && s.cpu.freq) {
+      s.cpu.freqText = `${Math.round(s.cpu.freq.current).toLocaleString()} MHz current`
+        + ` · ${Math.round(s.cpu.freq.max).toLocaleString()} MHz max`;
+    } else if (s.cpu) {
+      s.cpu.freqText = null;
+    }
+
+    if (s.cpus_load && s.cpus_load.length) {
+      s.cpuCores = s.cpus_load.map((pct, i) => ({
+        index: i,
+        pct: pct.toFixed(1),
+        barClass: progressBarClass(pct)
+      }));
+    } else {
+      s.cpuCores = [];
+    }
+
+    s.bootDatetime  = s.boot_time ? new Date(s.boot_time * 1000).toLocaleString() : null;
+    s.collectedText = s.datetime  || null;
+  }
+
+  async onActionRefreshSysinfo() {
+    this.loaded = false;
+    this.sysinfo = null;
+    this.sysinfoError = null;
+    await this.onTabActivated();
+  }
+
+  async getTemplate() {
+    return `
+      {{#loading|bool}}
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <div class="mt-2 text-muted small">Loading system info…</div>
+      </div>
+      {{/loading|bool}}
+
+      {{^loading|bool}}
+
+      {{#sysinfoError|bool}}
+      <div class="alert alert-warning d-flex align-items-start gap-2">
+        <i class="bi bi-exclamation-triangle flex-shrink-0 mt-1"></i>
+        <div>
+          <strong>Could not load system info</strong><br>
+          <span class="small">{{sysinfoError}}</span><br>
+          <button class="btn btn-sm btn-outline-warning mt-2" data-action="refresh-sysinfo">
+            <i class="bi bi-arrow-clockwise me-1"></i>Retry
+          </button>
+        </div>
+      </div>
+      {{/sysinfoError|bool}}
+
+      {{#sysinfo|bool}}
+
+      <div class="d-flex justify-content-end align-items-center gap-3 mb-3">
+        {{#sysinfo.collectedText}}
+        <small class="text-muted">Collected {{sysinfo.collectedText}}</small>
+        {{/sysinfo.collectedText}}
+        <button class="btn btn-sm btn-outline-secondary" data-action="refresh-sysinfo">
+          <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+        </button>
+      </div>
+
+      <!-- OS -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom py-2">
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-hdd-rack text-primary me-2"></i>Operating System</h6>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm table-borderless mb-0">
+            <tbody>
+              {{#sysinfo.os}}
+              <tr>
+                <td class="text-muted small fw-semibold text-uppercase ps-3 pe-2" style="width:20%;font-size:0.72rem;white-space:nowrap;">Hostname</td>
+                <td class="font-monospace small">{{.hostname}}</td>
+                <td class="text-muted small fw-semibold text-uppercase pe-2" style="width:15%;font-size:0.72rem;white-space:nowrap;">OS</td>
+                <td class="small">{{.system}}</td>
+              </tr>
+              <tr>
+                <td class="text-muted small fw-semibold text-uppercase ps-3 pe-2" style="font-size:0.72rem;">Release</td>
+                <td class="font-monospace small">{{.release}}</td>
+                <td class="text-muted small fw-semibold text-uppercase pe-2" style="font-size:0.72rem;">Machine</td>
+                <td class="font-monospace small">{{.machine}}</td>
+              </tr>
+              <tr>
+                <td class="text-muted small fw-semibold text-uppercase ps-3 pe-2" style="font-size:0.72rem;">Version</td>
+                <td colspan="3" class="font-monospace small text-muted" style="font-size:0.76rem;">{{.version}}</td>
+              </tr>
+              {{/sysinfo.os}}
+              {{#sysinfo.bootDatetime}}
+              <tr>
+                <td class="text-muted small fw-semibold text-uppercase ps-3 pe-2" style="font-size:0.72rem;">Boot Time</td>
+                <td colspan="3" class="small">{{sysinfo.bootDatetime}}</td>
+              </tr>
+              {{/sysinfo.bootDatetime}}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CPU -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-cpu text-primary me-2"></i>CPU</h6>
+          <span class="badge {{sysinfo.cpuLoadBadgeClass}}">{{sysinfo.cpu_load}}% overall</span>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-1">
+            <small class="fw-semibold text-muted">Overall Load</small>
+            <small class="fw-bold">{{sysinfo.cpu_load}}%</small>
+          </div>
+          <div class="progress mb-2" style="height:8px;">
+            <div class="progress-bar {{sysinfo.cpuLoadBarClass}}" style="width:{{sysinfo.cpu_load}}%;"></div>
+          </div>
+          {{#sysinfo.cpu}}
+          <div class="text-muted small mb-3">
+            {{.count}} logical cores
+            {{#.freqText}}&nbsp;·&nbsp;{{.freqText}}{{/.freqText}}
+          </div>
+          {{/sysinfo.cpu}}
+
+          {{#sysinfo.cpuCores.length}}
+          <div class="row g-2">
+            {{#sysinfo.cpuCores}}
+            <div class="col-6 col-md-3">
+              <div class="border rounded p-2 bg-light text-center">
+                <div class="text-muted fw-semibold text-uppercase mb-1" style="font-size:0.65rem;">Core {{.index}}</div>
+                <div class="fw-bold small">{{.pct}}%</div>
+                <div class="progress mt-1" style="height:4px;">
+                  <div class="progress-bar {{.barClass}}" style="width:{{.pct}}%;"></div>
                 </div>
               </div>
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label class="form-label fw-bold text-muted small">Started</label>
-                  <div>{{started_at|datetime}}</div>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label fw-bold text-muted small">Last Ping</label>
-                  <div class="{{pingAgeClass}}">{{last_ping|datetime}} ({{pingAgeText}})</div>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label fw-bold text-muted small">Uptime</label>
-                  <div>{{uptimeText}}</div>
-                </div>
+            </div>
+            {{/sysinfo.cpuCores}}
+          </div>
+          {{/sysinfo.cpuCores.length}}
+        </div>
+      </div>
+
+      <!-- Memory -->
+      {{#sysinfo.memory}}
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-memory text-primary me-2"></i>Memory</h6>
+          <span class="badge {{.badgeClass}}">{{.percent}}% used</span>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-1">
+            <small class="fw-semibold text-muted">RAM Usage</small>
+            <small class="fw-bold">{{.usedFmt}} / {{.totalFmt}}</small>
+          </div>
+          <div class="progress mb-3" style="height:8px;">
+            <div class="progress-bar {{.barClass}}" style="width:{{.percent}}%;"></div>
+          </div>
+          <div class="row g-2 text-center">
+            <div class="col-6 col-md-3">
+              <div class="text-muted fw-semibold text-uppercase" style="font-size:0.7rem;">Total</div>
+              <div class="fw-semibold small">{{.totalFmt}}</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="text-muted fw-semibold text-uppercase" style="font-size:0.7rem;">Used</div>
+              <div class="fw-semibold small">{{.usedFmt}}</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="text-muted fw-semibold text-uppercase" style="font-size:0.7rem;">Available</div>
+              <div class="fw-semibold small text-success">{{.availableFmt}}</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="text-muted fw-semibold text-uppercase" style="font-size:0.7rem;">Percent</div>
+              <div class="fw-semibold small">{{.percent}}%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {{/sysinfo.memory}}
+
+      <!-- Disk -->
+      {{#sysinfo.disk}}
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-hdd text-primary me-2"></i>Disk (Root)</h6>
+          <span class="badge {{.badgeClass}}">{{.percent}}% used</span>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-1">
+            <small class="fw-semibold text-muted">Disk Usage</small>
+            <small class="fw-bold">{{.usedFmt}} / {{.totalFmt}}</small>
+          </div>
+          <div class="progress mb-3" style="height:8px;">
+            <div class="progress-bar {{.barClass}}" style="width:{{.percent}}%;"></div>
+          </div>
+          <div class="row g-2 text-center">
+            <div class="col-6 col-md-3">
+              <div class="text-muted fw-semibold text-uppercase" style="font-size:0.7rem;">Total</div>
+              <div class="fw-semibold small">{{.totalFmt}}</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="text-muted fw-semibold text-uppercase" style="font-size:0.7rem;">Used</div>
+              <div class="fw-semibold small">{{.usedFmt}}</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="text-muted fw-semibold text-uppercase" style="font-size:0.7rem;">Free</div>
+              <div class="fw-semibold small text-success">{{.freeFmt}}</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="text-muted fw-semibold text-uppercase" style="font-size:0.7rem;">Percent</div>
+              <div class="fw-semibold small">{{.percent}}%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {{/sysinfo.disk}}
+
+      <!-- Network -->
+      {{#sysinfo.network}}
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom py-2">
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-diagram-3 text-primary me-2"></i>Network</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-6 col-md-4">
+              <div class="border rounded p-2 bg-light">
+                <div class="text-muted fw-semibold text-uppercase mb-1" style="font-size:0.67rem;"><i class="bi bi-arrow-down text-primary me-1"></i>Bytes Recv</div>
+                <div class="fw-bold font-monospace small">{{.bytesRecvFmt}}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="border rounded p-2 bg-light">
+                <div class="text-muted fw-semibold text-uppercase mb-1" style="font-size:0.67rem;"><i class="bi bi-arrow-up text-primary me-1"></i>Bytes Sent</div>
+                <div class="fw-bold font-monospace small">{{.bytesSentFmt}}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="border rounded p-2 bg-light">
+                <div class="text-muted fw-semibold text-uppercase mb-1" style="font-size:0.67rem;"><i class="bi bi-share text-primary me-1"></i>TCP Connections</div>
+                <div class="fw-bold font-monospace small">{{.tcp_cons|number}}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="border rounded p-2 bg-light">
+                <div class="text-muted fw-semibold text-uppercase mb-1" style="font-size:0.67rem;"><i class="bi bi-arrow-down me-1"></i>Packets Recv</div>
+                <div class="fw-bold font-monospace small">{{.packets_recv|number}}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="border rounded p-2 bg-light">
+                <div class="text-muted fw-semibold text-uppercase mb-1" style="font-size:0.67rem;"><i class="bi bi-arrow-up me-1"></i>Packets Sent</div>
+                <div class="fw-bold font-monospace small">{{.packets_sent|number}}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="border rounded p-2 bg-light">
+                <div class="text-muted fw-semibold text-uppercase mb-1" style="font-size:0.67rem;"><i class="bi bi-exclamation-triangle me-1"></i>Errors In / Out</div>
+                <div class="fw-bold font-monospace small {{.errClass}}">{{.errin}} / {{.errout}}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="border rounded p-2 bg-light">
+                <div class="text-muted fw-semibold text-uppercase mb-1" style="font-size:0.67rem;"><i class="bi bi-x-circle me-1"></i>Drops In</div>
+                <div class="fw-bold font-monospace small {{.dropClass}}">{{.dropin}}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="border rounded p-2 bg-light">
+                <div class="text-muted fw-semibold text-uppercase mb-1" style="font-size:0.67rem;"><i class="bi bi-x-circle me-1"></i>Drops Out</div>
+                <div class="fw-bold font-monospace small {{.dropClass}}">{{.dropout}}</div>
               </div>
             </div>
           </div>
         </div>
+      </div>
+      {{/sysinfo.network}}
 
-        <!-- Channel Assignment -->
-        <div class="card mb-3">
-          <div class="card-header py-2">
-            <h6 class="mb-0">
-              <i class="bi bi-collection me-2"></i>Assigned Channels
-            </h6>
-          </div>
-          <div class="card-body">
-            {{#channels.length}}
-              <div class="d-flex flex-wrap gap-2">
-                {{#channels}}
-                <span class="badge bg-primary-subtle text-primary px-3 py-2">
-                  {{.}}
-                </span>
-                {{/channels}}
-              </div>
-            {{/channels.length}}
-            {{^channels.length}}
-              <div class="text-center text-muted py-3">
-                <i class="bi bi-collection opacity-50"></i>
-                <p class="mb-0 mt-2">No channels assigned</p>
-              </div>
-            {{/channels.length}}
-          </div>
+      <!-- Logged-in Users -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-2">
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-person-badge text-primary me-2"></i>Logged-in Users</h6>
         </div>
+        {{#sysinfo.users.length}}
+        <ul class="list-group list-group-flush">
+          {{#sysinfo.users}}
+          <li class="list-group-item font-monospace small">{{.name|default:'unknown'}}
+            {{#.terminal}}<span class="text-muted ms-2">{{.terminal}}</span>{{/.terminal}}
+          </li>
+          {{/sysinfo.users}}
+        </ul>
+        {{/sysinfo.users.length}}
+        {{^sysinfo.users.length}}
+        <div class="card-body text-center text-muted py-4">
+          <i class="bi bi-person-x fs-2 d-block mb-2 opacity-50"></i>
+          <div class="small">No users currently logged in</div>
+        </div>
+        {{/sysinfo.users.length}}
+      </div>
 
-        <!-- Performance Metrics -->
-        {{#metrics}}
-        <div class="card mb-3">
-          <div class="card-header py-2 d-flex justify-content-between align-items-center">
-            <h6 class="mb-0">
-              <i class="bi bi-speedometer2 me-2"></i>Performance Metrics
-            </h6>
-            <button class="btn btn-sm btn-outline-primary" data-action="refresh-metrics">
-              <i class="bi bi-arrow-clockwise"></i> Refresh
+      {{/sysinfo|bool}}
+      {{/loading|bool}}
+    `;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RunnerJobsTab
+// ─────────────────────────────────────────────────────────────────────────────
+
+class RunnerJobsTab extends View {
+  constructor(options = {}) {
+    super({ className: 'runner-jobs-tab', ...options });
+    this.model = options.model || null;
+    this.jobs = [];
+    this.loading = false;
+    this.loaded = false;
+  }
+
+  async onTabActivated() {
+    if (this.loaded) return;
+    this.loaded = true;
+    this.loading = true;
+    await this.render();
+    await this.loadJobs();
+    this.loading = false;
+    await this.render();
+  }
+
+  async loadJobs() {
+    try {
+      const resp = await this.getApp().rest.GET(
+        `/api/jobs/job?runner_id=${this.model.get('runner_id')}&status=running&size=50`
+      );
+      if (resp.success && resp.data && resp.data.status) {
+        const now = Date.now() / 1000;
+        this.jobs = (resp.data.data || []).map(job => ({
+          ...job,
+          durationText: job.started_at
+            ? formatDuration(now - new Date(job.started_at).getTime() / 1000)
+            : 'N/A',
+          startedText: job.started_at
+            ? new Date(job.started_at).toLocaleTimeString()
+            : 'N/A',
+          attemptBadgeClass: job.attempt > 1
+            ? 'bg-danger-subtle text-danger'
+            : 'bg-warning-subtle text-warning'
+        }));
+      } else {
+        this.jobs = [];
+      }
+    } catch (e) {
+      this.jobs = [];
+      this.showError('Could not load running jobs: ' + e.message);
+    }
+  }
+
+  async onActionRefreshJobs() {
+    this.loaded = false;
+    this.jobs = [];
+    await this.onTabActivated();
+  }
+
+  async onActionViewJob(event, element) {
+    const jobId = element.dataset.jobId;
+    this.emit('job:view', { jobId, runner: this.model });
+  }
+
+  async onActionCancelJob(event, element) {
+    const jobId = element.dataset.jobId;
+    const ok = await Dialog.confirm(
+      'Cancel this job? The runner will receive a cooperative cancel signal.',
+      'Cancel Job',
+      { confirmText: 'Cancel Job', confirmClass: 'btn-warning' }
+    );
+    if (!ok) return;
+
+    try {
+      const resp = await this.getApp().rest.POST(
+        `/api/jobs/job/${jobId}`, { cancel_request: true }
+      );
+      if (resp.success && resp.data && resp.data.status) {
+        this.showSuccess('Cancel signal sent.');
+        this.loaded = false;
+        await this.onTabActivated();
+      } else {
+        this.showError((resp.data && resp.data.error) || 'Could not cancel job.');
+      }
+    } catch (e) {
+      this.showError('Could not cancel job: ' + e.message);
+    }
+  }
+
+  async getTemplate() {
+    return `
+      {{#loading|bool}}
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <div class="mt-2 text-muted small">Loading running jobs…</div>
+      </div>
+      {{/loading|bool}}
+
+      {{^loading|bool}}
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <small class="text-muted">{{jobs.length}} job(s) currently executing on this runner</small>
+        <button class="btn btn-sm btn-outline-secondary" data-action="refresh-jobs">
+          <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+        </button>
+      </div>
+
+      {{#jobs.length}}
+      <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3 border-0 text-muted fw-semibold text-uppercase" style="font-size:0.72rem;letter-spacing:0.04em;">Job ID</th>
+                <th class="border-0 text-muted fw-semibold text-uppercase" style="font-size:0.72rem;letter-spacing:0.04em;">Function</th>
+                <th class="border-0 text-muted fw-semibold text-uppercase" style="font-size:0.72rem;letter-spacing:0.04em;">Channel</th>
+                <th class="border-0 text-muted fw-semibold text-uppercase" style="font-size:0.72rem;letter-spacing:0.04em;">Started</th>
+                <th class="border-0 text-muted fw-semibold text-uppercase" style="font-size:0.72rem;letter-spacing:0.04em;">Duration</th>
+                <th class="border-0 text-muted fw-semibold text-uppercase" style="font-size:0.72rem;letter-spacing:0.04em;">Attempt</th>
+                <th class="border-0 text-end pe-3 text-muted fw-semibold text-uppercase" style="font-size:0.72rem;letter-spacing:0.04em;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#jobs}}
+              <tr>
+                <td class="ps-3">
+                  <span class="font-monospace text-primary small" title="{{.id}}">{{.id|truncate:12}}</span>
+                </td>
+                <td>
+                  <span class="font-monospace text-muted small" title="{{.func}}">{{.func|truncate:42}}</span>
+                </td>
+                <td>
+                  <span class="badge bg-primary-subtle text-primary">{{.channel}}</span>
+                </td>
+                <td><small class="text-muted">{{.startedText}}</small></td>
+                <td><span class="badge bg-light text-secondary border">{{.durationText}}</span></td>
+                <td><span class="badge {{.attemptBadgeClass}}">{{.attempt}}</span></td>
+                <td class="text-end pe-3">
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary btn-sm" data-action="view-job"
+                      data-job-id="{{.id}}" title="View job details">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-warning btn-sm" data-action="cancel-job"
+                      data-job-id="{{.id}}" title="Cancel job">
+                      <i class="bi bi-x-circle"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              {{/jobs}}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {{/jobs.length}}
+
+      {{^jobs.length}}
+      <div class="text-center text-muted py-5">
+        <i class="bi bi-list-task fs-2 d-block mb-2 opacity-50"></i>
+        <div class="small">No jobs currently executing on this runner</div>
+      </div>
+      {{/jobs.length}}
+      {{/loading|bool}}
+    `;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RunnerLogsTab
+// ─────────────────────────────────────────────────────────────────────────────
+
+class RunnerLogsTab extends View {
+  constructor(options = {}) {
+    super({ className: 'runner-logs-tab', ...options });
+    this.model = options.model || null;
+    this.logs = [];
+    this.filteredLogs = [];
+    this.logFilter = 'all';
+    this.loading = false;
+    this.loaded = false;
+    // precomputed filter button classes
+    this.filterAllClass   = 'btn-primary';
+    this.filterDebugClass = 'btn-outline-secondary';
+    this.filterInfoClass  = 'btn-outline-primary';
+    this.filterWarnClass  = 'btn-outline-warning';
+    this.filterErrorClass = 'btn-outline-danger';
+  }
+
+  async onTabActivated() {
+    if (this.loaded) return;
+    this.loaded = true;
+    this.loading = true;
+    await this.render();
+    await this.loadLogs();
+    this.loading = false;
+    await this.render();
+  }
+
+  async loadLogs() {
+    try {
+      // Get running job IDs for this runner first
+      const jobsResp = await this.getApp().rest.GET(
+        `/api/jobs/job?runner_id=${this.model.get('runner_id')}&status=running&size=50`
+      );
+
+      const jobIds = [];
+      if (jobsResp.success && jobsResp.data && jobsResp.data.status) {
+        (jobsResp.data.data || []).forEach(j => jobIds.push(j.id));
+      }
+
+      if (!jobIds.length) {
+        this.logs = [];
+        return;
+      }
+
+      // Fetch logs for each job in parallel (cap at 5 jobs)
+      const promises = jobIds.slice(0, 5).map(id =>
+        this.getApp().rest.GET(`/api/jobs/logs?job_id=${id}&sort=-created&size=20`)
+          .then(r => (r.success && r.data && r.data.status) ? (r.data.data || []) : [])
+          .catch(() => [])
+      );
+
+      const results = await Promise.all(promises);
+      const all = [].concat(...results);
+
+      all.sort((a, b) => new Date(b.created) - new Date(a.created));
+      this.logs = all.slice(0, 50).map(log => ({
+        ...log,
+        levelBadgeClass: this.getLogLevelClass(log.kind),
+        kindDisplay: (log.kind || 'info').toUpperCase(),
+        createdText: new Date(log.created).toLocaleTimeString()
+      }));
+    } catch (e) {
+      this.logs = [];
+      this.showError('Could not load logs: ' + e.message);
+    }
+  }
+
+  getLogLevelClass(kind) {
+    const map = {
+      debug: 'bg-secondary-subtle text-secondary',
+      info:  'bg-primary-subtle text-primary',
+      warn:  'bg-warning-subtle text-warning',
+      error: 'bg-danger-subtle text-danger'
+    };
+    return map[kind] || 'bg-secondary-subtle text-secondary';
+  }
+
+  async onBeforeRender() {
+    this.filteredLogs = this.logFilter === 'all'
+      ? this.logs
+      : this.logs.filter(l => l.kind === this.logFilter);
+
+    this.filterAllClass   = this.logFilter === 'all'   ? 'btn-primary'          : 'btn-outline-secondary';
+    this.filterDebugClass = this.logFilter === 'debug' ? 'btn-secondary'         : 'btn-outline-secondary';
+    this.filterInfoClass  = this.logFilter === 'info'  ? 'btn-primary'           : 'btn-outline-primary';
+    this.filterWarnClass  = this.logFilter === 'warn'  ? 'btn-warning'           : 'btn-outline-warning';
+    this.filterErrorClass = this.logFilter === 'error' ? 'btn-danger'            : 'btn-outline-danger';
+  }
+
+  async onActionFilterLogs(event, element) {
+    this.logFilter = element.dataset.kind || 'all';
+    await this.render();
+  }
+
+  async onActionRefreshLogs() {
+    this.loaded = false;
+    this.logs = [];
+    this.logFilter = 'all';
+    await this.onTabActivated();
+  }
+
+  async getTemplate() {
+    return `
+      {{#loading|bool}}
+      <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <div class="mt-2 text-muted small">Loading logs…</div>
+      </div>
+      {{/loading|bool}}
+
+      {{^loading|bool}}
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-2 d-flex align-items-center gap-2 flex-wrap">
+          <small class="text-muted fw-semibold me-1">Filter:</small>
+          <button class="btn btn-sm {{filterAllClass}}"   data-action="filter-logs" data-kind="all">All</button>
+          <button class="btn btn-sm {{filterDebugClass}}" data-action="filter-logs" data-kind="debug">Debug</button>
+          <button class="btn btn-sm {{filterInfoClass}}"  data-action="filter-logs" data-kind="info">Info</button>
+          <button class="btn btn-sm {{filterWarnClass}}"  data-action="filter-logs" data-kind="warn">Warning</button>
+          <button class="btn btn-sm {{filterErrorClass}}" data-action="filter-logs" data-kind="error">Error</button>
+          <div class="ms-auto d-flex align-items-center gap-2">
+            <small class="text-muted">{{filteredLogs.length}} entries</small>
+            <button class="btn btn-sm btn-outline-secondary" data-action="refresh-logs">
+              <i class="bi bi-arrow-clockwise"></i>
             </button>
           </div>
-          <div class="card-body">
-            <div class="row">
-              <div class="col-lg-3 col-md-6 mb-3">
-                <div class="text-center p-3 bg-light rounded">
-                  <div class="h4 mb-1 text-success">{{tasksCompleted|number}}</div>
-                  <small class="text-muted">Tasks Completed</small>
-                  {{#tasksCompletedToday}}
-                  <div class="small text-success mt-1">+{{tasksCompletedToday}} today</div>
-                  {{/tasksCompletedToday}}
-                </div>
-              </div>
-              <div class="col-lg-3 col-md-6 mb-3">
-                <div class="text-center p-3 bg-light rounded">
-                  <div class="h4 mb-1 text-info">{{avgExecutionTime}}ms</div>
-                  <small class="text-muted">Avg Execution</small>
-                  <div class="small {{performanceTrend.class}} mt-1">
-                    <i class="bi {{performanceTrend.icon}}"></i> {{performanceTrend.text}}
-                  </div>
-                </div>
-              </div>
-              <div class="col-lg-3 col-md-6 mb-3">
-                <div class="text-center p-3 bg-light rounded">
-                  <div class="h4 mb-1 text-danger">{{errorCount|number}}</div>
-                  <small class="text-muted">Errors</small>
-                  <div class="small text-muted mt-1">{{errorRate}}% error rate</div>
-                </div>
-              </div>
-              <div class="col-lg-3 col-md-6 mb-3">
-                <div class="text-center p-3 bg-light rounded">
-                  <div class="h4 mb-1 text-warning">{{queueBacklog|number}}</div>
-                  <small class="text-muted">Queue Backlog</small>
-                </div>
-              </div>
-            </div>
-
-            <!-- Resource Usage Bars -->
-            <div class="row mt-3">
-              <div class="col-md-6 mb-2">
-                <label class="form-label fw-bold small">CPU Usage</label>
-                <div class="progress" style="height: 20px;">
-                  <div class="progress-bar {{cpu.class}}" style="width: {{cpu.percentage}}%">
-                    {{cpu.percentage}}%
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6 mb-2">
-                <label class="form-label fw-bold small">Memory Usage</label>
-                <div class="progress" style="height: 20px;">
-                  <div class="progress-bar {{memory.class}}" style="width: {{memory.percentage}}%">
-                    {{memory.used}}MB / {{memory.total}}MB
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        {{/metrics}}
-
-        <!-- Current Tasks -->
-        <div class="card mb-3">
-          <div class="card-header py-2 d-flex justify-content-between align-items-center">
-            <h6 class="mb-0">
-              <i class="bi bi-list-task me-2"></i>Current Tasks ({{currentTasks.length}})
-            </h6>
-            <button class="btn btn-sm btn-outline-primary" data-action="refresh-tasks">
-              <i class="bi bi-arrow-clockwise"></i> Refresh
-            </button>
-          </div>
-          <div class="card-body p-0">
-            {{#currentTasks.length}}
-              <div class="table-responsive">
-                <table class="table table-sm table-hover mb-0">
-                  <thead class="table-light">
-                    <tr>
-                      <th class="border-0">Task ID</th>
-                      <th class="border-0">Function</th>
-                      <th class="border-0">Channel</th>
-                      <th class="border-0">Started</th>
-                      <th class="border-0">Duration</th>
-                      <th class="border-0 text-end">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {{#currentTasks}}
-                    <tr>
-                      <td class="font-monospace small">{{id|truncate(12)}}</td>
-                      <td>{{function}}</td>
-                      <td><span class="badge bg-primary-subtle text-primary">{{channel}}</span></td>
-                      <td>{{started|time}}</td>
-                      <td class="text-muted">{{duration}}</td>
-                      <td class="text-end">
-                        <div class="btn-group btn-group-sm">
-                          <button class="btn btn-outline-info" data-action="view-task" data-task-id="{{id}}" title="View Details">
-                            <i class="bi bi-eye"></i>
-                          </button>
-                          <button class="btn btn-outline-warning" data-action="cancel-task" data-task-id="{{id}}" title="Cancel">
-                            <i class="bi bi-x-circle"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                    {{/currentTasks}}
-                  </tbody>
-                </table>
-              </div>
-            {{/currentTasks.length}}
-            {{^currentTasks.length}}
-              <div class="text-center text-muted py-5">
-                <i class="bi bi-list-task fs-1 opacity-50"></i>
-                <p class="mb-0 mt-2">No active tasks</p>
-              </div>
-            {{/currentTasks.length}}
-          </div>
         </div>
 
-        <!-- Runner Logs -->
-        <div class="card">
-          <div class="card-header py-2 d-flex justify-content-between align-items-center">
-            <h6 class="mb-0">
-              <i class="bi bi-journal-text me-2"></i>Runner Logs
-            </h6>
-            <div class="btn-group btn-group-sm">
-              <button class="btn btn-outline-secondary active" data-action="filter-logs" data-level="all">All</button>
-              <button class="btn btn-outline-primary" data-action="filter-logs" data-level="info">Info</button>
-              <button class="btn btn-outline-warning" data-action="filter-logs" data-level="warning">Warning</button>
-              <button class="btn btn-outline-danger" data-action="filter-logs" data-level="error">Error</button>
-              <button class="btn btn-outline-primary" data-action="refresh-logs">
-                <i class="bi bi-arrow-clockwise"></i>
+        <div style="max-height:420px;overflow-y:auto;">
+          {{#filteredLogs.length}}
+          {{#filteredLogs}}
+          <div class="d-flex align-items-start gap-2 px-3 py-2 border-bottom font-monospace" style="font-size:0.78rem;">
+            <span class="text-muted flex-shrink-0 pt-1" style="min-width:65px;">{{.createdText}}</span>
+            <span class="badge {{.levelBadgeClass}} flex-shrink-0" style="margin-top:1px;">{{.kindDisplay}}</span>
+            <span class="flex-grow-1 text-break">{{.message}}</span>
+          </div>
+          {{/filteredLogs}}
+          {{/filteredLogs.length}}
+
+          {{^filteredLogs.length}}
+          <div class="text-center text-muted py-5">
+            <i class="bi bi-journal fs-2 d-block mb-2 opacity-50"></i>
+            <div class="small">No log entries</div>
+          </div>
+          {{/filteredLogs.length}}
+        </div>
+      </div>
+      {{/loading|bool}}
+    `;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RunnerActionsTab
+// ─────────────────────────────────────────────────────────────────────────────
+
+class RunnerActionsTab extends View {
+  constructor(options = {}) {
+    super({ className: 'runner-actions-tab', ...options });
+    this.model = options.model || null;
+    this.pingResult = null;
+  }
+
+  async onActionPing() {
+    this.pingResult = null;
+    await this.render();
+    try {
+      const resp = await this.getApp().rest.POST('/api/jobs/runners/ping', {
+        runner_id: this.model.get('runner_id'),
+        timeout: 2.0
+      });
+      if (resp.success && resp.data) {
+        this.pingResult = resp.data.responsive
+          ? '<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Runner is responsive</span>'
+          : '<span class="text-warning"><i class="bi bi-exclamation-triangle-fill me-1"></i>Runner did not respond within 2s</span>';
+      } else {
+        this.pingResult = '<span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>Ping request failed</span>';
+      }
+    } catch (e) {
+      this.pingResult = `<span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>${e.message}</span>`;
+    }
+    await this.render();
+  }
+
+  async onActionShutdown() {
+    const ok = await Dialog.confirm(
+      `Send a graceful shutdown to <strong class="font-monospace">${this.model.get('runner_id')}</strong>?`
+        + '<br><br>The runner will finish its current job then exit. This is fire-and-forget.',
+      'Shutdown Runner',
+      { confirmText: 'Shutdown', confirmClass: 'btn-danger' }
+    );
+    if (!ok) return;
+
+    try {
+      const resp = await this.getApp().rest.POST('/api/jobs/runners/shutdown', {
+        runner_id: this.model.get('runner_id'),
+        graceful: true
+      });
+      if (resp.success && resp.data && resp.data.status) {
+        this.showSuccess('Shutdown command sent to runner.');
+        this.emit('runner:shutdown', { runner: this.model });
+      } else {
+        this.showError((resp.data && resp.data.error) || 'Shutdown command failed.');
+      }
+    } catch (e) {
+      this.showError('Shutdown failed: ' + e.message);
+    }
+  }
+
+  async onActionBroadcast() {
+    const commandEl = this.element && this.element.querySelector('[data-field="broadcast-command"]');
+    const timeoutEl = this.element && this.element.querySelector('[data-field="broadcast-timeout"]');
+    const command = commandEl ? commandEl.value : 'status';
+    const timeout = timeoutEl ? (parseFloat(timeoutEl.value) || 2.0) : 2.0;
+
+    Dialog.showBusy({ message: `Broadcasting "${command}" to all runners…` });
+    try {
+      const resp = await this.getApp().rest.POST('/api/jobs/runners/broadcast', {
+        command,
+        timeout
+      });
+      Dialog.hideBusy();
+
+      if (resp.success && resp.data) {
+        await Dialog.showCode(
+          JSON.stringify(resp.data, null, 2),
+          'json',
+          { title: `Broadcast Response — ${command}`, size: 'lg' }
+        );
+      } else {
+        this.showError((resp.data && resp.data.error) || 'Broadcast failed.');
+      }
+    } catch (e) {
+      Dialog.hideBusy();
+      this.showError('Broadcast failed: ' + e.message);
+    }
+  }
+
+  async onActionExport() {
+    try {
+      const exportData = {
+        runner: this.model.toJSON ? this.model.toJSON() : this.model,
+        exported_at: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = Object.assign(document.createElement('a'), {
+        href: url,
+        download: `runner-${this.model.get('runner_id')}-${Date.now()}.json`
+      });
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      this.showSuccess('Runner data exported.');
+    } catch (e) {
+      this.showError('Export failed: ' + e.message);
+    }
+  }
+
+  async getTemplate() {
+    return `
+      <p class="text-muted small mb-3">
+        <i class="bi bi-info-circle me-1"></i>
+        Actions operate on runner <strong class="font-monospace">{{model.runner_id}}</strong> unless otherwise noted.
+      </p>
+
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <span class="text-muted fw-semibold text-uppercase" style="font-size:0.7rem;letter-spacing:0.09em;white-space:nowrap;">Runner Control</span>
+        <hr class="flex-grow-1 my-0">
+      </div>
+
+      <div class="row g-3 mb-4">
+
+        <!-- Ping -->
+        <div class="col-md-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex flex-column gap-3">
+              <div class="d-flex gap-3 align-items-start">
+                <div class="d-flex align-items-center justify-content-center rounded bg-success-subtle text-success flex-shrink-0"
+                  style="width:40px;height:40px;font-size:1.1rem;">
+                  <i class="bi bi-broadcast-pin"></i>
+                </div>
+                <div>
+                  <div class="fw-semibold mb-1">Ping Runner</div>
+                  <div class="text-muted small">Verify this runner is truly responsive, not just alive on paper.</div>
+                </div>
+              </div>
+              {{#pingResult|bool}}
+              <div class="small">{{{pingResult}}}</div>
+              {{/pingResult|bool}}
+              <button class="btn btn-sm btn-outline-success mt-auto" data-action="ping">
+                <i class="bi bi-broadcast-pin me-1"></i>Ping Now
               </button>
             </div>
           </div>
-          <div class="card-body p-0">
-            <div class="mojo-runner-logs-container" style="max-height: 300px; overflow-y: auto;">
-              {{#logs.length}}
-                {{#logs}}
-                <div class="log-entry p-3 border-bottom" data-level="{{level}}">
-                  <div class="d-flex justify-content-between align-items-start">
-                    <div class="log-message flex-grow-1">
-                      <span class="badge bg-{{levelClass}} me-2">{{level|uppercase}}</span>
-                      {{message}}
-                    </div>
-                    <small class="text-muted ms-3">{{timestamp|time}}</small>
-                  </div>
+        </div>
+
+        <!-- Shutdown -->
+        <div class="col-md-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex flex-column gap-3">
+              <div class="d-flex gap-3 align-items-start">
+                <div class="d-flex align-items-center justify-content-center rounded bg-danger-subtle text-danger flex-shrink-0"
+                  style="width:40px;height:40px;font-size:1.1rem;">
+                  <i class="bi bi-power"></i>
                 </div>
-                {{/logs}}
-              {{/logs.length}}
-              {{^logs.length}}
-                <div class="text-center text-muted py-5">
-                  <i class="bi bi-journal fs-1 opacity-50"></i>
-                  <p class="mb-0 mt-2">No logs available</p>
+                <div>
+                  <div class="fw-semibold mb-1">Graceful Shutdown</div>
+                  <div class="text-muted small">Runner finishes its current job then exits. Fire-and-forget.</div>
                 </div>
-              {{/logs.length}}
+              </div>
+              <button class="btn btn-sm btn-outline-danger mt-auto" data-action="shutdown">
+                <i class="bi bi-power me-1"></i>Shutdown
+              </button>
             </div>
           </div>
         </div>
-        {{/runner}}
 
-        {{^runner}}
-        <div class="alert alert-warning">
-          <i class="bi bi-exclamation-triangle me-2"></i>
-          No runner data available
+        <!-- Export -->
+        <div class="col-md-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex flex-column gap-3">
+              <div class="d-flex gap-3 align-items-start">
+                <div class="d-flex align-items-center justify-content-center rounded bg-secondary-subtle text-secondary flex-shrink-0"
+                  style="width:40px;height:40px;font-size:1.1rem;">
+                  <i class="bi bi-download"></i>
+                </div>
+                <div>
+                  <div class="fw-semibold mb-1">Export Snapshot</div>
+                  <div class="text-muted small">Download runner identity data as a JSON file.</div>
+                </div>
+              </div>
+              <button class="btn btn-sm btn-outline-secondary mt-auto" data-action="export">
+                <i class="bi bi-download me-1"></i>Export JSON
+              </button>
+            </div>
+          </div>
         </div>
-        {{/runner}}
+
+      </div>
+
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <span class="text-muted fw-semibold text-uppercase" style="font-size:0.7rem;letter-spacing:0.09em;white-space:nowrap;">Broadcast Command</span>
+        <hr class="flex-grow-1 my-0">
+      </div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            Send a command to <strong>all active runners</strong> simultaneously and collect replies within the timeout window.
+          </p>
+          <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold small text-muted mb-1">Command</label>
+              <select class="form-select form-select-sm" data-field="broadcast-command">
+                <option value="status">status</option>
+                <option value="pause">pause</option>
+                <option value="resume">resume</option>
+                <option value="reload">reload</option>
+                <option value="shutdown">shutdown</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold small text-muted mb-1">Timeout (s)</label>
+              <input type="number" class="form-control form-control-sm"
+                data-field="broadcast-timeout" value="2.0" min="0.5" step="0.5" />
+            </div>
+            <div class="col-md-5">
+              <button class="btn btn-primary btn-sm w-100" data-action="broadcast">
+                <i class="bi bi-megaphone me-1"></i>Broadcast to All Runners
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     `;
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RunnerDetailsView — shell (default export)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export default class RunnerDetailsView extends View {
+  constructor(options = {}) {
+    super({ className: 'runner-details-view', ...options });
+    this.model = options.model instanceof JobRunner
+      ? options.model
+      : new JobRunner(options.model || options.data || {});
+  }
 
   async onInit() {
-    if (this.runner) {
-      await this.prepareRunnerData();
-      await this.loadRunnerMetrics();
-      await this.loadCurrentTasks();
-      await this.loadRunnerLogs();
-    }
-  }
+    if (!this.model) return;
 
-  async prepareRunnerData() {
-    if (!this.runner) return;
-
-    // Status styling
-    this.runner.isActive = this.runner.status === 'active';
-    this.runner.statusBadgeClass = this.runner.isActive ? 'bg-success' : 'bg-warning';
-    this.runner.statusIcon = this.runner.isActive ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill';
-
-    // Calculate ping age and uptime
-    if (this.runner.ping_age !== undefined) {
-      this.runner.pingAgeText = this.formatDuration(this.runner.ping_age);
-      this.runner.pingAgeClass = this.runner.ping_age > 300 ? 'text-danger' : 'text-muted';
-    }
-
-    if (this.runner.started_at) {
-      const uptimeSeconds = Date.now() / 1000 - this.runner.started_at;
-      this.runner.uptimeText = this.formatUptime(uptimeSeconds);
-    }
-  }
-
-  async loadRunnerMetrics() {
-    if (!this.runner?.hostname) return;
-
-    try {
-      const response = await this.getApp().rest.GET(`/api/runners/${this.runner.hostname}/metrics`);
-      if (response.success && response.data.status) {
-        const data = response.data.data;
-        this.metrics = {
-          activeWorkers: data.activeWorkers || 0,
-          tasksCompleted: data.tasksCompleted || 0,
-          tasksCompletedToday: data.tasksCompletedToday || 0,
-          avgExecutionTime: data.avgExecutionTime || 0,
-          errorCount: data.errorCount || 0,
-          errorRate: data.errorRate || 0,
-          queueBacklog: data.queueBacklog || 0,
-          workerUtilization: Math.round((data.activeWorkers / this.runner.max_workers) * 100),
-          utilizationClass: this.getUtilizationClass(data.activeWorkers / this.runner.max_workers),
-          performanceTrend: this.getPerformanceTrend(data.avgExecutionTime || 0),
-          cpu: this.getResourceStatus(data.cpuUsage || 0),
-          memory: this.getMemoryStatus(data.memoryUsed || 0, data.memoryTotal || 1000)
-        };
-      }
-    } catch (error) {
-      console.error('Failed to load runner metrics:', error);
-      this.metrics = this.getDefaultMetrics();
-    }
-  }
-
-  async loadCurrentTasks() {
-    if (!this.runner?.hostname) return;
-
-    try {
-      const response = await this.getApp().rest.GET(`/api/runners/${this.runner.hostname}/tasks`);
-      if (response.success && response.data.status) {
-        this.currentTasks = response.data.data.map(task => ({
-          ...task,
-          duration: this.formatDuration(Date.now() / 1000 - task.started)
-        }));
-      } else {
-        this.currentTasks = [];
-      }
-    } catch (error) {
-      console.error('Failed to load current tasks:', error);
-      this.currentTasks = [];
-    }
-  }
-
-  async loadRunnerLogs() {
-    if (!this.runner?.hostname) return;
-
-    try {
-      const response = await this.getApp().rest.GET(`/api/runners/${this.runner.hostname}/logs?limit=50`);
-      if (response.success && response.data.status) {
-        this.logs = response.data.data.map(log => ({
-          ...log,
-          levelClass: this.getLogLevelClass(log.level)
-        }));
-      } else {
-        this.logs = [];
-      }
-    } catch (error) {
-      console.error('Failed to load runner logs:', error);
-      this.logs = [];
-    }
-  }
-
-  getDefaultMetrics() {
-    return {
-      activeWorkers: 0,
-      tasksCompleted: 0,
-      tasksCompletedToday: 0,
-      avgExecutionTime: 0,
-      errorCount: 0,
-      errorRate: 0,
-      queueBacklog: 0,
-      workerUtilization: 0,
-      utilizationClass: 'bg-secondary',
-      performanceTrend: { class: 'text-muted', icon: 'bi-dash', text: 'No data' },
-      cpu: { percentage: 0, class: 'bg-secondary' },
-      memory: { used: 0, total: 0, percentage: 0, class: 'bg-secondary' }
-    };
-  }
-
-  getUtilizationClass(utilization) {
-    if (utilization > 0.9) return 'bg-danger';
-    if (utilization > 0.7) return 'bg-warning';
-    if (utilization > 0.5) return 'bg-info';
-    return 'bg-success';
-  }
-
-  getPerformanceTrend(avgTime) {
-    if (avgTime < 1000) {
-      return { class: 'text-success', icon: 'bi-arrow-up', text: 'Excellent' };
-    } else if (avgTime < 5000) {
-      return { class: 'text-warning', icon: 'bi-arrow-right', text: 'Good' };
-    } else {
-      return { class: 'text-danger', icon: 'bi-arrow-down', text: 'Slow' };
-    }
-  }
-
-  getResourceStatus(usage) {
-    const percentage = Math.round(usage);
-    let cssClass = 'bg-success';
-    
-    if (percentage > 80) cssClass = 'bg-danger';
-    else if (percentage > 60) cssClass = 'bg-warning';
-    else if (percentage > 40) cssClass = 'bg-info';
-
-    return { percentage, class: cssClass };
-  }
-
-  getMemoryStatus(used, total) {
-    const percentage = Math.round((used / total) * 100);
-    return {
-      used: Math.round(used),
-      total: Math.round(total),
-      percentage,
-      class: this.getResourceStatus(percentage).class
-    };
-  }
-
-  getLogLevelClass(level) {
-    const classes = {
-      'debug': 'secondary',
-      'info': 'primary',
-      'warning': 'warning',
-      'error': 'danger'
-    };
-    return classes[level] || 'secondary';
-  }
-
-  formatUptime(seconds) {
-    const days = Math.floor(seconds / 86400);
-    const hours = Math.floor((seconds % 86400) / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    
-    if (days > 0) return `${days}d ${hours}h ${minutes}m`;
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
-  }
-
-  formatDuration(seconds) {
-    if (seconds < 60) return `${Math.round(seconds)}s`;
-    if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
-    if (seconds < 86400) return `${Math.round(seconds / 3600)}h`;
-    return `${Math.round(seconds / 86400)}d`;
-  }
-
-  async setRunner(runner) {
-    this.runner = runner;
-    await this.prepareRunnerData();
-    await this.loadRunnerMetrics();
-    await this.loadCurrentTasks();
-    await this.loadRunnerLogs();
-    
-    if (this.isMounted()) {
-      await this.render();
-    }
-  }
-
-  // Action handlers
-  async onActionRefreshMetrics(action, event, element) {
-    await this.loadRunnerMetrics();
-    await this.render();
-  }
-
-  async onActionRefreshTasks(action, event, element) {
-    await this.loadCurrentTasks();
-    await this.render();
-  }
-
-  async onActionRefreshLogs(action, event, element) {
-    await this.loadRunnerLogs();
-    await this.render();
-  }
-
-  async onActionFilterLogs(action, event, element) {
-    const level = element.getAttribute('data-level');
-    const logEntries = this.element.querySelectorAll('.log-entry');
-    
-    logEntries.forEach(entry => {
-      if (level === 'all' || entry.getAttribute('data-level') === level) {
-        entry.style.display = 'block';
-      } else {
-        entry.style.display = 'none';
+    const tabView = new TabView({
+      containerId: 'runner-tabs',
+      tabs: {
+        'Overview':     new RunnerOverviewTab({ model: this.model }),
+        'System Info':  new RunnerSysinfoTab({ model: this.model }),
+        'Running Jobs': new RunnerJobsTab({ model: this.model }),
+        'Logs':         new RunnerLogsTab({ model: this.model }),
+        'Actions':      new RunnerActionsTab({ model: this.model })
       }
     });
 
-    // Update active filter button
-    this.element.querySelectorAll('[data-action="filter-logs"]').forEach(btn => {
-      btn.classList.remove('active');
-    });
-    element.classList.add('active');
+    this.addChild(tabView);
   }
 
-  async onActionViewTask(action, event, element) {
-    const taskId = element.getAttribute('data-task-id');
-    this.emit('task:view', { taskId, runner: this.runner });
+  async getTemplate() {
+    return `<div data-container="runner-tabs"></div>`;
   }
 
-  async onActionCancelTask(action, event, element) {
-    const taskId = element.getAttribute('data-task-id');
-    
-    if (!confirm('Are you sure you want to cancel this task?')) {
-      return;
-    }
-
-    try {
-      const response = await this.getApp().rest.POST(`/api/tasks/${taskId}/cancel`);
-      
-      if (response.success && response.data.status) {
-        this.showSuccess('Task cancelled successfully');
-        await this.loadCurrentTasks();
-        await this.render();
-        this.emit('task:cancelled', { taskId, runner: this.runner });
-      } else {
-        this.showError(response.data.error || 'Failed to cancel task');
-      }
-    } catch (error) {
-      console.error('Failed to cancel task:', error);
-      this.showError('Failed to cancel task: ' + error.message);
-    }
-  }
-
-  // Static method for easy Dialog integration
+  /**
+   * Open this view in a Dialog.
+   *
+   * @param {object} runner  — runner object from GET /api/jobs/runners
+   * @param {object} options — extra options forwarded to Dialog.showDialog()
+   * @returns {Promise<any>}
+   */
   static async show(runner, options = {}) {
-    const view = new RunnerDetailsView({ runner });
-    await view.onInit();
-
-    const buttons = [];
-
-    // Add action buttons based on runner status
-    if (runner.status === 'active') {
-      buttons.push({
-        text: 'Pause Runner',
-        class: 'btn-warning',
-        action: async () => {
-          if (confirm(`Are you sure you want to pause runner "${runner.hostname}"?`)) {
-            try {
-              const response = await view.getApp().rest.POST(`/api/runners/${runner.hostname}/pause`);
-              if (response.success && response.data.status) {
-                view.showSuccess('Runner paused successfully');
-                return { action: 'paused', runner };
-              } else {
-                view.showError(response.data.error || 'Failed to pause runner');
-              }
-            } catch (error) {
-              view.showError('Failed to pause runner: ' + error.message);
-            }
-          }
-          return null;
-        }
-      });
-    } else {
-      buttons.push({
-        text: 'Restart Runner',
-        class: 'btn-success',
-        action: async () => {
-          if (confirm(`Are you sure you want to restart runner "${runner.hostname}"?`)) {
-            try {
-              const response = await view.getApp().rest.POST(`/api/runners/${runner.hostname}/restart`);
-              if (response.success && response.data.status) {
-                view.showSuccess('Runner restart initiated');
-                return { action: 'restarted', runner };
-              } else {
-                view.showError(response.data.error || 'Failed to restart runner');
-              }
-            } catch (error) {
-              view.showError('Failed to restart runner: ' + error.message);
-            }
-          }
-          return null;
-        }
-      });
-    }
-
-    buttons.push({
-      text: 'Configure',
-      class: 'btn-outline-primary',
-      action: () => {
-        view.emit('runner:configure', { runner });
-        return null;
-      }
-    });
-
-    buttons.push({
-      text: 'Remove Runner',
-      class: 'btn-outline-danger',
-      action: async () => {
-        const confirmMessage = `Are you sure you want to remove runner "${runner.hostname}"? This action cannot be undone.`;
-        if (confirm(confirmMessage)) {
-          try {
-            const response = await view.getApp().rest.DELETE(`/api/runners/${runner.hostname}`);
-            if (response.success && response.data.status) {
-              view.showSuccess('Runner removed successfully');
-              return { action: 'removed', runner };
-            } else {
-              view.showError(response.data.error || 'Failed to remove runner');
-            }
-          } catch (error) {
-            view.showError('Failed to remove runner: ' + error.message);
-          }
-        }
-        return null;
-      }
-    });
-
-    buttons.push({
-      text: 'Export',
-      class: 'btn-outline-secondary',
-      action: () => {
-        try {
-          const exportData = {
-            runner: runner,
-            metrics: view.metrics,
-            currentTasks: view.currentTasks,
-            logs: view.logs,
-            exported_at: new Date().toISOString(),
-            exported_by: 'task-management-system'
-          };
-
-          const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-            type: 'application/json'
-          });
-          
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `runner-${runner.hostname}-${Date.now()}.json`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-
-          view.showSuccess('Runner data exported successfully');
-          return null;
-        } catch (error) {
-          view.showError('Failed to export runner data');
-          return null;
-        }
-      }
-    });
-
-    buttons.push({
-      text: 'Close',
-      class: 'btn-secondary',
-      dismiss: true
-    });
+    const model = runner instanceof JobRunner ? runner : new JobRunner(runner);
+    const view = new RunnerDetailsView({ model });
 
     return await Dialog.showDialog({
-      title: `<i class="bi bi-cpu me-2"></i>Runner Details - ${runner.hostname}`,
+      title: `<i class="bi bi-cpu me-2"></i><span class="font-monospace">${model.get('runner_id')}</span>`,
       body: view,
       size: 'xl',
       scrollable: true,
-      buttons: buttons,
+      buttons: [
+        { text: 'Close', class: 'btn-secondary', dismiss: true }
+      ],
       ...options
     });
   }
 }
+
+
+JobRunner.VIEW_CLASS = RunnerDetailsView;

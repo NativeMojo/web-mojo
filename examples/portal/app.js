@@ -521,12 +521,6 @@ app.events.on('portal:action', ({ action }) => {
                 });
             });
             break;
-        case 'notifications':
-            app.showInfo('You have 3 new notifications');
-            break;
-        case 'profile':
-            app.showInfo('Profile page coming soon!');
-            break;
         case 'logout':
             app.showSuccess('Logged out successfully');
             // In a real app, you would clear session and redirect

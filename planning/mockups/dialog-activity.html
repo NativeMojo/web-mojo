@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activity Dialog</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    body { background: #f5f6fa; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .dialog-mock { width: 520px; background: #fff; border-radius: 12px; box-shadow: 0 8px 40px rgba(0,0,0,0.15); overflow: hidden; }
+    .dialog-header { display: flex; align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid #e9ecef; }
+    .dialog-header h6 { margin: 0; font-weight: 700; font-size: 0.95rem; flex: 1; }
+    .dialog-header .btn-close-dlg { background: none; border: none; color: #6c757d; font-size: 1rem; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 4px; }
+    .dialog-header .btn-close-dlg:hover { background: #f0f0f0; }
+    .dialog-body { padding: 1.25rem; max-height: 450px; overflow-y: auto; }
+    .dialog-footer { padding: 0.75rem 1.25rem; border-top: 1px solid #e9ecef; text-align: center; }
+
+    /* Compact activity list — no fancy timeline, just clean rows */
+    .act-row { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.5rem 0; border-bottom: 1px solid #f5f5f5; }
+    .act-row:last-child { border-bottom: none; }
+    .act-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 0.45rem; flex-shrink: 0; }
+    .act-dot.login { background: #198754; }
+    .act-dot.security { background: #0d6efd; }
+    .act-dot.warn { background: #ffc107; }
+    .act-dot.profile { background: #6f42c1; }
+    .act-info { flex: 1; }
+    .act-title { font-size: 0.83rem; font-weight: 500; }
+    .act-desc { font-size: 0.73rem; color: #6c757d; }
+    .act-time { font-size: 0.7rem; color: #adb5bd; white-space: nowrap; flex-shrink: 0; margin-top: 0.1rem; }
+
+    .date-sep { font-size: 0.7rem; font-weight: 700; color: #adb5bd; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.75rem 0 0.25rem; }
+  </style>
+</head>
+<body>
+
+<div class="dialog-mock">
+  <div class="dialog-header">
+    <h6><i class="bi bi-activity me-2"></i>Recent Activity</h6>
+    <button class="btn-close-dlg"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div class="dialog-body">
+
+    <div class="date-sep">Today</div>
+
+    <div class="act-row">
+      <div class="act-dot login"></div>
+      <div class="act-info">
+        <div class="act-title">Signed in</div>
+        <div class="act-desc">Chrome on macOS &middot; Denver, CO</div>
+      </div>
+      <div class="act-time">2 min ago</div>
+    </div>
+
+    <div class="act-row">
+      <div class="act-dot security"></div>
+      <div class="act-info">
+        <div class="act-title">Passkey authentication</div>
+        <div class="act-desc">MacBook Pro - Touch ID</div>
+      </div>
+      <div class="act-time">2 min ago</div>
+    </div>
+
+    <div class="act-row">
+      <div class="act-dot profile"></div>
+      <div class="act-info">
+        <div class="act-title">Updated display name</div>
+      </div>
+      <div class="act-time">1 hr ago</div>
+    </div>
+
+    <div class="date-sep">Yesterday</div>
+
+    <div class="act-row">
+      <div class="act-dot login"></div>
+      <div class="act-info">
+        <div class="act-title">Signed in</div>
+        <div class="act-desc">Safari on iOS &middot; Denver, CO</div>
+      </div>
+      <div class="act-time">3:45 PM</div>
+    </div>
+
+    <div class="act-row">
+      <div class="act-dot warn"></div>
+      <div class="act-info">
+        <div class="act-title">Failed sign-in attempt</div>
+        <div class="act-desc">Incorrect password &middot; New York, NY</div>
+      </div>
+      <div class="act-time">11:22 AM</div>
+    </div>
+
+    <div class="date-sep">March 12</div>
+
+    <div class="act-row">
+      <div class="act-dot security"></div>
+      <div class="act-info">
+        <div class="act-title">Changed password</div>
+      </div>
+      <div class="act-time">9:20 AM</div>
+    </div>
+
+    <div class="act-row">
+      <div class="act-dot login"></div>
+      <div class="act-info">
+        <div class="act-title">Signed in</div>
+        <div class="act-desc">Chrome on macOS &middot; Denver, CO</div>
+      </div>
+      <div class="act-time">9:15 AM</div>
+    </div>
+
+  </div>
+  <div class="dialog-footer">
+    <button class="btn btn-outline-secondary btn-sm" style="font-size: 0.78rem;">Load More</button>
+  </div>
+</div>
+
+</body>
+</html>

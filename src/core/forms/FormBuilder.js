@@ -251,7 +251,7 @@ class FormBuilder {
       `,
 
       image: `
-        <div class="mojo-form-control">
+        <div class="mojo-form-control" style="display: flex; flex-direction: column; align-items: center;">
           {{#label}}
           <label for="{{fieldId}}" class="{{labelClass}}">
             {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}

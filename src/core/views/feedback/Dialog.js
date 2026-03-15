@@ -1797,6 +1797,66 @@ class Dialog extends View {
     });
   }
 
+  /**
+   * Show form in a dialog for simple data collection (no model saving)
+   * @param {object} options - Configuration options
+   * @returns {Promise} Promise that resolves with form data or null if cancelled
+   */
+    static async updateModelImage(options = {}, fieldOptions = {}) {
+        const upload = options.upload || false;
+        const fieldName = fieldOptions.name || options.field || 'image';
+
+        const formOptions = {
+            title: "Upload Your Avatar",
+            model: null,
+            autoSave: !upload,
+            size: 'sm',
+            fields: [
+                {
+                    type: 'image',
+                    name: fieldName,
+                    size: 'lg',
+                    imageSize: { width: 200, height: 200 },
+                    placeholder: 'Upload your image',
+                    ...fieldOptions
+                }
+            ],
+            ...options
+        };
+
+        const result = await Dialog.showForm(formOptions);
+
+        if (!upload || !result || !options.model) return result;
+
+        // Get the base64 image data from the form result
+        const base64Data = result[fieldName];
+        if (!base64Data || !base64Data.startsWith('data:')) return result;
+
+        // Convert base64 to File object
+        const arr = base64Data.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) { u8arr[n] = bstr.charCodeAt(n); }
+        const ext = mime.split('/')[1] || 'png';
+        const file = new window.File([u8arr], `${fieldName}.${ext}`, { type: mime });
+
+        // Upload via FileUpload service (3-stage: initiate → upload → complete)
+        const { File: FileModel } = await import('@core/models/Files.js');
+        const fileModel = new FileModel();
+        await fileModel.upload({
+            file,
+            name: `${fieldName}.${ext}`,
+            description: options.uploadDescription || `${fieldName} upload`,
+            showToast: true
+        });
+
+        // Save file ID to the model
+        const resp = await options.model.save({ [fieldName]: fileModel.id });
+        return resp;
+    }
+
     static async showModelView(model, options) {
         const modelClass = model.constructor;
         const modelView = modelClass.VIEW_CLASS;

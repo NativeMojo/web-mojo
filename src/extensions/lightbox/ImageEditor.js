@@ -41,6 +41,9 @@ export default class ImageEditor extends View {
     this.allowExport = options.allowExport !== false;
     this.allowHistory = options.allowHistory !== false;
 
+    // Options forwarded to ImageCropView (aspectRatio, cropAndScale, etc.)
+    this.cropOptions = options.cropOptions || {};
+
     // Current active view (created on demand)
     this.currentView = null;
 
@@ -180,7 +183,8 @@ export default class ImageEditor extends View {
         return new ImageCropView({
           ...childOptions,
           showGrid: true,
-          minCropSize: 50
+          minCropSize: 50,
+          ...this.cropOptions
         });
       case 'filters':
         if (!this.allowFilters) return null;
@@ -437,7 +441,7 @@ export default class ImageEditor extends View {
   }
 
   // Export functionality
-  async exportImage() {
+  async exportImage(options = {}) {
     if (!this.currentView) return null;
 
     try {
@@ -447,13 +451,17 @@ export default class ImageEditor extends View {
       imageData = this.getCurrentImageData();
 
       if (imageData) {
-        // Trigger download
-        const link = document.createElement('a');
-        link.download = this.getExportFilename();
-        link.href = imageData;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const filename = this.getExportFilename();
+
+        // Only trigger download if requested (default true for backward compat)
+        if (options.download !== false) {
+          const link = document.createElement('a');
+          link.download = filename;
+          link.href = imageData;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
 
         // Emit export event
         const eventBus = this.getApp()?.events;
@@ -461,11 +469,11 @@ export default class ImageEditor extends View {
           eventBus.emit('imageeditor:exported', {
             editor: this,
             imageData: imageData,
-            filename: link.download
+            filename
           });
         }
 
-        return { imageData, filename: link.download };
+        return { imageData, filename };
       }
     } catch (error) {
       console.error('Export failed:', error);
@@ -528,7 +536,25 @@ export default class ImageEditor extends View {
     }
   }
 
-  // Static method to show editor in a fullscreen dialog
+  /**
+   * Show editor in a dialog
+   *
+   * @param {string} imageUrl - URL or object URL of the image to edit
+   * @param {Object} options
+   * @param {string}  [options.title='Image Editor']
+   * @param {string}  [options.alt='Image']
+   * @param {string}  [options.size='fullscreen']
+   * @param {boolean} [options.showToolbar=true]
+   * @param {boolean} [options.allowTransform=true]
+   * @param {boolean} [options.allowCrop=true]
+   * @param {boolean} [options.allowFilters=true]
+   * @param {boolean} [options.allowExport=true]
+   * @param {string}  [options.startMode='transform'] - Initial editing mode
+   * @param {boolean} [options.download=true]          - Download on save (false for server-upload flows)
+   * @param {string}  [options.saveText='Export & Close'] - Custom save button label
+   * @param {Object}  [options.cropOptions]            - Options forwarded to ImageCropView (aspectRatio, cropAndScale, etc.)
+   * @returns {Promise<{action: string, editor: ImageEditor, data?: string, filename?: string}>}
+   */
   static async showDialog(imageUrl, options = {}) {
     const {
       title = 'Image Editor',
@@ -539,6 +565,10 @@ export default class ImageEditor extends View {
       allowCrop = true,
       allowFilters = true,
       allowExport = true,
+      startMode = 'transform',
+      download = true,
+      saveText = 'Export & Close',
+      cropOptions,
       ...dialogOptions
     } = options;
 
@@ -550,7 +580,9 @@ export default class ImageEditor extends View {
       allowTransform,
       allowCrop,
       allowFilters,
-      allowExport
+      allowExport,
+      startMode,
+      cropOptions
     });
 
     const dialog = new Dialog({
@@ -568,7 +600,7 @@ export default class ImageEditor extends View {
           dismiss: true
         },
         {
-          text: 'Export & Close',
+          text: saveText,
           action: 'export-close',
           class: 'btn btn-primary'
         }
@@ -578,23 +610,18 @@ export default class ImageEditor extends View {
 
     // Render and mount
     await dialog.render(true, document.body);
-
-    // Show the dialog
-    window.lastDialog = dialog;
     dialog.show();
 
     return new Promise((resolve) => {
-      dialog.on('hidden', () => {
-        dialog.destroy();
-        resolve({ action: 'cancel', editor });
-      });
+      let resolved = false;
 
       dialog.on('action:cancel', () => {
         dialog.hide();
       });
 
       dialog.on('action:export-close', async () => {
-        const result = await editor.exportImage();
+        const result = await editor.exportImage({ download });
+        resolved = true;
         dialog.hide();
         resolve({
           action: 'export',
@@ -602,6 +629,13 @@ export default class ImageEditor extends View {
           data: result?.imageData,
           filename: result?.filename
         });
+      });
+
+      dialog.on('hidden', () => {
+        dialog.destroy();
+        if (!resolved) {
+          resolve({ action: 'cancel', editor });
+        }
       });
     });
   }

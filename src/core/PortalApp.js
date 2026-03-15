@@ -106,7 +106,6 @@ export default class PortalApp extends WebApp {
             await this.checkActiveGroup();
         }
 
-
         await this.setupRouter();
 
         // Mark as started
@@ -114,6 +113,11 @@ export default class PortalApp extends WebApp {
 
         // Emit app ready event
         this.events.emit('app:ready', { app: this });
+
+        // Prompt passkey setup after login if not dismissed
+        if (this.activeUser && !this.activeUser.get("has_passkey")) {
+            this.showPasskeySetup();
+        }
 
 
     }
@@ -756,145 +760,45 @@ export default class PortalApp extends WebApp {
         }
 
         try {
+            const { UserProfileView } = await import('@core/views/user/index.js');
+            const profileView = new UserProfileView({ model: this.activeUser });
 
+            await Dialog.showDialog({
+                body: profileView,
+                header: null,
+                size: 'lg'
+            });
+        } catch (error) {
+            console.error('Error showing profile:', error);
+            this.showError('Failed to load profile');
+        }
+    }
 
-            // Show profile edit form with automatic model saving
-            const result = await Dialog.showModelForm({
-                title: 'Edit Profile',
-                size: 'lg',
-                fileHandling: 'base64',
-                model: this.activeUser,
-                fields: [
-                    // Profile Header
-                    {
-                        type: 'header',
-                        text: 'Profile Information',
-                        level: 4,
-                        class: 'text-primary mb-3'
-                    },
+    async showPasskeySetup() {
+        if (localStorage.getItem('passkey_setup_dismissed')) return;
 
-                    // Avatar and Basic Info
-                    {
-                        type: 'group',
-                        columns: { xs: 12, md: 4 },
-                        title: 'Avatar',
-                        fields: [
-                            {
-                                type: 'image',
-                                name: 'avatar',
-                                size: 'lg',
-                                imageSize: { width: 200, height: 200 },
-                                placeholder: 'Upload your avatar',
-                                help: 'Square images work best'
-                            }
-                        ]
-                    },
+        try {
+            const { PasskeySetupView } = await import('@core/views/user/index.js');
+            const setupView = new PasskeySetupView();
 
-                    // Profile Details
-                    {
-                        type: 'group',
-                        columns: { xs: 12, md: 8 },
-                        title: 'Details',
-                        fields: [
-                            {
-                                type: 'text',
-                                name: 'display_name',
-                                label: 'Display Name',
-                                required: true,
-                                columns: 12,
-                                placeholder: 'Enter first name'
-                            },
-                            {
-                                type: 'email',
-                                name: 'email',
-                                label: 'Email Address',
-                                required: true,
-                                columns: 8,
-                                placeholder: 'your.email@example.com'
-                            },
-                            {
-                                type: 'tel',
-                                name: 'phone_number',
-                                label: 'Phone Number',
-                                columns: 4,
-                                placeholder: '(555) 123-4567'
-                            },
-                        ]
-                    },
-
-                    // Account Settings
-                    {
-                        type: 'group',
-                        columns: 12,
-                        title: 'Account Settings',
-                        class: "pt-3",
-                        fields: [
-                            {
-                                type: 'select',
-                                name: 'timezone',
-                                label: 'Timezone',
-                                columns: 6,
-                                options: [
-                                    { value: 'America/New_York', text: 'Eastern Time' },
-                                    { value: 'America/Chicago', text: 'Central Time' },
-                                    { value: 'America/Denver', text: 'Mountain Time' },
-                                    { value: 'America/Los_Angeles', text: 'Pacific Time' },
-                                    { value: 'UTC', text: 'UTC' }
-                                ]
-                            },
-                            {
-                                type: 'select',
-                                name: 'language',
-                                label: 'Language',
-                                columns: 6,
-                                options: [
-                                    { value: 'en', text: 'English' },
-                                    { value: 'es', text: 'Spanish' },
-                                    { value: 'fr', text: 'French' },
-                                    { value: 'de', text: 'German' }
-                                ]
-                            },
-                            {
-                                type: 'switch',
-                                name: 'email_notifications',
-                                label: 'Email Notifications',
-                                columns: 4
-                            },
-                            {
-                                type: 'switch',
-                                name: 'two_factor_enabled',
-                                label: 'Two-Factor Authentication',
-                                columns: 4
-                            },
-                            {
-                                type: 'switch',
-                                name: 'profile_public',
-                                label: 'Public Profile',
-                                columns: 4
-                            }
-                        ]
-                    }
-                ],
-                submitText: 'Save Profile',
-                cancelText: 'Cancel'
+            setupView.on('dismiss', () => {
+                // Close the dialog by finding and clicking dismiss
+                const dialog = setupView.element?.closest('.modal');
+                if (dialog) {
+                    const bsModal = bootstrap.Modal.getInstance(dialog);
+                    if (bsModal) bsModal.hide();
+                }
             });
 
-            if (result && result.success) {
-
-
-                // Update active user with new data from model
-                // (model should already be updated by save operation)
-
-                // Show success message
-                this.showSuccess('Profile updated successfully!');
-            } else if (result && !result.success) {
-                // Error case - already handled by Dialog.showForm
-
-            }
-
+            await Dialog.showDialog({
+                header: null,
+                body: setupView,
+                size: 'sm',
+                centered: true,
+                buttons: []
+            });
         } catch (error) {
-            console.error('Error showing profile form:', error);
-            this.showError('Failed to load profile form');
+            console.error('Error showing passkey setup:', error);
         }
     }
 

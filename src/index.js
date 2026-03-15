@@ -91,6 +91,9 @@ export { default as DjangoLookups, parseFilterKey, formatFilterDisplay, LOOKUPS 
 export { default as ProgressView } from '@core/views/feedback/ProgressView.js';
 export { default as ContextMenu } from '@core/views/feedback/ContextMenu.js';
 
+// User profile views
+export { UserProfileView, PasskeySetupView } from '@core/views/user/index.js';
+
 // Names
 export const FRAMEWORK_NAME = 'MOJO';
 export const PACKAGE_NAME = 'web-mojo';

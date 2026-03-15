@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RunnerDetailsView — Light Bootstrap 5 Mockup</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
+  <style>
+    body {
+      background: #f0f2f5;
+      padding: 2rem 1rem;
+    }
+
+    .modal-shell {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* Simulate a modal */
+    .mock-modal {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.13);
+      overflow: hidden;
+    }
+
+    .mock-modal-header {
+      background: #fff;
+      border-bottom: 1px solid #dee2e6;
+      padding: 1.1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .runner-icon-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: #e8eeff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 1.3rem;
+      color: #4f6ef7;
+    }
+
+    /* ── Nav tabs override to sit flush in the modal ── */
+    .runner-nav-tabs {
+      background: #f8f9fa;
+      border-bottom: 1px solid #dee2e6;
+      padding: 0 1.5rem;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+    }
+    .runner-nav-tabs .nav-link {
+      border: none;
+      border-bottom: 2px solid transparent;
+      border-radius: 0;
+      color: #6c757d;
+      font-size: 0.83rem;
+      font-weight: 500;
+      padding: 0.75rem 1rem;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .runner-nav-tabs .nav-link:hover {
+      color: #0d6efd;
+      background: transparent;
+      border-bottom-color: #adb5bd;
+    }
+    .runner-nav-tabs .nav-link.active {
+      color: #0d6efd;
+      background: transparent;
+      border-bottom-color: #0d6efd;
+    }
+
+    /* ── Tab body ── */
+    .runner-tab-body {
+      padding: 1.5rem;
+      max-height: 68vh;
+      overflow-y: auto;
+    }
+
+    /* ── Stat cards ── */
+    .stat-card {
+      border: 1px solid #e9ecef;
+      border-radius: 10px;
+      padding: 1rem 1.1rem;
+      background: #fff;
+      height: 100%;
+    }
+    .stat-card .stat-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .stat-card .stat-value {
+      font-size: 1.55rem;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .stat-card .stat-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #6c757d;
+    }
+    .stat-card .stat-sub {
+      font-size: 0.73rem;
+      margin-top: 0.2rem;
+    }
+
+    /* ── KV table ── */
+    .kv-table {
+      width: 100%;
+      font-size: 0.85rem;
+    }
+    .kv-table tr td {
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid #f1f3f5;
+      vertical-align: top;
+    }
+    .kv-table tr:last-child td { border-bottom: none; }
+    .kv-table .kv-label {
+      width: 38%;
+      font-weight: 600;
+      color: #6c757d;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    .kv-table .kv-value {
+      color: #212529;
+    }
+
+    /* ── Resource bars ── */
+    .resource-bar-section {
+      padding: 0.8rem 0.9rem;
+      border-bottom: 1px solid #f1f3f5;
+    }
+    .resource-bar-section:last-child { border-bottom: none; }
+
+    /* ── CPU core grid ── */
+    .core-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+    }
+    @media (max-width: 500px) {
+      .core-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .core-tile {
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      padding: 0.6rem 0.5rem 0.5rem;
+      text-align: center;
+      background: #f8f9fa;
+    }
+    .core-tile .core-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #6c757d;
+      margin-bottom: 0.3rem;
+    }
+    .core-tile .core-pct {
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    /* ── Network stat tiles ── */
+    .net-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+    }
+    @media (max-width: 500px) {
+      .net-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .net-tile {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      padding: 0.65rem 0.75rem;
+    }
+    .net-tile .net-label {
+      font-size: 0.67rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #6c757d;
+      margin-bottom: 0.2rem;
+    }
+    .net-tile .net-value {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #212529;
+      font-family: monospace;
+    }
+
+    /* ── Log stream ── */
+    .log-stream {
+      font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
+      font-size: 0.78rem;
+    }
+    .log-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      padding: 0.5rem 0.9rem;
+      border-bottom: 1px solid #f1f3f5;
+    }
+    .log-line:last-child { border-bottom: none; }
+    .log-line:hover { background: #f8f9fa; }
+    .log-ts {
+      color: #adb5bd;
+      white-space: nowrap;
+      flex-shrink: 0;
+      padding-top: 1px;
+    }
+    .log-msg {
+      color: #343a40;
+      flex: 1;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+    .log-msg.is-error { color: #b91c1c; }
+    .log-msg.is-warning { color: #92400e; }
+
+    /* ── Action cards ── */
+    .action-card {
+      border: 1px solid #e9ecef;
+      border-radius: 10px;
+      padding: 1.1rem;
+      background: #fff;
+      height: 100%;
+    }
+    .action-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      flex-shrink: 0;
+    }
+
+    /* ── Section dividers ── */
+    .section-divider {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: #adb5bd;
+      margin: 1.35rem 0 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .section-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e9ecef;
+    }
+
+    /* ── Modal footer ── */
+    .mock-modal-footer {
+      background: #f8f9fa;
+      border-top: 1px solid #dee2e6;
+      padding: 0.9rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+    }
+
+    /* ── Alive pulse ── */
+    .alive-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #198754;
+      margin-right: 3px;
+      animation: alive-pulse 2s infinite;
+    }
+    @keyframes alive-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="modal-shell">
+<div class="mock-modal">
+
+  <!-- ═══════════════════════════════════════════════
+       HEADER
+  ════════════════════════════════════════════════ -->
+  <div class="mock-modal-header">
+    <div class="runner-icon-wrap">
+      <i class="bi bi-cpu-fill"></i>
+    </div>
+    <div class="flex-grow-1">
+      <h5 class="mb-0 fw-bold">
+        runner-prod-worker-01
+        <span class="badge bg-success-subtle text-success ms-1" style="font-size:0.7rem;vertical-align:middle;">
+          <span class="alive-dot"></span> Alive
+        </span>
+      </h5>
+      <div class="text-muted font-monospace" style="font-size:0.72rem;">
+        runner-prod-worker-01-a4c9f2e1
+        &nbsp;·&nbsp;
+        <i class="bi bi-clock me-1"></i>Heartbeat 4s ago
+      </div>
+    </div>
+    <button class="btn-close ms-auto"></button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       TABS
+  ════════════════════════════════════════════════ -->
+  <ul class="nav runner-nav-tabs" id="runnerTabs">
+    <li class="nav-item">
+      <button class="nav-link active" onclick="switchTab(event,'overview')">
+        <i class="bi bi-speedometer2"></i> Overview
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" onclick="switchTab(event,'sysinfo')">
+        <i class="bi bi-pc-display"></i> System Info
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" onclick="switchTab(event,'jobs')">
+        <i class="bi bi-list-task"></i> Running Jobs
+        <span class="badge bg-primary-subtle text-primary" style="font-size:0.65rem;">3</span>
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" onclick="switchTab(event,'logs')">
+        <i class="bi bi-terminal"></i> Logs
+        <span class="badge bg-secondary-subtle text-secondary" style="font-size:0.65rem;">50</span>
+      </button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" onclick="switchTab(event,'actions')">
+        <i class="bi bi-lightning-charge"></i> Actions
+      </button>
+    </li>
+  </ul>
+
+  <div class="runner-tab-body">
+
+    <!-- ═══════════════════════════════════════════
+         TAB: OVERVIEW
+    ════════════════════════════════════════════ -->
+    <div id="tab-overview" class="tab-pane-content">
+
+      <!-- Stat cards -->
+      <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <div class="stat-label">Jobs Processed</div>
+                <div class="stat-value text-success">4,821</div>
+              </div>
+              <div class="stat-icon bg-success-subtle text-success">
+                <i class="bi bi-check2-circle"></i>
+              </div>
+            </div>
+            <div class="stat-sub text-success"><i class="bi bi-arrow-up-short"></i>+142 today</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <div class="stat-label">Failed</div>
+                <div class="stat-value text-danger">12</div>
+              </div>
+              <div class="stat-icon bg-danger-subtle text-danger">
+                <i class="bi bi-x-circle"></i>
+              </div>
+            </div>
+            <div class="stat-sub text-muted">0.25% error rate</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <div class="stat-label">Running Now</div>
+                <div class="stat-value text-primary">3</div>
+              </div>
+              <div class="stat-icon bg-primary-subtle text-primary">
+                <i class="bi bi-play-circle"></i>
+              </div>
+            </div>
+            <div class="stat-sub text-muted">of 4 max workers</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <div class="stat-label">Uptime</div>
+                <div class="stat-value">5d 14h</div>
+              </div>
+              <div class="stat-icon bg-info-subtle text-info">
+                <i class="bi bi-clock-history"></i>
+              </div>
+            </div>
+            <div class="stat-sub text-muted">since Jan 15, 08:00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Identity + Channels row -->
+      <div class="row g-3 mb-3">
+        <div class="col-md-7">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom py-2">
+              <h6 class="mb-0 fw-semibold">
+                <i class="bi bi-info-circle text-primary me-2"></i>Identity
+              </h6>
+            </div>
+            <div class="card-body p-0">
+              <table class="kv-table">
+                <tr>
+                  <td class="kv-label">Runner ID</td></tr>
+                  <td class="kv-value font-monospace" style="font-size:0.75rem;">runner-prod-worker-01-a4c9f2e1</td>
+                </tr>
+                <tr>
+                  <td class="kv-label">Status</td>
+                  <td class="kv-value">
+                    <span class="badge bg-success-subtle text-success">
+                      <span class="alive-dot"></span> Alive
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="kv-label">Started</td>
+                  <td class="kv-value">2024-01-15 08:00:00</td>
+                </tr>
+                <tr>
+                  <td class="kv-label">Last Heartbeat</td>
+                  <td class="kv-value text-success">2024-01-20 22:05:56 <span class="text-muted">(4s ago)</span></td>
+                </tr>
+                <tr>
+                  <td class="kv-label">Hostname</td>
+                  <td class="kv-value font-monospace">prod-worker-01.internal</td>
+                </tr>
+                <tr>
+                  <td class="kv-label">Max Workers</td>
+                  <td class="kv-value">4</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-5">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom py-2">
+              <h6 class="mb-0 fw-semibold">
+                <i class="bi bi-collection text-primary me-2"></i>Channels &amp; Workers
+              </h6>
+            </div>
+            <div class="card-body">
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                <span class="badge bg-primary-subtle text-primary px-3 py-2">
+                  <i class="bi bi-circle-fill me-1" style="font-size:0.4rem;vertical-align:middle;"></i>default
+                </span>
+                <span class="badge bg-primary-subtle text-primary px-3 py-2">
+                  <i class="bi bi-circle-fill me-1" style="font-size:0.4rem;vertical-align:middle;"></i>email
+                </span>
+                <span class="badge bg-primary-subtle text-primary px-3 py-2">
+                  <i class="bi bi-circle-fill me-1" style="font-size:0.4rem;vertical-align:middle;"></i>notifications
+                </span>
+              </div>
+              <div class="mb-1 d-flex justify-content-between">
+                <small class="fw-semibold text-muted text-uppercase" style="font-size:0.7rem;letter-spacing:0.04em;">Worker Utilization</small>
+                <small class="fw-bold text-warning">75%</small>
+              </div>
+              <div class="progress mb-2" style="height:8px;">
+                <div class="progress-bar bg-warning" style="width:75%;"></div>
+              </div>
+              <div class="row text-center g-0 mt-2">
+                <div class="col">
+                  <div class="fw-bold text-success">3</div>
+                  <div class="text-muted" style="font-size:0.65rem;text-transform:uppercase;">Active</div>
+                </div>
+                <div class="col">
+                  <div class="fw-bold">1</div>
+                  <div class="text-muted" style="font-size:0.65rem;text-transform:uppercase;">Idle</div>
+                </div>
+                <div class="col">
+                  <div class="fw-bold">4</div>
+                  <div class="text-muted" style="font-size:0.65rem;text-transform:uppercase;">Total</div>
+                </div>
+                <div class="col">
+                  <div class="fw-bold text-success">0</div>
+                  <div class="text-muted" style="font-size:0.65rem;text-transform:uppercase;">Stuck</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick resource snapshot -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 fw-semibold">
+            <i class="bi bi-bar-chart-line text-primary me-2"></i>Resource Snapshot
+          </h6>
+          <button class="btn btn-sm btn-outline-primary" onclick="switchTab(null,'sysinfo')">
+            <i class="bi bi-arrow-right me-1"></i>Full Sysinfo
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="d-flex justify-content-between mb-1">
+                <small class="fw-semibold text-muted"><i class="bi bi-cpu me-1"></i>CPU Load</small>
+                <small class="fw-bold text-success">12.5%</small>
+              </div>
+              <div class="progress mb-1" style="height:8px;">
+                <div class="progress-bar bg-success" style="width:12.5%;"></div>
+              </div>
+              <div class="text-muted" style="font-size:0.72rem;">4 cores · 2.4 GHz current</div>
+            </div>
+            <div class="col-md-4">
+              <div class="d-flex justify-content-between mb-1">
+                <small class="fw-semibold text-muted"><i class="bi bi-memory me-1"></i>Memory</small>
+                <small class="fw-bold text-warning">42.1%</small>
+              </div>
+              <div class="progress mb-1" style="height:8px;">
+                <div class="progress-bar bg-warning" style="width:42.1%;"></div>
+              </div>
+              <div class="text-muted" style="font-size:0.72rem;">3.36 GB of 8.00 GB used</div>
+            </div>
+            <div class="col-md-4">
+              <div class="d-flex justify-content-between mb-1">
+                <small class="fw-semibold text-muted"><i class="bi bi-hdd me-1"></i>Disk</small>
+                <small class="fw-bold text-success">38.0%</small>
+              </div>
+              <div class="progress mb-1" style="height:8px;">
+                <div class="progress-bar bg-success" style="width:38%;"></div>
+              </div>
+              <div class="text-muted" style="font-size:0.72rem;">37.99 GB of 100 GB used</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /tab-overview -->
+
+
+    <!-- ═══════════════════════════════════════════
+         TAB: SYSTEM INFO
+    ════════════════════════════════════════════ -->
+    <div id="tab-sysinfo" class="tab-pane-content" style="display:none;">
+
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-secondary-subtle text-secondary px-3 py-2">
+            <i class="bi bi-hdd-rack me-1"></i>Linux 6.1.0-18-amd64
+          </span>
+          <span class="badge bg-secondary-subtle text-secondary px-3 py-2">
+            <i class="bi bi-cpu me-1"></i>x86_64
+          </span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <small class="text-muted">Collected 2024-01-20 22:05:56</small>
+          <button class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+          </button>
+        </div>
+      </div>
+
+      <!-- OS -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom py-2">
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-hdd-rack text-primary me-2"></i>Operating System</h6>
+        </div>
+        <div class="card-body p-0">
+          <table class="kv-table">
+            <tr>
+              <td class="kv-label">Hostname</td>
+              <td class="kv-value font-monospace">prod-worker-01.internal</td>
+              <td class="kv-label">OS</td>
+              <td class="kv-value">Linux</td>
+            </tr>
+            <tr>
+              <td class="kv-label">Release</td>
+              <td class="kv-value font-monospace">6.1.0-18-amd64</td>
+              <td class="kv-label">Machine</td>
+              <td class="kv-value font-monospace">x86_64</td>
+            </tr>
+            <tr>
+              <td class="kv-label" colspan="1">Version</td>
+              <td class="kv-value font-monospace" colspan="3" style="font-size:0.76rem;">#1 SMP PREEMPT_DYNAMIC Debian 6.1.55-1 (2023-09-29)</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- CPU -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-cpu text-primary me-2"></i>CPU</h6>
+          <span class="badge bg-success-subtle text-success">Overall 12.5%</span>
+        </div>
+        <div class="card-body">
+          <!-- Overall bar -->
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1">
+              <small class="fw-semibold text-muted">Overall Load</small>
+              <small class="fw-bold text-success">12.5%</small>
+            </div>
+            <div class="progress mb-1" style="height:10px;">
+              <div class="progress-bar bg-success" style="width:12.5%;"></div>
+            </div>
+            <div class="text-muted" style="font-size:0.72rem;">
+              4 logical cores &nbsp;·&nbsp; 2,400 MHz current &nbsp;·&nbsp; 400 MHz min &nbsp;·&nbsp; 3,600 MHz max
+            </div>
+          </div>
+          <!-- Per-core -->
+          <div class="core-grid">
+            <div class="core-tile">
+              <div class="core-label">Core 0</div>
+              <div class="core-pct text-success">10.0%</div>
+              <div class="progress mt-1" style="height:4px;">
+                <div class="progress-bar bg-success" style="width:10%;"></div>
+              </div>
+            </div>
+            <div class="core-tile">
+              <div class="core-label">Core 1</div>
+              <div class="core-pct text-warning">15.0%</div>
+              <div class="progress mt-1" style="height:4px;">
+                <div class="progress-bar bg-warning" style="width:15%;"></div>
+              </div>
+            </div>
+            <div class="core-tile">
+              <div class="core-label">Core 2</div>
+              <div class="core-pct text-success">11.2%</div>
+              <div class="progress mt-1" style="height:4px;">
+                <div class="progress-bar bg-success" style="width:11.2%;"></div>
+              </div>
+            </div>
+            <div class="core-tile">
+              <div class="core-label">Core 3</div>
+              <div class="core-pct text-success">13.8%</div>
+              <div class="progress mt-1" style="height:4px;">
+                <div class="progress-bar bg-success" style="width:13.8%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Memory -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-memory text-primary me-2"></i>Memory</h6>
+          <span class="badge bg-warning-subtle text-warning">42.1% used</span>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-1">
+            <small class="fw-semibold text-muted">RAM Usage</small>
+            <small class="fw-bold text-warning">3.36 GB / 8.00 GB</small>
+          </div>
+          <div class="progress mb-2" style="height:10px;">
+            <div class="progress-bar bg-warning" style="width:42.1%;"></div>
+          </div>
+          <div class="row g-2 mt-1">
+            <div class="col-6 col-md-3">
+              <div class="text-muted" style="font-size:0.7rem;text-transform:uppercase;font-weight:600;">Total</div>
+              <div class="fw-semibold" style="font-size:0.85rem;">8.00 GB</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="text-muted" style="font-size:0.7rem;text-transform:uppercase;font-weight:600;">Used</div>
+              <div class="fw-semibold" style="font-size:0.85rem;">3.36 GB</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="text-muted" style="font-size:0.7rem;text-transform:uppercase;font-weight:600;">Available</div>
+              <div class="fw-semibold text-success" style="font-size:0.85rem;">4.64 GB</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="text-muted" style="font-size:0.7rem;text-transform:uppercase;font-weight:600;">Percent</div>
+              <div class="fw-semibold text-warning" style="font-size:0.85rem;">42.1%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Disk -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-hdd text-primary me-2"></i>Disk (Root)</h6>
+          <span class="badge bg-success-subtle text-success">38.0% used</span>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-1">
+            <small class="fw-semibold text-muted">Disk Usage</small>
+            <small class="fw-bold text-success">37.99 GB / 100.00 GB</small>
+          </div>
+          <div class="progress mb-2" style="height:10px;">
+            <div class="progress-bar bg-success" style="width:38%;"></div>
+          </div>
+          <div class="row g-2 mt-1">
+            <div class="col-6 col-md-3">
+              <div class="text-muted" style="font-size:0.7rem;text-transform:uppercase;font-weight:600;">Total</div>
+              <div class="fw-semibold" style="font-size:0.85rem;">100.00 GB</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="text-muted" style="font-size:0.7rem;text-transform:uppercase;font-weight:600;">Used</div>
+              <div class="fw-semibold" style="font-size:0.85rem;">37.99 GB</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="text-muted" style="font-size:0.7rem;text-transform:uppercase;font-weight:600;">Free</div>
+              <div class="fw-semibold text-success" style="font-size:0.85rem;">62.01 GB</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="text-muted" style="font-size:0.7rem;text-transform:uppercase;font-weight:600;">Percent</div>
+              <div class="fw-semibold text-success" style="font-size:0.85rem;">38.0%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Network -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-bottom py-2">
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-diagram-3 text-primary me-2"></i>Network</h6>
+        </div>
+        <div class="card-body">
+          <div class="net-grid">
+            <div class="net-tile">
+              <div class="net-label"><i class="bi bi-arrow-down text-primary me-1"></i>Bytes Recv</div>
+              <div class="net-value">2.00 MB</div>
+            </div>
+            <div class="net-tile">
+              <div class="net-label"><i class="bi bi-arrow-up text-primary me-1"></i>Bytes Sent</div>
+              <div class="net-value">1.00 MB</div>
+            </div>
+            <div class="net-tile">
+              <div class="net-label"><i class="bi bi-share text-primary me-1"></i>TCP Connections</div>
+              <div class="net-value">24</div>
+            </div>
+            <div class="net-tile">
+              <div class="net-label"><i class="bi bi-arrow-down text-muted me-1"></i>Packets Recv</div>
+              <div class="net-value">16,384</div>
+            </div>
+            <div class="net-tile">
+              <div class="net-label"><i class="bi bi-arrow-up text-muted me-1"></i>Packets Sent</div>
+              <div class="net-value">8,192</div>
+            </div>
+            <div class="net-tile">
+              <div class="net-label"><i class="bi bi-exclamation-triangle text-muted me-1"></i>Errors In / Out</div>
+              <div class="net-value text-success">0 / 0</div>
+            </div>
+            <div class="net-tile">
+              <div class="net-label"><i class="bi bi-arrow-down text-muted me-1"></i>Drops In</div>
+              <div class="net-value text-success">0</div>
+            </div>
+            <div class="net-tile">
+              <div class="net-label"><i class="bi bi-arrow-up text-muted me-1"></i>Drops Out</div>
+              <div class="net-value text-success">0</div>
+            </div>
+            <div class="net-tile">
+              <div class="net-label"><i class="bi bi-clock text-muted me-1"></i>Boot Time</div>
+              <div class="net-value" style="font-size:0.78rem;">Jan 15, 08:00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logged-in users -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-2">
+          <h6 class="mb-0 fw-semibold"><i class="bi bi-person-badge text-primary me-2"></i>Logged-in Users</h6>
+        </div>
+        <div class="card-body text-center text-muted py-4">
+          <i class="bi bi-person-x fs-2 d-block mb-2 opacity-50"></i>
+          <div class="small">No users currently logged in</div>
+        </div>
+      </div>
+
+    </div><!-- /tab-sysinfo -->
+
+
+    <!-- ═══════════════════════════════════════════
+         TAB: RUNNING JOBS
+    ════════════════════════════════════════════ -->
+    <div id="tab-jobs" class="tab-pane-content" style="display:none;">
+
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <small class="text-muted">3 jobs currently executing on this runner</small>
+        <button class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+        </button>
+      </div>
+
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="border-0 ps-3" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;font-weight:600;color:#6c757d;">Job ID</th>
+                <th class="border-0" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;font-weight:600;color:#6c757d;">Function</th>
+                <th class="border-0" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;font-weight:600;color:#6c757d;">Channel</th>
+                <th class="border-0" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;font-weight:600;color:#6c757d;">Started</th>
+                <th class="border-0" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;font-weight:600;color:#6c757d;">Duration</th>
+                <th class="border-0" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;font-weight:600;color:#6c757d;">Attempt</th>
+                <th class="border-0 text-end pe-3" style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;font-weight:600;color:#6c757d;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="ps-3">
+                  <span class="font-monospace text-primary" style="font-size:0.78rem;">a1b2c3d4e5f6</span>
+                </td>
+                <td>
+                  <span class="font-monospace text-muted" style="font-size:0.78rem;" title="myapp.tasks.send_welcome_email">myapp.tasks.send_welcome_email</span>
+                </td>
+                <td>
+                  <span class="badge bg-primary-subtle text-primary">email</span>
+                </td>
+                <td><small class="text-muted">22:05:12</small></td>
+                <td><span class="badge bg-light text-secondary border">44s</span></td>
+                <td><span class="badge bg-warning-subtle text-warning">1</span></td>
+                <td class="text-end pe-3">
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary btn-sm" title="View job">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" title="Cancel job">
+                      <i class="bi bi-x-circle"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="ps-3">
+                  <span class="font-monospace text-primary" style="font-size:0.78rem;">b2c3d4e5f6a1</span>
+                </td>
+                <td>
+                  <span class="font-monospace text-muted" style="font-size:0.78rem;" title="reports.tasks.generate_monthly_pdf">reports.tasks.generate_monthly_pdf</span>
+                </td>
+                <td>
+                  <span class="badge bg-primary-subtle text-primary">default</span>
+                </td>
+                <td><small class="text-muted">22:03:41</small></td>
+                <td><span class="badge bg-light text-secondary border">2m 15s</span></td>
+                <td><span class="badge bg-warning-subtle text-warning">1</span></td>
+                <td class="text-end pe-3">
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary btn-sm" title="View job">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" title="Cancel job">
+                      <i class="bi bi-x-circle"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="ps-3">
+                  <span class="font-monospace text-primary" style="font-size:0.78rem;">c3d4e5f6a1b2</span>
+                </td>
+                <td>
+                  <span class="font-monospace text-muted" style="font-size:0.78rem;" title="notifications.tasks.send_push_batch">notifications.tasks.send_push_batch</span>
+                </td>
+                <td>
+                  <span class="badge bg-primary-subtle text-primary">notifications</span>
+                </td>
+                <td><small class="text-muted">22:05:50</small></td>
+                <td><span class="badge bg-light text-secondary border">6s</span></td>
+                <td><span class="badge bg-danger-subtle text-danger">2</span></td>
+                <td class="text-end pe-3">
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary btn-sm" title="View job">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" title="Cancel job">
+                      <i class="bi bi-x-circle"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Aggregate totals -->
+      <div class="row g-3">
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">Total Processed</div>
+            <div class="stat-value text-success">4,821</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">Total Failed</div>
+            <div class="stat-value text-danger">12</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">Stuck Jobs</div>
+            <div class="stat-value text-success">0</div>
+            <div class="stat-sub text-success"><i class="bi bi-check-circle me-1"></i>All clear</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card">
+            <div class="stat-label">Stale Running</div>
+            <div class="stat-value text-success">0</div>
+            <div class="stat-sub text-success"><i class="bi bi-check-circle me-1"></i>All active</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /tab-jobs -->
+
+
+    <!-- ═══════════════════════════════════════════
+         TAB: LOGS
+    ════════════════════════════════════════════ -->
+    <div id="tab-logs" class="tab-pane-content" style="display:none;">
+
+      <div class="card border-0 shadow-sm">
+        <!-- Filter bar -->
+        <div class="card-header bg-white border-bottom d-flex align-items-center gap-2 flex-wrap py-2">
+          <small class="text-muted fw-semibold me-1">Filter:</small>
+          <button class="btn btn-sm btn-primary active" onclick="filterLogs(event,'all')">All</button>
+          <button class="btn btn-sm btn-outline-secondary" onclick="filterLogs(event,'debug')">Debug</button>
+          <button class="btn btn-sm btn-outline-primary" onclick="filterLogs(event,'info')">Info</button>
+          <button class="btn btn-sm btn-outline-warning" onclick="filterLogs(event,'warning')">Warning</button>
+          <button class="btn btn-sm btn-outline-danger" onclick="filterLogs(event,'error')">Error</button>
+          <div class="ms-auto d-flex align-items-center gap-2">
+            <small class="text-muted">50 entries</small>
+            <button class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-arrow-clockwise"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Log entries -->
+        <div class="log-stream" style="max-height:380px;overflow-y:auto;">
+
+          <div class="log-line" data-level="error">
+            <span class="log-ts">22:05:44</span>
+            <span class="badge bg-danger-subtle text-danger" style="font-size:0.65rem;flex-shrink:0;">ERROR</span>
+            <span class="log-msg is-error">notifications.tasks.send_push_batch: ConnectionRefusedError — FCM endpoint unreachable (attempt 1/3)</span>
+          </div>
+          <div class="log-line" data-level="info">
+            <span class="log-ts">22:05:50</span>
+            <span class="badge bg-primary-subtle text-primary" style="font-size:0.65rem;flex-shrink:0;">INFO</span>
+            <span class="log-msg">notifications.tasks.send_push_batch retry queued, delay=5s</span>
+          </div>
+          <div class="log-line" data-level="info">
+            <span class="log-ts">22:05:12</span>
+            <span class="badge bg-primary-subtle text-primary" style="font-size:0.65rem;flex-shrink:0;">INFO</span>
+            <span class="log-msg">Claimed job a1b2c3d4e5f6 on channel email (worker-2)</span>
+          </div>
+          <div class="log-line" data-level="debug">
+            <span class="log-ts">22:05:10</span>
+            <span class="badge bg-secondary-subtle text-secondary" style="font-size:0.65rem;flex-shrink:0;">DEBUG</span>
+            <span class="log-msg text-muted">Heartbeat sent — alive=true, workers=3/4, jobs_processed=4821</span>
+          </div>
+          <div class="log-line" data-level="info">
+            <span class="log-ts">22:03:41</span>
+            <span class="badge bg-primary-subtle text-primary" style="font-size:0.65rem;flex-shrink:0;">INFO</span>
+            <span class="log-msg">Claimed job b2c3d4e5f6a1 on channel default (worker-1)</span>
+          </div>
+          <div class="log-line" data-level="info">
+            <span class="log-ts">22:03:05</span>
+            <span class="badge bg-primary-subtle text-primary" style="font-size:0.65rem;flex-shrink:0;">INFO</span>
+            <span class="log-msg">Job d4e5f6a1b2c3 completed in 1,240ms — channel default</span>
+          </div>
+          <div class="log-line" data-level="warning">
+            <span class="log-ts">22:02:55</span>
+            <span class="badge bg-warning-subtle text-warning" style="font-size:0.65rem;flex-shrink:0;">WARN</span>
+            <span class="log-msg is-warning">Queue backlog on channel email: 28 pending — consider scaling workers</span>
+          </div>
+          <div class="log-line" data-level="debug">
+            <span class="log-ts">22:02:40</span>
+            <span class="badge bg-secondary-subtle text-secondary" style="font-size:0.65rem;flex-shrink:0;">DEBUG</span>
+            <span class="log-msg text-muted">Heartbeat sent — alive=true, workers=2/4, jobs_processed=4818</span>
+          </div>
+          <div class="log-line" data-level="info">
+            <span class="log-ts">22:02:18</span>
+            <span class="badge bg-primary-subtle text-primary" style="font-size:0.65rem;flex-shrink:0;">INFO</span>
+            <span class="log-msg">Job e5f6a1b2c3d4 completed in 820ms — channel notifications</span>
+          </div>
+          <div class="log-line" data-level="warning">
+            <span class="log-ts">22:00:44</span>
+            <span class="badge bg-warning-subtle text-warning" style="font-size:0.65rem;flex-shrink:0;">WARN</span>
+            <span class="log-msg is-warning">Slow job a1b2f3c4d5e6: exec time 18,200ms exceeds avg threshold (5,000ms)</span>
+          </div>
+          <div class="log-line" data-level="info">
+            <span class="log-ts">22:00:22</span>
+            <span class="badge bg-primary-subtle text-primary" style="font-size:0.65rem;flex-shrink:0;">INFO</span>
+            <span class="log-msg">Runner started — channels: default, email, notifications</span>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /tab-logs -->
+
+
+    <!-- ═══════════════════════════════════════════
+         TAB: ACTIONS
+    ════════════════════════════════════════════ -->
+    <div id="tab-actions" class="tab-pane-content" style="display:none;">
+
+      <div class="section-divider">Runner Control</div>
+
+      <div class="row g-3 mb-1">
+        <!-- Ping -->
+        <div class="col-md-4">
+          <div class="action-card">
+            <div class="d-flex gap-3 align-items-start mb-3">
+              <div class="action-icon bg-success-subtle text-success">
+                <i class="bi bi-broadcast-pin"></i>
+              </div>
+              <div>
+                <div class="fw-semibold mb-1">Ping Runner</div>
+                <div class="text-muted small">Send a live ping and verify this runner is truly responsive, not just alive on paper.</div>
+              </div>
+            </div>
+            <button class="btn btn-sm btn-outline-success w-100">
+              <i class="bi bi-broadcast-pin me-1"></i>Ping Now
+            </button>
+          </div>
+        </div>
+
+        <!-- Pause -->
+        <div class="col-md-4">
+          <div class="action-card">
+            <div class="d-flex gap-3 align-items-start mb-3">
+              <div class="action-icon bg-warning-subtle text-warning">
+                <i class="bi bi-pause-circle"></i>
+              </div>
+              <div>
+                <div class="fw-semibold mb-1">Pause Runner</div>
+                <div class="text-muted small">Stop accepting new jobs. Jobs currently running will finish normally.</div>
+              </div>
+            </div>
+            <button class="btn btn-sm btn-outline-warning w-100">
+              <i class="bi bi-pause-circle me-1"></i>Pause
+            </button>
+          </div>
+        </div>
+
+        <!-- Shutdown -->
+        <div class="col-md-4">
+          <div class="action-card">
+            <div class="d-flex gap-3 align-items-start mb-3">
+              <div class="action-icon bg-danger-subtle text-danger">
+                <i class="bi bi-power"></i>
+              </div>
+              <div>
+                <div class="fw-semibold mb-1">Graceful Shutdown</div>
+                <div class="text-muted small">Runner will finish its current job then exit. Fire-and-forget — poll runners to confirm.</div>
+              </div>
+            </div>
+            <button class="btn btn-sm btn-outline-danger w-100">
+              <i class="bi bi-power me-1"></i>Shutdown
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-divider">Broadcast Command</div>
+
+      <div class="card border-0 shadow-sm mb-1">
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            Send a command to <strong>all active runners</strong> simultaneously and collect their replies within the timeout window.
+          </p>
+          <div class="row g-2 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold small text-muted mb-1">Command</label>
+              <select class="form-select form-select-sm">
+                <option>status</option>
+                <option>pause</option>
+                <option>resume</option>
+                <option>reload</option>
+                <option>shutdown</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold small text-muted mb-1">Timeout (s)</label>
+              <input type="number" class="form-control form-control-sm" value="2.0" min="0.5" step="0.5" />
+            </div>
+            <div class="col-md-5">
+              <button class="btn btn-primary btn-sm w-100">
+                <i class="bi bi-megaphone me-1"></i>Broadcast to All Runners
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-divider">Export</div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-body d-flex align-items-center justify-content-between gap-3">
+          <div>
+            <div class="fw-semibold mb-1">Export Runner Snapshot</div>
+            <div class="text-muted small">Downloads runner data, sysinfo, running jobs, and recent logs as a JSON file.</div>
+          </div>
+          <button class="btn btn-sm btn-outline-secondary flex-shrink-0">
+            <i class="bi bi-download me-1"></i>Export JSON
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /tab-actions -->
+
+  </div><!-- /runner-tab-body -->
+
+  <!-- ═══════════════════════════════════════════
+       FOOTER
+  ════════════════════════════════════════════ -->
+  <div class="mock-modal-footer">
+    <small class="text-muted">
+      <i class="bi bi-clock me-1"></i>Last refreshed: just now
+    </small>
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-clockwise me-1"></i>Refresh All
+      </button>
+      <button class="btn btn-sm btn-outline-danger">
+        <i class="bi bi-power me-1"></i>Shutdown
+      </button>
+      <button class="btn btn-sm btn-secondary">
+        <i class="bi bi-x me-1"></i>Close
+      </button>
+    </div>
+  </div>
+
+</div><!-- /mock-modal -->
+</div><!-- /modal-shell -->
+
+<script>
+  function switchTab(event, tabId) {
+    document.querySelectorAll('.tab-pane-content').forEach(p => p.style.display = 'none');
+    document.querySelectorAll('.runner-nav-tabs .nav-link').forEach(b => b.classList.remove('active'));
+    const pane = document.getElementById('tab-' + tabId);
+    if (pane) pane.style.display = 'block';
+    if (event && event.currentTarget) {
+      event.currentTarget.classList.add('active');
+    } else {
+      document.querySelectorAll('.runner-nav-tabs .nav-link').forEach(btn => {
+        if ((btn.getAttribute('onclick') || '').includes("'" + tabId + "'")) {
+          btn.classList.add('active');
+        }
+      });
+    }
+  }
+
+  function filterLogs(event, level) {
+    document.querySelectorAll('.card-header .btn').forEach(btn => {
+      if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes('filterLogs')) {
+        btn.className = btn.className
+          .replace('btn-primary', 'btn-outline-secondary')
+          .replace('btn-secondary', 'btn-outline-secondary')
+          .replace('btn-warning', 'btn-outline-warning')
+          .replace('btn-danger', 'btn-outline-danger');
+        if (!btn.className.includes('btn-outline')) btn.classList.add('btn-outline-secondary');
+        btn.classList.remove('active');
+      }
+    });
+    event.currentTarget.classList.remove('btn-outline-secondary','btn-outline-primary','btn-outline-warning','btn-outline-danger');
+    event.currentTarget.classList.add(level === 'all' ? 'btn-primary' : level === 'warning' ? 'btn-warning' : level === 'error' ? 'btn-danger' : 'btn-primary');
+    event.currentTarget.classList.add('active');
+    document.querySelectorAll('.log-line').forEach(line => {
+      line.style.display = (level === 'all' || line.getAttribute('data-level') === level) ? 'flex' : 'none';
+    });
+  }
+</script>
+
+</body>
+</html>

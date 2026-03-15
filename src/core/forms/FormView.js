@@ -302,7 +302,7 @@ class FormView extends View {
     inputs.forEach(input => {
       console.log('FormView: Processing input:', input.type, input.name, input.getAttribute('data-change-action'));
       // Skip inputs that already have specific handlers or are handled by custom components
-      if (input.hasAttribute('data-component') || input.classList.contains('form-check-input')) {
+      if (input.hasAttribute('data-component') || input.hasAttribute('data-change-action') || input.classList.contains('form-check-input')) {
         return;
       }
 
