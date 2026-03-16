@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import path from 'path'
 import fs from 'fs'
-import mojoTemplatesPlugin from './vite-plugin-templates.js'
+import mojoTemplatesPlugin from './scripts/vite-plugin-templates.js'
 
 export default defineConfig({
   // Root directory - serves from project root

@@ -2,9 +2,10 @@ import { defineConfig } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import mojoTemplatesPlugin from './vite-plugin-templates.js';
+import mojoTemplatesPlugin from '../scripts/vite-plugin-templates.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(__dirname, '..');
 
 // Helper to find all template files
 function findTemplateFiles() {
@@ -30,7 +31,7 @@ function findTemplateFiles() {
   // Find templates in various locations
   const templateDirs = ['src/templates', 'src/components', 'src/pages', 'src/auth'];
   templateDirs.forEach(dir => {
-    const fullPath = path.resolve(__dirname, dir);
+    const fullPath = path.resolve(ROOT, dir);
     if (fs.existsSync(fullPath)) {
       walkDir(fullPath, path.basename(dir));
     }
@@ -43,14 +44,14 @@ export default defineConfig({
   build: {
     lib: {
       entry: [
-        path.resolve(__dirname, 'src/index.js'),
-        path.resolve(__dirname, 'src/auth.js'),
-        path.resolve(__dirname, 'src/lightbox.js'),
-        path.resolve(__dirname, 'src/charts.js'),
-        path.resolve(__dirname, 'src/docit.js'),
-        path.resolve(__dirname, 'src/admin.js'),
-        path.resolve(__dirname, 'src/map.js'),
-        path.resolve(__dirname, 'src/timeline.js')
+        path.resolve(ROOT, 'src/index.js'),
+        path.resolve(ROOT, 'src/auth.js'),
+        path.resolve(ROOT, 'src/lightbox.js'),
+        path.resolve(ROOT, 'src/charts.js'),
+        path.resolve(ROOT, 'src/docit.js'),
+        path.resolve(ROOT, 'src/admin.js'),
+        path.resolve(ROOT, 'src/map.js'),
+        path.resolve(ROOT, 'src/timeline.js')
       ],
       name: 'MOJO',
       // Generate multiple formats
@@ -154,17 +155,17 @@ export default defineConfig({
   resolve: {
     alias: {
       // Legacy aliases (to be cleaned after restructure)
-      '@': path.resolve(__dirname, 'src'),
-      '@components': path.resolve(__dirname, 'src/components'),
-      '@utils': path.resolve(__dirname, 'src/utils'),
-      '@pages': path.resolve(__dirname, 'src/pages'),
-      '@models': path.resolve(__dirname, 'src/models'),
-      '@templates': path.resolve(__dirname, 'src/templates'),
-      '@styles': path.resolve(__dirname, 'src/styles'),
+      '@': path.resolve(ROOT, 'src'),
+      '@components': path.resolve(ROOT, 'src/components'),
+      '@utils': path.resolve(ROOT, 'src/utils'),
+      '@pages': path.resolve(ROOT, 'src/pages'),
+      '@models': path.resolve(ROOT, 'src/models'),
+      '@templates': path.resolve(ROOT, 'src/templates'),
+      '@styles': path.resolve(ROOT, 'src/styles'),
 
       // New aliases for clearer boundaries
-      '@core': path.resolve(__dirname, 'src/core'),
-      '@ext': path.resolve(__dirname, 'src/extensions')
+      '@core': path.resolve(ROOT, 'src/core'),
+      '@ext': path.resolve(ROOT, 'src/extensions')
     }
   },
   // Define global constants
@@ -180,7 +181,7 @@ export default defineConfig({
       writeBundle() {
         const templates = findTemplateFiles();
         templates.forEach(({ src, dest }) => {
-          const destDir = path.join(__dirname, 'dist', dest);
+          const destDir = path.join(ROOT, 'dist', dest);
           if (!fs.existsSync(destDir)) {
             fs.mkdirSync(destDir, { recursive: true });
           }
@@ -198,7 +199,7 @@ export default defineConfig({
         
         if (templateIndex) {
           fs.writeFileSync(
-            path.join(__dirname, 'dist', 'templates', 'index.js'),
+            path.join(ROOT, 'dist', 'templates', 'index.js'),
             `// Auto-generated template exports\n${templateIndex}\n`
           );
         }
@@ -214,9 +215,9 @@ export default defineConfig({
         ];
         
         cssFilesToCopy.forEach(({ src, dest }) => {
-          const srcPath = path.join(__dirname, src);
+          const srcPath = path.join(ROOT, src);
           if (fs.existsSync(srcPath)) {
-            const destPath = path.join(__dirname, 'dist', dest);
+            const destPath = path.join(ROOT, 'dist', dest);
             const destDir = path.dirname(destPath);
             if (!fs.existsSync(destDir)) {
               fs.mkdirSync(destDir, { recursive: true });
@@ -227,7 +228,7 @@ export default defineConfig({
         });
         
         // Create a CSS manifest
-        const distDir = path.join(__dirname, 'dist');
+        const distDir = path.join(ROOT, 'dist');
         const cssFiles = [];
         
         function findCssFiles(dir, base = '') {

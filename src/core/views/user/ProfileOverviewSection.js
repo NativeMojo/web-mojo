@@ -55,6 +55,7 @@ export default class ProfileOverviewSection extends View {
                     {{^model.is_email_verified|bool}}
                         <button type="button" class="po-field-action" data-action="verify-email" title="Send verification email"><i class="bi bi-envelope-check"></i></button>
                     {{/model.is_email_verified|bool}}
+                    <button type="button" class="po-field-action" data-action="update-email" title="Change email"><i class="bi bi-pencil"></i></button>
                 </div>
                 <div class="po-field-row">
                     <div class="po-field-label">Phone</div>
@@ -79,26 +80,9 @@ export default class ProfileOverviewSection extends View {
                         {{^model.is_phone_verified|bool}}
                             <button type="button" class="po-field-action" data-action="verify-phone" title="Send verification"><i class="bi bi-phone-vibrate"></i></button>
                         {{/model.is_phone_verified|bool}}
+                        <button type="button" class="po-field-action" data-action="update-phone" title="Change phone number"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="po-field-action" data-action="remove-phone" title="Remove phone number"><i class="bi bi-x-lg"></i></button>
                     {{/hasPhone|bool}}
-                </div>
-
-                <!-- Personal -->
-                <div class="po-section-label">Personal</div>
-                <div class="po-field-row">
-                    <div class="po-field-label">Display Name</div>
-                    <div class="po-field-value">{{model.display_name}}</div>
-                    <button type="button" class="po-field-action" data-action="edit-name"><i class="bi bi-pencil"></i></button>
-                </div>
-                {{#hasFullName|bool}}
-                <div class="po-field-row">
-                    <div class="po-field-label">Full Name</div>
-                    <div class="po-field-value">{{fullName}}</div>
-                </div>
-                {{/hasFullName|bool}}
-                <div class="po-field-row">
-                    <div class="po-field-label">Timezone</div>
-                    <div class="po-field-value">{{model.timezone|default:'Not set'}}</div>
-                    <button type="button" class="po-field-action" data-action="edit-timezone"><i class="bi bi-pencil"></i></button>
                 </div>
 
                 <!-- Account -->
@@ -106,6 +90,7 @@ export default class ProfileOverviewSection extends View {
                 <div class="po-field-row">
                     <div class="po-field-label">Username</div>
                     <div class="po-field-value">{{model.username}}</div>
+                    <button type="button" class="po-field-action" data-action="edit-username" title="Change username"><i class="bi bi-pencil"></i></button>
                 </div>
                 <div class="po-field-row">
                     <div class="po-field-label">Status</div>
@@ -152,6 +137,13 @@ export default class ProfileOverviewSection extends View {
                         <span class="po-not-set">No permissions assigned</span>
                     {{/permissionPeek|bool}}
                 </div>
+
+                <!-- Danger zone -->
+                <div style="margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #f0f0f0;">
+                    <button type="button" class="btn btn-link text-danger p-0" style="font-size: 0.8rem; text-decoration: none;" data-action="deactivate-account">
+                        <i class="bi bi-exclamation-triangle me-1"></i>Deactivate Account
+                    </button>
+                </div>
             `,
             ...options
         });
@@ -159,20 +151,6 @@ export default class ProfileOverviewSection extends View {
 
     get hasPhone() {
         return !!(this.model && this.model.get('phone_number'));
-    }
-
-    get hasFullName() {
-        if (!this.model) return false;
-        const first = this.model.get('first_name');
-        const last = this.model.get('last_name');
-        return !!(first || last);
-    }
-
-    get fullName() {
-        if (!this.model) return '';
-        const first = this.model.get('first_name') || '';
-        const last = this.model.get('last_name') || '';
-        return `${first} ${last}`.trim();
     }
 
     get roleLabel() {
@@ -202,94 +180,197 @@ export default class ProfileOverviewSection extends View {
         };
     }
 
-    async onActionEditName() {
-        const name = await Dialog.prompt(
-            'Enter your display name:',
-            'Display Name',
-            { defaultValue: this.model.get('display_name') || '' }
-        );
-        if (name !== null && name.trim()) {
-            const resp = await this.model.save({ display_name: name.trim() });
-            if (resp.status === 200) {
-                this.getApp()?.toast?.success('Display name updated');
-                await this.render();
-            } else {
-                this.getApp()?.toast?.error('Failed to update display name');
-            }
+    async onActionEditUsername() {
+        const app = this.getApp();
+        const data = await Dialog.showForm({
+            title: 'Change Username',
+            size: 'sm',
+            submitText: 'Change',
+            fields: [
+                {
+                    name: 'new_username',
+                    type: 'text',
+                    label: 'New Username',
+                    required: true,
+                    placeholder: 'Enter new username',
+                    attributes: { autocomplete: 'off' },
+                    cols: 12
+                },
+                {
+                    name: 'confirm_identity',
+                    type: 'password',
+                    label: 'Current Password',
+                    required: true,
+                    placeholder: 'Required to confirm identity',
+                    showToggle: true,
+                    attributes: { autocomplete: 'off' },
+                    cols: 12
+                }
+            ]
+        });
+        if (!data) return true;
+
+        const resp = await rest.POST('/api/auth/username/change', {
+            username: data.new_username,
+            current_password: data.confirm_identity
+        });
+        if (resp.success) {
+            app?.toast?.success('Username updated');
+            await this.model.fetch({ params: { graph: 'full' } });
+            await this.render();
+            // Re-render parent to update header
+            if (this.parent) await this.parent.render();
+        } else {
+            app?.toast?.error(resp.message || 'Failed to change username');
         }
         return true;
     }
 
-    async onActionEditTimezone() {
-        const result = await Dialog.showForm({
-            title: 'Change Timezone',
-            fields: [{
-                name: 'timezone',
-                type: 'select',
-                label: 'Timezone',
-                columns: 12,
-                options: [
-                    { value: 'America/New_York', text: 'Eastern Time (ET)' },
-                    { value: 'America/Chicago', text: 'Central Time (CT)' },
-                    { value: 'America/Denver', text: 'Mountain Time (MT)' },
-                    { value: 'America/Los_Angeles', text: 'Pacific Time (PT)' },
-                    { value: 'America/Anchorage', text: 'Alaska Time (AKT)' },
-                    { value: 'Pacific/Honolulu', text: 'Hawaii Time (HT)' },
-                    { value: 'UTC', text: 'UTC' },
-                    { value: 'Europe/London', text: 'London (GMT/BST)' },
-                    { value: 'Europe/Paris', text: 'Paris (CET/CEST)' },
-                    { value: 'Europe/Berlin', text: 'Berlin (CET/CEST)' },
-                    { value: 'Asia/Tokyo', text: 'Tokyo (JST)' },
-                    { value: 'Asia/Shanghai', text: 'Shanghai (CST)' },
-                    { value: 'Australia/Sydney', text: 'Sydney (AEST)' }
-                ]
-            }],
-            data: { timezone: this.model.get('timezone') || '' },
-            size: 'sm'
-        });
+    async onActionDeactivateAccount() {
+        const app = this.getApp();
+        const confirmed = await Dialog.confirm(
+            'Are you sure you want to deactivate your account? A confirmation email will be sent to complete the process. This action cannot be undone.',
+            'Deactivate Account'
+        );
+        if (!confirmed) return true;
 
-        if (result && result.submitted) {
-            const resp = await this.model.save({ timezone: result.data.timezone });
-            if (resp.status === 200) {
-                this.getApp()?.toast?.success('Timezone updated');
-                await this.render();
-            } else {
-                this.getApp()?.toast?.error('Failed to update timezone');
-            }
+        const resp = await rest.POST('/api/account/deactivate');
+        if (resp.success) {
+            app?.toast?.success('A confirmation email has been sent. Follow the link to complete deactivation.');
+        } else {
+            app?.toast?.error(resp.message || 'Failed to request deactivation');
         }
         return true;
     }
 
     async onActionVerifyEmail() {
-        try {
-            const resp = await rest.POST('/api/account/email/verify/send');
-            if (resp.success) {
-                this.getApp()?.toast?.success('Verification email sent');
-            } else {
-                this.getApp()?.toast?.error(resp.data?.error || 'Failed to send verification email');
-            }
-        } catch (err) {
-            this.getApp()?.toast?.error('Failed to send verification email');
+        const app = this.getApp();
+        const email = this.model.get('email');
+
+        // Step 1: Send verification code
+        const sendResp = await rest.POST('/api/auth/verify/email/send', { method: 'code' });
+        if (!sendResp.success) {
+            app?.toast?.error(sendResp.message || 'Failed to send verification code');
+            return true;
+        }
+
+        // Step 2: Prompt for code
+        const code = await Dialog.prompt(
+            `Enter the 6-digit code sent to <strong>${email}</strong>`,
+            'Verify Email',
+            { placeholder: '000000' }
+        );
+        if (!code) return true;
+
+        // Step 3: Confirm
+        const confirmResp = await rest.POST('/api/auth/verify/email/confirm', { code: code.trim() });
+        if (confirmResp.success) {
+            app?.toast?.success('Email verified');
+            this.model.set('is_email_verified', true);
+            await this.render();
+        } else {
+            app?.toast?.error(confirmResp.message || 'Invalid or expired code');
         }
         return true;
     }
 
     async onActionVerifyPhone() {
-        try {
-            const resp = await rest.POST('/api/account/phone/verify/send');
-            if (resp.success) {
-                this.getApp()?.toast?.success('Verification code sent');
-            } else {
-                this.getApp()?.toast?.error(resp.data?.error || 'Failed to send verification');
-            }
-        } catch (err) {
-            this.getApp()?.toast?.error('Failed to send verification');
+        const app = this.getApp();
+        const phone = this.model.get('phone_number');
+
+        // Step 1: Send verification code
+        const sendResp = await rest.POST('/api/auth/verify/phone/send');
+        if (!sendResp.success) {
+            app?.toast?.error(sendResp.message || 'Failed to send verification code');
+            return true;
+        }
+
+        // Step 2: Prompt for code
+        const code = await Dialog.prompt(
+            `Enter the 6-digit code sent to <strong>${phone}</strong>`,
+            'Verify Phone',
+            { placeholder: '000000' }
+        );
+        if (!code) return true;
+
+        // Step 3: Confirm
+        const confirmResp = await rest.POST('/api/auth/verify/phone/confirm', { code: code.trim() });
+        if (confirmResp.success) {
+            app?.toast?.success('Phone verified');
+            this.model.set('is_phone_verified', true);
+            await this.render();
+        } else {
+            app?.toast?.error(confirmResp.message || 'Invalid or expired code');
         }
         return true;
     }
 
     async onActionAddPhone() {
-        this.getApp()?.toast?.info('Phone management coming soon');
+        const app = this.getApp();
+
+        // Step 1: Collect phone number
+        const phone = await Dialog.prompt(
+            'Enter your phone number in E.164 format:',
+            'Add Phone Number',
+            { placeholder: '+14155550123' }
+        );
+        if (!phone || !phone.trim()) return true;
+
+        // Step 2: Save to profile
+        const saveResp = await this.model.save({ phone_number: phone.trim() });
+        if (saveResp.status !== 200) {
+            app?.toast?.error(saveResp.message || 'Failed to save phone number');
+            return true;
+        }
+
+        // Step 3: Send verification code
+        const sendResp = await rest.POST('/api/auth/verify/phone/send');
+        if (!sendResp.success) {
+            app?.toast?.error(sendResp.message || 'Failed to send verification code');
+            await this.render();
+            return true;
+        }
+
+        // Step 4: Prompt for code
+        const code = await Dialog.prompt(
+            `Enter the 6-digit code sent to <strong>${phone.trim()}</strong>`,
+            'Verify Phone',
+            { placeholder: '000000' }
+        );
+        if (!code) {
+            await this.render();
+            return true;
+        }
+
+        // Step 5: Confirm
+        const confirmResp = await rest.POST('/api/auth/verify/phone/confirm', { code: code.trim() });
+        if (confirmResp.success) {
+            app?.toast?.success('Phone number added and verified');
+            this.model.set('is_phone_verified', true);
+            await this.render();
+        } else {
+            app?.toast?.error(confirmResp.message || 'Invalid or expired code');
+            await this.render();
+        }
+        return true;
+    }
+
+    async onActionRemovePhone() {
+        const app = this.getApp();
+        const confirmed = await Dialog.confirm(
+            'Remove your phone number? You will need to add it again to use phone-based verification.',
+            'Remove Phone'
+        );
+        if (!confirmed) return true;
+
+        const resp = await this.model.save({ phone_number: null });
+        if (resp.status === 200) {
+            app?.toast?.success('Phone number removed');
+            this.model.set('is_phone_verified', false);
+            await this.render();
+        } else {
+            app?.toast?.error(resp.message || 'Failed to remove phone number');
+        }
         return true;
     }
 

@@ -21,6 +21,9 @@
 - **TableView `defaultQuery` params leak into filter pills** — when using `defaultQuery` to scope a TableView (e.g. `{ uid: model.id }`), add those keys to `hideActivePillNames` so they don't show up as removable filter pills. Example: `hideActivePillNames: ['uid', 'sort']`.
 - **Collection has no `toArray()`** — use `collection.models` for Model instances or `collection.toJSON()` for plain objects. `toArray()` does not exist.
 - **`docs/pending_update/`** — these are drafts awaiting review. Do NOT treat them as authoritative. Use `docs/web-mojo/` instead.
+- **REST `dataOnly` option** — `Rest.js` double-wraps responses: `resp.data` = server JSON `{ status, data, message }`, so actual payload is at `resp.data.data`. Pass `{ dataOnly: true }` as the 4th arg (options) to unwrap automatically: `rest.POST(url, body, {}, { dataOnly: true })`. Then `resp.data` gives the payload directly. Use this for any call where you need the inner `data`.
+- **Mustache `{{{triple braces}}}` for data URIs** — `{{var}}` HTML-escapes output, breaking base64 strings in `src` attributes. Use `{{{var}}}` for data URIs, HTML content, or any unescaped output.
+- **ImageCropView requires lightbox extension** — `FormView.onChangeImageSelected` checks `window.MOJO?.plugins?.ImageCropView`. This is only registered when `import 'web-mojo/lightbox'` is loaded. Without it, crop dialogs silently skip.
 
 ---
 

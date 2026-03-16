@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(__dirname, '..');
 
 /**
  * Vite config for building a "lite" WEB-MOJO bundle that can be used via <script> tag.
@@ -26,15 +27,15 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: [
         // Match the main Vite config aliases so lite can import using @core, @ext, etc.
-        { find: '@core', replacement: path.resolve(__dirname, 'src/core') },
-        { find: '@ext', replacement: path.resolve(__dirname, 'src/extensions') },
+        { find: '@core', replacement: path.resolve(ROOT, 'src/core') },
+        { find: '@ext', replacement: path.resolve(ROOT, 'src/extensions') },
 
         // Legacy aliases (safe to include; helps if lite imports indirectly reference them)
-        { find: '@', replacement: path.resolve(__dirname, 'src') },
-        { find: '@components', replacement: path.resolve(__dirname, 'src/components') },
-        { find: '@models', replacement: path.resolve(__dirname, 'src/models') },
-        { find: '@pages', replacement: path.resolve(__dirname, 'src/pages') },
-        { find: '@utils', replacement: path.resolve(__dirname, 'src/utils') }
+        { find: '@', replacement: path.resolve(ROOT, 'src') },
+        { find: '@components', replacement: path.resolve(ROOT, 'src/components') },
+        { find: '@models', replacement: path.resolve(ROOT, 'src/models') },
+        { find: '@pages', replacement: path.resolve(ROOT, 'src/pages') },
+        { find: '@utils', replacement: path.resolve(ROOT, 'src/utils') }
       ]
     },
 
@@ -44,7 +45,7 @@ export default defineConfig(({ mode }) => {
       sourcemap: true,
       minify: isMin ? 'esbuild' : false,
       lib: {
-        entry: path.resolve(__dirname, 'src/lite/index.js'),
+        entry: path.resolve(ROOT, 'src/lite/index.js'),
         name: 'MOJO',
         formats: ['iife'],
         fileName: () => (isMin ? 'web-mojo.lite.iife.min.js' : 'web-mojo.lite.iife.js')

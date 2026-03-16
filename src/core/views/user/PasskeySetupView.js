@@ -140,6 +140,7 @@ export default class PasskeySetupView extends View {
         const checkbox = this.element?.querySelector('.pks-dont-show input[type="checkbox"]');
         if (checkbox && checkbox.checked) {
             localStorage.setItem('passkey_setup_dismissed', '1');
+            this.emit('dismiss');
         } else {
             localStorage.removeItem('passkey_setup_dismissed');
         }

@@ -6,6 +6,7 @@
  */
 import View from '@core/View.js';
 import Dialog from '@core/views/feedback/Dialog.js';
+import rest from '@core/Rest.js';
 import { Passkey, PasskeyList, PasskeyForms } from '@core/models/Passkeys.js';
 
 export default class ProfileSecuritySection extends View {
@@ -46,35 +47,39 @@ export default class ProfileSecuritySection extends View {
                     <i class="bi bi-chevron-right ps-chevron"></i>
                 </div>
 
-                <div class="ps-section-label">Sessions & Devices</div>
-
-                <div class="ps-item" data-action="navigate" data-section="sessions">
-                    <div class="ps-icon bg-info bg-opacity-10 text-info"><i class="bi bi-clock-history"></i></div>
+                <div class="ps-item" data-action="manage-totp">
+                    <div class="ps-icon bg-purple bg-opacity-10" style="background: rgba(111,66,193,0.1); color: #6f42c1;"><i class="bi bi-shield-lock"></i></div>
                     <div class="ps-info">
-                        <div class="ps-title">Active Sessions</div>
-                        <div class="ps-desc">Manage where you're signed in</div>
+                        <div class="ps-title">Authenticator App</div>
+                        <div class="ps-desc">Two-factor authentication with TOTP codes</div>
+                    </div>
+                    {{#model.requires_mfa|bool}}
+                        <span class="ps-badge bg-success bg-opacity-10 text-success border">Enabled</span>
+                    {{/model.requires_mfa|bool}}
+                    {{^model.requires_mfa|bool}}
+                        <span class="ps-badge bg-light text-muted border">Setup</span>
+                    {{/model.requires_mfa|bool}}
+                </div>
+
+                {{#model.requires_mfa|bool}}
+                <div class="ps-item" data-action="manage-recovery-codes">
+                    <div class="ps-icon" style="background: rgba(111,66,193,0.1); color: #6f42c1;"><i class="bi bi-file-earmark-lock"></i></div>
+                    <div class="ps-info">
+                        <div class="ps-title">Recovery Codes</div>
+                        <div class="ps-desc">Backup codes for when you lose your authenticator</div>
                     </div>
                     <i class="bi bi-chevron-right ps-chevron"></i>
                 </div>
+                {{/model.requires_mfa|bool}}
 
-                <div class="ps-item" data-action="navigate" data-section="devices">
-                    <div class="ps-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-laptop"></i></div>
+                <div class="ps-section-label">Sessions</div>
+
+                <div class="ps-item" data-action="revoke-all-sessions">
+                    <div class="ps-icon" style="background: rgba(220,53,69,0.1); color: #dc3545;"><i class="bi bi-box-arrow-right"></i></div>
                     <div class="ps-info">
-                        <div class="ps-title">Devices</div>
-                        <div class="ps-desc">Registered devices</div>
+                        <div class="ps-title">Revoke All Sessions</div>
+                        <div class="ps-desc">Sign out of all devices except this one</div>
                     </div>
-                    <i class="bi bi-chevron-right ps-chevron"></i>
-                </div>
-
-                <div class="ps-section-label">Activity</div>
-
-                <div class="ps-item" data-action="navigate" data-section="activity">
-                    <div class="ps-icon bg-secondary bg-opacity-10 text-secondary"><i class="bi bi-activity"></i></div>
-                    <div class="ps-info">
-                        <div class="ps-title">Recent Activity</div>
-                        <div class="ps-desc">Sign-in history and account events</div>
-                    </div>
-                    <i class="bi bi-chevron-right ps-chevron"></i>
                 </div>
             `,
             ...options
@@ -174,7 +179,10 @@ export default class ProfileSecuritySection extends View {
         });
 
         if (result === 'add') {
-            await this._registerPasskey();
+            const added = await this._registerPasskey();
+            if (added) {
+                this.getApp()?.toast?.success('Passkey registered successfully');
+            }
         }
         return true;
     }
@@ -246,19 +254,243 @@ export default class ProfileSecuritySection extends View {
             });
 
             if (completeResp.success) {
-                this.getApp()?.toast?.success('Passkey registered successfully');
+                return true;
             } else {
                 this.getApp()?.toast?.error(completeResp.error || 'Failed to register passkey');
+                return false;
             }
         } catch (err) {
-            if (err.name === 'NotAllowedError') return;
+            if (err.name === 'NotAllowedError') {
+                this.getApp()?.toast?.error('Passkey creation was blocked or cancelled. Check your browser settings if this persists.');
+                return false;
+            }
             if (err.name === 'SecurityError') {
                 this.getApp()?.toast?.error('Passkeys are not supported on this domain');
             } else {
                 console.error('Passkey registration error:', err);
                 this.getApp()?.toast?.error('Passkey registration failed');
             }
+            return false;
         }
+    }
+
+    async onActionManageTotp() {
+        const app = this.getApp();
+        const isMfaEnabled = this.model.get('requires_mfa');
+
+        if (isMfaEnabled) {
+            // Already enabled — offer to disable
+            const confirmed = await Dialog.confirm(
+                'Disable authenticator app? You will no longer need a TOTP code to sign in.',
+                'Disable Authenticator'
+            );
+            if (!confirmed) return true;
+
+            const resp = await rest.DELETE('/api/account/totp');
+            if (resp.success) {
+                app?.toast?.success('Authenticator app disabled');
+                this.model.set('requires_mfa', false);
+                await this.render();
+            } else {
+                app?.toast?.error(resp.message || 'Failed to disable authenticator');
+            }
+            return true;
+        }
+
+        // Step 1: Call setup to get QR code + secret
+        const setupResp = await rest.POST('/api/account/totp/setup', {}, {}, { dataOnly: true });
+        if (!setupResp.success || !setupResp.data) {
+            app?.toast?.error(setupResp.message || 'Failed to start authenticator setup');
+            return true;
+        }
+
+        const { secret, qr_code } = setupResp.data;
+
+        // Step 2: Show QR code dialog
+        const setupView = new View({
+            template: `
+                <div style="text-align: center; padding: 0.5rem 0;">
+                    <p style="font-size: 0.85rem; color: #6c757d; margin-bottom: 1rem;">
+                        Scan this QR code with your authenticator app (Google Authenticator, Authy, 1Password, etc.)
+                    </p>
+                    <img src="{{{qrCode}}}" alt="TOTP QR Code" style="width: 200px; height: 200px; margin: 0 auto; display: block; border: 1px solid #e9ecef; border-radius: 8px; padding: 8px;" />
+                    <div style="margin-top: 1rem;">
+                        <p style="font-size: 0.75rem; color: #adb5bd; margin-bottom: 0.25rem;">Or enter this key manually:</p>
+                        <code style="font-size: 0.85rem; letter-spacing: 0.1em; user-select: all; padding: 0.35rem 0.75rem; background: #f8f9fa; border-radius: 4px;">{{secret}}</code>
+                    </div>
+                </div>
+            `
+        });
+        setupView.qrCode = qr_code;
+        setupView.secret = secret;
+
+        const result = await Dialog.showDialog({
+            title: 'Set Up Authenticator',
+            body: setupView,
+            size: 'sm',
+            buttons: [
+                { text: 'Cancel', class: 'btn-secondary', dismiss: true },
+                { text: 'Next', class: 'btn-primary', value: 'next' }
+            ]
+        });
+
+        if (result !== 'next') return true;
+
+        // Step 3: Prompt for the first TOTP code to confirm
+        const code = await Dialog.prompt(
+            'Enter the 6-digit code from your authenticator app to verify setup:',
+            'Verify Authenticator',
+            { placeholder: '000000' }
+        );
+        if (!code) return true;
+
+        // Step 4: Confirm
+        const confirmResp = await rest.POST('/api/account/totp/confirm', { code: code.trim() });
+        if (confirmResp.success) {
+            app?.toast?.success('Authenticator app enabled');
+            this.model.set('requires_mfa', true);
+            await this.render();
+        } else {
+            app?.toast?.error(confirmResp.message || 'Invalid code. Please try setup again.');
+        }
+        return true;
+    }
+
+    // Navigate to sections in the parent UserProfileView
+    async onActionManageRecoveryCodes() {
+        const app = this.getApp();
+
+        // Fetch masked recovery codes
+        const resp = await rest.GET('/api/account/totp/recovery-codes', {}, { dataOnly: true });
+        if (!resp.success || !resp.data) {
+            app?.toast?.error(resp.message || 'Failed to load recovery codes');
+            return true;
+        }
+
+        const { remaining, codes } = resp.data;
+
+        const view = new View({
+            template: `
+                <style>
+                    .rc-info { font-size: 0.82rem; color: #6c757d; margin-bottom: 1rem; }
+                    .rc-remaining { font-weight: 600; color: #495057; }
+                    .rc-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; }
+                    .rc-code { font-family: monospace; font-size: 0.85rem; padding: 0.35rem 0.6rem; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; text-align: center; }
+                </style>
+                <div class="rc-info">
+                    <span class="rc-remaining">{{remaining}}</span> recovery codes remaining
+                </div>
+                <div class="rc-list">
+                    {{#codes}}
+                        <div class="rc-code">{{.}}</div>
+                    {{/codes}}
+                </div>
+            `
+        });
+        view.remaining = remaining;
+        view.codes = codes || [];
+
+        const result = await Dialog.showDialog({
+            title: 'Recovery Codes',
+            body: view,
+            size: 'sm',
+            buttons: [
+                { text: 'Regenerate', icon: 'bi-arrow-repeat', class: 'btn-warning', value: 'regenerate' },
+                { text: 'Close', class: 'btn-outline-secondary', dismiss: true }
+            ]
+        });
+
+        if (result === 'regenerate') {
+            // Require current TOTP code to regenerate
+            const code = await Dialog.prompt(
+                'Enter your current authenticator code to regenerate recovery codes:',
+                'Regenerate Recovery Codes',
+                { placeholder: '000000' }
+            );
+            if (!code) return true;
+
+            const regenResp = await rest.POST('/api/account/totp/recovery-codes/regenerate', {
+                code: code.trim()
+            }, {}, { dataOnly: true });
+
+            if (regenResp.success && regenResp.data?.recovery_codes) {
+                const newCodes = regenResp.data.recovery_codes;
+                const codesText = newCodes.join('\n');
+
+                const newView = new View({
+                    template: `
+                        <style>
+                            .rc-warning { padding: 0.65rem 0.85rem; background: #fff3cd; border: 1px solid #ffecb5; border-radius: 6px; margin-bottom: 1rem; font-size: 0.8rem; color: #664d03; }
+                            .rc-new-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; margin-bottom: 1rem; }
+                            .rc-new-code { font-family: monospace; font-size: 0.85rem; padding: 0.35rem 0.6rem; background: #d1e7dd; border: 1px solid #badbcc; border-radius: 4px; text-align: center; }
+                        </style>
+                        <div class="rc-warning">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            <strong>Save these codes now.</strong> They will not be shown again. Old codes are invalidated.
+                        </div>
+                        <div class="rc-new-list">
+                            {{#newCodes}}
+                                <div class="rc-new-code">{{.}}</div>
+                            {{/newCodes}}
+                        </div>
+                    `
+                });
+                newView.newCodes = newCodes;
+
+                await Dialog.showDialog({
+                    title: 'New Recovery Codes',
+                    body: newView,
+                    size: 'sm',
+                    buttons: [
+                        { text: 'Copy All', icon: 'bi-clipboard', class: 'btn-primary', handler: async () => {
+                            try {
+                                await navigator.clipboard.writeText(codesText);
+                                app?.toast?.success('Recovery codes copied');
+                            } catch {
+                                app?.toast?.error('Failed to copy codes');
+                            }
+                            return false; // keep dialog open
+                        }},
+                        { text: 'Done', class: 'btn-outline-secondary', dismiss: true }
+                    ]
+                });
+            } else {
+                app?.toast?.error(regenResp.message || 'Failed to regenerate recovery codes');
+            }
+        }
+        return true;
+    }
+
+    async onActionRevokeAllSessions() {
+        const app = this.getApp();
+
+        const confirmed = await Dialog.confirm(
+            'This will sign you out of all other devices and sessions. Your current session will remain active. This cannot be undone.',
+            'Revoke All Sessions'
+        );
+        if (!confirmed) return true;
+
+        const password = await Dialog.prompt(
+            'Enter your current password to confirm:',
+            'Confirm Password',
+            { placeholder: 'Current password' }
+        );
+        if (!password) return true;
+
+        const resp = await rest.POST('/api/auth/sessions/revoke', {
+            current_password: password.trim()
+        }, {}, { dataOnly: true });
+
+        if (resp.success && resp.data) {
+            // Store new tokens — old ones are now invalid
+            if (resp.data.access_token) {
+                app?.auth?.setTokens?.(resp.data);
+            }
+            app?.toast?.success('All other sessions have been revoked');
+        } else {
+            app?.toast?.error(resp.message || 'Failed to revoke sessions');
+        }
+        return true;
     }
 
     // Navigate to sections in the parent UserProfileView

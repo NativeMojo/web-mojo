@@ -422,6 +422,12 @@ class Rest {
       // Process response through interceptors
       const responseData = await this.processResponseInterceptors(response, request);
 
+      // Unwrap server envelope: { status, data, message } → data only
+      if (options.dataOnly && responseData.data && typeof responseData.data === 'object' && 'data' in responseData.data) {
+        responseData.message = responseData.message || responseData.data.message;
+        responseData.data = responseData.data.data;
+      }
+
       return responseData;
 
     } catch (error) {

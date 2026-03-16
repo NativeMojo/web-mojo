@@ -1,5 +1,8 @@
 # Dependencies
 node_modules/
+
+# Published tarballs
+published/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

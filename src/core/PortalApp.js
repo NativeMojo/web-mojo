@@ -766,7 +766,9 @@ export default class PortalApp extends WebApp {
             await Dialog.showDialog({
                 body: profileView,
                 header: null,
-                size: 'lg'
+                size: 'lg',
+                noBodyPadding: true,
+                centered: false
             });
         } catch (error) {
             console.error('Error showing profile:', error);
