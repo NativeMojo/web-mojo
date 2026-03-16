@@ -122,21 +122,6 @@ export default class ProfileOverviewSection extends View {
                     <div class="po-field-value">{{model.last_login|relative}}</div>
                 </div>
 
-                <!-- Permissions peek -->
-                <div class="po-section-label">Permissions</div>
-                <div class="po-perms-peek">
-                    {{#permissionPeek}}
-                        {{#items}}
-                            <span class="po-perm-pill">{{.}}</span>
-                        {{/items}}
-                        {{#remaining|bool}}
-                            <span class="po-perm-more" data-action="navigate" data-section="permissions">+{{remaining}} more</span>
-                        {{/remaining|bool}}
-                    {{/permissionPeek}}
-                    {{^permissionPeek|bool}}
-                        <span class="po-not-set">No permissions assigned</span>
-                    {{/permissionPeek|bool}}
-                </div>
 
                 <!-- Danger zone -->
                 <div style="margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #f0f0f0;">
@@ -170,6 +155,34 @@ export default class ProfileOverviewSection extends View {
         const active = Object.keys(perms)
             .filter(k => perms[k] === true)
             .map(k => permMap[k] || k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
+
+        if (active.length === 0) return null;
+
+        const PEEK_COUNT = 5;
+        return {
+            items: active.slice(0, PEEK_COUNT),
+            remaining: Math.max(0, active.length - PEEK_COUNT)
+        };
+    }
+
+    get hasActiveGroup() {
+        const app = this.getApp();
+        return !!(app?.activeGroup && this.model?.member);
+    }
+
+    get activeGroupName() {
+        const app = this.getApp();
+        return app?.activeGroup?.get('name') || app?.activeGroup?.get('display_name') || 'Current Group';
+    }
+
+    get groupPermissionPeek() {
+        if (!this.model?.member) return null;
+        const perms = this.model.member.get('permissions');
+        if (!perms) return null;
+
+        const active = Object.keys(perms)
+            .filter(k => perms[k] === true)
+            .map(k => k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
 
         if (active.length === 0) return null;
 

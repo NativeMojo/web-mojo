@@ -73,33 +73,46 @@ export default class MetricsChart extends SeriesChart {
   }
 
   async onInit() {
-    // Build header controls for granularity and date range
-    const controls = [];
+    // Build gear dropdown menu items
+    const menuItems = [];
 
+    // Granularity options
     if (this.showGranularity) {
-      controls.push({
-        type: 'select',
-        name: 'granularity',
-        action: 'granularity-changed',
-        size: 'sm',
-        options: this.granularityOptions.map(opt => ({
-          value: opt.value,
-          label: opt.label,
-          selected: opt.value === this.granularity
-        }))
-      });
+      menuItems.push('<li><h6 class="dropdown-header">Granularity</h6></li>');
+      for (const opt of this.granularityOptions) {
+        const selected = opt.value === this.granularity ? ' mc-selected' : '';
+        menuItems.push(`<li><a class="dropdown-item${selected}" role="button" data-action="granularity-changed" data-value="${opt.value}">${opt.label}</a></li>`);
+      }
     }
 
+    // Quick date ranges
     if (this.showDateRange) {
-      controls.push({
-        type: 'button',
-        action: 'show-date-range-dialog',
-        labelHtml: `<i class="bi bi-calendar-range me-1"></i>${this.formatDateRangeDisplay()}`,
-        title: 'Select Date Range',
-        variant: 'outline-secondary',
-        size: 'sm'
-      });
+      if (menuItems.length) menuItems.push('<li><hr class="dropdown-divider"></li>');
+      menuItems.push('<li><h6 class="dropdown-header">Date Range</h6></li>');
+      for (const qr of this.quickRanges) {
+        const selected = qr.value === this.defaultDateRange ? ' mc-selected' : '';
+        menuItems.push(`<li><a class="dropdown-item${selected}" role="button" data-action="quick-range" data-range="${qr.value}">${qr.label}</a></li>`);
+      }
+      menuItems.push(`<li><a class="dropdown-item" role="button" data-action="show-date-range-dialog"><i class="bi bi-calendar-range me-1"></i>Custom Range...</a></li>`);
     }
+
+    const gearHtml = menuItems.length ? `
+      <style>
+        .mc-gear-menu .dropdown-item.mc-selected { background: #f0f0f0; color: inherit; }
+        .mc-gear-menu .dropdown-item.mc-selected::before { content: '\\F633'; font-family: 'bootstrap-icons'; margin-right: 0.4rem; font-size: 0.75em; }
+      </style>
+      <div class="btn-group btn-group-sm me-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" title="Chart Settings">
+          <i class="bi bi-gear"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end mc-gear-menu">${menuItems.join('')}</ul>
+      </div>` : '';
+
+    // Use SeriesChart's built-in line/bar toggle
+    this.showTypeSwitch = true;
+
+    const controls = [];
+    if (gearHtml) controls.push({ type: 'html', html: gearHtml });
 
     this.headerConfig = {
       titleHtml: this.title || 'Metrics',
@@ -113,55 +126,89 @@ export default class MetricsChart extends SeriesChart {
     await super.onInit();
   }
 
+  // ─── Granularity → date range mapping ──────────────────────────────────────
+  // When granularity changes, auto-pick a sensible date range so we get
+  // a reasonable number of data points (not 10,000 minute-buckets over 30 days).
+
+  static GRANULARITY_DEFAULTS = {
+    minutes: '1h',    // ~60 points
+    hours:   '24h',   // ~24 points
+    days:    '30d',   // ~30 points
+    weeks:   '30d',   // ~4 points (show more if available)
+    months:  '30d'    // ~1 point  (show more if available)
+  };
+
   // Action Handlers
   async onActionGranularityChanged(event, element) {
-    const newGranularity = element.value;
+    const newGranularity = element.dataset?.value || element.value;
     if (newGranularity && newGranularity !== this.granularity) {
       this.granularity = newGranularity;
+
+      // Auto-adjust date range to match granularity
+      const defaultRange = MetricsChart.GRANULARITY_DEFAULTS[newGranularity] || '24h';
+      this.setQuickRange(defaultRange);
+
+      // Update active states in dropdown
+      this._updateDropdownActive('granularity-changed', newGranularity, 'value');
+
       await this.fetchData();
     }
+    return true;
   }
 
   async onActionShowDateRangeDialog() {
     try {
-      const result = await Dialog.showForm({
+      const data = await Dialog.showForm({
         title: 'Select Date Range',
-        size: 'md',
+        size: 'sm',
         fields: [
           {
-            name: 'dateRange',
-            type: 'daterange',
-            label: 'Date Range',
-            startName: 'dt_start',
-            endName: 'dt_end',
-            startDate: this.formatDateTimeLocal(this.dateStart),
-            endDate: this.formatDateTimeLocal(this.dateEnd),
+            name: 'dt_start',
+            type: 'datetime-local',
+            label: 'Start',
+            value: this.formatDateTimeLocal(this.dateStart),
+            required: true
+          },
+          {
+            name: 'dt_end',
+            type: 'datetime-local',
+            label: 'End',
+            value: this.formatDateTimeLocal(this.dateEnd),
             required: true
           }
-        ],
-        formConfig: {
-          options: {
-            submitButton: false,
-            resetButton: false
-          }
-        }
+        ]
       });
 
-      if (result && result.startDate && result.endDate) {
-        this.dateStart = new Date(result.startDate);
-        this.dateEnd = new Date(result.endDate);
-
-        // Update the header button label
-        const btn = this.element?.querySelector('[data-action="show-date-range-dialog"]');
-        if (btn) {
-          btn.innerHTML = `<i class="bi bi-calendar-range me-1"></i>${this.formatDateRangeDisplay()}`;
-        }
-
+      if (data?.dt_start && data?.dt_end) {
+        this.dateStart = new Date(data.dt_start);
+        this.dateEnd = new Date(data.dt_end);
+        // Clear quick range active states since we're using custom
+        this._updateDropdownActive('quick-range', '', 'range');
         await this.fetchData();
       }
     } catch (error) {
       console.error('Date range dialog error:', error);
     }
+    return true;
+  }
+
+  async onActionQuickRange(event, el) {
+    const range = el.dataset?.range;
+    if (!range) return true;
+
+    this.setQuickRange(range);
+    this._updateDropdownActive('quick-range', range, 'range');
+    await this.fetchData();
+    return true;
+  }
+
+  _updateDropdownActive(action, activeValue, dataKey) {
+    const items = this.element?.querySelectorAll(`[data-action="${action}"]`);
+    if (!items) return;
+    items.forEach(item => {
+      const val = item.dataset?.[dataKey];
+      item.classList.toggle('mc-selected', val === activeValue);
+    });
   }
 
   // Data Management
@@ -345,6 +392,29 @@ export default class MetricsChart extends SeriesChart {
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
+  formatDateRangeDisplay() {
+    if (!this.dateStart || !this.dateEnd) return 'Select Range';
+
+    const fmt = (d) => {
+      const mon = d.toLocaleString('default', { month: 'short' });
+      const day = d.getDate();
+      const hrs = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+      return `${mon} ${day} ${hrs}:${min}`;
+    };
+
+    // Check if this matches a quick range (within 2 min tolerance)
+    const diffMs = this.dateEnd.getTime() - this.dateStart.getTime();
+    const diffHours = diffMs / (60 * 60 * 1000);
+    if (Math.abs(diffHours - 1) < 0.05) return 'Last 1H';
+    if (Math.abs(diffHours - 24) < 0.05) return 'Last 24H';
+    const diffDays = diffMs / (24 * 60 * 60 * 1000);
+    if (Math.abs(diffDays - 7) < 0.05) return 'Last 7D';
+    if (Math.abs(diffDays - 30) < 0.5) return 'Last 30D';
+
+    return `${fmt(this.dateStart)} – ${fmt(this.dateEnd)}`;
   }
 
   // Public API

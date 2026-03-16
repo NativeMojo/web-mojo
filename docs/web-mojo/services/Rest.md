@@ -174,6 +174,49 @@ const response = await rest.request('POST', '/api/endpoint', { name: 'test' }, {
 });
 ```
 
+### Request Options
+
+The final `options` parameter (4th arg for `GET`/`POST`/etc., or part of the options object for `request()`) supports:
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `timeout` | `number` | `30000` | Per-request timeout in milliseconds |
+| `signal` | `AbortSignal` | — | `AbortController` signal for manual cancellation |
+| `dataOnly` | `boolean` | `false` | Unwrap the server envelope automatically (see below) |
+
+### `dataOnly` Option (Recommended)
+
+MOJO APIs return a double-wrapped response: the HTTP response wraps `{ status, data, message }`, so the actual payload lives at `resp.data.data`. The `dataOnly` option unwraps this for you:
+
+```js
+// ❌ Without dataOnly — verbose two-level unwrap
+const resp = await rest.GET('/api/account/api_keys');
+if (resp.success && resp.data.status) {
+  const keys = resp.data.data; // actual payload buried at .data.data
+}
+
+// ✅ With dataOnly — clean single-level access
+const resp = await rest.GET('/api/account/api_keys', {}, {}, { dataOnly: true });
+if (resp.success) {
+  const keys = resp.data; // payload is directly on .data
+}
+```
+
+Works with all HTTP methods. Pass as the **4th argument** (options):
+
+```js
+// GET: rest.GET(url, params, fetchOptions, mojoOptions)
+const resp = await rest.GET('/api/users', { page: 1 }, {}, { dataOnly: true });
+
+// POST: rest.POST(url, body, fetchOptions, mojoOptions)
+const resp = await rest.POST('/api/auth/login', credentials, {}, { dataOnly: true });
+
+// DELETE: rest.DELETE(url, body, fetchOptions, mojoOptions)
+const resp = await rest.DELETE(`/api/items/${id}`, {}, {}, { dataOnly: true });
+```
+
+> **Note:** When `dataOnly` is enabled, `resp.message` is populated from the server envelope's `message` field before unwrapping, so error messages remain accessible.
+
 ---
 
 ## Response Structure

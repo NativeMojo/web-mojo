@@ -61,6 +61,9 @@ import {
   FileTablePage,
   S3BucketTablePage,
 
+  CloudWatchDashboardPage,
+  CloudWatchChart,
+
   // Views
   DeviceView,
   GeoIPView,
@@ -88,7 +91,9 @@ import {
   LogView,
   MetricsPermissionsView,
 
-  FileView
+  FileView,
+
+  CloudWatchResourceView
 } from 'web-mojo/admin';
 ```
 
@@ -206,6 +211,9 @@ await TaskDetailsView.show(task);
 - `FileTablePage`
 - `S3BucketTablePage`
 
+### AWS
+- `CloudWatchDashboardPage`
+
 ---
 
 ## Views (Composable UI components)
@@ -247,6 +255,63 @@ await TaskDetailsView.show(task);
 
 ### Storage
 - `FileView`
+
+### AWS
+- `CloudWatchChart` — MetricsChart subclass for CloudWatch endpoints
+- `CloudWatchResourceView` — Detail view for a single resource (all metrics in a grid)
+
+---
+
+## CloudWatch Dashboard
+
+The `CloudWatchDashboardPage` renders a 2-column grid of `CloudWatchChart` instances, each showing all resources for a given account + category:
+
+```/dev/null/example.js#L1-8
+import { CloudWatchDashboardPage } from 'web-mojo/admin';
+
+router.register('/admin/cloudwatch', CloudWatchDashboardPage);
+```
+
+### CloudWatchChart
+
+Extends `MetricsChart` for CloudWatch endpoints. Each chart auto-fetches from `/api/aws/cloudwatch/fetch` with the configured `account` (ec2/rds/redis) and `category` (cpu/memory/conns/etc). Inherits all MetricsChart features: granularity selector, date range picker, refresh, loading states.
+
+```/dev/null/example.js#L1-12
+import { CloudWatchChart } from 'web-mojo/admin';
+
+const chart = new CloudWatchChart({
+    containerId: 'my-container',
+    account: 'ec2',
+    category: 'cpu',
+    title: 'EC2 CPU',
+    height: 250,
+    yAxis: { label: '%', beginAtZero: true, max: 100 },
+    defaultDateRange: '24h'
+});
+this.addChild(chart);
+```
+
+For a single resource, pass `slug`:
+
+```/dev/null/example.js#L1-6
+const chart = new CloudWatchChart({
+    containerId: 'cpu-chart',
+    account: 'rds',
+    category: 'cpu',
+    slug: 'prod-postgres',
+    title: 'RDS CPU — prod-postgres'
+});
+```
+
+### CloudWatchResourceView
+
+Detail view showing all metric categories for one resource. Open via the static `show()` helper:
+
+```/dev/null/example.js#L1-5
+import { CloudWatchResourceView } from 'web-mojo/admin';
+
+await CloudWatchResourceView.show('ec2', 'web-server-1', resourceData);
+```
 
 ---
 

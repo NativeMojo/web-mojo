@@ -110,6 +110,7 @@ class TopNav extends View {
             this.replaceMenuItem('user', this.loginMenu);
         } else {
             this.userMenu.label = user.get("display_name");
+            this._updateUserAvatar(user);
             this.replaceMenuItem('login', this.userMenu);
         }
         this.setModel(user);
@@ -118,10 +119,23 @@ class TopNav extends View {
     _onModelChange() {
       if (this.model) {
         this.userMenu.label = this.model.get("display_name");
+        this._updateUserAvatar(this.model);
       }
       if (this.isMounted()) {
           this.render();
       }
+    }
+
+    _updateUserAvatar(user) {
+        if (!this.userMenu || !user) return;
+        const avatar = user.get('avatar');
+        if (avatar) {
+            // Extract URL from avatar object (try renditions first, then direct url)
+            const url = avatar?.renditions?.square_sm?.url || avatar?.url || (typeof avatar === 'string' ? avatar : null);
+            this.userMenu.avatarUrl = url || null;
+        } else {
+            this.userMenu.avatarUrl = null;
+        }
     }
 
     /**
@@ -202,7 +216,8 @@ class TopNav extends View {
                         {{#isDropdown}}
                         <div class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                {{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}
+                                {{#avatarUrl}}<img src="{{avatarUrl}}" class="rounded-circle me-1" style="width: 24px; height: 24px; object-fit: cover;" alt="" />{{/avatarUrl}}
+                                {{^avatarUrl}}{{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}{{/avatarUrl}}
                                 {{label}}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">

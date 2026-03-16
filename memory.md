@@ -24,6 +24,8 @@
 - **REST `dataOnly` option** — `Rest.js` double-wraps responses: `resp.data` = server JSON `{ status, data, message }`, so actual payload is at `resp.data.data`. Pass `{ dataOnly: true }` as the 4th arg (options) to unwrap automatically: `rest.POST(url, body, {}, { dataOnly: true })`. Then `resp.data` gives the payload directly. Use this for any call where you need the inner `data`.
 - **Mustache `{{{triple braces}}}` for data URIs** — `{{var}}` HTML-escapes output, breaking base64 strings in `src` attributes. Use `{{{var}}}` for data URIs, HTML content, or any unescaped output.
 - **ImageCropView requires lightbox extension** — `FormView.onChangeImageSelected` checks `window.MOJO?.plugins?.ImageCropView`. This is only registered when `import 'web-mojo/lightbox'` is loaded. Without it, crop dialogs silently skip.
+- **Always use `showLoading()` / `hideLoading()` during async waits** — Any time a view is fetching data or doing async work that the user will notice (page load, form submit, data refresh), wrap it with `this.getApp().showLoading()` before and `this.getApp().hideLoading()` after (in a `finally` block). This shows a busy overlay via `Dialog.showBusy()` / `Dialog.hideBusy()`. Accepts a string message: `this.getApp().showLoading('Loading resources...')`. Skipping this creates horrible UX with no feedback.
+- **`Dialog.showForm` returns data directly** — `Dialog.showForm(...)` returns the form data object (e.g., `{ field: value }`) or `null` on dismiss. It does NOT return `{ submitted, data }`. Access fields directly: `const data = await Dialog.showForm(...); if (!data) return; data.myField;`
 
 ---
 

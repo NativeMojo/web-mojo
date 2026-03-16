@@ -52,6 +52,18 @@ class GroupMemberItem extends ListViewItem {
         if (r === 'admin') return 'bg-info';
         return 'bg-secondary';
     }
+
+    get permissionsList() {
+        const perms = this.model?.get('permissions');
+        if (!perms) return [];
+        return Object.keys(perms)
+            .filter(k => perms[k] === true)
+            .map(k => k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
+    }
+
+    get hasPermissions() {
+        return this.permissionsList.length > 0;
+    }
 }
 
 export default class ProfileGroupsSection extends View {
@@ -67,6 +79,8 @@ export default class ProfileGroupsSection extends View {
                     .pg-name { font-weight: 600; font-size: 0.88rem; }
                     .pg-meta { font-size: 0.73rem; color: #6c757d; }
                     .pg-role { font-size: 0.7rem; }
+                    .pg-perms { display: flex; flex-wrap: wrap; gap: 0.25rem; justify-content: flex-end; }
+                    .pg-perm-tag { display: inline-flex; align-items: center; font-size: 0.68rem; padding: 0.15em 0.45em; background: #f0f4ff; border: 1px solid #d4deff; border-radius: 3px; color: #4a6cf7; }
                 </style>
                 <div id="groups-list"></div>
             `,
@@ -88,6 +102,13 @@ export default class ProfileGroupsSection extends View {
                         <div class="pg-name">{{groupName}}</div>
                         <div class="pg-meta">{{groupKind}}</div>
                     </div>
+                    {{#hasPermissions|bool}}
+                    <div class="pg-perms">
+                        {{#permissionsList}}
+                            <span class="pg-perm-tag">{{.}}</span>
+                        {{/permissionsList}}
+                    </div>
+                    {{/hasPermissions|bool}}
                     {{#hasRole|bool}}
                         <span class="pg-role badge {{roleBadgeClass}}">{{roleName}}</span>
                     {{/hasRole|bool}}
