@@ -5,6 +5,7 @@
  */
 
 import View from '@core/View.js';
+import { File as FileModel } from '@core/models/Files.js';
 
 
 class Dialog extends View {
@@ -1834,16 +1835,20 @@ class Dialog extends View {
 
         // Convert base64 to File object
         const arr = base64Data.split(',');
-        const mime = arr[0].match(/:(.*?);/)[1];
+        const mimeMatch = arr[0]?.match(/:(.*?);/);
+        const mime = mimeMatch?.[1] || 'image/png';
         const bstr = atob(arr[1]);
         let n = bstr.length;
         const u8arr = new Uint8Array(n);
         while (n--) { u8arr[n] = bstr.charCodeAt(n); }
         const ext = mime.split('/')[1] || 'png';
-        const file = new window.File([u8arr], `${fieldName}.${ext}`, { type: mime });
+        const FileCtor = (typeof window !== 'undefined' && window.File) || globalThis.File;
+        if (!FileCtor) {
+            throw new Error('File API is not available in this environment');
+        }
+        const file = new FileCtor([u8arr], `${fieldName}.${ext}`, { type: mime });
 
         // Upload via FileUpload service (3-stage: initiate → upload → complete)
-        const { File: FileModel } = await import('@core/models/Files.js');
         const fileModel = new FileModel();
         await fileModel.upload({
             file,
