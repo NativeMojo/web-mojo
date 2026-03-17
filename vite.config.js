@@ -31,6 +31,7 @@ export default defineConfig({
       { find: 'web-mojo/map', replacement: path.resolve(__dirname, 'src/extensions/map/index.js') },
       { find: 'web-mojo/admin', replacement: path.resolve(__dirname, 'src/extensions/admin/index.js') },
       { find: 'web-mojo/auth', replacement: path.resolve(__dirname, 'src/extensions/auth/index.js') },
+      { find: 'web-mojo/user-profile', replacement: path.resolve(__dirname, 'src/extensions/user-profile/index.js') },
       { find: 'web-mojo', replacement: path.resolve(__dirname, 'src/index.js') },
 
       // New aliases for clearer boundaries

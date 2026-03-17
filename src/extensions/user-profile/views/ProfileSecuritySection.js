@@ -7,6 +7,7 @@
 import View from '@core/View.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 import rest from '@core/Rest.js';
+import PasskeySetupView from './PasskeySetupView.js';
 import { Passkey, PasskeyList, PasskeyForms } from '@core/models/Passkeys.js';
 
 export default class ProfileSecuritySection extends View {
@@ -179,98 +180,62 @@ export default class ProfileSecuritySection extends View {
         });
 
         if (result === 'add') {
-            const added = await this._registerPasskey();
-            if (added) {
-                this.getApp()?.toast?.success('Passkey registered successfully');
-            }
+            await this._addPasskey();
         }
         return true;
     }
 
-    _base64urlToBytes(base64url) {
-        const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-        const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
-        return Uint8Array.from(atob(padded), c => c.charCodeAt(0));
-    }
-
-    async _registerPasskey() {
-        try {
-            const beginResp = await Passkey.registerBegin();
-            if (!beginResp.success || !beginResp.data) {
-                this.getApp()?.toast?.error('Failed to start passkey registration');
-                return;
-            }
-
-            const options = beginResp.data.data || beginResp.data;
-            const publicKey = options.publicKey;
-
-            // Override rp.id to match current domain (server may return production domain)
-            if (publicKey.rp) {
-                publicKey.rp.id = window.location.hostname;
-            }
-
-            if (publicKey.challenge && typeof publicKey.challenge === 'string') {
-                publicKey.challenge = this._base64urlToBytes(publicKey.challenge);
-            }
-            if (publicKey.user && publicKey.user.id && typeof publicKey.user.id === 'string') {
-                publicKey.user.id = this._base64urlToBytes(publicKey.user.id);
-            }
-            if (publicKey.excludeCredentials) {
-                publicKey.excludeCredentials = publicKey.excludeCredentials.map(cred => ({
-                    ...cred,
-                    id: typeof cred.id === 'string' ? this._base64urlToBytes(cred.id) : cred.id
-                }));
-            }
-
-            const credential = await navigator.credentials.create({ publicKey });
-            if (!credential) {
-                this.getApp()?.toast?.error('Passkey creation was cancelled');
-                return;
-            }
-
-            const friendlyName = await Dialog.prompt('Name this passkey:', 'Passkey Name', {
-                defaultValue: '',
-                placeholder: 'e.g., My MacBook'
-            });
-
-            const credentialData = {
-                id: credential.id,
-                rawId: btoa(String.fromCharCode(...new Uint8Array(credential.rawId))),
-                type: credential.type,
-                response: {
-                    clientDataJSON: btoa(String.fromCharCode(...new Uint8Array(credential.response.clientDataJSON))),
-                    attestationObject: btoa(String.fromCharCode(...new Uint8Array(credential.response.attestationObject)))
+    async _addPasskey() {
+        // Ask for name via rich dialog
+        const suggested = Passkey.suggestName();
+        const friendlyName = await Dialog.showDialog({
+            title: '<i class="bi bi-fingerprint me-2"></i>Register a Passkey',
+            size: 'sm',
+            centered: true,
+            body: `
+                <div style="text-align:center; padding: 0.5rem 0 1rem;">
+                    <div style="width:72px; height:72px; background:linear-gradient(135deg, #e7f1ff 0%, #d0e2ff 100%); border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:2rem; color:#0d6efd; margin-bottom:1rem;">
+                        <i class="bi bi-fingerprint"></i>
+                    </div>
+                    <p style="font-size:0.85rem; color:#6c757d; margin-bottom:1.25rem; line-height:1.5;">
+                        Passkeys replace passwords with biometrics — fingerprint, face, or device PIN.
+                        The private key never leaves your device.
+                    </p>
+                    <div class="text-start" style="margin-bottom:0.25rem;">
+                        <label class="form-label fw-semibold" style="font-size:0.82rem;">Name this passkey</label>
+                        <input type="text" class="form-control" id="pss-name-input" value="${suggested}" placeholder="e.g., My MacBook" style="border-radius:8px;">
+                        <div class="form-text">A label so you can identify this passkey later.</div>
+                    </div>
+                </div>`,
+            buttons: [
+                { text: 'Cancel', class: 'btn-secondary', dismiss: true },
+                {
+                    text: '<i class="bi bi-fingerprint me-1"></i>Continue',
+                    class: 'btn-primary',
+                    handler: ({ dialog }) => {
+                        const input = dialog.element?.querySelector('#pss-name-input');
+                        return input?.value?.trim() || suggested;
+                    }
                 }
-            };
+            ]
+        });
+        if (!friendlyName) return;
 
-            if (credential.response.getTransports) {
-                credentialData.transports = credential.response.getTransports();
-            }
-
-            const completeResp = await Passkey.registerComplete({
-                challenge_id: options.challenge_id,
-                credential: credentialData,
-                friendly_name: friendlyName || 'My Passkey'
-            });
-
-            if (completeResp.success) {
-                return true;
+        try {
+            const result = await Passkey.register(friendlyName);
+            if (result.success) {
+                await PasskeySetupView.showSuccess(friendlyName);
             } else {
-                this.getApp()?.toast?.error(completeResp.error || 'Failed to register passkey');
-                return false;
+                PasskeySetupView.showError(result.error);
             }
         } catch (err) {
-            if (err.name === 'NotAllowedError') {
-                this.getApp()?.toast?.error('Passkey creation was blocked or cancelled. Check your browser settings if this persists.');
-                return false;
-            }
+            if (err.name === 'NotAllowedError') return;
             if (err.name === 'SecurityError') {
-                this.getApp()?.toast?.error('Passkeys are not supported on this domain');
+                PasskeySetupView.showError('Passkeys are not supported on this domain. Ensure you are using HTTPS.');
             } else {
                 console.error('Passkey registration error:', err);
-                this.getApp()?.toast?.error('Passkey registration failed');
+                PasskeySetupView.showError(err.message || 'An unexpected error occurred.');
             }
-            return false;
         }
     }
 

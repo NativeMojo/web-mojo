@@ -113,12 +113,12 @@ class TableRow extends ListViewItem {
     }
 
     // Data cells for each column
-    this.columns.forEach(column => {
+    this.columns.forEach((column, columnIndex) => {
       const cellClass = column.class || column.className || '';
       const responsiveClasses = this.getResponsiveClasses(column.visibility);
       const editableClass = column.editable ? 'editable-cell' : '';
       const combinedClasses = [cellClass, responsiveClasses, editableClass].filter(c => c).join(' ');
-      const cellContent = this.buildCellTemplate(column);
+      const cellContent = this.buildCellTemplate(column, columnIndex);
 
       // Determine cell action
       let cellAction = column.action;
@@ -151,7 +151,7 @@ class TableRow extends ListViewItem {
    /**
     * Build template for a single cell
     */
-   buildCellTemplate(column) {
+   buildCellTemplate(column, columnIndex = 0) {
        // Build path for Mustache to access the value
        const path = `model.${column.key}`;
        // Support both 'formatter' and 'format' for consistency with DataView
@@ -161,7 +161,9 @@ class TableRow extends ListViewItem {
          if (typeof formatter === 'string') {
            return `{{{${path}|${formatter}}}}`;
          } else if (typeof formatter === 'function') {
-           return `<span data-formatter="${column.key}">{{${path}}}</span>`;
+           // Keep legacy data-formatter key selector for compatibility, but
+           // use a per-column id so duplicate keys can be formatted correctly.
+           return `<span data-formatter="${column.key}" data-formatter-id="${columnIndex}">{{${path}}}</span>`;
          }
        }
 
@@ -295,9 +297,13 @@ class TableRow extends ListViewItem {
     await super.onAfterRender();
 
     // Apply function formatters
-    this.columns.forEach(column => {
+    this.columns.forEach((column, columnIndex) => {
       if (column.formatter && typeof column.formatter === 'function') {
-        const cell = this.element.querySelector(`[data-formatter="${column.key}"]`);
+        let cell = this.element.querySelector(`[data-formatter-id="${columnIndex}"]`);
+        if (!cell) {
+          // Backward-compatible fallback for existing markup/selectors.
+          cell = this.element.querySelector(`[data-formatter="${column.key}"]`);
+        }
         if (cell) {
           const value = this.model.get ? this.model.get(column.key) : this.model[column.key];
           const context = {

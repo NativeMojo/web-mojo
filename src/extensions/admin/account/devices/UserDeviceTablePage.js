@@ -15,8 +15,8 @@ class UserDeviceTablePage extends TablePage {
             pageName: 'User Devices',
             router: "admin/user/devices",
             Collection: UserDeviceList,
-            
-            itemViewClass: DeviceView,
+
+            // itemViewClass: DeviceView,
             viewDialogOptions: {
                 header: false,
                 size: 'lg'

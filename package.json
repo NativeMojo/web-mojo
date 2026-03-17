@@ -43,6 +43,10 @@
             "import": "./dist/timeline.es.js",
             "require": "./dist/timeline.cjs.js"
         },
+        "./user-profile": {
+            "import": "./dist/user-profile.es.js",
+            "require": "./dist/user-profile.cjs.js"
+        },
         "./models": {
             "import": "./src/core/models/index.js",
             "require": "./src/core/models/index.js"

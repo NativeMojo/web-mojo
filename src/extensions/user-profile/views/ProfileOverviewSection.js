@@ -90,7 +90,6 @@ export default class ProfileOverviewSection extends View {
                 <div class="po-field-row">
                     <div class="po-field-label">Username</div>
                     <div class="po-field-value">{{model.username}}</div>
-                    <button type="button" class="po-field-action" data-action="edit-username" title="Change username"><i class="bi bi-pencil"></i></button>
                 </div>
                 <div class="po-field-row">
                     <div class="po-field-label">Status</div>
@@ -193,52 +192,6 @@ export default class ProfileOverviewSection extends View {
         };
     }
 
-    async onActionEditUsername() {
-        const app = this.getApp();
-        const data = await Dialog.showForm({
-            title: 'Change Username',
-            size: 'sm',
-            submitText: 'Change',
-            fields: [
-                {
-                    name: 'new_username',
-                    type: 'text',
-                    label: 'New Username',
-                    required: true,
-                    placeholder: 'Enter new username',
-                    attributes: { autocomplete: 'off' },
-                    cols: 12
-                },
-                {
-                    name: 'confirm_identity',
-                    type: 'password',
-                    label: 'Current Password',
-                    required: true,
-                    placeholder: 'Required to confirm identity',
-                    showToggle: true,
-                    attributes: { autocomplete: 'off' },
-                    cols: 12
-                }
-            ]
-        });
-        if (!data) return true;
-
-        const resp = await rest.POST('/api/auth/username/change', {
-            username: data.new_username,
-            current_password: data.confirm_identity
-        });
-        if (resp.success) {
-            app?.toast?.success('Username updated');
-            await this.model.fetch({ params: { graph: 'full' } });
-            await this.render();
-            // Re-render parent to update header
-            if (this.parent) await this.parent.render();
-        } else {
-            app?.toast?.error(resp.message || 'Failed to change username');
-        }
-        return true;
-    }
-
     async onActionDeactivateAccount() {
         const app = this.getApp();
         const confirmed = await Dialog.confirm(
@@ -323,9 +276,9 @@ export default class ProfileOverviewSection extends View {
 
         // Step 1: Collect phone number
         const phone = await Dialog.prompt(
-            'Enter your phone number in E.164 format:',
+            'Enter your phone number:',
             'Add Phone Number',
-            { placeholder: '+14155550123' }
+            { placeholder: '(415) 555-0123' }
         );
         if (!phone || !phone.trim()) return true;
 

@@ -51,7 +51,8 @@ export default defineConfig({
         path.resolve(ROOT, 'src/docit.js'),
         path.resolve(ROOT, 'src/admin.js'),
         path.resolve(ROOT, 'src/map.js'),
-        path.resolve(ROOT, 'src/timeline.js')
+        path.resolve(ROOT, 'src/timeline.js'),
+        path.resolve(ROOT, 'src/user-profile.js')
       ],
       name: 'MOJO',
       // Generate multiple formats

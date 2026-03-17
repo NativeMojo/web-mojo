@@ -760,7 +760,7 @@ export default class PortalApp extends WebApp {
         }
 
         try {
-            const { UserProfileView } = await import('@core/views/user/index.js');
+            const { UserProfileView } = await import('@ext/user-profile/index.js');
             const profileView = new UserProfileView({ model: this.activeUser });
 
             await Dialog.showDialog({
@@ -780,7 +780,7 @@ export default class PortalApp extends WebApp {
         if (localStorage.getItem('passkey_setup_dismissed')) return;
 
         try {
-            const { PasskeySetupView } = await import('@core/views/user/index.js');
+            const { PasskeySetupView } = await import('@ext/user-profile/index.js');
             const setupView = new PasskeySetupView();
 
             setupView.on('dismiss', () => {

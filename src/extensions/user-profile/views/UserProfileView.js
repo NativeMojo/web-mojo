@@ -212,14 +212,6 @@ export default class UserProfileView extends View {
         return true;
     }
 
-    async onActionChangePassword() {
-        const app = this.getApp();
-        if (app && app.changePassword) {
-            await app.changePassword();
-        }
-        return true;
-    }
-
     async onActionUpdateEmail() {
         const app = this.getApp();
         const rest = app.rest;
@@ -299,7 +291,7 @@ export default class UserProfileView extends View {
                     type: 'tel',
                     label: 'New Phone Number',
                     required: true,
-                    placeholder: '+14155550123',
+                    placeholder: '(415) 555-0123',
                     attributes: { autocomplete: 'off' },
                     cols: 12
                 }

@@ -1,105 +1,193 @@
-# WEB-MOJO — Agent Entry Point
+# WEB-MOJO — Canonical Agent Contract
 
-WEB-MOJO is a component-based JavaScript framework for building data-driven web applications using Views, Models, Collections, and Mustache templates.
+WEB-MOJO is the source repository for a browser-side JavaScript framework/library. The codebase is organized as core runtime classes in `src/core/`, optional extensions in `src/extensions/`, documentation in `docs/web-mojo/`, and a custom test harness in `test/`.
 
----
-
-## 🚀 Thread Start Protocol
-
-1. Read this file first (you're doing it now).
-2. Read `docs/agent/architecture.md` for project structure and source map.
-3. Read `memory.md` for current work, gotchas, and decisions.
-4. For the task at hand, fetch the relevant remote doc listed below — don't guess, read it.
+This file is the single source of truth for agent workflow in this repo.
 
 ---
 
-## 📚 Framework Documentation (Remote — Fetch When Needed)
+## Mandatory Thread Start
 
-| Topic | URL path (append to base) |
+1. Read `AGENT.md`.
+2. Read `docs/agent/architecture.md`.
+3. Read `memory.md`.
+4. Choose a mode:
+   - Planning → `prompts/planning.md`
+   - Building → `prompts/building.md`
+   - Bug fixing → use building mode plus the bug-fixing rules in this file
+5. Read `docs/web-mojo/README.md`, then the exact docs for the component, class, or pattern you are touching.
+6. Read the target file and at least one nearby similar file before editing.
+7. Check whether the task changes public API, exported behavior, or docs.
+
+---
+
+## Source of Truth
+
+| File | Use |
 |---|---|
-| WebApp | `docs/web-mojo/core/WebApp.md` |
-| PortalApp | `docs/web-mojo/core/PortalApp.md` |
-| View | `docs/web-mojo/core/View.md` |
-| Templates ⚠️ | `docs/web-mojo/core/Templates.md` |
-| DataFormatter | `docs/web-mojo/core/DataFormatter.md` |
-| Model | `docs/web-mojo/core/Model.md` |
-| Collection | `docs/web-mojo/core/Collection.md` |
-| Events | `docs/web-mojo/core/Events.md` |
-| Child Views | `docs/web-mojo/core/ViewChildViews.md` |
-| Advanced Views | `docs/web-mojo/core/AdvancedViews.md` |
-| Page | `docs/web-mojo/pages/Page.md` |
-| FormPage | `docs/web-mojo/pages/FormPage.md` |
-| Rest | `docs/web-mojo/services/Rest.md` |
-| ToastService | `docs/web-mojo/services/ToastService.md` |
-| WebSocketClient | `docs/web-mojo/services/WebSocketClient.md` |
-| Dialog | `docs/web-mojo/components/Dialog.md` |
-| Sidebar & TopNav | `docs/web-mojo/components/SidebarTopNav.md` |
-| ListView | `docs/web-mojo/components/ListView.md` |
-| TableView | `docs/web-mojo/components/TableView.md` |
-| TablePage | `docs/web-mojo/components/TablePage.md` |
-| DataView | `docs/web-mojo/components/DataView.md` |
-| BuiltinModels | `docs/web-mojo/models/BuiltinModels.md` |
-| MOJOUtils | `docs/web-mojo/utils/MOJOUtils.md` |
-| Charts | `docs/web-mojo/extensions/Charts.md` |
-| TabView | `docs/web-mojo/extensions/TabView.md` |
-| MapView / MapLibre | `docs/web-mojo/extensions/MapView.md` |
-| FileUpload | `docs/web-mojo/extensions/FileUpload.md` |
-| LightBox | `docs/web-mojo/extensions/LightBox.md` |
-| TimelineView | `docs/web-mojo/extensions/TimelineView.md` |
-| Location | `docs/web-mojo/extensions/Location.md` |
-| Admin | `docs/web-mojo/extensions/Admin.md` |
-| Forms overview | `docs/web-mojo/forms/README.md` |
-
-**Human-readable portal:** https://nativemojo.com/web-mojo/
+| `AGENT.md` | Master workflow contract for all agents |
+| `docs/agent/architecture.md` | Repo layout, source map, extension map |
+| `memory.md` | Active decisions, gotchas, current work |
+| `docs/web-mojo/README.md` | Local docs index for framework concepts |
+| `docs/web-mojo/**/*.md` | Authoritative framework docs |
+| `prompts/planning.md` | Planning-mode workflow |
+| `prompts/building.md` | Implementation-mode workflow |
+| `DEV_GUIDE.md` | Contributor/build/import guidance |
+| `test/README.md` | Test suite overview |
+| `CHANGELOG.md` | Release-facing behavior changes |
+| `docs/pending_update/` | Draft docs only — not authoritative |
 
 ---
 
-## ⚡ Critical Rules (Violations Cause Bugs)
+## Modes
 
-- **NO `data-action` on `<form>` elements** — put it on `<button type="button">` inside the form
-- **NO data fetching in `onAfterRender()` or `onAfterMount()`** — causes infinite re-render loops; fetch in `onInit()` or action handlers
-- **NO manual `render()`/`mount()` after `addChild()`** — the framework handles it; only set `containerId`
-- **NO `getViewData()` or `get()` on views** — the view instance IS the Mustache context; use `this.property`
-- **`|bool` required for boolean checks** — `{{#flag}}` iterates arrays; `{{#flag|bool}}` does a boolean check
-- **`{{{triple braces}}}` required for HTML output** — double braces always escape
-- **String formatter args need quotes** — `{{date|date:'YYYY-MM-DD'}}` not `{{date|date:YYYY-MM-DD}}`
-- **`{{.property}}` in iterations** — not `{{property}}`; objects need `|iter` to iterate key/value pairs
-- **Pages are cached** — per-visit logic belongs in `onEnter()`, not the constructor or `onInit()`
-- **NO formatters in Chart.js config** — use JS callbacks instead
+### Planning Mode
+Use when the user wants architecture, scoping, sequencing, or design before code. Produce an execution-ready plan before implementation.
 
----
+### Building Mode
+Use when the user wants code changes. Make focused edits, follow existing patterns, and keep diffs small.
 
-## 🛠️ Code Style
-
-- Bootstrap 5.3 for all styling; Bootstrap Icons for all icons
-- `data-action="kebab-case"` → handler `onActionKebabCase(event, element)`
-- `data-container="name"` → child view `containerId: 'name'`
-- Class names PascalCase, match filename; actions kebab-case; containers kebab-case
-- No tests, examples, or docs unless explicitly asked
+### Bug-Fixing Mode
+Use when the task is a defect or regression. Work regression-first:
+- identify the failing behavior
+- add or update a regression test when practical
+- implement the minimal fix
+- verify the bug is fixed without broad collateral changes
 
 ---
 
-## 🧪 Build & Test
+## Non-Negotiable Rules
 
-```sh
-npm run dev          # development server
-npm run build        # production build (full)
-npm run build:lib    # library build
-npm run lint         # ESLint
-```
+- Read the relevant docs before using any framework component. Do not guess `View`, `Page`, `Dialog`, `TableView`, `TabView`, `FormPage`, `Rest`, or template behavior.
+- Internal framework code uses `@core` and `@ext` imports. Do not import `web-mojo` from inside framework source.
+- The primary data object for a view is `this.model`, not `this.runner`, `this.device`, or other custom names. In templates, use `{{model.field}}`.
+- Do not fetch data in `onAfterRender()` or `onAfterMount()`. Fetch in `onInit()`, `onEnter()` for cached pages, or action handlers.
+- Do not manually call `render()` or `mount()` on children after `addChild()`. Set `containerId` and let the framework manage the child lifecycle.
+- `data-action` belongs on clickable or interactive elements, not `<form>`.
+- `data-action="kebab-case"` maps to `onActionKebabCase(event, element)`.
+- `data-container="name"` maps to child views created with `containerId: 'name'`.
+- Pages are cached. Per-visit logic belongs in `onEnter()`, not the constructor or `onInit()`.
+- Use Bootstrap 5.3 classes and Bootstrap Icons.
+- For user-visible async waits, use `showLoading()` / `hideLoading()` around the async work.
+- Do not rely on `docs/pending_update/` for implementation decisions.
 
 ---
 
-## 🗂️ Source of Truth
+## Template Rules That Prevent Bugs
 
-| File | Purpose |
-|---|---|
-| `AGENT.md` | This file — entry point, critical rules, doc index |
-| `docs/agent/architecture.md` | Project structure, patterns, app map |
-| `memory.md` | Current work, gotchas, decisions |
-| `prompts/building.md` | Building-mode mindset and rules |
-| `prompts/planning.md` | Planning-mode output format |
-| `docs/web-mojo/AGENT.md` | Consumer drop-in — copy into other projects to give their agents web-mojo knowledge |
-| `docs/web-mojo/README.md` | Full local docs index |
-| `DEV_GUIDE.md` | Framework contributor guide (build system, extensions) |
-| `docs/pending_update/` | Unreviewed docs — do not rely on these |
+- The view instance is the Mustache context. Use `this.someProperty` in JS and `{{someProperty}}` in templates.
+- For model data, prefer `{{model.field}}` and compute extra display fields on the view instance.
+- Use `{{#flag|bool}}` for boolean checks. Plain `{{#flag}}` can iterate arrays/objects.
+- Use `{{{triple braces}}}` for trusted HTML or data URIs that must not be escaped.
+- Quote string formatter arguments: `{{date|date:'YYYY-MM-DD'}}`.
+- In iterations, use `{{.}}` or `{{.property}}` as appropriate.
+- Do not use Mustache formatters inside Chart.js config objects; use plain JavaScript callbacks there.
+
+---
+
+## Core Conventions by Layer
+
+### Models and Collections
+- Models extend `Model`; collections extend `Collection`.
+- Model constructors usually call `super(data, { endpoint, idAttribute })`.
+- Access model data with `this.model.get('field')` and mutate with `set()`.
+- Collection classes typically declare `ModelClass` and `endpoint`.
+- If a new model file is added under `src/core/models/`, run the model export generator flow used by the repo.
+
+### Views and Pages
+- Views extend `View`; routed screens extend `Page`.
+- Keep file names PascalCase and match the class name.
+- Compose UI with child views and containers instead of hand-managed DOM trees.
+- Read the surrounding file before changing lifecycle or render behavior.
+- For pages, use `onEnter()` / `onExit()` for visit lifecycle and group/route-sensitive refreshes.
+
+### Services and API Usage
+- Prefer existing `Model`, `Collection`, and `app.rest` patterns over ad hoc request code.
+- Preserve response-shape handling already used in the target area.
+- Do not hardcode secrets, tokens, or environment-specific credentials.
+
+### Tests
+- This repo uses a custom test runner: `node test/test-runner.js`.
+- Test suites live primarily in `test/unit`, `test/integration`, and `test/build`.
+- Do not assume standard Jest CLI flow even though many tests use Jest-style globals.
+- For bug fixes, add a regression test when practical and make sure it would fail before the fix.
+
+### Documentation
+- Framework docs live in `docs/web-mojo/`.
+- Update docs when public API, exported behavior, or documented conventions change.
+- Update `CHANGELOG.md` when the change is release-facing.
+- Add important new gotchas or non-obvious decisions to `memory.md`.
+
+---
+
+## Workflow Rules
+
+### Before Editing
+- Read the target file.
+- Read one similar implementation file nearby.
+- Read the exact framework docs for the component/pattern involved.
+- Check `memory.md` for active gotchas and recent decisions.
+- Confirm whether the change touches public API, docs, or changelog.
+- Confirm whether the task is a plan, feature, or bug fix.
+
+### While Editing
+- Keep changes minimal and localized.
+- Match the style and patterns already used in the target area.
+- Avoid one-off abstractions unless the surrounding code already uses them.
+- Preserve existing import style, naming, and file organization.
+
+### Before Delivery
+- Re-read the changed files for consistency.
+- Verify tests or validation steps appropriate to the change.
+- Update docs/changelog if the change affects public behavior.
+- Update `memory.md` if you introduced or discovered a non-obvious rule.
+- Report what changed, why it changed, and how to verify it.
+
+---
+
+## Build and Validation Reference
+
+Use only the commands relevant to the task:
+
+- `npm run dev` — local development server
+- `npm run build` — main build
+- `npm run build:lib` — library build
+- `npm run build:loader` — loader bundle
+- `npm run build:mojo-auth` — auth bundle
+- `npm run build:lite` — lite bundle
+- `npm run lint` — ESLint
+- `npm test` — full custom test runner
+- `npm run test:unit` — unit suite
+- `npm run test:integration` — integration suite
+- `npm run test:build` — build suite
+
+---
+
+## Documentation Quick Lookup
+
+Start with `docs/web-mojo/README.md`, then read the exact topic docs you need:
+
+- App shell work → `core/WebApp.md`, `core/PortalApp.md`
+- View work → `core/View.md`, `core/ViewChildViews.md`, `core/AdvancedViews.md`
+- Templates → `core/Templates.md`, `core/DataFormatter.md`
+- Data layer → `core/Model.md`, `core/Collection.md`
+- Routed screens → `pages/Page.md`, `pages/FormPage.md`
+- HTTP / realtime → `services/Rest.md`, `services/WebSocketClient.md`
+- Dialogs / tables / lists → `components/Dialog.md`, `components/TableView.md`, `components/TablePage.md`, `components/ListView.md`
+- Extensions → `extensions/*.md`
+- Forms → `forms/README.md`
+
+---
+
+## Delivery Checklist
+
+A task is not complete until all applicable items are true:
+
+- The change follows existing repo patterns.
+- Imports use the correct internal alias style.
+- Lifecycle hooks are used correctly.
+- Template rules are respected.
+- Validation or tests appropriate to the task have been considered.
+- Docs and `CHANGELOG.md` are updated if public behavior changed.
+- `memory.md` is updated if a new gotcha or decision was introduced.
+- The final handoff explains what changed, why, and how to verify it.
