@@ -10,18 +10,21 @@
 
 import View from '@core/View.js';
 import SideNavView from '@core/views/navigation/SideNavView.js';
+import TabView from '@core/views/navigation/TabView.js';
 import DataView from '@core/views/data/DataView.js';
 import TableView from '@core/views/table/TableView.js';
 import TableRow from '@core/views/table/TableRow.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import rest from '@core/Rest.js';
 import { User, UserDataView, UserForms, UserDeviceList, UserDeviceLocationList } from '@core/models/User.js';
+import { LoginEventList } from '@core/models/LoginEvent.js';
 import { LogList } from '@core/models/Log.js';
 import { IncidentEventList } from '@core/models/Incident.js';
 import { MemberList } from '@core/models/Member.js';
 import { PushDeviceList } from '@core/models/Push.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 import FormView from '@core/forms/FormView.js';
+import LoginLocationMapView from '../devices/LoginLocationMapView.js';
 import AdminProfileSection from './sections/AdminProfileSection.js';
 import AdminPersonalSection from './sections/AdminPersonalSection.js';
 import AdminSecuritySection from './sections/AdminSecuritySection.js';
@@ -256,29 +259,32 @@ class UserView extends View {
             ]
         });
 
-        // Locations — multiline rows with detail dialog
-        const locationsView = new TableView({
-            collection: new UserDeviceLocationList({ params: { size: 10, user: this.model.get('id') } }),
+        // Locations — TabView with login map + login events table
+        const loginMapView = new LoginLocationMapView({
+            userId: this.model.get('id'),
+            height: 300,
+            mapStyle: 'dark'
+        });
+
+        const loginEventsTable = new TableView({
+            collection: new LoginEventList({ params: { user: this.model.get('id'), size: 10 } }),
             hideActivePillNames: ['user'],
-            clickAction: 'view',
-            itemClass: LocationRow,
             columns: [
-                {
-                    key: 'user_device',
-                    label: 'Session',
-                    template: `
-                        <div style="font-size:0.85rem; font-weight:500;">
-                            <i class="bi {{deviceIcon}} text-muted me-1" style="font-size:1.1rem; vertical-align:middle;"></i>{{browserName}} <span class="text-muted fw-normal">on</span> {{deviceName}}
-                        </div>
-                        <div style="font-size:0.73rem; color:#6c757d; margin-top:0.15rem;">
-                            <i class="bi bi-geo-alt me-1"></i>{{locationText}}
-                            {{#countryName}} <span class="text-muted mx-1">&middot;</span> {{countryName}}{{/countryName}}
-                            {{#model.ip_address}} <span class="text-muted mx-1">&middot;</span> {{model.ip_address}}{{/model.ip_address}}
-                            {{#hasThreatFlags|bool}} <span class="ms-1">{{{threatFlags}}}</span>{{/hasThreatFlags|bool}}
-                        </div>`
-                },
-                { key: 'last_seen', label: 'Last Seen', formatter: 'epoch|relative', width: '120px' }
+                { key: 'created', label: 'Date', formatter: 'datetime', sortable: true, width: '160px' },
+                { key: 'ip_address', label: 'IP Address' },
+                { key: 'city', label: 'City', formatter: "default('—')" },
+                { key: 'region', label: 'Region', formatter: "default('—')" },
+                { key: 'country_code', label: 'Country', sortable: true },
+                { key: 'source', label: 'Source', sortable: true }
             ]
+        });
+
+        const locationsView = new TabView({
+            tabs: {
+                'Map': loginMapView,
+                'Logins': loginEventsTable
+            },
+            activeTab: 'Map'
         });
 
         // Push Devices

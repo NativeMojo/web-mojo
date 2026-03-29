@@ -2,6 +2,7 @@ import View from '@core/View.js';
 import DataView from '@core/views/data/DataView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import { Ticket, TicketForms } from '@core/models/Tickets.js';
+import { UserList } from '@core/models/User.js';
 import ChatView from '@core/views/chat/ChatView.js';
 import TicketNoteAdapter from './adapters/TicketNoteAdapter.js';
 import Dialog from '@core/views/feedback/Dialog.js';
@@ -195,22 +196,26 @@ class TicketView extends View {
             size: 'sm',
             fields: [
                 {
-                    name: 'assigned_to',
-                    type: 'number',
-                    label: 'User ID',
+                    name: 'assignee',
+                    type: 'collection',
+                    label: 'User',
+                    Collection: UserList,
+                    labelField: 'display_name',
+                    valueField: 'id',
                     required: true,
-                    placeholder: 'Enter user ID',
-                    help: 'The user ID to assign this ticket to.'
+                    cols: 12,
+                    value: this.model.get('assignee')
                 }
             ]
         });
         if (!data) return true;
 
-        const resp = await this.model.save({ assigned_to: data.assigned_to });
-        if (resp.status === 200) {
+        try {
+            await this.model.save({ assignee: data.assignee });
             this.getApp()?.toast?.success('Ticket assigned successfully');
-        } else {
-            this.getApp()?.toast?.error('Failed to assign ticket');
+            this.render();
+        } catch (error) {
+            this.getApp()?.toast?.error('Failed to assign ticket: ' + error.message);
         }
         return true;
     }

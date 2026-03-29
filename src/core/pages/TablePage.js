@@ -166,11 +166,19 @@ class TablePage extends Page {
     this.applyQueryToCollection();
 
     // Create TableView instance with all configuration
+    // Intercept item view to add deep-link URL support
     this.tableView = new TableView({
       collection: this.collection,
       containerId: 'table',
       fetchOnMount: true,
-      ...this.tableViewConfig
+      ...this.tableViewConfig,
+      onItemView: async (model, event) => {
+        // Allow subclass onItemView to fully override
+        if (this.tableViewConfig.onItemView) {
+          return this.tableViewConfig.onItemView(model, event);
+        }
+        await this.showItemDialog(model);
+      }
     });
 
     // Add as child view
@@ -278,7 +286,7 @@ class TablePage extends Page {
     if (query.search !== undefined) params.search = query.search;
 
     // Process all other params as potential filters
-    const reservedParams = ['start', 'size', 'sort', 'search', 'page'];
+    const reservedParams = ['start', 'size', 'sort', 'search', 'page', '_item'];
     Object.entries(query).forEach(([key, value]) => {
       if (!reservedParams.includes(key) && value !== undefined && value !== '') {
         // Parse value if it looks like JSON
@@ -367,6 +375,11 @@ class TablePage extends Page {
         !(key in desiredParams)
       );
 
+    // Preserve _item param if currently set (deep-link, not a collection param)
+    if (this.query._item) {
+      desiredParams._item = this.query._item;
+    }
+
     this.query = desiredParams;
     if (!hasChanges && !force) return;
 
@@ -413,6 +426,74 @@ class TablePage extends Page {
         this.tableView.updateSortIcons();
       }, 100);
     }
+
+    // Deep-link: auto-open item dialog if _item param is present
+    if (this.query._item) {
+      this._openDeepLinkedItem(this.query._item);
+    }
+  }
+
+  /**
+   * Open a deep-linked item dialog by fetching the model and showing it
+   */
+  async _openDeepLinkedItem(itemId) {
+    try {
+      const model = await this.collection.fetchOne(itemId);
+      if (model) {
+        await this.showItemDialog(model);
+      }
+    } catch (e) {
+      // Item not found or fetch failed — silently clear the param
+      this._clearItemParam();
+    }
+  }
+
+  /**
+   * Show the item view dialog with deep-link URL support
+   */
+  async showItemDialog(model) {
+    // Update URL with _item param
+    this._setItemParam(model.id);
+
+    // Open the dialog using the same logic as TableView._onRowView
+    const ViewClass = this.tableView.getItemViewClass(model);
+
+    if (ViewClass) {
+      const viewInstance = new ViewClass({ model, collection: this.collection });
+      await Modal.dialog({
+        header: false,
+        body: viewInstance,
+        size: 'lg',
+        centered: false,
+        ...this.tableView.getFormDialogConfig(this.tableView.getModelClass(model)),
+        ...this.tableView.viewDialogOptions
+      });
+    } else {
+      await Modal.data({
+        title: `View ${this.tableView.getModelName(model)} #${model.id}`,
+        model
+      });
+    }
+
+    // Dialog closed — remove _item from URL
+    this._clearItemParam();
+  }
+
+  /**
+   * Add _item param to URL
+   */
+  _setItemParam(itemId) {
+    const params = { ...this.query, _item: itemId };
+    this.query = params;
+    this.updateBrowserUrl(params, true, false);
+  }
+
+  /**
+   * Remove _item param from URL
+   */
+  _clearItemParam() {
+    delete this.query._item;
+    this.updateBrowserUrl(this.query, true, false);
   }
 
   /**

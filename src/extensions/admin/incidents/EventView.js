@@ -7,9 +7,35 @@ import TabView from '@core/views/navigation/TabView.js';
 import DataView from '@core/views/data/DataView.js';
 import StackTraceView from '@core/views/data/StackTraceView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
+import Modal from '@core/views/feedback/Modal.js';
 import { Incident, IncidentEvent } from '@core/models/Incident.js';
+import { User, UserDevice, UserDeviceLocation } from '@core/models/User.js';
+import { GeoLocatedIP } from '@core/models/System.js';
+import { Member } from '@core/models/Member.js';
+import { Ticket } from '@core/models/Tickets.js';
+import { Job } from '@core/models/Job.js';
+import { Log } from '@core/models/Log.js';
+import { ApiKey } from '@core/models/ApiKey.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 import IncidentView from './IncidentView.js';
+
+/**
+ * Map of model_name strings (as returned by the API) to Model classes.
+ * Used to resolve the related model for "View Related Model" actions.
+ */
+const MODEL_REGISTRY = {
+    user: User,
+    userdevice: UserDevice,
+    userdevicelocation: UserDeviceLocation,
+    geolocatedip: GeoLocatedIP,
+    member: Member,
+    incident: Incident,
+    incidentevent: IncidentEvent,
+    ticket: Ticket,
+    job: Job,
+    log: Log,
+    apikey: ApiKey,
+};
 
 class EventView extends View {
     constructor(options = {}) {
@@ -139,13 +165,27 @@ class EventView extends View {
     }
 
     async onActionViewModel() {
-        const modelClass = this.model.get('model_name') || this.model.get('model_class');
+        const modelName = this.model.get('model_name') || this.model.get('model_class');
         const objectId = this.model.get('model_id') || this.model.get('object_id');
-        if (!modelClass || !objectId) {
+        if (!modelName || !objectId) {
             this.getApp()?.toast?.warning('No related model linked to this event');
             return true;
         }
-        this.getApp()?.toast?.info('Related model: ' + modelClass + ' #' + objectId);
+
+        const key = modelName.toLowerCase().replace(/[^a-z]/g, '');
+        const ModelClass = MODEL_REGISTRY[key];
+
+        if (!ModelClass) {
+            this.getApp()?.toast?.warning(`Unknown model type: ${modelName}`);
+            return true;
+        }
+
+        if (!ModelClass.VIEW_CLASS) {
+            this.getApp()?.toast?.warning(`No detail view available for ${modelName}`);
+            return true;
+        }
+
+        await Modal.showModelById(ModelClass, objectId);
     }
 
     async onActionDeleteEvent() {
