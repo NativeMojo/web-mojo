@@ -138,6 +138,12 @@ class IncidentDashboardPage extends Page {
                     <div class="col-xl-6 col-lg-12" data-container="incidents-widget"></div>
                 </div>
 
+                <!-- Security Metrics -->
+                <div class="row g-4 mt-1">
+                    <div class="col-xl-4 col-lg-6 col-12" data-container="firewall-blocks-widget"></div>
+                    <div class="col-xl-4 col-lg-6 col-12" data-container="bouncer-blocks-widget"></div>
+                    <div class="col-xl-4 col-lg-6 col-12" data-container="bouncer-prescreen-widget"></div>
+                </div>
 
                 <div class="row g-4 mt-1">
                     <div class="col-12">
@@ -276,6 +282,88 @@ class IncidentDashboardPage extends Page {
         });
         this.addChild(this.incidentsWidget);
 
+        // Security metric widgets
+        this.firewallBlocksWidget = new MetricsMiniChartWidget({
+            containerId: 'firewall-blocks-widget',
+            icon: 'bi bi-shield-x fs-2',
+            title: 'Firewall Blocks',
+            subtitle: '{{now_value}} <span class="subtitle-label">{{now_label}}</span>',
+            background: '#922B21',
+            textColor: '#FFFFFF',
+            endpoint: '/api/metrics/fetch',
+            granularity: 'days',
+            slugs: ['firewall:blocks'],
+            account: 'incident',
+            chartType: 'line',
+            showTooltip: true,
+            showXAxis: false,
+            height: 120,
+            color: 'rgba(255,255,255,0.9)',
+            fill: true,
+            fillColor: 'rgba(255,255,255,0.2)',
+            smoothing: 0.3,
+            defaultDateRange: '7d',
+            valueFormat: 'number',
+            showTrending: true,
+            showSettings: true,
+            settingsKey: 'incident-dashboard-firewall-blocks'
+        });
+        this.addChild(this.firewallBlocksWidget);
+
+        this.bouncerBlocksWidget = new MetricsMiniChartWidget({
+            containerId: 'bouncer-blocks-widget',
+            icon: 'bi bi-person-slash fs-2',
+            title: 'Bouncer Blocks',
+            subtitle: '{{now_value}} <span class="subtitle-label">{{now_label}}</span>',
+            background: '#6C3483',
+            textColor: '#FFFFFF',
+            endpoint: '/api/metrics/fetch',
+            granularity: 'days',
+            slugs: ['bouncer:blocks'],
+            account: 'incident',
+            chartType: 'line',
+            showTooltip: true,
+            showXAxis: false,
+            height: 120,
+            color: 'rgba(255,255,255,0.9)',
+            fill: true,
+            fillColor: 'rgba(255,255,255,0.2)',
+            smoothing: 0.3,
+            defaultDateRange: '7d',
+            valueFormat: 'number',
+            showTrending: true,
+            showSettings: true,
+            settingsKey: 'incident-dashboard-bouncer-blocks'
+        });
+        this.addChild(this.bouncerBlocksWidget);
+
+        this.bouncerPrescreenWidget = new MetricsMiniChartWidget({
+            containerId: 'bouncer-prescreen-widget',
+            icon: 'bi bi-funnel fs-2',
+            title: 'Pre-Screen Blocks',
+            subtitle: '{{now_value}} <span class="subtitle-label">{{now_label}}</span>',
+            background: '#1A5276',
+            textColor: '#FFFFFF',
+            endpoint: '/api/metrics/fetch',
+            granularity: 'days',
+            slugs: ['bouncer:pre_screen_blocks'],
+            account: 'incident',
+            chartType: 'line',
+            showTooltip: true,
+            showXAxis: false,
+            height: 120,
+            color: 'rgba(255,255,255,0.9)',
+            fill: true,
+            fillColor: 'rgba(255,255,255,0.2)',
+            smoothing: 0.3,
+            defaultDateRange: '7d',
+            valueFormat: 'number',
+            showTrending: true,
+            showSettings: true,
+            settingsKey: 'incident-dashboard-bouncer-prescreen'
+        });
+        this.addChild(this.bouncerPrescreenWidget);
+
         this.eventsByCountryChart = new MetricsChart({
             title: '<i class="bi bi-globe-central-south-asia me-2"></i> Events by Country',
             endpoint: '/api/metrics/fetch',
@@ -378,6 +466,9 @@ class IncidentDashboardPage extends Page {
             this.header?.model?.fetch()?.then(() => this.header.render()),
             this.eventsWidget?.refresh(),
             this.incidentsWidget?.refresh(),
+            this.firewallBlocksWidget?.refresh(),
+            this.bouncerBlocksWidget?.refresh(),
+            this.bouncerPrescreenWidget?.refresh(),
             this.eventsByCountryChart?.refresh(),
             this.incidentsByCountryChart?.refresh(),
             this.eventsCountryMap?.refresh(),

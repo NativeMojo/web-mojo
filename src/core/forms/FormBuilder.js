@@ -65,7 +65,7 @@ class FormBuilder {
         <div class="mojo-form-control">
           {{#label}}
           <label for="{{fieldId}}" class="{{labelClass}}">
-            {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}
+            {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}{{#tooltip}} <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip" title="{{tooltip}}" style="font-size: 0.75rem; cursor: help;"></i>{{/tooltip}}
           </label>
           {{/label}}
           {{#showCopy}}
@@ -96,7 +96,7 @@ class FormBuilder {
         <div class="mojo-form-control">
           {{#label}}
           <label for="{{fieldId}}" class="{{labelClass}}">
-            {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}
+            {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}{{#tooltip}} <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip" title="{{tooltip}}" style="font-size: 0.75rem; cursor: help;"></i>{{/tooltip}}
           </label>
           {{/label}}
           <div class="input-group">
@@ -141,7 +141,7 @@ class FormBuilder {
         <div class="mojo-form-control">
           {{#label}}
           <label for="{{fieldId}}" class="{{labelClass}}">
-            {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}
+            {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}{{#tooltip}} <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip" title="{{tooltip}}" style="font-size: 0.75rem; cursor: help;"></i>{{/tooltip}}
           </label>
           {{/label}}
           {{#showCopy}}
@@ -170,7 +170,7 @@ class FormBuilder {
         <div class="mojo-form-control">
           {{#label}}
           <label for="{{fieldId}}" class="{{labelClass}}">
-            {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}
+            {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}{{#tooltip}} <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip" title="{{tooltip}}" style="font-size: 0.75rem; cursor: help;"></i>{{/tooltip}}
           </label>
           {{/label}}
           <div class="position-relative">
@@ -207,7 +207,7 @@ class FormBuilder {
         <div class="mojo-form-control">
           {{#label}}
           <label for="{{fieldId}}" class="{{labelClass}}">
-            {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}
+            {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}{{#tooltip}} <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip" title="{{tooltip}}" style="font-size: 0.75rem; cursor: help;"></i>{{/tooltip}}
           </label>
           {{/label}}
           {{#searchInput}}{{{searchInput}}}{{/searchInput}}
@@ -228,7 +228,7 @@ class FormBuilder {
                    class="form-check-input{{#error}} is-invalid{{/error}}" value="{{value}}"
                    {{#checked}}checked{{/checked}} {{#required}}required{{/required}}
                      {{#disabled}}disabled{{/disabled}} {{{attrs}}}>
-              <label class="form-check-label" for="{{fieldId}}">{{label}}</label>
+              <label class="form-check-label" for="{{fieldId}}">{{label}}{{#tooltip}} <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip" title="{{tooltip}}" style="font-size: 0.75rem; cursor: help;"></i>{{/tooltip}}</label>
             </div>
             {{#help}}<div class="{{helpClass}}">{{help}}</div>{{/help}}
             {{#error}}<div class="{{errorClass}}">{{error}}</div>{{/error}}
@@ -243,7 +243,7 @@ class FormBuilder {
                    {{#checked}}checked{{/checked}} {{#required}}required{{/required}}
                    {{#disabled}}disabled{{/disabled}} data-change-action="toggle-switch"
                    data-field="{{name}}" {{{attrs}}}>
-            <label class="form-check-label" for="{{fieldId}}">{{label}}</label>
+            <label class="form-check-label" for="{{fieldId}}">{{label}}{{#tooltip}} <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip" title="{{tooltip}}" style="font-size: 0.75rem; cursor: help;"></i>{{/tooltip}}</label>
           </div>
           {{#help}}<div class="{{helpClass}}">{{help}}</div>{{/help}}
           {{#error}}<div class="{{errorClass}}">{{error}}</div>{{/error}}
@@ -254,7 +254,7 @@ class FormBuilder {
         <div class="mojo-form-control" style="display: flex; flex-direction: column; align-items: center;">
           {{#label}}
           <label for="{{fieldId}}" class="{{labelClass}}">
-            {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}
+            {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}{{#tooltip}} <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip" title="{{tooltip}}" style="font-size: 0.75rem; cursor: help;"></i>{{/tooltip}}
           </label>
           {{/label}}
           <div class="image-field-container {{containerClass}}" id="{{dropZoneId}}" style="width: {{width}}px; height: {{height}}px;">
@@ -304,7 +304,7 @@ class FormBuilder {
         <div class="mojo-form-control">
           {{#label}}
           <label for="{{fieldId}}" class="{{labelClass}}">
-            {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}
+            {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}{{#tooltip}} <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip" title="{{tooltip}}" style="font-size: 0.75rem; cursor: help;"></i>{{/tooltip}}
           </label>
           {{/label}}
           <input type="file" id="{{fieldId}}" name="{{name}}" class="{{inputClass}}{{#error}} is-invalid{{/error}}"
@@ -417,7 +417,7 @@ class FormBuilder {
         <div class="mojo-form-control">
           {{#label}}
           <label for="{{fieldId}}" class="{{labelClass}}">
-            {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}
+            {{label}}{{#required}}<span class="text-danger">*</span>{{/required}}{{#tooltip}} <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip" title="{{tooltip}}" style="font-size: 0.75rem; cursor: help;"></i>{{/tooltip}}
           </label>
           {{/label}}
           <div class="d-flex align-items-center gap-2">
@@ -1063,6 +1063,7 @@ class FormBuilder {
       label: label ? this.escapeHtml(label) : null,
       placeholder: placeholder ? this.escapeHtml(placeholder) : null,
       help: help ? this.escapeHtml(help) : null,
+      tooltip: field.tooltip ? this.escapeHtml(field.tooltip) : null,
       error: error ? this.escapeHtml(error) : null,
       required,
       disabled,
@@ -1131,6 +1132,7 @@ class FormBuilder {
       label: label ? this.escapeHtml(label) : null,
       placeholder: placeholder ? this.escapeHtml(placeholder) : null,
       help: help ? this.escapeHtml(help) : null,
+      tooltip: field.tooltip ? this.escapeHtml(field.tooltip) : null,
       error: error ? this.escapeHtml(error) : null,
       rows: rows || 3,
       required,
@@ -1181,6 +1183,7 @@ class FormBuilder {
       label: label ? this.escapeHtml(label) : null,
       placeholder: placeholder ? this.escapeHtml(placeholder) : null,
       help: help ? this.escapeHtml(help) : null,
+      tooltip: field.tooltip ? this.escapeHtml(field.tooltip) : null,
       error: error ? this.escapeHtml(error) : null,
       rows: rows || 5,
       required,
@@ -1245,6 +1248,7 @@ class FormBuilder {
       label: label ? this.escapeHtml(label) : null,
       placeholder: placeholder ? this.escapeHtml(placeholder) : null,
       help: help ? this.escapeHtml(help) : null,
+      tooltip: field.tooltip ? this.escapeHtml(field.tooltip) : null,
       error: error ? this.escapeHtml(error) : null,
       rows: rows || 3,
       required,
@@ -1335,6 +1339,7 @@ class FormBuilder {
       name,
       label: label ? this.escapeHtml(label) : null,
       help: help ? this.escapeHtml(help) : null,
+      tooltip: field.tooltip ? this.escapeHtml(field.tooltip) : null,
       error: error ? this.escapeHtml(error) : null,
       searchInput: searchable ? searchInput : null,
       optionsHTML,
@@ -1435,6 +1440,7 @@ class FormBuilder {
       name,
       label: this.escapeHtml(label),
       help: help ? this.escapeHtml(help) : null,
+      tooltip: field.tooltip ? this.escapeHtml(field.tooltip) : null,
       error: error ? this.escapeHtml(error) : null,
       value: this.escapeHtml(value),
       fieldClass,
@@ -1480,6 +1486,7 @@ class FormBuilder {
       name,
       label: this.escapeHtml(label),
       help: help ? this.escapeHtml(help) : null,
+      tooltip: field.tooltip ? this.escapeHtml(field.tooltip) : null,
       error: error ? this.escapeHtml(error) : null,
       value: this.escapeHtml(value),
       sizeClass,
@@ -1549,7 +1556,7 @@ class FormBuilder {
     return `
       <div class="mojo-form-control">
         ${label ? `<fieldset>
-          <legend class="${this.options.labelClass}">${this.escapeHtml(label)}</legend>
+          <legend class="${this.options.labelClass}">${this.escapeHtml(label)}${this.renderTooltipIcon(field)}</legend>
           <div class="${fieldClass}">
             ${optionsHTML}
           </div>
@@ -1620,6 +1627,7 @@ class FormBuilder {
       name,
       label: label ? this.escapeHtml(label) : null,
       help: help ? this.escapeHtml(help) : null,
+      tooltip: field.tooltip ? this.escapeHtml(field.tooltip) : null,
       error: error ? this.escapeHtml(error) : null,
       accept,
       required,
@@ -1682,6 +1690,7 @@ class FormBuilder {
       name,
       label: label ? this.escapeHtml(label) : null,
       help: help ? this.escapeHtml(help) : null,
+      tooltip: field.tooltip ? this.escapeHtml(field.tooltip) : null,
       error: error ? this.escapeHtml(error) : null,
       dropZoneId,
       previewId,
@@ -1781,6 +1790,7 @@ class FormBuilder {
       label: label ? this.escapeHtml(label) : null,
       placeholder: placeholder ? this.escapeHtml(placeholder) : null,
       help: help ? this.escapeHtml(help) : null,
+      tooltip: field.tooltip ? this.escapeHtml(field.tooltip) : null,
       error: error ? this.escapeHtml(error) : null,
       required,
       disabled,
@@ -1826,6 +1836,7 @@ class FormBuilder {
       name,
       label: label ? this.escapeHtml(label) : null,
       help: help ? this.escapeHtml(help) : null,
+      tooltip: field.tooltip ? this.escapeHtml(field.tooltip) : null,
       error: error ? this.escapeHtml(error) : null,
       min,
       max,
@@ -2028,7 +2039,7 @@ class FormBuilder {
 
     return `
       <div class="mojo-form-control">
-        ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}</label>` : ''}
+        ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}${this.renderTooltipIcon(field)}</label>` : ''}
         <div class="tag-input-placeholder"
              data-field-name="${name}"
              data-field-type="tag"
@@ -2090,7 +2101,7 @@ class FormBuilder {
 
     return `
       <div class="mojo-form-control">
-        ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}</label>` : ''}
+        ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}${this.renderTooltipIcon(field)}</label>` : ''}
         <div class="collection-select-placeholder"
              data-field-name="${name}"
              data-field-type="collection"
@@ -2159,7 +2170,7 @@ class FormBuilder {
 
     return `
       <div class="mojo-form-control">
-        ${label ? `<label class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}</label>` : ''}
+        ${label ? `<label class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}${this.renderTooltipIcon(field)}</label>` : ''}
         <div class="collection-multiselect-placeholder"
              data-field-name="${name}"
              data-field-type="collectionmultiselect"
@@ -2216,7 +2227,7 @@ class FormBuilder {
 
     return `
       <div class="mojo-form-control">
-        ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}</label>` : ''}
+        ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}${this.renderTooltipIcon(field)}</label>` : ''}
         <div class="date-picker-placeholder"
              data-field-name="${name}"
              data-field-type="datepicker"
@@ -2288,7 +2299,7 @@ class FormBuilder {
 
     return `
       <div class="mojo-form-control">
-        ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}</label>` : ''}
+        ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}${this.renderTooltipIcon(field)}</label>` : ''}
         <div class="date-range-picker-placeholder"
              data-field-name="${name || startName || 'daterange'}"
              data-field-type="daterange"
@@ -2450,7 +2461,7 @@ class FormBuilder {
     // Create placeholder div that will be replaced with ComboBox component
     return `
       <div class="mojo-form-control">
-        ${label ? `<label class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}</label>` : ''}
+        ${label ? `<label class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}${this.renderTooltipIcon(field)}</label>` : ''}
         <div class="combobox-placeholder"
              data-field-name="${name}"
              data-field-type="combobox"
@@ -2650,6 +2661,16 @@ class FormBuilder {
     const div = document.createElement('div');
     div.textContent = String(str);
     return div.innerHTML;
+  }
+
+  /**
+   * Render a tooltip icon for a field
+   * @param {Object} field - Field configuration with optional tooltip property
+   * @returns {string} HTML for tooltip icon, or empty string
+   */
+  renderTooltipIcon(field) {
+    if (!field || !field.tooltip) return '';
+    return ` <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip" title="${this.escapeHtml(field.tooltip)}" style="font-size: 0.75rem; cursor: help;"></i>`;
   }
 }
 

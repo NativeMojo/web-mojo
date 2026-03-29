@@ -24,7 +24,7 @@ class ToastService {
       containerId: 'toast-container',
       position: 'top-end', // top-start, top-center, top-end, middle-start, etc.
       autohide: true,
-      defaultDelay: 5000, // 5 seconds
+      defaultDelay: 3000, // 3 seconds
       maxToasts: 5, // Maximum number of toasts to show at once
       ...options
     };
@@ -222,6 +222,7 @@ class ToastService {
       autohide: this.options.autohide,
       delay: this.options.defaultDelay,
       dismissible: true,
+      size: 'md', // View toasts default to medium
       ...options
     };
 
@@ -285,7 +286,7 @@ class ToastService {
   createToastElement(id, message, type, config) {
     const toast = document.createElement('div');
     toast.id = id;
-    toast.className = `toast toast-service-${type}`;
+    toast.className = `toast toast-service-${type}${config.size ? ` toast-${config.size}` : ''}`;
     toast.setAttribute('role', 'alert');
     toast.setAttribute('aria-live', 'assertive');
     toast.setAttribute('aria-atomic', 'true');
@@ -307,7 +308,7 @@ class ToastService {
   createViewToastElement(id, view, type, config) {
     const toast = document.createElement('div');
     toast.id = id;
-    toast.className = `toast toast-service-${type}`;
+    toast.className = `toast toast-service-${type}${config.size ? ` toast-${config.size}` : ''}`;
     toast.setAttribute('role', 'alert');
     toast.setAttribute('aria-live', 'assertive');
     toast.setAttribute('aria-atomic', 'true');

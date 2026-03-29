@@ -23,6 +23,7 @@ import EventBus from '@core/utils/EventBus.js';
 // Dialog is intentionally not imported statically to avoid circular deps and reduce initial bundle size.
 // It will be loaded lazily inside helper methods when needed.
 import rest from '@core/Rest.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 class WebApp {
     constructor(config = {}) {
@@ -75,6 +76,7 @@ class WebApp {
         // Global event bus (singleton for the app)
         this.events = new EventBus();
         this.rest = rest;
+        this.modal = Modal;
         if (config.api) {
             this.rest.configure(config.api);
         }

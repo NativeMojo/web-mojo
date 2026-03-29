@@ -10,8 +10,11 @@ You are implementing requests in the WEB-MOJO framework source repo. You have al
 
 ## Workflow
 
+> **⚠️ FIRST STEP — ALWAYS:** Before planning, exploring, or writing any code, record the request in `planning/requests/`. If a request file does not already exist for the current task, create one from `planning/requests/_template.md` immediately. No work begins until the request is tracked.
+
 For each request:
 
+0. **Record** — create a request file in `planning/requests/` from `_template.md` **before doing anything else**. If a file already exists for this task, confirm it is up to date. Every task — no matter how small — must have a tracked request file before planning or implementation begins.
 1. **Understand** — read the request file and restate the goal in concrete terms.
 2. **Explore** — read the relevant source files and fetch the matching framework docs before coding.
 3. **Plan + confirm** — propose the smallest correct implementation plan and wait for user confirmation before editing.
@@ -34,6 +37,7 @@ For each request:
 - Bootstrap 5.3 for styling; Bootstrap Icons for icons.
 - `data-action="kebab-case"` → `onActionKebabCase(event, element)`
 - `data-container="name"` → child view with `containerId: 'name'`
+- REST API uses standard CRUD endpoints for all access — admin and user alike. Permissions (User → Group → Member) handle authorization. Admins filter with query params (e.g., `/api/account/api_keys?user=123`). Never create or assume separate admin-scoped endpoints like `/api/user/{id}/resource`.
 - Fetch data in `onInit()` or action handlers — never in `onAfterRender()` or `onAfterMount()`
 - Never manually call `child.render()` or `child.mount()` after `addChild()`
 - Boolean template checks require `|bool`; unescaped HTML/data URIs require `{{{triple braces}}}`
@@ -79,6 +83,9 @@ Run the narrowest validation that proves the request works:
 - `npm run build:lib` for package build validation
 - `npm run lint` for lint-only validation
 - `npm test` when the change spans multiple areas
+- **Chrome UI smoke test** for any page, view, or navigation changes — see `prompts/testing.md`
+
+When Chrome MCP tools are available, run a UI smoke test after implementing any visual change. Use `find` + `computer left_click` for real mouse interaction (never `.click()` via JS). Use `javascript_tool` only for DOM assertions. See `prompts/testing.md` for the full testing protocol.
 
 Add or update tests when:
 - behavior changes in a reusable framework primitive

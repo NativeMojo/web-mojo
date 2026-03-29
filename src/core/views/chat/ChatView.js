@@ -170,7 +170,7 @@ class ChatView extends View {
             }
             
             // If there are multiple files, or files without text, create a note for each
-            const startIndex = (data.text && data.text.trim() && data.files.length > 0) ? 1 : 0;
+            const startIndex = (data.text && data.text.trim() && data.files?.length > 0) ? 1 : 0;
             
             for (let i = startIndex; i < (data.files?.length || 0); i++) {
                 const file = data.files[i];
@@ -201,7 +201,11 @@ class ChatView extends View {
             console.error('Failed to send message:', error);
             // Reset busy state on error
             this.inputView.setBusy(false);
-            // TODO: Show error feedback to user
+            try {
+                this.getApp().toast.error('Failed to send message');
+            } catch (e) {
+                // Toast not available — fail silently
+            }
         }
     }
 

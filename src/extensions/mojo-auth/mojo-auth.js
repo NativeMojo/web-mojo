@@ -291,6 +291,57 @@
         },
 
         /**
+         * Login with a passkey (WebAuthn) without requiring a username.
+         * Uses discoverable credentials — browser shows all passkeys for this domain.
+         * Handles the full begin → browser prompt → complete flow.
+         * Stores tokens on success.
+         * @returns {Promise<object>}
+         */
+        loginWithPasskeyDiscoverable: function () {
+            if (!MojoAuth.isPasskeySupported()) {
+                return Promise.reject(new Error('Passkeys are not supported in this browser'));
+            }
+
+            // Step 1: Begin with no username — server returns empty allowCredentials
+            return post(ep('passkeyLoginBegin'), {})
+                .then(function (resp) {
+                    var d = resp.data || resp;
+                    var challengeId = d.challenge_id;
+                    var publicKey = d.publicKey;
+
+                    publicKey.challenge = base64urlToBuffer(publicKey.challenge);
+                    if (publicKey.allowCredentials) {
+                        publicKey.allowCredentials = publicKey.allowCredentials.map(function (c) {
+                            return Object.assign({}, c, { id: base64urlToBuffer(c.id) });
+                        });
+                    }
+
+                    return navigator.credentials.get({ publicKey: publicKey })
+                        .then(function (credential) {
+                            if (!credential) throw new Error('No credential received from authenticator');
+
+                            return post(ep('passkeyLoginComplete'), {
+                                challenge_id: challengeId,
+                                credential: {
+                                    id: credential.id,
+                                    rawId: bufferToBase64url(credential.rawId),
+                                    type: credential.type,
+                                    response: {
+                                        clientDataJSON:    bufferToBase64url(credential.response.clientDataJSON),
+                                        authenticatorData: bufferToBase64url(credential.response.authenticatorData),
+                                        signature:         bufferToBase64url(credential.response.signature),
+                                        userHandle:        credential.response.userHandle
+                                            ? bufferToBase64url(credential.response.userHandle)
+                                            : null
+                                    }
+                                }
+                            });
+                        });
+                })
+                .then(saveTokens);
+        },
+
+        /**
          * Login with a passkey (WebAuthn).
          * Handles the full begin → browser prompt → complete flow.
          * Stores tokens on success.
@@ -353,8 +404,21 @@
          * Fetches the authorization URL from the backend and redirects the browser.
          * @returns {Promise<void>}
          */
-        startGoogleLogin: function () {
-            return get(ep('oauthBegin', { provider: 'google' }))
+        /**
+         * Start an OAuth login flow for any provider.
+         * Stores the provider in sessionStorage so the callback page knows which provider to complete.
+         * @param {string} provider     - e.g. 'google', 'apple'
+         * @param {string} [callbackUrl] - URL Google/Apple should redirect back to.
+         *                                 Defaults to the current page URL (strip query/hash).
+         *                                 Must be registered in the provider's console AND
+         *                                 allowed by the backend (ALLOWED_REDIRECT_URLS or per-group).
+         * @returns {Promise<void>}
+         */
+        startOAuthLogin: function (provider, callbackUrl) {
+            sessionStorage.setItem('oauth_provider', provider);
+            var redirectUri = callbackUrl || (window.location.origin + window.location.pathname);
+            var url = ep('oauthBegin', { provider: provider }) + '?redirect_uri=' + encodeURIComponent(redirectUri);
+            return get(url)
                 .then(function (resp) {
                     var d = resp.data || resp;
                     if (!d.auth_url) throw new Error('No auth_url in OAuth begin response');
@@ -362,21 +426,31 @@
                 });
         },
 
+        startGoogleLogin: function (callbackUrl) {
+            return MojoAuth.startOAuthLogin('google', callbackUrl);
+        },
+
         /**
-         * Complete Google OAuth login — call this on your OAuth callback page.
+         * Complete OAuth login for any provider — call this on your OAuth callback page.
          * Reads ?code and ?state from the current URL automatically.
          * Stores tokens on success.
+         * @param {string} provider  - e.g. 'google'
          * @returns {Promise<object>}
          */
-        completeGoogleLogin: function () {
+        completeOAuthLogin: function (provider) {
             var params = new URLSearchParams(window.location.search);
             var code  = params.get('code');
             var state = params.get('state');
             if (!code) return Promise.reject(new Error('No OAuth code in URL'));
-            return post(ep('oauthComplete', { provider: 'google' }), {
+            return post(ep('oauthComplete', { provider: provider }), {
                 code: code,
                 state: state
             }).then(saveTokens);
+        },
+
+        /** @deprecated use completeOAuthLogin('google') */
+        completeGoogleLogin: function () {
+            return MojoAuth.completeOAuthLogin('google');
         },
 
         // -----------------------------------------------------------------------

@@ -1,5 +1,25 @@
 # Dialog
 
+> **⚠️ Deprecated — use [Modal](Modal.md) instead.**
+> Dialog still works and is not being removed, but new code should use `Modal` (or `app.modal`) for a simpler API. Modal wraps Dialog's static helpers — no need to learn a new system.
+>
+> ```js
+> // ❌ Old — don't do this
+> import Dialog from '@core/views/feedback/Dialog.js';
+> const dialog = new Dialog({ body: view, size: 'lg' });
+> await dialog.render(true, document.body);
+> dialog.show();
+>
+> // ✅ New — use Modal
+> import Modal from '@core/views/feedback/Modal.js';
+> await Modal.show(view);
+>
+> // ✅ Or via app instance
+> await app.modal.show(view);
+> await app.modal.showModel(userModel);
+> await app.modal.confirm('Delete?');
+> ```
+
 **Dialog** is WEB-MOJO's full-featured modal dialog system. It wraps Bootstrap 5 modals with a rich, declarative API for alerts, confirms, prompts, forms, data views, code display, and fully custom content — all driven by static helper methods that return Promises.
 
 ---

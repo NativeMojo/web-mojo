@@ -193,11 +193,11 @@ const IncidentForms = {
                 cols: 6,
             },
             {
-                name: 'state',
+                name: 'status',
                 type: 'select',
-                label: 'State',
-                placeholder: 'Select State',
-                options: ['new', 'opened', 'paused', 'ignore', 'resolved'],
+                label: 'Status',
+                placeholder: 'Select Status',
+                options: ['open', 'investigating', 'resolved', 'closed', 'paused', 'ignored'],
                 cols: 3,
             },
             {

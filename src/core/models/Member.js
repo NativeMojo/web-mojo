@@ -73,6 +73,25 @@ const MemberForms = {
 };
 
 
+Member.PERMISSIONS = [
+    { name: "manage_group", label: "Group Admin" },
+    { name: "view_metrics", label: "View Metrics" },
+    { name: "view_logs", label: "View Logs" },
+    { name: "view_tickets", label: "View Tickets" },
+    { name: "view_members", label: "View Members" },
+    { name: "manage_members", label: "Manage Members" },
+    { name: "view_billing", label: "View Billing" }
+];
+
+Member.PERMISSION_FIELDS = [
+    ...Member.PERMISSIONS.map(permission => ({
+        name: `permissions.${permission.name}`,
+        type: 'switch',
+        label: permission.label,
+        columns: 6
+    }))
+];
+
 Member.EDIT_FORM = MemberForms.edit;
 Member.ADD_FORM = MemberForms.create;
 

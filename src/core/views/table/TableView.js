@@ -21,7 +21,9 @@
 import ListView from '../list/ListView.js';
 import TableRow from './TableRow.js';
 import Mustache from '@core/utils/mustache.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
+// Note: Modal wraps Dialog's static helpers. Use Modal.dialog() for generic,
+// Modal.show(view) for views, Modal.confirm/form/modelForm for helpers.
 import FormView from '@core/forms/FormView.js';
 import dataFormatter from '@core/utils/DataFormatter.js';
 import { parseFilterKey, formatFilterDisplay } from '@core/utils/DjangoLookups.js';
@@ -1151,7 +1153,7 @@ class TableView extends ListView {
     if (ViewClass) {
       // Use custom view class
       const viewInstance = new ViewClass({ model: event.model, collection: this.collection });
-      await Dialog.showDialog({
+      await Modal.dialog({
         header: false,
         body: viewInstance,
         size: 'lg',
@@ -1161,7 +1163,7 @@ class TableView extends ListView {
       });
     } else {
       // Fallback to data view
-      await Dialog.showData({
+      await Modal.data({
         title: `View ${this.getModelName(event.model)} #${event.model.id}`,
         model: event.model
       });
@@ -1188,7 +1190,7 @@ class TableView extends ListView {
             formConfig = { title: `Edit ${this.getModelName(event.model)}`, fields: formConfig };
         }
 
-      const result = await Dialog.showModelForm({
+      const result = await Modal.modelForm({
         model: event.model,
         ...formConfig,
         ...this.getFormDialogConfig(ModelClass)
@@ -1197,14 +1199,14 @@ class TableView extends ListView {
       if (!result) return;  // Cancelled
 
       if (!result.success || !result?.result?.data.status) {
-        Dialog.showError(result?.result?.data?.error || result?.result?.message || "An error occurred");
+        Modal.showError(result?.result?.data?.error || result?.result?.message || "An error occurred");
         return;
       }
 
     } else {
       // Fallback to basic form if no config provided
       // Using statically imported FormView
-      const result = await Dialog.showDialog({
+      const result = await Modal.dialog({
         title: `Edit ${this.getModelName(event.model)} #${event.model.id}`,
         body: new FormView({
           model: event.model,
@@ -1215,7 +1217,7 @@ class TableView extends ListView {
       if (result) {
         const resp = await event.model.save(result);
         if (!resp.data?.status) {
-            Dialog.showError(resp.data.error || 'An error occurred');
+            Modal.showError(resp.data.error || 'An error occurred');
             return;
         }
         await this.refresh();
@@ -1245,7 +1247,7 @@ class TableView extends ListView {
     // Render template with model context
     const message = this.renderTemplateString(template, event.model);
 
-    const confirmed = await Dialog.confirm({
+    const confirmed = await Modal.confirm({
       message: message || 'Are you sure you want to delete this item?',
       title: 'Confirm Delete',
       confirmText: 'Delete',
@@ -1467,7 +1469,7 @@ class TableView extends ListView {
           formConfig = { title: `Add ${this.getModelName()}`, fields: formConfig };
       }
 
-      const result = await Dialog.showForm({
+      const result = await Modal.form({
         model: model,
         ...formConfig,
         ...this.getFormDialogConfig(ModelClass)
@@ -1485,7 +1487,7 @@ class TableView extends ListView {
         }
         const resp = await model.save(result);
         if (!resp?.data.status) {
-            Dialog.showError(resp?.data.error || 'An error occurred');
+            Modal.showError(resp?.data.error || 'An error occurred');
             return;
         }
         if (this.collection) {
@@ -1498,7 +1500,7 @@ class TableView extends ListView {
       // Using statically imported FormView
       const model = new ModelClass();
 
-      const result = await Dialog.showDialog({
+      const result = await Modal.dialog({
         title: `Add ${this.getModelName()}`,
         body: new FormView({
           model: model,
@@ -1509,7 +1511,7 @@ class TableView extends ListView {
       if (result) {
         const resp = await model.save(result);
         if (!resp?.data.status) {
-            Dialog.showError(resp.data.error || 'An error occurred');
+            Modal.showError(resp.data.error || 'An error occurred');
             return;
         }
         if (this.collection) {
@@ -2179,10 +2181,10 @@ class TableView extends ListView {
       return;
     }
 
-    // Using statically imported Dialog
+
 
     // Show dialog for this specific filter
-    const result = await Dialog.showForm({
+    const result = await Modal.form({
       title: `${currentValue !== undefined && currentValue !== '' ? 'Edit' : 'Add'} ${this.getFilterLabel(filterKey)} Filter`,
       size: 'md',
       fields: [this.buildFilterDialogField(filterConfig, currentValue, filterKey)]
@@ -2367,7 +2369,7 @@ class TableView extends ListView {
     }
 
     // Show mini dialog for this specific filter
-    const result = await Dialog.showForm({
+    const result = await Modal.form({
       title: `Edit ${this.getFilterLabel(field)} Filter`,
       size: 'md',
       data: formData,

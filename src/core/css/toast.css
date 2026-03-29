@@ -1,107 +1,123 @@
 /**
- * Toast Service CSS - Bootstrap 5 Toast Styling
- * Provides custom styling for different toast types
+ * Toast Service CSS - Modern Compact Toast Styling
+ * Left accent bar, rounded corners, two-line layout
  */
 
-/* Toast Type Styling */
+/* Base toast overrides — compact, rounded with left accent */
+.toast-container .toast {
+    --bs-toast-max-width: 300px;
+    --bs-toast-border-color: transparent;
+    font-size: 0.8rem;
+    border-radius: 10px;
+    border: none;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Toast Sizes — override max-width for larger toasts */
+.toast-container .toast.toast-md {
+    --bs-toast-max-width: 380px;
+    min-width: 360px;
+}
+.toast-container .toast.toast-lg {
+    --bs-toast-max-width: 460px;
+    min-width: 440px;
+}
+
+/* Toast Type Styling — left accent bar */
 .toast-service-success {
-    --bs-toast-bg: rgba(248, 249, 250, 0.98);
-    --bs-toast-border-color: rgba(25, 135, 84, 0.3);
-    color: var(--bs-body-color);
-    border-left: 4px solid rgba(25, 135, 84, 0.8);
+    --bs-toast-bg: #fff;
+    border-left: 4px solid #198754 !important;
 }
 
 .toast-service-error {
-    --bs-toast-bg: rgba(248, 249, 250, 0.98);
-    --bs-toast-border-color: rgba(220, 53, 69, 0.3);
-    color: var(--bs-body-color);
-    border-left: 4px solid rgba(220, 53, 69, 0.8);
+    --bs-toast-bg: #fff;
+    border-left: 4px solid #dc3545 !important;
 }
 
 .toast-service-warning {
-    --bs-toast-bg: rgba(248, 249, 250, 0.98);
-    --bs-toast-border-color: rgba(255, 193, 7, 0.3);
-    color: var(--bs-body-color);
-    border-left: 4px solid rgba(255, 193, 7, 0.9);
+    --bs-toast-bg: #fff;
+    border-left: 4px solid #ffc107 !important;
 }
 
 .toast-service-info {
-    --bs-toast-bg: rgba(248, 249, 250, 0.98);
-    --bs-toast-border-color: rgba(13, 110, 253, 0.3);
-    color: var(--bs-body-color);
-    border-left: 4px solid rgba(13, 110, 253, 0.8);
+    --bs-toast-bg: #fff;
+    border-left: 4px solid #0d6efd !important;
 }
 
 .toast-service-plain {
-    --bs-toast-bg: rgba(248, 249, 250, 0.98);
-    --bs-toast-border-color: rgba(0, 0, 0, 0.08);
-    color: var(--bs-body-color);
+    --bs-toast-bg: #fff;
+    border-left: 4px solid #6c757d !important;
 }
 
-/* Toast Icon Styling */
+/* Toast Icon Styling — colored circle background */
 .toast-service-icon {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
+    font-size: 0.85rem;
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
 }
 
-/* Toast Icon Colors */
+/* Toast Icon Colors — icon in colored circle */
 .toast-service-success .toast-service-icon {
-    color: rgba(25, 135, 84, 0.9);
+    color: #fff;
+    background: #198754;
 }
-
 .toast-service-error .toast-service-icon {
-    color: rgba(220, 53, 69, 0.9);
+    color: #fff;
+    background: #dc3545;
 }
-
 .toast-service-warning .toast-service-icon {
-    color: rgba(255, 193, 7, 1);
+    color: #000;
+    background: #ffc107;
 }
-
 .toast-service-info .toast-service-icon {
-    color: rgba(13, 110, 253, 0.9);
+    color: #fff;
+    background: #0d6efd;
 }
-
 .toast-service-plain .toast-service-icon {
-    color: rgba(108, 117, 125, 0.8);
+    color: #fff;
+    background: #6c757d;
 }
 
-/* Close Button Styling */
+/* Close Button — subtle */
 .toast-service-close {
     filter: none;
-    opacity: 0.6;
+    opacity: 0.35;
+    padding: 0.35rem !important;
+    font-size: 0.6rem;
 }
-
 .toast-service-close:hover {
-    opacity: 1;
+    opacity: 0.8;
 }
 
-/* Toast Container Enhancements */
+/* Toast Container — wide enough for largest toast size */
 .toast-container {
-    max-width: 400px;
+    max-width: 480px;
 }
 
-/* Toast Animation Enhancements */
+/* Toast Animation */
 .toast {
-    transition: all 0.3s ease-in-out;
+    transition: all 0.25s ease-in-out;
 }
-
 .toast.showing {
     opacity: 0;
     transform: translateX(100%);
 }
-
 .toast.show {
     opacity: 1;
     transform: translateX(0);
 }
-
 .toast.hide {
     opacity: 0;
     transform: translateX(100%);
 }
 
-/* Responsive Toast Styling */
+/* Responsive */
 @media (max-width: 576px) {
     .toast-container {
         max-width: calc(100vw - 20px);
@@ -109,7 +125,6 @@
         right: 10px !important;
         transform: none !important;
     }
-
     .toast-container.position-fixed.top-0.start-50.translate-middle-x,
     .toast-container.position-fixed.bottom-0.start-50.translate-middle-x {
         left: 10px !important;
@@ -119,63 +134,80 @@
     }
 }
 
-/* Toast Header Enhancements */
+/* Toast Header — compact, no border */
 .toast-header {
-    padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 0.4rem 0.6rem 0.1rem;
+    border-bottom: none;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: transparent !important;
 }
 
-.toast-service-success .toast-header,
-.toast-service-error .toast-header,
-.toast-service-info .toast-header,
-.toast-service-warning .toast-header {
-    border-bottom-color: rgba(0, 0, 0, 0.06);
+.toast-header strong {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #212529;
 }
 
-/* Toast Body Enhancements */
+/* Toast Body — compact, muted description text */
 .toast-body {
-    padding: 0.75rem;
+    padding: 0.25rem 0.6rem 0.45rem;
     word-wrap: break-word;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    color: #6c757d;
 }
 
-/* Multi-line Toast Support */
 .toast-body .toast-message {
-    line-height: 1.4;
+    line-height: 1.35;
 }
 
-/* Toast Stacking */
+/* Toast Stacking — tighter */
 .toast-container .toast + .toast {
-    margin-top: 0.5rem;
+    margin-top: 0.4rem;
 }
 
-/* Dark Mode Support */
+/* Dark Mode */
 @media (prefers-color-scheme: dark) {
     .toast-service-plain {
         --bs-toast-bg: rgba(33, 37, 41, 0.95);
-        --bs-toast-border-color: rgba(255, 255, 255, 0.1);
         color: var(--bs-body-color);
+    }
+    .toast-service-success,
+    .toast-service-error,
+    .toast-service-warning,
+    .toast-service-info {
+        --bs-toast-bg: rgba(33, 37, 41, 0.95);
+    }
+    .toast-header strong {
+        color: #e9ecef;
+    }
+    .toast-body {
+        color: #adb5bd;
     }
 }
 
-/* Toast Progress Bar (for future use) */
+/* Toast Progress Bar */
 .toast-progress {
     position: absolute;
     bottom: 0;
     left: 0;
-    height: 3px;
-    background-color: rgba(255, 255, 255, 0.3);
-    border-radius: 0 0 0.375rem 0.375rem;
+    height: 2px;
+    border-radius: 0 0 10px 10px;
     transition: width linear;
 }
+.toast-service-success .toast-progress { background-color: #198754; }
+.toast-service-error .toast-progress { background-color: #dc3545; }
+.toast-service-warning .toast-progress { background-color: #ffc107; }
+.toast-service-info .toast-progress { background-color: #0d6efd; }
 
-/* Toast Action Buttons (for future use) */
+/* Toast Action Buttons */
 .toast-actions {
-    padding: 0.25rem 0.75rem 0.75rem;
+    padding: 0.15rem 0.6rem 0.45rem;
     display: flex;
-    gap: 0.5rem;
+    gap: 0.35rem;
 }
-
 .toast-actions .btn {
-    font-size: 0.875rem;
-    padding: 0.25rem 0.75rem;
+    font-size: 0.72rem;
+    padding: 0.12rem 0.45rem;
 }

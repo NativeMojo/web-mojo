@@ -7,8 +7,9 @@ import TabView from '@core/views/navigation/TabView.js';
 import DataView from '@core/views/data/DataView.js';
 import StackTraceView from '@core/views/data/StackTraceView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
-import { IncidentEvent } from '@core/models/Incident.js';
+import { Incident, IncidentEvent } from '@core/models/Incident.js';
 import Dialog from '@core/views/feedback/Dialog.js';
+import IncidentView from './IncidentView.js';
 
 class EventView extends View {
     constructor(options = {}) {
@@ -120,11 +121,31 @@ class EventView extends View {
     }
 
     async onActionViewIncident() {
-        console.log("TODO: View incident", this.model.get('incident'));
+        const incidentId = this.model.get('incident') || this.model.get('incident_id');
+        if (!incidentId) {
+            this.getApp()?.toast?.warning('No incident linked to this event');
+            return true;
+        }
+        const incident = new Incident({ id: incidentId });
+        const view = new IncidentView({ model: incident });
+        await Dialog.showDialog({
+            title: 'Incident Details',
+            body: view,
+            size: 'xl',
+            scrollable: true,
+            header: false,
+            buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }]
+        });
     }
 
     async onActionViewModel() {
-        console.log("TODO: View model", this.model.get('model_name'), this.model.get('model_id'));
+        const modelClass = this.model.get('model_name') || this.model.get('model_class');
+        const objectId = this.model.get('model_id') || this.model.get('object_id');
+        if (!modelClass || !objectId) {
+            this.getApp()?.toast?.warning('No related model linked to this event');
+            return true;
+        }
+        this.getApp()?.toast?.info('Related model: ' + modelClass + ' #' + objectId);
     }
 
     async onActionDeleteEvent() {

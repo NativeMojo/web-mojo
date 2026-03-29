@@ -280,6 +280,16 @@ class GeoIPView extends View {
             });
         }
 
+        // Firewall actions
+        menuItems.push(
+            { type: 'divider' },
+            { label: 'Block IP', action: 'block-ip', icon: 'bi-slash-circle', class: 'text-danger' },
+            { label: 'Unblock IP', action: 'unblock-ip', icon: 'bi-unlock', class: 'text-success' },
+            { label: 'Whitelist IP', action: 'whitelist-ip', icon: 'bi-check-circle', class: 'text-primary' },
+            { label: 'Remove Whitelist', action: 'unwhitelist-ip', icon: 'bi-x-circle' },
+            { label: 'Refresh Threat Data', action: 'threat-analysis', icon: 'bi-shield-exclamation' }
+        );
+
         menuItems.push(
             { type: 'divider' },
             { label: 'Delete Record', action: 'delete-geoip', icon: 'bi-trash', danger: true }
@@ -359,10 +369,122 @@ class GeoIPView extends View {
         this.getApp()?.toast?.info('Refresh request sent for ' + this.model.get('ip_address'));
     }
 
-    async onActionThreatAnalysis() {
-        // Placeholder for refresh logic, e.g., a POST request to a refresh endpoint
-        await this.model.save({ threat_analysis: true });
-        this.getApp()?.toast?.info('Requesting threat analysis for ' + this.model.get('ip_address'));
+    async onActionBlockIp() {
+        const data = await Dialog.showForm({
+            title: 'Block IP',
+            icon: 'bi-slash-circle',
+            size: 'sm',
+            fields: [
+                { name: 'reason', type: 'text', label: 'Reason', required: true, placeholder: 'e.g., Suspicious activity' },
+                {
+                    name: 'ttl', type: 'select', label: 'Duration',
+                    options: [
+                        { value: 3600, label: '1 hour' },
+                        { value: 21600, label: '6 hours' },
+                        { value: 86400, label: '24 hours' },
+                        { value: 604800, label: '7 days' },
+                        { value: 2592000, label: '30 days' },
+                        { value: 0, label: 'Permanent' }
+                    ],
+                    value: 86400
+                }
+            ]
+        });
+        if (!data) return true;
+
+        const resp = await this.getApp().rest.POST(`/api/account/system/geoip/${this.model.id}`, {
+            action: 'block',
+            value: { reason: data.reason, ttl: parseInt(data.ttl) }
+        });
+        if (resp.success) {
+            this.getApp().toast.success('IP blocked successfully');
+            await this.model.fetch();
+        } else {
+            this.getApp().toast.error('Failed to block IP');
+        }
+        return true;
+    }
+
+    async onActionUnblockIp() {
+        const data = await Dialog.showForm({
+            title: 'Unblock IP',
+            icon: 'bi-unlock',
+            size: 'sm',
+            fields: [
+                { name: 'reason', type: 'text', label: 'Reason', placeholder: 'e.g., False positive' }
+            ]
+        });
+        if (!data) return true;
+
+        const resp = await this.getApp().rest.POST(`/api/account/system/geoip/${this.model.id}`, {
+            action: 'unblock',
+            value: data.reason || 'Unblocked from admin'
+        });
+        if (resp.success) {
+            this.getApp().toast.success('IP unblocked successfully');
+            await this.model.fetch();
+        } else {
+            this.getApp().toast.error('Failed to unblock IP');
+        }
+        return true;
+    }
+
+    async onActionWhitelistIp() {
+        const data = await Dialog.showForm({
+            title: 'Whitelist IP',
+            icon: 'bi-check-circle',
+            size: 'sm',
+            fields: [
+                { name: 'reason', type: 'text', label: 'Reason', required: true, placeholder: 'e.g., Known office IP' }
+            ]
+        });
+        if (!data) return true;
+
+        const resp = await this.getApp().rest.POST(`/api/account/system/geoip/${this.model.id}`, {
+            action: 'whitelist',
+            value: data.reason
+        });
+        if (resp.success) {
+            this.getApp().toast.success('IP whitelisted successfully');
+            await this.model.fetch();
+        } else {
+            this.getApp().toast.error('Failed to whitelist IP');
+        }
+        return true;
+    }
+
+    async onActionUnwhitelistIp() {
+        const confirmed = await Dialog.confirm('Remove this IP from the whitelist?', 'Remove Whitelist');
+        if (!confirmed) return true;
+
+        const resp = await this.getApp().rest.POST(`/api/account/system/geoip/${this.model.id}`, {
+            action: 'unwhitelist'
+        });
+        if (resp.success) {
+            this.getApp().toast.success('IP removed from whitelist');
+            await this.model.fetch();
+        } else {
+            this.getApp().toast.error('Failed to remove from whitelist');
+        }
+        return true;
+    }
+
+    async onActionThreatAnalysis(event, element) {
+        try {
+            if (element) element.disabled = true;
+            const resp = await this.getApp().rest.POST(`/api/account/system/geoip/${this.model.id}`, {
+                action: 'threat_analysis'
+            });
+            if (resp.success) {
+                this.getApp().toast.success('Threat data refreshed');
+                await this.model.fetch();
+            } else {
+                this.getApp().toast.error('Failed to refresh threat data');
+            }
+        } finally {
+            if (element) element.disabled = false;
+        }
+        return true;
     }
 
     async onActionViewOnMap() {

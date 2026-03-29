@@ -189,11 +189,30 @@ class TicketView extends View {
     }
 
     async onActionAssignUser() {
-        console.log("TODO: Implement assign user dialog with user selector");
-        Dialog.alert({
-            title: 'Coming Soon',
-            message: 'User assignment feature will be implemented soon.'
+        const data = await Dialog.showForm({
+            title: 'Assign User',
+            icon: 'bi-person-plus',
+            size: 'sm',
+            fields: [
+                {
+                    name: 'assigned_to',
+                    type: 'number',
+                    label: 'User ID',
+                    required: true,
+                    placeholder: 'Enter user ID',
+                    help: 'The user ID to assign this ticket to.'
+                }
+            ]
         });
+        if (!data) return true;
+
+        const resp = await this.model.save({ assigned_to: data.assigned_to });
+        if (resp.status === 200) {
+            this.getApp()?.toast?.success('Ticket assigned successfully');
+        } else {
+            this.getApp()?.toast?.error('Failed to assign ticket');
+        }
+        return true;
     }
 
     async onActionCloseTicket() {

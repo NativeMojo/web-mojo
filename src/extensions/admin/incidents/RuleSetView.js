@@ -5,6 +5,7 @@ import TableView from '@core/views/table/TableView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import { RuleSet, RuleList, BundleByOptions, MatchByOptions } from '@core/models/Incident.js';
 import Dialog from '@core/views/feedback/Dialog.js';
+import HandlerBuilderView from '../security/HandlerBuilderView.js';
 
 class RuleSetView extends View {
     constructor(options = {}) {
@@ -122,6 +123,7 @@ class RuleSetView extends View {
                 icon: 'bi-three-dots-vertical',
                 items: [
                     { label: 'Edit RuleSet', action: 'edit-ruleset', icon: 'bi-pencil' },
+                    { label: 'Edit Handler', action: 'edit-handler', icon: 'bi-tools' },
                     { label: 'Disable', action: 'disable-ruleset', icon: 'bi-toggle-off' },
                     { type: 'divider' },
                     { label: 'Delete RuleSet', action: 'delete-ruleset', icon: 'bi-trash', danger: true }
@@ -129,6 +131,39 @@ class RuleSetView extends View {
             }
         });
         this.addChild(contextMenu);
+    }
+
+    /**
+     * Action handler: Edit Handler via guided builder
+     */
+    async onActionEditHandler() {
+        const builder = new HandlerBuilderView({
+            value: this.model.get('handler') || ''
+        });
+
+        const result = await Dialog.showDialog({
+            title: 'Configure Handler',
+            body: builder,
+            size: 'md',
+            scrollable: true,
+            buttons: [
+                { text: 'Cancel', class: 'btn-secondary', dismiss: true },
+                { text: 'Save', class: 'btn-primary', action: 'save' }
+            ]
+        });
+
+        if (result === 'save') {
+            const handlerString = builder.getValue();
+            if (handlerString) {
+                const resp = await this.model.save({ handler: handlerString });
+                if (resp.status === 200) {
+                    this.getApp()?.toast?.success('Handler updated');
+                    await this.render();
+                } else {
+                    this.getApp()?.toast?.error('Failed to update handler');
+                }
+            }
+        }
     }
 
     /**

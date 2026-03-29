@@ -30,6 +30,7 @@ class FormView extends View {
     super({
       tagName: 'div',
       className: 'form-view',
+      enableTooltips: true,
       ...viewOptions
     });
 

@@ -19,7 +19,7 @@
  */
 
 import Page from '@core/Page.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import TableView from '@core/views/table/TableView.js';
 import Collection from '@core/Collection.js';
 import { parseFilterKey } from '@core/utils/DjangoLookups.js';
@@ -440,7 +440,6 @@ class TablePage extends Page {
    * Handle filter edit dialog
    */
   async handleFilterEdit(filterKey) {
-    // Using statically imported Dialog
     const filterConfig = this.tableView.getAllAvailableFilters().find(f => f.key === filterKey);
     const currentValue = this.collection.params[filterKey];
 
@@ -454,7 +453,7 @@ class TablePage extends Page {
       ...filterConfig.config
     };
 
-    const result = await Dialog.showForm({
+    const result = await Modal.form({
       title: `Edit ${field.label} Filter`,
       size: 'md',
       fields: [field]

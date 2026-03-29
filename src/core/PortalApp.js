@@ -15,7 +15,7 @@ import {Group } from '@core/models/Group.js';
 import {Member} from '@core/models/Member.js';
 import NotFoundPage from '@core/pages/NotFoundPage.js';
 import ToastService from '@core/services/ToastService.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 export default class PortalApp extends WebApp {
     constructor(config = {}) {
@@ -66,7 +66,7 @@ export default class PortalApp extends WebApp {
         this.setupPageContainer();
 
         this.toast = new ToastService();
-        this.Dialog = Dialog;
+        this.Dialog = Modal;  // Backwards compat — prefer app.modal instead
 
         this.registerPage("denied", DeniedPage);
         this.registerPage("404", NotFoundPage);
@@ -763,9 +763,7 @@ export default class PortalApp extends WebApp {
             const { UserProfileView } = await import('@ext/user-profile/index.js');
             const profileView = new UserProfileView({ model: this.activeUser });
 
-            await Dialog.showDialog({
-                body: profileView,
-                header: null,
+            await Modal.show(profileView, {
                 size: 'lg',
                 noBodyPadding: true,
                 centered: false
@@ -792,9 +790,7 @@ export default class PortalApp extends WebApp {
                 }
             });
 
-            await Dialog.showDialog({
-                header: null,
-                body: setupView,
+            await Modal.show(setupView, {
                 size: 'sm',
                 centered: true,
                 buttons: []

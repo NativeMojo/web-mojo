@@ -15,6 +15,12 @@ export class EventDelegate {
       if (actionEl && this.shouldHandle(actionEl, event)) {
         const action = actionEl.getAttribute('data-action');
 
+        // Prevent default immediately for anchor tags to avoid navigation
+        // before async dispatch completes (e.g. <a href="#" data-action="...">)
+        if (actionEl.tagName === 'A') {
+          event.preventDefault();
+        }
+
         // Hide any tooltips on the clicked element
         this.hideTooltip(actionEl);
 

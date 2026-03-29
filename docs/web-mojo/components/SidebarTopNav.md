@@ -63,6 +63,7 @@ await app.start();
 |---|---|---|---|
 | `menus` | `Array` | `[]` | Array of menu config objects (see below) |
 | `menu` | `Object` | — | Shorthand for a single menu (name defaults to `"default"`) |
+| `defaultMenu` | `string` | — | Name of the menu to show when no route match or page override applies. Falls back to the first non-group menu if not set. |
 | `theme` | `string` | `'sidebar-light'` | CSS class added to the `<nav>` element |
 | `showToggle` | `boolean` | `true` | Show the collapse toggle button |
 | `autoCollapseMobile` | `boolean` | `true` | Auto-collapse on small screens |
@@ -685,28 +686,32 @@ items: [
 
 ---
 
+## Menu Selection Order
+
+When a route change fires, the Sidebar resolves the active menu using this chain:
+
+1. **`page.sidebarMenu`** — if the page declares `sidebarMenu`, that menu is used. This is the highest-priority override and works for **all** pages, not just homeless ones.
+2. **Route match** — if any registered menu contains the new route in its items, switch to it.
+3. **`defaultMenu`** — if configured, switch to the named default menu.
+4. **First non-group menu with visible items** — skips menus where every item is hidden by permissions or group requirements.
+5. **First non-group menu** — last resort, even if the user can't see any items.
+
+This chain also applies on initial load (e.g. first login with no route in the URL).
+
 ## Homeless Pages
 
-A **homeless page** is a page whose route is not listed in any sidebar menu. Before the bug fix, navigating to a homeless page would leave the sidebar showing whatever menu happened to be registered last — producing confusing navigation state.
-
-### How It Works Now
-
-When a route change fires, the Sidebar resolves the active menu in this order:
-
-1. **Route match** — if any registered menu contains the new route, switch to it.
-2. **`sidebarMenu` property on the Page** — if the page declares `sidebarMenu`, switch to that menu.
-3. **First non-group menu fallback** — switch to the first non-group menu so the sidebar always shows something sensible.
+A **homeless page** is a page whose route is not listed in any sidebar menu.
 
 ### Declaring a Menu on a Page
 
-Add `sidebarMenu = 'menuName'` to your `Page` class:
+Add `sidebarMenu = 'menuName'` to your `Page` class. This is the **highest-priority** override — it takes precedence over route-based matching, so it works for both homeless pages and pages whose route appears in a different menu.
 
 ```js
 import { Page } from 'web-mojo';
 
 export default class SettingsPage extends Page {
-  // This page is not in any sidebar menu, but we want
-  // the 'default' sidebar to remain visible.
+  // Always show the 'default' sidebar on this page,
+  // even if its route appears in another menu.
   sidebarMenu = 'default';
 
   get title() { return 'Settings'; }
@@ -745,19 +750,26 @@ class GroupDetailPage extends AdminDetailPage {
 
 ### When No `sidebarMenu` Is Declared
 
-If a homeless page doesn't declare `sidebarMenu`, the sidebar falls back to the **first non-group menu** registered. In most apps that's the `default` menu, which is usually the right behaviour.
+If a page doesn't declare `sidebarMenu` and its route isn't in any menu, the sidebar uses the fallback chain:
 
-If you have a specific fallback preference, register your menus in the desired fallback order:
+1. **`defaultMenu`** — if configured, that menu is used.
+2. **First non-group menu with visible items** — skips menus where the user can't see anything (all items permission-gated).
+3. **First non-group menu** — last resort.
+
+Use `defaultMenu` to make this explicit:
 
 ```js
 sidebar: {
+  defaultMenu: 'main',
   menus: [
-    { name: 'default', /* ... */ },   // ← fallback will land here
-    { name: 'admin',   /* ... */ },
+    { name: 'main',     /* ... */ },
+    { name: 'admin',    /* ... */ },
     { name: 'org-menu', groupKind: 'organization', /* ... */ }
   ]
 }
 ```
+
+Without `defaultMenu`, the sidebar falls back by registration order — register your menus in the desired fallback order.
 
 ---
 
@@ -986,9 +998,9 @@ app.sidebar.setActiveMenu('admin');
 app.navigate('?page=admin-users');
 ```
 
-### ⚠️ Homeless pages default to the first non-group menu
+### ⚠️ Homeless pages use the fallback chain — set `defaultMenu` or `sidebarMenu`
 
-If navigating to a page that isn't in any sidebar menu and you don't declare `sidebarMenu` on the page, the sidebar falls back to the **first registered non-group menu**. Register your menus in preference order to control this behaviour.
+If navigating to a page that isn't in any sidebar menu, the sidebar uses the fallback chain: `defaultMenu` → first non-group menu with visible items → first non-group menu. Set `defaultMenu` in your sidebar config or declare `sidebarMenu` on the page to control which menu appears.
 
 ---
 

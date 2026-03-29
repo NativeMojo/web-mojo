@@ -40,7 +40,15 @@ export { default as PushDeviceTablePage } from './messaging/push/PushDeviceTable
 
 // Jobs
 export { default as JobsAdminPage } from './jobs/JobsAdminPage.js';
-export { default as TaskManagementPage } from './jobs/TaskManagementPage.js';
+
+// Security
+export { default as BlockedIPsTablePage } from './security/BlockedIPsTablePage.js';
+export { default as FirewallLogTablePage } from './security/FirewallLogTablePage.js';
+export { default as BouncerSignalTablePage } from './security/BouncerSignalTablePage.js';
+export { default as BouncerDeviceTablePage } from './security/BouncerDeviceTablePage.js';
+export { default as BotSignatureTablePage } from './security/BotSignatureTablePage.js';
+export { default as BouncerSignalView } from './security/BouncerSignalView.js';
+export { default as BouncerDeviceView } from './security/BouncerDeviceView.js';
 
 // Monitoring
 export { default as LogTablePage } from './monitoring/LogTablePage.js';

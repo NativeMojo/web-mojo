@@ -21,6 +21,7 @@ class Sidebar extends View {
         this.menus = new Map();
         this.activeMenuName = null;
         this.currentRoute = null;
+        this.defaultMenu = options.defaultMenu || null;
         this.showToggle = options.showToggle; // Default to true
         this.isCollapsed = false;
         this.sidebarTheme = options.theme || 'sidebar-light';
@@ -76,15 +77,14 @@ class Sidebar extends View {
     async onInit() {
         await super.onInit();
 
-        // Get current route from router
+        // Get current route from router and resolve the correct menu
         const app = this.getApp();
         const router = app?.router;
+        const currentPath = router?.getCurrentPath();
 
-        if (router) {
-            const currentPath = router.getCurrentPath();
-            if (currentPath) {
-                this.autoSwitchToMenuForRoute(currentPath);
-            }
+        if (!currentPath || !this.autoSwitchToMenuForRoute(currentPath)) {
+            // No route yet or route not in any menu — apply fallback chain
+            this._applyFallbackMenu();
         }
 
         // Initialize tooltips for nav items
@@ -526,9 +526,12 @@ class Sidebar extends View {
         });
 
 
-        // Set as active if it's the first menu
+        // Set as active if it's the first menu added.
+        // When defaultMenu is configured, only auto-activate if this IS the default.
         if (!this.activeMenuName) {
-            this._setActiveMenu(name);
+            if (!this.defaultMenu || name === this.defaultMenu) {
+                this._setActiveMenu(name);
+            }
         }
 
         return this;
@@ -622,6 +625,63 @@ class Sidebar extends View {
 
         // Handle single kind string
         return groupKind === kind;
+    }
+
+    /**
+     * Apply fallback menu selection when no route match exists.
+     *
+     * Resolution order:
+     *   1. defaultMenu (if configured and registered)
+     *   2. First non-group menu with at least one visible item
+     *   3. First non-group menu (last resort)
+     */
+    _applyFallbackMenu() {
+        // 1. defaultMenu
+        if (this.defaultMenu && this.menus.has(this.defaultMenu)) {
+            if (this.activeMenuName !== this.defaultMenu) {
+                this._setActiveMenu(this.defaultMenu);
+            }
+            return;
+        }
+
+        // 2. First non-group menu with visible items
+        let firstNonGroup = null;
+        for (const [menuName, menuConfig] of this.menus) {
+            if (menuConfig.groupKind) continue;
+            if (!firstNonGroup) firstNonGroup = menuName;
+            if (this._menuHasVisibleItems(menuConfig)) {
+                if (this.activeMenuName !== menuName) {
+                    this._setActiveMenu(menuName);
+                }
+                return;
+            }
+        }
+
+        // 3. First non-group menu (even if empty for this user)
+        if (firstNonGroup && this.activeMenuName !== firstNonGroup) {
+            this._setActiveMenu(firstNonGroup);
+        }
+    }
+
+    /**
+     * Check if a menu has at least one visible item for the current user.
+     * Used during fallback selection to avoid picking menus the user can't see.
+     */
+    _menuHasVisibleItems(menuConfig) {
+        const app = this.getApp();
+        const activeUser = app?.activeUser;
+        const activeGroup = app?.activeGroup;
+
+        for (const item of menuConfig.items || []) {
+            if (item.divider || item.spacer) continue;
+            if (item.permissions && (!activeUser || !activeUser.hasPermission(item.permissions))) continue;
+            if (item.requiresGroupKind) {
+                const kind = activeGroup?._.kind || activeGroup?.kind;
+                if (!kind || !this._groupKindMatches(item.requiresGroupKind, kind)) continue;
+            }
+            return true;
+        }
+        return false;
     }
 
     showMenuForGroup(group) {
@@ -1049,59 +1109,46 @@ class Sidebar extends View {
      * Handle route changed event.
      *
      * Resolution order for "which menu to show":
-     *   1. The menu that contains the new route (autoSwitchToMenuForRoute).
-     *   2. The menu named by `page.sidebarMenu` (declared on the Page class).
-     *   3. The first non-group menu registered — prevents "last-menu-wins" default.
+     *   1. page.sidebarMenu — explicit override declared on the Page class.
+     *   2. autoSwitchToMenuForRoute — route found in a menu's items.
+     *   3. defaultMenu — configured default menu.
+     *   4. First non-group menu with visible items for the current user.
+     *   5. First non-group menu (last resort).
      *
-     * Pages that don't belong to any menu are called "homeless" pages.
-     * Declare `sidebarMenu = 'menuName'` on the Page class to pin them to a menu:
+     * Declare `sidebarMenu = 'menuName'` on any Page class to pin it:
      *
      *   class SettingsPage extends Page {
-     *     sidebarMenu = 'default';   // show 'default' sidebar on this page
+     *     sidebarMenu = 'default';
      *   }
      */
     onRouteChanged(data) {
         if (data.page && data.page.route) {
             const route = data.page.route;
+
+            // Early return if already on the correct item
             if (this.activeMenuItem && this.routesMatch(route, this.activeMenuItem.route)) {
                 return;
             }
 
-            // 1. Try to auto-switch to the menu that contains this route
-            const switchedMenu = this.autoSwitchToMenuForRoute(route);
-
-            if (switchedMenu) {
-                console.log(`Route changed to '${route}', auto-switched menu`);
-                return;
-            }
-
-            // 2. "Homeless" page — route is not in any menu.
-            //    Check if the page class declares a preferred sidebarMenu name.
+            // 1. Page declares a preferred menu — highest priority
             const preferredMenu = data.page.sidebarMenu || data.page.options?.sidebarMenu || null;
             if (preferredMenu && this.menus.has(preferredMenu)) {
                 this._setActiveMenu(preferredMenu);
                 this.clearAllActiveStates();
+                this.setActiveItemByRoute(route);
                 this.render();
-                console.log(`Homeless route '${route}' — switched to page-declared sidebarMenu '${preferredMenu}'`);
                 return;
             }
 
-            // 3. Fall back to the first non-group menu so we never
-            //    accidentally land on the last-registered menu.
-            let fallbackMenu = null;
-            for (const [menuName, menuConfig] of this.menus) {
-                if (!menuConfig.groupKind) {
-                    fallbackMenu = menuName;
-                    break;
-                }
+            // 2. Route-based auto-switch
+            if (this.autoSwitchToMenuForRoute(route)) {
+                return;
             }
 
-            if (fallbackMenu && this.activeMenuName !== fallbackMenu) {
-                this._setActiveMenu(fallbackMenu);
-                console.log(`Homeless route '${route}' — fell back to first non-group menu '${fallbackMenu}'`);
-            }
+            // 3–5. Fallback chain (defaultMenu → visible non-group → first non-group)
+            this._applyFallbackMenu();
 
-            // Always clear active states and re-render for homeless pages
+            // Clear active states and re-render for homeless pages
             this.clearAllActiveStates();
             this.updateActiveItem(route);
             this.render();
@@ -1328,6 +1375,16 @@ class Sidebar extends View {
         } else if (options.menu) {
             options.menu.name = options.menu.name || "default";
             this.addMenu(options.menu.name, options.menu);
+        }
+
+        // After all menus are loaded, ensure defaultMenu is active if configured.
+        // Handles the case where defaultMenu wasn't the first one registered.
+        if (this.defaultMenu) {
+            if (this.menus.has(this.defaultMenu)) {
+                this._setActiveMenu(this.defaultMenu);
+            } else {
+                console.warn(`Sidebar: defaultMenu '${this.defaultMenu}' not found in registered menus`);
+            }
         }
     }
 

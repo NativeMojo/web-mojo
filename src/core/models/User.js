@@ -55,39 +55,119 @@ class UserList extends Collection {
     }
 }
 
-User.PERMISSIONS = [
-    { name: "manage_users", label: "Manage Users" },
-    { name: "view_users", label: "View Users" },
-    { name: "view_groups", label: "View Groups" },
-    { name: "manage_groups", label: "Manage Groups" },
-    { name: "view_metrics", label: "View System Metrics" },
-    { name: "manage_metrics", label: "Manage System Metrics" },
-    { name: "view_logs", label: "View Logs" },
-    { name: "view_incidents", label: "View Incidents" },
-    { name: "manage_incidents", label: "Manage Incidents" },
-    { name: "view_tickets", label: "View Tickets" },
-    { name: "manage_tickets", label: "Manage Tickets" },
-    { name: "view_admin", label: "View Admin" },
-    { name: "view_jobs", label: "View Jobs" },
-    { name: "manage_jobs", label: "Manage Jobs" },
-    { name: "view_global", label: "View Global" },
-    { name: "manage_notifications", label: "Manage Notifications" },
-    { name: "manage_files", label: "Manage Files" },
-    { name: "force_single_session", label: "Force Single Session" },
-    { name: "file_vault", label: "Access File Vault" },
-    { name: "manage_aws", label: "Manage AWS" },
-    { name: "manage_docit", label: "Manage DocIt" }
+// ── Category Permissions (broad domain-level access) ──────────────
+User.CATEGORY_PERMISSIONS = [
+    { name: "security", label: "Security", tooltip: "Incidents, events, rules, tickets, firewall, bouncer, GeoIP, system logs" },
+    { name: "users", label: "Users", tooltip: "User records, passkeys, TOTP, API keys, OAuth, devices, locations" },
+    { name: "groups", label: "Groups", tooltip: "Groups, members, group API keys, settings" },
+    { name: "comms", label: "Communications", tooltip: "Email, phone, SMS, push notifications, chat, notifications" },
+    { name: "jobs", label: "Jobs", tooltip: "Jobs, job events, job logs, runners, queue control, system stats" },
+    { name: "metrics", label: "Metrics", tooltip: "Metrics recording, fetching, categories, values, permissions" },
+    { name: "files", label: "Files", tooltip: "File managers, files, renditions, vault files, vault data, S3 buckets" },
 ];
 
+// ── Granular Permissions (fine-grained view/manage pairs) ─────────
+User.GRANULAR_PERMISSION_TABS = [
+    {
+        label: 'Account',
+        permissions: [
+            { name: "view_users", label: "View Users" },
+            { name: "manage_users", label: "Manage Users" },
+            { name: "view_groups", label: "View Groups" },
+            { name: "manage_groups", label: "Manage Groups" },
+            { name: "manage_group", label: "Manage Own Group" },
+            { name: "view_members", label: "View Members" },
+            { name: "manage_settings", label: "Manage Settings" },
+        ]
+    },
+    {
+        label: 'Communication',
+        permissions: [
+            { name: "manage_chat", label: "Manage Chat" },
+            { name: "manage_aws", label: "Manage Email (AWS)" },
+            { name: "view_notifications", label: "View Notifications" },
+            { name: "manage_notifications", label: "Manage Notifications" },
+            { name: "send_notifications", label: "Send Notifications" },
+            { name: "view_devices", label: "View Push Devices" },
+            { name: "manage_devices", label: "Manage Push Devices" },
+            { name: "manage_push_config", label: "Push Config" },
+            { name: "view_phone_numbers", label: "View Phone Numbers" },
+            { name: "manage_phone_numbers", label: "Manage Phone Numbers" },
+            { name: "manage_phone_config", label: "Phone Config" },
+            { name: "view_sms", label: "View SMS" },
+            { name: "manage_sms", label: "Manage SMS" },
+            { name: "send_sms", label: "Send SMS" },
+        ]
+    },
+    {
+        label: 'Platform',
+        permissions: [
+            { name: "view_security", label: "View Security" },
+            { name: "manage_security", label: "Manage Security" },
+            { name: "admin", label: "Log Admin" },
+            { name: "view_logs", label: "View Logs" },
+            { name: "manage_logs", label: "Manage Logs" },
+            { name: "view_jobs", label: "View Jobs" },
+            { name: "manage_jobs", label: "Manage Jobs" },
+            { name: "view_metrics", label: "View Metrics" },
+            { name: "manage_metrics", label: "Manage Metrics" },
+            { name: "write_metrics", label: "Write Metrics" },
+            { name: "view_fileman", label: "View File Managers" },
+            { name: "manage_files", label: "Manage Files" },
+            { name: "view_vault", label: "View Vault" },
+            { name: "manage_vault", label: "Manage Vault" },
+            { name: "manage_docit", label: "Manage Docs" },
+            { name: "manage_shortlinks", label: "Manage Shortlinks" },
+        ]
+    },
+];
+
+// ── App-level extension points (empty by default) ─────────────────
+User.APP_CATEGORY_PERMISSIONS = [];
+User.APP_GRANULAR_PERMISSIONS = [];
+
+// ── Backwards-compatible flat list ────────────────────────────────
+User.PERMISSIONS = [
+    ...User.CATEGORY_PERMISSIONS,
+    ...User.GRANULAR_PERMISSION_TABS.flatMap(tab => tab.permissions),
+    ...User.APP_CATEGORY_PERMISSIONS,
+    ...User.APP_GRANULAR_PERMISSIONS,
+];
 
 User.PERMISSION_FIELDS = [
     ...User.PERMISSIONS.map(permission => ({
         name: `permissions.${permission.name}`,
         type: 'switch',
         label: permission.label,
-        columns: 4
+        columns: 6
     }))
 ];
+
+// ── Field builders for UI ─────────────────────────────────────────
+const _permSwitch = (p) => ({ name: `permissions.${p.name}`, type: 'switch', label: p.label, columns: 6, ...(p.tooltip ? { tooltip: p.tooltip } : {}) });
+
+// "Permissions" sidenav section — tabset with System (+ App when non-empty)
+User.CATEGORY_PERMISSION_FIELDS = (() => {
+    const tabs = [
+        { label: 'System', fields: User.CATEGORY_PERMISSIONS.map(_permSwitch) },
+    ];
+    if (User.APP_CATEGORY_PERMISSIONS.length > 0) {
+        tabs.push({ label: 'App', fields: User.APP_CATEGORY_PERMISSIONS.map(_permSwitch) });
+    }
+    return [{ type: 'tabset', tabs }];
+})();
+
+// "Adv Permissions" sidenav section — tabset with Account, Communication, Platform (+ App when non-empty)
+User.GRANULAR_PERMISSION_FIELDS = (() => {
+    const tabs = User.GRANULAR_PERMISSION_TABS.map(tab => ({
+        label: tab.label,
+        fields: tab.permissions.map(_permSwitch)
+    }));
+    if (User.APP_GRANULAR_PERMISSIONS.length > 0) {
+        tabs.push({ label: 'App', fields: User.APP_GRANULAR_PERMISSIONS.map(_permSwitch) });
+    }
+    return [{ type: 'tabset', tabs }];
+})();
 
 const UserForms = {
     create: {
