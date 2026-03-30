@@ -230,12 +230,13 @@ class LoginLocationMapView extends View {
         if (bar) bar.classList.replace('d-flex', 'd-none');
     }
 
-    // ── Tab activation (for hidden-container resize) ─
+    // ── Tab activation (for hidden-container resize + refresh) ─
 
-    onTabActivated() {
+    async onTabActivated() {
         if (this.mapView?.map) {
             this.mapView.map.resize();
         }
+        await this.refresh();
     }
 
     // ── Helpers ──────────────────────────────────────

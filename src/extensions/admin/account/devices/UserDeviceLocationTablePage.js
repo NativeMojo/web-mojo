@@ -62,6 +62,9 @@ class UserDeviceLocationTablePage extends Page {
                 { key: 'is_new_country', label: 'New Country', formatter: 'boolean', sortable: true, width: '110px' }
             ]
         });
+        loginEventsTable.onTabActivated = async () => {
+            await loginEventsTable.collection?.fetch();
+        };
 
         this.tabView = new TabView({
             containerId: 'tabs',

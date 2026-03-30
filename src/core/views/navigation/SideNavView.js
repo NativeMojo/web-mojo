@@ -339,6 +339,12 @@ class SideNavView extends View {
         // Mount new section
         await this._mountSection(key);
 
+        // Call onSectionActivated hook after the view is mounted and visible
+        const activeView = this.sectionViews[key];
+        if (activeView?.onSectionActivated) {
+            await activeView.onSectionActivated();
+        }
+
         // Update nav visual state
         this._updateNavState(key);
 

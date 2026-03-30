@@ -590,6 +590,17 @@ class TabView extends View {
   }
 
   /**
+   * Called when this TabView is inside a SideNavView and the section is re-activated.
+   * Propagates to the active tab's onTabActivated hook.
+   */
+  async onSectionActivated() {
+    const activeView = this.activeTab ? this.tabs[this.activeTab] : null;
+    if (activeView?.onTabActivated) {
+      await activeView.onTabActivated();
+    }
+  }
+
+  /**
    * Get the currently active tab label
    * @returns {string|null} Active tab label
    */

@@ -122,12 +122,13 @@ class SecurityStatsBar extends View {
 
     async fetchAll() {
         const rest = this.getApp()?.rest;
+        const today = new Date().toISOString().slice(0, 10);
         const [statsResult, ...countResults] = await Promise.allSettled([
             this.model.fetch(),
             rest.GET('/api/account/system/geoip?is_blocked=true&size=0'),
             rest.GET('/api/account/bouncer/device?risk_tier=blocked&size=0'),
-            rest.GET('/api/account/bouncer/signal?decision=block&dr_start=today&size=0'),
-            rest.GET('/api/account/logins?is_new_country=true&dr_start=today&size=0'),
+            rest.GET(`/api/account/bouncer/signal?decision=block&dr_start=${today}&size=0`),
+            rest.GET(`/api/account/logins?is_new_country=true&dr_start=${today}&size=0`),
         ]);
 
         const keys = ['ipBlocks', 'blockedDevices', 'blocksToday', 'newCountryLogins'];
@@ -507,6 +508,10 @@ class LoginActivityTab extends View {
             ]
         });
         this.addChild(this.loginTable);
+    }
+
+    async onTabActivated() {
+        await this.refresh();
     }
 
     async refresh() {

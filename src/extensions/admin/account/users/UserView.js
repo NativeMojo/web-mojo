@@ -278,6 +278,9 @@ class UserView extends View {
                 { key: 'source', label: 'Source', sortable: true }
             ]
         });
+        loginEventsTable.onTabActivated = async () => {
+            await loginEventsTable.collection?.fetch();
+        };
 
         const locationsView = new TabView({
             tabs: {
