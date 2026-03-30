@@ -3,7 +3,7 @@ import { IncidentHistory, IncidentHistoryList } from '@core/models/Incident.js';
 class IncidentHistoryAdapter {
     constructor(incidentId) {
         this.incidentId = incidentId;
-        this.collection = new IncidentHistoryList({ params: { incident: this.incidentId, sort: 'created', size: 100 } });
+        this.collection = new IncidentHistoryList({ params: { parent: this.incidentId, sort: 'created', size: 100 } });
     }
 
     async fetch() {

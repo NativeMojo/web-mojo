@@ -8,7 +8,7 @@
  *   import { User, Job, Email } from 'web-mojo/models';
  *   import { UserList, JobForms } from 'web-mojo/models';
  * 
- * Generated on: 2026-03-29T16:52:32.162Z
+ * Generated on: 2026-03-29T19:48:02.664Z
  */
 
 // AWS model exports
@@ -50,6 +50,10 @@ export { default as JobRunner } from './JobRunner.js';
 // Log model exports
 export * from './Log.js';
 export { default as Log } from './Log.js';
+
+// LoginEvent model exports
+export * from './LoginEvent.js';
+export { default as LoginEvent } from './LoginEvent.js';
 
 // Member model exports
 export * from './Member.js';
