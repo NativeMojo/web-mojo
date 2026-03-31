@@ -39,7 +39,10 @@ export { default as PushDeliveryTablePage } from './messaging/push/PushDeliveryT
 export { default as PushDeviceTablePage } from './messaging/push/PushDeviceTablePage.js';
 
 // Jobs
-export { default as JobsAdminPage } from './jobs/JobsAdminPage.js';
+export { default as JobDashboardPage } from './jobs/JobDashboardPage.js';
+export { default as JobRunnersPage } from './jobs/JobRunnersPage.js';
+export { default as JobsTablePage } from './jobs/JobsTablePage.js';
+export { default as RunnerDetailsView } from './jobs/RunnerDetailsView.js';
 
 // Security
 export { default as BlockedIPsTablePage } from './security/BlockedIPsTablePage.js';

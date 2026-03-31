@@ -7,6 +7,7 @@
 import View from '@core/View.js';
 import TableView from '@core/views/table/TableView.js';
 import { JobRunnerList } from '@core/models/JobRunner.js';
+import RunnerDetailsView from '../RunnerDetailsView.js';
 
 export default class JobRunnersSection extends View {
     constructor(options = {}) {
@@ -32,6 +33,12 @@ export default class JobRunnersSection extends View {
             searchable: true,
             filterable: false,
             paginated: true,
+            itemView: RunnerDetailsView,
+            viewDialogOptions: {
+                title: 'Runner Details',
+                size: 'xl',
+                scrollable: true
+            },
             tableOptions: {
                 striped: false,
                 hover: true,

@@ -36,7 +36,10 @@ export { default as PushTemplateTablePage } from '@ext/admin/messaging/push/Push
 export { default as PushDeliveryTablePage } from '@ext/admin/messaging/push/PushDeliveryTablePage.js';
 export { default as PushDeviceTablePage } from '@ext/admin/messaging/push/PushDeviceTablePage.js';
 
-export { default as JobsAdminPage } from '@ext/admin/jobs/JobsAdminPage.js';
+export { default as JobDashboardPage } from '@ext/admin/jobs/JobDashboardPage.js';
+export { default as JobRunnersPage } from '@ext/admin/jobs/JobRunnersPage.js';
+export { default as JobsTablePage } from '@ext/admin/jobs/JobsTablePage.js';
+export { default as RunnerDetailsView } from '@ext/admin/jobs/RunnerDetailsView.js';
 
 // Security Pages
 export { default as BlockedIPsTablePage } from '@ext/admin/security/BlockedIPsTablePage.js';
@@ -136,7 +139,9 @@ import PushTemplateTablePageClass from '@ext/admin/messaging/push/PushTemplateTa
 import PushDeliveryTablePageClass from '@ext/admin/messaging/push/PushDeliveryTablePage.js';
 import PushDeviceTablePageClass from '@ext/admin/messaging/push/PushDeviceTablePage.js';
 
-import JobsAdminPageClass from '@ext/admin/jobs/JobsAdminPage.js';
+import JobDashboardPageClass from '@ext/admin/jobs/JobDashboardPage.js';
+import JobRunnersPageClass from '@ext/admin/jobs/JobRunnersPage.js';
+import JobsTablePageClass from '@ext/admin/jobs/JobsTablePage.js';
 
 import BlockedIPsTablePageClass from '@ext/admin/security/BlockedIPsTablePage.js';
 import FirewallLogTablePageClass from '@ext/admin/security/FirewallLogTablePage.js';
@@ -163,7 +168,9 @@ export function registerSystemPages(app, addToMenu = true) {
     // Permissions align with django-mojo backend: category perms (security, users, groups, etc.)
     // and fine-grained perms (view_security, manage_users, etc.)
     app.registerPage('system/dashboard', AdminDashboardPageClass, {permissions: ["security"]});
-    app.registerPage('system/jobs', JobsAdminPageClass, {permissions: ["view_jobs", "manage_jobs"]});
+    app.registerPage('system/jobs/dashboard', JobDashboardPageClass, {permissions: ["view_jobs", "manage_jobs"]});
+    app.registerPage('system/jobs/runners', JobRunnersPageClass, {permissions: ["view_jobs"]});
+    app.registerPage('system/jobs/list', JobsTablePageClass, {permissions: ["view_jobs"]});
     app.registerPage('system/users', UserTablePageClass, {permissions: ["view_users", "manage_users"]});
     app.registerPage('system/groups', GroupTablePageClass, {permissions: ["view_groups", "manage_groups"]});
     app.registerPage('system/members', MemberTablePageClass, {permissions: ["view_members", "manage_groups"]});
@@ -229,9 +236,14 @@ export function registerSystemPages(app, addToMenu = true) {
                 },
                 {
                     text: 'Job Engine',
-                    route: '?page=system/jobs',
+                    route: null,
                     icon: 'bi-gear-wide-connected',
-                    permissions: ["view_jobs", "manage_jobs"]
+                    permissions: ["view_jobs", "manage_jobs"],
+                    children: [
+                        { text: 'Dashboard', route: '?page=system/jobs/dashboard', icon: 'bi-bar-chart-line', permissions: ["view_jobs"] },
+                        { text: 'Runners', route: '?page=system/jobs/runners', icon: 'bi-cpu', permissions: ["view_jobs"] },
+                        { text: 'Jobs', route: '?page=system/jobs/list', icon: 'bi-list-task', permissions: ["view_jobs"] },
+                    ]
                 },
 
                 // ── Security (unified threat pipeline) ──

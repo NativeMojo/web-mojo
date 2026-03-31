@@ -1,27 +1,23 @@
 /**
- * JobsAdminPage - Async Job Engine management dashboard
+ * JobDashboardPage - Stats + charts + health + operations
  *
- * Stats cards header (always visible) + SideNavView for organized sections:
- * Overview, Runners, Running, Pending, Scheduled, Failed, All Jobs, Operations
+ * Combines JobStatsView, JobOverviewSection, and JobOperationsSection
+ * into a single dashboard page with auto-refresh.
+ *
+ * Route: system/jobs/dashboard
  */
-
 import Page from '@core/Page.js';
-import SideNavView from '@core/views/navigation/SideNavView.js';
 import { JobsEngineStats } from '@core/models/Job.js';
-
-// Section views
 import JobStatsView from './JobStatsView.js';
 import JobOverviewSection from './sections/JobOverviewSection.js';
-import JobTableSection from './sections/JobTableSection.js';
-import JobRunnersSection from './sections/JobRunnersSection.js';
 import JobOperationsSection from './sections/JobOperationsSection.js';
 
-export default class JobsAdminPage extends Page {
+export default class JobDashboardPage extends Page {
     constructor(options = {}) {
         super({
-            title: 'Job Engine',
-            pageName: "Job Admin",
-            className: 'jobs-admin-page',
+            title: 'Job Engine Dashboard',
+            pageName: 'Job Dashboard',
+            className: 'job-dashboard-page',
             ...options
         });
 
@@ -31,7 +27,7 @@ export default class JobsAdminPage extends Page {
         this.refreshRate = 30000;
 
         this.template = `
-            <div class="jobs-admin-container">
+            <div class="job-dashboard-container">
                 <!-- Page Header -->
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
@@ -62,97 +58,52 @@ export default class JobsAdminPage extends Page {
                     </div>
                 </div>
 
-                <!-- Stats Cards (always visible) -->
+                <!-- Stats Cards -->
                 <div data-container="job-stats"></div>
 
-                <!-- SideNavView sections -->
-                <div data-container="job-sidenav"></div>
+                <!-- Charts + Health -->
+                <div data-container="job-overview"></div>
+
+                <!-- Operations -->
+                <div class="mt-4" data-container="job-operations"></div>
             </div>
         `;
     }
 
     async onInit() {
-        // Stats model (shared across sections)
+        // Shared stats model
         this.jobStats = new JobsEngineStats();
 
-        // Stats cards — always visible above the SideNav
+        // Stats cards
         this.jobStatsView = new JobStatsView({
             containerId: 'job-stats',
             model: this.jobStats
         });
         this.addChild(this.jobStatsView);
 
-        // Build section views
-        const overviewSection = new JobOverviewSection({ model: this.jobStats });
-
-        const runningSection = new JobTableSection({
-            status: 'running',
-            sort: '-created',
-            title: 'Running Jobs'
+        // Charts + health
+        this.overviewSection = new JobOverviewSection({
+            containerId: 'job-overview',
+            model: this.jobStats
         });
+        this.addChild(this.overviewSection);
 
-        const pendingSection = new JobTableSection({
-            status: 'pending',
-            sort: '-created',
-            extraParams: { run_at__isnull: true },
-            title: 'Pending Jobs',
-            selectable: true
-        });
-
-        const scheduledSection = new JobTableSection({
-            status: 'pending',
-            sort: 'run_at',
-            extraParams: { run_at__isnull: false },
-            columns: 'scheduled',
-            title: 'Scheduled Jobs',
-            selectable: true
-        });
-
-        const failedSection = new JobTableSection({
-            status: 'failed',
-            sort: '-finished_at',
-            title: 'Failed Jobs'
-        });
-
-        const allJobsSection = new JobTableSection({
-            sort: '-created',
-            title: 'All Jobs'
-        });
-
-        const runnersSection = new JobRunnersSection();
-
-        const operationsSection = new JobOperationsSection({
+        // Operations buttons
+        this.operationsSection = new JobOperationsSection({
+            containerId: 'job-operations',
             getChannels: () => {
                 const health = this.jobStats?.attributes;
                 if (!health?.channels) return [];
                 return Object.values(health.channels);
             }
         });
-
-        // SideNavView
-        this.sideNav = new SideNavView({
-            containerId: 'job-sidenav',
-            sections: [
-                { key: 'Overview',   label: 'Overview',   icon: 'bi-bar-chart-line',  view: overviewSection },
-                { key: 'Runners',    label: 'Runners',    icon: 'bi-cpu',             view: runnersSection },
-                { type: 'divider', label: 'Queues' },
-                { key: 'Running',    label: 'Running',    icon: 'bi-play-circle',     view: runningSection },
-                { key: 'Pending',    label: 'Pending',    icon: 'bi-hourglass-split',  view: pendingSection },
-                { key: 'Scheduled',  label: 'Scheduled',  icon: 'bi-calendar-event',  view: scheduledSection },
-                { key: 'Failed',     label: 'Failed',     icon: 'bi-bug',             view: failedSection },
-                { key: 'All Jobs',   label: 'All Jobs',   icon: 'bi-table',           view: allJobsSection },
-                { type: 'divider', label: 'Admin' },
-                { key: 'Operations', label: 'Operations', icon: 'bi-tools',           view: operationsSection },
-            ],
-            activeSection: 'Overview'
-        });
-        this.addChild(this.sideNav);
+        this.addChild(this.operationsSection);
 
         // Fetch initial stats
         await this.jobStats.fetch();
     }
 
-    // ── Auto-refresh ────────────────────────────────────────
+    // -- Auto-refresh --------------------------------------------------------
 
     startAutoRefresh() {
         if (this.autoRefreshInterval) {
@@ -187,7 +138,7 @@ export default class JobsAdminPage extends Page {
         return this.refreshRate === 0 ? 'Off' : `${this.refreshRate / 1000}s`;
     }
 
-    // ── Actions ─────────────────────────────────────────────
+    // -- Actions --------------------------------------------------------------
 
     async onActionRefreshAll(event, element) {
         try {
@@ -211,7 +162,7 @@ export default class JobsAdminPage extends Page {
         this.getApp().toast.success(`Auto-refresh set to ${rateText}`);
     }
 
-    // ── Lifecycle ───────────────────────────────────────────
+    // -- Lifecycle ------------------------------------------------------------
 
     async onEnter() {
         this.startAutoRefresh();
