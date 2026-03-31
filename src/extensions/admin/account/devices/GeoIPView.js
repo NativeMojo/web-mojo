@@ -3,7 +3,7 @@
  */
 
 import View from '@core/View.js';
-import TabView from '@core/views/navigation/TabView.js';
+import SideNavView from '@core/views/navigation/SideNavView.js';
 import DataView from '@core/views/data/DataView.js';
 import TableView from '@core/views/table/TableView.js';
 import MapView from '@ext/map/MapView.js';
@@ -75,14 +75,14 @@ class GeoIPView extends View {
                     </div>
                 </div>
 
-                <!-- Tabs -->
-                <div data-container="geoip-tabs"></div>
+                <!-- Content -->
+                <div data-container="geoip-sidenav"></div>
             </div>
         `;
     }
 
     async onInit() {
-        // Location Details Tab
+        // Location section
         this.detailsView = new DataView({
             model: this.model,
             className: "p-3",
@@ -103,46 +103,46 @@ class GeoIPView extends View {
             ]
         });
 
-        // Network Tab
-                this.networkView = new DataView({
-                    model: this.model,
-                    className: "p-3",
-                    showEmptyValues: true,
-                    emptyValueText: '—',
-                    columns: 2,
-                    fields: [
-                        { name: 'is_tor', label: 'TOR Exit Node', formatter: 'yesnoicon', cols: 4 },
-                        { name: 'is_vpn', label: 'VPN', formatter: 'yesnoicon', cols: 4 },
-                        { name: 'is_proxy', label: 'Proxy', formatter: 'yesnoicon', cols: 4 },
-                        { name: 'is_cloud', label: 'Cloud Provider', formatter: 'yesnoicon', cols: 4 },
-                        { name: 'is_datacenter', label: 'Datacenter', formatter: 'yesnoicon', cols: 4 },
-                        { name: 'is_mobile', label: 'Mobile', formatter: 'yesnoicon', cols: 4 },
-                        { name: 'mobile_carrier', label: 'Mobile Carrier', cols: 8 },
-                        { name: 'asn', label: 'ASN', cols: 4 },
-                        { name: 'asn_org', label: 'ASN Organization', cols: 8 },
-                        { name: 'isp', label: 'ISP', cols: 12 },
-                        { name: 'connection_type', label: 'Connection Type', cols: 6 }
-                    ]
-                });
+        // Network section
+        this.networkView = new DataView({
+            model: this.model,
+            className: "p-3",
+            showEmptyValues: true,
+            emptyValueText: '—',
+            columns: 2,
+            fields: [
+                { name: 'is_tor', label: 'TOR Exit Node', formatter: 'yesnoicon', cols: 4 },
+                { name: 'is_vpn', label: 'VPN', formatter: 'yesnoicon', cols: 4 },
+                { name: 'is_proxy', label: 'Proxy', formatter: 'yesnoicon', cols: 4 },
+                { name: 'is_cloud', label: 'Cloud Provider', formatter: 'yesnoicon', cols: 4 },
+                { name: 'is_datacenter', label: 'Datacenter', formatter: 'yesnoicon', cols: 4 },
+                { name: 'is_mobile', label: 'Mobile', formatter: 'yesnoicon', cols: 4 },
+                { name: 'mobile_carrier', label: 'Mobile Carrier', cols: 8 },
+                { name: 'asn', label: 'ASN', cols: 4 },
+                { name: 'asn_org', label: 'ASN Organization', cols: 8 },
+                { name: 'isp', label: 'ISP', cols: 12 },
+                { name: 'connection_type', label: 'Connection Type', cols: 6 }
+            ]
+        });
 
-                // Risk & Reputation Tab
-                this.riskView = new DataView({
-                    model: this.model,
-                    className: "p-3",
-                    showEmptyValues: true,
-                    emptyValueText: '—',
-                    columns: 2,
-                    fields: [
-                        { name: 'threat_level', label: 'Threat Level', cols: 6 },
-                        { name: 'risk_score', label: 'Risk Score', cols: 6 },
-                        { name: 'is_threat', label: 'Threat', formatter: 'yesnoicon', cols: 6 },
-                        { name: 'is_suspicious', label: 'Suspicious', formatter: 'yesnoicon', cols: 6 },
-                        { name: 'is_known_attacker', label: 'Known Attacker', formatter: 'yesnoicon', cols: 6 },
-                        { name: 'is_known_abuser', label: 'Known Abuser', formatter: 'yesnoicon', cols: 6 }
-                    ]
-                });
+        // Risk & Reputation section
+        this.riskView = new DataView({
+            model: this.model,
+            className: "p-3",
+            showEmptyValues: true,
+            emptyValueText: '—',
+            columns: 2,
+            fields: [
+                { name: 'threat_level', label: 'Threat Level', cols: 6 },
+                { name: 'risk_score', label: 'Risk Score', cols: 6 },
+                { name: 'is_threat', label: 'Threat', formatter: 'yesnoicon', cols: 6 },
+                { name: 'is_suspicious', label: 'Suspicious', formatter: 'yesnoicon', cols: 6 },
+                { name: 'is_known_attacker', label: 'Known Attacker', formatter: 'yesnoicon', cols: 6 },
+                { name: 'is_known_abuser', label: 'Known Abuser', formatter: 'yesnoicon', cols: 6 }
+            ]
+        });
 
-        // Metadata Tab
+        // Metadata section
         this.metadataView = new DataView({
             model: this.model,
             className: "p-3",
@@ -159,7 +159,7 @@ class GeoIPView extends View {
             ]
         });
 
-        // Create Events table with IncidentEventList collection
+        // Events section
         const eventsCollection = new IncidentEventList({
             params: {
                 size: 5,
@@ -177,15 +177,15 @@ class GeoIPView extends View {
             ]
         });
 
-        // Create Logs table with LogList collection
-        const logsCollection = new LogList({
+        // Traffic section — request logs from this IP
+        const trafficCollection = new LogList({
             params: {
                 size: 5,
                 ip: this.model.get('ip_address')
             }
         });
-        this.logsView = new TableView({
-            collection: logsCollection,
+        this.trafficView = new TableView({
+            collection: trafficCollection,
             permissions: 'view_logs',
             hideActivePillNames: ['ip'],
             columns: [
@@ -224,23 +224,53 @@ class GeoIPView extends View {
             ]
         });
 
-        const tabs = {
-            'Location': this.detailsView,
-            'Network': this.networkView,
-            'Risk & Reputation': this.riskView,
-            'Events': this.eventsView,
-            'Logs': this.logsView,
-            'Metadata': this.metadataView
-        };
+        // Logs section — audit logs for this GeoIP record
+        const logsCollection = new LogList({
+            params: {
+                size: 5,
+                model_name: 'account.GeoLocatedIP',
+                model_id: this.model.get('id')
+            }
+        });
+        this.logsView = new TableView({
+            collection: logsCollection,
+            permissions: 'view_logs',
+            hideActivePillNames: ['model_name', 'model_id'],
+            columns: [
+                {
+                    key: 'created',
+                    label: 'Timestamp',
+                    sortable: true,
+                    formatter: "epoch|datetime"
+                },
+                {
+                    key: 'level',
+                    label: 'Level',
+                    sortable: true,
+                    filter: {
+                        type: 'select',
+                        options: [
+                            { value: 'info', label: 'Info' },
+                            { value: 'warning', label: 'Warning' },
+                            { value: 'error', label: 'Error' }
+                        ]
+                    }
+                },
+                { key: 'kind', label: 'Kind', filter: { type: 'text' } },
+                { name: 'log', label: 'Log' }
+            ]
+        });
 
-        // Add Map tab if coordinates exist
+        // Build sections
+        const sections = [];
+
+        // Add Map section if coordinates exist
         if (this.hasCoordinates) {
             const lat = this.model.get('latitude');
             const lng = this.model.get('longitude');
             const city = this.model.get('city') || 'Unknown';
             const region = this.model.get('region') || '';
             const country = this.model.get('country_name') || '';
-
             const locationStr = [city, region, country].filter(Boolean).join(', ');
 
             this.mapView = new MapView({
@@ -253,15 +283,31 @@ class GeoIPView extends View {
                 zoom: 4,
                 height: 450
             });
-            tabs['Map'] = this.mapView;
+            sections.push({ key: 'map', label: 'Map', icon: 'bi-map', view: this.mapView });
         }
 
-        this.tabView = new TabView({
-            containerId: 'geoip-tabs',
-            tabs: tabs,
-            activeTab: this.hasCoordinates ? 'Map' : 'Location'
+        sections.push(
+            { key: 'location', label: 'Location', icon: 'bi-geo-alt', view: this.detailsView },
+            { key: 'network', label: 'Network', icon: 'bi-diagram-3', view: this.networkView },
+            { key: 'risk', label: 'Risk & Reputation', icon: 'bi-shield-exclamation', view: this.riskView },
+            { type: 'divider', label: 'Activity' },
+            { key: 'events', label: 'Events', icon: 'bi-calendar-event', view: this.eventsView },
+            { key: 'traffic', label: 'Traffic', icon: 'bi-arrow-left-right', view: this.trafficView, permissions: 'view_logs' },
+            { key: 'logs', label: 'Logs', icon: 'bi-journal-text', view: this.logsView, permissions: 'view_logs' },
+            { type: 'divider', label: 'Record' },
+            { key: 'metadata', label: 'Metadata', icon: 'bi-braces', view: this.metadataView }
+        );
+
+        this.sideNavView = new SideNavView({
+            containerId: 'geoip-sidenav',
+            activeSection: this.hasCoordinates ? 'map' : 'location',
+            navWidth: 180,
+            contentPadding: '1.25rem 2rem',
+            enableResponsive: true,
+            minWidth: 500,
+            sections
         });
-        this.addChild(this.tabView);
+        this.addChild(this.sideNavView);
 
         // ContextMenu
         const menuItems = [
@@ -392,7 +438,7 @@ class GeoIPView extends View {
         });
         if (!data) return true;
 
-        const resp = await this.getApp().rest.POST(`/api/account/system/geoip/${this.model.id}`, {
+        const resp = await this.getApp().rest.POST(`/api/system/geoip/${this.model.id}`, {
             action: 'block',
             value: { reason: data.reason, ttl: parseInt(data.ttl) }
         });
@@ -416,7 +462,7 @@ class GeoIPView extends View {
         });
         if (!data) return true;
 
-        const resp = await this.getApp().rest.POST(`/api/account/system/geoip/${this.model.id}`, {
+        const resp = await this.getApp().rest.POST(`/api/system/geoip/${this.model.id}`, {
             action: 'unblock',
             value: data.reason || 'Unblocked from admin'
         });
@@ -440,7 +486,7 @@ class GeoIPView extends View {
         });
         if (!data) return true;
 
-        const resp = await this.getApp().rest.POST(`/api/account/system/geoip/${this.model.id}`, {
+        const resp = await this.getApp().rest.POST(`/api/system/geoip/${this.model.id}`, {
             action: 'whitelist',
             value: data.reason
         });
@@ -457,7 +503,7 @@ class GeoIPView extends View {
         const confirmed = await Dialog.confirm('Remove this IP from the whitelist?', 'Remove Whitelist');
         if (!confirmed) return true;
 
-        const resp = await this.getApp().rest.POST(`/api/account/system/geoip/${this.model.id}`, {
+        const resp = await this.getApp().rest.POST(`/api/system/geoip/${this.model.id}`, {
             action: 'unwhitelist'
         });
         if (resp.success) {
@@ -472,7 +518,7 @@ class GeoIPView extends View {
     async onActionThreatAnalysis(event, element) {
         try {
             if (element) element.disabled = true;
-            const resp = await this.getApp().rest.POST(`/api/account/system/geoip/${this.model.id}`, {
+            const resp = await this.getApp().rest.POST(`/api/system/geoip/${this.model.id}`, {
                 action: 'threat_analysis'
             });
             if (resp.success) {

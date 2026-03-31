@@ -6,20 +6,8 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import Collection from '@core/Collection.js';
-import { GeoLocatedIP } from '@core/models/System.js';
+import { GeoLocatedIPList } from '@core/models/System.js';
 import GeoIPView from '../account/devices/GeoIPView.js';
-
-class BlockedIPList extends Collection {
-    constructor(options = {}) {
-        super({
-            ModelClass: GeoLocatedIP,
-            endpoint: '/api/account/system/geoip',
-            size: 25,
-            ...options
-        });
-    }
-}
 
 export default class BlockedIPsTablePage extends TablePage {
     constructor(options = {}) {
@@ -28,7 +16,7 @@ export default class BlockedIPsTablePage extends TablePage {
             name: 'admin_blocked_ips',
             pageName: 'Blocked IPs',
             router: 'admin/security/blocked-ips',
-            Collection: BlockedIPList,
+            Collection: GeoLocatedIPList,
             itemViewClass: GeoIPView,
 
             viewDialogOptions: {
@@ -118,7 +106,7 @@ export default class BlockedIPsTablePage extends TablePage {
         if (!confirmed) return;
 
         await Promise.all(selected.map(item =>
-            this.getApp().rest.POST(`/api/account/system/geoip/${item.model.id}`, {
+            this.getApp().rest.POST(`/api/system/geoip/${item.model.id}`, {
                 action: 'unblock',
                 value: 'Bulk unblock from admin'
             })
@@ -137,7 +125,7 @@ export default class BlockedIPsTablePage extends TablePage {
         if (!confirmed) return;
 
         await Promise.all(selected.map(item =>
-            this.getApp().rest.POST(`/api/account/system/geoip/${item.model.id}`, {
+            this.getApp().rest.POST(`/api/system/geoip/${item.model.id}`, {
                 action: 'whitelist',
                 value: 'Bulk whitelist from admin'
             })

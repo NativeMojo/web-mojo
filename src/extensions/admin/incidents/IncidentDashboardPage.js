@@ -125,7 +125,7 @@ class SecurityStatsBar extends View {
         const today = new Date().toISOString().slice(0, 10);
         const [statsResult, ...countResults] = await Promise.allSettled([
             this.model.fetch(),
-            rest.GET('/api/account/system/geoip?is_blocked=true&size=0'),
+            rest.GET('/api/system/geoip?is_blocked=true&size=0'),
             rest.GET('/api/account/bouncer/device?risk_tier=blocked&size=0'),
             rest.GET(`/api/account/bouncer/signal?decision=block&dr_start=${today}&size=0`),
             rest.GET(`/api/account/logins?is_new_country=true&dr_start=${today}&size=0`),

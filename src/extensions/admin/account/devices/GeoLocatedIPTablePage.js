@@ -32,6 +32,59 @@ class GeoLocatedIPTablePage extends TablePage {
                 { key: 'threat_level', label: 'Threat', formatter: "default('—')"}
             ],
 
+            // Filters
+            filters: [
+                {
+                    key: 'country_code',
+                    label: 'Country',
+                    type: 'text'
+                },
+                {
+                    key: 'threat_level',
+                    label: 'Threat Level',
+                    type: 'select',
+                    options: [
+                        { label: 'None', value: 'none' },
+                        { label: 'Low', value: 'low' },
+                        { label: 'Medium', value: 'medium' },
+                        { label: 'High', value: 'high' },
+                        { label: 'Critical', value: 'critical' }
+                    ]
+                },
+                {
+                    key: 'isp__icontains',
+                    label: 'ISP',
+                    type: 'text'
+                },
+                {
+                    key: 'is_blocked',
+                    label: 'Blocked',
+                    type: 'select',
+                    options: [
+                        { label: 'Yes', value: 'true' },
+                        { label: 'No', value: 'false' }
+                    ]
+                },
+                {
+                    key: 'is_vpn',
+                    label: 'VPN',
+                    type: 'select',
+                    options: [
+                        { label: 'Yes', value: 'true' },
+                        { label: 'No', value: 'false' }
+                    ]
+                },
+                {
+                    key: 'is_tor',
+                    label: 'TOR',
+                    type: 'select',
+                    options: [
+                        { label: 'Yes', value: 'true' },
+                        { label: 'No', value: 'false' }
+                    ]
+                }
+            ],
+
             // Table features
             selectable: true,
             searchable: true,
