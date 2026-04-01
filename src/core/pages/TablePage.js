@@ -60,7 +60,7 @@ class TablePage extends Page {
       editForm: options.editForm || options.formEdit || options.formFields,
 
       // Model operation configurations
-      itemView: options.itemView,
+      itemView: options.itemView || options.itemViewClass,
       deleteTemplate: options.deleteTemplate,
       formDialogConfig: options.formDialogConfig,
       viewDialogOptions: options.viewDialogOptions,

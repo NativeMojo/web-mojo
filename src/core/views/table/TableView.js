@@ -77,7 +77,7 @@ class TableView extends ListView {
     // Filter configuration
     this.filters = {};
     this.additionalFilters = options.filters || [];
-    this.hideActivePills = options.hideActivePills || false;
+    this.hideActivePills = options.hideActivePills === true;
     this.hideActivePillNames = options.hideActivePillNames || [];
     this.rowAction = options.rowAction || "row-click";
     this.batchBarLocation = options.batchBarLocation || "bottom"; // "top" or "bottom"
@@ -1566,7 +1566,7 @@ class TableView extends ListView {
         await this.collection.fetch();
       } else {
         // Client-side filtering
-        this.render();
+        await this.render();
       }
     }
 
@@ -2322,16 +2322,17 @@ class TableView extends ListView {
     if (this.collection?.restEnabled) {
       try {
         await this.collection.fetch();
-        this.render();
+        await this.render();
       } catch (error) {
         console.error('Failed to fetch filtered data:', error);
-        this.render();
+        await this.render();
       }
     } else {
-      this.render();
+      await this.render();
     }
 
-    // Update filter pills display
+    // Update filter pills display (onAfterRender also calls this,
+    // but we call again to ensure pills are current after render completes)
     this.updateFilterPills();
 
     // Emit params changed event for URL synchronization

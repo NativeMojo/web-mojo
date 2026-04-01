@@ -47,17 +47,22 @@ class RuleSetView extends View {
         const bundleByLabel = bundleByOption ? bundleByOption.label : String(bundleByValue);
 
         // Config Tab
+        const triggerCount = this.model.get('trigger_count');
+        const triggerWindow = this.model.get('trigger_window');
+        const retriggerEvery = this.model.get('retrigger_every');
+
         this.configView = new DataView({
             model: this.model,
             className: "p-3",
             columns: 2,
+            showEmptyValues: true,
+            emptyValueText: '—',
             fields: [
-                { name: 'name', label: 'Name', cols: 4 },
-                { name: 'category', label: 'Scope', formatter: 'badge', cols: 4 },
-                { name: 'is_active', label: 'Is Active', formatter: 'yesno_icon', cols: 4 },
-                { name: 'priority', label: 'Priority', cols: 4 },
-                { name: 'id', label: 'RuleSet ID', cols: 4 },
-
+                { name: 'name', label: 'Name', cols: 6 },
+                { name: 'id', label: 'RuleSet ID', cols: 3 },
+                { name: 'is_active', label: 'Active', formatter: 'yesnoicon', cols: 3 },
+                { name: 'category', label: 'Event Category', formatter: 'badge', cols: 4 },
+                { name: 'priority', label: 'Evaluation Priority', cols: 4 },
                 {
                     name: 'match_by',
                     label: 'Match Logic',
@@ -70,9 +75,27 @@ class RuleSetView extends View {
                     template: bundleByLabel,
                     cols: 4
                 },
-                { name: 'bundle_minutes', label: 'Bundle Minutes', cols: 4 },
-                { name: 'bundle_by_rule_set', label: 'Bundle By Rule Set', formatter: 'yesno_icon', cols: 4 },
-                { name: 'handler', label: 'Handler', cols: 12 },
+                { name: 'bundle_minutes', label: 'Bundle Window (min)', cols: 4 },
+                { name: 'bundle_by_rule_set', label: 'Bundle by RuleSet', formatter: 'yesnoicon', cols: 4 },
+                {
+                    name: 'trigger_count',
+                    label: 'Trigger Count',
+                    template: triggerCount != null ? String(triggerCount) + ' events' : 'Immediate (first event)',
+                    cols: 4
+                },
+                {
+                    name: 'trigger_window',
+                    label: 'Trigger Window',
+                    template: triggerWindow != null ? triggerWindow + ' minutes' : 'All events counted',
+                    cols: 4
+                },
+                {
+                    name: 'retrigger_every',
+                    label: 'Re-trigger Every',
+                    template: retriggerEvery != null ? retriggerEvery + ' events' : 'Fire once only',
+                    cols: 4
+                },
+                { name: 'handler', label: 'Handler Chain', cols: 12 },
             ]
         });
 
@@ -191,16 +214,9 @@ class RuleSetView extends View {
             this.model.set('is_active', newStatus);
             await this.model.save();
             await this.render();
-
-            Dialog.showToast({
-                message: `RuleSet ${newStatus ? 'enabled' : 'disabled'} successfully`,
-                type: 'success'
-            });
+            this.getApp()?.toast?.success(`RuleSet ${newStatus ? 'enabled' : 'disabled'} successfully`);
         } catch (error) {
-            Dialog.showToast({
-                message: `Failed to update RuleSet: ${error.message}`,
-                type: 'error'
-            });
+            this.getApp()?.toast?.error(`Failed to update RuleSet: ${error.message}`);
         }
     }
 
@@ -218,16 +234,12 @@ class RuleSetView extends View {
         if (confirmed) {
             try {
                 await this.model.destroy();
-
-                Dialog.showToast({
-                    message: 'RuleSet deleted successfully',
-                    type: 'success'
-                });
+                this.getApp()?.toast?.success('RuleSet deleted successfully');
 
                 // Close the dialog
                 const dialog = this.element?.closest('.modal');
                 if (dialog) {
-                    const bsModal = bootstrap.Modal.getInstance(dialog);
+                    const bsModal = window.bootstrap?.Modal?.getInstance(dialog);
                     if (bsModal) {
                         bsModal.hide();
                     }
@@ -236,10 +248,7 @@ class RuleSetView extends View {
                 // Emit event to parent to refresh the table
                 this.emit('ruleset:deleted', { model: this.model });
             } catch (error) {
-                Dialog.showToast({
-                    message: `Failed to delete RuleSet: ${error.message}`,
-                    type: 'error'
-                });
+                this.getApp()?.toast?.error(`Failed to delete RuleSet: ${error.message}`);
             }
         }
     }

@@ -558,29 +558,34 @@ class IncidentDashboardPage extends Page {
     }
 
     async onInit() {
-        this.statsBar = new SecurityStatsBar({
-            containerId: 'stats-bar'
-        });
-        this.addChild(this.statsBar);
+        this.getApp()?.showLoading('Loading Security Dashboard...');
+        try {
+            this.statsBar = new SecurityStatsBar({
+                containerId: 'stats-bar'
+            });
+            this.addChild(this.statsBar);
 
-        this.overviewTab = new OverviewTab();
-        this.threatsTab = new ThreatsTab();
-        this.geographyTab = new GeographyTab();
-        this.loginMapTab = new LoginMapTab();
-        this.loginActivityTab = new LoginActivityTab();
+            this.overviewTab = new OverviewTab();
+            this.threatsTab = new ThreatsTab();
+            this.geographyTab = new GeographyTab();
+            this.loginMapTab = new LoginMapTab();
+            this.loginActivityTab = new LoginActivityTab();
 
-        this.tabView = new TabView({
-            containerId: 'tabs',
-            tabs: {
-                'Overview': this.overviewTab,
-                'Threats': this.threatsTab,
-                'Geography': this.geographyTab,
-                'Login Map': this.loginMapTab,
-                'Login Activity': this.loginActivityTab
-            },
-            activeTab: 'Overview'
-        });
-        this.addChild(this.tabView);
+            this.tabView = new TabView({
+                containerId: 'tabs',
+                tabs: {
+                    'Overview': this.overviewTab,
+                    'Threats': this.threatsTab,
+                    'Geography': this.geographyTab,
+                    'Login Map': this.loginMapTab,
+                    'Login Activity': this.loginActivityTab
+                },
+                activeTab: 'Overview'
+            });
+            this.addChild(this.tabView);
+        } finally {
+            this.getApp()?.hideLoading();
+        }
     }
 
     async onActionRefreshAll(event, element) {

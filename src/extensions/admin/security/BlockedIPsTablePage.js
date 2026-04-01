@@ -57,13 +57,19 @@ export default class BlockedIPsTablePage extends TablePage {
                     sortable: true
                 },
                 {
-                    key: 'org',
-                    label: 'Organization',
+                    key: 'blocked_reason',
+                    label: 'Reason',
                     formatter: 'truncate(40)'
                 },
                 {
-                    key: 'modified',
+                    key: 'blocked_at',
                     label: 'Blocked At',
+                    formatter: 'datetime',
+                    sortable: true
+                },
+                {
+                    key: 'blocked_until',
+                    label: 'Expires',
                     formatter: 'datetime',
                     sortable: true
                 }

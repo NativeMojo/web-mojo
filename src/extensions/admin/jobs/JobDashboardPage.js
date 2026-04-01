@@ -71,36 +71,41 @@ export default class JobDashboardPage extends Page {
     }
 
     async onInit() {
-        // Shared stats model
-        this.jobStats = new JobsEngineStats();
+        this.getApp()?.showLoading('Loading Job Engine...');
+        try {
+            // Shared stats model
+            this.jobStats = new JobsEngineStats();
 
-        // Stats cards
-        this.jobStatsView = new JobStatsView({
-            containerId: 'job-stats',
-            model: this.jobStats
-        });
-        this.addChild(this.jobStatsView);
+            // Stats cards
+            this.jobStatsView = new JobStatsView({
+                containerId: 'job-stats',
+                model: this.jobStats
+            });
+            this.addChild(this.jobStatsView);
 
-        // Charts + health
-        this.overviewSection = new JobOverviewSection({
-            containerId: 'job-overview',
-            model: this.jobStats
-        });
-        this.addChild(this.overviewSection);
+            // Charts + health
+            this.overviewSection = new JobOverviewSection({
+                containerId: 'job-overview',
+                model: this.jobStats
+            });
+            this.addChild(this.overviewSection);
 
-        // Operations buttons
-        this.operationsSection = new JobOperationsSection({
-            containerId: 'job-operations',
-            getChannels: () => {
-                const health = this.jobStats?.attributes;
-                if (!health?.channels) return [];
-                return Object.values(health.channels);
-            }
-        });
-        this.addChild(this.operationsSection);
+            // Operations buttons
+            this.operationsSection = new JobOperationsSection({
+                containerId: 'job-operations',
+                getChannels: () => {
+                    const health = this.jobStats?.attributes;
+                    if (!health?.channels) return [];
+                    return Object.values(health.channels);
+                }
+            });
+            this.addChild(this.operationsSection);
 
-        // Fetch initial stats
-        await this.jobStats.fetch();
+            // Fetch initial stats
+            await this.jobStats.fetch();
+        } finally {
+            this.getApp()?.hideLoading();
+        }
     }
 
     // -- Auto-refresh --------------------------------------------------------

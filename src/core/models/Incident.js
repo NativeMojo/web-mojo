@@ -411,80 +411,178 @@ class RuleSetList extends Collection {
     }
 }
 
+const BundleMinutesOptions = [
+    { value: 0, label: "Disabled — each event gets its own incident" },
+    { value: 5, label: "5 minutes" },
+    { value: 10, label: "10 minutes" },
+    { value: 15, label: "15 minutes" },
+    { value: 30, label: "30 minutes" },
+    { value: 60, label: "1 hour" },
+    { value: 120, label: "2 hours" },
+    { value: 360, label: "6 hours" },
+    { value: 720, label: "12 hours" },
+    { value: 1440, label: "1 day" },
+    { value: null, label: "No limit — bundle forever" }
+];
+
 const RuleSetForms = {
     create: {
         title: 'Create RuleSet',
         size: 'lg',
         fields: [
             {
-                name: 'name',
-                type: 'text',
-                label: 'Name',
-                required: true,
-                placeholder: 'Enter ruleset name',
-                cols: 12
-            },
-            {
-                name: 'category',
-                type: 'combo',
-                label: 'Scope',
-                required: true,
-                options: CommonScopeOptions,
-                placeholder: 'e.g., ossec, auth, api_error',
-                cols: 6
-            },
-            {
-                name: 'priority',
-                type: 'number',
-                label: 'Priority',
-                value: 10,
-                required: true,
-                cols: 6
-            },
-            {
-                name: 'match_by',
-                type: 'select',
-                label: 'Match Logic',
-                value: 0,
-                options: MatchByOptions,
-                cols: 12
-            },
-            {
-                name: 'bundle_by',
-                type: 'select',
-                label: 'Bundle By',
-                value: 0,
-                options: BundleByOptions,
-                cols: 12
-            },
-            {
-                name: 'bundle_minutes',
-                type: 'number',
-                label: 'Bundle Minutes',
-                value: 10,
-                placeholder: 'Time window for bundling',
-                cols: 12
-            },
-            {
-                name: 'handler',
-                type: 'text',
-                label: 'Handler',
-                placeholder: 'e.g., email://user@company.com, task://name',
-                cols: 12
-            },
-            {
-                name: 'is_active',
-                type: 'switch',
-                label: 'Is Active',
-                value: true,
-                cols: 6
-            },
-            {
-                name: 'bundle_by_rule_set',
-                type: 'switch',
-                label: 'Bundle by Rule Set',
-                value: true,
-                cols: 6
+                type: 'tabset',
+                name: 'rulesetTabs',
+                tabs: [
+                    {
+                        label: 'General',
+                        fields: [
+                            {
+                                name: 'name',
+                                type: 'text',
+                                label: 'Name',
+                                required: true,
+                                placeholder: 'e.g., Brute Force Detection',
+                                help: 'Human-readable label for this rule',
+                                columns: 8
+                            },
+                            {
+                                name: 'is_active',
+                                type: 'switch',
+                                label: 'Active',
+                                value: true,
+                                help: 'Inactive rules are skipped during event processing',
+                                columns: 4
+                            },
+                            {
+                                name: 'category',
+                                type: 'combo',
+                                label: 'Event Category',
+                                required: true,
+                                options: CommonScopeOptions,
+                                placeholder: 'e.g., auth:failed, ossec, xss:attempt',
+                                help: 'Use * as a catch-all fallback.',
+                                columns: 6
+                            },
+                            {
+                                name: 'priority',
+                                type: 'number',
+                                label: 'Evaluation Priority',
+                                value: 10,
+                                required: true,
+                                help: 'Lower number = evaluated first.',
+                                columns: 3
+                            },
+                            {
+                                name: 'match_by',
+                                type: 'select',
+                                label: 'Match Logic',
+                                value: 0,
+                                options: MatchByOptions,
+                                help: 'ALL = every condition must match. ANY = at least one.',
+                                columns: 3
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Bundling',
+                        fields: [
+                            {
+                                name: 'bundle_by',
+                                type: 'select',
+                                label: 'Bundle By',
+                                value: 4,
+                                options: BundleByOptions,
+                                help: 'How to group related events into one incident. SOURCE_IP (4) is recommended for most security rules.',
+                                columns: 6
+                            },
+                            {
+                                name: 'bundle_minutes',
+                                type: 'select',
+                                label: 'Bundle Window',
+                                value: 30,
+                                options: BundleMinutesOptions,
+                                help: 'Time window for grouping. Events outside this window create a new incident.',
+                                columns: 6
+                            },
+                            {
+                                name: 'bundle_by_rule_set',
+                                type: 'switch',
+                                label: 'Bundle by RuleSet',
+                                value: true,
+                                help: 'Group events matched by this rule into the same incident.',
+                                columns: 6
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Thresholds',
+                        fields: [
+                            {
+                                type: 'html',
+                                columns: 12,
+                                html: `<div class="alert alert-info small mb-3">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>How thresholds work:</strong> Events accumulate on the incident in "pending" status.
+                                    Once trigger count is reached (within the optional window), the handler fires and the incident becomes "new".
+                                    Leave all fields empty to fire the handler immediately on the first event.
+                                </div>`
+                            },
+                            {
+                                name: 'trigger_count',
+                                type: 'number',
+                                label: 'Trigger Count',
+                                placeholder: 'Empty = fire on first event',
+                                help: 'Number of events before the handler fires.',
+                                columns: 4
+                            },
+                            {
+                                name: 'trigger_window',
+                                type: 'number',
+                                label: 'Trigger Window (minutes)',
+                                placeholder: 'Empty = count all events',
+                                help: 'Only count events within this many minutes.',
+                                columns: 4
+                            },
+                            {
+                                name: 'retrigger_every',
+                                type: 'number',
+                                label: 'Re-trigger Every N Events',
+                                placeholder: 'Empty = fire once only',
+                                help: 'Re-fire handler every N additional events.',
+                                columns: 4
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Handler',
+                        fields: [
+                            {
+                                name: 'handler',
+                                type: 'text',
+                                label: 'Handler Chain',
+                                placeholder: 'e.g., block://?ttl=3600,ticket://?priority=8',
+                                help: 'Chain multiple handlers with commas. Use the Handler Builder in the detail view for a guided experience.',
+                                columns: 12
+                            },
+                            {
+                                type: 'html',
+                                columns: 12,
+                                html: `<div class="alert alert-light border small mb-0">
+                                    <strong>Handler syntax:</strong><br>
+                                    <code>block://?ttl=3600</code> — Block source IP (ttl in seconds, 0 = permanent)<br>
+                                    <code>ticket://?priority=8</code> — Create a review ticket<br>
+                                    <code>email://perm@manage_security</code> — Email users with permission<br>
+                                    <code>sms://perm@manage_security</code> — SMS notification<br>
+                                    <code>notify://perm@manage_security</code> — In-app + push notification<br>
+                                    <code>llm://</code> — LLM-powered triage agent<br>
+                                    <code>job://myapp.module.function</code> — Run async job<br>
+                                    <strong>Chain example:</strong> <code>block://?ttl=3600,ticket://?priority=9,email://perm@manage_security</code>
+                                </div>`
+                            }
+                        ]
+                    }
+                ]
             }
         ]
     },
@@ -493,83 +591,151 @@ const RuleSetForms = {
         size: 'lg',
         fields: [
             {
-                name: 'name',
-                type: 'text',
-                label: 'Name',
-                required: true,
-                placeholder: 'Enter ruleset name',
-                cols: 12
-            },
-            {
-                name: 'category',
-                type: 'combo',
-                label: 'Scope',
-                options: CommonScopeOptions,
-                required: true,
-                placeholder: 'e.g., ossec, auth, api_error',
-                cols: 6
-            },
-            {
-                name: 'priority',
-                type: 'number',
-                label: 'Priority',
-                required: true,
-                cols: 6
-            },
-            {
-                name: 'match_by',
-                type: 'select',
-                label: 'Match Logic',
-                options: MatchByOptions,
-                cols: 12
-            },
-            {
-                name: 'bundle_by',
-                type: 'select',
-                label: 'Bundle By',
-                options: BundleByOptions,
-                cols: 12
-            },
-            {
-                name: 'bundle_minutes',
-                type: 'select',
-                label: 'Bundle Minutes',
-                placeholder: 'Time window for bundling',
-                "options": [
-                  {"value": 0, "label": "Disabled - don't bundle by time"},
-                  {"value": 5, "label": "5 minutes"},
-                  {"value": 10, "label": "10 minutes"},
-                  {"value": 15, "label": "15 minutes"},
-                  {"value": 30, "label": "30 minutes"},
-                  {"value": 60, "label": "1 hour"},
-                  {"value": 120, "label": "2 hours"},
-                  {"value": 360, "label": "6 hours"},
-                  {"value": 720, "label": "12 hours"},
-                  {"value": 1440, "label": "1 day"},
-                  {"value": null, "label": "No limit - bundle forever"}
-                ],
-                cols: 12
-            },
-            {
-                name: 'handler',
-                type: 'text',
-                label: 'Handler',
-                placeholder: 'e.g., email://user@company.com, task://name',
-                cols: 12
-            },
-            {
-                name: 'is_active',
-                type: 'switch',
-                label: 'Is Active',
-                value: true,
-                cols: 6
-            },
-            {
-                name: 'bundle_by_rule_set',
-                type: 'switch',
-                label: 'Bundle by Rule Set',
-                value: true,
-                cols: 6
+                type: 'tabset',
+                name: 'rulesetTabs',
+                tabs: [
+                    {
+                        label: 'General',
+                        fields: [
+                            {
+                                name: 'name',
+                                type: 'text',
+                                label: 'Name',
+                                required: true,
+                                placeholder: 'e.g., Brute Force Detection',
+                                columns: 8
+                            },
+                            {
+                                name: 'is_active',
+                                type: 'switch',
+                                label: 'Active',
+                                help: 'Inactive rules are skipped during event processing',
+                                columns: 4
+                            },
+                            {
+                                name: 'category',
+                                type: 'combo',
+                                label: 'Event Category',
+                                options: CommonScopeOptions,
+                                required: true,
+                                placeholder: 'e.g., auth:failed, ossec, xss:attempt',
+                                help: 'Use * as a catch-all.',
+                                columns: 6
+                            },
+                            {
+                                name: 'priority',
+                                type: 'number',
+                                label: 'Evaluation Priority',
+                                required: true,
+                                help: 'Lower = evaluated first.',
+                                columns: 3
+                            },
+                            {
+                                name: 'match_by',
+                                type: 'select',
+                                label: 'Match Logic',
+                                options: MatchByOptions,
+                                help: 'ALL = every condition must match. ANY = at least one.',
+                                columns: 3
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Bundling',
+                        fields: [
+                            {
+                                name: 'bundle_by',
+                                type: 'select',
+                                label: 'Bundle By',
+                                options: BundleByOptions,
+                                help: 'How to group related events into one incident.',
+                                columns: 6
+                            },
+                            {
+                                name: 'bundle_minutes',
+                                type: 'select',
+                                label: 'Bundle Window',
+                                options: BundleMinutesOptions,
+                                help: 'Time window for grouping. Events outside this window create a new incident.',
+                                columns: 6
+                            },
+                            {
+                                name: 'bundle_by_rule_set',
+                                type: 'switch',
+                                label: 'Bundle by RuleSet',
+                                help: 'Group events matched by this rule into the same incident.',
+                                columns: 6
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Thresholds',
+                        fields: [
+                            {
+                                type: 'html',
+                                columns: 12,
+                                html: `<div class="alert alert-info small mb-3">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>How thresholds work:</strong> Events accumulate on the incident in "pending" status.
+                                    Once trigger count is reached (within the optional window), the handler fires and the incident becomes "new".
+                                    Leave all fields empty to fire the handler immediately on the first event.
+                                </div>`
+                            },
+                            {
+                                name: 'trigger_count',
+                                type: 'number',
+                                label: 'Trigger Count',
+                                placeholder: 'Empty = fire on first event',
+                                help: 'Number of events before the handler fires.',
+                                columns: 4
+                            },
+                            {
+                                name: 'trigger_window',
+                                type: 'number',
+                                label: 'Trigger Window (minutes)',
+                                placeholder: 'Empty = count all',
+                                help: 'Only count events within this window toward the trigger count.',
+                                columns: 4
+                            },
+                            {
+                                name: 'retrigger_every',
+                                type: 'number',
+                                label: 'Re-trigger Every N Events',
+                                placeholder: 'Empty = fire once',
+                                help: 'Re-fire handler every N additional events.',
+                                columns: 4
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Handler',
+                        fields: [
+                            {
+                                name: 'handler',
+                                type: 'text',
+                                label: 'Handler Chain',
+                                placeholder: 'e.g., block://?ttl=3600,ticket://?priority=8',
+                                help: 'Chain multiple handlers with commas. Use the Handler Builder for guided setup.',
+                                columns: 12
+                            },
+                            {
+                                type: 'html',
+                                columns: 12,
+                                html: `<div class="alert alert-light border small mb-0">
+                                    <strong>Handler syntax:</strong><br>
+                                    <code>block://?ttl=3600</code> — Block source IP (ttl in seconds, 0 = permanent)<br>
+                                    <code>ticket://?priority=8</code> — Create a review ticket<br>
+                                    <code>email://perm@manage_security</code> — Email users with permission<br>
+                                    <code>sms://perm@manage_security</code> — SMS notification<br>
+                                    <code>notify://perm@manage_security</code> — In-app + push notification<br>
+                                    <code>llm://</code> — LLM-powered triage agent<br>
+                                    <code>job://myapp.module.function</code> — Run async job<br>
+                                    <strong>Chain example:</strong> <code>block://?ttl=3600,ticket://?priority=9,email://perm@manage_security</code>
+                                </div>`
+                            }
+                        ]
+                    }
+                ]
             }
         ]
     }
