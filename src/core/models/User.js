@@ -37,7 +37,15 @@ class User extends Model {
         if (!permissions) {
             return false;
         }
-        return permissions[permission] == true;
+        if (permissions[permission] == true) {
+            return true;
+        }
+        // Check if user has the category permission that covers this granular perm
+        const category = User.GRANULAR_TO_CATEGORY[permission];
+        if (category && permissions[category] == true) {
+            return true;
+        }
+        return false;
     }
 
     hasPerm(p) {
@@ -121,6 +129,30 @@ User.GRANULAR_PERMISSION_TABS = [
         ]
     },
 ];
+
+// ── Category → Granular mapping ───────────────────────────────────
+// Maps each category permission to the granular permissions it covers.
+// If a user has a category perm, all its granular perms are implicitly granted.
+User.CATEGORY_GRANULAR_MAP = {
+    security: ["view_security", "manage_security"],
+    users: ["view_users", "manage_users", "view_members"],
+    groups: ["view_groups", "manage_groups", "manage_group"],
+    comms: ["manage_chat", "manage_aws", "view_notifications", "manage_notifications", "send_notifications",
+            "view_devices", "manage_devices", "manage_push_config",
+            "view_phone_numbers", "manage_phone_numbers", "manage_phone_config",
+            "view_sms", "manage_sms", "send_sms"],
+    jobs: ["view_jobs", "manage_jobs"],
+    metrics: ["view_metrics", "manage_metrics", "write_metrics"],
+    files: ["view_fileman", "manage_files", "view_vault", "manage_vault"],
+};
+
+// Reverse lookup: granular perm name → category name
+User.GRANULAR_TO_CATEGORY = {};
+for (const [category, perms] of Object.entries(User.CATEGORY_GRANULAR_MAP)) {
+    for (const perm of perms) {
+        User.GRANULAR_TO_CATEGORY[perm] = category;
+    }
+}
 
 // ── App-level extension points (empty by default) ─────────────────
 User.APP_CATEGORY_PERMISSIONS = [];
