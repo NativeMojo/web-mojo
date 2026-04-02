@@ -210,12 +210,11 @@ class GeoIPSummaryCard extends View {
         if (!data) return true;
 
         if (!this.geoModel) return true;
-        const resp = await this.getApp().rest.POST(`/api/system/geoip/${this.geoModel.id}`, {
-            action: 'block',
-            value: { reason: data.reason, ttl: parseInt(data.ttl) }
+        const resp = await this.geoModel.save({
+            block: { reason: data.reason, ttl: parseInt(data.ttl) }
         });
-        if (resp.success) {
-            this.getApp().toast.success(`IP ${this.sourceIP} blocked`);
+        if (resp.success || resp.status === 200) {
+            this.getApp()?.toast?.success(`IP ${this.sourceIP} blocked`);
             await this.geoModel.fetch();
             this.geoData = this.geoModel.attributes;
             this.isBlocked = true;
@@ -239,12 +238,11 @@ class GeoIPSummaryCard extends View {
         if (!data) return true;
 
         if (!this.geoModel) return true;
-        const resp = await this.getApp().rest.POST(`/api/system/geoip/${this.geoModel.id}`, {
-            action: 'unblock',
-            value: data.reason || 'Unblocked from incident view'
+        const resp = await this.geoModel.save({
+            unblock: data.reason || 'Unblocked from incident view'
         });
-        if (resp.success) {
-            this.getApp().toast.success(`IP ${this.sourceIP} unblocked`);
+        if (resp.success || resp.status === 200) {
+            this.getApp()?.toast?.success(`IP ${this.sourceIP} unblocked`);
             await this.geoModel.fetch();
             this.geoData = this.geoModel.attributes;
             this.isBlocked = false;
@@ -267,12 +265,11 @@ class GeoIPSummaryCard extends View {
         if (!data) return true;
 
         if (!this.geoModel) return true;
-        const resp = await this.getApp().rest.POST(`/api/system/geoip/${this.geoModel.id}`, {
-            action: 'whitelist',
-            value: data.reason
+        const resp = await this.geoModel.save({
+            whitelist: data.reason
         });
-        if (resp.success) {
-            this.getApp().toast.success(`IP ${this.sourceIP} whitelisted`);
+        if (resp.success || resp.status === 200) {
+            this.getApp()?.toast?.success(`IP ${this.sourceIP} whitelisted`);
             await this.geoModel.fetch();
             this.geoData = this.geoModel.attributes;
             this.isWhitelisted = true;
@@ -1346,14 +1343,13 @@ class IncidentView extends View {
         });
         if (!data) return;
 
-        const resp = await this.getApp().rest.POST(`/api/system/geoip/${geoModel.id}`, {
-            action: 'block',
-            value: { reason: data.reason, ttl: parseInt(data.ttl) }
+        const resp = await geoModel.save({
+            block: { reason: data.reason, ttl: parseInt(data.ttl) }
         });
-        if (resp.success) {
-            this.getApp().toast.success(`IP ${this._sourceIP} blocked fleet-wide`);
+        if (resp.success || resp.status === 200) {
+            this.getApp()?.toast?.success(`IP ${this._sourceIP} blocked fleet-wide`);
         } else {
-            this.getApp().toast.error('Failed to block IP');
+            this.getApp()?.toast?.error('Failed to block IP');
         }
     }
 
@@ -1443,22 +1439,18 @@ class IncidentView extends View {
         app?.showLoading('Starting LLM analysis...');
 
         try {
-            const resp = await app.rest.POST(`/api/incident/incident/${this.model.id}`, {
-                action: 'analyze'
-            });
+            const resp = await this.model.save({ analyze: 1 });
 
-            if (!resp.success && !resp.data?.status) {
+            if (!resp.success && resp.status !== 200) {
                 const errorMsg = resp.data?.error || resp.error || 'Failed to start analysis';
-                app?.hideLoading();
                 app?.toast?.error(errorMsg);
                 return;
             }
 
-            app?.toast?.success('LLM analysis started — monitoring progress...');
-            app?.showLoading('LLM agent is analyzing this incident...');
+            app?.toast?.success('LLM analysis started — polling for results in the background...');
 
-            // Poll for completion
-            await this._pollAnalysisProgress();
+            // Poll in the background — don't block the UI
+            this._pollAnalysisProgress();
 
         } catch (error) {
             app?.toast?.error(`Analysis failed: ${error.message}`);
@@ -1472,40 +1464,35 @@ class IncidentView extends View {
         const pollInterval = 5000;
         let attempt = 0;
 
-        return new Promise((resolve) => {
-            const poll = () => {
-                attempt++;
-                if (attempt > maxAttempts) {
-                    this.getApp()?.toast?.error('Analysis is taking longer than expected. Check back later.');
-                    this._handleIncidentUpdated();
-                    resolve();
-                    return;
-                }
+        const poll = () => {
+            attempt++;
+            if (attempt > maxAttempts) {
+                this.getApp()?.toast?.error('Analysis is taking longer than expected. Check back later.');
+                return;
+            }
 
-                setTimeout(() => {
-                    this.model.fetch().then(() => {
-                        const metadata = this.model.get('metadata') || {};
+            setTimeout(() => {
+                this.model.fetch().then(() => {
+                    const metadata = this.model.get('metadata') || {};
 
-                        if (!metadata.analysis_in_progress) {
-                            if (metadata.llm_analysis) {
-                                this.getApp()?.toast?.success('LLM analysis complete');
-                            } else {
-                                this.getApp()?.toast?.success('Analysis finished');
-                            }
-                            this._handleIncidentUpdated();
-                            resolve();
-                            return;
+                    if (!metadata.analysis_in_progress) {
+                        if (metadata.llm_analysis) {
+                            this.getApp()?.toast?.success('LLM analysis complete — refreshing view');
+                        } else {
+                            this.getApp()?.toast?.success('Analysis finished');
                         }
-                        poll();
-                    }).catch(() => {
-                        // Fetch failed — keep polling
-                        poll();
-                    });
-                }, pollInterval);
-            };
+                        this._handleIncidentUpdated();
+                        return;
+                    }
+                    poll();
+                }).catch(() => {
+                    // Fetch failed — keep polling
+                    poll();
+                });
+            }, pollInterval);
+        };
 
-            poll();
-        });
+        poll();
     }
 
     // ── Delete ──

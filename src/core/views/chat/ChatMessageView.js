@@ -118,8 +118,13 @@ class ChatMessageView extends View {
         if (!this.message.tool_calls || this.message.tool_calls.length === 0) {
             return '';
         }
+        const esc = (str) => {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        };
         const toolBadges = this.message.tool_calls.map(tc => {
-            const name = tc.name || tc.function?.name || 'tool';
+            const name = esc(tc.name || tc.function?.name || 'tool');
             const statusClass = tc.status === 'error' ? 'bg-danger' : 'bg-info';
             return `<span class="badge ${statusClass} me-1">${name}</span>`;
         }).join('');

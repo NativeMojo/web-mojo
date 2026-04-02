@@ -141,6 +141,9 @@ class FormView extends View {
       });
     }
 
+    // Initialize showWhen conditional visibility
+    this._initShowWhen();
+
     // Allow plugins to run after the form renders and initializes
     FormPlugins.onFormViewAfterRender?.(this);
   }
@@ -746,8 +749,86 @@ class FormView extends View {
     // Emit change event
     this.emit('field:change', { field: fieldName, value });
 
+    // Update showWhen conditional visibility
+    this._updateShowWhen(fieldName, value);
+
     // Notify plugins of the field change
     FormPlugins.onFieldChange?.(this, fieldName, value);
+  }
+
+  // ── showWhen: Conditional Field Visibility ──────────────
+
+  /**
+   * Initialize showWhen visibility system.
+   * Builds a lookup map from controlling field names to their dependent elements.
+   */
+  _initShowWhen() {
+    this._showWhenMap = {};
+    if (!this.element) return;
+
+    const dependents = this.element.querySelectorAll('[data-show-when-field]');
+    dependents.forEach(el => {
+      const controlField = el.getAttribute('data-show-when-field');
+      if (!this._showWhenMap[controlField]) {
+        this._showWhenMap[controlField] = [];
+      }
+      this._showWhenMap[controlField].push(el);
+
+      // For initially hidden fields, store and strip required attributes
+      if (el.style.display === 'none') {
+        const inputs = el.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+          if (input.required) {
+            input.dataset.wasRequired = 'true';
+            input.required = false;
+          }
+        });
+      } else {
+        // For initially visible fields, mark them as was-required for future toggling
+        const inputs = el.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+          if (input.required) {
+            input.dataset.wasRequired = 'true';
+          }
+        });
+      }
+    });
+  }
+
+  /**
+   * Update visibility of dependent fields when a controlling field changes.
+   * @param {string} fieldName - The field that changed
+   * @param {*} value - The new value
+   */
+  _updateShowWhen(fieldName, value) {
+    const dependents = this._showWhenMap?.[fieldName];
+    if (!dependents) return;
+
+    const currentValue = String(value ?? '');
+    dependents.forEach(el => {
+      const allowedValues = el.getAttribute('data-show-when-value').split(',');
+      const negate = el.getAttribute('data-show-when-negate') === 'true';
+      const matches = allowedValues.includes(currentValue);
+      const visible = negate ? !matches : matches;
+      el.style.display = visible ? '' : 'none';
+
+      // Toggle required on inputs inside to prevent hidden field validation
+      const inputs = el.querySelectorAll('input, select, textarea');
+      inputs.forEach(input => {
+        if (visible) {
+          // Restore required if it was originally required
+          if (input.dataset.wasRequired === 'true') {
+            input.required = true;
+          }
+        } else {
+          // Store original required state and remove it
+          if (input.required) {
+            input.dataset.wasRequired = 'true';
+          }
+          input.required = false;
+        }
+      });
+    });
   }
 
   /**
@@ -1638,6 +1719,20 @@ class FormView extends View {
           data[fieldName] = component.getValue();
         }
       });
+
+      // Exclude fields hidden by showWhen
+      if (this.element) {
+        const hiddenByShowWhen = this.element.querySelectorAll('[data-show-when-field]');
+        hiddenByShowWhen.forEach(el => {
+          if (el.style.display === 'none') {
+            // Find inputs inside this hidden wrapper and remove their keys
+            const inputs = el.querySelectorAll('[name]');
+            inputs.forEach(input => {
+              delete data[input.name];
+            });
+          }
+        });
+      }
 
       // Convert files to base64 and add to data
       for (const [key, value] of Object.entries(this.data)) {

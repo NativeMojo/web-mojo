@@ -827,7 +827,55 @@ class FormBuilder {
     } else {
       colClass = `col-${columns} ${fieldClass}`.trim();
     }
-    return `<div class="${colClass}">${fieldHTML}</div>`;
+
+    // showWhen: conditionally hide field based on another field's value
+    let showWhenAttrs = '';
+    let showWhenStyle = '';
+    if (field.showWhen) {
+      const sw = field.showWhen;
+      const swValues = Array.isArray(sw.value) ? sw.value : [sw.value];
+      showWhenAttrs = ` data-show-when-field="${sw.field}" data-show-when-value="${swValues.join(',')}"`;
+      if (sw.negate) {
+        showWhenAttrs += ' data-show-when-negate="true"';
+      }
+      // Determine initial visibility from form data or field default values
+      let resolvedValue = this.data[sw.field];
+      if (resolvedValue === undefined || resolvedValue === null) {
+        // Fall back to the controlling field's default value
+        const controlField = this._findField(sw.field, this.fields);
+        if (controlField) resolvedValue = controlField.value;
+      }
+      const currentValue = String(resolvedValue ?? '');
+      const matches = swValues.map(String).includes(currentValue);
+      const visible = sw.negate ? !matches : matches;
+      if (!visible) {
+        showWhenStyle = ' style="display:none"';
+      }
+    }
+
+    return `<div class="${colClass}"${showWhenAttrs}${showWhenStyle}>${fieldHTML}</div>`;
+  }
+
+  /**
+   * Find a field config by name, searching nested groups and tabsets
+   */
+  _findField(name, fields) {
+    for (const f of fields) {
+      if (f.name === name) return f;
+      if (f.fields) {
+        const found = this._findField(name, f.fields);
+        if (found) return found;
+      }
+      if (f.tabs) {
+        for (const tab of f.tabs) {
+          if (tab.fields) {
+            const found = this._findField(name, tab.fields);
+            if (found) return found;
+          }
+        }
+      }
+    }
+    return null;
   }
 
   /**

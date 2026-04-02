@@ -42,7 +42,10 @@ class AssistantMessageView extends ChatMessageView {
                 }
             } catch (err) {
                 console.error('Failed to render block:', block.type, err);
-                wrapper.innerHTML = `<div class="alert alert-warning small">Failed to render ${block.type} block</div>`;
+                const errEl = document.createElement('div');
+                errEl.className = 'alert alert-warning small';
+                errEl.textContent = `Failed to render ${block.type} block`;
+                wrapper.appendChild(errEl);
             }
         }
     }

@@ -112,10 +112,7 @@ export default class BlockedIPsTablePage extends TablePage {
         if (!confirmed) return;
 
         await Promise.all(selected.map(item =>
-            this.getApp().rest.POST(`/api/system/geoip/${item.model.id}`, {
-                action: 'unblock',
-                value: 'Bulk unblock from admin'
-            })
+            item.model.save({ unblock: 'Bulk unblock from admin' })
         ));
         this.getApp().toast.success(`${selected.length} IP(s) unblocked`);
         this.tableView.collection.fetch();
@@ -131,10 +128,7 @@ export default class BlockedIPsTablePage extends TablePage {
         if (!confirmed) return;
 
         await Promise.all(selected.map(item =>
-            this.getApp().rest.POST(`/api/system/geoip/${item.model.id}`, {
-                action: 'whitelist',
-                value: 'Bulk whitelist from admin'
-            })
+            item.model.save({ whitelist: 'Bulk whitelist from admin' })
         ));
         this.getApp().toast.success(`${selected.length} IP(s) whitelisted`);
         this.tableView.collection.fetch();

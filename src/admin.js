@@ -363,13 +363,8 @@ export { registerSystemPages as registerAdminPages };
  *
  * @param {WebApp} app - The WebApp/PortalApp instance
  */
-export async function registerAssistant(app) {
-    if (!app.topbar || !app.topbar.config) return;
-
-    const { default: AssistantViewClass } = await import('@ext/admin/assistant/AssistantView.js');
-    const { default: Modal } = await import('@core/views/feedback/Modal.js');
-
-    app.topbar.config.rightItems.unshift({
+export function registerAssistant(app) {
+    const assistantItem = {
         id: 'assistant',
         icon: 'bi-robot',
         action: 'open-assistant',
@@ -377,7 +372,9 @@ export async function registerAssistant(app) {
         buttonClass: 'btn btn-link nav-link',
         tooltip: 'Admin Assistant',
         permissions: ['view_admin'],
-        handler: () => {
+        handler: async () => {
+            const { default: AssistantViewClass } = await import('@ext/admin/assistant/AssistantView.js');
+            const { default: Modal } = await import('@core/views/feedback/Modal.js');
             const view = new AssistantViewClass({ app });
             Modal.show(view, {
                 size: 'fullscreen',
@@ -385,10 +382,17 @@ export async function registerAssistant(app) {
                 noBodyPadding: true
             });
         }
-    });
+    };
 
-    // Re-render topbar to show the new button
-    if (app.topbar.isMounted()) {
-        app.topbar.render();
+    // If topbar is already created, add to its config directly
+    if (app.topbar && app.topbar.config) {
+        app.topbar.config.rightItems.unshift(assistantItem);
+        if (app.topbar.isMounted()) {
+            app.topbar.render();
+        }
+    } else if (app.topbarConfig) {
+        // Before app.start() — add to the topbar config that PortalApp reads
+        if (!app.topbarConfig.rightItems) app.topbarConfig.rightItems = [];
+        app.topbarConfig.rightItems.unshift(assistantItem);
     }
 }

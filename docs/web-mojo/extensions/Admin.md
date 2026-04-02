@@ -61,6 +61,8 @@ import {
   FileTablePage,
   S3BucketTablePage,
 
+  IPSetTablePage,
+
   CloudWatchDashboardPage,
   CloudWatchChart,
 
@@ -92,6 +94,10 @@ import {
   MetricsPermissionsView,
 
   FileView,
+
+  IPSetView,
+
+  AssistantView,
 
   CloudWatchResourceView
 } from 'web-mojo/admin';
@@ -198,6 +204,9 @@ await TaskDetailsView.show(task);
 - `PushDeliveryTablePage`
 - `PushDeviceTablePage`
 
+### Security
+- `IPSetTablePage` — Manage kernel-level IP blocking sets (country blocks, AbuseIPDB feeds, datacenter ranges, custom CIDR lists). Route: `system/security/ipsets`.
+
 ### Jobs
 - `JobsAdminPage`
 - `TaskManagementPage`
@@ -255,6 +264,12 @@ await TaskDetailsView.show(task);
 
 ### Storage
 - `FileView`
+
+### Security
+- `IPSetView` — Detail view for a single IP Set, shown in a dialog when a row is clicked from `IPSetTablePage`.
+
+### Assistant
+- `AssistantView` — Main admin assistant interface. Shown inside a fullscreen modal. See [Admin Assistant](#admin-assistant) below.
 
 ### AWS
 - `CloudWatchChart` — MetricsChart subclass for CloudWatch endpoints
@@ -326,6 +341,89 @@ import { AdminDashboardPage, UserTablePage } from 'web-mojo/admin';
 router.register('/admin', AdminDashboardPage);
 router.register('/admin/users', UserTablePage);
 ```
+
+---
+
+## Admin Assistant
+
+The Admin Assistant is an LLM-powered chat interface that lets admins query data in natural language. It is delivered as a fullscreen modal triggered from a topbar icon button.
+
+### Enabling the Assistant
+
+Call `registerAssistant(app)` after your app starts. This adds a `bi-robot` icon to the topbar that opens the assistant modal. The button is only shown to users with the `view_admin` permission.
+
+```js
+import { registerAssistant } from 'web-mojo/admin';
+
+// After app.start() or once the topbar is mounted
+await registerAssistant(app);
+```
+
+`registerAssistant` is an async function — it dynamically imports `AssistantView` and `Modal` so they are not included in your initial bundle unless the function is called.
+
+### AssistantView
+
+`AssistantView` can also be instantiated directly and shown in any modal:
+
+```js
+import { AssistantView } from 'web-mojo/admin';
+import { Modal } from 'web-mojo';
+
+const view = new AssistantView({ app });
+Modal.show(view, { size: 'fullscreen', title: 'Admin Assistant', noBodyPadding: true });
+```
+
+**Constructor options:**
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `app` | `WebApp` | The running app instance (required). Used to access `app.ws` and `app.rest`. |
+
+### Layout
+
+Two-panel layout inside the modal:
+
+- **Left sidebar** — Conversation list fetched from `GET /api/assistant/conversation`. Grouped by date (Today / Yesterday / Earlier). Supports selecting, creating, and deleting conversations.
+- **Right chat area** — `ChatView` with `AssistantMessageView` for rich message content. Connection status indicator at the top.
+
+### WebSocket Events
+
+Messages are sent via `app.ws` and responses arrive as typed WebSocket events:
+
+| Event | Triggered when |
+|-------|----------------|
+| `message:assistant_thinking` | Backend starts processing — shows thinking indicator, disables input |
+| `message:assistant_tool_call` | Backend calls a tool — updates thinking text to "Calling {tool}..." |
+| `message:assistant_response` | Final response — hides thinking, adds assistant message, re-enables input |
+| `message:assistant_error` | Backend error — hides thinking, shows error as system message, re-enables input |
+
+All events are filtered by `conversation_id` to ignore events from other active sessions.
+
+When WebSocket is unavailable, the assistant falls back to a REST POST to `POST /api/assistant`.
+
+### Structured Response Blocks
+
+Assistant responses can include `blocks` rendered inline inside the message:
+
+| Block type | Rendered as |
+|------------|-------------|
+| `table` | `TableView` (non-paginated, non-sortable) |
+| `chart` (line/bar/area) | `SeriesChart` |
+| `chart` (pie) | `PieChart` |
+| `stat` | Bootstrap stat cards in a flex row |
+
+### REST Endpoints Used
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `GET` | `/api/assistant/conversation` | List user's conversations (max 50) |
+| `GET` | `/api/assistant/conversation/{id}` | Load full message history |
+| `DELETE` | `/api/assistant/conversation/{id}` | Delete a conversation |
+| `POST` | `/api/assistant` | REST fallback when WebSocket is unavailable |
+
+### Permissions
+
+The topbar button and the assistant modal both require the `view_admin` permission.
 
 ---
 

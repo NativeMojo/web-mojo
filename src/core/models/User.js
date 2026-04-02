@@ -65,6 +65,7 @@ class UserList extends Collection {
 
 // ── Category Permissions (broad domain-level access) ──────────────
 User.CATEGORY_PERMISSIONS = [
+    { name: "view_admin", label: "Admin Panel", tooltip: "Access the admin panel, assistant, and system tools" },
     { name: "security", label: "Security", tooltip: "Incidents, events, rules, tickets, firewall, bouncer, GeoIP, system logs" },
     { name: "users", label: "Users", tooltip: "User records, passkeys, TOTP, API keys, OAuth, devices, locations" },
     { name: "groups", label: "Groups", tooltip: "Groups, members, group API keys, settings" },

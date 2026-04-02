@@ -13,7 +13,7 @@ class SimpleModuleLoader {
         this.loadedModules = new Map();
         
         // Module dependency order
-        this.moduleOrder = ['EventBus', 'Router', 'Rest', 'dataFormatter', 'MOJOUtils', 'Model', 'RestModel', 'DataList', 'View', 'Page', 'Table', 'MOJO'];
+        this.moduleOrder = ['EventBus', 'EventEmitter', 'EventDelegate', 'Router', 'Rest', 'dataFormatter', 'MOJOUtils', 'Model', 'RestModel', 'DataList', 'View', 'Page', 'Table', 'MOJO'];
         
         // Set up global environment
         this.setupGlobals();
@@ -105,7 +105,15 @@ class SimpleModuleLoader {
     getModuleInfo(moduleName) {
         const modules = {
             'EventBus': {
-                path: path.join(this.sourceRoot, 'utils/EventBus.js'),
+                path: path.join(this.sourceRoot, 'core/utils/EventBus.js'),
+                dependencies: []
+            },
+            'EventEmitter': {
+                path: path.join(this.sourceRoot, 'core/mixins/EventEmitter.js'),
+                dependencies: []
+            },
+            'EventDelegate': {
+                path: path.join(this.sourceRoot, 'core/mixins/EventDelegate.js'),
                 dependencies: []
             },
             'Router': {
@@ -117,11 +125,11 @@ class SimpleModuleLoader {
                 dependencies: []
             },
             'dataFormatter': {
-                path: path.join(this.sourceRoot, 'utils/DataFormatter.js'),
+                path: path.join(this.sourceRoot, 'core/utils/DataFormatter.js'),
                 dependencies: []
             },
             'MOJOUtils': {
-                path: path.join(this.sourceRoot, 'utils/MOJOUtils.js'),
+                path: path.join(this.sourceRoot, 'core/utils/MOJOUtils.js'),
                 dependencies: ['dataFormatter']
             },
             'Model': {
@@ -223,15 +231,23 @@ class SimpleModuleLoader {
         let code = sourceCode;
 
         // Remove import statements and replace with access to globals
-        code = code.replace(/import\s+([^'"\s]+)\s+from\s+['"]([^'"]+)['"];?\s*\n?/g, (match, importName, importPath) => {
+        code = code.replace(/import\s+([^'"\s{][^'"\s]*)\s+from\s+['"]([^'"]+)['"];?\s*\n?/g, (match, importName, importPath) => {
             if (importPath.includes('mustache')) {
                 return `// Using global Mustache\n`;
+            } else if (importPath.includes('EventEmitter')) {
+                return `const ${importName} = global.EventEmitter;\n`;
+            } else if (importPath.includes('EventDelegate')) {
+                return `const ${importName} = global.EventDelegate;\n`;
             } else if (importPath.includes('View')) {
                 return `const ${importName} = global.View;\n`;
             } else if (importPath.includes('Page')) {
                 return `const ${importName} = global.Page;\n`;
             } else if (importPath.includes('EventBus')) {
                 return `const ${importName} = global.EventBus;\n`;
+            } else if (importPath.includes('MOJOUtils')) {
+                return `const ${importName} = global.MOJOUtils;\n`;
+            } else if (importPath.includes('DataFormatter')) {
+                return `const ${importName} = global.dataFormatter;\n`;
             }
             return `// Import: ${match}\n`;
         });

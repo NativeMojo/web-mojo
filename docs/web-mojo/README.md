@@ -15,6 +15,7 @@ The top-level application containers that bootstrap and run a MOJO application:
 
 - **[WebApp](./core/WebApp.md)** - Central application container: routing, pages, REST, state, events
 - **[PortalApp](./core/PortalApp.md)** - Full portal shell extending WebApp: sidebar, topbar, auth, groups
+- **[PortalWebApp](./core/PortalWebApp.md)** - Opinionated portal extending PortalApp: auth-gated lifecycle, auto WebSocket, countdown redirect
 
 ---
 
@@ -196,6 +197,7 @@ This documentation is structured for easy navigation and understanding.
 | Working with data | [Model.md](./core/Model.md) or [Collection.md](./core/Collection.md) |
 | Creating a page | [Page.md](./pages/Page.md), [WebApp.md](./core/WebApp.md) |
 | Building a portal app | [PortalApp.md](./core/PortalApp.md) |
+| Portal with auth-gated start + WebSocket | [PortalWebApp.md](./core/PortalWebApp.md) |
 | HTTP requests | [Rest.md](./services/Rest.md) |
 | Modal dialogs | [Dialog.md](./components/Dialog.md) |
 | Toast notifications | [ToastService.md](./services/ToastService.md) |
@@ -249,6 +251,7 @@ web-mojo/
 ├── core/                        # Framework fundamentals
 │   ├── WebApp.md                # Application container and orchestrator
 │   ├── PortalApp.md             # Portal shell (auth, sidebar, topbar, groups)
+│   ├── PortalWebApp.md          # Opinionated portal: auth-gated lifecycle, auto WebSocket
 │   ├── View.md                  # Base view component and full lifecycle
 │   ├── ViewChildViews.md        # Composing views with children
 │   ├── AdvancedViews.md         # Custom rendering, Canvas, WebGL

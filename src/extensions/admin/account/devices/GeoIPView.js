@@ -438,15 +438,14 @@ class GeoIPView extends View {
         });
         if (!data) return true;
 
-        const resp = await this.getApp().rest.POST(`/api/system/geoip/${this.model.id}`, {
-            action: 'block',
-            value: { reason: data.reason, ttl: parseInt(data.ttl) }
+        const resp = await this.model.save({
+            block: { reason: data.reason, ttl: parseInt(data.ttl) }
         });
-        if (resp.success) {
-            this.getApp().toast.success('IP blocked successfully');
+        if (resp.success || resp.status === 200) {
+            this.getApp()?.toast?.success('IP blocked successfully');
             await this.model.fetch();
         } else {
-            this.getApp().toast.error('Failed to block IP');
+            this.getApp()?.toast?.error('Failed to block IP');
         }
         return true;
     }
@@ -462,15 +461,14 @@ class GeoIPView extends View {
         });
         if (!data) return true;
 
-        const resp = await this.getApp().rest.POST(`/api/system/geoip/${this.model.id}`, {
-            action: 'unblock',
-            value: data.reason || 'Unblocked from admin'
+        const resp = await this.model.save({
+            unblock: data.reason || 'Unblocked from admin'
         });
-        if (resp.success) {
-            this.getApp().toast.success('IP unblocked successfully');
+        if (resp.success || resp.status === 200) {
+            this.getApp()?.toast?.success('IP unblocked successfully');
             await this.model.fetch();
         } else {
-            this.getApp().toast.error('Failed to unblock IP');
+            this.getApp()?.toast?.error('Failed to unblock IP');
         }
         return true;
     }
@@ -486,15 +484,14 @@ class GeoIPView extends View {
         });
         if (!data) return true;
 
-        const resp = await this.getApp().rest.POST(`/api/system/geoip/${this.model.id}`, {
-            action: 'whitelist',
-            value: data.reason
+        const resp = await this.model.save({
+            whitelist: data.reason
         });
-        if (resp.success) {
-            this.getApp().toast.success('IP whitelisted successfully');
+        if (resp.success || resp.status === 200) {
+            this.getApp()?.toast?.success('IP whitelisted successfully');
             await this.model.fetch();
         } else {
-            this.getApp().toast.error('Failed to whitelist IP');
+            this.getApp()?.toast?.error('Failed to whitelist IP');
         }
         return true;
     }
@@ -503,14 +500,14 @@ class GeoIPView extends View {
         const confirmed = await Dialog.confirm('Remove this IP from the whitelist?', 'Remove Whitelist');
         if (!confirmed) return true;
 
-        const resp = await this.getApp().rest.POST(`/api/system/geoip/${this.model.id}`, {
-            action: 'unwhitelist'
+        const resp = await this.model.save({
+            unwhitelist: 1
         });
-        if (resp.success) {
-            this.getApp().toast.success('IP removed from whitelist');
+        if (resp.success || resp.status === 200) {
+            this.getApp()?.toast?.success('IP removed from whitelist');
             await this.model.fetch();
         } else {
-            this.getApp().toast.error('Failed to remove from whitelist');
+            this.getApp()?.toast?.error('Failed to remove from whitelist');
         }
         return true;
     }
@@ -518,14 +515,14 @@ class GeoIPView extends View {
     async onActionThreatAnalysis(event, element) {
         try {
             if (element) element.disabled = true;
-            const resp = await this.getApp().rest.POST(`/api/system/geoip/${this.model.id}`, {
-                action: 'threat_analysis'
+            const resp = await this.model.save({
+                threat_analysis: 1
             });
-            if (resp.success) {
-                this.getApp().toast.success('Threat data refreshed');
+            if (resp.success || resp.status === 200) {
+                this.getApp()?.toast?.success('Threat data refreshed');
                 await this.model.fetch();
             } else {
-                this.getApp().toast.error('Failed to refresh threat data');
+                this.getApp()?.toast?.error('Failed to refresh threat data');
             }
         } finally {
             if (element) element.disabled = false;

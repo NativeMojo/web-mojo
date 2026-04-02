@@ -52,6 +52,8 @@ export { default as BouncerDeviceTablePage } from './security/BouncerDeviceTable
 export { default as BotSignatureTablePage } from './security/BotSignatureTablePage.js';
 export { default as BouncerSignalView } from './security/BouncerSignalView.js';
 export { default as BouncerDeviceView } from './security/BouncerDeviceView.js';
+export { default as IPSetTablePage } from './security/IPSetTablePage.js';
+export { default as IPSetView } from './security/IPSetView.js';
 
 // Monitoring
 export { default as LogTablePage } from './monitoring/LogTablePage.js';

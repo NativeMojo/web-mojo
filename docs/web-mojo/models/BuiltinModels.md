@@ -27,6 +27,7 @@ import { UserList, GroupList, JobForms } from 'web-mojo/models';
 - [Metrics](#metrics)
 - [ApiKey & ApiKeyList](#apikey--apikeylist)
 - [Push & PushList](#push--pushlist)
+- [AssistantConversation & AssistantConversationList](#assistantconversation--assistantconversationlist)
 - [Passkeys](#passkeys)
 - [Phonehub](#phonehub)
 - [AWS](#aws)
@@ -702,6 +703,36 @@ if (resp.success && resp.data.status) {
   this.systemStatus = resp.data.data;
 }
 ```
+
+---
+
+## AssistantConversation & AssistantConversationList
+
+Represents an LLM assistant conversation and its message history. Used by the Admin Assistant interface.
+
+**Endpoint:** `/api/assistant/conversation`
+
+```js
+import { AssistantConversation, AssistantConversationList } from 'web-mojo/models';
+
+// Fetch a conversation with full message history
+const conversation = new AssistantConversation({ id: 42 });
+await conversation.fetch();
+const messages = conversation.get('messages'); // Array of message objects
+
+// Fetch the list of the current user's conversations (max 50)
+const list = new AssistantConversationList();
+await list.fetch();
+list.forEach(c => console.log(c.get('id'), c.get('created')));
+
+// Delete a conversation
+const conversation = new AssistantConversation({ id: 42 });
+await conversation.destroy();
+```
+
+`AssistantConversationList` defaults to `size: 50`. Conversations are always scoped to the authenticated user — the API does not expose other users' conversations.
+
+Conversations are created implicitly when the first WebSocket message is sent. There is no explicit `save()` flow for creating a new conversation.
 
 ---
 

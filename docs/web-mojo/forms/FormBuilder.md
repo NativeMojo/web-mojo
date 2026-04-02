@@ -174,9 +174,63 @@ All field types support:
   class: '',                 // Custom CSS classes
   inputClass: '',            // Additional input classes
   labelClass: '',            // Additional label classes
-  attributes: {}             // Custom HTML attributes
+  attributes: {},            // Custom HTML attributes
+  showWhen: {               // Conditional visibility (optional)
+    field: 'type',          //   Controlling field name
+    value: 'advanced',      //   Show when controlling field equals this value
+                            //   (or an array of values for multi-match)
+    negate: false           //   true = hide when value matches (inverts logic)
+  }
 }
 ```
+
+---
+
+## Conditional Visibility (showWhen)
+
+The `showWhen` property hides or shows a field based on another field's current value. It is evaluated at render time and updated live as the controlling field changes.
+
+```javascript
+fields: [
+  {
+    type: 'select',
+    name: 'mode',
+    label: 'Mode',
+    options: [
+      { value: 'simple', label: 'Simple' },
+      { value: 'advanced', label: 'Advanced' }
+    ]
+  },
+  {
+    type: 'text',
+    name: 'extra_option',
+    label: 'Extra Option',
+    showWhen: { field: 'mode', value: 'advanced' }
+    // Only visible when mode === 'advanced'
+  }
+]
+```
+
+### Multi-value match
+
+```javascript
+showWhen: { field: 'status', value: ['pending', 'review'] }
+// Visible when status is 'pending' OR 'review'
+```
+
+### Negated (hide when)
+
+```javascript
+showWhen: { field: 'type', value: 'basic', negate: true }
+// Visible when type is NOT 'basic'
+```
+
+### Behavior
+
+- Fields hidden by `showWhen` are excluded from form submission data — their values are not sent to the server.
+- The `required` attribute on hidden inputs is removed to prevent browser validation errors. It is restored automatically when the field becomes visible again.
+- Initial visibility is determined at render time from the form's current data or the controlling field's `value` default.
+- Visibility updates are wired in `FormView` after render. If you use `FormBuilder` directly (without `FormView`) you are responsible for calling `_updateShowWhen` yourself.
 
 ---
 
