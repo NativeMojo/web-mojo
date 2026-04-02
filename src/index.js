@@ -50,6 +50,7 @@ export * from '@core/models/User.js';
 // App classes
 export { default as WebApp } from '@core/WebApp.js';
 export { default as PortalApp } from '@core/PortalApp.js';
+export { default as PortalWebApp } from '@core/PortalWebApp.js';
 
 // UI helper
 export { default as Dialog } from '@core/views/feedback/Dialog.js';

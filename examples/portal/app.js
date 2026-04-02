@@ -5,7 +5,7 @@
 
 import { VERSION_INFO } from '/src/version.js'
 import Page from '/src/core/Page.js';
-import PortalApp from '/src/core/PortalApp.js'
+import PortalWebApp from '/src/core/PortalWebApp.js'
 import HomePage from './pages/HomePage.js';
 import DashboardPage from './pages/DashboardPage.js';
 import TemplatesPage from './pages/TemplatesPage.js';
@@ -21,7 +21,7 @@ import ImagePage from './pages/ImagePage.js';
 import FileDropPage from './pages/FileDropPage.js';
 import ImageViewer from '/src/extensions/lightbox/ImageViewer.js';
 import ConsoleSilencer from '/src/core/utils/ConsoleSilencer.js';
-import { registerAdminPages, FileTablePage } from '/src/admin.js';
+import { registerAdminPages, registerAssistant, FileTablePage } from '/src/admin.js';
 import formsMenu from './menus/formsMenu.js';
 import FormsSection from './pages/forms/FormsSection.js';
 import FormViewBasics from './pages/forms/FormViewBasics.js';
@@ -60,7 +60,7 @@ window.addEventListener('beforeunload', () => {
 });
 
 // Create and configure the app
-const app = new PortalApp({
+const app = new PortalWebApp({
     name: 'Portal Example',
     version: '1.0.0',
     debug: true,
@@ -78,6 +78,12 @@ const app = new PortalApp({
         baseUrl: 'http://localhost:9009',
         timeout: 30000
     },
+
+    // Auth configuration — redirect to login on auth failure
+    auth: { loginUrl: '/examples/auth/' },
+
+    // WebSocket — auto-connects after auth (path is always /ws/realtime/)
+    ws: true,
 
     // Default brand configuration
     brand: 'Portal App',
@@ -456,6 +462,7 @@ app.registerPage("group/files", FileTablePage, {
 // Register admin pages
 try {
     registerAdminPages(app, true);
+    registerAssistant(app);
     console.log('Admin pages registered successfully');
 } catch (error) {
     console.warn('Failed to register admin pages:', error);
@@ -531,9 +538,10 @@ app.events.on('portal:action', ({ action }) => {
     }
 });
 
-// Start the application
-app.start().then(() => {
-    console.log('Portal app started successfully');
+// Start the application — auth, WS, and router are handled automatically
+app.start().then((result) => {
+    console.log('Portal app started:', result.success ? 'authenticated' : 'auth failed');
+
     // Hide the initial loader once the app is ready
     if (window.hideInitialLoader) {
         window.hideInitialLoader();
