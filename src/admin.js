@@ -378,8 +378,9 @@ export function registerAssistant(app) {
             const view = new AssistantViewClass({ app });
             Modal.show(view, {
                 size: 'fullscreen',
-                title: 'Admin Assistant',
-                noBodyPadding: true
+                noBodyPadding: true,
+                title: ' ',
+                buttons: []
             });
         }
     };

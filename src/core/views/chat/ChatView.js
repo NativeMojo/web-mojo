@@ -31,6 +31,7 @@ class ChatView extends View {
         this.inputPlaceholder = options.inputPlaceholder || 'Type a message...';
         this.inputButtonText = options.inputButtonText || 'Send';
         this.showFileInput = options.showFileInput !== false; // default true
+        this.showInput = options.showInput !== false; // default true
         this.MessageViewClass = options.messageViewClass || ChatMessageView;
         this.messages = [];
         this.messageViews = new Map(); // Track message views by ID
@@ -41,7 +42,7 @@ class ChatView extends View {
         return `
             <div class="chat-container chat-theme-${this.theme}">
                 <div class="chat-messages" data-container="messages"></div>
-                <div class="chat-input-wrapper" data-container="input"></div>
+                ${this.showInput ? '<div class="chat-input-wrapper" data-container="input"></div>' : ''}
             </div>
         `;
     }
@@ -49,20 +50,22 @@ class ChatView extends View {
     async onInit() {
         // Initial fetch of messages
         this.messages = await this.adapter.fetch();
-        
-        // Create input view
-        this.inputView = new ChatInputView({
-            containerId: 'input',
-            placeholder: this.inputPlaceholder,
-            buttonText: this.inputButtonText,
-            showFileInput: this.showFileInput
-        });
-        this.addChild(this.inputView);
-        
-        // Listen for new messages
-        this.inputView.on('message:send', async (data) => {
-            await this.handleSendMessage(data);
-        });
+
+        // Create input view (if not hidden)
+        if (this.showInput) {
+            this.inputView = new ChatInputView({
+                containerId: 'input',
+                placeholder: this.inputPlaceholder,
+                buttonText: this.inputButtonText,
+                showFileInput: this.showFileInput
+            });
+            this.addChild(this.inputView);
+
+            // Listen for new messages
+            this.inputView.on('message:send', async (data) => {
+                await this.handleSendMessage(data);
+            });
+        }
     }
 
     async onAfterRender() {

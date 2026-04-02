@@ -20,9 +20,9 @@ class AssistantConversationListView extends View {
 
     getTemplate() {
         return `
-            <div class="conversation-list-header p-3">
-                <button class="btn btn-primary btn-sm w-100" data-action="new-conversation">
-                    <i class="bi bi-plus-lg me-1"></i> New Conversation
+            <div class="conversation-list-header">
+                <button class="btn btn-outline-secondary w-100" data-action="new-conversation">
+                    <i class="bi bi-plus-lg me-1"></i> New conversation
                 </button>
             </div>
             <div class="conversation-list-items" data-container="items"></div>
