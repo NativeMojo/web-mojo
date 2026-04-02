@@ -148,9 +148,10 @@ export default class PortalWebApp extends PortalApp {
         this.rest.clearAuth();
         this.setActiveUser(null);
 
-        // Disconnect WebSocket if connected
+        // Disconnect and clear WebSocket if connected
         if (this.ws) {
             this.ws.disconnect();
+            this.ws = null;
         }
 
         // Emit user:logout event
