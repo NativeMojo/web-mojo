@@ -14,6 +14,7 @@ class ChatInputView extends View {
 
         this.placeholder = options.placeholder || 'Type a message...';
         this.buttonText = options.buttonText || 'Send';
+        this.showFileInput = options.showFileInput !== false; // default true
         this.attachments = []; // Array of uploaded file data
         this.pendingUploads = new Map(); // Track in-progress uploads
     }
@@ -32,26 +33,30 @@ class ChatInputView extends View {
                         <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                     </button>
                 </div>
+                ${this.showFileInput ? `
                 <div class="chat-input-footer">
                     <small class="text-muted">
                         <i class="bi bi-paperclip"></i>
                         Drag & drop files to attach
                     </small>
                 </div>
+                ` : ''}
             </div>
         `;
     }
 
     async onAfterRender() {
-        // Enable file drop on the entire input container
-        this.enableFileDrop({
-            dropZoneSelector: '.chat-input-container',
-            multiple: true,
-            acceptedTypes: ['*/*'], // Accept all file types
-            visualFeedback: true,
-            dragOverClass: 'drag-over',
-            dragActiveClass: 'drag-active'
-        });
+        // Enable file drop on the entire input container (if file input is shown)
+        if (this.showFileInput) {
+            this.enableFileDrop({
+                dropZoneSelector: '.chat-input-container',
+                multiple: true,
+                acceptedTypes: ['*/*'], // Accept all file types
+                visualFeedback: true,
+                dragOverClass: 'drag-over',
+                dragActiveClass: 'drag-active'
+            });
+        }
 
         // Auto-resize textarea as user types and handle Enter key
         const textarea = this.element.querySelector('.chat-input');
@@ -244,6 +249,17 @@ class ChatInputView extends View {
         });
 
         // Note: Don't clear here - let the parent ChatView call clearInput() after successful send
+    }
+
+    /**
+     * Enable or disable the entire input area
+     * @param {boolean} enabled - Whether the input should be enabled
+     */
+    setEnabled(enabled) {
+        const textarea = this.element?.querySelector('.chat-input');
+        const button = this.element?.querySelector('.chat-send-btn');
+        if (textarea) textarea.disabled = !enabled;
+        if (button) button.disabled = !enabled;
     }
 
     /**

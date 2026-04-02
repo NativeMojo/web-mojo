@@ -8,7 +8,7 @@
  *   import { User, Job, Email } from 'web-mojo/models';
  *   import { UserList, JobForms } from 'web-mojo/models';
  * 
- * Generated on: 2026-04-01T19:15:21.512Z
+ * Generated on: 2026-04-02T11:14:15.849Z
  */
 
 // AWS model exports
@@ -18,6 +18,10 @@ export { default as AWS } from './AWS.js';
 // ApiKey model exports
 export * from './ApiKey.js';
 export { default as ApiKey } from './ApiKey.js';
+
+// Assistant model exports
+export * from './Assistant.js';
+export { default as Assistant } from './Assistant.js';
 
 // Bouncer model exports
 export * from './Bouncer.js';
@@ -34,6 +38,10 @@ export { default as Files } from './Files.js';
 // Group model exports
 export * from './Group.js';
 export { default as Group } from './Group.js';
+
+// IPSet model exports
+export * from './IPSet.js';
+export { default as IPSet } from './IPSet.js';
 
 // Incident model exports
 export * from './Incident.js';

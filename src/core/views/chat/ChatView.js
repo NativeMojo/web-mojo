@@ -24,14 +24,17 @@ class ChatView extends View {
             className: 'chat-view',
             ...options
         });
-        
+
         this.adapter = options.adapter;
         this.theme = options.theme || 'compact'; // 'compact' or 'bubbles'
         this.currentUserId = options.currentUserId;
         this.inputPlaceholder = options.inputPlaceholder || 'Type a message...';
         this.inputButtonText = options.inputButtonText || 'Send';
+        this.showFileInput = options.showFileInput !== false; // default true
+        this.MessageViewClass = options.messageViewClass || ChatMessageView;
         this.messages = [];
         this.messageViews = new Map(); // Track message views by ID
+        this._thinkingEl = null;
     }
 
     getTemplate() {
@@ -51,7 +54,8 @@ class ChatView extends View {
         this.inputView = new ChatInputView({
             containerId: 'input',
             placeholder: this.inputPlaceholder,
-            buttonText: this.inputButtonText
+            buttonText: this.inputButtonText,
+            showFileInput: this.showFileInput
         });
         this.addChild(this.inputView);
         
@@ -114,7 +118,7 @@ class ChatView extends View {
         
         const isCurrentUser = message.author && message.author.id === this.currentUserId;
         
-        const messageView = new ChatMessageView({
+        const messageView = new this.MessageViewClass({
             message: message,
             theme: this.theme,
             isCurrentUser: isCurrentUser
@@ -206,6 +210,53 @@ class ChatView extends View {
             } catch (e) {
                 // Toast not available — fail silently
             }
+        }
+    }
+
+    /**
+     * Show an animated thinking indicator at the bottom of the messages area.
+     * Only one indicator is shown at a time — subsequent calls update the text.
+     * @param {string} [text='Thinking...'] - Status text to display
+     */
+    showThinking(text = 'Thinking...') {
+        const container = this.element?.querySelector('[data-container="messages"]');
+        if (!container) return;
+
+        if (!this._thinkingEl) {
+            this._thinkingEl = document.createElement('div');
+            this._thinkingEl.className = 'chat-thinking';
+            this._thinkingEl.innerHTML = `
+                <div class="chat-thinking-content">
+                    <span class="chat-thinking-dots">
+                        <span></span><span></span><span></span>
+                    </span>
+                    <span class="chat-thinking-text"></span>
+                </div>
+            `;
+            container.appendChild(this._thinkingEl);
+        }
+
+        this._thinkingEl.querySelector('.chat-thinking-text').textContent = text;
+        this.scrollToBottom();
+    }
+
+    /**
+     * Remove the thinking indicator
+     */
+    hideThinking() {
+        if (this._thinkingEl) {
+            this._thinkingEl.remove();
+            this._thinkingEl = null;
+        }
+    }
+
+    /**
+     * Enable or disable the chat input
+     * @param {boolean} enabled - Whether the input should be enabled
+     */
+    setInputEnabled(enabled) {
+        if (this.inputView?.setEnabled) {
+            this.inputView.setEnabled(enabled);
         }
     }
 

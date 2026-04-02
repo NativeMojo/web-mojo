@@ -619,3 +619,233 @@
         overflow: visible;
     }
 }
+
+/* ─── Admin Assistant ─────────────────────────────────── */
+
+.assistant-view {
+    height: 100%;
+    min-height: 0;
+}
+
+.assistant-layout {
+    display: flex;
+    height: calc(100vh - 56px);
+    min-height: 0;
+}
+
+.assistant-sidebar {
+    width: 280px;
+    min-width: 280px;
+    border-right: 1px solid var(--bs-border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bs-body-bg);
+}
+
+.assistant-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.assistant-status-bar {
+    padding: 4px 12px;
+    border-bottom: 1px solid var(--bs-border-color);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bs-body-bg);
+}
+
+.assistant-chat-area {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.assistant-chat-area .chat-view {
+    height: 100%;
+}
+
+.assistant-chat-area .chat-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.assistant-chat-area .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+/* Connection status dot */
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    background: var(--bs-secondary);
+}
+
+.status-dot.connected {
+    background: var(--bs-success);
+}
+
+.status-dot.reconnecting {
+    background: var(--bs-warning);
+    animation: pulse-dot 1.2s infinite;
+}
+
+.status-dot.disconnected {
+    background: var(--bs-danger);
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* Conversation list */
+.assistant-conversation-list {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.conversation-list-items {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.conversation-date-header {
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    color: var(--bs-secondary);
+    padding-top: 12px !important;
+    border-top: 1px solid var(--bs-border-color);
+}
+
+.conversation-date-header:first-child {
+    border-top: none;
+    padding-top: 8px !important;
+}
+
+.conversation-item {
+    cursor: pointer;
+    transition: background-color 0.15s;
+    border-left: 3px solid transparent;
+}
+
+.conversation-item:hover {
+    background-color: var(--bs-tertiary-bg);
+}
+
+.conversation-item.active {
+    background-color: var(--bs-primary-bg-subtle);
+    border-left-color: var(--bs-primary);
+}
+
+.conversation-title {
+    font-size: 0.875rem;
+}
+
+.conversation-delete {
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.conversation-item:hover .conversation-delete {
+    opacity: 0.6;
+}
+
+.conversation-delete:hover {
+    opacity: 1 !important;
+}
+
+/* Thinking indicator */
+.chat-thinking {
+    padding: 8px 16px;
+}
+
+.chat-thinking-content {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--bs-tertiary-bg);
+    border-radius: 12px;
+    font-size: 0.85rem;
+    color: var(--bs-secondary-color);
+}
+
+.chat-thinking-dots {
+    display: inline-flex;
+    gap: 3px;
+}
+
+.chat-thinking-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--bs-secondary);
+    animation: thinking-bounce 1.4s infinite ease-in-out both;
+}
+
+.chat-thinking-dots span:nth-child(1) { animation-delay: -0.32s; }
+.chat-thinking-dots span:nth-child(2) { animation-delay: -0.16s; }
+.chat-thinking-dots span:nth-child(3) { animation-delay: 0s; }
+
+@keyframes thinking-bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+}
+
+/* Assistant message styling */
+.chat-message.message-assistant .message-avatar {
+    background: var(--bs-dark) !important;
+}
+
+.chat-message.message-assistant .message-text {
+    color: var(--bs-body-color);
+}
+
+.message-tool-calls a {
+    text-decoration: none;
+}
+
+.message-tool-calls a:hover {
+    text-decoration: underline;
+}
+
+/* Assistant blocks */
+.assistant-block {
+    margin-top: 8px;
+}
+
+.assistant-block .table-view-component {
+    margin-bottom: 0;
+}
+
+.assistant-block .chart-component {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 6px;
+    padding: 8px;
+}
+
+.assistant-stat-card {
+    min-width: 120px;
+    border-color: var(--bs-border-color);
+}
+
+/* Responsive: collapse sidebar on small screens */
+@media (max-width: 768px) {
+    .assistant-sidebar {
+        display: none;
+    }
+}

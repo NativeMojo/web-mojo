@@ -47,11 +47,13 @@ export { default as FirewallLogTablePage } from '@ext/admin/security/FirewallLog
 export { default as BouncerSignalTablePage } from '@ext/admin/security/BouncerSignalTablePage.js';
 export { default as BouncerDeviceTablePage } from '@ext/admin/security/BouncerDeviceTablePage.js';
 export { default as BotSignatureTablePage } from '@ext/admin/security/BotSignatureTablePage.js';
+export { default as IPSetTablePage } from '@ext/admin/security/IPSetTablePage.js';
 
 // Security Views
 export { default as BouncerSignalView } from '@ext/admin/security/BouncerSignalView.js';
 export { default as BouncerDeviceView } from '@ext/admin/security/BouncerDeviceView.js';
 export { default as HandlerBuilderView } from '@ext/admin/security/HandlerBuilderView.js';
+export { default as IPSetView } from '@ext/admin/security/IPSetView.js';
 
 export { default as LogTablePage } from '@ext/admin/monitoring/LogTablePage.js';
 export { default as MetricsPermissionsTablePage } from '@ext/admin/monitoring/MetricsPermissionsTablePage.js';
@@ -93,6 +95,9 @@ export { default as MetricsPermissionsView } from '@ext/admin/monitoring/Metrics
 export { default as SettingView } from '@ext/admin/settings/SettingView.js';
 
 export { default as FileView } from '@ext/admin/storage/FileView.js';
+
+// Assistant (loaded dynamically via registerAssistant())
+export { default as AssistantView } from '@ext/admin/assistant/AssistantView.js';
 
 // Admin Components
 // Convenience
@@ -148,6 +153,7 @@ import FirewallLogTablePageClass from '@ext/admin/security/FirewallLogTablePage.
 import BouncerSignalTablePageClass from '@ext/admin/security/BouncerSignalTablePage.js';
 import BouncerDeviceTablePageClass from '@ext/admin/security/BouncerDeviceTablePage.js';
 import BotSignatureTablePageClass from '@ext/admin/security/BotSignatureTablePage.js';
+import IPSetTablePageClass from '@ext/admin/security/IPSetTablePage.js';
 
 import LogTablePageClass from '@ext/admin/monitoring/LogTablePage.js';
 import MetricsPermissionsTablePageClass from '@ext/admin/monitoring/MetricsPermissionsTablePage.js';
@@ -208,6 +214,7 @@ export function registerSystemPages(app, addToMenu = true) {
     app.registerPage('system/security/bouncer-signals', BouncerSignalTablePageClass, { permissions: ["view_security"] });
     app.registerPage('system/security/bouncer-devices', BouncerDeviceTablePageClass, { permissions: ["view_security"] });
     app.registerPage('system/security/bot-signatures', BotSignatureTablePageClass, { permissions: ["manage_security"] });
+    app.registerPage('system/security/ipsets', IPSetTablePageClass, { permissions: ["view_security"] });
 
     // Check if sidebar exists and has an admin menu config
     if (addToMenu && app.sidebar && app.sidebar.getMenuConfig) {
@@ -259,6 +266,7 @@ export function registerSystemPages(app, addToMenu = true) {
                         { text: 'Events', route: '?page=system/events', icon: 'bi-bell', permissions: ["view_security"] },
                         { text: 'Rule Engine', route: '?page=system/rulesets', icon: 'bi-funnel', permissions: ["manage_security"] },
                         { text: 'Blocked IPs', route: '?page=system/security/blocked-ips', icon: 'bi-slash-circle', permissions: ["view_security"] },
+                        { text: 'IP Sets', route: '?page=system/security/ipsets', icon: 'bi-shield-shaded', permissions: ["view_security"] },
                         { text: 'Firewall Log', route: '?page=system/security/firewall-log', icon: 'bi-journal-code', permissions: ["view_security"] },
                         { text: 'GeoIP', route: '?page=system/system/geoip', icon: 'bi-globe', permissions: ["view_security"] },
                         { text: 'Bouncer Signals', route: '?page=system/security/bouncer-signals', icon: 'bi-activity', permissions: ["view_security"] },
@@ -347,3 +355,40 @@ export function registerSystemPages(app, addToMenu = true) {
 }
 
 export { registerSystemPages as registerAdminPages };
+
+/**
+ * Register the Admin Assistant topbar button
+ * Adds a robot icon to the topbar that opens the assistant in a fullscreen modal.
+ * Requires `view_admin` permission.
+ *
+ * @param {WebApp} app - The WebApp/PortalApp instance
+ */
+export async function registerAssistant(app) {
+    if (!app.topbar || !app.topbar.config) return;
+
+    const { default: AssistantViewClass } = await import('@ext/admin/assistant/AssistantView.js');
+    const { default: Modal } = await import('@core/views/feedback/Modal.js');
+
+    app.topbar.config.rightItems.unshift({
+        id: 'assistant',
+        icon: 'bi-robot',
+        action: 'open-assistant',
+        isButton: true,
+        buttonClass: 'btn btn-link nav-link',
+        tooltip: 'Admin Assistant',
+        permissions: ['view_admin'],
+        handler: () => {
+            const view = new AssistantViewClass({ app });
+            Modal.show(view, {
+                size: 'fullscreen',
+                title: 'Admin Assistant',
+                noBodyPadding: true
+            });
+        }
+    });
+
+    // Re-render topbar to show the new button
+    if (app.topbar.isMounted()) {
+        app.topbar.render();
+    }
+}

@@ -18,10 +18,16 @@ class ChatMessageView extends View {
         this.message = options.message || {};
         this.theme = options.theme || 'compact';
         this.isCurrentUser = options.isCurrentUser || false;
-        
-        // Add theme-specific class
+        this.role = this.message.role || (this.isCurrentUser ? 'user' : null);
+
+        // Add theme-specific and role-specific classes
         if (this.theme === 'bubbles') {
             this.className += this.isCurrentUser ? ' message-right' : ' message-left';
+        }
+        if (this.role === 'assistant') {
+            this.className += ' message-assistant';
+        } else if (this.role === 'user') {
+            this.className += ' message-user';
         }
     }
 
@@ -49,21 +55,24 @@ class ChatMessageView extends View {
      */
     getCompactTemplate() {
         const userClass = this.isCurrentUser ? 'bg-primary' : 'bg-secondary';
-        
+        const isAssistant = this.role === 'assistant';
+
         return `
             <div class="message-item">
-                <div class="message-avatar ${userClass}">
+                <div class="message-avatar ${isAssistant ? 'bg-dark' : userClass}">
+                    ${isAssistant ? '<i class="bi bi-robot"></i>' : `
                     {{#message.author.avatarUrl}}
                         <img src="{{message.author.avatarUrl}}" alt="{{message.author.name}}" class="w-100 h-100 rounded-circle">
                     {{/message.author.avatarUrl}}
                     {{^message.author.avatarUrl}}
                         {{message.author.name|initials}}
                     {{/message.author.avatarUrl}}
+                    `}
                 </div>
                 <div class="message-content">
                     <div class="message-header">
                         <div class="message-author">
-                            {{message.author.name}}
+                            ${isAssistant ? 'Assistant' : '{{message.author.name}}'}
                             {{#isCurrentUser}}
                                 <span class="badge bg-primary badge-sm ms-1">You</span>
                             {{/isCurrentUser}}
@@ -71,6 +80,8 @@ class ChatMessageView extends View {
                         <div class="message-time text-muted">{{message.timestamp|relative}}</div>
                     </div>
                     <div class="message-text">{{{message.content}}}</div>
+                    ${this._getToolCallsTemplate()}
+                    <div data-container="blocks-${this.message.id || this.id}"></div>
                     <div data-container="attachments"></div>
                 </div>
             </div>
@@ -81,15 +92,46 @@ class ChatMessageView extends View {
      * Get bubbles theme template (Option 1 - Modern Chat Bubbles)
      */
     getBubblesTemplate() {
+        const isAssistant = this.role === 'assistant';
+
         return `
             <div class="message-bubble-wrapper">
                 <div class="message-meta">
-                    <strong>{{message.author.name}}</strong>
+                    <strong>${isAssistant ? '<i class="bi bi-robot me-1"></i>Assistant' : '{{message.author.name}}'}</strong>
                     <span class="text-muted">· {{message.timestamp|relative}}</span>
                 </div>
                 <div class="message-bubble">
                     <div class="message-text">{{{message.content}}}</div>
+                    ${this._getToolCallsTemplate()}
+                    <div data-container="blocks-${this.message.id || this.id}"></div>
                     <div data-container="attachments"></div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Get tool calls display template (collapsible section showing tool usage)
+     * @private
+     */
+    _getToolCallsTemplate() {
+        if (!this.message.tool_calls || this.message.tool_calls.length === 0) {
+            return '';
+        }
+        const toolBadges = this.message.tool_calls.map(tc => {
+            const name = tc.name || tc.function?.name || 'tool';
+            const statusClass = tc.status === 'error' ? 'bg-danger' : 'bg-info';
+            return `<span class="badge ${statusClass} me-1">${name}</span>`;
+        }).join('');
+
+        const collapseId = `tools-${this.message.id || this.id}`;
+        return `
+            <div class="message-tool-calls mt-1">
+                <a class="text-muted small" data-bs-toggle="collapse" href="#${collapseId}" role="button" aria-expanded="false">
+                    <i class="bi bi-tools me-1"></i>${this.message.tool_calls.length} tool call${this.message.tool_calls.length > 1 ? 's' : ''}
+                </a>
+                <div class="collapse" id="${collapseId}">
+                    <div class="mt-1">${toolBadges}</div>
                 </div>
             </div>
         `;
