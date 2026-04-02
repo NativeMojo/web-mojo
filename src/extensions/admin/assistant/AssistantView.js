@@ -64,8 +64,11 @@ class AssistantView extends View {
                     <div class="assistant-input-wrapper">
                         <div class="assistant-input-box">
                             <textarea class="assistant-input" placeholder="Message the assistant..." rows="1" data-ref="input"></textarea>
-                            <button class="assistant-send-btn" data-action="send" type="button" title="Send message">
+                            <button class="assistant-send-btn" data-action="send" type="button" title="Send message" data-ref="send-btn">
                                 <i class="bi bi-arrow-up"></i>
+                            </button>
+                            <button class="assistant-stop-btn d-none" data-action="stop" type="button" title="Stop generating" data-ref="stop-btn">
+                                <i class="bi bi-stop-fill"></i>
                             </button>
                         </div>
                         <div class="assistant-input-footer">
@@ -94,6 +97,7 @@ class AssistantView extends View {
             containerId: 'chat-area',
             theme: 'compact',
             messageViewClass: AssistantMessageView,
+            currentUserId: this.app?.activeUser?.id,
             showFileInput: false,
             showInput: false,
             adapter: this._createAdapter()
@@ -218,14 +222,48 @@ class AssistantView extends View {
     }
 
     /**
-     * Set input enabled/disabled state
+     * Set input enabled/disabled state and toggle send/stop buttons
      * @private
      */
     _setInputEnabled(enabled) {
         const textarea = this.element?.querySelector('[data-ref="input"]');
-        const button = this.element?.querySelector('[data-action="send"]');
+        const sendBtn = this.element?.querySelector('[data-ref="send-btn"]');
+        const stopBtn = this.element?.querySelector('[data-ref="stop-btn"]');
+
         if (textarea) textarea.disabled = !enabled;
-        if (button) button.disabled = !enabled;
+
+        // Toggle send/stop button visibility
+        if (sendBtn) sendBtn.classList.toggle('d-none', !enabled);
+        if (stopBtn) stopBtn.classList.toggle('d-none', enabled);
+
+        // Clear or set safety timeout
+        if (this._responseTimeout) clearTimeout(this._responseTimeout);
+        if (!enabled) {
+            this._responseTimeout = setTimeout(() => this._onResponseTimeout(), 60000);
+        }
+    }
+
+    /**
+     * Handle stop button click — abort waiting for response
+     */
+    onActionStop() {
+        this.chatView.hideThinking();
+        this._setInputEnabled(true);
+        this._showSystemMessage('Response cancelled.');
+
+        const textarea = this.element?.querySelector('[data-ref="input"]');
+        if (textarea) textarea.focus();
+    }
+
+    /**
+     * Safety timeout — re-enable input if server never responds
+     * @private
+     */
+    _onResponseTimeout() {
+        this._responseTimeout = null;
+        this.chatView.hideThinking();
+        this._setInputEnabled(true);
+        this._showSystemMessage('Request timed out. Please try again.');
     }
 
     // ── Chat Adapter ─────────────────────────────────────
@@ -236,7 +274,7 @@ class AssistantView extends View {
                 if (!this.conversationId) return [];
                 try {
                     const conversation = new AssistantConversation({ id: this.conversationId });
-                    await conversation.fetch();
+                    await conversation.fetch({ graph: 'detail' });
                     const messages = conversation.get('messages') || [];
                     return messages.map(msg => this._transformMessage(msg));
                 } catch (_err) {
@@ -303,20 +341,30 @@ class AssistantView extends View {
     _subscribeWS() {
         if (!this.ws) return;
 
+        // Server sends events two ways:
+        // 1. Direct WS response: {"type":"assistant_thinking", ...}
+        //    → WebSocketClient emits "message:assistant_thinking"
+        // 2. Background thread via send_to_user: {"type":"message","data":{"type":"assistant_*",...}}
+        //    → WebSocketClient emits "message:message"
         this._wsHandlers = {
             thinking: (data) => this._onThinking(data),
             tool_call: (data) => this._onToolCall(data),
             response: (data) => this._onResponse(data),
             error: (data) => this._onError(data),
+            message: (envelope) => this._dispatchWSMessage(envelope),
             connected: () => this._updateConnectionStatus(),
             disconnected: () => this._updateConnectionStatus(),
             reconnecting: () => this._updateConnectionStatus()
         };
 
+        // Direct events (from WS handler return)
         this.ws.on('message:assistant_thinking', this._wsHandlers.thinking);
         this.ws.on('message:assistant_tool_call', this._wsHandlers.tool_call);
         this.ws.on('message:assistant_response', this._wsHandlers.response);
         this.ws.on('message:assistant_error', this._wsHandlers.error);
+        // Wrapped events (from background thread via send_to_user)
+        this.ws.on('message:message', this._wsHandlers.message);
+        // Connection status
         this.ws.on('connected', this._wsHandlers.connected);
         this.ws.on('disconnected', this._wsHandlers.disconnected);
         this.ws.on('reconnecting', this._wsHandlers.reconnecting);
@@ -329,6 +377,7 @@ class AssistantView extends View {
         this.ws.off('message:assistant_tool_call', this._wsHandlers.tool_call);
         this.ws.off('message:assistant_response', this._wsHandlers.response);
         this.ws.off('message:assistant_error', this._wsHandlers.error);
+        this.ws.off('message:message', this._wsHandlers.message);
         this.ws.off('connected', this._wsHandlers.connected);
         this.ws.off('disconnected', this._wsHandlers.disconnected);
         this.ws.off('reconnecting', this._wsHandlers.reconnecting);
@@ -338,50 +387,86 @@ class AssistantView extends View {
 
     // ── WS Event Handlers ────────────────────────────────
 
+    /**
+     * Dispatch an incoming WS message envelope to the correct handler.
+     * Envelope shape: { type: "message", data: { type: "assistant_*", ... }, timestamp }
+     * @private
+     */
+    _dispatchWSMessage(envelope) {
+        const inner = envelope?.data;
+        if (!inner?.type) return;
+
+        switch (inner.type) {
+            case 'assistant_thinking':  this._onThinking(inner); break;
+            case 'assistant_tool_call': this._onToolCall(inner); break;
+            case 'assistant_response':  this._onResponse(inner); break;
+            case 'assistant_error':     this._onError(inner); break;
+        }
+    }
+
+    /**
+     * Check if a WS event belongs to this view's conversation.
+     * Accept if: no conversation_id on event, or matches ours, or we have none yet (new conversation).
+     * @private
+     */
+    _isMyConversation(data) {
+        if (!data.conversation_id) return true;
+        if (!this.conversationId) return true; // new conversation — accept server-assigned ID
+        return String(data.conversation_id) === String(this.conversationId);
+    }
+
+    /**
+     * Adopt a conversation ID from a WS event if we don't have one yet.
+     * @private
+     */
+    _adoptConversationId(data) {
+        if (data.conversation_id && !this.conversationId) {
+            this.conversationId = data.conversation_id;
+            this.conversationListView.refresh();
+        }
+    }
+
     _onThinking(data) {
-        if (data.conversation_id && data.conversation_id !== this.conversationId) return;
+        if (!this._isMyConversation(data)) return;
+        this._adoptConversationId(data);
         this._showChatArea();
         this.chatView.showThinking('Thinking...');
         this._setInputEnabled(false);
     }
 
     _onToolCall(data) {
-        if (data.conversation_id && data.conversation_id !== this.conversationId) return;
+        if (!this._isMyConversation(data)) return;
         this.chatView.showThinking(`Using ${data.tool || data.name || 'tool'}...`);
     }
 
     _onResponse(data) {
-        if (data.conversation_id && data.conversation_id !== this.conversationId) return;
+        if (!this._isMyConversation(data)) return;
 
         this.chatView.hideThinking();
         this._setInputEnabled(true);
+        this._adoptConversationId(data);
 
         // Focus input after response
         const textarea = this.element?.querySelector('[data-ref="input"]');
         if (textarea) textarea.focus();
 
-        // Set conversation ID if this is a new conversation
-        if (data.conversation_id && !this.conversationId) {
-            this.conversationId = data.conversation_id;
-            this.conversationListView.refresh();
-        }
-
         const msg = this._transformMessage({
             id: data.message_id || `resp-${++this._messageIdCounter}`,
             role: 'assistant',
-            content: data.content || data.message || '',
+            content: data.response || data.content || data.message || '',
             blocks: data.blocks || [],
-            tool_calls: data.tool_calls || [],
+            tool_calls: data.tool_calls_made || data.tool_calls || [],
             created: data.timestamp || new Date().toISOString()
         });
         this.chatView.addMessage(msg);
     }
 
     _onError(data) {
-        if (data.conversation_id && data.conversation_id !== this.conversationId) return;
+        if (!this._isMyConversation(data)) return;
 
         this.chatView.hideThinking();
         this._setInputEnabled(true);
+        this._adoptConversationId(data);
 
         const errorText = data.error || data.message || 'An error occurred';
         this._showSystemMessage(errorText);
@@ -417,17 +502,59 @@ class AssistantView extends View {
     // ── Helpers ──────────────────────────────────────────
 
     _transformMessage(msg) {
+        let content = msg.content || msg.text || '';
+        let blocks = msg.blocks || [];
+
+        // Safety net: parse blocks from content if API didn't return them
+        // (e.g. WS events or older API responses that still embed fences).
+        if (blocks.length === 0 && content.includes('assistant_block')) {
+            const parsed = AssistantView._parseBlocks(content);
+            content = parsed.content;
+            blocks = parsed.blocks;
+        }
+
+        const currentUserId = this.app?.activeUser?.id;
+
         return {
             id: msg.id,
             role: msg.role || 'user',
             author: msg.role === 'assistant'
                 ? { name: 'Assistant' }
-                : msg.author || { name: msg.user?.display_name || 'You', id: msg.user?.id },
-            content: msg.content || msg.text || '',
+                : msg.author || {
+                    name: msg.user?.display_name || this.app?.activeUser?.get('display_name') || 'You',
+                    id: msg.user?.id || currentUserId
+                },
+            content,
             timestamp: msg.created || msg.timestamp,
-            blocks: msg.blocks || [],
+            blocks,
             tool_calls: msg.tool_calls || []
         };
+    }
+
+    /**
+     * Parse assistant_block fences from message content.
+     * Mirrors the server-side _parse_blocks() logic.
+     * @static
+     */
+    static _parseBlocks(text) {
+        const BLOCK_RE = /```assistant_block\s*\n([\s\S]*?)```/g;
+        const VALID_TYPES = new Set(['table', 'chart', 'stat']);
+        const blocks = [];
+        let match;
+
+        while ((match = BLOCK_RE.exec(text)) !== null) {
+            try {
+                const block = JSON.parse(match[1].trim());
+                if (block && VALID_TYPES.has(block.type)) {
+                    blocks.push(block);
+                }
+            } catch (_e) {
+                // Skip malformed blocks
+            }
+        }
+
+        const content = text.replace(BLOCK_RE, '').replace(/\n{3,}/g, '\n\n').trim();
+        return { content, blocks };
     }
 
     _showSystemMessage(text) {
@@ -480,6 +607,10 @@ class AssistantView extends View {
 
     async onBeforeDestroy() {
         this._unsubscribeWS();
+        if (this._responseTimeout) {
+            clearTimeout(this._responseTimeout);
+            this._responseTimeout = null;
+        }
     }
 }
 

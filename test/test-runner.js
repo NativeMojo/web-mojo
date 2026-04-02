@@ -232,6 +232,7 @@ class TestRunner {
             passed: 0,
             failed: 0,
             unknown: 0,
+            errors: [],
             testPromises: []
         };
 

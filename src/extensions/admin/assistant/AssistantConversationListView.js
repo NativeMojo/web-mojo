@@ -70,14 +70,19 @@ class AssistantConversationListView extends View {
             items.forEach(model => {
                 const id = model.get('id');
                 const title = model.get('title') || model.get('summary') || 'New conversation';
+                const modified = model.get('modified') || model.get('created');
+                const timeStr = this._relativeTime(modified);
                 const isActive = id === this.activeId;
 
                 const item = document.createElement('div');
                 item.className = `conversation-item px-3 py-2${isActive ? ' active' : ''}`;
                 item.dataset.id = id;
                 item.innerHTML = `
-                    <div class="d-flex align-items-center">
-                        <div class="flex-grow-1 text-truncate conversation-title">${this._escapeHtml(title)}</div>
+                    <div class="d-flex align-items-start">
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="text-truncate conversation-title">${this._escapeHtml(title)}</div>
+                            ${timeStr ? `<div class="conversation-time text-muted">${timeStr}</div>` : ''}
+                        </div>
                         <button class="btn btn-sm btn-link text-muted p-0 ms-2 conversation-delete" data-action="delete-conversation" data-id="${id}" title="Delete">
                             <i class="bi bi-trash"></i>
                         </button>
@@ -180,6 +185,32 @@ class AssistantConversationListView extends View {
     async refresh() {
         await this.collection.fetch();
         this._renderItems();
+    }
+
+    /**
+     * Format a date string as relative time (e.g. "2m ago", "3h ago", "Jan 5")
+     * @private
+     */
+    _relativeTime(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        if (isNaN(date)) return '';
+
+        const now = Date.now();
+        const diff = now - date.getTime();
+        const seconds = Math.floor(diff / 1000);
+
+        if (seconds < 60) return 'just now';
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes}m ago`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours}h ago`;
+        const days = Math.floor(hours / 24);
+        if (days < 7) return `${days}d ago`;
+
+        // Older than a week — show short date
+        const month = date.toLocaleString('default', { month: 'short' });
+        return `${month} ${date.getDate()}`;
     }
 
     /**

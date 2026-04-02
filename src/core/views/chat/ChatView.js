@@ -84,14 +84,24 @@ class ChatView extends View {
      * @private
      */
     async _renderChildren() {
-        await super._renderChildren();
-        const messagesContainer = this.element.querySelector('[data-container="messages"]');
-        if (!messagesContainer) {
-            console.error('ChatView: messages container not found');
-            return;
+        // Collect message view IDs so we can skip them in the standard path
+        const messageViewIds = new Set();
+        this.messageViews.forEach(v => messageViewIds.add(v.id));
+
+        // Render non-message children (e.g. input view) via the standard path
+        for (const id in this.children) {
+            const child = this.children[id];
+            if (!child || messageViewIds.has(id)) continue;
+            child.parent = this;
+            await Promise.resolve(child.render()).catch(err =>
+                console.warn(`ChatView child render error (${id})`, err)
+            );
         }
-        
-        // Append each message view to the container and render it
+
+        // Then place message views into the messages container
+        const messagesContainer = this.element.querySelector('[data-container="messages"]');
+        if (!messagesContainer) return;
+
         this.messageViews.forEach((messageView) => {
             messagesContainer.appendChild(messageView.element);
             messageView.render(false);
@@ -279,11 +289,15 @@ class ChatView extends View {
      * Clear all messages
      */
     clearMessages() {
-        this.messageViews.forEach(view => view.destroy());
+        this.messageViews.forEach((view) => {
+            // Remove from parent's children hash so _renderChildren won't re-render them
+            delete this.children[view.id];
+            view.destroy();
+        });
         this.messageViews.clear();
         this.messages = [];
-        
-        const container = this.element.querySelector('[data-container="messages"]');
+
+        const container = this.element?.querySelector('[data-container="messages"]');
         if (container) {
             container.innerHTML = '';
         }
