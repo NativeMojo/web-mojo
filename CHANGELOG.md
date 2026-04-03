@@ -19,9 +19,21 @@
 - **ChatMessageView: `blocks` container** — Renders a `data-container="blocks-{id}"` slot after message text for attaching block child views (used by `AssistantMessageView`).
 - **ChatMessageView: `tool_calls` display** — If `message.tool_calls` is present, renders a collapsible Bootstrap collapse section showing tool names as badges.
 - **FormBuilder: `showWhen` field option** — Conditionally shows/hides a field based on another field's value. Hidden fields are excluded from form submission data and their `required` attributes are suppressed during validation.
+- **IncidentView RuleEngine: OSSEC smart rule creation** — When creating a new RuleSet from an OSSEC incident that carries a `rule_id` in its metadata, a matching rule condition (`field_name=rule_id`, `comparator==`, `value_type=int`) is auto-created and linked. Toast confirms whether auto-creation succeeded or fell back to manual.
+- **IncidentView RuleEngine: "Create New Rule" button** — New `create-rule-from-incident` action button added alongside "View Full Details" in the RuleEngine section header.
+- **IncidentView events table: compact two-line columns** — Date column now shows datetime + category badge stacked; Source column now shows hostname + IP stacked. Standalone Category and Host columns removed to reduce horizontal clutter.
+- **RuleSet form: `Delete on Resolution` toggle** — New switch field (`metadata.delete_on_resolution`) added to both the create and edit RuleSet forms. When enabled, incidents produced by this rule are permanently deleted (cascade to events and history) when resolved or closed.
+- **RuleSetTablePage: Auto-Delete column** — New `Auto-Delete` column (`metadata.delete_on_resolution`, `yesnoicon` formatter) shows at a glance which rules cascade-delete incidents on resolution.
+- **IncidentView: Protect / Unprotect quick actions** — `QuickActionsBar` now shows a `Protect` button (outline) or a `Protected` button (warning/filled) based on `metadata.do_not_delete`. Clicking either saves the flag and emits `incident:updated` to refresh the view.
+- **IncidentView: Protect / Remove Protection context menu items** — The incident context menu now includes "Protect from Deletion" or "Remove Protection" depending on current state, wired to `onActionProtectIncident` / `onActionRemoveProtection`.
+- **IncidentView header: Protected badge** — A `bg-warning` Bootstrap badge with a shield icon is shown alongside the category badge when `metadata.do_not_delete` is set on the incident.
+- **IncidentView RuleEngine: auto-delete warning** — When the linked RuleSet has `delete_on_resolution` enabled and the incident is not protected, a warning alert is shown. If the incident is also protected, an info alert notes that auto-delete is enabled but overridden.
+- **IncidentTablePage: batch Protect action** — "Protect" added to the batch-action bar. Confirms via dialog, then saves `metadata.do_not_delete: true` on all selected incidents and refreshes the table.
 
 ### Fixed
 - **GeoIPView block/unblock/whitelist actions** — Converted from ad hoc `rest.POST` calls to `model.save()` with action payloads; added optional chaining on `toast` calls to avoid errors in non-portal contexts.
+- **IncidentView RuleEngine: `rule_set` field name** — Fixed stale field reference (`ruleset` → `rule_set`) when reading and saving the linked rule set on an incident. Handles both plain ID and nested object responses.
+- **IncidentView: detailed graph fetch** — `IncidentView.onInit()` now fetches the incident with `graph=detailed` so nested relations (e.g. `rule_set`) are available before child sections render.
 
 ## [Previous]
 - **User Profile Extension** (`web-mojo/user-profile`) — Moved all user profile views from `src/core/views/user/` into a standalone extension at `src/extensions/user-profile/`. Available as `import { ... } from 'web-mojo/user-profile'` or via `@ext/user-profile/index.js` internally.
