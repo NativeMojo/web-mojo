@@ -12,7 +12,7 @@ import DataView from '@core/views/data/DataView.js';
 import TableView from '@core/views/table/TableView.js';
 import StackTraceView from '@core/views/data/StackTraceView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
-import { Incident, IncidentForms, IncidentList, IncidentEventList, RuleSet, RuleSetForms, RuleList, BundleByOptions, MatchByOptions } from '@core/models/Incident.js';
+import { Incident, IncidentForms, IncidentList, IncidentEventList, RuleSet, RuleSetForms, Rule, RuleList, BundleByOptions, MatchByOptions } from '@core/models/Incident.js';
 import { GeoLocatedIP } from '@core/models/System.js';
 import { Ticket, TicketList, TicketForms } from '@core/models/Tickets.js';
 import Dialog from '@core/views/feedback/Dialog.js';
@@ -579,7 +579,8 @@ class RuleEngineSection extends View {
         });
 
         this.incident = options.incident;
-        this.rulesetId = this.incident.get('ruleset');
+        const ruleSet = this.incident.get('rule_set');
+        this.rulesetId = ruleSet && typeof ruleSet === 'object' ? ruleSet.id : ruleSet;
         this.rulesetModel = null;
         this.hasRuleset = false;
 
@@ -594,6 +595,9 @@ class RuleEngineSection extends View {
                             </button>
                             <button class="btn btn-outline-secondary btn-sm" data-action="view-linked-ruleset">
                                 <i class="bi bi-box-arrow-up-right me-1"></i>View Full Details
+                            </button>
+                            <button class="btn btn-outline-success btn-sm" data-action="create-rule-from-incident">
+                                <i class="bi bi-plus-circle me-1"></i>Create New Rule
                             </button>
                         </div>
                     </div>
@@ -781,15 +785,39 @@ class RuleEngineSection extends View {
         });
 
         if (saveResp.status === 200 || saveResp.success) {
-            this.getApp()?.toast?.success('RuleSet created — add rule conditions to activate');
-
             // Link the new ruleset to this incident
-            await this.incident.save({ ruleset: ruleset.id });
+            await this.incident.save({ rule_set: ruleset.id });
             this.rulesetId = ruleset.id;
             this.rulesetModel = ruleset;
             this.hasRuleset = true;
 
-            // Open the full RuleSet view so user can add rule conditions
+            // Auto-create rule condition for OSSEC incidents with rule_id
+            let autoRuleCreated = false;
+            if (scope === 'ossec' && metadata.rule_id) {
+                try {
+                    const rule = new Rule();
+                    await rule.save({
+                        parent: ruleset.id,
+                        name: `Match rule_id ${metadata.rule_id}`,
+                        field_name: 'rule_id',
+                        comparator: '==',
+                        value: String(metadata.rule_id),
+                        value_type: 'int',
+                        index: 0
+                    });
+                    autoRuleCreated = true;
+                } catch (e) {
+                    this.getApp()?.toast?.warning('RuleSet created but auto-rule failed — add conditions manually');
+                }
+            }
+
+            this.getApp()?.toast?.success(
+                autoRuleCreated
+                    ? `RuleSet created with rule_id=${metadata.rule_id} condition`
+                    : 'RuleSet created — add rule conditions to activate'
+            );
+
+            // Open the full RuleSet view so user can add/review rule conditions
             const view = new RuleSetView({ model: ruleset });
             const dialog = new Dialog({
                 header: false,
@@ -1007,6 +1035,9 @@ class IncidentView extends View {
     async onInit() {
         // Resolve source IP early for reuse
         this._sourceIP = await this._resolveSourceIP();
+        this.getApp().showLoading();
+        await this.model.fetch({params: {graph:"detailed"}});
+        this.getApp().hideLoading();
 
         // ── Overview section ──
         const overviewSection = new IncidentOverviewSection({ model: this.model });
@@ -1022,19 +1053,21 @@ class IncidentView extends View {
             collection: eventsCollection,
             hideActivePillNames: ['incident'],
             columns: [
-                { key: 'id', label: 'ID', width: '60px', sortable: true },
-                { key: 'created', label: 'Date', formatter: 'epoch|datetime', sortable: true, width: '170px' },
+                { key: 'id', label: 'ID', width: '50px', sortable: true },
                 {
-                    key: 'source_ip', label: 'Source IP', sortable: true, width: '130px',
+                    key: 'created', label: 'Date / Category', sortable: true, width: '160px',
+                    template: `<div>{{{model.created|epoch|datetime}}}</div><div class="text-muted small">{{{model.category|badge}}}</div>`
+                },
+                {
+                    key: 'source_ip', label: 'Source', sortable: true, width: '130px',
+                    template: `<div>{{model.hostname}}</div><div class="text-muted small">{{model.source_ip}}</div>`,
                     filter: { type: 'text' }
                 },
-                { key: 'category', label: 'Category', formatter: 'badge', sortable: true },
                 { key: 'title', label: 'Title', sortable: true, formatter: "truncate(80)|default('—')" },
                 {
-                    key: 'level', label: 'Level', sortable: true, width: '80px',
+                    key: 'level', label: 'Level', sortable: true, width: '60px',
                     filter: { type: 'text' }
                 },
-                { key: 'hostname', label: 'Host', sortable: true, width: '120px' },
             ],
             showAdd: false,
             actions: ['view'],

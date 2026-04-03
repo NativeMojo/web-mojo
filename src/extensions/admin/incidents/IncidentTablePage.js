@@ -47,8 +47,8 @@ class IncidentTablePage extends TablePage {
                     }
                 },
                 {
-                    key: 'created',
-                    label: 'Created',
+                    key: 'modified',
+                    label: 'Modified',
                     formatter: "epoch|datetime",
                     filter: {
                         type: 'daterange',
@@ -82,6 +82,26 @@ class IncidentTablePage extends TablePage {
                 {
                     key: 'category__not',
                     label: 'Not Category',
+                    filter: {type:"text"}
+                },
+                {
+                    key: 'priority__gt',
+                    label: 'Priority Greater Than',
+                    filter: {type:"number"}
+                },
+                {
+                    key: 'priority__lt',
+                    label: 'Priority Less Than',
+                    filter: {type:"number"}
+                },
+                {
+                    key: 'metadata__rule_id',
+                    label: 'Rule ID',
+                    filter: {type:"text"}
+                },
+                {
+                    key: 'metadata__key',
+                    label: 'Metadata Key',
                     filter: {type:"text"}
                 },
             ],
