@@ -29,8 +29,12 @@
 - **IncidentView header: Protected badge** — A `bg-warning` Bootstrap badge with a shield icon is shown alongside the category badge when `metadata.do_not_delete` is set on the incident.
 - **IncidentView RuleEngine: auto-delete warning** — When the linked RuleSet has `delete_on_resolution` enabled and the incident is not protected, a warning alert is shown. If the incident is also protected, an info alert notes that auto-delete is enabled but overridden.
 - **IncidentTablePage: batch Protect action** — "Protect" added to the batch-action bar. Confirms via dialog, then saves `metadata.do_not_delete: true` on all selected incidents and refreshes the table.
+- **IncidentView: HTTP Request tab** — A new "HTTP Request" tab (`bi-globe2`) is conditionally shown when the incident's metadata includes `http_method` or `http_path`. Displays method, status code, host, path, URL, protocol, query string, and user agent via `DataView`.
+- **IncidentView: IP Intelligence tab** — A new "IP Intel" tab (`bi-shield-lock`) is conditionally shown when the incident carries `ip_info`. The tab is divided into four `DataView` subsections: Network (IP address, subnet, ISP, ASN, connection type), Threat Assessment (level, risk score, is_threat, is_suspicious), Threat Flags (TOR, VPN, proxy, datacenter, mobile, cloud, known attacker/abuser), and Block Status (blocked/whitelisted state, reason, timestamps).
+- **IncidentView overview: server/timezone info** — If the incident metadata contains `server` or `timezone`, a combined info line is shown beneath the GeoIP summary card in the Overview tab.
 
 ### Fixed
+- **GeoIPSummaryCard: eliminated redundant API call** — The card now accepts an `ipInfo` option. When `ip_info` is already present on the incident graph response, the card uses it directly and skips the `GeoLocatedIP.lookup()` call. Falls back to the API lookup when `ip_info` is absent.
 - **GeoIPView block/unblock/whitelist actions** — Converted from ad hoc `rest.POST` calls to `model.save()` with action payloads; added optional chaining on `toast` calls to avoid errors in non-portal contexts.
 - **IncidentView RuleEngine: `rule_set` field name** — Fixed stale field reference (`ruleset` → `rule_set`) when reading and saving the linked rule set on an incident. Handles both plain ID and nested object responses.
 - **IncidentView: detailed graph fetch** — `IncidentView.onInit()` now fetches the incident with `graph=detailed` so nested relations (e.g. `rule_set`) are available before child sections render.
