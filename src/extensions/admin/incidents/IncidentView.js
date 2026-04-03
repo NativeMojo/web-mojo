@@ -68,6 +68,7 @@ class GeoIPSummaryCard extends View {
         });
 
         this.sourceIP = options.sourceIP;
+        this.ipInfo = options.ipInfo || null;
         this.geoData = null;
         this.threatBadgeClass = 'bg-secondary';
         this.threatLevel = 'Unknown';
@@ -159,18 +160,29 @@ class GeoIPSummaryCard extends View {
 
     async onInit() {
         if (!this.sourceIP) return;
-        try {
-            this.geoModel = await GeoLocatedIP.lookup(this.sourceIP);
-            if (this.geoModel) {
-                this.geoData = this.geoModel.attributes;
-                this.threatLevel = (this.geoData.threat_level || 'unknown').toUpperCase();
-                this.threatBadgeClass = this._getThreatBadgeClass(this.geoData.threat_level);
-                this.isBlocked = !!this.geoData.is_blocked;
-                this.isWhitelisted = !!this.geoData.is_whitelisted;
-                this.blockedReason = this.geoData.blocked_reason || 'Blocked';
+
+        // Use pre-fetched ip_info if available, otherwise fall back to API lookup
+        if (this.ipInfo) {
+            this.geoData = this.ipInfo;
+            this.geoModel = new GeoLocatedIP(this.ipInfo);
+        } else {
+            try {
+                this.geoModel = await GeoLocatedIP.lookup(this.sourceIP);
+                if (this.geoModel) {
+                    this.geoData = this.geoModel.attributes;
+                }
+            } catch (e) {
+                // GeoIP lookup failed — card shows "no data" state
+                return;
             }
-        } catch (e) {
-            // GeoIP lookup failed — card shows "no data" state
+        }
+
+        if (this.geoData) {
+            this.threatLevel = (this.geoData.threat_level || 'unknown').toUpperCase();
+            this.threatBadgeClass = this._getThreatBadgeClass(this.geoData.threat_level);
+            this.isBlocked = !!this.geoData.is_blocked;
+            this.isWhitelisted = !!this.geoData.is_whitelisted;
+            this.blockedReason = this.geoData.blocked_reason || 'Blocked';
         }
     }
 
@@ -489,6 +501,9 @@ class IncidentOverviewSection extends View {
                 <div data-container="llm-analysis-results"></div>
                 <div data-container="overview-data" class="mb-3"></div>
                 <div data-container="geoip-summary"></div>
+                {{#serverInfo}}
+                    <div class="text-muted small mt-2"><i class="bi bi-hdd-rack me-1"></i>{{serverInfo}}</div>
+                {{/serverInfo}}
             `,
             ...options
         });
@@ -558,12 +573,19 @@ class IncidentOverviewSection extends View {
         });
         this.addChild(this.dataView);
 
-        // GeoIP summary
+        // Server/environment info from metadata
+        const serverParts = [];
+        if (metadata.server) serverParts.push(metadata.server);
+        if (metadata.timezone) serverParts.push(metadata.timezone);
+        this.serverInfo = serverParts.length ? serverParts.join(' · ') : null;
+
+        // GeoIP summary — pass ip_info to avoid redundant API call
         const sourceIP = await this._resolveSourceIP();
         if (sourceIP) {
             this.geoipCard = new GeoIPSummaryCard({
                 containerId: 'geoip-summary',
-                sourceIP
+                sourceIP,
+                ipInfo: this.model.get('ip_info')
             });
             this.addChild(this.geoipCard);
         }
@@ -588,6 +610,139 @@ class IncidentOverviewSection extends View {
             // No IP available
         }
         return null;
+    }
+}
+
+
+// ── HTTP Request Section ────────────────────────────────
+
+class HttpRequestSection extends View {
+    constructor(options = {}) {
+        super({
+            className: 'http-request-section p-3',
+            template: `
+                <h6 class="mb-3"><i class="bi bi-globe2 me-2"></i>HTTP Request Details</h6>
+                <div data-container="http-data"></div>
+            `,
+            ...options
+        });
+        this.metadata = options.metadata || {};
+    }
+
+    async onInit() {
+        const m = this.metadata;
+        const metaModel = { get: (key) => m[key], attributes: m };
+        this.dataView = new DataView({
+            containerId: 'http-data',
+            model: metaModel,
+            columns: 2,
+            showEmptyValues: false,
+            fields: [
+                { name: 'http_method', label: 'Method', formatter: 'badge', cols: 3 },
+                { name: 'http_status', label: 'Status Code', cols: 3 },
+                { name: 'http_host', label: 'Host', cols: 6 },
+                { name: 'http_path', label: 'Path', cols: 12 },
+                { name: 'http_url', label: 'URL', cols: 12 },
+                { name: 'http_protocol', label: 'Protocol', cols: 6 },
+                { name: 'http_query_string', label: 'Query String', cols: 6 },
+                { name: 'http_user_agent', label: 'User Agent', cols: 12 },
+            ]
+        });
+        this.addChild(this.dataView);
+    }
+}
+
+
+// ── IP Intelligence Section ─────────────────────────────
+
+class IPIntelligenceSection extends View {
+    constructor(options = {}) {
+        super({
+            className: 'ip-intelligence-section p-3',
+            template: `
+                <h6 class="mb-3"><i class="bi bi-shield-lock me-2"></i>Network</h6>
+                <div data-container="ip-network" class="mb-4"></div>
+                <h6 class="mb-3"><i class="bi bi-exclamation-triangle me-2"></i>Threat Assessment</h6>
+                <div data-container="ip-threat" class="mb-4"></div>
+                <h6 class="mb-3"><i class="bi bi-flag me-2"></i>Threat Flags</h6>
+                <div data-container="ip-flags" class="mb-4"></div>
+                <h6 class="mb-3"><i class="bi bi-slash-circle me-2"></i>Block Status</h6>
+                <div data-container="ip-block"></div>
+            `,
+            ...options
+        });
+        this.ipInfo = options.ipInfo || {};
+    }
+
+    async onInit() {
+        const ip = this.ipInfo;
+        const ipModel = { get: (key) => ip[key], attributes: ip };
+
+        this.networkView = new DataView({
+            containerId: 'ip-network',
+            model: ipModel,
+            columns: 2,
+            showEmptyValues: false,
+            fields: [
+                { name: 'ip_address', label: 'IP Address', cols: 6 },
+                { name: 'subnet', label: 'Subnet', cols: 6 },
+                { name: 'isp', label: 'ISP', cols: 6 },
+                { name: 'asn', label: 'ASN', cols: 3 },
+                { name: 'asn_org', label: 'ASN Org', cols: 3 },
+                { name: 'mobile_carrier', label: 'Mobile Carrier', cols: 6 },
+                { name: 'connection_type', label: 'Connection Type', cols: 6 },
+            ]
+        });
+        this.addChild(this.networkView);
+
+        this.threatView = new DataView({
+            containerId: 'ip-threat',
+            model: ipModel,
+            columns: 2,
+            showEmptyValues: false,
+            fields: [
+                { name: 'threat_level', label: 'Threat Level', formatter: 'badge', cols: 4 },
+                { name: 'risk_score', label: 'Risk Score', cols: 4 },
+                { name: 'is_threat', label: 'Threat', formatter: 'yesnoicon', cols: 2 },
+                { name: 'is_suspicious', label: 'Suspicious', formatter: 'yesnoicon', cols: 2 },
+            ]
+        });
+        this.addChild(this.threatView);
+
+        this.flagsView = new DataView({
+            containerId: 'ip-flags',
+            model: ipModel,
+            columns: 2,
+            showEmptyValues: false,
+            fields: [
+                { name: 'is_tor', label: 'TOR', formatter: 'yesnoicon', cols: 3 },
+                { name: 'is_vpn', label: 'VPN', formatter: 'yesnoicon', cols: 3 },
+                { name: 'is_proxy', label: 'Proxy', formatter: 'yesnoicon', cols: 3 },
+                { name: 'is_datacenter', label: 'Datacenter', formatter: 'yesnoicon', cols: 3 },
+                { name: 'is_mobile', label: 'Mobile', formatter: 'yesnoicon', cols: 3 },
+                { name: 'is_cloud', label: 'Cloud', formatter: 'yesnoicon', cols: 3 },
+                { name: 'is_known_attacker', label: 'Known Attacker', formatter: 'yesnoicon', cols: 3 },
+                { name: 'is_known_abuser', label: 'Known Abuser', formatter: 'yesnoicon', cols: 3 },
+            ]
+        });
+        this.addChild(this.flagsView);
+
+        this.blockView = new DataView({
+            containerId: 'ip-block',
+            model: ipModel,
+            columns: 2,
+            showEmptyValues: false,
+            fields: [
+                { name: 'is_blocked', label: 'Blocked', formatter: 'yesnoicon', cols: 3 },
+                { name: 'block_count', label: 'Block Count', cols: 3 },
+                { name: 'is_whitelisted', label: 'Whitelisted', formatter: 'yesnoicon', cols: 3 },
+                { name: 'blocked_reason', label: 'Block Reason', cols: 3 },
+                { name: 'blocked_at', label: 'Blocked At', formatter: 'epoch|datetime', cols: 6 },
+                { name: 'blocked_until', label: 'Blocked Until', formatter: 'epoch|datetime', cols: 6 },
+                { name: 'whitelisted_reason', label: 'Whitelist Reason', cols: 12 },
+            ]
+        });
+        this.addChild(this.blockView);
     }
 }
 
@@ -1147,8 +1302,21 @@ class IncidentView extends View {
             { key: 'Related Incidents',  label: 'Related',            icon: 'bi-diagram-2',          view: relatedSection },
         ];
 
-        // Conditional forensics sections
+        // Conditional investigation sections
         const metadata = this.model.get('metadata') || {};
+        const ipInfo = this.model.get('ip_info');
+
+        if (metadata.http_method || metadata.http_path) {
+            const httpSection = new HttpRequestSection({ metadata });
+            sections.push({ key: 'HTTP Request', label: 'HTTP Request', icon: 'bi-globe2', view: httpSection });
+        }
+
+        if (ipInfo) {
+            const ipIntelSection = new IPIntelligenceSection({ ipInfo });
+            sections.push({ key: 'IP Intelligence', label: 'IP Intel', icon: 'bi-shield-lock', view: ipIntelSection });
+        }
+
+        // Conditional forensics sections
         const hasStackTrace = !!metadata.stack_trace;
         const hasMetadata = Object.keys(metadata).length > 0;
 
