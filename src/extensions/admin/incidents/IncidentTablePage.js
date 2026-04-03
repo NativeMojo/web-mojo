@@ -128,7 +128,8 @@ class IncidentTablePage extends TablePage {
                 { label: "Resolve", icon: "bi bi-check-circle", action: "resolve" },
                 { label: "Pause", icon: "bi bi-pause-circle", action: "pause" },
                 { label: "Ignore", icon: "bi bi-x-circle", action: "ignore" },
-                { label: "Merge", icon: "bi bi-merge", action: "merge" }
+                { label: "Merge", icon: "bi bi-merge", action: "merge" },
+                { label: "Protect", icon: "bi bi-shield-fill-check", action: "protect" }
             ],
 
             // Table display options
@@ -215,6 +216,18 @@ class IncidentTablePage extends TablePage {
 
         // Save the merge operation to the parent model
         await parentModel.save({ merge: mergeIds });
+        this.tableView.collection.fetch();
+    }
+
+    async onActionBatchProtect(event, element) {
+        const selected = this.tableView.getSelectedItems();
+        if (!selected.length) return;
+
+        const app = this.getApp();
+        const result = await app.confirm(`Protect ${selected.length} incident(s) from deletion?`);
+        if (!result) return;
+        await Promise.all(selected.map(item => item.model.save({ metadata: { do_not_delete: true } })));
+        app.toast?.success(`${selected.length} incident(s) protected`);
         this.tableView.collection.fetch();
     }
 }

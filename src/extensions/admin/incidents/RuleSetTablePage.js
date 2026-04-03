@@ -36,6 +36,10 @@ class RuleSetTablePage extends TablePage {
                         ]
                     }
                 },
+                {
+                    key: 'metadata.delete_on_resolution', label: 'Auto-Delete', width: '90px',
+                    formatter: 'yesnoicon'
+                },
                 { key: 'name', label: 'Name', sortable: true },
                 {
                     key: 'category', label: 'Category', sortable: true, formatter: 'badge',

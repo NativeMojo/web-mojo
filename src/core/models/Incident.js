@@ -455,6 +455,14 @@ const RuleSetForms = {
                                 columns: 4
                             },
                             {
+                                name: 'metadata.delete_on_resolution',
+                                type: 'switch',
+                                label: 'Delete on Resolution',
+                                value: false,
+                                help: 'Incidents from this rule are permanently deleted when resolved or closed (CASCADE — events and history are also removed)',
+                                columns: 12
+                            },
+                            {
                                 name: 'category',
                                 type: 'combo',
                                 label: 'Event Category',
@@ -611,6 +619,13 @@ const RuleSetForms = {
                                 label: 'Active',
                                 help: 'Inactive rules are skipped during event processing',
                                 columns: 4
+                            },
+                            {
+                                name: 'metadata.delete_on_resolution',
+                                type: 'switch',
+                                label: 'Delete on Resolution',
+                                help: 'Incidents from this rule are permanently deleted when resolved or closed (CASCADE — events and history are also removed)',
+                                columns: 12
                             },
                             {
                                 name: 'category',

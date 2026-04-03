@@ -296,6 +296,7 @@ class QuickActionsBar extends View {
         const status = (this.incident.get('status') || '').toLowerCase();
         this.isActive = ['new', 'open', 'investigating'].includes(status);
         this.isResolved = ['resolved', 'closed'].includes(status);
+        this.isProtected = !!(this.incident.get('metadata')?.do_not_delete);
 
         this.template = `
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -321,6 +322,16 @@ class QuickActionsBar extends View {
                     {{/isResolved|bool}}
                 </div>
                 <div class="d-flex align-items-center gap-2">
+                    {{#isProtected|bool}}
+                        <button class="btn btn-warning btn-sm" data-action="quick-unprotect" data-bs-toggle="tooltip" title="Remove deletion protection">
+                            <i class="bi bi-shield-fill-check me-1"></i>Protected
+                        </button>
+                    {{/isProtected|bool}}
+                    {{^isProtected|bool}}
+                        <button class="btn btn-outline-secondary btn-sm" data-action="quick-protect" data-bs-toggle="tooltip" title="Protect from auto-deletion">
+                            <i class="bi bi-shield me-1"></i>Protect
+                        </button>
+                    {{/isProtected|bool}}
                     <button class="btn btn-outline-primary btn-sm" data-action="quick-create-ticket" data-bs-toggle="tooltip" title="Create a review ticket">
                         <i class="bi bi-ticket-perforated me-1"></i>Ticket
                     </button>
@@ -370,6 +381,18 @@ class QuickActionsBar extends View {
 
     async onActionQuickAnalyzeLlm() {
         this.emit('analyze-llm');
+    }
+
+    async onActionQuickProtect() {
+        await this.incident.save({ metadata: { do_not_delete: true } });
+        this.getApp()?.toast?.success('Incident protected from deletion');
+        this.emit('incident:updated');
+    }
+
+    async onActionQuickUnprotect() {
+        await this.incident.save({ metadata: { do_not_delete: false } });
+        this.getApp()?.toast?.success('Deletion protection removed');
+        this.emit('incident:updated');
     }
 }
 
@@ -583,9 +606,25 @@ class RuleEngineSection extends View {
         this.rulesetId = ruleSet && typeof ruleSet === 'object' ? ruleSet.id : ruleSet;
         this.rulesetModel = null;
         this.hasRuleset = false;
+        this.autoDeleteEnabled = false;
+        this.incidentProtected = !!(this.incident.get('metadata')?.do_not_delete);
 
         this.template = `
             {{#hasRuleset|bool}}
+                {{#autoDeleteEnabled|bool}}
+                    {{^incidentProtected|bool}}
+                        <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <div>This incident will be <strong>permanently deleted</strong> when resolved or closed. Events and history will also be removed.</div>
+                        </div>
+                    {{/incidentProtected|bool}}
+                    {{#incidentProtected|bool}}
+                        <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+                            <i class="bi bi-shield-fill-check me-2"></i>
+                            <div>Auto-delete is enabled on this rule, but this incident is <strong>protected</strong> from deletion.</div>
+                        </div>
+                    {{/incidentProtected|bool}}
+                {{/autoDeleteEnabled|bool}}
                 <div class="mb-3">
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <h6 class="mb-0"><i class="bi bi-gear-wide-connected me-2"></i>Linked RuleSet</h6>
@@ -633,6 +672,7 @@ class RuleEngineSection extends View {
             this.rulesetModel = new RuleSet({ id: this.rulesetId });
             await this.rulesetModel.fetch();
             this.hasRuleset = true;
+            this.autoDeleteEnabled = !!(this.rulesetModel.get('metadata')?.delete_on_resolution);
         } catch (e) {
             return;
         }
@@ -991,6 +1031,7 @@ class IncidentView extends View {
         this.incidentIcon = getHeaderIcon(this.model.get('status'));
         this.statusCfg = getStatusConfig(this.model.get('status'));
         this.priorityCfg = getPriorityConfig(this.model.get('priority'));
+        this.isProtected = !!(this.model.get('metadata')?.do_not_delete);
 
         this.template = `
             <div class="incident-view-container">
@@ -1015,6 +1056,9 @@ class IncidentView extends View {
                                 {{#model.category}}
                                     <span class="badge bg-light text-dark border">{{model.category}}</span>
                                 {{/model.category}}
+                                {{#isProtected|bool}}
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-shield-fill-check me-1"></i>Protected</span>
+                                {{/isProtected|bool}}
                             </div>
                             <div class="text-muted small mt-1">
                                 {{model.created|datetime}}
@@ -1218,6 +1262,13 @@ class IncidentView extends View {
         items.push({ label: 'Edit Incident', action: 'edit-incident', icon: 'bi-pencil' });
         items.push({ label: 'Change Priority', action: 'change-priority', icon: 'bi-arrow-up-circle' });
 
+        // Protection
+        if (this.model.get('metadata')?.do_not_delete) {
+            items.push({ label: 'Remove Protection', action: 'remove-protection', icon: 'bi-shield' });
+        } else {
+            items.push({ label: 'Protect from Deletion', action: 'protect-incident', icon: 'bi-shield-fill-check' });
+        }
+
         items.push({ type: 'divider' });
 
         // IP actions
@@ -1297,6 +1348,20 @@ class IncidentView extends View {
     async onActionSetStatusPaused() { await this._setStatus('paused'); }
     async onActionSetStatusResolved() { await this._setStatus('resolved'); }
     async onActionSetStatusIgnored() { await this._setStatus('ignored'); }
+
+    // ── Protection ──
+
+    async onActionProtectIncident() {
+        await this.model.save({ metadata: { do_not_delete: true } });
+        this.getApp()?.toast?.success('Incident protected from deletion');
+        this._handleIncidentUpdated();
+    }
+
+    async onActionRemoveProtection() {
+        await this.model.save({ metadata: { do_not_delete: false } });
+        this.getApp()?.toast?.success('Deletion protection removed');
+        this._handleIncidentUpdated();
+    }
 
     // ── Priority ──
 
