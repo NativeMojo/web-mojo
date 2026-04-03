@@ -793,15 +793,16 @@ class RuleEngineSection extends View {
 
             // Auto-create rule condition for OSSEC incidents with rule_id
             let autoRuleCreated = false;
-            if (scope === 'ossec' && metadata.rule_id) {
+            const ruleId = parseInt(metadata.rule_id, 10);
+            if (scope === 'ossec' && Number.isFinite(ruleId)) {
                 try {
                     const rule = new Rule();
                     await rule.save({
                         parent: ruleset.id,
-                        name: `Match rule_id ${metadata.rule_id}`,
+                        name: `Match rule_id ${ruleId}`,
                         field_name: 'rule_id',
                         comparator: '==',
-                        value: String(metadata.rule_id),
+                        value: String(ruleId),
                         value_type: 'int',
                         index: 0
                     });
@@ -813,7 +814,7 @@ class RuleEngineSection extends View {
 
             this.getApp()?.toast?.success(
                 autoRuleCreated
-                    ? `RuleSet created with rule_id=${metadata.rule_id} condition`
+                    ? `RuleSet created with rule_id=${ruleId} condition`
                     : 'RuleSet created — add rule conditions to activate'
             );
 
