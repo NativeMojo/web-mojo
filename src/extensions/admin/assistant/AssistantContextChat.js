@@ -58,8 +58,9 @@ class AssistantContextAdapter {
             const messages = conversation.get('messages') || [];
             return messages.map(msg => this._transformMessage(msg));
         } catch (_err) {
-            // Stale conversation — clear and retry
-            if (_err.status === 404 && this.conversationId) {
+            // Stale conversation — clear and retry once
+            if (_err.status === 404 && this.conversationId && !this._fetchRetried) {
+                this._fetchRetried = true;
                 this.conversationId = null;
                 return this.fetch();
             }
@@ -374,8 +375,8 @@ class AssistantContextChat extends View {
         this.chatView.hideThinking();
         this._setInputEnabled(true);
 
-        const errorText = data.error || data.message || 'An error occurred';
-        this.app?.toast?.error(errorText);
+        console.error('[AssistantContextChat] WS error:', data.error || data.message);
+        this.app?.toast?.error('The assistant encountered an error. Please try again.');
     }
 
     _updateConnectionStatus() {

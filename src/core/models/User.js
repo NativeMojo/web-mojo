@@ -73,7 +73,7 @@ User.CATEGORY_PERMISSIONS = [
     { name: "jobs", label: "Jobs", tooltip: "Jobs, job events, job logs, runners, queue control, system stats" },
     { name: "metrics", label: "Metrics", tooltip: "Metrics recording, fetching, categories, values, permissions" },
     { name: "files", label: "Files", tooltip: "File managers, files, renditions, vault files, vault data, S3 buckets" },
-    { name: "assistant", label: "AI Assisttant", tooltip: "Access to the AI Assistant" },
+    { name: "assistant", label: "AI Assistant", tooltip: "Access to the AI Assistant" },
 ];
 
 // ── Granular Permissions (fine-grained view/manage pairs) ─────────
