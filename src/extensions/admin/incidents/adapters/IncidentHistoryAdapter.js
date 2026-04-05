@@ -1,4 +1,5 @@
 import { IncidentHistory, IncidentHistoryList } from '@core/models/Incident.js';
+import rest from '@core/Rest.js';
 
 class IncidentHistoryAdapter {
     constructor(incidentId) {
@@ -8,7 +9,14 @@ class IncidentHistoryAdapter {
 
     async fetch() {
         await this.collection.fetch();
-        return this.collection.models.map(item => this.transform(item));
+        const messages = this.collection.models.map(item => this.transform(item));
+        // Render markdown for system_event messages (e.g., LLM analysis notes)
+        await Promise.all(messages.map(async (msg) => {
+            if (msg.type === 'system_event' && msg.content) {
+                msg.content = await this._renderMarkdown(msg.content);
+            }
+        }));
+        return messages;
     }
 
     transform(item) {
@@ -37,6 +45,19 @@ class IncidentHistoryAdapter {
             await this.collection.fetch();
         }
         return resp;
+    }
+
+    async _renderMarkdown(markdown) {
+        if (!markdown) return '';
+        try {
+            const resp = await rest.post('/api/docit/render', { markdown });
+            const html = resp?.data?.data?.html || resp?.data?.html;
+            if (html) return html;
+        } catch (_e) { /* API unavailable */ }
+        // Fallback: escape and preserve whitespace
+        const div = document.createElement('div');
+        div.textContent = markdown;
+        return `<pre style="white-space: pre-wrap;">${div.innerHTML}</pre>`;
     }
 }
 

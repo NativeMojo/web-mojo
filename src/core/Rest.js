@@ -525,6 +525,13 @@ class Rest {
     return this.request('DELETE', url, null, params, options);
   }
 
+  // Lowercase aliases
+  get(...args) { return this.GET(...args); }
+  post(...args) { return this.POST(...args); }
+  put(...args) { return this.PUT(...args); }
+  patch(...args) { return this.PATCH(...args); }
+  delete(...args) { return this.DELETE(...args); }
+
   /**
    * Download a file from a URL
    * @param {string} url - Request URL

@@ -381,17 +381,36 @@ const CommonEventFields = [
     { value: 'method', label: 'Method', description: 'HTTP method or function name', meta: { type: 'str' } }
 ];
 
-const CommonScopeOptions = [
-    { value: 'global', label: 'Global' },
-    { value: 'account', label: 'Account' },
-    { value: 'incident', label: 'Incident' },
-    { value: 'ossec', label: 'OSSEC' },
-    { value: 'fileman', label: 'File Manager' },
-    { value: 'metrics', label: 'Metrics' },
-    { value: 'jobs', label: 'Jobs' },
-    { value: 'realtime', label: 'Realtime' },
-    { value: 'aws', label: 'AWS' }
+const CommonCategoryOptions = [
+    // Scopes
+    'global', 'account', 'ossec', 'api', 'realtime',
+    // Auth & Login
+    'auth', 'login:unknown', 'invalid_password',
+    'sms:login_unknown', 'totp:login_unknown',
+    'reset:unknown', 'magic:unknown', 'token:unknown',
+    // Permissions
+    'api_denied', 'unauthenticated',
+    'view_permission_denied', 'edit_permission_denied',
+    'group_member_permission_denied', 'user_permission_denied',
+    // Security
+    'security_alert',
+    // MFA
+    'totp:confirm_failed', 'totp:login_failed', 'totp:recovery_used',
+    'sms:otp_failed',
+    // Email & SMS
+    'email:no_mailbox', 'email:send_failed', 'sms:send_failed',
+    // Account Changes
+    'email_change:bad_password', 'email_change:requested',
+    'account:deactivate_requested',
+    'phone_verify:invalid', 'email_verify:invalid',
+    // OAuth
+    'oauth:unlink_guard_error',
+    // Errors
+    'rest_error', 'mojo_rest_error', 'rest_value_error'
 ];
+
+// Keep backward compat alias
+const CommonScopeOptions = CommonCategoryOptions;
 
 class RuleSet extends Model {
     constructor(data = {}) {
@@ -443,33 +462,26 @@ const RuleSetForms = {
                                 label: 'Name',
                                 required: true,
                                 placeholder: 'e.g., Brute Force Detection',
-                                help: 'Human-readable label for this rule',
-                                columns: 8
+                                columns: 6
                             },
                             {
-                                name: 'is_active',
-                                type: 'switch',
-                                label: 'Active',
-                                value: true,
-                                help: 'Inactive rules are skipped during event processing',
-                                columns: 4
-                            },
-                            {
-                                name: 'metadata.delete_on_resolution',
-                                type: 'switch',
-                                label: 'Delete on Resolution',
-                                value: false,
-                                help: 'Incidents from this rule are permanently deleted when resolved or closed (CASCADE — events and history are also removed)',
-                                columns: 12
+                                name: 'match_by',
+                                type: 'select',
+                                label: 'Match Logic',
+                                value: 0,
+                                options: MatchByOptions,
+                                tooltip: 'ALL = every condition must match. ANY = at least one',
+                                columns: 6
                             },
                             {
                                 name: 'category',
                                 type: 'combo',
-                                label: 'Event Category',
+                                label: 'Scope / Category',
                                 required: true,
-                                options: CommonScopeOptions,
-                                placeholder: 'e.g., auth:failed, ossec, xss:attempt',
-                                help: 'Use * as a catch-all fallback.',
+                                options: CommonCategoryOptions,
+                                allowCustom: true,
+                                placeholder: 'Type or select...',
+                                tooltip: 'Scope or event category to match. Use * as a catch-all',
                                 columns: 6
                             },
                             {
@@ -478,17 +490,24 @@ const RuleSetForms = {
                                 label: 'Evaluation Priority',
                                 value: 10,
                                 required: true,
-                                help: 'Lower number = evaluated first.',
-                                columns: 3
+                                tooltip: 'Lower number = evaluated first',
+                                columns: 6
                             },
                             {
-                                name: 'match_by',
-                                type: 'select',
-                                label: 'Match Logic',
-                                value: 0,
-                                options: MatchByOptions,
-                                help: 'ALL = every condition must match. ANY = at least one.',
-                                columns: 3
+                                name: 'is_active',
+                                type: 'switch',
+                                label: 'Active',
+                                value: true,
+                                tooltip: 'Inactive rules are skipped during event processing',
+                                columns: 6
+                            },
+                            {
+                                name: 'metadata.delete_on_resolution',
+                                type: 'switch',
+                                label: 'Delete on Resolution',
+                                value: false,
+                                tooltip: 'Incidents are permanently deleted when resolved or closed (CASCADE)',
+                                columns: 6
                             }
                         ]
                     },
@@ -501,7 +520,7 @@ const RuleSetForms = {
                                 label: 'Bundle By',
                                 value: 4,
                                 options: BundleByOptions,
-                                help: 'How to group related events into one incident. SOURCE_IP (4) is recommended for most security rules.',
+                                tooltip: 'How to group related events into one incident',
                                 columns: 6
                             },
                             {
@@ -510,7 +529,7 @@ const RuleSetForms = {
                                 label: 'Bundle Window',
                                 value: 30,
                                 options: BundleMinutesOptions,
-                                help: 'Time window for grouping. Events outside this window create a new incident.',
+                                tooltip: 'Events outside this window create a new incident',
                                 columns: 6
                             },
                             {
@@ -518,7 +537,7 @@ const RuleSetForms = {
                                 type: 'switch',
                                 label: 'Bundle by RuleSet',
                                 value: true,
-                                help: 'Group events matched by this rule into the same incident.',
+                                tooltip: 'Group events matched by this rule into the same incident',
                                 columns: 6
                             }
                         ]
@@ -531,33 +550,33 @@ const RuleSetForms = {
                                 columns: 12,
                                 html: `<div class="alert alert-info small mb-3">
                                     <i class="bi bi-info-circle me-1"></i>
-                                    <strong>How thresholds work:</strong> Events accumulate on the incident in "pending" status.
-                                    Once trigger count is reached (within the optional window), the handler fires and the incident becomes "new".
-                                    Leave all fields empty to fire the handler immediately on the first event.
+                                    <strong>How thresholds work:</strong> Events accumulate in "pending" status.
+                                    Once trigger count is reached, the handler fires and the incident becomes "new".
+                                    Leave empty to fire immediately on the first event.
                                 </div>`
                             },
                             {
                                 name: 'trigger_count',
                                 type: 'number',
                                 label: 'Trigger Count',
-                                placeholder: 'Empty = fire on first event',
-                                help: 'Number of events before the handler fires.',
+                                placeholder: 'Empty = immediate',
+                                tooltip: 'Number of events before the handler fires',
                                 columns: 4
                             },
                             {
                                 name: 'trigger_window',
                                 type: 'number',
-                                label: 'Trigger Window (minutes)',
-                                placeholder: 'Empty = count all events',
-                                help: 'Only count events within this many minutes.',
+                                label: 'Trigger Window (min)',
+                                placeholder: 'Empty = all events',
+                                tooltip: 'Only count events within this many minutes',
                                 columns: 4
                             },
                             {
                                 name: 'retrigger_every',
                                 type: 'number',
-                                label: 'Re-trigger Every N Events',
-                                placeholder: 'Empty = fire once only',
-                                help: 'Re-fire handler every N additional events.',
+                                label: 'Re-trigger Every',
+                                placeholder: 'Empty = once',
+                                tooltip: 'Re-fire handler every N additional events after initial trigger',
                                 columns: 4
                             }
                         ]
@@ -570,22 +589,20 @@ const RuleSetForms = {
                                 type: 'text',
                                 label: 'Handler Chain',
                                 placeholder: 'e.g., block://?ttl=3600,ticket://?priority=8',
-                                help: 'Chain multiple handlers with commas. Use the Handler Builder in the detail view for a guided experience.',
+                                tooltip: 'Chain multiple handlers with commas',
                                 columns: 12
                             },
                             {
                                 type: 'html',
                                 columns: 12,
                                 html: `<div class="alert alert-light border small mb-0">
-                                    <strong>Handler syntax:</strong><br>
-                                    <code>block://?ttl=3600</code> — Block source IP (ttl in seconds, 0 = permanent)<br>
-                                    <code>ticket://?priority=8</code> — Create a review ticket<br>
-                                    <code>email://perm@manage_security</code> — Email users with permission<br>
+                                    <code>block://?ttl=3600</code> — Block source IP<br>
+                                    <code>ticket://?priority=8</code> — Create ticket<br>
+                                    <code>email://perm@manage_security</code> — Email notification<br>
                                     <code>sms://perm@manage_security</code> — SMS notification<br>
-                                    <code>notify://perm@manage_security</code> — In-app + push notification<br>
-                                    <code>llm://</code> — LLM-powered triage agent<br>
-                                    <code>job://myapp.module.function</code> — Run async job<br>
-                                    <strong>Chain example:</strong> <code>block://?ttl=3600,ticket://?priority=9,email://perm@manage_security</code>
+                                    <code>notify://perm@manage_security</code> — In-app + push<br>
+                                    <code>llm://</code> — LLM triage agent<br>
+                                    <code>job://myapp.module.function</code> — Async job
                                 </div>`
                             }
                         ]
@@ -611,30 +628,25 @@ const RuleSetForms = {
                                 label: 'Name',
                                 required: true,
                                 placeholder: 'e.g., Brute Force Detection',
-                                columns: 8
+                                columns: 6
                             },
                             {
-                                name: 'is_active',
-                                type: 'switch',
-                                label: 'Active',
-                                help: 'Inactive rules are skipped during event processing',
-                                columns: 4
-                            },
-                            {
-                                name: 'metadata.delete_on_resolution',
-                                type: 'switch',
-                                label: 'Delete on Resolution',
-                                help: 'Incidents from this rule are permanently deleted when resolved or closed (CASCADE — events and history are also removed)',
-                                columns: 12
+                                name: 'match_by',
+                                type: 'select',
+                                label: 'Match Logic',
+                                options: MatchByOptions,
+                                tooltip: 'ALL = every condition must match. ANY = at least one',
+                                columns: 6
                             },
                             {
                                 name: 'category',
                                 type: 'combo',
-                                label: 'Event Category',
-                                options: CommonScopeOptions,
+                                label: 'Scope / Category',
+                                options: CommonCategoryOptions,
+                                allowCustom: true,
                                 required: true,
-                                placeholder: 'e.g., auth:failed, ossec, xss:attempt',
-                                help: 'Use * as a catch-all.',
+                                placeholder: 'Type or select...',
+                                tooltip: 'Scope or event category to match. Use * as a catch-all',
                                 columns: 6
                             },
                             {
@@ -642,16 +654,22 @@ const RuleSetForms = {
                                 type: 'number',
                                 label: 'Evaluation Priority',
                                 required: true,
-                                help: 'Lower = evaluated first.',
-                                columns: 3
+                                tooltip: 'Lower number = evaluated first',
+                                columns: 6
                             },
                             {
-                                name: 'match_by',
-                                type: 'select',
-                                label: 'Match Logic',
-                                options: MatchByOptions,
-                                help: 'ALL = every condition must match. ANY = at least one.',
-                                columns: 3
+                                name: 'is_active',
+                                type: 'switch',
+                                label: 'Active',
+                                tooltip: 'Inactive rules are skipped during event processing',
+                                columns: 6
+                            },
+                            {
+                                name: 'metadata.delete_on_resolution',
+                                type: 'switch',
+                                label: 'Delete on Resolution',
+                                tooltip: 'Incidents are permanently deleted when resolved or closed (CASCADE)',
+                                columns: 6
                             }
                         ]
                     },
@@ -663,7 +681,7 @@ const RuleSetForms = {
                                 type: 'select',
                                 label: 'Bundle By',
                                 options: BundleByOptions,
-                                help: 'How to group related events into one incident.',
+                                tooltip: 'How to group related events into one incident',
                                 columns: 6
                             },
                             {
@@ -671,14 +689,14 @@ const RuleSetForms = {
                                 type: 'select',
                                 label: 'Bundle Window',
                                 options: BundleMinutesOptions,
-                                help: 'Time window for grouping. Events outside this window create a new incident.',
+                                tooltip: 'Events outside this window create a new incident',
                                 columns: 6
                             },
                             {
                                 name: 'bundle_by_rule_set',
                                 type: 'switch',
                                 label: 'Bundle by RuleSet',
-                                help: 'Group events matched by this rule into the same incident.',
+                                tooltip: 'Group events matched by this rule into the same incident',
                                 columns: 6
                             }
                         ]
@@ -691,33 +709,33 @@ const RuleSetForms = {
                                 columns: 12,
                                 html: `<div class="alert alert-info small mb-3">
                                     <i class="bi bi-info-circle me-1"></i>
-                                    <strong>How thresholds work:</strong> Events accumulate on the incident in "pending" status.
-                                    Once trigger count is reached (within the optional window), the handler fires and the incident becomes "new".
-                                    Leave all fields empty to fire the handler immediately on the first event.
+                                    <strong>How thresholds work:</strong> Events accumulate in "pending" status.
+                                    Once trigger count is reached, the handler fires and the incident becomes "new".
+                                    Leave empty to fire immediately on the first event.
                                 </div>`
                             },
                             {
                                 name: 'trigger_count',
                                 type: 'number',
                                 label: 'Trigger Count',
-                                placeholder: 'Empty = fire on first event',
-                                help: 'Number of events before the handler fires.',
+                                placeholder: 'Empty = immediate',
+                                tooltip: 'Number of events before the handler fires',
                                 columns: 4
                             },
                             {
                                 name: 'trigger_window',
                                 type: 'number',
-                                label: 'Trigger Window (minutes)',
-                                placeholder: 'Empty = count all',
-                                help: 'Only count events within this window toward the trigger count.',
+                                label: 'Trigger Window (min)',
+                                placeholder: 'Empty = all events',
+                                tooltip: 'Only count events within this window toward the trigger count',
                                 columns: 4
                             },
                             {
                                 name: 'retrigger_every',
                                 type: 'number',
-                                label: 'Re-trigger Every N Events',
-                                placeholder: 'Empty = fire once',
-                                help: 'Re-fire handler every N additional events.',
+                                label: 'Re-trigger Every',
+                                placeholder: 'Empty = once',
+                                tooltip: 'Re-fire handler every N additional events after initial trigger',
                                 columns: 4
                             }
                         ]
@@ -730,22 +748,20 @@ const RuleSetForms = {
                                 type: 'text',
                                 label: 'Handler Chain',
                                 placeholder: 'e.g., block://?ttl=3600,ticket://?priority=8',
-                                help: 'Chain multiple handlers with commas. Use the Handler Builder for guided setup.',
+                                tooltip: 'Chain multiple handlers with commas',
                                 columns: 12
                             },
                             {
                                 type: 'html',
                                 columns: 12,
                                 html: `<div class="alert alert-light border small mb-0">
-                                    <strong>Handler syntax:</strong><br>
-                                    <code>block://?ttl=3600</code> — Block source IP (ttl in seconds, 0 = permanent)<br>
-                                    <code>ticket://?priority=8</code> — Create a review ticket<br>
-                                    <code>email://perm@manage_security</code> — Email users with permission<br>
+                                    <code>block://?ttl=3600</code> — Block source IP<br>
+                                    <code>ticket://?priority=8</code> — Create ticket<br>
+                                    <code>email://perm@manage_security</code> — Email notification<br>
                                     <code>sms://perm@manage_security</code> — SMS notification<br>
-                                    <code>notify://perm@manage_security</code> — In-app + push notification<br>
-                                    <code>llm://</code> — LLM-powered triage agent<br>
-                                    <code>job://myapp.module.function</code> — Run async job<br>
-                                    <strong>Chain example:</strong> <code>block://?ttl=3600,ticket://?priority=9,email://perm@manage_security</code>
+                                    <code>notify://perm@manage_security</code> — In-app + push<br>
+                                    <code>llm://</code> — LLM triage agent<br>
+                                    <code>job://myapp.module.function</code> — Async job
                                 </div>`
                             }
                         ]
@@ -915,5 +931,6 @@ export {
     ComparatorOptions,
     ValueTypeOptions,
     CommonEventFields,
+    CommonCategoryOptions,
     CommonScopeOptions
 };

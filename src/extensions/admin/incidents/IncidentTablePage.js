@@ -47,8 +47,8 @@ class IncidentTablePage extends TablePage {
                     }
                 },
                 {
-                    key: 'modified',
-                    label: 'Modified',
+                    key: 'created',
+                    label: 'Created',
                     formatter: "epoch|datetime",
                     filter: {
                         type: 'daterange',

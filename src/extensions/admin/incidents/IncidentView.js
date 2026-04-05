@@ -22,6 +22,38 @@ import IncidentHistoryAdapter from './adapters/IncidentHistoryAdapter.js';
 import ChatView from '@core/views/chat/ChatView.js';
 
 
+// ── Module Helpers ──────────────────────────────────────────
+
+/** Infer Rule value_type from a JS value */
+function _inferValueType(val) {
+    if (typeof val === 'boolean') return 'bool';
+    if (typeof val === 'number') return Number.isInteger(val) ? 'int' : 'float';
+    const num = Number(val);
+    if (val !== '' && !isNaN(num)) return Number.isInteger(num) ? 'int' : 'float';
+    return 'str';
+}
+
+function _escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function _truncate(str, max) {
+    return str.length > max ? str.slice(0, max) + '…' : str;
+}
+
+/** Render markdown to HTML via the docit API, with plain-text fallback */
+async function _renderMarkdown(view, markdown) {
+    if (!markdown) return '';
+    try {
+        const app = view.getApp();
+        const resp = await app.rest.post('/api/docit/render', { markdown });
+        const html = resp?.data?.data?.html || resp?.data?.html;
+        if (html) return html;
+    } catch (_e) { /* API unavailable — fall through */ }
+    // Fallback: escape and preserve whitespace
+    return `<pre style="white-space: pre-wrap;">${_escapeHtml(markdown)}</pre>`;
+}
+
 // ── Status & Priority Helpers ──────────────────────────────
 
 const STATUS_CONFIG = {
@@ -421,6 +453,7 @@ class LLMAnalysisResultsView extends View {
         this.analysis = options.analysis || {};
         this.incident = options.incident;
         this.summary = this.analysis.summary || '';
+        this.summaryHtml = '';
         this.hasProposedRule = !!(this.analysis.proposed_ruleset_id);
         this.proposedRulesetId = this.analysis.proposed_ruleset_id;
         this.mergedCount = (this.analysis.merged_incidents || []).length;
@@ -442,7 +475,7 @@ class LLMAnalysisResultsView extends View {
                     {{#summary}}
                     <div class="mb-3">
                         <h6 class="text-muted mb-2"><i class="bi bi-chat-left-text me-1"></i>Summary</h6>
-                        <div class="bg-light rounded p-3 small" style="white-space: pre-wrap;">{{{summary}}}</div>
+                        <div class="bg-light rounded p-3 small llm-summary-content">{{{summaryHtml}}}</div>
                     </div>
                     {{/summary}}
                     {{#mergedCount}}
@@ -463,6 +496,12 @@ class LLMAnalysisResultsView extends View {
                 </div>
             </div>
         `;
+    }
+
+    async onBeforeRender() {
+        if (this.summary && !this.summaryHtml) {
+            this.summaryHtml = await _renderMarkdown(this, this.summary);
+        }
     }
 
     async onActionReAnalyze() {
@@ -521,17 +560,7 @@ class IncidentOverviewSection extends View {
         this.addChild(this.quickActions);
 
         // LLM Analysis results (if available)
-        const metadata = this.model.get('metadata') || {};
-        const llmAnalysis = metadata.llm_analysis;
-        if (llmAnalysis) {
-            this.llmResultsView = new LLMAnalysisResultsView({
-                containerId: 'llm-analysis-results',
-                analysis: llmAnalysis,
-                incident: this.model
-            });
-            this.llmResultsView.on('analyze-llm', () => this.emit('analyze-llm'));
-            this.addChild(this.llmResultsView);
-        }
+        this._showLlmAnalysisIfAvailable();
 
         // Core incident fields
         const statusCfg = getStatusConfig(this.model.get('status'));
@@ -574,6 +603,7 @@ class IncidentOverviewSection extends View {
         this.addChild(this.dataView);
 
         // Server/environment info from metadata
+        const metadata = this.model.get('metadata') || {};
         const serverParts = [];
         if (metadata.server) serverParts.push(metadata.server);
         if (metadata.timezone) serverParts.push(metadata.timezone);
@@ -589,6 +619,30 @@ class IncidentOverviewSection extends View {
             });
             this.addChild(this.geoipCard);
         }
+    }
+
+    _showLlmAnalysisIfAvailable() {
+        const metadata = this.model.get('metadata') || {};
+        const llmAnalysis = metadata.llm_analysis;
+        if (llmAnalysis && !this.llmResultsView) {
+            this.llmResultsView = new LLMAnalysisResultsView({
+                containerId: 'llm-analysis-results',
+                analysis: llmAnalysis,
+                incident: this.model
+            });
+            this.llmResultsView.on('analyze-llm', () => this.emit('analyze-llm'));
+            this.addChild(this.llmResultsView);
+        }
+    }
+
+    /** Called after polling completes to show newly available LLM results */
+    refreshAnalysis() {
+        if (this.llmResultsView) {
+            this.removeChild(this.llmResultsView);
+            this.llmResultsView = null;
+        }
+        this._showLlmAnalysisIfAvailable();
+        this.render();
     }
 
     async _resolveSourceIP() {
@@ -914,59 +968,21 @@ class RuleEngineSection extends View {
         const scope = incident.get('scope') || '';
         const metadata = incident.get('metadata') || {};
 
-        // Build a helpful default name
-        const defaultName = `Rule: ${category || 'custom'} (from incident #${incident.get('id')})`;
-
+        // Step 1: Create the RuleSet using the standard form
         const resp = await Dialog.showForm({
             title: 'Create RuleSet from Incident',
             icon: 'bi-gear-wide-connected',
+            formConfig: RuleSetForms.create,
             size: 'lg',
-            fields: [
-                {
-                    name: 'name', type: 'text', label: 'RuleSet Name',
-                    required: true, value: defaultName, cols: 12
-                },
-                {
-                    name: 'category', type: 'combo', label: 'Scope',
-                    required: true, value: scope || category,
-                    options: [
-                        { value: 'global', label: 'Global' },
-                        { value: 'account', label: 'Account' },
-                        { value: 'incident', label: 'Incident' },
-                        { value: 'ossec', label: 'OSSEC' },
-                    ],
-                    cols: 6
-                },
-                {
-                    name: 'priority', type: 'number', label: 'Priority',
-                    value: 10, required: true, cols: 6
-                },
-                {
-                    name: 'bundle_by', type: 'select', label: 'Bundle By',
-                    value: metadata.source_ip ? 4 : 0,
-                    options: [
-                        { value: 0, label: 'No Bundling' },
-                        { value: 1, label: 'By Hostname' },
-                        { value: 2, label: 'By Model Name' },
-                        { value: 4, label: 'By Source IP' },
-                    ],
-                    cols: 6
-                },
-                {
-                    name: 'bundle_minutes', type: 'number', label: 'Bundle Window (minutes)',
-                    value: 30, cols: 6
-                },
-                {
-                    name: 'handler', type: 'text', label: 'Handler',
-                    placeholder: 'e.g., block://?ttl=3600, ticket://?priority=8',
-                    cols: 12
-                },
-                {
-                    name: 'is_active', type: 'switch', label: 'Enable Immediately',
-                    value: false, cols: 6,
-                    help: 'Leave disabled to review before activating'
-                }
-            ]
+            data: {
+                name: `Rule: ${category || 'custom'} (from incident #${incident.get('id')})`,
+                category: scope || category,
+                priority: 10,
+                is_active: false,
+                bundle_by: metadata.source_ip ? 4 : 0,
+                bundle_minutes: 30,
+                match_by: 0
+            }
         });
 
         if (!resp) return;
@@ -974,58 +990,119 @@ class RuleEngineSection extends View {
         const ruleset = new RuleSet();
         const saveResp = await ruleset.save({
             ...resp,
-            match_by: 0,
             bundle_by: parseInt(resp.bundle_by),
-            bundle_minutes: parseInt(resp.bundle_minutes) || 30
+            bundle_minutes: parseInt(resp.bundle_minutes) || 30,
+            match_by: parseInt(resp.match_by) || 0
         });
 
-        if (saveResp.status === 200 || saveResp.success) {
-            // Link the new ruleset to this incident
-            await this.incident.save({ rule_set: ruleset.id });
-            this.rulesetId = ruleset.id;
-            this.rulesetModel = ruleset;
-            this.hasRuleset = true;
-
-            // Auto-create rule condition for OSSEC incidents with rule_id
-            let autoRuleCreated = false;
-            const ruleId = parseInt(metadata.rule_id, 10);
-            if (scope === 'ossec' && Number.isFinite(ruleId)) {
-                try {
-                    const rule = new Rule();
-                    await rule.save({
-                        parent: ruleset.id,
-                        name: `Match rule_id ${ruleId}`,
-                        field_name: 'rule_id',
-                        comparator: '==',
-                        value: String(ruleId),
-                        value_type: 'int',
-                        index: 0
-                    });
-                    autoRuleCreated = true;
-                } catch (e) {
-                    this.getApp()?.toast?.warning('RuleSet created but auto-rule failed — add conditions manually');
-                }
-            }
-
-            this.getApp()?.toast?.success(
-                autoRuleCreated
-                    ? `RuleSet created with rule_id=${ruleId} condition`
-                    : 'RuleSet created — add rule conditions to activate'
-            );
-
-            // Open the full RuleSet view so user can add/review rule conditions
-            const view = new RuleSetView({ model: ruleset });
-            const dialog = new Dialog({
-                header: false,
-                size: 'xl',
-                body: view,
-                buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }]
-            });
-            await dialog.render(true, document.body);
-            dialog.show();
-        } else {
+        if (!saveResp.success && saveResp.status !== 200) {
             this.getApp()?.toast?.error('Failed to create RuleSet');
+            return;
         }
+
+        // Link the new ruleset to this incident
+        await this.incident.save({ rule_set: ruleset.id });
+        this.rulesetId = ruleset.id;
+        this.rulesetModel = ruleset;
+        this.hasRuleset = true;
+
+        // Step 2: Show metadata field picker for rule conditions
+        const rulesCreated = await this._showMetadataRulePicker(ruleset, metadata);
+
+        this.getApp()?.toast?.success(
+            rulesCreated
+                ? `RuleSet created with ${rulesCreated} rule condition(s)`
+                : 'RuleSet created — add rule conditions to activate'
+        );
+
+        // Open the full RuleSet view so user can review
+        const view = new RuleSetView({ model: ruleset });
+        const dialog = new Dialog({
+            header: false,
+            size: 'xl',
+            body: view,
+            buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }]
+        });
+        await dialog.render(true, document.body);
+        dialog.show();
+    }
+
+    /**
+     * Show a picker dialog letting the user select which metadata fields
+     * should become Rule conditions on the new RuleSet.
+     * @returns {number} Number of rules created, or 0 if skipped
+     */
+    async _showMetadataRulePicker(ruleset, metadata) {
+        // Fields to exclude — duplicates of top-level incident fields or not useful for matching
+        const EXCLUDE_FIELDS = new Set([
+            'title', 'details', 'scope', 'category', 'source_ip', 'hostname',
+            'model_name', 'model_id', 'country_code', 'country_name',
+            'latitude', 'longitude', 'stack_trace', 'traceback',
+            'do_not_delete', 'delete_on_resolution'
+        ]);
+
+        // Build field entries from metadata
+        const entries = Object.entries(metadata)
+            .filter(([key, val]) => !EXCLUDE_FIELDS.has(key) && val !== null && val !== '' && typeof val !== 'object')
+            .map(([key, val]) => ({ key, value: val, type: _inferValueType(val) }));
+
+        if (!entries.length) return 0;
+
+        // Build switch fields — each metadata key becomes a toggle with its value shown
+        const fields = [
+            {
+                type: 'html',
+                columns: 12,
+                html: `<div class="text-muted small mb-3">
+                    Select metadata fields to create as rule conditions.
+                    Each selected field becomes an <code>==</code> match rule.
+                </div>`
+            },
+            ...entries.map(e => ({
+                name: `rule__${e.key}`,
+                type: 'switch',
+                label: `${e.key}  =  ${_truncate(String(e.value), 30)}`,
+                tooltip: `${e.type}: ${String(e.value)}`,
+                value: false,
+                columns: 6
+            }))
+        ];
+
+        const pickerResp = await Dialog.showForm({
+            title: 'Create Rules from Metadata',
+            icon: 'bi-list-check',
+            size: 'lg',
+            fields,
+            submitText: 'Create Rules',
+            cancelText: 'Skip'
+        });
+
+        if (!pickerResp) return 0;
+
+        // Collect selected fields
+        const selected = entries.filter(e => pickerResp[`rule__${e.key}`]);
+        if (!selected.length) return 0;
+
+        // Create Rule conditions in parallel
+        const app = this.getApp();
+        try {
+            await Promise.all(selected.map((e, i) => {
+                const rule = new Rule();
+                return rule.save({
+                    parent: ruleset.id,
+                    name: `Match ${e.key}`,
+                    field_name: e.key,
+                    comparator: '==',
+                    value: String(e.value),
+                    value_type: e.type,
+                    index: i
+                });
+            }));
+        } catch (err) {
+            app?.toast?.warning('Some rule conditions failed to save');
+        }
+
+        return selected.length;
     }
 }
 
@@ -1240,7 +1317,8 @@ class IncidentView extends View {
         this.getApp().hideLoading();
 
         // ── Overview section ──
-        const overviewSection = new IncidentOverviewSection({ model: this.model });
+        this.overviewSection = new IncidentOverviewSection({ model: this.model });
+        const overviewSection = this.overviewSection;
         overviewSection.on('incident:updated', () => this._handleIncidentUpdated());
         overviewSection.on('create-ticket', () => this._handleCreateTicket());
         overviewSection.on('analyze-llm', () => this._handleAnalyzeLlm());
@@ -1317,7 +1395,8 @@ class IncidentView extends View {
         }
 
         // Conditional forensics sections
-        const hasStackTrace = !!metadata.stack_trace;
+        const stackTrace = metadata.stack_trace || metadata.traceback;
+        const hasStackTrace = !!stackTrace;
         const hasMetadata = Object.keys(metadata).length > 0;
 
         if (hasStackTrace || hasMetadata) {
@@ -1326,7 +1405,7 @@ class IncidentView extends View {
 
         if (hasStackTrace) {
             const stackTraceSection = new StackTraceView({
-                stackTrace: metadata.stack_trace
+                stackTrace
             });
             sections.push({ key: 'Stack Trace', label: 'Stack Trace', icon: 'bi-code-square', view: stackTraceSection });
         }
@@ -1744,7 +1823,8 @@ class IncidentView extends View {
 
                     if (!metadata.analysis_in_progress) {
                         if (metadata.llm_analysis) {
-                            this.getApp()?.toast?.success('LLM analysis complete — refreshing view');
+                            this.getApp()?.toast?.success('LLM analysis complete');
+                            this.overviewSection?.refreshAnalysis();
                         } else {
                             this.getApp()?.toast?.success('Analysis finished');
                         }

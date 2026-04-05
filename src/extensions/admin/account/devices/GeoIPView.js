@@ -133,12 +133,30 @@ class GeoIPView extends View {
             emptyValueText: '—',
             columns: 2,
             fields: [
-                { name: 'threat_level', label: 'Threat Level', cols: 6 },
+                { name: 'threat_level', label: 'Threat Level', formatter: 'capitalize', cols: 6 },
                 { name: 'risk_score', label: 'Risk Score', cols: 6 },
                 { name: 'is_threat', label: 'Threat', formatter: 'yesnoicon', cols: 6 },
                 { name: 'is_suspicious', label: 'Suspicious', formatter: 'yesnoicon', cols: 6 },
                 { name: 'is_known_attacker', label: 'Known Attacker', formatter: 'yesnoicon', cols: 6 },
                 { name: 'is_known_abuser', label: 'Known Abuser', formatter: 'yesnoicon', cols: 6 }
+            ]
+        });
+
+        // Block & Whitelist section
+        this.blockView = new DataView({
+            model: this.model,
+            className: "p-3",
+            showEmptyValues: false,
+            emptyValueText: '—',
+            columns: 2,
+            fields: [
+                { name: 'is_blocked', label: 'Blocked', formatter: 'yesnoicon', cols: 6 },
+                { name: 'block_count', label: 'Block Count', cols: 6 },
+                { name: 'blocked_reason', label: 'Block Reason', cols: 12 },
+                { name: 'blocked_at', label: 'Blocked At', formatter: 'datetime', cols: 6 },
+                { name: 'blocked_until', label: 'Blocked Until', formatter: 'datetime', cols: 6 },
+                { name: 'is_whitelisted', label: 'Whitelisted', formatter: 'yesnoicon', cols: 6 },
+                { name: 'whitelisted_reason', label: 'Whitelist Reason', cols: 6 }
             ]
         });
 
@@ -290,6 +308,7 @@ class GeoIPView extends View {
             { key: 'location', label: 'Location', icon: 'bi-geo-alt', view: this.detailsView },
             { key: 'network', label: 'Network', icon: 'bi-diagram-3', view: this.networkView },
             { key: 'risk', label: 'Risk & Reputation', icon: 'bi-shield-exclamation', view: this.riskView },
+            { key: 'block', label: 'Block & Whitelist', icon: 'bi-slash-circle', view: this.blockView },
             { type: 'divider', label: 'Activity' },
             { key: 'events', label: 'Events', icon: 'bi-calendar-event', view: this.eventsView },
             { key: 'traffic', label: 'Traffic', icon: 'bi-arrow-left-right', view: this.trafficView, permissions: 'view_logs' },
