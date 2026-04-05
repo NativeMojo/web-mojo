@@ -8,6 +8,7 @@ import TicketNoteAdapter from './adapters/TicketNoteAdapter.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 import IncidentView from './IncidentView.js';
 import rest from '@core/Rest.js';
+import { openAssistantChat } from '../assistant/AssistantContextChat.js';
 
 
 // ── Helpers ─────────────────────────────────────────────
@@ -173,6 +174,9 @@ class TicketView extends View {
                         </div>
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                        <button class="btn btn-outline-primary btn-sm" data-action="ask-ai" data-bs-toggle="tooltip" title="Chat with AI about this ticket">
+                            <i class="bi bi-robot me-1"></i>Ask AI
+                        </button>
                         <div data-container="ticket-context-menu"></div>
                     </div>
                 </div>
@@ -273,6 +277,10 @@ class TicketView extends View {
     async onActionRefreshNotes() {
         await this.chatView.refresh();
         this.getApp()?.toast?.success('Notes refreshed');
+    }
+
+    async onActionAskAi() {
+        await openAssistantChat(this, 'incident.Ticket');
     }
 
     // ── Context Menu Actions ──

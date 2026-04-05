@@ -73,6 +73,7 @@ User.CATEGORY_PERMISSIONS = [
     { name: "jobs", label: "Jobs", tooltip: "Jobs, job events, job logs, runners, queue control, system stats" },
     { name: "metrics", label: "Metrics", tooltip: "Metrics recording, fetching, categories, values, permissions" },
     { name: "files", label: "Files", tooltip: "File managers, files, renditions, vault files, vault data, S3 buckets" },
+    { name: "assistant", label: "AI Assisttant", tooltip: "Access to the AI Assistant" },
 ];
 
 // ── Granular Permissions (fine-grained view/manage pairs) ─────────
@@ -144,7 +145,7 @@ User.CATEGORY_GRANULAR_MAP = {
             "view_sms", "manage_sms", "send_sms"],
     jobs: ["view_jobs", "manage_jobs"],
     metrics: ["view_metrics", "manage_metrics", "write_metrics"],
-    files: ["view_fileman", "manage_files", "view_vault", "manage_vault"],
+    files: ["view_fileman", "manage_files", "view_vault", "manage_vault"]
 };
 
 // Reverse lookup: granular perm name → category name

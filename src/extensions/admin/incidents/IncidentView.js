@@ -20,6 +20,7 @@ import GeoIPView from '../account/devices/GeoIPView.js';
 import RuleSetView from './RuleSetView.js';
 import IncidentHistoryAdapter from './adapters/IncidentHistoryAdapter.js';
 import ChatView from '@core/views/chat/ChatView.js';
+import { openAssistantChat } from '../assistant/AssistantContextChat.js';
 
 
 // ── Module Helpers ──────────────────────────────────────────
@@ -382,6 +383,9 @@ class QuickActionsBar extends View {
                     <button class="btn btn-outline-dark btn-sm" data-action="quick-analyze-llm" data-bs-toggle="tooltip" title="LLM agent reviews events, merges related incidents, and proposes rules">
                         <i class="bi bi-robot me-1"></i>LLM Analyze
                     </button>
+                    <button class="btn btn-outline-primary btn-sm" data-action="quick-ask-ai" data-bs-toggle="tooltip" title="Chat with AI about this incident">
+                        <i class="bi bi-chat-dots me-1"></i>Ask AI
+                    </button>
                 </div>
             </div>
         `;
@@ -425,6 +429,10 @@ class QuickActionsBar extends View {
 
     async onActionQuickAnalyzeLlm() {
         this.emit('analyze-llm');
+    }
+
+    async onActionQuickAskAi() {
+        this.emit('ask-ai');
     }
 
     async onActionQuickProtect() {
@@ -557,6 +565,7 @@ class IncidentOverviewSection extends View {
         this.quickActions.on('incident:updated', () => this.emit('incident:updated'));
         this.quickActions.on('create-ticket', () => this.emit('create-ticket'));
         this.quickActions.on('analyze-llm', () => this.emit('analyze-llm'));
+        this.quickActions.on('ask-ai', () => this.emit('ask-ai'));
         this.addChild(this.quickActions);
 
         // LLM Analysis results (if available)
@@ -1322,6 +1331,7 @@ class IncidentView extends View {
         overviewSection.on('incident:updated', () => this._handleIncidentUpdated());
         overviewSection.on('create-ticket', () => this._handleCreateTicket());
         overviewSection.on('analyze-llm', () => this._handleAnalyzeLlm());
+        overviewSection.on('ask-ai', () => this._handleAskAi());
 
         // ── Events section ──
         const eventsCollection = new IncidentEventList({
@@ -1530,7 +1540,8 @@ class IncidentView extends View {
 
         items.push({ type: 'divider' });
 
-        // LLM Analysis
+        // AI
+        items.push({ label: 'Ask AI', action: 'ask-ai', icon: 'bi-chat-dots' });
         items.push({ label: 'LLM Analyze', action: 'analyze-llm', icon: 'bi-robot' });
 
         items.push({ type: 'divider' });
@@ -1766,6 +1777,14 @@ class IncidentView extends View {
     }
 
     // ── LLM Analysis ──
+
+    async onActionAskAi() {
+        await this._handleAskAi();
+    }
+
+    async _handleAskAi() {
+        await openAssistantChat(this, 'incident.Incident');
+    }
 
     async onActionAnalyzeLlm() {
         await this._handleAnalyzeLlm();
