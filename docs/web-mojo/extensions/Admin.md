@@ -427,6 +427,52 @@ The topbar button and the assistant modal both require the `view_admin` permissi
 
 ---
 
+## Context-Scoped Assistant Chat
+
+`TicketView` and `IncidentView` each have an **Ask AI** button that opens a single-conversation assistant chat scoped to that specific model instance. This is distinct from the fullscreen standalone `AssistantView` — it opens in an `xl` Dialog so the underlying view stays visible, always shows a single conversation, and provides the backend with the full model context (incident events, metadata, ticket description).
+
+### How it works
+
+1. On first open, `POST /api/assistant/context` is called with `{ model, pk }`. The returned `conversation_id` is saved to `metadata.assistant_conversation_id` via a partial metadata save (backend auto-merges).
+2. On subsequent opens, the stored `conversation_id` is reused to resume the same thread.
+3. If the stored `conversation_id` is stale (404), a fresh conversation is created automatically.
+4. Messages stream in real time via the same WebSocket events as `AssistantView`. Falls back to `POST /api/assistant` when WebSocket is unavailable.
+
+### Reusing the pattern in your own views
+
+The `openAssistantChat` helper is internal to the `admin` extension. To add "Ask AI" to your own view:
+
+```js
+import { openAssistantChat } from '@ext/admin/assistant/AssistantContextChat.js';
+
+// Inside your view, called from an action handler:
+async onActionAskAi() {
+    await openAssistantChat(this, 'myapp.MyModel');
+}
+```
+
+Requirements for the calling view:
+- `this.model` must be set and have an `id` field.
+- `this.model.get('metadata')` is used to read/store `assistant_conversation_id`.
+- `this.getApp()` must return the running app instance (standard for any `View` subclass).
+
+**`openAssistantChat(view, modelName)`**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `view` | `View` | The calling view instance |
+| `modelName` | `string` | Backend model name, e.g. `'incident.Ticket'`, `'incident.Incident'` |
+
+### REST Endpoints Used
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `POST` | `/api/assistant/context` | Create or retrieve a conversation scoped to `{ model, pk }` |
+| `GET` | `/api/assistant/conversation/{id}?graph=detail` | Load conversation with full message history |
+| `POST` | `/api/assistant` | REST fallback when WebSocket is unavailable |
+
+---
+
 ## Best Practices
 
 - Keep admin pages and views under `src/admin` in your application code if you’re building app-specific admin UIs.
