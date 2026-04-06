@@ -244,9 +244,23 @@ class ChatView extends View {
                         <span></span><span></span><span></span>
                     </span>
                     <span class="chat-thinking-text"></span>
+                    <span class="chat-thinking-timer text-muted"></span>
                 </div>
             `;
             container.appendChild(this._thinkingEl);
+
+            this._thinkingStart = Date.now();
+            this._thinkingInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - this._thinkingStart) / 1000);
+                const mins = Math.floor(elapsed / 60);
+                const secs = elapsed % 60;
+                const timerEl = this._thinkingEl?.querySelector('.chat-thinking-timer');
+                if (timerEl) {
+                    timerEl.textContent = mins > 0
+                        ? `${mins}m ${String(secs).padStart(2, '0')}s`
+                        : `${secs}s`;
+                }
+            }, 1000);
         }
 
         this._thinkingEl.querySelector('.chat-thinking-text').textContent = text;
@@ -257,6 +271,10 @@ class ChatView extends View {
      * Remove the thinking indicator
      */
     hideThinking() {
+        if (this._thinkingInterval) {
+            clearInterval(this._thinkingInterval);
+            this._thinkingInterval = null;
+        }
         if (this._thinkingEl) {
             this._thinkingEl.remove();
             this._thinkingEl = null;

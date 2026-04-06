@@ -74,6 +74,7 @@ User.CATEGORY_PERMISSIONS = [
     { name: "metrics", label: "Metrics", tooltip: "Metrics recording, fetching, categories, values, permissions" },
     { name: "files", label: "Files", tooltip: "File managers, files, renditions, vault files, vault data, S3 buckets" },
     { name: "assistant", label: "AI Assistant", tooltip: "Access to the AI Assistant" },
+    { name: "comms", label: "Communication", tooltip: "Ability to notify users" },
 ];
 
 // ── Granular Permissions (fine-grained view/manage pairs) ─────────

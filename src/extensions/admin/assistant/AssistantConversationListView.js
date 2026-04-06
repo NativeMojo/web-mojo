@@ -1,5 +1,6 @@
 import View from '@core/View.js';
 import Dialog from '@core/views/feedback/Dialog.js';
+import dataFormatter from '@core/utils/DataFormatter.js';
 
 /**
  * AssistantConversationListView - Left panel showing past conversations
@@ -117,7 +118,8 @@ class AssistantConversationListView extends View {
         groups.set('Earlier', []);
 
         models.forEach(model => {
-            const created = new Date(model.get('created') || model.get('modified'));
+            const raw = model.get('created') || model.get('modified');
+            const created = new Date(dataFormatter.normalizeEpoch(raw));
             const createdDate = new Date(created.getFullYear(), created.getMonth(), created.getDate());
 
             if (createdDate >= today) {
@@ -193,7 +195,7 @@ class AssistantConversationListView extends View {
      */
     _relativeTime(dateStr) {
         if (!dateStr) return '';
-        const date = new Date(dateStr);
+        const date = new Date(dataFormatter.normalizeEpoch(dateStr));
         if (isNaN(date)) return '';
 
         const now = Date.now();

@@ -26,6 +26,7 @@ class AssistantView extends View {
         this._wsHandlers = {};
         this._messageIdCounter = 0;
         this._hasMessages = false;
+        this._activePlans = {};
     }
 
     getTemplate() {
@@ -276,7 +277,7 @@ class AssistantView extends View {
                     const conversation = new AssistantConversation({ id: this.conversationId });
                     await conversation.fetch({ graph: 'detail' });
                     const messages = conversation.get('messages') || [];
-                    return messages.map(msg => this._transformMessage(msg));
+                    return messages.map(msg => this._transformMessage(msg)).filter(Boolean);
                 } catch (_err) {
                     if (_err.status === 404) {
                         this._onNewConversation();
@@ -351,6 +352,8 @@ class AssistantView extends View {
             tool_call: (data) => this._onToolCall(data),
             response: (data) => this._onResponse(data),
             error: (data) => this._onError(data),
+            plan: (data) => this._onPlan(data),
+            plan_update: (data) => this._onPlanUpdate(data),
             message: (envelope) => this._dispatchWSMessage(envelope),
             connected: () => this._updateConnectionStatus(),
             disconnected: () => this._updateConnectionStatus(),
@@ -362,6 +365,8 @@ class AssistantView extends View {
         this.ws.on('message:assistant_tool_call', this._wsHandlers.tool_call);
         this.ws.on('message:assistant_response', this._wsHandlers.response);
         this.ws.on('message:assistant_error', this._wsHandlers.error);
+        this.ws.on('message:assistant_plan', this._wsHandlers.plan);
+        this.ws.on('message:assistant_plan_update', this._wsHandlers.plan_update);
         // Wrapped events (from background thread via send_to_user)
         this.ws.on('message:message', this._wsHandlers.message);
         // Connection status
@@ -377,6 +382,8 @@ class AssistantView extends View {
         this.ws.off('message:assistant_tool_call', this._wsHandlers.tool_call);
         this.ws.off('message:assistant_response', this._wsHandlers.response);
         this.ws.off('message:assistant_error', this._wsHandlers.error);
+        this.ws.off('message:assistant_plan', this._wsHandlers.plan);
+        this.ws.off('message:assistant_plan_update', this._wsHandlers.plan_update);
         this.ws.off('message:message', this._wsHandlers.message);
         this.ws.off('connected', this._wsHandlers.connected);
         this.ws.off('disconnected', this._wsHandlers.disconnected);
@@ -397,10 +404,12 @@ class AssistantView extends View {
         if (!inner?.type) return;
 
         switch (inner.type) {
-            case 'assistant_thinking':  this._onThinking(inner); break;
-            case 'assistant_tool_call': this._onToolCall(inner); break;
-            case 'assistant_response':  this._onResponse(inner); break;
-            case 'assistant_error':     this._onError(inner); break;
+            case 'assistant_thinking':    this._onThinking(inner); break;
+            case 'assistant_tool_call':   this._onToolCall(inner); break;
+            case 'assistant_response':    this._onResponse(inner); break;
+            case 'assistant_error':       this._onError(inner); break;
+            case 'assistant_plan':        this._onPlan(inner); break;
+            case 'assistant_plan_update': this._onPlanUpdate(inner); break;
         }
     }
 
@@ -472,6 +481,47 @@ class AssistantView extends View {
         this._showSystemMessage(errorText);
     }
 
+    _onPlan(data) {
+        if (!this._isMyConversation(data)) return;
+        this._adoptConversationId(data);
+        this._showChatArea();
+
+        const plan = data.plan;
+        if (!plan) return;
+
+        this._activePlans[plan.plan_id] = plan;
+
+        // Add as a message with a progress block
+        this.chatView.addMessage({
+            id: `plan-${plan.plan_id}`,
+            role: 'assistant',
+            author: { name: 'Assistant' },
+            content: '',
+            timestamp: new Date().toISOString(),
+            blocks: [{ type: 'progress', ...plan }],
+            tool_calls: []
+        });
+    }
+
+    _onPlanUpdate(data) {
+        if (!this._isMyConversation(data)) return;
+
+        const plan = this._activePlans[data.plan_id];
+        if (plan) {
+            const step = plan.steps.find(s => s.id === data.step_id);
+            if (step) {
+                step.status = data.status;
+                step.summary = data.summary;
+            }
+        }
+
+        // Update the rendered step in-place
+        const msgView = this.chatView.messageViews.get(`plan-${data.plan_id}`);
+        if (msgView?.updateProgressStep) {
+            msgView.updateProgressStep(data.plan_id, data.step_id, data.status, data.summary);
+        }
+    }
+
     // ── Conversation Management ──────────────────────────
 
     async _onConversationSelect(data) {
@@ -502,8 +552,23 @@ class AssistantView extends View {
     // ── Helpers ──────────────────────────────────────────
 
     _transformMessage(msg) {
+        // Skip tool_result messages — they are internal API artifacts
+        if (msg.role === 'tool_result') return null;
+
         let content = msg.content || msg.text || '';
         let blocks = msg.blocks || [];
+        let toolCalls = msg.tool_calls || [];
+
+        // Extract thinking text from tool_call entries and separate tool_use entries
+        if (toolCalls.length > 0) {
+            const textParts = toolCalls
+                .filter(tc => tc.type === 'text' && tc.text)
+                .map(tc => tc.text);
+            if (!content && textParts.length > 0) {
+                content = textParts.join('\n\n');
+            }
+            toolCalls = toolCalls.filter(tc => tc.type === 'tool_use');
+        }
 
         // Safety net: parse blocks from content if API didn't return them
         // (e.g. WS events or older API responses that still embed fences).
@@ -527,7 +592,8 @@ class AssistantView extends View {
             content,
             timestamp: msg.created || msg.timestamp,
             blocks,
-            tool_calls: msg.tool_calls || []
+            tool_calls: toolCalls,
+            _conversationId: this.conversationId
         };
     }
 
@@ -538,7 +604,7 @@ class AssistantView extends View {
      */
     static _parseBlocks(text) {
         const BLOCK_RE = /```assistant_block\s*\n([\s\S]*?)```/g;
-        const VALID_TYPES = new Set(['table', 'chart', 'stat']);
+        const VALID_TYPES = new Set(['table', 'chart', 'stat', 'action', 'list', 'alert', 'progress']);
         const blocks = [];
         let match;
 
@@ -595,7 +661,12 @@ class AssistantView extends View {
         } else {
             dot.className = 'status-dot disconnected';
             dot.title = 'Disconnected';
-            this._setInputEnabled(false);
+            // Disable input visually but do NOT start the response timeout —
+            // the timeout is only for pending message requests, not connection state.
+            const textarea = this.element?.querySelector('[data-ref="input"]');
+            const sendBtn = this.element?.querySelector('[data-ref="send-btn"]');
+            if (textarea) textarea.disabled = true;
+            if (sendBtn) sendBtn.classList.add('d-none');
         }
     }
 

@@ -71,11 +71,7 @@ class IPSetTablePage extends TablePage {
                     }
                 },
                 {
-                    key: 'last_synced', label: 'Last Synced', width: '160px', sortable: true,
-                    formatter: (value) => {
-                        if (!value) return '<span class="text-muted">Never</span>';
-                        return new Date(value).toLocaleString();
-                    }
+                    key: 'last_synced|datetime', label: 'Last Synced', width: '160px', sortable: true,
                 },
                 {
                     key: 'sync_error', label: 'Status', width: '80px',

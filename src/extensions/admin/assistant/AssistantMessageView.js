@@ -46,6 +46,14 @@ class AssistantMessageView extends ChatMessageView {
                     await this._renderChartBlock(block, wrapper);
                 } else if (block.type === 'stat') {
                     this._renderStatBlock(block, wrapper);
+                } else if (block.type === 'action') {
+                    this._renderActionBlock(block, wrapper);
+                } else if (block.type === 'list') {
+                    this._renderListBlock(block, wrapper);
+                } else if (block.type === 'alert') {
+                    this._renderAlertBlock(block, wrapper);
+                } else if (block.type === 'progress') {
+                    this._renderProgressBlock(block, wrapper);
                 }
             } catch (err) {
                 console.error('Failed to render block:', block.type, err);
@@ -240,6 +248,181 @@ class AssistantMessageView extends ChatMessageView {
         });
 
         container.appendChild(row);
+    }
+
+    /**
+     * Render an action confirmation card with buttons.
+     * @private
+     */
+    _renderActionBlock(block, container) {
+        const esc = this._escapeHtml.bind(this);
+        const card = document.createElement('div');
+        card.className = 'assistant-action-card';
+
+        card.innerHTML = `
+            <div class="assistant-action-header">${esc(block.title || 'Action Required')}</div>
+            ${block.description ? `<div class="assistant-action-desc">${esc(block.description)}</div>` : ''}
+            <div class="assistant-action-buttons"></div>
+        `;
+
+        const btnRow = card.querySelector('.assistant-action-buttons');
+        const actions = block.actions || [];
+
+        actions.forEach((action, index) => {
+            const btn = document.createElement('button');
+            btn.className = index === 0 ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline-secondary';
+            btn.textContent = action.label;
+            btn.addEventListener('click', () => {
+                // Disable all buttons
+                btnRow.querySelectorAll('button').forEach(b => {
+                    b.disabled = true;
+                    b.classList.add('assistant-action-dimmed');
+                });
+                btn.classList.remove('assistant-action-dimmed');
+                btn.classList.add('assistant-action-chosen');
+
+                // Send choice via WS
+                const app = this.getApp();
+                if (app?.ws?.isConnected) {
+                    app.ws.send({
+                        type: 'assistant_action',
+                        conversation_id: this.message._conversationId,
+                        action_id: block.action_id,
+                        value: action.value
+                    });
+                }
+            });
+            btnRow.appendChild(btn);
+        });
+
+        container.appendChild(card);
+    }
+
+    /**
+     * Render a key/value detail list card.
+     * @private
+     */
+    _renderListBlock(block, container) {
+        const esc = this._escapeHtml.bind(this);
+        const card = document.createElement('div');
+        card.className = 'assistant-list-card';
+
+        let html = '';
+        if (block.title) {
+            html += `<div class="assistant-list-title">${esc(block.title)}</div>`;
+        }
+        html += '<dl class="assistant-list-items">';
+        (block.items || []).forEach(item => {
+            html += `
+                <div class="assistant-list-row">
+                    <dt>${esc(item.label)}</dt>
+                    <dd>${esc(String(item.value ?? ''))}</dd>
+                </div>`;
+        });
+        html += '</dl>';
+        card.innerHTML = html;
+        container.appendChild(card);
+    }
+
+    /**
+     * Render a severity-colored alert banner.
+     * @private
+     */
+    _renderAlertBlock(block, container) {
+        const esc = this._escapeHtml.bind(this);
+        const level = block.level || 'info';
+        const icons = { info: 'bi-info-circle-fill', success: 'bi-check-circle-fill', warning: 'bi-exclamation-triangle-fill', error: 'bi-x-circle-fill' };
+        const bsClass = { info: 'alert-info', success: 'alert-success', warning: 'alert-warning', error: 'alert-danger' };
+
+        const alert = document.createElement('div');
+        alert.className = `assistant-alert alert ${bsClass[level] || 'alert-info'}`;
+        alert.innerHTML = `
+            <i class="bi ${icons[level] || icons.info} me-2"></i>
+            <div class="assistant-alert-content">
+                ${block.title ? `<strong>${esc(block.title)}</strong>` : ''}
+                <div>${esc(block.message || '')}</div>
+            </div>
+        `;
+        container.appendChild(alert);
+    }
+
+    /**
+     * Render a multi-step progress tracker.
+     * @private
+     */
+    _renderProgressBlock(block, container) {
+        const esc = this._escapeHtml.bind(this);
+        const steps = block.steps || [];
+        const doneCount = steps.filter(s => s.status === 'done').length;
+        const pct = steps.length > 0 ? Math.round((doneCount / steps.length) * 100) : 0;
+
+        const card = document.createElement('div');
+        card.className = 'assistant-progress-card';
+        if (block.plan_id) card.dataset.planId = block.plan_id;
+
+        let stepsHtml = '';
+        const statusIcons = { pending: 'bi-circle', in_progress: 'bi-arrow-repeat', done: 'bi-check-circle-fill', skipped: 'bi-slash-circle' };
+
+        steps.forEach(step => {
+            stepsHtml += `
+                <div class="assistant-progress-step step-${step.status}" data-step-id="${step.id}">
+                    <i class="bi ${statusIcons[step.status] || statusIcons.pending} step-icon"></i>
+                    <div class="step-content">
+                        <span class="step-description">${esc(step.description)}</span>
+                        ${step.summary ? `<span class="step-summary">${esc(step.summary)}</span>` : ''}
+                    </div>
+                </div>`;
+        });
+
+        card.innerHTML = `
+            <div class="assistant-progress-header">
+                <span class="assistant-progress-title">${esc(block.title || 'Plan')}</span>
+                <span class="assistant-progress-counter">${doneCount} of ${steps.length}</span>
+            </div>
+            <div class="progress" style="height: 4px; margin-bottom: 10px;">
+                <div class="progress-bar" role="progressbar" style="width: ${pct}%"></div>
+            </div>
+            <div class="assistant-progress-steps">${stepsHtml}</div>
+        `;
+        container.appendChild(card);
+    }
+
+    /**
+     * Update a single step inside an existing progress block (called from WS events).
+     * @param {string} planId
+     * @param {number} stepId
+     * @param {string} status
+     * @param {string|null} summary
+     */
+    updateProgressStep(planId, stepId, status, summary) {
+        const card = this.element?.querySelector(`[data-plan-id="${planId}"]`);
+        if (!card) return;
+
+        const statusIcons = { pending: 'bi-circle', in_progress: 'bi-arrow-repeat', done: 'bi-check-circle-fill', skipped: 'bi-slash-circle' };
+        const row = card.querySelector(`[data-step-id="${stepId}"]`);
+        if (row) {
+            row.className = `assistant-progress-step step-${status}`;
+            const icon = row.querySelector('.step-icon');
+            if (icon) icon.className = `bi ${statusIcons[status] || statusIcons.pending} step-icon`;
+
+            let summaryEl = row.querySelector('.step-summary');
+            if (summary) {
+                if (!summaryEl) {
+                    summaryEl = document.createElement('span');
+                    summaryEl.className = 'step-summary';
+                    row.querySelector('.step-content').appendChild(summaryEl);
+                }
+                summaryEl.textContent = summary;
+            }
+        }
+
+        // Update counter and progress bar
+        const allSteps = card.querySelectorAll('.assistant-progress-step');
+        const doneCount = card.querySelectorAll('.step-done').length;
+        const counter = card.querySelector('.assistant-progress-counter');
+        if (counter) counter.textContent = `${doneCount} of ${allSteps.length}`;
+        const bar = card.querySelector('.progress-bar');
+        if (bar) bar.style.width = `${allSteps.length > 0 ? Math.round((doneCount / allSteps.length) * 100) : 0}%`;
     }
 
     /**

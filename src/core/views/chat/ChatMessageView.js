@@ -37,7 +37,7 @@ class ChatMessageView extends View {
             return `
                 <div class="chat-message-system text-center text-muted small py-2">
                     <i class="bi bi-info-circle me-1"></i>
-                    {{message.content}} on {{message.timestamp|datetime}}
+                    {{message.content}}
                 </div>
             `;
         }

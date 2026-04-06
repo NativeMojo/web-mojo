@@ -1,5 +1,5 @@
 ---
-name: plan
+name: design
 description: Design implementation approach for an issue or request file, adds a Plan section
 user-invocable: true
 argument-hint: <path to issue or request file>
