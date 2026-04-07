@@ -107,6 +107,17 @@ class AssistantView extends View {
         });
         this.addChild(this.chatView);
 
+        // Safety net: whenever an assistant message is added to the chat
+        // from any source (WS, fetch, etc.), re-enable input.
+        const origAddMessage = this.chatView.addMessage.bind(this.chatView);
+        this.chatView.addMessage = (msg, scroll) => {
+            origAddMessage(msg, scroll);
+            if (msg.role === 'assistant' && (msg.content || msg.blocks?.length)) {
+                this.chatView.hideThinking();
+                this._setInputEnabled(true);
+            }
+        };
+
         // Wire conversation list events
         this.conversationListView.on('conversation:select', (data) => this._onConversationSelect(data));
         this.conversationListView.on('conversation:new', () => this._onNewConversation());
@@ -258,11 +269,21 @@ class AssistantView extends View {
         const el = this.element?.querySelector('[data-ref="input-status"]');
         if (!el) return;
         if (message) {
-            el.textContent = message;
+            el.innerHTML = `${this._escapeHtml(message)} <span class="assistant-input-status-dismiss">Click to dismiss</span>`;
             el.classList.remove('d-none');
+            // Click to dismiss — escape hatch for stuck state
+            if (!el._hasDismiss) {
+                el._hasDismiss = true;
+                el.addEventListener('click', () => {
+                    this.chatView.hideThinking();
+                    this._setInputEnabled(true);
+                    const textarea = this.element?.querySelector('[data-ref="input"]');
+                    if (textarea) textarea.focus();
+                });
+            }
         } else {
             el.classList.add('d-none');
-            el.textContent = '';
+            el.innerHTML = '';
         }
     }
 

@@ -184,6 +184,17 @@ class AssistantContextChat extends View {
         });
         this.addChild(this.chatView);
 
+        // Safety net: whenever an assistant message with content arrives,
+        // re-enable input regardless of which path delivered it.
+        const origAddMessage = this.chatView.addMessage.bind(this.chatView);
+        this.chatView.addMessage = (msg, scroll) => {
+            origAddMessage(msg, scroll);
+            if (msg.role === 'assistant' && (msg.content || msg.blocks?.length)) {
+                this.chatView.hideThinking();
+                this._setInputEnabled(true);
+            }
+        };
+
         this._subscribeWS();
     }
 
@@ -306,11 +317,21 @@ class AssistantContextChat extends View {
         const statusEl = this.element?.querySelector('[data-ref="input-status"]');
         if (statusEl) {
             if (!enabled && reason) {
-                statusEl.textContent = reason;
+                const esc = (t) => { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; };
+                statusEl.innerHTML = `${esc(reason)} <span class="assistant-input-status-dismiss">Click to dismiss</span>`;
                 statusEl.classList.remove('d-none');
+                if (!statusEl._hasDismiss) {
+                    statusEl._hasDismiss = true;
+                    statusEl.addEventListener('click', () => {
+                        this.chatView.hideThinking();
+                        this._setInputEnabled(true);
+                        const ta = this.element?.querySelector('[data-ref="input"]');
+                        if (ta) ta.focus();
+                    });
+                }
             } else {
                 statusEl.classList.add('d-none');
-                statusEl.textContent = '';
+                statusEl.innerHTML = '';
             }
         }
 
