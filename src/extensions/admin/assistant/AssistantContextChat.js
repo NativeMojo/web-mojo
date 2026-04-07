@@ -14,6 +14,7 @@ import View from '@core/View.js';
 import ChatView from '@core/views/chat/ChatView.js';
 import { AssistantConversation } from '@core/models/Assistant.js';
 import AssistantMessageView from './AssistantMessageView.js';
+import AssistantView from './AssistantView.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 
 
@@ -56,7 +57,8 @@ class AssistantContextAdapter {
             const conversation = new AssistantConversation({ id: this.conversationId });
             await conversation.fetch({ graph: 'detail' });
             const messages = conversation.get('messages') || [];
-            return messages.map(msg => this._transformMessage(msg)).filter(Boolean);
+            const transformed = messages.map(msg => this._transformMessage(msg)).filter(Boolean);
+            return AssistantView._collapseMessages(transformed);
         } catch (_err) {
             // Stale conversation — clear and retry once
             if (_err.status === 404 && this.conversationId && !this._fetchRetried) {
@@ -149,6 +151,7 @@ class AssistantContextChat extends View {
             <div class="d-flex flex-column h-100">
                 <div class="flex-grow-1" style="min-height: 0;" data-container="chat-area"></div>
                 <div class="assistant-input-wrapper border-top p-2">
+                    <div class="assistant-input-status d-none" data-ref="input-status"></div>
                     <div class="d-flex gap-2 align-items-end">
                         <textarea class="form-control" placeholder="Ask the AI assistant..." rows="1" data-ref="input" style="resize: none; max-height: 150px;"></textarea>
                         <button class="btn btn-primary" data-action="send" type="button" data-ref="send-btn">
@@ -247,7 +250,10 @@ class AssistantContextChat extends View {
             timestamp: new Date().toISOString()
         };
         this.chatView.addMessage(userMsg);
-        this._setInputEnabled(false);
+
+        // Show thinking immediately — don't wait for server event
+        this.chatView.showThinking('Thinking...');
+        this._setInputEnabled(false, 'Waiting for response…');
 
         // Send via WebSocket or REST fallback
         if (this.ws && this.ws.isConnected) {
@@ -287,7 +293,7 @@ class AssistantContextChat extends View {
         if (textarea) textarea.focus();
     }
 
-    _setInputEnabled(enabled) {
+    _setInputEnabled(enabled, reason) {
         const textarea = this.element?.querySelector('[data-ref="input"]');
         const sendBtn = this.element?.querySelector('[data-ref="send-btn"]');
         const stopBtn = this.element?.querySelector('[data-ref="stop-btn"]');
@@ -295,6 +301,18 @@ class AssistantContextChat extends View {
         if (textarea) textarea.disabled = !enabled;
         if (sendBtn) sendBtn.classList.toggle('d-none', !enabled);
         if (stopBtn) stopBtn.classList.toggle('d-none', enabled);
+
+        // Show/hide status bar with reason
+        const statusEl = this.element?.querySelector('[data-ref="input-status"]');
+        if (statusEl) {
+            if (!enabled && reason) {
+                statusEl.textContent = reason;
+                statusEl.classList.remove('d-none');
+            } else {
+                statusEl.classList.add('d-none');
+                statusEl.textContent = '';
+            }
+        }
 
         if (this._responseTimeout) clearTimeout(this._responseTimeout);
         if (!enabled) {
@@ -318,7 +336,9 @@ class AssistantContextChat extends View {
             error: (data) => this._onError(data),
             plan: (data) => this._onPlan(data),
             plan_update: (data) => this._onPlanUpdate(data),
-            message: (envelope) => this._dispatchWSMessage(envelope)
+            message: (envelope) => this._dispatchWSMessage(envelope),
+            connected: () => this._updateConnectionStatus(),
+            disconnected: () => this._updateConnectionStatus()
         };
 
         this.ws.on('message:assistant_thinking', this._wsHandlers.thinking);
@@ -328,6 +348,8 @@ class AssistantContextChat extends View {
         this.ws.on('message:assistant_plan', this._wsHandlers.plan);
         this.ws.on('message:assistant_plan_update', this._wsHandlers.plan_update);
         this.ws.on('message:message', this._wsHandlers.message);
+        this.ws.on('connected', this._wsHandlers.connected);
+        this.ws.on('disconnected', this._wsHandlers.disconnected);
     }
 
     _unsubscribeWS() {
@@ -340,6 +362,8 @@ class AssistantContextChat extends View {
         this.ws.off('message:assistant_plan', this._wsHandlers.plan);
         this.ws.off('message:assistant_plan_update', this._wsHandlers.plan_update);
         this.ws.off('message:message', this._wsHandlers.message);
+        this.ws.off('connected', this._wsHandlers.connected);
+        this.ws.off('disconnected', this._wsHandlers.disconnected);
         this._wsHandlers = {};
     }
 
@@ -366,12 +390,28 @@ class AssistantContextChat extends View {
     _onThinking(data) {
         if (!this._isMyConversation(data)) return;
         this.chatView.showThinking('Thinking...');
-        this._setInputEnabled(false);
+        this._setInputEnabled(false, 'Assistant is thinking…');
     }
 
     _onToolCall(data) {
         if (!this._isMyConversation(data)) return;
         this.chatView.showThinking(`Using ${data.tool || data.name || 'tool'}...`);
+        this._resetResponseTimeout();
+    }
+
+    /**
+     * Reset the safety timeout without changing input enabled state.
+     * @private
+     */
+    _resetResponseTimeout() {
+        if (this._responseTimeout) {
+            clearTimeout(this._responseTimeout);
+            this._responseTimeout = setTimeout(() => {
+                this.chatView.hideThinking();
+                this._setInputEnabled(true);
+                this.app?.toast?.warning('Request timed out');
+            }, 60000);
+        }
     }
 
     _onResponse(data) {
@@ -440,6 +480,7 @@ class AssistantContextChat extends View {
         if (msgView?.updateProgressStep) {
             msgView.updateProgressStep(data.plan_id, data.step_id, data.status, data.summary);
         }
+        this._resetResponseTimeout();
     }
 
     _updateConnectionStatus() {
@@ -449,9 +490,25 @@ class AssistantContextChat extends View {
         if (this.ws?.isConnected) {
             dot.style.background = '#198754';
             dot.title = 'Connected';
+            // Re-enable input on reconnect if no pending request
+            if (!this._responseTimeout) {
+                this._setInputEnabled(true);
+            } else {
+                this._setInputEnabled(false, 'Waiting for response…');
+            }
         } else {
             dot.style.background = '#dc3545';
             dot.title = 'Disconnected';
+            // Disable input visually but don't start response timeout
+            const textarea = this.element?.querySelector('[data-ref="input"]');
+            const sendBtn = this.element?.querySelector('[data-ref="send-btn"]');
+            if (textarea) textarea.disabled = true;
+            if (sendBtn) sendBtn.classList.add('d-none');
+            const statusEl = this.element?.querySelector('[data-ref="input-status"]');
+            if (statusEl) {
+                statusEl.textContent = 'Disconnected — reconnecting…';
+                statusEl.classList.remove('d-none');
+            }
         }
     }
 

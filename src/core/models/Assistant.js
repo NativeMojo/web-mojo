@@ -24,9 +24,33 @@ class AssistantConversationList extends Collection {
     }
 }
 
+/* =========================
+ * AssistantSkill
+ * ========================= */
+class AssistantSkill extends Model {
+    constructor(data = {}) {
+        super(data, {
+            endpoint: '/api/assistant/skill',
+        });
+    }
+}
+
+class AssistantSkillList extends Collection {
+    constructor(options = {}) {
+        super({
+            ModelClass: AssistantSkill,
+            endpoint: '/api/assistant/skill',
+            size: 50,
+            ...options,
+        });
+    }
+}
+
 export {
     AssistantConversation,
-    AssistantConversationList
+    AssistantConversationList,
+    AssistantSkill,
+    AssistantSkillList
 };
 
 export default AssistantConversation;

@@ -98,8 +98,13 @@ export { default as SettingView } from '@ext/admin/settings/SettingView.js';
 
 export { default as FileView } from '@ext/admin/storage/FileView.js';
 
-// Assistant (loaded dynamically via registerAssistant())
+// Assistant
 export { default as AssistantView } from '@ext/admin/assistant/AssistantView.js';
+export { default as AssistantSkillTablePage } from '@ext/admin/assistant/AssistantSkillTablePage.js';
+export { default as AssistantSkillView } from '@ext/admin/assistant/AssistantSkillView.js';
+export { default as AssistantConversationTablePage } from '@ext/admin/assistant/AssistantConversationTablePage.js';
+export { default as AssistantConversationView } from '@ext/admin/assistant/AssistantConversationView.js';
+export { default as AssistantMemoryPage } from '@ext/admin/assistant/AssistantMemoryPage.js';
 
 // Admin Components
 // Convenience
@@ -167,6 +172,10 @@ import FileManagerTablePageClass from '@ext/admin/storage/FileManagerTablePage.j
 import FileTablePageClass from '@ext/admin/storage/FileTablePage.js';
 import S3BucketTablePageClass from '@ext/admin/storage/S3BucketTablePage.js';
 
+import AssistantSkillTablePageClass from '@ext/admin/assistant/AssistantSkillTablePage.js';
+import AssistantConversationTablePageClass from '@ext/admin/assistant/AssistantConversationTablePage.js';
+import AssistantMemoryPageClass from '@ext/admin/assistant/AssistantMemoryPage.js';
+
 /**
  * Register all admin pages to a WebApp instance
  * @param {WebApp} app - The WebApp instance to register pages to
@@ -219,6 +228,11 @@ export function registerSystemPages(app, addToMenu = true) {
     app.registerPage('system/security/bouncer-devices', BouncerDeviceTablePageClass, { permissions: ["view_security"] });
     app.registerPage('system/security/bot-signatures', BotSignatureTablePageClass, { permissions: ["manage_security"] });
     app.registerPage('system/security/ipsets', IPSetTablePageClass, { permissions: ["view_security"] });
+
+    // Assistant management pages
+    app.registerPage('system/assistant/skills', AssistantSkillTablePageClass, { permissions: ["view_admin", "assistant"] });
+    app.registerPage('system/assistant/conversations', AssistantConversationTablePageClass, { permissions: ["view_admin", "assistant"] });
+    app.registerPage('system/assistant/memory', AssistantMemoryPageClass, { permissions: ["view_admin", "assistant"] });
 
     // Check if sidebar exists and has an admin menu config
     if (addToMenu && app.sidebar && app.sidebar.getMenuConfig) {
@@ -331,6 +345,19 @@ export function registerSystemPages(app, addToMenu = true) {
                         { text: 'S3 Buckets', route: '?page=system/s3buckets', icon: 'bi-bucket', permissions: ["manage_aws"] },
                         { text: 'Storage Backends', route: '?page=system/filemanagers', icon: 'bi-hdd-stack', permissions: ["view_fileman", "manage_files"] },
                         { text: 'Files', route: '?page=system/files', icon: 'bi-file-earmark', permissions: ["manage_files"] },
+                    ]
+                },
+
+                // ── AI Assistant ──
+                {
+                    text: 'AI Assistant',
+                    route: null,
+                    icon: 'bi-robot',
+                    permissions: ["view_admin", "assistant"],
+                    children: [
+                        { text: 'Skills', route: '?page=system/assistant/skills', icon: 'bi-lightning', permissions: ["view_admin", "assistant"] },
+                        { text: 'Memory', route: '?page=system/assistant/memory', icon: 'bi-lightbulb', permissions: ["view_admin", "assistant"] },
+                        { text: 'Conversations', route: '?page=system/assistant/conversations', icon: 'bi-chat-left-text', permissions: ["view_admin", "assistant"] },
                     ]
                 },
 

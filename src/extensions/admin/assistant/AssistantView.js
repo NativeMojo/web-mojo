@@ -63,6 +63,7 @@ class AssistantView extends View {
                     </div>
                     <div class="assistant-chat-area" data-container="chat-area"></div>
                     <div class="assistant-input-wrapper">
+                        <div class="assistant-input-status d-none" data-ref="input-status"></div>
                         <div class="assistant-input-box">
                             <textarea class="assistant-input" placeholder="Message the assistant..." rows="1" data-ref="input"></textarea>
                             <button class="assistant-send-btn" data-action="send" type="button" title="Send message" data-ref="send-btn">
@@ -85,8 +86,9 @@ class AssistantView extends View {
     }
 
     async onInit() {
-        // Conversation list
+        // Conversation list — scoped to current user
         this.conversations = new AssistantConversationList();
+        this.conversations.params.user = this.app?.activeUser?.id;
         this.conversationListView = new AssistantConversationListView({
             containerId: 'conversation-list',
             collection: this.conversations
@@ -226,7 +228,7 @@ class AssistantView extends View {
      * Set input enabled/disabled state and toggle send/stop buttons
      * @private
      */
-    _setInputEnabled(enabled) {
+    _setInputEnabled(enabled, reason) {
         const textarea = this.element?.querySelector('[data-ref="input"]');
         const sendBtn = this.element?.querySelector('[data-ref="send-btn"]');
         const stopBtn = this.element?.querySelector('[data-ref="stop-btn"]');
@@ -237,10 +239,30 @@ class AssistantView extends View {
         if (sendBtn) sendBtn.classList.toggle('d-none', !enabled);
         if (stopBtn) stopBtn.classList.toggle('d-none', enabled);
 
+        // Show/hide status bar with reason
+        this._setInputStatus(enabled ? null : reason);
+
         // Clear or set safety timeout
         if (this._responseTimeout) clearTimeout(this._responseTimeout);
         if (!enabled) {
             this._responseTimeout = setTimeout(() => this._onResponseTimeout(), 60000);
+        }
+    }
+
+    /**
+     * Show or hide the input status bar.
+     * @param {string|null} message - Status text, or null to hide.
+     * @private
+     */
+    _setInputStatus(message) {
+        const el = this.element?.querySelector('[data-ref="input-status"]');
+        if (!el) return;
+        if (message) {
+            el.textContent = message;
+            el.classList.remove('d-none');
+        } else {
+            el.classList.add('d-none');
+            el.textContent = '';
         }
     }
 
@@ -277,7 +299,8 @@ class AssistantView extends View {
                     const conversation = new AssistantConversation({ id: this.conversationId });
                     await conversation.fetch({ graph: 'detail' });
                     const messages = conversation.get('messages') || [];
-                    return messages.map(msg => this._transformMessage(msg)).filter(Boolean);
+                    const transformed = messages.map(msg => this._transformMessage(msg)).filter(Boolean);
+                    return AssistantView._collapseMessages(transformed);
                 } catch (_err) {
                     if (_err.status === 404) {
                         this._onNewConversation();
@@ -302,8 +325,9 @@ class AssistantView extends View {
                 };
                 this.chatView.addMessage(userMsg);
 
-                // Disable input while waiting for response
-                this._setInputEnabled(false);
+                // Show thinking immediately — don't wait for server event
+                this.chatView.showThinking('Thinking...');
+                this._setInputEnabled(false, 'Waiting for response…');
 
                 // Send via WebSocket
                 if (this.ws && this.ws.isConnected) {
@@ -440,12 +464,27 @@ class AssistantView extends View {
         this._adoptConversationId(data);
         this._showChatArea();
         this.chatView.showThinking('Thinking...');
-        this._setInputEnabled(false);
+        this._setInputEnabled(false, 'Assistant is thinking…');
     }
 
     _onToolCall(data) {
         if (!this._isMyConversation(data)) return;
         this.chatView.showThinking(`Using ${data.tool || data.name || 'tool'}...`);
+        // Reset the safety timeout — server is still working
+        this._resetResponseTimeout();
+    }
+
+    /**
+     * Reset the safety timeout without changing input enabled state.
+     * Called on intermediate events (tool_call, plan_update) to prevent
+     * false "Request timed out" while the server is still processing.
+     * @private
+     */
+    _resetResponseTimeout() {
+        if (this._responseTimeout) {
+            clearTimeout(this._responseTimeout);
+            this._responseTimeout = setTimeout(() => this._onResponseTimeout(), 60000);
+        }
     }
 
     _onResponse(data) {
@@ -520,6 +559,7 @@ class AssistantView extends View {
         if (msgView?.updateProgressStep) {
             msgView.updateProgressStep(data.plan_id, data.step_id, data.status, data.summary);
         }
+        this._resetResponseTimeout();
     }
 
     // ── Conversation Management ──────────────────────────
@@ -598,6 +638,47 @@ class AssistantView extends View {
     }
 
     /**
+     * Post-process transformed messages to reduce noise:
+     * 1. Strip internal orchestration tool calls (create_plan, update_plan, load_tools)
+     * 2. Drop messages that become empty after stripping
+     * 3. Merge consecutive tool-call-only assistant messages into one
+     * @static
+     */
+    static _collapseMessages(messages) {
+        const INTERNAL_TOOLS = new Set(['create_plan', 'update_plan', 'load_tools']);
+        const result = [];
+
+        for (const msg of messages) {
+            // Only process assistant messages with tool_calls
+            if (msg.role === 'assistant' && msg.tool_calls?.length > 0) {
+                msg.tool_calls = msg.tool_calls.filter(tc => !INTERNAL_TOOLS.has(tc.name));
+            }
+
+            const hasContent = !!msg.content;
+            const hasTools = msg.tool_calls?.length > 0;
+            const hasBlocks = msg.blocks?.length > 0;
+
+            // Skip empty assistant messages (no content, no tools, no blocks)
+            if (msg.role === 'assistant' && !hasContent && !hasTools && !hasBlocks) {
+                continue;
+            }
+
+            // Merge consecutive tool-call-only assistant messages
+            if (msg.role === 'assistant' && !hasContent && hasTools && !hasBlocks) {
+                const prev = result[result.length - 1];
+                if (prev?.role === 'assistant' && !prev.content && prev.tool_calls?.length > 0 && !prev.blocks?.length) {
+                    prev.tool_calls = [...prev.tool_calls, ...msg.tool_calls];
+                    continue;
+                }
+            }
+
+            result.push(msg);
+        }
+
+        return result;
+    }
+
+    /**
      * Parse assistant_block fences from message content.
      * Mirrors the server-side _parse_blocks() logic.
      * @static
@@ -655,6 +736,13 @@ class AssistantView extends View {
         if (this.ws?.isConnected) {
             dot.className = 'status-dot connected';
             dot.title = 'Connected';
+            // Re-enable input on reconnect if no pending request
+            if (!this._responseTimeout) {
+                this._setInputEnabled(true);
+            } else {
+                // Still waiting — clear the disconnect message, keep the request status
+                this._setInputStatus('Waiting for response…');
+            }
         } else if (this.ws?.isReconnecting) {
             dot.className = 'status-dot reconnecting';
             dot.title = 'Reconnecting...';
@@ -667,6 +755,7 @@ class AssistantView extends View {
             const sendBtn = this.element?.querySelector('[data-ref="send-btn"]');
             if (textarea) textarea.disabled = true;
             if (sendBtn) sendBtn.classList.add('d-none');
+            this._setInputStatus('Disconnected — reconnecting…');
         }
     }
 

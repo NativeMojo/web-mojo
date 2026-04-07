@@ -26,6 +26,9 @@ class AssistantMessageView extends ChatMessageView {
             await this._renderMarkdown();
         }
 
+        // Collapsible long messages — check after markdown renders
+        this._setupCollapsibleMessage();
+
         if (!this.message.blocks || this.message.blocks.length === 0) return;
 
         const blocksContainer = this.element.querySelector(
@@ -273,13 +276,13 @@ class AssistantMessageView extends ChatMessageView {
             btn.className = index === 0 ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline-secondary';
             btn.textContent = action.label;
             btn.addEventListener('click', () => {
-                // Disable all buttons
-                btnRow.querySelectorAll('button').forEach(b => {
-                    b.disabled = true;
-                    b.classList.add('assistant-action-dimmed');
-                });
-                btn.classList.remove('assistant-action-dimmed');
-                btn.classList.add('assistant-action-chosen');
+                // Replace buttons with confirmation text
+                btnRow.innerHTML = `
+                    <div class="assistant-action-chosen-label">
+                        <i class="bi bi-check-circle-fill me-1"></i>
+                        You chose: <strong>${esc(action.label)}</strong>
+                    </div>
+                `;
 
                 // Send choice via WS
                 const app = this.getApp();
@@ -423,6 +426,38 @@ class AssistantMessageView extends ChatMessageView {
         if (counter) counter.textContent = `${doneCount} of ${allSteps.length}`;
         const bar = card.querySelector('.progress-bar');
         if (bar) bar.style.width = `${allSteps.length > 0 ? Math.round((doneCount / allSteps.length) * 100) : 0}%`;
+    }
+
+    /**
+     * Add expand/collapse toggle for long assistant messages.
+     * @private
+     */
+    _setupCollapsibleMessage() {
+        if (this.message.role !== 'assistant') return;
+
+        const textEl = this.element?.querySelector('.message-text');
+        if (!textEl || !textEl.textContent.trim()) return;
+
+        // Use requestAnimationFrame to measure after layout
+        requestAnimationFrame(() => {
+            const MAX_HEIGHT = 300;
+            if (textEl.scrollHeight <= MAX_HEIGHT) return;
+
+            textEl.classList.add('message-collapsed');
+            textEl.style.setProperty('--collapse-height', MAX_HEIGHT + 'px');
+
+            const toggle = document.createElement('button');
+            toggle.className = 'message-expand-toggle';
+            toggle.innerHTML = '<i class="bi bi-chevron-down me-1"></i>Show more';
+            toggle.addEventListener('click', () => {
+                const collapsed = textEl.classList.toggle('message-collapsed');
+                toggle.innerHTML = collapsed
+                    ? '<i class="bi bi-chevron-down me-1"></i>Show more'
+                    : '<i class="bi bi-chevron-up me-1"></i>Show less';
+            });
+
+            textEl.parentNode.insertBefore(toggle, textEl.nextSibling);
+        });
     }
 
     /**

@@ -10,25 +10,28 @@ import FilePreviewView from '@core/views/data/FilePreviewView.js';
  */
 class ChatMessageView extends View {
     constructor(options = {}) {
+        // Compute full className before super() so _syncAttrs picks it up
+        const message = options.message || {};
+        const theme = options.theme || 'compact';
+        const isCurrentUser = options.isCurrentUser || false;
+        const role = message.role || (isCurrentUser ? 'user' : null);
+
+        let cls = 'chat-message';
+        if (theme === 'bubbles') {
+            cls += isCurrentUser ? ' message-right' : ' message-left';
+        }
+        if (role === 'assistant') cls += ' message-assistant';
+        else if (role === 'user') cls += ' message-user';
+
         super({
-            className: 'chat-message',
+            className: cls,
             ...options
         });
-        
-        this.message = options.message || {};
-        this.theme = options.theme || 'compact';
-        this.isCurrentUser = options.isCurrentUser || false;
-        this.role = this.message.role || (this.isCurrentUser ? 'user' : null);
 
-        // Add theme-specific and role-specific classes
-        if (this.theme === 'bubbles') {
-            this.className += this.isCurrentUser ? ' message-right' : ' message-left';
-        }
-        if (this.role === 'assistant') {
-            this.className += ' message-assistant';
-        } else if (this.role === 'user') {
-            this.className += ' message-user';
-        }
+        this.message = message;
+        this.theme = theme;
+        this.isCurrentUser = isCurrentUser;
+        this.role = role;
     }
 
     getTemplate() {
