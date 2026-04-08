@@ -160,8 +160,13 @@ class ListView extends View {
       this.collection.on('fetch:start', this._onFetchStart, this);
       this.collection.on('fetch:end', this._onFetchEnd, this);
 
-      // Build items for existing models
-      this._buildItems();
+      // If collection needs an initial fetch, show loading state instead of empty state
+      if (this.collection.restEnabled && !this.collection.lastFetchTime && !this.collection.options?.preloaded) {
+        this.loading = true;
+      } else {
+        // Build items for existing models
+        this._buildItems();
+      }
     }
 
     return this;
