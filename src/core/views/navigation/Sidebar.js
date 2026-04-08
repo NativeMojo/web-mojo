@@ -426,11 +426,6 @@ class Sidebar extends View {
                     {{{footer}}}
                 </div>
                 {{/footer}}
-                {{#groupSettingsLink}}
-                <div class="sidebar-footer">
-                    {{{groupSettingsLink}}}
-                </div>
-                {{/groupSettingsLink}}
                 {{/data.currentMenu}}
 
                 {{^data.currentMenu}}
@@ -798,12 +793,19 @@ class Sidebar extends View {
             group: this.getApp().activeGroup || null,
             user: this.getApp.activeUser || null
         };
-        // Build group settings footer link for group menus when permitted
-        let groupSettingsLink = '';
+        // Inject group settings nav item for group menus when permitted
+        let items = currentMenu.items;
         if (currentMenu.groupKind && subData.group) {
             const activeUser = this.getApp()?.activeUser;
             if (activeUser?.hasPermission(["manage_groups", "manage_group"])) {
-                groupSettingsLink = `<a class="nav-link" data-action="group-settings"><i class="bi bi-gear me-2"></i><span class="nav-text">Settings</span></a>`;
+                items = [...items];
+                const spacerIdx = items.findIndex(i => i.spacer);
+                const settingsItem = { text: 'Group Settings', action: 'group-settings', icon: 'bi-gear' };
+                if (spacerIdx !== -1) {
+                    items.splice(spacerIdx, 0, settingsItem);
+                } else {
+                    items.push(settingsItem);
+                }
             }
         }
 
@@ -812,8 +814,7 @@ class Sidebar extends View {
             currentMenu: {
                 header: this.renderTemplateString(currentMenu.header || '', subData),
                 footer: this.renderTemplateString(currentMenu.footer || '', subData),
-                groupSettingsLink,
-                items: this.processNavItems(currentMenu.items, currentMenu.groupKind),
+                items: this.processNavItems(items, currentMenu.groupKind),
                 data: currentMenu.data,
                 showToggle: this.showToggle
             }
