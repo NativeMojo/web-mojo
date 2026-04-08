@@ -27,6 +27,7 @@ class AssistantView extends View {
         this._messageIdCounter = 0;
         this._hasMessages = false;
         this._activePlans = {};
+        this._requestStartTime = null;
     }
 
     getTemplate() {
@@ -256,7 +257,10 @@ class AssistantView extends View {
         // Clear or set safety timeout
         if (this._responseTimeout) clearTimeout(this._responseTimeout);
         if (!enabled) {
+            if (!this._requestStartTime) this._requestStartTime = Date.now();
             this._responseTimeout = setTimeout(() => this._onResponseTimeout(), 60000);
+        } else {
+            this._requestStartTime = null;
         }
     }
 
@@ -503,6 +507,11 @@ class AssistantView extends View {
      */
     _resetResponseTimeout() {
         if (this._responseTimeout) {
+            // Hard cap: 5 minutes from the original request — prevents infinite deferral
+            if (this._requestStartTime && (Date.now() - this._requestStartTime) >= 300000) {
+                this._onResponseTimeout();
+                return;
+            }
             clearTimeout(this._responseTimeout);
             this._responseTimeout = setTimeout(() => this._onResponseTimeout(), 60000);
         }
@@ -761,22 +770,28 @@ class AssistantView extends View {
             if (!this._responseTimeout) {
                 this._setInputEnabled(true);
             } else {
-                // Still waiting — clear the disconnect message, keep the request status
-                this._setInputStatus('Waiting for response…');
+                // Still waiting — fully restore the "waiting" UI so buttons are correct
+                this._setInputEnabled(false, 'Waiting for response…');
             }
         } else if (this.ws?.isReconnecting) {
             dot.className = 'status-dot reconnecting';
             dot.title = 'Reconnecting...';
+            // Pause input through the standard path; clear the response timeout
+            // since it only governs active requests over a live connection.
+            this._setInputEnabled(false, 'Reconnecting…');
+            if (this._responseTimeout) {
+                clearTimeout(this._responseTimeout);
+                this._responseTimeout = null;
+            }
         } else {
             dot.className = 'status-dot disconnected';
             dot.title = 'Disconnected';
-            // Disable input visually but do NOT start the response timeout —
-            // the timeout is only for pending message requests, not connection state.
-            const textarea = this.element?.querySelector('[data-ref="input"]');
-            const sendBtn = this.element?.querySelector('[data-ref="send-btn"]');
-            if (textarea) textarea.disabled = true;
-            if (sendBtn) sendBtn.classList.add('d-none');
-            this._setInputStatus('Disconnected — reconnecting…');
+            // Disable input through the standard path; clear the response timeout.
+            this._setInputEnabled(false, 'Disconnected — reconnecting…');
+            if (this._responseTimeout) {
+                clearTimeout(this._responseTimeout);
+                this._responseTimeout = null;
+            }
         }
     }
 

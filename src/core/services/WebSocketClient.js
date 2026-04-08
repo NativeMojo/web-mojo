@@ -34,6 +34,8 @@ class WebSocketClient {
     this.isConnected  = false;
     this.isConnecting = false;
 
+    // isReconnecting — computed getter, see prototype below
+
     // ── Auth ────────────────────────────────────────────────────────────────
     this.getToken    = options.getToken   || null;
     this.tokenPrefix = options.tokenPrefix || 'bearer';
@@ -486,6 +488,17 @@ class WebSocketClient {
     return url.toString();
   }
 }
+
+/**
+ * True when the client is between reconnect attempts (disconnected, not
+ * intentional, and at least one retry has been attempted or scheduled).
+ */
+Object.defineProperty(WebSocketClient.prototype, 'isReconnecting', {
+  get() {
+    return !this.isConnected && !this._intentionalDisconnect
+      && this.autoReconnect && this.reconnectAttempts > 0;
+  }
+});
 
 // Mix in EventEmitter (adds on / off / emit / once)
 Object.assign(WebSocketClient.prototype, EventEmitter);
