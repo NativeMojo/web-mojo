@@ -159,6 +159,7 @@ class Sidebar extends View {
         const app = this.getApp();
         const activeGroup = app.activeGroup;
         if (!activeGroup) return;
+        if (!app.activeUser?.hasPermission(["manage_groups", "manage_group"])) return;
 
         try {
             const { default: GroupView } = await import('@ext/admin/account/groups/GroupView.js');
@@ -425,6 +426,11 @@ class Sidebar extends View {
                     {{{footer}}}
                 </div>
                 {{/footer}}
+                {{#groupSettingsLink}}
+                <div class="sidebar-footer">
+                    {{{groupSettingsLink}}}
+                </div>
+                {{/groupSettingsLink}}
                 {{/data.currentMenu}}
 
                 {{^data.currentMenu}}
@@ -792,13 +798,12 @@ class Sidebar extends View {
             group: this.getApp().activeGroup || null,
             user: this.getApp.activeUser || null
         };
-        // Build footer — append group settings link for group menus when permitted
-        let footer = this.renderTemplateString(currentMenu.footer || '', subData);
+        // Build group settings footer link for group menus when permitted
+        let groupSettingsLink = '';
         if (currentMenu.groupKind && subData.group) {
             const activeUser = this.getApp()?.activeUser;
             if (activeUser?.hasPermission(["manage_groups", "manage_group"])) {
-                const settingsLink = `<a class="nav-link" data-action="group-settings"><i class="bi bi-gear me-2"></i><span class="nav-text">Settings</span></a>`;
-                footer = footer ? footer + settingsLink : settingsLink;
+                groupSettingsLink = `<a class="nav-link" data-action="group-settings"><i class="bi bi-gear me-2"></i><span class="nav-text">Settings</span></a>`;
             }
         }
 
@@ -806,7 +811,8 @@ class Sidebar extends View {
         this.data = {
             currentMenu: {
                 header: this.renderTemplateString(currentMenu.header || '', subData),
-                footer,
+                footer: this.renderTemplateString(currentMenu.footer || '', subData),
+                groupSettingsLink,
                 items: this.processNavItems(currentMenu.items, currentMenu.groupKind),
                 data: currentMenu.data,
                 showToggle: this.showToggle
