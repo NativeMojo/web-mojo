@@ -155,6 +155,25 @@ class Sidebar extends View {
         }
     }
 
+    async onActionGroupSettings() {
+        const app = this.getApp();
+        const activeGroup = app.activeGroup;
+        if (!activeGroup) return;
+
+        try {
+            const { default: GroupView } = await import('@ext/admin/account/groups/GroupView.js');
+            Dialog.showDialog({
+                title: false,
+                size: 'lg',
+                body: new GroupView({ model: activeGroup }),
+                buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }]
+            });
+        } catch (e) {
+            console.error('Failed to load GroupView', e);
+            app.toast?.error('Group settings not available');
+        }
+    }
+
     /**
      * Show group selector in a dialog (like TopNav)
      */
@@ -773,11 +792,21 @@ class Sidebar extends View {
             group: this.getApp().activeGroup || null,
             user: this.getApp.activeUser || null
         };
+        // Build footer — append group settings link for group menus when permitted
+        let footer = this.renderTemplateString(currentMenu.footer || '', subData);
+        if (currentMenu.groupKind && subData.group) {
+            const activeUser = this.getApp()?.activeUser;
+            if (activeUser?.hasPermission(["manage_groups", "manage_group"])) {
+                const settingsLink = `<a class="nav-link" data-action="group-settings"><i class="bi bi-gear me-2"></i><span class="nav-text">Settings</span></a>`;
+                footer = footer ? footer + settingsLink : settingsLink;
+            }
+        }
+
         // Process menu data through template if it contains handlebars
         this.data = {
             currentMenu: {
                 header: this.renderTemplateString(currentMenu.header || '', subData),
-                footer: this.renderTemplateString(currentMenu.footer || '', subData),
+                footer,
                 items: this.processNavItems(currentMenu.items, currentMenu.groupKind),
                 data: currentMenu.data,
                 showToggle: this.showToggle
