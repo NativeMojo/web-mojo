@@ -257,7 +257,6 @@ class AssistantView extends View {
         // Clear or set safety timeout
         if (this._responseTimeout) clearTimeout(this._responseTimeout);
         if (!enabled) {
-            if (!this._requestStartTime) this._requestStartTime = Date.now();
             this._responseTimeout = setTimeout(() => this._onResponseTimeout(), 60000);
         } else {
             this._requestStartTime = null;
@@ -352,6 +351,7 @@ class AssistantView extends View {
 
                 // Show thinking immediately — don't wait for server event
                 this.chatView.showThinking('Thinking...');
+                this._requestStartTime = Date.now();
                 this._setInputEnabled(false, 'Waiting for response…');
 
                 // Send via WebSocket
