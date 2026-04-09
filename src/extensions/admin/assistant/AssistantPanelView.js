@@ -150,12 +150,6 @@ class AssistantPanelView extends View {
         });
         this.conversationListView.on('conversation:deleted', (data) => this._onConversationDeleted(data));
 
-        // Load existing conversation if we have an ID
-        if (this.conversationId) {
-            this._showChatArea();
-            await this.chatView.refresh();
-        }
-
         this._subscribeWS();
     }
 
@@ -167,6 +161,12 @@ class AssistantPanelView extends View {
             textarea.addEventListener('input', () => this._autoResize(textarea));
             textarea.addEventListener('keydown', (e) => this._handleKeydown(e));
             setTimeout(() => textarea.focus(), 100);
+        }
+
+        // Load existing conversation after DOM is ready
+        if (this.conversationId) {
+            this._showChatArea();
+            await this.chatView.refresh();
         }
 
         this._updateConnectionStatus();
