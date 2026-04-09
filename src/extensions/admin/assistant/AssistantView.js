@@ -536,7 +536,11 @@ class AssistantView extends View {
             tool_calls: data.tool_calls_made || data.tool_calls || [],
             created: data.timestamp || new Date().toISOString()
         });
-        this.chatView.addMessage(msg);
+
+        // Skip empty messages (e.g. plan-only responses where all tool calls are internal)
+        if (msg && (msg.content || msg.blocks?.length || msg.tool_calls?.length)) {
+            this.chatView.addMessage(msg);
+        }
     }
 
     _onError(data) {
