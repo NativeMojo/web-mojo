@@ -433,6 +433,8 @@ export function registerAssistant(app) {
 
         const view = new AssistantPanelView({ app });
         view.on('panel:close', () => closeSidebarPanel());
+        view.on('panel:fullscreen', () => openFullscreenModal());
+        view.on('panel:popout', (data) => openPopupWindow(data?.conversationId));
         await view.render(true, panelEl);
         app._assistantPanel = view;
 
@@ -450,6 +452,75 @@ export function registerAssistant(app) {
                 const w = parseInt(savedWidth, 10);
                 if (w >= 300 && w <= 700) panelEl.style.width = w + 'px';
             }
+        });
+    }
+
+    async function openPopupWindow(conversationId) {
+        // Close sidebar first
+        closeSidebarPanel();
+
+        const popup = window.open('', 'mojo-assistant',
+            'width=480,height=700,toolbar=no,menubar=no,status=no,location=no,resizable=yes');
+
+        if (!popup) {
+            // Popup blocked — fall back to sidebar or fullscreen
+            if (app.toast) app.toast.warning('Popup blocked — opening sidebar instead');
+            if (window.innerWidth >= 1000) {
+                await openSidebarPanel();
+            } else {
+                await openFullscreenModal();
+            }
+            return;
+        }
+
+        // Write minimal document into the popup
+        const styles = document.querySelectorAll('link[rel="stylesheet"], style');
+        let styleHTML = '';
+        styles.forEach(s => {
+            if (s.tagName === 'LINK') {
+                styleHTML += `<link rel="stylesheet" href="${s.href}">`;
+            } else {
+                styleHTML += s.outerHTML;
+            }
+        });
+
+        popup.document.write(`<!DOCTYPE html>
+<html><head><title>AI Assistant</title>${styleHTML}
+<style>
+    body { margin: 0; height: 100vh; overflow: hidden; }
+    #assistant-popup-root { height: 100vh; }
+    .assistant-panel-view { height: 100%; }
+    .assistant-panel-resize-handle { display: none; }
+</style>
+</head><body class="assistant-popup">
+<div id="assistant-popup-root"></div>
+</body></html>`);
+        popup.document.close();
+
+        const { default: AssistantPanelView } = await import('@ext/admin/assistant/AssistantPanelView.js');
+
+        const view = new AssistantPanelView({
+            app,
+            conversationId: conversationId || app._assistantConversationId || null
+        });
+
+        // Pop-out from popup doesn't make sense — close panel just closes popup
+        view.on('panel:close', () => popup.close());
+        view.on('panel:popout', () => {}); // no-op in popup
+
+        const root = popup.document.getElementById('assistant-popup-root');
+        await view.render(true, root);
+
+        app._assistantPopup = popup;
+        app._assistantPopupView = view;
+
+        // Cleanup when popup is closed externally
+        popup.addEventListener('beforeunload', () => {
+            if (app._assistantPopupView) {
+                app._assistantPopupView.destroy();
+                app._assistantPopupView = null;
+            }
+            app._assistantPopup = null;
         });
     }
 

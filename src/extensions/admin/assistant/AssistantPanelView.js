@@ -49,6 +49,12 @@ class AssistantPanelView extends View {
                         <button class="assistant-panel-header-btn" data-action="new-conversation" type="button" title="New conversation">
                             <i class="bi bi-plus-lg"></i>
                         </button>
+                        <button class="assistant-panel-header-btn" data-action="fullscreen" type="button" title="Open fullscreen">
+                            <i class="bi bi-arrows-fullscreen"></i>
+                        </button>
+                        <button class="assistant-panel-header-btn" data-action="pop-out" type="button" title="Open in popup window">
+                            <i class="bi bi-box-arrow-up-right"></i>
+                        </button>
                         <button class="assistant-panel-header-btn" data-action="close-panel" type="button" title="Close">
                             <i class="bi bi-x-lg"></i>
                         </button>
@@ -235,6 +241,14 @@ class AssistantPanelView extends View {
 
     onActionClosePanel() {
         this.emit('panel:close');
+    }
+
+    onActionFullscreen() {
+        this.emit('panel:fullscreen', { conversationId: this.conversationId });
+    }
+
+    onActionPopOut() {
+        this.emit('panel:popout', { conversationId: this.conversationId });
     }
 
     onActionUseSuggestion(_event, element) {
