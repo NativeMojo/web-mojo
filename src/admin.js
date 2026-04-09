@@ -436,8 +436,21 @@ export function registerAssistant(app) {
         await view.render(true, panelEl);
         app._assistantPanel = view;
 
+        // Restore saved width before triggering open transition
+        const savedWidth = localStorage.getItem('mojo:assistant_panel_width');
+        if (savedWidth) {
+            const w = parseInt(savedWidth, 10);
+            if (w >= 300 && w <= 700) panelEl.style.width = '0px'; // start from 0 for transition
+        }
+
         // Trigger reflow transition
-        requestAnimationFrame(() => layout.classList.add('assistant-panel-open'));
+        requestAnimationFrame(() => {
+            layout.classList.add('assistant-panel-open');
+            if (savedWidth) {
+                const w = parseInt(savedWidth, 10);
+                if (w >= 300 && w <= 700) panelEl.style.width = w + 'px';
+            }
+        });
     }
 
     async function openFullscreenModal() {

@@ -38,6 +38,7 @@ class AssistantPanelView extends View {
         );
 
         return `
+            <div class="assistant-panel-resize-handle" data-ref="resize-handle"></div>
             <div class="assistant-panel-layout">
                 <div class="assistant-panel-header">
                     <button class="assistant-panel-header-btn" data-action="toggle-history" type="button" title="Conversation history">
@@ -164,6 +165,61 @@ class AssistantPanelView extends View {
 
         this._updateConnectionStatus();
         this._updateTitle();
+        this._setupResizeHandle();
+    }
+
+    // ── Resize Handle ────────────────────────────────────────
+
+    _setupResizeHandle() {
+        const handle = this.element?.querySelector('[data-ref="resize-handle"]');
+        if (!handle) return;
+
+        const MIN_WIDTH = 300;
+        const MAX_WIDTH = 700;
+        const STORAGE_KEY = 'mojo:assistant_panel_width';
+
+        // Restore saved width
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const w = parseInt(saved, 10);
+            if (w >= MIN_WIDTH && w <= MAX_WIDTH) {
+                const panelEl = document.getElementById('assistant-panel');
+                if (panelEl) panelEl.style.width = w + 'px';
+            }
+        }
+
+        let startX, startWidth;
+
+        const onMouseMove = (e) => {
+            const delta = startX - e.clientX;
+            const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + delta));
+            const panelEl = document.getElementById('assistant-panel');
+            if (panelEl) panelEl.style.width = newWidth + 'px';
+        };
+
+        const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+
+            // Save width
+            const panelEl = document.getElementById('assistant-panel');
+            if (panelEl) {
+                localStorage.setItem(STORAGE_KEY, parseInt(panelEl.style.width, 10));
+            }
+        };
+
+        handle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            startX = e.clientX;
+            const panelEl = document.getElementById('assistant-panel');
+            startWidth = panelEl ? panelEl.offsetWidth : 500;
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
     }
 
     // ── Actions ──────────────────────────────────────────────
