@@ -6,6 +6,7 @@ import dataFormatter from '@core/utils/DataFormatter.js';
  * AssistantConversationListView - Left panel showing past conversations
  *
  * Displays conversations grouped by date (Today / Yesterday / Earlier).
+ * Includes search input (debounced) and "Load more" pagination.
  * Emits events for conversation selection, creation, and deletion.
  */
 class AssistantConversationListView extends View {
@@ -17,11 +18,16 @@ class AssistantConversationListView extends View {
 
         this.collection = options.collection;
         this.activeId = null;
+        this._searchTimeout = null;
     }
 
     getTemplate() {
         return `
             <div class="conversation-list-header">
+                <div class="conversation-search-wrapper mb-2">
+                    <input type="text" class="form-control form-control-sm conversation-search-input"
+                           placeholder="Search conversations..." data-ref="search-input">
+                </div>
                 <button class="btn btn-outline-secondary w-100" data-action="new-conversation">
                     <i class="bi bi-plus-lg me-1"></i> New conversation
                 </button>
@@ -36,6 +42,31 @@ class AssistantConversationListView extends View {
 
     async onAfterRender() {
         this._renderItems();
+
+        // Wire search input
+        const searchInput = this.element.querySelector('[data-ref="search-input"]');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => this._onSearchInput(searchInput));
+        }
+    }
+
+    /**
+     * Handle search input with debounce
+     * @private
+     */
+    _onSearchInput(input) {
+        if (this._searchTimeout) clearTimeout(this._searchTimeout);
+        this._searchTimeout = setTimeout(async () => {
+            const query = input.value.trim();
+            if (query) {
+                this.collection.params.search = query;
+            } else {
+                delete this.collection.params.search;
+            }
+            this.collection.params.start = 0;
+            await this.collection.fetch();
+            this._renderItems();
+        }, 300);
     }
 
     /**
@@ -74,15 +105,25 @@ class AssistantConversationListView extends View {
                 const modified = model.get('modified') || model.get('created');
                 const timeStr = this._relativeTime(modified);
                 const isActive = id === this.activeId;
+                const user = model.get('user');
+                const userName = user?.display_name || '';
+                const avatarUrl = user?.avatar?.thumbnail || user?.avatar?.url || '';
 
                 const item = document.createElement('div');
                 item.className = `conversation-item px-3 py-2${isActive ? ' active' : ''}`;
                 item.dataset.id = id;
                 item.innerHTML = `
                     <div class="d-flex align-items-start">
+                        ${avatarUrl
+                            ? `<img src="${this._escapeHtml(avatarUrl)}" alt="" class="conversation-avatar">`
+                            : `<div class="conversation-avatar conversation-avatar-initials">${this._escapeHtml(this._initials(userName))}</div>`
+                        }
                         <div class="flex-grow-1 overflow-hidden">
                             <div class="text-truncate conversation-title">${this._escapeHtml(title)}</div>
-                            ${timeStr ? `<div class="conversation-time text-muted">${timeStr}</div>` : ''}
+                            <div class="conversation-meta text-muted">
+                                ${userName ? `<span>${this._escapeHtml(userName)}</span>` : ''}
+                                ${timeStr ? `<span>${timeStr}</span>` : ''}
+                            </div>
                         </div>
                         <button class="btn btn-sm btn-link text-muted p-0 ms-2 conversation-delete" data-action="delete-conversation" data-id="${id}" title="Delete">
                             <i class="bi bi-trash"></i>
@@ -100,6 +141,22 @@ class AssistantConversationListView extends View {
                 container.appendChild(item);
             });
         }
+
+        // "Load more" button when there are more pages
+        if (this.collection.hasMore) {
+            const loadMore = document.createElement('div');
+            loadMore.className = 'conversation-load-more text-center py-2';
+            loadMore.innerHTML = '<button class="btn btn-sm btn-link text-muted" data-action="load-more">Load more</button>';
+            container.appendChild(loadMore);
+        }
+    }
+
+    /**
+     * Load next page of conversations and append
+     */
+    async onActionLoadMore() {
+        await this.collection.nextPage();
+        this._renderItems();
     }
 
     /**
@@ -213,6 +270,15 @@ class AssistantConversationListView extends View {
         // Older than a week — show short date
         const month = date.toLocaleString('default', { month: 'short' });
         return `${month} ${date.getDate()}`;
+    }
+
+    /**
+     * Get initials from a display name (e.g. "Internal Use" → "IU")
+     * @private
+     */
+    _initials(name) {
+        if (!name) return '?';
+        return name.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2);
     }
 
     /**

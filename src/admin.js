@@ -265,10 +265,10 @@ export function registerSystemPages(app, addToMenu = true) {
                     icon: 'bi-gear-wide-connected',
                     permissions: ["view_jobs", "manage_jobs"],
                     children: [
-                        { text: 'Dashboard', route: '?page=system/jobs/dashboard', icon: 'bi-bar-chart-line', permissions: ["view_jobs"] },
-                        { text: 'Runners', route: '?page=system/jobs/runners', icon: 'bi-cpu', permissions: ["view_jobs"] },
-                        { text: 'Jobs', route: '?page=system/jobs/list', icon: 'bi-list-task', permissions: ["view_jobs"] },
-                        { text: 'Scheduled Tasks', route: '?page=system/jobs/scheduled-tasks', icon: 'bi-clock-history', permissions: ["view_scheduled_tasks", "manage_scheduled_tasks"] },
+                        { text: 'Dashboard', route: '?page=system/jobs/dashboard', icon: 'bi-bar-chart-line', permissions: ["jobs", "view_jobs", "manage_jobs"] },
+                        { text: 'Runners', route: '?page=system/jobs/runners', icon: 'bi-cpu', permissions: ["jobs", "view_jobs", "manage_jobs"] },
+                        { text: 'Jobs', route: '?page=system/jobs/list', icon: 'bi-list-task', permissions: ["jobs", "view_jobs", "manage_jobs"] },
+                        { text: 'Scheduled Tasks', route: '?page=system/jobs/scheduled-tasks', icon: 'bi-clock-history', permissions: ["jobs", "view_jobs", "manage_jobs"] },
                     ]
                 },
 
@@ -390,12 +390,87 @@ export { registerSystemPages as registerAdminPages };
 
 /**
  * Register the Admin Assistant topbar button
- * Adds a robot icon to the topbar that opens the assistant in a fullscreen modal.
+ * Auto-selects display mode based on viewport width:
+ *   >= 1000px → right sidebar panel (reflow layout)
+ *   <  1000px → fullscreen modal
  * Requires `view_admin` permission.
  *
  * @param {WebApp} app - The WebApp/PortalApp instance
  */
 export function registerAssistant(app) {
+
+    // ── Sidebar panel helpers ────────────────────────────────
+
+    function closeSidebarPanel() {
+        if (!app._assistantPanel) return;
+        const layout = document.querySelector('.portal-layout');
+        if (layout) layout.classList.remove('assistant-panel-open');
+        app._assistantPanel.destroy();
+        app._assistantPanel = null;
+        const panelEl = document.getElementById('assistant-panel');
+        if (panelEl) panelEl.remove();
+    }
+
+    async function openSidebarPanel() {
+        // If already open, just focus
+        if (app._assistantPanel && app._assistantPanel.isMounted()) {
+            app._assistantPanel.focusInput();
+            return;
+        }
+
+        const { default: AssistantPanelView } = await import('@ext/admin/assistant/AssistantPanelView.js');
+
+        // Create mount point inside .portal-layout
+        const layout = document.querySelector('.portal-layout');
+        if (!layout) return openFullscreenModal(); // fallback
+
+        let panelEl = document.getElementById('assistant-panel');
+        if (!panelEl) {
+            panelEl = document.createElement('div');
+            panelEl.id = 'assistant-panel';
+            layout.appendChild(panelEl);
+        }
+
+        const view = new AssistantPanelView({ app });
+        view.on('panel:close', () => closeSidebarPanel());
+        await view.render(true, panelEl);
+        app._assistantPanel = view;
+
+        // Trigger reflow transition
+        requestAnimationFrame(() => layout.classList.add('assistant-panel-open'));
+    }
+
+    async function openFullscreenModal() {
+        // Close sidebar if open, preserving conversation ID
+        closeSidebarPanel();
+
+        const { default: AssistantViewClass } = await import('@ext/admin/assistant/AssistantView.js');
+        const { default: Modal } = await import('@core/views/feedback/Modal.js');
+        const view = new AssistantViewClass({ app });
+        Modal.show(view, {
+            size: 'fullscreen',
+            noBodyPadding: true,
+            title: ' ',
+            buttons: []
+        });
+    }
+
+    // ── Resize listener (debounced) ──────────────────────────
+
+    let resizeTimeout = null;
+    function onResize() {
+        if (resizeTimeout) clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            // If sidebar is open but viewport is now too narrow, switch to fullscreen
+            if (app._assistantPanel && window.innerWidth < 1000) {
+                openFullscreenModal();
+            }
+        }, 250);
+    }
+    window.addEventListener('resize', onResize);
+
+    // ── Topbar button ────────────────────────────────────────
+
     const assistantItem = {
         id: 'assistant',
         icon: 'bi-robot',
@@ -405,15 +480,17 @@ export function registerAssistant(app) {
         tooltip: 'Admin Assistant',
         permissions: ['view_admin'],
         handler: async () => {
-            const { default: AssistantViewClass } = await import('@ext/admin/assistant/AssistantView.js');
-            const { default: Modal } = await import('@core/views/feedback/Modal.js');
-            const view = new AssistantViewClass({ app });
-            Modal.show(view, {
-                size: 'fullscreen',
-                noBodyPadding: true,
-                title: ' ',
-                buttons: []
-            });
+            // Toggle sidebar if already open
+            if (app._assistantPanel && app._assistantPanel.isMounted()) {
+                closeSidebarPanel();
+                return;
+            }
+
+            if (window.innerWidth >= 1000) {
+                await openSidebarPanel();
+            } else {
+                await openFullscreenModal();
+            }
         }
     };
 

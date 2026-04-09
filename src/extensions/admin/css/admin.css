@@ -736,15 +736,43 @@
     background-color: rgba(0, 0, 0, 0.1);
 }
 
+.conversation-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-right: 8px;
+    margin-top: 2px;
+    object-fit: cover;
+}
+
+.conversation-avatar-initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bs-secondary-bg);
+    color: var(--bs-secondary-color);
+    font-size: 0.6rem;
+    font-weight: 600;
+}
+
 .conversation-title {
     font-size: 0.84rem;
     color: var(--bs-body-color);
 }
 
-.conversation-time {
-    font-size: 0.72rem;
+.conversation-meta {
+    display: flex;
+    gap: 6px;
+    font-size: 0.7rem;
     line-height: 1.2;
     margin-top: 1px;
+}
+
+.conversation-meta span:not(:last-child)::after {
+    content: '·';
+    margin-left: 6px;
+    opacity: 0.5;
 }
 
 .conversation-delete {
@@ -1911,4 +1939,176 @@
 .assistant-conversation-view .chat-messages {
     max-height: 600px;
     overflow-y: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Assistant Sidebar Panel
+   Right-side chat panel that reflows the portal layout
+   ═══════════════════════════════════════════════════════════════ */
+
+#assistant-panel {
+    width: 0;
+    overflow: hidden;
+    flex-shrink: 0;
+    border-left: 1px solid var(--bs-border-color);
+    transition: width 0.25s ease;
+    position: relative;
+    z-index: var(--mojo-zindex-fixed, 1030);
+}
+
+.assistant-panel-open #assistant-panel {
+    width: 380px;
+}
+
+/* ── Panel Layout ────────────────────────────────────────────── */
+
+.assistant-panel-view {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.assistant-panel-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+
+/* ── Panel Header ────────────────────────────────────────────── */
+
+.assistant-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 8px 8px 10px;
+    border-bottom: 1px solid var(--bs-border-color);
+    background: #f7f7f8;
+    flex-shrink: 0;
+}
+
+.assistant-panel-header-btn {
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: transparent;
+    color: var(--bs-secondary-color);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background-color 0.15s, color 0.15s;
+    font-size: 1rem;
+    padding: 0;
+}
+
+.assistant-panel-header-btn:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: var(--bs-body-color);
+}
+
+.assistant-panel-title {
+    font-size: 0.84rem;
+    font-weight: 500;
+    color: var(--bs-body-color);
+    min-width: 0;
+}
+
+/* ── History Panel ───────────────────────────────────────────── */
+
+.assistant-panel-history {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    background: #f7f7f8;
+}
+
+.assistant-panel-history .assistant-conversation-list {
+    height: 100%;
+}
+
+/* ── Chat Area (within panel) ────────────────────────────────── */
+
+.assistant-panel-chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    background: #fff;
+}
+
+.assistant-panel-view .assistant-welcome-content {
+    padding: 24px 16px;
+}
+
+.assistant-panel-view .assistant-welcome-icon {
+    font-size: 2rem;
+}
+
+.assistant-panel-view .assistant-welcome-title {
+    font-size: 1.25rem;
+}
+
+.assistant-panel-view .assistant-welcome-subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+.assistant-panel-view .assistant-suggestions {
+    max-width: 280px;
+}
+
+.assistant-panel-view .assistant-suggestion {
+    padding: 10px 14px;
+    font-size: 0.82rem;
+}
+
+.assistant-panel-view .assistant-input-wrapper {
+    padding: 0 12px 12px;
+}
+
+.assistant-panel-view .assistant-chat-area .chat-messages {
+    padding: 16px 12px;
+}
+
+/* ── Conversation Search ─────────────────────────────────────── */
+
+.conversation-search-wrapper {
+    position: relative;
+}
+
+.conversation-search-input {
+    border-radius: 8px;
+    font-size: 0.82rem;
+    padding: 6px 12px;
+    background: #fff;
+    border-color: var(--bs-border-color);
+}
+
+.conversation-search-input:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.15rem rgba(var(--bs-primary-rgb), 0.15);
+}
+
+/* ── Load More ───────────────────────────────────────────────── */
+
+.conversation-load-more .btn {
+    font-size: 0.78rem;
+}
+
+/* ── Responsive: full overlay on narrow screens ──────────────── */
+
+@media (max-width: 767.98px) {
+    .assistant-panel-open #assistant-panel {
+        position: fixed;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+        z-index: var(--mojo-zindex-offcanvas, 1045);
+    }
 }
