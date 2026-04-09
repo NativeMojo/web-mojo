@@ -8,7 +8,7 @@ This guide explains how Claude Code is configured for this project.
 |---------|---------|
 | `/bug <description>` | Investigate a bug, write issue file |
 | `/request <description>` | Scope a feature, write request file |
-| `/plan <path>` | Design implementation for an issue/request |
+| `/design <path>` | Design implementation for an issue/request |
 | `/build <path>` | Implement, test, commit, review |
 | `/memory` | Show Claude Code project memory |
 
@@ -17,7 +17,7 @@ This guide explains how Claude Code is configured for this project.
 ```
 /bug or /request  →  planning/issues/ or planning/requests/
         ↓
-/plan <file>      →  adds ## Plan section, status → "planned"
+/design <file>      →  adds ## Plan section, status → "planned"
         ↓
 /build <file>     →  implements, tests, commits, spawns agents
         ↓
@@ -42,7 +42,7 @@ planning/
 Files grow as they move through the workflow:
 
 1. **Investigation** — added by `/bug` or `/request` (status: open)
-2. **Plan** — added by `/plan` (status: planned)
+2. **Plan** — added by `/design` (status: planned)
 3. **Resolution** — added by `/build` (status: done, moved to `planning/done/`)
 
 ## Rules (.claude/rules/)
@@ -63,7 +63,7 @@ Rules load automatically based on file globs — no need to invoke them.
 |-------|---------|--------|
 | `/bug` | Investigate and document bugs | `planning/issues/<slug>.md` |
 | `/request` | Explore and document feature requests | `planning/requests/<slug>.md` |
-| `/plan` | Design implementation approach | Appends `## Plan` to file |
+| `/design` | Design implementation approach | Appends `## Plan` to file |
 | `/build` | Implement, test, commit, review | Appends `## Resolution`, moves to `planning/done/` |
 | `/memory` | Show Claude Code memory state | Read-only display |
 

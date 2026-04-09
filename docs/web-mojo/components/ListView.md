@@ -394,7 +394,9 @@ listView.on('selection:change', ({ selected }) => {
 
 ### setCollection(collection)
 
-Replace the current collection. Cleans up old listeners and rebuilds items.
+Replace the current collection. Cleans up old listeners, then either shows the loading state or builds items immediately depending on whether the collection needs an initial fetch.
+
+If the collection is REST-enabled and has never been fetched (`lastFetchTime` is null) and is not marked as `preloaded`, `setCollection()` sets `this.loading = true` instead of calling `_buildItems()`. This prevents the empty-state message from flashing before the first fetch completes. Items are rendered once the fetch fires `fetch:end`.
 
 ```javascript
 const newCollection = new UserCollection();
@@ -704,6 +706,12 @@ const listView = new ListView({
 ```
 
 During fetching, the ListView shows a loading spinner. When the fetch completes, items are rendered automatically.
+
+### Initial Loading State
+
+When `setCollection()` is called with a REST-backed collection that has never been fetched and is not preloaded, the ListView sets `loading = true` immediately. This means the loading spinner is shown from the first render rather than a brief flash of the empty-state message before the fetch begins. The items are rendered once the collection fires its `fetch:end` event.
+
+For preloaded collections (raw arrays or collections with `options.preloaded = true`), items are built immediately without a loading state.
 
 ---
 

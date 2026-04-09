@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Type | request |
-| Status | planned |
+| Status | done |
 | Date | 2026-04-09 |
 | Priority | medium |
 
@@ -185,3 +185,28 @@ Add a right sidebar display mode for the Admin Assistant Chat that auto-selects 
 - Sidebar on left side
 - Mobile-specific chat UI beyond fullscreen fallback
 - Changes to AssistantContextChat (model-scoped variant)
+
+## Resolution
+
+### What was implemented
+- **AssistantPanelView** (`src/extensions/admin/assistant/AssistantPanelView.js`) — New chat-only sidebar view with header bar (hamburger toggle, title, new/close buttons), two states (chat vs conversation history), full WS event handling, and conversation state transfer via `app._assistantConversationId`.
+- **Conversation search & pagination** — Added debounced search input and "Load more" button to `AssistantConversationListView`, benefiting both fullscreen modal and sidebar history modes.
+- **Auto-mode selection** — `registerAssistant()` now auto-selects sidebar (>=1000px) or fullscreen modal (<1000px) based on viewport width. Topbar button toggles sidebar on/off. Debounced resize listener switches mode if viewport crosses threshold.
+- **Sidebar panel CSS** — Reflow layout via `width` transition on `#assistant-panel` inside `.portal-layout`. Responsive overlay below 768px.
+
+### Files changed
+- `src/extensions/admin/assistant/AssistantPanelView.js` (new)
+- `src/extensions/admin/assistant/AssistantConversationListView.js` (modified)
+- `src/admin.js` (modified)
+- `src/extensions/admin/css/admin.css` (modified)
+- `CHANGELOG.md` (updated by docs agent)
+- `docs/web-mojo/extensions/Admin.md` (updated by docs agent)
+
+### Tests run and results
+- `npm run build:lib` — passes, new chunk `AssistantPanelView-CQ858Qp1.js` (17.94 kB)
+- `npm run lint` — no new lint errors in changed files
+- `npm test` — all failures pre-existing (53/182 unit pass rate identical before/after)
+
+### Agent findings
+- **Security review:** 2 warnings (avatar URL scheme sanitization, WS message fan-out on null conversation ID — both pre-existing patterns), 4 informational items. None blocking.
+- **Docs updater:** Updated CHANGELOG.md and Admin.md with new sidebar mode documentation.

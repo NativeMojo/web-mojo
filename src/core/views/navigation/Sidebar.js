@@ -160,13 +160,12 @@ class Sidebar extends View {
         const activeGroup = app.activeGroup;
         if (!activeGroup) return;
         if (!app.activeUser?.hasPermission(["manage_groups", "manage_group"])) return;
-
         try {
-            const { default: GroupView } = await import('@ext/admin/account/groups/GroupView.js');
             Dialog.showDialog({
                 title: false,
                 size: 'lg',
-                body: new GroupView({ model: activeGroup }),
+                header: null,
+                body: new activeGroup.constructor.VIEW_CLASS({ model: activeGroup }),
                 buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }]
             });
         } catch (e) {
@@ -865,13 +864,13 @@ class Sidebar extends View {
          // Helper function to normalize and update route with group parameter
          const updateRouteWithGroup = (route) => {
              let normalizedRoute = route;
-             
+
              // Convert path format (/forms) to query string format (?page=forms)
              if (route.startsWith('/') && !route.includes('?')) {
                  const pageName = route.substring(1) || 'home';
                  normalizedRoute = `?page=${pageName}`;
              }
-             
+
              // Add group parameter if needed
              if (groupKind && activeGroup && activeGroup.id) {
                  const separator = normalizedRoute.includes('?') ? '&' : '?';

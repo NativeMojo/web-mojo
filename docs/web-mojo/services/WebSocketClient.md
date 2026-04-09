@@ -394,6 +394,7 @@ const ws = new WebSocketClient(options);
 | `socket` | `WebSocket\|null` | The underlying `WebSocket` instance |
 | `isConnected` | `boolean` | Whether the socket is currently open |
 | `isConnecting` | `boolean` | Whether a connection is in progress |
+| `isReconnecting` | `boolean` | Whether the client is between reconnect attempts (waiting to retry after a drop) |
 | `shouldReconnect` | `boolean` | Whether auto-reconnect is enabled |
 | `reconnectAttempts` | `number` | Number of reconnection attempts made so far |
 | `debug` | `boolean` | Whether verbose logging is enabled |

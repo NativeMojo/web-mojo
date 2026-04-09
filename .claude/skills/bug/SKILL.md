@@ -48,7 +48,7 @@ You are a senior engineer investigating a bug in the WEB-MOJO framework source r
 - **Related files:** <list>
 ```
 
-6. **Hand off** — Print the file path and: "Start new session, run `/plan planning/issues/<slug>.md`"
+6. **Hand off** — Print the file path and: "Start new session, run `/design planning/issues/<slug>.md`"
 
 ## Rules
 

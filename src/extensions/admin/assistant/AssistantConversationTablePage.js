@@ -27,6 +27,7 @@ class AssistantConversationTablePage extends TablePage {
 
             columns: [
                 { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },
+                { key: 'user.username', label: 'User', sortable: true },
                 { key: 'title', label: 'Title', sortable: true, formatter: "truncate:80" },
                 { key: 'created', label: 'Created', sortable: true, formatter: 'datetime' },
                 { key: 'modified', label: 'Last Active', sortable: true, formatter: 'relative' }

@@ -79,7 +79,7 @@ Each entry in the `menus` array accepts:
 | `name` | `string` | **Required.** Unique menu identifier |
 | `items` | `Array` | Menu item definitions (see item types below) |
 | `header` | `string` | Raw HTML rendered above the item list |
-| `footer` | `string` | Raw HTML rendered below the item list |
+| `footer` | `string` | Raw HTML rendered below the item list. For group-kind menus, a "Settings" link is automatically appended when the active user has `manage_groups` or `manage_group` permission (see below). |
 | `className` | `string` | CSS classes applied to the `<nav>` when this menu is active |
 | `groupKind` | `string\|string[]` | If set, this menu only activates for groups of that kind (use `'any'` for all groups) |
 | `data` | `Object` | Extra data available to the header/footer template |
@@ -97,6 +97,12 @@ sidebar: {
   ]
 }
 ```
+
+#### Auto-generated Group Settings footer link
+
+When a menu has `groupKind` set and a group is active, the Sidebar automatically appends a "Settings" nav link to the footer for users who hold the `manage_groups` or `manage_group` permission. Clicking it opens a `GroupView` dialog for the active group — no additional configuration is required.
+
+The injected link uses `data-action="group-settings"` and is appended after any HTML you supply in `footer`. If the user does not have the required permission the link is not rendered.
 
 ---
 

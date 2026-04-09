@@ -270,6 +270,7 @@ await TaskDetailsView.show(task);
 
 ### Assistant
 - `AssistantView` — Main admin assistant interface. Shown inside a fullscreen modal. See [Admin Assistant](#admin-assistant) below.
+- `AssistantPanelView` — Chat-only sidebar panel variant. Mounted into a `#assistant-panel` div inside `.portal-layout` by `registerAssistant()`. Not exported from `web-mojo/admin`; used internally by `registerAssistant()`.
 
 ### AWS
 - `CloudWatchChart` — MetricsChart subclass for CloudWatch endpoints
@@ -346,22 +347,33 @@ router.register('/admin/users', UserTablePage);
 
 ## Admin Assistant
 
-The Admin Assistant is an LLM-powered chat interface that lets admins query data in natural language. It is delivered as a fullscreen modal triggered from a topbar icon button.
+The Admin Assistant is an LLM-powered chat interface that lets admins query data in natural language. It is triggered from a `bi-robot` topbar icon button added by `registerAssistant(app)`.
 
 ### Enabling the Assistant
 
-Call `registerAssistant(app)` after your app starts. This adds a `bi-robot` icon to the topbar that opens the assistant modal. The button is only shown to users with the `view_admin` permission.
+Call `registerAssistant(app)` after your app starts. The button is only shown to users with the `view_admin` permission.
 
 ```js
 import { registerAssistant } from 'web-mojo/admin';
 
 // After app.start() or once the topbar is mounted
-await registerAssistant(app);
+registerAssistant(app);
 ```
 
-`registerAssistant` is an async function — it dynamically imports `AssistantView` and `Modal` so they are not included in your initial bundle unless the function is called.
+`registerAssistant` dynamically imports `AssistantView`, `AssistantPanelView`, and `Modal` so they are not included in your initial bundle unless the function is called.
 
-### AssistantView
+### Display Modes
+
+`registerAssistant()` automatically selects the display mode based on viewport width each time the button is clicked:
+
+| Viewport width | Display mode |
+|----------------|--------------|
+| `>= 1000px` | Right sidebar panel (`AssistantPanelView`) |
+| `< 1000px` | Fullscreen modal (`AssistantView`) |
+
+Clicking the button while the sidebar is already open closes it. A debounced `resize` listener watches for the viewport crossing the 1000 px threshold while the sidebar is open: if it does, the sidebar is closed and the fullscreen modal is opened automatically. The active conversation ID is preserved across mode switches via `app._assistantConversationId`.
+
+### AssistantView (fullscreen modal)
 
 `AssistantView` can also be instantiated directly and shown in any modal:
 
@@ -379,12 +391,34 @@ Modal.show(view, { size: 'fullscreen', title: 'Admin Assistant', noBodyPadding: 
 |--------|------|-------------|
 | `app` | `WebApp` | The running app instance (required). Used to access `app.ws` and `app.rest`. |
 
-### Layout
+**Layout** — Two-panel layout inside the modal:
 
-Two-panel layout inside the modal:
-
-- **Left sidebar** — Conversation list fetched from `GET /api/assistant/conversation`. Grouped by date (Today / Yesterday / Earlier). Supports selecting, creating, and deleting conversations.
+- **Left sidebar** — `AssistantConversationListView`: conversation list fetched from `GET /api/assistant/conversation`. Grouped by date (Today / Yesterday / Earlier). Includes a debounced search input and "Load more" pagination. Supports selecting, creating, and deleting conversations.
 - **Right chat area** — `ChatView` with `AssistantMessageView` for rich message content. Connection status indicator at the top.
+
+### AssistantPanelView (sidebar panel)
+
+`AssistantPanelView` is the compact sidebar variant used on wide viewports. It is mounted by `registerAssistant()` into a `#assistant-panel` div appended to `.portal-layout`; the layout reflows via CSS flex so the main content area remains usable while the panel is open.
+
+**Header bar actions:**
+
+| Button | Action |
+|--------|--------|
+| `bi-list` hamburger | Toggle between chat and conversation history |
+| Conversation title (truncated) | Display only |
+| `bi-plus-lg` | Start a new conversation |
+| `bi-x-lg` | Close the panel (emits `panel:close`) |
+
+**States:**
+
+- **Chat state** (default) — Welcome screen with quick-start suggestions or active chat area with auto-resizing textarea, send/stop buttons, and connection status dot.
+- **History state** — Replaces the chat area with `AssistantConversationListView` (search + "Load more"). Selecting a conversation switches back to chat state automatically.
+
+**Public method:**
+
+| Method | Description |
+|--------|-------------|
+| `focusInput()` | Focuses the textarea. Called by `registerAssistant()` when the panel is already open. |
 
 ### WebSocket Events
 
@@ -416,7 +450,7 @@ Assistant responses can include `blocks` rendered inline inside the message:
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| `GET` | `/api/assistant/conversation` | List user's conversations (max 50) |
+| `GET` | `/api/assistant/conversation` | List user's conversations. Supports `search` and `start` query params for filtering and pagination. |
 | `GET` | `/api/assistant/conversation/{id}` | Load full message history |
 | `DELETE` | `/api/assistant/conversation/{id}` | Delete a conversation |
 | `POST` | `/api/assistant` | REST fallback when WebSocket is unavailable |

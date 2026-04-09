@@ -9,6 +9,7 @@ import View from '@core/View.js';
 import ChatView from '@core/views/chat/ChatView.js';
 import { AssistantConversation } from '@core/models/Assistant.js';
 import AssistantMessageView from './AssistantMessageView.js';
+import AssistantView from './AssistantView.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 
 class AssistantConversationView extends View {
@@ -63,11 +64,14 @@ class AssistantConversationView extends View {
         const messages = this.model.get('messages') || [];
         this.messageCount = messages.length;
 
-        // Build adapter that returns the already-fetched messages
-        const currentUserId = window.app?.state?.user?.id;
-        const transformedMessages = messages
-            .filter(msg => msg.role !== 'tool_result')
-            .map(msg => this._transformMessage(msg, currentUserId));
+        // Use the conversation's user ID, not the admin's
+        const conversationUser = this.model.get('user');
+        const currentUserId = conversationUser?.id;
+        const transformedMessages = AssistantView._collapseMessages(
+            messages
+                .filter(msg => msg.role !== 'tool_result')
+                .map(msg => this._transformMessage(msg, conversationUser))
+        );
 
         this.chatView = new ChatView({
             containerId: 'chat-view',
@@ -84,7 +88,7 @@ class AssistantConversationView extends View {
         this.addChild(this.chatView);
     }
 
-    _transformMessage(msg, currentUserId) {
+    _transformMessage(msg, conversationUser) {
         let content = msg.content || '';
         let blocks = msg.blocks || [];
         let toolCalls = msg.tool_calls || [];
@@ -100,16 +104,38 @@ class AssistantConversationView extends View {
             toolCalls = toolCalls.filter(tc => tc.type === 'tool_use');
         }
 
+        // Parse blocks from content if API didn't return them (legacy format)
+        if (blocks.length === 0 && content.includes('assistant_block')) {
+            const parsed = AssistantView._parseBlocks(content);
+            content = parsed.content;
+            blocks = parsed.blocks;
+        }
+
+        // Build author from message data or conversation-level user
+        let author;
+        if (msg.role === 'assistant') {
+            author = { name: 'Assistant' };
+        } else if (msg.author) {
+            author = msg.author;
+        } else {
+            const user = msg.user || conversationUser;
+            const avatarUrl = user?.avatar?.thumbnail || user?.avatar?.url || '';
+            author = {
+                name: user?.display_name || 'Unknown',
+                id: user?.id,
+                ...(avatarUrl ? { avatarUrl } : {})
+            };
+        }
+
         return {
             id: msg.id,
             role: msg.role || 'user',
-            author: msg.role === 'assistant'
-                ? { name: 'Assistant' }
-                : { name: 'You', id: currentUserId },
+            author,
             content,
-            timestamp: msg.created,
+            timestamp: msg.created || msg.timestamp,
             blocks,
-            tool_calls: toolCalls
+            tool_calls: toolCalls,
+            _conversationId: this.model.get('id')
         };
     }
 
