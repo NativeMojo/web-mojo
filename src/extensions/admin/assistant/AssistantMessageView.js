@@ -425,12 +425,6 @@ class AssistantMessageView extends ChatMessageView {
         };
         const icon = formatIcons[block.format] || 'bi-file-earmark-arrow-down';
 
-        // Build metadata fragments
-        const meta = [];
-        if (block.size != null) meta.push(this._formatBytes(block.size));
-        if (block.row_count != null) meta.push(`${Number(block.row_count).toLocaleString()} rows`);
-        if (block.expires_in) meta.push(`expires in ${esc(block.expires_in)}`);
-
         const card = document.createElement('a');
         card.className = 'assistant-file-card';
         card.href = url;
@@ -438,15 +432,21 @@ class AssistantMessageView extends ChatMessageView {
         card.target = '_blank';
         card.rel = 'noopener';
 
+        // Split metadata: file stats (size, rows) vs expiry
+        const stats = [];
+        if (block.size != null) stats.push(this._formatBytes(block.size));
+        if (block.row_count != null) stats.push(`${Number(block.row_count).toLocaleString()} rows`);
+
         card.innerHTML = `
             <span class="assistant-file-icon">
                 <i class="bi ${icon}"></i>
             </span>
             <div class="assistant-file-info">
                 <span class="assistant-file-name">${esc(block.filename)}</span>
-                ${meta.length ? `<span class="assistant-file-meta">${meta.join(' · ')}</span>` : ''}
+                ${stats.length ? `<span class="assistant-file-stats">${stats.join(' · ')}</span>` : ''}
+                ${block.expires_in ? `<span class="assistant-file-expiry"><i class="bi bi-clock me-1"></i>${esc(block.expires_in)}</span>` : ''}
             </div>
-            <span class="assistant-file-download">
+            <span class="assistant-file-download" title="Download">
                 <i class="bi bi-download"></i>
             </span>
         `;
