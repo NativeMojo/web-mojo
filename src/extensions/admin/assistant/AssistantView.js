@@ -719,7 +719,7 @@ class AssistantView extends View {
      */
     static _parseBlocks(text) {
         const BLOCK_RE = /```assistant_block\s*\n([\s\S]*?)```/g;
-        const VALID_TYPES = new Set(['table', 'chart', 'stat', 'action', 'list', 'alert', 'progress']);
+        const VALID_TYPES = new Set(['table', 'chart', 'stat', 'action', 'list', 'alert', 'progress', 'file']);
         const blocks = [];
         let match;
 

@@ -97,7 +97,7 @@ class AssistantContextAdapter {
         // Parse embedded blocks from content if not provided
         if (blocks.length === 0 && content.includes('assistant_block')) {
             const BLOCK_RE = /```assistant_block\s*\n([\s\S]*?)```/g;
-            const VALID_TYPES = new Set(['table', 'chart', 'stat', 'action', 'list', 'alert', 'progress']);
+            const VALID_TYPES = new Set(['table', 'chart', 'stat', 'action', 'list', 'alert', 'progress', 'file']);
             let match;
             while ((match = BLOCK_RE.exec(content)) !== null) {
                 try {

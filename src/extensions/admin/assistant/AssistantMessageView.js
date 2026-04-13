@@ -57,6 +57,8 @@ class AssistantMessageView extends ChatMessageView {
                     this._renderAlertBlock(block, wrapper);
                 } else if (block.type === 'progress') {
                     this._renderProgressBlock(block, wrapper);
+                } else if (block.type === 'file') {
+                    this._renderFileBlock(block, wrapper);
                 }
             } catch (err) {
                 console.error('Failed to render block:', block.type, err);
@@ -388,6 +390,71 @@ class AssistantMessageView extends ChatMessageView {
             <div class="assistant-progress-steps">${stepsHtml}</div>
         `;
         container.appendChild(card);
+    }
+
+    /**
+     * Render a downloadable file attachment card.
+     * @private
+     */
+    _renderFileBlock(block, container) {
+        if (!block.filename || !block.url) {
+            console.warn('File block missing required fields (filename, url):', block);
+            return;
+        }
+
+        // URL scheme validation — prevent javascript: XSS
+        const url = block.url;
+        if (!/^https?:\/\/|^\//.test(url)) {
+            console.warn('File block URL rejected (invalid scheme):', url);
+            return;
+        }
+
+        const esc = this._escapeHtml.bind(this);
+        const formatIcons = {
+            csv: 'bi-filetype-csv',
+            xlsx: 'bi-file-earmark-spreadsheet',
+            pdf: 'bi-filetype-pdf',
+            json: 'bi-filetype-json'
+        };
+        const icon = formatIcons[block.format] || 'bi-file-earmark-arrow-down';
+
+        // Build metadata fragments
+        const meta = [];
+        if (block.size != null) meta.push(this._formatBytes(block.size));
+        if (block.row_count != null) meta.push(`${Number(block.row_count).toLocaleString()} rows`);
+        if (block.expires_in) meta.push(`expires in ${esc(block.expires_in)}`);
+
+        const card = document.createElement('a');
+        card.className = 'assistant-file-card';
+        card.href = url;
+        card.download = block.filename;
+        card.target = '_blank';
+        card.rel = 'noopener';
+
+        card.innerHTML = `
+            <span class="assistant-file-icon">
+                <i class="bi ${icon}"></i>
+            </span>
+            <div class="assistant-file-info">
+                <span class="assistant-file-name">${esc(block.filename)}</span>
+                ${meta.length ? `<span class="assistant-file-meta">${meta.join(' · ')}</span>` : ''}
+            </div>
+            <span class="assistant-file-download">
+                <i class="bi bi-download"></i>
+            </span>
+        `;
+
+        container.appendChild(card);
+    }
+
+    /**
+     * Format byte count to human-readable string.
+     * @private
+     */
+    _formatBytes(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(1) + ' MB';
     }
 
     /**

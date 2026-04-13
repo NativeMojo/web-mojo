@@ -1697,6 +1697,73 @@
     color: var(--bs-success);
 }
 
+/* ── File blocks ─────────────────────────────────────────── */
+
+.assistant-file-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 10px;
+    padding: 10px 14px;
+    background: var(--bs-body-bg);
+    text-decoration: none !important;
+    color: var(--bs-body-color) !important;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.assistant-file-card:hover {
+    background: var(--bs-tertiary-bg);
+}
+
+.assistant-file-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--bs-tertiary-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    color: var(--bs-primary);
+}
+
+.assistant-file-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.assistant-file-name {
+    display: block;
+    font-weight: 600;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.assistant-file-meta {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--bs-secondary-color);
+    line-height: 1.2;
+    margin-top: 1px;
+}
+
+.assistant-file-download {
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    color: var(--bs-secondary-color);
+    transition: color 0.15s;
+}
+
+.assistant-file-card:hover .assistant-file-download {
+    color: var(--bs-primary);
+}
+
 /* ── List blocks (key/value detail) ──────────────────────── */
 
 .assistant-list-card {
