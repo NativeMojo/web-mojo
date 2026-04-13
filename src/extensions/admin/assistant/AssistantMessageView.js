@@ -398,14 +398,21 @@ class AssistantMessageView extends ChatMessageView {
      */
     _renderFileBlock(block, container) {
         if (!block.filename || !block.url) {
-            console.warn('File block missing required fields (filename, url):', block);
+            console.warn('File block missing required fields (filename, url). type:', block.type);
             return;
         }
 
-        // URL scheme validation — prevent javascript: XSS
-        const url = block.url;
-        if (!/^https?:\/\/|^\//.test(url)) {
-            console.warn('File block URL rejected (invalid scheme):', url);
+        // URL scheme validation — prevent javascript:, data:, and protocol-relative XSS
+        let url;
+        try {
+            const parsed = new URL(block.url, window.location.href);
+            if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+                console.warn('File block URL rejected (invalid scheme).');
+                return;
+            }
+            url = block.url;
+        } catch {
+            console.warn('File block URL rejected (unparseable).');
             return;
         }
 
