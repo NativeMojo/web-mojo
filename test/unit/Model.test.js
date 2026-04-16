@@ -450,7 +450,7 @@ module.exports = async function(testContext) {
                 setupUrlTest();
                 const url = model.buildUrl(123);
                 expect(url).toBe('/api/users/123');
-            }
+            });
 
             it('should handle trailing slash in endpoint', () => {
                 setupUrlTest();
@@ -500,7 +500,7 @@ module.exports = async function(testContext) {
                 expect(model.get('name')).toBe('John');
                 expect(model.get('email')).toBe('john@test.com');
             });
-        }
+        });
 
         describe('Loading States', () => {
             let model;
@@ -508,7 +508,7 @@ module.exports = async function(testContext) {
             function setupLoadingTest() {
                 setupTest();
                 model = new TestModel({ id: 1 });
-            });
+            }
 
             it('should set loading state during fetch', async () => {
                 setupLoadingTest();
@@ -566,7 +566,7 @@ module.exports = async function(testContext) {
             function setupErrorTest() {
                 setupTest();
                 model = new TestModel({ id: 1 });
-            });
+            }
 
             it('should handle network errors in fetch', async () => {
                 setupErrorTest();

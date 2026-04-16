@@ -445,6 +445,9 @@ Assistant responses can include `blocks` rendered inline inside the message:
 | `chart` (line/bar/area) | `SeriesChart` |
 | `chart` (pie) | `PieChart` |
 | `stat` | Bootstrap stat cards in a flex row |
+| `file` | Downloadable attachment card with format-aware icon and metadata |
+
+The `file` block requires `filename` and `url` fields. Optional fields: `format` (`csv`, `xlsx`, `pdf`, `json`), `size` (bytes), `row_count`, `expires_in` (display string). Only `https://`, `http://`, and root-relative (`/`) URLs are accepted; `javascript:` and other schemes are silently rejected.
 
 ### REST Endpoints Used
 
