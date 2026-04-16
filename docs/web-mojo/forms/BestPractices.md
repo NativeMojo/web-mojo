@@ -245,45 +245,41 @@ const form = new FormView({
 
 ---
 
-### ⚠️ Pitfall 2: Forgetting File Mode
+### ⚠️ Pitfall 2: Embedding Large Files as Base64
 
-**Problem:** Large files embedded as base64
+**Problem:** Uploading files inline with form data instead of using the initiated upload flow
 
 ```javascript
-// Bad: 10MB PDF becomes 13MB+ base64 string
+// Bad: 10MB PDF embedded as 13MB+ base64 string in JSON
 {
   type: 'file',
   name: 'document',
   accept: '.pdf'
-  // Missing fileMode!
+  // This sends the file through the API server as base64!
 }
 ```
 
-**Solution:** Use `multipart` for large files
+**Solution:** Use `File.upload()` for all real file uploads. Upload separately, then save the file ID.
 
 ```javascript
-// Good: Use multipart for files > 1MB
-{
-  type: 'file',
-  name: 'document',
-  accept: '.pdf',
-  fileMode: 'multipart' // Use FormData instead of base64
-}
+import { File } from '@core/models/Files.js';
 
-// Update submit handler
-form.on('submit', async (data, event) => {
-  // data is already FormData when fileMode: 'multipart'
-  await fetch('/api/upload', {
-    method: 'POST',
-    body: data // Send as multipart/form-data
-  });
+// Good: Upload via FileUpload service, then save file ID to model
+const fileModel = new File();
+await fileModel.upload({
+    file: selectedFile,
+    showToast: true,     // progress toast with cancel button
 });
+
+// Save only the file ID — not the file contents
+await this.model.save({ document: fileModel.id });
 ```
 
 **Guidelines:**
-- Files < 100KB: `base64` is fine
-- Files 100KB - 1MB: Either works
-- Files > 1MB: Use `multipart`
+- Files under ~100KB (tiny icons): inline base64 is acceptable
+- Everything else: use `File.upload()` — it uploads directly to storage, never through the API server
+- For image fields: use `Dialog.updateModelImage()` which wraps the full flow
+- See [FileHandling.md](./FileHandling.md) for complete examples
 
 ---
 

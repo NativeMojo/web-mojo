@@ -205,23 +205,22 @@ Organize fields into visual groups:
 }
 ```
 
-### File Handling Modes
+### File Uploads
 
-Forms support two file handling modes:
+**For most file uploads, use the `File` model's `upload()` method** — it handles the 3-stage initiated upload (initiate → upload to signed URL → confirm) with automatic progress toasts. Then save the returned file ID to your model.
 
 ```javascript
-// Base64 encoding (default) - for small files like avatars
-const form = new FormView({
-  fileHandling: 'base64',  // Files encoded as base64 strings in JSON
-  formConfig: { fields: [...] }
-});
+import { File } from '@core/models/Files.js';
 
-// Multipart form data - for large files like documents
-const form = new FormView({
-  fileHandling: 'multipart',  // Traditional multipart/form-data POST
-  formConfig: { fields: [...] }
-});
+// Upload the file
+const fileModel = new File();
+await fileModel.upload({ file: selectedFile, showToast: true });
+
+// Save the file ID to your model
+await myModel.save({ document: fileModel.id });
 ```
+
+For image fields, `Dialog.updateModelImage()` wraps this entire flow in one call. See [FileHandling.md](./FileHandling.md) for full examples and patterns.
 
 ---
 
@@ -291,13 +290,13 @@ const form = new FormView({
    - Common patterns (password strength, credit cards, etc.)
 
 7. **[FileHandling.md](./FileHandling.md)** - File Uploads
-   - Base64 vs multipart modes (when to use each)
-   - File type restrictions
-   - Size validation
-   - Image dimension validation
-   - Progress tracking
-   - Server-side handling
-   - Security best practices
+   - 3-stage initiated upload via `File.upload()`
+   - Image uploads via `Dialog.updateModelImage()`
+   - Associating uploaded files with models (save file ID)
+   - Drag-and-drop with `FileDropMixin`
+   - Progress toasts and callbacks
+   - File validation and accepted types
+   - Base64 inline fallback for tiny files
 
 8. **[FormBuilder.md](./FormBuilder.md)** - FormBuilder API
    - HTML generation engine

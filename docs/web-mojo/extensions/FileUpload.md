@@ -242,26 +242,46 @@ async onFileDrop(files, event, validation) {
 }
 ```
 
-### Form Integration
+### Upload + Associate with Model
+
+The standard two-step pattern: upload the file, then save the returned file ID to a model field.
 
 ```javascript
-// In a form submission handler
-async handleFormSubmit(formData) {
-    const fileInput = this.element.querySelector('input[type="file"]');
-    const file = fileInput.files[0];
-    
-    if (file) {
-        const fileModel = new File();
-        const upload = fileModel.upload({
-            file: file,
-            name: formData.get('filename') || file.name,
-            group: formData.get('file_group'),
-            description: formData.get('description')
-        });
-        
-        await upload; // Wait for completion
-        // Continue with form submission
-    }
+import { File } from '@core/models/Files.js';
+
+// Step 1: Upload the file
+const fileModel = new File();
+await fileModel.upload({
+    file: selectedFile,
+    name: selectedFile.name,
+    showToast: true,
+});
+
+// Step 2: Save the file ID to the parent model's FK field
+await this.model.save({ document: fileModel.id });
+```
+
+### Image Upload via Dialog
+
+For image fields, `Dialog.updateModelImage()` wraps the full flow (pick → upload → save ID) in one call:
+
+```javascript
+import Dialog from '@core/views/feedback/Dialog.js';
+
+const resp = await Dialog.updateModelImage({
+    model: this.model,
+    field: 'avatar',        // FK field on the model
+    title: 'Change Avatar',
+    upload: true,           // use FileUpload service
+}, {
+    name: 'avatar',
+    size: 'lg',
+    imageSize: { width: 200, height: 200 },
+    placeholder: 'Upload your avatar',
+});
+
+if (resp && resp.status === 200) {
+    await this.render();
 }
 ```
 

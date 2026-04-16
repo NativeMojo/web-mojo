@@ -1,539 +1,479 @@
 # File Handling
 
-Guide to handling file uploads in WEB-MOJO forms, including base64 encoding, multipart uploads, and file validation.
+How to upload files and associate them with models in WEB-MOJO.
+
+> **Key principle:** Files are uploaded separately via the `File` model, then the returned file ID is saved to the target model field. This keeps uploads off the main API server and gives you progress tracking for free.
 
 ---
 
-## Quick Start
+## Quick Start — Image Upload (Avatar)
+
+The simplest path for image fields on a model. `Dialog.updateModelImage()` handles the entire flow: pick image → upload via `FileUpload` service → save file ID to model.
 
 ```javascript
-{
-  type: 'file',
-  name: 'document',
-  label: 'Upload Document',
-  accept: '.pdf,.doc,.docx',
-  fileMode: 'multipart' // or 'base64'
+import Dialog from '@core/views/feedback/Dialog.js';
+
+// model = a User (or any model with an image FK field)
+const resp = await Dialog.updateModelImage({
+    model: this.model,
+    field: 'avatar',          // FK field on the model
+    title: 'Change Avatar',
+    upload: true,             // use FileUpload (not inline base64)
+}, {
+    name: 'avatar',
+    size: 'lg',
+    imageSize: { width: 200, height: 200 },
+    placeholder: 'Upload your avatar',
+});
+
+if (resp && resp.status === 200) {
+    await this.render();      // re-render to show new image
+}
+```
+
+**What happens internally:**
+1. Dialog opens with an `image` field (drag-drop or click to pick).
+2. The selected image is converted to a `File` object.
+3. `File.upload()` runs the 3-stage initiated upload (initiate → upload to signed URL → confirm).
+4. A progress toast appears automatically during upload.
+5. The returned file ID is saved to `model.avatar`.
+
+---
+
+## Quick Start — General File Upload
+
+For uploading any file type (documents, videos, archives, etc.) outside of a form context.
+
+```javascript
+import { File } from '@core/models/Files.js';
+
+// Get a file from an <input>, drag-drop, or any other source
+const file = inputElement.files[0];
+
+const fileModel = new File();
+const upload = fileModel.upload({
+    file: file,                   // required — HTML File object
+    name: file.name,              // optional — custom filename
+    group: app.activeGroup?.id,   // optional — associate with a group
+    description: 'Quarterly report',  // optional
+    showToast: true,              // default true — shows progress toast
+});
+
+try {
+    await upload;
+    // fileModel.id is now the uploaded file's ID
+    console.log('Uploaded file ID:', fileModel.id);
+} catch (error) {
+    console.error('Upload failed:', error.message);
+}
+```
+
+### Then Associate with a Model
+
+After upload, save the file ID to the model field that holds the FK:
+
+```javascript
+// Example: attach a document to a project
+await projectModel.save({ document: fileModel.id });
+```
+
+That's it — two steps: upload the file, save the ID.
+
+---
+
+## How It Works — The 3-Stage Upload
+
+All file uploads in WEB-MOJO use the **Initiated Upload** flow. The file never passes through the main API server.
+
+```
+┌──────────┐       POST /api/fileman/upload/initiate       ┌───────────┐
+│  Browser  │ ─────────────────────────────────────────────▶│ API Server│
+│           │ ◀───────── { id, upload_url }  ──────────────│           │
+│           │                                               └───────────┘
+│           │       PUT (raw bytes) to upload_url           ┌───────────┐
+│           │ ─────────────────────────────────────────────▶│  Storage  │
+│           │ ◀───────── 200 OK ───────────────────────────│ (S3/local)│
+│           │                                               └───────────┘
+│           │       PATCH /api/fileman/file/{id}            ┌───────────┐
+│           │       { action: "mark_as_completed" }         │ API Server│
+│           │ ─────────────────────────────────────────────▶│           │
+└──────────┘                                                └───────────┘
+```
+
+**Stage 1 — Initiate:** POST file metadata (name, size, content type) to the API. The server creates a `File` record and returns `{ id, upload_url }`.
+
+**Stage 2 — Upload:** Upload the raw file bytes directly to `upload_url`. For S3 backends this is a presigned URL — the file goes straight to cloud storage. For local backends it's a token-secured endpoint.
+
+**Stage 3 — Confirm:** PATCH the file record with `{ action: "mark_as_completed" }`. This tells the backend the upload finished successfully.
+
+The `File.upload()` method handles all three stages automatically, including progress tracking and error handling.
+
+---
+
+## Progress Toast
+
+When `showToast: true` (the default), a non-dismissible toast appears showing:
+- Filename and file size
+- Progress bar with percentage
+- Bytes uploaded / total
+- Cancel button
+
+The toast auto-hides 2 seconds after success. On failure, an error toast appears instead.
+
+```javascript
+// Toast is shown automatically — no extra code needed
+const upload = fileModel.upload({
+    file: file,
+    showToast: true   // default
+});
+
+// Or disable it and handle progress yourself
+const upload = fileModel.upload({
+    file: file,
+    showToast: false,
+    onProgress: ({ percentage, loaded, total }) => {
+        myProgressBar.style.width = `${percentage}%`;
+    }
+});
+```
+
+---
+
+## Complete Examples
+
+### Example 1: Avatar / Profile Image
+
+Using `Dialog.updateModelImage()` — the easiest path for image fields.
+
+```javascript
+async onActionChangeAvatar() {
+    const resp = await Dialog.updateModelImage({
+        model: this.model,
+        field: 'avatar',
+        title: 'Change Avatar',
+        upload: true,
+    }, {
+        name: 'avatar',
+        size: 'lg',
+        imageSize: { width: 200, height: 200 },
+        placeholder: 'Upload your avatar',
+    });
+
+    if (resp && resp.status === 200) {
+        await this.render();
+    }
+}
+```
+
+### Example 2: Document Upload via File Picker
+
+A button that opens the native file picker, uploads the selected file, and associates it with a model.
+
+```javascript
+import { File } from '@core/models/Files.js';
+
+async onActionUploadDocument() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.doc,.docx,.xls,.xlsx';
+
+    input.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            const fileModel = new File();
+            await fileModel.upload({
+                file: file,
+                name: file.name,
+                showToast: true,
+            });
+
+            // Save the file ID to the parent model
+            await this.model.save({ document: fileModel.id });
+            app.toast.success('Document uploaded');
+            await this.render();
+        } catch (error) {
+            app.toast.error('Upload failed: ' + error.message);
+        } finally {
+            input.remove();
+        }
+    });
+
+    document.body.appendChild(input);
+    input.click();
+}
+```
+
+### Example 3: Drag-and-Drop File Upload
+
+Using `FileDropMixin` to add drop-zone support to any view or page.
+
+```javascript
+import TablePage from '@core/pages/TablePage.js';
+import { File, FileList } from '@core/models/Files.js';
+import applyFileDropMixin from '@core/mixins/FileDropMixin.js';
+
+class DocumentsPage extends TablePage {
+    constructor(options = {}) {
+        super({
+            Collection: FileList,
+            // ... columns, etc.
+            ...options,
+        });
+
+        // Enable drag-and-drop on this page
+        this.enableFileDrop({
+            acceptedTypes: ['application/pdf', 'image/*'],
+            maxFileSize: 50 * 1024 * 1024,  // 50 MB
+            multiple: false,
+            validateOnDrop: true,
+        });
+    }
+
+    async onFileDrop(files, event, validation) {
+        const file = files[0];
+
+        try {
+            const fileModel = new File();
+            const upload = fileModel.upload({
+                file: file,
+                name: file.name,
+                group: this.getApp().activeGroup?.id,
+                showToast: true,
+                onComplete: () => this.refresh(),
+            });
+
+            await upload;
+        } catch (error) {
+            this.showError('Upload failed: ' + error.message);
+        }
+    }
+}
+
+applyFileDropMixin(DocumentsPage);
+```
+
+### Example 4: Upload with Custom Progress Callbacks
+
+When you need fine-grained control over the upload lifecycle.
+
+```javascript
+import { File } from '@core/models/Files.js';
+
+const fileModel = new File();
+const upload = fileModel.upload({
+    file: selectedFile,
+    name: 'report.pdf',
+    group: 7,
+    description: 'Monthly report',
+    showToast: true,
+
+    onProgress: ({ percentage, loaded, total }) => {
+        console.log(`${percentage}% — ${loaded} / ${total} bytes`);
+    },
+    onComplete: (result) => {
+        console.log('Upload done, file ID:', result.id);
+    },
+    onError: (error) => {
+        console.error('Upload failed:', error.message);
+    },
+});
+
+// upload is thenable — you can also await it
+try {
+    const result = await upload;
+} catch (error) {
+    // error handling
+}
+
+// Cancel if needed
+upload.cancel();
+```
+
+### Example 5: Upload Then Associate with Model (Full Pattern)
+
+The complete two-step pattern used in most real features.
+
+```javascript
+import { File } from '@core/models/Files.js';
+
+async onActionAttachFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '*/*';
+
+    input.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            // Step 1: Upload the file
+            const fileModel = new File();
+            await fileModel.upload({
+                file: file,
+                name: file.name,
+                group: this.getApp().activeGroup?.id,
+                showToast: true,
+            });
+
+            // Step 2: Save the file ID to the parent model
+            const resp = await this.model.save({
+                attachment: fileModel.id    // FK field on the model
+            });
+
+            if (resp.data?.status) {
+                this.getApp().toast.success('File attached');
+                await this.render();
+            }
+        } catch (error) {
+            this.getApp().toast.error('Failed: ' + error.message);
+        } finally {
+            input.remove();
+        }
+    });
+
+    document.body.appendChild(input);
+    input.click();
 }
 ```
 
 ---
 
-## File Modes
+## File.upload() Options
 
-### Base64 Mode (Default)
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `file` | `File` | *required* | HTML `File` object to upload |
+| `name` | `string` | `file.name` | Custom filename |
+| `group` | `number` | — | Group ID to scope the file to |
+| `description` | `string` | — | File description |
+| `showToast` | `boolean` | `true` | Show progress toast during upload |
+| `onProgress` | `function` | — | Callback: `({ progress, loaded, total, percentage })` |
+| `onComplete` | `function` | — | Callback on success: `(fileModel)` |
+| `onError` | `function` | — | Callback on failure: `(error)` |
 
-Files are embedded as base64 strings in JSON:
-
-```javascript
-{
-  type: 'file',
-  name: 'avatar',
-  fileMode: 'base64' // Default
-}
-
-// Result:
-{
-  avatar: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
-}
-```
-
-**Pros:**
-- Simple JSON payload
-- Works with any API
-- No special server handling needed
-
-**Cons:**
-- 33% larger than original file
-- Not suitable for large files (>1MB)
-- Can hit JSON size limits
-
-**Best for:** Small files, profile pictures, icons
-
-### Multipart Mode
-
-Files sent as FormData:
-
-```javascript
-{
-  type: 'file',
-  name: 'document',
-  fileMode: 'multipart'
-}
-
-// Result: FormData object with file
-```
-
-**Pros:**
-- Efficient for large files
-- Standard HTTP file upload
-- No size increase
-
-**Cons:**
-- Requires FormData-compatible server
-- Cannot mix with JSON fields easily
-
-**Best for:** Large files, documents, videos
+**Returns:** A `FileUpload` instance that is thenable (`await`-able) and supports `.cancel()`.
 
 ---
 
-## File Input Types
+## FileUpload Instance
 
-### Basic File Upload
+The object returned by `file.upload()`:
 
-```javascript
-{
-  type: 'file',
-  name: 'attachment',
-  label: 'Attachment',
-  accept: '*/*',
-  multiple: false
-}
-```
+| Method | Description |
+|--------|-------------|
+| `then(onSuccess, onError)` | Promise interface |
+| `catch(onError)` | Promise interface |
+| `finally(onFinally)` | Promise interface |
+| `cancel()` | Abort the upload. Returns `true` if cancelled, `false` if already done. |
+| `isCancelled()` | Check if cancelled |
+| `getStats()` | Returns `{ filename, size, type, cancelled, group, description }` |
 
-### Image Upload
+---
 
-```javascript
-{
-  type: 'image',
-  name: 'photo',
-  label: 'Photo',
-  size: 'md',
-  accept: 'image/*',
-  fileMode: 'base64'
-}
-```
+## Inline Base64 (Rare Fallback)
 
-### Multiple Files
+For tiny files (under ~100 KB) where a separate upload round-trip is overkill, you can embed the file as a base64 data URI directly in a JSON save. This is a **fallback** — prefer the initiated upload for everything else.
 
 ```javascript
-{
-  type: 'file',
-  name: 'documents',
-  label: 'Documents',
-  multiple: true,
-  accept: '.pdf,.doc,.docx'
-}
+// In a FormView with an image field
+const form = new FormView({
+    model: this.model,
+    fileHandling: 'base64',       // files encoded as data URIs
+    formConfig: {
+        fields: [
+            { type: 'image', name: 'icon', size: 'sm' }
+        ]
+    }
+});
+
+// On submit, icon = "data:image/png;base64,iVBOR..." and is saved
+// directly to the model as a string. The backend auto-converts
+// base64 data URIs on ForeignKey(File) fields into file records.
 ```
+
+**When to use base64:**
+- Tiny icons or thumbnails under 100 KB
+- Fields where a two-step upload would be awkward
+
+**When NOT to use base64:**
+- Files over 100 KB (33% size inflation)
+- Documents, videos, or any large media
+- High-traffic upload flows
 
 ---
 
 ## Accepted File Types
 
-### By Extension
+Control which files users can select with the `accept` attribute on file inputs:
 
 ```javascript
+// By extension
 accept: '.pdf,.doc,.docx,.txt'
-```
 
-### By MIME Type
+// By MIME type
+accept: 'image/png,image/jpeg'
 
-```javascript
-accept: 'image/png,image/jpeg,image/gif'
-```
-
-### By Category
-
-```javascript
+// By category
 accept: 'image/*'      // All images
 accept: 'video/*'      // All videos
-accept: 'audio/*'      // All audio
-accept: 'application/*' // Documents, etc.
-```
 
-### Common Combinations
-
-```javascript
-// Images only
-accept: 'image/jpeg,image/png,image/gif,image/webp'
-
-// Documents
-accept: '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx'
-
-// Archives
-accept: '.zip,.rar,.7z,.tar,.gz'
-
-// Text files
-accept: '.txt,.md,.json,.xml,.csv'
+// Common combinations
+accept: '.pdf,.doc,.docx,.xls,.xlsx'          // Documents
+accept: 'image/jpeg,image/png,image/webp'     // Web images
 ```
 
 ---
 
-## File Validation
+## File Validation (FileDropMixin)
 
-### Size Validation
+When using `FileDropMixin`, configure validation in `enableFileDrop()`:
 
 ```javascript
-{
-  type: 'file',
-  name: 'document',
-  validation: {
-    file: {
-      maxSize: 5 * 1024 * 1024, // 5MB in bytes
-      maxSizeMessage: 'File must be less than 5MB'
-    }
-  }
-}
+this.enableFileDrop({
+    acceptedTypes: ['image/jpeg', 'image/png', 'application/pdf'],
+    maxFileSize: 10 * 1024 * 1024,   // 10 MB
+    multiple: false,
+    validateOnDrop: true,
+});
 ```
 
-### Type Validation
+For programmatic validation before upload:
 
 ```javascript
-{
-  type: 'file',
-  name: 'image',
-  validation: {
-    file: {
-      types: ['image/jpeg', 'image/png'],
-      typesMessage: 'Only JPEG and PNG images allowed'
-    }
-  }
+const file = inputElement.files[0];
+
+if (file.size > 50 * 1024 * 1024) {
+    app.toast.error('File must be under 50 MB');
+    return;
 }
-```
 
-### Custom Validation
-
-```javascript
-{
-  type: 'file',
-  name: 'upload',
-  validation: {
-    custom: (file) => {
-      if (!file) return 'File is required';
-      
-      // Size check
-      if (file.size > 10 * 1024 * 1024) {
-        return 'File must be less than 10MB';
-      }
-      
-      // Type check
-      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
-      if (!allowedTypes.includes(file.type)) {
-        return 'Only PDF, JPEG, and PNG files allowed';
-      }
-      
-      // Name check
-      if (file.name.length > 100) {
-        return 'Filename too long';
-      }
-      
-      return true;
-    }
-  }
+const allowed = ['application/pdf', 'image/jpeg', 'image/png'];
+if (!allowed.includes(file.type)) {
+    app.toast.error('Only PDF, JPEG, and PNG files allowed');
+    return;
 }
-```
 
-### Image Dimensions
-
-```javascript
-{
-  type: 'image',
-  name: 'banner',
-  validation: {
-    custom: async (file) => {
-      if (!file) return true;
-      
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-          if (img.width < 1200 || img.height < 400) {
-            resolve('Image must be at least 1200x400px');
-          } else if (img.width > 4000 || img.height > 4000) {
-            resolve('Image too large (max 4000x4000px)');
-          } else {
-            resolve(true);
-          }
-        };
-        img.src = URL.createObjectURL(file);
-      });
-    }
-  }
-}
+// Proceed with upload...
 ```
 
 ---
 
-## Handling File Data
+## Security
 
-### Getting Files (Base64)
-
-```javascript
-const data = await form.getFormData();
-console.log(data.avatar);
-// "data:image/png;base64,iVBORw0KG..."
-
-// Send to server
-await fetch('/api/profile', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(data)
-});
-```
-
-### Getting Files (Multipart)
-
-```javascript
-const formData = await form.getFormData();
-// formData is a FormData object
-
-// Send to server
-await fetch('/api/upload', {
-  method: 'POST',
-  body: formData // Don't set Content-Type, browser handles it
-});
-```
-
-### Mixed Mode (Some Files, Some JSON)
-
-```javascript
-const form = new FormView({
-  formConfig: {
-    fields: [
-      { type: 'text', name: 'title', label: 'Title' },
-      { type: 'file', name: 'document', fileMode: 'multipart' },
-      { type: 'image', name: 'thumbnail', fileMode: 'base64' }
-    ]
-  }
-});
-
-// Get data
-const data = await form.getFormData();
-// data = FormData with:
-// - title (string)
-// - document (File object)
-// - thumbnail (base64 string)
-```
-
----
-
-## Server-Side Handling
-
-### Express.js (Multipart)
-
-```javascript
-const multer = require('multer');
-const upload = multer({ dest: 'uploads/' });
-
-app.post('/api/upload', upload.single('document'), (req, res) => {
-  const file = req.file;
-  console.log(file.originalname);
-  console.log(file.mimetype);
-  console.log(file.size);
-  
-  res.json({ success: true, file: file });
-});
-```
-
-### Express.js (Base64)
-
-```javascript
-app.post('/api/profile', (req, res) => {
-  const { avatar } = req.body;
-  
-  // avatar = "data:image/png;base64,..."
-  const matches = avatar.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-  if (!matches) {
-    return res.status(400).json({ error: 'Invalid base64' });
-  }
-  
-  const mimeType = matches[1];
-  const base64Data = matches[2];
-  const buffer = Buffer.from(base64Data, 'base64');
-  
-  // Save file
-  fs.writeFileSync('avatar.png', buffer);
-  
-  res.json({ success: true });
-});
-```
-
----
-
-## File Preview
-
-### Image Preview
-
-```javascript
-// Automatic with image field type
-{
-  type: 'image',
-  name: 'photo',
-  size: 'md' // Shows preview automatically
-}
-```
-
-### Custom Preview
-
-```javascript
-form.on('field:change:document', (file) => {
-  if (file && file.type.startsWith('image/')) {
-    const preview = document.getElementById('preview');
-    preview.src = URL.createObjectURL(file);
-    preview.style.display = 'block';
-  }
-});
-```
-
----
-
-## Progress Tracking
-
-### Upload Progress
-
-```javascript
-form.on('submit', async (data) => {
-  const xhr = new XMLHttpRequest();
-  
-  xhr.upload.addEventListener('progress', (e) => {
-    if (e.lengthComputable) {
-      const percent = (e.loaded / e.total) * 100;
-      console.log(`Upload progress: ${percent}%`);
-      updateProgressBar(percent);
-    }
-  });
-  
-  xhr.open('POST', '/api/upload');
-  xhr.send(data);
-});
-```
-
----
-
-## Security Best Practices
-
-### ✅ DO
-
-- Validate file types on server (don't trust client)
-- Check file size limits
-- Scan for viruses
-- Sanitize filenames
-- Store files outside web root
-- Use unique filenames (prevent overwrites)
-- Check file content (magic bytes), not just extension
-
-### ❌ DON'T
-
-- Don't trust client-side validation alone
-- Don't allow executable file uploads (.exe, .sh, .bat)
-- Don't serve uploaded files directly
-- Don't use original filenames
-- Don't skip virus scanning
-- Don't store sensitive files without encryption
-
----
-
-## Common Patterns
-
-### Profile Photo Upload
-
-```javascript
-{
-  type: 'image',
-  name: 'avatar',
-  label: 'Profile Photo',
-  size: 'md',
-  accept: 'image/jpeg,image/png',
-  fileMode: 'base64',
-  validation: {
-    file: {
-      maxSize: 2 * 1024 * 1024, // 2MB
-      types: ['image/jpeg', 'image/png']
-    }
-  },
-  help: 'JPEG or PNG, max 2MB, recommended 400x400px'
-}
-```
-
-### Document Upload
-
-```javascript
-{
-  type: 'file',
-  name: 'resume',
-  label: 'Resume',
-  accept: '.pdf,.doc,.docx',
-  fileMode: 'multipart',
-  validation: {
-    required: true,
-    file: {
-      maxSize: 5 * 1024 * 1024,
-      types: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
-    }
-  }
-}
-```
-
-### Multiple File Attachments
-
-```javascript
-{
-  type: 'file',
-  name: 'attachments',
-  label: 'Attachments',
-  multiple: true,
-  fileMode: 'multipart',
-  validation: {
-    custom: (files) => {
-      if (!files || files.length === 0) return true;
-      if (files.length > 10) return 'Maximum 10 files allowed';
-      
-      const totalSize = Array.from(files).reduce((sum, f) => sum + f.size, 0);
-      if (totalSize > 20 * 1024 * 1024) {
-        return 'Total size must be less than 20MB';
-      }
-      
-      return true;
-    }
-  }
-}
-```
-
----
-
-## Troubleshooting
-
-### File Not Uploading
-
-**Check file mode:**
-```javascript
-// Ensure server expects FormData
-{ type: 'file', fileMode: 'multipart' }
-
-// Or base64 if server expects JSON
-{ type: 'file', fileMode: 'base64' }
-```
-
-### Request Too Large
-
-**Use multipart for large files:**
-```javascript
-// ❌ Bad: Large file as base64
-{ type: 'file', name: 'video', fileMode: 'base64' }
-
-// ✅ Good: Use multipart
-{ type: 'file', name: 'video', fileMode: 'multipart' }
-```
-
-### Server Not Receiving Files
-
-**Check Content-Type:**
-```javascript
-// ❌ Wrong: Setting Content-Type with FormData
-await fetch('/api/upload', {
-  headers: { 'Content-Type': 'multipart/form-data' }, // Browser sets this automatically!
-  body: formData
-});
-
-// ✅ Correct: Let browser set Content-Type
-await fetch('/api/upload', {
-  body: formData // No headers needed
-});
-```
+- **Always validate on the server.** Client-side `accept` and size checks are UX, not security.
+- Upload URLs are signed and time-limited.
+- Files upload directly to storage (S3/local) — they never pass through the API server as request body.
+- Do not hardcode secrets or storage credentials in client code.
 
 ---
 
 ## Related Documentation
 
-- [BasicTypes.md](./BasicTypes.md#file---file-upload) - File field type
-- [inputs/ImageField.md](./inputs/ImageField.md) - Image field component
-- [FormView.md](./FormView.md) - FormView API
-- [Validation.md](./Validation.md) - File validation
+- [FileUpload System](../extensions/FileUpload.md) — Full API reference for `FileUpload`, `ProgressView`, and `ToastService.showView()`
+- [ImageField](./inputs/ImageField.md) — Image field component with drag-drop and preview
+- [FileDropMixin](../mixins/FileDropMixin.md) — Add drag-and-drop to any view
+- [Dialog.updateModelImage()](../components/Dialog.md) — One-call image upload + model save
+- [File Model](../models/Files.md) — `File` and `FileList` model reference
+- [Rest Service](../services/Rest.md) — Low-level `rest.upload()` and `rest.uploadMultipart()` (rarely needed directly)
