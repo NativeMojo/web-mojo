@@ -8,6 +8,40 @@
 const fs = require('fs');
 const path = require('path');
 
+// Install up-front browser-environment stubs BEFORE any test file is loaded
+// so source modules imported at require-time (e.g. Rest.js constructs a
+// singleton, DataFormatter.js assigns to window) don't crash. Individual
+// tests may override these with richer mocks.
+(function installBrowserStubs() {
+    if (typeof globalThis.window === 'undefined') {
+        const { JSDOM } = require('jsdom');
+        const dom = new JSDOM(
+            '<!DOCTYPE html><html><body><div id="app"></div><div id="test-container"></div></body></html>',
+            { url: 'http://localhost:3000', pretendToBeVisual: true }
+        );
+        globalThis.window = dom.window;
+        globalThis.document = dom.window.document;
+        globalThis.HTMLElement = dom.window.HTMLElement;
+        globalThis.Event = dom.window.Event;
+        globalThis.CustomEvent = dom.window.CustomEvent;
+        globalThis.Node = dom.window.Node;
+        globalThis.FormData = dom.window.FormData;
+        globalThis.File = dom.window.File;
+        globalThis.Blob = dom.window.Blob;
+        globalThis.navigator = dom.window.navigator;
+    }
+    if (typeof globalThis.localStorage === 'undefined' ||
+        typeof globalThis.localStorage.getItem !== 'function') {
+        const store = new Map();
+        globalThis.localStorage = {
+            getItem: (k) => (store.has(k) ? store.get(k) : null),
+            setItem: (k, v) => { store.set(k, String(v)); },
+            removeItem: (k) => { store.delete(k); },
+            clear: () => { store.clear(); }
+        };
+    }
+})();
+
 class TestRunner {
     constructor(options = {}) {
         this.options = {
@@ -164,7 +198,8 @@ class TestRunner {
     }
 
     /**
-     * Run a single test file
+     * Run a single test file. Supports both CommonJS (module.exports = fn)
+     * and ESM (export default fn) test files.
      */
     async runTestFile(testFile) {
         const testResult = {
@@ -176,22 +211,38 @@ class TestRunner {
         };
 
         try {
-            // Create test context
             const testContext = this.createTestContext();
 
-            // Require and run the test module
-            delete require.cache[require.resolve(testFile)];
-            const testModule = require(testFile);
-            
+            // Detect ESM by reading the file; top-level `import` makes it ESM.
+            const source = fs.readFileSync(testFile, 'utf8');
+            const isESM = /^\s*import\s+[^('"\s]/m.test(source);
+
+            let testModule;
+            if (isESM) {
+                // Expose the test context as globals so ESM test files can use
+                // describe/it/expect/beforeEach/afterEach without boilerplate.
+                this.installGlobalTestContext(testContext);
+                const mod = await import(`file://${testFile}?t=${Date.now()}`);
+                testModule = mod.default || mod;
+            } else {
+                delete require.cache[require.resolve(testFile)];
+                testModule = require(testFile);
+            }
+
             if (typeof testModule === 'function') {
                 await testModule(testContext);
-                
-                // Wait for all test promises to complete
-                if (testContext.stats.testPromises.length > 0) {
-                    await Promise.all(testContext.stats.testPromises);
-                }
+            } else if (isESM) {
+                // ESM tests that don't export a function declare their tests
+                // at module scope against the installed globals.
             } else {
                 throw new Error('Test module must export a function');
+            }
+
+            // Wait for the sequential test chain to fully drain.
+            await testContext.__awaitAll();
+
+            if (isESM) {
+                this.uninstallGlobalTestContext();
             }
 
             // Calculate unknown tests (started but never completed)
@@ -236,83 +287,77 @@ class TestRunner {
             testPromises: []
         };
 
-        let beforeEachCallbacks = [];
-        let afterEachCallbacks = [];
+        // Stack of [beforeEach[], afterEach[]] frames, one per describe scope.
+        // This mirrors Jest/Mocha: hooks declared inside a describe only apply
+        // to tests inside that describe.
+        const hookStack = [[[], []]];
+        const currentHooks = () => hookStack[hookStack.length - 1];
+
+        // Serialize test execution: each `it()` is chained onto a single
+        // promise so tests inside a file never run concurrently. Shared
+        // globals (fetch, localStorage, AbortSignal) are safe with this model.
+        let testChain = Promise.resolve();
+
+        const describe = (name, fn) => {
+            console.log(`  📝 ${name}`);
+            hookStack.push([[], []]);
+            try {
+                return fn();
+            } catch (error) {
+                console.log(`    ❌ DESCRIBE ERROR in "${name}": ${error.message}`);
+                if (this.options.debug) {
+                    console.log(`       ${error.stack}`);
+                }
+            } finally {
+                hookStack.pop();
+            }
+        };
+
+        // Snapshot of which hook arrays are visible at the time `it()` is
+        // declared. All ancestor beforeEach/afterEach callbacks run for that test.
+        const it = (name, fn) => {
+            stats.total++;
+            const activeBefore = hookStack.map(frame => frame[0]);
+            const activeAfter = hookStack.map(frame => frame[1]);
+
+            testChain = testChain.then(async () => {
+                try {
+                    for (const arr of activeBefore) {
+                        for (const cb of arr) await cb();
+                    }
+
+                    await fn();
+
+                    // afterEach runs inside-out (reverse of beforeEach)
+                    for (let i = activeAfter.length - 1; i >= 0; i--) {
+                        for (const cb of activeAfter[i]) await cb();
+                    }
+
+                    console.log(`    ✅ ${name}`);
+                    stats.passed++;
+                } catch (error) {
+                    console.log(`    ❌ ${name}`);
+                    console.log(`       ${error.message}`);
+                    stats.failed++;
+                    stats.errors.push({
+                        test: name,
+                        message: error.message,
+                        stack: error.stack
+                    });
+                }
+            });
+
+            stats.testPromises.push(testChain);
+        };
 
         const context = {
             stats,
-            
-            describe: (name, fn) => {
-                console.log(`  📝 ${name}`);
-                try {
-                    return fn();
-                } catch (error) {
-                    console.log(`    ❌ DESCRIBE ERROR in "${name}": ${error.message}`);
-                    if (this.options.debug) {
-                        console.log(`       ${error.stack}`);
-                    }
-                }
-            },
-
-            it: (name, fn) => {
-                stats.total++;
-                if (this.options.debug) {
-                    console.log(`    🧪 COUNTING: Test ${stats.total} - ${name}`);
-                }
-                
-                // Create a promise for this test and track it
-                const testPromise = (async () => {
-                    try {
-                        // Run beforeEach callbacks
-                        for (const callback of beforeEachCallbacks) {
-                            await callback();
-                        }
-                        
-                        await fn();
-                        
-                        // Run afterEach callbacks
-                        for (const callback of afterEachCallbacks) {
-                            await callback();
-                        }
-                        
-                        console.log(`    ✅ ${name}`);
-                        stats.passed++;
-                        if (this.options.debug) {
-                            console.log(`    📊 PASSED: ${stats.total}`);
-                        }
-                    } catch (error) {
-                        console.log(`    ❌ ${name}`);
-                        console.log(`       ${error.message}`);
-                        stats.failed++;
-                        stats.errors.push({
-                            test: name,
-                            message: error.message,
-                            stack: error.stack
-                        });
-                        if (this.options.debug) {
-                            console.log(`    📊 FAILED: ${stats.failed}/${stats.total}`);
-                        }
-                    }
-                })();
-                
-                // Track the test promise so we can wait for it
-                stats.testPromises.push(testPromise);
-            },
-
-            beforeEach: (fn) => {
-                beforeEachCallbacks.push(fn);
-            },
-
-            afterEach: (fn) => {
-                afterEachCallbacks.push(fn);
-            },
-
-            test: function(name, fn) {
-                return this.it(name, fn);
-            },
-
+            describe,
+            it,
+            test: it,
+            beforeEach: (fn) => { currentHooks()[0].push(fn); },
+            afterEach: (fn) => { currentHooks()[1].push(fn); },
             expect: this.createExpectMatcher(),
-
             assert: (condition, message) => {
                 if (!condition) {
                     throw new Error(message || 'Assertion failed');
@@ -320,30 +365,81 @@ class TestRunner {
             }
         };
 
+        // Expose a waiter so the runner can await the final test in the chain.
+        context.__awaitAll = () => testChain;
+
         return context;
+    }
+
+    /**
+     * Install the test context onto `globalThis` so ESM test files (which
+     * can't receive a testContext argument via module.exports) can use
+     * describe/it/expect/etc. as bare globals.
+     */
+    installGlobalTestContext(ctx) {
+        this._globalKeys = ['describe', 'it', 'test', 'beforeEach', 'afterEach', 'expect', 'assert'];
+        this._savedGlobals = {};
+        for (const k of this._globalKeys) {
+            this._savedGlobals[k] = globalThis[k];
+            globalThis[k] = ctx[k];
+        }
+        this._currentCtx = ctx;
+    }
+
+    uninstallGlobalTestContext() {
+        if (!this._globalKeys) return;
+        for (const k of this._globalKeys) {
+            if (this._savedGlobals[k] === undefined) {
+                delete globalThis[k];
+            } else {
+                globalThis[k] = this._savedGlobals[k];
+            }
+        }
+        this._globalKeys = null;
+        this._savedGlobals = null;
+        this._currentCtx = null;
     }
 
     /**
      * Create comprehensive expect matcher
      */
     createExpectMatcher() {
+        // Deep-equality helper used by toEqual / toHaveBeenCalledWith /
+        // asymmetric matcher recursion. Supports nested asymmetric matchers
+        // so you can pass e.g. `expect.objectContaining({ headers: expect.any(Object) })`.
+        const deepEqual = (a, b) => {
+            if (b && typeof b.asymmetricMatch === 'function') return b.asymmetricMatch(a);
+            if (a && typeof a.asymmetricMatch === 'function') return a.asymmetricMatch(b);
+            if (Object.is(a, b)) return true;
+            if (a === null || b === null) return false;
+            if (typeof a !== 'object' || typeof b !== 'object') return false;
+            if (Array.isArray(a) !== Array.isArray(b)) return false;
+            if (Array.isArray(a)) {
+                if (a.length !== b.length) return false;
+                return a.every((v, i) => deepEqual(v, b[i]));
+            }
+            const aKeys = Object.keys(a);
+            const bKeys = Object.keys(b);
+            if (aKeys.length !== bKeys.length) return false;
+            return aKeys.every(k => deepEqual(a[k], b[k]));
+        };
+
+        const fmt = (v) => {
+            try { return JSON.stringify(v); } catch { return String(v); }
+        };
+
         const expectFn = (actual) => {
             const expectObj = {
                 toBe: (expected) => {
-                    if (actual !== expected) {
+                    if (!Object.is(actual, expected)) {
                         throw new Error(`Expected ${actual} to be ${expected}`);
                     }
                     return expectObj;
                 },
                 
                 toEqual: (expected) => {
-                    // Handle asymmetric matchers
-                    if (expected && typeof expected.asymmetricMatch === 'function') {
-                        if (!expected.asymmetricMatch(actual)) {
-                            throw new Error(`Expected ${JSON.stringify(actual)} to equal ${expected.toString()}`);
-                        }
-                    } else if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-                        throw new Error(`Expected ${JSON.stringify(actual)} to equal ${JSON.stringify(expected)}`);
+                    if (!deepEqual(actual, expected)) {
+                        throw new Error(`Expected ${fmt(actual)} to equal ${fmt(expected)}`);
                     }
                     return expectObj;
                 },
@@ -456,6 +552,73 @@ class TestRunner {
                     return expectObj;
                 },
 
+                toBeNull: () => {
+                    if (actual !== null) throw new Error(`Expected ${fmt(actual)} to be null`);
+                    return expectObj;
+                },
+
+                toBeGreaterThanOrEqual: (expected) => {
+                    if (!(actual >= expected)) {
+                        throw new Error(`Expected ${actual} to be >= ${expected}`);
+                    }
+                    return expectObj;
+                },
+
+                toBeLessThanOrEqual: (expected) => {
+                    if (!(actual <= expected)) {
+                        throw new Error(`Expected ${actual} to be <= ${expected}`);
+                    }
+                    return expectObj;
+                },
+
+                toHaveBeenCalled: () => {
+                    if (!actual || !actual.mock) throw new Error('Expected a jest.fn mock');
+                    if (actual.mock.calls.length === 0) {
+                        throw new Error('Expected mock to have been called');
+                    }
+                    return expectObj;
+                },
+
+                toHaveBeenCalledTimes: (n) => {
+                    if (!actual || !actual.mock) throw new Error('Expected a jest.fn mock');
+                    if (actual.mock.calls.length !== n) {
+                        throw new Error(`Expected mock to have been called ${n} times, got ${actual.mock.calls.length}`);
+                    }
+                    return expectObj;
+                },
+
+                toHaveBeenCalledWith: (...expectedArgs) => {
+                    if (!actual || !actual.mock) throw new Error('Expected a jest.fn mock');
+                    const matched = actual.mock.calls.some(callArgs =>
+                        callArgs.length === expectedArgs.length &&
+                        callArgs.every((a, i) => deepEqual(a, expectedArgs[i]))
+                    );
+                    if (!matched) {
+                        throw new Error(
+                            `Expected mock to have been called with ${fmt(expectedArgs)}. ` +
+                            `Actual calls: ${fmt(actual.mock.calls)}`
+                        );
+                    }
+                    return expectObj;
+                },
+
+                toHaveProperty: (propPath, expectedValue) => {
+                    const keys = Array.isArray(propPath) ? propPath : String(propPath).split('.');
+                    let cur = actual;
+                    for (const k of keys) {
+                        if (cur === null || cur === undefined || !(k in cur)) {
+                            throw new Error(`Expected ${fmt(actual)} to have property ${propPath}`);
+                        }
+                        cur = cur[k];
+                    }
+                    if (arguments.length >= 2 && !deepEqual(cur, expectedValue)) {
+                        throw new Error(
+                            `Expected property ${propPath} to equal ${fmt(expectedValue)}, got ${fmt(cur)}`
+                        );
+                    }
+                    return expectObj;
+                },
+
                 not: {
                     toBe: (expected) => {
                         if (actual === expected) {
@@ -510,6 +673,22 @@ class TestRunner {
                             throw new Error('Expected function not to throw');
                         }
                         return expectObj;
+                    },
+                    toHaveBeenCalled: () => {
+                        if (!actual || !actual.mock) throw new Error('Expected a jest.fn mock');
+                        if (actual.mock.calls.length > 0) {
+                            throw new Error('Expected mock NOT to have been called');
+                        }
+                        return expectObj;
+                    },
+                    toHaveProperty: (propPath) => {
+                        const keys = Array.isArray(propPath) ? propPath : String(propPath).split('.');
+                        let cur = actual;
+                        for (const k of keys) {
+                            if (cur === null || cur === undefined || !(k in cur)) return expectObj;
+                            cur = cur[k];
+                        }
+                        throw new Error(`Expected ${fmt(actual)} NOT to have property ${propPath}`);
                     }
                 }
             };
@@ -517,6 +696,21 @@ class TestRunner {
         };
 
         // Add static methods to expect
+        expectFn.any = (expectedType) => {
+            return {
+                asymmetricMatch: (actual) => {
+                    if (expectedType === String) return typeof actual === 'string';
+                    if (expectedType === Number) return typeof actual === 'number';
+                    if (expectedType === Boolean) return typeof actual === 'boolean';
+                    if (expectedType === Function) return typeof actual === 'function';
+                    if (expectedType === Object) return typeof actual === 'object' && actual !== null;
+                    if (expectedType === Array) return Array.isArray(actual);
+                    return actual instanceof expectedType;
+                },
+                toString: () => `Any<${expectedType && expectedType.name || expectedType}>`
+            };
+        };
+
         expectFn.arrayContaining = (expected) => {
             return {
                 asymmetricMatch: (actual) => {
@@ -535,9 +729,19 @@ class TestRunner {
                     if (typeof actual !== 'object' || actual === null) {
                         return false;
                     }
-                    return Object.keys(expected).every(key => 
-                        actual.hasOwnProperty(key) && actual[key] === expected[key]
-                    );
+                    const match = (a, b) => {
+                        if (b && typeof b.asymmetricMatch === 'function') return b.asymmetricMatch(a);
+                        if (Object.is(a, b)) return true;
+                        if (a === null || b === null) return false;
+                        if (typeof a !== 'object' || typeof b !== 'object') return false;
+                        if (Array.isArray(a) !== Array.isArray(b)) return false;
+                        if (Array.isArray(a)) {
+                            if (a.length !== b.length) return false;
+                            return a.every((v, i) => match(v, b[i]));
+                        }
+                        return Object.keys(b).every(k => match(a[k], b[k]));
+                    };
+                    return Object.keys(expected).every(key => match(actual[key], expected[key]));
                 },
                 toString: () => `ObjectContaining ${JSON.stringify(expected)}`
             };

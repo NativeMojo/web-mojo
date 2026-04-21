@@ -878,4 +878,5 @@ class Rest {
 // Create singleton instance
 const rest = new Rest();
 
+export { Rest };
 export default rest;

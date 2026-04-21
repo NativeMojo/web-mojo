@@ -6,8 +6,11 @@
 module.exports = async function(testContext) {
     const { describe, it, expect, assert } = testContext;
     const { testHelpers } = require('../utils/test-helpers');
-    const Model = require('../../src/core/Model.js').default;
-    
+    const { loadModule } = require('../utils/simple-module-loader');
+
+    await testHelpers.setup();
+    const Model = loadModule('Model');
+
     // Make Model available globally for tests
     global.Model = Model;
 

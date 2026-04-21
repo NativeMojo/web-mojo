@@ -6,12 +6,12 @@
 module.exports = async function(testContext) {
     const { describe, it, expect, assert, beforeEach } = testContext;
     const { testHelpers } = require('../utils/test-helpers');
-    
-    // Import Collection and RestModel
-    const Collection = require('../../src/core/Collection.js').default;
-    const Model = require('../../src/core/Model.js').default;
-    
+    const { loadModule } = require('../utils/simple-module-loader');
+
     await testHelpers.setup();
+
+    const Model = loadModule('Model');
+    const Collection = loadModule('Collection');
 
     describe('Collection Core Functionality', () => {
         let mockRest;
@@ -39,12 +39,12 @@ module.exports = async function(testContext) {
             Collection.Rest = mockRest;
 
             // Create collection instance
-            collection = new Collection(TestModel, { endpoint: '/api/users' });
+            collection = new Collection({ ModelClass: TestModel, endpoint: '/api/users' });
         });
 
         describe('Constructor and Initialization', () => {
             it('should create empty collection', () => {
-                const col = new Collection(TestModel);
+                const col = new Collection({ ModelClass: TestModel });
                 
                 expect(col.ModelClass).toBe(TestModel);
                 expect(col.endpoint).toBe('/api/users');
@@ -55,22 +55,23 @@ module.exports = async function(testContext) {
             });
 
             it('should use custom endpoint', () => {
-                const col = new Collection(TestModel, { endpoint: '/api/custom' });
-                
+                const col = new Collection({ ModelClass: TestModel, endpoint: '/api/custom' });
+
                 expect(col.endpoint).toBe('/api/custom');
             });
 
             it('should set default options', () => {
-                const col = new Collection(TestModel);
-                
+                const col = new Collection({ ModelClass: TestModel });
+
                 expect(col.options.parse).toBe(true);
                 expect(col.options.reset).toBe(true);
             });
 
             it('should accept custom options', () => {
-                const col = new Collection(TestModel, { 
-                    parse: false, 
-                    reset: false 
+                const col = new Collection({
+                    ModelClass: TestModel,
+                    parse: false,
+                    reset: false
                 });
                 
                 expect(col.options.parse).toBe(false);

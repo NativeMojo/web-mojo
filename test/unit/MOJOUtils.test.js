@@ -5,12 +5,15 @@
 
 module.exports = async function(testContext) {
   const { describe, it, expect, beforeEach, afterEach } = testContext;
-  
-  // Import components
-  const MOJOUtils = require('../../src/utils/MOJOUtils.js').default;
-  const Model = require('../../src/core/Model.js').default;
-  const View = require('../../src/core/View.js').default;
-  const dataFormatter = require('../../src/utils/DataFormatter.js').default;
+  const { testHelpers } = require('../utils/test-helpers');
+  const { loadModule } = require('../utils/simple-module-loader');
+
+  await testHelpers.setup();
+
+  const MOJOUtils = loadModule('MOJOUtils');
+  const Model = loadModule('Model');
+  const View = loadModule('View');
+  const dataFormatter = loadModule('dataFormatter');
   
   describe('MOJOUtils.getContextData', () => {
     describe('Basic Property Access', () => {

@@ -6,15 +6,31 @@
 const fs = require('fs');
 const path = require('path');
 
+const PROJECT_ROOT = path.resolve(__dirname, '../..');
+const SOURCE_ROOT = path.join(PROJECT_ROOT, 'src');
+
 class SimpleModuleLoader {
     constructor() {
-        this.projectRoot = path.resolve(__dirname, '../..');
-        this.sourceRoot = path.join(this.projectRoot, 'src');
+        this.projectRoot = PROJECT_ROOT;
+        this.sourceRoot = SOURCE_ROOT;
         this.loadedModules = new Map();
-        
-        // Module dependency order
-        this.moduleOrder = ['EventBus', 'EventEmitter', 'EventDelegate', 'Router', 'Rest', 'dataFormatter', 'MOJOUtils', 'Model', 'RestModel', 'DataList', 'View', 'Page', 'Table', 'MOJO'];
-        
+
+        // Module dependency order (only modules that actually exist)
+        this.moduleOrder = [
+            'EventBus',
+            'EventEmitter',
+            'EventDelegate',
+            'Router',
+            'Rest',
+            'dataFormatter',
+            'MOJOUtils',
+            'Model',
+            'RestModel',
+            'Collection',
+            'View',
+            'Page'
+        ];
+
         // Set up global environment
         this.setupGlobals();
     }
@@ -23,27 +39,37 @@ class SimpleModuleLoader {
      * Set up global environment for modules
      */
     setupGlobals() {
-        // Ensure DOM globals are available (will be set up by test helpers)
-        if (typeof global.window === 'undefined') {
-            // DOM globals will be set up by testHelpers.setup() - this is expected during module loading
+        // Mock localStorage so Rest's DUID init doesn't throw.
+        // Always install — tests may have clobbered it with a plain object mock.
+        const store = new Map();
+        const localStorageStub = {
+            getItem: (k) => (store.has(k) ? store.get(k) : null),
+            setItem: (k, v) => { store.set(k, String(v)); },
+            removeItem: (k) => { store.delete(k); },
+            clear: () => { store.clear(); }
+        };
+        global.localStorage = localStorageStub;
+        // Node >= 20 has globalThis.localStorage sometimes set to undefined;
+        // make sure our stub is visible to ESM-imported source files too.
+        if (typeof globalThis.localStorage === 'undefined' ||
+            typeof globalThis.localStorage.getItem !== 'function') {
+            globalThis.localStorage = localStorageStub;
         }
 
         // Mock Mustache if not available
         if (typeof global.Mustache === 'undefined') {
             global.Mustache = {
-                render: (template, data = {}, partials = {}) => {
+                render: (template, data = {}) => {
                     let result = template;
-                    
-                    // Simple variable substitution
+
                     result = result.replace(/\{\{(\w+)\}\}/g, (match, key) => {
                         return data[key] || '';
                     });
-                    
-                    // Simple section handling
+
                     result = result.replace(/\{\{#(\w+)\}\}(.*?)\{\{\/\1\}\}/gs, (match, key, content) => {
                         const value = data[key];
                         if (Array.isArray(value)) {
-                            return value.map(item => 
+                            return value.map(item =>
                                 content.replace(/\{\{(\w+)\}\}/g, (m, k) => item[k] || '')
                             ).join('');
                         } else if (value) {
@@ -51,7 +77,7 @@ class SimpleModuleLoader {
                         }
                         return '';
                     });
-                    
+
                     return result;
                 }
             };
@@ -64,12 +90,11 @@ class SimpleModuleLoader {
      * @returns {*} Loaded module
      */
     loadModule(moduleName) {
-        // Check if already loaded
         if (this.loadedModules.has(moduleName)) {
             return this.loadedModules.get(moduleName);
         }
 
-        // Special handling for RestModel - load Model and alias it
+        // RestModel is just an alias for Model
         if (moduleName === 'RestModel') {
             const Model = this.loadModule('Model');
             this.loadedModules.set('RestModel', Model);
@@ -87,20 +112,15 @@ class SimpleModuleLoader {
             this.loadModule(dep);
         }
 
-        // Load the module
         const module = this.loadModuleFromFile(moduleInfo.path, moduleName);
         this.loadedModules.set(moduleName, module);
-        
-        // Set as global
         global[moduleName] = module;
-        
+
         return module;
     }
 
     /**
      * Get module configuration
-     * @param {string} moduleName - Module name
-     * @returns {object} Module info
      */
     getModuleInfo(moduleName) {
         const modules = {
@@ -134,15 +154,15 @@ class SimpleModuleLoader {
             },
             'Model': {
                 path: path.join(this.sourceRoot, 'core/Model.js'),
-                dependencies: ['Rest', 'dataFormatter', 'MOJOUtils']
+                dependencies: ['Rest', 'dataFormatter', 'MOJOUtils', 'EventEmitter']
             },
             'RestModel': {
                 path: path.join(this.sourceRoot, 'core/Model.js'),
                 dependencies: ['Rest']
             },
-            'DataList': {
-                path: path.join(this.sourceRoot, 'core/DataList.js'),
-                dependencies: ['RestModel', 'Rest']
+            'Collection': {
+                path: path.join(this.sourceRoot, 'core/Collection.js'),
+                dependencies: ['Model', 'Rest', 'EventEmitter']
             },
             'View': {
                 path: path.join(this.sourceRoot, 'core/View.js'),
@@ -151,14 +171,6 @@ class SimpleModuleLoader {
             'Page': {
                 path: path.join(this.sourceRoot, 'core/Page.js'),
                 dependencies: ['View']
-            },
-            'Table': {
-                path: path.join(this.sourceRoot, 'components/Table.js'),
-                dependencies: ['View']
-            },
-            'MOJO': {
-                path: path.join(this.sourceRoot, 'mojo.js'),
-                dependencies: ['View', 'Page', 'Router', 'EventBus', 'Rest', 'RestModel', 'DataList', 'Table']
             }
         };
 
@@ -166,10 +178,8 @@ class SimpleModuleLoader {
     }
 
     /**
-     * Load module from file
-     * @param {string} filePath - Path to module file
-     * @param {string} moduleName - Name of the module
-     * @returns {*} Loaded module
+     * Load module from file by transforming ES6 module syntax so it can
+     * execute in a Node.js function sandbox.
      */
     loadModuleFromFile(filePath, moduleName) {
         if (!fs.existsSync(filePath)) {
@@ -179,8 +189,7 @@ class SimpleModuleLoader {
         try {
             const sourceCode = fs.readFileSync(filePath, 'utf8');
             const transformedCode = this.transformModule(sourceCode, moduleName);
-            
-            // Create a simple context without conflicting names
+
             const sandbox = {
                 // Node.js globals
                 require,
@@ -192,14 +201,15 @@ class SimpleModuleLoader {
                 Buffer,
                 process,
                 global,
-                
-                // Browser globals
+
+                // Browser globals (some may be undefined before testHelpers.setup())
                 window: global.window,
                 document: global.document,
                 HTMLElement: global.HTMLElement,
                 Event: global.Event,
                 CustomEvent: global.CustomEvent,
                 fetch: global.fetch,
+                localStorage: global.localStorage,
                 Mustache: global.Mustache,
                 setTimeout: global.setTimeout || setTimeout,
                 clearTimeout: global.clearTimeout || clearTimeout,
@@ -207,14 +217,12 @@ class SimpleModuleLoader {
                 clearInterval: global.clearInterval || clearInterval
             };
 
-            // Create function with just the sandbox context
             const contextKeys = Object.keys(sandbox);
             const contextValues = Object.values(sandbox);
-            
-            // Execute the transformed code
+
             const moduleFunction = new Function(...contextKeys, transformedCode);
             const result = moduleFunction(...contextValues);
-            
+
             return result;
         } catch (error) {
             throw new Error(`Failed to load module ${moduleName} from ${filePath}: ${error.message}\n${error.stack}`);
@@ -223,91 +231,104 @@ class SimpleModuleLoader {
 
     /**
      * Transform ES6 module syntax to work in our context
-     * @param {string} sourceCode - Original source code
-     * @param {string} moduleName - Module name for context
-     * @returns {string} Transformed code
      */
     transformModule(sourceCode, moduleName) {
         let code = sourceCode;
 
-        // Remove import statements and replace with access to globals
+        // Default imports: `import Foo from 'path';`
         code = code.replace(/import\s+([^'"\s{][^'"\s]*)\s+from\s+['"]([^'"]+)['"];?\s*\n?/g, (match, importName, importPath) => {
-            if (importPath.includes('mustache')) {
-                return `// Using global Mustache\n`;
-            } else if (importPath.includes('EventEmitter')) {
-                return `const ${importName} = global.EventEmitter;\n`;
-            } else if (importPath.includes('EventDelegate')) {
-                return `const ${importName} = global.EventDelegate;\n`;
-            } else if (importPath.includes('View')) {
-                return `const ${importName} = global.View;\n`;
-            } else if (importPath.includes('Page')) {
-                return `const ${importName} = global.Page;\n`;
-            } else if (importPath.includes('EventBus')) {
-                return `const ${importName} = global.EventBus;\n`;
-            } else if (importPath.includes('MOJOUtils')) {
-                return `const ${importName} = global.MOJOUtils;\n`;
-            } else if (importPath.includes('DataFormatter')) {
-                return `const ${importName} = global.dataFormatter;\n`;
+            if (importPath.includes('mustache')) return `// Using global Mustache\n`;
+
+            // Map import paths to global module names
+            const globalName = this.importPathToGlobal(importPath);
+            if (globalName) {
+                return `const ${importName} = global.${globalName};\n`;
             }
-            return `// Import: ${match}\n`;
+            return `// Import (unresolved): ${match}\n`;
         });
 
-        // Handle named imports
+        // Named imports: `import { a, b } from 'path';`
         code = code.replace(/import\s*\{\s*([^}]+)\s*\}\s*from\s+['"]([^'"]+)['"];?\s*\n?/g, (match, imports, importPath) => {
-            return `// Named imports: ${imports} from ${importPath}\n`;
+            const globalName = this.importPathToGlobal(importPath);
+            if (globalName) {
+                const names = imports.split(',').map(n => n.trim()).filter(Boolean);
+                return names.map(n => `const ${n} = global.${globalName} && global.${globalName}.${n};`).join('\n') + '\n';
+            }
+            return `// Named imports (unresolved): ${imports} from ${importPath}\n`;
         });
 
-        // Handle named export statements first (remove them, we only care about default export)
-        code = code.replace(/export\s*\{\s*([^}]+)\s*\};?\s*$/gm, (match, exports) => {
-            return `// Named exports removed: ${exports}`;
-        });
+        // Named export statements: `export { a, b };` — drop them
+        code = code.replace(/export\s*\{\s*[^}]+\s*\};?\s*$/gm, '// (named export removed)');
 
-        // Handle export default - wrap everything and return the default export
-        if (code.includes('export default')) {
-            // Replace export default with a variable assignment
+        // `export default <expr>;` — capture and return
+        if (/export\s+default\s+/.test(code)) {
             code = code.replace(/export\s+default\s+([^;]+);?\s*$/gm, (match, exportValue) => {
                 return `const __moduleExport = ${exportValue};\nreturn __moduleExport;`;
             });
         } else {
-            // If no explicit export default, return the main class/function
-            if (moduleName === 'EventBus') {
-                code += '\nreturn EventBus;';
-            } else if (moduleName === 'View') {
-                code += '\nreturn View;';
-            } else if (moduleName === 'Page') {
-                code += '\nreturn Page;';
-            } else if (moduleName === 'MOJO') {
-                code += '\nreturn MOJO;';
-            } else if (moduleName === 'dataFormatter') {
-                code += '\nreturn dataFormatter;';
-            } else if (moduleName === 'MOJOUtils') {
-                code += '\nreturn MOJOUtils;';
+            // Fallback returns by well-known module name
+            const fallbackReturns = {
+                EventBus: 'EventBus',
+                View: 'View',
+                Page: 'Page',
+                dataFormatter: 'dataFormatter',
+                MOJOUtils: 'MOJOUtils',
+                EventEmitter: 'EventEmitter',
+                EventDelegate: 'EventDelegate',
+                Router: 'Router',
+                Rest: 'Rest',
+                Model: 'Model',
+                Collection: 'Collection'
+            };
+            if (fallbackReturns[moduleName]) {
+                code += `\nreturn ${fallbackReturns[moduleName]};`;
             }
         }
 
-        // Handle export const/let/var/class/function
-        code = code.replace(/^export\s+(const|let|var|class|function)\s+/gm, '$1 ');
+        // `export const/let/var/class/function` — strip the export keyword
+        code = code.replace(/^export\s+(const|let|var|class|function|async)\s+/gm, '$1 ');
 
         return code;
     }
 
     /**
+     * Map an import path to the global module variable name set up by the loader.
+     */
+    importPathToGlobal(importPath) {
+        const rules = [
+            { test: /EventBus/i, name: 'EventBus' },
+            { test: /EventEmitter/, name: 'EventEmitter' },
+            { test: /EventDelegate/, name: 'EventDelegate' },
+            { test: /Collection/, name: 'Collection' },
+            { test: /Model/, name: 'Model' },
+            { test: /Router/, name: 'Router' },
+            { test: /Rest/, name: 'Rest' },
+            { test: /DataFormatter/, name: 'dataFormatter' },
+            { test: /MOJOUtils/, name: 'MOJOUtils' },
+            { test: /\/View(\.js)?$/, name: 'View' },
+            { test: /\/Page(\.js)?$/, name: 'Page' }
+        ];
+        for (const rule of rules) {
+            if (rule.test.test(importPath)) return rule.name;
+        }
+        return null;
+    }
+
+    /**
      * Load all modules in dependency order
-     * @returns {object} Object containing all loaded modules
      */
     loadAllModules() {
         const modules = {};
-        
+
         for (const moduleName of this.moduleOrder) {
             try {
                 modules[moduleName] = this.loadModule(moduleName);
             } catch (error) {
                 console.error(`Failed to load ${moduleName}:`, error.message);
-                // Continue loading other modules
                 modules[moduleName] = null;
             }
         }
-        
+
         return modules;
     }
 
@@ -316,7 +337,6 @@ class SimpleModuleLoader {
      */
     clearCache() {
         this.loadedModules.clear();
-        // Clear globals
         for (const moduleName of this.moduleOrder) {
             delete global[moduleName];
         }
@@ -324,7 +344,6 @@ class SimpleModuleLoader {
 
     /**
      * Get diagnostic information
-     * @returns {object} Diagnostic data
      */
     getDiagnostics() {
         const diagnostics = {
@@ -341,7 +360,6 @@ class SimpleModuleLoader {
             }
         };
 
-        // Check which module files exist
         for (const moduleName of this.moduleOrder) {
             const info = this.getModuleInfo(moduleName);
             if (info) {
@@ -359,85 +377,50 @@ class SimpleModuleLoader {
 
     /**
      * Validate a loaded module
-     * @param {*} module - Module to validate
-     * @param {string} expectedType - Expected type ('class' or 'function')
-     * @returns {boolean} Whether module is valid
      */
     validateModule(module, expectedType = 'class') {
         if (!module) return false;
-        
-        if (expectedType === 'class') {
-            return typeof module === 'function' && module.prototype;
-        }
-        
-        if (expectedType === 'function') {
-            return typeof module === 'function';
-        }
-        
+        if (expectedType === 'class') return typeof module === 'function' && module.prototype;
+        if (expectedType === 'function') return typeof module === 'function';
         return true;
     }
 }
 
-// Create singleton instance
+// Singleton instance
 const moduleLoader = new SimpleModuleLoader();
 
-/**
- * Load a specific module
- * @param {string} moduleName - Module name
- * @returns {*} Loaded module
- */
 function loadModule(moduleName) {
     return moduleLoader.loadModule(moduleName);
 }
 
-/**
- * Load all MOJO modules
- * @returns {object} All loaded modules
- */
 function loadAllModules() {
     return moduleLoader.loadAllModules();
 }
 
-/**
- * Set up modules for testing
- * @param {object} testContext - Test context to populate
- * @returns {object} Loaded modules
- */
 function setupModules(testContext = {}) {
     try {
-        console.log('Loading MOJO modules...');
         const modules = moduleLoader.loadAllModules();
-        
-        // Validate modules
-        const validationResults = {};
-        validationResults.EventBus = moduleLoader.validateModule(modules.EventBus, 'class');
-        validationResults.View = moduleLoader.validateModule(modules.View, 'class');
-        validationResults.Page = moduleLoader.validateModule(modules.Page, 'class');
-        validationResults.MOJO = moduleLoader.validateModule(modules.MOJO, 'class');
-        
+
+        const validationResults = {
+            EventBus: moduleLoader.validateModule(modules.EventBus, 'class'),
+            View: moduleLoader.validateModule(modules.View, 'class'),
+            Page: moduleLoader.validateModule(modules.Page, 'class')
+        };
+
         const failedModules = Object.entries(validationResults)
-            .filter(([name, valid]) => !valid)
+            .filter(([, valid]) => !valid)
             .map(([name]) => name);
-            
+
         if (failedModules.length > 0) {
             console.warn('Some modules failed validation:', failedModules);
-            const diagnostics = moduleLoader.getDiagnostics();
-            console.log('Diagnostics:', JSON.stringify(diagnostics, null, 2));
-        } else {
-            console.log('All modules loaded successfully');
         }
-        
-        // Add to test context
+
         Object.assign(testContext, modules);
-        
-        // Make available globally
         Object.assign(global, modules);
-        
+
         return modules;
     } catch (error) {
         console.error('Failed to setup modules:', error);
-        const diagnostics = moduleLoader.getDiagnostics();
-        console.log('Diagnostics:', JSON.stringify(diagnostics, null, 2));
         throw error;
     }
 }

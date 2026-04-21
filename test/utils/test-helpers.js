@@ -70,53 +70,113 @@ class TestHelpers {
      * Set up MOJO framework mocks
      */
     setupMOJOMocks() {
-        // Mock Jest functionality
+        // Track every jest.fn-created mock so jest.clearAllMocks() can reset them all.
+        const allMocks = new Set();
+
+        const makeMock = (implementation) => {
+            const state = {
+                impl: implementation || (() => undefined),
+                queuedImpls: [],
+                returnValue: undefined,
+                hasReturnValue: false,
+                resolvedValue: undefined,
+                hasResolvedValue: false,
+                rejectedValue: undefined,
+                hasRejectedValue: false
+            };
+
+            const mock = function(...args) {
+                mock.mock.calls.push(args);
+                mock.mock.instances.push(this);
+
+                let result, isThrow = false;
+                try {
+                    if (state.hasRejectedValue) {
+                        result = Promise.reject(state.rejectedValue);
+                    } else if (state.hasResolvedValue) {
+                        result = Promise.resolve(state.resolvedValue);
+                    } else if (state.hasReturnValue) {
+                        result = state.returnValue;
+                    } else if (state.queuedImpls.length > 0) {
+                        result = state.queuedImpls.shift().apply(this, args);
+                    } else {
+                        result = state.impl.apply(this, args);
+                    }
+                } catch (err) {
+                    isThrow = true;
+                    result = err;
+                }
+
+                mock.mock.results.push({ type: isThrow ? 'throw' : 'return', value: result });
+                if (isThrow) throw result;
+                return result;
+            };
+
+            mock.mock = {
+                calls: [],
+                instances: [],
+                results: []
+            };
+
+            mock.mockReturnValue = (v) => { state.hasReturnValue = true; state.returnValue = v; return mock; };
+            mock.mockReturnValueOnce = (v) => { state.queuedImpls.push(() => v); return mock; };
+            mock.mockResolvedValue = (v) => { state.hasResolvedValue = true; state.resolvedValue = v; return mock; };
+            mock.mockResolvedValueOnce = (v) => { state.queuedImpls.push(() => Promise.resolve(v)); return mock; };
+            mock.mockRejectedValue = (v) => { state.hasRejectedValue = true; state.rejectedValue = v; return mock; };
+            mock.mockRejectedValueOnce = (v) => { state.queuedImpls.push(() => Promise.reject(v)); return mock; };
+            mock.mockImplementation = (fn) => {
+                state.impl = fn;
+                state.hasReturnValue = state.hasResolvedValue = state.hasRejectedValue = false;
+                return mock;
+            };
+            mock.mockImplementationOnce = (fn) => { state.queuedImpls.push(fn); return mock; };
+            mock.mockClear = () => {
+                mock.mock.calls.length = 0;
+                mock.mock.instances.length = 0;
+                mock.mock.results.length = 0;
+                return mock;
+            };
+            mock.mockReset = () => {
+                mock.mockClear();
+                state.impl = () => undefined;
+                state.queuedImpls.length = 0;
+                state.hasReturnValue = state.hasResolvedValue = state.hasRejectedValue = false;
+                return mock;
+            };
+            mock.mockRestore = () => {
+                if (mock._restore) mock._restore();
+                return mock;
+            };
+
+            allMocks.add(mock);
+            return mock;
+        };
+
         global.jest = {
-            fn: (implementation) => {
-                const mockFunction = implementation || function() {};
-                mockFunction.mockReturnValue = (value) => {
-                    mockFunction._mockReturnValue = value;
-                    return mockFunction;
-                };
-                mockFunction.mockResolvedValue = (value) => {
-                    mockFunction._mockResolvedValue = value;
-                    return mockFunction;
-                };
-                mockFunction.mockRejectedValue = (value) => {
-                    mockFunction._mockRejectedValue = value;
-                    return mockFunction;
-                };
-                mockFunction.mockImplementation = (impl) => {
-                    mockFunction._mockImplementation = impl;
-                    return mockFunction;
-                };
-                
-                // Override the function to use mocked behavior
-                const originalFn = mockFunction;
-                const mockedFn = function(...args) {
-                    if (mockFunction._mockRejectedValue) {
-                        return Promise.reject(mockFunction._mockRejectedValue);
-                    }
-                    if (mockFunction._mockResolvedValue) {
-                        return Promise.resolve(mockFunction._mockResolvedValue);
-                    }
-                    if (mockFunction._mockReturnValue !== undefined) {
-                        return mockFunction._mockReturnValue;
-                    }
-                    if (mockFunction._mockImplementation) {
-                        return mockFunction._mockImplementation(...args);
-                    }
-                    return originalFn.apply(this, args);
-                };
-                
-                // Copy mock methods to the new function
-                Object.keys(mockFunction).forEach(key => {
-                    if (typeof mockFunction[key] === 'function') {
-                        mockedFn[key] = mockFunction[key];
-                    }
-                });
-                
-                return mockedFn;
+            fn: makeMock,
+
+            spyOn: (obj, methodName) => {
+                const original = obj[methodName];
+                const spy = makeMock((...args) =>
+                    typeof original === 'function' ? original.apply(obj, args) : undefined
+                );
+                spy._restore = () => { obj[methodName] = original; };
+                obj[methodName] = spy;
+                return spy;
+            },
+
+            clearAllMocks: () => {
+                for (const m of allMocks) m.mockClear();
+            },
+
+            resetAllMocks: () => {
+                for (const m of allMocks) m.mockReset();
+            },
+
+            restoreAllMocks: () => {
+                for (const m of allMocks) {
+                    if (m._restore) m._restore();
+                }
             }
         };
 

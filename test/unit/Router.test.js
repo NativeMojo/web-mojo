@@ -7,10 +7,27 @@
 const { SimpleModuleLoader } = require('../utils/simple-module-loader.js');
 const loader = new SimpleModuleLoader();
 
-module.exports = async function() {
+module.exports = async function(testContext) {
+    const { describe, it, expect, beforeEach, afterEach } = testContext;
+
+    // Legacy assertion helpers used throughout this file (predate the
+    // expect-based harness). Kept local so we don't pollute the rest of
+    // the suite.
+    const assertEqual = (actual, expected, message) => {
+        if (actual !== expected) {
+            throw new Error(`${message || 'assertEqual failed'}: expected ${expected}, got ${actual}`);
+        }
+    };
+    const assertTrue = (condition, message) => {
+        if (!condition) throw new Error(message || 'assertTrue failed');
+    };
+    const assertFalse = (condition, message) => {
+        if (condition) throw new Error(message || 'assertFalse failed');
+    };
+
     // Load Router module
     const Router = loader.loadModule('Router');
-    
+
     describe('Router Tests', () => {
         let router;
         let mockContainer;

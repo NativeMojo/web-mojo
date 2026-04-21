@@ -6,18 +6,19 @@
 const { SimpleModuleLoader } = require('../utils/simple-module-loader.js');
 const loader = new SimpleModuleLoader();
 
-module.exports = async function() {
+module.exports = async function(testContext) {
+    const { describe, it, expect, beforeEach, afterEach } = testContext;
     // Load required modules
     const Router = loader.loadModule('Router');
     const Page = loader.loadModule('Page');
     const EventBus = loader.loadModule('EventBus');
-    
+
     // Setup global MOJO with event bus for tests
     global.window = global.window || {};
     global.window.MOJO = {
         eventBus: new EventBus()
     };
-    
+
     describe('Page Events System', () => {
         let router;
         let eventData;
