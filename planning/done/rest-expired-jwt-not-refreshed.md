@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Type | bug |
-| Status | planned |
+| Status | resolved |
 | Date | 2026-04-20 |
 | Severity | high |
 
@@ -136,3 +136,37 @@ Gate every outgoing REST call on a valid access JWT. Refresh before dispatch whe
 - `download()` / `downloadBlob()` / raw XHR `upload()` bypass (separate follow-up).
 - Cross-tab refresh coordination.
 - Changing the 60s interval or 10-minute expiring-soon threshold.
+
+## Resolution
+
+**Status:** Resolved — 2026-04-21
+**Commits:** 58cb683 (core fix + tests + docs), 4bb65b1 (security-review tightening)
+
+### What was implemented
+- `TokenManager.refreshToken()` is now single-flight via an `_refreshPromise` field — concurrent callers share one `POST /api/token/refresh`. The inner `_doRefresh()` always resolves to `true`/`false` and never throws, preserving the fire-and-forget callers (`startAutoRefresh` interval, `browser:focus`).
+- `TokenManager.ensureValidToken(app)` wraps `checkTokenStatus()` and throws an `AuthRequiredError` (new named export) when the access token is expired and no refresh path is available. Valid tokens pass through without network.
+- `PortalApp._installAuthGate()` registers a request interceptor in the constructor. It awaits `ensureValidToken()` before every outgoing REST call and, after a refresh, overwrites the pre-snapshotted `Authorization` header with the current one. `PortalWebApp` and `DocItApp` inherit this via `extends PortalApp`.
+- `Rest.request()` catches `AuthRequiredError` thrown from a request interceptor and returns `{ success: false, status: 401, reason: 'unauthorized' }` without calling `fetch` or the response-interceptor chain.
+- Post-review tightening: the bypass path was narrowed from `startsWith('/api/token/')` to the exact `/api/token/refresh` URL, and the public `message` on the synthetic 401 was normalized to the generic `"Authentication required"` (internal reason is retained on `errors.auth`).
+
+### Files changed
+- `src/core/services/TokenManager.js` — AuthRequiredError, single-flight, ensureValidToken.
+- `src/core/Rest.js` — AuthRequiredError short-circuit wrapping `processRequestInterceptors`.
+- `src/core/PortalApp.js` — `_installAuthGate()` method, called from the constructor.
+- `test/unit/TokenManager.test.js` (new) — 10 tests covering export, single-flight, ensureValidToken.
+- `test/unit/RestAuthGate.test.js` (new) — 1 test verifying `fetch` is not called and the 401 short-circuit.
+- `docs/web-mojo/services/Rest.md` — new "Automatic JWT refresh (PortalApp)" subsection.
+- `CHANGELOG.md` — Fixed bullet.
+
+### Tests
+- `npm run test:unit` — 11 new tests pass. Total went from 53/182 (pre-commit) to 64/193 (post-commit). No previously-passing test regressed. Pre-existing harness issues (ES-import failures, `new Rest()` on a singleton, concurrent-test race conditions) are unrelated and out of scope.
+
+### Agent findings
+- **test-runner:** 64/193 pass, 11 new tests green, zero regressions.
+- **docs-updater:** Rest.md and CHANGELOG.md updates are accurate and sufficient. No separate `TokenManager.md` is expected.
+- **security-review (pre-tightening):** flagged (1) overly-broad `/api/token/` prefix bypass, (2) internal failure reason surfacing in the public `message` field. Both addressed in commit 4bb65b1.
+
+### Follow-ups (not done, flagged)
+- `rest.download()` / `rest.downloadBlob()` / raw-XHR `rest.upload()` call `fetch`/`XMLHttpRequest` directly and bypass interceptors — still unguarded by this gate.
+- Cross-tab refresh coordination (two tabs can still race on `/api/token/refresh`).
+- The broader test harness is in a pre-existing broken state (ES-import test files can't load, `Rest.test.js` calls `new Rest()` on a singleton, tests run concurrently causing race conditions). Worth a dedicated cleanup pass.
