@@ -354,8 +354,26 @@ class Rest {
       }
     };
 
-    // Process request interceptors
-    request = await this.processRequestInterceptors(request);
+    // Process request interceptors. If an interceptor throws
+    // AuthRequiredError (auth gate refused to refresh), short-circuit to a
+    // 401 response without hitting the network.
+    try {
+      request = await this.processRequestInterceptors(request);
+    } catch (error) {
+      if (error.name === 'AuthRequiredError') {
+        return {
+          success: false,
+          status: 401,
+          statusText: 'Unauthorized',
+          headers: {},
+          data: null,
+          errors: { auth: error.message },
+          message: error.message || 'Authentication required',
+          reason: 'unauthorized'
+        };
+      }
+      throw error;
+    }
 
     // Add DUID if tracking is enabled
     if (this.config.trackDevice && this.duid) {

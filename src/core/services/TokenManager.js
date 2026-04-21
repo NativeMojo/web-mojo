@@ -1,4 +1,17 @@
 /**
+ * AuthRequiredError - Thrown by the pre-request auth gate when the access
+ * token is expired and cannot be refreshed. Rest recognizes it by name and
+ * short-circuits the request to a 401 response without calling fetch.
+ */
+export class AuthRequiredError extends Error {
+    constructor(message = 'Authentication required') {
+        super(message);
+        this.name = 'AuthRequiredError';
+        this.reason = 'unauthorized';
+    }
+}
+
+/**
  * Token - Individual JWT token handling
  * Handles decoding, validation, and data extraction for a single token
  */
@@ -180,6 +193,9 @@ export default class TokenManager {
         this.tokenKey = 'access_token';
         this.refreshTokenKey = 'refresh_token';
         this.tokenInstance = null;
+        // Single-flight guard for refreshToken(). Holds the in-flight
+        // Promise<boolean> while a refresh is pending; null otherwise.
+        this._refreshPromise = null;
     }
 
     /**
@@ -409,19 +425,41 @@ export default class TokenManager {
         }
     }
 
+    /**
+     * Refresh the access token using the stored refresh token.
+     * Single-flight: concurrent callers share one in-flight POST.
+     * @param {object} app - App instance (needs .rest and .events)
+     * @returns {Promise<boolean>} true on success, false on any failure
+     */
     async refreshToken(app) {
+        if (this._refreshPromise) {
+            return this._refreshPromise;
+        }
+
+        this._refreshPromise = this._doRefresh(app).finally(() => {
+            this._refreshPromise = null;
+        });
+
+        return this._refreshPromise;
+    }
+
+    /**
+     * Perform the actual refresh network call. Always resolves to a boolean;
+     * never throws. Emits auth:unauthorized / auth:token:refresh:failed on
+     * failure paths, matching prior behavior.
+     * @private
+     */
+    async _doRefresh(app) {
         const refreshTokenInstance = this.getRefreshTokenInstance();
 
         // Double-check refresh token validity before attempting refresh
         if (!refreshTokenInstance || !refreshTokenInstance.isValid() || refreshTokenInstance.isExpired()) {
-
             app.events.emit("auth:unauthorized");
             this.stopAutoRefresh();
-            return;
+            return false;
         }
 
         try {
-
             const response = await app.rest.POST('/api/token/refresh', {
                 refresh_token: refreshTokenInstance.token
             });
@@ -443,18 +481,46 @@ export default class TokenManager {
             });
 
             console.log('Token refreshed successfully');
-
+            return true;
         } catch (error) {
-
-
             // Check if it's an authentication error (refresh token invalid)
             if (error.status === 401 || error.status === 403) {
-
                 app.events.emit("auth:unauthorized");
                 this.stopAutoRefresh();
             } else {
                 // For other errors, emit specific event but don't logout
                 app.events.emit('auth:token:refresh:failed', { error });
+            }
+            return false;
+        }
+    }
+
+    /**
+     * Gate an outgoing request on token validity. Intended for use by a
+     * pre-request interceptor.
+     *
+     * - Valid access token: returns (no network).
+     * - Expired access token + valid refresh: awaits the (single-flight)
+     *   refresh; throws AuthRequiredError if the refresh fails.
+     * - Both tokens expired/invalid: emits auth:unauthorized and throws
+     *   AuthRequiredError without hitting the network.
+     *
+     * @param {object} app - App instance (needs .rest and .events)
+     * @throws {AuthRequiredError} when the request must not be sent
+     */
+    async ensureValidToken(app) {
+        const status = this.checkTokenStatus();
+
+        if (status.action === 'logout') {
+            app.events.emit('auth:unauthorized');
+            this.stopAutoRefresh();
+            throw new AuthRequiredError('Both access and refresh tokens are invalid');
+        }
+
+        if (status.action === 'refresh') {
+            const ok = await this.refreshToken(app);
+            if (!ok) {
+                throw new AuthRequiredError('Token refresh failed');
             }
         }
     }

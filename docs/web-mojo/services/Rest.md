@@ -422,6 +422,22 @@ rest.addInterceptor('response', async (responseData) => {
 });
 ```
 
+### Automatic JWT refresh (PortalApp)
+
+When the app is a [PortalApp](../core/PortalApp.md) (including `PortalWebApp` and `DocItApp`), a **pre-request auth gate** is installed automatically. Every outgoing REST call is blocked on access-token validity:
+
+- If the access token is still valid → the call proceeds as usual.
+- If the access token is expired → a refresh (`POST /api/token/refresh`) runs first; once it completes the call goes out using the newly-issued bearer token.
+- If the refresh token is also missing / invalid / expired → the call returns a `{ success: false, status: 401, reason: 'unauthorized' }` response **without hitting the network** and `auth:unauthorized` is emitted on the app's event bus.
+
+**Single-flight guarantee.** Concurrent callers share a single refresh attempt — exactly one `POST /api/token/refresh` is ever in flight. Additional callers that arrive during a pending refresh wait on the same promise and then proceed with the refreshed token (or fail together if the refresh fails).
+
+**Bypass rules.** Requests whose pathname starts with `/api/token/` (the refresh and login endpoints) are exempt, to prevent recursion during refresh. Requests made while no access token is stored (login screen, public flows) also bypass the gate.
+
+The gate is complementary to the 60-second `TokenManager.startAutoRefresh()` interval and the `browser:focus` refresh handler — those continue to refresh proactively, and the single-flight guard ensures they cooperate with the per-request gate.
+
+> **Note:** `rest.download()`, `rest.downloadBlob()`, and the raw-XHR `rest.upload()` call `fetch` / `XMLHttpRequest` directly and **do not** go through the interceptor chain — they are not currently covered by the gate.
+
 ---
 
 ## File Upload & Download

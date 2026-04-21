@@ -53,6 +53,7 @@ export default class PortalApp extends WebApp {
         this.topnav = null; // Legacy reference
         this.pageHeader = null;
         this.tokenManager = new TokenManager();
+        this._installAuthGate();
 
         // Active group management
         this.activeGroup = null;
@@ -162,6 +163,54 @@ export default class PortalApp extends WebApp {
         this.setActiveUser(user);
         this.tokenManager.startAutoRefresh(this);
         return true;
+    }
+
+    /**
+     * Install a pre-request interceptor that blocks outgoing REST calls on
+     * access-token validity. Expired access tokens trigger a (single-flight)
+     * refresh before the request goes out. When both tokens are invalid the
+     * request is rejected with a 401 response without hitting the network
+     * and `auth:unauthorized` is emitted.
+     *
+     * Bypassed for:
+     *   - URLs under `/api/token/` (refresh + login endpoints), to avoid
+     *     recursion during the refresh POST.
+     *   - Requests made while no access token is stored (pre-login / public).
+     * @private
+     */
+    _installAuthGate() {
+        this.rest.addInterceptor('request', async (request) => {
+            // Bypass for auth endpoints to prevent recursion.
+            let pathname = '';
+            try {
+                pathname = new URL(request.url, window.location.origin).pathname;
+            } catch (_e) {
+                pathname = request.url || '';
+            }
+            if (pathname.startsWith('/api/token/')) {
+                return request;
+            }
+
+            // No stored token means we're in a pre-login / public flow.
+            if (!this.tokenManager.getToken()) {
+                return request;
+            }
+
+            // Throws AuthRequiredError if the token cannot be refreshed.
+            // Rest.request() recognizes the error and short-circuits to a
+            // 401 response without calling fetch.
+            await this.tokenManager.ensureValidToken(this);
+
+            // request.headers was snapshotted from config.headers before this
+            // interceptor ran, so after a successful refresh we need to
+            // overwrite the Authorization header with the new token.
+            const authHeader = this.tokenManager.getAuthHeader();
+            if (authHeader) {
+                request.headers['Authorization'] = authHeader;
+            }
+
+            return request;
+        });
     }
 
     /**
