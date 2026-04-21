@@ -45,7 +45,8 @@ module.exports = async function(testContext) {
                 expect(result.success).toBe(false);
                 expect(result.status).toBe(401);
                 expect(result.reason).toBe('unauthorized');
-                expect(result.message).toBe('Token refresh failed');
+                expect(result.message).toBe('Authentication required');
+                expect(result.errors.auth).toBe('Token refresh failed');
             } finally {
                 rest.interceptors.request = originalInterceptors;
                 global.fetch = originalFetch;

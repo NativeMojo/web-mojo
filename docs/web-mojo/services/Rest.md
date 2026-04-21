@@ -432,7 +432,7 @@ When the app is a [PortalApp](../core/PortalApp.md) (including `PortalWebApp` an
 
 **Single-flight guarantee.** Concurrent callers share a single refresh attempt — exactly one `POST /api/token/refresh` is ever in flight. Additional callers that arrive during a pending refresh wait on the same promise and then proceed with the refreshed token (or fail together if the refresh fails).
 
-**Bypass rules.** Requests whose pathname starts with `/api/token/` (the refresh and login endpoints) are exempt, to prevent recursion during refresh. Requests made while no access token is stored (login screen, public flows) also bypass the gate.
+**Bypass rules.** The refresh endpoint itself (`/api/token/refresh`) is exempt from the gate to prevent recursion. Requests made while no access token is stored (login screen, public flows) also bypass the gate.
 
 The gate is complementary to the 60-second `TokenManager.startAutoRefresh()` interval and the `browser:focus` refresh handler — those continue to refresh proactively, and the single-flight guard ensures they cooperate with the per-request gate.
 

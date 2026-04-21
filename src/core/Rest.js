@@ -368,7 +368,7 @@ class Rest {
           headers: {},
           data: null,
           errors: { auth: error.message },
-          message: error.message || 'Authentication required',
+          message: 'Authentication required',
           reason: 'unauthorized'
         };
       }

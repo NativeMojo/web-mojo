@@ -173,21 +173,23 @@ export default class PortalApp extends WebApp {
      * and `auth:unauthorized` is emitted.
      *
      * Bypassed for:
-     *   - URLs under `/api/token/` (refresh + login endpoints), to avoid
-     *     recursion during the refresh POST.
+     *   - `/api/token/refresh` — required to avoid recursion when the gate
+     *     itself triggers a refresh.
      *   - Requests made while no access token is stored (pre-login / public).
      * @private
      */
     _installAuthGate() {
         this.rest.addInterceptor('request', async (request) => {
-            // Bypass for auth endpoints to prevent recursion.
+            // Bypass only the refresh endpoint itself (prevents recursion).
+            // Login / other auth endpoints fall through the no-token bypass
+            // below when used during pre-login flows.
             let pathname = '';
             try {
                 pathname = new URL(request.url, window.location.origin).pathname;
             } catch (_e) {
                 pathname = request.url || '';
             }
-            if (pathname.startsWith('/api/token/')) {
+            if (pathname === '/api/token/refresh') {
                 return request;
             }
 
