@@ -1,7 +1,7 @@
 # Enrich IncidentView for Security Operations
 
 **Type**: request
-**Status**: open
+**Status**: done
 **Date**: 2026-04-01
 
 ## Description

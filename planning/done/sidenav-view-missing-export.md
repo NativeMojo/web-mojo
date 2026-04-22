@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Type | bug |
-| Status | open |
+| Status | resolved |
 | Date | 2026-04-15 |
 | Severity | medium |
 

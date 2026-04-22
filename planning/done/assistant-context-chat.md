@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Type | request |
-| Status | planned |
+| Status | done |
 | Date | 2026-04-05 |
 | Priority | high |
 

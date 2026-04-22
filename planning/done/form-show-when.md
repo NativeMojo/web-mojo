@@ -1,7 +1,7 @@
 # FormBuilder: Declarative `showWhen` Field Visibility
 
 **Type**: request
-**Status**: open
+**Status**: done
 **Date**: 2026-04-01
 **Priority**: high (dependency for ipset-admin)
 

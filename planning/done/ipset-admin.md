@@ -1,7 +1,7 @@
 # IPSet Admin Interface
 
 **Type**: request
-**Status**: open
+**Status**: done
 **Date**: 2026-04-01
 **Depends on**: `planning/requests/form-show-when.md`
 
