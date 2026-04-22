@@ -1,7 +1,7 @@
 # Public Messages Admin Interface
 
 **Type**: request
-**Status**: planned
+**Status**: done
 **Date**: 2026-04-22
 
 ## Description
@@ -187,7 +187,62 @@ friendly labels and fall back to `Text(key) → value` for unknown keys.
 
 <!-- Fill in when the request is resolved, then move the file to planning/done/ -->
 ## Resolution
-**Status**: Open
+**Status**: Done — 2026-04-22
+
+### What Was Implemented
+
+All eight acceptance criteria met. Admin UI for `account.PublicMessage` is
+wired under **Messaging → Contact Messages** with filterable/sortable list,
+batch Mark Closed, and a detail modal that renders arbitrary metadata
+generically. Implementation followed the plan verbatim except:
+
+- `subject`-blank fallback uses `default('—')` (column formatter), not
+  first-line-of-message (kept simple per plan trim note).
+- Group rendered as text only, not as a link back to `GroupView` — no
+  precedent for that link pattern in sibling views (`TicketView`, etc.).
+
+### Files Changed
+
+Commits `eb9afb1` and `565bce0` on `main`:
+
+**New files**
+- `src/core/models/PublicMessage.js` — Model + list + option arrays + metadata-label map
+- `src/extensions/admin/messaging/PublicMessageTablePage.js` — TablePage with status/kind filters + batch Mark Closed
+- `src/extensions/admin/messaging/PublicMessageView.js` — Detail view with generic metadata rendering + inline status toggle
+
+**Wiring**
+- `src/extensions/admin/index.js` — added two exports under new Messaging (Public) block
+- `src/admin.js` — added top-level re-exports, import, `registerPage('system/messaging/public-messages', …)`, and renamed the sidebar "Email" block to "Messaging" with a new "Contact Messages" child
+
+**Docs**
+- `docs/web-mojo/extensions/Admin.md` — added `PublicMessageTablePage` + `PublicMessageView` entries (docs-updater agent)
+- `CHANGELOG.md` — release-level entry under `Unreleased` › `Added`
+
+### Tests Run
+
+- `npm run lint` — 71 pre-existing problems in unrelated files; no new issues in any of the three new files.
+- `npm run test:unit` — **378/378 passing** (94 ms) before and after the security hardening commit.
+- `npm run test:integration` and `npm run test:build` — pre-existing failures tied to missing `src/mojo.js` entry point and missing build artefacts; **not caused by this change** (confirmed by test-runner agent).
+
+### Agent Findings
+
+- **test-runner**: No regressions. Unit suite fully green. Pre-existing integration/build failures flagged but not in scope for this change.
+- **docs-updater**: Added `PublicMessageTablePage` / `PublicMessageView` entries to `docs/web-mojo/extensions/Admin.md`. Declined to add to `docs/web-mojo/models/BuiltinModels.md` — correct call, the models aren't part of the public `web-mojo/models` export surface.
+- **security-review**: Two actionable findings applied in the follow-up commit `565bce0`:
+  - **Medium** — `mailto:{{model.email}}` was unencoded. Fixed: new `safeMailtoEmail` computed with `encodeURIComponent()` in `onBeforeRender`, template now references `{{safeMailtoEmail}}` for both mailto `href` attributes.
+  - **Low** — Batch `Promise.all` had no catch and would abort on the first failure. Fixed: replaced with `Promise.allSettled`, now toasts succeeded/failed counts separately and always refreshes the collection.
+  - All informational findings (no triple-brace XSS sinks, permission model aligns with backend, PII exposure appropriate for role, no dangerous DOM sinks) — clean.
+
+### Follow-ups (Out of Scope, As Planned)
+
+- Red unread-count badge on the sidebar nav item (spec Notes §).
+- Reply-to-submitter / threaded-note workflow.
+- Create / delete UI.
+- Per-kind specialized detail layouts (intentionally generic).
+
+### Verification Notes
+
+No preview server was started — this framework repo's `npm run dev` (Vite/`index.html`) is a core-only example app and cannot render admin-extension views. End-to-end verification needs a consumer portal (e.g. MojoVerify) with the updated `web-mojo` package, a user with `view_support`/`support` permission, and at least one `PublicMessage` record submitted through the bouncer `/contact` form.
 
 ---
 
