@@ -52,8 +52,8 @@ module.exports = async function(testContext) {
             
             // Log what we get when accessing model.items
             console.log('\n=== Basic Access Test ===');
-            const items = view.get('model.items');
-            console.log('view.get("model.items") type:', typeof items);
+            const items = view.getContextValue('model.items');
+            console.log('view.getContextValue("model.items") type:', typeof items);
             console.log('Is array?:', Array.isArray(items));
             console.log('Has get method?:', typeof items.get === 'function');
             if (Array.isArray(items) && items.length > 0) {
@@ -119,7 +119,7 @@ module.exports = async function(testContext) {
             view.setModel(model);
             
             // Test simple property
-            const simple = view.get('model.simple');
+            const simple = view.getContextValue('model.simple');
             console.log('model.simple:', simple);
             expect(simple).toBe('text');
             
@@ -127,7 +127,7 @@ module.exports = async function(testContext) {
             console.log('About to get model.items...');
             let items;
             try {
-                items = view.get('model.items');
+                items = view.getContextValue('model.items');
                 console.log('Successfully got model.items');
                 console.log('Items type:', typeof items);
                 console.log('Is array?:', Array.isArray(items));
@@ -192,7 +192,7 @@ module.exports = async function(testContext) {
             // Get items through view
             console.log('Through view.get:');
             try {
-                const itemsViaView = view.get('model.items');
+                const itemsViaView = view.getContextValue('model.items');
                 console.log('  Type:', typeof itemsViaView);
                 console.log('  Is array?:', Array.isArray(itemsViaView));
                 if (Array.isArray(itemsViaView) && itemsViaView[0]) {

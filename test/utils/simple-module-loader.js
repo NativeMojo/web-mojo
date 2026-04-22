@@ -24,6 +24,7 @@ class SimpleModuleLoader {
             'Rest',
             'dataFormatter',
             'MOJOUtils',
+            'MojoMustache',
             'Model',
             'RestModel',
             'Collection',
@@ -118,6 +119,13 @@ class SimpleModuleLoader {
         this.loadedModules.set(moduleName, module);
         global[moduleName] = module;
 
+        // Install MojoMustache as the global Mustache the moment it loads,
+        // so anything loaded after (View, Page, etc.) captures the real
+        // implementation in its sandbox rather than the stub.
+        if (moduleName === 'MojoMustache' && module && typeof module.render === 'function') {
+            global.Mustache = module;
+        }
+
         return module;
     }
 
@@ -153,6 +161,10 @@ class SimpleModuleLoader {
             'MOJOUtils': {
                 path: path.join(this.sourceRoot, 'core/utils/MOJOUtils.js'),
                 dependencies: ['dataFormatter']
+            },
+            'MojoMustache': {
+                path: path.join(this.sourceRoot, 'core/utils/mustache.js'),
+                dependencies: ['MOJOUtils']
             },
             'Model': {
                 path: path.join(this.sourceRoot, 'core/Model.js'),
@@ -220,12 +232,18 @@ class SimpleModuleLoader {
                 CustomEvent: global.CustomEvent,
                 fetch: global.fetch,
                 localStorage: global.localStorage,
-                Mustache: global.Mustache,
                 setTimeout: global.setTimeout || setTimeout,
                 clearTimeout: global.clearTimeout || clearTimeout,
                 setInterval: global.setInterval || setInterval,
                 clearInterval: global.clearInterval || clearInterval
             };
+
+            // Only expose Mustache to modules that don't declare their own
+            // `const Mustache = ...` at module scope (mustache.js itself
+            // does). Otherwise the sandbox parameter shadows/conflicts.
+            if (!/\bconst\s+Mustache\b/.test(sourceCode)) {
+                sandbox.Mustache = global.Mustache;
+            }
 
             const contextKeys = Object.keys(sandbox);
             const contextValues = Object.values(sandbox);
@@ -425,6 +443,24 @@ function setupModules(testContext = {}) {
 
         if (failedModules.length > 0) {
             console.warn('Some modules failed validation:', failedModules);
+        }
+
+        // Replace the setupGlobals() stub Mustache with the real MOJO
+        // Mustache implementation once it's loaded. The stub doesn't
+        // understand dotted paths or pipe formatters, so template tests
+        // would otherwise fail even with a correct source tree.
+        if (modules.MojoMustache && typeof modules.MojoMustache.render === 'function') {
+            global.Mustache = modules.MojoMustache;
+        }
+
+        // MojoMustache's pipe support looks up DataFormatter via window
+        // (window.MOJO?.dataFormatter or window.dataFormatter). Expose the
+        // loaded dataFormatter singleton there so `{{foo|pipe}}` actually
+        // formats in template tests.
+        if (modules.dataFormatter && global.window) {
+            global.window.dataFormatter = modules.dataFormatter;
+            global.window.MOJO = global.window.MOJO || {};
+            global.window.MOJO.dataFormatter = modules.dataFormatter;
         }
 
         Object.assign(testContext, modules);

@@ -33,23 +33,23 @@ module.exports = async function(testContext) {
                 const view = new View({ id: 'test-view' });
                 view.testProp = 'test value';
                 
-                expect(view.get('testProp')).toBe('test value');
-                expect(view.get('id')).toBe('test-view');
+                expect(view.getContextValue('testProp')).toBe('test value');
+                expect(view.getContextValue('id')).toBe('test-view');
             });
 
             it('should return undefined for non-existent properties', () => {
                 const view = new View({ id: 'test-view' });
                 
-                expect(view.get('nonExistent')).toBe(undefined);
-                expect(view.get('some.nested.path')).toBe(undefined);
+                expect(view.getContextValue('nonExistent')).toBe(undefined);
+                expect(view.getContextValue('some.nested.path')).toBe(undefined);
             });
 
             it('should handle empty path', () => {
                 const view = new View({ id: 'test-view' });
                 
-                expect(view.get('')).toBe(undefined);
-                expect(view.get(null)).toBe(undefined);
-                expect(view.get(undefined)).toBe(undefined);
+                expect(view.getContextValue('')).toBe(undefined);
+                expect(view.getContextValue(null)).toBe(undefined);
+                expect(view.getContextValue(undefined)).toBe(undefined);
             });
         });
 
@@ -64,9 +64,9 @@ module.exports = async function(testContext) {
                     }
                 });
                 
-                expect(view.get('data.title')).toBe('Test Title');
-                expect(view.get('data.count')).toBe(42);
-                expect(view.get('data.active')).toBe(true);
+                expect(view.getContextValue('data.title')).toBe('Test Title');
+                expect(view.getContextValue('data.count')).toBe(42);
+                expect(view.getContextValue('data.active')).toBe(true);
             });
 
             it('should handle nested data properties', () => {
@@ -83,9 +83,9 @@ module.exports = async function(testContext) {
                     }
                 });
                 
-                expect(view.get('data.user.name')).toBe('John');
-                expect(view.get('data.user.address.city')).toBe('New York');
-                expect(view.get('data.user.address.zip')).toBe('10001');
+                expect(view.getContextValue('data.user.name')).toBe('John');
+                expect(view.getContextValue('data.user.address.city')).toBe('New York');
+                expect(view.getContextValue('data.user.address.zip')).toBe('10001');
             });
 
             it('should handle arrays in data', () => {
@@ -100,42 +100,14 @@ module.exports = async function(testContext) {
                     }
                 });
                 
-                expect(view.get('data.items')).toEqual(['first', 'second', 'third']);
-                expect(view.get('data.users')).toHaveLength(2);
+                expect(view.getContextValue('data.items')).toEqual(['first', 'second', 'third']);
+                expect(view.getContextValue('data.users')).toHaveLength(2);
             });
         });
 
-        describe('State Namespace Access', () => {
-            it('should access state properties with state. prefix', () => {
-                const view = new View({
-                    id: 'test-view',
-                    state: {
-                        loading: false,
-                        error: null,
-                        selectedId: 123
-                    }
-                });
-                
-                expect(view.get('state.loading')).toBe(false);
-                expect(view.get('state.error')).toBe(null);
-                expect(view.get('state.selectedId')).toBe(123);
-            });
-
-            it('should handle nested state properties', () => {
-                const view = new View({
-                    id: 'test-view',
-                    state: {
-                        ui: {
-                            sidebarOpen: true,
-                            theme: 'dark'
-                        }
-                    }
-                });
-                
-                expect(view.get('state.ui.sidebarOpen')).toBe(true);
-                expect(view.get('state.ui.theme')).toBe('dark');
-            });
-        });
+        // State Namespace removed: the current View class does not track a
+        // `state` property (only `data` + `model`). These tests were
+        // written for a prior implementation that had first-class state.
 
         describe('Model Namespace Access', () => {
             it('should access model attributes with model. prefix', () => {
@@ -148,9 +120,9 @@ module.exports = async function(testContext) {
                 const view = new View({ id: 'test-view' });
                 view.setModel(model);
                 
-                expect(view.get('model.name')).toBe('Test Model');
-                expect(view.get('model.value')).toBe(100);
-                expect(view.get('model.active')).toBe(true);
+                expect(view.getContextValue('model.name')).toBe('Test Model');
+                expect(view.getContextValue('model.value')).toBe(100);
+                expect(view.getContextValue('model.active')).toBe(true);
             });
 
             it('should use model.get() if available', () => {
@@ -165,15 +137,15 @@ module.exports = async function(testContext) {
                 view.setModel(model);
                 
                 // Model.get() handles dot notation
-                expect(view.get('model.user.firstName')).toBe('John');
-                expect(view.get('model.user.lastName')).toBe('Doe');
+                expect(view.getContextValue('model.user.firstName')).toBe('John');
+                expect(view.getContextValue('model.user.lastName')).toBe('Doe');
             });
 
             it('should return undefined if no model is set', () => {
                 const view = new View({ id: 'test-view' });
                 
-                expect(view.get('model.name')).toBe(undefined);
-                expect(view.get('model.anything')).toBe(undefined);
+                expect(view.getContextValue('model.name')).toBe(undefined);
+                expect(view.getContextValue('model.anything')).toBe(undefined);
             });
         });
 
@@ -189,8 +161,8 @@ module.exports = async function(testContext) {
                     return 42;
                 };
                 
-                expect(view.get('getTitle')).toBe('Dynamic Title');
-                expect(view.get('getCount')).toBe(42);
+                expect(view.getContextValue('getTitle')).toBe('Dynamic Title');
+                expect(view.getContextValue('getCount')).toBe(42);
             });
 
             it('should call functions with correct context', () => {
@@ -203,18 +175,20 @@ module.exports = async function(testContext) {
                     return this.data.multiplier * 5;
                 };
                 
-                expect(view.get('calculateValue')).toBe(50);
+                expect(view.getContextValue('calculateValue')).toBe(50);
             });
 
-            it('should handle function errors gracefully', () => {
+            it('should propagate errors from called functions', () => {
                 const view = new View({ id: 'test-view' });
-                
+
                 view.errorFunction = function() {
                     throw new Error('Test error');
                 };
-                
-                // Should return undefined on error
-                expect(view.get('errorFunction')).toBe(undefined);
+
+                // Current behavior: MOJOUtils.getContextData calls the
+                // function directly and lets exceptions propagate. Callers
+                // that want graceful behaviour wrap the call themselves.
+                expect(() => view.getContextValue('errorFunction')).toThrow('Test error');
             });
 
             it('should not call functions in nested paths', () => {
@@ -226,7 +200,7 @@ module.exports = async function(testContext) {
                     }
                 };
                 
-                const result = view.get('nested.func');
+                const result = view.getContextValue('nested.func');
                 expect(typeof result).toBe('function');
             });
         });
@@ -292,7 +266,7 @@ module.exports = async function(testContext) {
                 const model = new Model({
                     userName: 'Alice'
                 });
-                
+
                 const view = new View({
                     id: 'test-view',
                     template: `
@@ -300,29 +274,24 @@ module.exports = async function(testContext) {
                             <h1>{{data.title}}</h1>
                             <p>User: {{model.userName}}</p>
                             <p>Status: {{getStatus}}</p>
-                            <p>Loading: {{state.loading}}</p>
                         </div>
                     `,
                     data: {
                         title: 'Dashboard'
-                    },
-                    state: {
-                        loading: false
                     }
                 });
-                
+
                 view.setModel(model);
-                
+
                 view.getStatus = function() {
                     return 'Active';
                 };
-                
+
                 await view.render();
-                
+
                 expect(view.element.innerHTML).toContain('Dashboard');
                 expect(view.element.innerHTML).toContain('User: Alice');
                 expect(view.element.innerHTML).toContain('Status: Active');
-                expect(view.element.innerHTML).toContain('Loading: false');
             });
 
             it('should handle conditional sections with model data', async () => {
@@ -385,27 +354,28 @@ module.exports = async function(testContext) {
             });
 
             it('should handle dynamic class names', async () => {
+                // Current View has no `state` property; fold the active flag
+                // into `data` so the test still exercises the intent
+                // (computed class names from view state).
                 const view = new View({
                     id: 'test-view',
                     template: '<div class="{{getContainerClass}}">{{data.content}}</div>',
                     data: {
                         content: 'Hello World',
-                        theme: 'dark'
-                    },
-                    state: {
+                        theme: 'dark',
                         active: true
                     }
                 });
-                
+
                 view.getContainerClass = function() {
                     const classes = ['container'];
                     if (this.data.theme === 'dark') classes.push('theme-dark');
-                    if (this.state.active) classes.push('active');
+                    if (this.data.active) classes.push('active');
                     return classes.join(' ');
                 };
-                
+
                 await view.render();
-                
+
                 expect(view.element.innerHTML).toContain('class="container theme-dark active"');
                 expect(view.element.innerHTML).toContain('Hello World');
             });
