@@ -50,7 +50,7 @@ class PublicMessageView extends View {
                         <h5 class="mb-1">{{#model.subject}}{{model.subject}}{{/model.subject}}{{^model.subject}}<span class="text-muted fst-italic">No subject</span>{{/model.subject}}</h5>
                         <div class="text-muted small d-flex align-items-center gap-3 flex-wrap">
                             <span><i class="bi bi-person-fill me-1"></i>{{model.name}}</span>
-                            <span><i class="bi bi-envelope me-1"></i><a href="mailto:{{model.email}}">{{model.email}}</a></span>
+                            <span><i class="bi bi-envelope me-1"></i><a href="mailto:{{safeMailtoEmail}}">{{model.email}}</a></span>
                             {{#model.group.name}}
                                 <span><i class="bi bi-diagram-3 me-1"></i>{{model.group.name}}</span>
                             {{/model.group.name}}
@@ -85,7 +85,7 @@ class PublicMessageView extends View {
                     <button class="btn {{toggleBtnClass}} btn-sm" data-action="toggle-status">
                         <i class="bi {{toggleBtnIcon}} me-1"></i>{{toggleBtnLabel}}
                     </button>
-                    <a class="btn btn-outline-secondary btn-sm" href="mailto:{{model.email}}?subject={{replySubject}}">
+                    <a class="btn btn-outline-secondary btn-sm" href="mailto:{{safeMailtoEmail}}?subject={{replySubject}}">
                         <i class="bi bi-reply me-1"></i>Reply via Email
                     </a>
                 </div>
@@ -117,6 +117,7 @@ class PublicMessageView extends View {
 
         const subject = this.model.get('subject') || '';
         this.replySubject = encodeURIComponent(subject ? `Re: ${subject}` : 'Re: your message');
+        this.safeMailtoEmail = encodeURIComponent(this.model.get('email') || '');
     }
 
     async onInit() {

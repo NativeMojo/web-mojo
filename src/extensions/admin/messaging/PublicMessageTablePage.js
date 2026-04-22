@@ -98,10 +98,17 @@ class PublicMessageTablePage extends TablePage {
         );
         if (!confirmed) return;
 
-        await Promise.all(selected.map(item =>
+        const results = await Promise.allSettled(selected.map(item =>
             item.model.save({ status: 'closed' })
         ));
-        this.getApp().toast.success(`${selected.length} message(s) closed`);
+        const failed = results.filter(r => r.status === 'rejected').length;
+        const succeeded = results.length - failed;
+        if (succeeded) {
+            this.getApp().toast.success(`${succeeded} message(s) closed`);
+        }
+        if (failed) {
+            this.getApp().toast.error(`${failed} message(s) failed to update`);
+        }
         this.tableView.collection.fetch();
     }
 }

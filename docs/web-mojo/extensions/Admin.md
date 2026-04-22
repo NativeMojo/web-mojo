@@ -41,6 +41,7 @@ import {
   EmailMailboxTablePage,
   EmailTemplateTablePage,
   SentMessageTablePage,
+  PublicMessageTablePage,
 
   PhoneNumberTablePage,
   SMSTablePage,
@@ -80,6 +81,7 @@ import {
 
   EmailTemplateView,
   EmailView,
+  PublicMessageView,
   PhoneNumberView,
   PushDeliveryView,
   PushDeviceView,
@@ -193,6 +195,9 @@ await TaskDetailsView.show(task);
 - `EmailTemplateTablePage`
 - `SentMessageTablePage`
 
+### Messaging (Contact)
+- `PublicMessageTablePage` — Read + status-toggle table for visitor contact/support submissions. Route: `system/messaging/public-messages`. Permissions: `view_support`, `support`, `security`.
+
 ### Messaging (SMS)
 - `PhoneNumberTablePage`
 - `SMSTablePage`
@@ -243,6 +248,9 @@ await TaskDetailsView.show(task);
 ### Messaging (Email)
 - `EmailTemplateView`
 - `EmailView`
+
+### Messaging (Contact)
+- `PublicMessageView` — Detail view for a single public message, shown when a row is clicked from `PublicMessageTablePage`. Renders metadata with friendly labels for known keys and a humanized fallback for unknown keys. Includes an inline status toggle.
 
 ### Messaging (SMS)
 - `PhoneNumberView`
