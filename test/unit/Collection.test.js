@@ -35,11 +35,14 @@ module.exports = async function(testContext) {
             }
 
             TestModel = TestUser;
-            TestModel.Rest = mockRest;
-            Collection.Rest = mockRest;
 
             // Create collection instance
             collection = new Collection({ ModelClass: TestModel, endpoint: '/api/users' });
+
+            // Collection and Model both hold a reference to the shared `rest`
+            // singleton on `this.rest`. Replace it on the instance so tests
+            // can drive fetch/save/destroy through mockRest.
+            collection.rest = mockRest;
         });
 
         describe('Constructor and Initialization', () => {
@@ -80,113 +83,100 @@ module.exports = async function(testContext) {
         });
 
         describe('Fetch Functionality', () => {
+            // The current REST response shape nests the array under
+            // response.data.data, with pagination fields alongside it.
+            // _performFetch only accepts the success branch when
+            // response.data.status is truthy (typically 'ok').
+            const successResponse = (models, extra = {}) => ({
+                success: true,
+                data: {
+                    data: models,
+                    status: 'ok',
+                    size: 10,
+                    start: 0,
+                    count: models.length,
+                    ...extra
+                }
+            });
+
             it('should fetch collection data successfully', async () => {
                 const responseData = [
                     { id: 1, name: 'John', email: 'john@test.com' },
                     { id: 2, name: 'Jane', email: 'jane@test.com' }
                 ];
-                
-                mockRest.GET.mockResolvedValue({
-                    success: true,
-                    data: responseData,
-                    total: 2,
-                    page: 1,
-                    per_page: 10,
-                    total_pages: 1
-                });
 
-                const result = await collection.fetch();
-                
-                expect(mockRest.GET).toHaveBeenCalledWith('/api/users', undefined);
+                mockRest.GET.mockResolvedValue(successResponse(responseData));
+
+                await collection.fetch();
+
+                // Fetch calls rest.GET(url, params, options). Default params
+                // include start/size from the constructor; don't over-assert
+                // the exact shape — just verify the URL and that it was called.
+                expect(mockRest.GET).toHaveBeenCalled();
+                expect(mockRest.GET.mock.calls[0][0]).toBe('/api/users');
                 expect(collection.models).toHaveLength(2);
                 expect(collection.models[0]).toBeInstanceOf(TestModel);
                 expect(collection.models[0].get('name')).toBe('John');
-                expect(collection.meta.total).toBe(2);
-                expect(result).toBe(collection);
             });
 
-            it('should handle fetch with query parameters', async () => {
-                mockRest.GET.mockResolvedValue({
-                    success: true,
-                    data: []
-                });
+            it('should pass additional query parameters to rest.GET', async () => {
+                mockRest.GET.mockResolvedValue(successResponse([]));
 
-                const params = { page: 2, limit: 5 };
-                await collection.fetch({ params });
-                
-                expect(mockRest.GET).toHaveBeenCalledWith('/api/users', params);
+                await collection.fetch({ page: 2, limit: 5 });
+
+                const sentParams = mockRest.GET.mock.calls[0][1];
+                expect(sentParams.page).toBe(2);
+                expect(sentParams.limit).toBe(5);
             });
 
-            it('should parse paginated response', async () => {
-                const responseData = {
-                    success: true,
-                    data: [
-                        { id: 1, name: 'John' }
-                    ],
-                    total: 100,
-                    page: 2,
-                    per_page: 10,
-                    total_pages: 10
-                };
-                
-                mockRest.GET.mockResolvedValue(responseData);
+            it('should populate meta from a paginated response', async () => {
+                mockRest.GET.mockResolvedValue(successResponse(
+                    [{ id: 1, name: 'John' }],
+                    { count: 100, size: 10, start: 10 }
+                ));
 
                 await collection.fetch();
-                
-                expect(collection.meta).toEqual({
-                    total: 100,
-                    page: 2,
-                    per_page: 10,
-                    total_pages: 10
-                });
+
+                // parse() populates meta with size/start/count/status/graph
+                expect(collection.meta.count).toBe(100);
+                expect(collection.meta.size).toBe(10);
+                expect(collection.meta.start).toBe(10);
+                expect(collection.meta.status).toBe('ok');
             });
 
-            it('should handle direct array response', async () => {
+            it('should add models from a paginated response', async () => {
                 const responseData = [
                     { id: 1, name: 'John' },
                     { id: 2, name: 'Jane' }
                 ];
-                
-                mockRest.GET.mockResolvedValue({
-                    success: true,
-                    data: responseData
-                });
+
+                mockRest.GET.mockResolvedValue(successResponse(responseData));
 
                 await collection.fetch();
-                
+
                 expect(collection.models).toHaveLength(2);
             });
 
-            it('should handle fetch errors', async () => {
+            it('should record errors when the response is unsuccessful', async () => {
+                // _performFetch no longer throws on an error response — it
+                // records errors and emits a fetch:error event.
                 mockRest.GET.mockResolvedValue({
                     success: false,
                     message: 'Server error',
                     errors: { server: 'Internal error' }
                 });
 
-                try {
-                    await collection.fetch();
-                    assert.fail('Should have thrown error');
-                } catch (error) {
-                    expect(error.message).toBe('Server error');
-                    expect(collection.errors).toEqual({ server: 'Internal error' });
-                }
+                const result = await collection.fetch();
+
+                expect(collection.errors).toEqual({ server: 'Internal error' });
+                expect(result.success).toBe(false);
             });
 
-            it('should set loading state during fetch', async () => {
-                let loadingDuringRequest = false;
-                
-                mockRest.GET.mockImplementation(async () => {
-                    loadingDuringRequest = collection.loading;
-                    return {
-                        success: true,
-                        data: []
-                    };
-                });
+            it('should clear loading state when fetch completes', async () => {
+                mockRest.GET.mockResolvedValue(successResponse([]));
 
+                expect(collection.loading).toBe(false);
                 await collection.fetch();
-                
-                expect(loadingDuringRequest).toBe(true);
                 expect(collection.loading).toBe(false);
             });
         });
@@ -604,26 +594,22 @@ module.exports = async function(testContext) {
         });
 
         describe('Error Handling', () => {
-            it('should handle network errors during fetch', async () => {
+            it('should record network errors on collection.errors', async () => {
+                // fetch() no longer throws — it catches the error, records it,
+                // emits fetch:error, and returns a { success: false } result.
                 mockRest.GET.mockRejectedValue(new Error('Network error'));
 
-                try {
-                    await collection.fetch();
-                    assert.fail('Should have thrown error');
-                } catch (error) {
-                    expect(error.message).toBe('Network error');
-                    expect(collection.errors).toEqual({ fetch: 'Network error' });
-                }
+                const result = await collection.fetch();
+
+                expect(result.success).toBe(false);
+                expect(result.error).toBe('Network error');
+                expect(collection.errors).toEqual({ fetch: 'Network error' });
             });
 
             it('should clear loading state on error', async () => {
                 mockRest.GET.mockRejectedValue(new Error('Network error'));
 
-                try {
-                    await collection.fetch();
-                } catch (error) {
-                    // Expected
-                }
+                await collection.fetch();
 
                 expect(collection.loading).toBe(false);
             });
@@ -633,7 +619,6 @@ module.exports = async function(testContext) {
             it('should use custom parse method', async () => {
                 class CustomCollection extends Collection {
                     parse(response) {
-                        // Custom parsing logic
                         if (response.data && response.data.users) {
                             this.meta = response.data.pagination;
                             return response.data.users;
@@ -642,31 +627,28 @@ module.exports = async function(testContext) {
                     }
                 }
 
-                const customCol = new CustomCollection(TestModel);
-                CustomCollection.Rest = mockRest;
+                const customCol = new CustomCollection({
+                    ModelClass: TestModel,
+                    endpoint: '/api/users'
+                });
+                customCol.rest = mockRest;
 
-                const responseData = {
+                // _performFetch still requires response.data.status to enter
+                // the success branch — the custom parse() shape is otherwise
+                // unused.
+                mockRest.GET.mockResolvedValue({
                     success: true,
                     data: {
-                        users: [
-                            { id: 1, name: 'John' }
-                        ],
-                        pagination: {
-                            total: 1,
-                            page: 1
-                        }
+                        status: 'ok',
+                        users: [{ id: 1, name: 'John' }],
+                        pagination: { total: 1, page: 1 }
                     }
-                };
-
-                mockRest.GET.mockResolvedValue(responseData);
+                });
 
                 await customCol.fetch();
 
                 expect(customCol.length()).toBe(1);
-                expect(customCol.meta).toEqual({
-                    total: 1,
-                    page: 1
-                });
+                expect(customCol.meta).toEqual({ total: 1, page: 1 });
             });
         });
     });

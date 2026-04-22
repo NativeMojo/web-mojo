@@ -629,7 +629,7 @@ class Collection {
     this.models.sort(comparator);
 
     if (!options.silent) {
-      this.trigger('sort', { collection: this });
+      this.emit('sort', { collection: this });
     }
 
     return this;
@@ -691,7 +691,7 @@ class Collection {
    * @returns {Collection} New collection instance
    */
   static fromArray(ModelClass, data = [], options = {}) {
-    const collection = new this(ModelClass, options);
+    const collection = new this({ ModelClass, ...options });
     collection.add(data, { silent: true });
     return collection;
   }
