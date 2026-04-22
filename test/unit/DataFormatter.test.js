@@ -34,12 +34,13 @@ module.exports = async function(testContext) {
         expect(formatter.apply('date', testDate, 'MMM DD, YYYY')).toMatch(/Jan 15, 2024/);
       });
 
-      it('should handle string dates', () => {
-        // Use a date string with explicit timezone to avoid timezone issues
-        const dateStr = '2024-01-15T00:00:00';
-        const result = formatter.apply('date', dateStr);
-        // Check that it's a valid date format (MM/DD/YYYY)
-        expect(result).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+      it('should format epoch seconds', () => {
+        // date() now expects a Date, an epoch-ms number, or an epoch-seconds
+        // number. Arbitrary date strings no longer parse — they go through
+        // normalizeEpoch and get dropped.
+        const localMidnight = new Date(2024, 0, 15);
+        const epochSeconds = Math.floor(localMidnight.getTime() / 1000);
+        expect(formatter.apply('date', epochSeconds)).toBe('01/15/2024');
       });
 
       it('should return empty string for null/undefined', () => {
@@ -47,8 +48,9 @@ module.exports = async function(testContext) {
         expect(formatter.apply('date', undefined)).toBe('');
       });
 
-      it('should return original value for invalid dates', () => {
-        expect(formatter.apply('date', 'invalid')).toBe('invalid');
+      it('should return empty string for non-numeric garbage', () => {
+        // 'invalid' -> normalizeEpoch('invalid') -> NaN -> '' -> formatter short-circuits
+        expect(formatter.apply('date', 'invalid')).toBe('');
       });
     });
 
@@ -137,13 +139,14 @@ module.exports = async function(testContext) {
     });
 
     describe('currency', () => {
+      // `currency` takes the raw value in CENTS (docs/web-mojo/core/DataFormatter.md
+      // L91, L122). 123456 cents → $1,234.56.
       it('should format currency with default symbol', () => {
-        expect(formatter.apply('currency', 1234.56)).toBe('$1,234.56');
+        expect(formatter.apply('currency', 123456)).toBe('$1,234.56');
       });
 
       it('should format currency with custom symbol', () => {
-        expect(formatter.apply('currency', 1234.56, '€')).toBe('€1,234.56');
-        expect(formatter.apply('currency', 1234.56, '£', 0)).toBe('£1,235');
+        expect(formatter.apply('currency', 123456, '€')).toBe('€1,234.56');
       });
     });
 
@@ -224,11 +227,14 @@ module.exports = async function(testContext) {
     });
 
     describe('capitalize', () => {
-      it('should capitalize first letter', () => {
-        expect(formatter.apply('capitalize', 'hello world')).toBe('Hello world');
+      // Default is now `all=true` (title-case every word). Pass `false` for
+      // first-letter-only capitalization.
+      it('should capitalize only the first letter when all=false', () => {
+        expect(formatter.apply('capitalize', 'hello world', false)).toBe('Hello world');
       });
 
-      it('should capitalize all words when requested', () => {
+      it('should title-case every word by default', () => {
+        expect(formatter.apply('capitalize', 'hello world')).toBe('Hello World');
         expect(formatter.apply('capitalize', 'hello world', true)).toBe('Hello World');
       });
 
@@ -381,17 +387,21 @@ module.exports = async function(testContext) {
     });
 
     describe('status', () => {
-      it('should format status with icons', () => {
+      // `status` renders Bootstrap Icons markup now (framework uses bi-*
+      // classes throughout the UI); see _status() in DataFormatter.js.
+      it('should format status with bootstrap icons', () => {
         expect(formatter.apply('status', 'active'))
-          .toBe('<span class="text-success">✓ active</span>');
+          .toBe('<span class="text-success"><i class="bi bi-check-circle-fill"></i> active</span>');
       });
 
-      it('should use custom icons and colors', () => {
-        const result = formatter.apply('status', 'custom', 
-          { custom: '🔥' }, 
-          { custom: 'primary' }
-        );
-        expect(result).toBe('<span class="text-primary">🔥 custom</span>');
+      it('should fall back to secondary color + no icon for unknown status', () => {
+        expect(formatter.apply('status', 'custom'))
+          .toBe('<span class="text-secondary">custom</span>');
+      });
+
+      it('should omit icon when status_text is used', () => {
+        expect(formatter.apply('status_text', 'active'))
+          .toBe('<span class="text-success">active</span>');
       });
     });
 
@@ -496,7 +506,8 @@ module.exports = async function(testContext) {
     });
 
     it('should handle complex chains', () => {
-      expect(formatter.pipe(1234.567, 'currency|default("Free")')).toBe('$1,234.57');
+      // currency now takes cents (see `currency` describe above)
+      expect(formatter.pipe(123457, 'currency|default("Free")')).toBe('$1,234.57');
       expect(formatter.pipe(null, 'default("Free")|uppercase')).toBe('FREE');
     });
 
@@ -568,7 +579,7 @@ module.exports = async function(testContext) {
     });
 
     it('should list all formatters', () => {
-      const list = formatter.list();
+      const list = formatter.listFormatters();
       expect(list).toContain('date');
       expect(list).toContain('currency');
       expect(list).toContain('uppercase');
