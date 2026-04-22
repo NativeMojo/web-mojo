@@ -358,11 +358,31 @@ class TestRunner {
             beforeEach: (fn) => { currentHooks()[0].push(fn); },
             afterEach: (fn) => { currentHooks()[1].push(fn); },
             expect: this.createExpectMatcher(),
-            assert: (condition, message) => {
-                if (!condition) {
-                    throw new Error(message || 'Assertion failed');
+            assert: Object.assign(
+                (condition, message) => {
+                    if (!condition) {
+                        throw new Error(message || 'Assertion failed');
+                    }
+                },
+                {
+                    fail: (message) => {
+                        throw new Error(message || 'assert.fail called');
+                    },
+                    ok: (condition, message) => {
+                        if (!condition) throw new Error(message || 'assert.ok failed');
+                    },
+                    equal: (actual, expected, message) => {
+                        if (actual !== expected) {
+                            throw new Error(message || `assert.equal: ${actual} !== ${expected}`);
+                        }
+                    },
+                    deepEqual: (actual, expected, message) => {
+                        if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+                            throw new Error(message || `assert.deepEqual failed`);
+                        }
+                    }
                 }
-            }
+            )
         };
 
         // Expose a waiter so the runner can await the final test in the chain.

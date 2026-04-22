@@ -484,6 +484,16 @@ class Model {
    * Reset model to original state
    */
   reset() {
+    // _setNestedAttribute mirrors writes onto instance props (this[key]) for
+    // fast access. Clear those so `reset()` actually restores original state
+    // — otherwise `model.get(key)` (which reads this[key] first) returns the
+    // dirty value even though `this.attributes` has been reverted.
+    for (const key of Object.keys(this.attributes)) {
+      if (!(key in this.originalAttributes)) delete this[key];
+    }
+    for (const [key, value] of Object.entries(this.originalAttributes)) {
+      this[key] = value;
+    }
     this.attributes = { ...this.originalAttributes };
     this._ = this.attributes;
     this.errors = {};
