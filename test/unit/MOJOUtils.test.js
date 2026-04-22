@@ -122,13 +122,13 @@ module.exports = async function(testContext) {
       it('should handle nested get() with pipes', () => {
         const nestedModel = new Model({
           name: 'john doe',
-          price: 99.99
+          price: 9999    // currency formatter takes cents now (see DataFormatter.md)
         });
-        
+
         const context = {
           model: nestedModel
         };
-        
+
         // Model.get() should handle the pipe
         expect(MOJOUtils.getContextData(context, 'model.name|uppercase')).toBe('JOHN DOE');
         expect(MOJOUtils.getContextData(context, 'model.price|currency')).toBe('$99.99');
@@ -139,10 +139,10 @@ module.exports = async function(testContext) {
       it('should apply single pipe formatter', () => {
         const context = {
           name: 'john doe',
-          price: 99.99,
+          price: 9999,     // cents → $99.99
           date: '2024-01-15'
         };
-        
+
         expect(MOJOUtils.getContextData(context, 'name|uppercase')).toBe('JOHN DOE');
         expect(MOJOUtils.getContextData(context, 'price|currency')).toBe('$99.99');
       });
@@ -156,10 +156,12 @@ module.exports = async function(testContext) {
       });
       
       it('should handle pipes with parentheses in arguments', () => {
+        // date() takes a Date, epoch-ms, or epoch-seconds number — not an
+        // arbitrary ISO string (see DataFormatter.test.js notes).
         const context = {
-          date: '2024-01-15T10:30:00Z'
+          date: new Date(2024, 0, 15, 10, 30, 0)
         };
-        
+
         expect(MOJOUtils.getContextData(context, 'date|date("MMMM D, YYYY")')).toMatch(/January 15, 2024/);
       });
       
@@ -199,8 +201,10 @@ module.exports = async function(testContext) {
             ]
           }
         };
-        
-        expect(MOJOUtils.getContextData(context, 'data.items.0.title|capitalize')).toBe('First item title');
+
+        // capitalize default is `all=true` now — title-cases every word.
+        // Pass `false` for first-letter-only.
+        expect(MOJOUtils.getContextData(context, 'data.items.0.title|capitalize(false)')).toBe('First item title');
         expect(MOJOUtils.getContextData(context, 'data.items.1.title|uppercase|truncate(10)')).toBe('SECOND ITE...');
       });
     });
@@ -249,10 +253,10 @@ module.exports = async function(testContext) {
     it('should handle pipes in Model.get()', () => {
       const model = new Model({
         name: 'john doe',
-        price: 99.99,
-        created: '2024-01-15T10:30:00Z'
+        price: 9999,                                // cents
+        created: new Date(2024, 0, 15, 10, 30, 0)   // Date object — ISO strings don't normalize
       });
-      
+
       expect(model.get('name')).toBe('john doe');
       expect(model.get('name|uppercase')).toBe('JOHN DOE');
       expect(model.get('price|currency')).toBe('$99.99');
@@ -266,16 +270,21 @@ module.exports = async function(testContext) {
           email: 'JANE@EXAMPLE.COM'
         }
       });
-      
+
       expect(model.get('user.name')).toBe('jane smith');
-      expect(model.get('user.name|capitalize')).toBe('Jane smith');
+      // capitalize default is all=true → 'Jane Smith'; use capitalize(false)
+      // for first-letter-only.
+      expect(model.get('user.name|capitalize(false)')).toBe('Jane smith');
+      expect(model.get('user.name|capitalize')).toBe('Jane Smith');
       expect(model.get('user.email|lowercase')).toBe('jane@example.com');
     });
   });
-  
-  describe('View.get() with MOJOUtils', () => {
+
+  // View exposes getContextValue(path); use that (or MOJOUtils.getContextData
+  // directly) instead of a non-existent view.get().
+  describe('View.getContextValue() with MOJOUtils', () => {
     let view;
-    
+
     beforeEach(() => {
       view = new View({
         data: {
@@ -284,83 +293,87 @@ module.exports = async function(testContext) {
         }
       });
     });
-    
+
     it('should handle direct properties with pipes', () => {
       view.status = 'active';
-      
-      expect(view.get('status')).toBe('active');
-      expect(view.get('status|uppercase')).toBe('ACTIVE');
+
+      expect(view.getContextValue('status')).toBe('active');
+      expect(view.getContextValue('status|uppercase')).toBe('ACTIVE');
     });
-    
+
     it('should handle data namespace with pipes', () => {
-      expect(view.get('data.title')).toBe('my page title');
-      expect(view.get('data.title|capitalize')).toBe('My page title');
-      expect(view.get('data.count')).toBe(42);
+      expect(view.getContextValue('data.title')).toBe('my page title');
+      expect(view.getContextValue('data.title|capitalize(false)')).toBe('My page title');
+      expect(view.getContextValue('data.count')).toBe(42);
     });
-    
+
     it('should handle model namespace with pipes', () => {
       const model = new Model({
         name: 'product name',
-        price: 29.99
+        price: 2999    // cents → $29.99
       });
       view.setModel(model);
-      
-      expect(view.get('model.name')).toBe('product name');
-      expect(view.get('model.name|uppercase')).toBe('PRODUCT NAME');
-      expect(view.get('model.price|currency')).toBe('$29.99');
+
+      expect(view.getContextValue('model.name')).toBe('product name');
+      expect(view.getContextValue('model.name|uppercase')).toBe('PRODUCT NAME');
+      expect(view.getContextValue('model.price|currency')).toBe('$29.99');
     });
-    
+
     it('should handle view methods', () => {
       view.getStatus = function() { return 'ready'; };
       view.getCount = function() { return this.data.count; };
-      
-      expect(view.get('getStatus')).toBe('ready');
-      expect(view.get('getStatus|uppercase')).toBe('READY');
-      expect(view.get('getCount')).toBe(42);
+
+      expect(view.getContextValue('getStatus')).toBe('ready');
+      expect(view.getContextValue('getStatus|uppercase')).toBe('READY');
+      expect(view.getContextValue('getCount')).toBe(42);
     });
-    
+
     it('should handle complex nested paths with pipes', () => {
       view.data.items = [
-        { name: 'first item', value: 10.5 },
-        { name: 'second item', value: 20.75 }
+        { name: 'first item', value: 1050 },
+        { name: 'second item', value: 2075 }   // cents → $20.75
       ];
-      
-      expect(view.get('data.items.0.name')).toBe('first item');
-      expect(view.get('data.items.0.name|uppercase')).toBe('FIRST ITEM');
-      expect(view.get('data.items.1.value|currency')).toBe('$20.75');
+
+      expect(view.getContextValue('data.items.0.name')).toBe('first item');
+      expect(view.getContextValue('data.items.0.name|uppercase')).toBe('FIRST ITEM');
+      expect(view.getContextValue('data.items.1.value|currency')).toBe('$20.75');
     });
   });
   
   describe('Integration with Mustache Templates', () => {
     it('should work seamlessly with Mustache rendering', () => {
       const Mustache = require('../../src/utils/mustache.js').default;
-      
+
       const view = new View({
         data: {
           title: 'hello world',
-          price: 99.99
+          price: 9999     // cents → $99.99
         }
       });
-      
+
       const model = new Model({
         name: 'john doe',
-        created: '2024-01-15T10:30:00Z'
+        // date() needs a Date object or epoch number — plain ISO strings
+        // go through normalizeEpoch and get dropped.
+        created: new Date(2024, 0, 15, 10, 30, 0)
       });
       view.setModel(model);
-      
+
       // Add a method to view
       view.getStatus = function() { return 'active'; };
-      
+
+      // capitalize default is all=true → 'John Doe'. Use capitalize(false)
+      // to match "John doe".
       const template = `
         <h1>{{data.title|uppercase}}</h1>
-        <p>Name: {{model.name|capitalize}}</p>
+        <p>Name: {{model.name|capitalize(false)}}</p>
         <p>Price: {{data.price|currency}}</p>
         <p>Status: {{getStatus|uppercase}}</p>
         <p>Date: {{model.created|date("MMMM D, YYYY")}}</p>
       `;
-      
+
       const result = Mustache.render(template, view);
-      
+
       expect(result).toContain('<h1>HELLO WORLD</h1>');
       expect(result).toContain('<p>Name: John doe</p>');
       expect(result).toContain('<p>Price: $99.99</p>');
