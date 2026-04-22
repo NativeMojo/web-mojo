@@ -28,7 +28,9 @@ class SimpleModuleLoader {
             'RestModel',
             'Collection',
             'View',
-            'Page'
+            'Page',
+            'ListViewItem',
+            'TableRow'
         ];
 
         // Set up global environment
@@ -171,6 +173,14 @@ class SimpleModuleLoader {
             'Page': {
                 path: path.join(this.sourceRoot, 'core/Page.js'),
                 dependencies: ['View']
+            },
+            'ListViewItem': {
+                path: path.join(this.sourceRoot, 'core/views/list/ListViewItem.js'),
+                dependencies: ['View']
+            },
+            'TableRow': {
+                path: path.join(this.sourceRoot, 'core/views/table/TableRow.js'),
+                dependencies: ['ListViewItem', 'dataFormatter']
             }
         };
 
@@ -305,6 +315,8 @@ class SimpleModuleLoader {
             { test: /Rest/, name: 'Rest' },
             { test: /DataFormatter/, name: 'dataFormatter' },
             { test: /MOJOUtils/, name: 'MOJOUtils' },
+            { test: /ListViewItem/, name: 'ListViewItem' },
+            { test: /TableRow/, name: 'TableRow' },
             { test: /\/View(\.js)?$/, name: 'View' },
             { test: /\/Page(\.js)?$/, name: 'Page' }
         ];
