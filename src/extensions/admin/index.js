@@ -27,6 +27,10 @@ export { default as EmailMailboxTablePage } from './messaging/email/EmailMailbox
 export { default as EmailTemplateTablePage } from './messaging/email/EmailTemplateTablePage.js';
 export { default as SentMessageTablePage } from './messaging/email/SentMessageTablePage.js';
 
+// Messaging - Public (visitor contact/support submissions)
+export { default as PublicMessageTablePage } from './messaging/PublicMessageTablePage.js';
+export { default as PublicMessageView } from './messaging/PublicMessageView.js';
+
 // Messaging - SMS
 export { default as PhoneNumberTablePage } from './messaging/sms/PhoneNumberTablePage.js';
 export { default as SMSTablePage } from './messaging/sms/SMSTablePage.js';

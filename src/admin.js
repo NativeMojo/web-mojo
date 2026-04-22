@@ -28,6 +28,7 @@ export { default as EmailDomainTablePage } from '@ext/admin/messaging/email/Emai
 export { default as EmailMailboxTablePage } from '@ext/admin/messaging/email/EmailMailboxTablePage.js';
 export { default as EmailTemplateTablePage } from '@ext/admin/messaging/email/EmailTemplateTablePage.js';
 export { default as SentMessageTablePage } from '@ext/admin/messaging/email/SentMessageTablePage.js';
+export { default as PublicMessageTablePage } from '@ext/admin/messaging/PublicMessageTablePage.js';
 export { default as PhoneNumberTablePage } from '@ext/admin/messaging/sms/PhoneNumberTablePage.js';
 export { default as SMSTablePage } from '@ext/admin/messaging/sms/SMSTablePage.js';
 export { default as PushDashboardPage } from '@ext/admin/messaging/push/PushDashboardPage.js';
@@ -82,6 +83,7 @@ export { default as RuleSetView } from '@ext/admin/incidents/RuleSetView.js';
 
 export { default as EmailTemplateView } from '@ext/admin/messaging/email/EmailTemplateView.js';
 export { default as EmailView } from '@ext/admin/messaging/email/EmailView.js';
+export { default as PublicMessageView } from '@ext/admin/messaging/PublicMessageView.js';
 export { default as PhoneNumberView } from '@ext/admin/messaging/sms/PhoneNumberView.js';
 export { default as PushDeliveryView } from '@ext/admin/messaging/push/PushDeliveryView.js';
 export { default as PushDeviceView } from '@ext/admin/messaging/push/PushDeviceView.js';
@@ -143,6 +145,7 @@ import EmailDomainTablePageClass from '@ext/admin/messaging/email/EmailDomainTab
 import EmailMailboxTablePageClass from '@ext/admin/messaging/email/EmailMailboxTablePage.js';
 import EmailTemplateTablePageClass from '@ext/admin/messaging/email/EmailTemplateTablePage.js';
 import SentMessageTablePageClass from '@ext/admin/messaging/email/SentMessageTablePage.js';
+import PublicMessageTablePageClass from '@ext/admin/messaging/PublicMessageTablePage.js';
 import PhoneNumberTablePageClass from '@ext/admin/messaging/sms/PhoneNumberTablePage.js';
 import SMSTablePageClass from '@ext/admin/messaging/sms/SMSTablePage.js';
 import PushDashboardPageClass from '@ext/admin/messaging/push/PushDashboardPage.js';
@@ -206,6 +209,7 @@ export function registerSystemPages(app, addToMenu = true) {
     app.registerPage('system/email/domains', EmailDomainTablePageClass, {permissions: ["manage_aws"]});
     app.registerPage('system/email/sent', SentMessageTablePageClass, {permissions: ["manage_aws"]});
     app.registerPage('system/email/templates', EmailTemplateTablePageClass, {permissions: ["manage_aws"]});
+    app.registerPage('system/messaging/public-messages', PublicMessageTablePageClass, {permissions: ["view_support", "support", "security"]});
     app.registerPage('system/incident-dashboard', IncidentDashboardPageClass, { permissions: ["view_security"] });
     app.registerPage('system/rulesets', RuleSetTablePageClass, { permissions: ["manage_security"] });
     app.registerPage('system/tickets', TicketTablePageClass, { permissions: ["manage_security"] });
@@ -294,17 +298,18 @@ export function registerSystemPages(app, addToMenu = true) {
                     ]
                 },
 
-                // ── Email ──
+                // ── Messaging ──
                 {
-                    text: 'Email',
+                    text: 'Messaging',
                     route: null,
                     icon: 'bi-envelope',
-                    permissions: ["manage_aws"],
+                    permissions: ["manage_aws", "view_support", "support"],
                     children: [
                         { text: 'Domains', route: '?page=system/email/domains', icon: 'bi-globe', permissions: ["manage_aws"] },
                         { text: 'Mailboxes', route: '?page=system/email/mailboxes', icon: 'bi-inbox', permissions: ["manage_aws"] },
                         { text: 'Sent', route: '?page=system/email/sent', icon: 'bi-send-check', permissions: ["manage_aws"] },
                         { text: 'Templates', route: '?page=system/email/templates', icon: 'bi-file-text', permissions: ["manage_aws"] },
+                        { text: 'Contact Messages', route: '?page=system/messaging/public-messages', icon: 'bi-chat-square-text', permissions: ["view_support", "support"] },
                     ]
                 },
 
