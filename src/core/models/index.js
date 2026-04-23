@@ -8,7 +8,7 @@
  *   import { User, Job, Email } from 'web-mojo/models';
  *   import { UserList, JobForms } from 'web-mojo/models';
  * 
- * Generated on: 2026-04-21T15:13:19.581Z
+ * Generated on: 2026-04-23T14:42:41.377Z
  */
 
 // AWS model exports
@@ -78,6 +78,10 @@ export { default as Passkeys } from './Passkeys.js';
 // Phonehub model exports
 export * from './Phonehub.js';
 export { default as Phonehub } from './Phonehub.js';
+
+// PublicMessage model exports
+export * from './PublicMessage.js';
+export { default as PublicMessage } from './PublicMessage.js';
 
 // Push model exports
 export * from './Push.js';

@@ -199,7 +199,7 @@
 
             // Initialize
             const PROD_BASE = "/api";
-            const DEV_API = "http://0.0.0.0:9009/api";
+            const DEV_API = "http://127.0.0.1:9009/api";
             const API_BASE = window.location.hostname === "localhost" ? DEV_API : PROD_BASE;
 
             rest.setDefaults({ baseURL: API_BASE });
@@ -216,9 +216,7 @@
                 document
                     .getElementById("registerPasskeyBtn")
                     .addEventListener("click", registerNewPasskey);
-                document
-                    .getElementById("saveEditBtn")
-                    .addEventListener("click", savePasskeyEdit);
+                document.getElementById("saveEditBtn").addEventListener("click", savePasskeyEdit);
             });
 
             // Load passkeys from server
@@ -281,7 +279,7 @@
                             </button>
                         </div>
                     </div>
-                `
+                `,
                     )
                     .join("");
             }
@@ -292,7 +290,7 @@
                 if (!window.PublicKeyCredential) {
                     showAlert(
                         "WebAuthn is not supported in this browser. Please use a modern browser.",
-                        "danger"
+                        "danger",
                     );
                     return;
                 }
@@ -323,7 +321,7 @@
                     // Ask for friendly name
                     const friendlyName = prompt(
                         "Give this passkey a name:",
-                        getDefaultDeviceName()
+                        getDefaultDeviceName(),
                     );
                     if (!friendlyName) {
                         showAlert("Registration cancelled - no name provided", "warning");
@@ -339,10 +337,10 @@
                             type: credential.type,
                             response: {
                                 clientDataJSON: arrayBufferToBase64(
-                                    credential.response.clientDataJSON
+                                    credential.response.clientDataJSON,
                                 ),
                                 attestationObject: arrayBufferToBase64(
-                                    credential.response.attestationObject
+                                    credential.response.attestationObject,
                                 ),
                             },
                             transports: credential.response.getTransports
@@ -358,7 +356,7 @@
                     } else {
                         showAlert(
                             "Failed to complete registration: " + completeResponse.error,
-                            "danger"
+                            "danger",
                         );
                     }
                 } catch (error) {
@@ -373,8 +371,7 @@
                 if (!passkey) return;
 
                 document.getElementById("editPasskeyId").value = id;
-                document.getElementById("editFriendlyName").value =
-                    passkey.get("friendly_name");
+                document.getElementById("editFriendlyName").value = passkey.get("friendly_name");
                 document.getElementById("editIsEnabled").checked = passkey.get("is_enabled");
 
                 editModal.show();
@@ -419,7 +416,7 @@
             window.deletePasskey = async function (id) {
                 if (
                     !confirm(
-                        "Are you sure you want to delete this passkey? This action cannot be undone."
+                        "Are you sure you want to delete this passkey? This action cannot be undone.",
                     )
                 ) {
                     return;
