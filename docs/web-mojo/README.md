@@ -62,7 +62,7 @@ UI Components for displaying and interacting with data:
 - **[TableView](./components/TableView.md)** - Advanced data table with sorting, filtering, pagination
 - **[TablePage](./components/TablePage.md)** - Page wrapper for TableView with URL sync
 - **[DataView](./components/DataView.md)** - Structured data display component
-- **[FileView](./components/FileView.md)** - File upload and management
+- **[FileView](./components/FileView.md)** - Canonical viewer for File records (preview, details, renditions, metadata)
 - **[ImageFields](./components/ImageFields.md)** - Image field components
 
 ---

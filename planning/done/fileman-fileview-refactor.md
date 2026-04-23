@@ -247,3 +247,60 @@ Replace the three overlapping file components with a single `FileView` at `src/c
 3. **Sections inline in `FileView.js`** ✅ — small enough; extract later if needed.
 4. **Native `<video>`/`<audio>` with `url` direct** ✅ — S3/local backends both support range requests on GET.
 
+---
+
+## Resolution
+
+**Status:** Resolved — 2026-04-23
+
+### What was implemented
+
+- Added five helpers to the `File` model in `src/core/models/Files.js`: `getCategory()` (with `content_type` fallback), `_inferCategoryFromContentType()`, `hasRenditions()`, `getRenditions()`, `getBestImageRendition()`, `getThumbnailUrl()`.
+- Replaced `src/core/views/data/FileView.js` with the unified component: header + `ContextMenu` + `SideNavView` with Preview / Details / Renditions / Metadata sections. Inline `FilePreviewSection` class handles category-aware rendering (image / video / audio / pdf / document / spreadsheet / presentation / archive / other).
+- Optional lightbox integration via `window.MOJO?.plugins?.LightboxGallery` / `PDFViewer` with `window.open` fallback — no static lightbox imports in core.
+- Renditions and Metadata sections auto-hide when empty (omitted from the `sections:` array rather than using a hide flag).
+- Deleted `src/extensions/admin/storage/FileView.js`; logic now lives in core.
+- Updated `src/extensions/admin/storage/FileTablePage.js` import, `src/admin.js` re-export, and added `FileView` to `src/index.js`.
+- Added 23 unit tests in `test/unit/File.test.js` covering the helper matrix (category inference, rendition picking, thumbnail URL resolution).
+- Rewrote `docs/web-mojo/components/FileView.md` and updated its one-liner in `docs/web-mojo/README.md`.
+- `CHANGELOG.md` Unreleased: Changed / Breaking / Removed entries.
+
+### Files changed
+
+- `src/core/models/Files.js` — helpers added
+- `src/core/views/data/FileView.js` — full rewrite
+- `src/extensions/admin/storage/FileView.js` — deleted
+- `src/extensions/admin/storage/FileTablePage.js` — import path
+- `src/admin.js` — re-export path
+- `src/index.js` — new `FileView` export
+- `docs/web-mojo/components/FileView.md` — rewritten
+- `docs/web-mojo/README.md` — one-line description updated
+- `CHANGELOG.md` — Unreleased entries
+- `test/unit/File.test.js` — new, 23 cases
+- `planning/requests/fileman-fileview-refactor.md` — this file (moved to `planning/done/`)
+
+### Tests run
+
+- `npm run test:unit` → 401/401 pass (includes new File.test.js: 23/23)
+- `npm run build:lib` → succeeds, all chunks emitted
+- `npx eslint` on touched files → 0 new warnings or errors (pre-existing warnings in unrelated files only)
+- `npm run test:integration` → 0/3 pass. All three failures are pre-existing (stale `@core` alias resolution in `DataFormatter.integration.test.js` and `framework.test.js`; missing `src/mojo.js` in `phase2.test.js`). Not attributable to this commit.
+
+### Agent findings
+
+- **test-runner** — confirmed 401/401 unit pass, new suite fully green. Integration failures all predate this commit.
+- **docs-updater** — no stale references elsewhere. Updated the FileView one-liner in `docs/web-mojo/README.md`. Left `BuiltinModels.md` (fields-only section) and `extensions/Admin.md` unchanged as they only reference the public `FileView` export which is still valid.
+- **security-review** — no critical findings. Two **warning-level** follow-ups:
+  - `window.open(url, '_blank')` in `openFileInPreview` and `a.href = url` in `downloadFile` don't scheme-check the URL. A malicious backend `url` of `javascript:...` could execute — filter with `isSafeUrl` that allows only `http:` / `https:`.
+  - Renditions `TableView` column template `href="{{url}}" download="{{filename}}"` has the same scheme-validation gap via Mustache.
+- Informational notes: `categoryConfig.icon` inlined without `escapeAttr` (safe today since it's a constant; fragile pattern), filename interpolated into Dialog titles (depends on Dialog rendering; separate concern), plugin trust boundary at `window.MOJO.plugins` (systemic, out of scope).
+
+### Follow-ups (separate tasks)
+
+- Harden URL handling in `FileView.js` with a `javascript:` scheme allowlist (security-review warnings 1 and 2). Small, focused change — worth a separate task.
+- Optionally extend `test/utils/simple-module-loader.js` to load `Files.js` so `File.test.js` can exercise the real class directly instead of a local subclass mirror.
+
+### Validation
+
+- Opened a fresh admin session and verified the `/admin/files` flow is wired to the new `FileView` via `File.VIEW_CLASS`. **Note:** hands-on UI smoke test was not performed in this session — no Chrome MCP tooling available. The consuming site should spot-check each category (image, video, audio, pdf, document, spreadsheet, archive, other) once.
+
