@@ -55,8 +55,20 @@ await view.mount(container);
 |-----|-------|-----------------|----------|
 | `preview` | Preview | yes — default active | Category-aware preview (see next section) |
 | `details` | Details | yes | `DataView` of the file's core fields (id, filename, sizes, timestamps, storage info, public URL) |
-| `renditions` | Renditions | only when `model.hasRenditions()` | `TableView` of renditions with role, filename, size, content type, and view/download buttons |
+| `renditions` | Renditions | yes | `TableView` of renditions when populated; "processing…" placeholder with Refresh button when the backend is still generating them; "upload pending" placeholder otherwise |
 | `metadata` | Metadata | only when `model.metadata` is non-empty | `DataView` auto-generated from the `metadata` object (image EXIF, video duration, renderer-specific fields, etc.) |
+
+### Async renditions
+
+The backend generates renditions asynchronously on the `renditions` worker channel. Immediately after `upload_status` flips to `completed`, the `renditions` map is often empty `{}` — image renditions usually land within seconds; video transcodes can take minutes.
+
+FileView handles this automatically:
+
+1. On mount, if `model.isRenditionsProcessing()` is true, a background poll (`model.fetch()` every 5s, up to 5 minutes) runs until the map populates or the cap is hit. Each successful fetch emits `change` on the model; the Preview and Renditions sections re-render themselves to pick up the new URLs.
+2. The Renditions section shows a spinner placeholder with a manual **Refresh** button for users who want to check immediately.
+3. A **Regenerate Previews** ContextMenu action POSTs `{ action: 'regenerate_renditions' }` to the file endpoint, then restarts the poll. Uses `File.regenerateRenditions(roles?)` under the hood.
+
+The poll is cancelled in `onBeforeDestroy` so closing the dialog leaves no pending timers.
 
 ## Category-Driven Preview
 
@@ -85,6 +97,7 @@ The three-dots menu in the header exposes:
 | `copy-url` | `onActionCopyUrl` | Writes the file URL to the clipboard, toasts success/failure |
 | `edit-file` | `onActionEditFile` | Opens `Dialog.showModelForm({ formConfig: FileForms.edit })`; re-renders on save |
 | `make-public` / `make-private` | `onActionMakePublic` / `onActionMakePrivate` | `model.save({ is_public: true/false })`; menu item flips on next render |
+| `regenerate-renditions` | `onActionRegenerateRenditions` | Confirms, then POSTs `{ action: 'regenerate_renditions' }` and (re)starts the rendition poll |
 | `delete-file` | `onActionDeleteFile` | `Dialog.confirm` → `model.destroy()` → emits `file:deleted` on success |
 
 ## Events
@@ -115,9 +128,11 @@ The component relies on these helpers on `File`:
 
 - `getCategory()` — backend `category` with content_type fallback
 - `hasRenditions()`
+- `isRenditionsProcessing()` — true when `upload_status === 'completed'` but renditions is empty
 - `getRenditions()` — returns renditions as an array
 - `getBestImageRendition()` — largest-area image rendition
 - `getThumbnailUrl()` — prefers `renditions.thumbnail`, falls back to best image rendition
+- `regenerateRenditions(roles?)` — POSTs `{ action: 'regenerate_renditions', roles? }`; returns the save promise
 
 ## Common Pitfalls
 

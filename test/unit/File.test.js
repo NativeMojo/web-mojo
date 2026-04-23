@@ -64,6 +64,16 @@ module.exports = async function (testContext) {
             return !!(r && Object.keys(r).length);
         }
 
+        isRenditionsProcessing() {
+            return this.get('upload_status') === 'completed' && !this.hasRenditions();
+        }
+
+        regenerateRenditions(roles) {
+            const body = { action: 'regenerate_renditions' };
+            if (Array.isArray(roles) && roles.length) body.roles = roles;
+            return this.save(body);
+        }
+
         getRenditions() {
             const r = this.get('renditions');
             return r ? Object.values(r) : [];
@@ -146,6 +156,53 @@ module.exports = async function (testContext) {
 
         it('returns "other" for unrecognized content_type', () => {
             expect(new TestFile({ content_type: 'application/x-custom-thing' }).getCategory()).toBe('other');
+        });
+    });
+
+    describe('File.isRenditionsProcessing()', () => {
+        it('returns true when upload is completed but renditions is empty', () => {
+            expect(new TestFile({ upload_status: 'completed' }).isRenditionsProcessing()).toBe(true);
+            expect(new TestFile({ upload_status: 'completed', renditions: {} }).isRenditionsProcessing()).toBe(true);
+        });
+
+        it('returns false when the upload is not yet completed', () => {
+            expect(new TestFile({ upload_status: 'pending' }).isRenditionsProcessing()).toBe(false);
+            expect(new TestFile({ upload_status: 'uploading' }).isRenditionsProcessing()).toBe(false);
+            expect(new TestFile({}).isRenditionsProcessing()).toBe(false);
+        });
+
+        it('returns false once renditions have arrived', () => {
+            const f = new TestFile({
+                upload_status: 'completed',
+                renditions: { thumbnail: { url: 'x' } }
+            });
+            expect(f.isRenditionsProcessing()).toBe(false);
+        });
+    });
+
+    describe('File.regenerateRenditions()', () => {
+        it('calls save() with the regenerate_renditions action', () => {
+            const f = new TestFile({ id: 42 });
+            let captured = null;
+            f.save = (body) => { captured = body; return Promise.resolve({ success: true }); };
+            f.regenerateRenditions();
+            expect(captured).toEqual({ action: 'regenerate_renditions' });
+        });
+
+        it('includes roles when supplied', () => {
+            const f = new TestFile({ id: 42 });
+            let captured = null;
+            f.save = (body) => { captured = body; return Promise.resolve({ success: true }); };
+            f.regenerateRenditions(['thumbnail', 'preview']);
+            expect(captured).toEqual({ action: 'regenerate_renditions', roles: ['thumbnail', 'preview'] });
+        });
+
+        it('omits roles when the array is empty', () => {
+            const f = new TestFile({ id: 42 });
+            let captured = null;
+            f.save = (body) => { captured = body; return Promise.resolve({ success: true }); };
+            f.regenerateRenditions([]);
+            expect(captured).toEqual({ action: 'regenerate_renditions' });
         });
     });
 

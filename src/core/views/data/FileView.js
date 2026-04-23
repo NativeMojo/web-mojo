@@ -70,6 +70,27 @@ class FilePreviewSection extends View {
         });
         this.model = options.model;
         this.categoryConfig = options.categoryConfig || CATEGORY_CONFIG.other;
+        this._handleModelChange = this._handleModelChange.bind(this);
+    }
+
+    async onInit() {
+        // Re-render when renditions populate so video posters / document
+        // previews pick up the new thumbnail URL.
+        if (this.model && typeof this.model.on === 'function') {
+            this.model.on('change', this._handleModelChange, this);
+        }
+    }
+
+    async onBeforeDestroy() {
+        if (this.model && typeof this.model.off === 'function') {
+            this.model.off('change', this._handleModelChange, this);
+        }
+    }
+
+    _handleModelChange() {
+        if (this.isMounted && this.isMounted()) {
+            this.render();
+        }
     }
 
     getTemplate() {
@@ -171,6 +192,126 @@ class FilePreviewSection extends View {
 
     async onActionDownloadFile() {
         downloadFile(this.model);
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// FileRenditionsSection — renders the Renditions SideNav section
+//
+// Backend produces renditions asynchronously on a background channel. A file
+// can have `upload_status === 'completed'` with an empty `renditions` map
+// for seconds (images) to minutes (video transcodes). This section renders:
+//   - the TableView when renditions are present
+//   - a "processing" placeholder with a manual Refresh when still building
+//   - a "upload pending" placeholder when upload hasn't finished yet
+//
+// Listens for model `change` events so it swaps from placeholder to table as
+// soon as the poll (in FileView) pulls in the populated renditions.
+// ──────────────────────────────────────────────────────────────────────────
+
+class FileRenditionsSection extends View {
+    constructor(options = {}) {
+        super({
+            className: 'file-renditions-section p-3',
+            ...options
+        });
+        this.model = options.model;
+        this.renditionsTable = null;
+        this._handleModelChange = this._handleModelChange.bind(this);
+    }
+
+    async onInit() {
+        if (this.model && typeof this.model.on === 'function') {
+            this.model.on('change', this._handleModelChange, this);
+        }
+    }
+
+    async onBeforeDestroy() {
+        if (this.model && typeof this.model.off === 'function') {
+            this.model.off('change', this._handleModelChange, this);
+        }
+        if (this.renditionsTable) {
+            this.removeChild(this.renditionsTable);
+            this.renditionsTable = null;
+        }
+    }
+
+    _handleModelChange() {
+        if (this.isMounted && this.isMounted()) {
+            this.render();
+        }
+    }
+
+    async onBeforeRender() {
+        // Rebuild the table child fresh each render. Cheap — the child is
+        // only created when renditions exist, and renditions change rarely.
+        if (this.renditionsTable) {
+            this.removeChild(this.renditionsTable);
+            this.renditionsTable = null;
+        }
+        if (this.model && this.model.hasRenditions && this.model.hasRenditions()) {
+            this.renditionsTable = new TableView({
+                containerId: 'renditions-table',
+                collection: new Collection(this.model.getRenditions()),
+                columns: [
+                    { key: 'role', label: 'Role', formatter: 'badge' },
+                    { key: 'filename', label: 'Filename', formatter: 'truncate(40)' },
+                    { key: 'file_size', label: 'Size', formatter: 'filesize' },
+                    { key: 'content_type', label: 'Content Type' },
+                    {
+                        key: 'actions',
+                        label: 'Actions',
+                        template: `
+                            <a href="{{url}}" target="_blank" class="btn btn-sm btn-outline-primary" title="View">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{{url}}" download="{{filename}}" class="btn btn-sm btn-outline-secondary" title="Download">
+                                <i class="bi bi-download"></i>
+                            </a>
+                        `
+                    }
+                ]
+            });
+            this.addChild(this.renditionsTable);
+        }
+    }
+
+    getTemplate() {
+        if (this.model.hasRenditions && this.model.hasRenditions()) {
+            return `<div data-container="renditions-table"></div>`;
+        }
+        if (this.model.isRenditionsProcessing && this.model.isRenditionsProcessing()) {
+            return `
+                <div class="text-center p-5 bg-light rounded">
+                    <div class="spinner-border text-secondary mb-3" role="status">
+                        <span class="visually-hidden">Processing…</span>
+                    </div>
+                    <h6 class="mb-1">Renditions are being generated</h6>
+                    <p class="text-muted small mb-3">
+                        Thumbnails and previews are built in the background. Image renditions usually
+                        appear within seconds; video transcodes can take several minutes.
+                    </p>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-action="refresh-renditions">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+                    </button>
+                </div>
+            `;
+        }
+        return `
+            <div class="text-center p-5 bg-light rounded">
+                <i class="bi bi-hourglass-split display-6 text-muted"></i>
+                <h6 class="mt-3 mb-1">Upload still in progress</h6>
+                <p class="text-muted small mb-0">Renditions will be generated once the upload completes.</p>
+            </div>
+        `;
+    }
+
+    async onActionRefreshRenditions() {
+        try {
+            await this.model.fetch();
+        } catch (err) {
+            console.warn('FileView: refresh-renditions fetch failed:', err);
+        }
     }
 }
 
@@ -303,32 +444,12 @@ class FileView extends View {
         });
         sections.push({ key: 'details', label: 'Details', icon: 'bi-info-circle', view: detailsView });
 
-        // Renditions — only when the file has renditions
-        if (this.model.hasRenditions && this.model.hasRenditions()) {
-            const renditionsCollection = new Collection(this.model.getRenditions());
-            const renditionsView = new TableView({
-                collection: renditionsCollection,
-                columns: [
-                    { key: 'role', label: 'Role', formatter: 'badge' },
-                    { key: 'filename', label: 'Filename', formatter: 'truncate(40)' },
-                    { key: 'file_size', label: 'Size', formatter: 'filesize' },
-                    { key: 'content_type', label: 'Content Type' },
-                    {
-                        key: 'actions',
-                        label: 'Actions',
-                        template: `
-                            <a href="{{url}}" target="_blank" class="btn btn-sm btn-outline-primary" title="View">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                            <a href="{{url}}" download="{{filename}}" class="btn btn-sm btn-outline-secondary" title="Download">
-                                <i class="bi bi-download"></i>
-                            </a>
-                        `
-                    }
-                ]
-            });
-            sections.push({ key: 'renditions', label: 'Renditions', icon: 'bi-layers', view: renditionsView });
-        }
+        // Renditions — always shown; the section itself decides whether to
+        // render the table, a "processing" placeholder, or a "upload pending"
+        // placeholder based on current model state. Backend renditions are
+        // async, so even completed files may start with an empty map.
+        const renditionsView = new FileRenditionsSection({ model: this.model });
+        sections.push({ key: 'renditions', label: 'Renditions', icon: 'bi-layers', view: renditionsView });
 
         // Metadata — only when backend returned a non-empty metadata object
         const metadata = this.model.get('metadata');
@@ -370,12 +491,23 @@ class FileView extends View {
                     this.model.get('is_public')
                         ? { label: 'Make Private', action: 'make-private', icon: 'bi-lock' }
                         : { label: 'Make Public', action: 'make-public', icon: 'bi-unlock' },
+                    { label: 'Regenerate Previews', action: 'regenerate-renditions', icon: 'bi-arrow-repeat' },
                     { type: 'divider' },
                     { label: 'Delete File', action: 'delete-file', icon: 'bi-trash', danger: true }
                 ]
             }
         });
         this.addChild(this.contextMenu);
+
+        // If the backend is still producing renditions, poll until they
+        // appear (or give up after ~5 minutes). Each successful fetch emits
+        // a model 'change' event, which the preview/renditions sections
+        // listen to and re-render themselves.
+        this._maybeStartRenditionsPoll();
+    }
+
+    async onBeforeDestroy() {
+        this._stopRenditionsPoll();
     }
 
     _buildHeaderTemplate(categoryConfig) {
@@ -472,6 +604,66 @@ class FileView extends View {
     async onActionMakePrivate() {
         await this.model.save({ is_public: false });
         this.render();
+    }
+
+    async onActionRegenerateRenditions() {
+        const confirmed = await Dialog.confirm(
+            'Rebuild all previews and thumbnails for this file? Existing renditions will be replaced. Generation runs in the background and may take several minutes for video.',
+            'Regenerate Previews',
+            { confirmText: 'Regenerate' }
+        );
+        if (!confirmed) return;
+
+        try {
+            await this.model.regenerateRenditions();
+            this.getApp()?.toast?.success?.('Regenerating previews in the background…');
+        } catch (err) {
+            console.error('Failed to trigger regenerate_renditions:', err);
+            this.getApp()?.toast?.error?.('Failed to start preview regeneration');
+            return;
+        }
+        // Start polling so the new renditions appear automatically as the
+        // worker finishes.
+        this._maybeStartRenditionsPoll({ force: true });
+    }
+
+    // ── Renditions polling ──────────────────────────
+    // Mirrors the IncidentView analysis-progress polling shape: recursive
+    // setTimeout, attempt counter, no overlap with a previous fetch.
+
+    _maybeStartRenditionsPoll(options = {}) {
+        if (this._renditionsPollTimer) return; // already polling
+        if (!options.force && !(this.model && this.model.isRenditionsProcessing && this.model.isRenditionsProcessing())) {
+            return;
+        }
+        const maxAttempts = 60;       // 5 minutes at 5s
+        const intervalMs = 5000;
+        let attempts = 0;
+
+        const tick = () => {
+            this._renditionsPollTimer = null;
+            if (!this.model) return;
+            if (this.model.hasRenditions && this.model.hasRenditions()) return;
+            if (++attempts > maxAttempts) return;
+
+            this._renditionsPollTimer = setTimeout(async () => {
+                try {
+                    await this.model.fetch();
+                } catch (err) {
+                    console.warn('FileView: renditions poll fetch failed:', err);
+                }
+                tick();
+            }, intervalMs);
+        };
+
+        tick();
+    }
+
+    _stopRenditionsPoll() {
+        if (this._renditionsPollTimer) {
+            clearTimeout(this._renditionsPollTimer);
+            this._renditionsPollTimer = null;
+        }
     }
 
     async onActionDeleteFile() {

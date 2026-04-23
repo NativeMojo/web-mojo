@@ -305,6 +305,31 @@ class File extends Model {
     }
 
     /**
+     * True when the file upload is complete but the backend has not yet
+     * produced any renditions. Renditions are generated asynchronously on the
+     * `renditions` background channel, so an empty `renditions` map paired
+     * with `upload_status === 'completed'` means "still processing".
+     * @returns {boolean}
+     */
+    isRenditionsProcessing() {
+        return this.get('upload_status') === 'completed' && !this.hasRenditions();
+    }
+
+    /**
+     * Trigger a background rebuild of renditions.
+     * See django-mojo fileman docs — POST to the file with
+     * `{ action: 'regenerate_renditions' }` and optional `roles` (<=20).
+     * Returns immediately; the map repopulates as the worker finishes.
+     * @param {string[]} [roles] - Optional rendition roles to rebuild
+     * @returns {Promise}
+     */
+    regenerateRenditions(roles) {
+        const body = { action: 'regenerate_renditions' };
+        if (Array.isArray(roles) && roles.length) body.roles = roles;
+        return this.save(body);
+    }
+
+    /**
      * Get all renditions as an array. Backend returns renditions as a
      * role-keyed object; this normalizes to an array for easy iteration.
      * @returns {Array<object>}
