@@ -5,7 +5,7 @@
 
 import TablePage from '@core/pages/TablePage.js';
 import { File, FileList, FileForms } from '@core/models/Files.js';
-import FileView from './FileView.js';
+import FileView from '@core/views/data/FileView.js';
 import applyFileDropMixin from '@core/mixins/FileDropMixin.js';
 
 class FileTablePage extends TablePage {

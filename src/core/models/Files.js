@@ -253,6 +253,101 @@ class File extends Model {
     }
 
     /**
+     * Get the file's category. Prefers the backend-provided `category` field.
+     * Falls back to inferring from `content_type` for locally constructed
+     * models that haven't been saved yet. Returns 'other' if both are missing.
+     * @returns {string} One of: image, video, audio, pdf, document, spreadsheet,
+     *                  presentation, archive, other.
+     */
+    getCategory() {
+        return this.get('category') || this._inferCategoryFromContentType();
+    }
+
+    /**
+     * Infer category from content_type when the backend `category` field is
+     * missing. Mirrors the backend mapping in
+     * django-mojo/mojo/apps/fileman/renderer/utils.py CATEGORY_MAP.
+     * @returns {string}
+     * @private
+     */
+    _inferCategoryFromContentType() {
+        const ct = (this.get('content_type') || '').toLowerCase();
+        if (!ct) return 'other';
+        if (ct.startsWith('image/')) return 'image';
+        if (ct.startsWith('video/')) return 'video';
+        if (ct.startsWith('audio/')) return 'audio';
+        if (ct === 'application/pdf') return 'pdf';
+        if (ct.startsWith('text/') ||
+            ct === 'application/msword' ||
+            ct.startsWith('application/vnd.openxmlformats-officedocument.wordprocessingml') ||
+            ct === 'application/vnd.oasis.opendocument.text') return 'document';
+        if (ct === 'application/vnd.ms-excel' ||
+            ct.startsWith('application/vnd.openxmlformats-officedocument.spreadsheetml') ||
+            ct === 'application/vnd.oasis.opendocument.spreadsheet') return 'spreadsheet';
+        if (ct === 'application/vnd.ms-powerpoint' ||
+            ct.startsWith('application/vnd.openxmlformats-officedocument.presentationml') ||
+            ct === 'application/vnd.oasis.opendocument.presentation') return 'presentation';
+        if (ct === 'application/zip' ||
+            ct === 'application/x-rar-compressed' ||
+            ct === 'application/x-7z-compressed' ||
+            ct === 'application/x-tar' ||
+            ct === 'application/gzip') return 'archive';
+        return 'other';
+    }
+
+    /**
+     * True if the file has at least one rendition.
+     * @returns {boolean}
+     */
+    hasRenditions() {
+        const r = this.get('renditions');
+        return !!(r && Object.keys(r).length);
+    }
+
+    /**
+     * Get all renditions as an array. Backend returns renditions as a
+     * role-keyed object; this normalizes to an array for easy iteration.
+     * @returns {Array<object>}
+     */
+    getRenditions() {
+        const r = this.get('renditions');
+        return r ? Object.values(r) : [];
+    }
+
+    /**
+     * Pick the best image rendition by pixel area (width * height).
+     * Only considers renditions with an `image/*` content_type. Returns null
+     * when no image rendition is available.
+     * @returns {object|null}
+     */
+    getBestImageRendition() {
+        const images = this.getRenditions().filter(
+            r => r && typeof r.content_type === 'string' && r.content_type.startsWith('image/')
+        );
+        if (!images.length) return null;
+        return images.reduce((best, current) => {
+            const bestArea = (parseInt(best.width) || 0) * (parseInt(best.height) || 0);
+            const currentArea = (parseInt(current.width) || 0) * (parseInt(current.height) || 0);
+            return currentArea > bestArea ? current : best;
+        });
+    }
+
+    /**
+     * Get a URL suitable for a small preview/thumbnail. Prefers the explicit
+     * `thumbnail` rendition, then falls back to the best available image
+     * rendition. Returns null when no thumbnail-ish URL is available.
+     * @returns {string|null}
+     */
+    getThumbnailUrl() {
+        const renditions = this.get('renditions') || {};
+        if (renditions.thumbnail && renditions.thumbnail.url) {
+            return renditions.thumbnail.url;
+        }
+        const best = this.getBestImageRendition();
+        return best ? best.url : null;
+    }
+
+    /**
      * Upload file with progress tracking and UI integration
      * Returns a FileUpload instance with promise interface and cancellation support
      *

@@ -98,7 +98,7 @@ export { default as MetricsPermissionsView } from '@ext/admin/monitoring/Metrics
 
 export { default as SettingView } from '@ext/admin/settings/SettingView.js';
 
-export { default as FileView } from '@ext/admin/storage/FileView.js';
+export { default as FileView } from '@core/views/data/FileView.js';
 
 // Assistant
 export { default as AssistantView } from '@ext/admin/assistant/AssistantView.js';

@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Changed
+- **FileView consolidated** — The three overlapping file components (`src/core/views/data/FileView.js` legacy, `src/extensions/admin/storage/FileView.js` admin, and the small `FilePreviewView` chat card) have been reduced to one canonical `FileView` at `src/core/views/data/FileView.js`, exported from both `web-mojo` and `web-mojo/admin`. The new component uses a `SideNavView` layout (Preview / Details / Renditions / Metadata) and drives its Preview section from the backend `category` field (`image`, `video`, `audio`, `pdf`, `document`, `spreadsheet`, `presentation`, `archive`, `other`) — each category gets a purpose-built preview (inline `<video>`/`<audio>`, lightbox gallery, PDF viewer, or download-focused card). `LightboxGallery` and `PDFViewer` are accessed optionally via `window.MOJO.plugins.*` and fall back to `window.open` when the lightbox extension isn't loaded. Renditions and Metadata sections are hidden when empty. `FilePreviewView` (chat attachment card) is unchanged.
+- **`File` model helpers** — Added `getCategory()` (with content_type fallback), `hasRenditions()`, `getRenditions()`, `getBestImageRendition()`, and `getThumbnailUrl()` to the `File` model.
+
+### Breaking
+- **FileView constructor** — Removed options `file` (URL string input), `size: 'xs'..'xl'`, `showActions`, `showMetadata`, `showRenditions`, and the `updateFile()` method. Pass a `File` model via `model`, or raw data via `data` (wrapped internally). The legacy options described a different component that no longer exists.
+
+### Removed
+- **`src/extensions/admin/storage/FileView.js`** — Deleted. Logic moved into the canonical core `FileView`. `src/admin.js` still exports `FileView` for backward compatibility — it now re-exports the core component.
+
 ### Added
 - **PublicMessage admin (Contact Messages)** — New `PublicMessage` model + `PublicMessageList` collection wired to `/api/account/public_message`, plus `PublicMessageTablePage` and `PublicMessageView` for reviewing visitor-submitted contact and support messages (bouncer-gated `/contact` submissions). Table supports filtering by status/kind, batch "Mark Closed", and row-click detail view. Detail view renders submitter info, generic key/value metadata (friendly labels for known keys like `company`, `category`, `severity`, UTM tags; humanized fallback for unknown keys), full message body (auto-escaped), and a one-click status toggle via `model.save({ status })`. Registered at `system/messaging/public-messages` with `view_support`/`support`/`security` permissions. Sidebar "Email" block renamed to "Messaging" with a new "Contact Messages" child entry.
 - **PortalWebApp** — New opinionated base class extending `PortalApp` with auth-gated lifecycle, automatic WebSocket setup, and clean events. Auth is checked before the router starts; if it fails, a configurable countdown redirect is shown. WebSocket connects automatically after auth using `WebSocketClient.deriveURL()`. New events: `user:ready`, `user:logout`, `ws:ready`, `ws:lost`, `ws:reconnecting`. Config-driven: `auth: { loginUrl }` (default `/login`), `ws: true/false` (default `true`). Overridable `onAuthFailed(error)` hook. Exported from `src/index.js`.
