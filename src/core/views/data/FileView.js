@@ -24,9 +24,7 @@
 import View from '@core/View.js';
 import SideNavView from '@core/views/navigation/SideNavView.js';
 import DataView from '@core/views/data/DataView.js';
-import TableView from '@core/views/table/TableView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
-import Collection from '@core/Collection.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 import { File, FileForms } from '@core/models/Files.js';
 
@@ -191,94 +189,180 @@ class FilePreviewSection extends View {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// FileRenditionsSection — renders the Renditions SideNav section
+// FileRenditionsSection — Renditions gallery
 //
-// Backend produces renditions asynchronously on a background channel. A file
-// can have `upload_status === 'completed'` with an empty `renditions` map
-// for seconds (images) to minutes (video transcodes). This section renders:
-//   - the TableView when renditions are present
-//   - a "processing" placeholder with a manual Refresh when still building
-//   - a "upload pending" placeholder when upload hasn't finished yet
+// Renders each rendition as a card tile: inline preview (image thumbnail,
+// video poster with play overlay, or category icon), role badge, dimensions
+// + size, and three actions (Preview, Copy URL, Download).
 //
-// Listens for model `change` events so it swaps from placeholder to table as
-// soon as the poll (in FileView) pulls in the populated renditions.
+// Three states:
+//   - Gallery grid when renditions exist
+//   - Processing placeholder when upload_status === 'completed' and the
+//     backend worker hasn't populated renditions yet
+//   - "Upload in progress" placeholder otherwise
+//
+// `model:` flows through to View.setModel which wires the built-in
+// 'change' → _onModelChange → render() listener (guarded by isMounted).
+// That's exactly what we want: swap placeholder for the grid, or add new
+// rendition cards, as the rendition poll brings them in.
 // ──────────────────────────────────────────────────────────────────────────
 
 class FileRenditionsSection extends View {
     constructor(options = {}) {
-        // `model:` in options lets View.setModel wire the built-in
-        // 'change' → _onModelChange → render() listener. No duplicate
-        // listener needed; re-render on change is exactly what we want
-        // here (swap placeholder for the rendition table).
         super({
             className: 'file-renditions-section p-3',
             ...options
         });
-        this.renditionsTable = null;
-    }
-
-    async onBeforeDestroy() {
-        if (this.renditionsTable) {
-            this.removeChild(this.renditionsTable);
-            this.renditionsTable = null;
-        }
-    }
-
-    async onBeforeRender() {
-        // Rebuild the table child fresh each render. Cheap — the child is
-        // only created when renditions exist, and renditions change rarely.
-        if (this.renditionsTable) {
-            this.removeChild(this.renditionsTable);
-            this.renditionsTable = null;
-        }
-        if (this.model && this.model.hasRenditions && this.model.hasRenditions()) {
-            this.renditionsTable = new TableView({
-                containerId: 'renditions-table',
-                collection: new Collection(this.model.getRenditions()),
-                columns: [
-                    { key: 'role', label: 'Role', formatter: 'badge' },
-                    { key: 'filename', label: 'Filename', formatter: 'truncate(40)' },
-                    { key: 'file_size', label: 'Size', formatter: 'filesize' },
-                    { key: 'content_type', label: 'Content Type' },
-                    {
-                        key: 'actions',
-                        label: 'Actions',
-                        template: `
-                            <a href="{{url}}" target="_blank" class="btn btn-sm btn-outline-primary" title="View">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                            <a href="{{url}}" download="{{filename}}" class="btn btn-sm btn-outline-secondary" title="Download">
-                                <i class="bi bi-download"></i>
-                            </a>
-                        `
-                    }
-                ]
-            });
-            this.addChild(this.renditionsTable);
-        }
     }
 
     getTemplate() {
         if (this.model.hasRenditions && this.model.hasRenditions()) {
-            return `<div data-container="renditions-table"></div>`;
+            return this._buildGalleryTemplate();
         }
         if (this.model.isRenditionsProcessing && this.model.isRenditionsProcessing()) {
-            return `
-                <div class="text-center p-5 bg-light rounded">
-                    <div class="spinner-border text-secondary mb-3" role="status">
-                        <span class="visually-hidden">Processing…</span>
+            return this._buildProcessingTemplate();
+        }
+        return this._buildWaitingTemplate();
+    }
+
+    _buildGalleryTemplate() {
+        const renditions = this.model.getRenditions();
+        const cards = renditions.map(r => this._buildCard(r)).join('');
+        const count = renditions.length;
+        return `
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="text-muted small">
+                    ${count} rendition${count === 1 ? '' : 's'}
+                </div>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-secondary" data-action="refresh-renditions" title="Refresh list">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" data-action="regenerate-from-section" title="Rebuild all previews">
+                        <i class="bi bi-arrow-repeat me-1"></i>Regenerate
+                    </button>
+                </div>
+            </div>
+            <div class="row g-3">${cards}</div>
+        `;
+    }
+
+    _buildCard(r) {
+        const url = r && r.url ? r.url : '';
+        const ct = r && typeof r.content_type === 'string' ? r.content_type : '';
+        const role = r && r.role ? r.role : 'rendition';
+        const filename = r && r.filename ? r.filename : role;
+        const size = r && r.file_size ? formatBytes(r.file_size) : '';
+        const dimensions = (r && r.width && r.height) ? `${r.width} × ${r.height}` : '';
+
+        const viewData = [
+            `data-action="view-rendition"`,
+            `data-url="${escapeAttr(url)}"`,
+            `data-ct="${escapeAttr(ct)}"`,
+            `data-filename="${escapeAttr(filename)}"`,
+            `data-role="${escapeAttr(role)}"`
+        ].join(' ');
+
+        let preview;
+        if (ct.startsWith('image/') && url) {
+            preview = `<img src="${escapeAttr(url)}" alt="${escapeAttr(role)}"
+                            loading="lazy"
+                            class="w-100"
+                            style="height: 140px; object-fit: cover; background: #f8f9fa; border-top-left-radius: var(--bs-card-inner-border-radius); border-top-right-radius: var(--bs-card-inner-border-radius);">`;
+        } else if (ct.startsWith('video/')) {
+            preview = `
+                <div class="d-flex align-items-center justify-content-center position-relative"
+                     style="height: 140px; background: linear-gradient(135deg, #212529 0%, #343a40 100%); color: #fff;
+                            border-top-left-radius: var(--bs-card-inner-border-radius);
+                            border-top-right-radius: var(--bs-card-inner-border-radius);">
+                    <i class="bi bi-play-circle-fill" style="font-size: 2.75rem; opacity: 0.9;"></i>
+                    <span class="position-absolute bottom-0 start-0 end-0 text-center small py-1"
+                          style="background: rgba(0,0,0,0.35); font-variant-numeric: tabular-nums;">
+                        ${escapeHtml(ct)}
+                    </span>
+                </div>`;
+        } else if (ct.startsWith('audio/')) {
+            preview = `
+                <div class="d-flex align-items-center justify-content-center"
+                     style="height: 140px; background: #f8f9fa;
+                            border-top-left-radius: var(--bs-card-inner-border-radius);
+                            border-top-right-radius: var(--bs-card-inner-border-radius);">
+                    <i class="bi bi-music-note-beamed text-secondary" style="font-size: 2.5rem;"></i>
+                </div>`;
+        } else {
+            preview = `
+                <div class="d-flex align-items-center justify-content-center"
+                     style="height: 140px; background: #f8f9fa;
+                            border-top-left-radius: var(--bs-card-inner-border-radius);
+                            border-top-right-radius: var(--bs-card-inner-border-radius);">
+                    <i class="bi bi-file-earmark text-secondary" style="font-size: 2.5rem;"></i>
+                </div>`;
+        }
+
+        const footer = url ? `
+            <div class="card-footer p-1 d-flex gap-1 bg-white border-top-0">
+                <button type="button" class="btn btn-sm btn-outline-primary flex-fill"
+                        ${viewData}
+                        title="Preview">
+                    <i class="bi bi-eye"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary flex-fill"
+                        data-action="copy-rendition-url" data-url="${escapeAttr(url)}"
+                        title="Copy URL">
+                    <i class="bi bi-clipboard"></i>
+                </button>
+                <a href="${escapeAttr(url)}" download="${escapeAttr(filename)}"
+                   class="btn btn-sm btn-outline-secondary flex-fill"
+                   title="Download"
+                   data-stop-propagation>
+                    <i class="bi bi-download"></i>
+                </a>
+            </div>
+        ` : '';
+
+        return `
+            <div class="col-sm-6 col-md-4 col-lg-3">
+                <div class="card h-100 shadow-sm rendition-card">
+                    <div ${url ? viewData : ''} ${url ? 'role="button" style="cursor: pointer;"' : ''}>
+                        ${preview}
                     </div>
-                    <h6 class="mb-1">Renditions are being generated</h6>
-                    <p class="text-muted small mb-3">
-                        Thumbnails and previews are built in the background. Image renditions usually
-                        appear within seconds; video transcodes can take several minutes.
-                    </p>
+                    <div class="card-body p-2">
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                            <span class="badge bg-secondary text-truncate" style="max-width: 100%;" title="${escapeAttr(role)}">${escapeHtml(role)}</span>
+                            ${size ? `<small class="text-muted flex-shrink-0" style="font-variant-numeric: tabular-nums;">${escapeHtml(size)}</small>` : ''}
+                        </div>
+                        ${dimensions ? `<div class="small text-muted" style="font-variant-numeric: tabular-nums;">${escapeHtml(dimensions)}</div>` : ''}
+                    </div>
+                    ${footer}
+                </div>
+            </div>
+        `;
+    }
+
+    _buildProcessingTemplate() {
+        return `
+            <div class="text-center p-5 bg-light rounded">
+                <div class="spinner-border text-secondary mb-3" role="status">
+                    <span class="visually-hidden">Processing…</span>
+                </div>
+                <h6 class="mb-1">Renditions are being generated</h6>
+                <p class="text-muted small mb-3">
+                    Thumbnails and previews are built in the background. Image renditions usually
+                    appear within seconds; video transcodes can take several minutes.
+                </p>
+                <div class="d-inline-flex gap-2">
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-action="refresh-renditions">
                         <i class="bi bi-arrow-clockwise me-1"></i>Refresh
                     </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-action="regenerate-from-section">
+                        <i class="bi bi-arrow-repeat me-1"></i>Regenerate
+                    </button>
                 </div>
-            `;
-        }
+            </div>
+        `;
+    }
+
+    _buildWaitingTemplate() {
         return `
             <div class="text-center p-5 bg-light rounded">
                 <i class="bi bi-hourglass-split display-6 text-muted"></i>
@@ -288,11 +372,77 @@ class FileRenditionsSection extends View {
         `;
     }
 
+    // ── Actions ─────────────────────────────────────
+
     async onActionRefreshRenditions() {
         try {
             await this.model.fetch();
         } catch (err) {
             console.warn('FileView: refresh-renditions fetch failed:', err);
+        }
+    }
+
+    async onActionViewRendition(event, element) {
+        if (event) { event.preventDefault(); event.stopPropagation(); }
+        const url = element.dataset.url;
+        const ct  = element.dataset.ct || '';
+        if (!url) return;
+
+        if (ct.startsWith('image/')) {
+            const Lightbox = typeof window !== 'undefined' ? window.MOJO?.plugins?.LightboxGallery : null;
+            if (Lightbox && typeof Lightbox.show === 'function') {
+                const images = this.model.getRenditions()
+                    .filter(r => r && r.url && typeof r.content_type === 'string' && r.content_type.startsWith('image/'))
+                    .map(r => ({ src: r.url, alt: r.role || '' }));
+                const startIndex = Math.max(0, images.findIndex(img => img.src === url));
+                Lightbox.show(images, { startIndex, fitToScreen: false });
+                return;
+            }
+        }
+        // Non-image renditions (video, audio, anything else) open in a new tab
+        // — browsers have native players for these and the lightbox plugin
+        // only handles images.
+        window.open(url, '_blank', 'noopener');
+    }
+
+    async onActionCopyRenditionUrl(event, element) {
+        if (event) { event.preventDefault(); event.stopPropagation(); }
+        const url = element.dataset.url;
+        if (!url) return;
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(url);
+            } else {
+                const textarea = document.createElement('textarea');
+                textarea.value = url;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            }
+            // Short-lived visual confirmation on the clicked button
+            const icon = element.querySelector('i');
+            if (icon) {
+                const orig = icon.className;
+                icon.className = 'bi bi-check-lg text-success';
+                setTimeout(() => { icon.className = orig; }, 1200);
+            }
+            this.getApp()?.toast?.success?.('URL copied to clipboard');
+        } catch (err) {
+            console.error('Failed to copy rendition URL:', err);
+            this.getApp()?.toast?.error?.('Failed to copy URL');
+        }
+    }
+
+    // Delegates up the parent chain to FileView.onActionRegenerateRenditions
+    // so the section button behaves identically to the ContextMenu item.
+    async onActionRegenerateFromSection() {
+        let node = this.parent;
+        while (node) {
+            if (typeof node.onActionRegenerateRenditions === 'function') {
+                return node.onActionRegenerateRenditions();
+            }
+            node = node.parent;
         }
     }
 }
@@ -705,6 +855,15 @@ function escapeHtml(str) {
 
 function escapeAttr(str) {
     return escapeHtml(str);
+}
+
+function formatBytes(bytes) {
+    if (bytes == null || isNaN(bytes)) return '';
+    const n = Number(bytes);
+    if (n < 1024) return `${n} B`;
+    if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+    if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
+    return `${(n / 1024 / 1024 / 1024).toFixed(1)} GB`;
 }
 
 File.VIEW_CLASS = FileView;

@@ -55,7 +55,7 @@ await view.mount(container);
 |-----|-------|-----------------|----------|
 | `preview` | Preview | yes — default active | Category-aware preview (see next section) |
 | `details` | Details | yes | `DataView` of the file's core fields (id, filename, sizes, timestamps, storage info, public URL) |
-| `renditions` | Renditions | yes | `TableView` of renditions when populated; "processing…" placeholder with Refresh button when the backend is still generating them; "upload pending" placeholder otherwise |
+| `renditions` | Renditions | yes | Card gallery of rendition previews (inline image tiles, video posters, or category icons) with per-card **Preview / Copy URL / Download** actions. Section header offers Refresh and Regenerate. Shows a "processing…" placeholder when the backend is still generating, or "upload pending" while the upload is in flight. |
 | `metadata` | Metadata | only when `model.metadata` is non-empty | `DataView` auto-generated from the `metadata` object (image EXIF, video duration, renderer-specific fields, etc.) |
 
 ### Async renditions
