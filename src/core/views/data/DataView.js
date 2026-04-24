@@ -1114,15 +1114,25 @@ class DataView extends View {
   }
 
   /**
-   * Set up model event listeners if model is provided
+   * Set up model event listeners if model is provided.
+   *
+   * NOTE: DataView's constructor destructures `model` out of the options
+   * before calling `super()`, so `View.setModel` is never invoked from the
+   * base constructor and the base-class `change` listener is never attached
+   * here. This is our only listener — which is why the `isMounted()` guard
+   * is critical. Without it, a DataView that has been unmounted (e.g. after
+   * switching away from it inside a SideNavView / TabView) still reacts to
+   * model changes, calls `render()` with no container, and falls through to
+   * `View.mount`'s `parent.element.appendChild(this.element)` fallback —
+   * reattaching the DataView to its parent's root element and producing
+   * "content spillage" outside the intended section panel.
    */
   onInit() {
     super.onInit();
 
-    // Listen for model changes
     if (this.model && typeof this.model.on === 'function') {
       this.model.on('change', () => {
-        this.render();
+        if (this.isMounted()) this.render();
       });
     }
   }
