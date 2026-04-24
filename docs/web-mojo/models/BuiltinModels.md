@@ -32,6 +32,7 @@ import { UserList, GroupList, JobForms } from 'web-mojo/models';
 - [Phonehub](#phonehub)
 - [AWS](#aws)
 - [System](#system)
+- [ShortLink & ShortLinkClick](#shortlink--shortlinkclick)
 - [Model Conventions](#model-conventions)
 - [Form Configurations](#form-configurations)
 - [DataView Configurations](#dataview-configurations)
@@ -733,6 +734,77 @@ await conversation.destroy();
 `AssistantConversationList` defaults to `size: 50`. Conversations are always scoped to the authenticated user — the API does not expose other users' conversations.
 
 Conversations are created implicitly when the first WebSocket message is sent. There is no explicit `save()` flow for creating a new conversation.
+
+---
+
+## ShortLink & ShortLinkClick
+
+Represent django-mojo shortlinks and their per-click history records.
+
+**ShortLink endpoint:** `/api/shortlink/link`
+**ShortLinkClick endpoint:** `/api/shortlink/history` (read-only)
+
+```js
+import {
+    ShortLink, ShortLinkList,
+    ShortLinkClick, ShortLinkClickList,
+    ShortLinkForms,
+    flattenShortLinkMetadata,
+    buildShortLinkMetadata,
+    extractShortLinkPayload,
+} from 'web-mojo/models';
+
+// Fetch a list of shortlinks
+const links = new ShortLinkList();
+await links.fetch({ page: 1, size: 25 });
+
+links.forEach(link => {
+    link.get('id');
+    link.get('url');           // Destination URL
+    link.get('source');        // 'admin' | 'email' | 'sms' | 'push' | 'fileman' | 'api' | 'other'
+    link.get('is_active');
+    link.get('is_protected');  // Prevents accidental deletion
+    link.get('track_clicks');
+    link.get('bot_passthrough');
+    link.get('expire_days');
+    link.get('expire_hours');
+    link.get('metadata');      // { 'og:title', 'og:description', 'og:image', 'twitter:*', ... }
+    link.get('created_at');
+});
+
+// Fetch global click history
+const clicks = new ShortLinkClickList();
+await clicks.fetch({ link_id: link.get('id') });
+```
+
+### ShortLinkForms
+
+```js
+ShortLinkForms.create  // Destination URL, source, expiry, track_clicks, bot_passthrough, is_protected, OG fields
+ShortLinkForms.edit    // Same as create + is_active switch + Twitter card fields
+
+ShortLink.EDIT_FORM === ShortLinkForms.edit
+```
+
+### OG / Twitter Metadata Helpers
+
+OG and Twitter metadata is stored in the API as colon-keyed fields inside `metadata` (e.g., `"og:title"`). The three helpers bridge that shape and flat form fields.
+
+| Helper | Purpose |
+|--------|---------|
+| `flattenShortLinkMetadata(metadata)` | Expand `metadata` object into flat `og_title`, `og_description`, … fields for seeding edit dialogs |
+| `buildShortLinkMetadata(formData)` | Inverse — collapses flat `og_*` / `twitter_*` form fields back into a colon-keyed `metadata` object; empty values are dropped |
+| `extractShortLinkPayload(formData)` | Strips OG/Twitter keys from `formData`, calls `buildShortLinkMetadata`, and returns a clean REST payload. When no OG/Twitter fields are set, `metadata` is omitted entirely so the backend auto-scrape runs |
+
+```js
+// Seed an edit dialog from an existing shortlink
+const flat = flattenShortLinkMetadata(link.get('metadata'));
+// flat.og_title, flat.og_description, flat.og_image, flat.twitter_card, ...
+
+// Build payload before saving
+const payload = extractShortLinkPayload({ url: 'https://...', og_title: 'Hello', ... });
+// payload.metadata = { 'og:title': 'Hello' }
+```
 
 ---
 

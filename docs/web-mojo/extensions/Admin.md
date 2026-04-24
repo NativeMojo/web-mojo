@@ -62,6 +62,9 @@ import {
   FileTablePage,
   S3BucketTablePage,
 
+  ShortLinkTablePage,
+  ShortLinkClickTablePage,
+
   IPSetTablePage,
 
   CloudWatchDashboardPage,
@@ -96,6 +99,8 @@ import {
   MetricsPermissionsView,
 
   FileView,
+
+  ShortLinkView,
 
   IPSetView,
 
@@ -209,6 +214,10 @@ await TaskDetailsView.show(task);
 - `PushDeliveryTablePage`
 - `PushDeviceTablePage`
 
+### Shortlinks
+- `ShortLinkTablePage` — CRUD table for django-mojo shortlinks. Route: `system/shortlinks/links`. Row-click opens `ShortLinkView` in a detail modal (Details / Preview / Metadata / Click History / Metrics tabs). Permission: `manage_shortlinks`.
+- `ShortLinkClickTablePage` — Read-only global click history across all shortlinks. Route: `system/shortlinks/clicks`. Permission: `manage_shortlinks`.
+
 ### Security
 - `IPSetTablePage` — Manage kernel-level IP blocking sets (country blocks, AbuseIPDB feeds, datacenter ranges, custom CIDR lists). Route: `system/security/ipsets`.
 
@@ -272,6 +281,9 @@ await TaskDetailsView.show(task);
 
 ### Storage
 - `FileView`
+
+### Shortlinks
+- `ShortLinkView` — Detail view for a single shortlink, shown in a tabbed modal (Details / Preview / Metadata / Click History / Metrics) when a row is clicked from `ShortLinkTablePage`.
 
 ### Security
 - `IPSetView` — Detail view for a single IP Set, shown in a dialog when a row is clicked from `IPSetTablePage`.
