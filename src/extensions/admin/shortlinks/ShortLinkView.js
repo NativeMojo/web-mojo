@@ -361,7 +361,7 @@ class ShortLinkView extends View {
 
     async onActionOpenDestination() {
         const url = this.model.get('url');
-        if (!url) return;
+        if (!url || !/^https?:\/\//i.test(url)) return;
         window.open(url, '_blank', 'noopener,noreferrer');
     }
 
