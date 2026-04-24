@@ -64,33 +64,28 @@ function getCategoryConfig(model) {
 
 class FilePreviewSection extends View {
     constructor(options = {}) {
+        // Pass `model` through — View.setModel wires up the 'change'
+        // listener automatically, no need to duplicate it here.
         super({
             className: 'file-preview-section p-3',
             ...options
         });
-        this.model = options.model;
         this.categoryConfig = options.categoryConfig || CATEGORY_CONFIG.other;
-        this._handleModelChange = this._handleModelChange.bind(this);
     }
 
-    async onInit() {
-        // Re-render when renditions populate so video posters / document
-        // previews pick up the new thumbnail URL.
-        if (this.model && typeof this.model.on === 'function') {
-            this.model.on('change', this._handleModelChange, this);
-        }
-    }
-
-    async onBeforeDestroy() {
-        if (this.model && typeof this.model.off === 'function') {
-            this.model.off('change', this._handleModelChange, this);
-        }
-    }
-
-    _handleModelChange() {
-        if (this.isMounted && this.isMounted()) {
-            this.render();
-        }
+    /**
+     * Override the base re-render-on-model-change behavior.
+     * - video/audio elements must NOT re-render: the rendition poll fires
+     *   model `change` every 5s while transcoding, and re-rendering would
+     *   destroy and recreate the media element on every tick (visible
+     *   reload cycle, lost playback state).
+     * - image/pdf/document/archive previews are idempotent — re-render
+     *   safely to pick up new rendition URLs as they arrive.
+     */
+    _onModelChange() {
+        const type = this.categoryConfig?.previewType;
+        if (type === 'video' || type === 'audio') return;
+        if (this.isMounted()) this.render();
     }
 
     getTemplate() {
@@ -211,34 +206,21 @@ class FilePreviewSection extends View {
 
 class FileRenditionsSection extends View {
     constructor(options = {}) {
+        // `model:` in options lets View.setModel wire the built-in
+        // 'change' → _onModelChange → render() listener. No duplicate
+        // listener needed; re-render on change is exactly what we want
+        // here (swap placeholder for the rendition table).
         super({
             className: 'file-renditions-section p-3',
             ...options
         });
-        this.model = options.model;
         this.renditionsTable = null;
-        this._handleModelChange = this._handleModelChange.bind(this);
-    }
-
-    async onInit() {
-        if (this.model && typeof this.model.on === 'function') {
-            this.model.on('change', this._handleModelChange, this);
-        }
     }
 
     async onBeforeDestroy() {
-        if (this.model && typeof this.model.off === 'function') {
-            this.model.off('change', this._handleModelChange, this);
-        }
         if (this.renditionsTable) {
             this.removeChild(this.renditionsTable);
             this.renditionsTable = null;
-        }
-    }
-
-    _handleModelChange() {
-        if (this.isMounted && this.isMounted()) {
-            this.render();
         }
     }
 
@@ -380,15 +362,21 @@ class FileView extends View {
         this.sideNavView = null;
         this.contextMenu = null;
 
+        // The SideNavView uses flex + overflow-y: auto on its content panel,
+        // which needs a *bounded* parent height to scroll correctly. Without
+        // a max-height the nav content stretches the dialog and overflows
+        // past its own bounds. `min-height` keeps short content from looking
+        // cramped; `max-height: 70vh` keeps tall content scrollable inside
+        // the dialog on any viewport.
         this.template = `
-            <div class="file-view-container">
+            <div class="file-view-container d-flex flex-column" style="min-height: 0;">
                 <!-- Header + Context Menu -->
-                <div class="d-flex justify-content-between align-items-start mb-4">
-                    <div data-container="file-header" style="flex: 1;"></div>
+                <div class="d-flex justify-content-between align-items-start mb-3 flex-shrink-0">
+                    <div data-container="file-header" style="flex: 1; min-width: 0;"></div>
                     <div data-container="file-context-menu" class="ms-3 flex-shrink-0"></div>
                 </div>
                 <!-- Section body -->
-                <div data-container="file-sidenav" style="min-height: 400px;"></div>
+                <div data-container="file-sidenav" class="flex-grow-1" style="min-height: 400px; max-height: 70vh;"></div>
             </div>
         `;
     }
