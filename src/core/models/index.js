@@ -8,7 +8,7 @@
  *   import { User, Job, Email } from 'web-mojo/models';
  *   import { UserList, JobForms } from 'web-mojo/models';
  * 
- * Generated on: 2026-04-23T14:42:41.377Z
+ * Generated on: 2026-04-24T03:14:51.606Z
  */
 
 // AWS model exports
@@ -94,6 +94,10 @@ export { default as ScheduledTask } from './ScheduledTask.js';
 // Settings model exports
 export * from './Settings.js';
 export { default as Settings } from './Settings.js';
+
+// ShortLink model exports
+export * from './ShortLink.js';
+export { default as ShortLink } from './ShortLink.js';
 
 // System model exports
 export * from './System.js';

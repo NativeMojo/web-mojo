@@ -66,6 +66,10 @@ export { default as FileManagerTablePage } from '@ext/admin/storage/FileManagerT
 export { default as FileTablePage } from '@ext/admin/storage/FileTablePage.js';
 export { default as S3BucketTablePage } from '@ext/admin/storage/S3BucketTablePage.js';
 
+export { default as ShortLinkTablePage } from '@ext/admin/shortlinks/ShortLinkTablePage.js';
+export { default as ShortLinkClickTablePage } from '@ext/admin/shortlinks/ShortLinkClickTablePage.js';
+export { default as ShortLinkView } from '@ext/admin/shortlinks/ShortLinkView.js';
+
 // Admin Views
 export { default as DeviceView } from '@ext/admin/account/devices/DeviceView.js';
 export { default as GeoIPView } from '@ext/admin/account/devices/GeoIPView.js';
@@ -175,6 +179,9 @@ import FileManagerTablePageClass from '@ext/admin/storage/FileManagerTablePage.j
 import FileTablePageClass from '@ext/admin/storage/FileTablePage.js';
 import S3BucketTablePageClass from '@ext/admin/storage/S3BucketTablePage.js';
 
+import ShortLinkTablePageClass from '@ext/admin/shortlinks/ShortLinkTablePage.js';
+import ShortLinkClickTablePageClass from '@ext/admin/shortlinks/ShortLinkClickTablePage.js';
+
 import AssistantSkillTablePageClass from '@ext/admin/assistant/AssistantSkillTablePage.js';
 import AssistantConversationTablePageClass from '@ext/admin/assistant/AssistantConversationTablePage.js';
 import AssistantMemoryPageClass from '@ext/admin/assistant/AssistantMemoryPage.js';
@@ -199,6 +206,8 @@ export function registerSystemPages(app, addToMenu = true) {
     app.registerPage('system/s3buckets', S3BucketTablePageClass, {permissions: ["manage_aws"]});
     app.registerPage('system/filemanagers', FileManagerTablePageClass, {permissions: ["view_fileman", "manage_files"]});
     app.registerPage('system/files', FileTablePageClass, {permissions: ["manage_files"]});
+    app.registerPage('system/shortlinks/links', ShortLinkTablePageClass, {permissions: ["manage_shortlinks"]});
+    app.registerPage('system/shortlinks/clicks', ShortLinkClickTablePageClass, {permissions: ["manage_shortlinks"]});
     app.registerPage('system/incidents', IncidentTablePageClass, {permissions: ["view_security"]});
     app.registerPage('system/events', EventTablePageClass, {permissions: ["view_security"]});
     app.registerPage('system/logs', LogTablePageClass, {permissions: ["view_logs"]});
@@ -325,6 +334,18 @@ export function registerSystemPages(app, addToMenu = true) {
                         { text: 'Templates', route: '?page=system/push/templates', icon: 'bi-file-earmark-text', permissions: ["manage_notifications"] },
                         { text: 'Deliveries', route: '?page=system/push/deliveries', icon: 'bi-send', permissions: ["view_notifications", "manage_notifications"] },
                         { text: 'Devices', route: '?page=system/push/devices', icon: 'bi-phone', permissions: ["view_devices", "manage_devices"] },
+                    ]
+                },
+
+                // ── Shortlinks ──
+                {
+                    text: 'Shortlinks',
+                    route: null,
+                    icon: 'bi-link-45deg',
+                    permissions: ["manage_shortlinks"],
+                    children: [
+                        { text: 'Links', route: '?page=system/shortlinks/links', icon: 'bi-link', permissions: ["manage_shortlinks"] },
+                        { text: 'Click History', route: '?page=system/shortlinks/clicks', icon: 'bi-cursor', permissions: ["manage_shortlinks"] },
                     ]
                 },
 
