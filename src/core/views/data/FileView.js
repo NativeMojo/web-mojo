@@ -24,9 +24,12 @@
 import View from '@core/View.js';
 import SideNavView from '@core/views/navigation/SideNavView.js';
 import DataView from '@core/views/data/DataView.js';
+import TableView from '@core/views/table/TableView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import { File, FileForms } from '@core/models/Files.js';
+import { ShortLinkList } from '@core/models/ShortLink.js';
 
 // ──────────────────────────────────────────────────────────────────────────
 // Category → preview config
@@ -219,10 +222,13 @@ class FileRenditionsSection extends View {
         if (this.model.hasRenditions && this.model.hasRenditions()) {
             return this._buildGalleryTemplate();
         }
-        if (this.model.isRenditionsProcessing && this.model.isRenditionsProcessing()) {
-            return this._buildProcessingTemplate();
+        if (this.model.isUploadPending && this.model.isUploadPending()) {
+            return this._buildWaitingTemplate();
         }
-        return this._buildWaitingTemplate();
+        // Upload finished, but the rendition map is empty — no work is in
+        // progress (per the backend: completed === done). Show a clean empty
+        // state with a Regenerate button instead of an indefinite spinner.
+        return this._buildEmptyTemplate();
     }
 
     _buildGalleryTemplate() {
@@ -339,22 +345,19 @@ class FileRenditionsSection extends View {
         `;
     }
 
-    _buildProcessingTemplate() {
+    _buildEmptyTemplate() {
         return `
             <div class="text-center p-5 bg-light rounded">
-                <div class="spinner-border text-secondary mb-3" role="status">
-                    <span class="visually-hidden">Processing…</span>
-                </div>
-                <h6 class="mb-1">Renditions are being generated</h6>
+                <i class="bi bi-layers display-6 text-muted"></i>
+                <h6 class="mt-3 mb-1">No renditions for this file</h6>
                 <p class="text-muted small mb-3">
-                    Thumbnails and previews are built in the background. Image renditions usually
-                    appear within seconds; video transcodes can take several minutes.
+                    Click <strong>Regenerate</strong> to (re)build thumbnails and previews on the backend.
                 </p>
                 <div class="d-inline-flex gap-2">
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-action="refresh-renditions">
                         <i class="bi bi-arrow-clockwise me-1"></i>Refresh
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" data-action="regenerate-from-section">
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-action="regenerate-from-section">
                         <i class="bi bi-arrow-repeat me-1"></i>Regenerate
                     </button>
                 </div>
@@ -498,6 +501,156 @@ function downloadFile(model) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
+// FileSharesSection — Active shortlink shares for this file
+//
+// Lists ShortLink rows where source=fileman-share and file=<this.id>. Each
+// share is a distinct shortlink minted by `model.share({...})` (see
+// Files.js). Revoking a share flips `is_active=false`; the audit row is
+// preserved per the backend contract — never DELETE the row, that just
+// causes a fresh shortlink to be minted on next read.
+// ──────────────────────────────────────────────────────────────────────────
+
+class FileSharesSection extends View {
+    constructor(options = {}) {
+        super({
+            className: 'file-shares-section p-3',
+            ...options
+        });
+        this.template = `
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="text-muted small">
+                    Active and historical shareable links for this file.
+                </div>
+                <button type="button" class="btn btn-sm btn-primary"
+                        data-action="share-file-from-section">
+                    <i class="bi bi-link-45deg me-1"></i>Share new
+                </button>
+            </div>
+            <div data-container="file-shares-table"></div>
+        `;
+    }
+
+    async onInit() {
+        const fileId = this.model.get('id');
+        if (!fileId) return;
+
+        const collection = new ShortLinkList({
+            params: {
+                source: 'fileman-share',
+                file: fileId,
+                sort: '-created',
+                size: 25,
+            },
+        });
+        this._sharesCollection = collection;
+
+        this.sharesTable = new TableView({
+            containerId: 'file-shares-table',
+            collection,
+            hideActivePillNames: ['source', 'file'],
+            columns: [
+                {
+                    key: 'code',
+                    label: 'Short URL',
+                    template: `
+                        <div class="d-flex align-items-center gap-2">
+                            <code>{{model.code}}</code>
+                            <button class="btn btn-sm btn-link p-0 text-muted"
+                                    data-action="copy-share-code"
+                                    data-code="{{model.code}}"
+                                    title="Copy short URL">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
+                    `,
+                },
+                { key: 'user.display_name', label: 'Shared By', formatter: "default('—')" },
+                { key: 'hit_count', label: 'Hits', width: '80px', sortable: true },
+                { key: 'track_clicks', label: 'Tracked', width: '90px', formatter: 'yesnoicon' },
+                { key: 'is_active', label: 'Active', width: '80px', formatter: 'yesnoicon' },
+                { key: 'expires_at', label: 'Expires', width: '160px', formatter: "datetime|default('Never')", sortable: true },
+                { key: 'created', label: 'Created', width: '160px', formatter: 'datetime', sortable: true },
+                { key: 'metadata.note', label: 'Note', formatter: "truncate(40)|default('—')", visibility: 'lg' },
+            ],
+            paginated: true,
+            sortable: true,
+            searchable: false,
+            filterable: false,
+            contextMenu: [
+                { label: 'Copy Short URL', action: 'copy-share-code', icon: 'bi-clipboard' },
+                { divider: true },
+                { label: 'Revoke', action: 'revoke-share', icon: 'bi-slash-circle', danger: true },
+            ],
+            tableOptions: {
+                hover: true,
+                size: 'sm',
+                emptyMessage: 'No shares yet — click “Share new” to mint a tracked link.',
+                emptyIcon: 'bi-link-45deg',
+                actions: [],
+            },
+        });
+        this.addChild(this.sharesTable);
+    }
+
+    /** Re-fetch the shares list (called after a new share is minted). */
+    refreshShares() {
+        return this._sharesCollection?.fetch();
+    }
+
+    // Section bubbles section-scoped actions up to FileView. Mirrors the
+    // FileRenditionsSection.onActionRegenerateFromSection pattern.
+    async onActionShareFileFromSection() {
+        let node = this.parent;
+        while (node) {
+            if (typeof node.onActionShareFile === 'function') {
+                return node.onActionShareFile();
+            }
+            node = node.parent;
+        }
+        return null;
+    }
+
+    async onActionCopyShareCode(event, element) {
+        if (event) { event.preventDefault(); event.stopPropagation(); }
+        const code = element?.dataset?.code;
+        if (!code) return;
+        const url = buildShortUrl(code, this.getApp?.());
+        try {
+            await navigator.clipboard.writeText(url);
+            this.getApp()?.toast?.success?.(`Copied: ${url}`);
+        } catch (_e) {
+            this.getApp()?.toast?.warning?.('Copy failed — select the URL manually.');
+        }
+    }
+
+    async onActionRevokeShare(event, element) {
+        if (event) { event.preventDefault(); event.stopPropagation(); }
+        // The contextMenu wires `data-id` on the row; resolve from the table.
+        const row = element?.closest?.('[data-row-id]');
+        const id = row?.dataset?.rowId || element?.dataset?.id;
+        if (!id) return;
+        const target = this._sharesCollection?.get?.(id);
+        if (!target) return;
+
+        const confirmed = await Dialog.confirm(
+            'Revoke this share? Anyone with the short URL will get a 404 — the audit row is preserved.',
+            'Revoke Share',
+            { confirmText: 'Revoke', confirmClass: 'btn-danger' }
+        );
+        if (!confirmed) return;
+
+        try {
+            await target.save({ is_active: false });
+            this.getApp()?.toast?.success?.('Share revoked');
+            await this.refreshShares();
+        } catch (err) {
+            console.error('Failed to revoke share:', err);
+            this.getApp()?.toast?.error?.('Failed to revoke share');
+        }
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 // FileView (main component)
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -589,6 +742,13 @@ class FileView extends View {
         const renditionsView = new FileRenditionsSection({ model: this.model });
         sections.push({ key: 'renditions', label: 'Renditions', icon: 'bi-layers', view: renditionsView });
 
+        // Shares — list of shortlinks (source=fileman-share) for this file.
+        // Hidden for unsaved models — the section needs an `id` to scope.
+        if (this.model.get('id')) {
+            this.sharesSection = new FileSharesSection({ model: this.model });
+            sections.push({ key: 'shares', label: 'Shares', icon: 'bi-link-45deg', view: this.sharesSection });
+        }
+
         // Metadata — only when backend returned a non-empty metadata object
         const metadata = this.model.get('metadata');
         if (metadata && typeof metadata === 'object' && Object.keys(metadata).length) {
@@ -624,6 +784,7 @@ class FileView extends View {
                     { label: 'View', action: 'view-file', icon: 'bi-eye' },
                     { label: 'Download', action: 'download-file', icon: 'bi-download' },
                     { label: 'Copy URL', action: 'copy-url', icon: 'bi-clipboard' },
+                    { label: 'Share Link…', action: 'share-file', icon: 'bi-link-45deg' },
                     { type: 'divider' },
                     { label: 'Edit Details', action: 'edit-file', icon: 'bi-pencil' },
                     this.model.get('is_public')
@@ -637,11 +798,10 @@ class FileView extends View {
         });
         this.addChild(this.contextMenu);
 
-        // If the backend is still producing renditions, poll until they
-        // appear (or give up after ~5 minutes). Each successful fetch emits
-        // a model 'change' event, which the preview/renditions sections
-        // listen to and re-render themselves.
-        this._maybeStartRenditionsPoll();
+        // No auto-poll: a `completed` upload means renditions are done. If the
+        // user explicitly clicks "Regenerate", _maybeStartRenditionsPoll is
+        // invoked with { force: true } from that handler so the new renditions
+        // appear without a manual refresh.
     }
 
     async onBeforeDestroy() {
@@ -744,6 +904,94 @@ class FileView extends View {
         this.render();
     }
 
+    async onActionShareFile() {
+        if (!this.model.get('id')) {
+            this.getApp()?.toast?.warning?.('Save the file before sharing it.');
+            return;
+        }
+
+        // Step 1 — collect share options.
+        const formResult = await Modal.form({
+            title: 'Share Link',
+            size: 'sm',
+            help: 'Each share creates a distinct, audit-tracked short URL attributed to you.',
+            fields: [
+                { name: 'expire_days', type: 'number', label: 'Expire after (days)', value: 30, min: 0, cols: 12, help: '0 = never expires. Server max: 3650.' },
+                { name: 'track_clicks', type: 'switch', label: 'Track clicks', value: true, cols: 12, help: 'Records per-click history (IP, user-agent, bot/human).' },
+                { name: 'note', type: 'textarea', label: 'Note (optional)', rows: 2, cols: 12, maxlength: 512, help: 'Private audit note — not shown to recipients.' },
+            ],
+            submitText: 'Share',
+        });
+        if (!formResult) return;
+
+        // Build options dict — only include keys with meaningful values.
+        const opts = {};
+        if (formResult.expire_days !== undefined && formResult.expire_days !== null && formResult.expire_days !== '') {
+            opts.expire_days = Number(formResult.expire_days);
+        }
+        if (formResult.track_clicks !== undefined) {
+            opts.track_clicks = !!formResult.track_clicks;
+        }
+        if (formResult.note) {
+            opts.note = String(formResult.note).slice(0, 512);
+        }
+
+        // Step 2 — mint the share.
+        let resp;
+        try {
+            resp = await this.model.share(Object.keys(opts).length ? opts : true);
+        } catch (err) {
+            console.error('Share failed:', err);
+            Modal.showError(err?.data?.error || err?.message || 'Failed to create share link');
+            return;
+        }
+
+        const data = resp?.data;
+        const shortUrl = data?.url;
+        if (!resp?.success || !shortUrl) {
+            Modal.showError(data?.error || 'Failed to create share link');
+            return;
+        }
+
+        // Best-effort copy to clipboard so the user can paste immediately.
+        let copied = false;
+        try {
+            await navigator.clipboard?.writeText?.(shortUrl);
+            copied = true;
+        } catch (_e) {
+            copied = false;
+        }
+
+        // Step 3 — show the result with the URL + summary.
+        const expiry = data.expires_at
+            ? new Date(data.expires_at).toLocaleString()
+            : 'Never';
+        const tracked = data.track_clicks ? 'Yes' : 'No';
+        const copyHint = copied
+            ? '<div class="form-text text-success mb-2"><i class="bi bi-check-circle me-1"></i>Copied to clipboard.</div>'
+            : '<div class="form-text text-muted mb-2">Select the URL above to copy.</div>';
+        const summary = `
+            <div class="mb-2">
+                <label class="form-label small text-muted mb-1">Share URL</label>
+                <input type="text" class="form-control font-monospace" readonly value="${escapeAttr(shortUrl)}">
+                ${copyHint}
+            </div>
+            <dl class="row small mb-0">
+                <dt class="col-4 text-muted">Expires</dt><dd class="col-8">${escapeHtml(expiry)}</dd>
+                <dt class="col-4 text-muted">Tracked</dt><dd class="col-8">${escapeHtml(tracked)}</dd>
+                ${data.shortlink_code ? `<dt class="col-4 text-muted">Code</dt><dd class="col-8"><code>${escapeHtml(data.shortlink_code)}</code></dd>` : ''}
+            </dl>
+        `;
+        await Dialog.alert(summary, 'Share link created', { type: 'success' });
+
+        // Step 4 — refresh the Shares section if it's mounted.
+        try {
+            await this.sharesSection?.refreshShares?.();
+        } catch (err) {
+            console.warn('Failed to refresh shares section:', err);
+        }
+    }
+
     async onActionRegenerateRenditions() {
         const confirmed = await Dialog.confirm(
             'Rebuild all previews and thumbnails for this file? Existing renditions will be replaced. Generation runs in the background and may take several minutes for video.',
@@ -771,9 +1019,10 @@ class FileView extends View {
 
     _maybeStartRenditionsPoll(options = {}) {
         if (this._renditionsPollTimer) return; // already polling
-        if (!options.force && !(this.model && this.model.isRenditionsProcessing && this.model.isRenditionsProcessing())) {
-            return;
-        }
+        // Only the explicit `force: true` path remains — this is invoked from
+        // onActionRegenerateRenditions to catch newly built renditions as the
+        // worker finishes.
+        if (!options.force) return;
         const maxAttempts = 60;       // 5 minutes at 5s
         const intervalMs = 5000;
         let attempts = 0;
@@ -851,6 +1100,20 @@ function escapeHtml(str) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+}
+
+/**
+ * Build a full short URL from a shortlink code. Prefers
+ * `app.config.shortlink_base_url`, falls back to `window.location.origin`.
+ * Mirrors the helper in src/extensions/admin/shortlinks/ShortLinkView.js
+ * but lives here so this core view doesn't depend on the admin extension.
+ */
+function buildShortUrl(code, app) {
+    if (!code) return '';
+    const base =
+        app?.config?.shortlink_base_url ||
+        (typeof window !== 'undefined' ? window.location.origin : '');
+    return `${String(base).replace(/\/+$/, '')}/s/${code}`;
 }
 
 function escapeAttr(str) {

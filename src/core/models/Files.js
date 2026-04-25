@@ -305,28 +305,66 @@ class File extends Model {
     }
 
     /**
-     * True when the file upload is complete but the backend has not yet
-     * produced any renditions. Renditions are generated asynchronously on the
-     * `renditions` background channel, so an empty `renditions` map paired
-     * with `upload_status === 'completed'` means "still processing".
+     * True when the upload itself is still in flight (no renditions can exist
+     * yet). When `upload_status === 'completed'` the rendition pipeline has
+     * already run — an empty `renditions` map then just means this file has
+     * no renditions, NOT that work is in progress.
      * @returns {boolean}
      */
-    isRenditionsProcessing() {
-        return this.get('upload_status') === 'completed' && !this.hasRenditions();
+    isUploadPending() {
+        const status = this.get('upload_status');
+        return !!(status && status !== 'completed' && status !== 'failed');
     }
 
     /**
      * Trigger a background rebuild of renditions.
-     * See django-mojo fileman docs — POST to the file with
-     * `{ action: 'regenerate_renditions' }` and optional `roles` (<=20).
-     * Returns immediately; the map repopulates as the worker finishes.
+     *
+     * Backend contract (django-mojo fileman, 2026 update):
+     *   POST /api/fileman/file/<id>
+     *   { "regenerate_renditions": true }              # all default roles
+     *   { "regenerate_renditions": ["thumbnail", ...] } # specific roles (<=20)
+     *
+     * Returns immediately; the renditions map repopulates as the worker
+     * finishes. FileView starts a short-lived poll after this call so the
+     * gallery picks up the new renditions automatically.
+     *
      * @param {string[]} [roles] - Optional rendition roles to rebuild
      * @returns {Promise}
      */
     regenerateRenditions(roles) {
-        const body = { action: 'regenerate_renditions' };
-        if (Array.isArray(roles) && roles.length) body.roles = roles;
-        return this.save(body);
+        const id = this.id || this.get('id');
+        if (!id) return Promise.reject(new Error('Cannot regenerate renditions on an unsaved file'));
+        const body = (Array.isArray(roles) && roles.length)
+            ? { regenerate_renditions: roles }
+            : { regenerate_renditions: true };
+        return this.rest.POST(`${this.endpoint}/${id}`, body);
+    }
+
+    /**
+     * Mint a new shortlink that redirects to this file. Each call creates a
+     * distinct ShortLink attributed to the calling user (audit trail).
+     *
+     * Backend contract:
+     *   POST /api/fileman/file/<id>
+     *   { "share": true }
+     *   { "share": { "expire_days": 30, "track_clicks": true, "note": "..." } }
+     *
+     * Server clamps: expire_days <= 3650, note <= 512 chars.
+     *
+     * Response shape is the action dict directly (no {status, data} wrap):
+     *   { url, shortlink_code, expires_at, track_clicks, code, server }
+     *
+     * The full Rest response is returned; read fields from `response.data`.
+     *
+     * @param {true|object} [options=true] - true for defaults, or object with
+     *   `expire_days` (number, optional), `track_clicks` (bool, optional),
+     *   `note` (string, optional)
+     * @returns {Promise}
+     */
+    share(options = true) {
+        const id = this.id || this.get('id');
+        if (!id) return Promise.reject(new Error('Cannot share an unsaved file'));
+        return this.rest.POST(`${this.endpoint}/${id}`, { share: options });
     }
 
     /**

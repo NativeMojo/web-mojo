@@ -28,6 +28,10 @@ module.exports = async function (testContext) {
     // ──────────────────────────────────────────────────────────────────
 
     class TestFile extends Model {
+        constructor(data = {}, options = {}) {
+            super(data, { endpoint: '/api/fileman/file', ...options });
+        }
+
         isImage() { return this.get('category') === 'image'; }
 
         getCategory() {
@@ -64,14 +68,24 @@ module.exports = async function (testContext) {
             return !!(r && Object.keys(r).length);
         }
 
-        isRenditionsProcessing() {
-            return this.get('upload_status') === 'completed' && !this.hasRenditions();
+        isUploadPending() {
+            const status = this.get('upload_status');
+            return !!(status && status !== 'completed' && status !== 'failed');
         }
 
         regenerateRenditions(roles) {
-            const body = { action: 'regenerate_renditions' };
-            if (Array.isArray(roles) && roles.length) body.roles = roles;
-            return this.save(body);
+            const id = this.id || this.get('id');
+            if (!id) return Promise.reject(new Error('Cannot regenerate renditions on an unsaved file'));
+            const body = (Array.isArray(roles) && roles.length)
+                ? { regenerate_renditions: roles }
+                : { regenerate_renditions: true };
+            return this.rest.POST(`${this.endpoint}/${id}`, body);
+        }
+
+        share(options = true) {
+            const id = this.id || this.get('id');
+            if (!id) return Promise.reject(new Error('Cannot share an unsaved file'));
+            return this.rest.POST(`${this.endpoint}/${id}`, { share: options });
         }
 
         getRenditions() {
@@ -159,50 +173,106 @@ module.exports = async function (testContext) {
         });
     });
 
-    describe('File.isRenditionsProcessing()', () => {
-        it('returns true when upload is completed but renditions is empty', () => {
-            expect(new TestFile({ upload_status: 'completed' }).isRenditionsProcessing()).toBe(true);
-            expect(new TestFile({ upload_status: 'completed', renditions: {} }).isRenditionsProcessing()).toBe(true);
+    describe('File.isUploadPending()', () => {
+        it('returns true while the upload is in flight', () => {
+            expect(new TestFile({ upload_status: 'pending' }).isUploadPending()).toBe(true);
+            expect(new TestFile({ upload_status: 'uploading' }).isUploadPending()).toBe(true);
         });
 
-        it('returns false when the upload is not yet completed', () => {
-            expect(new TestFile({ upload_status: 'pending' }).isRenditionsProcessing()).toBe(false);
-            expect(new TestFile({ upload_status: 'uploading' }).isRenditionsProcessing()).toBe(false);
-            expect(new TestFile({}).isRenditionsProcessing()).toBe(false);
-        });
-
-        it('returns false once renditions have arrived', () => {
-            const f = new TestFile({
+        it('returns false once the upload is complete (renditions, if any, are done)', () => {
+            expect(new TestFile({ upload_status: 'completed' }).isUploadPending()).toBe(false);
+            expect(new TestFile({ upload_status: 'completed', renditions: {} }).isUploadPending()).toBe(false);
+            expect(new TestFile({
                 upload_status: 'completed',
                 renditions: { thumbnail: { url: 'x' } }
-            });
-            expect(f.isRenditionsProcessing()).toBe(false);
+            }).isUploadPending()).toBe(false);
+        });
+
+        it('returns false for failed and missing statuses', () => {
+            expect(new TestFile({ upload_status: 'failed' }).isUploadPending()).toBe(false);
+            expect(new TestFile({}).isUploadPending()).toBe(false);
         });
     });
 
     describe('File.regenerateRenditions()', () => {
-        it('calls save() with the regenerate_renditions action', () => {
+        function stubRest() {
+            const calls = [];
+            return {
+                calls,
+                rest: {
+                    POST: (url, body) => {
+                        calls.push({ url, body });
+                        return Promise.resolve({ success: true, data: {} });
+                    },
+                },
+            };
+        }
+
+        it('POSTs {regenerate_renditions: true} for all default roles', () => {
             const f = new TestFile({ id: 42 });
-            let captured = null;
-            f.save = (body) => { captured = body; return Promise.resolve({ success: true }); };
+            const { rest, calls } = stubRest();
+            f.rest = rest;
             f.regenerateRenditions();
-            expect(captured).toEqual({ action: 'regenerate_renditions' });
+            expect(calls).toHaveLength(1);
+            expect(calls[0].url).toBe('/api/fileman/file/42');
+            expect(calls[0].body).toEqual({ regenerate_renditions: true });
         });
 
-        it('includes roles when supplied', () => {
+        it('POSTs the roles array when supplied', () => {
             const f = new TestFile({ id: 42 });
-            let captured = null;
-            f.save = (body) => { captured = body; return Promise.resolve({ success: true }); };
+            const { rest, calls } = stubRest();
+            f.rest = rest;
             f.regenerateRenditions(['thumbnail', 'preview']);
-            expect(captured).toEqual({ action: 'regenerate_renditions', roles: ['thumbnail', 'preview'] });
+            expect(calls[0].body).toEqual({ regenerate_renditions: ['thumbnail', 'preview'] });
         });
 
-        it('omits roles when the array is empty', () => {
+        it('falls back to true when the roles array is empty', () => {
             const f = new TestFile({ id: 42 });
-            let captured = null;
-            f.save = (body) => { captured = body; return Promise.resolve({ success: true }); };
+            const { rest, calls } = stubRest();
+            f.rest = rest;
             f.regenerateRenditions([]);
-            expect(captured).toEqual({ action: 'regenerate_renditions' });
+            expect(calls[0].body).toEqual({ regenerate_renditions: true });
+        });
+
+        it('rejects when the file has no id', async () => {
+            const f = new TestFile({});
+            let caught = null;
+            try { await f.regenerateRenditions(); } catch (err) { caught = err; }
+            expect(caught).toBeInstanceOf(Error);
+            expect(caught.message).toMatch(/unsaved/i);
+        });
+    });
+
+    describe('File.share()', () => {
+        it('POSTs {share: true} by default', async () => {
+            const f = new TestFile({ id: 7 });
+            const calls = [];
+            f.rest = {
+                POST: (url, body) => {
+                    calls.push({ url, body });
+                    return Promise.resolve({ success: true, data: { url: 'https://x/s/abc' } });
+                },
+            };
+            const resp = await f.share();
+            expect(calls[0].url).toBe('/api/fileman/file/7');
+            expect(calls[0].body).toEqual({ share: true });
+            expect(resp.data.url).toBe('https://x/s/abc');
+        });
+
+        it('forwards options as the share dict', async () => {
+            const f = new TestFile({ id: 7 });
+            const calls = [];
+            f.rest = { POST: (url, body) => { calls.push({ url, body }); return Promise.resolve({ success: true, data: {} }); } };
+            await f.share({ expire_days: 30, track_clicks: true, note: 'hello' });
+            expect(calls[0].body).toEqual({ share: { expire_days: 30, track_clicks: true, note: 'hello' } });
+        });
+
+        it('rejects when the file has no id', async () => {
+            const f = new TestFile({});
+            let caught = null;
+            try { await f.share(); } catch (err) { caught = err; }
+            expect(caught).toBeInstanceOf(Error);
+            expect(caught.message).toMatch(/unsaved/i);
         });
     });
 
