@@ -1,15 +1,16 @@
 /**
  * ShortLinkView - Detail view for a ShortLink record
  *
- * Modal-hosted TabView with five tabs:
+ * Modal-hosted SideNavView with five sections:
  *   Details | Preview | Metadata | Click History | Metrics
  *
- * Context menu exposes Copy Short URL, Open Destination, Enable/Disable,
- * Edit, Delete.
+ * The header surfaces the short URL with copy and open buttons. The
+ * context menu offers Copy Short URL, Open Destination, Enable/Disable,
+ * Edit, Delete. Mirrors the FileView / IPSetView shape.
  */
 
 import View from '@core/View.js';
-import TabView from '@core/views/navigation/TabView.js';
+import SideNavView from '@core/views/navigation/SideNavView.js';
 import DataView from '@core/views/data/DataView.js';
 import TableView from '@core/views/table/TableView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
@@ -31,10 +32,9 @@ import {
 // ── Helpers ────────────────────────────────────────────────
 
 /**
- * Compose the full short URL for a ShortLink.
- * Prefers a server-supplied `short_link` field; otherwise builds
- * `{base}/s/<code>` using `app.config.shortlink_base_url` or
- * `window.location.origin`.
+ * Compose the full short URL for a ShortLink. Prefers a server-supplied
+ * `short_link` field; otherwise builds `{base}/s/<code>` using
+ * `app.config.shortlink_base_url` or `window.location.origin`.
  */
 function getShortUrl(model, app) {
     const serverUrl = model?.get?.('short_link');
@@ -63,7 +63,151 @@ function isShortLinkExpired(model) {
     return Number.isFinite(t) && t < Date.now();
 }
 
-// ── ShortLinkView ──────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────────────────
+// PreviewSection — visual mock of the Slack/iMessage card built from
+// `metadata.og:*`. Re-renderable from the parent after edits land.
+// ──────────────────────────────────────────────────────────────────────────
+
+class ShortLinkPreviewSection extends View {
+    constructor(options = {}) {
+        super({ className: 'shortlink-preview-section p-3', ...options });
+        this._syncFromModel();
+        this.template = `
+            <p class="text-muted small mb-3">
+                Preview of how this link appears when shared in Slack, iMessage, WhatsApp, and other platforms that render OpenGraph metadata.
+            </p>
+            {{#hasOg|bool}}
+            <div class="card shadow-sm" style="max-width: 540px; border-left: 4px solid #0d6efd;">
+                {{#ogImage}}<img src="{{ogImage}}" class="card-img-top" alt="OG image" style="max-height: 260px; object-fit: cover;">{{/ogImage}}
+                <div class="card-body">
+                    <div class="text-muted small mb-1">{{domain}}</div>
+                    {{#ogTitle}}<h5 class="card-title mb-1">{{ogTitle}}</h5>{{/ogTitle}}
+                    {{#ogDescription}}<p class="card-text small text-muted mb-0">{{ogDescription}}</p>{{/ogDescription}}
+                </div>
+            </div>
+            {{/hasOg|bool}}
+            {{^hasOg|bool}}
+            <div class="alert alert-info mb-0 small d-flex align-items-start gap-2">
+                <i class="bi bi-info-circle flex-shrink-0 mt-1"></i>
+                <div>
+                    No OG metadata set on this link. The server auto-scrapes the destination URL in the background —
+                    custom values entered in the <strong>Metadata</strong> section take priority over scraped values.
+                </div>
+            </div>
+            {{/hasOg|bool}}
+        `;
+    }
+
+    _syncFromModel() {
+        const flat = flattenShortLinkMetadata(this.model?.get('metadata'));
+        this.ogTitle = flat.og_title || '';
+        this.ogDescription = flat.og_description || '';
+        this.ogImage = flat.og_image || '';
+        this.hasOg = !!(this.ogTitle || this.ogDescription || this.ogImage);
+        this.domain = getDomain(this.model?.get('url'));
+    }
+
+    async refreshFromModel() {
+        this._syncFromModel();
+        if (this.isMounted?.()) await this.render();
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// MetricsSection — wraps MetricsChart, or renders an info panel when the
+// link has no metrics stream (track_clicks=false or no owning user).
+// ──────────────────────────────────────────────────────────────────────────
+
+class ShortLinkMetricsSection extends View {
+    constructor(options = {}) {
+        super({ className: 'shortlink-metrics-section p-3', ...options });
+
+        const trackClicks = !!this.model.get('track_clicks');
+        const user = this.model.get('user');
+        this.userId = user?.id || user || null;
+        this.code = this.model.get('code');
+        this.canShowMetrics = trackClicks && this.userId && this.code;
+
+        if (this.canShowMetrics) {
+            this.template = `<div data-container="shortlink-metrics-chart"></div>`;
+        } else {
+            const reason = !trackClicks
+                ? 'Click tracking is disabled — enable “Track clicks” on this shortlink to collect time-series data.'
+                : 'No owning user on this shortlink — per-link metrics are recorded per user account.';
+            this.template = `
+                <div class="alert alert-info mb-0 d-flex align-items-start gap-2">
+                    <i class="bi bi-info-circle flex-shrink-0 mt-1"></i>
+                    <div>${reason}</div>
+                </div>
+            `;
+        }
+    }
+
+    async onInit() {
+        if (!this.canShowMetrics) return;
+        this.metricsChart = new MetricsChart({
+            containerId: 'shortlink-metrics-chart',
+            title: 'Clicks',
+            slugs: [`sl:click:${this.code}`],
+            account: `user-${this.userId}`,
+            granularity: 'days',
+            defaultDateRange: '30d',
+            yAxis: { label: 'Clicks', beginAtZero: true },
+            tooltip: { y: 'number' },
+            height: 320,
+        });
+        this.addChild(this.metricsChart);
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// MetadataSection — editable og_*/twitter_* form. Submit is intercepted
+// so the model.save() body is the nested `metadata` map (not raw fields).
+// ──────────────────────────────────────────────────────────────────────────
+
+class ShortLinkMetadataSection extends FormView {
+    constructor(options = {}) {
+        const seed = flattenShortLinkMetadata(options.model?.get('metadata'));
+        super({
+            className: 'p-3',
+            // NOTE: deliberately NOT passing `model` — FormView would otherwise
+            // call model.save(rawFormData) which would persist og_title/etc as
+            // model attributes. We handle save ourselves in onSubmit.
+            data: seed,
+            submitButtonText: 'Save Metadata',
+            submitButtonClass: 'btn btn-primary',
+            formConfig: {
+                fields: [
+                    { name: 'og_title', type: 'text', label: 'og:title', cols: 12 },
+                    { name: 'og_description', type: 'textarea', label: 'og:description', rows: 3, cols: 12 },
+                    { name: 'og_image', type: 'url', label: 'og:image', placeholder: 'https://…', cols: 12 },
+                    { name: 'twitter_card', type: 'select', label: 'twitter:card', options: TWITTER_CARD_OPTIONS, cols: 6 },
+                    { name: 'twitter_title', type: 'text', label: 'twitter:title', cols: 6 },
+                    { name: 'twitter_description', type: 'textarea', label: 'twitter:description', rows: 2, cols: 12 },
+                    { name: 'twitter_image', type: 'url', label: 'twitter:image', cols: 12 },
+                ],
+                onSubmit: (formData) => this._saveMetadata(formData),
+            },
+            ...options,
+        });
+        this._targetModel = options.model;
+    }
+
+    async _saveMetadata(formData) {
+        const metadata = buildShortLinkMetadata(formData);
+        try {
+            await this._targetModel.save({ metadata });
+            this.getApp()?.toast?.success?.('Metadata saved');
+            this.emit('metadata:saved', { model: this._targetModel, metadata });
+        } catch (err) {
+            Modal.showError(err?.data?.error || err?.message || 'Failed to save metadata');
+        }
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// ShortLinkView (main component)
+// ──────────────────────────────────────────────────────────────────────────
 
 class ShortLinkView extends View {
     constructor(options = {}) {
@@ -73,13 +217,19 @@ class ShortLinkView extends View {
         });
 
         this.model = options.model || new ShortLink(options.data || {});
+        this.sideNavView = null;
+        this.contextMenu = null;
+        this.previewSection = null;
+        this.metadataSection = null;
 
         this._refreshHeader();
 
+        // SideNavView (like FileView) needs a bounded container height to
+        // scroll its content panel properly inside a modal.
         this.template = `
-            <div class="shortlink-view-container">
-                <div class="d-flex justify-content-between align-items-start mb-3">
-                    <div class="d-flex align-items-start gap-3 flex-grow-1">
+            <div class="shortlink-view-container d-flex flex-column" style="min-height: 0;">
+                <div class="d-flex justify-content-between align-items-start mb-3 flex-shrink-0">
+                    <div class="d-flex align-items-start gap-3 flex-grow-1" style="min-width: 0;">
                         <div class="fs-1 text-primary"><i class="bi bi-link-45deg"></i></div>
                         <div class="flex-grow-1" style="min-width: 0;">
                             <div class="input-group input-group-lg mb-2" style="max-width: 620px;">
@@ -103,10 +253,9 @@ class ShortLinkView extends View {
                             </div>
                         </div>
                     </div>
-                    <div data-container="shortlink-context-menu"></div>
+                    <div data-container="shortlink-context-menu" class="ms-3 flex-shrink-0"></div>
                 </div>
-
-                <div data-container="shortlink-tabs"></div>
+                <div data-container="shortlink-sidenav" class="flex-grow-1" style="min-height: 400px; max-height: 70vh;"></div>
             </div>
         `;
     }
@@ -122,17 +271,17 @@ class ShortLinkView extends View {
     }
 
     async onInit() {
-        await this._buildTabs();
+        await this._buildSideNav();
         await this._buildContextMenu();
     }
 
-    async _buildTabs() {
-        // ── Details tab ──
+    async _buildSideNav() {
+        // ── Details ──
         const sourceVal = this.model.get('source') || '';
         const sourceOpt = SHORTLINK_SOURCE_OPTIONS.find((o) => o.value === sourceVal);
         const sourceLabel = sourceOpt ? sourceOpt.label : (sourceVal || '—');
 
-        this.detailsView = new DataView({
+        const detailsView = new DataView({
             model: this.model,
             className: 'p-3',
             columns: 2,
@@ -155,87 +304,20 @@ class ShortLinkView extends View {
             ],
         });
 
-        // ── Preview tab ──
-        this.previewView = new (class extends View {
-            constructor(opts) {
-                super({ className: 'p-3', ...opts });
-                this._syncFromModel();
-                this.template = `
-                    <p class="text-muted small mb-3">
-                        Preview of how this link appears when shared in Slack, iMessage, WhatsApp, and other platforms that render OpenGraph metadata.
-                    </p>
-                    {{#hasOg|bool}}
-                    <div class="card shadow-sm" style="max-width: 540px; border-left: 4px solid #0d6efd;">
-                        {{#ogImage}}<img src="{{ogImage}}" class="card-img-top" style="max-height: 260px; object-fit: cover;" onerror="this.style.display='none'">{{/ogImage}}
-                        <div class="card-body">
-                            <div class="text-muted small mb-1">{{domain}}</div>
-                            {{#ogTitle}}<h5 class="card-title mb-1">{{ogTitle}}</h5>{{/ogTitle}}
-                            {{#ogDescription}}<p class="card-text small text-muted mb-0">{{ogDescription}}</p>{{/ogDescription}}
-                        </div>
-                    </div>
-                    {{/hasOg|bool}}
-                    {{^hasOg|bool}}
-                    <div class="alert alert-info mb-0 small d-flex align-items-start gap-2">
-                        <i class="bi bi-info-circle flex-shrink-0 mt-1"></i>
-                        <div>
-                            No OG metadata set on this link. The server auto-scrapes the destination URL in the background —
-                            custom values entered in the <strong>Metadata</strong> tab take priority over scraped values.
-                        </div>
-                    </div>
-                    {{/hasOg|bool}}
-                `;
-            }
-            _syncFromModel() {
-                const flat = flattenShortLinkMetadata(this.model?.get('metadata'));
-                this.ogTitle = flat.og_title || '';
-                this.ogDescription = flat.og_description || '';
-                this.ogImage = flat.og_image || '';
-                this.hasOg = !!(this.ogTitle || this.ogDescription || this.ogImage);
-                this.domain = getDomain(this.model?.get('url'));
-            }
-            async refreshFromModel() {
-                this._syncFromModel();
-                if (this.isMounted?.()) await this.render();
-            }
-        })({ model: this.model });
+        // ── Preview ──
+        this.previewSection = new ShortLinkPreviewSection({ model: this.model });
 
-        // ── Metadata tab (editable form) ──
-        const metaSeed = flattenShortLinkMetadata(this.model.get('metadata'));
-        this.metadataForm = new FormView({
-            className: 'p-3',
-            model: this.model,
-            data: metaSeed,
-            submitButtonText: 'Save Metadata',
-            submitButtonClass: 'btn btn-primary',
-            formConfig: {
-                fields: [
-                    { name: 'og_title', type: 'text', label: 'og:title', cols: 12 },
-                    { name: 'og_description', type: 'textarea', label: 'og:description', rows: 3, cols: 12 },
-                    { name: 'og_image', type: 'url', label: 'og:image', placeholder: 'https://…', cols: 12 },
-                    { name: 'twitter_card', type: 'select', label: 'twitter:card', options: TWITTER_CARD_OPTIONS, cols: 6 },
-                    { name: 'twitter_title', type: 'text', label: 'twitter:title', cols: 6 },
-                    { name: 'twitter_description', type: 'textarea', label: 'twitter:description', rows: 2, cols: 12 },
-                    { name: 'twitter_image', type: 'url', label: 'twitter:image', cols: 12 },
-                ],
-            },
-        });
-        this.metadataForm.on('submit', async (payload) => {
-            const formData = payload?.data || payload;
-            const metadata = buildShortLinkMetadata(formData);
-            try {
-                await this.model.save({ metadata });
-                this.getApp()?.toast?.success('Metadata saved');
-                await this.previewView.refreshFromModel();
-            } catch (err) {
-                Modal.showError(err?.data?.error || err?.message || 'Failed to save metadata');
-            }
+        // ── Metadata (intercepts submit, saves only `metadata` map) ──
+        this.metadataSection = new ShortLinkMetadataSection({ model: this.model });
+        this.metadataSection.on('metadata:saved', () => {
+            this.previewSection?.refreshFromModel?.();
         });
 
-        // ── Click History tab (lazy TableView) ──
+        // ── Click History ──
         const clickCollection = new ShortLinkClickList({
             params: { shortlink: this.model.get('id'), sort: '-created', size: 25 },
         });
-        this.clicksTable = new TableView({
+        const clicksTable = new TableView({
             collection: clickCollection,
             className: 'p-2',
             hideActivePillNames: ['shortlink'],
@@ -273,60 +355,30 @@ class ShortLinkView extends View {
             },
         });
 
-        // ── Metrics tab ──
-        const trackClicks = !!this.model.get('track_clicks');
-        const user = this.model.get('user');
-        const userId = user?.id || user;
-        const code = this.model.get('code');
+        // ── Metrics ──
+        const metricsSection = new ShortLinkMetricsSection({ model: this.model });
 
-        if (trackClicks && userId && code) {
-            this.metricsChart = new MetricsChart({
-                title: 'Clicks',
-                slugs: [`sl:click:${code}`],
-                account: `user-${userId}`,
-                granularity: 'days',
-                defaultDateRange: '30d',
-                yAxis: { label: 'Clicks', beginAtZero: true },
-                tooltip: { y: 'number' },
-                height: 320,
-            });
-            this.metricsTab = new View({
-                className: 'p-3',
-                template: `<div data-container="shortlink-metrics-chart"></div>`,
-            });
-            this.metricsTab.addChild(this.metricsChart, 'shortlink-metrics-chart');
-        } else {
-            const reason = !trackClicks
-                ? 'Click tracking is disabled — enable “Track clicks” on this shortlink to collect time-series data.'
-                : 'No owning user on this shortlink — per-link metrics are recorded per user account.';
-            this.metricsTab = new View({
-                className: 'p-3',
-                template: `
-                    <div class="alert alert-info mb-0 d-flex align-items-start gap-2">
-                        <i class="bi bi-info-circle flex-shrink-0 mt-1"></i>
-                        <div>${reason}</div>
-                    </div>
-                `,
-            });
-        }
-
-        // ── Assemble TabView ──
-        this.tabView = new TabView({
-            containerId: 'shortlink-tabs',
-            tabs: {
-                'Details': this.detailsView,
-                'Preview': this.previewView,
-                'Metadata': this.metadataForm,
-                'Click History': this.clicksTable,
-                'Metrics': this.metricsTab,
-            },
-            activeTab: 'Details',
+        // ── Assemble SideNavView ──
+        this.sideNavView = new SideNavView({
+            containerId: 'shortlink-sidenav',
+            activeSection: 'details',
+            navWidth: 200,
+            contentPadding: '1.25rem 1.5rem',
+            enableResponsive: true,
+            minWidth: 600,
+            sections: [
+                { key: 'details',  label: 'Details',       icon: 'bi-info-circle',   view: detailsView },
+                { key: 'preview',  label: 'Preview',       icon: 'bi-card-image',    view: this.previewSection },
+                { key: 'metadata', label: 'Metadata',      icon: 'bi-braces',        view: this.metadataSection },
+                { key: 'clicks',   label: 'Click History', icon: 'bi-cursor',        view: clicksTable },
+                { key: 'metrics',  label: 'Metrics',       icon: 'bi-bar-chart-line', view: metricsSection },
+            ],
         });
-        this.addChild(this.tabView);
+        this.addChild(this.sideNavView);
     }
 
     async _buildContextMenu() {
-        const contextMenu = new ContextMenu({
+        this.contextMenu = new ContextMenu({
             containerId: 'shortlink-context-menu',
             context: this.model,
             config: {
@@ -344,10 +396,18 @@ class ShortLinkView extends View {
                 ],
             },
         });
-        this.addChild(contextMenu);
+        this.addChild(this.contextMenu);
     }
 
-    // ── Actions ──
+    // Section views are mounted under SideNavView, so model `change` events
+    // re-rendering the parent would unmount/remount everything. Sections
+    // manage their own reactivity (DataView listens to model directly,
+    // PreviewSection has refreshFromModel). Same pattern as FileView.
+    _onModelChange() {
+        // no-op
+    }
+
+    // ── Actions ────────────────────────────────────
 
     async onActionCopyShortUrl() {
         if (!this.shortUrl) return;
@@ -408,7 +468,7 @@ class ShortLinkView extends View {
             this.getApp()?.toast?.success('Shortlink updated');
             this._refreshHeader();
             await this.render();
-            await this.previewView?.refreshFromModel?.();
+            await this.previewSection?.refreshFromModel?.();
         } catch (err) {
             Modal.showError(err?.data?.error || err?.message || 'Failed to update');
         }
@@ -435,6 +495,16 @@ class ShortLinkView extends View {
         } catch (err) {
             Modal.showError(err?.data?.error || err?.message || 'Failed to delete');
         }
+    }
+
+    async showSection(name) {
+        if (this.sideNavView) {
+            await this.sideNavView.showSection(name);
+        }
+    }
+
+    getActiveSection() {
+        return this.sideNavView ? this.sideNavView.getActiveSection() : null;
     }
 }
 
