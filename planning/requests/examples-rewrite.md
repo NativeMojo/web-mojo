@@ -356,17 +356,48 @@ Agents in Wave 2 must each: open their target docs page, write `<Component>Examp
 - Dynamic `import()` of `ex.modulePath` from the registry uses paths relative to `examples/portal/`. The generator emits `./examples/<area>/<Component>/<File>.js` strings; vite's `@vite-ignore` opt-out is on the dynamic import call so vite doesn't try to statically analyze it. Wave 2 examples must keep their files inside `examples/portal/examples/**` for this to work.
 - The legacy `SearchFilterExample.js` calls non-existent APIs (`FormView.setData`, `Collection.setFilters`, `Collection.query`). Wave 2 agents writing the new search/filter form example must use `FormView.setFormData`, `Collection.setParams`/`updateParams`/`where` per the new SearchFilterForms.md doc.
 
-### Wave 2 — pending
+### Wave 2 — landed in commit `bd447ed`
 
-Per-area examples, 6 parallel agents. See the **Parallelization Plan → Wave 2** table in this file for the area assignments. Wave 2 should reference:
-- This file's `## Plan` for the per-example shape and acceptance criteria.
-- `planning/notes/examples-rewrite-audit.md` for the legacy → new mapping.
-- `examples/portal/examples/core/View/ViewExample.js` as the locked-in shape.
-- `examples/portal/README.md` for the manifest schema.
+**What shipped** — 6 parallel agents wrote 58 canonical examples + 1 standalone auth app (119 files, +9908 lines).
+
+| Area | Agent | Files | Sample LOC range |
+|---|---|---|---|
+| `core/` | A | 10 examples | 104–133 |
+| `pages/` + `services/` | B | 5 examples | 124–150 |
+| `components/` | C | 12 examples (10 + 2 siblings: DialogContextMenu, TableViewBatchActions) | 57–129 |
+| `forms/` | D | 14 examples (12 + 2 siblings: ValidationAdvanced, AllFieldTypes) | 109–173 |
+| `extensions/` | E | 9 examples (8 + 1 sibling: TabViewDynamic) | 86–148 |
+| `forms/inputs/` + `models/` + new auth | F | 8 examples + standalone auth | 115–139 |
+
+Plus the locked `core/View/` from Wave 1 = **59 routes total across 8 areas**.
+
+**Verification**
+- Registry generator: 59 examples, 8 areas, byte-identical on consecutive runs.
+- Browser smoke (`npm run dev` against `localhost:9009`): all 59 routes load with rendered content. Zero console errors. (Two render warnings remain — `Formatter 'timeago' not found` and a ListView array-init crash path — both filed as separate issues; they don't affect rendering, only console hygiene.)
+- Anti-pattern grep: no `data-action` on `<form>` elements; no `/src/...` imports leaked into example files.
+
+**Bug fixes layered onto Wave 2 during smoke testing**
+- `TableViewExample.js` and `TableViewBatchActionsExample.js`: agents subscribed to `this.table.collection.on(...)` after construction, but TableView only sets `this.collection` during `onInit`. Fixed by capturing the collection in a local variable and subscribing before passing it into TableView.
+- `TimelineViewExample.js`, `WebSocketClientExample.js`, `PortalWebAppExample.js`: agents shadowed `this.events` (the View's EventDelegate) with their own arrays/Collections. Renamed to `timelineEvents` / `eventLog` so the framework's `unbindEvents()` doesn't choke.
+- `DateTimeFieldsExample.js` and `AllFieldTypesExample.js`: agents used `type: 'datetime-local'` (not a registered field type — FormBuilder logs "Unknown field type"). Replaced with `type: 'datetime'`.
+- `ListViewExample.js`: agent passed a raw array to `collection:` per the doc; ListView's `_initCollection` array path is broken (filed as `planning/issues/listview-collection-array-init-crash.md`). Workaround: wrap in `new Collection([...])`.
+
+**Vite config**
+- Added `web-mojo/timeline` and `web-mojo/models` aliases so extension subpath imports resolve in dev.
+
+**Bugs surfaced — filed as separate issues**
+- [planning/issues/listview-collection-array-init-crash.md](../issues/listview-collection-array-init-crash.md) — `ListView({ collection: [...] })` crashes; `_initCollection` calls `new Collection(null, {}, array)` which doesn't match Collection's signature.
+- [planning/issues/timeline-timeago-formatter-missing.md](../issues/timeline-timeago-formatter-missing.md) — `TimelineViewItem` calls `pipe(date, 'timeago')`; only `relative` / `fromNow` are registered.
+
+**Notes for Wave 3**
+- The per-doc `## Example` cross-link target list is the `pages` array in `examples/portal/examples.registry.json` — for each entry whose `docs` field points at a `docs/web-mojo/<area>/<Component>.md`, append a single "See:" link to that doc.
+- The generated `docs/web-mojo/examples.md` is already up to date (the registry generator emits it). Wave 3 only needs to confirm + commit it as-of the final example set.
 
 ### Wave 3 — pending
 
-Per-doc cross-links, CHANGELOG entry, smoke tests under `test/build/`. Run after Wave 2 lands.
+### Wave 3 — pending
+
+Per-doc cross-links, CHANGELOG entry, smoke tests under `test/build/`. Ready to run as a single sequential agent now that Wave 2 is in.
 
 ### Status of the related follow-up request
 
