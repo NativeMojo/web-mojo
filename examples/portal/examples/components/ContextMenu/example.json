@@ -1,0 +1,15 @@
+{
+    "name": "ContextMenu",
+    "area": "components",
+    "route": "components/context-menu",
+    "title": "ContextMenu",
+    "summary": "Reusable Bootstrap-dropdown action menu — three-dots row menus, header menus, and inline handlers.",
+    "docs": "docs/web-mojo/components/ContextMenu.md",
+    "tags": ["context-menu", "dropdown", "actions"],
+    "page": "ContextMenuExample.js",
+    "menu": {
+        "section": "Components",
+        "icon": "bi-three-dots-vertical",
+        "order": 70
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "name": "CollectionSelect",
+    "area": "forms/inputs",
+    "route": "forms/inputs/collection-select",
+    "title": "CollectionSelect / MultiSelect",
+    "summary": "Single + multi select bound to a Collection (built-in UserList).",
+    "docs": "docs/web-mojo/forms/inputs/CollectionSelect.md",
+    "tags": ["form", "input", "select", "collection", "model"],
+    "page": "CollectionSelectExample.js",
+    "menu": {
+        "section": "Form Inputs",
+        "icon": "bi-link-45deg",
+        "order": 60
+    }
+}

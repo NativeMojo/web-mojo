@@ -1,0 +1,15 @@
+{
+    "name": "Rest",
+    "area": "services",
+    "route": "services/rest",
+    "title": "Rest",
+    "summary": "HTTP client: GET/POST/PUT/DELETE, file upload/download, interceptors.",
+    "docs": "docs/web-mojo/services/Rest.md",
+    "tags": ["rest", "http", "api", "fetch"],
+    "page": "RestExample.js",
+    "menu": {
+        "section": "Services",
+        "icon": "bi-arrow-left-right",
+        "order": 10
+    }
+}

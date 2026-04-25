@@ -1,0 +1,15 @@
+{
+    "name": "BuiltinModels",
+    "area": "models",
+    "route": "models/builtin-models",
+    "title": "Built-in Models",
+    "summary": "Catalog of built-in Model/Collection classes (User, Group, Job, …) plus a UserList demo.",
+    "docs": "docs/web-mojo/models/BuiltinModels.md",
+    "tags": ["models", "user", "group", "job", "files", "incidents", "tickets", "metrics"],
+    "page": "BuiltinModelsExample.js",
+    "menu": {
+        "section": "Models",
+        "icon": "bi-collection",
+        "order": 10
+    }
+}

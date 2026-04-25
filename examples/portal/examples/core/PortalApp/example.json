@@ -1,0 +1,15 @@
+{
+    "name": "PortalApp",
+    "area": "core",
+    "route": "core/portal-app",
+    "title": "PortalApp",
+    "summary": "WebApp plus sidebar, topbar, auth, multi-tenant group, and toast notifications.",
+    "docs": "docs/web-mojo/core/PortalApp.md",
+    "tags": ["portal", "app", "sidebar", "topbar", "auth"],
+    "page": "PortalAppExample.js",
+    "menu": {
+        "section": "Core",
+        "icon": "bi-window-sidebar",
+        "order": 100
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "name": "ListView",
+    "area": "components",
+    "route": "components/list-view",
+    "title": "ListView",
+    "summary": "Visual list bound to a Collection — per-row Views with selection support.",
+    "docs": "docs/web-mojo/components/ListView.md",
+    "tags": ["list", "collection", "selection"],
+    "page": "ListViewExample.js",
+    "menu": {
+        "section": "Components",
+        "icon": "bi-list-ul",
+        "order": 20
+    }
+}

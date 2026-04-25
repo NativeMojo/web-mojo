@@ -1,0 +1,15 @@
+{
+    "name": "Charts",
+    "area": "extensions",
+    "route": "extensions/charts",
+    "title": "Charts",
+    "summary": "SeriesChart (line/bar) and PieChart driven from inline data.",
+    "docs": "docs/web-mojo/extensions/Charts.md",
+    "tags": ["chart", "chart.js", "series", "pie", "visualization"],
+    "page": "ChartsExample.js",
+    "menu": {
+        "section": "Extensions",
+        "icon": "bi-graph-up",
+        "order": 10
+    }
+}

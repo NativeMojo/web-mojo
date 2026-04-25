@@ -1,0 +1,25 @@
+{
+    "name": "Dialog",
+    "area": "components",
+    "docs": "docs/web-mojo/components/Dialog.md",
+    "tags": ["dialog", "modal", "alert", "confirm", "prompt", "context-menu"],
+    "menu": {
+        "section": "Components",
+        "icon": "bi-window",
+        "order": 10
+    },
+    "pages": [
+        {
+            "page": "DialogExample.js",
+            "route": "components/dialog",
+            "title": "Dialog",
+            "summary": "Modal dialogs — alert, confirm, prompt, busy, and custom buttons."
+        },
+        {
+            "page": "DialogContextMenuExample.js",
+            "route": "components/dialog/context-menu",
+            "title": "Dialog — context menu",
+            "summary": "Header dropdown menu inside a Dialog. Resolves Promise with selected value."
+        }
+    ]
+}

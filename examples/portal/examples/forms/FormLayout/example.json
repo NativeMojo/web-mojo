@@ -1,0 +1,15 @@
+{
+    "name": "FormLayout",
+    "area": "forms",
+    "route": "forms/form-layout",
+    "title": "Form layout",
+    "summary": "Column grids, responsive widths, and grouped sub-grids.",
+    "page": "FormLayoutExample.js",
+    "docs": "docs/web-mojo/forms/BestPractices.md",
+    "tags": ["form", "layout", "grid", "responsive", "group"],
+    "menu": {
+        "section": "Forms",
+        "icon": "bi-grid-3x3-gap",
+        "order": 100
+    }
+}

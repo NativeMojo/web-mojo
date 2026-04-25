@@ -1,0 +1,15 @@
+{
+    "name": "OtherFields",
+    "area": "forms",
+    "route": "forms/other-fields",
+    "title": "Other fields",
+    "summary": "Color, range, and hex-color fields with live previews.",
+    "page": "OtherFieldsExample.js",
+    "docs": "docs/web-mojo/forms/BasicTypes.md",
+    "tags": ["form", "color", "range", "hex", "slider"],
+    "menu": {
+        "section": "Forms",
+        "icon": "bi-sliders",
+        "order": 80
+    }
+}

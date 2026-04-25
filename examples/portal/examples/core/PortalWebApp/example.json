@@ -1,0 +1,15 @@
+{
+    "name": "PortalWebApp",
+    "area": "core",
+    "route": "core/portal-web-app",
+    "title": "PortalWebApp",
+    "summary": "Opinionated portal: auth-gated router, automatic WebSocket, lifecycle events.",
+    "docs": "docs/web-mojo/core/PortalWebApp.md",
+    "tags": ["portal", "auth", "websocket", "lifecycle"],
+    "page": "PortalWebAppExample.js",
+    "menu": {
+        "section": "Core",
+        "icon": "bi-shield-lock",
+        "order": 110
+    }
+}

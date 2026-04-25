@@ -1,0 +1,15 @@
+{
+    "name": "Collection",
+    "area": "core",
+    "route": "core/collection",
+    "title": "Collection",
+    "summary": "Model set with setParams/updateParams, where() filtering, and events.",
+    "docs": "docs/web-mojo/core/Collection.md",
+    "tags": ["collection", "rest", "data", "filter"],
+    "page": "CollectionExample.js",
+    "menu": {
+        "section": "Core",
+        "icon": "bi-stack",
+        "order": 70
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "name": "Validation",
+    "area": "forms",
+    "docs": "docs/web-mojo/forms/Validation.md",
+    "tags": ["form", "validation", "required", "pattern", "async"],
+    "menu": {
+        "section": "Forms",
+        "icon": "bi-shield-check",
+        "order": 90
+    },
+    "pages": [
+        {
+            "page": "ValidationExample.js",
+            "route": "forms/validation",
+            "title": "Validation",
+            "summary": "HTML5 + custom validators, patterns, and error handling."
+        },
+        {
+            "page": "ValidationAdvancedExample.js",
+            "route": "forms/validation/advanced",
+            "title": "Validation — advanced",
+            "summary": "Async validators, real-time feedback, cross-field rules."
+        }
+    ]
+}

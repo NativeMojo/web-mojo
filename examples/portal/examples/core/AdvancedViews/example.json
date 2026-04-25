@@ -1,0 +1,15 @@
+{
+    "name": "AdvancedViews",
+    "area": "core",
+    "route": "core/advanced-views",
+    "title": "Advanced Views — Canvas",
+    "summary": "Canvas inside a View with onAfterRender setup and onBeforeDestroy cleanup.",
+    "docs": "docs/web-mojo/core/AdvancedViews.md",
+    "tags": ["view", "canvas", "advanced", "lifecycle"],
+    "page": "AdvancedViewsExample.js",
+    "menu": {
+        "section": "Core",
+        "icon": "bi-easel",
+        "order": 30
+    }
+}

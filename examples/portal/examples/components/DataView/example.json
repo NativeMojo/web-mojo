@@ -1,0 +1,15 @@
+{
+    "name": "DataView",
+    "area": "components",
+    "route": "components/data-view",
+    "title": "DataView",
+    "summary": "Structured key/value display with field types for email, URL, boolean, dates, and JSON.",
+    "docs": "docs/web-mojo/components/DataView.md",
+    "tags": ["data", "display", "details", "view"],
+    "page": "DataViewExample.js",
+    "menu": {
+        "section": "Components",
+        "icon": "bi-card-list",
+        "order": 40
+    }
+}

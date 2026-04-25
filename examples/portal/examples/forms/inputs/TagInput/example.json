@@ -1,0 +1,15 @@
+{
+    "name": "TagInput",
+    "area": "forms/inputs",
+    "route": "forms/inputs/tag-input",
+    "title": "TagInput",
+    "summary": "Tag/chip input with autocomplete suggestions.",
+    "docs": "docs/web-mojo/forms/inputs/TagInput.md",
+    "tags": ["form", "input", "tags", "autocomplete", "chips"],
+    "page": "TagInputExample.js",
+    "menu": {
+        "section": "Form Inputs",
+        "icon": "bi-tags",
+        "order": 10
+    }
+}

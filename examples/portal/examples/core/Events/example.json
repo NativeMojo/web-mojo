@@ -1,0 +1,15 @@
+{
+    "name": "Events",
+    "area": "core",
+    "route": "core/events",
+    "title": "Events",
+    "summary": "EventBus for global pub/sub and per-instance on/emit on Models and Views.",
+    "docs": "docs/web-mojo/core/Events.md",
+    "tags": ["events", "eventbus", "pub-sub"],
+    "page": "EventsExample.js",
+    "menu": {
+        "section": "Core",
+        "icon": "bi-broadcast",
+        "order": 80
+    }
+}

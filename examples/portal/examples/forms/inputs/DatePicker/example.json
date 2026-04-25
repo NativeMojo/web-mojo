@@ -1,0 +1,15 @@
+{
+    "name": "DatePicker",
+    "area": "forms/inputs",
+    "route": "forms/inputs/date-picker",
+    "title": "DatePicker",
+    "summary": "Calendar date picker with min/max, inline mode, and custom formats.",
+    "docs": "docs/web-mojo/forms/inputs/DatePicker.md",
+    "tags": ["form", "input", "date", "calendar"],
+    "page": "DatePickerExample.js",
+    "menu": {
+        "section": "Form Inputs",
+        "icon": "bi-calendar-date",
+        "order": 20
+    }
+}

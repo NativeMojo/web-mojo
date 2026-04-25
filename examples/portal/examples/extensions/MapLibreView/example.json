@@ -1,0 +1,15 @@
+{
+    "name": "MapLibreView",
+    "area": "extensions",
+    "route": "extensions/map-libre-view",
+    "title": "MapLibreView",
+    "summary": "Vector-tile MapLibre GL map with 3D pitch and bearing.",
+    "docs": "docs/web-mojo/extensions/MapLibreView.md",
+    "tags": ["map", "maplibre", "vector-tiles", "3d", "geo"],
+    "page": "MapLibreViewExample.js",
+    "menu": {
+        "section": "Extensions",
+        "icon": "bi-globe-americas",
+        "order": 40
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "name": "SidebarTopNav",
+    "area": "components",
+    "route": "components/sidebar-top-nav",
+    "title": "Sidebar & TopNav",
+    "summary": "Portal navigation chrome — sidebar menus and topbar configured via PortalApp.",
+    "docs": "docs/web-mojo/components/SidebarTopNav.md",
+    "tags": ["sidebar", "topnav", "navigation", "portal"],
+    "page": "SidebarTopNavExample.js",
+    "menu": {
+        "section": "Components",
+        "icon": "bi-layout-sidebar",
+        "order": 60
+    }
+}

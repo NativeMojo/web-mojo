@@ -1,0 +1,15 @@
+{
+    "name": "StructuralFields",
+    "area": "forms",
+    "route": "forms/structural-fields",
+    "title": "Structural fields",
+    "summary": "Header, divider, html, button, and hidden — non-input field types.",
+    "page": "StructuralFieldsExample.js",
+    "docs": "docs/web-mojo/forms/BasicTypes.md",
+    "tags": ["form", "header", "divider", "hidden", "button"],
+    "menu": {
+        "section": "Forms",
+        "icon": "bi-layout-text-window",
+        "order": 70
+    }
+}

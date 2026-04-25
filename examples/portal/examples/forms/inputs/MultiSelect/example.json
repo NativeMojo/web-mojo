@@ -1,0 +1,15 @@
+{
+    "name": "MultiSelectDropdown",
+    "area": "forms/inputs",
+    "route": "forms/inputs/multi-select",
+    "title": "MultiSelectDropdown",
+    "summary": "Compact multi-select dropdown with optional search and select-all.",
+    "docs": "docs/web-mojo/forms/inputs/MultiSelectDropdown.md",
+    "tags": ["form", "input", "multi-select", "dropdown"],
+    "page": "MultiSelectExample.js",
+    "menu": {
+        "section": "Form Inputs",
+        "icon": "bi-check2-square",
+        "order": 40
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "name": "FormPage",
+    "area": "pages",
+    "route": "pages/form-page",
+    "title": "FormPage",
+    "summary": "Page wrapped around a FormView with model load/save.",
+    "docs": "docs/web-mojo/pages/FormPage.md",
+    "tags": ["form", "page", "model", "edit"],
+    "page": "FormPageExample.js",
+    "menu": {
+        "section": "Pages",
+        "icon": "bi-ui-checks",
+        "order": 20
+    }
+}

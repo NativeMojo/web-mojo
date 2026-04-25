@@ -1,0 +1,15 @@
+{
+    "name": "ImageFields",
+    "area": "components",
+    "route": "components/image-fields",
+    "title": "Image fields",
+    "summary": "FormView image input fields — five size variants, drag/drop, and rendition-aware preview.",
+    "docs": "docs/web-mojo/components/ImageFields.md",
+    "tags": ["form", "image", "upload", "drag-drop"],
+    "page": "ImageFieldsExample.js",
+    "menu": {
+        "section": "Components",
+        "icon": "bi-image",
+        "order": 55
+    }
+}

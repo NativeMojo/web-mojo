@@ -1,0 +1,15 @@
+{
+    "name": "Templates",
+    "area": "core",
+    "route": "core/templates",
+    "title": "Templates",
+    "summary": "Mustache syntax reference: |bool, triple braces, quoted args, dot-prefix, |iter.",
+    "docs": "docs/web-mojo/core/Templates.md",
+    "tags": ["templates", "mustache", "syntax"],
+    "page": "TemplatesExample.js",
+    "menu": {
+        "section": "Core",
+        "icon": "bi-braces",
+        "order": 40
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "name": "ToastService",
+    "area": "services",
+    "route": "services/toast-service",
+    "title": "ToastService",
+    "summary": "Bootstrap 5 toasts: success/warn/error/info, view-as-toast.",
+    "docs": "docs/web-mojo/services/ToastService.md",
+    "tags": ["toast", "notification", "bootstrap"],
+    "page": "ToastServiceExample.js",
+    "menu": {
+        "section": "Services",
+        "icon": "bi-bell",
+        "order": 20
+    }
+}

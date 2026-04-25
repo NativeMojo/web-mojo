@@ -1,0 +1,25 @@
+{
+    "name": "FormView",
+    "area": "forms",
+    "docs": "docs/web-mojo/forms/FormView.md",
+    "tags": ["form", "formview", "validation", "submit"],
+    "menu": {
+        "section": "Forms",
+        "icon": "bi-ui-checks-grid",
+        "order": 10
+    },
+    "pages": [
+        {
+            "page": "FormViewExample.js",
+            "route": "forms/form-view",
+            "title": "FormView",
+            "summary": "FormView fundamentals: fields, validation, submission."
+        },
+        {
+            "page": "AllFieldTypesExample.js",
+            "route": "forms/form-view/all-field-types",
+            "title": "FormView — all field types",
+            "summary": "Comprehensive reference of every supported field type."
+        }
+    ]
+}

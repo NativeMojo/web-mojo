@@ -1,0 +1,15 @@
+{
+    "name": "LightBox",
+    "area": "extensions",
+    "route": "extensions/light-box",
+    "title": "LightBox",
+    "summary": "ImageViewer, LightboxGallery, and ImageEditor opened via static dialogs.",
+    "docs": "docs/web-mojo/extensions/LightBox.md",
+    "tags": ["image", "viewer", "gallery", "editor", "lightbox"],
+    "page": "LightBoxExample.js",
+    "menu": {
+        "section": "Extensions",
+        "icon": "bi-image",
+        "order": 20
+    }
+}

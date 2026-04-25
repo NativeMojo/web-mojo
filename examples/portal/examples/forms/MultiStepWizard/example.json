@@ -1,0 +1,15 @@
+{
+    "name": "MultiStepWizard",
+    "area": "forms",
+    "route": "forms/multi-step-wizard",
+    "title": "Multi-step wizard",
+    "summary": "Page + one FormView per step, with progress, navigation, and review.",
+    "page": "MultiStepWizardExample.js",
+    "docs": "docs/web-mojo/forms/MultiStepWizard.md",
+    "tags": ["form", "wizard", "multi-step", "progress"],
+    "menu": {
+        "section": "Forms",
+        "icon": "bi-list-ol",
+        "order": 110
+    }
+}

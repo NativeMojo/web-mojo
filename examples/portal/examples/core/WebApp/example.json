@@ -1,0 +1,15 @@
+{
+    "name": "WebApp",
+    "area": "core",
+    "route": "core/web-app",
+    "title": "WebApp",
+    "summary": "Minimal app shell: routing, page registry, REST client, global event bus.",
+    "docs": "docs/web-mojo/core/WebApp.md",
+    "tags": ["webapp", "router", "pages"],
+    "page": "WebAppExample.js",
+    "menu": {
+        "section": "Core",
+        "icon": "bi-app",
+        "order": 90
+    }
+}

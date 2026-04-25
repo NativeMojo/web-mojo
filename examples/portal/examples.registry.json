@@ -1,7 +1,411 @@
 {
   "generatedAt": "static",
-  "pageCount": 1,
+  "pageCount": 59,
   "pages": [
+    {
+      "name": "ContextMenu",
+      "area": "components",
+      "route": "components/context-menu",
+      "title": "ContextMenu",
+      "summary": "Reusable Bootstrap-dropdown action menu — three-dots row menus, header menus, and inline handlers.",
+      "docs": "docs/web-mojo/components/ContextMenu.md",
+      "tags": [
+        "context-menu",
+        "dropdown",
+        "actions"
+      ],
+      "page": "ContextMenuExample.js",
+      "modulePath": "./examples/components/ContextMenu/ContextMenuExample.js",
+      "sourcePath": "examples/portal/examples/components/ContextMenu/ContextMenuExample.js",
+      "section": "Components",
+      "icon": "bi-three-dots-vertical",
+      "order": 70
+    },
+    {
+      "name": "DataView",
+      "area": "components",
+      "route": "components/data-view",
+      "title": "DataView",
+      "summary": "Structured key/value display with field types for email, URL, boolean, dates, and JSON.",
+      "docs": "docs/web-mojo/components/DataView.md",
+      "tags": [
+        "data",
+        "display",
+        "details",
+        "view"
+      ],
+      "page": "DataViewExample.js",
+      "modulePath": "./examples/components/DataView/DataViewExample.js",
+      "sourcePath": "examples/portal/examples/components/DataView/DataViewExample.js",
+      "section": "Components",
+      "icon": "bi-card-list",
+      "order": 40
+    },
+    {
+      "name": "Dialog",
+      "area": "components",
+      "route": "components/dialog",
+      "title": "Dialog",
+      "summary": "Modal dialogs — alert, confirm, prompt, busy, and custom buttons.",
+      "docs": "docs/web-mojo/components/Dialog.md",
+      "tags": [
+        "dialog",
+        "modal",
+        "alert",
+        "confirm",
+        "prompt",
+        "context-menu"
+      ],
+      "page": "DialogExample.js",
+      "modulePath": "./examples/components/Dialog/DialogExample.js",
+      "sourcePath": "examples/portal/examples/components/Dialog/DialogExample.js",
+      "section": "Components",
+      "icon": "bi-window",
+      "order": 10
+    },
+    {
+      "name": "Dialog",
+      "area": "components",
+      "route": "components/dialog/context-menu",
+      "title": "Dialog — context menu",
+      "summary": "Header dropdown menu inside a Dialog. Resolves Promise with selected value.",
+      "docs": "docs/web-mojo/components/Dialog.md",
+      "tags": [
+        "dialog",
+        "modal",
+        "alert",
+        "confirm",
+        "prompt",
+        "context-menu"
+      ],
+      "page": "DialogContextMenuExample.js",
+      "modulePath": "./examples/components/Dialog/DialogContextMenuExample.js",
+      "sourcePath": "examples/portal/examples/components/Dialog/DialogContextMenuExample.js",
+      "section": "Components",
+      "icon": "bi-window",
+      "order": 11
+    },
+    {
+      "name": "FileView",
+      "area": "components",
+      "route": "components/file-view",
+      "title": "FileView",
+      "summary": "File record viewer — preview, details, renditions, and metadata sections.",
+      "docs": "docs/web-mojo/components/FileView.md",
+      "tags": [
+        "file",
+        "viewer",
+        "fileman",
+        "preview",
+        "renditions"
+      ],
+      "page": "FileViewExample.js",
+      "modulePath": "./examples/components/FileView/FileViewExample.js",
+      "sourcePath": "examples/portal/examples/components/FileView/FileViewExample.js",
+      "section": "Components",
+      "icon": "bi-file-earmark",
+      "order": 50
+    },
+    {
+      "name": "ImageFields",
+      "area": "components",
+      "route": "components/image-fields",
+      "title": "Image fields",
+      "summary": "FormView image input fields — five size variants, drag/drop, and rendition-aware preview.",
+      "docs": "docs/web-mojo/components/ImageFields.md",
+      "tags": [
+        "form",
+        "image",
+        "upload",
+        "drag-drop"
+      ],
+      "page": "ImageFieldsExample.js",
+      "modulePath": "./examples/components/ImageFields/ImageFieldsExample.js",
+      "sourcePath": "examples/portal/examples/components/ImageFields/ImageFieldsExample.js",
+      "section": "Components",
+      "icon": "bi-image",
+      "order": 55
+    },
+    {
+      "name": "ListView",
+      "area": "components",
+      "route": "components/list-view",
+      "title": "ListView",
+      "summary": "Visual list bound to a Collection — per-row Views with selection support.",
+      "docs": "docs/web-mojo/components/ListView.md",
+      "tags": [
+        "list",
+        "collection",
+        "selection"
+      ],
+      "page": "ListViewExample.js",
+      "modulePath": "./examples/components/ListView/ListViewExample.js",
+      "sourcePath": "examples/portal/examples/components/ListView/ListViewExample.js",
+      "section": "Components",
+      "icon": "bi-list-ul",
+      "order": 20
+    },
+    {
+      "name": "Modal",
+      "area": "components",
+      "route": "components/modal",
+      "title": "Modal",
+      "summary": "Static-only API for showing Views in modal dialogs (simpler than Dialog).",
+      "docs": "docs/web-mojo/components/Modal.md",
+      "tags": [
+        "modal",
+        "dialog",
+        "view"
+      ],
+      "page": "ModalExample.js",
+      "modulePath": "./examples/components/Modal/ModalExample.js",
+      "sourcePath": "examples/portal/examples/components/Modal/ModalExample.js",
+      "section": "Components",
+      "icon": "bi-window-stack",
+      "order": 15
+    },
+    {
+      "name": "SidebarTopNav",
+      "area": "components",
+      "route": "components/sidebar-top-nav",
+      "title": "Sidebar & TopNav",
+      "summary": "Portal navigation chrome — sidebar menus and topbar configured via PortalApp.",
+      "docs": "docs/web-mojo/components/SidebarTopNav.md",
+      "tags": [
+        "sidebar",
+        "topnav",
+        "navigation",
+        "portal"
+      ],
+      "page": "SidebarTopNavExample.js",
+      "modulePath": "./examples/components/SidebarTopNav/SidebarTopNavExample.js",
+      "sourcePath": "examples/portal/examples/components/SidebarTopNav/SidebarTopNavExample.js",
+      "section": "Components",
+      "icon": "bi-layout-sidebar",
+      "order": 60
+    },
+    {
+      "name": "TablePage",
+      "area": "components",
+      "route": "components/table-page",
+      "title": "TablePage",
+      "summary": "Page wrapper for TableView with URL-synced sort, filter, search, and pagination.",
+      "docs": "docs/web-mojo/components/TablePage.md",
+      "tags": [
+        "table",
+        "page",
+        "url-sync",
+        "collection"
+      ],
+      "page": "TablePageExample.js",
+      "modulePath": "./examples/components/TablePage/TablePageExample.js",
+      "sourcePath": "examples/portal/examples/components/TablePage/TablePageExample.js",
+      "section": "Components",
+      "icon": "bi-grid-3x3-gap",
+      "order": 35
+    },
+    {
+      "name": "TableView",
+      "area": "components",
+      "route": "components/table-view",
+      "title": "TableView",
+      "summary": "Sortable, filterable, paginated table bound to a Collection.",
+      "docs": "docs/web-mojo/components/TableView.md",
+      "tags": [
+        "table",
+        "collection",
+        "sort",
+        "filter",
+        "pagination",
+        "batch-actions"
+      ],
+      "page": "TableViewExample.js",
+      "modulePath": "./examples/components/TableView/TableViewExample.js",
+      "sourcePath": "examples/portal/examples/components/TableView/TableViewExample.js",
+      "section": "Components",
+      "icon": "bi-table",
+      "order": 30
+    },
+    {
+      "name": "TableView",
+      "area": "components",
+      "route": "components/table-view/batch-actions",
+      "title": "TableView — batch actions",
+      "summary": "Multi-select rows + bulk action toolbar.",
+      "docs": "docs/web-mojo/components/TableView.md",
+      "tags": [
+        "table",
+        "collection",
+        "sort",
+        "filter",
+        "pagination",
+        "batch-actions"
+      ],
+      "page": "TableViewBatchActionsExample.js",
+      "modulePath": "./examples/components/TableView/TableViewBatchActionsExample.js",
+      "sourcePath": "examples/portal/examples/components/TableView/TableViewBatchActionsExample.js",
+      "section": "Components",
+      "icon": "bi-table",
+      "order": 31
+    },
+    {
+      "name": "AdvancedViews",
+      "area": "core",
+      "route": "core/advanced-views",
+      "title": "Advanced Views — Canvas",
+      "summary": "Canvas inside a View with onAfterRender setup and onBeforeDestroy cleanup.",
+      "docs": "docs/web-mojo/core/AdvancedViews.md",
+      "tags": [
+        "view",
+        "canvas",
+        "advanced",
+        "lifecycle"
+      ],
+      "page": "AdvancedViewsExample.js",
+      "modulePath": "./examples/core/AdvancedViews/AdvancedViewsExample.js",
+      "sourcePath": "examples/portal/examples/core/AdvancedViews/AdvancedViewsExample.js",
+      "section": "Core",
+      "icon": "bi-easel",
+      "order": 30
+    },
+    {
+      "name": "Collection",
+      "area": "core",
+      "route": "core/collection",
+      "title": "Collection",
+      "summary": "Model set with setParams/updateParams, where() filtering, and events.",
+      "docs": "docs/web-mojo/core/Collection.md",
+      "tags": [
+        "collection",
+        "rest",
+        "data",
+        "filter"
+      ],
+      "page": "CollectionExample.js",
+      "modulePath": "./examples/core/Collection/CollectionExample.js",
+      "sourcePath": "examples/portal/examples/core/Collection/CollectionExample.js",
+      "section": "Core",
+      "icon": "bi-stack",
+      "order": 70
+    },
+    {
+      "name": "DataFormatter",
+      "area": "core",
+      "route": "core/data-formatter",
+      "title": "DataFormatter",
+      "summary": "Pipe formatters in templates plus dataFormatter.register and dataFormatter.apply.",
+      "docs": "docs/web-mojo/core/DataFormatter.md",
+      "tags": [
+        "formatter",
+        "pipe",
+        "templates"
+      ],
+      "page": "DataFormatterExample.js",
+      "modulePath": "./examples/core/DataFormatter/DataFormatterExample.js",
+      "sourcePath": "examples/portal/examples/core/DataFormatter/DataFormatterExample.js",
+      "section": "Core",
+      "icon": "bi-funnel",
+      "order": 50
+    },
+    {
+      "name": "Events",
+      "area": "core",
+      "route": "core/events",
+      "title": "Events",
+      "summary": "EventBus for global pub/sub and per-instance on/emit on Models and Views.",
+      "docs": "docs/web-mojo/core/Events.md",
+      "tags": [
+        "events",
+        "eventbus",
+        "pub-sub"
+      ],
+      "page": "EventsExample.js",
+      "modulePath": "./examples/core/Events/EventsExample.js",
+      "sourcePath": "examples/portal/examples/core/Events/EventsExample.js",
+      "section": "Core",
+      "icon": "bi-broadcast",
+      "order": 80
+    },
+    {
+      "name": "Model",
+      "area": "core",
+      "route": "core/model",
+      "title": "Model",
+      "summary": "REST-backed entity with attribute access, change events, dirty tracking, and CRUD.",
+      "docs": "docs/web-mojo/core/Model.md",
+      "tags": [
+        "model",
+        "rest",
+        "data",
+        "dirty-tracking"
+      ],
+      "page": "ModelExample.js",
+      "modulePath": "./examples/core/Model/ModelExample.js",
+      "sourcePath": "examples/portal/examples/core/Model/ModelExample.js",
+      "section": "Core",
+      "icon": "bi-database",
+      "order": 60
+    },
+    {
+      "name": "PortalApp",
+      "area": "core",
+      "route": "core/portal-app",
+      "title": "PortalApp",
+      "summary": "WebApp plus sidebar, topbar, auth, multi-tenant group, and toast notifications.",
+      "docs": "docs/web-mojo/core/PortalApp.md",
+      "tags": [
+        "portal",
+        "app",
+        "sidebar",
+        "topbar",
+        "auth"
+      ],
+      "page": "PortalAppExample.js",
+      "modulePath": "./examples/core/PortalApp/PortalAppExample.js",
+      "sourcePath": "examples/portal/examples/core/PortalApp/PortalAppExample.js",
+      "section": "Core",
+      "icon": "bi-window-sidebar",
+      "order": 100
+    },
+    {
+      "name": "PortalWebApp",
+      "area": "core",
+      "route": "core/portal-web-app",
+      "title": "PortalWebApp",
+      "summary": "Opinionated portal: auth-gated router, automatic WebSocket, lifecycle events.",
+      "docs": "docs/web-mojo/core/PortalWebApp.md",
+      "tags": [
+        "portal",
+        "auth",
+        "websocket",
+        "lifecycle"
+      ],
+      "page": "PortalWebAppExample.js",
+      "modulePath": "./examples/core/PortalWebApp/PortalWebAppExample.js",
+      "sourcePath": "examples/portal/examples/core/PortalWebApp/PortalWebAppExample.js",
+      "section": "Core",
+      "icon": "bi-shield-lock",
+      "order": 110
+    },
+    {
+      "name": "Templates",
+      "area": "core",
+      "route": "core/templates",
+      "title": "Templates",
+      "summary": "Mustache syntax reference: |bool, triple braces, quoted args, dot-prefix, |iter.",
+      "docs": "docs/web-mojo/core/Templates.md",
+      "tags": [
+        "templates",
+        "mustache",
+        "syntax"
+      ],
+      "page": "TemplatesExample.js",
+      "modulePath": "./examples/core/Templates/TemplatesExample.js",
+      "sourcePath": "examples/portal/examples/core/Templates/TemplatesExample.js",
+      "section": "Core",
+      "icon": "bi-braces",
+      "order": 40
+    },
     {
       "name": "View",
       "area": "core",
@@ -22,13 +426,788 @@
       "section": "Core",
       "icon": "bi-box",
       "order": 10
+    },
+    {
+      "name": "ViewChildViews",
+      "area": "core",
+      "route": "core/view-child-views",
+      "title": "View — child views",
+      "summary": "Compose a parent view from independent children using addChild + containerId.",
+      "docs": "docs/web-mojo/core/ViewChildViews.md",
+      "tags": [
+        "view",
+        "child-views",
+        "composition",
+        "addChild"
+      ],
+      "page": "ViewChildViewsExample.js",
+      "modulePath": "./examples/core/ViewChildViews/ViewChildViewsExample.js",
+      "sourcePath": "examples/portal/examples/core/ViewChildViews/ViewChildViewsExample.js",
+      "section": "Core",
+      "icon": "bi-diagram-3",
+      "order": 20
+    },
+    {
+      "name": "WebApp",
+      "area": "core",
+      "route": "core/web-app",
+      "title": "WebApp",
+      "summary": "Minimal app shell: routing, page registry, REST client, global event bus.",
+      "docs": "docs/web-mojo/core/WebApp.md",
+      "tags": [
+        "webapp",
+        "router",
+        "pages"
+      ],
+      "page": "WebAppExample.js",
+      "modulePath": "./examples/core/WebApp/WebAppExample.js",
+      "sourcePath": "examples/portal/examples/core/WebApp/WebAppExample.js",
+      "section": "Core",
+      "icon": "bi-app",
+      "order": 90
+    },
+    {
+      "name": "Charts",
+      "area": "extensions",
+      "route": "extensions/charts",
+      "title": "Charts",
+      "summary": "SeriesChart (line/bar) and PieChart driven from inline data.",
+      "docs": "docs/web-mojo/extensions/Charts.md",
+      "tags": [
+        "chart",
+        "chart.js",
+        "series",
+        "pie",
+        "visualization"
+      ],
+      "page": "ChartsExample.js",
+      "modulePath": "./examples/extensions/Charts/ChartsExample.js",
+      "sourcePath": "examples/portal/examples/extensions/Charts/ChartsExample.js",
+      "section": "Extensions",
+      "icon": "bi-graph-up",
+      "order": 10
+    },
+    {
+      "name": "FileUpload",
+      "area": "extensions",
+      "route": "extensions/file-upload",
+      "title": "FileUpload",
+      "summary": "Drag-and-drop file handling via applyFileDropMixin with validation.",
+      "docs": "docs/web-mojo/extensions/FileUpload.md",
+      "tags": [
+        "file",
+        "upload",
+        "drag-drop",
+        "mixin"
+      ],
+      "page": "FileUploadExample.js",
+      "modulePath": "./examples/extensions/FileUpload/FileUploadExample.js",
+      "sourcePath": "examples/portal/examples/extensions/FileUpload/FileUploadExample.js",
+      "section": "Extensions",
+      "icon": "bi-cloud-arrow-up",
+      "order": 60
+    },
+    {
+      "name": "LightBox",
+      "area": "extensions",
+      "route": "extensions/light-box",
+      "title": "LightBox",
+      "summary": "ImageViewer, LightboxGallery, and ImageEditor opened via static dialogs.",
+      "docs": "docs/web-mojo/extensions/LightBox.md",
+      "tags": [
+        "image",
+        "viewer",
+        "gallery",
+        "editor",
+        "lightbox"
+      ],
+      "page": "LightBoxExample.js",
+      "modulePath": "./examples/extensions/LightBox/LightBoxExample.js",
+      "sourcePath": "examples/portal/examples/extensions/LightBox/LightBoxExample.js",
+      "section": "Extensions",
+      "icon": "bi-image",
+      "order": 20
+    },
+    {
+      "name": "Location",
+      "area": "extensions",
+      "route": "extensions/location",
+      "title": "Location",
+      "summary": "Browser geolocation: one-shot fix and live watch with permission handling.",
+      "docs": "docs/web-mojo/extensions/Location.md",
+      "tags": [
+        "geolocation",
+        "location",
+        "tracking",
+        "browser-api"
+      ],
+      "page": "LocationExample.js",
+      "modulePath": "./examples/extensions/Location/LocationExample.js",
+      "sourcePath": "examples/portal/examples/extensions/Location/LocationExample.js",
+      "section": "Extensions",
+      "icon": "bi-geo-alt",
+      "order": 70
+    },
+    {
+      "name": "MapLibreView",
+      "area": "extensions",
+      "route": "extensions/map-libre-view",
+      "title": "MapLibreView",
+      "summary": "Vector-tile MapLibre GL map with 3D pitch and bearing.",
+      "docs": "docs/web-mojo/extensions/MapLibreView.md",
+      "tags": [
+        "map",
+        "maplibre",
+        "vector-tiles",
+        "3d",
+        "geo"
+      ],
+      "page": "MapLibreViewExample.js",
+      "modulePath": "./examples/extensions/MapLibreView/MapLibreViewExample.js",
+      "sourcePath": "examples/portal/examples/extensions/MapLibreView/MapLibreViewExample.js",
+      "section": "Extensions",
+      "icon": "bi-globe-americas",
+      "order": 40
+    },
+    {
+      "name": "MapView",
+      "area": "extensions",
+      "route": "extensions/map-view",
+      "title": "MapView",
+      "summary": "Leaflet marker map with auto-fit bounds and switchable tile layers.",
+      "docs": "docs/web-mojo/extensions/MapView.md",
+      "tags": [
+        "map",
+        "leaflet",
+        "markers",
+        "geo"
+      ],
+      "page": "MapViewExample.js",
+      "modulePath": "./examples/extensions/MapView/MapViewExample.js",
+      "sourcePath": "examples/portal/examples/extensions/MapView/MapViewExample.js",
+      "section": "Extensions",
+      "icon": "bi-map",
+      "order": 30
+    },
+    {
+      "name": "TabView",
+      "area": "extensions",
+      "route": "extensions/tab-view",
+      "title": "TabView",
+      "summary": "Tab navigation with static tabs and lazy mounting.",
+      "docs": "docs/web-mojo/extensions/TabView.md",
+      "tags": [
+        "tabs",
+        "navigation",
+        "responsive"
+      ],
+      "page": "TabViewExample.js",
+      "modulePath": "./examples/extensions/TabView/TabViewExample.js",
+      "sourcePath": "examples/portal/examples/extensions/TabView/TabViewExample.js",
+      "section": "Extensions",
+      "icon": "bi-ui-checks-grid",
+      "order": 100
+    },
+    {
+      "name": "TabView",
+      "area": "extensions",
+      "route": "extensions/tab-view/dynamic",
+      "title": "TabView — dynamic",
+      "summary": "Tabs added and removed at runtime.",
+      "docs": "docs/web-mojo/extensions/TabView.md",
+      "tags": [
+        "tabs",
+        "navigation",
+        "responsive"
+      ],
+      "page": "TabViewDynamicExample.js",
+      "modulePath": "./examples/extensions/TabView/TabViewDynamicExample.js",
+      "sourcePath": "examples/portal/examples/extensions/TabView/TabViewDynamicExample.js",
+      "section": "Extensions",
+      "icon": "bi-ui-checks-grid",
+      "order": 101
+    },
+    {
+      "name": "TimelineView",
+      "area": "extensions",
+      "route": "extensions/timeline-view",
+      "title": "TimelineView",
+      "summary": "Chronological event timeline backed by a Collection.",
+      "docs": "docs/web-mojo/extensions/TimelineView.md",
+      "tags": [
+        "timeline",
+        "activity",
+        "feed",
+        "collection"
+      ],
+      "page": "TimelineViewExample.js",
+      "modulePath": "./examples/extensions/TimelineView/TimelineViewExample.js",
+      "sourcePath": "examples/portal/examples/extensions/TimelineView/TimelineViewExample.js",
+      "section": "Extensions",
+      "icon": "bi-clock-history",
+      "order": 50
+    },
+    {
+      "name": "DateTimeFields",
+      "area": "forms",
+      "route": "forms/date-time-fields",
+      "title": "Date & time fields",
+      "summary": "Native HTML5 date, time, and datetime-local pickers.",
+      "docs": "docs/web-mojo/forms/BasicTypes.md",
+      "tags": [
+        "form",
+        "date",
+        "time",
+        "datetime"
+      ],
+      "page": "DateTimeFieldsExample.js",
+      "modulePath": "./examples/forms/DateTimeFields/DateTimeFieldsExample.js",
+      "sourcePath": "examples/portal/examples/forms/DateTimeFields/DateTimeFieldsExample.js",
+      "section": "Forms",
+      "icon": "bi-calendar-event",
+      "order": 40
+    },
+    {
+      "name": "FileMediaFields",
+      "area": "forms",
+      "route": "forms/file-media-fields",
+      "title": "File & media fields",
+      "summary": "File upload, image preview, audio/video file inputs.",
+      "docs": "docs/web-mojo/forms/FileHandling.md",
+      "tags": [
+        "form",
+        "file",
+        "upload",
+        "image",
+        "media"
+      ],
+      "page": "FileMediaFieldsExample.js",
+      "modulePath": "./examples/forms/FileMediaFields/FileMediaFieldsExample.js",
+      "sourcePath": "examples/portal/examples/forms/FileMediaFields/FileMediaFieldsExample.js",
+      "section": "Forms",
+      "icon": "bi-cloud-upload",
+      "order": 50
+    },
+    {
+      "name": "FormLayout",
+      "area": "forms",
+      "route": "forms/form-layout",
+      "title": "Form layout",
+      "summary": "Column grids, responsive widths, and grouped sub-grids.",
+      "docs": "docs/web-mojo/forms/BestPractices.md",
+      "tags": [
+        "form",
+        "layout",
+        "grid",
+        "responsive",
+        "group"
+      ],
+      "page": "FormLayoutExample.js",
+      "modulePath": "./examples/forms/FormLayout/FormLayoutExample.js",
+      "sourcePath": "examples/portal/examples/forms/FormLayout/FormLayoutExample.js",
+      "section": "Forms",
+      "icon": "bi-grid-3x3-gap",
+      "order": 100
+    },
+    {
+      "name": "FormView",
+      "area": "forms",
+      "route": "forms/form-view",
+      "title": "FormView",
+      "summary": "FormView fundamentals: fields, validation, submission.",
+      "docs": "docs/web-mojo/forms/FormView.md",
+      "tags": [
+        "form",
+        "formview",
+        "validation",
+        "submit"
+      ],
+      "page": "FormViewExample.js",
+      "modulePath": "./examples/forms/FormView/FormViewExample.js",
+      "sourcePath": "examples/portal/examples/forms/FormView/FormViewExample.js",
+      "section": "Forms",
+      "icon": "bi-ui-checks-grid",
+      "order": 10
+    },
+    {
+      "name": "FormView",
+      "area": "forms",
+      "route": "forms/form-view/all-field-types",
+      "title": "FormView — all field types",
+      "summary": "Comprehensive reference of every supported field type.",
+      "docs": "docs/web-mojo/forms/FormView.md",
+      "tags": [
+        "form",
+        "formview",
+        "validation",
+        "submit"
+      ],
+      "page": "AllFieldTypesExample.js",
+      "modulePath": "./examples/forms/FormView/AllFieldTypesExample.js",
+      "sourcePath": "examples/portal/examples/forms/FormView/AllFieldTypesExample.js",
+      "section": "Forms",
+      "icon": "bi-ui-checks-grid",
+      "order": 11
+    },
+    {
+      "name": "CollectionSelect",
+      "area": "forms/inputs",
+      "route": "forms/inputs/collection-select",
+      "title": "CollectionSelect / MultiSelect",
+      "summary": "Single + multi select bound to a Collection (built-in UserList).",
+      "docs": "docs/web-mojo/forms/inputs/CollectionSelect.md",
+      "tags": [
+        "form",
+        "input",
+        "select",
+        "collection",
+        "model"
+      ],
+      "page": "CollectionSelectExample.js",
+      "modulePath": "./examples/forms/inputs/CollectionSelect/CollectionSelectExample.js",
+      "sourcePath": "examples/portal/examples/forms/inputs/CollectionSelect/CollectionSelectExample.js",
+      "section": "Form Inputs",
+      "icon": "bi-link-45deg",
+      "order": 60
+    },
+    {
+      "name": "ComboInput",
+      "area": "forms/inputs",
+      "route": "forms/inputs/combo-input",
+      "title": "ComboInput",
+      "summary": "Searchable text + dropdown; toggle allowCustom for strict mode.",
+      "docs": "docs/web-mojo/forms/inputs/ComboInput.md",
+      "tags": [
+        "form",
+        "input",
+        "combo",
+        "autocomplete",
+        "select"
+      ],
+      "page": "ComboInputExample.js",
+      "modulePath": "./examples/forms/inputs/ComboInput/ComboInputExample.js",
+      "sourcePath": "examples/portal/examples/forms/inputs/ComboInput/ComboInputExample.js",
+      "section": "Form Inputs",
+      "icon": "bi-input-cursor",
+      "order": 50
+    },
+    {
+      "name": "DatePicker",
+      "area": "forms/inputs",
+      "route": "forms/inputs/date-picker",
+      "title": "DatePicker",
+      "summary": "Calendar date picker with min/max, inline mode, and custom formats.",
+      "docs": "docs/web-mojo/forms/inputs/DatePicker.md",
+      "tags": [
+        "form",
+        "input",
+        "date",
+        "calendar"
+      ],
+      "page": "DatePickerExample.js",
+      "modulePath": "./examples/forms/inputs/DatePicker/DatePickerExample.js",
+      "sourcePath": "examples/portal/examples/forms/inputs/DatePicker/DatePickerExample.js",
+      "section": "Form Inputs",
+      "icon": "bi-calendar-date",
+      "order": 20
+    },
+    {
+      "name": "DateRangePicker",
+      "area": "forms/inputs",
+      "route": "forms/inputs/date-range-picker",
+      "title": "DateRangePicker",
+      "summary": "Start/end date range in a single combined picker.",
+      "docs": "docs/web-mojo/forms/inputs/DateRangePicker.md",
+      "tags": [
+        "form",
+        "input",
+        "date",
+        "range"
+      ],
+      "page": "DateRangePickerExample.js",
+      "modulePath": "./examples/forms/inputs/DateRangePicker/DateRangePickerExample.js",
+      "sourcePath": "examples/portal/examples/forms/inputs/DateRangePicker/DateRangePickerExample.js",
+      "section": "Form Inputs",
+      "icon": "bi-calendar-range",
+      "order": 30
+    },
+    {
+      "name": "ImageField",
+      "area": "forms/inputs",
+      "route": "forms/inputs/image-field",
+      "title": "ImageField",
+      "summary": "Image upload with drag-and-drop, preview, and configurable size.",
+      "docs": "docs/web-mojo/forms/inputs/ImageField.md",
+      "tags": [
+        "form",
+        "input",
+        "image",
+        "upload",
+        "file"
+      ],
+      "page": "ImageFieldExample.js",
+      "modulePath": "./examples/forms/inputs/ImageField/ImageFieldExample.js",
+      "sourcePath": "examples/portal/examples/forms/inputs/ImageField/ImageFieldExample.js",
+      "section": "Form Inputs",
+      "icon": "bi-image",
+      "order": 70
+    },
+    {
+      "name": "MultiSelectDropdown",
+      "area": "forms/inputs",
+      "route": "forms/inputs/multi-select",
+      "title": "MultiSelectDropdown",
+      "summary": "Compact multi-select dropdown with optional search and select-all.",
+      "docs": "docs/web-mojo/forms/inputs/MultiSelectDropdown.md",
+      "tags": [
+        "form",
+        "input",
+        "multi-select",
+        "dropdown"
+      ],
+      "page": "MultiSelectExample.js",
+      "modulePath": "./examples/forms/inputs/MultiSelect/MultiSelectExample.js",
+      "sourcePath": "examples/portal/examples/forms/inputs/MultiSelect/MultiSelectExample.js",
+      "section": "Form Inputs",
+      "icon": "bi-check2-square",
+      "order": 40
+    },
+    {
+      "name": "TagInput",
+      "area": "forms/inputs",
+      "route": "forms/inputs/tag-input",
+      "title": "TagInput",
+      "summary": "Tag/chip input with autocomplete suggestions.",
+      "docs": "docs/web-mojo/forms/inputs/TagInput.md",
+      "tags": [
+        "form",
+        "input",
+        "tags",
+        "autocomplete",
+        "chips"
+      ],
+      "page": "TagInputExample.js",
+      "modulePath": "./examples/forms/inputs/TagInput/TagInputExample.js",
+      "sourcePath": "examples/portal/examples/forms/inputs/TagInput/TagInputExample.js",
+      "section": "Form Inputs",
+      "icon": "bi-tags",
+      "order": 10
+    },
+    {
+      "name": "MultiStepWizard",
+      "area": "forms",
+      "route": "forms/multi-step-wizard",
+      "title": "Multi-step wizard",
+      "summary": "Page + one FormView per step, with progress, navigation, and review.",
+      "docs": "docs/web-mojo/forms/MultiStepWizard.md",
+      "tags": [
+        "form",
+        "wizard",
+        "multi-step",
+        "progress"
+      ],
+      "page": "MultiStepWizardExample.js",
+      "modulePath": "./examples/forms/MultiStepWizard/MultiStepWizardExample.js",
+      "sourcePath": "examples/portal/examples/forms/MultiStepWizard/MultiStepWizardExample.js",
+      "section": "Forms",
+      "icon": "bi-list-ol",
+      "order": 110
+    },
+    {
+      "name": "OtherFields",
+      "area": "forms",
+      "route": "forms/other-fields",
+      "title": "Other fields",
+      "summary": "Color, range, and hex-color fields with live previews.",
+      "docs": "docs/web-mojo/forms/BasicTypes.md",
+      "tags": [
+        "form",
+        "color",
+        "range",
+        "hex",
+        "slider"
+      ],
+      "page": "OtherFieldsExample.js",
+      "modulePath": "./examples/forms/OtherFields/OtherFieldsExample.js",
+      "sourcePath": "examples/portal/examples/forms/OtherFields/OtherFieldsExample.js",
+      "section": "Forms",
+      "icon": "bi-sliders",
+      "order": 80
+    },
+    {
+      "name": "SearchFilterForm",
+      "area": "forms",
+      "route": "forms/search-filter-form",
+      "title": "Search & filter form",
+      "summary": "Live filter form driving a result list, with debounced changes.",
+      "docs": "docs/web-mojo/forms/SearchFilterForms.md",
+      "tags": [
+        "form",
+        "search",
+        "filter",
+        "debounce"
+      ],
+      "page": "SearchFilterFormExample.js",
+      "modulePath": "./examples/forms/SearchFilterForm/SearchFilterFormExample.js",
+      "sourcePath": "examples/portal/examples/forms/SearchFilterForm/SearchFilterFormExample.js",
+      "section": "Forms",
+      "icon": "bi-funnel",
+      "order": 120
+    },
+    {
+      "name": "SelectionFields",
+      "area": "forms",
+      "route": "forms/selection-fields",
+      "title": "Selection fields",
+      "summary": "Select, radio, checkbox, toggle/switch, and button group.",
+      "docs": "docs/web-mojo/forms/BasicTypes.md",
+      "tags": [
+        "form",
+        "select",
+        "radio",
+        "checkbox",
+        "toggle"
+      ],
+      "page": "SelectionFieldsExample.js",
+      "modulePath": "./examples/forms/SelectionFields/SelectionFieldsExample.js",
+      "sourcePath": "examples/portal/examples/forms/SelectionFields/SelectionFieldsExample.js",
+      "section": "Forms",
+      "icon": "bi-ui-radios",
+      "order": 30
+    },
+    {
+      "name": "StructuralFields",
+      "area": "forms",
+      "route": "forms/structural-fields",
+      "title": "Structural fields",
+      "summary": "Header, divider, html, button, and hidden — non-input field types.",
+      "docs": "docs/web-mojo/forms/BasicTypes.md",
+      "tags": [
+        "form",
+        "header",
+        "divider",
+        "hidden",
+        "button"
+      ],
+      "page": "StructuralFieldsExample.js",
+      "modulePath": "./examples/forms/StructuralFields/StructuralFieldsExample.js",
+      "sourcePath": "examples/portal/examples/forms/StructuralFields/StructuralFieldsExample.js",
+      "section": "Forms",
+      "icon": "bi-layout-text-window",
+      "order": 70
+    },
+    {
+      "name": "TextInputs",
+      "area": "forms",
+      "route": "forms/text-inputs",
+      "title": "Text inputs",
+      "summary": "Text, email, password, tel, url, search, hex, number fields.",
+      "docs": "docs/web-mojo/forms/BasicTypes.md",
+      "tags": [
+        "form",
+        "text",
+        "email",
+        "number",
+        "input"
+      ],
+      "page": "TextInputsExample.js",
+      "modulePath": "./examples/forms/TextInputs/TextInputsExample.js",
+      "sourcePath": "examples/portal/examples/forms/TextInputs/TextInputsExample.js",
+      "section": "Forms",
+      "icon": "bi-input-cursor-text",
+      "order": 20
+    },
+    {
+      "name": "TextareaFields",
+      "area": "forms",
+      "route": "forms/textarea-fields",
+      "title": "Textarea fields",
+      "summary": "Multi-line text plus htmlpreview and json variants.",
+      "docs": "docs/web-mojo/forms/BasicTypes.md",
+      "tags": [
+        "form",
+        "textarea",
+        "html",
+        "json"
+      ],
+      "page": "TextareaFieldsExample.js",
+      "modulePath": "./examples/forms/TextareaFields/TextareaFieldsExample.js",
+      "sourcePath": "examples/portal/examples/forms/TextareaFields/TextareaFieldsExample.js",
+      "section": "Forms",
+      "icon": "bi-textarea-resize",
+      "order": 60
+    },
+    {
+      "name": "Validation",
+      "area": "forms",
+      "route": "forms/validation",
+      "title": "Validation",
+      "summary": "HTML5 + custom validators, patterns, and error handling.",
+      "docs": "docs/web-mojo/forms/Validation.md",
+      "tags": [
+        "form",
+        "validation",
+        "required",
+        "pattern",
+        "async"
+      ],
+      "page": "ValidationExample.js",
+      "modulePath": "./examples/forms/Validation/ValidationExample.js",
+      "sourcePath": "examples/portal/examples/forms/Validation/ValidationExample.js",
+      "section": "Forms",
+      "icon": "bi-shield-check",
+      "order": 90
+    },
+    {
+      "name": "Validation",
+      "area": "forms",
+      "route": "forms/validation/advanced",
+      "title": "Validation — advanced",
+      "summary": "Async validators, real-time feedback, cross-field rules.",
+      "docs": "docs/web-mojo/forms/Validation.md",
+      "tags": [
+        "form",
+        "validation",
+        "required",
+        "pattern",
+        "async"
+      ],
+      "page": "ValidationAdvancedExample.js",
+      "modulePath": "./examples/forms/Validation/ValidationAdvancedExample.js",
+      "sourcePath": "examples/portal/examples/forms/Validation/ValidationAdvancedExample.js",
+      "section": "Forms",
+      "icon": "bi-shield-check",
+      "order": 91
+    },
+    {
+      "name": "BuiltinModels",
+      "area": "models",
+      "route": "models/builtin-models",
+      "title": "Built-in Models",
+      "summary": "Catalog of built-in Model/Collection classes (User, Group, Job, …) plus a UserList demo.",
+      "docs": "docs/web-mojo/models/BuiltinModels.md",
+      "tags": [
+        "models",
+        "user",
+        "group",
+        "job",
+        "files",
+        "incidents",
+        "tickets",
+        "metrics"
+      ],
+      "page": "BuiltinModelsExample.js",
+      "modulePath": "./examples/models/BuiltinModels/BuiltinModelsExample.js",
+      "sourcePath": "examples/portal/examples/models/BuiltinModels/BuiltinModelsExample.js",
+      "section": "Models",
+      "icon": "bi-collection",
+      "order": 10
+    },
+    {
+      "name": "FormPage",
+      "area": "pages",
+      "route": "pages/form-page",
+      "title": "FormPage",
+      "summary": "Page wrapped around a FormView with model load/save.",
+      "docs": "docs/web-mojo/pages/FormPage.md",
+      "tags": [
+        "form",
+        "page",
+        "model",
+        "edit"
+      ],
+      "page": "FormPageExample.js",
+      "modulePath": "./examples/pages/FormPage/FormPageExample.js",
+      "sourcePath": "examples/portal/examples/pages/FormPage/FormPageExample.js",
+      "section": "Pages",
+      "icon": "bi-ui-checks",
+      "order": 20
+    },
+    {
+      "name": "Page",
+      "area": "pages",
+      "route": "pages/page",
+      "title": "Page",
+      "summary": "Routed screen base: onEnter/onExit, URL params, permissions.",
+      "docs": "docs/web-mojo/pages/Page.md",
+      "tags": [
+        "page",
+        "routing",
+        "lifecycle",
+        "params",
+        "permissions"
+      ],
+      "page": "PageExample.js",
+      "modulePath": "./examples/pages/Page/PageExample.js",
+      "sourcePath": "examples/portal/examples/pages/Page/PageExample.js",
+      "section": "Pages",
+      "icon": "bi-file-earmark-text",
+      "order": 10
+    },
+    {
+      "name": "Rest",
+      "area": "services",
+      "route": "services/rest",
+      "title": "Rest",
+      "summary": "HTTP client: GET/POST/PUT/DELETE, file upload/download, interceptors.",
+      "docs": "docs/web-mojo/services/Rest.md",
+      "tags": [
+        "rest",
+        "http",
+        "api",
+        "fetch"
+      ],
+      "page": "RestExample.js",
+      "modulePath": "./examples/services/Rest/RestExample.js",
+      "sourcePath": "examples/portal/examples/services/Rest/RestExample.js",
+      "section": "Services",
+      "icon": "bi-arrow-left-right",
+      "order": 10
+    },
+    {
+      "name": "ToastService",
+      "area": "services",
+      "route": "services/toast-service",
+      "title": "ToastService",
+      "summary": "Bootstrap 5 toasts: success/warn/error/info, view-as-toast.",
+      "docs": "docs/web-mojo/services/ToastService.md",
+      "tags": [
+        "toast",
+        "notification",
+        "bootstrap"
+      ],
+      "page": "ToastServiceExample.js",
+      "modulePath": "./examples/services/ToastService/ToastServiceExample.js",
+      "sourcePath": "examples/portal/examples/services/ToastService/ToastServiceExample.js",
+      "section": "Services",
+      "icon": "bi-bell",
+      "order": 20
+    },
+    {
+      "name": "WebSocketClient",
+      "area": "services",
+      "route": "services/web-socket-client",
+      "title": "WebSocketClient",
+      "summary": "WebSocket client with auto-reconnect and heartbeat.",
+      "docs": "docs/web-mojo/services/WebSocketClient.md",
+      "tags": [
+        "websocket",
+        "realtime",
+        "reconnect"
+      ],
+      "page": "WebSocketClientExample.js",
+      "modulePath": "./examples/services/WebSocketClient/WebSocketClientExample.js",
+      "sourcePath": "examples/portal/examples/services/WebSocketClient/WebSocketClientExample.js",
+      "section": "Services",
+      "icon": "bi-broadcast",
+      "order": 30
     }
   ],
   "menu": [
     {
       "area": "core",
       "section": "Core",
-      "icon": "bi-box",
+      "icon": "bi-easel",
       "pages": [
         {
           "route": "core/view",
@@ -36,6 +1215,461 @@
           "summary": "Base component: lifecycle, templates, data-action, child views.",
           "icon": "bi-box",
           "docs": "docs/web-mojo/core/View.md"
+        },
+        {
+          "route": "core/view-child-views",
+          "title": "View — child views",
+          "summary": "Compose a parent view from independent children using addChild + containerId.",
+          "icon": "bi-diagram-3",
+          "docs": "docs/web-mojo/core/ViewChildViews.md"
+        },
+        {
+          "route": "core/advanced-views",
+          "title": "Advanced Views — Canvas",
+          "summary": "Canvas inside a View with onAfterRender setup and onBeforeDestroy cleanup.",
+          "icon": "bi-easel",
+          "docs": "docs/web-mojo/core/AdvancedViews.md"
+        },
+        {
+          "route": "core/templates",
+          "title": "Templates",
+          "summary": "Mustache syntax reference: |bool, triple braces, quoted args, dot-prefix, |iter.",
+          "icon": "bi-braces",
+          "docs": "docs/web-mojo/core/Templates.md"
+        },
+        {
+          "route": "core/data-formatter",
+          "title": "DataFormatter",
+          "summary": "Pipe formatters in templates plus dataFormatter.register and dataFormatter.apply.",
+          "icon": "bi-funnel",
+          "docs": "docs/web-mojo/core/DataFormatter.md"
+        },
+        {
+          "route": "core/model",
+          "title": "Model",
+          "summary": "REST-backed entity with attribute access, change events, dirty tracking, and CRUD.",
+          "icon": "bi-database",
+          "docs": "docs/web-mojo/core/Model.md"
+        },
+        {
+          "route": "core/collection",
+          "title": "Collection",
+          "summary": "Model set with setParams/updateParams, where() filtering, and events.",
+          "icon": "bi-stack",
+          "docs": "docs/web-mojo/core/Collection.md"
+        },
+        {
+          "route": "core/events",
+          "title": "Events",
+          "summary": "EventBus for global pub/sub and per-instance on/emit on Models and Views.",
+          "icon": "bi-broadcast",
+          "docs": "docs/web-mojo/core/Events.md"
+        },
+        {
+          "route": "core/web-app",
+          "title": "WebApp",
+          "summary": "Minimal app shell: routing, page registry, REST client, global event bus.",
+          "icon": "bi-app",
+          "docs": "docs/web-mojo/core/WebApp.md"
+        },
+        {
+          "route": "core/portal-app",
+          "title": "PortalApp",
+          "summary": "WebApp plus sidebar, topbar, auth, multi-tenant group, and toast notifications.",
+          "icon": "bi-window-sidebar",
+          "docs": "docs/web-mojo/core/PortalApp.md"
+        },
+        {
+          "route": "core/portal-web-app",
+          "title": "PortalWebApp",
+          "summary": "Opinionated portal: auth-gated router, automatic WebSocket, lifecycle events.",
+          "icon": "bi-shield-lock",
+          "docs": "docs/web-mojo/core/PortalWebApp.md"
+        }
+      ]
+    },
+    {
+      "area": "pages",
+      "section": "Pages",
+      "icon": "bi-ui-checks",
+      "pages": [
+        {
+          "route": "pages/page",
+          "title": "Page",
+          "summary": "Routed screen base: onEnter/onExit, URL params, permissions.",
+          "icon": "bi-file-earmark-text",
+          "docs": "docs/web-mojo/pages/Page.md"
+        },
+        {
+          "route": "pages/form-page",
+          "title": "FormPage",
+          "summary": "Page wrapped around a FormView with model load/save.",
+          "icon": "bi-ui-checks",
+          "docs": "docs/web-mojo/pages/FormPage.md"
+        }
+      ]
+    },
+    {
+      "area": "services",
+      "section": "Services",
+      "icon": "bi-arrow-left-right",
+      "pages": [
+        {
+          "route": "services/rest",
+          "title": "Rest",
+          "summary": "HTTP client: GET/POST/PUT/DELETE, file upload/download, interceptors.",
+          "icon": "bi-arrow-left-right",
+          "docs": "docs/web-mojo/services/Rest.md"
+        },
+        {
+          "route": "services/toast-service",
+          "title": "ToastService",
+          "summary": "Bootstrap 5 toasts: success/warn/error/info, view-as-toast.",
+          "icon": "bi-bell",
+          "docs": "docs/web-mojo/services/ToastService.md"
+        },
+        {
+          "route": "services/web-socket-client",
+          "title": "WebSocketClient",
+          "summary": "WebSocket client with auto-reconnect and heartbeat.",
+          "icon": "bi-broadcast",
+          "docs": "docs/web-mojo/services/WebSocketClient.md"
+        }
+      ]
+    },
+    {
+      "area": "components",
+      "section": "Components",
+      "icon": "bi-three-dots-vertical",
+      "pages": [
+        {
+          "route": "components/dialog",
+          "title": "Dialog",
+          "summary": "Modal dialogs — alert, confirm, prompt, busy, and custom buttons.",
+          "icon": "bi-window",
+          "docs": "docs/web-mojo/components/Dialog.md"
+        },
+        {
+          "route": "components/dialog/context-menu",
+          "title": "Dialog — context menu",
+          "summary": "Header dropdown menu inside a Dialog. Resolves Promise with selected value.",
+          "icon": "bi-window",
+          "docs": "docs/web-mojo/components/Dialog.md"
+        },
+        {
+          "route": "components/modal",
+          "title": "Modal",
+          "summary": "Static-only API for showing Views in modal dialogs (simpler than Dialog).",
+          "icon": "bi-window-stack",
+          "docs": "docs/web-mojo/components/Modal.md"
+        },
+        {
+          "route": "components/list-view",
+          "title": "ListView",
+          "summary": "Visual list bound to a Collection — per-row Views with selection support.",
+          "icon": "bi-list-ul",
+          "docs": "docs/web-mojo/components/ListView.md"
+        },
+        {
+          "route": "components/table-view",
+          "title": "TableView",
+          "summary": "Sortable, filterable, paginated table bound to a Collection.",
+          "icon": "bi-table",
+          "docs": "docs/web-mojo/components/TableView.md"
+        },
+        {
+          "route": "components/table-view/batch-actions",
+          "title": "TableView — batch actions",
+          "summary": "Multi-select rows + bulk action toolbar.",
+          "icon": "bi-table",
+          "docs": "docs/web-mojo/components/TableView.md"
+        },
+        {
+          "route": "components/table-page",
+          "title": "TablePage",
+          "summary": "Page wrapper for TableView with URL-synced sort, filter, search, and pagination.",
+          "icon": "bi-grid-3x3-gap",
+          "docs": "docs/web-mojo/components/TablePage.md"
+        },
+        {
+          "route": "components/data-view",
+          "title": "DataView",
+          "summary": "Structured key/value display with field types for email, URL, boolean, dates, and JSON.",
+          "icon": "bi-card-list",
+          "docs": "docs/web-mojo/components/DataView.md"
+        },
+        {
+          "route": "components/file-view",
+          "title": "FileView",
+          "summary": "File record viewer — preview, details, renditions, and metadata sections.",
+          "icon": "bi-file-earmark",
+          "docs": "docs/web-mojo/components/FileView.md"
+        },
+        {
+          "route": "components/image-fields",
+          "title": "Image fields",
+          "summary": "FormView image input fields — five size variants, drag/drop, and rendition-aware preview.",
+          "icon": "bi-image",
+          "docs": "docs/web-mojo/components/ImageFields.md"
+        },
+        {
+          "route": "components/sidebar-top-nav",
+          "title": "Sidebar & TopNav",
+          "summary": "Portal navigation chrome — sidebar menus and topbar configured via PortalApp.",
+          "icon": "bi-layout-sidebar",
+          "docs": "docs/web-mojo/components/SidebarTopNav.md"
+        },
+        {
+          "route": "components/context-menu",
+          "title": "ContextMenu",
+          "summary": "Reusable Bootstrap-dropdown action menu — three-dots row menus, header menus, and inline handlers.",
+          "icon": "bi-three-dots-vertical",
+          "docs": "docs/web-mojo/components/ContextMenu.md"
+        }
+      ]
+    },
+    {
+      "area": "extensions",
+      "section": "Extensions",
+      "icon": "bi-graph-up",
+      "pages": [
+        {
+          "route": "extensions/charts",
+          "title": "Charts",
+          "summary": "SeriesChart (line/bar) and PieChart driven from inline data.",
+          "icon": "bi-graph-up",
+          "docs": "docs/web-mojo/extensions/Charts.md"
+        },
+        {
+          "route": "extensions/light-box",
+          "title": "LightBox",
+          "summary": "ImageViewer, LightboxGallery, and ImageEditor opened via static dialogs.",
+          "icon": "bi-image",
+          "docs": "docs/web-mojo/extensions/LightBox.md"
+        },
+        {
+          "route": "extensions/map-view",
+          "title": "MapView",
+          "summary": "Leaflet marker map with auto-fit bounds and switchable tile layers.",
+          "icon": "bi-map",
+          "docs": "docs/web-mojo/extensions/MapView.md"
+        },
+        {
+          "route": "extensions/map-libre-view",
+          "title": "MapLibreView",
+          "summary": "Vector-tile MapLibre GL map with 3D pitch and bearing.",
+          "icon": "bi-globe-americas",
+          "docs": "docs/web-mojo/extensions/MapLibreView.md"
+        },
+        {
+          "route": "extensions/timeline-view",
+          "title": "TimelineView",
+          "summary": "Chronological event timeline backed by a Collection.",
+          "icon": "bi-clock-history",
+          "docs": "docs/web-mojo/extensions/TimelineView.md"
+        },
+        {
+          "route": "extensions/file-upload",
+          "title": "FileUpload",
+          "summary": "Drag-and-drop file handling via applyFileDropMixin with validation.",
+          "icon": "bi-cloud-arrow-up",
+          "docs": "docs/web-mojo/extensions/FileUpload.md"
+        },
+        {
+          "route": "extensions/location",
+          "title": "Location",
+          "summary": "Browser geolocation: one-shot fix and live watch with permission handling.",
+          "icon": "bi-geo-alt",
+          "docs": "docs/web-mojo/extensions/Location.md"
+        },
+        {
+          "route": "extensions/tab-view",
+          "title": "TabView",
+          "summary": "Tab navigation with static tabs and lazy mounting.",
+          "icon": "bi-ui-checks-grid",
+          "docs": "docs/web-mojo/extensions/TabView.md"
+        },
+        {
+          "route": "extensions/tab-view/dynamic",
+          "title": "TabView — dynamic",
+          "summary": "Tabs added and removed at runtime.",
+          "icon": "bi-ui-checks-grid",
+          "docs": "docs/web-mojo/extensions/TabView.md"
+        }
+      ]
+    },
+    {
+      "area": "forms",
+      "section": "Forms",
+      "icon": "bi-calendar-event",
+      "pages": [
+        {
+          "route": "forms/form-view",
+          "title": "FormView",
+          "summary": "FormView fundamentals: fields, validation, submission.",
+          "icon": "bi-ui-checks-grid",
+          "docs": "docs/web-mojo/forms/FormView.md"
+        },
+        {
+          "route": "forms/form-view/all-field-types",
+          "title": "FormView — all field types",
+          "summary": "Comprehensive reference of every supported field type.",
+          "icon": "bi-ui-checks-grid",
+          "docs": "docs/web-mojo/forms/FormView.md"
+        },
+        {
+          "route": "forms/text-inputs",
+          "title": "Text inputs",
+          "summary": "Text, email, password, tel, url, search, hex, number fields.",
+          "icon": "bi-input-cursor-text",
+          "docs": "docs/web-mojo/forms/BasicTypes.md"
+        },
+        {
+          "route": "forms/selection-fields",
+          "title": "Selection fields",
+          "summary": "Select, radio, checkbox, toggle/switch, and button group.",
+          "icon": "bi-ui-radios",
+          "docs": "docs/web-mojo/forms/BasicTypes.md"
+        },
+        {
+          "route": "forms/date-time-fields",
+          "title": "Date & time fields",
+          "summary": "Native HTML5 date, time, and datetime-local pickers.",
+          "icon": "bi-calendar-event",
+          "docs": "docs/web-mojo/forms/BasicTypes.md"
+        },
+        {
+          "route": "forms/file-media-fields",
+          "title": "File & media fields",
+          "summary": "File upload, image preview, audio/video file inputs.",
+          "icon": "bi-cloud-upload",
+          "docs": "docs/web-mojo/forms/FileHandling.md"
+        },
+        {
+          "route": "forms/textarea-fields",
+          "title": "Textarea fields",
+          "summary": "Multi-line text plus htmlpreview and json variants.",
+          "icon": "bi-textarea-resize",
+          "docs": "docs/web-mojo/forms/BasicTypes.md"
+        },
+        {
+          "route": "forms/structural-fields",
+          "title": "Structural fields",
+          "summary": "Header, divider, html, button, and hidden — non-input field types.",
+          "icon": "bi-layout-text-window",
+          "docs": "docs/web-mojo/forms/BasicTypes.md"
+        },
+        {
+          "route": "forms/other-fields",
+          "title": "Other fields",
+          "summary": "Color, range, and hex-color fields with live previews.",
+          "icon": "bi-sliders",
+          "docs": "docs/web-mojo/forms/BasicTypes.md"
+        },
+        {
+          "route": "forms/validation",
+          "title": "Validation",
+          "summary": "HTML5 + custom validators, patterns, and error handling.",
+          "icon": "bi-shield-check",
+          "docs": "docs/web-mojo/forms/Validation.md"
+        },
+        {
+          "route": "forms/validation/advanced",
+          "title": "Validation — advanced",
+          "summary": "Async validators, real-time feedback, cross-field rules.",
+          "icon": "bi-shield-check",
+          "docs": "docs/web-mojo/forms/Validation.md"
+        },
+        {
+          "route": "forms/form-layout",
+          "title": "Form layout",
+          "summary": "Column grids, responsive widths, and grouped sub-grids.",
+          "icon": "bi-grid-3x3-gap",
+          "docs": "docs/web-mojo/forms/BestPractices.md"
+        },
+        {
+          "route": "forms/multi-step-wizard",
+          "title": "Multi-step wizard",
+          "summary": "Page + one FormView per step, with progress, navigation, and review.",
+          "icon": "bi-list-ol",
+          "docs": "docs/web-mojo/forms/MultiStepWizard.md"
+        },
+        {
+          "route": "forms/search-filter-form",
+          "title": "Search & filter form",
+          "summary": "Live filter form driving a result list, with debounced changes.",
+          "icon": "bi-funnel",
+          "docs": "docs/web-mojo/forms/SearchFilterForms.md"
+        }
+      ]
+    },
+    {
+      "area": "forms/inputs",
+      "section": "Form Inputs",
+      "icon": "bi-link-45deg",
+      "pages": [
+        {
+          "route": "forms/inputs/tag-input",
+          "title": "TagInput",
+          "summary": "Tag/chip input with autocomplete suggestions.",
+          "icon": "bi-tags",
+          "docs": "docs/web-mojo/forms/inputs/TagInput.md"
+        },
+        {
+          "route": "forms/inputs/date-picker",
+          "title": "DatePicker",
+          "summary": "Calendar date picker with min/max, inline mode, and custom formats.",
+          "icon": "bi-calendar-date",
+          "docs": "docs/web-mojo/forms/inputs/DatePicker.md"
+        },
+        {
+          "route": "forms/inputs/date-range-picker",
+          "title": "DateRangePicker",
+          "summary": "Start/end date range in a single combined picker.",
+          "icon": "bi-calendar-range",
+          "docs": "docs/web-mojo/forms/inputs/DateRangePicker.md"
+        },
+        {
+          "route": "forms/inputs/multi-select",
+          "title": "MultiSelectDropdown",
+          "summary": "Compact multi-select dropdown with optional search and select-all.",
+          "icon": "bi-check2-square",
+          "docs": "docs/web-mojo/forms/inputs/MultiSelectDropdown.md"
+        },
+        {
+          "route": "forms/inputs/combo-input",
+          "title": "ComboInput",
+          "summary": "Searchable text + dropdown; toggle allowCustom for strict mode.",
+          "icon": "bi-input-cursor",
+          "docs": "docs/web-mojo/forms/inputs/ComboInput.md"
+        },
+        {
+          "route": "forms/inputs/collection-select",
+          "title": "CollectionSelect / MultiSelect",
+          "summary": "Single + multi select bound to a Collection (built-in UserList).",
+          "icon": "bi-link-45deg",
+          "docs": "docs/web-mojo/forms/inputs/CollectionSelect.md"
+        },
+        {
+          "route": "forms/inputs/image-field",
+          "title": "ImageField",
+          "summary": "Image upload with drag-and-drop, preview, and configurable size.",
+          "icon": "bi-image",
+          "docs": "docs/web-mojo/forms/inputs/ImageField.md"
+        }
+      ]
+    },
+    {
+      "area": "models",
+      "section": "Models",
+      "icon": "bi-collection",
+      "pages": [
+        {
+          "route": "models/builtin-models",
+          "title": "Built-in Models",
+          "summary": "Catalog of built-in Model/Collection classes (User, Group, Job, …) plus a UserList demo.",
+          "icon": "bi-collection",
+          "docs": "docs/web-mojo/models/BuiltinModels.md"
         }
       ]
     }

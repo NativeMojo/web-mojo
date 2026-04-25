@@ -1,0 +1,15 @@
+{
+    "name": "TimelineView",
+    "area": "extensions",
+    "route": "extensions/timeline-view",
+    "title": "TimelineView",
+    "summary": "Chronological event timeline backed by a Collection.",
+    "docs": "docs/web-mojo/extensions/TimelineView.md",
+    "tags": ["timeline", "activity", "feed", "collection"],
+    "page": "TimelineViewExample.js",
+    "menu": {
+        "section": "Extensions",
+        "icon": "bi-clock-history",
+        "order": 50
+    }
+}

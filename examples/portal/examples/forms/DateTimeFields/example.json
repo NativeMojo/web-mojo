@@ -1,0 +1,15 @@
+{
+    "name": "DateTimeFields",
+    "area": "forms",
+    "route": "forms/date-time-fields",
+    "title": "Date & time fields",
+    "summary": "Native HTML5 date, time, and datetime-local pickers.",
+    "page": "DateTimeFieldsExample.js",
+    "docs": "docs/web-mojo/forms/BasicTypes.md",
+    "tags": ["form", "date", "time", "datetime"],
+    "menu": {
+        "section": "Forms",
+        "icon": "bi-calendar-event",
+        "order": 40
+    }
+}

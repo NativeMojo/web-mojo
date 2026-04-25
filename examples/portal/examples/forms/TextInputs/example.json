@@ -1,0 +1,15 @@
+{
+    "name": "TextInputs",
+    "area": "forms",
+    "route": "forms/text-inputs",
+    "title": "Text inputs",
+    "summary": "Text, email, password, tel, url, search, hex, number fields.",
+    "page": "TextInputsExample.js",
+    "docs": "docs/web-mojo/forms/BasicTypes.md",
+    "tags": ["form", "text", "email", "number", "input"],
+    "menu": {
+        "section": "Forms",
+        "icon": "bi-input-cursor-text",
+        "order": 20
+    }
+}

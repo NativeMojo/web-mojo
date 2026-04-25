@@ -1,0 +1,15 @@
+{
+    "name": "TablePage",
+    "area": "components",
+    "route": "components/table-page",
+    "title": "TablePage",
+    "summary": "Page wrapper for TableView with URL-synced sort, filter, search, and pagination.",
+    "docs": "docs/web-mojo/components/TablePage.md",
+    "tags": ["table", "page", "url-sync", "collection"],
+    "page": "TablePageExample.js",
+    "menu": {
+        "section": "Components",
+        "icon": "bi-grid-3x3-gap",
+        "order": 35
+    }
+}

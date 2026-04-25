@@ -1,0 +1,15 @@
+{
+    "name": "Modal",
+    "area": "components",
+    "route": "components/modal",
+    "title": "Modal",
+    "summary": "Static-only API for showing Views in modal dialogs (simpler than Dialog).",
+    "docs": "docs/web-mojo/components/Modal.md",
+    "tags": ["modal", "dialog", "view"],
+    "page": "ModalExample.js",
+    "menu": {
+        "section": "Components",
+        "icon": "bi-window-stack",
+        "order": 15
+    }
+}

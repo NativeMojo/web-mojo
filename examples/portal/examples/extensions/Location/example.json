@@ -1,0 +1,15 @@
+{
+    "name": "Location",
+    "area": "extensions",
+    "route": "extensions/location",
+    "title": "Location",
+    "summary": "Browser geolocation: one-shot fix and live watch with permission handling.",
+    "docs": "docs/web-mojo/extensions/Location.md",
+    "tags": ["geolocation", "location", "tracking", "browser-api"],
+    "page": "LocationExample.js",
+    "menu": {
+        "section": "Extensions",
+        "icon": "bi-geo-alt",
+        "order": 70
+    }
+}

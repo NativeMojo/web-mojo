@@ -1,0 +1,15 @@
+{
+    "name": "ComboInput",
+    "area": "forms/inputs",
+    "route": "forms/inputs/combo-input",
+    "title": "ComboInput",
+    "summary": "Searchable text + dropdown; toggle allowCustom for strict mode.",
+    "docs": "docs/web-mojo/forms/inputs/ComboInput.md",
+    "tags": ["form", "input", "combo", "autocomplete", "select"],
+    "page": "ComboInputExample.js",
+    "menu": {
+        "section": "Form Inputs",
+        "icon": "bi-input-cursor",
+        "order": 50
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "name": "Page",
+    "area": "pages",
+    "route": "pages/page",
+    "title": "Page",
+    "summary": "Routed screen base: onEnter/onExit, URL params, permissions.",
+    "docs": "docs/web-mojo/pages/Page.md",
+    "tags": ["page", "routing", "lifecycle", "params", "permissions"],
+    "page": "PageExample.js",
+    "menu": {
+        "section": "Pages",
+        "icon": "bi-file-earmark-text",
+        "order": 10
+    }
+}

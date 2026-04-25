@@ -1,0 +1,15 @@
+{
+    "name": "Model",
+    "area": "core",
+    "route": "core/model",
+    "title": "Model",
+    "summary": "REST-backed entity with attribute access, change events, dirty tracking, and CRUD.",
+    "docs": "docs/web-mojo/core/Model.md",
+    "tags": ["model", "rest", "data", "dirty-tracking"],
+    "page": "ModelExample.js",
+    "menu": {
+        "section": "Core",
+        "icon": "bi-database",
+        "order": 60
+    }
+}

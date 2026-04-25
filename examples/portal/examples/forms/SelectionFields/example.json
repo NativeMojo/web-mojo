@@ -1,0 +1,15 @@
+{
+    "name": "SelectionFields",
+    "area": "forms",
+    "route": "forms/selection-fields",
+    "title": "Selection fields",
+    "summary": "Select, radio, checkbox, toggle/switch, and button group.",
+    "page": "SelectionFieldsExample.js",
+    "docs": "docs/web-mojo/forms/BasicTypes.md",
+    "tags": ["form", "select", "radio", "checkbox", "toggle"],
+    "menu": {
+        "section": "Forms",
+        "icon": "bi-ui-radios",
+        "order": 30
+    }
+}

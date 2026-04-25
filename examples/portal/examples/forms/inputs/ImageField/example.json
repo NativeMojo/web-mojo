@@ -1,0 +1,15 @@
+{
+    "name": "ImageField",
+    "area": "forms/inputs",
+    "route": "forms/inputs/image-field",
+    "title": "ImageField",
+    "summary": "Image upload with drag-and-drop, preview, and configurable size.",
+    "docs": "docs/web-mojo/forms/inputs/ImageField.md",
+    "tags": ["form", "input", "image", "upload", "file"],
+    "page": "ImageFieldExample.js",
+    "menu": {
+        "section": "Form Inputs",
+        "icon": "bi-image",
+        "order": 70
+    }
+}

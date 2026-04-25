@@ -1,0 +1,15 @@
+{
+    "name": "FileMediaFields",
+    "area": "forms",
+    "route": "forms/file-media-fields",
+    "title": "File & media fields",
+    "summary": "File upload, image preview, audio/video file inputs.",
+    "page": "FileMediaFieldsExample.js",
+    "docs": "docs/web-mojo/forms/FileHandling.md",
+    "tags": ["form", "file", "upload", "image", "media"],
+    "menu": {
+        "section": "Forms",
+        "icon": "bi-cloud-upload",
+        "order": 50
+    }
+}

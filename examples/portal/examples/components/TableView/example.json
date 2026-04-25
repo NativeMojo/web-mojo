@@ -1,0 +1,25 @@
+{
+    "name": "TableView",
+    "area": "components",
+    "docs": "docs/web-mojo/components/TableView.md",
+    "tags": ["table", "collection", "sort", "filter", "pagination", "batch-actions"],
+    "menu": {
+        "section": "Components",
+        "icon": "bi-table",
+        "order": 30
+    },
+    "pages": [
+        {
+            "page": "TableViewExample.js",
+            "route": "components/table-view",
+            "title": "TableView",
+            "summary": "Sortable, filterable, paginated table bound to a Collection."
+        },
+        {
+            "page": "TableViewBatchActionsExample.js",
+            "route": "components/table-view/batch-actions",
+            "title": "TableView — batch actions",
+            "summary": "Multi-select rows + bulk action toolbar."
+        }
+    ]
+}

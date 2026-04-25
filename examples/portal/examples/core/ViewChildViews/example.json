@@ -1,0 +1,15 @@
+{
+    "name": "ViewChildViews",
+    "area": "core",
+    "route": "core/view-child-views",
+    "title": "View — child views",
+    "summary": "Compose a parent view from independent children using addChild + containerId.",
+    "docs": "docs/web-mojo/core/ViewChildViews.md",
+    "tags": ["view", "child-views", "composition", "addChild"],
+    "page": "ViewChildViewsExample.js",
+    "menu": {
+        "section": "Core",
+        "icon": "bi-diagram-3",
+        "order": 20
+    }
+}

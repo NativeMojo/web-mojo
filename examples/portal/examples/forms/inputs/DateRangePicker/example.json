@@ -1,0 +1,15 @@
+{
+    "name": "DateRangePicker",
+    "area": "forms/inputs",
+    "route": "forms/inputs/date-range-picker",
+    "title": "DateRangePicker",
+    "summary": "Start/end date range in a single combined picker.",
+    "docs": "docs/web-mojo/forms/inputs/DateRangePicker.md",
+    "tags": ["form", "input", "date", "range"],
+    "page": "DateRangePickerExample.js",
+    "menu": {
+        "section": "Form Inputs",
+        "icon": "bi-calendar-range",
+        "order": 30
+    }
+}

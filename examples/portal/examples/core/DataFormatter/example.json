@@ -1,0 +1,15 @@
+{
+    "name": "DataFormatter",
+    "area": "core",
+    "route": "core/data-formatter",
+    "title": "DataFormatter",
+    "summary": "Pipe formatters in templates plus dataFormatter.register and dataFormatter.apply.",
+    "docs": "docs/web-mojo/core/DataFormatter.md",
+    "tags": ["formatter", "pipe", "templates"],
+    "page": "DataFormatterExample.js",
+    "menu": {
+        "section": "Core",
+        "icon": "bi-funnel",
+        "order": 50
+    }
+}

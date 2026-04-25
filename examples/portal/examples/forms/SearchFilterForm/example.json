@@ -1,0 +1,15 @@
+{
+    "name": "SearchFilterForm",
+    "area": "forms",
+    "route": "forms/search-filter-form",
+    "title": "Search & filter form",
+    "summary": "Live filter form driving a result list, with debounced changes.",
+    "page": "SearchFilterFormExample.js",
+    "docs": "docs/web-mojo/forms/SearchFilterForms.md",
+    "tags": ["form", "search", "filter", "debounce"],
+    "menu": {
+        "section": "Forms",
+        "icon": "bi-funnel",
+        "order": 120
+    }
+}

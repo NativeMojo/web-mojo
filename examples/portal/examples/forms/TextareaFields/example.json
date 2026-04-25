@@ -1,0 +1,15 @@
+{
+    "name": "TextareaFields",
+    "area": "forms",
+    "route": "forms/textarea-fields",
+    "title": "Textarea fields",
+    "summary": "Multi-line text plus htmlpreview and json variants.",
+    "page": "TextareaFieldsExample.js",
+    "docs": "docs/web-mojo/forms/BasicTypes.md",
+    "tags": ["form", "textarea", "html", "json"],
+    "menu": {
+        "section": "Forms",
+        "icon": "bi-textarea-resize",
+        "order": 60
+    }
+}

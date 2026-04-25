@@ -1,0 +1,15 @@
+{
+    "name": "WebSocketClient",
+    "area": "services",
+    "route": "services/web-socket-client",
+    "title": "WebSocketClient",
+    "summary": "WebSocket client with auto-reconnect and heartbeat.",
+    "docs": "docs/web-mojo/services/WebSocketClient.md",
+    "tags": ["websocket", "realtime", "reconnect"],
+    "page": "WebSocketClientExample.js",
+    "menu": {
+        "section": "Services",
+        "icon": "bi-broadcast",
+        "order": 30
+    }
+}

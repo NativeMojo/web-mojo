@@ -1,0 +1,15 @@
+{
+    "name": "MapView",
+    "area": "extensions",
+    "route": "extensions/map-view",
+    "title": "MapView",
+    "summary": "Leaflet marker map with auto-fit bounds and switchable tile layers.",
+    "docs": "docs/web-mojo/extensions/MapView.md",
+    "tags": ["map", "leaflet", "markers", "geo"],
+    "page": "MapViewExample.js",
+    "menu": {
+        "section": "Extensions",
+        "icon": "bi-map",
+        "order": 30
+    }
+}

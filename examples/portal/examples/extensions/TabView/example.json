@@ -1,0 +1,24 @@
+{
+    "name": "TabView",
+    "area": "extensions",
+    "docs": "docs/web-mojo/extensions/TabView.md",
+    "tags": ["tabs", "navigation", "responsive"],
+    "menu": {
+        "section": "Extensions",
+        "icon": "bi-ui-checks-grid"
+    },
+    "pages": [
+        {
+            "page": "TabViewExample.js",
+            "route": "extensions/tab-view",
+            "title": "TabView",
+            "summary": "Tab navigation with static tabs and lazy mounting."
+        },
+        {
+            "page": "TabViewDynamicExample.js",
+            "route": "extensions/tab-view/dynamic",
+            "title": "TabView — dynamic",
+            "summary": "Tabs added and removed at runtime."
+        }
+    ]
+}
