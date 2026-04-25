@@ -70,6 +70,27 @@ function findManifests(dir) {
     return out;
 }
 
+function resolvePageFile(folder, pageField, manifestPath) {
+    if (typeof pageField !== 'string' || !pageField) {
+        fail(`${manifestPath}: 'page' must be a non-empty string`);
+    }
+    if (pageField.includes('..') || pageField.startsWith('/') || pageField.includes('\0')) {
+        fail(`${manifestPath}: 'page' must be a simple filename inside the manifest folder, got '${pageField}'`);
+    }
+    const pageFile = resolve(folder, pageField);
+    const folderResolved = resolve(folder);
+    if (pageFile !== folderResolved && !pageFile.startsWith(folderResolved + '/')) {
+        fail(`${manifestPath}: 'page' resolves outside the manifest folder: '${pageField}'`);
+    }
+    if (!pageFile.startsWith(EXAMPLES_ROOT + '/')) {
+        fail(`${manifestPath}: 'page' resolves outside the examples tree`);
+    }
+    if (!existsSync(pageFile)) {
+        fail(`${manifestPath}: referenced page file not found: ${pageField}`);
+    }
+    return pageFile;
+}
+
 function validateManifest(manifest, manifestPath) {
     const folder = dirname(manifestPath);
 
@@ -84,10 +105,7 @@ function validateManifest(manifest, manifestPath) {
                     fail(`${manifestPath}: page entry missing required field '${field}'`);
                 }
             }
-            const pageFile = join(folder, page.page);
-            if (!existsSync(pageFile)) {
-                fail(`${manifestPath}: referenced page file not found: ${page.page}`);
-            }
+            resolvePageFile(folder, page.page, manifestPath);
         }
     } else {
         for (const field of REQUIRED_FIELDS) {
@@ -95,10 +113,7 @@ function validateManifest(manifest, manifestPath) {
                 fail(`${manifestPath}: missing required field '${field}'`);
             }
         }
-        const pageFile = join(folder, manifest.page);
-        if (!existsSync(pageFile)) {
-            fail(`${manifestPath}: referenced page file not found: ${manifest.page}`);
-        }
+        resolvePageFile(folder, manifest.page, manifestPath);
     }
 }
 
@@ -172,6 +187,14 @@ function buildMenu(pages) {
     });
 }
 
+function escapeMdCell(text) {
+    if (text == null) return '';
+    return String(text)
+        .replace(/\\/g, '\\\\')
+        .replace(/\|/g, '\\|')
+        .replace(/\r?\n/g, ' ');
+}
+
 function buildDocsIndex(menu) {
     const lines = [];
     lines.push('# Examples Index');
@@ -187,9 +210,12 @@ function buildDocsIndex(menu) {
         lines.push('| Component | Summary | Doc |');
         lines.push('|---|---|---|');
         for (const p of area.pages) {
-            const sourcePath = `examples/portal/examples/${area.area}/${p.title.split(' ')[0]}/${p.title.split(' ')[0]}Example.js`;
-            const docCell = p.docs ? `[${p.docs.replace(/^docs\/web-mojo\//, '')}](../../${p.docs})` : '—';
-            lines.push(`| [${p.title.split(' ')[0]}](../../${sourcePath}) | ${p.summary} | ${docCell} |`);
+            const stem = String(p.title).split(' ')[0].replace(/[^A-Za-z0-9_-]/g, '');
+            const sourcePath = `examples/portal/examples/${area.area}/${stem}/${stem}Example.js`;
+            const docCell = p.docs
+                ? `[${escapeMdCell(p.docs.replace(/^docs\/web-mojo\//, ''))}](../../${p.docs})`
+                : '—';
+            lines.push(`| [${escapeMdCell(stem)}](../../${sourcePath}) | ${escapeMdCell(p.summary)} | ${docCell} |`);
         }
         lines.push('');
     }
