@@ -1,583 +1,90 @@
 /**
- * Portal Example - Main Application
- * Demonstrates WebApp with Portal layout (sidebar + topnav)
+ * web-mojo Examples Portal — bootstrap.
+ *
+ * - PortalWebApp shell with auth disabled (the canonical examples don't depend
+ *   on a logged-in user). Examples that hit `/api/*` require the NativeMojo
+ *   backend at localhost:9009 to be running.
+ * - Sidebar and routes are generated from `examples.registry.json`. To add a
+ *   new example, drop a folder under `examples/<area>/<Component>/` with a
+ *   `<Component>Example.js` and an `example.json`, then re-run
+ *   `npm run examples:registry`.
+ *
+ * Imports `/src/...` are allowed in this shell because we're in the framework
+ * repo. Per-component example files MUST import from `web-mojo` only.
  */
 
-import { VERSION_INFO } from '/src/version.js'
-import Page from '/src/core/Page.js';
-import PortalWebApp from '/src/core/PortalWebApp.js'
-import HomePage from './pages/HomePage.js';
-import DashboardPage from './pages/DashboardPage.js';
-import TemplatesPage from './pages/TemplatesPage.js';
-import TodosPage from './pages/TodosPage.js';
-import FormsPage from './pages/FormsPage.js';
-import FormInputsPage from './pages/FormInputsPage.js';
-import FormValidationPage from './pages/FormValidationPage.js';
-import DialogsPage from './pages/DialogsPage.js';
-import FormDialogsPage from './pages/FormDialogsPage.js';
-import TabViewPage from './pages/TabViewPage.js';
-import ChartsPage from './pages/ChartsPage.js';
-import ImagePage from './pages/ImagePage.js';
-import FileDropPage from './pages/FileDropPage.js';
-import ImageViewer from '/src/extensions/lightbox/ImageViewer.js';
-import ConsoleSilencer from '/src/core/utils/ConsoleSilencer.js';
-import { registerAdminPages, registerAssistant, FileTablePage } from '/src/admin.js';
-import formsMenu from './menus/formsMenu.js';
-import FormsSection from './pages/forms/FormsSection.js';
-import FormViewBasics from './pages/forms/FormViewBasics.js';
-import TextInputsPage from './pages/forms/TextInputsPage.js';
-import SelectionFieldsPage from './pages/forms/SelectionFieldsPage.js';
-import DateTimeFieldsPage from './pages/forms/DateTimeFieldsPage.js';
-import FileMediaFieldsPage from './pages/forms/FileMediaFieldsPage.js';
-import ValidationPage from './pages/forms/ValidationPage.js';
-import TextareaFieldsPage from './pages/forms/TextareaFieldsPage.js';
-import StructuralFieldsPage from './pages/forms/StructuralFieldsPage.js';
-import OtherInputsPage from './pages/forms/OtherInputsPage.js';
-import FormLayoutPage from './pages/forms/FormLayoutPage.js';
-import UserProfileExample from './pages/forms/examples/UserProfileExample.js';
-import MultiStepWizardExample from './pages/forms/examples/MultiStepWizardExample.js';
-import SearchFilterExample from './pages/forms/examples/SearchFilterExample.js';
-import TagInputPage from './pages/forms/advanced/TagInputPage.js';
-import DatePickerPage from './pages/forms/advanced/DatePickerPage.js';
-import DateRangePickerPage from './pages/forms/advanced/DateRangePickerPage.js';
-import MultiSelectPage from './pages/forms/advanced/MultiSelectPage.js';
-import ComboInputPage from './pages/forms/advanced/ComboInputPage.js';
-import CollectionSelectPage from './pages/forms/advanced/CollectionSelectPage.js';
-import ImageFieldPage from './pages/forms/advanced/ImageFieldPage.js';
+import { PortalWebApp } from 'web-mojo';
+import HomePage from './shell/HomePage.js';
+import registry from './examples.registry.json';
 
-ConsoleSilencer.setLevel('debug');
+const examples = Array.isArray(registry?.pages) ? registry.pages : [];
+const menuAreas = Array.isArray(registry?.menu) ? registry.menu : [];
 
-// Detect page reloads
-if (window.performance && window.performance.navigation.type === 1) {
-    console.warn('⚠️ Page was reloaded!');
-} else {
-    console.log('✅ Initial page load (not a reload)');
+const sidebarItems = [
+    { text: 'Home', route: '?page=home', icon: 'bi-house' },
+    { divider: true },
+];
+
+for (const area of menuAreas) {
+    if (!area.pages || !area.pages.length) continue;
+    sidebarItems.push({
+        text: area.section,
+        icon: area.icon || 'bi-folder',
+        children: area.pages.map(p => ({
+            text: p.title,
+            route: `?page=${p.route}`,
+            icon: p.icon || 'bi-circle',
+        })),
+    });
 }
 
-// Add beforeunload listener to detect when page is about to reload
-window.addEventListener('beforeunload', () => {
-    console.warn('⚠️ Page is about to reload/navigate away!');
-});
-
-// Create and configure the app
 const app = new PortalWebApp({
-    name: 'Portal Example',
-    version: '1.0.0',
-    debug: true,
-    basePath: '/examples/portal',
-
-    showPageHeader: false,
-
-    // Layout configuration
-    layout: 'portal',
+    name: 'web-mojo Examples',
     container: '#app',
     pageContainer: '#page-container',
+    defaultRoute: 'home',
+    showPageHeader: false,
 
-    // API configuration (optional - for demo purposes)
-    api: {
-        baseUrl: 'http://localhost:9009',
-        timeout: 30000
-    },
+    api: { baseUrl: 'http://localhost:9009', timeout: 30000 },
+    auth: false,
+    ws: false,
 
-    // Auth configuration — redirect to login on auth failure
-    auth: { loginUrl: '/examples/auth/' },
-
-    // WebSocket — auto-connects after auth (path is always /ws/realtime/)
-    ws: true,
-
-    // Default brand configuration
-    brand: 'Portal App',
+    brand: 'web-mojo Examples',
     brandIcon: 'bi-lightning-charge',
 
-    // Sidebar configuration with one collapsible menu
     sidebar: {
-        groupSelectorMode: 'dialog',
         menus: [{
-            name: "default",
+            name: 'default',
             className: 'sidebar sidebar-dark',
-            header: '<div class="fs-5 fw-bold text-center pt-3 sidebar-collapse-hide">Main Menu</div>',
-            items: [
-                {
-                    text: 'Home',
-                    route: '?page=home',
-                    icon: 'bi-house'
-                },
-                {
-                    text: 'Dashboard',
-                    route: '?page=dashboard',
-                    icon: 'bi-speedometer2'
-                },
-
-                {
-                    text: 'Extensions',
-                    icon: 'bi-graph-up',
-                    children: [
-                        {
-                            text: 'Charts',
-                            route: '?page=charts',
-                            icon: 'bi-graph-up'
-                        },
-                        {
-                            text: 'Image Processing',
-                            route: '?page=image',
-                            icon: 'bi-image'
-                        },
-                        {
-                            text: 'File Drop Examples',
-                            route: '?page=file-drop',
-                            icon: 'bi-cloud-arrow-up'
-                        }
-                    ]
-                },
-                {
-                    text: 'Special Pages',
-                    icon: 'bi-exclamation-circle',
-                    children: [
-                        {
-                            text: 'Not Found',
-                            route: '?page=settings',
-                            icon: 'bi-question-circle'
-                        },
-                        {
-                            text: 'Need Permissions',
-                            route: '?page=noperms',
-                            icon: 'bi-shield'
-                        },
-                    ]
-                },
-                { divider: true },
-                {
-                    text: 'Templates',
-                    route: '?page=templates',
-                    icon: 'bi-code-slash'
-                },
-                {
-                    text: 'Todos (Table Page)',
-                    route: '?page=todos',
-                    icon: 'bi-check2-square'
-                },
-                {
-                    text: 'Forms',
-                    icon: 'bi-input-cursor-text',
-                    children: [
-                        {
-                            text: '📚 Forms Portal',
-                            action: 'open_forms_portal',
-                            icon: 'bi-ui-checks-grid',
-                            badge: 'NEW',
-                            handler: async (action, event, el) => {
-                                console.log("Opening Forms Portal");
-                                await app.sidebar.setActiveMenu("forms");
-                                app.router.navigate('?page=forms-section');
-                            }
-                        },
-                        { divider: true },
-                        {
-                            text: 'Form Examples',
-                            route: '?page=forms',
-                            icon: 'bi-clipboard-data'
-                        },
-                        {
-                            text: 'Input Types',
-                            route: '?page=form-inputs',
-                            icon: 'bi-ui-checks-grid'
-                        },
-                        {
-                            text: 'Validation',
-                            route: '?page=form-validation',
-                            icon: 'bi-shield-check'
-                        },
-                        {
-                            text: 'Form Dialogs',
-                            route: '?page=form-dialogs',
-                            icon: 'bi-chat-square-text'
-                        }
-                    ]
-                },
-                {
-                    text: 'Navigation',
-                    icon: 'bi-signpost-split',
-                    children: [
-                        {
-                            text: 'TabView',
-                            route: '?page=tabview',
-                            icon: 'bi-ui-checks-grid'
-                        }
-                    ]
-                },
-                {
-                    text: 'Dialogs',
-                    route: '?page=dialogs',
-                    icon: 'bi-input-cursor-text'
-                },
-                {
-                    kind: "label",
-                    text: "This is a label",
-                    className: "mt-3"
-                },
-                {
-                    text: 'Simple',
-                    route: '?page=simple',
-                    icon: 'bi-input-cursor-text'
-                },
-                {
-                    text: 'Show Group Menu',
-                    action: 'show-group-menu',
-                    icon: 'bi-menu-down'
-                }
-            ],
-            footer: '<div class="text-center text-muted small collapsed-hidden">v1.0.0</div>'
-        },
-        {
-           name: "group_default",
-           groupKind: "any",
-           className: 'sidebar sidebar-light sidebar-global',
-           // header: "<div class='pt-3 text-center fs-5 fw-bold'><i class='bi bi-wrench pe-2'></i> <span class='collapsed-hidden'>Group</span></div>",
-           items: [
-               {
-                   text: 'Dashboard',
-                   route: '?page=group_simple',
-                   icon: 'bi-input-cursor-text'
-               },
-               {
-             		icon: "bi-folder-fill",
-             		text:"Files",
-             		route: "?page=group/files"
-              	},
-               {
-                   spacer: true
-               },
-               {
-                   text: 'Exit Menu',
-                   action: 'exit_menu',
-                   icon: 'bi-arrow-bar-left',
-                   handler: async (action, event, el) => {
-                       console.log("EXIT CLICKED");
-                       app.sidebar.setActiveMenu("default");
-                   }
-               }
-           ],
-           footer: `
-               <div class="text-center text-light small p-2" style="height: 56px;">
-                   <div class="mt-1">v${VERSION_INFO.full}</div>
-                   <div class="text-muted" style="font-size: 0.75em;">${VERSION_INFO.buildTime.split('T')[0]}</div>
-               </div>
-           `
-        },
-        {
-           name: "system",
-           className: 'sidebar sidebar-light sidebar-admin',
-           header: "<div class='pt-3 text-center fs-5 fw-bold'><i class='bi bi-wrench pe-2'></i> <span class='collapsed-hidden'>System</span></div>",
-           items: [
-               {
-                   spacer: true
-               },
-               {
-                   text: 'Exit Menu',
-                   action: 'exit_admin',
-                   icon: 'bi-arrow-bar-left',
-                   handler: async (action, event, el) => {
-                       console.log("EXIT CLICKED");
-                       app.sidebar.setActiveMenu("default");
-                   }
-               }
-           ],
-           footer: `
-               <div class="text-center text-light small p-2 collapsed-hidden" style="height: 56px;">
-                   <div class="mt-1">v${VERSION_INFO.full}</div>
-                   <div class="text-muted" style="font-size: 0.75em;">${VERSION_INFO.buildTime.split('T')[0]}</div>
-               </div>
-           `
-        },
-        formsMenu]
+            items: sidebarItems,
+        }],
     },
 
-    // Topbar configuration
     topbar: {
-        brand: 'MOJO Portal',
+        brand: 'web-mojo Examples',
         brandIcon: 'bi-lightning-charge',
         brandRoute: '?page=home',
-        // theme: 'navbar-dark bg-primary',
-        displayMode: 'group',
-        theme: "dark",
-        shadow: "dark",
+        theme: 'dark',
         showSidebarToggle: true,
-        // Left navigation items
-        // leftItems: [
-        //     {
-        //         label: 'Projects',
-        //         page: 'projects',
-        //         icon: 'bi-folder'
-        //     },
-        //     {
-        //         label: 'Team',
-        //         page: 'team',
-        //         icon: 'bi-people'
-        //     }
-        // ],
-        // Right items (user menu, notifications, etc)
-        rightItems: [
-            // {
-            //     type: 'group-selector',
-            //     id: 'group-selector',
-            // },
-            {
-                icon: 'bi-cloud-upload',
-                action: 'test-upload',
-                buttonClass: 'btn btn-link',
-                tooltip: "Test File Upload Progress",
-                title: 'Test File Upload Progress'
-            },
-            {
-                icon: 'bi-bell',
-                action: 'notifications',
-                tooltip: "View Notifications",
-                buttonClass: 'btn btn-link'
-            },
-            {
-                id: "system",
-                icon: 'bi-wrench',
-                action: 'system-menu',
-                buttonClass: 'btn btn-link',
-                permissions: "view_admin",
-                tooltip: "View System Menu",
-                handler: async (action, event, el) => {
-                    console.log("ADMIN CLICKED");
-                    app.sidebar.setActiveMenu("system");
-                }
-            },
-            {
-                id: "login",
-                icon: 'bi-box-arrow-in-right',
-                href: '/examples/auth/',
-                label: 'Login'
-            }
-        ],
-        userMenu: {
-            label: 'User',
-            icon: 'bi-person-circle',
-            items: [
-                {
-                    label: 'Profile',
-                    icon: 'bi-person',
-                    action: 'profile'
-                },
-                {
-                    divider: true
-                },                {
-                    label: 'Change Password',
-                    icon: 'bi-shield-lock',
-                    action: 'change-password'
-                },
-                {
-                    divider: true
-                },
-                {
-                    label: 'Logout',
-                    icon: 'bi-box-arrow-right',
-                    action: 'logout'
-                }
-            ]
-        }
-    },
-
-    // Default route
-    defaultRoute: 'home'
-});
-
-// Register pages using clean API: registerPage(name, PageClass, options)
-app.registerPage('home', HomePage);
-app.registerPage('dashboard', DashboardPage);
-app.registerPage('charts', ChartsPage);
-app.registerPage('templates', TemplatesPage);
-app.registerPage('todos', TodosPage);
-app.registerPage('forms2', FormsPage);
-app.registerPage('form-inputs', FormInputsPage);
-app.registerPage('form-validation', FormValidationPage);
-app.registerPage('dialogs', DialogsPage);
-app.registerPage('form-dialogs', FormDialogsPage);
-app.registerPage('tabview', TabViewPage);
-app.registerPage('image', ImagePage);
-app.registerPage('file-drop', FileDropPage);
-app.registerPage('forms-section', FormsSection);
-app.registerPage('forms/formview-basics', FormViewBasics);
-app.registerPage('forms/text-inputs', TextInputsPage);
-app.registerPage('forms/selection-fields', SelectionFieldsPage);
-app.registerPage('forms/date-time-fields', DateTimeFieldsPage);
-app.registerPage('forms/file-media-fields', FileMediaFieldsPage);
-app.registerPage('forms/validation', ValidationPage);
-app.registerPage('forms/textarea-fields', TextareaFieldsPage);
-app.registerPage('forms/structural-fields', StructuralFieldsPage);
-app.registerPage('forms/other-inputs', OtherInputsPage);
-app.registerPage('forms/layout', FormLayoutPage);
-app.registerPage('forms/examples/profile', UserProfileExample);
-app.registerPage('forms/examples/wizard', MultiStepWizardExample);
-app.registerPage('forms/examples/filters', SearchFilterExample);
-app.registerPage('forms/tag-input', TagInputPage);
-app.registerPage('forms/date-picker', DatePickerPage);
-app.registerPage('forms/date-range-picker', DateRangePickerPage);
-app.registerPage('forms/multiselect', MultiSelectPage);
-app.registerPage('forms/combo-input', ComboInputPage);
-app.registerPage('forms/collection-select', CollectionSelectPage);
-app.registerPage('forms/image-field', ImageFieldPage);
-app.registerPage('simple', Page, {
-    id: 'simple',
-    title: "Simple",
-    icon: 'bi bi-circle',
-    headerActions: [
-        {
-            label: 'Export',
-            icon: 'bi-download',
-            action: 'export',
-            buttonClass: 'btn-primary'
-        }
-    ],
-    template: '<div class="fs-5 mt-4 text-center">Simple page</div>'
-});
-app.registerPage('group_simple', Page, {
-    id: 'group_simple',
-    title: "Group Simple",
-    requiresGroup: true,
-    template: '<div class="fs-5 mt-4 text-center">Group Simple page</div>'
-});
-app.registerPage('noperms', Page, {
-    id: 'noperms',
-    title: "Simple",
-    permissions: ['not_real_permission'],
-    template: '<div class="fs-5 mt-4 text-center">Simple page</div>'
-});
-
-app.registerPage("group/files", FileTablePage, {
-    requiresGroup: true,
-    permissions: ["manage_group", "manage_groups"],
-    tableViewOptions: {
-        hideActivePillNames: ["group"],
-        showAdd: true,
-        addRequiresActiveGroup: true,
-        addRequiresActiveUser: false
     },
 });
 
+app.registerPage('home', HomePage, { areas: menuAreas });
 
-// Register admin pages
-try {
-    registerAdminPages(app, true);
-    registerAssistant(app);
-    console.log('Admin pages registered successfully');
-} catch (error) {
-    console.warn('Failed to register admin pages:', error);
+for (const ex of examples) {
+    try {
+        const mod = await import(/* @vite-ignore */ ex.modulePath);
+        const PageClass = mod.default;
+        if (!PageClass) {
+            console.warn(`[examples] ${ex.route}: ${ex.modulePath} has no default export`);
+            continue;
+        }
+        app.registerPage(ex.route, PageClass);
+    } catch (err) {
+        console.error(`[examples] failed to load ${ex.route} from ${ex.modulePath}`, err);
+    }
 }
 
-// Register ReportsPage for all report-related routes
-// Handle portal actions
-app.events.on('portal:action', ({ action }) => {
-    switch (action) {
-        case 'test-upload':
-            // Import and test file upload progress UI
-            import('/src/index.js').then(({ ToastService }) => {
-                import('/src/index.js').then(({ ProgressView }) => {
-                    // ToastService and ProgressView are already destructured
+await app.start();
 
-                    const toastService = new ToastService();
-
-                    // Create fake file upload progress
-                    const progressView = new ProgressView({
-                        filename: 'test-document.pdf',
-                        filesize: 2560000, // 2.56 MB
-                        showCancel: true,
-                        onCancel: () => {
-                            clearInterval(progressInterval);
-                            app.showWarning('Test upload cancelled');
-                        }
-                    });
-
-                    // Show progress in toast
-                    const progressToast = toastService.showView(progressView, 'info', {
-                        title: 'Test File Upload',
-                        autohide: false,
-                        dismissible: false
-                    });
-
-                    // Simulate progress
-                    let progress = 0;
-                    const progressInterval = setInterval(() => {
-                        progress += Math.random() * 15; // Random progress increment
-
-                        if (progress >= 100) {
-                            progress = 100;
-                            clearInterval(progressInterval);
-
-                            // Mark as completed
-                            progressView.markCompleted('Test upload completed!');
-
-                            // Auto-hide after 2 seconds
-                            setTimeout(() => {
-                                progressToast.hide();
-                            }, 2000);
-                        }
-
-                        // Update progress
-                        const loaded = Math.round((progress / 100) * 2560000);
-                        progressView.updateProgress({
-                            progress: progress / 100,
-                            loaded: loaded,
-                            total: 2560000,
-                            percentage: Math.round(progress)
-                        });
-                    }, 200); // Update every 200ms
-                });
-            });
-            break;
-        case 'logout':
-            app.showSuccess('Logged out successfully');
-            // In a real app, you would clear session and redirect
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-            break;
-    }
-});
-
-// Start the application — auth, WS, and router are handled automatically
-app.start().then((result) => {
-    console.log('Portal app started:', result.success ? 'authenticated' : 'auth failed');
-
-    // Hide the initial loader once the app is ready
-    if (window.hideInitialLoader) {
-        window.hideInitialLoader();
-    }
-}).catch(error => {
-    console.error('Failed to start app:', error);
-    // Also hide loader on error
-    if (window.hideInitialLoader) {
-        window.hideInitialLoader();
-    }
-});
-
-// Make app globally available for debugging
 window.app = app;
-
-// Debug helper function
-window.debugApp = () => {
-    console.log('=== App Debug Info ===');
-    console.log('Pages registered:', Array.from(app.pageClasses.keys()));
-    console.log('Pages cached:', Array.from(app.pageCache.keys()));
-    console.log('Current page:', app.currentPage?.pageName || 'none');
-    console.log('Router mode:', app.router?.options?.mode);
-
-    const routes = Array.from(app.router.routes.entries())
-        .filter(([key]) => !key.startsWith('@'))
-        .map(([pattern, info]) => ({
-            pattern,
-            pageName: info.pageName,
-            regex: info.regex.toString()
-        }));
-    console.table(routes);
-
-    return {
-        pageClasses: app.pageClasses,
-        pageCache: app.pageCache,
-        router: app.router,
-        currentPage: app.currentPage
-    };
-};

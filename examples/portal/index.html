@@ -3,9 +3,8 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>MOJO Portal Example</title>
+        <title>web-mojo — Examples Portal</title>
 
-        <!-- Bootstrap 5 CSS -->
         <link
             href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
             rel="stylesheet"
@@ -15,47 +14,17 @@
             href="https://cdn.jsdelivr.net/npm/bootstrap-icons@latest/font/bootstrap-icons.min.css"
         />
 
-        <!-- MOJO Framework CSS Options -->
-
-        <!-- Option 1: Single Bundle (Recommended) - Includes all core + extension styles -->
-        <!--<link href="/src/core/css/web-mojo.css" rel="stylesheet" />-->
-
-        <!-- Option 2: Individual Core Files (Selective Loading) -->
-
         <link href="/src/core/css/core.css" rel="stylesheet" />
         <link href="/src/core/css/portal.css" rel="stylesheet" />
         <link href="/src/core/css/table.css" rel="stylesheet" />
         <link href="/src/core/css/toast.css" rel="stylesheet" />
-        <link href="/src/core/css/chat.css" rel="stylesheet" />
 
-        <!-- Option 3: Core + Specific Extensions -->
-
-        <link href="/src/extensions/auth/css/auth.css" rel="stylesheet" />
-        <link href="/src/extensions/lightbox/css/lightbox.css" rel="stylesheet" />
-        <link href="/src/extensions/charts/css/charts.css" rel="stylesheet" />
-
-        <!-- Option 4: Package Style (when using as npm package) -->
-        <!-- <link href="./node_modules/web-mojo/dist/css/web-mojo.css" rel="stylesheet" /> -->
-
-        <!-- Custom styles -->
         <link rel="stylesheet" href="app.css" />
-
-        <!-- <link rel="stylesheet" href="dojo.css" /> -->
     </head>
     <body class="mojo-loader-theme-light">
-        <!-- App container -->
         <div id="app"></div>
 
-        <!-- Bootstrap 5 JS -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-        <script src="https://cdn.jsdelivr.net/npm/@easepick/bundle@1.2.1/dist/index.umd.min.js"></script>
-
-        <!-- MOJO Loader -->
-        // Note: loader.js is a standalone script, not a module export
-        <script src="https://unpkg.com/web-mojo/dist/loader.umd.js"></script>
-
-        <!-- MOJO Framework -->
         <script type="module" src="app.js"></script>
     </body>
 </html>

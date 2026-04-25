@@ -321,6 +321,8 @@ For image fields, `Dialog.updateModelImage()` wraps this entire flow in one call
 | **Features** | | |
 | [Validation.md](./Validation.md) | Complete validation system guide | ~500 |
 | [FileHandling.md](./FileHandling.md) | File upload modes & patterns | ~450 |
+| [MultiStepWizard.md](./MultiStepWizard.md) | Multi-step form wizard pattern | ~490 |
+| [SearchFilterForms.md](./SearchFilterForms.md) | Live search/filter form pattern (Collection / TableView / ListView) | ~500 |
 | **Field Types** | | |
 | [BasicTypes.md](./BasicTypes.md) | Native HTML5 field types reference | ~1,300 |
 | **Advanced Inputs** | | |
@@ -345,6 +347,7 @@ For image fields, `Dialog.updateModelImage()` wraps this entire flow in one call
 | Find the right field type | [FieldTypes.md](./FieldTypes.md) |
 | Learn FormView API | [FormView.md](./FormView.md) |
 | Validate my form | [Validation.md](./Validation.md) |
+| Build a multi-step wizard | [MultiStepWizard.md](./MultiStepWizard.md) |
 | Upload files | [FileHandling.md](./FileHandling.md) |
 | Use tags/chips | [inputs/TagInput.md](./inputs/TagInput.md) |
 | Better date picker | [inputs/DatePicker.md](./inputs/DatePicker.md) |

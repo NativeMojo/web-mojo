@@ -1,0 +1,43 @@
+{
+  "generatedAt": "static",
+  "pageCount": 1,
+  "pages": [
+    {
+      "name": "View",
+      "area": "core",
+      "route": "core/view",
+      "title": "View",
+      "summary": "Base component: lifecycle, templates, data-action, child views.",
+      "docs": "docs/web-mojo/core/View.md",
+      "tags": [
+        "view",
+        "lifecycle",
+        "template",
+        "child-views",
+        "data-action"
+      ],
+      "page": "ViewExample.js",
+      "modulePath": "./examples/core/View/ViewExample.js",
+      "sourcePath": "examples/portal/examples/core/View/ViewExample.js",
+      "section": "Core",
+      "icon": "bi-box",
+      "order": 10
+    }
+  ],
+  "menu": [
+    {
+      "area": "core",
+      "section": "Core",
+      "icon": "bi-box",
+      "pages": [
+        {
+          "route": "core/view",
+          "title": "View",
+          "summary": "Base component: lifecycle, templates, data-action, child views.",
+          "icon": "bi-box",
+          "docs": "docs/web-mojo/core/View.md"
+        }
+      ]
+    }
+  ]
+}

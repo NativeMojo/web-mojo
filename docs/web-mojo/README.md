@@ -56,6 +56,7 @@ Framework services for HTTP, real-time, notifications, and file handling:
 
 UI Components for displaying and interacting with data:
 
+- **[ContextMenu](./components/ContextMenu.md)** - Reusable Bootstrap dropdown menu component for row/header actions
 - **[Dialog](./components/Dialog.md)** - Modal dialogs: alert, confirm, prompt, forms, code view, busy indicator
 - **[Sidebar & TopNav](./components/SidebarTopNav.md)** - Portal navigation: sidebar menus, topbar, homeless pages, group switching
 - **[ListView](./components/ListView.md)** - Visual list component for collections
@@ -64,6 +65,21 @@ UI Components for displaying and interacting with data:
 - **[DataView](./components/DataView.md)** - Structured data display component
 - **[FileView](./components/FileView.md)** - Canonical viewer for File records (preview, details, renditions, metadata)
 - **[ImageFields](./components/ImageFields.md)** - Image field components
+
+---
+
+## 📝 Forms
+
+Build forms declaratively with field definitions, validation, and model binding:
+
+- **[Forms Overview](./forms/README.md)** - Form system architecture and quick start
+- **[FormView](./forms/FormView.md)** - Complete FormView component reference
+- **[FieldTypes](./forms/FieldTypes.md)** - Master quick reference for all field types
+- **[Validation](./forms/Validation.md)** - HTML5, FormView, and server-side validation
+- **[FileHandling](./forms/FileHandling.md)** - File upload modes and patterns
+- **[MultiStepWizard](./forms/MultiStepWizard.md)** - Multi-step wizard pattern (Page + FormView per step)
+- **[SearchFilterForms](./forms/SearchFilterForms.md)** - Live search/filter form pattern driving a Collection, TableView, ListView, or array
+- **[BestPractices](./forms/BestPractices.md)** - Patterns, pitfalls, and production checklist
 
 ---
 
