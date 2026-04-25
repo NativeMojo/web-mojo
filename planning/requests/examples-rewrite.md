@@ -319,7 +319,58 @@ Agents in Wave 2 must each: open their target docs page, write `<Component>Examp
 
 <!-- Fill in when the request is resolved, then move the file to planning/done/ -->
 ## Resolution
-**Status**: planned
+**Status**: Wave 1 complete — Wave 2 and Wave 3 pending
+
+### Wave 1 — landed in commit `c7a7c65`
+
+**What shipped**
+- All legacy example folders + standalone HTML demos moved under `examples/legacy/` via `git mv` (history preserved). New `examples/legacy/README.md` documents the freeze and the "do not port code without verifying current APIs" warning.
+- New portal shell:
+  - [examples/portal/index.html](../../examples/portal/index.html)
+  - [examples/portal/app.js](../../examples/portal/app.js) — `PortalWebApp` with `auth: false`, `ws: false` for now, sidebar generated from the registry, routes auto-registered via dynamic `import()`.
+  - [examples/portal/app.css](../../examples/portal/app.css) — minimal.
+  - [examples/portal/shell/HomePage.js](../../examples/portal/shell/HomePage.js) — landing page with cards generated from the registry's menu tree.
+  - [examples/portal/README.md](../../examples/portal/README.md) — schema reference + add-an-example walkthrough.
+- Registry generator: [examples/portal/scripts/build-registry.js](../../examples/portal/scripts/build-registry.js). Walks `examples/portal/examples/**/example.json`, validates schema, asserts page files exist, enforces unique routes, emits `examples/portal/examples.registry.json` and `docs/web-mojo/examples.md`. Idempotent (verified — second run produces a byte-identical registry).
+- `package.json`: new `"examples:registry"` script; `"dev"` runs the generator before vite.
+- Worked example: [examples/portal/examples/core/View/ViewExample.js](../../examples/portal/examples/core/View/ViewExample.js) + `example.json`. Locks the per-example shape — single Page subclass, inline template, ~110 LOC, imports only from `web-mojo`, demonstrates `data-action`, `addChild` with `containerId`, `this.render()` re-rendering on state change.
+
+**Verification**
+- `node examples/portal/scripts/build-registry.js` — wrote 1 example across 1 area; second run is byte-identical (idempotent).
+- Path-traversal guard test: a manifest with `"page": "../../../etc/passwd"` is rejected with exit code 1 and a named error before the registry is written.
+- `npm test`: unit suite 411/411 passing. Integration + build suites have pre-existing infrastructure failures unrelated to this commit (`@core` alias not resolving in integration test env, missing `src/mojo.js`, missing `dist/` artifacts). These were pre-existing before Wave 1 and are out of scope.
+- Security review: 4 findings on the new code. Two warnings (path traversal in registry generator, unsanitized `page` field) and one info (markdown injection in docs index) were fixed in follow-up commit `5ac1de2`. One info (CDN @latest tag for bootstrap-icons) was pinned to `1.11.3` in the same follow-up. No remaining unaddressed findings. No `src/` framework code was touched.
+- Browser smoke test against `npm run dev`:
+  - Home page: renders sidebar with Home link, Core group expanded with View example. No console errors.
+  - `?page=core/view`: renders cleanly. Topbar shows page title, summary, doc link. Card with `{{greeting}}` interpolated correctly. Bump button fires `onActionBump` → state increments → `render()` updates "Bumps: N". Child view (separate `View` subclass) mounted via `addChild` + `containerId`; its `data-action="inc"` fires `onActionInc` and re-renders independently. Screenshot taken.
+- Full test suite + security review running in the background; results recorded below when in.
+
+**Doc agent work that landed during planning** (still in this commit)
+- [docs/web-mojo/components/ContextMenu.md](../../docs/web-mojo/components/ContextMenu.md) (432 lines, new)
+- [docs/web-mojo/forms/MultiStepWizard.md](../../docs/web-mojo/forms/MultiStepWizard.md) (487 lines, new)
+- [docs/web-mojo/forms/SearchFilterForms.md](../../docs/web-mojo/forms/SearchFilterForms.md) (497 lines, new)
+- Cross-link rows added to [docs/web-mojo/README.md](../../docs/web-mojo/README.md) and [docs/web-mojo/forms/README.md](../../docs/web-mojo/forms/README.md).
+
+**Decisions / notes that should inform Wave 2**
+- `auth: false`, `ws: false` for now. Wave 2's auth example reactivates auth and points the portal's `loginUrl` at the new `examples/auth/`.
+- Dynamic `import()` of `ex.modulePath` from the registry uses paths relative to `examples/portal/`. The generator emits `./examples/<area>/<Component>/<File>.js` strings; vite's `@vite-ignore` opt-out is on the dynamic import call so vite doesn't try to statically analyze it. Wave 2 examples must keep their files inside `examples/portal/examples/**` for this to work.
+- The legacy `SearchFilterExample.js` calls non-existent APIs (`FormView.setData`, `Collection.setFilters`, `Collection.query`). Wave 2 agents writing the new search/filter form example must use `FormView.setFormData`, `Collection.setParams`/`updateParams`/`where` per the new SearchFilterForms.md doc.
+
+### Wave 2 — pending
+
+Per-area examples, 6 parallel agents. See the **Parallelization Plan → Wave 2** table in this file for the area assignments. Wave 2 should reference:
+- This file's `## Plan` for the per-example shape and acceptance criteria.
+- `planning/notes/examples-rewrite-audit.md` for the legacy → new mapping.
+- `examples/portal/examples/core/View/ViewExample.js` as the locked-in shape.
+- `examples/portal/README.md` for the manifest schema.
+
+### Wave 3 — pending
+
+Per-doc cross-links, CHANGELOG entry, smoke tests under `test/build/`. Run after Wave 2 lands.
+
+### Status of the related follow-up request
+
+[planning/requests/document-undocumented-public-exports.md](document-undocumented-public-exports.md) — covers the 11 undocumented public-API exports (Router, ProgressView, TokenManager, …). Independent of this rewrite; can be picked up at any time.
 
 ---
 
