@@ -520,3 +520,13 @@ myToast.dispose(); // OK — you created it
 - **[WebApp](../core/WebApp.md)** — `showNotification()` emits events that can be wired to `ToastService`
 - **[Dialog](../components/Dialog.md)** — For blocking modal dialogs; use `ToastService` for non-blocking notifications
 - **[View](../core/View.md)** — Views can be embedded in toasts via `showView()`
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/services/ToastService/ToastServiceExample.js`](../../../examples/portal/examples/services/ToastService/ToastServiceExample.js) — Bootstrap 5 toasts: success/warn/error/info, view-as-toast.
+
+<!-- examples:cross-link end -->

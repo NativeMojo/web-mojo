@@ -574,3 +574,13 @@ form.setFieldValue('skills', ['new', 'tags']);
 - [FieldTypes.md](../FieldTypes.md) - Master quick reference
 - [FormView.md](../FormView.md) - FormView API
 - [Validation.md](../Validation.md) - Validation system
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/forms/inputs/TagInput/TagInputExample.js`](../../../../examples/portal/examples/forms/inputs/TagInput/TagInputExample.js) — Tag/chip input with autocomplete suggestions.
+
+<!-- examples:cross-link end -->

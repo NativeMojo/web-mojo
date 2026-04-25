@@ -398,3 +398,13 @@ Unlike native `<input type="date">`, DatePicker provides identical UX everywhere
 - [BasicTypes.md](../BasicTypes.md#date---date-picker) - Native date input
 - [FieldTypes.md](../FieldTypes.md) - All field types
 - [Validation.md](../Validation.md) - Validation system
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/forms/inputs/DatePicker/DatePickerExample.js`](../../../../examples/portal/examples/forms/inputs/DatePicker/DatePickerExample.js) — Calendar date picker with min/max, inline mode, and custom formats.
+
+<!-- examples:cross-link end -->

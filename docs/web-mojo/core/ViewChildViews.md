@@ -1158,3 +1158,13 @@ class ParentView extends View {
 
 For core View concepts, see [View.md](./View.md).  
 For advanced patterns, see [AdvancedViews.md](./AdvancedViews.md).
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/core/ViewChildViews/ViewChildViewsExample.js`](../../../examples/portal/examples/core/ViewChildViews/ViewChildViewsExample.js) — Compose a parent view from independent children using addChild + containerId.
+
+<!-- examples:cross-link end -->

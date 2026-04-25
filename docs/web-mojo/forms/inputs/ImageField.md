@@ -349,3 +349,13 @@ fields: [
 - [BasicTypes.md](../BasicTypes.md#file---file-upload) - Basic file upload
 - [FileHandling.md](../FileHandling.md) - File upload details
 - [FieldTypes.md](../FieldTypes.md) - All field types
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/forms/inputs/ImageField/ImageFieldExample.js`](../../../../examples/portal/examples/forms/inputs/ImageField/ImageFieldExample.js) — Image upload with drag-and-drop, preview, and configurable size.
+
+<!-- examples:cross-link end -->

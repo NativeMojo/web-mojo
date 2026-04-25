@@ -500,3 +500,13 @@ class AcmeApp extends PortalWebApp {
 - **[WebSocketClient](../services/WebSocketClient.md)** — The WebSocket client used by `app.ws`
 - **[Page](../pages/Page.md)** — Page base class with `onEnter()`, `onGroupChange()`
 - **[Events](./Events.md)** — EventBus patterns
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/core/PortalWebApp/PortalWebAppExample.js`](../../../examples/portal/examples/core/PortalWebApp/PortalWebAppExample.js) — Opinionated portal: auth-gated router, automatic WebSocket, lifecycle events.
+
+<!-- examples:cross-link end -->

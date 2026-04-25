@@ -1194,3 +1194,14 @@ new FormView(options: FormViewOptions)
 - [BestPractices](./BestPractices.md) - Common patterns and pitfalls
 - [View](../core/View.md) - Parent View class
 - [Model](../core/Model.md) - Model integration
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste references in the examples portal:
+
+- [`examples/portal/examples/forms/FormView/FormViewExample.js`](../../../examples/portal/examples/forms/FormView/FormViewExample.js) — FormView fundamentals: fields, validation, submission.
+- [`examples/portal/examples/forms/FormView/AllFieldTypesExample.js`](../../../examples/portal/examples/forms/FormView/AllFieldTypesExample.js) — Comprehensive reference of every supported field type.
+
+<!-- examples:cross-link end -->

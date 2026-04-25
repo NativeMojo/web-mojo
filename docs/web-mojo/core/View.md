@@ -1848,3 +1848,13 @@ For child view patterns, see [ViewChildViews.md](./ViewChildViews.md).
 For template syntax and formatters, see [Templates.md](./Templates.md).  
 For event handling details, see [Events.md](./Events.md).  
 For advanced patterns, see [AdvancedViews.md](./AdvancedViews.md).
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/core/View/ViewExample.js`](../../../examples/portal/examples/core/View/ViewExample.js) — Base component: lifecycle, templates, data-action, child views.
+
+<!-- examples:cross-link end -->

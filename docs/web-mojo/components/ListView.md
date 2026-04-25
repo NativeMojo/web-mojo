@@ -897,3 +897,13 @@ listView.clearSelection();
 - **[TablePage](./TablePage.md)** — Page wrapper for TableView with URL sync
 - **[Templates](../core/Templates.md)** — Mustache template syntax and formatters
 - **[Events](../core/Events.md)** — Event system and delegation
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/components/ListView/ListViewExample.js`](../../../examples/portal/examples/components/ListView/ListViewExample.js) — Visual list bound to a Collection — per-row Views with selection support.
+
+<!-- examples:cross-link end -->

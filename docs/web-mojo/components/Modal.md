@@ -206,3 +206,13 @@ if (result === 'pdf') {
 - [Dialog](Dialog.md) — Full dialog system with all options
 - [TableView](TableView.md) — Automatic VIEW_CLASS opening on row click
 - [View](../core/View.md) — Base view class
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/components/Modal/ModalExample.js`](../../../examples/portal/examples/components/Modal/ModalExample.js) — Static-only API for showing Views in modal dialogs (simpler than Dialog).
+
+<!-- examples:cross-link end -->

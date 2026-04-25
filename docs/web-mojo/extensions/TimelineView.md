@@ -448,3 +448,13 @@ Works in all modern browsers that support:
 - [Collection Documentation](../guide/collections.md)
 - [Model Documentation](../guide/models.md)
 - [View Lifecycle](../guide/view-lifecycle.md)
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/extensions/TimelineView/TimelineViewExample.js`](../../../examples/portal/examples/extensions/TimelineView/TimelineViewExample.js) — Chronological event timeline backed by a Collection.
+
+<!-- examples:cross-link end -->

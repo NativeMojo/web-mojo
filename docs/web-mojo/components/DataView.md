@@ -761,3 +761,13 @@ dataView.on('after:render', () => {
 ---
 
 The DataView component provides a powerful, flexible way to display structured data in your MOJO applications while maintaining consistency with the framework's patterns and conventions.
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/components/DataView/DataViewExample.js`](../../../examples/portal/examples/components/DataView/DataViewExample.js) — Structured key/value display with field types for email, URL, boolean, dates, and JSON.
+
+<!-- examples:cross-link end -->

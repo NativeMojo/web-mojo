@@ -1660,3 +1660,13 @@ Advanced view patterns extend MOJO's core capabilities:
 - [ViewChildViews.md](./ViewChildViews.md) - Child view patterns
 - [Templates.md](./Templates.md) - Template system
 - [Events.md](./Events.md) - Event handling
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/core/AdvancedViews/AdvancedViewsExample.js`](../../../examples/portal/examples/core/AdvancedViews/AdvancedViewsExample.js) — Canvas inside a View with onAfterRender setup and onBeforeDestroy cleanup.
+
+<!-- examples:cross-link end -->

@@ -430,3 +430,13 @@ new ContextMenu({ className: 'context-menu-view dropdown my-custom-menu', /* ...
 - **[ListView](ListView.md)** — Common host for ContextMenu instances (one per row)
 - **[TableView](TableView.md)** — Row context menus use the same configuration shape
 - **[Templates](../core/Templates.md)** — For the `data-container` placeholder used to mount a ContextMenu in a parent template
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/components/ContextMenu/ContextMenuExample.js`](../../../examples/portal/examples/components/ContextMenu/ContextMenuExample.js) — Reusable Bootstrap-dropdown action menu — three-dots row menus, header menus, and inline handlers.
+
+<!-- examples:cross-link end -->

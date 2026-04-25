@@ -831,3 +831,13 @@ this.model.emit('change');
 - **[Router](./Router.md)** — The underlying Router instance (`app.router`)
 - **[Events](./Events.md)** — EventBus and EventEmitter patterns
 - **[Model](./Model.md)** — Data models that use the shared REST client
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/core/WebApp/WebAppExample.js`](../../../examples/portal/examples/core/WebApp/WebAppExample.js) — Minimal app shell: routing, page registry, REST client, global event bus.
+
+<!-- examples:cross-link end -->

@@ -1322,3 +1322,13 @@ MOJO templates provide a powerful, readable way to render data:
 - [Collection.md](./Collection.md) - Collection data management
 
 For advanced template patterns, see [AdvancedViews.md](./AdvancedViews.md).
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/core/Templates/TemplatesExample.js`](../../../examples/portal/examples/core/Templates/TemplatesExample.js) — Mustache syntax reference: |bool, triple braces, quoted args, dot-prefix, |iter.
+
+<!-- examples:cross-link end -->

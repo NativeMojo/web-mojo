@@ -2365,3 +2365,13 @@ The `Collection` class provides a robust foundation for managing arrays of model
 For model management, see [Model.md](Model.md).  
 For using collections in views, see [View.md](View.md).  
 For form integration, see [Form.md](Form.md).
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/core/Collection/CollectionExample.js`](../../../examples/portal/examples/core/Collection/CollectionExample.js) — Model set with setParams/updateParams, where() filtering, and events.
+
+<!-- examples:cross-link end -->

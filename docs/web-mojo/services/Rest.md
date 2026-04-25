@@ -885,3 +885,13 @@ rest.setAuthToken('my-token');
 - **[PortalApp](../core/PortalApp.md)** — Manages auth tokens and calls `rest.setAuthToken()`
 - **[WebSocketClient](./WebSocketClient.md)** — Real-time counterpart to REST communication
 - **[ToastService](./ToastService.md)** — For showing upload/error feedback to users
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/services/Rest/RestExample.js`](../../../examples/portal/examples/services/Rest/RestExample.js) — HTTP client: GET/POST/PUT/DELETE, file upload/download, interceptors.
+
+<!-- examples:cross-link end -->

@@ -1547,3 +1547,13 @@ The MOJO Charts package provides a powerful, flexible foundation for data visual
 8. **Performance**: Optimize for your data size
 
 The Charts package seamlessly integrates with the MOJO framework while providing the full power of Chart.js for creating beautiful, interactive data visualizations that scale from simple dashboards to complex analytics applications.
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/extensions/Charts/ChartsExample.js`](../../../examples/portal/examples/extensions/Charts/ChartsExample.js) — SeriesChart (line/bar) and PieChart driven from inline data.
+
+<!-- examples:cross-link end -->

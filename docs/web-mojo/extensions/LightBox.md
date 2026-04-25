@@ -882,3 +882,13 @@ class MediaGalleryView extends View {
 ```
 
 This comprehensive implementation shows how to use all three lightbox components together in a real application with proper event handling, cleanup, and best practices.
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/extensions/LightBox/LightBoxExample.js`](../../../examples/portal/examples/extensions/LightBox/LightBoxExample.js) — ImageViewer, LightboxGallery, and ImageEditor opened via static dialogs.
+
+<!-- examples:cross-link end -->

@@ -961,3 +961,13 @@ await Dialog.showModelView(null, {
 - **[Dialog](../components/Dialog.md)** — Use `showForm()` and `showModelForm()` with built-in form configs
 - **[DataView](../components/DataView.md)** — Display model data using built-in `DATA_VIEW` configurations
 - **[PortalApp](../core/PortalApp.md)** — Uses User, Group, and Member models internally for auth and group management
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/models/BuiltinModels/BuiltinModelsExample.js`](../../../examples/portal/examples/models/BuiltinModels/BuiltinModelsExample.js) — Catalog of built-in Model/Collection classes (User, Group, Job, …) plus a UserList demo.
+
+<!-- examples:cross-link end -->

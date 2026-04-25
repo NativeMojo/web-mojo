@@ -10,8 +10,9 @@ pnpm-debug.log*
 
 # Build outputs
 dist/
-build/
+/build/
 out/
+!test/build/
 
 # claude projects files
 .claude/projects

@@ -1060,3 +1060,13 @@ The `useLocationAutocomplete` hook returns a disposer function that's tracked an
 **API provider support:**
 - USPS: https://emailus.usps.com/s/web-tools-inquiry
 - Google Maps: https://developers.google.com/maps/support
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/extensions/Location/LocationExample.js`](../../../examples/portal/examples/extensions/Location/LocationExample.js) — Browser geolocation: one-shot fix and live watch with permission handling.
+
+<!-- examples:cross-link end -->

@@ -645,3 +645,13 @@ const ws = new WebSocketClient({
 - **[Events](../core/Events.md)** — EventEmitter mixin used by WebSocketClient
 - **[ToastService](./ToastService.md)** — Show real-time notifications triggered by WebSocket messages
 - **[Page](../pages/Page.md)** — Connect/disconnect in `onEnter()` / `onExit()` lifecycle hooks
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/services/WebSocketClient/WebSocketClientExample.js`](../../../examples/portal/examples/services/WebSocketClient/WebSocketClientExample.js) — WebSocket client with auto-reconnect and heartbeat.
+
+<!-- examples:cross-link end -->

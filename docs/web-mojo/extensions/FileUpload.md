@@ -382,3 +382,13 @@ The system is designed to be resilient:
 - Progress tracking has minimal overhead
 - Toast UI is lightweight and efficient
 - Memory usage scales with file size during upload only
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/extensions/FileUpload/FileUploadExample.js`](../../../examples/portal/examples/extensions/FileUpload/FileUploadExample.js) — Drag-and-drop file handling via applyFileDropMixin with validation.
+
+<!-- examples:cross-link end -->

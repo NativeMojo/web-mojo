@@ -1304,3 +1304,18 @@ const formConfig = {
   ]
 };
 ```
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste references in the examples portal:
+
+- [`examples/portal/examples/forms/DateTimeFields/DateTimeFieldsExample.js`](../../../examples/portal/examples/forms/DateTimeFields/DateTimeFieldsExample.js) — Native HTML5 date, time, and datetime-local pickers.
+- [`examples/portal/examples/forms/OtherFields/OtherFieldsExample.js`](../../../examples/portal/examples/forms/OtherFields/OtherFieldsExample.js) — Color, range, and hex-color fields with live previews.
+- [`examples/portal/examples/forms/SelectionFields/SelectionFieldsExample.js`](../../../examples/portal/examples/forms/SelectionFields/SelectionFieldsExample.js) — Select, radio, checkbox, toggle/switch, and button group.
+- [`examples/portal/examples/forms/StructuralFields/StructuralFieldsExample.js`](../../../examples/portal/examples/forms/StructuralFields/StructuralFieldsExample.js) — Header, divider, html, button, and hidden — non-input field types.
+- [`examples/portal/examples/forms/TextInputs/TextInputsExample.js`](../../../examples/portal/examples/forms/TextInputs/TextInputsExample.js) — Text, email, password, tel, url, search, hex, number fields.
+- [`examples/portal/examples/forms/TextareaFields/TextareaFieldsExample.js`](../../../examples/portal/examples/forms/TextareaFields/TextareaFieldsExample.js) — Multi-line text plus htmlpreview and json variants.
+
+<!-- examples:cross-link end -->

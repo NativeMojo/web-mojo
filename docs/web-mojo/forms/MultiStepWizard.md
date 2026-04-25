@@ -485,3 +485,13 @@ async onEnter(params) {
 
 A complete working wizard with progress bar, four steps, and review screen:
 `examples/portal/pages/forms/examples/MultiStepWizardExample.js`
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/forms/MultiStepWizard/MultiStepWizardExample.js`](../../../examples/portal/examples/forms/MultiStepWizard/MultiStepWizardExample.js) — Page + one FormView per step, with progress, navigation, and review.
+
+<!-- examples:cross-link end -->

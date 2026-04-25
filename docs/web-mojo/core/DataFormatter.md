@@ -1637,3 +1637,13 @@ Formatters are applied left-to-right. Each formatter receives the **output** of 
 - **[View](./View.md)** — View template rendering and `getContextValue()`
 - **[Model](./Model.md)** — Model `get()` method with pipe support
 - **[Collection](./Collection.md)** — Working with collections of models
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/core/DataFormatter/DataFormatterExample.js`](../../../examples/portal/examples/core/DataFormatter/DataFormatterExample.js) — Pipe formatters in templates plus dataFormatter.register and dataFormatter.apply.
+
+<!-- examples:cross-link end -->

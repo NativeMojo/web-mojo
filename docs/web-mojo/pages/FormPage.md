@@ -592,3 +592,13 @@ All standard `Page` and `View` methods are also available — see [Page.md](./Pa
 - **[FieldTypes.md](../forms/FieldTypes.md)** — all available field types and their options
 - **[FormBuilder.md](../forms/FormBuilder.md)** — the HTML generation layer used by FormView
 - **[PortalApp.md](../core/PortalApp.md)** — `activeGroup`, `activeUser`, group switching
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/pages/FormPage/FormPageExample.js`](../../../examples/portal/examples/pages/FormPage/FormPageExample.js) — Page wrapped around a FormView with model load/save.
+
+<!-- examples:cross-link end -->

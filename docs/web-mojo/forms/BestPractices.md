@@ -981,3 +981,13 @@ Before deploying forms to production, verify:
 10. **Test accessibility** with keyboard and screen readers
 
 Following these patterns will help you build robust, user-friendly, and secure forms with WEB-MOJO.
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/forms/FormLayout/FormLayoutExample.js`](../../../examples/portal/examples/forms/FormLayout/FormLayoutExample.js) — Column grids, responsive widths, and grouped sub-grids.
+
+<!-- examples:cross-link end -->

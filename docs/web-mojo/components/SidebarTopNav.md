@@ -1016,3 +1016,13 @@ If navigating to a page that isn't in any sidebar menu, the sidebar uses the fal
 - **[Page](../pages/Page.md)** — `sidebarMenu`, `title`, `icon`, and routing lifecycle
 - **[Events](../core/Events.md)** — `portal:action`, `group:changed`, `page:show` events
 - **[Built-in Models](../models/BuiltinModels.md)** — User and Group models used by these components
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/components/SidebarTopNav/SidebarTopNavExample.js`](../../../examples/portal/examples/components/SidebarTopNav/SidebarTopNavExample.js) — Portal navigation chrome — sidebar menus and topbar configured via PortalApp.
+
+<!-- examples:cross-link end -->

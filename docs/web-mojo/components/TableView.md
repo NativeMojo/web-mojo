@@ -1491,3 +1491,14 @@ class DashboardView extends View {
 - **[Model](../core/Model.md)** — Individual row data
 - **[Templates](../core/Templates.md)** — Mustache syntax and formatters
 - **[Events](../core/Events.md)** — Event system and delegation
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste references in the examples portal:
+
+- [`examples/portal/examples/components/TableView/TableViewExample.js`](../../../examples/portal/examples/components/TableView/TableViewExample.js) — Sortable, filterable, paginated table bound to a Collection.
+- [`examples/portal/examples/components/TableView/TableViewBatchActionsExample.js`](../../../examples/portal/examples/components/TableView/TableViewBatchActionsExample.js) — Multi-select rows + bulk action toolbar.
+
+<!-- examples:cross-link end -->

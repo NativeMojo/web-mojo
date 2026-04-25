@@ -741,3 +741,13 @@ if (result && result.submitted) {
 - **[Dialog](../components/Dialog.md)** — The dialog component used by built-in dialogs
 - **[Events](./Events.md)** — EventBus and EventEmitter patterns
 - **[Model](./Model.md)** — The User and Group models used internally
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/core/PortalApp/PortalAppExample.js`](../../../examples/portal/examples/core/PortalApp/PortalAppExample.js) — WebApp plus sidebar, topbar, auth, multi-tenant group, and toast notifications.
+
+<!-- examples:cross-link end -->

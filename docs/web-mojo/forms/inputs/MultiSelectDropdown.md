@@ -204,3 +204,13 @@ form.setFieldValue('categories', ['tech', 'design']);
 - [BasicTypes.md](../BasicTypes.md#select---dropdown) - Native select
 - [CollectionMultiSelect.md](./CollectionMultiSelect.md) - Multi-select from API
 - [FieldTypes.md](../FieldTypes.md) - All field types
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/forms/inputs/MultiSelect/MultiSelectExample.js`](../../../../examples/portal/examples/forms/inputs/MultiSelect/MultiSelectExample.js) — Compact multi-select dropdown with optional search and select-all.
+
+<!-- examples:cross-link end -->

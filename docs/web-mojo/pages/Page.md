@@ -985,3 +985,13 @@ async onParams(params, query) {
 - **[Events](../core/Events.md)** — EventBus patterns for cross-component communication
 - **[Templates](../core/Templates.md)** — Mustache templating with formatters
 - **[FormView](../forms/FormView.md)** — The form component managed by FormPage
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/pages/Page/PageExample.js`](../../../examples/portal/examples/pages/Page/PageExample.js) — Routed screen base: onEnter/onExit, URL params, permissions.
+
+<!-- examples:cross-link end -->

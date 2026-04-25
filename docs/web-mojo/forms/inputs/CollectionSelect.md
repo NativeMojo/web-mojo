@@ -191,3 +191,13 @@ class UsersCollection extends Collection {
 - [ComboInput.md](./ComboInput.md) - Editable dropdown
 - [FieldTypes.md](../FieldTypes.md) - All field types
 - Collection documentation - Learn about Collection class
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/forms/inputs/CollectionSelect/CollectionSelectExample.js`](../../../../examples/portal/examples/forms/inputs/CollectionSelect/CollectionSelectExample.js) — Single + multi select bound to a Collection (built-in UserList).
+
+<!-- examples:cross-link end -->

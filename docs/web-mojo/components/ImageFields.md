@@ -555,3 +555,13 @@ form.on('error', (data) => {
   }
 });
 ```
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/components/ImageFields/ImageFieldsExample.js`](../../../examples/portal/examples/components/ImageFields/ImageFieldsExample.js) — FormView image input fields — five size variants, drag/drop, and rendition-aware preview.
+
+<!-- examples:cross-link end -->

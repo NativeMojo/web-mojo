@@ -1881,3 +1881,13 @@ The EventDelegate system provides a powerful, convention-based approach to DOM e
 For view development, see [View.md](View.md).  
 For template syntax, see [Templates.md](Templates.md).  
 For form handling, see [Form.md](Form.md).
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/core/Events/EventsExample.js`](../../../examples/portal/examples/core/Events/EventsExample.js) — EventBus for global pub/sub and per-instance on/emit on Models and Views.
+
+<!-- examples:cross-link end -->

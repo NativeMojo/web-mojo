@@ -1646,3 +1646,14 @@ class DataView extends View {
 **Web APIs:**
 - ResizeObserver: https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver
 - Performance API: https://developer.mozilla.org/en-US/docs/Web/API/Performance
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste references in the examples portal:
+
+- [`examples/portal/examples/extensions/TabView/TabViewExample.js`](../../../examples/portal/examples/extensions/TabView/TabViewExample.js) — Tab navigation with static tabs and lazy mounting.
+- [`examples/portal/examples/extensions/TabView/TabViewDynamicExample.js`](../../../examples/portal/examples/extensions/TabView/TabViewDynamicExample.js) — Tabs added and removed at runtime.
+
+<!-- examples:cross-link end -->

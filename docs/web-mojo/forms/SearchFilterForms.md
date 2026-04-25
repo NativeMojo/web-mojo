@@ -495,3 +495,13 @@ this.filterForm.on('form:changed', async () => {
 - **[MOJOUtils.md](../utils/MOJOUtils.md)** — `MOJOUtils.debounce(fn, delay)` and `MOJOUtils.throttle(fn, limit)`.
 - **[View.md](../core/View.md)** — Lifecycle hooks (`onInit`, `onEnter`, `onExit`); fetching rules.
 - **[Templates.md](../core/Templates.md)** — `|bool`, `{{{triple braces}}}`, quoted formatter args, `{{.property}}` in iterations.
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/forms/SearchFilterForm/SearchFilterFormExample.js`](../../../examples/portal/examples/forms/SearchFilterForm/SearchFilterFormExample.js) — Live filter form driving a result list, with debounced changes.
+
+<!-- examples:cross-link end -->

@@ -194,3 +194,13 @@ form.on('field:change:country', (country) => {
 - [TagInput.md](./TagInput.md) - Tag input component
 - [CollectionSelect.md](./CollectionSelect.md) - Select from API
 - [FieldTypes.md](../FieldTypes.md) - All field types
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/forms/inputs/ComboInput/ComboInputExample.js`](../../../../examples/portal/examples/forms/inputs/ComboInput/ComboInputExample.js) — Searchable text + dropdown; toggle allowCustom for strict mode.
+
+<!-- examples:cross-link end -->

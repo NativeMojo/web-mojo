@@ -152,3 +152,13 @@ The component relies on these helpers on `File`:
 - [ContextMenu](./Dialog.md#context-menus) — the header action menu
 - [File / FileList models](../models/BuiltinModels.md)
 - [LightBox extension](../extensions/LightBox.md)
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/components/FileView/FileViewExample.js`](../../../examples/portal/examples/components/FileView/FileViewExample.js) — File record viewer — preview, details, renditions, and metadata sections.
+
+<!-- examples:cross-link end -->

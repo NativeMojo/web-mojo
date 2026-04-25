@@ -719,3 +719,13 @@ if (!maplibregl.supported()) {
 - [TabView](../guide/TabView.md) - For organizing maps with other data
 - [Dialog](../guide/Dialog.md) - For showing maps in modals
 - [MapLibre GL JS Documentation](https://maplibre.org/maplibre-gl-js-docs/api/) - Official MapLibre docs
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/extensions/MapLibreView/MapLibreViewExample.js`](../../../examples/portal/examples/extensions/MapLibreView/MapLibreViewExample.js) — Vector-tile MapLibre GL map with 3D pitch and bearing.
+
+<!-- examples:cross-link end -->

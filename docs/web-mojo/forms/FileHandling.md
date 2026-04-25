@@ -477,3 +477,13 @@ if (!allowed.includes(file.type)) {
 - [Dialog.updateModelImage()](../components/Dialog.md) — One-call image upload + model save
 - [File Model](../models/Files.md) — `File` and `FileList` model reference
 - [Rest Service](../services/Rest.md) — Low-level `rest.upload()` and `rest.uploadMultipart()` (rarely needed directly)
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/forms/FileMediaFields/FileMediaFieldsExample.js`](../../../examples/portal/examples/forms/FileMediaFields/FileMediaFieldsExample.js) — File upload, image preview, audio/video file inputs.
+
+<!-- examples:cross-link end -->

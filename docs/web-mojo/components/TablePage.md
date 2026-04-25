@@ -1000,3 +1000,13 @@ new TablePage({
 - **[Model](../core/Model.md)** — Individual row data
 - **[Templates](../core/Templates.md)** — Mustache template syntax and formatters
 - **[Events](../core/Events.md)** — Event system and delegation
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/components/TablePage/TablePageExample.js`](../../../examples/portal/examples/components/TablePage/TablePageExample.js) — Page wrapper for TableView with URL-synced sort, filter, search, and pagination.
+
+<!-- examples:cross-link end -->

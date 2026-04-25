@@ -582,3 +582,13 @@ For many markers (100+), consider using MapLibreView with clustering instead:
 - [MapLibreView](./MapLibreView.md) - Advanced vector map component
 - [TabView](../guide/TabView.md) - For organizing map with other data
 - [Dialog](../guide/Dialog.md) - For showing maps in modals
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/extensions/MapView/MapViewExample.js`](../../../examples/portal/examples/extensions/MapView/MapViewExample.js) — Leaflet marker map with auto-fit bounds and switchable tile layers.
+
+<!-- examples:cross-link end -->

@@ -573,3 +573,14 @@ form.on('submit', async (data) => {
 - [BestPractices.md](./BestPractices.md) - Form best practices
 - [FieldTypes.md](./FieldTypes.md) - Field type reference
 - Model documentation - Model validation methods
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste references in the examples portal:
+
+- [`examples/portal/examples/forms/Validation/ValidationExample.js`](../../../examples/portal/examples/forms/Validation/ValidationExample.js) — HTML5 + custom validators, patterns, and error handling.
+- [`examples/portal/examples/forms/Validation/ValidationAdvancedExample.js`](../../../examples/portal/examples/forms/Validation/ValidationAdvancedExample.js) — Async validators, real-time feedback, cross-field rules.
+
+<!-- examples:cross-link end -->

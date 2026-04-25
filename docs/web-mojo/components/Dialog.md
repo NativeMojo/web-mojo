@@ -996,3 +996,14 @@ if (result === 'save') { ... }
 - **[ToastService](../services/ToastService.md)** — Non-blocking alternative for lightweight notifications
 - **[Forms](../forms/)** — The form configuration system used by `showForm()` and `showModelForm()`
 - **[DataView](./DataView.md)** — The data display component used by `showModelView()` and `showData()`
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste references in the examples portal:
+
+- [`examples/portal/examples/components/Dialog/DialogExample.js`](../../../examples/portal/examples/components/Dialog/DialogExample.js) — Modal dialogs — alert, confirm, prompt, busy, and custom buttons.
+- [`examples/portal/examples/components/Dialog/DialogContextMenuExample.js`](../../../examples/portal/examples/components/Dialog/DialogContextMenuExample.js) — Header dropdown menu inside a Dialog. Resolves Promise with selected value.
+
+<!-- examples:cross-link end -->

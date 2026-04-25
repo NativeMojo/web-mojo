@@ -211,3 +211,13 @@ fields: [
 - [DatePicker.md](./DatePicker.md) - Single date selection
 - [FieldTypes.md](../FieldTypes.md) - All field types
 - [Validation.md](../Validation.md) - Validation system
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/forms/inputs/DateRangePicker/DateRangePickerExample.js`](../../../../examples/portal/examples/forms/inputs/DateRangePicker/DateRangePickerExample.js) — Start/end date range in a single combined picker.
+
+<!-- examples:cross-link end -->

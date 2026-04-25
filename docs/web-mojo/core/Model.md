@@ -2206,3 +2206,13 @@ The `Model` class provides a robust foundation for managing individual data reso
 For collection management, see [Collection.md](Collection.md).  
 For using models in views, see [View.md](View.md).  
 For form integration, see [Form.md](Form.md).
+
+## Examples
+
+<!-- examples:cross-link begin -->
+
+Runnable, copy-paste reference in the examples portal:
+
+- [`examples/portal/examples/core/Model/ModelExample.js`](../../../examples/portal/examples/core/Model/ModelExample.js) — REST-backed entity with attribute access, change events, dirty tracking, and CRUD.
+
+<!-- examples:cross-link end -->
