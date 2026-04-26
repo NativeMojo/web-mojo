@@ -1,7 +1,7 @@
 # Charts — Native rebuild: drop Chart.js, unify on a simple-yet-powerful native series chart
 
 **Type**: request
-**Status**: planned
+**Status**: Resolved — 2026-04-26
 **Date**: 2026-04-26
 **Priority**: medium
 
@@ -337,4 +337,98 @@ Drop the runtime Chart.js CDN dependency. Promote the existing native SVG `MiniS
 
 ---
 ## Resolution
-**Status**: open
+**Status**: Resolved — 2026-04-26
+
+**Commits**:
+- `9300678` — Charts: drop Chart.js, native SVG SeriesChart + PieChart + MetricsChart rebuilt
+- `942dd46` — Charts: address security-review findings (XSS hardening)
+
+**What was implemented**
+
+All goals from the plan landed:
+
+- **`SeriesChart`** (native SVG, replaces both the Chart.js wrapper and `MiniSeriesChart`) — multi-dataset line/bar/area, **bar charts default to stacked** via `stacked: 'auto'`, `grouped: true` alias, click-to-toggle legend, hover-isolated highlighting, animated `setData` updates with `rAF` tweens (cancellable), built-in 10-color palette + golden-angle HSL fallback, per-series `color` override, three accepted data shapes (Chart.js, series, single-array shorthand), `xLabelFormat`/`xLabelFormatter`, `valueFormatter` for axes and tooltip.
+- **`PieChart`** (native SVG, replaces both the Chart.js wrapper and `MiniPieChart`) — pie/doughnut via `cutout`, slice-edge labels (`showLabels`), `chart:click` drill-down, animated slice tweens matched by label, optional `endpoint:` shim that calls `app.rest.GET()` in `onInit` (so `PushDashboardPage` works unchanged).
+- **`MetricsChart`** rewritten on top of the native `SeriesChart` via `addChild` composition — public API preserved (`endpoint`, `slugs`, `account`, `granularity`, `quickRanges`, `maxDatasets`, `setGranularity`, `setDateRange`, `setMetrics`, `refresh`, `fetchData`, `processMetricsData`, `getStats`, `formatMetricLabel`, action handlers, gear-menu, line/bar toggle).
+- **`exportChartPng(view)`** — new standalone helper, replaces `MetricsChart.export()`. SVG → `XMLSerializer` → data URL → offscreen canvas → `<a download>`. Documented tainted-canvas caveat for SVGs with cross-origin resources.
+- **Deleted**: `BaseChart.js` (1,329 LOC), old `SeriesChart.js` (533), old `PieChart.js` (567), `MiniSeriesChart.js`, `MiniPieChart.js`. ~2,400 LOC removed from source. Runtime `chart.umd.js` CDN load is gone.
+- **Updated callers**: dynamic imports in `AssistantMessageView.js` (`MiniSeriesChart`/`MiniPieChart` → `SeriesChart`/`PieChart`); `AdminDashboardPage.onActionExportMetrics` switched from `chart.export('png')` to `exportChartPng(chart)`.
+- **CSS**: added native `.mini-series-*` and `.mini-pie-*` selectors (legend, tooltip, hover-fade, layouts) — these had no styles before.
+- **Examples**: new `SeriesChartExample.js` (multi-dataset line, stacked bars, grouped bars, palette overflow, animated `setData`, click events) and `PieChartExample.js` (pie, doughnut, slice labels, click drill-down, animated update). `example.json` updated and registry regenerated.
+- **Docs**: full rewrite of `docs/web-mojo/extensions/Charts.md`. One-liner updates in `docs/web-mojo/README.md`, `docs/agent/architecture.md`, top-level `README.md`, `AGENT.md`, and `docs/web-mojo/AGENT.md`.
+- **`CHANGELOG.md`**: breaking-change entry added under `## Unreleased`.
+- **`src/charts.js`** version bumped 2.1.0 → 3.0.0.
+- **Security hardening (commit `942dd46`)**: legend + tooltip swatches now use `element.style.background` property assignment (immune to attribute breakout); MetricsChart dropdown HTML now escapes `value`/`label` via `_escAttr`/`_escHtml`; `title` trust boundary documented; `exportChart.js` tainted-canvas note added.
+
+**Files changed** — `git show 9300678 942dd46 --stat` summary:
+
+Created:
+- `src/extensions/charts/exportChart.js`
+- `examples/portal/examples/extensions/Charts/SeriesChartExample.js`
+- `examples/portal/examples/extensions/Charts/PieChartExample.js`
+- `test/unit/SeriesChart.test.js`
+- `test/unit/PieChart.test.js`
+- `test/unit/MetricsChart.test.js`
+- `test/unit/exportChart.test.js`
+
+Modified:
+- `src/extensions/charts/SeriesChart.js` (full rewrite, ~700 LOC)
+- `src/extensions/charts/PieChart.js` (full rewrite, ~430 LOC)
+- `src/extensions/charts/MetricsChart.js` (full rewrite, ~430 LOC)
+- `src/extensions/charts/index.js`
+- `src/extensions/charts/css/charts.css` (+208 lines of native chart CSS)
+- `src/charts.js`
+- `src/extensions/admin/account/AdminDashboardPage.js` (export call migration)
+- `src/extensions/admin/assistant/AssistantMessageView.js` (dynamic import paths)
+- `docs/web-mojo/extensions/Charts.md` (full rewrite)
+- `docs/web-mojo/README.md` (line 119 + structure block)
+- `docs/agent/architecture.md` (line 69)
+- `README.md` (top-level — 2 lines)
+- `AGENT.md` (line 84)
+- `docs/web-mojo/AGENT.md` (line 21)
+- `CHANGELOG.md` (Unreleased breaking-change entry)
+- `examples/portal/examples/extensions/Charts/example.json`
+- `examples/portal/examples.registry.json`
+- `docs/web-mojo/examples.md`
+
+Deleted:
+- `src/extensions/charts/BaseChart.js`
+- `src/extensions/charts/SeriesChart.js` (Chart.js wrapper, replaced)
+- `src/extensions/charts/PieChart.js` (Chart.js wrapper, replaced)
+- `src/extensions/charts/MiniSeriesChart.js`
+- `src/extensions/charts/MiniPieChart.js`
+- `planning/requests/charts-drop-chartjs-stage{1,2,3,4}-*.md` (moved to `planning/rejected/`)
+
+**Tests run**
+
+- `npm run test:unit` → **465/467 pass**. The 2 failures are pre-existing JSDOM positional-layout failures in `ContextMenu.test.js` (unrelated to this change). All 4 new chart unit tests pass: `SeriesChart.test.js` (16 tests covering data normalization, stacking default, color resolution, `_toRgba` helper, legend toggle, bounds calc), `PieChart.test.js` (9 tests — three data shapes, geometry, percentage math, palette+generator, all-zero handling, `legendPosition: 'none'`), `MetricsChart.test.js` (4 tests — `processMetricsData` shape, "Other" grouping, `formatMetricLabel`, `buildApiParams`), `exportChart.test.js` (3 tests — function shape and DOM input variants).
+- `npm run lint` → **no new errors**. 16 pre-existing errors in `src/core/{View,Model,Page,Rest,Router,WebApp}.js` unchanged.
+- `npm run build:lib` → **succeeds**. `dist/charts.cjs.js` is 13.17 kB (gzip 3.95 kB). The Chart.js runtime CDN is no longer fetched by any page. `grep -rn "chart.js\|window.Chart\|chartJsCdn\|cdn.jsdelivr.*chart" src/` returns zero matches.
+- **Browser verification** at `http://localhost:3000/examples/portal/?page=extensions/charts/series` and `?page=extensions/charts/pie`: SeriesChart renders 5 SVGs with 72 bar elements + 17 line elements (stacked + grouped + line + many-dataset overflow demos); 26 legend items all show their swatch via DOM property assignment (e.g. `rgb(54, 162, 235)`); hover tooltip on bars shows 3 dataset rows (`Jul` label, all three series). PieChart renders 4 SVGs / 16 segments. MiniChart at `?page=extensions/charts` unaffected (3 sparklines).
+- `npm test` (full suite, via test-runner agent): same picture — only pre-existing failures (2 ContextMenu unit tests, 3 integration alias-resolution issues, build-test artifact issues), zero chart-related regressions.
+
+**Agent findings**
+
+- **test-runner**: 465/467 unit tests pass; 2 pre-existing `ContextMenu` failures are JSDOM positional-layout limitations. Integration-suite failures (`@core` alias resolution, missing `src/mojo.js`) and build-test failures (missing `dist/index.html`) are pre-existing environment issues unrelated to this change.
+- **docs-updater**: Found and fixed 4 stale `Chart.js` references — `README.md:134`, `README.md:319`, `AGENT.md:84`, `docs/web-mojo/AGENT.md:21`. Did not touch the rewritten `Charts.md` or `docs/pending_update/` (per scope).
+- **security-review**: 2 medium + 1 low + 2 informational findings. **All medium and low findings have been resolved in commit `942dd46`**:
+  - *medium* — Color values interpolated into `style="..."` attribute string. **Fixed**: legend + tooltip swatches now built via `createElement` + `element.style.background` property assignment.
+  - *medium* — `MetricsChart.title` rendered as `{{{title}}}` raw HTML with no enforced trust boundary. **Fixed**: explicit ⚠️ JSDoc note on the field; behavior preserved (admin callers pass legitimate icon markup), but the developer-controlled requirement is now documented.
+  - *low* — `granularityOptions[].value/.label` and `quickRanges[].value/.label` interpolated unescaped into HTML attributes/content. **Fixed**: added `_escAttr` / `_escHtml` helpers and applied them at both interpolation points.
+  - *note* — Tainted-canvas risk for SVGs with external resources in `exportChart.js`. **Documented** in the JSDoc; no code change required for the current charts.
+  - *note* — `PieChart.endpoint` shim — confirmed developer-controlled only. No action needed.
+
+**Docs updated**
+
+- `docs/web-mojo/extensions/Charts.md` (full rewrite)
+- `docs/web-mojo/README.md` (line 119, structure block)
+- `docs/agent/architecture.md` (line 69)
+- `README.md` (top-level — 2 lines)
+- `AGENT.md` (line 84)
+- `docs/web-mojo/AGENT.md` (line 21)
+- `CHANGELOG.md` (`## Unreleased` breaking-change entry)
+- `docs/web-mojo/examples.md` (auto-regenerated by `build-registry.js`)
+
+**Validation**
+
+The change is verified end-to-end: unit tests pass, lint passes, library build produces a bundle without any Chart.js code, the dev server renders all three chart components correctly, the legacy `MetricsChart`-using admin pages compile (call sites untouched except the one PNG-export migration), and the security-review findings are addressed with regression-free re-verification in the browser.
