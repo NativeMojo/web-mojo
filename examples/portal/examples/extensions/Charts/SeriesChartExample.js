@@ -113,6 +113,19 @@ class SeriesChartExample extends Page {
         this.animChart.on?.('chart:click', (payload) => {
             console.log('chart:click →', payload);
         });
+
+        // Floating crosshair tooltip — opt-in tracking mode for line/area
+        // charts. Cursor anywhere over the plot snaps to the nearest column
+        // and shows a multi-row tooltip. Bootstrap-theme-aware.
+        this.crosshairChart = new SeriesChart({
+            containerId: 'crosshair-slot',
+            chartType: 'line',
+            data: SEED_LINES,
+            height: 260,
+            crosshairTracking: true,
+            showLegend: true
+        });
+        this.addChild(this.crosshairChart);
     }
 
     onActionRandomiseAnim() {
@@ -199,6 +212,20 @@ class SeriesChartExample extends Page {
                     </div>
                     <div data-container="anim-slot"></div>
                     <small class="text-muted">Click any bar/dot to fire <code>chart:click</code> (open the console).</small>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-baseline mb-2">
+                        <strong>Floating crosshair tooltip</strong>
+                        <span class="text-muted small">opt-in via <code>crosshairTracking: true</code></span>
+                    </div>
+                    <div class="text-muted small mb-2">
+                        Move the cursor anywhere over the plot — the crosshair snaps to the nearest column
+                        and the tooltip shows values for every visible dataset. Theme-aware (try toggling dark mode).
+                    </div>
+                    <div data-container="crosshair-slot"></div>
                 </div>
             </div>
         </div>

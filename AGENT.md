@@ -81,7 +81,7 @@ Use when the task is a defect or regression. Work regression-first:
 - Use `{{{triple braces}}}` for trusted HTML or data URIs that must not be escaped.
 - Quote string formatter arguments: `{{date|date:'YYYY-MM-DD'}}`.
 - In iterations, use `{{.}}` or `{{.property}}` as appropriate.
-- Do not use Mustache formatters inside Chart.js config objects; use plain JavaScript callbacks there.
+- Do not use Mustache formatters inside chart config objects or SVG callbacks; use plain JavaScript callbacks there.
 
 ---
 

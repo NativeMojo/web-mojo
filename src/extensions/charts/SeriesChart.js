@@ -98,6 +98,16 @@ class SeriesChart extends View {
         this.animate = options.animate !== false;
         this.animationDuration = options.animationDuration || 300;
 
+        // Crosshair tracking (Chart.js-style "mode: index" tooltip on line/area)
+        // Off by default. When on AND chartType !== 'bar', a transparent rect
+        // overlays the plot area; mousemove snaps to the nearest column and
+        // shows a crosshair + per-dataset ghost dot + multi-row tooltip.
+        this.crosshairTracking = options.crosshairTracking === true;
+        // null → use the CSS default (Bootstrap-aware via currentColor).
+        // A non-null value sets `stroke` directly on the line element.
+        this.crosshairColor = options.crosshairColor || null;
+        this.crosshairWidth = options.crosshairWidth || 1;
+
         // Data
         this._rawData = options.data || null;
         this._labels = [];
@@ -107,6 +117,12 @@ class SeriesChart extends View {
         // Render bookkeeping
         this._tweenId = 0;
         this._currentGeometry = null; // last rendered geometry, used as tween source
+
+        // Crosshair-tracking DOM cache (rebuilt on each paint).
+        this._crosshairLayer = null;
+        this._crosshairLine = null;
+        this._ghostDots = null;
+        this._hitRect = null;
     }
 
     // ── template ──────────────────────────────────────────────────────
@@ -336,6 +352,10 @@ class SeriesChart extends View {
         this._tweenId++;
         const tweenId = this._tweenId;
 
+        // Hide the crosshair before rebuilding so it doesn't paint at a stale
+        // column while the next geometry is being computed.
+        if (this.crosshairTracking) this._clearCrosshair();
+
         if (this._datasets.length === 0) {
             this.svg.innerHTML = '';
             this._currentGeometry = null;
@@ -545,6 +565,20 @@ class SeriesChart extends View {
         }
 
         this._attachHoverListeners();
+
+        // Crosshair-tracking overlay (line/area only). Mounted last so the
+        // hit-rect captures hover above all marks. Does nothing when off.
+        if (this.crosshairTracking
+            && geom.chartType !== 'bar'
+            && geom.lines.length > 0) {
+            this._setupCrosshairTracking(geom);
+        } else {
+            // Drop stale references in case the mode was just turned off.
+            this._crosshairLayer = null;
+            this._crosshairLine = null;
+            this._ghostDots = null;
+            this._hitRect = null;
+        }
     }
 
     _paintLines(geom) {
@@ -596,6 +630,139 @@ class SeriesChart extends View {
                 'data-ds': b.dsIdx,
                 'data-col': b.dataIdx
             }));
+        }
+    }
+
+    // ── crosshair tracking (line/area only) ──────────────────────────
+
+    _setupCrosshairTracking(geom) {
+        // Build a single <g> containing the vertical line, one ghost dot per
+        // visible dataset, and a transparent hit-rect that captures hover.
+        const layer = this._svgEl('g', { class: 'mini-series-crosshair-layer' });
+
+        const lineAttrs = {
+            x1: 0, y1: this._plotTop, x2: 0, y2: this._plotBottom,
+            'stroke-width': this.crosshairWidth,
+            class: 'mini-series-crosshair',
+            style: 'display:none;'
+        };
+        if (this.crosshairColor) {
+            lineAttrs.stroke = this.crosshairColor;
+        } else {
+            lineAttrs.stroke = 'currentColor';
+        }
+        const xLine = this._svgEl('line', lineAttrs);
+        layer.appendChild(xLine);
+
+        // One ghost dot per visible dataset, in the same order as geom.lines.
+        const ghosts = geom.lines.map((line) => {
+            const dot = this._svgEl('circle', {
+                cx: 0, cy: 0, r: this.dotRadius + 1,
+                fill: line.color,
+                class: `mini-series-ghost mini-series-ds-${line.dsIdx}`,
+                'data-ds': line.dsIdx,
+                style: 'display:none;'
+            });
+            layer.appendChild(dot);
+            return dot;
+        });
+
+        // Hit-rect — last child of the layer so it's above the ghosts.
+        const hit = this._svgEl('rect', {
+            x: this._plotLeft, y: this._plotTop,
+            width: this._plotW, height: this._plotH,
+            class: 'mini-series-hit'
+        });
+        layer.appendChild(hit);
+
+        this.svg.appendChild(layer);
+
+        this._crosshairLayer = layer;
+        this._crosshairLine = xLine;
+        this._ghostDots = ghosts;
+        this._hitRect = hit;
+
+        // Listeners
+        hit.addEventListener('mousemove', (event) => {
+            const rect = this.svg.getBoundingClientRect();
+            const cursorX = event.clientX - rect.left;
+            const colIdx = this._findColumn(cursorX);
+            if (colIdx < 0 || !this._currentGeometry) {
+                this._clearCrosshair();
+                this._hideTooltip();
+                return;
+            }
+            this._paintCrosshair(colIdx, this._currentGeometry);
+            if (this.showTooltip) this._showTooltip(colIdx, event);
+        });
+        hit.addEventListener('mouseleave', () => {
+            this._clearCrosshair();
+            this._hideTooltip();
+            this._clearFade();
+        });
+        hit.addEventListener('click', (event) => {
+            const rect = this.svg.getBoundingClientRect();
+            const cursorX = event.clientX - rect.left;
+            const colIdx = this._findColumn(cursorX);
+            if (colIdx < 0) return;
+            // Match Chart.js mode:'index' — emit the column for the first
+            // visible dataset. Per-dataset clicks remain available with
+            // crosshairTracking: false.
+            const firstVisible = this._visibleDatasets()[0];
+            if (!firstVisible) return;
+            this.emit?.('chart:click', {
+                chart: this,
+                datasetIndex: firstVisible.i,
+                index: colIdx,
+                value: firstVisible.ds.data[colIdx],
+                label: this._labels[colIdx]
+            });
+        });
+    }
+
+    _findColumn(cursorX) {
+        const count = this._labels.length
+            || (this._datasets[0]?.data.length || 0);
+        if (count < 2) return -1;
+        if (cursorX < this._plotLeft || cursorX > this._plotRight) return -1;
+        const ratio = (cursorX - this._plotLeft) / this._plotW;
+        const idx = Math.round(ratio * (count - 1));
+        if (idx < 0) return 0;
+        if (idx > count - 1) return count - 1;
+        return idx;
+    }
+
+    _paintCrosshair(colIdx, geom) {
+        if (!this._crosshairLine || !geom || !geom.lines.length) return;
+
+        // All visible lines share the same X grid — pick from the first.
+        const firstLine = geom.lines[0];
+        const point = firstLine.points[colIdx];
+        if (!point) return;
+
+        this._crosshairLine.setAttribute('x1', point.x);
+        this._crosshairLine.setAttribute('x2', point.x);
+        this._crosshairLine.style.display = '';
+
+        // Place each ghost dot at its line's (x, y) for this column.
+        for (let k = 0; k < geom.lines.length; k++) {
+            const dot = this._ghostDots && this._ghostDots[k];
+            if (!dot) continue;
+            const p = geom.lines[k].points[colIdx];
+            if (!p) {
+                dot.style.display = 'none';
+                continue;
+            }
+            dot.setAttribute('cx', p.x);
+            dot.setAttribute('cy', p.y);
+            dot.style.display = '';
+        }
+    }
+
+    _clearCrosshair() {
+        if (this._crosshairLine) this._crosshairLine.style.display = 'none';
+        if (this._ghostDots) {
+            for (const dot of this._ghostDots) dot.style.display = 'none';
         }
     }
 

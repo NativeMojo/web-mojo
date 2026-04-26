@@ -126,6 +126,24 @@ Bars and area fills derive from the line color with reduced alpha unless you set
 | `colorGenerator`    | (golden-angle) | `(i) => string` for palette overflow |
 | `animate`           | `true`         | Animate `setData` updates |
 | `animationDuration` | `300`          | ms |
+| `crosshairTracking` | `false`        | Line/area only. Cursor anywhere over the plot snaps to the nearest column and shows a multi-row tooltip + per-dataset ghost dot. Bar charts ignore this flag. |
+| `crosshairColor`    | `null`         | Default uses `currentColor` resolved from `var(--bs-secondary-color)` so the line auto-adapts to `data-bs-theme="dark"`. Override with any CSS color string or `var(--…)` reference. |
+| `crosshairWidth`    | `1`            | Stroke width of the vertical crosshair line. |
+
+#### Floating crosshair tooltip
+
+```js
+new SeriesChart({
+    chartType: 'line',
+    data: { labels, datasets: [...] },
+    crosshairTracking: true       // off by default
+});
+```
+
+In tracking mode, `chart:click` emits the column for the first visible
+dataset (matches Chart.js `mode: 'index'`). For per-dataset click events,
+leave `crosshairTracking: false` and the existing per-dot click flow stays
+unchanged.
 
 ### Methods
 

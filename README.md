@@ -131,7 +131,7 @@ Complete authentication system with JWT tokens, login/register forms, and sessio
 Image and PDF viewers with editing capabilities including cropping and annotation.
 
 #### 📊 Charts (`web-mojo/charts`)
-Interactive charts built on Chart.js with PieChart, SeriesChart, and more.
+Native SVG charts (SeriesChart, PieChart, MetricsChart) with no Chart.js dependency.
 
 #### 📚 Documentation (`web-mojo/docit`)
 Full-featured documentation portal system with markdown editing and syntax highlighting.
@@ -316,7 +316,7 @@ Our documentation is organized into focused sections — browse online or click 
 - [DataView](https://nativemojo.com/web-mojo/#components/DataView.md) — structured data display
 
 ### Extensions
-- [Charts](https://nativemojo.com/web-mojo/#extensions/Charts.md) — Chart.js integration (SeriesChart, PieChart)
+- [Charts](https://nativemojo.com/web-mojo/#extensions/Charts.md) — Native SVG charts (SeriesChart, PieChart, MetricsChart)
 - [Admin](https://nativemojo.com/web-mojo/#extensions/Admin.md) — pre-built admin pages and views
 - [TabView](https://nativemojo.com/web-mojo/#extensions/TabView.md) — tab navigation
 - [MapView](https://nativemojo.com/web-mojo/#extensions/MapView.md) / [MapLibreView](https://nativemojo.com/web-mojo/#extensions/MapLibreView.md) — maps

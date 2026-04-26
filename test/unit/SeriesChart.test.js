@@ -203,4 +203,88 @@ module.exports = async function (testContext) {
             expect(max).toBeGreaterThanOrEqual(60);
         });
     });
+
+    describe('SeriesChart — crosshair tracking', () => {
+        const stubPlotArea = (chart) => {
+            // Stub the plot-area dimensions so the column-projection math has
+            // concrete inputs without needing a real SVG / layout pass.
+            chart._w = 400;
+            chart._h = 200;
+        };
+
+        it('_findColumn projects cursor X to nearest column index', () => {
+            const c = new SeriesChart({
+                data: { labels: ['a', 'b', 'c', 'd', 'e'], datasets: [{ label: 'A', data: [1, 2, 3, 4, 5] }] }
+            });
+            c._parseData(c._rawData);
+            stubPlotArea(c);
+
+            // plotLeft=40, plotW=400-40-12=348, count=5 → step ~87px
+            expect(c._findColumn(c._plotLeft)).toBe(0);
+            expect(c._findColumn(c._plotRight)).toBe(4);
+            // Midpoint of plot maps to ~column 2.
+            const mid = c._plotLeft + c._plotW / 2;
+            expect(c._findColumn(mid)).toBe(2);
+            // Outside bounds returns -1.
+            expect(c._findColumn(c._plotLeft - 5)).toBe(-1);
+            expect(c._findColumn(c._plotRight + 5)).toBe(-1);
+        });
+
+        it('_findColumn returns -1 when count < 2', () => {
+            const c = new SeriesChart({
+                data: { labels: ['only'], datasets: [{ label: 'A', data: [1] }] }
+            });
+            c._parseData(c._rawData);
+            stubPlotArea(c);
+            expect(c._findColumn(c._plotLeft + 10)).toBe(-1);
+        });
+
+        it('chartType: "bar" with crosshairTracking: true does NOT install hit-rect', () => {
+            const c = new SeriesChart({
+                chartType: 'bar',
+                crosshairTracking: true,
+                data: { labels: ['a', 'b'], datasets: [{ label: 'A', data: [1, 2] }] }
+            });
+            c._parseData(c._rawData);
+            stubPlotArea(c);
+            // Provide a real SVG element for the paint code to populate.
+            c.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            c._renderChart({ animate: false });
+            expect(c.svg.querySelector('.mini-series-hit')).toBeFalsy();
+            expect(c.svg.querySelector('.mini-series-crosshair-layer')).toBeFalsy();
+        });
+
+        it('chartType: "line" with crosshairTracking: true installs hit-rect + ghost dots', () => {
+            const c = new SeriesChart({
+                chartType: 'line',
+                crosshairTracking: true,
+                data: {
+                    labels: ['a', 'b', 'c'],
+                    datasets: [{ label: 'A', data: [1, 2, 3] }, { label: 'B', data: [4, 5, 6] }]
+                }
+            });
+            c._parseData(c._rawData);
+            stubPlotArea(c);
+            c.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            c._renderChart({ animate: false });
+            expect(c.svg.querySelector('.mini-series-crosshair-layer')).toBeTruthy();
+            expect(c.svg.querySelector('.mini-series-hit')).toBeTruthy();
+            expect(c.svg.querySelector('.mini-series-crosshair')).toBeTruthy();
+            // One ghost dot per visible dataset.
+            const ghosts = c.svg.querySelectorAll('.mini-series-ghost');
+            expect(ghosts.length).toBe(2);
+        });
+
+        it('default mode (crosshairTracking: false) does NOT install hit-rect', () => {
+            const c = new SeriesChart({
+                chartType: 'line',
+                data: { labels: ['a', 'b'], datasets: [{ label: 'A', data: [1, 2] }] }
+            });
+            c._parseData(c._rawData);
+            stubPlotArea(c);
+            c.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            c._renderChart({ animate: false });
+            expect(c.svg.querySelector('.mini-series-hit')).toBeFalsy();
+        });
+    });
 };

@@ -18,7 +18,7 @@ WEB-MOJO is a component-based JavaScript framework for building data-driven web 
 - **String formatter args need quotes** — `{{date|date:'YYYY-MM-DD'}}` not `{{date|date:YYYY-MM-DD}}`
 - **`{{.property}}` in iterations** — not `{{property}}`; objects need `|iter` to iterate key/value pairs
 - **Pages are cached** — per-visit logic belongs in `onEnter()`, not the constructor or `onInit()`
-- **NO formatters in Chart.js config** — use plain JS callbacks instead
+- **NO formatters in chart config** — use plain JS callbacks instead
 
 ---
 

@@ -1955,3 +1955,31 @@
 
 .mini-pie-legend-label { flex: 1 1 auto; min-width: 0; }
 .mini-pie-legend-value { font-variant-numeric: tabular-nums; opacity: 0.8; }
+
+
+/* ==========================================================================
+   SeriesChart crosshair-tracking layer
+   ========================================================================== */
+
+.mini-series-crosshair-layer {
+    pointer-events: none;
+}
+
+.mini-series-crosshair-layer .mini-series-hit {
+    fill: transparent;
+    cursor: crosshair;
+    pointer-events: all;
+}
+
+.mini-series-crosshair {
+    /* `currentColor` resolves through this rule unless `crosshairColor` was
+       passed explicitly (which sets `stroke` inline and wins). Matches the
+       Bootstrap text-muted color and auto-adapts under data-bs-theme="dark". */
+    color: var(--bs-secondary-color, #6c757d);
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.mini-series-ghost {
+    pointer-events: none;
+}
