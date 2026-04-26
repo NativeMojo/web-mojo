@@ -116,7 +116,7 @@ Helper classes and functions:
 Optional extensions for charts, maps, admin, and more:
 
 - **[Admin](./extensions/Admin.md)** - 50+ pre-built admin pages (users, jobs, security, files, shortlinks, messaging, push) + LLM-backed Assistant chat panel; wired into a `PortalWebApp` via `registerAdminPages` and `registerAssistant`
-- **[Charts](./extensions/Charts.md)** - Native SVG charts (SeriesChart, PieChart, MetricsChart) — no Chart.js dependency
+- **[Charts](./extensions/Charts.md)** - Native SVG charts (SeriesChart, PieChart, MetricsChart) — no Chart.js dependency; `SeriesChart` supports opt-in `crosshairTracking` for floating crosshair + tooltip on line/area charts
 - **[FileUpload](./extensions/FileUpload.md)** - File upload utilities
 - **[LightBox](./extensions/LightBox.md)** - Image lightbox viewer
 - **[Location](./extensions/Location.md)** - Geolocation services and tracking

@@ -131,7 +131,7 @@ Complete authentication system with JWT tokens, login/register forms, and sessio
 Image and PDF viewers with editing capabilities including cropping and annotation.
 
 #### 📊 Charts (`web-mojo/charts`)
-Native SVG charts (SeriesChart, PieChart, MetricsChart) with no Chart.js dependency.
+Native SVG charts (SeriesChart, PieChart, MetricsChart) with no Chart.js dependency. `SeriesChart` supports opt-in `crosshairTracking` for floating crosshair + multi-row tooltip on line/area charts.
 
 #### 📚 Documentation (`web-mojo/docit`)
 Full-featured documentation portal system with markdown editing and syntax highlighting.

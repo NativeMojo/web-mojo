@@ -330,10 +330,10 @@ that with native SVG. Behavioural changes:
 
 Runnable, copy-paste references in the examples portal:
 
-- [`examples/portal/examples/extensions/Charts/SeriesChartExample.js`](../../../examples/portal/examples/extensions/Charts/SeriesChartExample.js) — Multi-dataset line/bar, stacked vs grouped, color overflow, animated `setData`, `chart:click`.
-- [`examples/portal/examples/extensions/Charts/PieChartExample.js`](../../../examples/portal/examples/extensions/Charts/PieChartExample.js) — Pie, doughnut, slice labels, animated update, click drill-down.
-- [`examples/portal/examples/extensions/Charts/ChartsExample.js`](../../../examples/portal/examples/extensions/Charts/ChartsExample.js) — `MiniChart` sparkline.
-- [`examples/portal/examples/extensions/Charts/CircularProgressExample.js`](../../../examples/portal/examples/extensions/Charts/CircularProgressExample.js) — Sizes, variants, themes, multi-segment, and live `setValue` updates.
+- [`examples/portal/examples/extensions/Charts/ChartsExample.js`](../../../examples/portal/examples/extensions/Charts/ChartsExample.js) — Single-series sparkline — line/bar with crosshair, tooltip, value formatter.
+- [`examples/portal/examples/extensions/Charts/CircularProgressExample.js`](../../../examples/portal/examples/extensions/Charts/CircularProgressExample.js) — Sizes, variants, themes, multi-segment, and live setValue updates.
 - [`examples/portal/examples/extensions/Charts/MetricsMiniChartExample.js`](../../../examples/portal/examples/extensions/Charts/MetricsMiniChartExample.js) — Backend-driven sparkline tiles with header, trending, and settings popover.
+- [`examples/portal/examples/extensions/Charts/PieChartExample.js`](../../../examples/portal/examples/extensions/Charts/PieChartExample.js) — Native pie + doughnut, slice labels, click drill-down, animated updates.
+- [`examples/portal/examples/extensions/Charts/SeriesChartExample.js`](../../../examples/portal/examples/extensions/Charts/SeriesChartExample.js) — Multi-dataset line/bar/area — stacked-by-default bars, dynamic colors, legend toggle, animated setData.
 
 <!-- examples:cross-link end -->
