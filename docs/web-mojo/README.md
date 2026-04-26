@@ -56,6 +56,7 @@ Framework services for HTTP, real-time, notifications, and file handling:
 
 UI Components for displaying and interacting with data:
 
+- **[ChatView](./components/ChatView.md)** - Chat interface (ChatView + ChatMessageView + ChatInputView): adapter-driven messages, file drop, streaming-ready
 - **[ContextMenu](./components/ContextMenu.md)** - Reusable Bootstrap dropdown menu component for row/header actions
 - **[Dialog](./components/Dialog.md)** - Modal dialogs: alert, confirm, prompt, forms, code view, busy indicator
 - **[Sidebar & TopNav](./components/SidebarTopNav.md)** - Portal navigation: sidebar menus, topbar, homeless pages, group switching
@@ -114,18 +115,18 @@ Helper classes and functions:
 
 Optional extensions for charts, maps, admin, and more:
 
+- **[Admin](./extensions/Admin.md)** - 50+ pre-built admin pages (users, jobs, security, files, shortlinks, messaging, push) + LLM-backed Assistant chat panel; wired into a `PortalWebApp` via `registerAdminPages` and `registerAssistant`
 - **[Charts](./extensions/Charts.md)** - Chart.js integration (SeriesChart, PieChart)
-- **[LightBox](./extensions/LightBox.md)** - Image lightbox viewer
-- **[MapView](./extensions/MapView.md)** - Map view component
-- **[MapLibreView](./extensions/MapLibreView.md)** - MapLibre GL integration
-- **[TimelineView](./extensions/TimelineView.md)** - Timeline visualization
 - **[FileUpload](./extensions/FileUpload.md)** - File upload utilities
-- **[TabView](./extensions/TabView.md)** - Tab navigation component
+- **[LightBox](./extensions/LightBox.md)** - Image lightbox viewer
 - **[Location](./extensions/Location.md)** - Geolocation services and tracking
 - **[Location API](./extensions/Location_API.md)** - Location API reference
 - **[Map](./extensions/Map.md)** - Map integration and controls
-- **[Admin](./extensions/Admin.md)** - Pre-built admin pages and views
+- **[MapView](./extensions/MapView.md)** - Map view component
+- **[MapLibreView](./extensions/MapLibreView.md)** - MapLibre GL integration
 - **[Metrics Mini Chart Widget](./extensions/metricsminichartwidget.md)** - Compact metrics chart widget
+- **[TabView](./extensions/TabView.md)** - Tab navigation component
+- **[TimelineView](./extensions/TimelineView.md)** - Timeline visualization
 
 ---
 

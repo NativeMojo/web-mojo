@@ -1,463 +1,380 @@
-# Admin Extension (Built-in Admin Views & Pages)
+# Admin Extension
 
-MOJO ships with a set of **pre-built admin pages and views** under the `admin` extension. These are designed to be dropped into your app’s routing/navigation and used as-is, while still allowing you to subclass/extend when needed.
+**Pre-built admin pages, views, and an LLM-backed Assistant for `PortalWebApp`-based applications.**
 
-This guide documents what is currently available and how you should import it in production.
+## Table of Contents
+
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [API Reference](#api-reference)
+  - [`registerAdminPages(app, addToMenu)`](#registeradminpagesapp-addtomenu)
+  - [`registerAssistant(app)`](#registerassistantapp)
+- [The `system` Sidebar Menu](#the-system-sidebar-menu)
+- [Topbar Wiring](#topbar-wiring)
+- [Permissions](#permissions)
+- [Importing Individual Pages & Views](#importing-individual-pages--views)
+- [Convenience Helpers (`Class.show(...)`)](#convenience-helpers-classshow)
+- [Admin Assistant](#admin-assistant)
+- [Context-Scoped Assistant Chat](#context-scoped-assistant-chat)
+- [Common Pitfalls](#common-pitfalls)
+- [Related Docs](#related-docs)
 
 ---
 
-## Importing Admin Components (Production)
+## Overview
 
-The admin extension is published as its own entrypoint:
+The admin extension ships ~50 pre-built admin pages plus an LLM-backed Assistant chat panel, all designed to drop into a `PortalWebApp`. It is published as its own subpath export so it stays out of your default bundle until you opt in.
 
-- Entry export: `web-mojo/admin` (per `package.json` `"exports": { "./admin": ... }`)
+**What you get:**
 
-In production app code, import admin pages/views from `web-mojo/admin`.
+- **Account** — users, members, groups, devices, GeoIP, API keys, admin dashboard.
+- **Security** — incidents, tickets, events, rule sets, blocked IPs, IP sets, firewall log, bouncer signals/devices, bot signatures, GeoIP.
+- **Job engine** — dashboard, runners, jobs, scheduled tasks.
+- **Messaging** — email domains/mailboxes/templates/sent, public (contact-form) messages, SMS phone numbers, SMS log.
+- **Push notifications** — dashboard, configurations, templates, deliveries, devices.
+- **Storage** — file managers, files, S3 buckets.
+- **Shortlinks** — links table, click history.
+- **Monitoring** — logs, metrics permissions, CloudWatch dashboard.
+- **System** — settings, API keys.
+- **AI Assistant** — skills, memory, conversations admin pages, plus a topbar-triggered chat panel (`AssistantPanelView` on wide viewports, `AssistantView` fullscreen modal on narrow viewports).
+
+**Two integration helpers do the heavy lifting:**
+
+| Helper | What it does |
+|--------|--------------|
+| `registerAdminPages(app, addToMenu)` | Registers every `system/*` page on the app and (optionally) injects a fully-wired sidebar menu into your `system` menu config. |
+| `registerAssistant(app)` | Adds a `bi-robot` topbar button that opens the Assistant chat panel/modal. Lazy-loads `AssistantPanelView` / `AssistantView` so they aren't in your initial bundle. |
+
+**Import path:**
+
+```js
+import { registerAdminPages, registerAssistant } from 'web-mojo/admin';
+```
+
+> ✅ Always import from `web-mojo/admin`. Never deep-import `web-mojo/src/extensions/admin/...` — those paths are not part of the public surface.
 
 ---
 
-## Available Admin Pages & Views (Exported)
+## Quick Start
 
-The following are exported from the admin entrypoint. Import them like:
+Minimal portal wiring with admin pages and the Assistant. The full working reference lives in [`examples/portal/app.js`](../../examples/portal/app.js) — copy from there if you want a paste-ready starting point.
 
-```/dev/null/example.js#L1-26
+```js
+import { PortalWebApp, User } from 'web-mojo';
+import { registerAdminPages, registerAssistant } from 'web-mojo/admin';
+
+const app = new PortalWebApp({
+    name: 'Acme Portal',
+    container: '#app',
+    pageContainer: '#page-container',
+    defaultRoute: 'home',
+
+    api: { baseUrl: 'https://api.example.com' },
+
+    sidebar: {
+        defaultMenu: 'default',
+        menus: [
+            { name: 'default', items: [ /* your app's items */ ] },
+            // The `system` menu MUST exist — registerAdminPages will inject the
+            // full admin tree into items[] (see "The system Sidebar Menu" below).
+            {
+                name: 'system',
+                className: 'sidebar sidebar-light sidebar-admin',
+                header: '<div class="pt-3 text-center fw-bold"><i class="bi bi-wrench pe-2"></i>System</div>',
+                items: [
+                    { spacer: true },
+                    { text: 'Exit Admin', action: 'exit-admin', icon: 'bi-arrow-bar-left',
+                      handler: async () => app.sidebar.setActiveMenu('default') },
+                ],
+            },
+        ],
+    },
+
+    topbar: {
+        rightItems: [
+            // Wrench icon flips the sidebar to the system menu
+            { id: 'admin', icon: 'bi-wrench', tooltip: 'Open admin', buttonClass: 'btn btn-link',
+              handler: () => app.sidebar.setActiveMenu('system') },
+        ],
+    },
+});
+
+app.registerPage('home', HomePage);
+
+// 1) Start the app first — sidebar/topbar must exist before injecting items
+await app.start();
+
+// 2) Register admin pages + sidebar items
+registerAdminPages(app, true);
+
+// 3) Register the Assistant topbar button (lazy-loads on click)
+registerAssistant(app);
+```
+
+**Order matters.** `app.start()` builds the sidebar and topbar; `registerAdminPages` and `registerAssistant` then mutate them. Calling either before `start()` either no-ops the menu injection or registers items that your topbar never renders.
+
+---
+
+## API Reference
+
+### `registerAdminPages(app, addToMenu)`
+
+```js
+import { registerAdminPages } from 'web-mojo/admin';
+
+registerAdminPages(app, true);
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `app` | `WebApp` / `PortalApp` / `PortalWebApp` | The running app instance. |
+| `addToMenu` | `boolean` (default `true`) | If `true` and a sidebar menu named `system` exists, the helper unshifts a fully-wired admin tree into that menu's `items` array. If `false`, only `registerPage` calls happen — you handle the menu yourself. |
+
+**What it registers:** every page under `system/*` — Account (`system/dashboard`, `system/users`, `system/groups`, `system/members`, `system/api-keys`), Job Engine (`system/jobs/dashboard`, `system/jobs/runners`, `system/jobs/list`, `system/jobs/scheduled-tasks`), Security (`system/incidents`, `system/tickets`, `system/events`, `system/rulesets`, `system/security/*`, `system/system/geoip`), Messaging (`system/email/*`, `system/messaging/public-messages`, `system/phonehub/*`), Push (`system/push/*`), Storage (`system/s3buckets`, `system/filemanagers`, `system/files`), Shortlinks (`system/shortlinks/links`, `system/shortlinks/clicks`), Monitoring (`system/logs`, `system/metrics/permissions`, `system/cloudwatch`), Settings (`system/settings`), and Assistant admin (`system/assistant/skills`, `system/assistant/memory`, `system/assistant/conversations`).
+
+> ℹ️ The complete `(route, page-class, permissions)` mapping lives in [`src/admin.js`](../../src/admin.js). It is the single source of truth — read it directly when you need the exact list.
+
+`registerAdminPages` is also exported as `registerSystemPages`. Both names refer to the same function.
+
+### `registerAssistant(app)`
+
+```js
+import { registerAssistant } from 'web-mojo/admin';
+
+registerAssistant(app);
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `app` | `WebApp` / `PortalApp` / `PortalWebApp` | The running app instance. Must have `app.ws` and `app.rest` configured. |
+
+**What it does:**
+
+1. Adds a `bi-robot` button to `topbar.rightItems` (or `topbarConfig.rightItems` if called pre-`start()`).
+2. The button is permission-gated to `view_admin` — users without it never see it.
+3. On click, picks the display mode based on viewport width:
+   - `>= 1000 px` → mounts `AssistantPanelView` as a right sidebar inside `.portal-layout`.
+   - `<  1000 px` → opens `AssistantView` in a fullscreen `Modal`.
+4. `AssistantPanelView`, `AssistantView`, and `Modal` are loaded with dynamic `import()` — they are not in your initial bundle.
+5. Adds a debounced `resize` listener: if the panel is open and the viewport drops below 1000 px, it auto-switches to the fullscreen modal. The active conversation is preserved across mode switches via `app._assistantConversationId`.
+
+> ✅ Calling `registerAssistant` before `app.start()` is fine — it falls back to mutating `app.topbarConfig.rightItems` so the button shows up the moment the topbar mounts. Calling it after `start()` works the same way and re-renders the topbar if needed.
+
+---
+
+## The `system` Sidebar Menu
+
+For `registerAdminPages(app, true)` to inject items, your sidebar config must declare a menu named `system`. Anything you put in its `items` array is preserved — `registerAdminPages` calls `items.unshift(...)` to put the admin tree on top.
+
+**Canonical shape (matches `examples/portal/app.js`):**
+
+```js
+{
+    name: 'system',
+    className: 'sidebar sidebar-light sidebar-admin',
+    header: '<div class="pt-3 text-center fs-5 fw-bold sidebar-collapse-hide"><i class="bi bi-wrench pe-2"></i>System</div>',
+    items: [
+        // The admin tree gets unshifted ABOVE this point.
+
+        { spacer: true },
+        {
+            text: 'Exit Admin',
+            action: 'exit-admin',
+            icon: 'bi-arrow-bar-left',
+            handler: async () => app.sidebar.setActiveMenu('default'),
+        },
+    ],
+}
+```
+
+| Item field | Purpose |
+|------------|---------|
+| `header` | Optional HTML rendered above the items. Use `sidebar-collapse-hide` so it disappears when the sidebar is collapsed. |
+| `{ spacer: true }` | Pushes everything below it to the bottom of the sidebar. |
+| `text` / `route` / `icon` / `permissions` / `children` | Standard sidebar item fields. |
+| `action` + `handler` | Inline handler. `'exit-admin'` is the convention used by the examples portal to switch back to the default menu. |
+
+> ⚠️ **Without a `system` menu, the admin items have nowhere to go.** `registerAdminPages` checks for it via `app.sidebar.getMenuConfig('system')` and silently skips menu injection if it is missing. The pages will still be registered (so URL routing works), but nothing will appear in the sidebar.
+
+---
+
+## Topbar Wiring
+
+The standard pattern is a wrench icon on the right side of the topbar that flips the sidebar to the `system` menu. The Assistant button (`bi-robot`) is added separately by `registerAssistant`.
+
+```js
+topbar: {
+    rightItems: [
+        // ... your other items ...
+
+        // Admin shortcut — flips sidebar to the `system` menu.
+        // Permission-gate it so it doesn't show up for non-admins.
+        {
+            id: 'admin',
+            icon: 'bi-wrench',
+            action: 'open-admin',
+            tooltip: 'Open admin / system menu',
+            buttonClass: 'btn btn-link',
+            permissions: ['view_admin'],
+            handler: () => app.sidebar.setActiveMenu('system'),
+        },
+    ],
+}
+```
+
+If you prefer the central event bus over inline handlers:
+
+```js
+app.events.on('portal:action', ({ action }) => {
+    switch (action) {
+        case 'open-admin': app.sidebar.setActiveMenu('system'); break;
+        case 'exit-admin': app.sidebar.setActiveMenu('default'); break;
+    }
+});
+```
+
+`registerAssistant(app)` adds its own `bi-robot` topbar button. You do not need to add it manually.
+
+---
+
+## Permissions
+
+Every admin page is registered with a `permissions:` requirement. The framework's sidebar and router check these against `app.user.hasPermission(...)` and silently hide / 403 anything the user lacks.
+
+**Common permission keys (high level):**
+
+- `security` / `view_security` / `manage_security` — admin dashboard, incidents, tickets, events, rule engine, blocked IPs, firewall log, bouncer, bot signatures
+- `view_admin` / `assistant` — AI Assistant admin pages and the topbar Assistant button
+- `view_users` / `manage_users` — users, user devices, GeoIP
+- `view_groups` / `manage_groups` — groups, members, API keys
+- `view_jobs` / `manage_jobs` / `view_scheduled_tasks` / `manage_scheduled_tasks` — job engine
+- `manage_aws` — S3 buckets, email mailboxes / domains / sent / templates, CloudWatch
+- `view_fileman` / `manage_files` — file managers and file table
+- `manage_shortlinks` — shortlinks and click history
+- `manage_notifications` / `manage_push_config` / `view_notifications` / `view_devices` / `manage_devices` — push notifications and devices
+- `view_phone_numbers` / `manage_phone_numbers` / `view_sms` / `manage_sms` — phone hub
+- `view_logs` / `manage_settings` / `manage_metrics` — system pages
+- `view_support` / `support` — contact-form messages
+
+> ℹ️ The complete `(route, permissions)` mapping lives in [`src/admin.js`](../../src/admin.js) as the single source of truth. Don't duplicate it here — read the source.
+
+---
+
+## Importing Individual Pages & Views
+
+If you only want a couple of pages and prefer to wire them yourself instead of using `registerAdminPages`, every class is also exported from `web-mojo/admin`.
+
+```js
 import {
-  // Pages
-  AdminDashboardPage,
-  UserTablePage,
-  MemberTablePage,
-  GroupTablePage,
-  UserDeviceTablePage,
-  UserDeviceLocationTablePage,
-  GeoLocatedIPTablePage,
+    // Pages — Table/Dashboard pages, one per admin area
+    AdminDashboardPage, UserTablePage, GroupTablePage, MemberTablePage, ApiKeyTablePage,
+    IncidentDashboardPage, IncidentTablePage, EventTablePage, TicketTablePage, RuleSetTablePage,
+    JobDashboardPage, JobRunnersPage, JobsTablePage, ScheduledTaskTablePage,
+    EmailDomainTablePage, EmailTemplateTablePage, SentMessageTablePage, PublicMessageTablePage,
+    PhoneNumberTablePage, SMSTablePage,
+    PushDashboardPage, PushConfigTablePage, PushTemplateTablePage, PushDeliveryTablePage, PushDeviceTablePage,
+    FileManagerTablePage, FileTablePage, S3BucketTablePage,
+    ShortLinkTablePage, ShortLinkClickTablePage,
+    BlockedIPsTablePage, FirewallLogTablePage, BouncerSignalTablePage, BouncerDeviceTablePage, BotSignatureTablePage, IPSetTablePage,
+    LogTablePage, MetricsPermissionsTablePage, SettingTablePage, CloudWatchDashboardPage,
+    AssistantSkillTablePage, AssistantConversationTablePage, AssistantMemoryPage,
 
-  IncidentDashboardPage,
-  IncidentTablePage,
-  EventTablePage,
-  TicketTablePage,
-  RuleSetTablePage,
-
-  EmailDomainTablePage,
-  EmailMailboxTablePage,
-  EmailTemplateTablePage,
-  SentMessageTablePage,
-  PublicMessageTablePage,
-
-  PhoneNumberTablePage,
-  SMSTablePage,
-
-  PushDashboardPage,
-  PushConfigTablePage,
-  PushTemplateTablePage,
-  PushDeliveryTablePage,
-  PushDeviceTablePage,
-
-  JobsAdminPage,
-  TaskManagementPage,
-
-  LogTablePage,
-  MetricsPermissionsTablePage,
-
-  FileManagerTablePage,
-  FileTablePage,
-  S3BucketTablePage,
-
-  ShortLinkTablePage,
-  ShortLinkClickTablePage,
-
-  IPSetTablePage,
-
-  CloudWatchDashboardPage,
-  CloudWatchChart,
-
-  // Views
-  DeviceView,
-  GeoIPView,
-  GroupView,
-  MemberView,
-  UserView,
-
-  IncidentView,
-  EventView,
-  TicketView,
-  RuleSetView,
-
-  EmailTemplateView,
-  EmailView,
-  PublicMessageView,
-  PhoneNumberView,
-  PushDeliveryView,
-  PushDeviceView,
-
-  JobDetailsView,
-  JobHealthView,
-  JobStatsView,
-  RunnerDetailsView,
-  TaskDetailsView,
-
-  LogView,
-  MetricsPermissionsView,
-
-  FileView,
-
-  ShortLinkView,
-
-  IPSetView,
-
-  AssistantView,
-
-  CloudWatchResourceView
+    // Views — Detail/dialog views (composable, often opened via row clicks)
+    DeviceView, GeoIPView, GroupView, MemberView, UserView, ApiKeyView,
+    IncidentView, EventView, TicketView, RuleSetView,
+    JobDetailsView, JobHealthView, JobStatsView, RunnerDetailsView, ScheduledTaskView,
+    EmailTemplateView, EmailView, PublicMessageView, PhoneNumberView, PushDeliveryView, PushDeviceView,
+    ShortLinkView, BouncerSignalView, BouncerDeviceView, IPSetView,
+    LogView, MetricsPermissionsView, SettingView, FileView, CloudWatchResourceView, CloudWatchChart,
+    AssistantView, AssistantSkillView, AssistantConversationView,
 } from 'web-mojo/admin';
 ```
 
-Notes:
-- Prefer importing from `web-mojo/admin` rather than deep-importing internal `src/...` paths.
-- This document intentionally lists **admin pages and admin views only** (not non-admin passthrough exports like `WebApp` or version constants).
+The complete export list is in [`src/admin.js`](../../src/admin.js).
 
 ---
 
-## Convenience Helpers (Open Details in a Dialog)
+## Convenience Helpers (`Class.show(...)`)
 
-Some admin views provide a static `show(...)` helper to make it easy to open that view in a `Dialog` without wiring the dialog yourself. These are intended as simple “one-liner” integrations.
+A handful of admin views expose a static `show()` helper that wraps the view in a `Dialog` — useful when you have an ID or model in hand and just want the detail view to pop up:
 
-### GeoIPView.show(ip)
+- `GeoIPView.show(ip)` — look up an IP via the GeoIP API and show its details
+- `DeviceView.show(duid)` — look up a user device by DUID
+- `JobDetailsView.show(job, options?)` / `RunnerDetailsView.show(runner, options?)` / `ScheduledTaskView.show(task, options?)` — show job-engine details (status-aware action buttons)
+- `CloudWatchResourceView.show(account, slug, resource)` — show all metric categories for one CloudWatch resource
 
-Looks up geolocation data for an IP and opens the details view in a dialog.
-
-```/dev/null/example.js#L1-12
-import { GeoIPView } from 'web-mojo/admin';
+```js
+import { GeoIPView, JobDetailsView } from 'web-mojo/admin';
 
 await GeoIPView.show('8.8.8.8');
-```
-
-### DeviceView.show(duid)
-
-Looks up a user device by DUID and opens the device details view in a dialog.
-
-```/dev/null/example.js#L1-12
-import { DeviceView } from 'web-mojo/admin';
-
-await DeviceView.show('device-duid-here');
-```
-
-### JobDetailsView.show(job, options?)
-
-Opens a job details view in a dialog. Useful when you already have a `Job` model instance.
-
-```/dev/null/example.js#L1-18
-import { JobDetailsView } from 'web-mojo/admin';
-
-await JobDetailsView.show(job, {
-  // Optional Dialog options override
-  size: 'xl',
-  scrollable: true
-});
-```
-
-### RunnerDetailsView.show(runner, options?)
-
-Opens runner details in a dialog (and may include action buttons depending on runner status).
-
-```/dev/null/example.js#L1-14
-import { RunnerDetailsView } from 'web-mojo/admin';
-
-await RunnerDetailsView.show(runner);
-```
-
-### TaskDetailsView.show(task, options?)
-
-Opens task details in a dialog (and may include action buttons depending on task status).
-
-```/dev/null/example.js#L1-14
-import { TaskDetailsView } from 'web-mojo/admin';
-
-await TaskDetailsView.show(task);
-```
-
----
-
-## Pages (Routing-level)
-
-### Account
-- `AdminDashboardPage`
-- `UserTablePage`
-- `MemberTablePage`
-- `GroupTablePage`
-- `UserDeviceTablePage`
-- `UserDeviceLocationTablePage`
-- `GeoLocatedIPTablePage`
-
-### Incidents
-- `IncidentDashboardPage`
-- `IncidentTablePage`
-- `EventTablePage`
-- `TicketTablePage`
-- `RuleSetTablePage`
-
-### Messaging (Email)
-- `EmailDomainTablePage`
-- `EmailMailboxTablePage`
-- `EmailTemplateTablePage`
-- `SentMessageTablePage`
-
-### Messaging (Contact)
-- `PublicMessageTablePage` — Read + status-toggle table for visitor contact/support submissions. Route: `system/messaging/public-messages`. Permissions: `view_support`, `support`, `security`.
-
-### Messaging (SMS)
-- `PhoneNumberTablePage`
-- `SMSTablePage`
-
-### Messaging (Push)
-- `PushDashboardPage`
-- `PushConfigTablePage`
-- `PushTemplateTablePage`
-- `PushDeliveryTablePage`
-- `PushDeviceTablePage`
-
-### Shortlinks
-- `ShortLinkTablePage` — CRUD table for django-mojo shortlinks. Route: `system/shortlinks/links`. Row-click opens `ShortLinkView` in a detail modal (Details / Preview / Metadata / Click History / Metrics tabs). Permission: `manage_shortlinks`.
-- `ShortLinkClickTablePage` — Read-only global click history across all shortlinks. Route: `system/shortlinks/clicks`. Permission: `manage_shortlinks`.
-
-### Security
-- `IPSetTablePage` — Manage kernel-level IP blocking sets (country blocks, AbuseIPDB feeds, datacenter ranges, custom CIDR lists). Route: `system/security/ipsets`.
-
-### Jobs
-- `JobsAdminPage`
-- `TaskManagementPage`
-
-### Monitoring
-- `LogTablePage`
-- `MetricsPermissionsTablePage`
-
-### Storage
-- `FileManagerTablePage`
-- `FileTablePage`
-- `S3BucketTablePage`
-
-### AWS
-- `CloudWatchDashboardPage`
-
----
-
-## Views (Composable UI components)
-
-### Account
-- `DeviceView`
-- `GeoIPView`
-- `GroupView`
-- `MemberView`
-- `UserView`
-
-### Incidents
-- `IncidentView`
-- `EventView`
-- `TicketView`
-- `RuleSetView`
-
-### Messaging (Email)
-- `EmailTemplateView`
-- `EmailView`
-
-### Messaging (Contact)
-- `PublicMessageView` — Detail view for a single public message, shown when a row is clicked from `PublicMessageTablePage`. Renders metadata with friendly labels for known keys and a humanized fallback for unknown keys. Includes an inline status toggle.
-
-### Messaging (SMS)
-- `PhoneNumberView`
-
-### Messaging (Push)
-- `PushDeliveryView`
-- `PushDeviceView`
-
-### Jobs
-- `JobDetailsView`
-- `JobHealthView`
-- `JobStatsView`
-- `RunnerDetailsView`
-- `TaskDetailsView`
-
-### Monitoring
-- `LogView`
-- `MetricsPermissionsView`
-
-### Storage
-- `FileView`
-
-### Shortlinks
-- `ShortLinkView` — Detail view for a single shortlink, shown in a tabbed modal (Details / Preview / Metadata / Click History / Metrics) when a row is clicked from `ShortLinkTablePage`.
-
-### Security
-- `IPSetView` — Detail view for a single IP Set, shown in a dialog when a row is clicked from `IPSetTablePage`.
-
-### Assistant
-- `AssistantView` — Main admin assistant interface. Shown inside a fullscreen modal. See [Admin Assistant](#admin-assistant) below.
-- `AssistantPanelView` — Chat-only sidebar panel variant. Mounted into a `#assistant-panel` div inside `.portal-layout` by `registerAssistant()`. Not exported from `web-mojo/admin`; used internally by `registerAssistant()`.
-
-### AWS
-- `CloudWatchChart` — MetricsChart subclass for CloudWatch endpoints
-- `CloudWatchResourceView` — Detail view for a single resource (all metrics in a grid)
-
----
-
-## CloudWatch Dashboard
-
-The `CloudWatchDashboardPage` renders a 2-column grid of `CloudWatchChart` instances, each showing all resources for a given account + category:
-
-```/dev/null/example.js#L1-8
-import { CloudWatchDashboardPage } from 'web-mojo/admin';
-
-router.register('/admin/cloudwatch', CloudWatchDashboardPage);
-```
-
-### CloudWatchChart
-
-Extends `MetricsChart` for CloudWatch endpoints. Each chart auto-fetches from `/api/aws/cloudwatch/fetch` with the configured `account` (ec2/rds/redis) and `category` (cpu/memory/conns/etc). Inherits all MetricsChart features: granularity selector, date range picker, refresh, loading states.
-
-```/dev/null/example.js#L1-12
-import { CloudWatchChart } from 'web-mojo/admin';
-
-const chart = new CloudWatchChart({
-    containerId: 'my-container',
-    account: 'ec2',
-    category: 'cpu',
-    title: 'EC2 CPU',
-    height: 250,
-    yAxis: { label: '%', beginAtZero: true, max: 100 },
-    defaultDateRange: '24h'
-});
-this.addChild(chart);
-```
-
-For a single resource, pass `slug`:
-
-```/dev/null/example.js#L1-6
-const chart = new CloudWatchChart({
-    containerId: 'cpu-chart',
-    account: 'rds',
-    category: 'cpu',
-    slug: 'prod-postgres',
-    title: 'RDS CPU — prod-postgres'
-});
-```
-
-### CloudWatchResourceView
-
-Detail view showing all metric categories for one resource. Open via the static `show()` helper:
-
-```/dev/null/example.js#L1-5
-import { CloudWatchResourceView } from 'web-mojo/admin';
-
-await CloudWatchResourceView.show('ec2', 'web-server-1', resourceData);
-```
-
----
-
-## Typical Usage in an App (Routing)
-
-The exact routing API depends on your app, but the general pattern is:
-
-```/dev/null/example.js#L1-24
-import { AdminDashboardPage, UserTablePage } from 'web-mojo/admin';
-
-// Example pseudo-router registration
-router.register('/admin', AdminDashboardPage);
-router.register('/admin/users', UserTablePage);
+await JobDetailsView.show(job, { size: 'xl', scrollable: true });
 ```
 
 ---
 
 ## Admin Assistant
 
-The Admin Assistant is an LLM-powered chat interface that lets admins query data in natural language. It is triggered from a `bi-robot` topbar icon button added by `registerAssistant(app)`.
+The Admin Assistant is an LLM-powered chat interface for natural-language queries against your data. It is registered with `registerAssistant(app)`.
 
-### Enabling the Assistant
+### Display modes
 
-Call `registerAssistant(app)` after your app starts. The button is only shown to users with the `view_admin` permission.
-
-```js
-import { registerAssistant } from 'web-mojo/admin';
-
-// After app.start() or once the topbar is mounted
-registerAssistant(app);
-```
-
-`registerAssistant` dynamically imports `AssistantView`, `AssistantPanelView`, and `Modal` so they are not included in your initial bundle unless the function is called.
-
-### Display Modes
-
-`registerAssistant()` automatically selects the display mode based on viewport width each time the button is clicked:
+`registerAssistant()` automatically selects the display mode based on viewport width each time the topbar button is clicked:
 
 | Viewport width | Display mode |
 |----------------|--------------|
-| `>= 1000px` | Right sidebar panel (`AssistantPanelView`) |
-| `< 1000px` | Fullscreen modal (`AssistantView`) |
+| `>= 1000 px` | Right sidebar panel (`AssistantPanelView`) — reflows `.portal-layout` via CSS flex |
+| `< 1000 px` | Fullscreen modal (`AssistantView`) |
 
-Clicking the button while the sidebar is already open closes it. A debounced `resize` listener watches for the viewport crossing the 1000 px threshold while the sidebar is open: if it does, the sidebar is closed and the fullscreen modal is opened automatically. The active conversation ID is preserved across mode switches via `app._assistantConversationId`.
+Clicking the button while the sidebar is open closes it. A debounced `resize` listener watches for crossing the 1000 px threshold and auto-switches modes if needed. The active conversation ID is preserved on `app._assistantConversationId`.
 
-### AssistantView (fullscreen modal)
+### `AssistantView` (fullscreen modal)
 
-`AssistantView` can also be instantiated directly and shown in any modal:
+Two-panel layout inside a fullscreen `Modal`:
+
+- **Left** — `AssistantConversationListView`: conversation list from `GET /api/assistant/conversation`, grouped by date (Today / Yesterday / Earlier), with debounced search and "Load more" pagination.
+- **Right** — `ChatView` with `AssistantMessageView` for rich blocks, plus a connection-status indicator.
+
+You can also instantiate and show it manually:
 
 ```js
 import { AssistantView } from 'web-mojo/admin';
 import { Modal } from 'web-mojo';
 
 const view = new AssistantView({ app });
-Modal.show(view, { size: 'fullscreen', title: 'Admin Assistant', noBodyPadding: true });
+Modal.show(view, { size: 'fullscreen', title: ' ', noBodyPadding: true, buttons: [] });
 ```
 
-**Constructor options:**
+### `AssistantPanelView` (sidebar panel)
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `app` | `WebApp` | The running app instance (required). Used to access `app.ws` and `app.rest`. |
-
-**Layout** — Two-panel layout inside the modal:
-
-- **Left sidebar** — `AssistantConversationListView`: conversation list fetched from `GET /api/assistant/conversation`. Grouped by date (Today / Yesterday / Earlier). Includes a debounced search input and "Load more" pagination. Supports selecting, creating, and deleting conversations.
-- **Right chat area** — `ChatView` with `AssistantMessageView` for rich message content. Connection status indicator at the top.
-
-### AssistantPanelView (sidebar panel)
-
-`AssistantPanelView` is the compact sidebar variant used on wide viewports. It is mounted by `registerAssistant()` into a `#assistant-panel` div appended to `.portal-layout`; the layout reflows via CSS flex so the main content area remains usable while the panel is open.
+Compact right-sidebar variant. `registerAssistant` mounts it into a `#assistant-panel` div appended to `.portal-layout`. CSS reflow keeps the page content usable.
 
 **Header bar actions:**
 
 | Button | Action |
 |--------|--------|
 | `bi-list` hamburger | Toggle between chat and conversation history |
-| Conversation title (truncated) | Display only |
+| Conversation title | Display only (truncated) |
 | `bi-plus-lg` | Start a new conversation |
 | `bi-x-lg` | Close the panel (emits `panel:close`) |
 
-**States:**
+The view also emits `panel:fullscreen` (switch to the modal) and `panel:popout` (open the chat in a popup window).
 
-- **Chat state** (default) — Welcome screen with quick-start suggestions or active chat area with auto-resizing textarea, send/stop buttons, and connection status dot.
-- **History state** — Replaces the chat area with `AssistantConversationListView` (search + "Load more"). Selecting a conversation switches back to chat state automatically.
+### WebSocket events
 
-**Public method:**
-
-| Method | Description |
-|--------|-------------|
-| `focusInput()` | Focuses the textarea. Called by `registerAssistant()` when the panel is already open. |
-
-### WebSocket Events
-
-Messages are sent via `app.ws` and responses arrive as typed WebSocket events:
+Messages stream through `app.ws` as typed events, each filtered by `conversation_id`:
 
 | Event | Triggered when |
 |-------|----------------|
-| `message:assistant_thinking` | Backend starts processing — shows thinking indicator, disables input |
-| `message:assistant_tool_call` | Backend calls a tool — updates thinking text to "Calling {tool}..." |
-| `message:assistant_response` | Final response — hides thinking, adds assistant message, re-enables input |
-| `message:assistant_error` | Backend error — hides thinking, shows error as system message, re-enables input |
+| `message:assistant_thinking` | Backend starts processing — shows a thinking indicator, disables input. |
+| `message:assistant_tool_call` | Backend calls a tool — updates thinking text to "Calling {tool}...". |
+| `message:assistant_response` | Final response — hides indicator, appends an assistant message, re-enables input. |
+| `message:assistant_error` | Backend error — shows error as a system message, re-enables input. |
 
-All events are filtered by `conversation_id` to ignore events from other active sessions.
+Falls back to `POST /api/assistant` when WebSocket is unavailable.
 
-When WebSocket is unavailable, the assistant falls back to a REST POST to `POST /api/assistant`.
+### Structured response blocks
 
-### Structured Response Blocks
-
-Assistant responses can include `blocks` rendered inline inside the message:
+Assistant responses can include `blocks` rendered inline:
 
 | Block type | Rendered as |
 |------------|-------------|
@@ -465,73 +382,117 @@ Assistant responses can include `blocks` rendered inline inside the message:
 | `chart` (line/bar/area) | `SeriesChart` |
 | `chart` (pie) | `PieChart` |
 | `stat` | Bootstrap stat cards in a flex row |
-| `file` | Downloadable attachment card with format-aware icon and metadata |
+| `file` | Downloadable card. Requires `filename` and `url`; only `https://`, `http://`, and `/`-rooted URLs accepted. |
 
-The `file` block requires `filename` and `url` fields. Optional fields: `format` (`csv`, `xlsx`, `pdf`, `json`), `size` (bytes), `row_count`, `expires_in` (display string). Only `https://`, `http://`, and root-relative (`/`) URLs are accepted; `javascript:` and other schemes are silently rejected.
-
-### REST Endpoints Used
+### REST endpoints
 
 | Method | Endpoint | Purpose |
 |--------|----------|---------|
-| `GET` | `/api/assistant/conversation` | List user's conversations. Supports `search` and `start` query params for filtering and pagination. |
-| `GET` | `/api/assistant/conversation/{id}` | Load full message history |
-| `DELETE` | `/api/assistant/conversation/{id}` | Delete a conversation |
-| `POST` | `/api/assistant` | REST fallback when WebSocket is unavailable |
+| `GET` | `/api/assistant/conversation` | List user conversations (`search`, `start` query params). |
+| `GET` | `/api/assistant/conversation/{id}` | Load full message history. |
+| `DELETE` | `/api/assistant/conversation/{id}` | Delete a conversation. |
+| `POST` | `/api/assistant` | REST fallback when WebSocket is unavailable. |
 
-### Permissions
-
-The topbar button and the assistant modal both require the `view_admin` permission.
+> Cross-link: see [ChatView](../components/ChatView.md) for the underlying chat UI used by the Assistant — adapter-driven messages, file drop, and streaming hooks.
 
 ---
 
 ## Context-Scoped Assistant Chat
 
-`TicketView` and `IncidentView` each have an **Ask AI** button that opens a single-conversation assistant chat scoped to that specific model instance. This is distinct from the fullscreen standalone `AssistantView` — it opens in an `xl` Dialog so the underlying view stays visible, always shows a single conversation, and provides the backend with the full model context (incident events, metadata, ticket description).
+`TicketView` and `IncidentView` each ship an **Ask AI** button that opens a single-conversation Assistant chat scoped to that model instance. It opens in an `xl` `Dialog` so the underlying view stays visible, always shows a single conversation, and the backend gets full model context.
 
-### How it works
+On first open, `POST /api/assistant/context` is called with `{ model, pk }`; the returned `conversation_id` is stored on `metadata.assistant_conversation_id` (via a partial save — the backend auto-merges JSON fields). Subsequent opens resume the same thread; a stale (404) conversation triggers automatic re-creation. Messages stream over the same WebSocket events as the global Assistant.
 
-1. On first open, `POST /api/assistant/context` is called with `{ model, pk }`. The returned `conversation_id` is saved to `metadata.assistant_conversation_id` via a partial metadata save (backend auto-merges).
-2. On subsequent opens, the stored `conversation_id` is reused to resume the same thread.
-3. If the stored `conversation_id` is stale (404), a fresh conversation is created automatically.
-4. Messages stream in real time via the same WebSocket events as `AssistantView`. Falls back to `POST /api/assistant` when WebSocket is unavailable.
-
-### Reusing the pattern in your own views
-
-The `openAssistantChat` helper is internal to the `admin` extension. To add "Ask AI" to your own view:
+To add **Ask AI** to your own view:
 
 ```js
 import { openAssistantChat } from '@ext/admin/assistant/AssistantContextChat.js';
 
-// Inside your view, called from an action handler:
 async onActionAskAi() {
     await openAssistantChat(this, 'myapp.MyModel');
 }
 ```
 
-Requirements for the calling view:
-- `this.model` must be set and have an `id` field.
-- `this.model.get('metadata')` is used to read/store `assistant_conversation_id`.
-- `this.getApp()` must return the running app instance (standard for any `View` subclass).
-
-**`openAssistantChat(view, modelName)`**
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `view` | `View` | The calling view instance |
-| `modelName` | `string` | Backend model name, e.g. `'incident.Ticket'`, `'incident.Incident'` |
-
-### REST Endpoints Used
-
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| `POST` | `/api/assistant/context` | Create or retrieve a conversation scoped to `{ model, pk }` |
-| `GET` | `/api/assistant/conversation/{id}?graph=detail` | Load conversation with full message history |
-| `POST` | `/api/assistant` | REST fallback when WebSocket is unavailable |
+Requirements: `this.model` is set with an `id`; `this.model.get('metadata')` is readable/writable; `this.getApp()` returns the running app. The endpoints used are `POST /api/assistant/context`, `GET /api/assistant/conversation/{id}?graph=detail`, and `POST /api/assistant` (fallback).
 
 ---
 
-## Best Practices
+## Common Pitfalls
 
-- Keep admin pages and views under `src/admin` in your application code if you’re building app-specific admin UIs.
-- Use the built-in extension pages/views first; subclass only when you need custom behavior.
-- Avoid deep imports to internal `src/extensions/admin/...` paths in production app code—prefer `import { ... } from 'web-mojo/admin'`.
+### ❌ Calling `registerAdminPages` before `app.start()`
+
+The sidebar is constructed during `start()`. Calling the registrar before that means `app.sidebar` is undefined and the menu-injection branch silently skips. Routes still register, but the admin tree never appears in the sidebar.
+
+✅ **Fix:** always call after `start()`.
+
+```js
+await app.start();
+registerAdminPages(app, true);
+registerAssistant(app);
+```
+
+### ❌ Forgetting the `system` menu in your sidebar config
+
+```js
+sidebar: {
+    menus: [
+        { name: 'default', items: [ ... ] }
+        // no `system` menu!
+    ]
+}
+```
+
+`registerAdminPages(app, true)` calls `app.sidebar.getMenuConfig('system')`. If that returns `undefined`, the helper skips menu injection entirely. The user clicks the wrench icon, the sidebar switches to a non-existent menu, and the rail looks blank.
+
+✅ **Fix:** declare a `system` menu (it can start nearly empty — see [The `system` Sidebar Menu](#the-system-sidebar-menu)). The registrar appends the admin tree above whatever items you've put in it.
+
+### ❌ Empty admin menu in dev because of permissions
+
+Every admin item is permission-gated. If your local dev user has no permissions, every item is filtered out — and the resulting admin menu looks empty even though `registerAdminPages` ran successfully.
+
+✅ **Fix (dev only):** wildcard the user's permission check. Production code should never do this.
+
+```js
+const demoUser = new User({ id: 1, username: 'demo' });
+demoUser.hasPermission = () => true;   // dev/demo only!
+app.setActiveUser(demoUser);
+```
+
+The examples portal (`examples/portal/app.js`) does exactly this for the offline demo.
+
+### ❌ Calling `registerAssistant` without configuring `app.ws`
+
+The Assistant streams responses over WebSocket via `app.ws`. If you instantiate `WebApp` (not `PortalWebApp`) and don't enable WebSocket, the panel still opens but every message takes the REST fallback path with no streaming and no tool-call indicator.
+
+✅ **Fix:** prefer `PortalWebApp`, which auto-wires `app.ws`. If you stay on `WebApp`, set `ws: { url: '...' }` in the constructor options.
+
+### ❌ Deep-importing internal admin paths
+
+```js
+import IncidentView from 'web-mojo/src/extensions/admin/incidents/IncidentView.js';   // ❌
+```
+
+Internal paths under `src/extensions/admin/...` are not part of the public surface and may move at any time. The package's `exports` map only blesses `web-mojo` and `web-mojo/admin`.
+
+✅ **Fix:**
+
+```js
+import { IncidentView } from 'web-mojo/admin';   // ✅
+```
+
+### ⚠️ Pre-`start()` registration of the Assistant button
+
+`registerAssistant(app)` does support being called before `start()` — it falls back to mutating `app.topbarConfig.rightItems`. It works, but the recommended pattern is post-`start()` so the button appears alongside any other dynamic items.
+
+---
+
+## Related Docs
+
+- [PortalWebApp](../core/PortalWebApp.md) — auth-gated portal shell that auto-wires `app.ws` for the Assistant
+- [PortalApp](../core/PortalApp.md) — the underlying portal class with sidebar, topbar, and group switching
+- [Sidebar & TopNav](../components/SidebarTopNav.md) — sidebar menu shape, topbar items, `setActiveMenu` API
+- [ChatView](../components/ChatView.md) — base chat UI used by the Admin Assistant
+- [WebSocketClient](../services/WebSocketClient.md) — the transport the Assistant uses for streaming responses
+- [Built-in Models](../models/BuiltinModels.md) — `User`, `Group`, `Incident`, `Ticket`, `Job`, `File`, etc. (every admin page is backed by one of these)
+- [`src/admin.js`](../../src/admin.js) — single source of truth for routes, page classes, and permissions
+- [`examples/portal/app.js`](../../examples/portal/app.js) — working reference integration
