@@ -35,16 +35,16 @@ class DemoUser extends Model {
     }
 }
 
+const DEMO_FIELDS = [
+    { type: 'text',     name: 'display_name', label: 'Display Name', required: true, columns: { md: 6 } },
+    { type: 'email',    name: 'email',        label: 'Email',        required: true, columns: { md: 6 } },
+    { type: 'textarea', name: 'bio',          label: 'Bio',          rows: 3 },
+    { type: 'switch',   name: 'notifications', label: 'Email me about updates' },
+];
+
 class FormPageExample extends FormPage {
     static pageName = 'pages/form-page';
     static route = 'pages/form-page';
-
-    fields = [
-        { type: 'text',     name: 'display_name', label: 'Display Name', required: true, columns: { md: 6 } },
-        { type: 'email',    name: 'email',        label: 'Email',        required: true, columns: { md: 6 } },
-        { type: 'textarea', name: 'bio',          label: 'Bio',          rows: 3 },
-        { type: 'switch',   name: 'notifications', label: 'Email me about updates' },
-    ];
 
     constructor(options = {}) {
         super({
@@ -52,6 +52,9 @@ class FormPageExample extends FormPage {
             pageName: FormPageExample.pageName,
             route: FormPageExample.route,
             title: 'FormPage — Page wrapped around a FormView',
+            // FormPage reads `fields` from options (not from a class field).
+            fields: DEMO_FIELDS,
+            template: FormPageExample.TEMPLATE,
         });
 
         // Demo model — kept on the page so save edits persist across visits.
@@ -72,7 +75,7 @@ class FormPageExample extends FormPage {
     // Custom template — keeps the form-view-container slot, adds page chrome
     // and an explicit Save button. (The default FormPage template is just the
     // bare slot; override only when you want surrounding actions.)
-    template = `
+    static TEMPLATE = `
         <div class="example-page">
             <h1>FormPage</h1>
             <p class="example-summary">
