@@ -113,7 +113,7 @@ Single canonical example per documented component. Pages are organized by topic 
 |---|---|---|
 | [FormView](../../examples/portal/examples/forms/FormView/FormViewExample.js) | FormView fundamentals: fields, validation, submission. | [forms/FormView.md](../../docs/web-mojo/forms/FormView.md) |
 | [FormView — all field types](../../examples/portal/examples/forms/FormView/AllFieldTypesExample.js) | Comprehensive reference of every supported field type. | [forms/FormView.md](../../docs/web-mojo/forms/FormView.md) |
-| [FormBuilder — pure HTML generation](../../examples/portal/examples/forms/FormBuilder/FormBuilderExample.js) | Generate Bootstrap form HTML directly from a fields config — no FormView, no lifecycle, no validation. | [forms/FormBuilder.md](../../docs/web-mojo/forms/FormBuilder.md) |
+| [FormBuilder — live JSON playground](../../examples/portal/examples/forms/FormBuilder/FormBuilderExample.js) | Edit a fields config as JSON, see a live FormView render. Same syntax FormView and FormBuilder both accept. | [forms/FormBuilder.md](../../docs/web-mojo/forms/FormBuilder.md) |
 
 ### Field Types
 

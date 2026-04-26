@@ -2,10 +2,10 @@
     "name": "FormBuilder",
     "area": "forms",
     "route": "forms/form-builder",
-    "title": "FormBuilder — pure HTML generation",
-    "summary": "Generate Bootstrap form HTML directly from a fields config — no FormView, no lifecycle, no validation.",
+    "title": "FormBuilder — live JSON playground",
+    "summary": "Edit a fields config as JSON, see a live FormView render. Same syntax FormView and FormBuilder both accept.",
     "docs": "docs/web-mojo/forms/FormBuilder.md",
-    "tags": ["form", "html", "builder", "bootstrap", "pure"],
+    "tags": ["form", "builder", "playground", "json", "interactive"],
     "page": "FormBuilderExample.js",
     "menu": {
         "section": "Forms",

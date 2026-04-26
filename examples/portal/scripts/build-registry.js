@@ -65,6 +65,7 @@ const TOPIC_TAXONOMY = [
         groups: [
             {
                 label: 'Core',
+                icon: 'bi-box',
                 items: [
                     'core/view',
                     'core/view-child-views',
@@ -78,10 +79,12 @@ const TOPIC_TAXONOMY = [
             },
             {
                 label: 'App Shells',
+                icon: 'bi-app',
                 items: ['core/web-app', 'core/portal-app', 'core/portal-web-app'],
             },
             {
                 label: 'Pages',
+                icon: 'bi-file-earmark-text',
                 items: [
                     'pages/page',
                     'pages/form-page',
@@ -92,6 +95,7 @@ const TOPIC_TAXONOMY = [
             },
             {
                 label: 'Services',
+                icon: 'bi-hdd-network',
                 items: [
                     'services/rest',
                     'services/toast-service',
@@ -101,6 +105,7 @@ const TOPIC_TAXONOMY = [
             },
             {
                 label: 'Models',
+                icon: 'bi-database',
                 items: ['models/builtin-models'],
             },
         ],
@@ -112,6 +117,7 @@ const TOPIC_TAXONOMY = [
         groups: [
             {
                 label: 'Modals & Dialogs',
+                icon: 'bi-window',
                 items: [
                     'components/dialog',
                     'components/dialog/form',
@@ -124,6 +130,7 @@ const TOPIC_TAXONOMY = [
             },
             {
                 label: 'Lists & Tables',
+                icon: 'bi-table',
                 items: [
                     'components/list-view',
                     'components/list-view/custom-item',
@@ -137,6 +144,7 @@ const TOPIC_TAXONOMY = [
             },
             {
                 label: 'Files',
+                icon: 'bi-file-earmark',
                 items: [
                     'components/file-view',
                     'components/file-view/inline',
@@ -145,6 +153,7 @@ const TOPIC_TAXONOMY = [
             },
             {
                 label: 'Navigation',
+                icon: 'bi-compass',
                 items: [
                     'components/sidebar-top-nav',
                     'components/active-group',
@@ -157,6 +166,7 @@ const TOPIC_TAXONOMY = [
             },
             {
                 label: 'Other',
+                icon: 'bi-three-dots',
                 items: ['components/chat-view'],
             },
         ],
@@ -168,6 +178,7 @@ const TOPIC_TAXONOMY = [
         groups: [
             {
                 label: 'FormView',
+                icon: 'bi-ui-checks-grid',
                 items: [
                     'forms/form-view',
                     'forms/form-view/all-field-types',
@@ -176,6 +187,7 @@ const TOPIC_TAXONOMY = [
             },
             {
                 label: 'Field Types',
+                icon: 'bi-input-cursor-text',
                 items: [
                     'forms/text-inputs',
                     'forms/selection-fields',
@@ -188,6 +200,7 @@ const TOPIC_TAXONOMY = [
             },
             {
                 label: 'Specialized Inputs',
+                icon: 'bi-stars',
                 items: [
                     'forms/inputs/tag-input',
                     'forms/inputs/date-picker',
@@ -200,6 +213,7 @@ const TOPIC_TAXONOMY = [
             },
             {
                 label: 'Patterns',
+                icon: 'bi-diagram-3',
                 items: [
                     'forms/validation',
                     'forms/validation/advanced',
@@ -217,6 +231,7 @@ const TOPIC_TAXONOMY = [
         groups: [
             {
                 label: 'Charts',
+                icon: 'bi-graph-up',
                 items: [
                     'extensions/charts',
                     'extensions/charts/series',
@@ -227,14 +242,17 @@ const TOPIC_TAXONOMY = [
             },
             {
                 label: 'Maps & Location',
+                icon: 'bi-geo-alt',
                 items: ['extensions/map-view', 'extensions/map-libre-view', 'extensions/location'],
             },
             {
                 label: 'Media',
+                icon: 'bi-image',
                 items: ['extensions/light-box'],
             },
             {
                 label: 'UI',
+                icon: 'bi-palette',
                 items: [
                     'extensions/timeline-view',
                 ],
@@ -386,7 +404,7 @@ function buildTopics(pages) {
                 if (!page) continue;
                 items.push(pageEntry(page));
             }
-            if (items.length) groups.push({ label: group.label, items });
+            if (items.length) groups.push({ label: group.label, icon: group.icon || 'bi-folder', items });
         }
         if (groups.length) topics.push({ name: topic.name, label: topic.label, icon: topic.icon, groups });
     }

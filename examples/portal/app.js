@@ -48,22 +48,25 @@ function topicHeader(topic) {
 }
 
 // Translate one registry.topics[i] entry into a Sidebar menu config.
-// Each group becomes a non-clickable label (kind: 'label') followed by
-// flat leaf items — never collapsible parents. The Sidebar template
-// turns parents-with-children into Bootstrap collapse toggles, which
-// would make the parent's route unreachable from the sidebar.
+// Each group becomes a Bootstrap-collapsible parent (text + icon + children)
+// — leaf items are the only routable entries. The "no children in
+// TOPIC_TAXONOMY" build assertion keeps variant routes flat, so collapsing
+// happens only at this runtime translation layer, never on a routable parent.
+// Active-route highlighting propagates from child to parent in Sidebar, so
+// deep-linking to a leaf opens its group expanded automatically.
 // Trailing spacer + "Back to Examples" mirrors the admin menu's exit pattern.
 function buildTopicMenu(topic) {
     const items = [];
     for (const group of topic.groups) {
-        items.push({ kind: 'label', text: group.label, className: 'sidebar-section-label' });
-        for (const item of group.items) {
-            items.push({
+        items.push({
+            text: group.label,
+            icon: group.icon || 'bi-folder',
+            children: group.items.map(item => ({
                 text: item.title,
                 route: `?page=${item.route}`,
                 icon: item.icon || 'bi-circle',
-            });
-        }
+            })),
+        });
     }
     items.push({ spacer: true });
     items.push({

@@ -1127,15 +1127,15 @@
       "name": "FormBuilder",
       "area": "forms",
       "route": "forms/form-builder",
-      "title": "FormBuilder — pure HTML generation",
-      "summary": "Generate Bootstrap form HTML directly from a fields config — no FormView, no lifecycle, no validation.",
+      "title": "FormBuilder — live JSON playground",
+      "summary": "Edit a fields config as JSON, see a live FormView render. Same syntax FormView and FormBuilder both accept.",
       "docs": "docs/web-mojo/forms/FormBuilder.md",
       "tags": [
         "form",
-        "html",
         "builder",
-        "bootstrap",
-        "pure"
+        "playground",
+        "json",
+        "interactive"
       ],
       "page": "FormBuilderExample.js",
       "modulePath": "./examples/forms/FormBuilder/FormBuilderExample.js",
@@ -1813,6 +1813,7 @@
       "groups": [
         {
           "label": "Core",
+          "icon": "bi-box",
           "items": [
             {
               "route": "core/view",
@@ -1874,6 +1875,7 @@
         },
         {
           "label": "App Shells",
+          "icon": "bi-app",
           "items": [
             {
               "route": "core/web-app",
@@ -1900,6 +1902,7 @@
         },
         {
           "label": "Pages",
+          "icon": "bi-file-earmark-text",
           "items": [
             {
               "route": "pages/page",
@@ -1940,6 +1943,7 @@
         },
         {
           "label": "Services",
+          "icon": "bi-hdd-network",
           "items": [
             {
               "route": "services/rest",
@@ -1973,6 +1977,7 @@
         },
         {
           "label": "Models",
+          "icon": "bi-database",
           "items": [
             {
               "route": "models/builtin-models",
@@ -1992,6 +1997,7 @@
       "groups": [
         {
           "label": "Modals & Dialogs",
+          "icon": "bi-window",
           "items": [
             {
               "route": "components/dialog",
@@ -2046,6 +2052,7 @@
         },
         {
           "label": "Lists & Tables",
+          "icon": "bi-table",
           "items": [
             {
               "route": "components/list-view",
@@ -2107,6 +2114,7 @@
         },
         {
           "label": "Files",
+          "icon": "bi-file-earmark",
           "items": [
             {
               "route": "components/file-view",
@@ -2133,6 +2141,7 @@
         },
         {
           "label": "Navigation",
+          "icon": "bi-compass",
           "items": [
             {
               "route": "components/sidebar-top-nav",
@@ -2187,6 +2196,7 @@
         },
         {
           "label": "Other",
+          "icon": "bi-three-dots",
           "items": [
             {
               "route": "components/chat-view",
@@ -2206,6 +2216,7 @@
       "groups": [
         {
           "label": "FormView",
+          "icon": "bi-ui-checks-grid",
           "items": [
             {
               "route": "forms/form-view",
@@ -2223,8 +2234,8 @@
             },
             {
               "route": "forms/form-builder",
-              "title": "FormBuilder — pure HTML generation",
-              "summary": "Generate Bootstrap form HTML directly from a fields config — no FormView, no lifecycle, no validation.",
+              "title": "FormBuilder — live JSON playground",
+              "summary": "Edit a fields config as JSON, see a live FormView render. Same syntax FormView and FormBuilder both accept.",
               "icon": "bi-tools",
               "docs": "docs/web-mojo/forms/FormBuilder.md"
             }
@@ -2232,6 +2243,7 @@
         },
         {
           "label": "Field Types",
+          "icon": "bi-input-cursor-text",
           "items": [
             {
               "route": "forms/text-inputs",
@@ -2286,6 +2298,7 @@
         },
         {
           "label": "Specialized Inputs",
+          "icon": "bi-stars",
           "items": [
             {
               "route": "forms/inputs/tag-input",
@@ -2340,6 +2353,7 @@
         },
         {
           "label": "Patterns",
+          "icon": "bi-diagram-3",
           "items": [
             {
               "route": "forms/validation",
@@ -2387,6 +2401,7 @@
       "groups": [
         {
           "label": "Charts",
+          "icon": "bi-graph-up",
           "items": [
             {
               "route": "extensions/charts",
@@ -2427,6 +2442,7 @@
         },
         {
           "label": "Maps & Location",
+          "icon": "bi-geo-alt",
           "items": [
             {
               "route": "extensions/map-view",
@@ -2453,6 +2469,7 @@
         },
         {
           "label": "Media",
+          "icon": "bi-image",
           "items": [
             {
               "route": "extensions/light-box",
@@ -2465,6 +2482,7 @@
         },
         {
           "label": "UI",
+          "icon": "bi-palette",
           "items": [
             {
               "route": "extensions/timeline-view",
@@ -2913,8 +2931,8 @@
       "pages": [
         {
           "route": "forms/form-builder",
-          "title": "FormBuilder — pure HTML generation",
-          "summary": "Generate Bootstrap form HTML directly from a fields config — no FormView, no lifecycle, no validation.",
+          "title": "FormBuilder — live JSON playground",
+          "summary": "Edit a fields config as JSON, see a live FormView render. Same syntax FormView and FormBuilder both accept.",
           "icon": "bi-tools",
           "docs": "docs/web-mojo/forms/FormBuilder.md"
         },
