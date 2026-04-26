@@ -199,10 +199,10 @@ class AssistantMessageView extends ChatMessageView {
         };
 
         if (isPie) {
-            // MiniPieChart is SVG-based — no Chart.js canvas sizing issues.
-            // Render immediately (works fine in hidden containers).
-            const { default: MiniPieChart } = await import('../../charts/MiniPieChart.js');
-            const chartView = new MiniPieChart({
+            // PieChart is native SVG — no canvas sizing issues, renders fine
+            // even in hidden containers.
+            const { default: PieChart } = await import('../../charts/PieChart.js');
+            const chartView = new PieChart({
                 width: 180,
                 height: 180,
                 legendPosition: 'right',
@@ -214,9 +214,9 @@ class AssistantMessageView extends ChatMessageView {
             chartContainer.appendChild(chartView.element);
             chartView.render(false);
         } else {
-            // MiniSeriesChart is SVG-based — no Chart.js canvas sizing issues.
-            const { default: MiniSeriesChart } = await import('../../charts/MiniSeriesChart.js');
-            const chartView = new MiniSeriesChart({
+            // SeriesChart is native SVG — no canvas sizing issues.
+            const { default: SeriesChart } = await import('../../charts/SeriesChart.js');
+            const chartView = new SeriesChart({
                 chartType: chartType === 'area' ? 'line' : chartType,
                 fill: chartType === 'area',
                 height: 200,

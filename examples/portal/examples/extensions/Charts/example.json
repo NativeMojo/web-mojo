@@ -2,7 +2,7 @@
     "name": "Charts",
     "area": "extensions",
     "docs": "docs/web-mojo/extensions/Charts.md",
-    "tags": ["chart", "minichart", "circular-progress", "sparkline", "native-svg"],
+    "tags": ["chart", "minichart", "serieschart", "piechart", "circular-progress", "sparkline", "native-svg"],
     "menu": {
         "section": "Extensions",
         "icon": "bi-graph-up",
@@ -12,8 +12,20 @@
         {
             "page": "ChartsExample.js",
             "route": "extensions/charts",
-            "title": "Charts (native)",
-            "summary": "MiniChart + CircularProgress — native SVG, no Chart.js dependency."
+            "title": "MiniChart (sparkline)",
+            "summary": "Single-series sparkline — line/bar with crosshair, tooltip, value formatter."
+        },
+        {
+            "page": "SeriesChartExample.js",
+            "route": "extensions/charts/series",
+            "title": "SeriesChart (multi-dataset)",
+            "summary": "Multi-dataset line/bar/area — stacked-by-default bars, dynamic colors, legend toggle, animated setData."
+        },
+        {
+            "page": "PieChartExample.js",
+            "route": "extensions/charts/pie",
+            "title": "PieChart",
+            "summary": "Native pie + doughnut, slice labels, click drill-down, animated updates."
         },
         {
             "page": "CircularProgressExample.js",

@@ -70,7 +70,9 @@ Single canonical example per documented component. Folder taxonomy mirrors this 
 
 | Component | Summary | Doc |
 |---|---|---|
-| [Charts](../../examples/portal/examples/extensions/Charts/ChartsExample.js) | MiniChart + CircularProgress — native SVG, no Chart.js dependency. | [extensions/Charts.md](../../docs/web-mojo/extensions/Charts.md) |
+| [MiniChart](../../examples/portal/examples/extensions/MiniChart/MiniChartExample.js) | Single-series sparkline — line/bar with crosshair, tooltip, value formatter. | [extensions/Charts.md](../../docs/web-mojo/extensions/Charts.md) |
+| [SeriesChart](../../examples/portal/examples/extensions/SeriesChart/SeriesChartExample.js) | Multi-dataset line/bar/area — stacked-by-default bars, dynamic colors, legend toggle, animated setData. | [extensions/Charts.md](../../docs/web-mojo/extensions/Charts.md) |
+| [PieChart](../../examples/portal/examples/extensions/PieChart/PieChartExample.js) | Native pie + doughnut, slice labels, click drill-down, animated updates. | [extensions/Charts.md](../../docs/web-mojo/extensions/Charts.md) |
 | [CircularProgress](../../examples/portal/examples/extensions/CircularProgress/CircularProgressExample.js) | Sizes, variants, themes, multi-segment, and live setValue updates. | [extensions/Charts.md](../../docs/web-mojo/extensions/Charts.md) |
 | [MetricsMiniChartWidget](../../examples/portal/examples/extensions/MetricsMiniChartWidget/MetricsMiniChartWidgetExample.js) | Backend-driven sparkline tiles with header, trending, and settings popover. | [extensions/Charts.md](../../docs/web-mojo/extensions/Charts.md) |
 | [LightBox](../../examples/portal/examples/extensions/LightBox/LightBoxExample.js) | ImageViewer, LightboxGallery, and ImageEditor opened via static dialogs. | [extensions/LightBox.md](../../docs/web-mojo/extensions/LightBox.md) |

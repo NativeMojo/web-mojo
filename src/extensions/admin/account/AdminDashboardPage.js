@@ -4,7 +4,7 @@
 
 import Page from '@core/Page.js';
 import View from '@core/View.js';
-import { MetricsChart, MetricsMiniChart, MetricsMiniChartWidget } from '@ext/charts/index.js';
+import { MetricsChart, MetricsMiniChart, MetricsMiniChartWidget, exportChartPng } from '@ext/charts/index.js';
 
 // Embedded HeaderView for dashboard statistics
 class AdminHeaderView extends View {
@@ -402,8 +402,8 @@ export default class AdminDashboardPage extends Page {
 
   async onActionExportMetrics(event, element) {
     try {
-      // Export all charts as PNG
-      await this.apiMetricsChart?.export('png');
+      // Export the metrics chart as PNG via the SVG-to-PNG helper.
+      if (this.apiMetricsChart?.chart) exportChartPng(this.apiMetricsChart.chart);
 
       // Show success feedback
       const eventBus = this.getApp()?.events;

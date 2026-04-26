@@ -67,7 +67,7 @@ Optional modules. Each is a self-contained entry point with its own registration
 
 | Extension | Purpose |
 |---|---|
-| `Charts.js` | Chart.js integration (SeriesChart, PieChart) |
+| `Charts.js` | Native SVG charts (SeriesChart, PieChart, MetricsChart) |
 | `Admin.js` | Pre-built admin pages and CRUD scaffolding |
 | `MapView.js` | Google Maps integration |
 | `MapLibreView.js` | MapLibre GL integration |

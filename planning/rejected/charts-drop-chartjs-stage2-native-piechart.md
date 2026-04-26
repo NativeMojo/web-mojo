@@ -1,7 +1,7 @@
 # Charts — Stage 2: native PieChart replacement
 
 **Type**: request
-**Status**: open
+**Status**: superseded — 2026-04-26 — consolidated into planning/requests/charts-native-rebuild.md
 **Date**: 2026-04-25
 **Priority**: medium
 

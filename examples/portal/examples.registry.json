@@ -1,6 +1,6 @@
 {
   "generatedAt": "static",
-  "pageCount": 75,
+  "pageCount": 77,
   "pages": [
     {
       "name": "ChatView",
@@ -711,12 +711,14 @@
       "name": "Charts",
       "area": "extensions",
       "route": "extensions/charts",
-      "title": "Charts (native)",
-      "summary": "MiniChart + CircularProgress — native SVG, no Chart.js dependency.",
+      "title": "MiniChart (sparkline)",
+      "summary": "Single-series sparkline — line/bar with crosshair, tooltip, value formatter.",
       "docs": "docs/web-mojo/extensions/Charts.md",
       "tags": [
         "chart",
         "minichart",
+        "serieschart",
+        "piechart",
         "circular-progress",
         "sparkline",
         "native-svg"
@@ -738,6 +740,8 @@
       "tags": [
         "chart",
         "minichart",
+        "serieschart",
+        "piechart",
         "circular-progress",
         "sparkline",
         "native-svg"
@@ -747,7 +751,7 @@
       "sourcePath": "examples/portal/examples/extensions/Charts/CircularProgressExample.js",
       "section": "Extensions",
       "icon": "bi-graph-up",
-      "order": 11
+      "order": 13
     },
     {
       "name": "Charts",
@@ -759,6 +763,8 @@
       "tags": [
         "chart",
         "minichart",
+        "serieschart",
+        "piechart",
         "circular-progress",
         "sparkline",
         "native-svg"
@@ -768,7 +774,53 @@
       "sourcePath": "examples/portal/examples/extensions/Charts/MetricsMiniChartExample.js",
       "section": "Extensions",
       "icon": "bi-graph-up",
+      "order": 14
+    },
+    {
+      "name": "Charts",
+      "area": "extensions",
+      "route": "extensions/charts/pie",
+      "title": "PieChart",
+      "summary": "Native pie + doughnut, slice labels, click drill-down, animated updates.",
+      "docs": "docs/web-mojo/extensions/Charts.md",
+      "tags": [
+        "chart",
+        "minichart",
+        "serieschart",
+        "piechart",
+        "circular-progress",
+        "sparkline",
+        "native-svg"
+      ],
+      "page": "PieChartExample.js",
+      "modulePath": "./examples/extensions/Charts/PieChartExample.js",
+      "sourcePath": "examples/portal/examples/extensions/Charts/PieChartExample.js",
+      "section": "Extensions",
+      "icon": "bi-graph-up",
       "order": 12
+    },
+    {
+      "name": "Charts",
+      "area": "extensions",
+      "route": "extensions/charts/series",
+      "title": "SeriesChart (multi-dataset)",
+      "summary": "Multi-dataset line/bar/area — stacked-by-default bars, dynamic colors, legend toggle, animated setData.",
+      "docs": "docs/web-mojo/extensions/Charts.md",
+      "tags": [
+        "chart",
+        "minichart",
+        "serieschart",
+        "piechart",
+        "circular-progress",
+        "sparkline",
+        "native-svg"
+      ],
+      "page": "SeriesChartExample.js",
+      "modulePath": "./examples/extensions/Charts/SeriesChartExample.js",
+      "sourcePath": "examples/portal/examples/extensions/Charts/SeriesChartExample.js",
+      "section": "Extensions",
+      "icon": "bi-graph-up",
+      "order": 11
     },
     {
       "name": "FileUpload",
@@ -1882,8 +1934,22 @@
       "pages": [
         {
           "route": "extensions/charts",
-          "title": "Charts (native)",
-          "summary": "MiniChart + CircularProgress — native SVG, no Chart.js dependency.",
+          "title": "MiniChart (sparkline)",
+          "summary": "Single-series sparkline — line/bar with crosshair, tooltip, value formatter.",
+          "icon": "bi-graph-up",
+          "docs": "docs/web-mojo/extensions/Charts.md"
+        },
+        {
+          "route": "extensions/charts/series",
+          "title": "SeriesChart (multi-dataset)",
+          "summary": "Multi-dataset line/bar/area — stacked-by-default bars, dynamic colors, legend toggle, animated setData.",
+          "icon": "bi-graph-up",
+          "docs": "docs/web-mojo/extensions/Charts.md"
+        },
+        {
+          "route": "extensions/charts/pie",
+          "title": "PieChart",
+          "summary": "Native pie + doughnut, slice labels, click drill-down, animated updates.",
           "icon": "bi-graph-up",
           "docs": "docs/web-mojo/extensions/Charts.md"
         },

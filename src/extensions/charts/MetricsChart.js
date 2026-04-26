@@ -1,450 +1,440 @@
 /**
- * MetricsChart - Specialized metrics chart extending SeriesChart
- * Provides header controls and a REST-based fetch to transform API data into Chart.js format
+ * MetricsChart — composed view that fetches /api/metrics/fetch and displays
+ * the results in a native SeriesChart child.
+ *
+ * Owns: REST fetch, header bar with title + gear menu (granularity, quick
+ *       date ranges, custom range dialog) + line/bar toggle, loading/error
+ *       overlays.
+ *
+ * The actual rendering is delegated to a child SeriesChart mounted via
+ * `addChild` with `containerId: 'chart'`.
+ *
+ * Public API matches the prior MetricsChart so admin callers (CloudWatchChart,
+ * AdminDashboardPage, ShortLinkView, PushDashboardPage) need no changes —
+ * EXCEPT that `.export(format)` was removed; use `exportChartPng(chart)` from
+ * `web-mojo/charts/exportChart` instead.
  */
 
-import SeriesChart from './SeriesChart.js';
+import View from '@core/View.js';
 import Dialog from '@core/views/feedback/Dialog.js';
+import SeriesChart from './SeriesChart.js';
 
-export default class MetricsChart extends SeriesChart {
-  constructor(options = {}) {
-    super({
-      ...options,
-      chartType: options.chartType || 'line',
-      title: options.title || 'Metrics',
-      colors: options.colors,
-      yAxis: options.yAxis || { label: 'Count', beginAtZero: true },
-      tooltip: options.tooltip || { y: 'number' },
-      width: options.width,
-      height: options.height
-    });
+class MetricsChart extends View {
+    constructor(options = {}) {
+        super({
+            ...options,
+            className: `mojo-metrics-chart ${options.className || ''}`.trim()
+        });
 
-    // API configuration
-    this.endpoint = options.endpoint || '/api/metrics/fetch';
-    this.account = options.account || 'global';
+        // Title (HTML allowed for compatibility with admin callers).
+        this.title = options.title || 'Metrics';
+        this.chartTitle = options.chartTitle || '';
 
-    // Initial parameters
-    this.granularity = options.granularity || 'hours';
-    this.slugs = options.slugs || null;
-    this.category = options.category || null;
-    this.dateStart = options.dateStart || null;
-    this.dateEnd = options.dateEnd || null;
-    this.defaultDateRange = options.defaultDateRange || '24h';
+        // Chart configuration
+        this.chartType = options.chartType || 'line';
+        this.height = options.height || 300;
+        this.yAxis = options.yAxis || { label: 'Count', beginAtZero: true };
+        this.tooltip = options.tooltip || { y: 'number' };
+        this.colors = options.colors;
+        this.colorGenerator = options.colorGenerator;
 
-    // Control visibility options
-    this.showGranularity = options.showGranularity !== false;
-    this.showDateRange = options.showDateRange !== false;
+        // API
+        this.endpoint = options.endpoint || '/api/metrics/fetch';
+        this.account = options.account || 'global';
+        this.granularity = options.granularity || 'hours';
+        this.slugs = options.slugs || null;
+        this.category = options.category || null;
+        this.dateStart = options.dateStart || null;
+        this.dateEnd = options.dateEnd || null;
+        this.defaultDateRange = options.defaultDateRange || '24h';
 
-    // Options for controls
-    this.granularityOptions = options.granularityOptions || [
-      { value: 'minutes', label: 'Minutes' },
-      { value: 'hours', label: 'Hours' },
-      { value: 'days', label: 'Days' },
-      { value: 'weeks', label: 'Weeks' },
-      { value: 'months', label: 'Months' }
-    ];
+        // Controls
+        this.showGranularity = options.showGranularity !== false;
+        this.showDateRange = options.showDateRange !== false;
+        this.showTypeSwitch = options.showTypeSwitch !== false;
 
-    this.quickRanges = options.quickRanges || [
-      { value: '1h', label: '1H' },
-      { value: '24h', label: '24H' },
-      { value: '7d', label: '7D' },
-      { value: '30d', label: '30D' }
-    ];
+        this.granularityOptions = options.granularityOptions || [
+            { value: 'minutes', label: 'Minutes' },
+            { value: 'hours',   label: 'Hours' },
+            { value: 'days',    label: 'Days' },
+            { value: 'weeks',   label: 'Weeks' },
+            { value: 'months',  label: 'Months' }
+        ];
 
-    this.availableMetrics = options.availableMetrics || [
-      { value: 'api_calls', label: 'API Calls' },
-      { value: 'api_errors', label: 'API Errors' },
-      { value: 'incident_evt', label: 'System Events' },
-      { value: 'incidents', label: 'Incidents' }
-    ];
+        this.quickRanges = options.quickRanges || [
+            { value: '1h',  label: '1H' },
+            { value: '24h', label: '24H' },
+            { value: '7d',  label: '7D' },
+            { value: '30d', label: '30D' }
+        ];
 
-    // Dataset limiting (useful for charts with many categories e.g., countries)
-    this.maxDatasets = Number.isFinite(options.maxDatasets) ? options.maxDatasets : null;
-    this.groupRemainingLabel = options.groupRemainingLabel || 'Other';
+        // Dataset capping (large category sets like countries)
+        this.maxDatasets = Number.isFinite(options.maxDatasets) ? options.maxDatasets : null;
+        this.groupRemainingLabel = options.groupRemainingLabel || 'Other';
 
-    // State
-    this.isLoading = false;
-    this.lastFetch = null;
+        // State
+        this.isLoading = false;
+        this.lastFetch = null;
 
-    // Initialize date range if missing
-    if (!this.dateStart || !this.dateEnd) {
-      this.setQuickRange(this.defaultDateRange);
-    }
-  }
-
-  async onInit() {
-    // Build gear dropdown menu items
-    const menuItems = [];
-
-    // Granularity options
-    if (this.showGranularity) {
-      menuItems.push('<li><h6 class="dropdown-header">Granularity</h6></li>');
-      for (const opt of this.granularityOptions) {
-        const selected = opt.value === this.granularity ? ' mc-selected' : '';
-        menuItems.push(`<li><a class="dropdown-item${selected}" role="button" data-action="granularity-changed" data-value="${opt.value}">${opt.label}</a></li>`);
-      }
+        if (!this.dateStart || !this.dateEnd) {
+            this.setQuickRange(this.defaultDateRange);
+        }
     }
 
-    // Quick date ranges
-    if (this.showDateRange) {
-      if (menuItems.length) menuItems.push('<li><hr class="dropdown-divider"></li>');
-      menuItems.push('<li><h6 class="dropdown-header">Date Range</h6></li>');
-      for (const qr of this.quickRanges) {
-        const selected = qr.value === this.defaultDateRange ? ' mc-selected' : '';
-        menuItems.push(`<li><a class="dropdown-item${selected}" role="button" data-action="quick-range" data-range="${qr.value}">${qr.label}</a></li>`);
-      }
-      menuItems.push(`<li><a class="dropdown-item" role="button" data-action="show-date-range-dialog"><i class="bi bi-calendar-range me-1"></i>Custom Range...</a></li>`);
+    // ── lifecycle ─────────────────────────────────────────────────────
+
+    async onInit() {
+        this.chart = new SeriesChart({
+            containerId: 'chart',
+            chartType: this.chartType,
+            height: this.height,
+            valueFormatter: this.tooltip?.y || null,
+            xLabelFormat: this.tooltip?.x || null,
+            colors: this.colors,
+            colorGenerator: this.colorGenerator,
+            showLegend: true,
+            legendPosition: 'top'
+        });
+        this.addChild(this.chart);
     }
 
-    const gearHtml = menuItems.length ? `
-      <style>
-        .mc-gear-menu .dropdown-item.mc-selected { background: #f0f0f0; color: inherit; }
-        .mc-gear-menu .dropdown-item.mc-selected::before { content: '\\F633'; font-family: 'bootstrap-icons'; margin-right: 0.4rem; font-size: 0.75em; }
-      </style>
-      <div class="btn-group btn-group-sm me-2">
-        <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" title="Chart Settings">
-          <i class="bi bi-gear"></i>
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end mc-gear-menu">${menuItems.join('')}</ul>
-      </div>` : '';
-
-    // Use SeriesChart's built-in line/bar toggle
-    this.showTypeSwitch = true;
-
-    const controls = [];
-    if (gearHtml) controls.push({ type: 'html', html: gearHtml });
-
-    this.headerConfig = {
-      titleHtml: this.title || 'Metrics',
-      chartTitle: this.chartTitle || '',
-      showExport: this.exportEnabled === true,
-      showRefresh: this.refreshEnabled,
-      showTheme: false,
-      controls
-    };
-
-    await super.onInit();
-  }
-
-  // ─── Granularity → date range mapping ──────────────────────────────────────
-  // When granularity changes, auto-pick a sensible date range so we get
-  // a reasonable number of data points (not 10,000 minute-buckets over 30 days).
-
-  static GRANULARITY_DEFAULTS = {
-    minutes: '1h',    // ~60 points
-    hours:   '24h',   // ~24 points
-    days:    '30d',   // ~30 points
-    weeks:   '30d',   // ~4 points (show more if available)
-    months:  '30d'    // ~1 point  (show more if available)
-  };
-
-  // Action Handlers
-  async onActionGranularityChanged(event, element) {
-    const newGranularity = element.dataset?.value || element.value;
-    if (newGranularity && newGranularity !== this.granularity) {
-      this.granularity = newGranularity;
-
-      // Auto-adjust date range to match granularity
-      const defaultRange = MetricsChart.GRANULARITY_DEFAULTS[newGranularity] || '24h';
-      this.setQuickRange(defaultRange);
-
-      // Update active states in dropdown
-      this._updateDropdownActive('granularity-changed', newGranularity, 'value');
-
-      await this.fetchData();
-    }
-    return true;
-  }
-
-  async onActionShowDateRangeDialog() {
-    try {
-      const data = await Dialog.showForm({
-        title: 'Select Date Range',
-        size: 'sm',
-        fields: [
-          {
-            name: 'dt_start',
-            type: 'datetime-local',
-            label: 'Start',
-            value: this.formatDateTimeLocal(this.dateStart),
-            required: true
-          },
-          {
-            name: 'dt_end',
-            type: 'datetime-local',
-            label: 'End',
-            value: this.formatDateTimeLocal(this.dateEnd),
-            required: true
-          }
-        ]
-      });
-
-      if (data?.dt_start && data?.dt_end) {
-        this.dateStart = new Date(data.dt_start);
-        this.dateEnd = new Date(data.dt_end);
-        // Clear quick range active states since we're using custom
-        this._updateDropdownActive('quick-range', '', 'range');
+    async onAfterRender() {
         await this.fetchData();
-      }
-    } catch (error) {
-      console.error('Date range dialog error:', error);
     }
-    return true;
-  }
 
-  async onActionQuickRange(event, el) {
-    const range = el.dataset?.range;
-    if (!range) return true;
+    // ── template ──────────────────────────────────────────────────────
 
-    this.setQuickRange(range);
-    this._updateDropdownActive('quick-range', range, 'range');
-    await this.fetchData();
-    return true;
-  }
+    async getTemplate() {
+        return `
+            <div class="mojo-metrics-chart-container">
+                <div class="d-flex justify-content-between align-items-center mb-2 mojo-metrics-chart-header">
+                    <h5 class="mb-0 mojo-metrics-chart-title">{{{title}}}</h5>
+                    <div class="btn-toolbar" role="toolbar">
+                        ${this._renderGearMenuHtml()}
+                        ${this._renderTypeSwitchHtml()}
+                    </div>
+                </div>
+                <div class="position-relative" style="min-height:${typeof this.height === 'number' ? this.height + 'px' : this.height};">
+                    <div data-container="chart"></div>
+                    <div class="chart-overlay d-none" data-loading>
+                        <div class="d-flex flex-column align-items-center">
+                            <div class="spinner-border text-primary mb-2" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <small class="text-muted">Loading metrics…</small>
+                        </div>
+                    </div>
+                    <div class="chart-overlay d-none" data-error>
+                        <div class="alert alert-danger mb-0">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            <span class="error-message"></span>
+                            <button class="btn btn-sm btn-outline-danger ms-2" data-action="retry-fetch">Retry</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
 
-  _updateDropdownActive(action, activeValue, dataKey) {
-    const items = this.element?.querySelectorAll(`[data-action="${action}"]`);
-    if (!items) return;
-    items.forEach(item => {
-      const val = item.dataset?.[dataKey];
-      item.classList.toggle('mc-selected', val === activeValue);
-    });
-  }
+    _renderGearMenuHtml() {
+        const items = [];
+        if (this.showGranularity) {
+            items.push('<li><h6 class="dropdown-header">Granularity</h6></li>');
+            for (const opt of this.granularityOptions) {
+                const sel = opt.value === this.granularity ? ' mc-selected' : '';
+                items.push(`<li><a class="dropdown-item${sel}" role="button" data-action="granularity-changed" data-value="${opt.value}">${opt.label}</a></li>`);
+            }
+        }
+        if (this.showDateRange) {
+            if (items.length) items.push('<li><hr class="dropdown-divider"></li>');
+            items.push('<li><h6 class="dropdown-header">Date Range</h6></li>');
+            for (const qr of this.quickRanges) {
+                const sel = qr.value === this.defaultDateRange ? ' mc-selected' : '';
+                items.push(`<li><a class="dropdown-item${sel}" role="button" data-action="quick-range" data-range="${qr.value}">${qr.label}</a></li>`);
+            }
+            items.push('<li><a class="dropdown-item" role="button" data-action="show-date-range-dialog"><i class="bi bi-calendar-range me-1"></i>Custom Range…</a></li>');
+        }
+        if (!items.length) return '';
+        return `
+            <style>
+                .mc-gear-menu .dropdown-item.mc-selected { background:#f0f0f0; color:inherit; }
+                .mc-gear-menu .dropdown-item.mc-selected::before { content:'\\F633'; font-family:'bootstrap-icons'; margin-right:0.4rem; font-size:0.75em; }
+            </style>
+            <div class="btn-group btn-group-sm me-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle"
+                        data-bs-toggle="dropdown" aria-expanded="false" title="Chart Settings">
+                    <i class="bi bi-gear"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end mc-gear-menu">${items.join('')}</ul>
+            </div>`;
+    }
 
-  // Data Management
-  buildApiParams() {
-    const params = {
-      granularity: this.granularity,
-      account: this.account,
-      with_labels: true
-    };
+    _renderTypeSwitchHtml() {
+        if (!this.showTypeSwitch) return '';
+        const lineActive = this.chartType === 'line' ? 'btn-primary' : 'btn-outline-primary';
+        const barActive  = this.chartType === 'bar'  ? 'btn-primary' : 'btn-outline-primary';
+        return `
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn ${lineActive} btn-sm" data-action="set-chart-type" data-type="line" title="Line"><i class="bi bi-graph-up"></i></button>
+                <button type="button" class="btn ${barActive} btn-sm"  data-action="set-chart-type" data-type="bar"  title="Bar"><i class="bi bi-bar-chart"></i></button>
+            </div>`;
+    }
 
-    // Add slugs
-    if (this.slugs) {
-        this.slugs.forEach(slug => {
-          if (!params['slugs[]']) params['slugs[]'] = [];
-          params['slugs[]'].push(slug);
+    // ── action handlers ───────────────────────────────────────────────
+
+    async onActionGranularityChanged(event, element) {
+        const v = element.dataset?.value;
+        if (!v || v === this.granularity) return;
+        this.granularity = v;
+        this.setQuickRange(MetricsChart.GRANULARITY_DEFAULTS[v] || '24h');
+        this._updateDropdownActive('granularity-changed', v, 'value');
+        await this.fetchData();
+    }
+
+    async onActionQuickRange(event, element) {
+        const range = element.dataset?.range;
+        if (!range) return;
+        this.setQuickRange(range);
+        this._updateDropdownActive('quick-range', range, 'range');
+        await this.fetchData();
+    }
+
+    async onActionShowDateRangeDialog() {
+        try {
+            const data = await Dialog.showForm({
+                title: 'Select Date Range',
+                size: 'sm',
+                fields: [
+                    { name: 'dt_start', type: 'datetime-local', label: 'Start', value: this.formatDateTimeLocal(this.dateStart), required: true },
+                    { name: 'dt_end',   type: 'datetime-local', label: 'End',   value: this.formatDateTimeLocal(this.dateEnd),   required: true }
+                ]
+            });
+            if (data?.dt_start && data?.dt_end) {
+                this.dateStart = new Date(data.dt_start);
+                this.dateEnd = new Date(data.dt_end);
+                this._updateDropdownActive('quick-range', '', 'range');
+                await this.fetchData();
+            }
+        } catch (err) {
+            console.error('Date range dialog error:', err);
+        }
+    }
+
+    async onActionSetChartType(event, element) {
+        event.stopPropagation();
+        const t = element.getAttribute('data-type');
+        if (!t || t === this.chartType) return;
+        this.chartType = t;
+        if (this.chart) this.chart.setChartType(t);
+        // Refresh button styles by re-querying the toolbar.
+        const btns = this.element?.querySelectorAll('[data-action="set-chart-type"]');
+        btns?.forEach(b => {
+            const isActive = b.getAttribute('data-type') === t;
+            b.classList.toggle('btn-primary', isActive);
+            b.classList.toggle('btn-outline-primary', !isActive);
         });
     }
 
-    if (this.category) {
-        params.category = this.category;
-    }
-    // Date range
-    if (this.dateStart) {
-      params.dr_start = Math.floor(this.dateStart.getTime() / 1000);
-    }
-    if (this.dateEnd) {
-      params.dr_end = Math.floor(this.dateEnd.getTime() / 1000);
+    async onActionRetryFetch() {
+        return this.fetchData();
     }
 
-    // Cache buster
-    params._ = Date.now();
-
-    return params;
-  }
-
-  async fetchData() {
-    if (!this.endpoint) return;
-
-    this.isLoading = true;
-    this.showLoading();
-
-    try {
-      const rest = this.getApp()?.rest;
-      if (!rest) {
-        throw new Error('No REST client available');
-      }
-
-      const params = this.buildApiParams();
-      const response = await rest.GET(this.endpoint, params);
-
-      // Handle Rest standardized response
-      if (!response.success) {
-        throw new Error(response.message || 'Network error');
-      }
-      if (!response.data?.status) {
-        throw new Error(response.data?.error || 'Server error');
-      }
-
-      const metricsData = response.data.data;
-      const chartData = this.processMetricsData(metricsData);
-      await this.setData(chartData);
-      this.lastFetch = new Date();
-
-      // Emit success event
-      this.emit('metrics:data-loaded', {
-        chart: this,
-        data: metricsData,
-        params
-      });
-
-    } catch (error) {
-      console.error('Failed to fetch metrics data:', error);
-      this.showError(`Failed to load metrics: ${error.message}`);
-
-      // Emit error event
-      this.emit('metrics:error', { chart: this, error });
-
-    } finally {
-      this.isLoading = false;
-      this.hideLoading();
-    }
-  }
-
-  processMetricsData(data) {
-    // Expecting: { labels: [...], data: { metric_slug: [values...] } }
-    const { data: metricsData, labels } = data;
-    const metricEntries = Object.entries(metricsData || {});
-
-    const rankedEntries = metricEntries.map(([metric, values]) => {
-      const sanitizedValues = values.map(val => {
-        if (val === null || val === undefined || val === '') return 0;
-        return typeof val === 'number' ? val : (parseFloat(val) || 0);
-      });
-      const total = sanitizedValues.reduce((sum, val) => sum + val, 0);
-      return { metric, values: sanitizedValues, total };
-    });
-
-    rankedEntries.sort((a, b) => b.total - a.total);
-
-    let visibleEntries = rankedEntries;
-    let otherEntry = null;
-
-    if (this.maxDatasets && this.maxDatasets > 0 && rankedEntries.length > this.maxDatasets) {
-      visibleEntries = rankedEntries.slice(0, this.maxDatasets);
-      const remaining = rankedEntries.slice(this.maxDatasets);
-
-      const otherValues = labels.map((_, index) =>
-        remaining.reduce((sum, entry) => sum + (entry.values[index] || 0), 0)
-      );
-
-      otherEntry = {
-        metric: this.groupRemainingLabel,
-        values: otherValues,
-        total: otherValues.reduce((sum, val) => sum + val, 0),
-        isGrouped: true
-      };
+    _updateDropdownActive(action, activeValue, dataKey) {
+        const items = this.element?.querySelectorAll(`[data-action="${action}"]`);
+        items?.forEach(item => {
+            const v = item.dataset?.[dataKey];
+            item.classList.toggle('mc-selected', v === activeValue);
+        });
     }
 
-    const datasets = [];
-    const allEntries = otherEntry ? [...visibleEntries, otherEntry] : visibleEntries;
+    // ── data ──────────────────────────────────────────────────────────
 
-    this.ensureColorPool(allEntries.length);
-    const backgroundAlpha = this.chartType === 'line' ? 0.25 : 0.65;
-
-    allEntries.forEach((entry, index) => {
-      const baseColor = this.getColor(index);
-      datasets.push({
-        label: this.formatMetricLabel(entry.metric),
-        data: entry.values,
-        backgroundColor: this.withAlpha(baseColor, backgroundAlpha),
-        borderColor: baseColor,
-        borderWidth: 2,
-        tension: this.chartType === 'line' ? 0.4 : 0,
-        fill: false,
-        pointRadius: this.chartType === 'line' ? 3 : 0,
-        pointHoverRadius: 5
-      });
-    });
-
-    return { labels, datasets };
-  }
-
-  formatMetricLabel(metric) {
-    return metric
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  }
-
-  // Date utilities
-  setQuickRange(range) {
-    const now = new Date();
-    let startDate;
-
-    switch (range) {
-      case '1h':
-        startDate = new Date(now.getTime() - (60 * 60 * 1000));
-        break;
-      case '24h':
-        startDate = new Date(now.getTime() - (24 * 60 * 60 * 1000));
-        break;
-      case '7d':
-        startDate = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
-        break;
-      case '30d':
-        startDate = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
-        break;
-      default:
-        startDate = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+    buildApiParams() {
+        const params = {
+            granularity: this.granularity,
+            account: this.account,
+            with_labels: true
+        };
+        if (this.slugs) {
+            this.slugs.forEach(slug => {
+                if (!params['slugs[]']) params['slugs[]'] = [];
+                params['slugs[]'].push(slug);
+            });
+        }
+        if (this.category) params.category = this.category;
+        if (this.dateStart) params.dr_start = Math.floor(this.dateStart.getTime() / 1000);
+        if (this.dateEnd)   params.dr_end   = Math.floor(this.dateEnd.getTime() / 1000);
+        params._ = Date.now();
+        return params;
     }
 
-    this.dateStart = startDate;
-    this.dateEnd = now;
-  }
+    async fetchData() {
+        if (!this.endpoint) return;
+        this.isLoading = true;
+        this._showLoading();
 
-  formatDateTimeLocal(date) {
-    if (!date) return '';
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  }
+        try {
+            const rest = this.getApp()?.rest;
+            if (!rest) throw new Error('No REST client available');
 
-  formatDateRangeDisplay() {
-    if (!this.dateStart || !this.dateEnd) return 'Select Range';
+            const params = this.buildApiParams();
+            const response = await rest.GET(this.endpoint, params);
 
-    const fmt = (d) => {
-      const mon = d.toLocaleString('default', { month: 'short' });
-      const day = d.getDate();
-      const hrs = String(d.getHours()).padStart(2, '0');
-      const min = String(d.getMinutes()).padStart(2, '0');
-      return `${mon} ${day} ${hrs}:${min}`;
+            if (!response.success) throw new Error(response.message || 'Network error');
+            if (!response.data?.status) throw new Error(response.data?.error || 'Server error');
+
+            const metrics = response.data.data;
+            const chartData = this.processMetricsData(metrics);
+            await this.setData(chartData);
+            this.lastFetch = new Date();
+            this._hideError();
+
+            this.emit?.('metrics:data-loaded', { chart: this, data: metrics, params });
+        } catch (err) {
+            console.error('Failed to fetch metrics:', err);
+            this._showError(`Failed to load metrics: ${err.message}`);
+            this.emit?.('metrics:error', { chart: this, error: err });
+        } finally {
+            this.isLoading = false;
+            this._hideLoading();
+        }
+    }
+
+    processMetricsData(data) {
+        const { data: metrics, labels } = data || {};
+        const entries = Object.entries(metrics || {});
+
+        const ranked = entries.map(([metric, values]) => {
+            const sanitized = (values || []).map(v => {
+                if (v === null || v === undefined || v === '') return 0;
+                return typeof v === 'number' ? v : (parseFloat(v) || 0);
+            });
+            const total = sanitized.reduce((s, v) => s + v, 0);
+            return { metric, values: sanitized, total };
+        });
+        ranked.sort((a, b) => b.total - a.total);
+
+        let visible = ranked;
+        let other = null;
+        if (this.maxDatasets && this.maxDatasets > 0 && ranked.length > this.maxDatasets) {
+            visible = ranked.slice(0, this.maxDatasets);
+            const remaining = ranked.slice(this.maxDatasets);
+            const otherValues = (labels || []).map((_, i) =>
+                remaining.reduce((s, e) => s + (e.values[i] || 0), 0)
+            );
+            other = {
+                metric: this.groupRemainingLabel,
+                values: otherValues,
+                total: otherValues.reduce((s, v) => s + v, 0)
+            };
+        }
+
+        const all = other ? [...visible, other] : visible;
+        const datasets = all.map(entry => ({
+            label: this.formatMetricLabel(entry.metric),
+            data: entry.values
+        }));
+
+        return { labels: labels || [], datasets };
+    }
+
+    formatMetricLabel(metric) {
+        return String(metric)
+            .split('_')
+            .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(' ');
+    }
+
+    async setData(chartData) {
+        if (this.chart) this.chart.setData(chartData);
+    }
+
+    refresh() {
+        return this.fetchData();
+    }
+
+    // ── overlays ──────────────────────────────────────────────────────
+
+    _showLoading() {
+        const el = this.element?.querySelector('[data-loading]');
+        el?.classList.remove('d-none');
+    }
+    _hideLoading() {
+        const el = this.element?.querySelector('[data-loading]');
+        el?.classList.add('d-none');
+    }
+    _showError(msg) {
+        const el = this.element?.querySelector('[data-error]');
+        const m = el?.querySelector('.error-message');
+        if (m) m.textContent = msg;
+        el?.classList.remove('d-none');
+    }
+    _hideError() {
+        const el = this.element?.querySelector('[data-error]');
+        el?.classList.add('d-none');
+    }
+
+    // ── date utilities ────────────────────────────────────────────────
+
+    static GRANULARITY_DEFAULTS = {
+        minutes: '1h',
+        hours:   '24h',
+        days:    '30d',
+        weeks:   '30d',
+        months:  '30d'
     };
 
-    // Check if this matches a quick range (within 2 min tolerance)
-    const diffMs = this.dateEnd.getTime() - this.dateStart.getTime();
-    const diffHours = diffMs / (60 * 60 * 1000);
-    if (Math.abs(diffHours - 1) < 0.05) return 'Last 1H';
-    if (Math.abs(diffHours - 24) < 0.05) return 'Last 24H';
-    const diffDays = diffMs / (24 * 60 * 60 * 1000);
-    if (Math.abs(diffDays - 7) < 0.05) return 'Last 7D';
-    if (Math.abs(diffDays - 30) < 0.5) return 'Last 30D';
+    setQuickRange(range) {
+        const now = new Date();
+        let start;
+        switch (range) {
+            case '1h':  start = new Date(now.getTime() - 60 * 60 * 1000); break;
+            case '24h': start = new Date(now.getTime() - 24 * 60 * 60 * 1000); break;
+            case '7d':  start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); break;
+            case '30d': start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); break;
+            default:    start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        }
+        this.dateStart = start;
+        this.dateEnd = now;
+    }
 
-    return `${fmt(this.dateStart)} – ${fmt(this.dateEnd)}`;
-  }
+    formatDateTimeLocal(date) {
+        if (!date) return '';
+        const y = date.getFullYear();
+        const mo = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        const h = String(date.getHours()).padStart(2, '0');
+        const mi = String(date.getMinutes()).padStart(2, '0');
+        return `${y}-${mo}-${d}T${h}:${mi}`;
+    }
 
-  // Public API
-  setGranularity(granularity) {
-    this.granularity = granularity;
-    return this.fetchData();
-  }
+    // ── public API ────────────────────────────────────────────────────
 
-  setDateRange(startDate, endDate) {
-    this.dateStart = new Date(startDate);
-    this.dateEnd = new Date(endDate);
-    return this.fetchData();
-  }
+    setGranularity(granularity) {
+        this.granularity = granularity;
+        return this.fetchData();
+    }
 
-  setMetrics(slugs) {
-    this.slugs = [...slugs];
-    return this.fetchData();
-  }
+    setDateRange(startDate, endDate) {
+        this.dateStart = new Date(startDate);
+        this.dateEnd = new Date(endDate);
+        return this.fetchData();
+    }
 
-  getStats() {
-    const base = super.getStats();
-    return {
-      ...base,
-      lastFetch: this.lastFetch,
-      granularity: this.granularity,
-      slugs: [...this.slugs],
-      dateRange: {
-        start: this.dateStart,
-        end: this.dateEnd
-      }
-    };
-  }
+    setMetrics(slugs) {
+        this.slugs = [...slugs];
+        return this.fetchData();
+    }
+
+    getStats() {
+        return {
+            isLoading: this.isLoading,
+            lastFetch: this.lastFetch,
+            granularity: this.granularity,
+            slugs: this.slugs ? [...this.slugs] : [],
+            dateRange: { start: this.dateStart, end: this.dateEnd }
+        };
+    }
 }
+
+export default MetricsChart;
