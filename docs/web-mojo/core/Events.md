@@ -240,12 +240,13 @@ class LoginView extends View {
 EventDelegate recognizes these data attributes:
 
 ### data-action="name"
-Primary action attribute for clicks, submits, and keydown events.
+Primary action attribute for clicks, submits, and keydown events. When placed on a form control (`<input>`, `<textarea>`, `<select>`), it also fires `onAction{Name}` on `input` and `change` events — so `<input data-action="filter">` calls `onActionFilter` on every keystroke. Add `data-action-debounce="<ms>"` to debounce that input dispatch (default: no debounce). If both `data-action` and `data-change-action` are present, `data-change-action` takes precedence for input/change events.
 
 ```html
 <button data-action="save">Save</button>
 <button data-action="delete-item">Delete</button>
 <form data-action="submit-form">...</form>
+<input type="search" data-action="filter" data-action-debounce="200" />
 ```
 
 ### data-change-action="name"
@@ -419,7 +420,8 @@ async onPassThruActionTrack(event, element) {
 
 | Attribute | Used On | Purpose | Example |
 |-----------|---------|---------|---------|
-| `data-action` | Any element | Primary action for click/submit/keydown | `<button data-action="save">` |
+| `data-action` | Any element | Primary action for click/submit; also input/change on form controls | `<button data-action="save">` |
+| `data-action-debounce` | Form control with `data-action` | Debounce input dispatch in ms (default: 0) | `<input data-action="filter" data-action-debounce="200">` |
 | `data-change-action` | Wrapper element | Action for change/input/keydown events | `<div data-change-action="filter">` |
 | `data-change-keys` | Same as data-change-action | Keys that trigger action (default: Enter) | `data-change-keys="Enter, Escape"` |
 | `data-filter` | Input element | Enable live search behavior | `<input data-filter="live-search">` |
@@ -532,9 +534,8 @@ EventDelegate binds these DOM events on the View root:
 - Triggered by select, checkbox, radio changes
 
 ### input
-- Only for `[data-filter="live-search"]` inside `data-change-action` wrapper
-- Debounced by `data-filter-debounce` (default 300ms)
-- Uses `data-container` for debounce scope
+- For `[data-filter="live-search"]` inside `data-change-action` wrapper, debounced by `data-filter-debounce` (default 300ms) and scoped by `data-container`
+- For form controls (`<input>`, `<textarea>`, `<select>`) with `data-action`, dispatches `onAction{Name}` on every input event, optionally debounced by `data-action-debounce` (default: no debounce)
 
 ### keydown
 - Finds closest `data-change-action` wrapper

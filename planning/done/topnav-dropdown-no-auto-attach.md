@@ -48,6 +48,14 @@ Wave 2.5 wiring the new portal topbar with a proper `userMenu`. Verified the men
 
 ---
 ## Resolution
-**Status**: Worked around — 2026-04-25 (framework fix still pending)
-**Files changed**: `examples/portal/app.js` (workaround only)
-**Workaround**: Added a delegated `document` click listener that lazy-creates a Bootstrap.Dropdown instance for any `[data-bs-toggle="dropdown"]` toggle that doesn't have one yet, then toggles it. Verified the userMenu now opens on click in the new portal. The framework-level fix (auto-attaching from inside `TopNav.onAfterRender`) is still pending — kept this issue open in `planning/issues/` until the upstream fix lands; downstream apps that don't reuse the portal's app.js workaround will hit the same bug.
+**Status**: Fixed — 2026-04-25
+**Files changed**:
+- `src/core/views/navigation/TopNav.js` — added `_attachDropdowns()` that calls `bootstrap.Dropdown.getOrCreateInstance(...)` for every `[data-bs-toggle="dropdown"]` inside `this.element`; invoked from `onAfterRender()` so it re-runs after every render (covers the `setUser` swap of `login -> userMenu`).
+- `examples/portal/app.js` — removed the delegated-click workaround (the doc-link interceptor is unrelated and remains).
+- `test/unit/TopNav.test.js` — new focused unit tests covering the auto-attach behavior, the `onAfterRender` hookup, the silent-skip-with-warn fallback when `window.bootstrap.Dropdown` is missing, and that non-dropdown toggles are ignored.
+- `test/utils/simple-module-loader.js` — registered `TopNav` so it can be loaded via `loadModule('TopNav')`.
+
+**Notes**:
+- Tooltips already auto-init via `enableTooltips: true` in `View.bindEvents()`; that path is untouched.
+- The fallback warn fires at most once per session (guarded by a static `_warnedNoBootstrap` flag) so downstream apps that intentionally don't ship Bootstrap aren't spammed.
+- All 4 new TopNav tests pass under `node test/test-runner.js --suite unit`; no pre-existing tests regressed.

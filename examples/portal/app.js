@@ -16,7 +16,15 @@
 import { PortalWebApp, User } from 'web-mojo';
 import HomePage from './shell/HomePage.js';
 import DocsModal from './shell/DocsModal.js';
+import { installMockBackend } from './shell/mockBackend.js';
 import registry from './examples.registry.json';
+
+// Mock REST layer — short-circuits known endpoints with synthetic data so
+// every example renders without a live backend. Falls through to real
+// fetch for un-mocked URLs, so a running NativeMojo server still wins
+// on those routes. MUST install before app.start() so the very first
+// boot-time fetches are intercepted.
+installMockBackend();
 
 const examples = Array.isArray(registry?.pages) ? registry.pages : [];
 const menuAreas = Array.isArray(registry?.menu) ? registry.menu : [];
@@ -164,19 +172,6 @@ document.addEventListener('click', (event) => {
     if (!docPath) return;
     event.preventDefault();
     DocsModal.open(docPath);
-});
-
-// Workaround for planning/issues/topnav-dropdown-no-auto-attach.md:
-// Bootstrap's data-API isn't auto-attaching to TopNav's dynamically-rendered
-// dropdown toggles. Delegated click handler that lazy-creates the Dropdown
-// instance and toggles it on user click. Until the framework fix lands.
-document.addEventListener('click', (event) => {
-    const toggle = event.target.closest('[data-bs-toggle="dropdown"]');
-    if (!toggle) return;
-    if (window.bootstrap?.Dropdown?.getInstance(toggle)) return; // already wired
-    event.preventDefault();
-    const inst = window.bootstrap.Dropdown.getOrCreateInstance(toggle);
-    inst.toggle();
 });
 
 await app.start();

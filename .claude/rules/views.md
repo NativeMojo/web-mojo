@@ -19,6 +19,7 @@ globs: ["src/core/views/**/*.js", "src/core/forms/**/*.js", "src/core/pages/**/*
 - `data-action="kebab-case"` maps to `onActionKebabCase(event, element)`.
 - `data-container="name"` maps to child views created with `containerId: 'name'`.
 - `data-action` belongs on clickable or interactive elements, not `<form>`.
+- On a form control (`<input>`, `<textarea>`, `<select>`), `data-action` also fires the handler on `input` and `change` events — so `<input data-action="filter">` calls `onActionFilter` on every keystroke. Use `data-action-debounce="<ms>"` to debounce. If both `data-action` and `data-change-action` are set, `data-change-action` wins for input/change events.
 
 ## Child View Lifecycle
 - Use `addChild()` with `containerId`. For children added **before the parent's first render** (in `onInit()` or constructor), the parent renders them automatically — do not call `child.render()` or `child.mount()` yourself.

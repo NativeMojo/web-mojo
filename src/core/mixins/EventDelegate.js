@@ -53,45 +53,96 @@ export class EventDelegate {
     };
 
     const onChange = (event) => {
-      const el = event.target.closest('[data-change-action]');
-      if (!el || !this.shouldHandle(el, event)) return;
-      const action = el.getAttribute('data-change-action');
-      this.dispatchChange(action, event, el).then((handled) => {
-        if (handled) {
-          event.stopPropagation();
-          event.handledByChild = true;
-        }
-      });
-    };
-
-    const onInput = (event) => {
-      const el = event.target.closest('[data-change-action]');
-      if (!el || !this.shouldHandle(el, event)) return;
-
-      const liveSearch = event.target.matches('[data-filter="live-search"]');
-      if (!liveSearch) return;
-
-      const action = el.getAttribute('data-change-action');
-      const debounceMs = parseInt(el.getAttribute('data-filter-debounce')) || 300;
-      const timerId = `${action}-${el.getAttribute('data-container') || 'default'}`;
-
-      // Clear existing timer
-      if (this.debounceTimers.has(timerId)) {
-        clearTimeout(this.debounceTimers.get(timerId));
-      }
-
-      // Set new debounced timer
-      const timer = setTimeout(() => {
-        this.debounceTimers.delete(timerId);
-        this.dispatchChange(action, event, el).then((handled) => {
+      // `data-change-action` always wins for change events (existing behavior).
+      const changeEl = event.target.closest('[data-change-action]');
+      if (changeEl && this.shouldHandle(changeEl, event)) {
+        const action = changeEl.getAttribute('data-change-action');
+        this.dispatchChange(action, event, changeEl).then((handled) => {
           if (handled) {
             event.stopPropagation();
             event.handledByChild = true;
           }
         });
-      }, debounceMs);
+        return;
+      }
 
-      this.debounceTimers.set(timerId, timer);
+      // Fallback: `data-action` on a form control fires onAction* on change.
+      const actionEl = event.target.closest('[data-action]');
+      if (actionEl && this.isFormControl(actionEl) && this.shouldHandle(actionEl, event)) {
+        const action = actionEl.getAttribute('data-action');
+        this.dispatch(action, event, actionEl).then((handled) => {
+          if (handled) {
+            event.stopPropagation();
+            event.handledByChild = true;
+          }
+        });
+      }
+    };
+
+    const onInput = (event) => {
+      // Existing `data-change-action` + `data-filter="live-search"` path.
+      const changeEl = event.target.closest('[data-change-action]');
+      if (changeEl && this.shouldHandle(changeEl, event) &&
+          event.target.matches('[data-filter="live-search"]')) {
+        const action = changeEl.getAttribute('data-change-action');
+        const debounceMs = parseInt(changeEl.getAttribute('data-filter-debounce')) || 300;
+        const timerId = `change-${action}-${changeEl.getAttribute('data-container') || 'default'}`;
+
+        if (this.debounceTimers.has(timerId)) {
+          clearTimeout(this.debounceTimers.get(timerId));
+        }
+
+        const timer = setTimeout(() => {
+          this.debounceTimers.delete(timerId);
+          this.dispatchChange(action, event, changeEl).then((handled) => {
+            if (handled) {
+              event.stopPropagation();
+              event.handledByChild = true;
+            }
+          });
+        }, debounceMs);
+
+        this.debounceTimers.set(timerId, timer);
+        return;
+      }
+
+      // New: `data-action` on a form control fires onAction* on input
+      // (keystrokes for text-like inputs/textarea, value updates for select).
+      // `data-change-action` takes precedence above, so this only runs when
+      // the element doesn't carry a change-action.
+      const actionEl = event.target.closest('[data-action]');
+      if (!actionEl || !this.isFormControl(actionEl)) return;
+      if (actionEl.hasAttribute('data-change-action')) return;
+      if (!this.shouldHandle(actionEl, event)) return;
+
+      const action = actionEl.getAttribute('data-action');
+      const debounceAttr = actionEl.getAttribute('data-action-debounce');
+      const debounceMs = debounceAttr != null ? parseInt(debounceAttr) || 0 : 0;
+
+      if (debounceMs > 0) {
+        const timerId = `action-${action}-${actionEl.getAttribute('data-container') || 'default'}`;
+        if (this.debounceTimers.has(timerId)) {
+          clearTimeout(this.debounceTimers.get(timerId));
+        }
+        const timer = setTimeout(() => {
+          this.debounceTimers.delete(timerId);
+          this.dispatch(action, event, actionEl).then((handled) => {
+            if (handled) {
+              event.stopPropagation();
+              event.handledByChild = true;
+            }
+          });
+        }, debounceMs);
+        this.debounceTimers.set(timerId, timer);
+        return;
+      }
+
+      this.dispatch(action, event, actionEl).then((handled) => {
+        if (handled) {
+          event.stopPropagation();
+          event.handledByChild = true;
+        }
+      });
     };
 
     const onKeyDown = (event) => {
@@ -245,6 +296,12 @@ export class EventDelegate {
 
     // Fall back to regular dispatch if no onChange handler exists
     return await this.dispatch(action, event, el);
+  }
+
+  isFormControl(el) {
+    if (!el || !el.tagName) return false;
+    const tag = el.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
   }
 
   shouldHandle(el, event) {

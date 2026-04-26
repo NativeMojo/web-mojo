@@ -203,7 +203,7 @@ class FileRowView extends View {
 
 ## Instance Methods
 
-`ContextMenu` inherits the full [View](../core/View.md) API. The only menu-specific helper is:
+`ContextMenu` inherits the full [View](../core/View.md) API. The menu-specific helpers are:
 
 ### `closeDropdown()`
 
@@ -214,6 +214,40 @@ this.menu.closeDropdown();
 ```
 
 If Bootstrap's JS isn't loaded (`window.bootstrap` is missing), this is a no-op rather than an error.
+
+### `openAt(x, y, contextItem?)`
+
+Open the menu at viewport coordinates `(x, y)` without needing a visible trigger button. The menu's hidden Bootstrap dropdown trigger is positioned at the click point with `position: fixed` and shown via Bootstrap's `Dropdown` API. Click-outside-to-close still works because Bootstrap is in charge of the open/closed lifecycle.
+
+```js
+// In a contextmenu handler:
+row.element.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  this.menu.openAt(e.clientX, e.clientY, row);
+});
+```
+
+If `contextItem` is provided, it is stored on `menu.context` so the existing handler/dispatch path (`menuItem.handler(context, ...)`, `parent.events.dispatch(action, ...)`) sees the right row.
+
+If the menu has not been mounted yet, `openAt` will render and (if it has no parent or container) append it to `document.body` automatically.
+
+### `ContextMenu.attachToRightClick(element, getContextItem, menuOptions?)` *(static)*
+
+One-call helper for the right-click pattern: wires a `contextmenu` listener on `element`, calls `event.preventDefault()`, and opens the menu at the cursor with the context returned by `getContextItem(event)`.
+
+```js
+ContextMenu.attachToRightClick(this.element, () => this.row, { menu: this.menu });
+```
+
+Two ways to supply the menu:
+1. **Reuse an existing instance** — pass `{ menu: existingContextMenu }`. This is the right call when the menu is already a child of your View (so action dispatch routes through your `onActionXxx` handlers).
+2. **Build a fresh instance** — pass a normal ContextMenu options object (`{ config, context, ... }`) and a new ContextMenu is constructed for you. Use this for ad-hoc menus where you don't need parent dispatch.
+
+Returns the ContextMenu instance for cleanup. Call `menu.detachRightClick()` to remove the listener.
+
+### `detachRightClick()`
+
+Remove the `contextmenu` handler installed by `attachToRightClick()`. Safe to call multiple times. Does not destroy the ContextMenu itself.
 
 ---
 
@@ -332,6 +366,54 @@ new ContextMenu({
   }
 });
 ```
+
+### Right-click pattern
+
+The standard ContextMenu mounts a "three-dots" trigger button. For right-click menus (file-manager rows, table cells, etc.) you don't want a visible trigger — the row itself should respond to `contextmenu`. ContextMenu has two helpers for this:
+
+#### `attachToRightClick` — one-call wiring
+
+The cleanest path: build the menu as a child of your view (so `onActionXxx` dispatch still works), then call `ContextMenu.attachToRightClick()` in `onAfterMount()`.
+
+```js
+class FileRow extends View {
+  async onInit() {
+    this.menu = new ContextMenu({
+      containerId: 'row-menu',
+      context: this.row,
+      config: {
+        items: [
+          { label: 'Open',   action: 'open',   icon: 'bi-folder2-open' },
+          { label: 'Rename', action: 'rename', icon: 'bi-pencil' },
+          { type: 'divider' },
+          { label: 'Delete', action: 'delete', icon: 'bi-trash', danger: true },
+        ],
+      },
+    });
+    this.addChild(this.menu);
+  }
+
+  onAfterMount() {
+    ContextMenu.attachToRightClick(this.element, () => this.row, { menu: this.menu });
+  }
+
+  onActionOpen()   { /* ... */ }
+  onActionRename() { /* ... */ }
+  onActionDelete() { /* ... */ }
+}
+```
+
+The `data-container="row-menu"` slot can be hidden (`d-none`) — the trigger button is positioned at the click point with `position: fixed` when the menu opens.
+
+#### `openAt(x, y, contextItem)` — imperative
+
+If you need to open the menu from somewhere other than a `contextmenu` event (a custom long-press handler, a keyboard shortcut, etc.), call `openAt` directly:
+
+```js
+this.menu.openAt(event.clientX, event.clientY, this.row);
+```
+
+`contextItem` is stored on `menu.context`, so item handlers and the parent's `onActionXxx` dispatch path see the right row data.
 
 ### Custom trigger styling
 

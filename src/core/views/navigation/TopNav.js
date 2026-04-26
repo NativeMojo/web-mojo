@@ -522,6 +522,31 @@ class TopNav extends View {
         this.updateData({ navItems }, true);
     }
 
+    /**
+     * Wire any [data-bs-toggle="dropdown"] elements rendered inside this
+     * TopNav so they open on click. Bootstrap's data-API doesn't always
+     * pick up dynamically-rendered toggles, so we attach instances
+     * eagerly. Re-runs after every render to cover the setUser swap
+     * (login -> userMenu) and similar reflows.
+     */
+    _attachDropdowns() {
+        if (!this.element) return;
+        if (!window.bootstrap?.Dropdown) {
+            if (!TopNav._warnedNoBootstrap) {
+                TopNav._warnedNoBootstrap = true;
+                console.warn('[TopNav] window.bootstrap.Dropdown not available — dropdown toggles will not auto-attach.');
+            }
+            return;
+        }
+        const toggles = this.element.querySelectorAll('[data-bs-toggle="dropdown"]');
+        toggles.forEach(el => window.bootstrap.Dropdown.getOrCreateInstance(el));
+    }
+
+    async onAfterRender() {
+        await super.onAfterRender();
+        this._attachDropdowns();
+    }
+
     onPassThruActionProfile() {
         // Implement profile functionality here
         this.getApp().events.emit("portal:action", {action: "profile"});

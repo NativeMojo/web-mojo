@@ -11,10 +11,9 @@ import { Page, View, ContextMenu } from 'web-mojo';
  * a right-click anywhere on the row pops it open.
  *
  * Implementation:
- *   - The row hides ContextMenu's default trigger button (`buttonClass`
- *     reduced to a no-op span; the Bootstrap dropdown still works).
- *   - The row binds a `contextmenu` listener that suppresses the browser
- *     menu and programmatically opens the Bootstrap dropdown.
+ *   - The row uses `ContextMenu.attachToRightClick(...)` to wire a
+ *     right-click handler that opens the menu at the cursor.
+ *   - No hidden trigger button, no manual Bootstrap.Dropdown plumbing.
  *
  * Action dispatch is identical to the canonical example — items declare
  * `action: 'kebab-case'`, the row View defines `onActionKebabCase`.
@@ -34,12 +33,12 @@ class RowWithContextMenu extends View {
     async onInit() {
         await super.onInit();
 
+        // ContextMenu lives as a child so action dispatch routes through
+        // this View's `events` (onActionXxx handlers below).
         this.menu = new ContextMenu({
             containerId: 'row-menu',
             context: this.row,
             config: {
-                // Trigger button is invisible — the row itself handles right-click.
-                buttonClass: 'btn btn-sm p-0 invisible position-absolute',
                 items: [
                     { label: 'View',      action: 'view',      icon: 'bi-eye' },
                     { label: 'Edit',      action: 'edit',      icon: 'bi-pencil' },
@@ -53,15 +52,9 @@ class RowWithContextMenu extends View {
     }
 
     onAfterMount() {
-        // Bind right-click on the whole row to open the (otherwise hidden)
-        // dropdown trigger that ContextMenu rendered.
-        this.element.addEventListener('contextmenu', (event) => {
-            event.preventDefault();
-            const trigger = this.menu.element?.querySelector('[data-bs-toggle="dropdown"]');
-            if (!trigger || !window.bootstrap) return;
-            const dd = window.bootstrap.Dropdown.getOrCreateInstance(trigger);
-            dd.show();
-        });
+        // One-call right-click wiring — replaces the old hand-rolled
+        // contextmenu listener + bootstrap.Dropdown.getOrCreateInstance call.
+        ContextMenu.attachToRightClick(this.element, () => this.row, { menu: this.menu });
     }
 
     onActionView()      { this.onLog('view',      this.row); }
@@ -78,7 +71,7 @@ class RowWithContextMenu extends View {
                 </div>
             </div>
             <span class="badge text-bg-light">{{row.id}}</span>
-            <div data-container="row-menu"></div>
+            <div data-container="row-menu" class="d-none"></div>
         </div>
     `;
 }

@@ -67,6 +67,8 @@ class CircularProgressExample extends Page {
             containerId: 'segments',
             size: 'lg',
             theme: 'basic',
+            value: 92,
+            valueFormat: 'percentage',
             segments: [
                 { value: 35, color: '#198754', label: 'Eng' },
                 { value: 25, color: '#0d6efd', label: 'Sales' },

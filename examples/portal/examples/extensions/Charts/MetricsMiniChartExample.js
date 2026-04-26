@@ -64,6 +64,7 @@ class MetricsMiniChartExample extends Page {
             chartType: 'bar',
             height: 70,
             color: 'rgba(255,255,255,0.95)',
+            minValue: 0,
             showTrending: true,
         }));
 

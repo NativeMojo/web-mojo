@@ -180,7 +180,7 @@ class SimpleModuleLoader {
             },
             'View': {
                 path: path.join(this.sourceRoot, 'core/View.js'),
-                dependencies: ['MOJOUtils']
+                dependencies: ['MOJOUtils', 'EventDelegate', 'MojoMustache']
             },
             'Page': {
                 path: path.join(this.sourceRoot, 'core/Page.js'),
@@ -193,6 +193,14 @@ class SimpleModuleLoader {
             'TableRow': {
                 path: path.join(this.sourceRoot, 'core/views/table/TableRow.js'),
                 dependencies: ['ListViewItem', 'dataFormatter']
+            },
+            'TopNav': {
+                path: path.join(this.sourceRoot, 'core/views/navigation/TopNav.js'),
+                dependencies: ['View']
+            },
+            'ContextMenu': {
+                path: path.join(this.sourceRoot, 'core/views/feedback/ContextMenu.js'),
+                dependencies: ['View']
             }
         };
 

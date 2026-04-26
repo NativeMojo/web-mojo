@@ -10,6 +10,8 @@
  * - Generates menu items from a configuration array.
  * - Supports dividers, icons, labels, and links.
  * - Handles actions via inline handlers or by emitting an 'action' event.
+ * - Supports right-click usage via `openAt(x, y, contextItem)` and the
+ *   `ContextMenu.attachToRightClick()` static helper.
  *
  * @example
  * const contextMenu = new ContextMenu({
@@ -118,7 +120,7 @@ class ContextMenu extends View {
         // Support for inline handlers
         if (typeof menuItem.handler === 'function') {
             menuItem.handler(this.context, event, element);
-        } else {
+        } else if (this.parent && this.parent.events) {
             // Emit a general event for parent views to listen to
             // this.emit('action', {
             //     action: action,
@@ -136,6 +138,116 @@ class ContextMenu extends View {
             const dropdownInstance = window.bootstrap?.Dropdown.getInstance(dropdownTrigger);
             dropdownInstance?.hide();
         }
+    }
+
+    /**
+     * Open the menu at viewport coordinates (x, y), without needing a
+     * visible trigger button. Used for right-click / programmatic patterns.
+     *
+     * Internally, the existing Bootstrap dropdown trigger is positioned at
+     * (x, y) with `position: fixed` and shown via Bootstrap's Dropdown API.
+     * Click-outside-to-close still works because it is Bootstrap that
+     * manages the dropdown's open/closed state.
+     *
+     * @param {number} x - Viewport X coordinate (e.g. event.clientX)
+     * @param {number} y - Viewport Y coordinate (e.g. event.clientY)
+     * @param {*} [contextItem] - Optional context to attach for the handler/dispatch path
+     * @returns {Promise<this>}
+     */
+    async openAt(x, y, contextItem) {
+        if (typeof contextItem !== 'undefined') {
+            this.context = contextItem;
+        }
+
+        // Make sure the menu is rendered and in the DOM. If it has no
+        // parent and no container, we mount it on document.body so the
+        // dropdown has somewhere to live.
+        if (!this.isMounted()) {
+            if (!this.parent && !this.containerId && !this.container) {
+                this.options.allowAppendToBody = true;
+            }
+            await this.render();
+        }
+
+        const trigger = this.element?.querySelector('[data-bs-toggle="dropdown"]');
+        if (!trigger) return this;
+
+        // Pin the trigger at the click point. The dropdown menu is
+        // positioned by Bootstrap/Popper relative to this trigger.
+        trigger.style.position = 'fixed';
+        trigger.style.left = `${x}px`;
+        trigger.style.top = `${y}px`;
+        trigger.style.width = '0';
+        trigger.style.height = '0';
+        trigger.style.padding = '0';
+        trigger.style.margin = '0';
+        trigger.style.border = '0';
+        trigger.style.opacity = '0';
+        trigger.style.pointerEvents = 'none';
+
+        const Dropdown = window.bootstrap?.Dropdown;
+        if (Dropdown) {
+            const instance = Dropdown.getOrCreateInstance(trigger);
+            instance.show();
+        }
+
+        return this;
+    }
+
+    /**
+     * Wire a `contextmenu` (right-click) event on `element` to open a
+     * ContextMenu at the cursor. Returns the ContextMenu instance so
+     * callers can keep a handle for cleanup or further configuration.
+     *
+     * Two ways to supply the menu:
+     *   1. Pass a pre-built ContextMenu via `menuOptions.menu`.
+     *   2. Pass a plain options object (config / context / etc.) and a
+     *      fresh ContextMenu will be constructed.
+     *
+     * @param {HTMLElement} element - The element that should respond to right-click
+     * @param {Function} getContextItem - Callback invoked with the contextmenu event;
+     *        the return value is stored on `menu.context` for the dispatch path.
+     * @param {object} [menuOptions] - Either a ContextMenu options object
+     *        (`{ config, context, ... }`) or `{ menu: existingContextMenuInstance }`.
+     * @returns {ContextMenu} The ContextMenu instance bound to the element.
+     */
+    static attachToRightClick(element, getContextItem, menuOptions = {}) {
+        if (!element) {
+            throw new Error('ContextMenu.attachToRightClick: element is required');
+        }
+
+        const menu = menuOptions.menu instanceof ContextMenu
+            ? menuOptions.menu
+            : new ContextMenu(menuOptions);
+
+        const handler = (event) => {
+            event.preventDefault();
+            const contextItem = typeof getContextItem === 'function'
+                ? getContextItem(event)
+                : getContextItem;
+            menu.openAt(event.clientX, event.clientY, contextItem);
+        };
+
+        element.addEventListener('contextmenu', handler);
+
+        // Stash the handler so callers can remove it if they need to.
+        menu._rightClickHandler = handler;
+        menu._rightClickElement = element;
+
+        return menu;
+    }
+
+    /**
+     * Detach a previously attached right-click handler. Safe to call
+     * multiple times. Does not destroy the ContextMenu itself.
+     */
+    detachRightClick() {
+        if (this._rightClickElement && this._rightClickHandler) {
+            this._rightClickElement.removeEventListener('contextmenu', this._rightClickHandler);
+            this._rightClickElement = null;
+            this._rightClickHandler = null;
+        }
+        return this;
     }
 }
 
