@@ -1,5 +1,13 @@
 /**
  * mojo-auth
+ *
+ * **LEGACY shim** — predates `web-mojo/auth`. This file has no internal
+ * consumers and no `web-mojo/mojo-auth` package entry; it is built and
+ * served only as a standalone UMD/ES module for downstream apps that
+ * still link the file directly. New code should use `mountAuth` /
+ * `createAuthClient` from `web-mojo/auth` (see
+ * docs/web-mojo/extensions/Auth.md).
+ *
  * Standalone, vanilla JS authentication library for MOJO backends.
  * No dependencies. No HTML. No CSS. You own the markup.
  *

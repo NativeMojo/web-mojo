@@ -185,6 +185,7 @@ All correctly nested under `forms/` and `forms/inputs/`. ✅
 | `extensions/Map.md` | This is a README-style overview that overlaps with `MapView.md` and `MapLibreView.md` | **Action**: delete or fold into one of the others. |
 | `extensions/Location_API.md` | Possibly redundant with `Location.md` | Review and merge if duplicative. |
 | `forms/FORMS_DOCUMENTATION_PLAN.md` | Internal planning doc that snuck into published docs | **Action**: move to `planning/notes/`. |
+| `src/core/utils/TemplateResolver.js` | Zero `src/` consumers, not exported from `src/index.js`, no test/example/script references. | Either delete or wire in. Tracked here, deferred to a future cleanup request. (Discovered during Phase 2 doc-gaps work.) |
 
 ---
 

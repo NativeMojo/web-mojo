@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Docs — Phase 2 of taxonomy realignment
+
+- New doc pages in `docs/web-mojo/`:
+  - `extensions/Auth.md` — `mountAuth` + `createAuthClient` (`web-mojo/auth`).
+  - `extensions/UserProfile.md` — `UserProfileView`, `PasskeySetupView`, the 11 section views (`web-mojo/user-profile`).
+  - `extensions/DocIt.md` — `DocItApp` and the four documentation pages (`web-mojo/docit`).
+  - `services/TokenManager.md` — JWT lifecycle, single-flight refresh, the auth gate.
+  - `utils/DjangoLookups.md` — `field__lookup` syntax, `LOOKUPS` map, `parseFilterKey`, `formatFilterDisplay`.
+  - `utils/ConsoleSilencer.md` — log-level filtering, URL/`localStorage` runtime overrides.
+- `src/extensions/auth/README.md` deleted (the new `extensions/Auth.md` is canonical).
+- `src/extensions/mojo-auth/mojo-auth.js` gets a `LEGACY shim` JSDoc header. No package entry, no internal callers; new code uses `web-mojo/auth`. File is kept for downstream apps still linking it directly.
+- `docs/web-mojo/README.md`, `docs/web-mojo/AGENT.md`, and root `AGENT.md` cross-links updated to surface the new pages.
+- `planning/notes/taxonomy-audit.md` notes that `src/core/utils/TemplateResolver.js` is orphaned (zero consumers, not exported) — tracked for a future cleanup pass.
+
 ### Bug fixes — typed alerts now actually render their type
 
 - `Dialog.alert(message, title, options)` (and `Modal.alert(...)`) silently
@@ -34,11 +48,11 @@
 - All dialogs share a refreshed chrome: rounded corners (14px), soft
   drop-shadow, gradient header tint, and a small offset circular close
   button anchored to the top-right corner.
-- Typed alerts (`Modal.alert(... { type })`) now get a 4px solid colored
-  left border and a colored circle around the title icon — mirrors the
-  toast-notification styling so the system reads coherently. Color tokens
-  reuse the same hex values as `toast.css` (`#198754` / `#dc3545` /
-  `#ffc107` / `#0d6efd`).
+- Typed alerts (`Modal.alert(... { type })`) now get a 6px colored hero
+  band across the top of the modal card and a subtle tinted card background,
+  so each type is visually distinct without relying on an icon alone. Color
+  tokens: success=`#198754`, error=`#dc3545`, warning=`#ffc107`;
+  info/default uses `--mojo-dialog-accent` (see below).
 - New CSS variable `--mojo-dialog-accent`, defined at `:root` and defaulting
   to `var(--bs-primary)`. Drives the header gradient tint and the info-typed
   alert accent. Override at `:root` (or any scope) to set a custom brand

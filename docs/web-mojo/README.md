@@ -51,6 +51,7 @@ Framework services for HTTP, real-time, notifications, and file handling:
 - **[Rest](./services/Rest.md)** - HTTP client: GET/POST/PUT/PATCH/DELETE, file upload/download, interceptors
 - **[ToastService](./services/ToastService.md)** - Bootstrap 5 toast notifications with auto-dismiss and view support
 - **[WebSocketClient](./services/WebSocketClient.md)** - WebSocket client with auto-reconnect, heartbeat, and auth
+- **[TokenManager](./services/TokenManager.md)** - JWT lifecycle: storage, refresh, validity checks, single-flight auth gate
 - **[FileUpload](./services/FileUpload.md)** - Drag-and-drop file upload utilities (`applyFileDropMixin`)
 
 ---
@@ -61,7 +62,8 @@ UI Components for displaying and interacting with data:
 
 - **[ChatView](./components/ChatView.md)** - Chat interface (ChatView + ChatMessageView + ChatInputView): adapter-driven messages, file drop, streaming-ready
 - **[ContextMenu](./components/ContextMenu.md)** - Reusable Bootstrap dropdown menu component for row/header actions
-- **[Dialog](./components/Dialog.md)** - Modal dialogs: alert, confirm, prompt, forms, code view, busy indicator
+- **[Modal](./components/Modal.md)** - Canonical modal/dialog surface: alert, confirm, prompt, show, showModel, form
+- **[Dialog](./components/Dialog.md)** - Full dialog system: forms, code view, busy indicator, z-index stacking, context menus; alert/confirm/prompt are pass-throughs to Modal
 - **[Sidebar & TopNav](./components/SidebarTopNav.md)** - Portal navigation: sidebar menus, topbar, homeless pages, group switching
 - **[SideNavView](./components/SideNavView.md)** - Section-based detail layout: left rail of sections, responsive collapse to dropdown
 - **[ListView](./components/ListView.md)** - Visual list component for collections
@@ -111,6 +113,8 @@ Helper classes and functions:
 
 - **[MOJOUtils](./utils/MOJOUtils.md)** - Static helpers: deepClone, deepMerge, debounce, throttle, generateId, escapeHtml, password utilities, query string parsing
 - **[DataFormatter](./core/DataFormatter.md)** - 80+ formatters for use in templates and programmatic code
+- **[DjangoLookups](./utils/DjangoLookups.md)** - Django-style `field__lookup` filter parsing and pill-text formatting (used by TableView)
+- **[ConsoleSilencer](./utils/ConsoleSilencer.md)** - Filter `console.*` output by level — installed by default at `warn`. URL/`localStorage` runtime overrides.
 
 ---
 
@@ -119,7 +123,9 @@ Helper classes and functions:
 Optional extensions for charts, maps, admin, and more:
 
 - **[Admin](./extensions/Admin.md)** - 50+ pre-built admin pages (users, jobs, security, files, shortlinks, messaging, push) + LLM-backed Assistant chat panel; wired into a `PortalWebApp` via `registerAdminPages` and `registerAssistant`. Admin **models** ship separately at `web-mojo/admin-models` (no UI deps)
+- **[Auth](./extensions/Auth.md)** - Drop-in sign-in / forgot / reset UI (`mountAuth`) and a low-level auth client (`createAuthClient`)
 - **[Charts](./extensions/Charts.md)** - Native SVG charts (SeriesChart, PieChart, MetricsChart) — no Chart.js dependency; `SeriesChart` supports opt-in `crosshairTracking` for floating crosshair + tooltip on line/area charts
+- **[DocIt](./extensions/DocIt.md)** - Markdown documentation portal: books, pages, edit-in-place, search (`DocItApp` extends `WebApp`)
 - **[LightBox](./extensions/LightBox.md)** - Image lightbox viewer
 - **[Location](./extensions/Location.md)** - Geolocation services and tracking — see also the [REST API reference](./extensions/Location_API.md)
 - **[Map (overview)](./extensions/Map.md)** - Comprehensive overview covering MapView, MapLibreView, and MetricsCountryMapView
@@ -127,6 +133,7 @@ Optional extensions for charts, maps, admin, and more:
 - **[MapLibreView](./extensions/MapLibreView.md)** - MapLibre GL integration
 - **[Metrics Mini Chart Widget](./extensions/MetricsMiniChartWidget.md)** - Compact metrics chart widget
 - **[TimelineView](./extensions/TimelineView.md)** - Timeline visualization
+- **[UserProfile](./extensions/UserProfile.md)** - Profile/settings dialog with 11 sections + post-login Passkey setup prompt
 
 ---
 
@@ -217,7 +224,7 @@ This documentation is structured for easy navigation and understanding.
 | Building a portal app | [PortalApp.md](./core/PortalApp.md) |
 | Portal with auth-gated start + WebSocket | [PortalWebApp.md](./core/PortalWebApp.md) |
 | HTTP requests | [Rest.md](./services/Rest.md) |
-| Modal dialogs | [Dialog.md](./components/Dialog.md) |
+| Modal dialogs | [Modal.md](./components/Modal.md) (canonical), [Dialog.md](./components/Dialog.md) (forms, code view, busy indicator) |
 | Toast notifications | [ToastService.md](./services/ToastService.md) |
 | Real-time / WebSocket | [WebSocketClient.md](./services/WebSocketClient.md) |
 | Data tables | [TableView.md](./components/TableView.md), [TablePage.md](./pages/TablePage.md) |
@@ -288,10 +295,12 @@ web-mojo/
 │   ├── Rest.md                  # HTTP client for API communication
 │   ├── ToastService.md          # Bootstrap 5 toast notifications
 │   ├── WebSocketClient.md       # WebSocket client with auto-reconnect
+│   ├── TokenManager.md          # JWT lifecycle + single-flight refresh
 │   └── FileUpload.md            # Drag-and-drop file upload utilities
 │
 ├── components/                  # UI components
-│   ├── Dialog.md                # Modal dialogs (alert, confirm, forms, code)
+│   ├── Modal.md                 # Canonical modal surface (alert, confirm, prompt, show, form)
+│   ├── Dialog.md                # Full dialog system (forms, code, busy, stacking, context menus)
 │   ├── ListView.md              # List component for collections
 │   ├── TableView.md             # Advanced data table
 │   ├── TabView.md               # Tab navigation component
@@ -300,20 +309,25 @@ web-mojo/
 │   └── ImageFields.md           # Image field components
 │
 ├── extensions/                  # Optional framework extensions
+│   ├── Admin.md                 # Pre-built admin pages and views
+│   ├── Auth.md                  # mountAuth() + createAuthClient()
 │   ├── Charts.md                # Native SVG charts (SeriesChart, PieChart, MetricsChart)
+│   ├── DocIt.md                 # Markdown documentation portal (DocItApp)
 │   ├── LightBox.md              # Image lightbox viewer
 │   ├── MapView.md               # Map view component (Leaflet)
 │   ├── MapLibreView.md          # MapLibre GL integration
 │   ├── TimelineView.md          # Timeline visualization
 │   ├── Location.md              # Geolocation services
-│   ├── Admin.md                 # Pre-built admin pages and views
+│   ├── UserProfile.md           # UserProfileView + PasskeySetupView + 11 sections
 │   └── MetricsMiniChartWidget.md # Compact metrics chart widget
 │
 ├── models/                      # Built-in model reference
 │   └── BuiltinModels.md         # User, Group, Member, Files, etc. (admin-only models live in `web-mojo/admin-models`)
 │
 ├── utils/                       # Utility classes
-│   └── MOJOUtils.md             # Static helpers: clone, merge, debounce, password, etc.
+│   ├── MOJOUtils.md             # Static helpers: clone, merge, debounce, password, etc.
+│   ├── DjangoLookups.md         # Django-style filter key parsing
+│   └── ConsoleSilencer.md       # Console-level filtering with runtime overrides
 │
 ├── mixins/                      # Reusable mixins (documented in core/Events.md)
 │

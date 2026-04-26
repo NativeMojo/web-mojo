@@ -172,10 +172,11 @@ Start with `docs/web-mojo/README.md`, then read the exact topic docs you need:
 - Templates → `core/Templates.md`, `core/DataFormatter.md`
 - Data layer → `core/Model.md`, `core/Collection.md`
 - Routed screens → `pages/Page.md`, `pages/FormPage.md`, `pages/TablePage.md`
-- HTTP / realtime → `services/Rest.md`, `services/WebSocketClient.md`, `services/FileUpload.md`
+- HTTP / realtime → `services/Rest.md`, `services/WebSocketClient.md`, `services/FileUpload.md`, `services/TokenManager.md`
 - Dialogs / tables / lists → `components/Dialog.md`, `components/TableView.md`, `components/ListView.md`, `components/TabView.md`
-- Extensions → `extensions/*.md`
+- Extensions → `extensions/*.md` (`Auth.md`, `UserProfile.md`, `DocIt.md`, `Admin.md`, `Charts.md`, …)
 - Forms → `forms/README.md`
+- Filter syntax / console levels → `utils/DjangoLookups.md`, `utils/ConsoleSilencer.md`
 
 ---
 

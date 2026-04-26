@@ -43,6 +43,7 @@ WEB-MOJO is a component-based JavaScript framework for building data-driven web 
 | Rest | `docs/web-mojo/services/Rest.md` |
 | ToastService | `docs/web-mojo/services/ToastService.md` |
 | WebSocketClient | `docs/web-mojo/services/WebSocketClient.md` |
+| TokenManager | `docs/web-mojo/services/TokenManager.md` |
 | Dialog | `docs/web-mojo/components/Dialog.md` |
 | Sidebar & TopNav | `docs/web-mojo/components/SidebarTopNav.md` |
 | ListView | `docs/web-mojo/components/ListView.md` |
@@ -52,6 +53,8 @@ WEB-MOJO is a component-based JavaScript framework for building data-driven web 
 | DataView | `docs/web-mojo/components/DataView.md` |
 | BuiltinModels | `docs/web-mojo/models/BuiltinModels.md` |
 | MOJOUtils | `docs/web-mojo/utils/MOJOUtils.md` |
+| DjangoLookups | `docs/web-mojo/utils/DjangoLookups.md` |
+| ConsoleSilencer | `docs/web-mojo/utils/ConsoleSilencer.md` |
 | Charts | `docs/web-mojo/extensions/Charts.md` |
 | MapView / MapLibre | `docs/web-mojo/extensions/MapView.md` |
 | FileUpload | `docs/web-mojo/services/FileUpload.md` |
@@ -59,6 +62,9 @@ WEB-MOJO is a component-based JavaScript framework for building data-driven web 
 | TimelineView | `docs/web-mojo/extensions/TimelineView.md` |
 | Location | `docs/web-mojo/extensions/Location.md` |
 | Admin | `docs/web-mojo/extensions/Admin.md` |
+| Auth | `docs/web-mojo/extensions/Auth.md` |
+| DocIt | `docs/web-mojo/extensions/DocIt.md` |
+| UserProfile | `docs/web-mojo/extensions/UserProfile.md` |
 | Forms overview | `docs/web-mojo/forms/README.md` |
 
 **Human-readable portal:** https://nativemojo.com/web-mojo/
@@ -87,9 +93,16 @@ WEB-MOJO is a component-based JavaScript framework for building data-driven web 
 | Tab navigation | `TabView.md` |
 | Maps / geolocation | `MapView.md` + `Location.md` |
 | Image lightbox | `LightBox.md` |
-| File uploads | `FileUpload.md` |
+| File uploads | `services/FileUpload.md` |
 | Timeline visualization | `TimelineView.md` |
 | Admin pages / CRUD scaffolding | `Admin.md` |
+| Admin models (data only, no UI) | `models/BuiltinModels.md` (admin-models section) |
+| Login / forgot-password screens | `extensions/Auth.md` |
+| User profile / settings dialog | `extensions/UserProfile.md` |
+| Markdown documentation portal | `extensions/DocIt.md` |
+| Token storage / refresh / auth gate | `services/TokenManager.md` |
+| Filter syntax (`field__lookup`) | `utils/DjangoLookups.md` |
+| Console-level filtering | `utils/ConsoleSilencer.md` |
 | Built-in models (User, Group…) | `BuiltinModels.md` |
 | Sidebar / TopNav / homeless pages | `SidebarTopNav.md` |
 | Template formatters (80+) | `DataFormatter.md` |
