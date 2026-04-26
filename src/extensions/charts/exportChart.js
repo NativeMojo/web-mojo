@@ -8,6 +8,13 @@
  *   import { exportChartPng } from 'web-mojo/charts/exportChart';
  *   exportChartPng(myChart);                          // default filename
  *   exportChartPng(myChart, { filename: 'my.png' });
+ *
+ * ⚠️ Tainted-canvas note: if the SVG references cross-origin resources
+ * (external `<image href>` or remote fonts via `<style>`), browsers will
+ * taint the canvas and `canvas.toDataURL` will throw a SecurityError. The
+ * native chart components in this extension don't reference external
+ * resources, so this only matters if you extend the helper to handle SVGs
+ * with external content — inline those resources before serializing.
  */
 
 export function exportChartPng(viewOrElement, { filename } = {}) {

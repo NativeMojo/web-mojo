@@ -715,20 +715,40 @@ class SeriesChart extends View {
     _showTooltip(index, event) {
         if (!this.tooltipEl) return;
         const label = this._labels[index] !== undefined ? this._labels[index] : `#${index + 1}`;
-        let html = `<div class="mini-series-tooltip-label">${this._esc(String(this._formatXLabel(label)))}</div>`;
+
+        // Build via DOM nodes — colors come from API responses, so we set
+        // `style.background` as a property (safe) rather than interpolating
+        // into a `style="..."` attribute string.
+        this.tooltipEl.innerHTML = '';
+        const head = document.createElement('div');
+        head.className = 'mini-series-tooltip-label';
+        head.textContent = String(this._formatXLabel(label));
+        this.tooltipEl.appendChild(head);
 
         for (let i = 0; i < this._datasets.length; i++) {
             if (this._hidden.has(i)) continue;
             const ds = this._datasets[i];
             const v = ds.data[index];
-            html += `<div class="mini-series-tooltip-row">
-                <span class="mini-series-tooltip-swatch" style="background:${ds.color}"></span>
-                <span>${this._esc(ds.label)}:</span>
-                <strong>${this._esc(this._formatValue(v))}</strong>
-            </div>`;
+
+            const row = document.createElement('div');
+            row.className = 'mini-series-tooltip-row';
+
+            const swatch = document.createElement('span');
+            swatch.className = 'mini-series-tooltip-swatch';
+            swatch.style.background = ds.color;
+            row.appendChild(swatch);
+
+            const name = document.createElement('span');
+            name.textContent = `${ds.label}:`;
+            row.appendChild(name);
+
+            const strong = document.createElement('strong');
+            strong.textContent = this._formatValue(v);
+            row.appendChild(strong);
+
+            this.tooltipEl.appendChild(row);
         }
 
-        this.tooltipEl.innerHTML = html;
         this.tooltipEl.style.display = 'block';
         this._moveTooltip(event);
     }
@@ -776,10 +796,17 @@ class SeriesChart extends View {
             if (this._hidden.has(i)) item.classList.add('mini-series-legend-hidden');
             item.setAttribute('role', 'button');
             item.setAttribute('data-ds', String(i));
-            item.innerHTML = `
-                <span class="mini-series-legend-swatch" style="background:${ds.color};"></span>
-                <span class="mini-series-legend-label">${this._esc(ds.label)}</span>
-            `;
+
+            const swatch = document.createElement('span');
+            swatch.className = 'mini-series-legend-swatch';
+            swatch.style.background = ds.color;
+            item.appendChild(swatch);
+
+            const labelEl = document.createElement('span');
+            labelEl.className = 'mini-series-legend-label';
+            labelEl.textContent = ds.label;
+            item.appendChild(labelEl);
+
             item.addEventListener('click', () => this.toggleSeries(i));
             this.legendEl.appendChild(item);
         });

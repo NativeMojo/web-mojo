@@ -26,7 +26,11 @@ class MetricsChart extends View {
             className: `mojo-metrics-chart ${options.className || ''}`.trim()
         });
 
-        // Title (HTML allowed for compatibility with admin callers).
+        // Title is rendered as raw HTML via Mustache `{{{title}}}` so admin
+        // callers can pass icon markup like '<i class="bi-graph-up"></i> API'.
+        // ⚠️ Trust boundary: this option must be developer-controlled. Never
+        // set `title:` from user input or untrusted API data — it would be a
+        // stored XSS vector.
         this.title = options.title || 'Metrics';
         this.chartTitle = options.chartTitle || '';
 
@@ -142,7 +146,7 @@ class MetricsChart extends View {
             items.push('<li><h6 class="dropdown-header">Granularity</h6></li>');
             for (const opt of this.granularityOptions) {
                 const sel = opt.value === this.granularity ? ' mc-selected' : '';
-                items.push(`<li><a class="dropdown-item${sel}" role="button" data-action="granularity-changed" data-value="${opt.value}">${opt.label}</a></li>`);
+                items.push(`<li><a class="dropdown-item${sel}" role="button" data-action="granularity-changed" data-value="${this._escAttr(opt.value)}">${this._escHtml(opt.label)}</a></li>`);
             }
         }
         if (this.showDateRange) {
@@ -150,7 +154,7 @@ class MetricsChart extends View {
             items.push('<li><h6 class="dropdown-header">Date Range</h6></li>');
             for (const qr of this.quickRanges) {
                 const sel = qr.value === this.defaultDateRange ? ' mc-selected' : '';
-                items.push(`<li><a class="dropdown-item${sel}" role="button" data-action="quick-range" data-range="${qr.value}">${qr.label}</a></li>`);
+                items.push(`<li><a class="dropdown-item${sel}" role="button" data-action="quick-range" data-range="${this._escAttr(qr.value)}">${this._escHtml(qr.label)}</a></li>`);
             }
             items.push('<li><a class="dropdown-item" role="button" data-action="show-date-range-dialog"><i class="bi bi-calendar-range me-1"></i>Custom Range…</a></li>');
         }
@@ -178,6 +182,19 @@ class MetricsChart extends View {
                 <button type="button" class="btn ${lineActive} btn-sm" data-action="set-chart-type" data-type="line" title="Line"><i class="bi bi-graph-up"></i></button>
                 <button type="button" class="btn ${barActive} btn-sm"  data-action="set-chart-type" data-type="bar"  title="Bar"><i class="bi bi-bar-chart"></i></button>
             </div>`;
+    }
+
+    // ── escape helpers (for the few HTML-string interpolation points) ─
+
+    _escHtml(s) {
+        return String(s ?? '')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    _escAttr(s) {
+        return String(s ?? '')
+            .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
     // ── action handlers ───────────────────────────────────────────────

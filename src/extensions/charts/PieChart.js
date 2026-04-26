@@ -453,11 +453,25 @@ class PieChart extends View {
         for (const seg of this._segments) {
             const item = document.createElement('div');
             item.className = 'mini-pie-legend-item';
-            item.innerHTML = `
-                <span class="mini-pie-legend-swatch" style="background:${seg.color};"></span>
-                <span class="mini-pie-legend-label">${this._esc(seg.label)}</span>
-                <span class="mini-pie-legend-value">${seg.pct.toFixed(1)}%</span>
-            `;
+
+            // Set the swatch background as a DOM property — the color value
+            // can come from the API, so we never interpolate it into a `style`
+            // attribute string.
+            const swatch = document.createElement('span');
+            swatch.className = 'mini-pie-legend-swatch';
+            swatch.style.background = seg.color;
+            item.appendChild(swatch);
+
+            const labelEl = document.createElement('span');
+            labelEl.className = 'mini-pie-legend-label';
+            labelEl.textContent = seg.label;
+            item.appendChild(labelEl);
+
+            const valueEl = document.createElement('span');
+            valueEl.className = 'mini-pie-legend-value';
+            valueEl.textContent = `${seg.pct.toFixed(1)}%`;
+            item.appendChild(valueEl);
+
             this.legendEl.appendChild(item);
         }
     }
