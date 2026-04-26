@@ -31,6 +31,18 @@ const SEED_FILES = Array.from({ length: 25 }, (_, i) => ({
     upload_status: 'completed',
 }));
 
+// Seed groups for the ActiveGroup demo + GroupSearchView dialog.
+// Each kind has at least one entry so the activegroup-by-kind demo can
+// exercise the full sidebar.menus[].groupKind matching code path.
+const SEED_GROUPS = [
+    { id: 11, name: 'Acme Corp',          kind: 'org',      description: 'Parent organization' },
+    { id: 12, name: 'Globex',             kind: 'org',      description: 'Sister org' },
+    { id: 21, name: 'Engineering',        kind: 'team',     description: 'Builds the product' },
+    { id: 22, name: 'Design',             kind: 'team',     description: 'UX + brand' },
+    { id: 31, name: 'Pizza Palace',       kind: 'merchant', description: 'Sample merchant' },
+    { id: 32, name: 'Sushi Spot',         kind: 'merchant', description: 'Another merchant' },
+];
+
 const SEED_USERS = Array.from({ length: 30 }, (_, i) => ({
     id: i + 1,
     username: `user${i + 1}`,
@@ -116,6 +128,35 @@ const ROUTES = [
         // File list — `/api/fileman/file` and `/api/fileman/manager`.
         match: /\/api\/fileman\/(?:file|manager)s?(?:\/?)$/,
         handler: (url, init) => paginatedList(SEED_FILES, parseParams(url, init)),
+    },
+    {
+        // Group membership — fired when an example calls app.setActiveGroup(...)
+        // and app.activeUser is set. Returns a member with wildcard permissions
+        // so demos that gate on permissions don't get blocked.
+        match: /\/api\/group\/(\d+)\/member(?:\/?)$/,
+        handler: (url) => {
+            const groupId = Number(url.match(/\/group\/(\d+)\/member/)[1]);
+            return jsonOk({ status: true, data: {
+                id: groupId * 1000,
+                group_id: groupId,
+                user_id: SEED_USERS[0].id,
+                permissions: { '*': true },
+            }});
+        },
+    },
+    {
+        // Group list — used by GroupSearchView when opening the group selector.
+        match: /\/api\/group(?:\/?)$/,
+        handler: (url, init) => paginatedList(SEED_GROUPS, parseParams(url, init)),
+    },
+    {
+        // Single group fetch — used by clearActiveGroup recovery + URL hydration.
+        match: /\/api\/group\/(\d+)(?:\/?)$/,
+        handler: (url) => {
+            const id = Number(url.match(/\/group\/(\d+)/)[1]);
+            const g = SEED_GROUPS.find(x => x.id === id);
+            return g ? jsonOk({ status: true, data: g }) : jsonStatus(404, { status: false, error: 'not found' });
+        },
     },
     {
         // Catch-all login endpoint for the auth example demo.

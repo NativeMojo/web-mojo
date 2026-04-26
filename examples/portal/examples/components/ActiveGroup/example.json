@@ -1,0 +1,15 @@
+{
+    "name": "ActiveGroup",
+    "area": "components",
+    "route": "components/active-group",
+    "title": "Sidebar + Active Group",
+    "summary": "app.activeGroup, group:changed events, and sidebar menus filtered by groupKind.",
+    "docs": "docs/web-mojo/components/SidebarTopNav.md",
+    "tags": ["sidebar", "topnav", "active-group", "navigation", "portal", "group"],
+    "page": "ActiveGroupExample.js",
+    "menu": {
+        "section": "Components",
+        "icon": "bi-diagram-3",
+        "order": 61
+    }
+}
