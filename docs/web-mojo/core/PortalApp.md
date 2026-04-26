@@ -29,7 +29,7 @@ Use `PortalApp` when building multi-page applications that require login, a pers
 
 `PortalApp` builds on top of `WebApp` and adds:
 
-- **Authentication** — Token validation, automatic token refresh, and unauthorized session handling via `TokenManager`
+- **Authentication** — Token validation, automatic token refresh, and unauthorized session handling via [`TokenManager`](../services/TokenManager.md)
 - **Active Group** — Multi-tenant group selection persisted in `localStorage` and the URL
 - **Portal Layout** — Sidebar, top bar, and optional page header rendered automatically
 - **Toast Notifications** — A `ToastService` instance at `app.toast` for lightweight in-page notifications
@@ -154,7 +154,7 @@ new PortalApp({
 
 ## Authentication
 
-`PortalApp` handles authentication automatically via `TokenManager`. The flow runs inside `start()` before the router is started.
+`PortalApp` handles authentication automatically via [`TokenManager`](../services/TokenManager.md). The flow runs inside `start()` before the router is started.
 
 ### Auth Flow
 

@@ -42,6 +42,9 @@ import { mountAuth } from 'web-mojo/auth';
 const handle = mountAuth(document.getElementById('auth-root'), {
     baseURL: 'https://api.example.com',
     onSuccessRedirect: '/dashboard',
+    // ALWAYS set this in production. Without it, ?redirect=https://evil.com
+    // happily sends users off-site after login (open-redirect bug).
+    allowRedirectOrigins: [window.location.origin],
     branding: {
         title: 'Acme Portal',
         subtitle: 'Sign in to continue',
@@ -54,7 +57,7 @@ const handle = mountAuth(document.getElementById('auth-root'), {
 handle.destroy();
 ```
 
-That's the whole auth screen. The handler covers sign-in, forgot-password (code or magic-link), reset, and magic-link login from a `?login_token=` query param. On success, it stores the token in `localStorage` and navigates to `onSuccessRedirect` (or to a `?redirect=`/`?next=`/`?returnTo=` URL param if present).
+That's the whole auth screen. The handler covers sign-in, forgot-password (code or magic-link), reset, and magic-link login from a `?login_token=` query param. On success, it stores the token in `localStorage` and navigates to `onSuccessRedirect` (or to a `?redirect=`/`?next=`/`?returnTo=` URL param if present, gated by `allowRedirectOrigins`).
 
 ## Quick Start — `createAuthClient`
 
