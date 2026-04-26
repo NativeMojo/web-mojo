@@ -85,13 +85,21 @@ class AssistantContextAdapter {
 
         // Extract thinking text from tool_call entries and separate tool_use entries
         if (toolCalls.length > 0) {
+            // Normalize WS `tool_calls_made` shape `{ tool, input }` → Anthropic `{ type, name, input }`
+            toolCalls = toolCalls.map(tc =>
+                (!tc.type && tc.tool)
+                    ? { type: 'tool_use', name: tc.tool, input: tc.input }
+                    : tc
+            );
             const textParts = toolCalls
                 .filter(tc => tc.type === 'text' && tc.text)
                 .map(tc => tc.text);
             if (!content && textParts.length > 0) {
                 content = textParts.join('\n\n');
             }
-            toolCalls = toolCalls.filter(tc => tc.type === 'tool_use');
+            toolCalls = toolCalls
+                .filter(tc => tc.type === 'tool_use')
+                .filter(tc => !AssistantView.INTERNAL_TOOLS.has(tc.name));
         }
 
         // Parse embedded blocks from content if not provided
@@ -450,7 +458,7 @@ class AssistantContextChat extends View {
             content: data.response || data.content || data.message || '',
             blocks: data.blocks || [],
             tool_calls: data.tool_calls_made || data.tool_calls || [],
-            created: data.timestamp || new Date().toISOString()
+            created: data.created || data.timestamp || new Date().toISOString()
         });
 
         // Skip empty messages (e.g. plan-only responses where all tool calls are internal)

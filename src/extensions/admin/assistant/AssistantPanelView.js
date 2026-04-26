@@ -582,7 +582,7 @@ class AssistantPanelView extends View {
             content: data.response || data.content || data.message || '',
             blocks: data.blocks || [],
             tool_calls: data.tool_calls_made || data.tool_calls || [],
-            created: data.timestamp || new Date().toISOString()
+            created: data.created || data.timestamp || new Date().toISOString()
         });
 
         if (msg && (msg.content || msg.blocks?.length || msg.tool_calls?.length)) {
@@ -681,13 +681,21 @@ class AssistantPanelView extends View {
         let toolCalls = msg.tool_calls || [];
 
         if (toolCalls.length > 0) {
+            // Normalize WS `tool_calls_made` shape `{ tool, input }` → Anthropic `{ type, name, input }`
+            toolCalls = toolCalls.map(tc =>
+                (!tc.type && tc.tool)
+                    ? { type: 'tool_use', name: tc.tool, input: tc.input }
+                    : tc
+            );
             const textParts = toolCalls
                 .filter(tc => tc.type === 'text' && tc.text)
                 .map(tc => tc.text);
             if (!content && textParts.length > 0) {
                 content = textParts.join('\n\n');
             }
-            toolCalls = toolCalls.filter(tc => tc.type === 'tool_use');
+            toolCalls = toolCalls
+                .filter(tc => tc.type === 'tool_use')
+                .filter(tc => !AssistantView.INTERNAL_TOOLS.has(tc.name));
         }
 
         if (blocks.length === 0 && content.includes('assistant_block')) {
