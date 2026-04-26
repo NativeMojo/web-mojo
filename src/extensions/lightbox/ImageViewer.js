@@ -67,7 +67,7 @@ export default class ImageViewer extends View {
         </div>
 
         {{#showControls}}
-        <div class="image-viewer-controls position-absolute top-0 start-50 translate-middle-x mt-3" data-container="controls" style="z-index: 10;">
+        <div class="image-viewer-controls" data-container="controls">
           <div class="btn-group" role="group">
             {{#allowZoom}}
             <button type="button" class="btn btn-dark btn-sm" data-action="zoom-in" title="Zoom In">
@@ -141,10 +141,28 @@ export default class ImageViewer extends View {
       this.context.imageSmoothingQuality = 'high';
     }
 
-    // Size the canvas to its container immediately. The container is laid
-    // out by the dialog's flex column (h-100) and has real dimensions as
-    // soon as the dialog body is in the DOM.
+    // Size the canvas to its container. The dialog may still be
+    // animating in (Bootstrap modal fade) when this runs, so the
+    // container's clientWidth/Height can read 0 on the first call.
+    // Poll until we see real dimensions, then stop. Two seconds is
+    // generous for any modal show animation.
     this.resizeCanvas();
+    if (!this._sizingPoll && (!this.canvasWidth || this.canvasWidth <= 1 || !this.canvasHeight || this.canvasHeight <= 1)) {
+      const startedAt = Date.now();
+      this._sizingPoll = setInterval(() => {
+        if (!this.canvas || !this.containerElement) {
+          clearInterval(this._sizingPoll);
+          this._sizingPoll = null;
+          return;
+        }
+        this.resizeCanvas();
+        const ready = this.canvasWidth > 1 && this.canvasHeight > 1;
+        if (ready || Date.now() - startedAt > 2000) {
+          clearInterval(this._sizingPoll);
+          this._sizingPoll = null;
+        }
+      }, 50);
+    }
 
     // Watch for container resize (modal open animation, window resize,
     // sidebar toggle, etc.) and keep the backing store in sync with the
@@ -194,8 +212,13 @@ export default class ImageViewer extends View {
     // math can use logical (CSS) pixels.
     this.context.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // If image is loaded, re-render it
-    if (this.isLoaded && this.image) {
+    // If image is loaded, re-fit and re-render so the image stays
+    // sized to the new canvas. (Without this, growing the canvas
+    // during the modal-show animation would leave the image at
+    // whatever scale it was first drawn at.)
+    if (this.isLoaded && this.image && this.autoFit) {
+      this.fitToContainer();
+    } else if (this.isLoaded && this.image) {
       this.renderCanvas();
     }
   }
@@ -690,6 +713,11 @@ export default class ImageViewer extends View {
     if (this._resizeObserver) {
       this._resizeObserver.disconnect();
       this._resizeObserver = null;
+    }
+
+    if (this._sizingPoll) {
+      clearInterval(this._sizingPoll);
+      this._sizingPoll = null;
     }
 
     // Emit destroy event

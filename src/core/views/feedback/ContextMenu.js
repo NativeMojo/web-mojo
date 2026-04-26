@@ -46,6 +46,13 @@
 import View from '@core/View.js';
 
 class ContextMenu extends View {
+    /**
+     * Set `ContextMenu.DEBUG = true` from the browser console (or in a
+     * downstream app's bootstrap) to trace menu-item clicks, parent
+     * dispatch, and Bootstrap auto-attach. Off by default.
+     */
+    static DEBUG = false;
+
     constructor(options = {}) {
         super({
             tagName: 'div',
@@ -128,28 +135,59 @@ class ContextMenu extends View {
     async onActionMenuItemClick(event, element) {
         event.preventDefault();
         const action = element.getAttribute('data-item-action');
+        const debug = ContextMenu.DEBUG;
+        if (debug) console.log('[ContextMenu] menu-item-click', { action, hasParent: !!this.parent, parentClass: this.parent?.constructor?.name });
         if (!action) return;
 
         const menuItem = this.config.items.find(item => item.action === action);
-        if (!menuItem || menuItem.disabled) return;
+        if (!menuItem || menuItem.disabled) {
+            if (debug) console.log('[ContextMenu] no matching item or disabled', { action, found: !!menuItem, disabled: menuItem?.disabled });
+            return;
+        }
 
         // Support for inline handlers
         if (typeof menuItem.handler === 'function') {
+            if (debug) console.log('[ContextMenu] inline handler', action);
             menuItem.handler(this.context, event, element);
         } else if (this.parent && this.parent.events) {
-            // Emit a general event for parent views to listen to
-            // this.emit('action', {
-            //     action: action,
-            //     context: this.context,
-            //     sourceEvent: event
-            // });
+            if (debug) console.log('[ContextMenu] dispatching to parent', { action, parentClass: this.parent.constructor?.name });
             this.parent.events.dispatch(action, event, element);
+        } else if (debug) {
+            console.warn('[ContextMenu] no handler and no parent.events — action lost', { action });
         }
         this.closeDropdown();
     }
 
     closeDropdown() {
-        const dropdownTrigger = this.element.querySelector('[data-bs-toggle="dropdown"]');
+        // Manual-mode close: undo what openAt did (re-parent, strip
+        // .show, drop the outside-click listener). Falls through to the
+        // Bootstrap path so the trigger-button case keeps working.
+        const menuEl = this.element?.querySelector('.dropdown-menu')
+            || this._menuOrigParent?.querySelector?.('.dropdown-menu');
+        if (menuEl && menuEl.classList.contains('show') && menuEl.parentElement === document.body) {
+            menuEl.classList.remove('show');
+            menuEl.style.position = '';
+            menuEl.style.left = '';
+            menuEl.style.top = '';
+            menuEl.style.transform = '';
+            menuEl.style.inset = '';
+            menuEl.style.margin = '';
+            menuEl.style.zIndex = '';
+            if (this._menuOrigParent) {
+                if (this._menuOrigNextSibling && this._menuOrigNextSibling.parentElement === this._menuOrigParent) {
+                    this._menuOrigParent.insertBefore(menuEl, this._menuOrigNextSibling);
+                } else {
+                    this._menuOrigParent.appendChild(menuEl);
+                }
+            }
+        }
+        if (this._outsideHandler) {
+            document.removeEventListener('mousedown', this._outsideHandler, true);
+            this._outsideHandler = null;
+        }
+
+        // Bootstrap-trigger case (visible three-dots button).
+        const dropdownTrigger = this.element?.querySelector('[data-bs-toggle="dropdown"]');
         if (dropdownTrigger) {
             const dropdownInstance = window.bootstrap?.Dropdown.getInstance(dropdownTrigger);
             dropdownInstance?.hide();
@@ -160,10 +198,17 @@ class ContextMenu extends View {
      * Open the menu at viewport coordinates (x, y), without needing a
      * visible trigger button. Used for right-click / programmatic patterns.
      *
-     * Internally, the existing Bootstrap dropdown trigger is positioned at
-     * (x, y) with `position: fixed` and shown via Bootstrap's Dropdown API.
-     * Click-outside-to-close still works because it is Bootstrap that
-     * manages the dropdown's open/closed state.
+     * Implementation note — we deliberately do NOT delegate positioning to
+     * Bootstrap's Dropdown / Popper here. Two reasons:
+     *   1. Hosts often mount the ContextMenu inside a wrapper that hides
+     *      the (otherwise visible) trigger button. Wrappers like
+     *      `.visually-hidden` apply `clip: rect(0,0,0,0)` and
+     *      `overflow: hidden`, which clip the popped-out menu's paint even
+     *      though Popper places it correctly.
+     *   2. Portal layouts paint sidebars/offcanvas at z-index 1050 above
+     *      the dropdown's default 1000.
+     * Re-parenting the menu to `document.body` and pinning it with
+     * `position: fixed` + a high z-index sidesteps both.
      *
      * @param {number} x - Viewport X coordinate (e.g. event.clientX)
      * @param {number} y - Viewport Y coordinate (e.g. event.clientY)
@@ -175,9 +220,7 @@ class ContextMenu extends View {
             this.context = contextItem;
         }
 
-        // Make sure the menu is rendered and in the DOM. If it has no
-        // parent and no container, we mount it on document.body so the
-        // dropdown has somewhere to live.
+        // Make sure the menu is rendered and in the DOM.
         if (!this.isMounted()) {
             if (!this.parent && !this.containerId && !this.container) {
                 this.options.allowAppendToBody = true;
@@ -185,27 +228,57 @@ class ContextMenu extends View {
             await this.render();
         }
 
-        const trigger = this.element?.querySelector('[data-bs-toggle="dropdown"]');
-        if (!trigger) return this;
+        const menuEl = this.element?.querySelector('.dropdown-menu');
+        if (!menuEl) return this;
 
-        // Pin the trigger at the click point. The dropdown menu is
-        // positioned by Bootstrap/Popper relative to this trigger.
-        trigger.style.position = 'fixed';
-        trigger.style.left = `${x}px`;
-        trigger.style.top = `${y}px`;
-        trigger.style.width = '0';
-        trigger.style.height = '0';
-        trigger.style.padding = '0';
-        trigger.style.margin = '0';
-        trigger.style.border = '0';
-        trigger.style.opacity = '0';
-        trigger.style.pointerEvents = 'none';
-
-        const Dropdown = window.bootstrap?.Dropdown;
-        if (Dropdown) {
-            const instance = Dropdown.getOrCreateInstance(trigger);
-            instance.show();
+        // Re-parent the menu to <body> on first openAt so no host wrapper
+        // can clip or stack above it. Stash the original parent so we can
+        // re-attach on close (keeps the DOM tidy and the View's children
+        // model coherent).
+        if (menuEl.parentElement !== document.body) {
+            this._menuOrigParent = menuEl.parentElement;
+            this._menuOrigNextSibling = menuEl.nextSibling;
+            document.body.appendChild(menuEl);
         }
+
+        // Manual positioning + visibility — no Popper involvement.
+        // NOTE: `inset` is shorthand for top/right/bottom/left, so set it
+        // FIRST and then override left/top — otherwise inset:auto would
+        // clobber the coordinates we just assigned.
+        menuEl.style.transform = 'none';
+        menuEl.style.inset = 'auto';
+        menuEl.style.position = 'fixed';
+        menuEl.style.left = `${x}px`;
+        menuEl.style.top = `${y}px`;
+        menuEl.style.margin = '0';
+        menuEl.style.zIndex = '1080';
+        menuEl.classList.add('show');
+
+        // The menu is now a document.body child, so its `data-action`
+        // clicks no longer bubble up to `this.element` where the View's
+        // EventDelegate listens. Wire menu-item dispatch directly.
+        if (this._menuClickHandler) {
+            menuEl.removeEventListener('click', this._menuClickHandler);
+        }
+        this._menuClickHandler = (ev) => {
+            const item = ev.target.closest('[data-action="menu-item-click"]');
+            if (!item) return;
+            this.onActionMenuItemClick(ev, item);
+        };
+        menuEl.addEventListener('click', this._menuClickHandler);
+
+        // Click/contextmenu outside closes the menu. We listen on the next
+        // tick so the contextmenu event that opened us doesn't immediately
+        // close us.
+        if (this._outsideHandler) {
+            document.removeEventListener('mousedown', this._outsideHandler, true);
+        }
+        this._outsideHandler = (ev) => {
+            if (!menuEl.contains(ev.target)) this.closeDropdown();
+        };
+        setTimeout(() => {
+            document.addEventListener('mousedown', this._outsideHandler, true);
+        }, 0);
 
         return this;
     }

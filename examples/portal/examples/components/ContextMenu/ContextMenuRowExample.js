@@ -28,6 +28,7 @@ class RowWithContextMenu extends View {
         });
         this.row = options.row;
         this.onLog = options.onLog || (() => {});
+        this.onRightClick = options.onRightClick || (() => {});
     }
 
     async onInit() {
@@ -54,7 +55,26 @@ class RowWithContextMenu extends View {
     onAfterMount() {
         // One-call right-click wiring — replaces the old hand-rolled
         // contextmenu listener + bootstrap.Dropdown.getOrCreateInstance call.
-        ContextMenu.attachToRightClick(this.element, () => this.row, { menu: this.menu });
+        ContextMenu.attachToRightClick(this.element, (event) => {
+            // Debug ping so the user can confirm the contextmenu event is
+            // being captured even if the dropdown fails to render.
+            this.onRightClick(this.row, event);
+            // After Bootstrap has had a tick to position the dropdown,
+            // report what actually rendered. If the dropdown is missing or
+            // off-screen we can see that here without DevTools.
+            setTimeout(() => {
+                // openAt() reparents the dropdown to <body> to escape any
+                // ancestor clip/overflow, so look there — not inside
+                // `this.menu.element`.
+                const dm = document.querySelector('.dropdown-menu.show');
+                const el = this.parent?.element?.querySelector('[data-debug="right-click"]');
+                if (!el) return;
+                if (!dm) { el.textContent += ' | not opened'; return; }
+                const r = dm.getBoundingClientRect();
+                el.textContent += ` | open @ ${Math.round(r.x)},${Math.round(r.y)} ${Math.round(r.width)}x${Math.round(r.height)}`;
+            }, 50);
+            return this.row;
+        }, { menu: this.menu });
     }
 
     onActionView()      { this.onLog('view',      this.row); }
@@ -71,7 +91,14 @@ class RowWithContextMenu extends View {
                 </div>
             </div>
             <span class="badge text-bg-light">{{row.id}}</span>
-            <div data-container="row-menu" class="d-none"></div>
+            <!-- Off-screen wrapper for the ContextMenu's invisible trigger
+                 button. We avoid d-none (display:none would suppress the
+                 dropdown menu render) and visually-hidden (clip:rect(0,0,0,0)
+                 + overflow:hidden clips the popped-out menu paint even though
+                 Popper places it at the cursor). Off-screen positioning
+                 hides the trigger without clipping descendants; openAt then
+                 repositions the trigger to fixed-at-cursor when shown. -->
+            <div data-container="row-menu" style="position:absolute; left:-9999px; top:0;"></div>
         </div>
     `;
 }
@@ -89,6 +116,7 @@ class ContextMenuRowExample extends Page {
             template: ContextMenuRowExample.TEMPLATE,
         });
         this.lastAction = '(no action yet)';
+        this.lastRightClick = '(none yet)';
         this.rows = [
             { id: 'apollo',   name: 'Project Apollo' },
             { id: 'borealis', name: 'Project Borealis' },
@@ -101,15 +129,28 @@ class ContextMenuRowExample extends Page {
 
     async onInit() {
         await super.onInit();
+        // Light a console flag too so menu-item dispatch is traceable when
+        // the user opens DevTools.
+        ContextMenu.DEBUG = true;
+
         const log = (action, row) => {
             this.lastAction = `${action} → ${row.name} (${row.id})`;
             this.render();
+        };
+        const logRightClick = (row, event) => {
+            // Update the DOM directly — calling this.render() here would
+            // tear down the row whose contextmenu just fired, killing the
+            // dropdown before Bootstrap can show it.
+            this.lastRightClick = `${row.name} @ (${event.clientX}, ${event.clientY})`;
+            const el = this.element?.querySelector('[data-debug="right-click"]');
+            if (el) el.textContent = this.lastRightClick;
         };
         for (const row of this.rows) {
             this.addChild(new RowWithContextMenu({
                 containerId: `row-${row.id}`,
                 row,
                 onLog: log,
+                onRightClick: logRightClick,
             }));
         }
     }
@@ -134,7 +175,8 @@ class ContextMenuRowExample extends Page {
                     {{/rows}}
                 </div>
                 <div class="card-footer bg-light">
-                    <small class="text-muted">Last action: <strong>{{lastAction}}</strong></small>
+                    <div><small class="text-muted">Last right-click: <strong data-debug="right-click">{{lastRightClick}}</strong></small></div>
+                    <div><small class="text-muted">Last action: <strong>{{lastAction}}</strong></small></div>
                 </div>
             </div>
         </div>

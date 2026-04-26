@@ -37,12 +37,21 @@ class TimelineViewItem extends ListViewItem {
         this.showDate = options.showDate !== false;
         this.theme = options.theme || 'primary';
 
-        // Default timeline item template
-        if (!this.template) {
+        // Default timeline item template — apply only when the caller didn't
+        // pass a custom template. Checking `options.template` (not
+        // `this.template`) because the parent ListViewItem constructor
+        // always sets `this.template` to its own default; without this guard
+        // the timeline template never applied and items rendered with
+        // ListViewItem's `<span class="item-id">` chrome instead.
+        if (!options.template) {
+            // The marker's solid background comes from the color-keyed
+            // class (`timeline-marker-primary`, `-info`, …). Without it the
+            // icon circle is transparent and the timeline's vertical line
+            // shows through the center of the icon.
             this.template = `
-                <div class="timeline-marker timeline-marker-{{markerType}}">
+                <div class="timeline-marker timeline-marker-{{displayColor}}">
                     {{#hasIcon}}
-                    <i class="bi {{model.icon}} text-{{displayColor}}"></i>
+                    <i class="bi {{model.icon}}"></i>
                     {{/hasIcon}}
                     {{^hasIcon}}
                     <div class="timeline-dot bg-{{displayColor}}"></div>
