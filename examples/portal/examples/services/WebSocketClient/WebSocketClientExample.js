@@ -70,7 +70,11 @@ class WebSocketClientExample extends Page {
 
     _addEvent(kind, text) {
         this.eventLog = [{ at: new Date().toLocaleTimeString(), kind, text }, ...this.eventLog].slice(0, 8);
-        this.render();
+        // Only paint when we're the active page. Async sources (reconnect
+        // attempts, message frames) keep firing after the user navigates
+        // away — calling render() while inactive would overwrite the
+        // current page's DOM with our own template.
+        if (this.isActive) this.render();
     }
 
     async onActionConnect() {
@@ -95,8 +99,10 @@ class WebSocketClientExample extends Page {
     }
 
     async onExit() {
-        // Always tear the socket down when the page is hidden.
-        if (this.ws?.isConnected) this.ws.disconnect();
+        // Always tear the socket down when the page is hidden — disconnect()
+        // also disables auto-reconnect, so the client will not keep firing
+        // events into our (now hidden) handlers after the user leaves.
+        if (this.ws) this.ws.disconnect();
         await super.onExit();
     }
 
@@ -109,7 +115,7 @@ class WebSocketClientExample extends Page {
             </p>
             <p class="example-docs-link">
                 <i class="bi bi-book"></i>
-                <a href="https://github.com/NativeMojo/web-mojo/blob/main/docs/web-mojo/services/WebSocketClient.md" target="_blank">
+                <a href="#" data-action="open-doc" data-doc="docs/web-mojo/services/WebSocketClient.md">
                     docs/web-mojo/services/WebSocketClient.md
                 </a>
             </p>

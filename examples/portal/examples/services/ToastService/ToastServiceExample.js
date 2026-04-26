@@ -98,7 +98,7 @@ class ToastServiceExample extends Page {
             </p>
             <p class="example-docs-link">
                 <i class="bi bi-book"></i>
-                <a href="https://github.com/NativeMojo/web-mojo/blob/main/docs/web-mojo/services/ToastService.md" target="_blank">
+                <a href="#" data-action="open-doc" data-doc="docs/web-mojo/services/ToastService.md">
                     docs/web-mojo/services/ToastService.md
                 </a>
             </p>

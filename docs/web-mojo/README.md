@@ -59,6 +59,7 @@ UI Components for displaying and interacting with data:
 - **[ContextMenu](./components/ContextMenu.md)** - Reusable Bootstrap dropdown menu component for row/header actions
 - **[Dialog](./components/Dialog.md)** - Modal dialogs: alert, confirm, prompt, forms, code view, busy indicator
 - **[Sidebar & TopNav](./components/SidebarTopNav.md)** - Portal navigation: sidebar menus, topbar, homeless pages, group switching
+- **[SideNavView](./components/SideNavView.md)** - Section-based detail layout: left rail of sections, responsive collapse to dropdown
 - **[ListView](./components/ListView.md)** - Visual list component for collections
 - **[TableView](./components/TableView.md)** - Advanced data table with sorting, filtering, pagination
 - **[TablePage](./components/TablePage.md)** - Page wrapper for TableView with URL sync

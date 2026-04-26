@@ -64,7 +64,7 @@ class TabViewExample extends Page {
             </p>
             <p class="example-docs-link">
                 <i class="bi bi-book"></i>
-                <a href="https://github.com/NativeMojo/web-mojo/blob/main/docs/web-mojo/extensions/TabView.md" target="_blank">
+                <a href="#" data-action="open-doc" data-doc="docs/web-mojo/extensions/TabView.md">
                     docs/web-mojo/extensions/TabView.md
                 </a>
             </p>

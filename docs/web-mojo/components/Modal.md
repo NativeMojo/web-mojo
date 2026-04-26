@@ -211,8 +211,10 @@ if (result === 'pdf') {
 
 <!-- examples:cross-link begin -->
 
-Runnable, copy-paste reference in the examples portal:
+Runnable, copy-paste references in the examples portal:
 
-- [`examples/portal/examples/components/Modal/ModalExample.js`](../../../examples/portal/examples/components/Modal/ModalExample.js) — Static-only API for showing Views in modal dialogs (simpler than Dialog).
+- [`examples/portal/examples/components/Modal/ModalExample.js`](../../../examples/portal/examples/components/Modal/ModalExample.js) — Modal.show(view) — size matrix (sm/md/lg/xl/xxl/fullscreen), scrollable, static backdrop.
+- [`examples/portal/examples/components/Modal/ModalFormExample.js`](../../../examples/portal/examples/components/Modal/ModalFormExample.js) — Modal.form — host a FormView in a modal, resolve with the submitted data.
+- [`examples/portal/examples/components/Modal/ModalShowModelExample.js`](../../../examples/portal/examples/components/Modal/ModalShowModelExample.js) — Modal.showModel and showModelById — open a model in its VIEW_CLASS automatically.
 
 <!-- examples:cross-link end -->

@@ -1644,6 +1644,6 @@ Formatters are applied left-to-right. Each formatter receives the **output** of 
 
 Runnable, copy-paste reference in the examples portal:
 
-- [`examples/portal/examples/core/DataFormatter/DataFormatterExample.js`](../../../examples/portal/examples/core/DataFormatter/DataFormatterExample.js) — Pipe formatters in templates plus dataFormatter.register and dataFormatter.apply.
+- [`examples/portal/examples/core/DataFormatter/DataFormatterExample.js`](../../../examples/portal/examples/core/DataFormatter/DataFormatterExample.js) — Live formatter playground — apply or chain any registered pipe formatter.
 
 <!-- examples:cross-link end -->

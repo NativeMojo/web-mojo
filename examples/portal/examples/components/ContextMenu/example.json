@@ -1,15 +1,25 @@
 {
     "name": "ContextMenu",
     "area": "components",
-    "route": "components/context-menu",
-    "title": "ContextMenu",
-    "summary": "Reusable Bootstrap-dropdown action menu — three-dots row menus, header menus, and inline handlers.",
     "docs": "docs/web-mojo/components/ContextMenu.md",
-    "tags": ["context-menu", "dropdown", "actions"],
-    "page": "ContextMenuExample.js",
+    "tags": ["context-menu", "dropdown", "actions", "row-menu"],
     "menu": {
         "section": "Components",
         "icon": "bi-three-dots-vertical",
         "order": 70
-    }
+    },
+    "pages": [
+        {
+            "page": "ContextMenuExample.js",
+            "route": "components/context-menu",
+            "title": "ContextMenu",
+            "summary": "Three-dots row menu — items dispatch data-action handlers on the row View."
+        },
+        {
+            "page": "ContextMenuRowExample.js",
+            "route": "components/context-menu/row",
+            "title": "ContextMenu — right-click row",
+            "summary": "Right-click variant — the menu attaches to the row, not a trigger button."
+        }
+    ]
 }

@@ -1005,8 +1005,10 @@ new TablePage({
 
 <!-- examples:cross-link begin -->
 
-Runnable, copy-paste reference in the examples portal:
+Runnable, copy-paste references in the examples portal:
 
-- [`examples/portal/examples/components/TablePage/TablePageExample.js`](../../../examples/portal/examples/components/TablePage/TablePageExample.js) — Page wrapper for TableView with URL-synced sort, filter, search, and pagination.
+- [`examples/portal/examples/pages/TablePage/TablePageExample.js`](../../../examples/portal/examples/pages/TablePage/TablePageExample.js) — URL-synced table over a seeded Collection — sort, filter, search, pagination.
+- [`examples/portal/examples/pages/TablePage/TablePageWithDetailViewExample.js`](../../../examples/portal/examples/pages/TablePage/TablePageWithDetailViewExample.js) — itemView opens a custom detail View in a Modal, with deep-linkable _item URL param.
+- [`examples/portal/examples/pages/TablePage/TablePageWithFormsExample.js`](../../../examples/portal/examples/pages/TablePage/TablePageWithFormsExample.js) — Toolbar Add and row-edit open Modal.form dialogs that persist to the Collection.
 
 <!-- examples:cross-link end -->

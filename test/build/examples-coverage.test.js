@@ -35,11 +35,12 @@ module.exports = async function(testContext) {
             'View', 'ViewChildViews', 'AdvancedViews', 'Templates', 'DataFormatter',
             'Model', 'Collection', 'Events', 'WebApp', 'PortalApp', 'PortalWebApp',
         ],
-        pages: ['Page', 'FormPage'],
+        pages: ['Page', 'FormPage', 'TablePage'],
         services: ['Rest', 'ToastService', 'WebSocketClient'],
         components: [
-            'Dialog', 'Modal', 'ListView', 'TableView', 'TablePage',
+            'Dialog', 'Modal', 'ListView', 'TableView',
             'DataView', 'FileView', 'ImageFields', 'SidebarTopNav', 'ContextMenu',
+            'SideNavView',
         ],
         extensions: [
             'Charts', 'LightBox', 'MapView', 'MapLibreView', 'TimelineView',

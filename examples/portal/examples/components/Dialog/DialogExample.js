@@ -1,20 +1,20 @@
 import { Page, Dialog } from 'web-mojo';
 
 /**
- * DialogExample — canonical demo of the Dialog component.
+ * DialogExample — canonical demo of Dialog's static promise-based helpers.
  *
  * Doc:    docs/web-mojo/components/Dialog.md
  * Route:  components/dialog
  *
- * Shows the four Promise-based static helpers users reach for first:
+ * Shows the four helpers users reach for first, plus the typed alert
+ * variants. Each button calls one helper, awaits the Promise, and writes
+ * the resolved value into a "last result" panel so you can see exactly
+ * what each flavor returns.
  *
- *   1. `Dialog.alert()`  — typed alert (info/success/warning/error)
- *   2. `Dialog.confirm()` — yes/no, resolves true/false
- *   3. `Dialog.prompt()`  — text input, resolves entered string or null
- *   4. `Dialog.showBusy()` / `hideBusy()` — full-page loading overlay
- *
- * Each button calls one helper, awaits the Promise, and writes the result
- * into a small log so you can see exactly what each flavor returns.
+ *   - Dialog.alert(message, title, { type })   — info/success/warning/error
+ *   - Dialog.confirm(message, title)           — resolves true / false
+ *   - Dialog.prompt(message, title, opts)      — resolves entered string or null
+ *   - Dialog.showBusy({ message }) / hideBusy() — full-page blocking spinner
  */
 class DialogExample extends Page {
     static pageName = 'components/dialog';
@@ -25,35 +25,51 @@ class DialogExample extends Page {
             ...options,
             pageName: DialogExample.pageName,
             route: DialogExample.route,
-            title: 'Dialog — modal dialogs',
+            title: 'Dialog — canonical helpers',
             template: DialogExample.TEMPLATE,
         });
         this.lastResult = '(none yet)';
     }
 
     log(label, value) {
-        this.lastResult = `${label}: ${JSON.stringify(value)}`;
+        this.lastResult = `${label} → ${JSON.stringify(value)}`;
         this.render();
     }
 
     async onActionAlertInfo() {
+        await Dialog.alert('Just an FYI.', 'Heads up', { type: 'info' });
+        this.log('Dialog.alert (info)', 'closed');
+    }
+
+    async onActionAlertSuccess() {
         await Dialog.alert('Your changes have been saved.', 'Saved', { type: 'success' });
-        this.log('alert', 'closed');
+        this.log('Dialog.alert (success)', 'closed');
+    }
+
+    async onActionAlertWarning() {
+        await Dialog.alert('This action will affect 24 records.', 'Heads up', { type: 'warning' });
+        this.log('Dialog.alert (warning)', 'closed');
     }
 
     async onActionAlertError() {
-        await Dialog.alert('Something went wrong.', 'Error', { type: 'error' });
-        this.log('alert(error)', 'closed');
+        await Dialog.alert('The operation failed. Please try again.', 'Error', { type: 'error' });
+        this.log('Dialog.alert (error)', 'closed');
     }
 
     async onActionConfirm() {
-        const ok = await Dialog.confirm('Delete this record? This cannot be undone.', 'Confirm Delete');
-        this.log('confirm', ok);
+        const ok = await Dialog.confirm(
+            'Delete this record? This cannot be undone.',
+            'Confirm Delete'
+        );
+        this.log('Dialog.confirm', ok);
     }
 
     async onActionPrompt() {
-        const name = await Dialog.prompt('Enter a name:', 'Rename', { defaultValue: 'untitled', placeholder: 'e.g. report-q4' });
-        this.log('prompt', name);
+        const name = await Dialog.prompt('Enter a name:', 'Rename', {
+            defaultValue: 'untitled',
+            placeholder: 'e.g. report-q4',
+        });
+        this.log('Dialog.prompt', name);
     }
 
     async onActionBusy() {
@@ -63,7 +79,7 @@ class DialogExample extends Page {
         } finally {
             Dialog.hideBusy();
         }
-        this.log('busy', 'finished after 1.5s');
+        this.log('Dialog.showBusy / hideBusy', 'finished after 1.5s');
     }
 
     async onActionMultiButton() {
@@ -77,7 +93,7 @@ class DialogExample extends Page {
                 { text: 'Cancel', class: 'btn-link text-muted', dismiss: true },
             ],
         });
-        this.log('showDialog', choice);
+        this.log('Dialog.showDialog (custom buttons)', choice);
     }
 
     static TEMPLATE = `
@@ -88,20 +104,35 @@ class DialogExample extends Page {
             </p>
             <p class="example-docs-link">
                 <i class="bi bi-book"></i>
-                <a href="https://github.com/NativeMojo/web-mojo/blob/main/docs/web-mojo/components/Dialog.md" target="_blank">
+                <a href="#" data-action="open-doc" data-doc="docs/web-mojo/components/Dialog.md">
                     docs/web-mojo/components/Dialog.md
                 </a>
             </p>
 
-            <div class="card">
+            <div class="card mb-3">
+                <div class="card-header">Typed alerts</div>
                 <div class="card-body">
-                    <div class="d-flex flex-wrap gap-2 mb-3">
-                        <button class="btn btn-success" data-action="alert-info">
-                            <i class="bi bi-info-circle"></i> alert (success)
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-info text-white" data-action="alert-info">
+                            <i class="bi bi-info-circle"></i> alert (info)
+                        </button>
+                        <button class="btn btn-success" data-action="alert-success">
+                            <i class="bi bi-check-circle"></i> alert (success)
+                        </button>
+                        <button class="btn btn-warning" data-action="alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i> alert (warning)
                         </button>
                         <button class="btn btn-danger" data-action="alert-error">
                             <i class="bi bi-exclamation-octagon"></i> alert (error)
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">Interactive helpers</div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
                         <button class="btn btn-primary" data-action="confirm">
                             <i class="bi bi-question-circle"></i> confirm
                         </button>
@@ -115,10 +146,13 @@ class DialogExample extends Page {
                             <i class="bi bi-ui-checks"></i> showDialog (multi-button)
                         </button>
                     </div>
-                    <div class="border rounded p-3 bg-light">
-                        <strong class="small text-muted">Last result</strong>
-                        <pre class="mb-0 small"><code>{{lastResult}}</code></pre>
-                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Last result</div>
+                <div class="card-body">
+                    <pre class="mb-0 small"><code>{{lastResult}}</code></pre>
                 </div>
             </div>
         </div>

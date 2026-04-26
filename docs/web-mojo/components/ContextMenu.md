@@ -435,8 +435,9 @@ new ContextMenu({ className: 'context-menu-view dropdown my-custom-menu', /* ...
 
 <!-- examples:cross-link begin -->
 
-Runnable, copy-paste reference in the examples portal:
+Runnable, copy-paste references in the examples portal:
 
-- [`examples/portal/examples/components/ContextMenu/ContextMenuExample.js`](../../../examples/portal/examples/components/ContextMenu/ContextMenuExample.js) — Reusable Bootstrap-dropdown action menu — three-dots row menus, header menus, and inline handlers.
+- [`examples/portal/examples/components/ContextMenu/ContextMenuExample.js`](../../../examples/portal/examples/components/ContextMenu/ContextMenuExample.js) — Three-dots row menu — items dispatch data-action handlers on the row View.
+- [`examples/portal/examples/components/ContextMenu/ContextMenuRowExample.js`](../../../examples/portal/examples/components/ContextMenu/ContextMenuRowExample.js) — Right-click variant — the menu attaches to the row, not a trigger button.
 
 <!-- examples:cross-link end -->

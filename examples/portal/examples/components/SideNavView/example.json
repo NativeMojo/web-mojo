@@ -1,0 +1,15 @@
+{
+    "name": "SideNavView",
+    "area": "components",
+    "route": "components/side-nav-view",
+    "title": "SideNavView",
+    "summary": "Section-based detail layout used inside Modal record viewers (FileView, IPSetView, …).",
+    "docs": "docs/web-mojo/components/SideNavView.md",
+    "tags": ["nav", "sections", "modal", "detail-view"],
+    "page": "SideNavViewExample.js",
+    "menu": {
+        "section": "Components",
+        "icon": "bi-layout-sidebar",
+        "order": 50
+    }
+}

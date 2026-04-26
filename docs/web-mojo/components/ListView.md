@@ -902,8 +902,10 @@ listView.clearSelection();
 
 <!-- examples:cross-link begin -->
 
-Runnable, copy-paste reference in the examples portal:
+Runnable, copy-paste references in the examples portal:
 
-- [`examples/portal/examples/components/ListView/ListViewExample.js`](../../../examples/portal/examples/components/ListView/ListViewExample.js) — Visual list bound to a Collection — per-row Views with selection support.
+- [`examples/portal/examples/components/ListView/ListViewExample.js`](../../../examples/portal/examples/components/ListView/ListViewExample.js) — Visual list bound to a Collection — per-row Views with click-to-select.
+- [`examples/portal/examples/components/ListView/ListViewCustomItemExample.js`](../../../examples/portal/examples/components/ListView/ListViewCustomItemExample.js) — ListViewItem subclass with avatar, badges, and computed display fields.
+- [`examples/portal/examples/components/ListView/ListViewLiveFilterExample.js`](../../../examples/portal/examples/components/ListView/ListViewLiveFilterExample.js) — Search input above the list, debounced via MOJOUtils.debounce + collection.where().
 
 <!-- examples:cross-link end -->

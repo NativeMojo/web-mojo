@@ -1498,7 +1498,9 @@ class DashboardView extends View {
 
 Runnable, copy-paste references in the examples portal:
 
-- [`examples/portal/examples/components/TableView/TableViewExample.js`](../../../examples/portal/examples/components/TableView/TableViewExample.js) — Sortable, filterable, paginated table bound to a Collection.
-- [`examples/portal/examples/components/TableView/TableViewBatchActionsExample.js`](../../../examples/portal/examples/components/TableView/TableViewBatchActionsExample.js) — Multi-select rows + bulk action toolbar.
+- [`examples/portal/examples/components/TableView/TableViewExample.js`](../../../examples/portal/examples/components/TableView/TableViewExample.js) — Sortable, filterable, paginated table over ~25 seeded user rows.
+- [`examples/portal/examples/components/TableView/TableViewBatchActionsExample.js`](../../../examples/portal/examples/components/TableView/TableViewBatchActionsExample.js) — Multi-select rows + bulk actions wired to the in-memory Collection.
+- [`examples/portal/examples/components/TableView/TableViewCustomRowExample.js`](../../../examples/portal/examples/components/TableView/TableViewCustomRowExample.js) — Custom itemClass (TableRow subclass) with avatar, badges, and expand-on-click.
+- [`examples/portal/examples/components/TableView/TableViewServerExample.js`](../../../examples/portal/examples/components/TableView/TableViewServerExample.js) — Bound to UserList against the live backend, with fetch:error handling.
 
 <!-- examples:cross-link end -->

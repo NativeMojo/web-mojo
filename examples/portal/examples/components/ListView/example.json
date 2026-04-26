@@ -1,15 +1,31 @@
 {
     "name": "ListView",
     "area": "components",
-    "route": "components/list-view",
-    "title": "ListView",
-    "summary": "Visual list bound to a Collection — per-row Views with selection support.",
     "docs": "docs/web-mojo/components/ListView.md",
-    "tags": ["list", "collection", "selection"],
-    "page": "ListViewExample.js",
+    "tags": ["list", "collection", "selection", "search"],
     "menu": {
         "section": "Components",
         "icon": "bi-list-ul",
         "order": 20
-    }
+    },
+    "pages": [
+        {
+            "page": "ListViewExample.js",
+            "route": "components/list-view",
+            "title": "ListView",
+            "summary": "Visual list bound to a Collection — per-row Views with click-to-select."
+        },
+        {
+            "page": "ListViewCustomItemExample.js",
+            "route": "components/list-view/custom-item",
+            "title": "ListView — custom item class",
+            "summary": "ListViewItem subclass with avatar, badges, and computed display fields."
+        },
+        {
+            "page": "ListViewLiveFilterExample.js",
+            "route": "components/list-view/live-filter",
+            "title": "ListView — live search filter",
+            "summary": "Search input above the list, debounced via MOJOUtils.debounce + collection.where()."
+        }
+    ]
 }

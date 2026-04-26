@@ -3,7 +3,7 @@
     "area": "core",
     "route": "core/templates",
     "title": "Templates",
-    "summary": "Mustache syntax reference: |bool, triple braces, quoted args, dot-prefix, |iter.",
+    "summary": "Live Mustache playground: edit template + JSON, see the framework render it.",
     "docs": "docs/web-mojo/core/Templates.md",
     "tags": ["templates", "mustache", "syntax"],
     "page": "TemplatesExample.js",

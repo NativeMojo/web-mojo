@@ -96,6 +96,7 @@ class Page extends View {
    */
   async onEnter() {
     this.isActive = true;
+    this._wasExited = false;
     await this.onInitView();
 
     // Restore saved state if exists
@@ -125,6 +126,7 @@ class Page extends View {
     // Save state before exit
     this.savedState = this.captureState();
     this.isActive = false;
+    this._wasExited = true;
 
     // Emit deactivation event
     this.emit('deactivated', {
@@ -132,6 +134,26 @@ class Page extends View {
     });
     console.log(`Page ${this.pageName} exiting`);
   }
+
+  /**
+   * Render guard: once a Page has been exited (onExit ran, isActive went
+   * false), subsequent render() calls become no-ops until the page is
+   * re-entered. Without this guard, async sources still holding a
+   * reference to the page (timers, WebSocket reconnect attempts, lingering
+   * promises) can call this.render() from a hidden page and overwrite
+   * whatever page is currently visible in the page-container.
+   *
+   * The flag flips back on in onEnter via savedState restoration. The very
+   * first render (before any onEnter) is allowed because savedState is null
+   * and isActive is false but onExit has never set the _wasExited flag.
+   */
+  async render(allowMount = true, container = null) {
+    if (this._wasExited && !this.isActive) {
+      return this;
+    }
+    return super.render(allowMount, container);
+  }
+
 
   /**
    * Called by PortalApp.setActiveGroup() whenever the user switches to a different group.

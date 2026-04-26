@@ -13,13 +13,25 @@
             "page": "TableViewExample.js",
             "route": "components/table-view",
             "title": "TableView",
-            "summary": "Sortable, filterable, paginated table bound to a Collection."
+            "summary": "Sortable, filterable, paginated table over ~25 seeded user rows."
         },
         {
             "page": "TableViewBatchActionsExample.js",
             "route": "components/table-view/batch-actions",
             "title": "TableView — batch actions",
-            "summary": "Multi-select rows + bulk action toolbar."
+            "summary": "Multi-select rows + bulk actions wired to the in-memory Collection."
+        },
+        {
+            "page": "TableViewCustomRowExample.js",
+            "route": "components/table-view/custom-row",
+            "title": "TableView — custom row class",
+            "summary": "Custom itemClass (TableRow subclass) with avatar, badges, and expand-on-click."
+        },
+        {
+            "page": "TableViewServerExample.js",
+            "route": "components/table-view/server-collection",
+            "title": "TableView — server collection",
+            "summary": "Bound to UserList against the live backend, with fetch:error handling."
         }
     ]
 }

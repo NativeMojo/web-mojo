@@ -56,4 +56,6 @@ The Wave 2 `examples/portal/examples/components/ListView/ListViewExample.js` ori
 
 ---
 ## Resolution
-**Status**: open
+**Status**: Resolved — 2026-04-25
+**Files changed**: `src/core/views/list/ListView.js`
+**Fix**: `_initCollection`'s array path now calls `new Collection(collectionOrClass)` (which accepts the array directly via Collection's first-arg-is-array branch). Previously called `new Collection(null, {}, array)` which crashed reading `options.ModelClass` on null.

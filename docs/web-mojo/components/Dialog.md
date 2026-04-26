@@ -1003,7 +1003,9 @@ if (result === 'save') { ... }
 
 Runnable, copy-paste references in the examples portal:
 
-- [`examples/portal/examples/components/Dialog/DialogExample.js`](../../../examples/portal/examples/components/Dialog/DialogExample.js) — Modal dialogs — alert, confirm, prompt, busy, and custom buttons.
-- [`examples/portal/examples/components/Dialog/DialogContextMenuExample.js`](../../../examples/portal/examples/components/Dialog/DialogContextMenuExample.js) — Header dropdown menu inside a Dialog. Resolves Promise with selected value.
+- [`examples/portal/examples/components/Dialog/DialogExample.js`](../../../examples/portal/examples/components/Dialog/DialogExample.js) — alert / confirm / prompt / showBusy / showDialog — promise-based modal helpers.
+- [`examples/portal/examples/components/Dialog/DialogContextMenuExample.js`](../../../examples/portal/examples/components/Dialog/DialogContextMenuExample.js) — Header dropdown menu with permission-gated items.
+- [`examples/portal/examples/components/Dialog/DialogCustomBodyExample.js`](../../../examples/portal/examples/components/Dialog/DialogCustomBodyExample.js) — Mount any View as the dialog body; read its state when the dialog closes.
+- [`examples/portal/examples/components/Dialog/DialogFormExample.js`](../../../examples/portal/examples/components/Dialog/DialogFormExample.js) — showForm and showModelForm — host a FormView inside a Dialog.
 
 <!-- examples:cross-link end -->

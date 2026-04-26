@@ -1,15 +1,31 @@
 {
     "name": "Modal",
     "area": "components",
-    "route": "components/modal",
-    "title": "Modal",
-    "summary": "Static-only API for showing Views in modal dialogs (simpler than Dialog).",
     "docs": "docs/web-mojo/components/Modal.md",
-    "tags": ["modal", "dialog", "view"],
-    "page": "ModalExample.js",
+    "tags": ["modal", "dialog", "view", "form", "show-model"],
     "menu": {
         "section": "Components",
         "icon": "bi-window-stack",
         "order": 15
-    }
+    },
+    "pages": [
+        {
+            "page": "ModalExample.js",
+            "route": "components/modal",
+            "title": "Modal",
+            "summary": "Modal.show(view) — size matrix (sm/md/lg/xl/xxl/fullscreen), scrollable, static backdrop."
+        },
+        {
+            "page": "ModalShowModelExample.js",
+            "route": "components/modal/show-model",
+            "title": "Modal — showModel",
+            "summary": "Modal.showModel and showModelById — open a model in its VIEW_CLASS automatically."
+        },
+        {
+            "page": "ModalFormExample.js",
+            "route": "components/modal/form",
+            "title": "Modal — form",
+            "summary": "Modal.form — host a FormView in a modal, resolve with the submitted data."
+        }
+    ]
 }

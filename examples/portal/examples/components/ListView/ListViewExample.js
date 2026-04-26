@@ -7,15 +7,24 @@ import { Page, ListView, Collection } from 'web-mojo';
  * Route:  components/list-view
  *
  * ListView renders a Collection as a list of child Views, one per model. It
- * supports three input shapes — a Collection instance, a Collection class, or
- * a raw array (wrapped automatically in a generic Collection). This example
- * uses the raw-array form so it works without the backend running.
+ * accepts three input shapes — a Collection instance, a Collection class, or
+ * a raw array (wrapped automatically in a generic Collection). This canonical
+ * demo uses the Collection-from-array form so it works without a backend.
  *
  * Demonstrated:
- *   1. Inline `itemTemplate` with Mustache formatters
+ *   1. Inline `itemTemplate` with Mustache fields + `truncate` formatter
  *   2. `selectionMode: 'single'` + the `selection:change` event
  *   3. `data-action="select"` inside the item template wires click-to-select
  */
+const SEED_USERS = [
+    { id: 1, name: 'Alice Adams', role: 'Admin', email: 'alice@example.com', bio: 'Founding admin who keeps the lights on and the bills paid. Cat parent.' },
+    { id: 2, name: 'Ben Bryant', role: 'Editor', email: 'ben@example.com', bio: 'Writes most of the marketing copy and the worst of the in-jokes.' },
+    { id: 3, name: 'Carla Cruz', role: 'Viewer', email: 'carla@example.com', bio: 'Read-only access — auditing the docs corner of the workspace.' },
+    { id: 4, name: 'Dan Dietrich', role: 'Editor', email: 'dan@example.com', bio: 'Owns the docs site. Has strong opinions about heading hierarchy.' },
+    { id: 5, name: 'Eve Estrada', role: 'Admin', email: 'eve@example.com', bio: 'Security review lead — does not click suspicious links, ever.' },
+    { id: 6, name: 'Grace Gomez', role: 'Editor', email: 'grace@example.com', bio: 'Release-notes whisperer. Keeps the changelog honest.' },
+];
+
 class ListViewExample extends Page {
     static pageName = 'components/list-view';
     static route = 'components/list-view';
@@ -34,24 +43,24 @@ class ListViewExample extends Page {
     async onInit() {
         await super.onInit();
 
-        const users = new Collection([
-            { id: 1, name: 'Alice Adams', role: 'Admin', email: 'alice@example.com' },
-            { id: 2, name: 'Ben Bryant', role: 'Editor', email: 'ben@example.com' },
-            { id: 3, name: 'Carla Cruz', role: 'Viewer', email: 'carla@example.com' },
-            { id: 4, name: 'Dan Dietrich', role: 'Editor', email: 'dan@example.com' },
-        ]);
+        const users = new Collection(SEED_USERS);
 
         this.list = new ListView({
             containerId: 'list-slot',
             collection: users,
             itemTemplate: `
-                <div class="d-flex align-items-center gap-3 p-3 border-bottom" data-action="select" style="cursor:pointer;">
+                <div class="d-flex align-items-center gap-3 p-3 border-bottom"
+                     data-action="select" style="cursor:pointer;">
                     <i class="bi bi-person-circle fs-3 text-secondary"></i>
                     <div class="flex-grow-1">
-                        <strong>{{name}}</strong>
-                        <div class="small text-muted">{{email}}</div>
+                        <div class="d-flex align-items-center gap-2">
+                            <strong>{{model.name}}</strong>
+                            <span class="badge text-bg-light">{{model.role}}</span>
+                        </div>
+                        <div class="small text-muted">{{model.email}}</div>
+                        <div class="small text-muted">{{model.bio|truncate:80}}</div>
                     </div>
-                    <span class="badge text-bg-light">{{role}}</span>
+                    <i class="bi bi-chevron-right text-muted"></i>
                 </div>
             `,
             selectionMode: 'single',
@@ -60,7 +69,7 @@ class ListViewExample extends Page {
 
         this.list.on('selection:change', ({ model }) => {
             this.selectedName = model ? model.get('name') : '(nothing selected)';
-            this.render();
+            if (this.isActive) this.render();
         });
 
         this.addChild(this.list);
@@ -74,7 +83,7 @@ class ListViewExample extends Page {
             </p>
             <p class="example-docs-link">
                 <i class="bi bi-book"></i>
-                <a href="https://github.com/NativeMojo/web-mojo/blob/main/docs/web-mojo/components/ListView.md" target="_blank">
+                <a href="#" data-action="open-doc" data-doc="docs/web-mojo/components/ListView.md">
                     docs/web-mojo/components/ListView.md
                 </a>
             </p>

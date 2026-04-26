@@ -39,4 +39,6 @@ Wave 2 `examples/portal/examples/extensions/TimelineView/TimelineViewExample.js`
 
 ---
 ## Resolution
-**Status**: open
+**Status**: Resolved — 2026-04-25
+**Files changed**: `src/core/utils/DataFormatter.js`
+**Fix**: Registered `timeago` as an alias of `relative` next to the existing `fromNow` alias. TimelineViewItem's call site continues to work; the warning no longer fires.

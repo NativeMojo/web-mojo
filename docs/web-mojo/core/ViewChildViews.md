@@ -1165,6 +1165,6 @@ For advanced patterns, see [AdvancedViews.md](./AdvancedViews.md).
 
 Runnable, copy-paste reference in the examples portal:
 
-- [`examples/portal/examples/core/ViewChildViews/ViewChildViewsExample.js`](../../../examples/portal/examples/core/ViewChildViews/ViewChildViewsExample.js) — Compose a parent view from independent children using addChild + containerId.
+- [`examples/portal/examples/core/ViewChildViews/ViewChildViewsExample.js`](../../../examples/portal/examples/core/ViewChildViews/ViewChildViewsExample.js) — Full child-view tour: containers, collection iteration, events, action bubbling, remount.
 
 <!-- examples:cross-link end -->

@@ -9,10 +9,10 @@ Single canonical example per documented component. Folder taxonomy mirrors this 
 | Component | Summary | Doc |
 |---|---|---|
 | [View](../../examples/portal/examples/core/View/ViewExample.js) | Base component: lifecycle, templates, data-action, child views. | [core/View.md](../../docs/web-mojo/core/View.md) |
-| [View](../../examples/portal/examples/core/View/ViewExample.js) | Compose a parent view from independent children using addChild + containerId. | [core/ViewChildViews.md](../../docs/web-mojo/core/ViewChildViews.md) |
+| [View](../../examples/portal/examples/core/View/ViewExample.js) | Full child-view tour: containers, collection iteration, events, action bubbling, remount. | [core/ViewChildViews.md](../../docs/web-mojo/core/ViewChildViews.md) |
 | [Advanced](../../examples/portal/examples/core/Advanced/AdvancedExample.js) | Canvas inside a View with onAfterRender setup and onBeforeDestroy cleanup. | [core/AdvancedViews.md](../../docs/web-mojo/core/AdvancedViews.md) |
-| [Templates](../../examples/portal/examples/core/Templates/TemplatesExample.js) | Mustache syntax reference: \|bool, triple braces, quoted args, dot-prefix, \|iter. | [core/Templates.md](../../docs/web-mojo/core/Templates.md) |
-| [DataFormatter](../../examples/portal/examples/core/DataFormatter/DataFormatterExample.js) | Pipe formatters in templates plus dataFormatter.register and dataFormatter.apply. | [core/DataFormatter.md](../../docs/web-mojo/core/DataFormatter.md) |
+| [Templates](../../examples/portal/examples/core/Templates/TemplatesExample.js) | Live Mustache playground: edit template + JSON, see the framework render it. | [core/Templates.md](../../docs/web-mojo/core/Templates.md) |
+| [DataFormatter](../../examples/portal/examples/core/DataFormatter/DataFormatterExample.js) | Live formatter playground — apply or chain any registered pipe formatter. | [core/DataFormatter.md](../../docs/web-mojo/core/DataFormatter.md) |
 | [Model](../../examples/portal/examples/core/Model/ModelExample.js) | REST-backed entity with attribute access, change events, dirty tracking, and CRUD. | [core/Model.md](../../docs/web-mojo/core/Model.md) |
 | [Collection](../../examples/portal/examples/core/Collection/CollectionExample.js) | Model set with setParams/updateParams, where() filtering, and events. | [core/Collection.md](../../docs/web-mojo/core/Collection.md) |
 | [Events](../../examples/portal/examples/core/Events/EventsExample.js) | EventBus for global pub/sub and per-instance on/emit on Models and Views. | [core/Events.md](../../docs/web-mojo/core/Events.md) |
@@ -26,6 +26,9 @@ Single canonical example per documented component. Folder taxonomy mirrors this 
 |---|---|---|
 | [Page](../../examples/portal/examples/pages/Page/PageExample.js) | Routed screen base: onEnter/onExit, URL params, permissions. | [pages/Page.md](../../docs/web-mojo/pages/Page.md) |
 | [FormPage](../../examples/portal/examples/pages/FormPage/FormPageExample.js) | Page wrapped around a FormView with model load/save. | [pages/FormPage.md](../../docs/web-mojo/pages/FormPage.md) |
+| [TablePage](../../examples/portal/examples/pages/TablePage/TablePageExample.js) | URL-synced table over a seeded Collection — sort, filter, search, pagination. | [components/TablePage.md](../../docs/web-mojo/components/TablePage.md) |
+| [TablePage](../../examples/portal/examples/pages/TablePage/TablePageExample.js) | Toolbar Add and row-edit open Modal.form dialogs that persist to the Collection. | [components/TablePage.md](../../docs/web-mojo/components/TablePage.md) |
+| [TablePage](../../examples/portal/examples/pages/TablePage/TablePageExample.js) | itemView opens a custom detail View in a Modal, with deep-linkable _item URL param. | [components/TablePage.md](../../docs/web-mojo/components/TablePage.md) |
 
 ## Services
 
@@ -39,18 +42,28 @@ Single canonical example per documented component. Folder taxonomy mirrors this 
 
 | Component | Summary | Doc |
 |---|---|---|
-| [Dialog](../../examples/portal/examples/components/Dialog/DialogExample.js) | Modal dialogs — alert, confirm, prompt, busy, and custom buttons. | [components/Dialog.md](../../docs/web-mojo/components/Dialog.md) |
-| [Dialog](../../examples/portal/examples/components/Dialog/DialogExample.js) | Header dropdown menu inside a Dialog. Resolves Promise with selected value. | [components/Dialog.md](../../docs/web-mojo/components/Dialog.md) |
-| [Modal](../../examples/portal/examples/components/Modal/ModalExample.js) | Static-only API for showing Views in modal dialogs (simpler than Dialog). | [components/Modal.md](../../docs/web-mojo/components/Modal.md) |
-| [ListView](../../examples/portal/examples/components/ListView/ListViewExample.js) | Visual list bound to a Collection — per-row Views with selection support. | [components/ListView.md](../../docs/web-mojo/components/ListView.md) |
-| [TableView](../../examples/portal/examples/components/TableView/TableViewExample.js) | Sortable, filterable, paginated table bound to a Collection. | [components/TableView.md](../../docs/web-mojo/components/TableView.md) |
-| [TableView](../../examples/portal/examples/components/TableView/TableViewExample.js) | Multi-select rows + bulk action toolbar. | [components/TableView.md](../../docs/web-mojo/components/TableView.md) |
-| [TablePage](../../examples/portal/examples/components/TablePage/TablePageExample.js) | Page wrapper for TableView with URL-synced sort, filter, search, and pagination. | [components/TablePage.md](../../docs/web-mojo/components/TablePage.md) |
+| [Dialog](../../examples/portal/examples/components/Dialog/DialogExample.js) | alert / confirm / prompt / showBusy / showDialog — promise-based modal helpers. | [components/Dialog.md](../../docs/web-mojo/components/Dialog.md) |
+| [Dialog](../../examples/portal/examples/components/Dialog/DialogExample.js) | showForm and showModelForm — host a FormView inside a Dialog. | [components/Dialog.md](../../docs/web-mojo/components/Dialog.md) |
+| [Dialog](../../examples/portal/examples/components/Dialog/DialogExample.js) | Header dropdown menu with permission-gated items. | [components/Dialog.md](../../docs/web-mojo/components/Dialog.md) |
+| [Dialog](../../examples/portal/examples/components/Dialog/DialogExample.js) | Mount any View as the dialog body; read its state when the dialog closes. | [components/Dialog.md](../../docs/web-mojo/components/Dialog.md) |
+| [Modal](../../examples/portal/examples/components/Modal/ModalExample.js) | Modal.show(view) — size matrix (sm/md/lg/xl/xxl/fullscreen), scrollable, static backdrop. | [components/Modal.md](../../docs/web-mojo/components/Modal.md) |
+| [Modal](../../examples/portal/examples/components/Modal/ModalExample.js) | Modal.showModel and showModelById — open a model in its VIEW_CLASS automatically. | [components/Modal.md](../../docs/web-mojo/components/Modal.md) |
+| [Modal](../../examples/portal/examples/components/Modal/ModalExample.js) | Modal.form — host a FormView in a modal, resolve with the submitted data. | [components/Modal.md](../../docs/web-mojo/components/Modal.md) |
+| [ListView](../../examples/portal/examples/components/ListView/ListViewExample.js) | Visual list bound to a Collection — per-row Views with click-to-select. | [components/ListView.md](../../docs/web-mojo/components/ListView.md) |
+| [ListView](../../examples/portal/examples/components/ListView/ListViewExample.js) | ListViewItem subclass with avatar, badges, and computed display fields. | [components/ListView.md](../../docs/web-mojo/components/ListView.md) |
+| [ListView](../../examples/portal/examples/components/ListView/ListViewExample.js) | Search input above the list, debounced via MOJOUtils.debounce + collection.where(). | [components/ListView.md](../../docs/web-mojo/components/ListView.md) |
+| [TableView](../../examples/portal/examples/components/TableView/TableViewExample.js) | Sortable, filterable, paginated table over ~25 seeded user rows. | [components/TableView.md](../../docs/web-mojo/components/TableView.md) |
+| [TableView](../../examples/portal/examples/components/TableView/TableViewExample.js) | Multi-select rows + bulk actions wired to the in-memory Collection. | [components/TableView.md](../../docs/web-mojo/components/TableView.md) |
+| [TableView](../../examples/portal/examples/components/TableView/TableViewExample.js) | Custom itemClass (TableRow subclass) with avatar, badges, and expand-on-click. | [components/TableView.md](../../docs/web-mojo/components/TableView.md) |
+| [TableView](../../examples/portal/examples/components/TableView/TableViewExample.js) | Bound to UserList against the live backend, with fetch:error handling. | [components/TableView.md](../../docs/web-mojo/components/TableView.md) |
 | [DataView](../../examples/portal/examples/components/DataView/DataViewExample.js) | Structured key/value display with field types for email, URL, boolean, dates, and JSON. | [components/DataView.md](../../docs/web-mojo/components/DataView.md) |
-| [FileView](../../examples/portal/examples/components/FileView/FileViewExample.js) | File record viewer — preview, details, renditions, and metadata sections. | [components/FileView.md](../../docs/web-mojo/components/FileView.md) |
+| [FileView](../../examples/portal/examples/components/FileView/FileViewExample.js) | Modal-hosted file viewer — the canonical pattern for opening a File record. | [components/FileView.md](../../docs/web-mojo/components/FileView.md) |
+| [SideNavView](../../examples/portal/examples/components/SideNavView/SideNavViewExample.js) | Section-based detail layout used inside Modal record viewers (FileView, IPSetView, …). | [components/SideNavView.md](../../docs/web-mojo/components/SideNavView.md) |
+| [FileView](../../examples/portal/examples/components/FileView/FileViewExample.js) | Rare alternative — embed FileView directly in a page instead of a Modal. | [components/FileView.md](../../docs/web-mojo/components/FileView.md) |
 | [Image](../../examples/portal/examples/components/Image/ImageExample.js) | FormView image input fields — five size variants, drag/drop, and rendition-aware preview. | [components/ImageFields.md](../../docs/web-mojo/components/ImageFields.md) |
 | [Sidebar](../../examples/portal/examples/components/Sidebar/SidebarExample.js) | Portal navigation chrome — sidebar menus and topbar configured via PortalApp. | [components/SidebarTopNav.md](../../docs/web-mojo/components/SidebarTopNav.md) |
-| [ContextMenu](../../examples/portal/examples/components/ContextMenu/ContextMenuExample.js) | Reusable Bootstrap-dropdown action menu — three-dots row menus, header menus, and inline handlers. | [components/ContextMenu.md](../../docs/web-mojo/components/ContextMenu.md) |
+| [ContextMenu](../../examples/portal/examples/components/ContextMenu/ContextMenuExample.js) | Three-dots row menu — items dispatch data-action handlers on the row View. | [components/ContextMenu.md](../../docs/web-mojo/components/ContextMenu.md) |
+| [ContextMenu](../../examples/portal/examples/components/ContextMenu/ContextMenuExample.js) | Right-click variant — the menu attaches to the row, not a trigger button. | [components/ContextMenu.md](../../docs/web-mojo/components/ContextMenu.md) |
 
 ## Extensions
 

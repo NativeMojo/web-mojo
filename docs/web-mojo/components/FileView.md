@@ -157,8 +157,9 @@ The component relies on these helpers on `File`:
 
 <!-- examples:cross-link begin -->
 
-Runnable, copy-paste reference in the examples portal:
+Runnable, copy-paste references in the examples portal:
 
-- [`examples/portal/examples/components/FileView/FileViewExample.js`](../../../examples/portal/examples/components/FileView/FileViewExample.js) — File record viewer — preview, details, renditions, and metadata sections.
+- [`examples/portal/examples/components/FileView/FileViewExample.js`](../../../examples/portal/examples/components/FileView/FileViewExample.js) — Modal-hosted file viewer — the canonical pattern for opening a File record.
+- [`examples/portal/examples/components/FileView/FileViewInlineExample.js`](../../../examples/portal/examples/components/FileView/FileViewInlineExample.js) — Rare alternative — embed FileView directly in a page instead of a Modal.
 
 <!-- examples:cross-link end -->

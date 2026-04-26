@@ -2,7 +2,7 @@
     "name": "Dialog",
     "area": "components",
     "docs": "docs/web-mojo/components/Dialog.md",
-    "tags": ["dialog", "modal", "alert", "confirm", "prompt", "context-menu"],
+    "tags": ["dialog", "modal", "alert", "confirm", "prompt", "form", "context-menu"],
     "menu": {
         "section": "Components",
         "icon": "bi-window",
@@ -13,13 +13,25 @@
             "page": "DialogExample.js",
             "route": "components/dialog",
             "title": "Dialog",
-            "summary": "Modal dialogs — alert, confirm, prompt, busy, and custom buttons."
+            "summary": "alert / confirm / prompt / showBusy / showDialog — promise-based modal helpers."
+        },
+        {
+            "page": "DialogFormExample.js",
+            "route": "components/dialog/form",
+            "title": "Dialog — forms",
+            "summary": "showForm and showModelForm — host a FormView inside a Dialog."
         },
         {
             "page": "DialogContextMenuExample.js",
             "route": "components/dialog/context-menu",
             "title": "Dialog — context menu",
-            "summary": "Header dropdown menu inside a Dialog. Resolves Promise with selected value."
+            "summary": "Header dropdown menu with permission-gated items."
+        },
+        {
+            "page": "DialogCustomBodyExample.js",
+            "route": "components/dialog/custom-body",
+            "title": "Dialog — custom body",
+            "summary": "Mount any View as the dialog body; read its state when the dialog closes."
         }
     ]
 }

@@ -1,15 +1,25 @@
 {
     "name": "FileView",
     "area": "components",
-    "route": "components/file-view",
-    "title": "FileView",
-    "summary": "File record viewer — preview, details, renditions, and metadata sections.",
     "docs": "docs/web-mojo/components/FileView.md",
-    "tags": ["file", "viewer", "fileman", "preview", "renditions"],
-    "page": "FileViewExample.js",
+    "tags": ["file", "viewer", "fileman", "preview", "renditions", "modal"],
     "menu": {
         "section": "Components",
         "icon": "bi-file-earmark",
         "order": 50
-    }
+    },
+    "pages": [
+        {
+            "page": "FileViewExample.js",
+            "route": "components/file-view",
+            "title": "FileView",
+            "summary": "Modal-hosted file viewer — the canonical pattern for opening a File record."
+        },
+        {
+            "page": "FileViewInlineExample.js",
+            "route": "components/file-view/inline",
+            "title": "FileView — inline",
+            "summary": "Rare alternative — embed FileView directly in a page instead of a Modal."
+        }
+    ]
 }

@@ -1329,6 +1329,6 @@ For advanced template patterns, see [AdvancedViews.md](./AdvancedViews.md).
 
 Runnable, copy-paste reference in the examples portal:
 
-- [`examples/portal/examples/core/Templates/TemplatesExample.js`](../../../examples/portal/examples/core/Templates/TemplatesExample.js) — Mustache syntax reference: |bool, triple braces, quoted args, dot-prefix, |iter.
+- [`examples/portal/examples/core/Templates/TemplatesExample.js`](../../../examples/portal/examples/core/Templates/TemplatesExample.js) — Live Mustache playground: edit template + JSON, see the framework render it.
 
 <!-- examples:cross-link end -->

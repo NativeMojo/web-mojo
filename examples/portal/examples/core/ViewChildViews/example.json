@@ -3,7 +3,7 @@
     "area": "core",
     "route": "core/view-child-views",
     "title": "View — child views",
-    "summary": "Compose a parent view from independent children using addChild + containerId.",
+    "summary": "Full child-view tour: containers, collection iteration, events, action bubbling, remount.",
     "docs": "docs/web-mojo/core/ViewChildViews.md",
     "tags": ["view", "child-views", "composition", "addChild"],
     "page": "ViewChildViewsExample.js",

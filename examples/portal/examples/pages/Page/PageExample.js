@@ -81,7 +81,7 @@ class PageExample extends Page {
             </p>
             <p class="example-docs-link">
                 <i class="bi bi-book"></i>
-                <a href="https://github.com/NativeMojo/web-mojo/blob/main/docs/web-mojo/pages/Page.md" target="_blank">
+                <a href="#" data-action="open-doc" data-doc="docs/web-mojo/pages/Page.md">
                     docs/web-mojo/pages/Page.md
                 </a>
             </p>

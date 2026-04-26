@@ -1,18 +1,19 @@
 {
   "generatedAt": "static",
-  "pageCount": 59,
+  "pageCount": 72,
   "pages": [
     {
       "name": "ContextMenu",
       "area": "components",
       "route": "components/context-menu",
       "title": "ContextMenu",
-      "summary": "Reusable Bootstrap-dropdown action menu — three-dots row menus, header menus, and inline handlers.",
+      "summary": "Three-dots row menu — items dispatch data-action handlers on the row View.",
       "docs": "docs/web-mojo/components/ContextMenu.md",
       "tags": [
         "context-menu",
         "dropdown",
-        "actions"
+        "actions",
+        "row-menu"
       ],
       "page": "ContextMenuExample.js",
       "modulePath": "./examples/components/ContextMenu/ContextMenuExample.js",
@@ -20,6 +21,26 @@
       "section": "Components",
       "icon": "bi-three-dots-vertical",
       "order": 70
+    },
+    {
+      "name": "ContextMenu",
+      "area": "components",
+      "route": "components/context-menu/row",
+      "title": "ContextMenu — right-click row",
+      "summary": "Right-click variant — the menu attaches to the row, not a trigger button.",
+      "docs": "docs/web-mojo/components/ContextMenu.md",
+      "tags": [
+        "context-menu",
+        "dropdown",
+        "actions",
+        "row-menu"
+      ],
+      "page": "ContextMenuRowExample.js",
+      "modulePath": "./examples/components/ContextMenu/ContextMenuRowExample.js",
+      "sourcePath": "examples/portal/examples/components/ContextMenu/ContextMenuRowExample.js",
+      "section": "Components",
+      "icon": "bi-three-dots-vertical",
+      "order": 71
     },
     {
       "name": "DataView",
@@ -46,7 +67,7 @@
       "area": "components",
       "route": "components/dialog",
       "title": "Dialog",
-      "summary": "Modal dialogs — alert, confirm, prompt, busy, and custom buttons.",
+      "summary": "alert / confirm / prompt / showBusy / showDialog — promise-based modal helpers.",
       "docs": "docs/web-mojo/components/Dialog.md",
       "tags": [
         "dialog",
@@ -54,6 +75,7 @@
         "alert",
         "confirm",
         "prompt",
+        "form",
         "context-menu"
       ],
       "page": "DialogExample.js",
@@ -68,7 +90,7 @@
       "area": "components",
       "route": "components/dialog/context-menu",
       "title": "Dialog — context menu",
-      "summary": "Header dropdown menu inside a Dialog. Resolves Promise with selected value.",
+      "summary": "Header dropdown menu with permission-gated items.",
       "docs": "docs/web-mojo/components/Dialog.md",
       "tags": [
         "dialog",
@@ -76,11 +98,58 @@
         "alert",
         "confirm",
         "prompt",
+        "form",
         "context-menu"
       ],
       "page": "DialogContextMenuExample.js",
       "modulePath": "./examples/components/Dialog/DialogContextMenuExample.js",
       "sourcePath": "examples/portal/examples/components/Dialog/DialogContextMenuExample.js",
+      "section": "Components",
+      "icon": "bi-window",
+      "order": 12
+    },
+    {
+      "name": "Dialog",
+      "area": "components",
+      "route": "components/dialog/custom-body",
+      "title": "Dialog — custom body",
+      "summary": "Mount any View as the dialog body; read its state when the dialog closes.",
+      "docs": "docs/web-mojo/components/Dialog.md",
+      "tags": [
+        "dialog",
+        "modal",
+        "alert",
+        "confirm",
+        "prompt",
+        "form",
+        "context-menu"
+      ],
+      "page": "DialogCustomBodyExample.js",
+      "modulePath": "./examples/components/Dialog/DialogCustomBodyExample.js",
+      "sourcePath": "examples/portal/examples/components/Dialog/DialogCustomBodyExample.js",
+      "section": "Components",
+      "icon": "bi-window",
+      "order": 13
+    },
+    {
+      "name": "Dialog",
+      "area": "components",
+      "route": "components/dialog/form",
+      "title": "Dialog — forms",
+      "summary": "showForm and showModelForm — host a FormView inside a Dialog.",
+      "docs": "docs/web-mojo/components/Dialog.md",
+      "tags": [
+        "dialog",
+        "modal",
+        "alert",
+        "confirm",
+        "prompt",
+        "form",
+        "context-menu"
+      ],
+      "page": "DialogFormExample.js",
+      "modulePath": "./examples/components/Dialog/DialogFormExample.js",
+      "sourcePath": "examples/portal/examples/components/Dialog/DialogFormExample.js",
       "section": "Components",
       "icon": "bi-window",
       "order": 11
@@ -90,14 +159,15 @@
       "area": "components",
       "route": "components/file-view",
       "title": "FileView",
-      "summary": "File record viewer — preview, details, renditions, and metadata sections.",
+      "summary": "Modal-hosted file viewer — the canonical pattern for opening a File record.",
       "docs": "docs/web-mojo/components/FileView.md",
       "tags": [
         "file",
         "viewer",
         "fileman",
         "preview",
-        "renditions"
+        "renditions",
+        "modal"
       ],
       "page": "FileViewExample.js",
       "modulePath": "./examples/components/FileView/FileViewExample.js",
@@ -105,6 +175,28 @@
       "section": "Components",
       "icon": "bi-file-earmark",
       "order": 50
+    },
+    {
+      "name": "FileView",
+      "area": "components",
+      "route": "components/file-view/inline",
+      "title": "FileView — inline",
+      "summary": "Rare alternative — embed FileView directly in a page instead of a Modal.",
+      "docs": "docs/web-mojo/components/FileView.md",
+      "tags": [
+        "file",
+        "viewer",
+        "fileman",
+        "preview",
+        "renditions",
+        "modal"
+      ],
+      "page": "FileViewInlineExample.js",
+      "modulePath": "./examples/components/FileView/FileViewInlineExample.js",
+      "sourcePath": "examples/portal/examples/components/FileView/FileViewInlineExample.js",
+      "section": "Components",
+      "icon": "bi-file-earmark",
+      "order": 51
     },
     {
       "name": "ImageFields",
@@ -131,12 +223,13 @@
       "area": "components",
       "route": "components/list-view",
       "title": "ListView",
-      "summary": "Visual list bound to a Collection — per-row Views with selection support.",
+      "summary": "Visual list bound to a Collection — per-row Views with click-to-select.",
       "docs": "docs/web-mojo/components/ListView.md",
       "tags": [
         "list",
         "collection",
-        "selection"
+        "selection",
+        "search"
       ],
       "page": "ListViewExample.js",
       "modulePath": "./examples/components/ListView/ListViewExample.js",
@@ -146,16 +239,58 @@
       "order": 20
     },
     {
+      "name": "ListView",
+      "area": "components",
+      "route": "components/list-view/custom-item",
+      "title": "ListView — custom item class",
+      "summary": "ListViewItem subclass with avatar, badges, and computed display fields.",
+      "docs": "docs/web-mojo/components/ListView.md",
+      "tags": [
+        "list",
+        "collection",
+        "selection",
+        "search"
+      ],
+      "page": "ListViewCustomItemExample.js",
+      "modulePath": "./examples/components/ListView/ListViewCustomItemExample.js",
+      "sourcePath": "examples/portal/examples/components/ListView/ListViewCustomItemExample.js",
+      "section": "Components",
+      "icon": "bi-list-ul",
+      "order": 21
+    },
+    {
+      "name": "ListView",
+      "area": "components",
+      "route": "components/list-view/live-filter",
+      "title": "ListView — live search filter",
+      "summary": "Search input above the list, debounced via MOJOUtils.debounce + collection.where().",
+      "docs": "docs/web-mojo/components/ListView.md",
+      "tags": [
+        "list",
+        "collection",
+        "selection",
+        "search"
+      ],
+      "page": "ListViewLiveFilterExample.js",
+      "modulePath": "./examples/components/ListView/ListViewLiveFilterExample.js",
+      "sourcePath": "examples/portal/examples/components/ListView/ListViewLiveFilterExample.js",
+      "section": "Components",
+      "icon": "bi-list-ul",
+      "order": 22
+    },
+    {
       "name": "Modal",
       "area": "components",
       "route": "components/modal",
       "title": "Modal",
-      "summary": "Static-only API for showing Views in modal dialogs (simpler than Dialog).",
+      "summary": "Modal.show(view) — size matrix (sm/md/lg/xl/xxl/fullscreen), scrollable, static backdrop.",
       "docs": "docs/web-mojo/components/Modal.md",
       "tags": [
         "modal",
         "dialog",
-        "view"
+        "view",
+        "form",
+        "show-model"
       ],
       "page": "ModalExample.js",
       "modulePath": "./examples/components/Modal/ModalExample.js",
@@ -163,6 +298,68 @@
       "section": "Components",
       "icon": "bi-window-stack",
       "order": 15
+    },
+    {
+      "name": "Modal",
+      "area": "components",
+      "route": "components/modal/form",
+      "title": "Modal — form",
+      "summary": "Modal.form — host a FormView in a modal, resolve with the submitted data.",
+      "docs": "docs/web-mojo/components/Modal.md",
+      "tags": [
+        "modal",
+        "dialog",
+        "view",
+        "form",
+        "show-model"
+      ],
+      "page": "ModalFormExample.js",
+      "modulePath": "./examples/components/Modal/ModalFormExample.js",
+      "sourcePath": "examples/portal/examples/components/Modal/ModalFormExample.js",
+      "section": "Components",
+      "icon": "bi-window-stack",
+      "order": 17
+    },
+    {
+      "name": "Modal",
+      "area": "components",
+      "route": "components/modal/show-model",
+      "title": "Modal — showModel",
+      "summary": "Modal.showModel and showModelById — open a model in its VIEW_CLASS automatically.",
+      "docs": "docs/web-mojo/components/Modal.md",
+      "tags": [
+        "modal",
+        "dialog",
+        "view",
+        "form",
+        "show-model"
+      ],
+      "page": "ModalShowModelExample.js",
+      "modulePath": "./examples/components/Modal/ModalShowModelExample.js",
+      "sourcePath": "examples/portal/examples/components/Modal/ModalShowModelExample.js",
+      "section": "Components",
+      "icon": "bi-window-stack",
+      "order": 16
+    },
+    {
+      "name": "SideNavView",
+      "area": "components",
+      "route": "components/side-nav-view",
+      "title": "SideNavView",
+      "summary": "Section-based detail layout used inside Modal record viewers (FileView, IPSetView, …).",
+      "docs": "docs/web-mojo/components/SideNavView.md",
+      "tags": [
+        "nav",
+        "sections",
+        "modal",
+        "detail-view"
+      ],
+      "page": "SideNavViewExample.js",
+      "modulePath": "./examples/components/SideNavView/SideNavViewExample.js",
+      "sourcePath": "examples/portal/examples/components/SideNavView/SideNavViewExample.js",
+      "section": "Components",
+      "icon": "bi-layout-sidebar",
+      "order": 50
     },
     {
       "name": "SidebarTopNav",
@@ -185,31 +382,11 @@
       "order": 60
     },
     {
-      "name": "TablePage",
-      "area": "components",
-      "route": "components/table-page",
-      "title": "TablePage",
-      "summary": "Page wrapper for TableView with URL-synced sort, filter, search, and pagination.",
-      "docs": "docs/web-mojo/components/TablePage.md",
-      "tags": [
-        "table",
-        "page",
-        "url-sync",
-        "collection"
-      ],
-      "page": "TablePageExample.js",
-      "modulePath": "./examples/components/TablePage/TablePageExample.js",
-      "sourcePath": "examples/portal/examples/components/TablePage/TablePageExample.js",
-      "section": "Components",
-      "icon": "bi-grid-3x3-gap",
-      "order": 35
-    },
-    {
       "name": "TableView",
       "area": "components",
       "route": "components/table-view",
       "title": "TableView",
-      "summary": "Sortable, filterable, paginated table bound to a Collection.",
+      "summary": "Sortable, filterable, paginated table over ~25 seeded user rows.",
       "docs": "docs/web-mojo/components/TableView.md",
       "tags": [
         "table",
@@ -231,7 +408,7 @@
       "area": "components",
       "route": "components/table-view/batch-actions",
       "title": "TableView — batch actions",
-      "summary": "Multi-select rows + bulk action toolbar.",
+      "summary": "Multi-select rows + bulk actions wired to the in-memory Collection.",
       "docs": "docs/web-mojo/components/TableView.md",
       "tags": [
         "table",
@@ -247,6 +424,50 @@
       "section": "Components",
       "icon": "bi-table",
       "order": 31
+    },
+    {
+      "name": "TableView",
+      "area": "components",
+      "route": "components/table-view/custom-row",
+      "title": "TableView — custom row class",
+      "summary": "Custom itemClass (TableRow subclass) with avatar, badges, and expand-on-click.",
+      "docs": "docs/web-mojo/components/TableView.md",
+      "tags": [
+        "table",
+        "collection",
+        "sort",
+        "filter",
+        "pagination",
+        "batch-actions"
+      ],
+      "page": "TableViewCustomRowExample.js",
+      "modulePath": "./examples/components/TableView/TableViewCustomRowExample.js",
+      "sourcePath": "examples/portal/examples/components/TableView/TableViewCustomRowExample.js",
+      "section": "Components",
+      "icon": "bi-table",
+      "order": 32
+    },
+    {
+      "name": "TableView",
+      "area": "components",
+      "route": "components/table-view/server-collection",
+      "title": "TableView — server collection",
+      "summary": "Bound to UserList against the live backend, with fetch:error handling.",
+      "docs": "docs/web-mojo/components/TableView.md",
+      "tags": [
+        "table",
+        "collection",
+        "sort",
+        "filter",
+        "pagination",
+        "batch-actions"
+      ],
+      "page": "TableViewServerExample.js",
+      "modulePath": "./examples/components/TableView/TableViewServerExample.js",
+      "sourcePath": "examples/portal/examples/components/TableView/TableViewServerExample.js",
+      "section": "Components",
+      "icon": "bi-table",
+      "order": 33
     },
     {
       "name": "AdvancedViews",
@@ -293,7 +514,7 @@
       "area": "core",
       "route": "core/data-formatter",
       "title": "DataFormatter",
-      "summary": "Pipe formatters in templates plus dataFormatter.register and dataFormatter.apply.",
+      "summary": "Live formatter playground — apply or chain any registered pipe formatter.",
       "docs": "docs/web-mojo/core/DataFormatter.md",
       "tags": [
         "formatter",
@@ -392,7 +613,7 @@
       "area": "core",
       "route": "core/templates",
       "title": "Templates",
-      "summary": "Mustache syntax reference: |bool, triple braces, quoted args, dot-prefix, |iter.",
+      "summary": "Live Mustache playground: edit template + JSON, see the framework render it.",
       "docs": "docs/web-mojo/core/Templates.md",
       "tags": [
         "templates",
@@ -432,7 +653,7 @@
       "area": "core",
       "route": "core/view-child-views",
       "title": "View — child views",
-      "summary": "Compose a parent view from independent children using addChild + containerId.",
+      "summary": "Full child-view tour: containers, collection iteration, events, action bubbling, remount.",
       "docs": "docs/web-mojo/core/ViewChildViews.md",
       "tags": [
         "view",
@@ -1145,6 +1366,72 @@
       "order": 10
     },
     {
+      "name": "TablePage",
+      "area": "pages",
+      "route": "pages/table-page",
+      "title": "TablePage",
+      "summary": "URL-synced table over a seeded Collection — sort, filter, search, pagination.",
+      "docs": "docs/web-mojo/components/TablePage.md",
+      "tags": [
+        "table",
+        "page",
+        "url-sync",
+        "collection",
+        "form",
+        "detail-view"
+      ],
+      "page": "TablePageExample.js",
+      "modulePath": "./examples/pages/TablePage/TablePageExample.js",
+      "sourcePath": "examples/portal/examples/pages/TablePage/TablePageExample.js",
+      "section": "Pages",
+      "icon": "bi-grid-3x3-gap",
+      "order": 30
+    },
+    {
+      "name": "TablePage",
+      "area": "pages",
+      "route": "pages/table-page/detail-view",
+      "title": "TablePage — with detail view",
+      "summary": "itemView opens a custom detail View in a Modal, with deep-linkable _item URL param.",
+      "docs": "docs/web-mojo/components/TablePage.md",
+      "tags": [
+        "table",
+        "page",
+        "url-sync",
+        "collection",
+        "form",
+        "detail-view"
+      ],
+      "page": "TablePageWithDetailViewExample.js",
+      "modulePath": "./examples/pages/TablePage/TablePageWithDetailViewExample.js",
+      "sourcePath": "examples/portal/examples/pages/TablePage/TablePageWithDetailViewExample.js",
+      "section": "Pages",
+      "icon": "bi-grid-3x3-gap",
+      "order": 32
+    },
+    {
+      "name": "TablePage",
+      "area": "pages",
+      "route": "pages/table-page/forms",
+      "title": "TablePage — with forms",
+      "summary": "Toolbar Add and row-edit open Modal.form dialogs that persist to the Collection.",
+      "docs": "docs/web-mojo/components/TablePage.md",
+      "tags": [
+        "table",
+        "page",
+        "url-sync",
+        "collection",
+        "form",
+        "detail-view"
+      ],
+      "page": "TablePageWithFormsExample.js",
+      "modulePath": "./examples/pages/TablePage/TablePageWithFormsExample.js",
+      "sourcePath": "examples/portal/examples/pages/TablePage/TablePageWithFormsExample.js",
+      "section": "Pages",
+      "icon": "bi-grid-3x3-gap",
+      "order": 31
+    },
+    {
       "name": "Rest",
       "area": "services",
       "route": "services/rest",
@@ -1219,7 +1506,7 @@
         {
           "route": "core/view-child-views",
           "title": "View — child views",
-          "summary": "Compose a parent view from independent children using addChild + containerId.",
+          "summary": "Full child-view tour: containers, collection iteration, events, action bubbling, remount.",
           "icon": "bi-diagram-3",
           "docs": "docs/web-mojo/core/ViewChildViews.md"
         },
@@ -1233,14 +1520,14 @@
         {
           "route": "core/templates",
           "title": "Templates",
-          "summary": "Mustache syntax reference: |bool, triple braces, quoted args, dot-prefix, |iter.",
+          "summary": "Live Mustache playground: edit template + JSON, see the framework render it.",
           "icon": "bi-braces",
           "docs": "docs/web-mojo/core/Templates.md"
         },
         {
           "route": "core/data-formatter",
           "title": "DataFormatter",
-          "summary": "Pipe formatters in templates plus dataFormatter.register and dataFormatter.apply.",
+          "summary": "Live formatter playground — apply or chain any registered pipe formatter.",
           "icon": "bi-funnel",
           "docs": "docs/web-mojo/core/DataFormatter.md"
         },
@@ -1306,6 +1593,27 @@
           "summary": "Page wrapped around a FormView with model load/save.",
           "icon": "bi-ui-checks",
           "docs": "docs/web-mojo/pages/FormPage.md"
+        },
+        {
+          "route": "pages/table-page",
+          "title": "TablePage",
+          "summary": "URL-synced table over a seeded Collection — sort, filter, search, pagination.",
+          "icon": "bi-grid-3x3-gap",
+          "docs": "docs/web-mojo/components/TablePage.md"
+        },
+        {
+          "route": "pages/table-page/forms",
+          "title": "TablePage — with forms",
+          "summary": "Toolbar Add and row-edit open Modal.form dialogs that persist to the Collection.",
+          "icon": "bi-grid-3x3-gap",
+          "docs": "docs/web-mojo/components/TablePage.md"
+        },
+        {
+          "route": "pages/table-page/detail-view",
+          "title": "TablePage — with detail view",
+          "summary": "itemView opens a custom detail View in a Modal, with deep-linkable _item URL param.",
+          "icon": "bi-grid-3x3-gap",
+          "docs": "docs/web-mojo/components/TablePage.md"
         }
       ]
     },
@@ -1345,51 +1653,100 @@
         {
           "route": "components/dialog",
           "title": "Dialog",
-          "summary": "Modal dialogs — alert, confirm, prompt, busy, and custom buttons.",
+          "summary": "alert / confirm / prompt / showBusy / showDialog — promise-based modal helpers.",
+          "icon": "bi-window",
+          "docs": "docs/web-mojo/components/Dialog.md"
+        },
+        {
+          "route": "components/dialog/form",
+          "title": "Dialog — forms",
+          "summary": "showForm and showModelForm — host a FormView inside a Dialog.",
           "icon": "bi-window",
           "docs": "docs/web-mojo/components/Dialog.md"
         },
         {
           "route": "components/dialog/context-menu",
           "title": "Dialog — context menu",
-          "summary": "Header dropdown menu inside a Dialog. Resolves Promise with selected value.",
+          "summary": "Header dropdown menu with permission-gated items.",
+          "icon": "bi-window",
+          "docs": "docs/web-mojo/components/Dialog.md"
+        },
+        {
+          "route": "components/dialog/custom-body",
+          "title": "Dialog — custom body",
+          "summary": "Mount any View as the dialog body; read its state when the dialog closes.",
           "icon": "bi-window",
           "docs": "docs/web-mojo/components/Dialog.md"
         },
         {
           "route": "components/modal",
           "title": "Modal",
-          "summary": "Static-only API for showing Views in modal dialogs (simpler than Dialog).",
+          "summary": "Modal.show(view) — size matrix (sm/md/lg/xl/xxl/fullscreen), scrollable, static backdrop.",
+          "icon": "bi-window-stack",
+          "docs": "docs/web-mojo/components/Modal.md"
+        },
+        {
+          "route": "components/modal/show-model",
+          "title": "Modal — showModel",
+          "summary": "Modal.showModel and showModelById — open a model in its VIEW_CLASS automatically.",
+          "icon": "bi-window-stack",
+          "docs": "docs/web-mojo/components/Modal.md"
+        },
+        {
+          "route": "components/modal/form",
+          "title": "Modal — form",
+          "summary": "Modal.form — host a FormView in a modal, resolve with the submitted data.",
           "icon": "bi-window-stack",
           "docs": "docs/web-mojo/components/Modal.md"
         },
         {
           "route": "components/list-view",
           "title": "ListView",
-          "summary": "Visual list bound to a Collection — per-row Views with selection support.",
+          "summary": "Visual list bound to a Collection — per-row Views with click-to-select.",
+          "icon": "bi-list-ul",
+          "docs": "docs/web-mojo/components/ListView.md"
+        },
+        {
+          "route": "components/list-view/custom-item",
+          "title": "ListView — custom item class",
+          "summary": "ListViewItem subclass with avatar, badges, and computed display fields.",
+          "icon": "bi-list-ul",
+          "docs": "docs/web-mojo/components/ListView.md"
+        },
+        {
+          "route": "components/list-view/live-filter",
+          "title": "ListView — live search filter",
+          "summary": "Search input above the list, debounced via MOJOUtils.debounce + collection.where().",
           "icon": "bi-list-ul",
           "docs": "docs/web-mojo/components/ListView.md"
         },
         {
           "route": "components/table-view",
           "title": "TableView",
-          "summary": "Sortable, filterable, paginated table bound to a Collection.",
+          "summary": "Sortable, filterable, paginated table over ~25 seeded user rows.",
           "icon": "bi-table",
           "docs": "docs/web-mojo/components/TableView.md"
         },
         {
           "route": "components/table-view/batch-actions",
           "title": "TableView — batch actions",
-          "summary": "Multi-select rows + bulk action toolbar.",
+          "summary": "Multi-select rows + bulk actions wired to the in-memory Collection.",
           "icon": "bi-table",
           "docs": "docs/web-mojo/components/TableView.md"
         },
         {
-          "route": "components/table-page",
-          "title": "TablePage",
-          "summary": "Page wrapper for TableView with URL-synced sort, filter, search, and pagination.",
-          "icon": "bi-grid-3x3-gap",
-          "docs": "docs/web-mojo/components/TablePage.md"
+          "route": "components/table-view/custom-row",
+          "title": "TableView — custom row class",
+          "summary": "Custom itemClass (TableRow subclass) with avatar, badges, and expand-on-click.",
+          "icon": "bi-table",
+          "docs": "docs/web-mojo/components/TableView.md"
+        },
+        {
+          "route": "components/table-view/server-collection",
+          "title": "TableView — server collection",
+          "summary": "Bound to UserList against the live backend, with fetch:error handling.",
+          "icon": "bi-table",
+          "docs": "docs/web-mojo/components/TableView.md"
         },
         {
           "route": "components/data-view",
@@ -1401,7 +1758,21 @@
         {
           "route": "components/file-view",
           "title": "FileView",
-          "summary": "File record viewer — preview, details, renditions, and metadata sections.",
+          "summary": "Modal-hosted file viewer — the canonical pattern for opening a File record.",
+          "icon": "bi-file-earmark",
+          "docs": "docs/web-mojo/components/FileView.md"
+        },
+        {
+          "route": "components/side-nav-view",
+          "title": "SideNavView",
+          "summary": "Section-based detail layout used inside Modal record viewers (FileView, IPSetView, …).",
+          "icon": "bi-layout-sidebar",
+          "docs": "docs/web-mojo/components/SideNavView.md"
+        },
+        {
+          "route": "components/file-view/inline",
+          "title": "FileView — inline",
+          "summary": "Rare alternative — embed FileView directly in a page instead of a Modal.",
           "icon": "bi-file-earmark",
           "docs": "docs/web-mojo/components/FileView.md"
         },
@@ -1422,7 +1793,14 @@
         {
           "route": "components/context-menu",
           "title": "ContextMenu",
-          "summary": "Reusable Bootstrap-dropdown action menu — three-dots row menus, header menus, and inline handlers.",
+          "summary": "Three-dots row menu — items dispatch data-action handlers on the row View.",
+          "icon": "bi-three-dots-vertical",
+          "docs": "docs/web-mojo/components/ContextMenu.md"
+        },
+        {
+          "route": "components/context-menu/row",
+          "title": "ContextMenu — right-click row",
+          "summary": "Right-click variant — the menu attaches to the row, not a trigger button.",
           "icon": "bi-three-dots-vertical",
           "docs": "docs/web-mojo/components/ContextMenu.md"
         }

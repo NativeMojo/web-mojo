@@ -120,9 +120,10 @@ class ListView extends View {
       const collection = new collectionOrClass();
       this.setCollection(collection);
     }
-    // Check if it's an array of data
+    // Check if it's an array of data — Collection's signature is
+    // (options, data); first arg may be the array itself.
     else if (Array.isArray(collectionOrClass)) {
-      const collection = new Collection(null, {}, collectionOrClass);
+      const collection = new Collection(collectionOrClass);
       this.setCollection(collection);
     }
   }

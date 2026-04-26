@@ -15,6 +15,7 @@
 
 import { PortalWebApp } from 'web-mojo';
 import HomePage from './shell/HomePage.js';
+import DocsModal from './shell/DocsModal.js';
 import registry from './examples.registry.json';
 
 const examples = Array.isArray(registry?.pages) ? registry.pages : [];
@@ -85,6 +86,19 @@ for (const ex of examples) {
     }
 }
 
+// Global doc-link interceptor: anywhere in the portal, an element marked
+// `<a data-action="open-doc" data-doc="docs/web-mojo/<area>/<File>.md">…</a>`
+// opens the markdown in a Modal instead of navigating the browser.
+document.addEventListener('click', (event) => {
+    const el = event.target.closest('[data-action="open-doc"]');
+    if (!el) return;
+    const docPath = el.getAttribute('data-doc');
+    if (!docPath) return;
+    event.preventDefault();
+    DocsModal.open(docPath);
+});
+
 await app.start();
 
 window.app = app;
+window.DocsModal = DocsModal;

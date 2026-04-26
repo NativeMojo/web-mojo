@@ -79,7 +79,7 @@ const result = await app.start();   // { success, user } | { success: false, err
     _record(name) {
         this.eventLog.unshift(`${new Date().toLocaleTimeString()} — ${name}`);
         this.eventLog = this.eventLog.slice(0, 8);
-        this.render();
+        if (this.isActive) this.render();
     }
 
     static TEMPLATE = `
@@ -91,7 +91,7 @@ const result = await app.start();   // { success, user } | { success: false, err
             </p>
             <p class="example-docs-link">
                 <i class="bi bi-book"></i>
-                <a href="https://github.com/NativeMojo/web-mojo/blob/main/docs/web-mojo/core/PortalWebApp.md" target="_blank">
+                <a href="#" data-action="open-doc" data-doc="docs/web-mojo/core/PortalWebApp.md">
                     docs/web-mojo/core/PortalWebApp.md
                 </a>
             </p>

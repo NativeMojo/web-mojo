@@ -119,7 +119,9 @@ class MultiStepWizardExample extends Page {
                 <code>currentStep</code> and a <code>wizardData</code> accumulator.
             </p>
             <p class="example-docs-link"><i class="bi bi-book"></i>
-                <a href="https://github.com/NativeMojo/web-mojo/blob/main/docs/web-mojo/forms/MultiStepWizard.md" target="_blank">docs/web-mojo/forms/MultiStepWizard.md</a></p>
+                <a href="#" data-action="open-doc" data-doc="docs/web-mojo/forms/MultiStepWizard.md">
+                    docs/web-mojo/forms/MultiStepWizard.md
+                </a></p>
             <div class="card"><div class="card-body">
                 {{#isComplete|bool}}
                     <div class="alert alert-success"><i class="bi bi-check-circle"></i>

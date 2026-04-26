@@ -3,7 +3,7 @@
     "area": "core",
     "route": "core/data-formatter",
     "title": "DataFormatter",
-    "summary": "Pipe formatters in templates plus dataFormatter.register and dataFormatter.apply.",
+    "summary": "Live formatter playground — apply or chain any registered pipe formatter.",
     "docs": "docs/web-mojo/core/DataFormatter.md",
     "tags": ["formatter", "pipe", "templates"],
     "page": "DataFormatterExample.js",

@@ -42,6 +42,7 @@ class DataFormatter {
     this.register('datetime_range', this.datetime_range.bind(this));
     this.register('relative', this.relative.bind(this));
     this.register('fromNow', this.relative.bind(this)); // Alias
+    this.register('timeago', this.relative.bind(this)); // Alias used by TimelineViewItem
     this.register('relative_short', this.relative_short.bind(this)); // Alias for short relative time
     this.register('iso', this.iso.bind(this));
     this.register('epoch', (v) => {
@@ -720,7 +721,23 @@ class DataFormatter {
   }
 
   normalizeEpoch(value) {
-    if (typeof value !== "number") value = Number(value);
+    // Pass-through for Date instances — callers wrap with `new Date(value)`.
+    if (value instanceof Date) return value;
+
+    // ISO-8601 / parseable strings — Number('2026-04-25T...') is NaN and
+    // would silently drop to '' below; recover by trying Date.parse first.
+    if (typeof value === 'string') {
+      const asNum = Number(value);
+      if (Number.isFinite(asNum)) {
+        value = asNum;
+      } else {
+        const parsed = Date.parse(value);
+        if (Number.isFinite(parsed)) return parsed; // already ms epoch
+        return '';
+      }
+    } else if (typeof value !== 'number') {
+      value = Number(value);
+    }
 
     // Check if the number is valid
     if (isNaN(value)) return '';
