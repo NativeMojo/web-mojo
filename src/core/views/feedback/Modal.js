@@ -153,16 +153,40 @@ class Modal {
         const typeClass = `modal-alert modal-alert-${typeKey}`;
         const className = [typeClass, callerClassName].filter(Boolean).join(' ');
 
-        // Eyebrow micro-label is opt-in. Callers who want extra context above
-        // the headline can pass `eyebrow: 'ACCOUNT / SECURITY'`. By default the
-        // hero band + tinted card bg already communicate the type, so adding
-        // a "ERROR" eyebrow above an "Error" headline reads as redundant.
-        const eyebrowHtml = callerEyebrow
-            ? `<span class="modal-alert-eyebrow">${callerEyebrow}</span>`
+        // Eyebrow micro-label — typed alerts get one by default (it's what
+        // makes them feel labeled beyond just the band color). Other modal
+        // surfaces (confirm/prompt/show/form) don't go through this code path
+        // and never get an eyebrow.
+        //
+        // Smart suppression: skip the default eyebrow when the headline would
+        // just duplicate it case-insensitively (e.g. title="Error" + type=error
+        // would otherwise render "ERROR / Error"). Callers can always force
+        // suppression with `eyebrow: false` or override with a custom string.
+        const defaultEyebrow = {
+            info: 'INFORMATION',
+            success: 'SUCCESS',
+            warning: 'WARNING',
+            error: 'ERROR'
+        };
+        let eyebrowText;
+        if (callerEyebrow === false || callerEyebrow === '') {
+            eyebrowText = null;
+        } else if (callerEyebrow) {
+            eyebrowText = callerEyebrow;
+        } else {
+            const auto = defaultEyebrow[typeKey] ?? defaultEyebrow.info;
+            // Skip default if the headline would just repeat it
+            eyebrowText = (resolvedTitle.trim().toUpperCase() === auto)
+                ? null
+                : auto;
+        }
+
+        const eyebrowHtml = eyebrowText
+            ? `<span class="modal-alert-eyebrow">${eyebrowText}</span>`
             : '';
 
-        // Title is just the headline (with optional eyebrow). The hero band
-        // and tinted card bg communicate the type — no inline icon needed
+        // Title is the headline (with optional eyebrow). The hero band and
+        // tinted card bg communicate the type — no inline icon needed
         // (per the 05-merged-refined mockup direction).
         const titleHtml =
             eyebrowHtml +
