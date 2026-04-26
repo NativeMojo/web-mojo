@@ -28,25 +28,97 @@ import registry from './examples.registry.json';
 installMockBackend();
 
 const examples = Array.isArray(registry?.pages) ? registry.pages : [];
-const menuAreas = Array.isArray(registry?.menu) ? registry.menu : [];
+const topics = Array.isArray(registry?.topics) ? registry.topics : [];
 
-const sidebarItems = [
-    { text: 'Home', route: '?page=home', icon: 'bi-house' },
-    { divider: true },
+// Curated learning path pinned at the top of the hub menu. Five canonical
+// pages a brand-new user should see first. Routes are validated against the
+// registry by test/build/examples-registry.test.js, so renaming any of them
+// without updating this list will fail CI.
+const START_HERE = [
+    { text: 'View',      route: 'core/view',      icon: 'bi-box' },
+    { text: 'Templates', route: 'core/templates', icon: 'bi-braces' },
+    { text: 'Model',     route: 'core/model',     icon: 'bi-database' },
+    { text: 'Page',      route: 'pages/page',     icon: 'bi-file-earmark-text' },
+    { text: 'WebApp',    route: 'core/web-app',   icon: 'bi-app' },
 ];
 
-for (const area of menuAreas) {
-    if (!area.pages || !area.pages.length) continue;
-    sidebarItems.push({
-        text: area.section,
-        icon: area.icon || 'bi-folder',
-        children: area.pages.map(p => ({
-            text: p.title,
-            route: `?page=${p.route}`,
-            icon: p.icon || 'bi-circle',
-        })),
-    });
+function topicHeader(topic) {
+    return `<div class="pt-3 text-center fs-5 fw-bold sidebar-collapse-hide">`
+        + `<i class="bi ${topic.icon} pe-2"></i>${topic.label}</div>`;
 }
+
+// Translate one registry.topics[i] entry into a Sidebar menu config.
+// Each group becomes a non-clickable label (kind: 'label') followed by its
+// items. Items with `children` render as a one-level collapsible parent.
+// Trailing spacer + "Back to Examples" mirrors the admin menu's exit pattern.
+function buildTopicMenu(topic) {
+    const items = [];
+    for (const group of topic.groups) {
+        items.push({ kind: 'label', text: group.label, className: 'sidebar-section-label' });
+        for (const item of group.items) {
+            const entry = {
+                text: item.title,
+                route: `?page=${item.route}`,
+                icon: item.icon || 'bi-circle',
+            };
+            if (item.children && item.children.length) {
+                entry.children = item.children.map(c => ({
+                    text: c.title,
+                    route: `?page=${c.route}`,
+                    icon: c.icon || 'bi-circle',
+                }));
+            }
+            items.push(entry);
+        }
+    }
+    items.push({ spacer: true });
+    items.push({
+        text: 'Back to Examples',
+        action: `exit-topic-${topic.name}`,
+        icon: 'bi-arrow-bar-left',
+        handler: async () => app.sidebar.setActiveMenu('hub'),
+    });
+    return {
+        name: topic.name,
+        className: 'sidebar sidebar-light sidebar-topic',
+        header: topicHeader(topic),
+        items,
+    };
+}
+
+// Defensive switch — the admin `system` menu is registered late by
+// mountAdminExtension(); guard against clicking the link before it lands.
+function switchToMenu(name) {
+    if (!app.sidebar?.hasMenu?.(name)) {
+        console.warn(`[examples] menu '${name}' not yet registered`);
+        return;
+    }
+    app.sidebar.setActiveMenu(name);
+}
+
+const hubItems = [
+    { text: 'Home', route: '?page=home', icon: 'bi-house' },
+    { divider: true },
+    { kind: 'label', text: 'START HERE', className: 'sidebar-section-label' },
+    ...START_HERE.map(s => ({ text: s.text, route: `?page=${s.route}`, icon: s.icon })),
+    { divider: true },
+    { kind: 'label', text: 'BROWSE', className: 'sidebar-section-label' },
+    ...topics.map(t => ({
+        text: t.label,
+        action: `open-topic-${t.name}`,
+        icon: t.icon,
+        handler: () => switchToMenu(t.name),
+    })),
+    { divider: true },
+    {
+        text: 'Admin',
+        action: 'open-admin-from-hub',
+        icon: 'bi-wrench',
+        handler: () => switchToMenu('system'),
+    },
+];
+
+const topicMenus = topics.map(buildTopicMenu);
 
 const app = new PortalWebApp({
     name: 'web-mojo Examples',
@@ -63,17 +135,23 @@ const app = new PortalWebApp({
     brandIcon: 'bi-lightning-charge',
 
     sidebar: {
-        defaultMenu: 'default',
+        defaultMenu: 'hub',
         menus: [
+            // Hub — small landing menu. "Start Here" pins the canonical
+            // learning path; "Browse" links jump to topic sub-sidebars.
             {
-                name: 'default',
+                name: 'hub',
                 className: 'sidebar sidebar-dark',
-                items: sidebarItems,
+                items: hubItems,
             },
+            // Topic sub-sidebars (Architecture, Components, Forms, Extensions),
+            // each driven from registry.topics. Every sub-sidebar ends with
+            // a "Back to Examples" item that calls setActiveMenu('hub').
+            ...topicMenus,
+            // Admin / system menu — registerAdminPages(app, true) injects
+            // its items here when this menu exists. Switch in via the wrench
+            // icon in the topbar or the hub's "Admin" link.
             {
-                // Admin / system menu — registerAdminPages(app, true) injects
-                // its items here when this menu exists. Switch in via the
-                // wrench icon in the topbar.
                 name: 'system',
                 className: 'sidebar sidebar-light sidebar-admin',
                 header: '<div class="pt-3 text-center fs-5 fw-bold sidebar-collapse-hide"><i class="bi bi-wrench pe-2"></i>System</div>',
@@ -83,7 +161,7 @@ const app = new PortalWebApp({
                         text: 'Exit Admin',
                         action: 'exit-admin',
                         icon: 'bi-arrow-bar-left',
-                        handler: async () => app.sidebar.setActiveMenu('default'),
+                        handler: async () => app.sidebar.setActiveMenu('hub'),
                     },
                 ],
             },
@@ -121,7 +199,7 @@ const app = new PortalWebApp({
                 action: 'open-admin',
                 tooltip: 'Open admin / system menu',
                 buttonClass: 'btn btn-link',
-                handler: () => app.sidebar.setActiveMenu('system'),
+                handler: () => switchToMenu('system'),
             },
             // Login placeholder — replaced by userMenu after setActiveUser.
             {
@@ -157,10 +235,11 @@ app.events.on('portal:action', ({ action }) => {
             DocsModal.open('docs/web-mojo/examples.md');
             break;
         case 'open-admin':
-            app.sidebar.setActiveMenu('system');
+        case 'open-admin-from-hub':
+            switchToMenu('system');
             break;
         case 'exit-admin':
-            app.sidebar.setActiveMenu('default');
+            switchToMenu('hub');
             break;
         case 'profile':
             app.toast?.info?.('No real user — auth is disabled in this portal.');
@@ -182,7 +261,7 @@ app.events.on('portal:action', ({ action }) => {
     }
 });
 
-app.registerPage('home', HomePage, { areas: menuAreas });
+app.registerPage('home', HomePage, { topics, startHere: START_HERE });
 
 // Admin extension — same pattern the legacy portal used. Mounts the
 // system/* admin pages and the LLM-backed Assistant. Defer until after

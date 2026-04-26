@@ -101,5 +101,60 @@ module.exports = async function(testContext) {
             const b = fs.readFileSync(REGISTRY_PATH);
             expect(a.equals(b)).toBe(true);
         });
+
+        it('every page has a non-empty topic and group', () => {
+            const reg = loadRegistry();
+            for (const p of reg.pages) {
+                expect(typeof p.topic).toBe('string');
+                expect(p.topic.length).toBeGreaterThan(0);
+                expect(typeof p.group).toBe('string');
+                expect(p.group.length).toBeGreaterThan(0);
+            }
+        });
+
+        it('every flat-page route appears in exactly one topic group', () => {
+            const reg = loadRegistry();
+            const seen = new Map();
+            for (const t of reg.topics) {
+                for (const g of t.groups) {
+                    for (const i of g.items) {
+                        const key = i.route;
+                        expect(seen.has(key)).toBe(false);
+                        seen.set(key, `${t.name}/${g.label}`);
+                        for (const c of i.children || []) {
+                            expect(seen.has(c.route)).toBe(false);
+                            seen.set(c.route, `${t.name}/${g.label}`);
+                        }
+                    }
+                }
+            }
+            for (const p of reg.pages) {
+                expect(seen.has(p.route)).toBe(true);
+            }
+        });
+
+        it('every topic has a unique name and at least one group', () => {
+            const reg = loadRegistry();
+            expect(Array.isArray(reg.topics)).toBe(true);
+            expect(reg.topics.length).toBeGreaterThan(0);
+            const names = new Set();
+            for (const t of reg.topics) {
+                expect(typeof t.name).toBe('string');
+                expect(t.name.length).toBeGreaterThan(0);
+                expect(names.has(t.name)).toBe(false);
+                names.add(t.name);
+                expect(Array.isArray(t.groups)).toBe(true);
+                expect(t.groups.length).toBeGreaterThan(0);
+            }
+        });
+
+        it('the curated Start Here routes all resolve to existing pages', () => {
+            const reg = loadRegistry();
+            const known = new Set(reg.pages.map(p => p.route));
+            const startHereRoutes = ['core/view', 'core/templates', 'core/model', 'pages/page', 'core/web-app'];
+            for (const r of startHereRoutes) {
+                expect(known.has(r)).toBe(true);
+            }
+        });
     });
 };

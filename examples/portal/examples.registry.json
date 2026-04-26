@@ -20,7 +20,9 @@
       "sourcePath": "examples/portal/examples/components/ChatView/ChatViewExample.js",
       "section": "Components",
       "icon": "bi-chat-dots",
-      "order": 95
+      "order": 95,
+      "topic": "components",
+      "group": "Other"
     },
     {
       "name": "ContextMenu",
@@ -40,7 +42,9 @@
       "sourcePath": "examples/portal/examples/components/ContextMenu/ContextMenuExample.js",
       "section": "Components",
       "icon": "bi-three-dots-vertical",
-      "order": 70
+      "order": 70,
+      "topic": "components",
+      "group": "Navigation"
     },
     {
       "name": "ContextMenu",
@@ -60,7 +64,9 @@
       "sourcePath": "examples/portal/examples/components/ContextMenu/ContextMenuRowExample.js",
       "section": "Components",
       "icon": "bi-three-dots-vertical",
-      "order": 71
+      "order": 71,
+      "topic": "components",
+      "group": "Navigation"
     },
     {
       "name": "DataView",
@@ -80,7 +86,9 @@
       "sourcePath": "examples/portal/examples/components/DataView/DataViewExample.js",
       "section": "Components",
       "icon": "bi-card-list",
-      "order": 40
+      "order": 40,
+      "topic": "components",
+      "group": "Lists & Tables"
     },
     {
       "name": "Dialog",
@@ -103,7 +111,9 @@
       "sourcePath": "examples/portal/examples/components/Dialog/DialogExample.js",
       "section": "Components",
       "icon": "bi-window",
-      "order": 10
+      "order": 10,
+      "topic": "components",
+      "group": "Modals & Dialogs"
     },
     {
       "name": "Dialog",
@@ -126,7 +136,9 @@
       "sourcePath": "examples/portal/examples/components/Dialog/DialogContextMenuExample.js",
       "section": "Components",
       "icon": "bi-window",
-      "order": 12
+      "order": 12,
+      "topic": "components",
+      "group": "Modals & Dialogs"
     },
     {
       "name": "Dialog",
@@ -149,7 +161,9 @@
       "sourcePath": "examples/portal/examples/components/Dialog/DialogCustomBodyExample.js",
       "section": "Components",
       "icon": "bi-window",
-      "order": 13
+      "order": 13,
+      "topic": "components",
+      "group": "Modals & Dialogs"
     },
     {
       "name": "Dialog",
@@ -172,7 +186,9 @@
       "sourcePath": "examples/portal/examples/components/Dialog/DialogFormExample.js",
       "section": "Components",
       "icon": "bi-window",
-      "order": 11
+      "order": 11,
+      "topic": "components",
+      "group": "Modals & Dialogs"
     },
     {
       "name": "FileView",
@@ -194,7 +210,9 @@
       "sourcePath": "examples/portal/examples/components/FileView/FileViewExample.js",
       "section": "Components",
       "icon": "bi-file-earmark",
-      "order": 50
+      "order": 50,
+      "topic": "components",
+      "group": "Files"
     },
     {
       "name": "FileView",
@@ -216,7 +234,9 @@
       "sourcePath": "examples/portal/examples/components/FileView/FileViewInlineExample.js",
       "section": "Components",
       "icon": "bi-file-earmark",
-      "order": 51
+      "order": 51,
+      "topic": "components",
+      "group": "Files"
     },
     {
       "name": "ImageFields",
@@ -236,7 +256,9 @@
       "sourcePath": "examples/portal/examples/components/ImageFields/ImageFieldsExample.js",
       "section": "Components",
       "icon": "bi-image",
-      "order": 55
+      "order": 55,
+      "topic": "components",
+      "group": "Files"
     },
     {
       "name": "ListView",
@@ -256,7 +278,9 @@
       "sourcePath": "examples/portal/examples/components/ListView/ListViewExample.js",
       "section": "Components",
       "icon": "bi-list-ul",
-      "order": 20
+      "order": 20,
+      "topic": "components",
+      "group": "Lists & Tables"
     },
     {
       "name": "ListView",
@@ -276,7 +300,9 @@
       "sourcePath": "examples/portal/examples/components/ListView/ListViewCustomItemExample.js",
       "section": "Components",
       "icon": "bi-list-ul",
-      "order": 21
+      "order": 21,
+      "topic": "components",
+      "group": "Lists & Tables"
     },
     {
       "name": "ListView",
@@ -296,7 +322,9 @@
       "sourcePath": "examples/portal/examples/components/ListView/ListViewLiveFilterExample.js",
       "section": "Components",
       "icon": "bi-list-ul",
-      "order": 22
+      "order": 22,
+      "topic": "components",
+      "group": "Lists & Tables"
     },
     {
       "name": "Modal",
@@ -317,7 +345,9 @@
       "sourcePath": "examples/portal/examples/components/Modal/ModalExample.js",
       "section": "Components",
       "icon": "bi-window-stack",
-      "order": 15
+      "order": 15,
+      "topic": "components",
+      "group": "Modals & Dialogs"
     },
     {
       "name": "Modal",
@@ -338,7 +368,9 @@
       "sourcePath": "examples/portal/examples/components/Modal/ModalFormExample.js",
       "section": "Components",
       "icon": "bi-window-stack",
-      "order": 17
+      "order": 17,
+      "topic": "components",
+      "group": "Modals & Dialogs"
     },
     {
       "name": "Modal",
@@ -359,7 +391,9 @@
       "sourcePath": "examples/portal/examples/components/Modal/ModalShowModelExample.js",
       "section": "Components",
       "icon": "bi-window-stack",
-      "order": 16
+      "order": 16,
+      "topic": "components",
+      "group": "Modals & Dialogs"
     },
     {
       "name": "SideNavView",
@@ -379,7 +413,9 @@
       "sourcePath": "examples/portal/examples/components/SideNavView/SideNavViewExample.js",
       "section": "Components",
       "icon": "bi-layout-sidebar",
-      "order": 50
+      "order": 50,
+      "topic": "components",
+      "group": "Navigation"
     },
     {
       "name": "SidebarTopNav",
@@ -399,7 +435,9 @@
       "sourcePath": "examples/portal/examples/components/SidebarTopNav/SidebarTopNavExample.js",
       "section": "Components",
       "icon": "bi-layout-sidebar",
-      "order": 60
+      "order": 60,
+      "topic": "components",
+      "group": "Navigation"
     },
     {
       "name": "TableView",
@@ -421,7 +459,9 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewExample.js",
       "section": "Components",
       "icon": "bi-table",
-      "order": 30
+      "order": 30,
+      "topic": "components",
+      "group": "Lists & Tables"
     },
     {
       "name": "TableView",
@@ -443,7 +483,9 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewBatchActionsExample.js",
       "section": "Components",
       "icon": "bi-table",
-      "order": 31
+      "order": 31,
+      "topic": "components",
+      "group": "Lists & Tables"
     },
     {
       "name": "TableView",
@@ -465,7 +507,9 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewCustomRowExample.js",
       "section": "Components",
       "icon": "bi-table",
-      "order": 32
+      "order": 32,
+      "topic": "components",
+      "group": "Lists & Tables"
     },
     {
       "name": "TableView",
@@ -487,7 +531,9 @@
       "sourcePath": "examples/portal/examples/components/TableView/TableViewServerExample.js",
       "section": "Components",
       "icon": "bi-table",
-      "order": 33
+      "order": 33,
+      "topic": "components",
+      "group": "Lists & Tables"
     },
     {
       "name": "AdvancedViews",
@@ -507,7 +553,9 @@
       "sourcePath": "examples/portal/examples/core/AdvancedViews/AdvancedViewsExample.js",
       "section": "Core",
       "icon": "bi-easel",
-      "order": 30
+      "order": 30,
+      "topic": "architecture",
+      "group": "Core"
     },
     {
       "name": "Collection",
@@ -527,7 +575,9 @@
       "sourcePath": "examples/portal/examples/core/Collection/CollectionExample.js",
       "section": "Core",
       "icon": "bi-stack",
-      "order": 70
+      "order": 70,
+      "topic": "architecture",
+      "group": "Core"
     },
     {
       "name": "DataFormatter",
@@ -546,7 +596,9 @@
       "sourcePath": "examples/portal/examples/core/DataFormatter/DataFormatterExample.js",
       "section": "Core",
       "icon": "bi-funnel",
-      "order": 50
+      "order": 50,
+      "topic": "architecture",
+      "group": "Core"
     },
     {
       "name": "Events",
@@ -565,7 +617,9 @@
       "sourcePath": "examples/portal/examples/core/Events/EventsExample.js",
       "section": "Core",
       "icon": "bi-broadcast",
-      "order": 80
+      "order": 80,
+      "topic": "architecture",
+      "group": "Core"
     },
     {
       "name": "Model",
@@ -585,7 +639,9 @@
       "sourcePath": "examples/portal/examples/core/Model/ModelExample.js",
       "section": "Core",
       "icon": "bi-database",
-      "order": 60
+      "order": 60,
+      "topic": "architecture",
+      "group": "Core"
     },
     {
       "name": "PortalApp",
@@ -606,7 +662,9 @@
       "sourcePath": "examples/portal/examples/core/PortalApp/PortalAppExample.js",
       "section": "Core",
       "icon": "bi-window-sidebar",
-      "order": 100
+      "order": 100,
+      "topic": "architecture",
+      "group": "App Shells"
     },
     {
       "name": "PortalWebApp",
@@ -626,7 +684,9 @@
       "sourcePath": "examples/portal/examples/core/PortalWebApp/PortalWebAppExample.js",
       "section": "Core",
       "icon": "bi-shield-lock",
-      "order": 110
+      "order": 110,
+      "topic": "architecture",
+      "group": "App Shells"
     },
     {
       "name": "Templates",
@@ -645,7 +705,9 @@
       "sourcePath": "examples/portal/examples/core/Templates/TemplatesExample.js",
       "section": "Core",
       "icon": "bi-braces",
-      "order": 40
+      "order": 40,
+      "topic": "architecture",
+      "group": "Core"
     },
     {
       "name": "View",
@@ -666,7 +728,9 @@
       "sourcePath": "examples/portal/examples/core/View/ViewExample.js",
       "section": "Core",
       "icon": "bi-box",
-      "order": 10
+      "order": 10,
+      "topic": "architecture",
+      "group": "Core"
     },
     {
       "name": "ViewChildViews",
@@ -686,7 +750,9 @@
       "sourcePath": "examples/portal/examples/core/ViewChildViews/ViewChildViewsExample.js",
       "section": "Core",
       "icon": "bi-diagram-3",
-      "order": 20
+      "order": 20,
+      "topic": "architecture",
+      "group": "Core"
     },
     {
       "name": "WebApp",
@@ -705,7 +771,9 @@
       "sourcePath": "examples/portal/examples/core/WebApp/WebAppExample.js",
       "section": "Core",
       "icon": "bi-app",
-      "order": 90
+      "order": 90,
+      "topic": "architecture",
+      "group": "App Shells"
     },
     {
       "name": "Charts",
@@ -728,7 +796,9 @@
       "sourcePath": "examples/portal/examples/extensions/Charts/ChartsExample.js",
       "section": "Extensions",
       "icon": "bi-graph-up",
-      "order": 10
+      "order": 10,
+      "topic": "extensions",
+      "group": "Charts"
     },
     {
       "name": "Charts",
@@ -751,7 +821,9 @@
       "sourcePath": "examples/portal/examples/extensions/Charts/CircularProgressExample.js",
       "section": "Extensions",
       "icon": "bi-graph-up",
-      "order": 13
+      "order": 13,
+      "topic": "extensions",
+      "group": "Charts"
     },
     {
       "name": "Charts",
@@ -774,7 +846,9 @@
       "sourcePath": "examples/portal/examples/extensions/Charts/MetricsMiniChartExample.js",
       "section": "Extensions",
       "icon": "bi-graph-up",
-      "order": 14
+      "order": 14,
+      "topic": "extensions",
+      "group": "Charts"
     },
     {
       "name": "Charts",
@@ -797,7 +871,9 @@
       "sourcePath": "examples/portal/examples/extensions/Charts/PieChartExample.js",
       "section": "Extensions",
       "icon": "bi-graph-up",
-      "order": 12
+      "order": 12,
+      "topic": "extensions",
+      "group": "Charts"
     },
     {
       "name": "Charts",
@@ -820,7 +896,9 @@
       "sourcePath": "examples/portal/examples/extensions/Charts/SeriesChartExample.js",
       "section": "Extensions",
       "icon": "bi-graph-up",
-      "order": 11
+      "order": 11,
+      "topic": "extensions",
+      "group": "Charts"
     },
     {
       "name": "FileUpload",
@@ -840,7 +918,9 @@
       "sourcePath": "examples/portal/examples/extensions/FileUpload/FileUploadExample.js",
       "section": "Extensions",
       "icon": "bi-cloud-arrow-up",
-      "order": 60
+      "order": 60,
+      "topic": "extensions",
+      "group": "Media"
     },
     {
       "name": "LightBox",
@@ -861,7 +941,9 @@
       "sourcePath": "examples/portal/examples/extensions/LightBox/LightBoxExample.js",
       "section": "Extensions",
       "icon": "bi-image",
-      "order": 20
+      "order": 20,
+      "topic": "extensions",
+      "group": "Media"
     },
     {
       "name": "Location",
@@ -881,7 +963,9 @@
       "sourcePath": "examples/portal/examples/extensions/Location/LocationExample.js",
       "section": "Extensions",
       "icon": "bi-geo-alt",
-      "order": 70
+      "order": 70,
+      "topic": "extensions",
+      "group": "Maps & Location"
     },
     {
       "name": "MapLibreView",
@@ -902,7 +986,9 @@
       "sourcePath": "examples/portal/examples/extensions/MapLibreView/MapLibreViewExample.js",
       "section": "Extensions",
       "icon": "bi-globe-americas",
-      "order": 40
+      "order": 40,
+      "topic": "extensions",
+      "group": "Maps & Location"
     },
     {
       "name": "MapView",
@@ -922,7 +1008,9 @@
       "sourcePath": "examples/portal/examples/extensions/MapView/MapViewExample.js",
       "section": "Extensions",
       "icon": "bi-map",
-      "order": 30
+      "order": 30,
+      "topic": "extensions",
+      "group": "Maps & Location"
     },
     {
       "name": "TabView",
@@ -941,7 +1029,9 @@
       "sourcePath": "examples/portal/examples/extensions/TabView/TabViewExample.js",
       "section": "Extensions",
       "icon": "bi-ui-checks-grid",
-      "order": 100
+      "order": 100,
+      "topic": "extensions",
+      "group": "UI"
     },
     {
       "name": "TabView",
@@ -960,7 +1050,9 @@
       "sourcePath": "examples/portal/examples/extensions/TabView/TabViewDynamicExample.js",
       "section": "Extensions",
       "icon": "bi-ui-checks-grid",
-      "order": 101
+      "order": 101,
+      "topic": "extensions",
+      "group": "UI"
     },
     {
       "name": "TimelineView",
@@ -980,7 +1072,9 @@
       "sourcePath": "examples/portal/examples/extensions/TimelineView/TimelineViewExample.js",
       "section": "Extensions",
       "icon": "bi-clock-history",
-      "order": 50
+      "order": 50,
+      "topic": "extensions",
+      "group": "UI"
     },
     {
       "name": "DateTimeFields",
@@ -1000,7 +1094,9 @@
       "sourcePath": "examples/portal/examples/forms/DateTimeFields/DateTimeFieldsExample.js",
       "section": "Forms",
       "icon": "bi-calendar-event",
-      "order": 40
+      "order": 40,
+      "topic": "forms",
+      "group": "Field Types"
     },
     {
       "name": "FileMediaFields",
@@ -1021,7 +1117,9 @@
       "sourcePath": "examples/portal/examples/forms/FileMediaFields/FileMediaFieldsExample.js",
       "section": "Forms",
       "icon": "bi-cloud-upload",
-      "order": 50
+      "order": 50,
+      "topic": "forms",
+      "group": "Field Types"
     },
     {
       "name": "FormLayout",
@@ -1042,7 +1140,9 @@
       "sourcePath": "examples/portal/examples/forms/FormLayout/FormLayoutExample.js",
       "section": "Forms",
       "icon": "bi-grid-3x3-gap",
-      "order": 100
+      "order": 100,
+      "topic": "forms",
+      "group": "Patterns"
     },
     {
       "name": "FormView",
@@ -1062,7 +1162,9 @@
       "sourcePath": "examples/portal/examples/forms/FormView/FormViewExample.js",
       "section": "Forms",
       "icon": "bi-ui-checks-grid",
-      "order": 10
+      "order": 10,
+      "topic": "forms",
+      "group": "FormView"
     },
     {
       "name": "FormView",
@@ -1082,7 +1184,9 @@
       "sourcePath": "examples/portal/examples/forms/FormView/AllFieldTypesExample.js",
       "section": "Forms",
       "icon": "bi-ui-checks-grid",
-      "order": 11
+      "order": 11,
+      "topic": "forms",
+      "group": "FormView"
     },
     {
       "name": "CollectionSelect",
@@ -1103,7 +1207,9 @@
       "sourcePath": "examples/portal/examples/forms/inputs/CollectionSelect/CollectionSelectExample.js",
       "section": "Form Inputs",
       "icon": "bi-link-45deg",
-      "order": 60
+      "order": 60,
+      "topic": "forms",
+      "group": "Specialized Inputs"
     },
     {
       "name": "ComboInput",
@@ -1124,7 +1230,9 @@
       "sourcePath": "examples/portal/examples/forms/inputs/ComboInput/ComboInputExample.js",
       "section": "Form Inputs",
       "icon": "bi-input-cursor",
-      "order": 50
+      "order": 50,
+      "topic": "forms",
+      "group": "Specialized Inputs"
     },
     {
       "name": "DatePicker",
@@ -1144,7 +1252,9 @@
       "sourcePath": "examples/portal/examples/forms/inputs/DatePicker/DatePickerExample.js",
       "section": "Form Inputs",
       "icon": "bi-calendar-date",
-      "order": 20
+      "order": 20,
+      "topic": "forms",
+      "group": "Specialized Inputs"
     },
     {
       "name": "DateRangePicker",
@@ -1164,7 +1274,9 @@
       "sourcePath": "examples/portal/examples/forms/inputs/DateRangePicker/DateRangePickerExample.js",
       "section": "Form Inputs",
       "icon": "bi-calendar-range",
-      "order": 30
+      "order": 30,
+      "topic": "forms",
+      "group": "Specialized Inputs"
     },
     {
       "name": "ImageField",
@@ -1185,7 +1297,9 @@
       "sourcePath": "examples/portal/examples/forms/inputs/ImageField/ImageFieldExample.js",
       "section": "Form Inputs",
       "icon": "bi-image",
-      "order": 70
+      "order": 70,
+      "topic": "forms",
+      "group": "Specialized Inputs"
     },
     {
       "name": "MultiSelectDropdown",
@@ -1205,7 +1319,9 @@
       "sourcePath": "examples/portal/examples/forms/inputs/MultiSelect/MultiSelectExample.js",
       "section": "Form Inputs",
       "icon": "bi-check2-square",
-      "order": 40
+      "order": 40,
+      "topic": "forms",
+      "group": "Specialized Inputs"
     },
     {
       "name": "TagInput",
@@ -1226,7 +1342,9 @@
       "sourcePath": "examples/portal/examples/forms/inputs/TagInput/TagInputExample.js",
       "section": "Form Inputs",
       "icon": "bi-tags",
-      "order": 10
+      "order": 10,
+      "topic": "forms",
+      "group": "Specialized Inputs"
     },
     {
       "name": "MultiStepWizard",
@@ -1246,7 +1364,9 @@
       "sourcePath": "examples/portal/examples/forms/MultiStepWizard/MultiStepWizardExample.js",
       "section": "Forms",
       "icon": "bi-list-ol",
-      "order": 110
+      "order": 110,
+      "topic": "forms",
+      "group": "Patterns"
     },
     {
       "name": "OtherFields",
@@ -1267,7 +1387,9 @@
       "sourcePath": "examples/portal/examples/forms/OtherFields/OtherFieldsExample.js",
       "section": "Forms",
       "icon": "bi-sliders",
-      "order": 80
+      "order": 80,
+      "topic": "forms",
+      "group": "Field Types"
     },
     {
       "name": "SearchFilterForm",
@@ -1287,7 +1409,9 @@
       "sourcePath": "examples/portal/examples/forms/SearchFilterForm/SearchFilterFormExample.js",
       "section": "Forms",
       "icon": "bi-funnel",
-      "order": 120
+      "order": 120,
+      "topic": "forms",
+      "group": "Patterns"
     },
     {
       "name": "SelectionFields",
@@ -1308,7 +1432,9 @@
       "sourcePath": "examples/portal/examples/forms/SelectionFields/SelectionFieldsExample.js",
       "section": "Forms",
       "icon": "bi-ui-radios",
-      "order": 30
+      "order": 30,
+      "topic": "forms",
+      "group": "Field Types"
     },
     {
       "name": "StructuralFields",
@@ -1329,7 +1455,9 @@
       "sourcePath": "examples/portal/examples/forms/StructuralFields/StructuralFieldsExample.js",
       "section": "Forms",
       "icon": "bi-layout-text-window",
-      "order": 70
+      "order": 70,
+      "topic": "forms",
+      "group": "Field Types"
     },
     {
       "name": "TextInputs",
@@ -1350,7 +1478,9 @@
       "sourcePath": "examples/portal/examples/forms/TextInputs/TextInputsExample.js",
       "section": "Forms",
       "icon": "bi-input-cursor-text",
-      "order": 20
+      "order": 20,
+      "topic": "forms",
+      "group": "Field Types"
     },
     {
       "name": "TextareaFields",
@@ -1370,7 +1500,9 @@
       "sourcePath": "examples/portal/examples/forms/TextareaFields/TextareaFieldsExample.js",
       "section": "Forms",
       "icon": "bi-textarea-resize",
-      "order": 60
+      "order": 60,
+      "topic": "forms",
+      "group": "Field Types"
     },
     {
       "name": "Validation",
@@ -1391,7 +1523,9 @@
       "sourcePath": "examples/portal/examples/forms/Validation/ValidationExample.js",
       "section": "Forms",
       "icon": "bi-shield-check",
-      "order": 90
+      "order": 90,
+      "topic": "forms",
+      "group": "Patterns"
     },
     {
       "name": "Validation",
@@ -1412,7 +1546,9 @@
       "sourcePath": "examples/portal/examples/forms/Validation/ValidationAdvancedExample.js",
       "section": "Forms",
       "icon": "bi-shield-check",
-      "order": 91
+      "order": 91,
+      "topic": "forms",
+      "group": "Patterns"
     },
     {
       "name": "BuiltinModels",
@@ -1436,7 +1572,9 @@
       "sourcePath": "examples/portal/examples/models/BuiltinModels/BuiltinModelsExample.js",
       "section": "Models",
       "icon": "bi-collection",
-      "order": 10
+      "order": 10,
+      "topic": "architecture",
+      "group": "Models"
     },
     {
       "name": "FormPage",
@@ -1456,7 +1594,9 @@
       "sourcePath": "examples/portal/examples/pages/FormPage/FormPageExample.js",
       "section": "Pages",
       "icon": "bi-ui-checks",
-      "order": 20
+      "order": 20,
+      "topic": "architecture",
+      "group": "Pages"
     },
     {
       "name": "Page",
@@ -1477,7 +1617,9 @@
       "sourcePath": "examples/portal/examples/pages/Page/PageExample.js",
       "section": "Pages",
       "icon": "bi-file-earmark-text",
-      "order": 10
+      "order": 10,
+      "topic": "architecture",
+      "group": "Pages"
     },
     {
       "name": "TablePage",
@@ -1499,7 +1641,9 @@
       "sourcePath": "examples/portal/examples/pages/TablePage/TablePageExample.js",
       "section": "Pages",
       "icon": "bi-grid-3x3-gap",
-      "order": 30
+      "order": 30,
+      "topic": "architecture",
+      "group": "Pages"
     },
     {
       "name": "TablePage",
@@ -1521,7 +1665,9 @@
       "sourcePath": "examples/portal/examples/pages/TablePage/TablePageWithDetailViewExample.js",
       "section": "Pages",
       "icon": "bi-grid-3x3-gap",
-      "order": 32
+      "order": 32,
+      "topic": "architecture",
+      "group": "Pages"
     },
     {
       "name": "TablePage",
@@ -1543,7 +1689,9 @@
       "sourcePath": "examples/portal/examples/pages/TablePage/TablePageWithFormsExample.js",
       "section": "Pages",
       "icon": "bi-grid-3x3-gap",
-      "order": 31
+      "order": 31,
+      "topic": "architecture",
+      "group": "Pages"
     },
     {
       "name": "Rest",
@@ -1563,7 +1711,9 @@
       "sourcePath": "examples/portal/examples/services/Rest/RestExample.js",
       "section": "Services",
       "icon": "bi-arrow-left-right",
-      "order": 10
+      "order": 10,
+      "topic": "architecture",
+      "group": "Services"
     },
     {
       "name": "ToastService",
@@ -1582,7 +1732,9 @@
       "sourcePath": "examples/portal/examples/services/ToastService/ToastServiceExample.js",
       "section": "Services",
       "icon": "bi-bell",
-      "order": 20
+      "order": 20,
+      "topic": "architecture",
+      "group": "Services"
     },
     {
       "name": "WebSocketClient",
@@ -1601,7 +1753,690 @@
       "sourcePath": "examples/portal/examples/services/WebSocketClient/WebSocketClientExample.js",
       "section": "Services",
       "icon": "bi-broadcast",
-      "order": 30
+      "order": 30,
+      "topic": "architecture",
+      "group": "Services"
+    }
+  ],
+  "topics": [
+    {
+      "name": "architecture",
+      "label": "Architecture",
+      "icon": "bi-diagram-2",
+      "groups": [
+        {
+          "label": "Core",
+          "items": [
+            {
+              "route": "core/view",
+              "title": "View",
+              "summary": "Base component: lifecycle, templates, data-action, child views.",
+              "icon": "bi-box",
+              "docs": "docs/web-mojo/core/View.md",
+              "children": [
+                {
+                  "route": "core/view-child-views",
+                  "title": "View — child views",
+                  "summary": "Full child-view tour: containers, collection iteration, events, action bubbling, remount.",
+                  "icon": "bi-diagram-3",
+                  "docs": "docs/web-mojo/core/ViewChildViews.md"
+                },
+                {
+                  "route": "core/advanced-views",
+                  "title": "Advanced Views — Canvas",
+                  "summary": "Canvas inside a View with onAfterRender setup and onBeforeDestroy cleanup.",
+                  "icon": "bi-easel",
+                  "docs": "docs/web-mojo/core/AdvancedViews.md"
+                }
+              ]
+            },
+            {
+              "route": "core/templates",
+              "title": "Templates",
+              "summary": "Live Mustache playground: edit template + JSON, see the framework render it.",
+              "icon": "bi-braces",
+              "docs": "docs/web-mojo/core/Templates.md"
+            },
+            {
+              "route": "core/data-formatter",
+              "title": "DataFormatter",
+              "summary": "Live formatter playground — apply or chain any registered pipe formatter.",
+              "icon": "bi-funnel",
+              "docs": "docs/web-mojo/core/DataFormatter.md"
+            },
+            {
+              "route": "core/model",
+              "title": "Model",
+              "summary": "REST-backed entity with attribute access, change events, dirty tracking, and CRUD.",
+              "icon": "bi-database",
+              "docs": "docs/web-mojo/core/Model.md"
+            },
+            {
+              "route": "core/collection",
+              "title": "Collection",
+              "summary": "Model set with setParams/updateParams, where() filtering, and events.",
+              "icon": "bi-stack",
+              "docs": "docs/web-mojo/core/Collection.md"
+            },
+            {
+              "route": "core/events",
+              "title": "Events",
+              "summary": "EventBus for global pub/sub and per-instance on/emit on Models and Views.",
+              "icon": "bi-broadcast",
+              "docs": "docs/web-mojo/core/Events.md"
+            }
+          ]
+        },
+        {
+          "label": "App Shells",
+          "items": [
+            {
+              "route": "core/web-app",
+              "title": "WebApp",
+              "summary": "Minimal app shell: routing, page registry, REST client, global event bus.",
+              "icon": "bi-app",
+              "docs": "docs/web-mojo/core/WebApp.md"
+            },
+            {
+              "route": "core/portal-app",
+              "title": "PortalApp",
+              "summary": "WebApp plus sidebar, topbar, auth, multi-tenant group, and toast notifications.",
+              "icon": "bi-window-sidebar",
+              "docs": "docs/web-mojo/core/PortalApp.md"
+            },
+            {
+              "route": "core/portal-web-app",
+              "title": "PortalWebApp",
+              "summary": "Opinionated portal: auth-gated router, automatic WebSocket, lifecycle events.",
+              "icon": "bi-shield-lock",
+              "docs": "docs/web-mojo/core/PortalWebApp.md"
+            }
+          ]
+        },
+        {
+          "label": "Pages",
+          "items": [
+            {
+              "route": "pages/page",
+              "title": "Page",
+              "summary": "Routed screen base: onEnter/onExit, URL params, permissions.",
+              "icon": "bi-file-earmark-text",
+              "docs": "docs/web-mojo/pages/Page.md"
+            },
+            {
+              "route": "pages/form-page",
+              "title": "FormPage",
+              "summary": "Page wrapped around a FormView with model load/save.",
+              "icon": "bi-ui-checks",
+              "docs": "docs/web-mojo/pages/FormPage.md"
+            },
+            {
+              "route": "pages/table-page",
+              "title": "TablePage",
+              "summary": "URL-synced table over a seeded Collection — sort, filter, search, pagination.",
+              "icon": "bi-grid-3x3-gap",
+              "docs": "docs/web-mojo/components/TablePage.md",
+              "children": [
+                {
+                  "route": "pages/table-page/forms",
+                  "title": "TablePage — with forms",
+                  "summary": "Toolbar Add and row-edit open Modal.form dialogs that persist to the Collection.",
+                  "icon": "bi-grid-3x3-gap",
+                  "docs": "docs/web-mojo/components/TablePage.md"
+                },
+                {
+                  "route": "pages/table-page/detail-view",
+                  "title": "TablePage — with detail view",
+                  "summary": "itemView opens a custom detail View in a Modal, with deep-linkable _item URL param.",
+                  "icon": "bi-grid-3x3-gap",
+                  "docs": "docs/web-mojo/components/TablePage.md"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Services",
+          "items": [
+            {
+              "route": "services/rest",
+              "title": "Rest",
+              "summary": "HTTP client: GET/POST/PUT/DELETE, file upload/download, interceptors.",
+              "icon": "bi-arrow-left-right",
+              "docs": "docs/web-mojo/services/Rest.md"
+            },
+            {
+              "route": "services/toast-service",
+              "title": "ToastService",
+              "summary": "Bootstrap 5 toasts: success/warn/error/info, view-as-toast.",
+              "icon": "bi-bell",
+              "docs": "docs/web-mojo/services/ToastService.md"
+            },
+            {
+              "route": "services/web-socket-client",
+              "title": "WebSocketClient",
+              "summary": "WebSocket client with auto-reconnect and heartbeat.",
+              "icon": "bi-broadcast",
+              "docs": "docs/web-mojo/services/WebSocketClient.md"
+            }
+          ]
+        },
+        {
+          "label": "Models",
+          "items": [
+            {
+              "route": "models/builtin-models",
+              "title": "Built-in Models",
+              "summary": "Catalog of built-in Model/Collection classes (User, Group, Job, …) plus a UserList demo.",
+              "icon": "bi-collection",
+              "docs": "docs/web-mojo/models/BuiltinModels.md"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "components",
+      "label": "Components",
+      "icon": "bi-grid-3x3-gap",
+      "groups": [
+        {
+          "label": "Modals & Dialogs",
+          "items": [
+            {
+              "route": "components/dialog",
+              "title": "Dialog",
+              "summary": "alert / confirm / prompt / showBusy / showDialog — promise-based modal helpers.",
+              "icon": "bi-window",
+              "docs": "docs/web-mojo/components/Dialog.md",
+              "children": [
+                {
+                  "route": "components/dialog/form",
+                  "title": "Dialog — forms",
+                  "summary": "showForm and showModelForm — host a FormView inside a Dialog.",
+                  "icon": "bi-window",
+                  "docs": "docs/web-mojo/components/Dialog.md"
+                },
+                {
+                  "route": "components/dialog/context-menu",
+                  "title": "Dialog — context menu",
+                  "summary": "Header dropdown menu with permission-gated items.",
+                  "icon": "bi-window",
+                  "docs": "docs/web-mojo/components/Dialog.md"
+                },
+                {
+                  "route": "components/dialog/custom-body",
+                  "title": "Dialog — custom body",
+                  "summary": "Mount any View as the dialog body; read its state when the dialog closes.",
+                  "icon": "bi-window",
+                  "docs": "docs/web-mojo/components/Dialog.md"
+                }
+              ]
+            },
+            {
+              "route": "components/modal",
+              "title": "Modal",
+              "summary": "Modal.show(view) — size matrix (sm/md/lg/xl/xxl/fullscreen), scrollable, static backdrop.",
+              "icon": "bi-window-stack",
+              "docs": "docs/web-mojo/components/Modal.md",
+              "children": [
+                {
+                  "route": "components/modal/show-model",
+                  "title": "Modal — showModel",
+                  "summary": "Modal.showModel and showModelById — open a model in its VIEW_CLASS automatically.",
+                  "icon": "bi-window-stack",
+                  "docs": "docs/web-mojo/components/Modal.md"
+                },
+                {
+                  "route": "components/modal/form",
+                  "title": "Modal — form",
+                  "summary": "Modal.form — host a FormView in a modal, resolve with the submitted data.",
+                  "icon": "bi-window-stack",
+                  "docs": "docs/web-mojo/components/Modal.md"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Lists & Tables",
+          "items": [
+            {
+              "route": "components/list-view",
+              "title": "ListView",
+              "summary": "Visual list bound to a Collection — per-row Views with click-to-select.",
+              "icon": "bi-list-ul",
+              "docs": "docs/web-mojo/components/ListView.md",
+              "children": [
+                {
+                  "route": "components/list-view/custom-item",
+                  "title": "ListView — custom item class",
+                  "summary": "ListViewItem subclass with avatar, badges, and computed display fields.",
+                  "icon": "bi-list-ul",
+                  "docs": "docs/web-mojo/components/ListView.md"
+                },
+                {
+                  "route": "components/list-view/live-filter",
+                  "title": "ListView — live search filter",
+                  "summary": "Search input above the list, debounced via MOJOUtils.debounce + collection.where().",
+                  "icon": "bi-list-ul",
+                  "docs": "docs/web-mojo/components/ListView.md"
+                }
+              ]
+            },
+            {
+              "route": "components/table-view",
+              "title": "TableView",
+              "summary": "Sortable, filterable, paginated table over ~25 seeded user rows.",
+              "icon": "bi-table",
+              "docs": "docs/web-mojo/components/TableView.md",
+              "children": [
+                {
+                  "route": "components/table-view/batch-actions",
+                  "title": "TableView — batch actions",
+                  "summary": "Multi-select rows + bulk actions wired to the in-memory Collection.",
+                  "icon": "bi-table",
+                  "docs": "docs/web-mojo/components/TableView.md"
+                },
+                {
+                  "route": "components/table-view/custom-row",
+                  "title": "TableView — custom row class",
+                  "summary": "Custom itemClass (TableRow subclass) with avatar, badges, and expand-on-click.",
+                  "icon": "bi-table",
+                  "docs": "docs/web-mojo/components/TableView.md"
+                },
+                {
+                  "route": "components/table-view/server-collection",
+                  "title": "TableView — server collection",
+                  "summary": "Bound to UserList against the live backend, with fetch:error handling.",
+                  "icon": "bi-table",
+                  "docs": "docs/web-mojo/components/TableView.md"
+                }
+              ]
+            },
+            {
+              "route": "components/data-view",
+              "title": "DataView",
+              "summary": "Structured key/value display with field types for email, URL, boolean, dates, and JSON.",
+              "icon": "bi-card-list",
+              "docs": "docs/web-mojo/components/DataView.md"
+            }
+          ]
+        },
+        {
+          "label": "Files",
+          "items": [
+            {
+              "route": "components/file-view",
+              "title": "FileView",
+              "summary": "Modal-hosted file viewer — the canonical pattern for opening a File record.",
+              "icon": "bi-file-earmark",
+              "docs": "docs/web-mojo/components/FileView.md",
+              "children": [
+                {
+                  "route": "components/file-view/inline",
+                  "title": "FileView — inline",
+                  "summary": "Rare alternative — embed FileView directly in a page instead of a Modal.",
+                  "icon": "bi-file-earmark",
+                  "docs": "docs/web-mojo/components/FileView.md"
+                }
+              ]
+            },
+            {
+              "route": "components/image-fields",
+              "title": "Image fields",
+              "summary": "FormView image input fields — five size variants, drag/drop, and rendition-aware preview.",
+              "icon": "bi-image",
+              "docs": "docs/web-mojo/components/ImageFields.md"
+            }
+          ]
+        },
+        {
+          "label": "Navigation",
+          "items": [
+            {
+              "route": "components/sidebar-top-nav",
+              "title": "Sidebar & TopNav",
+              "summary": "Portal navigation chrome — sidebar menus and topbar configured via PortalApp.",
+              "icon": "bi-layout-sidebar",
+              "docs": "docs/web-mojo/components/SidebarTopNav.md"
+            },
+            {
+              "route": "components/side-nav-view",
+              "title": "SideNavView",
+              "summary": "Section-based detail layout used inside Modal record viewers (FileView, IPSetView, …).",
+              "icon": "bi-layout-sidebar",
+              "docs": "docs/web-mojo/components/SideNavView.md"
+            },
+            {
+              "route": "components/context-menu",
+              "title": "ContextMenu",
+              "summary": "Three-dots row menu — items dispatch data-action handlers on the row View.",
+              "icon": "bi-three-dots-vertical",
+              "docs": "docs/web-mojo/components/ContextMenu.md",
+              "children": [
+                {
+                  "route": "components/context-menu/row",
+                  "title": "ContextMenu — right-click row",
+                  "summary": "Right-click variant — the menu attaches to the row, not a trigger button.",
+                  "icon": "bi-three-dots-vertical",
+                  "docs": "docs/web-mojo/components/ContextMenu.md"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Other",
+          "items": [
+            {
+              "route": "components/chat-view",
+              "title": "ChatView",
+              "summary": "Chat thread with composer — ChatView + ChatMessageView + ChatInputView.",
+              "icon": "bi-chat-dots",
+              "docs": "docs/web-mojo/components/ChatView.md"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "forms",
+      "label": "Forms",
+      "icon": "bi-ui-checks",
+      "groups": [
+        {
+          "label": "FormView",
+          "items": [
+            {
+              "route": "forms/form-view",
+              "title": "FormView",
+              "summary": "FormView fundamentals: fields, validation, submission.",
+              "icon": "bi-ui-checks-grid",
+              "docs": "docs/web-mojo/forms/FormView.md",
+              "children": [
+                {
+                  "route": "forms/form-view/all-field-types",
+                  "title": "FormView — all field types",
+                  "summary": "Comprehensive reference of every supported field type.",
+                  "icon": "bi-ui-checks-grid",
+                  "docs": "docs/web-mojo/forms/FormView.md"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "label": "Field Types",
+          "items": [
+            {
+              "route": "forms/text-inputs",
+              "title": "Text inputs",
+              "summary": "Text, email, password, tel, url, search, hex, number fields.",
+              "icon": "bi-input-cursor-text",
+              "docs": "docs/web-mojo/forms/BasicTypes.md"
+            },
+            {
+              "route": "forms/selection-fields",
+              "title": "Selection fields",
+              "summary": "Select, radio, checkbox, toggle/switch, and button group.",
+              "icon": "bi-ui-radios",
+              "docs": "docs/web-mojo/forms/BasicTypes.md"
+            },
+            {
+              "route": "forms/date-time-fields",
+              "title": "Date & time fields",
+              "summary": "Native HTML5 date, time, and datetime-local pickers.",
+              "icon": "bi-calendar-event",
+              "docs": "docs/web-mojo/forms/BasicTypes.md"
+            },
+            {
+              "route": "forms/file-media-fields",
+              "title": "File & media fields",
+              "summary": "File upload, image preview, audio/video file inputs.",
+              "icon": "bi-cloud-upload",
+              "docs": "docs/web-mojo/forms/FileHandling.md"
+            },
+            {
+              "route": "forms/textarea-fields",
+              "title": "Textarea fields",
+              "summary": "Multi-line text plus htmlpreview and json variants.",
+              "icon": "bi-textarea-resize",
+              "docs": "docs/web-mojo/forms/BasicTypes.md"
+            },
+            {
+              "route": "forms/structural-fields",
+              "title": "Structural fields",
+              "summary": "Header, divider, html, button, and hidden — non-input field types.",
+              "icon": "bi-layout-text-window",
+              "docs": "docs/web-mojo/forms/BasicTypes.md"
+            },
+            {
+              "route": "forms/other-fields",
+              "title": "Other fields",
+              "summary": "Color, range, and hex-color fields with live previews.",
+              "icon": "bi-sliders",
+              "docs": "docs/web-mojo/forms/BasicTypes.md"
+            }
+          ]
+        },
+        {
+          "label": "Specialized Inputs",
+          "items": [
+            {
+              "route": "forms/inputs/tag-input",
+              "title": "TagInput",
+              "summary": "Tag/chip input with autocomplete suggestions.",
+              "icon": "bi-tags",
+              "docs": "docs/web-mojo/forms/inputs/TagInput.md"
+            },
+            {
+              "route": "forms/inputs/date-picker",
+              "title": "DatePicker",
+              "summary": "Calendar date picker with min/max, inline mode, and custom formats.",
+              "icon": "bi-calendar-date",
+              "docs": "docs/web-mojo/forms/inputs/DatePicker.md"
+            },
+            {
+              "route": "forms/inputs/date-range-picker",
+              "title": "DateRangePicker",
+              "summary": "Start/end date range in a single combined picker.",
+              "icon": "bi-calendar-range",
+              "docs": "docs/web-mojo/forms/inputs/DateRangePicker.md"
+            },
+            {
+              "route": "forms/inputs/multi-select",
+              "title": "MultiSelectDropdown",
+              "summary": "Compact multi-select dropdown with optional search and select-all.",
+              "icon": "bi-check2-square",
+              "docs": "docs/web-mojo/forms/inputs/MultiSelectDropdown.md"
+            },
+            {
+              "route": "forms/inputs/combo-input",
+              "title": "ComboInput",
+              "summary": "Searchable text + dropdown; toggle allowCustom for strict mode.",
+              "icon": "bi-input-cursor",
+              "docs": "docs/web-mojo/forms/inputs/ComboInput.md"
+            },
+            {
+              "route": "forms/inputs/collection-select",
+              "title": "CollectionSelect / MultiSelect",
+              "summary": "Single + multi select bound to a Collection (built-in UserList).",
+              "icon": "bi-link-45deg",
+              "docs": "docs/web-mojo/forms/inputs/CollectionSelect.md"
+            },
+            {
+              "route": "forms/inputs/image-field",
+              "title": "ImageField",
+              "summary": "Image upload with drag-and-drop, preview, and configurable size.",
+              "icon": "bi-image",
+              "docs": "docs/web-mojo/forms/inputs/ImageField.md"
+            }
+          ]
+        },
+        {
+          "label": "Patterns",
+          "items": [
+            {
+              "route": "forms/validation",
+              "title": "Validation",
+              "summary": "HTML5 + custom validators, patterns, and error handling.",
+              "icon": "bi-shield-check",
+              "docs": "docs/web-mojo/forms/Validation.md",
+              "children": [
+                {
+                  "route": "forms/validation/advanced",
+                  "title": "Validation — advanced",
+                  "summary": "Async validators, real-time feedback, cross-field rules.",
+                  "icon": "bi-shield-check",
+                  "docs": "docs/web-mojo/forms/Validation.md"
+                }
+              ]
+            },
+            {
+              "route": "forms/form-layout",
+              "title": "Form layout",
+              "summary": "Column grids, responsive widths, and grouped sub-grids.",
+              "icon": "bi-grid-3x3-gap",
+              "docs": "docs/web-mojo/forms/BestPractices.md"
+            },
+            {
+              "route": "forms/multi-step-wizard",
+              "title": "Multi-step wizard",
+              "summary": "Page + one FormView per step, with progress, navigation, and review.",
+              "icon": "bi-list-ol",
+              "docs": "docs/web-mojo/forms/MultiStepWizard.md"
+            },
+            {
+              "route": "forms/search-filter-form",
+              "title": "Search & filter form",
+              "summary": "Live filter form driving a result list, with debounced changes.",
+              "icon": "bi-funnel",
+              "docs": "docs/web-mojo/forms/SearchFilterForms.md"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "extensions",
+      "label": "Extensions",
+      "icon": "bi-puzzle",
+      "groups": [
+        {
+          "label": "Charts",
+          "items": [
+            {
+              "route": "extensions/charts",
+              "title": "MiniChart (sparkline)",
+              "summary": "Single-series sparkline — line/bar with crosshair, tooltip, value formatter.",
+              "icon": "bi-graph-up",
+              "docs": "docs/web-mojo/extensions/Charts.md"
+            },
+            {
+              "route": "extensions/charts/series",
+              "title": "SeriesChart (multi-dataset)",
+              "summary": "Multi-dataset line/bar/area — stacked-by-default bars, dynamic colors, legend toggle, animated setData.",
+              "icon": "bi-graph-up",
+              "docs": "docs/web-mojo/extensions/Charts.md"
+            },
+            {
+              "route": "extensions/charts/pie",
+              "title": "PieChart",
+              "summary": "Native pie + doughnut, slice labels, click drill-down, animated updates.",
+              "icon": "bi-graph-up",
+              "docs": "docs/web-mojo/extensions/Charts.md"
+            },
+            {
+              "route": "extensions/charts/circular-progress",
+              "title": "CircularProgress",
+              "summary": "Sizes, variants, themes, multi-segment, and live setValue updates.",
+              "icon": "bi-graph-up",
+              "docs": "docs/web-mojo/extensions/Charts.md"
+            },
+            {
+              "route": "extensions/charts/metrics-mini-chart",
+              "title": "MetricsMiniChartWidget",
+              "summary": "Backend-driven sparkline tiles with header, trending, and settings popover.",
+              "icon": "bi-graph-up",
+              "docs": "docs/web-mojo/extensions/Charts.md"
+            }
+          ]
+        },
+        {
+          "label": "Maps & Location",
+          "items": [
+            {
+              "route": "extensions/map-view",
+              "title": "MapView",
+              "summary": "Leaflet marker map with auto-fit bounds and switchable tile layers.",
+              "icon": "bi-map",
+              "docs": "docs/web-mojo/extensions/MapView.md"
+            },
+            {
+              "route": "extensions/map-libre-view",
+              "title": "MapLibreView",
+              "summary": "Vector-tile MapLibre GL map with 3D pitch and bearing.",
+              "icon": "bi-globe-americas",
+              "docs": "docs/web-mojo/extensions/MapLibreView.md"
+            },
+            {
+              "route": "extensions/location",
+              "title": "Location",
+              "summary": "Browser geolocation: one-shot fix and live watch with permission handling.",
+              "icon": "bi-geo-alt",
+              "docs": "docs/web-mojo/extensions/Location.md"
+            }
+          ]
+        },
+        {
+          "label": "Media",
+          "items": [
+            {
+              "route": "extensions/light-box",
+              "title": "LightBox",
+              "summary": "ImageViewer, LightboxGallery, and ImageEditor opened via static dialogs.",
+              "icon": "bi-image",
+              "docs": "docs/web-mojo/extensions/LightBox.md"
+            },
+            {
+              "route": "extensions/file-upload",
+              "title": "FileUpload",
+              "summary": "Drag-and-drop file handling via applyFileDropMixin with validation.",
+              "icon": "bi-cloud-arrow-up",
+              "docs": "docs/web-mojo/extensions/FileUpload.md"
+            }
+          ]
+        },
+        {
+          "label": "UI",
+          "items": [
+            {
+              "route": "extensions/tab-view",
+              "title": "TabView",
+              "summary": "Tab navigation with static tabs and lazy mounting.",
+              "icon": "bi-ui-checks-grid",
+              "docs": "docs/web-mojo/extensions/TabView.md",
+              "children": [
+                {
+                  "route": "extensions/tab-view/dynamic",
+                  "title": "TabView — dynamic",
+                  "summary": "Tabs added and removed at runtime.",
+                  "icon": "bi-ui-checks-grid",
+                  "docs": "docs/web-mojo/extensions/TabView.md"
+                }
+              ]
+            },
+            {
+              "route": "extensions/timeline-view",
+              "title": "TimelineView",
+              "summary": "Chronological event timeline backed by a Collection.",
+              "icon": "bi-clock-history",
+              "docs": "docs/web-mojo/extensions/TimelineView.md"
+            }
+          ]
+        }
+      ]
     }
   ],
   "menu": [

@@ -47,6 +47,176 @@ const AREA_LABEL = {
     'models': 'Models',
 };
 
+// Topic taxonomy — authoritative information architecture for the portal.
+//
+// Drives both the human-facing sidebar menus AND the LLM-facing `topics` tree
+// in examples.registry.json + the H2/H3 structure of docs/web-mojo/examples.md.
+// Adding a new example requires adding its route here, otherwise the build
+// fails with a clear message.
+//
+// Each topic lists groups in display order. Each group lists "items" — either
+// a single route (a leaf) or `{ route, children: [...] }` where children are
+// variant subroutes that should collapse under the parent in the sidebar.
+const TOPIC_TAXONOMY = [
+    {
+        name: 'architecture',
+        label: 'Architecture',
+        icon: 'bi-diagram-2',
+        groups: [
+            {
+                label: 'Core',
+                items: [
+                    { route: 'core/view', children: ['core/view-child-views', 'core/advanced-views'] },
+                    'core/templates',
+                    'core/data-formatter',
+                    'core/model',
+                    'core/collection',
+                    'core/events',
+                ],
+            },
+            {
+                label: 'App Shells',
+                items: ['core/web-app', 'core/portal-app', 'core/portal-web-app'],
+            },
+            {
+                label: 'Pages',
+                items: [
+                    'pages/page',
+                    'pages/form-page',
+                    { route: 'pages/table-page', children: ['pages/table-page/forms', 'pages/table-page/detail-view'] },
+                ],
+            },
+            {
+                label: 'Services',
+                items: ['services/rest', 'services/toast-service', 'services/web-socket-client'],
+            },
+            {
+                label: 'Models',
+                items: ['models/builtin-models'],
+            },
+        ],
+    },
+    {
+        name: 'components',
+        label: 'Components',
+        icon: 'bi-grid-3x3-gap',
+        groups: [
+            {
+                label: 'Modals & Dialogs',
+                items: [
+                    { route: 'components/dialog', children: ['components/dialog/form', 'components/dialog/context-menu', 'components/dialog/custom-body'] },
+                    { route: 'components/modal', children: ['components/modal/show-model', 'components/modal/form'] },
+                ],
+            },
+            {
+                label: 'Lists & Tables',
+                items: [
+                    { route: 'components/list-view', children: ['components/list-view/custom-item', 'components/list-view/live-filter'] },
+                    { route: 'components/table-view', children: ['components/table-view/batch-actions', 'components/table-view/custom-row', 'components/table-view/server-collection'] },
+                    'components/data-view',
+                ],
+            },
+            {
+                label: 'Files',
+                items: [
+                    { route: 'components/file-view', children: ['components/file-view/inline'] },
+                    'components/image-fields',
+                ],
+            },
+            {
+                label: 'Navigation',
+                items: [
+                    'components/sidebar-top-nav',
+                    'components/side-nav-view',
+                    { route: 'components/context-menu', children: ['components/context-menu/row'] },
+                ],
+            },
+            {
+                label: 'Other',
+                items: ['components/chat-view'],
+            },
+        ],
+    },
+    {
+        name: 'forms',
+        label: 'Forms',
+        icon: 'bi-ui-checks',
+        groups: [
+            {
+                label: 'FormView',
+                items: [
+                    { route: 'forms/form-view', children: ['forms/form-view/all-field-types'] },
+                ],
+            },
+            {
+                label: 'Field Types',
+                items: [
+                    'forms/text-inputs',
+                    'forms/selection-fields',
+                    'forms/date-time-fields',
+                    'forms/file-media-fields',
+                    'forms/textarea-fields',
+                    'forms/structural-fields',
+                    'forms/other-fields',
+                ],
+            },
+            {
+                label: 'Specialized Inputs',
+                items: [
+                    'forms/inputs/tag-input',
+                    'forms/inputs/date-picker',
+                    'forms/inputs/date-range-picker',
+                    'forms/inputs/multi-select',
+                    'forms/inputs/combo-input',
+                    'forms/inputs/collection-select',
+                    'forms/inputs/image-field',
+                ],
+            },
+            {
+                label: 'Patterns',
+                items: [
+                    { route: 'forms/validation', children: ['forms/validation/advanced'] },
+                    'forms/form-layout',
+                    'forms/multi-step-wizard',
+                    'forms/search-filter-form',
+                ],
+            },
+        ],
+    },
+    {
+        name: 'extensions',
+        label: 'Extensions',
+        icon: 'bi-puzzle',
+        groups: [
+            {
+                label: 'Charts',
+                items: [
+                    'extensions/charts',
+                    'extensions/charts/series',
+                    'extensions/charts/pie',
+                    'extensions/charts/circular-progress',
+                    'extensions/charts/metrics-mini-chart',
+                ],
+            },
+            {
+                label: 'Maps & Location',
+                items: ['extensions/map-view', 'extensions/map-libre-view', 'extensions/location'],
+            },
+            {
+                label: 'Media',
+                items: ['extensions/light-box', 'extensions/file-upload'],
+            },
+            {
+                label: 'UI',
+                items: [
+                    { route: 'extensions/tab-view', children: ['extensions/tab-view/dynamic'] },
+                    'extensions/timeline-view',
+                ],
+            },
+        ],
+    },
+];
+
 const REQUIRED_FIELDS = ['name', 'area', 'route', 'title', 'summary', 'page'];
 const REQUIRED_PAGE_FIELDS = ['route', 'title', 'summary', 'page'];
 
@@ -128,6 +298,7 @@ function expandManifest(manifest, manifestPath) {
 
     const make = (page, idx) => {
         const pageRel = `./${relative(resolve(REPO_ROOT, 'examples/portal'), join(folder, page.page)).replace(/\\/g, '/')}`;
+        const taxon = TOPIC_BY_ROUTE.get(page.route);
         return {
             name: page.name || manifest.name,
             area: manifest.area,
@@ -142,6 +313,8 @@ function expandManifest(manifest, manifestPath) {
             section: page.section || baseSection,
             icon: page.icon || baseIcon,
             order: typeof page.order === 'number' ? page.order : baseOrder + idx,
+            topic: taxon ? taxon.topic : null,
+            group: taxon ? taxon.group : null,
         };
     };
 
@@ -149,6 +322,69 @@ function expandManifest(manifest, manifestPath) {
         return manifest.pages.map((p, i) => make(p, i));
     }
     return [make(manifest, 0)];
+}
+
+// Flatten the topic taxonomy into a route → { topic, group, parentRoute? } lookup.
+// Variant routes carry a parentRoute pointer so we can render them as sidebar
+// children of their parent component.
+const TOPIC_BY_ROUTE = (() => {
+    const map = new Map();
+    for (const topic of TOPIC_TAXONOMY) {
+        for (const group of topic.groups) {
+            for (const item of group.items) {
+                if (typeof item === 'string') {
+                    map.set(item, { topic: topic.name, group: group.label });
+                } else {
+                    map.set(item.route, { topic: topic.name, group: group.label });
+                    for (const childRoute of item.children || []) {
+                        map.set(childRoute, { topic: topic.name, group: group.label, parentRoute: item.route });
+                    }
+                }
+            }
+        }
+    }
+    return map;
+})();
+
+function buildTopics(pages) {
+    const byRoute = new Map(pages.map(p => [p.route, p]));
+    const topics = [];
+
+    for (const topic of TOPIC_TAXONOMY) {
+        const groups = [];
+        for (const group of topic.groups) {
+            const items = [];
+            for (const item of group.items) {
+                if (typeof item === 'string') {
+                    const page = byRoute.get(item);
+                    if (!page) continue;
+                    items.push(pageEntry(page));
+                } else {
+                    const parent = byRoute.get(item.route);
+                    if (!parent) continue;
+                    const children = (item.children || [])
+                        .map(r => byRoute.get(r))
+                        .filter(Boolean)
+                        .map(pageEntry);
+                    items.push({ ...pageEntry(parent), children });
+                }
+            }
+            if (items.length) groups.push({ label: group.label, items });
+        }
+        if (groups.length) topics.push({ name: topic.name, label: topic.label, icon: topic.icon, groups });
+    }
+
+    return topics;
+}
+
+function pageEntry(p) {
+    return {
+        route: p.route,
+        title: p.title,
+        summary: p.summary,
+        icon: p.icon,
+        docs: p.docs,
+    };
 }
 
 function buildMenu(pages) {
@@ -195,29 +431,42 @@ function escapeMdCell(text) {
         .replace(/\r?\n/g, ' ');
 }
 
-function buildDocsIndex(menu) {
+function buildDocsIndex(topics, pagesByRoute) {
     const lines = [];
     lines.push('# Examples Index');
     lines.push('');
     lines.push('> **Generated** by `examples/portal/scripts/build-registry.js`. Do not edit by hand.');
     lines.push('');
-    lines.push('Single canonical example per documented component. Folder taxonomy mirrors this docs tree. Each link below points at the runnable, copy-paste reference file in the new portal.');
+    lines.push('Single canonical example per documented component. Pages are organized by topic — the same taxonomy that drives the portal sidebars. Each link below points at the runnable, copy-paste reference file.');
     lines.push('');
 
-    for (const area of menu) {
-        lines.push(`## ${area.section}`);
+    const renderRow = (entry) => {
+        const page = pagesByRoute.get(entry.route);
+        if (!page) return null;
+        const docCell = page.docs
+            ? `[${escapeMdCell(page.docs.replace(/^docs\/web-mojo\//, ''))}](../../${page.docs})`
+            : '—';
+        return `| [${escapeMdCell(page.title)}](../../${page.sourcePath}) | ${escapeMdCell(page.summary)} | ${docCell} |`;
+    };
+
+    for (const topic of topics) {
+        lines.push(`## ${topic.label}`);
         lines.push('');
-        lines.push('| Component | Summary | Doc |');
-        lines.push('|---|---|---|');
-        for (const p of area.pages) {
-            const stem = String(p.title).split(' ')[0].replace(/[^A-Za-z0-9_-]/g, '');
-            const sourcePath = `examples/portal/examples/${area.area}/${stem}/${stem}Example.js`;
-            const docCell = p.docs
-                ? `[${escapeMdCell(p.docs.replace(/^docs\/web-mojo\//, ''))}](../../${p.docs})`
-                : '—';
-            lines.push(`| [${escapeMdCell(stem)}](../../${sourcePath}) | ${escapeMdCell(p.summary)} | ${docCell} |`);
+        for (const group of topic.groups) {
+            lines.push(`### ${group.label}`);
+            lines.push('');
+            lines.push('| Component | Summary | Doc |');
+            lines.push('|---|---|---|');
+            for (const item of group.items) {
+                const row = renderRow(item);
+                if (row) lines.push(row);
+                for (const child of item.children || []) {
+                    const childRow = renderRow(child);
+                    if (childRow) lines.push(childRow);
+                }
+            }
+            lines.push('');
         }
-        lines.push('');
     }
 
     return lines.join('\n') + '\n';
@@ -247,19 +496,52 @@ function main() {
     }
 
     allPages.sort((a, b) => a.route.localeCompare(b.route));
+
+    // Verify that every page has a topic assignment. Catches new examples
+    // added without a TOPIC_TAXONOMY entry, and stale taxonomy entries
+    // pointing at routes that no longer exist.
+    const orphans = allPages.filter(p => !p.topic);
+    if (orphans.length) {
+        for (const o of orphans) {
+            console.error(`[build-registry] route '${o.route}' is not in TOPIC_TAXONOMY (build-registry.js)`);
+        }
+        fail(`${orphans.length} route(s) missing topic assignment — add them to TOPIC_TAXONOMY`);
+    }
+    const taxonomyRoutes = new Set();
+    for (const t of TOPIC_TAXONOMY) {
+        for (const g of t.groups) {
+            for (const i of g.items) {
+                const r = typeof i === 'string' ? i : i.route;
+                taxonomyRoutes.add(r);
+                if (typeof i !== 'string') {
+                    for (const c of i.children || []) taxonomyRoutes.add(c);
+                }
+            }
+        }
+    }
+    const knownRoutes = new Set(allPages.map(p => p.route));
+    for (const r of taxonomyRoutes) {
+        if (!knownRoutes.has(r)) {
+            fail(`TOPIC_TAXONOMY references unknown route '${r}'`);
+        }
+    }
+
     const menu = buildMenu(allPages);
+    const topics = buildTopics(allPages);
 
     const registry = {
         generatedAt: 'static',
         pageCount: allPages.length,
         pages: allPages,
+        topics,
         menu,
     };
 
     writeFileSync(REGISTRY_PATH, JSON.stringify(registry, null, 2) + '\n');
-    writeFileSync(DOCS_INDEX_PATH, buildDocsIndex(menu));
+    const pagesByRoute = new Map(allPages.map(p => [p.route, p]));
+    writeFileSync(DOCS_INDEX_PATH, buildDocsIndex(topics, pagesByRoute));
 
-    console.log(`[build-registry] wrote ${allPages.length} examples across ${menu.length} areas`);
+    console.log(`[build-registry] wrote ${allPages.length} examples across ${topics.length} topics (${menu.length} legacy areas)`);
     console.log(`[build-registry] -> ${relative(REPO_ROOT, REGISTRY_PATH)}`);
     console.log(`[build-registry] -> ${relative(REPO_ROOT, DOCS_INDEX_PATH)}`);
 }

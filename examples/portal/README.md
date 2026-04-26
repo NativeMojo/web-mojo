@@ -89,3 +89,9 @@ The legacy portal lives at [`examples/legacy/portal/`](../legacy/portal/) — it
 ## Registry contract
 
 `examples.registry.json` is the LLM-facing contract. The `find-example` skill (installed by the [bootstrap-web-mojo-claude.sh](https://gist.githubusercontent.com/iamojo/1096cba9bbb345a92dc0182c2ec2dc14/raw/606444ef630a4f028ffeea800d393294003a8ce5/bootstrap-web-mojo-claude.sh) gist) reads it. Keep its path stable.
+
+## Sidebar topic taxonomy
+
+The portal navigation is hub-and-spoke. The default `hub` sidebar pins a curated "Start Here" path and links to four topic sub-sidebars: **Architecture**, **Components**, **Forms**, **Extensions**. The existing **Admin** sidebar is unchanged. Each topic sub-sidebar groups its items under non-clickable section labels and ends with a "Back to Examples" item.
+
+The taxonomy is one constant — `TOPIC_TAXONOMY` in [scripts/build-registry.js](scripts/build-registry.js). When you add a new example, append its route to the right group in that constant (or the build will fail with a clear message naming the missing route). The build emits a `topics` tree on the registry and regenerates [docs/web-mojo/examples.md](../../docs/web-mojo/examples.md) under the same headings — so the LLM-facing index, the human-facing sidebar, and the home page card grid all stay in sync.

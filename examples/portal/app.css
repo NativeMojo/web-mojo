@@ -1,3 +1,11 @@
+/* Wider sidebar — many of the example titles include variant suffixes
+   ("TableView — server collection", "ListView — custom item class") that
+   wrap awkwardly at the framework default of 250px. */
+:root,
+.portal-container {
+    --mojo-sidebar-width: 300px;
+}
+
 .example-page {
     padding: 1rem 1.25rem;
 }
@@ -17,4 +25,30 @@
 
 .shell-home .lead {
     max-width: 64ch;
+}
+
+/* Topic sub-sidebars (Architecture / Components / Forms / Extensions).
+   Same palette as .sidebar-admin so the user knows they've left the dark hub. */
+.sidebar.sidebar-topic {
+    background: #f6f8fa;
+    color: #212529;
+}
+.sidebar.sidebar-topic .nav-link {
+    color: #212529;
+}
+.sidebar.sidebar-topic .nav-link.active {
+    background-color: #e7f1ff;
+    color: #0d6efd;
+}
+
+/* Non-clickable group section headers inside topic menus.
+   Sits between Bootstrap nav-pill items as a quiet uppercase label. */
+.sidebar .sidebar-section-label .nav-text {
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    opacity: 0.55;
+    margin-top: 0.5rem;
+    margin-bottom: 0.15rem;
+    padding: 0.25rem 0.75rem;
 }

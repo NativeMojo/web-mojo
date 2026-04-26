@@ -3,8 +3,14 @@ import { Page } from 'web-mojo';
 /**
  * HomePage — landing page for the examples portal.
  *
- * Lists every example in the registry grouped by area. The list is generated
- * from `examples.registry.json` so it stays in sync automatically.
+ * Renders the same topic taxonomy that drives the portal sidebars:
+ *   - "Start Here" strip pinned at the top (the canonical learning path).
+ *   - Per-topic sections (Architecture, Components, Forms, Extensions),
+ *     each with group sub-headings and a card grid.
+ *
+ * Variant subroutes (e.g. components/dialog/form, components/table-view/batch-actions)
+ * are rendered as flat cards in the same group as their parent so the home
+ * page is a complete index in one scroll.
  */
 class HomePage extends Page {
     static pageName = 'home';
@@ -22,7 +28,20 @@ class HomePage extends Page {
 
     async onInit() {
         await super.onInit();
-        this.areas = (this.options.areas || []).filter(a => a.pages && a.pages.length);
+
+        const topics = this.options.topics || [];
+        // Flatten each group's items + their children into a single card list,
+        // since variants are independent runnable examples.
+        this.topics = topics.map(t => ({
+            name: t.name,
+            label: t.label,
+            icon: t.icon,
+            groups: t.groups.map(g => ({
+                label: g.label,
+                items: g.items.flatMap(i => [i, ...(i.children || [])]),
+            })),
+        }));
+        this.startHere = this.options.startHere || [];
     }
 
     static TEMPLATE = `
@@ -38,14 +57,33 @@ class HomePage extends Page {
                 <code>examples/portal/examples.registry.json</code>
             </p>
 
-            {{#areas}}
-            <section class="mt-4">
-                <h4 class="text-uppercase text-muted small fw-bold">{{section}}</h4>
+            {{#startHere.length|bool}}
+            <section class="start-here mt-4">
+                <h4 class="text-uppercase text-muted small fw-bold mb-2">Start Here</h4>
                 <div class="row g-2">
-                    {{#pages}}
+                    {{#startHere}}
+                    <div class="col-6 col-md-4 col-lg-2">
+                        <a class="card text-decoration-none h-100" href="?page={{route}}">
+                            <div class="card-body py-2 px-3 d-flex align-items-center">
+                                <i class="bi {{icon}} me-2 text-primary"></i>
+                                <strong class="text-body">{{text}}</strong>
+                            </div>
+                        </a>
+                    </div>
+                    {{/startHere}}
+                </div>
+            </section>
+            {{/startHere.length|bool}}
+
+            {{#topics}}
+            <section class="topic-section mt-4">
+                <h3 class="d-flex align-items-center"><i class="bi {{icon}} me-2"></i>{{label}}</h3>
+                {{#groups}}
+                <h4 class="text-uppercase text-muted small fw-bold mt-3 mb-2">{{label}}</h4>
+                <div class="row g-2">
+                    {{#items}}
                     <div class="col-md-6 col-lg-4">
-                        <a class="card text-decoration-none h-100"
-                           href="?page={{route}}">
+                        <a class="card text-decoration-none h-100" href="?page={{route}}">
                             <div class="card-body py-2 px-3">
                                 <div class="d-flex align-items-center">
                                     <i class="bi {{icon}} me-2 text-primary"></i>
@@ -55,10 +93,11 @@ class HomePage extends Page {
                             </div>
                         </a>
                     </div>
-                    {{/pages}}
+                    {{/items}}
                 </div>
+                {{/groups}}
             </section>
-            {{/areas}}
+            {{/topics}}
         </div>
     `;
 }
