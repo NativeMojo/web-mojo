@@ -1388,6 +1388,166 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
     }
 }
 
+/* ==============================================
+   Dialog / Modal Chrome — "Hero Band + Tinted Card"
+
+   Direction picked from planning/mockups/modals/05-merged-refined.html.
+   - 6px colored hero band along the top of the card carries the type signal
+   - Tinted card background (5% accent on white, 10% accent on dark)
+     makes the type color felt across the whole surface, not just a stripe
+   - Header gets no separate tint — the band + card-bg do the work
+   - The X close button sits inside the card, top-right
+   - Accent color comes from --mojo-dialog-accent (defaults to var(--bs-primary))
+     and the four typed variants (success/warning/error/danger) override it.
+     Modal.alert sets `modal-alert modal-alert-{type}` on the modal root.
+   - Untyped surfaces (Modal.show / Modal.showForm without a type, etc.) inherit
+     the default info accent, so every dialog reads as part of the same family.
+   ============================================== */
+
+:root {
+    --mojo-dialog-accent: var(--bs-primary);
+    --mojo-dialog-success: #198754;
+    --mojo-dialog-warning: #ffc107;
+    --mojo-dialog-error:   #dc3545;
+}
+
+/* ── Card chrome ───────────────────────────────────────── */
+/* Applies to every dialog. Overflow:hidden so the colored band's
+   top corners get clipped to the card's border-radius. */
+.modal-content {
+    --mojo-current-accent: var(--mojo-dialog-accent);
+    border-radius: 14px;
+    border: none;
+    box-shadow:
+        0 1px 0 rgba(12, 17, 28, 0.05),
+        0 24px 48px -16px rgba(12, 17, 28, 0.18);
+    overflow: hidden;
+    position: relative;
+    background:
+        linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--mojo-current-accent) 5%, var(--bs-modal-bg, #fff)) 0%,
+            var(--bs-modal-bg, #fff) 100%
+        );
+}
+
+/* Hero band — pure CSS, no DOM change required.
+   Sits at the very top of .modal-content via a ::before pseudo-element. */
+.modal-content::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: var(--mojo-current-accent);
+    border-radius: 14px 14px 0 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Header — flush against the band, no gradient tint of its own
+   (the band + card-bg communicate the type). */
+.modal-header {
+    position: relative;
+    border-bottom: 1px solid rgba(12, 17, 28, 0.06);
+    border-radius: 14px 14px 0 0;
+    background: transparent;
+    padding-top: calc(1rem + 6px); /* clear the hero band */
+}
+
+/* Internal X — top-right inside the card, just below the band */
+.modal-header .btn-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background-color: transparent;
+    background-size: 12px;
+    border-radius: 8px;
+    opacity: 0.55;
+    transition: background-color 0.15s ease-in-out, opacity 0.15s ease-in-out;
+}
+.modal-header .btn-close:hover {
+    background-color: rgba(12, 17, 28, 0.06);
+    opacity: 1;
+}
+.modal-header .btn-close:focus {
+    opacity: 1;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--mojo-current-accent) 30%, transparent);
+}
+
+/* Modals without a header still need the band to clear the body padding */
+.modal-content > .modal-body:first-child {
+    padding-top: calc(1rem + 6px);
+}
+
+/* ── Typed alerts ──────────────────────────────────────────
+   Root class (modal-alert modal-alert-{type}) is set by Modal.alert.
+   Each type swaps --mojo-current-accent on .modal-content; everything else
+   (band, tinted bg, focus ring, primary buttons) reads from that token. */
+
+.modal.modal-alert.modal-alert-success .modal-content { --mojo-current-accent: var(--mojo-dialog-success); }
+.modal.modal-alert.modal-alert-warning .modal-content { --mojo-current-accent: var(--mojo-dialog-warning); }
+.modal.modal-alert.modal-alert-error   .modal-content { --mojo-current-accent: var(--mojo-dialog-error); }
+
+/* Backwards-compat: the legacy inline `<i class="bi bi-... text-{color}">` icon
+   inside .modal-title is no longer dressed up as a colored circle (the band
+   communicates the type now). Just normalize spacing so it doesn't clash. */
+.modal.modal-alert .modal-title i.bi {
+    margin-right: 0.4rem;
+    vertical-align: -0.05em;
+}
+
+/* ── Dark mode ─────────────────────────────────────────────
+   Brighter accents read against dark surfaces; tint bumped 5% → 10%
+   because dark backgrounds absorb color. */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --mojo-dialog-success: #4ade80;
+        --mojo-dialog-warning: #fbbf24;
+        --mojo-dialog-error:   #f87171;
+    }
+    .modal-content {
+        box-shadow:
+            0 1px 0 rgba(0, 0, 0, 0.4),
+            0 24px 60px -16px rgba(0, 0, 0, 0.6);
+        background:
+            linear-gradient(
+                180deg,
+                color-mix(in srgb, var(--mojo-current-accent) 10%, var(--bs-modal-bg, #14181f)) 0%,
+                var(--bs-modal-bg, #14181f) 100%
+            );
+    }
+    .modal-header {
+        border-bottom-color: rgba(255, 255, 255, 0.08);
+    }
+    .modal-header .btn-close:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+    }
+}
+
+/* Same rules under explicit Bootstrap dark theme attribute */
+[data-bs-theme="dark"] .modal-content {
+    box-shadow:
+        0 1px 0 rgba(0, 0, 0, 0.4),
+        0 24px 60px -16px rgba(0, 0, 0, 0.6);
+    background:
+        linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--mojo-current-accent) 10%, var(--bs-modal-bg, #14181f)) 0%,
+            var(--bs-modal-bg, #14181f) 100%
+        );
+}
+[data-bs-theme="dark"] .modal-header {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+[data-bs-theme="dark"] .modal-header .btn-close:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
 /* ========================================================================
    Field Status Indicators
    ======================================================================== */

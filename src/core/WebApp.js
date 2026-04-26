@@ -524,8 +524,8 @@ class WebApp {
      */
     async showError(message) {
         try {
-            const Dialog = (await import('./views/feedback/Dialog.js')).default;
-            await Dialog.alert(message, 'Error', { size: 'md', class: 'text-danger' });
+            const Modal = (await import('./views/feedback/Modal.js')).default;
+            await Modal.alert(message, 'Error', { size: 'md', type: 'error' });
         } catch (e) {
             this.events.emit('notification', { message, type: 'error' });
             if (typeof window !== 'undefined' && window?.console) {
@@ -542,8 +542,8 @@ class WebApp {
      */
     async showSuccess(message) {
         try {
-            const Dialog = (await import('./views/feedback/Dialog.js')).default;
-            await Dialog.alert(message, 'Success', { size: 'md', class: 'text-success' });
+            const Modal = (await import('./views/feedback/Modal.js')).default;
+            await Modal.alert(message, 'Success', { size: 'md', type: 'success' });
         } catch (e) {
             this.events.emit('notification', { message, type: 'success' });
             if (typeof window !== 'undefined' && window?.console) {
@@ -560,8 +560,8 @@ class WebApp {
      */
     async showInfo(message) {
         try {
-            const Dialog = (await import('./views/feedback/Dialog.js')).default;
-            await Dialog.alert(message, 'Information', { size: 'md', class: 'text-info' });
+            const Modal = (await import('./views/feedback/Modal.js')).default;
+            await Modal.alert(message, 'Information', { size: 'md', type: 'info' });
         } catch (e) {
             this.events.emit('notification', { message, type: 'info' });
             if (typeof window !== 'undefined' && window?.console) {
@@ -578,8 +578,8 @@ class WebApp {
      */
     async showWarning(message) {
         try {
-            const Dialog = (await import('./views/feedback/Dialog.js')).default;
-            await Dialog.alert(message, 'Warning', { size: 'md', class: 'text-warning' });
+            const Modal = (await import('./views/feedback/Modal.js')).default;
+            await Modal.alert(message, 'Warning', { size: 'md', type: 'warning' });
         } catch (e) {
             this.events.emit('notification', { message, type: 'warning' });
             if (typeof window !== 'undefined' && window?.console) {
@@ -693,8 +693,8 @@ class WebApp {
     }
 
     async confirm(message, title = 'Confirm', options = {}) {
-        const Dialog = (await import('./views/feedback/Dialog.js')).default;
-        return await Dialog.confirm(message, title, options);
+        const Modal = (await import('./views/feedback/Modal.js')).default;
+        return await Modal.confirm(message, title, options);
     }
 
     /**

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Modal Mockup Gallery — Web-Mojo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=JetBrains+Mono:wght@500;700&family=Manrope:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+    />
+    <style>
+        :root {
+            --c-bg: #0d1117;
+            --c-card: #161b22;
+            --c-text: #e6edf3;
+            --c-muted: #7d8590;
+            --c-border: rgba(255, 255, 255, 0.1);
+            --c-accent: #58a6ff;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: "Manrope", system-ui, -apple-system, sans-serif;
+            background:
+                radial-gradient(ellipse 800px 400px at 50% 0%, rgba(88, 166, 255, 0.08) 0%, transparent 60%),
+                var(--c-bg);
+            color: var(--c-text);
+            margin: 0;
+            padding: 5rem 2rem 6rem;
+            min-height: 100vh;
+            font-size: 15px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container { max-width: 1100px; margin: 0 auto; }
+
+        .page-eyebrow {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            color: var(--c-accent);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+        .page-title {
+            font-family: "Fraunces", serif;
+            font-weight: 500;
+            font-size: 3.25rem;
+            letter-spacing: -0.03em;
+            line-height: 1.05;
+            margin: 0 0 1.25rem;
+        }
+        .page-title em {
+            font-style: italic;
+            font-weight: 600;
+            color: var(--c-accent);
+        }
+        .page-subtitle {
+            color: var(--c-muted);
+            max-width: 60ch;
+            font-size: 1.0625rem;
+            margin: 0 0 1rem;
+        }
+        .page-context {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.75rem;
+            color: var(--c-muted);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--c-border);
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            margin: 1.5rem 0 0;
+            display: inline-block;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-top: 4rem;
+        }
+
+        .card {
+            background: var(--c-card);
+            border: 1px solid var(--c-border);
+            border-radius: 14px;
+            padding: 1.75rem;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.2s ease, transform 0.2s ease;
+        }
+        .card:hover {
+            border-color: var(--c-accent);
+            transform: translateY(-2px);
+        }
+        .card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                135deg,
+                color-mix(in srgb, var(--swatch) 8%, transparent) 0%,
+                transparent 60%
+            );
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .card-num {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--swatch);
+            margin-bottom: 0.75rem;
+            position: relative;
+        }
+        .card-title {
+            font-family: "Fraunces", serif;
+            font-weight: 500;
+            font-size: 1.5rem;
+            letter-spacing: -0.015em;
+            margin: 0 0 0.6rem;
+            position: relative;
+        }
+        .card-blurb {
+            color: var(--c-muted);
+            font-size: 0.9375rem;
+            line-height: 1.55;
+            margin: 0 0 1.25rem;
+            position: relative;
+        }
+        .card-keys {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            position: relative;
+        }
+        .key {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.6875rem;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--c-border);
+            border-radius: 999px;
+            padding: 0.25rem 0.65rem;
+            color: var(--c-muted);
+        }
+
+        .card.c1 { --swatch: #c2860c; }
+        .card.c2 { --swatch: #a78bfa; }
+        .card.c3 { --swatch: #2563eb; }
+        .card.c4 { --swatch: #15803d; }
+
+        .footer {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--c-border);
+            color: var(--c-muted);
+            font-size: 0.875rem;
+        }
+        .footer code {
+            font-family: "JetBrains Mono", monospace;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            color: var(--c-text);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-eyebrow">// planning / mockups / modals</div>
+        <h1 class="page-title">Modal redesign — <em>pick a direction.</em></h1>
+        <p class="page-subtitle">
+            Four distinct visual directions for WEB-MOJO's typed alerts, confirms, and form
+            dialogs. Each mockup is a complete &ldquo;design world&rdquo; showing the same
+            three surfaces (typed alerts × 4 / confirm / form) so you can compare them
+            on equal footing. The accent color shifts per type in every direction —
+            info / success / warning / error.
+        </p>
+        <div class="page-context">
+            const --mojo-dialog-accent = var(--bs-primary);  /* customizable per portal */
+        </div>
+
+        <div class="grid">
+            <a class="card c1" href="01-editorial-minimal.html">
+                <div class="card-num">// 01</div>
+                <h2 class="card-title">Editorial Minimal</h2>
+                <p class="card-blurb">
+                    Refined, editorial. Thin colored left bar plus an uppercase
+                    micro-eyebrow. Fraunces serif title; restrained accent use.
+                    Reads "design system," not consumer app.
+                </p>
+                <div class="card-keys">
+                    <span class="key">3px left bar</span>
+                    <span class="key">uppercase eyebrow</span>
+                    <span class="key">Fraunces + Manrope</span>
+                    <span class="key">internal X (square)</span>
+                </div>
+            </a>
+
+            <a class="card c2" href="02-soft-centered.html">
+                <div class="card-num">// 02</div>
+                <h2 class="card-title">Soft Centered</h2>
+                <p class="card-blurb">
+                    Closer to your purple "Change your password" reference. Centered
+                    title + subtitle. Pill buttons. Soft tinted background and a
+                    colored badge at the top. Friendly, consumer-feeling.
+                </p>
+                <div class="card-keys">
+                    <span class="key">centered layout</span>
+                    <span class="key">tinted card bg</span>
+                    <span class="key">circle type badge</span>
+                    <span class="key">pill buttons</span>
+                </div>
+            </a>
+
+            <a class="card c3" href="03-hero-band.html">
+                <div class="card-num">// 03</div>
+                <h2 class="card-title">Hero Band</h2>
+                <p class="card-blurb">
+                    A 6px colored band along the top of the card carries the type.
+                    No illustrations. Plus Jakarta Sans + JetBrains Mono micro-labels.
+                    Structured, technical, design-system-feeling.
+                </p>
+                <div class="card-keys">
+                    <span class="key">6px top band</span>
+                    <span class="key">icon tile + eyebrow</span>
+                    <span class="key">JetBrains Mono labels</span>
+                    <span class="key">internal X</span>
+                </div>
+            </a>
+
+            <a class="card c4" href="04-toast-evolved.html">
+                <div class="card-num">// 04</div>
+                <h2 class="card-title">Toast Evolved</h2>
+                <p class="card-blurb">
+                    Take the existing toast styling — left bar + colored circle
+                    icon — and grow it up into a modal. Modal and toast read as
+                    <em>one family</em>. The most system-coherent and most minimal
+                    of the four.
+                </p>
+                <div class="card-keys">
+                    <span class="key">5px left bar</span>
+                    <span class="key">colored circle icon</span>
+                    <span class="key">toast.css color tokens</span>
+                    <span class="key">tiny ghosted X</span>
+                </div>
+            </a>
+        </div>
+
+        <div class="footer">
+            Each mockup uses Bootstrap 5.3 + Bootstrap Icons via CDN — open any of them
+            standalone in a browser. The chosen direction will be ported into
+            <code>src/core/css/core.css</code> and the existing <code>Modal</code> /
+            <code>Dialog</code> JS surface (no API changes required).
+        </div>
+    </div>
+</body>
+</html>

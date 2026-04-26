@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Merged & Refined — Modal Mockup 05</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+        rel="stylesheet"
+    />
+    <style>
+        :root {
+            --c-info: #2563eb;
+            --c-success: #15803d;
+            --c-warning: #d97706;
+            --c-error: #dc2626;
+
+            --c-text: #0c111c;
+            --c-muted: #5b6478;
+            --c-border: rgba(12, 17, 28, 0.1);
+            --c-bg: #eef0f4;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+            background: var(--c-bg);
+            color: var(--c-text);
+            margin: 0;
+            padding: 4rem 2rem 8rem;
+            min-height: 100vh;
+            font-size: 15px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Page header */
+        .page-header { max-width: 1100px; margin: 0 auto 3rem; }
+        .page-eyebrow {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            color: var(--c-muted);
+            margin-bottom: 1rem;
+        }
+        .page-title {
+            font-weight: 800;
+            font-size: 2.75rem;
+            letter-spacing: -0.035em;
+            line-height: 1.05;
+            margin: 0 0 1rem;
+        }
+        .page-subtitle { color: var(--c-muted); max-width: 65ch; font-size: 1rem; }
+
+        .section-divider {
+            max-width: 1100px;
+            margin: 3.5rem auto 1.75rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .section-label {
+            font-family: "JetBrains Mono", monospace;
+            font-weight: 700;
+            font-size: 0.75rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--c-muted);
+            margin: 0;
+        }
+        .section-rule { flex: 1; height: 1px; background: var(--c-border); }
+        .verdict {
+            max-width: 1100px;
+            margin: 1rem auto 0;
+            font-size: 0.875rem;
+            color: var(--c-muted);
+            font-style: italic;
+            padding-left: 0.5rem;
+            border-left: 2px solid var(--c-border);
+        }
+
+        /* Grids */
+        .alerts-grid {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.75rem;
+        }
+        .single-row { max-width: 480px; margin: 0 auto; }
+        .compare-row {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+        .compare-label {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--c-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        /* ---------- Modal card ---------- */
+        .modal-card {
+            background: var(--card-bg, #fff);
+            border-radius: 14px;
+            box-shadow:
+                0 1px 0 rgba(12, 17, 28, 0.05),
+                0 24px 48px -16px rgba(12, 17, 28, 0.18);
+            position: relative;
+            overflow: hidden;
+            transition: background 0.2s ease;
+        }
+
+        /* Type variants — accent + tinted card bg */
+        .modal-card.info {
+            --accent: var(--c-info);
+            --card-bg: color-mix(in srgb, var(--c-info) 5%, #fff);
+        }
+        .modal-card.success {
+            --accent: var(--c-success);
+            --card-bg: color-mix(in srgb, var(--c-success) 6%, #fff);
+        }
+        .modal-card.warning {
+            --accent: var(--c-warning);
+            --card-bg: color-mix(in srgb, var(--c-warning) 6%, #fff);
+        }
+        .modal-card.error {
+            --accent: var(--c-error);
+            --card-bg: color-mix(in srgb, var(--c-error) 5%, #fff);
+        }
+        .modal-card.neutral { --card-bg: #fff; }
+
+        /* Hero band — radius matches card so it stops cleanly at the corners */
+        .hero-band {
+            height: 6px;
+            background: var(--accent);
+            border-radius: 14px 14px 0 0;
+        }
+        .modal-card.neutral .hero-band { display: none; }
+
+        /* Content */
+        .modal-content {
+            padding: 1.5rem 1.75rem 1.25rem;
+        }
+
+        .meta-eyebrow {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 0.65rem;
+        }
+        .modal-card.neutral .meta-eyebrow { color: var(--c-muted); }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.25;
+            margin: 0 0 0.5rem;
+            color: var(--c-text);
+            padding-right: 2.5rem;
+        }
+
+        .modal-body {
+            font-size: 0.9375rem;
+            color: var(--c-muted);
+            line-height: 1.55;
+            margin-bottom: 1.5rem;
+            min-height: 2.75em; /* ~2 lines so cards align */
+        }
+
+        .modal-footer-row {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .close-x {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--c-muted);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.15s ease, color 0.15s ease;
+            font-size: 0.75rem;
+            z-index: 2;
+        }
+        .close-x:hover { background: rgba(12, 17, 28, 0.06); color: var(--c-text); }
+
+        /* Buttons */
+        .btn-accent {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 0.55rem 1.1rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: filter 0.15s ease;
+        }
+        .btn-accent:hover { filter: brightness(0.92); }
+        .btn-ghost {
+            background: #fff;
+            color: var(--c-text);
+            border: 1px solid var(--c-border);
+            border-radius: 8px;
+            padding: 0.55rem 1rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        .btn-ghost:hover { background: rgba(12, 17, 28, 0.04); }
+
+        /* Form */
+        .form-section { padding-top: 0.25rem; }
+        .form-label {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 0.5rem;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--c-text);
+            margin-bottom: 0.4rem;
+        }
+        .form-label .req { color: var(--c-error); margin-left: 0.15rem; }
+        .form-label .hint {
+            font-weight: 500;
+            color: var(--c-muted);
+            font-size: 0.75rem;
+        }
+        .form-input,
+        .form-select,
+        .form-textarea {
+            display: block;
+            width: 100%;
+            padding: 0.65rem 0.9rem;
+            border: 1px solid var(--c-border);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9375rem;
+            color: var(--c-text);
+            background: #fff;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+        }
+        .form-textarea { resize: vertical; min-height: 5rem; }
+        .form-field { margin-bottom: 1rem; }
+        .form-field-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .form-divider {
+            height: 1px;
+            background: var(--c-border);
+            margin: 1.25rem -1.75rem;
+        }
+        .form-section-label {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--c-muted);
+            margin: 0 0 0.85rem;
+        }
+        .form-toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid var(--c-border);
+            border-radius: 10px;
+            padding: 0.85rem 1rem;
+            margin-bottom: 1rem;
+        }
+        .modal-card.neutral .form-toggle-row { background: #fafbfc; }
+        .form-toggle-meta { flex: 1; min-width: 0; }
+        .form-toggle-meta strong { font-size: 0.875rem; font-weight: 600; display: block; color: var(--c-text); }
+        .form-toggle-meta span { font-size: 0.8125rem; color: var(--c-muted); display: block; margin-top: 0.15rem; }
+        .toggle-switch {
+            width: 38px; height: 22px; border-radius: 999px;
+            background: var(--accent);
+            position: relative; flex-shrink: 0;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .toggle-switch::after {
+            content: "";
+            position: absolute; top: 2px; right: 2px;
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <header class="page-header">
+        <div class="page-eyebrow">// mockup 05 / merged & refined</div>
+        <h1 class="page-title">Merged & Refined.</h1>
+        <p class="page-subtitle">
+            Your merged direction (hero band + tinted background, no icons) with the
+            refinements applied: band corners aligned to the card (14px), eyebrow
+            color matches the band exactly, tint saturation balanced across all
+            four types, body has a min-height so cards align. Plus the answer to
+            the open question — <strong>does the tinted background work for a long
+            form?</strong> Compare side-by-side below.
+        </p>
+    </header>
+
+    <div class="section-divider">
+        <h2 class="section-label">// typed alerts (refined)</h2>
+        <div class="section-rule"></div>
+    </div>
+    <p class="verdict">
+        Band radius now matches the card. Eyebrow exactly matches the band color.
+        Success tint bumped from 4% → 6% so it reads at the same weight as
+        warning/error. All four cards align in height because the body has a
+        consistent min-height.
+    </p>
+
+    <div class="alerts-grid">
+        <!-- Info -->
+        <div class="modal-card info">
+            <div class="hero-band"></div>
+            <div class="modal-content">
+                <button class="close-x" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+                <div class="meta-eyebrow">Information</div>
+                <h3 class="modal-title">A new version is available</h3>
+                <p class="modal-body">
+                    Reload the page to pick up the latest changes. Your work is saved automatically.
+                </p>
+                <div class="modal-footer-row">
+                    <button class="btn-ghost">Later</button>
+                    <button class="btn-accent">Reload</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success -->
+        <div class="modal-card success">
+            <div class="hero-band"></div>
+            <div class="modal-content">
+                <button class="close-x" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+                <div class="meta-eyebrow">Saved</div>
+                <h3 class="modal-title">Your changes are live</h3>
+                <p class="modal-body">
+                    The user profile has been updated and synced across the team.
+                </p>
+                <div class="modal-footer-row">
+                    <button class="btn-accent">OK</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Warning -->
+        <div class="modal-card warning">
+            <div class="hero-band"></div>
+            <div class="modal-content">
+                <button class="close-x" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+                <div class="meta-eyebrow">Warning</div>
+                <h3 class="modal-title">This will affect 24 records</h3>
+                <p class="modal-body">
+                    Bulk operations cannot be undone individually. Please confirm before continuing.
+                </p>
+                <div class="modal-footer-row">
+                    <button class="btn-ghost">Cancel</button>
+                    <button class="btn-accent">Continue</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error -->
+        <div class="modal-card error">
+            <div class="hero-band"></div>
+            <div class="modal-content">
+                <button class="close-x" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+                <div class="meta-eyebrow">Error</div>
+                <h3 class="modal-title">The operation failed</h3>
+                <p class="modal-body">
+                    We weren't able to reach the server. Check your connection and try again.
+                </p>
+                <div class="modal-footer-row">
+                    <button class="btn-ghost">Dismiss</button>
+                    <button class="btn-accent">Retry</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-divider">
+        <h2 class="section-label">// confirm — destructive (red band feels heavier)</h2>
+        <div class="section-rule"></div>
+    </div>
+
+    <div class="single-row">
+        <div class="modal-card error">
+            <div class="hero-band"></div>
+            <div class="modal-content">
+                <button class="close-x" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+                <div class="meta-eyebrow">Confirm delete</div>
+                <h3 class="modal-title">Delete "Quarterly Report"?</h3>
+                <p class="modal-body">
+                    This will permanently remove the document and all of its revisions.
+                    This action cannot be undone.
+                </p>
+                <div class="modal-footer-row">
+                    <button class="btn-ghost">Cancel</button>
+                    <button class="btn-accent">Delete report</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-divider">
+        <h2 class="section-label">// short form — change password (info-tinted)</h2>
+        <div class="section-rule"></div>
+    </div>
+    <p class="verdict">
+        Short forms in tint feel fine — the colored bg is gentle enough to recede
+        behind the inputs. White input fields contrast cleanly against the blue
+        wash.
+    </p>
+
+    <div class="single-row">
+        <div class="modal-card info">
+            <div class="hero-band"></div>
+            <div class="modal-content">
+                <button class="close-x" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+                <div class="meta-eyebrow">Account / security</div>
+                <h3 class="modal-title">Change your password</h3>
+                <p class="modal-body">
+                    Pick something at least 8 characters long. Other devices will be signed out.
+                </p>
+
+                <div class="form-field">
+                    <label class="form-label">
+                        <span>New password<span class="req">*</span></span>
+                        <span class="hint">required</span>
+                    </label>
+                    <input type="password" class="form-input" placeholder="At least 8 characters" />
+                </div>
+                <div class="form-field">
+                    <label class="form-label">
+                        <span>Confirm new password<span class="req">*</span></span>
+                        <span class="hint">required</span>
+                    </label>
+                    <input type="password" class="form-input" placeholder="Re-enter to confirm" />
+                </div>
+
+                <div class="form-divider"></div>
+                <div class="modal-footer-row">
+                    <button class="btn-ghost">Cancel</button>
+                    <button class="btn-accent">Change password</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-divider">
+        <h2 class="section-label">// LONG form — the test: tinted vs neutral</h2>
+        <div class="section-rule"></div>
+    </div>
+    <p class="verdict">
+        <strong>The key A/B.</strong> Same edit-profile form, side-by-side. <strong>Left:</strong>
+        info-tinted bg (what Modal.alert/showForm with type:info would produce).
+        <strong>Right:</strong> neutral chrome (what Modal.show / Modal.showForm
+        without a type would produce). My read after building both: the tint at
+        5% is gentle enough that even a long form reads fine — but neutral
+        feels more focused for forms with no semantic type. <strong>Recommendation:</strong>
+        keep the tint+band reserved for typed alerts and confirms; use the
+        neutral chrome for showForm/showModelView/Modal.show.
+    </p>
+
+    <div class="compare-row">
+        <!-- LEFT: TINTED -->
+        <div>
+            <div class="compare-label">// info-tinted bg</div>
+            <div class="modal-card info">
+                <div class="hero-band"></div>
+                <div class="modal-content">
+                    <button class="close-x" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+                    <div class="meta-eyebrow">Edit user / Jane Cooper</div>
+                    <h3 class="modal-title">Edit profile</h3>
+                    <p class="modal-body">
+                        Update display details, role, and security preferences. Changes take effect immediately.
+                    </p>
+
+                    <div class="form-section">
+                        <h4 class="form-section-label">// identity</h4>
+                        <div class="form-field-grid">
+                            <div class="form-field">
+                                <label class="form-label"><span>First name<span class="req">*</span></span></label>
+                                <input type="text" class="form-input" value="Jane" />
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label"><span>Last name<span class="req">*</span></span></label>
+                                <input type="text" class="form-input" value="Cooper" />
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label"><span>Email<span class="req">*</span></span></label>
+                            <input type="email" class="form-input" value="jane.cooper@example.com" />
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label"><span>Bio</span><span class="hint">optional</span></label>
+                            <textarea class="form-textarea" placeholder="Tell us about yourself…">Product designer focused on developer tooling.</textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-divider"></div>
+
+                    <div class="form-section">
+                        <h4 class="form-section-label">// access</h4>
+                        <div class="form-field">
+                            <label class="form-label"><span>Role<span class="req">*</span></span></label>
+                            <select class="form-select">
+                                <option>Administrator</option>
+                                <option>Editor</option>
+                                <option selected>Member</option>
+                                <option>Viewer</option>
+                            </select>
+                        </div>
+                        <div class="form-toggle-row">
+                            <div class="form-toggle-meta">
+                                <strong>Two-factor authentication</strong>
+                                <span>Require a 6-digit code at sign-in.</span>
+                            </div>
+                            <div class="toggle-switch"></div>
+                        </div>
+                        <div class="form-toggle-row">
+                            <div class="form-toggle-meta">
+                                <strong>Email digest</strong>
+                                <span>Weekly summary of activity in your spaces.</span>
+                            </div>
+                            <div class="toggle-switch"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-divider"></div>
+                    <div class="modal-footer-row">
+                        <button class="btn-ghost">Cancel</button>
+                        <button class="btn-accent">Save changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: NEUTRAL -->
+        <div>
+            <div class="compare-label">// neutral (no band, no tint)</div>
+            <div class="modal-card neutral" style="--accent: var(--c-info);">
+                <div class="hero-band"></div>
+                <div class="modal-content">
+                    <button class="close-x" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+                    <div class="meta-eyebrow">Edit user / Jane Cooper</div>
+                    <h3 class="modal-title">Edit profile</h3>
+                    <p class="modal-body">
+                        Update display details, role, and security preferences. Changes take effect immediately.
+                    </p>
+
+                    <div class="form-section">
+                        <h4 class="form-section-label">// identity</h4>
+                        <div class="form-field-grid">
+                            <div class="form-field">
+                                <label class="form-label"><span>First name<span class="req">*</span></span></label>
+                                <input type="text" class="form-input" value="Jane" />
+                            </div>
+                            <div class="form-field">
+                                <label class="form-label"><span>Last name<span class="req">*</span></span></label>
+                                <input type="text" class="form-input" value="Cooper" />
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label"><span>Email<span class="req">*</span></span></label>
+                            <input type="email" class="form-input" value="jane.cooper@example.com" />
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label"><span>Bio</span><span class="hint">optional</span></label>
+                            <textarea class="form-textarea" placeholder="Tell us about yourself…">Product designer focused on developer tooling.</textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-divider"></div>
+
+                    <div class="form-section">
+                        <h4 class="form-section-label">// access</h4>
+                        <div class="form-field">
+                            <label class="form-label"><span>Role<span class="req">*</span></span></label>
+                            <select class="form-select">
+                                <option>Administrator</option>
+                                <option>Editor</option>
+                                <option selected>Member</option>
+                                <option>Viewer</option>
+                            </select>
+                        </div>
+                        <div class="form-toggle-row">
+                            <div class="form-toggle-meta">
+                                <strong>Two-factor authentication</strong>
+                                <span>Require a 6-digit code at sign-in.</span>
+                            </div>
+                            <div class="toggle-switch"></div>
+                        </div>
+                        <div class="form-toggle-row">
+                            <div class="form-toggle-meta">
+                                <strong>Email digest</strong>
+                                <span>Weekly summary of activity in your spaces.</span>
+                            </div>
+                            <div class="toggle-switch"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-divider"></div>
+                    <div class="modal-footer-row">
+                        <button class="btn-ghost">Cancel</button>
+                        <button class="btn-accent">Save changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-divider">
+        <h2 class="section-label">// summary — the rule I'd ship</h2>
+        <div class="section-rule"></div>
+    </div>
+    <p class="verdict">
+        <strong>Typed alerts + confirms</strong> get the band + tint (color
+        communicates type). <strong>showForm / showModelView / Modal.show</strong>
+        get the chrome refresh only — rounded corners, soft shadow, internal X —
+        but no band and no tint, because there's no type signal to convey. The
+        <code>--mojo-dialog-accent</code> CSS variable still drives the info
+        accent so brand portals can recolor it.
+    </p>
+</body>
+</html>

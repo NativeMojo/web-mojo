@@ -201,6 +201,13 @@ class SimpleModuleLoader {
             'ContextMenu': {
                 path: path.join(this.sourceRoot, 'core/views/feedback/ContextMenu.js'),
                 dependencies: ['View']
+            },
+            // Modal is the canonical dialog/modal surface. Tests typically
+            // pre-set `global.Dialog` to a mock before loading Modal so the
+            // transformed `import Dialog from './Dialog.js'` picks it up.
+            'Modal': {
+                path: path.join(this.sourceRoot, 'core/views/feedback/Modal.js'),
+                dependencies: []
             }
         };
 
@@ -343,6 +350,8 @@ class SimpleModuleLoader {
             { test: /MOJOUtils/, name: 'MOJOUtils' },
             { test: /ListViewItem/, name: 'ListViewItem' },
             { test: /TableRow/, name: 'TableRow' },
+            { test: /\/Dialog(\.js)?$/, name: 'Dialog' },
+            { test: /\/Modal(\.js)?$/, name: 'Modal' },
             { test: /\/View(\.js)?$/, name: 'View' },
             { test: /\/Page(\.js)?$/, name: 'Page' }
         ];

@@ -2,6 +2,52 @@
 
 ## Unreleased
 
+### Bug fixes — typed alerts now actually render their type
+
+- `Dialog.alert(message, title, options)` (and `Modal.alert(...)`) silently
+  dropped the second and third arguments — every typed alert rendered as
+  `info` regardless of the `type` option. The signature is now correctly
+  honored: `Modal.alert('Saved!', 'Done', { type: 'success' })` produces a
+  success-styled alert. Object-form (`Modal.alert({ message, title, type })`)
+  and single-string form (`Modal.alert('hi')`) continue to work unchanged.
+- `WebApp.showError / showSuccess / showInfo / showWarning` were broken in
+  the same way and rendered identically. They now produce visually distinct
+  typed alerts and route through `Modal.alert` directly.
+- `WebApp.confirm` also routes through `Modal.confirm` for consistency.
+
+### API direction — Modal is the canonical modal/dialog surface
+
+- `Modal.alert / Modal.confirm / Modal.prompt` are now the canonical
+  implementations. `Dialog.alert / Dialog.confirm / Dialog.prompt` have been
+  rewritten as thin pass-throughs that delegate to Modal — all existing
+  `Dialog.*` callers continue to work unchanged, but new code should call
+  `Modal.*` directly.
+- `Dialog` itself (the underlying View class) is unchanged: the constructor,
+  `Dialog.showDialog / showForm / showModelForm / showCode / showHtmlPreview`,
+  z-index management, and `Dialog.showBusy / hideBusy` continue to live there.
+  Only the three top-level helpers moved.
+- `docs/web-mojo/components/Modal.md` is now the canonical doc; Dialog.md
+  retains its deprecation banner with pass-through notes under each helper.
+
+### UI / CSS — refreshed dialog chrome and typed-alert accents
+
+- All dialogs share a refreshed chrome: rounded corners (14px), soft
+  drop-shadow, gradient header tint, and a small offset circular close
+  button anchored to the top-right corner.
+- Typed alerts (`Modal.alert(... { type })`) now get a 4px solid colored
+  left border and a colored circle around the title icon — mirrors the
+  toast-notification styling so the system reads coherently. Color tokens
+  reuse the same hex values as `toast.css` (`#198754` / `#dc3545` /
+  `#ffc107` / `#0d6efd`).
+- New CSS variable `--mojo-dialog-accent`, defined at `:root` and defaulting
+  to `var(--bs-primary)`. Drives the header gradient tint and the info-typed
+  alert accent. Override at `:root` (or any scope) to set a custom brand
+  color without touching `--bs-primary`.
+- Dark-mode rules added under `prefers-color-scheme: dark`, mirroring the
+  shape of the existing toast.css dark-mode block.
+- Internal styling hook: typed alerts add `modal-alert modal-alert-{type}`
+  to the modal root for downstream apps that want to override the look.
+
 ### Breaking — Admin models moved to a separate package entry
 
 - 14 admin-coupled `Model` / `Collection` classes have moved out of `src/core/models/`

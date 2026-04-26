@@ -108,23 +108,205 @@ class Modal {
         return Modal.showModel(model, options);
     }
 
+    // ── Canonical typed-alert / confirm / prompt ────────────────
+    // Modal owns these implementations. Dialog.alert/confirm/prompt are
+    // thin pass-throughs that delegate here.
+
+    /**
+     * Show a typed alert dialog (info / success / warning / error).
+     *
+     * Signatures supported:
+     *   Modal.alert(message)
+     *   Modal.alert({ message, title?, type?, ...options })
+     *   Modal.alert(message, title?)
+     *   Modal.alert(message, title?, { type?, ...options })
+     *
+     * @param {string|object} messageOrOptions - Message string or options object
+     * @param {string} [title='Alert'] - Dialog title
+     * @param {object} [options] - Additional options. `type`: 'info'|'success'|'warning'|'error'|'danger'
+     * @returns {Promise<*>} Resolves when the OK button is clicked or dialog dismissed
+     */
+    static async alert(messageOrOptions = {}, title, options) {
+        // Normalize the call signature
+        let opts;
+        if (typeof messageOrOptions === 'string') {
+            opts = {
+                message: messageOrOptions,
+                ...(title !== undefined ? { title } : {}),
+                ...(options || {})
+            };
+        } else {
+            opts = { ...messageOrOptions };
+        }
+
+        const {
+            message = '',
+            title: resolvedTitle = 'Alert',
+            type = 'info',
+            className: callerClassName,
+            ...rest
+        } = opts;
+
+        // Inline icon + title color (kept for backwards-compat with apps that
+        // depended on the colored title text). The new typed-alert CSS layers
+        // on top of this via the modal-alert-{type} root class.
+        let icon = '';
+        let titleClass = '';
+        switch (type) {
+            case 'success':
+                icon = '<i class="bi bi-check-circle-fill text-success me-2"></i>';
+                titleClass = 'text-success';
+                break;
+            case 'warning':
+                icon = '<i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>';
+                titleClass = 'text-warning';
+                break;
+            case 'danger':
+            case 'error':
+                icon = '<i class="bi bi-x-circle-fill text-danger me-2"></i>';
+                titleClass = 'text-danger';
+                break;
+            default:
+                icon = '<i class="bi bi-info-circle-fill text-info me-2"></i>';
+                titleClass = 'text-info';
+        }
+
+        // Compute typed-alert root class (lands on <div class="modal fade ...">)
+        const typeKey = type === 'danger' ? 'error' : type;
+        const typeClass = `modal-alert modal-alert-${typeKey}`;
+        const className = [typeClass, callerClassName].filter(Boolean).join(' ');
+
+        return Dialog.showDialog({
+            title: `<span class="${titleClass}">${icon}${resolvedTitle}</span>`,
+            body: `<p>${message}</p>`,
+            size: 'sm',
+            centered: true,
+            className,
+            buttons: [
+                { text: 'OK', class: 'btn-primary', value: true }
+            ],
+            ...rest
+        });
+    }
+
+    /**
+     * Show a confirmation dialog with Cancel / Confirm buttons.
+     *
+     * @param {string|object} messageOrOptions - Message string or options object
+     * @param {string} [title='Confirm'] - Dialog title
+     * @param {object} [options] - Additional options
+     * @returns {Promise<boolean>} Resolves true on Confirm, false on Cancel/dismiss
+     */
+    static async confirm(messageOrOptions, title = 'Confirm', options = {}) {
+        let message;
+        if (typeof messageOrOptions === 'object' && messageOrOptions !== null) {
+            options = messageOrOptions;
+            message = options.message;
+            title = options.title || title;
+        } else {
+            message = messageOrOptions;
+        }
+
+        const dialog = new Dialog({
+            title,
+            body: `<p>${message}</p>`,
+            size: options.size || 'sm',
+            centered: true,
+            backdrop: 'static',
+            buttons: [
+                { text: options.cancelText || 'Cancel', class: 'btn-secondary', dismiss: true, action: 'cancel' },
+                { text: options.confirmText || 'Confirm', class: options.confirmClass || 'btn-primary', action: 'confirm' }
+            ],
+            ...options
+        });
+
+        const fullscreenElement = document.querySelector('.table-fullscreen');
+        const targetContainer = fullscreenElement || document.body;
+        await dialog.render(true, targetContainer);
+        dialog.show();
+
+        return new Promise((resolve) => {
+            let result = false;
+
+            dialog.on('action:confirm', () => {
+                result = true;
+                dialog.hide();
+            });
+
+            dialog.on('hidden', () => {
+                dialog.destroy();
+                if (dialog.element) dialog.element.remove();
+                resolve(result);
+            });
+        });
+    }
+
+    /**
+     * Show a prompt dialog with a text input.
+     *
+     * @param {string} message - Prompt message
+     * @param {string} [title='Input'] - Dialog title
+     * @param {object} [options] - Additional options (defaultValue, inputType, placeholder, ...)
+     * @returns {Promise<string|null>} Resolves to entered text on OK, null on Cancel/dismiss
+     */
+    static async prompt(message, title = 'Input', options = {}) {
+        const inputId = `prompt-input-${Date.now()}`;
+        const defaultValue = options.defaultValue || '';
+        const inputType = options.inputType || 'text';
+        const placeholder = options.placeholder || '';
+
+        const dialog = new Dialog({
+            title,
+            body: `
+                <p>${message}</p>
+                <input type="${inputType}"
+                       class="form-control"
+                       id="${inputId}"
+                       value="${defaultValue}"
+                       placeholder="${placeholder}">
+            `,
+            size: options.size || 'sm',
+            centered: true,
+            backdrop: 'static',
+            buttons: [
+                { text: 'Cancel', class: 'btn-secondary', dismiss: true },
+                { text: 'OK', class: 'btn-primary', action: 'ok' }
+            ],
+            ...options
+        });
+
+        const fullscreenElement = document.querySelector('.table-fullscreen');
+        const targetContainer = fullscreenElement || document.body;
+        await dialog.render(true, targetContainer);
+        dialog.show();
+
+        dialog.on('shown', () => {
+            const input = dialog.element.querySelector(`#${inputId}`);
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        });
+
+        return new Promise((resolve) => {
+            let result = null;
+
+            dialog.on('action:ok', () => {
+                const input = dialog.element.querySelector(`#${inputId}`);
+                result = input ? input.value : null;
+                dialog.hide();
+            });
+
+            dialog.on('hidden', () => {
+                dialog.destroy();
+                if (dialog.element) dialog.element.remove();
+                resolve(result);
+            });
+        });
+    }
+
     // ── Convenience aliases ─────────────────────────
     // Re-exported so you never need to import Dialog separately.
-
-    /** @see Dialog.confirm */
-    static confirm(message, title, options) {
-        return Dialog.confirm(message, title, options);
-    }
-
-    /** @see Dialog.alert */
-    static alert(message, title, options) {
-        return Dialog.alert(message, title, options);
-    }
-
-    /** @see Dialog.prompt */
-    static prompt(message, title, options) {
-        return Dialog.prompt(message, title, options);
-    }
 
     /** @see Dialog.showForm */
     static form(options) {
@@ -146,9 +328,9 @@ class Modal {
         return Dialog.showDialog(options);
     }
 
-    /** @see Dialog.showError */
+    /** Show an error-typed alert. Equivalent to Modal.alert(msg, 'Error', { type: 'error' }). */
     static showError(message) {
-        return Dialog.alert(message, 'Error', { type: 'danger' });
+        return Modal.alert(message, 'Error', { type: 'error' });
     }
 
     // ── Loading indicator ───────────────────────

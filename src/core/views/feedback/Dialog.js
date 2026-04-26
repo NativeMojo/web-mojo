@@ -1504,163 +1504,44 @@ class Dialog extends View {
   }
 
   /**
-   * Static alert dialog helper
-   * @param {Object|string} options - Alert options or message string
-   * @returns {Promise} Resolves when OK is clicked
+   * Static alert dialog helper.
+   *
+   * @deprecated Use {@link Modal.alert} instead. This method is a thin
+   *   pass-through that delegates to Modal — the canonical implementation
+   *   lives there. Existing callers continue to work unchanged.
+   *
+   * @param {...*} args - Forwarded to Modal.alert. Supports
+   *   (message), ({...options}), (message, title?), (message, title?, options?).
+   * @returns {Promise} Resolves when the OK button is clicked or dialog dismissed.
    */
-  static async alert(options = {}) {
-    // Handle string argument
-    if (typeof options === 'string') {
-      options = {
-        message: options,
-        title: 'Alert'
-      };
-    }
-
-    const {
-      message = '',
-      title = 'Alert',
-      type = 'info', // info, success, warning, danger
-      ...dialogOptions
-    } = options;
-
-    // Add icon based on type
-    let icon = '';
-    let titleClass = '';
-    switch(type) {
-      case 'success':
-        icon = '<i class="bi bi-check-circle-fill text-success me-2"></i>';
-        titleClass = 'text-success';
-        break;
-      case 'warning':
-        icon = '<i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>';
-        titleClass = 'text-warning';
-        break;
-      case 'danger':
-      case 'error':
-        icon = '<i class="bi bi-x-circle-fill text-danger me-2"></i>';
-        titleClass = 'text-danger';
-        break;
-      default:
-        icon = '<i class="bi bi-info-circle-fill text-info me-2"></i>';
-        titleClass = 'text-info';
-    }
-
-    return Dialog.showDialog({
-      title: `<span class="${titleClass}">${icon}${title}</span>`,
-      body: `<p>${message}</p>`,
-      size: 'sm',
-      centered: true,
-      buttons: [
-        { text: 'OK', class: 'btn-primary', value: true }
-      ],
-      ...dialogOptions
-    });
+  static async alert(...args) {
+    // Lazy import sidesteps the circular static import (Modal imports Dialog).
+    const Modal = (await import('./Modal.js')).default;
+    return Modal.alert(...args);
   }
 
   /**
-   * Static confirm dialog
+   * Static confirm dialog.
+   *
+   * @deprecated Use {@link Modal.confirm} instead. Thin pass-through to Modal.
+   * @param {...*} args - Forwarded to Modal.confirm.
+   * @returns {Promise<boolean>}
    */
-  static async confirm(message, title = 'Confirm', options = {}) {
-    if (typeof message === 'object') {
-        options = message;
-        message = options.message;
-        title = options.title || title;
-    }
-    const dialog = new Dialog({
-      title,
-      body: `<p>${message}</p>`,
-      size: options.size || 'sm',
-      centered: true,
-      backdrop: 'static',
-      buttons: [
-        { text: options.cancelText || 'Cancel', class: 'btn-secondary', dismiss: true, action: 'cancel' },
-        { text: options.confirmText || 'Confirm', class: options.confirmClass || 'btn-primary', action: 'confirm' }
-      ],
-      ...options
-    });
-
-    // Mount to fullscreen element if it exists, otherwise body
-    const fullscreenElement = document.querySelector('.table-fullscreen');
-    const targetContainer = fullscreenElement || document.body;
-    await dialog.render(true, targetContainer);
-    dialog.show();
-
-    return new Promise((resolve) => {
-      let result = false;
-
-      dialog.on('action:confirm', () => {
-        result = true;
-        dialog.hide();
-      });
-
-      dialog.on('hidden', () => {
-        dialog.destroy();
-        dialog.element.remove();
-        resolve(result);
-      });
-    });
+  static async confirm(...args) {
+    const Modal = (await import('./Modal.js')).default;
+    return Modal.confirm(...args);
   }
 
   /**
-   * Static prompt dialog
+   * Static prompt dialog.
+   *
+   * @deprecated Use {@link Modal.prompt} instead. Thin pass-through to Modal.
+   * @param {...*} args - Forwarded to Modal.prompt.
+   * @returns {Promise<string|null>}
    */
-  static async prompt(message, title = 'Input', options = {}) {
-    const inputId = `prompt-input-${Date.now()}`;
-    const defaultValue = options.defaultValue || '';
-    const inputType = options.inputType || 'text';
-    const placeholder = options.placeholder || '';
-
-    const dialog = new Dialog({
-      title,
-      body: `
-        <p>${message}</p>
-        <input type="${inputType}"
-               class="form-control"
-               id="${inputId}"
-               value="${defaultValue}"
-               placeholder="${placeholder}">
-      `,
-      size: options.size || 'sm',
-      centered: true,
-      backdrop: 'static',
-      buttons: [
-        { text: 'Cancel', class: 'btn-secondary', dismiss: true },
-        { text: 'OK', class: 'btn-primary', action: 'ok' }
-      ],
-      ...options
-    });
-
-    // Mount to fullscreen element if it exists, otherwise body
-    const fullscreenElement = document.querySelector('.table-fullscreen');
-    const targetContainer = fullscreenElement || document.body;
-    await dialog.render(true, targetContainer);
-    dialog.show();
-
-    // Focus the input
-    dialog.on('shown', () => {
-      const input = dialog.element.querySelector(`#${inputId}`);
-      if (input) {
-        input.focus();
-        input.select();
-      }
-    });
-
-    return new Promise((resolve) => {
-      let result = null;
-
-      dialog.on('action:ok', () => {
-        const input = dialog.element.querySelector(`#${inputId}`);
-        result = input ? input.value : null;
-        dialog.hide();
-      });
-
-      dialog.on('hidden', () => {
-        dialog.destroy();
-        dialog.element.remove();
-        resolve(result);
-      });
-    });
+  static async prompt(...args) {
+    const Modal = (await import('./Modal.js')).default;
+    return Modal.prompt(...args);
   }
 
   /**

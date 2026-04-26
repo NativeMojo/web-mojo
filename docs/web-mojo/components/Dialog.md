@@ -1,7 +1,9 @@
 # Dialog
 
 > **⚠️ Deprecated — use [Modal](Modal.md) instead.**
-> Dialog still works and is not being removed, but new code should use `Modal` (or `app.modal`) for a simpler API. Modal wraps Dialog's static helpers — no need to learn a new system.
+> Dialog still works and is not being removed. The underlying View class is unchanged; you can still construct one directly with `new Dialog({...})` for fine-grained control.
+>
+> However, **`Dialog.alert / Dialog.confirm / Dialog.prompt` are now thin pass-throughs to `Modal.alert / Modal.confirm / Modal.prompt`** — the canonical implementation lives in Modal. Existing callers continue to work, but new code should call `Modal.*` directly.
 >
 > ```js
 > // ❌ Old — don't do this
@@ -109,6 +111,8 @@ Dialog.alert(message, title?, options?)
 // Returns: Promise<void>
 ```
 
+> **⚠️ Thin pass-through to [Modal.alert](Modal.md#modalalertmessage-title-options).** Use `Modal.alert(...)` in new code.
+
 Shows a modal alert with a single dismiss button. The dialog style is determined by the `type` option.
 
 ```js
@@ -140,6 +144,8 @@ await Dialog.alert('Server restarting in 5 minutes', 'Info', { type: 'info' });
 Dialog.confirm(message, title?, options?)
 // Returns: Promise<boolean>
 ```
+
+> **⚠️ Thin pass-through to [Modal.confirm](Modal.md#modalconfirmmessage-title-options).** Use `Modal.confirm(...)` in new code.
 
 Shows a two-button confirmation dialog. Resolves `true` if the user clicks the confirm button, `false` if they click cancel or dismiss.
 
@@ -174,6 +180,8 @@ if (confirmed) {
 Dialog.prompt(message, title?, options?)
 // Returns: Promise<string|null>
 ```
+
+> **⚠️ Thin pass-through to [Modal.prompt](Modal.md#modalpromptmessage-title-options).** Use `Modal.prompt(...)` in new code.
 
 Shows a dialog with a text input. Resolves to the entered string on OK, or `null` if cancelled.
 

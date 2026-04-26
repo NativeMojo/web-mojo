@@ -1,9 +1,11 @@
 # Modal
 
-**Modal** is a simplified, AI-agent-friendly static API for showing views in modal dialogs. It wraps [Dialog](Dialog.md)'s static helpers with a cleaner surface — no instance creation, no manual lifecycle management.
+**Modal** is the canonical JavaScript surface for modals and dialogs in WEB-MOJO. It owns the implementation of the typed-alert / confirm / prompt helpers and provides a clean static API for showing views in modal dialogs — no instance creation, no manual lifecycle management.
 
 > **When to use Modal vs Dialog:**
-> Use `Modal` when showing a View or Model in a dialog. Use `Dialog` directly for alerts, confirms, prompts, forms, or when you need fine-grained control over dialog options.
+> **Use `Modal` for all new code.** `Modal.alert / confirm / prompt / show / showModel / form / modelForm / dialog / showBusy` are the canonical entrypoints.
+>
+> [`Dialog`](Dialog.md) remains exported as the underlying View class — you can still construct one directly with `new Dialog({...})` for fine-grained control — but `Dialog.alert / confirm / prompt` are now thin pass-throughs that delegate here. Don't call them in new code; call `Modal.*` instead.
 
 ---
 
@@ -11,6 +13,16 @@
 
 ```js
 import Modal from '@core/views/feedback/Modal.js';
+
+// Typed alerts — info / success / warning / error
+await Modal.alert('All set!', 'Saved', { type: 'success' });
+await Modal.alert('That action will affect 24 records.', 'Heads up', { type: 'warning' });
+
+// Confirm — resolves true / false
+const ok = await Modal.confirm('Delete this record?', 'Confirm Delete');
+
+// Prompt — resolves entered text or null
+const name = await Modal.prompt('Enter a name:', 'Rename', { defaultValue: 'untitled' });
 
 // Show any View in a modal
 await Modal.show(new DeviceView({ model: device }));
@@ -21,6 +33,8 @@ await Modal.showModel(userModel);
 // Fetch by ID, then show
 await Modal.showModelById(User, 42);
 ```
+
+**Live example:** [`examples/portal/examples/components/Dialog/DialogExample.js`](../../../examples/portal/examples/components/Dialog/DialogExample.js) (route `/components/dialog`) — runnable demo of the four canonical helpers plus the typed-alert variants.
 
 ### Via App Instance
 
@@ -40,6 +54,73 @@ await app.modal.form({ title: 'Add', fields: [...] });
 ---
 
 ## API Reference
+
+### Modal.alert(message, title?, options?)
+
+Show a typed alert dialog with a single OK button. The dialog style is determined by the `type` option, and the modal root receives a `modal-alert modal-alert-{type}` class for CSS targeting.
+
+```js
+// All four call signatures supported
+await Modal.alert('Just an FYI.');
+await Modal.alert({ message: 'Saved!', type: 'success', title: 'Done' });
+await Modal.alert('Heads up', 'Warning');
+await Modal.alert('That action will affect 24 records.', 'Heads up', { type: 'warning' });
+```
+
+**Parameters:**
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `message` | `string \| object` | required | Message string, or an options object with `{ message, title, type, ... }` |
+| `title` | `string` | `'Alert'` | Dialog title |
+| `options.type` | `string` | `'info'` | `'info' \| 'success' \| 'warning' \| 'error' \| 'danger'`. `'danger'` aliases `'error'`. |
+| `options.size` | `string` | `'sm'` | Modal size: `sm`, `md`, `lg`, `xl`, `xxl`, `fullscreen` |
+| `options.className` | `string` | — | Additional class on the modal root. Concatenated with the typed-alert class. |
+| `options.*` | `any` | — | Any other [Dialog options](Dialog.md#constructor-options) |
+
+**Returns:** `Promise<*>` — resolves when the OK button is clicked or the dialog is dismissed.
+
+**Visual treatment:** typed alerts get a 4px solid colored left border (info=accent, success=green, warning=yellow, error=red) and a colored circle around the title icon — mirrors the toast notification styling. The accent for info-typed alerts is driven by the `--mojo-dialog-accent` CSS variable, which defaults to `var(--bs-primary)` and can be overridden at `:root` for a custom brand color.
+
+---
+
+### Modal.confirm(message, title?, options?)
+
+Show a confirmation dialog with Cancel / Confirm buttons.
+
+```js
+const ok = await Modal.confirm('Delete this record? This cannot be undone.', 'Confirm Delete');
+if (ok) await record.destroy();
+```
+
+**Parameters:** `message`, `title` (default `'Confirm'`), `options` (`cancelText`, `confirmText`, `confirmClass`, `size`, plus any [Dialog options](Dialog.md#constructor-options)).
+
+**Returns:** `Promise<boolean>` — `true` on Confirm, `false` on Cancel/dismiss.
+
+---
+
+### Modal.prompt(message, title?, options?)
+
+Show a dialog with a text input.
+
+```js
+const name = await Modal.prompt('Enter a name:', 'Rename', {
+    defaultValue: 'untitled',
+    placeholder: 'e.g. report-q4'
+});
+if (name !== null) await rename(name);
+```
+
+**Parameters:** `message`, `title` (default `'Input'`), `options` (`defaultValue`, `inputType`, `placeholder`, `size`, plus any [Dialog options](Dialog.md#constructor-options)).
+
+**Returns:** `Promise<string|null>` — entered text on OK, `null` on Cancel/dismiss.
+
+---
+
+### Modal.showError(message)
+
+Convenience wrapper. Equivalent to `Modal.alert(message, 'Error', { type: 'error' })`.
+
+---
 
 ### Modal.show(view, options?)
 
