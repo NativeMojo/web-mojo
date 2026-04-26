@@ -130,23 +130,47 @@ module.exports = async function (testContext) {
         });
     });
 
-    describe('Modal.alert — typed icon and title', () => {
-        it('embeds a colored icon for success type', async () => {
-            await Modal.alert('hi', 'Saved', { type: 'success' });
-            expect(lastShowDialogOpts.title).toContain('bi-check-circle-fill');
-            expect(lastShowDialogOpts.title).toContain('text-success');
+    describe('Modal.alert — eyebrow + headline structure', () => {
+        it('builds title as eyebrow + headline spans (no inline icon)', async () => {
+            await Modal.alert('hi', 'Custom Title', { type: 'success' });
+            expect(lastShowDialogOpts.title).toContain('modal-alert-eyebrow');
+            expect(lastShowDialogOpts.title).toContain('modal-alert-headline');
+            expect(lastShowDialogOpts.title).toContain('Custom Title');
+            // Inline colored icon removed — band + tint communicate the type now
+            expect(lastShowDialogOpts.title).not.toContain('bi-check-circle-fill');
         });
 
-        it('embeds a colored icon for warning type', async () => {
-            await Modal.alert('hi', 'Warn', { type: 'warning' });
-            expect(lastShowDialogOpts.title).toContain('bi-exclamation-triangle-fill');
-            expect(lastShowDialogOpts.title).toContain('text-warning');
+        it('uses default eyebrow text per type', async () => {
+            await Modal.alert('hi', 'T', { type: 'info' });
+            expect(lastShowDialogOpts.title).toContain('INFORMATION');
+            showDialogSpy.mockClear();
+
+            await Modal.alert('hi', 'T', { type: 'success' });
+            expect(lastShowDialogOpts.title).toContain('SUCCESS');
+            showDialogSpy.mockClear();
+
+            await Modal.alert('hi', 'T', { type: 'warning' });
+            expect(lastShowDialogOpts.title).toContain('WARNING');
+            showDialogSpy.mockClear();
+
+            await Modal.alert('hi', 'T', { type: 'error' });
+            expect(lastShowDialogOpts.title).toContain('ERROR');
+            showDialogSpy.mockClear();
+
+            await Modal.alert('hi', 'T', { type: 'danger' });
+            expect(lastShowDialogOpts.title).toContain('ERROR'); // danger aliases error
         });
 
-        it('embeds a colored icon for error type', async () => {
-            await Modal.alert('hi', 'Err', { type: 'error' });
-            expect(lastShowDialogOpts.title).toContain('bi-x-circle-fill');
-            expect(lastShowDialogOpts.title).toContain('text-danger');
+        it('honors a caller-supplied eyebrow override', async () => {
+            await Modal.alert('hi', 'Saved', { type: 'success', eyebrow: 'ACCOUNT / SAVED' });
+            expect(lastShowDialogOpts.title).toContain('ACCOUNT / SAVED');
+            expect(lastShowDialogOpts.title).not.toContain('SUCCESS<');
+        });
+
+        it('wraps the message in a modal-alert-message paragraph', async () => {
+            await Modal.alert('Body text here.', 'T', { type: 'info' });
+            expect(lastShowDialogOpts.body).toContain('modal-alert-message');
+            expect(lastShowDialogOpts.body).toContain('Body text here.');
         });
     });
 

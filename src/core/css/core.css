@@ -1419,8 +1419,9 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
     border-radius: 14px;
     border: none;
     box-shadow:
-        0 1px 0 rgba(12, 17, 28, 0.05),
-        0 24px 48px -16px rgba(12, 17, 28, 0.18);
+        0 1px 2px rgba(12, 17, 28, 0.06),
+        0 8px 16px -4px rgba(12, 17, 28, 0.1),
+        0 30px 60px -12px rgba(12, 17, 28, 0.28);
     overflow: hidden;
     position: relative;
     background:
@@ -1446,37 +1447,47 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
     z-index: 1;
 }
 
-/* Header — flush against the band, no gradient tint of its own
-   (the band + card-bg communicate the type). */
+/* Header — flush against the band, no divider of its own
+   (the band + card-bg communicate the boundary). */
 .modal-header {
     position: relative;
-    border-bottom: 1px solid rgba(12, 17, 28, 0.06);
+    border-bottom: none;
     border-radius: 14px 14px 0 0;
     background: transparent;
-    padding-top: calc(1rem + 6px); /* clear the hero band */
+    padding: calc(1rem + 6px) 1.5rem 0.5rem;
 }
 
 /* Internal X — top-right inside the card, just below the band */
 .modal-header .btn-close {
     position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
+    top: calc(0.5rem + 6px);
+    right: 0.65rem;
     width: 28px;
     height: 28px;
     padding: 0;
     background-color: transparent;
-    background-size: 12px;
+    background-size: 11px;
     border-radius: 8px;
     opacity: 0.55;
+    margin: 0;
     transition: background-color 0.15s ease-in-out, opacity 0.15s ease-in-out;
 }
 .modal-header .btn-close:hover {
-    background-color: rgba(12, 17, 28, 0.06);
+    background-color: rgba(12, 17, 28, 0.07);
     opacity: 1;
 }
 .modal-header .btn-close:focus {
     opacity: 1;
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--mojo-current-accent) 30%, transparent);
+}
+
+/* Footer — clean, no divider line; band/tinted bg already separates regions */
+.modal-content .modal-footer {
+    border-top: none;
+    padding: 0.5rem 1.5rem 1.25rem;
+}
+.modal-content .modal-body {
+    padding: 0.25rem 1.5rem 1rem;
 }
 
 /* Modals without a header still need the band to clear the body padding */
@@ -1493,9 +1504,47 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
 .modal.modal-alert.modal-alert-warning .modal-content { --mojo-current-accent: var(--mojo-dialog-warning); }
 .modal.modal-alert.modal-alert-error   .modal-content { --mojo-current-accent: var(--mojo-dialog-error); }
 
-/* Backwards-compat: the legacy inline `<i class="bi bi-... text-{color}">` icon
-   inside .modal-title is no longer dressed up as a colored circle (the band
-   communicates the type now). Just normalize spacing so it doesn't clash. */
+/* Title typography for typed alerts — eyebrow micro-label above headline.
+   Both spans live inside Bootstrap's <h5 class="modal-title"> wrapper; we
+   reset that h5 so our spans control the styling. */
+.modal.modal-alert .modal-title {
+    display: block;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    margin: 0;
+    padding-right: 1.75rem; /* clear the close X */
+}
+
+.modal-alert-eyebrow {
+    display: block;
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--mojo-current-accent);
+    margin: 0 0 0.4rem;
+}
+
+.modal-alert-headline {
+    display: block;
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+    color: var(--bs-body-color, #212529);
+}
+
+.modal.modal-alert .modal-body .modal-alert-message {
+    margin: 0;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--bs-secondary-color, #5b6478);
+}
+
+/* Backwards-compat: any inline `<i class="bi">` still passed in via custom
+   title HTML just renders inline (no synthetic colored circle). */
 .modal.modal-alert .modal-title i.bi {
     margin-right: 0.4rem;
     vertical-align: -0.05em;

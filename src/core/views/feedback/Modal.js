@@ -143,42 +143,36 @@ class Modal {
             message = '',
             title: resolvedTitle = 'Alert',
             type = 'info',
+            eyebrow: callerEyebrow,
             className: callerClassName,
             ...rest
         } = opts;
-
-        // Inline icon + title color (kept for backwards-compat with apps that
-        // depended on the colored title text). The new typed-alert CSS layers
-        // on top of this via the modal-alert-{type} root class.
-        let icon = '';
-        let titleClass = '';
-        switch (type) {
-            case 'success':
-                icon = '<i class="bi bi-check-circle-fill text-success me-2"></i>';
-                titleClass = 'text-success';
-                break;
-            case 'warning':
-                icon = '<i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>';
-                titleClass = 'text-warning';
-                break;
-            case 'danger':
-            case 'error':
-                icon = '<i class="bi bi-x-circle-fill text-danger me-2"></i>';
-                titleClass = 'text-danger';
-                break;
-            default:
-                icon = '<i class="bi bi-info-circle-fill text-info me-2"></i>';
-                titleClass = 'text-info';
-        }
 
         // Compute typed-alert root class (lands on <div class="modal fade ...">)
         const typeKey = type === 'danger' ? 'error' : type;
         const typeClass = `modal-alert modal-alert-${typeKey}`;
         const className = [typeClass, callerClassName].filter(Boolean).join(' ');
 
+        // Eyebrow micro-label above the headline. Defaults per type; callers
+        // can override with `eyebrow: 'ACCOUNT / SECURITY'` etc.
+        const defaultEyebrow = {
+            info: 'INFORMATION',
+            success: 'SUCCESS',
+            warning: 'WARNING',
+            error: 'ERROR'
+        };
+        const eyebrowText = (callerEyebrow ?? defaultEyebrow[typeKey] ?? defaultEyebrow.info);
+
+        // Title is structured as eyebrow + headline. The hero band and tinted
+        // card bg communicate the type — no inline icon needed (per the
+        // 05-merged-refined mockup direction).
+        const titleHtml =
+            `<span class="modal-alert-eyebrow">${eyebrowText}</span>` +
+            `<span class="modal-alert-headline">${resolvedTitle}</span>`;
+
         return Dialog.showDialog({
-            title: `<span class="${titleClass}">${icon}${resolvedTitle}</span>`,
-            body: `<p>${message}</p>`,
+            title: titleHtml,
+            body: `<p class="modal-alert-message">${message}</p>`,
             size: 'sm',
             centered: true,
             className,
