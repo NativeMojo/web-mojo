@@ -14,6 +14,12 @@
  */
 
 import { PortalWebApp, User } from 'web-mojo';
+// registerAdminPages / registerAssistant live in /src/admin.js (the
+// admin extension's package surface — not in `web-mojo/admin` which
+// only re-exports the page CLASSES, not the registration helpers).
+// /src/ imports are allowed in the portal SHELL only — never in the
+// per-component canonical examples under examples/portal/examples/.
+import { registerAdminPages, registerAssistant } from '/src/admin.js';
 import HomePage from './shell/HomePage.js';
 import DocsModal from './shell/DocsModal.js';
 import { installMockBackend } from './shell/mockBackend.js';
@@ -62,11 +68,31 @@ const app = new PortalWebApp({
     brandIcon: 'bi-lightning-charge',
 
     sidebar: {
-        menus: [{
-            name: 'default',
-            className: 'sidebar sidebar-dark',
-            items: sidebarItems,
-        }],
+        defaultMenu: 'default',
+        menus: [
+            {
+                name: 'default',
+                className: 'sidebar sidebar-dark',
+                items: sidebarItems,
+            },
+            {
+                // Admin / system menu — registerAdminPages(app, true) injects
+                // its items here when this menu exists. Switch in via the
+                // wrench icon in the topbar.
+                name: 'system',
+                className: 'sidebar sidebar-light sidebar-admin',
+                header: '<div class="pt-3 text-center fs-5 fw-bold sidebar-collapse-hide"><i class="bi bi-wrench pe-2"></i>System</div>',
+                items: [
+                    { spacer: true },
+                    {
+                        text: 'Exit Admin',
+                        action: 'exit-admin',
+                        icon: 'bi-arrow-bar-left',
+                        handler: async () => app.sidebar.setActiveMenu('default'),
+                    },
+                ],
+            },
+        ],
     },
 
     topbar: {
@@ -92,6 +118,15 @@ const app = new PortalWebApp({
                 icon: 'bi-github',
                 href: 'https://github.com/NativeMojo/web-mojo',
                 tooltip: 'web-mojo on GitHub',
+            },
+            // Admin shortcut — switches the sidebar to the `system` menu.
+            {
+                id: 'admin',
+                icon: 'bi-wrench',
+                action: 'open-admin',
+                tooltip: 'Open admin / system menu',
+                buttonClass: 'btn btn-link',
+                handler: () => app.sidebar.setActiveMenu('system'),
             },
             // Login placeholder — replaced by userMenu after setActiveUser.
             {
@@ -126,6 +161,12 @@ app.events.on('portal:action', ({ action }) => {
         case 'open-examples-index':
             DocsModal.open('docs/web-mojo/examples.md');
             break;
+        case 'open-admin':
+            app.sidebar.setActiveMenu('system');
+            break;
+        case 'exit-admin':
+            app.sidebar.setActiveMenu('default');
+            break;
         case 'profile':
             app.toast?.info?.('No real user — auth is disabled in this portal.');
             break;
@@ -147,6 +188,20 @@ app.events.on('portal:action', ({ action }) => {
 });
 
 app.registerPage('home', HomePage, { areas: menuAreas });
+
+// Admin extension — same pattern the legacy portal used. Mounts the
+// system/* admin pages and the LLM-backed Assistant. Defer until after
+// app.start() so the sidebar exists when registerAdminPages tries to
+// inject menu items. The framework hides items the user lacks permission
+// for; demoUser (below) gets a wildcard hasPermission to expose everything.
+function mountAdminExtension() {
+    try {
+        registerAdminPages(app, true);
+        registerAssistant(app);
+    } catch (err) {
+        console.warn('[examples] failed to register admin pages:', err);
+    }
+}
 
 for (const ex of examples) {
     try {
@@ -187,8 +242,15 @@ const demoUser = new User({
     display_name: 'Demo User',
     email: 'demo@example.com',
 });
+// Wildcard permissions — the admin extension hides items the user lacks
+// permission for, but in this offline demo we want every admin page
+// visible. Production code would NOT do this; permissions are real.
+demoUser.hasPermission = () => true;
 // Defer one tick so any pending render in start() finishes first.
-setTimeout(() => app.setActiveUser(demoUser), 0);
+setTimeout(() => {
+    app.setActiveUser(demoUser);
+    mountAdminExtension();
+}, 0);
 
 window.app = app;
 window.DocsModal = DocsModal;
