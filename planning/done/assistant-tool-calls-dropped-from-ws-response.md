@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Type | bug |
-| Status | planned |
+| Status | done |
 | Date | 2026-04-25 |
 | Severity | high |
 
@@ -148,3 +148,31 @@ Out of scope: the missing intermediate-text turn — that requires a backend cha
 
 - **No `docs/web-mojo/` change.** The assistant extension is admin-internal and not documented in the public framework docs.
 - **No `CHANGELOG.md` entry.** Bug fix in an unreleased internal feature; matches the precedent set by `assistant-empty-response-bubble.md`.
+
+## Resolution
+
+Landed in commit `2ad579d` — *Assistant: render tool-call badges from live WS responses.*
+
+### What was implemented
+Followed the plan exactly. In all three assistant entry points, `_transformMessage` now normalizes WS `tool_calls_made` entries (`{ tool, input }` → `{ type: 'tool_use', name: tc.tool, input: tc.input }`) before the existing `type === 'tool_use'` filter, then drops internal orchestration tools via the new `AssistantView.INTERNAL_TOOLS` static. `_onResponse` now reads `data.created` first in the timestamp fallback chain so live messages display the server's `created` ISO string instead of "now". `AssistantView._collapseMessages` was updated to reference the hoisted static so REST history filtering uses the same set.
+
+### Files changed
+- `src/extensions/admin/assistant/AssistantView.js`
+- `src/extensions/admin/assistant/AssistantPanelView.js`
+- `src/extensions/admin/assistant/AssistantContextChat.js`
+
+### Tests and validation
+- **Lint:** clean on all three changed files (`npx eslint`). Pre-existing 16 errors in `src/core/Model.js`, `src/core/PortalApp.js`, `src/core/WebApp.js` are unchanged.
+- **Unit:** `npm run test:unit` — 411/411 passed. No regression test added — `_transformMessage` requires WS simulation that the harness does not support, flagged in the issue.
+- **Integration / build:** test-runner agent ran the full suite. Pre-existing failures in `DataFormatter.integration.test.js`, `framework.test.js`, `phase2.test.js`, and several build tests that depend on missing scaffolding (`dist/index.html`, `src/mojo.js`, `test/build/dist/`). None reference the assistant extension; none caused by this change.
+- **Browser preview verification:** dynamically imported all three modules and ran `_transformMessage` against representative WS and REST payloads. Confirmed: WS `{tool, input}` entries normalize to `{type, name, input}`, `create_plan`/`update_plan`/`load_tools` are filtered, REST `{type:'text', text:...}` entries still extract to `content`, and timestamps pass through both as Unix number (REST) and ISO string (WS).
+
+### Agent findings
+
+- **docs-updater:** No changes warranted. `docs/web-mojo/extensions/Admin.md` documents the public event API but no `tool_calls_made`/`_transformMessage` implementation details. The fix realigns runtime behavior with the documented contract — no doc text is wrong. CHANGELOG precedent (assistant-empty-response-bubble.md) was to skip; followed.
+- **security-review:** Rated *minor*. `ChatMessageView._getToolCallsTemplate` correctly escapes `tc.name` via `div.textContent` before injection — no XSS path. `INTERNAL_TOOLS` filter is shape-tight; both WS and Anthropic shapes are caught. Pre-existing triple-brace `{{{message.content}}}` rendering noted as context, not introduced by this diff.
+- **security-review (acted on / declined):** The agent recommended dropping `tc.input` from the normalized object since the renderer doesn't read it, to limit PII exposure (tool inputs can contain IPs/emails/IDs). **Declined** — REST-loaded historical messages already carry `tc.input` for the same lifetime, so dropping it only on the WS path would diverge the two shapes (defeating the purpose of normalization) without solving the underlying concern. PII scrubbing of in-memory `tool_calls` is a real but separate issue; if pursued it should land as one pass over both transports plus the `Message.tool_calls` JSONField, not as an asymmetric strip in the WS adapter. Filed mentally as a follow-up rather than in this commit.
+
+### Companion bug
+
+`django-mojo/planning/issues/assistant-ws-drops-intermediate-assistant-text.md` — backend WS does not emit intermediate assistant text turns (e.g. message 1515 in the trace). Out of scope for this client-side fix; user will still need that backend fix to see all intermediate analysis text in real time without a refresh.
