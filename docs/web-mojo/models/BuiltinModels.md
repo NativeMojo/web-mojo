@@ -52,10 +52,12 @@ Every built-in model, collection, form config, and DataView config is exported f
 // Named imports — recommended
 import { User, UserList, UserForms, UserDataView } from 'web-mojo/models';
 import { Group, GroupList, GroupForms } from 'web-mojo/models';
-import { Job, JobList } from 'web-mojo/models';
 
 // You can also import the core classes from the same path
 import { Model, Collection, Rest } from 'web-mojo/models';
+
+// Admin-coupled models (Job, Incident, Email, Push, etc.) ship separately:
+import { Job, JobList } from 'web-mojo/admin-models';
 ```
 
 ### Common Pattern

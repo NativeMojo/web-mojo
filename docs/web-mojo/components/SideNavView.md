@@ -2,7 +2,7 @@
 
 **SideNavView** is a sectioned detail layout — a left rail of nav links beside a content panel that mounts one child view at a time. It's the standard chrome inside Modal-hosted record viewers like [`FileView`](FileView.md), `IPSetView`, `ShortLinkView`, and `UserView`. Below a configurable `minWidth`, the rail collapses into a Bootstrap dropdown so the same component works inside narrow modals or cards.
 
-> **When to use SideNavView vs [TabView](../extensions/TabView.md):**
+> **When to use SideNavView vs [TabView](../components/TabView.md):**
 > Use `SideNavView` for record detail screens with **3+ sections**, permission gating, and where you want a persistent left rail. Use `TabView` for short tab strips (2–4 tabs) without responsive collapse.
 
 ---
@@ -489,7 +489,7 @@ async onActionRegenerateFromSection() {
 - **[FileView](FileView.md)** — canonical SideNavView host (preview / details / renditions / shares)
 - **[DataView](DataView.md)** — drop into a section to display model fields without a custom subclass
 - **[ContextMenu](ContextMenu.md)** — header companion in detail viewers
-- **[TabView](../extensions/TabView.md)** — simpler tab strip alternative for short tab counts
+- **[TabView](../components/TabView.md)** — simpler tab strip alternative for short tab counts
 - **[Events](../core/Events.md)** — `section:changed`, `navigation:modeChanged` listeners
 
 ## Examples

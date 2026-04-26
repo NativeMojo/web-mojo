@@ -389,6 +389,6 @@ The system is designed to be resilient:
 
 Runnable, copy-paste reference in the examples portal:
 
-- [`examples/portal/examples/extensions/FileUpload/FileUploadExample.js`](../../../examples/portal/examples/extensions/FileUpload/FileUploadExample.js) — Drag-and-drop file handling via applyFileDropMixin with validation.
+- [`examples/portal/examples/services/FileUpload/FileUploadExample.js`](../../../examples/portal/examples/services/FileUpload/FileUploadExample.js) — Drag-and-drop file handling via applyFileDropMixin with validation.
 
 <!-- examples:cross-link end -->

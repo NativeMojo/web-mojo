@@ -471,7 +471,7 @@ if (!allowed.includes(file.type)) {
 
 ## Related Documentation
 
-- [FileUpload System](../extensions/FileUpload.md) — Full API reference for `FileUpload`, `ProgressView`, and `ToastService.showView()`
+- [FileUpload System](../services/FileUpload.md) — Full API reference for `FileUpload`, `ProgressView`, and `ToastService.showView()`
 - [ImageField](./inputs/ImageField.md) — Image field component with drag-drop and preview
 - [FileDropMixin](../mixins/FileDropMixin.md) — Add drag-and-drop to any view
 - [Dialog.updateModelImage()](../components/Dialog.md) — One-call image upload + model save

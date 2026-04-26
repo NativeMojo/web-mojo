@@ -21,7 +21,7 @@ The pattern is roughly 100–150 lines of user code: a `Page` owns the wizard ch
 ❌ **Don't use a wizard when:**
 - The form has fewer than ~8 fields — use a single [FormView](./FormView.md) with [groups](./BestPractices.md#pattern-2-form-groups-for-organization).
 - All fields are visible at once and the user picks among them — use a single form, optionally with [progressive disclosure](./BestPractices.md#pattern-4-progressive-disclosure).
-- The sections are independent and the user may visit them in any order — use a [TabView](../extensions/TabView.md) with one `FormView` per tab.
+- The sections are independent and the user may visit them in any order — use a [TabView](../components/TabView.md) with one `FormView` per tab.
 
 | Pattern | Best for | Cost |
 |---|---|---|

@@ -1653,7 +1653,7 @@ class DataView extends View {
 
 Runnable, copy-paste references in the examples portal:
 
-- [`examples/portal/examples/extensions/TabView/TabViewExample.js`](../../../examples/portal/examples/extensions/TabView/TabViewExample.js) — Tab navigation with static tabs and lazy mounting.
-- [`examples/portal/examples/extensions/TabView/TabViewDynamicExample.js`](../../../examples/portal/examples/extensions/TabView/TabViewDynamicExample.js) — Tabs added and removed at runtime.
+- [`examples/portal/examples/components/TabView/TabViewExample.js`](../../../examples/portal/examples/components/TabView/TabViewExample.js) — Tab navigation with static tabs and lazy mounting.
+- [`examples/portal/examples/components/TabView/TabViewDynamicExample.js`](../../../examples/portal/examples/components/TabView/TabViewDynamicExample.js) — Tabs added and removed at runtime.
 
 <!-- examples:cross-link end -->
