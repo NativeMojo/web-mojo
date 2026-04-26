@@ -92,7 +92,12 @@ const TOPIC_TAXONOMY = [
             },
             {
                 label: 'Services',
-                items: ['services/rest', 'services/toast-service', 'services/web-socket-client'],
+                items: [
+                    'services/rest',
+                    'services/toast-service',
+                    'services/web-socket-client',
+                    'services/file-upload',
+                ],
             },
             {
                 label: 'Models',
@@ -144,6 +149,8 @@ const TOPIC_TAXONOMY = [
                     'components/sidebar-top-nav',
                     'components/active-group',
                     'components/side-nav-view',
+                    'components/tab-view',
+                    'components/tab-view/dynamic',
                     'components/context-menu',
                     'components/context-menu/row',
                 ],
@@ -164,6 +171,7 @@ const TOPIC_TAXONOMY = [
                 items: [
                     'forms/form-view',
                     'forms/form-view/all-field-types',
+                    'forms/form-builder',
                 ],
             },
             {
@@ -223,13 +231,11 @@ const TOPIC_TAXONOMY = [
             },
             {
                 label: 'Media',
-                items: ['extensions/light-box', 'extensions/file-upload'],
+                items: ['extensions/light-box'],
             },
             {
                 label: 'UI',
                 items: [
-                    'extensions/tab-view',
-                    'extensions/tab-view/dynamic',
                     'extensions/timeline-view',
                 ],
             },

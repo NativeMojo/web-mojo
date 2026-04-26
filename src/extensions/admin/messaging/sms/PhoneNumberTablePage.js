@@ -4,7 +4,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { PhoneNumberList, PhoneNumber } from '@core/models/Phonehub.js';
+import { PhoneNumberList, PhoneNumber } from '@ext/admin/models/Phonehub.js';
 import PhoneNumberView from './PhoneNumberView.js';
 
 class PhoneNumberTablePage extends TablePage {

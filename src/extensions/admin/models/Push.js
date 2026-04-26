@@ -1,6 +1,6 @@
 import Collection from '@core/Collection.js';
 import Model from '@core/Model.js';
-import { GroupList } from './Group.js';
+import { GroupList } from '@core/models/Group.js';
 
 // =========================
 // PushDevice

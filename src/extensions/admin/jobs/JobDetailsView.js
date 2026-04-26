@@ -12,7 +12,7 @@ import View from '@core/View.js';
 import TabView from '@core/views/navigation/TabView.js';
 import TableView from '@core/views/table/TableView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
-import { Job, JobEventList, JobLogList, JobForms } from '@core/models/Job.js';
+import { Job, JobEventList, JobLogList, JobForms } from '@ext/admin/models/Job.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 
 class JobDetailsView extends View {

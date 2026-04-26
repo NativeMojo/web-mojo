@@ -13,7 +13,7 @@ import SideNavView from '@core/views/navigation/SideNavView.js';
 import TableView from '@core/views/table/TableView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import { UserDeviceLocation } from '@core/models/User.js';
-import { IncidentEventList } from '@core/models/Incident.js';
+import { IncidentEventList } from '@ext/admin/models/Incident.js';
 import { LogList } from '@core/models/Log.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 

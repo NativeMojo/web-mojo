@@ -1,6 +1,6 @@
 import View from '@core/View.js';
 import ChatView from '@core/views/chat/ChatView.js';
-import { AssistantConversation, AssistantConversationList } from '@core/models/Assistant.js';
+import { AssistantConversation, AssistantConversationList } from '@ext/admin/models/Assistant.js';
 import AssistantMessageView from './AssistantMessageView.js';
 import AssistantConversationListView from './AssistantConversationListView.js';
 import AssistantView from './AssistantView.js';

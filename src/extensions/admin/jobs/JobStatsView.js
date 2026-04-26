@@ -3,7 +3,7 @@
  */
 
 import View from '@core/View.js';
-import { Job } from '@core/models/Job.js';
+import { Job } from '@ext/admin/models/Job.js';
 
 export default class JobStatsView extends View {
     constructor(options = {}) {

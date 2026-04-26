@@ -7,7 +7,7 @@
  * Route: system/jobs/dashboard
  */
 import Page from '@core/Page.js';
-import { JobsEngineStats } from '@core/models/Job.js';
+import { JobsEngineStats } from '@ext/admin/models/Job.js';
 import JobStatsView from './JobStatsView.js';
 import JobOverviewSection from './sections/JobOverviewSection.js';
 import JobOperationsSection from './sections/JobOperationsSection.js';

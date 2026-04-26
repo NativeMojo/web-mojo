@@ -1,4 +1,4 @@
-import { TicketNote, TicketNoteList } from '@core/models/Tickets.js';
+import { TicketNote, TicketNoteList } from '@ext/admin/models/Tickets.js';
 import rest from '@core/Rest.js';
 
 class TicketNoteAdapter {

@@ -3,7 +3,7 @@ import TabView from '@core/views/navigation/TabView.js';
 import DataView from '@core/views/data/DataView.js';
 import TableView from '@core/views/table/TableView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
-import { RuleSet, RuleList, BundleByOptions, MatchByOptions } from '@core/models/Incident.js';
+import { RuleSet, RuleList, BundleByOptions, MatchByOptions } from '@ext/admin/models/Incident.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 import HandlerBuilderView from '../security/HandlerBuilderView.js';
 

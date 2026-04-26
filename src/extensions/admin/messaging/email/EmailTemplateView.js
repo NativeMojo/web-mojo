@@ -4,7 +4,7 @@
 
 import View from '@core/View.js';
 import TabView from '@core/views/navigation/TabView.js';
-import { EmailTemplate } from '@core/models/Email.js';
+import { EmailTemplate } from '@ext/admin/models/Email.js';
 
 /**
  * EmailHtmlPreviewView - Renders HTML email template in a sandboxed iframe

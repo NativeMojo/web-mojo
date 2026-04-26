@@ -8,7 +8,7 @@
 import Page from '@core/Page.js';
 import TabView from '@core/views/navigation/TabView.js';
 import TableView from '@core/views/table/TableView.js';
-import { LoginEventList } from '@core/models/LoginEvent.js';
+import { LoginEventList } from '@ext/admin/models/LoginEvent.js';
 import LoginLocationMapView from './LoginLocationMapView.js';
 
 class UserDeviceLocationTablePage extends Page {

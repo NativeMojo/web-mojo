@@ -10,7 +10,7 @@
 import TablePage from '@core/pages/TablePage.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 import Modal from '@core/views/feedback/Modal.js';
-import { IPSet, IPSetList, IPSetForms, IPSetKindBadgeOptions, IPSetSourceOptions, CommonBlockCountries } from '@core/models/IPSet.js';
+import { IPSet, IPSetList, IPSetForms, IPSetKindBadgeOptions, IPSetSourceOptions, CommonBlockCountries } from '@ext/admin/models/IPSet.js';
 import IPSetView from './IPSetView.js';
 
 class IPSetTablePage extends TablePage {

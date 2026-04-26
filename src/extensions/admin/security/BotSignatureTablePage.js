@@ -6,7 +6,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { BouncerSignatureList, BouncerSignatureForms } from '@core/models/Bouncer.js';
+import { BouncerSignatureList, BouncerSignatureForms } from '@ext/admin/models/Bouncer.js';
 
 export default class BotSignatureTablePage extends TablePage {
     constructor(options = {}) {

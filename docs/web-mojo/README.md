@@ -39,6 +39,8 @@ Essential framework components every MOJO developer should understand:
 Page-level components with routing lifecycle:
 
 - **[Page](./pages/Page.md)** - Base page class: routing params, onEnter/onExit, URL sync, permissions
+- **[FormPage](./pages/FormPage.md)** - Page wrapped around a FormView with model load/save
+- **[TablePage](./pages/TablePage.md)** - Page wrapper for TableView with URL sync
 
 ---
 
@@ -49,6 +51,7 @@ Framework services for HTTP, real-time, notifications, and file handling:
 - **[Rest](./services/Rest.md)** - HTTP client: GET/POST/PUT/PATCH/DELETE, file upload/download, interceptors
 - **[ToastService](./services/ToastService.md)** - Bootstrap 5 toast notifications with auto-dismiss and view support
 - **[WebSocketClient](./services/WebSocketClient.md)** - WebSocket client with auto-reconnect, heartbeat, and auth
+- **[FileUpload](./services/FileUpload.md)** - Drag-and-drop file upload utilities (`applyFileDropMixin`)
 
 ---
 
@@ -63,7 +66,7 @@ UI Components for displaying and interacting with data:
 - **[SideNavView](./components/SideNavView.md)** - Section-based detail layout: left rail of sections, responsive collapse to dropdown
 - **[ListView](./components/ListView.md)** - Visual list component for collections
 - **[TableView](./components/TableView.md)** - Advanced data table with sorting, filtering, pagination
-- **[TablePage](./components/TablePage.md)** - Page wrapper for TableView with URL sync
+- **[TabView](./components/TabView.md)** - Tab navigation component
 - **[DataView](./components/DataView.md)** - Structured data display component
 - **[FileView](./components/FileView.md)** - Canonical viewer for File records (preview, details, renditions, metadata)
 - **[ImageFields](./components/ImageFields.md)** - Image field components
@@ -115,17 +118,14 @@ Helper classes and functions:
 
 Optional extensions for charts, maps, admin, and more:
 
-- **[Admin](./extensions/Admin.md)** - 50+ pre-built admin pages (users, jobs, security, files, shortlinks, messaging, push) + LLM-backed Assistant chat panel; wired into a `PortalWebApp` via `registerAdminPages` and `registerAssistant`
+- **[Admin](./extensions/Admin.md)** - 50+ pre-built admin pages (users, jobs, security, files, shortlinks, messaging, push) + LLM-backed Assistant chat panel; wired into a `PortalWebApp` via `registerAdminPages` and `registerAssistant`. Admin **models** ship separately at `web-mojo/admin-models` (no UI deps)
 - **[Charts](./extensions/Charts.md)** - Native SVG charts (SeriesChart, PieChart, MetricsChart) — no Chart.js dependency; `SeriesChart` supports opt-in `crosshairTracking` for floating crosshair + tooltip on line/area charts
-- **[FileUpload](./extensions/FileUpload.md)** - File upload utilities
 - **[LightBox](./extensions/LightBox.md)** - Image lightbox viewer
-- **[Location](./extensions/Location.md)** - Geolocation services and tracking
-- **[Location API](./extensions/Location_API.md)** - Location API reference
-- **[Map](./extensions/Map.md)** - Map integration and controls
-- **[MapView](./extensions/MapView.md)** - Map view component
+- **[Location](./extensions/Location.md)** - Geolocation services and tracking — see also the [REST API reference](./extensions/Location_API.md)
+- **[Map (overview)](./extensions/Map.md)** - Comprehensive overview covering MapView, MapLibreView, and MetricsCountryMapView
+- **[MapView](./extensions/MapView.md)** - Map view component (Leaflet)
 - **[MapLibreView](./extensions/MapLibreView.md)** - MapLibre GL integration
-- **[Metrics Mini Chart Widget](./extensions/metricsminichartwidget.md)** - Compact metrics chart widget
-- **[TabView](./extensions/TabView.md)** - Tab navigation component
+- **[Metrics Mini Chart Widget](./extensions/MetricsMiniChartWidget.md)** - Compact metrics chart widget
 - **[TimelineView](./extensions/TimelineView.md)** - Timeline visualization
 
 ---
@@ -220,7 +220,7 @@ This documentation is structured for easy navigation and understanding.
 | Modal dialogs | [Dialog.md](./components/Dialog.md) |
 | Toast notifications | [ToastService.md](./services/ToastService.md) |
 | Real-time / WebSocket | [WebSocketClient.md](./services/WebSocketClient.md) |
-| Data tables | [TableView.md](./components/TableView.md), [TablePage.md](./components/TablePage.md) |
+| Data tables | [TableView.md](./components/TableView.md), [TablePage.md](./pages/TablePage.md) |
 | List components | [ListView.md](./components/ListView.md) |
 | Built-in models (User, Group…) | [BuiltinModels.md](./models/BuiltinModels.md) |
 | Utility helpers | [MOJOUtils.md](./utils/MOJOUtils.md) |
@@ -280,18 +280,21 @@ web-mojo/
 │   └── Events.md                # EventBus and EventEmitter patterns
 │
 ├── pages/                       # Page-level routing components
-│   └── Page.md                  # Page base class (extends View with routing)
+│   ├── Page.md                  # Page base class (extends View with routing)
+│   ├── FormPage.md              # Page wrapped around a FormView
+│   └── TablePage.md             # Page wrapper for TableView with URL sync
 │
 ├── services/                    # Framework services
 │   ├── Rest.md                  # HTTP client for API communication
 │   ├── ToastService.md          # Bootstrap 5 toast notifications
-│   └── WebSocketClient.md       # WebSocket client with auto-reconnect
+│   ├── WebSocketClient.md       # WebSocket client with auto-reconnect
+│   └── FileUpload.md            # Drag-and-drop file upload utilities
 │
 ├── components/                  # UI components
 │   ├── Dialog.md                # Modal dialogs (alert, confirm, forms, code)
 │   ├── ListView.md              # List component for collections
 │   ├── TableView.md             # Advanced data table
-│   ├── TablePage.md             # Page wrapper for TableView with URL sync
+│   ├── TabView.md               # Tab navigation component
 │   ├── DataView.md              # Structured data display
 │   ├── FileView.md              # File display and management
 │   └── ImageFields.md           # Image field components
@@ -299,19 +302,15 @@ web-mojo/
 ├── extensions/                  # Optional framework extensions
 │   ├── Charts.md                # Native SVG charts (SeriesChart, PieChart, MetricsChart)
 │   ├── LightBox.md              # Image lightbox viewer
-│   ├── MapView.md               # Map view component
+│   ├── MapView.md               # Map view component (Leaflet)
 │   ├── MapLibreView.md          # MapLibre GL integration
 │   ├── TimelineView.md          # Timeline visualization
-│   ├── FileUpload.md            # File upload utilities
-│   ├── TabView.md               # Tab navigation component
 │   ├── Location.md              # Geolocation services
-│   ├── Location_API.md          # Location API reference
-│   ├── Map.md                   # Map integration and controls
 │   ├── Admin.md                 # Pre-built admin pages and views
-│   └── metricsminichartwidget.md # Compact metrics chart widget
+│   └── MetricsMiniChartWidget.md # Compact metrics chart widget
 │
 ├── models/                      # Built-in model reference
-│   └── BuiltinModels.md         # User, Group, Member, Job, Email, Files, etc.
+│   └── BuiltinModels.md         # User, Group, Member, Files, etc. (admin-only models live in `web-mojo/admin-models`)
 │
 ├── utils/                       # Utility classes
 │   └── MOJOUtils.md             # Static helpers: clone, merge, debounce, password, etc.

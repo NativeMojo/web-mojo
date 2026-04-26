@@ -3,8 +3,8 @@ import { Page, applyFileDropMixin } from 'web-mojo';
 /**
  * FileUploadExample — canonical demo of the FileDropMixin.
  *
- * Doc:    docs/web-mojo/extensions/FileUpload.md
- * Route:  extensions/file-upload
+ * Doc:    docs/web-mojo/services/FileUpload.md
+ * Route:  services/file-upload
  *
  * `applyFileDropMixin(ViewClass)` adds drag-and-drop file handling to any
  * View (or Page). After applying it, call `enableFileDrop({...})` in
@@ -17,8 +17,8 @@ import { Page, applyFileDropMixin } from 'web-mojo';
  * shows name, size, type, and a thumbnail for image MIME types.
  */
 class FileUploadExample extends Page {
-    static pageName = 'extensions/file-upload';
-    static route = 'extensions/file-upload';
+    static pageName = 'services/file-upload';
+    static route = 'services/file-upload';
 
     constructor(options = {}) {
         super({
@@ -93,8 +93,8 @@ class FileUploadExample extends Page {
             </p>
             <p class="example-docs-link">
                 <i class="bi bi-book"></i>
-                <a href="#" data-action="open-doc" data-doc="docs/web-mojo/extensions/FileUpload.md">
-                    docs/web-mojo/extensions/FileUpload.md
+                <a href="#" data-action="open-doc" data-doc="docs/web-mojo/services/FileUpload.md">
+                    docs/web-mojo/services/FileUpload.md
                 </a>
             </p>
 

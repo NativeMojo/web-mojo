@@ -4,7 +4,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { MailboxList, MailboxForms, Mailbox } from '@core/models/Email.js';
+import { MailboxList, MailboxForms, Mailbox } from '@ext/admin/models/Email.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 
 class EmailMailboxTablePage extends TablePage {

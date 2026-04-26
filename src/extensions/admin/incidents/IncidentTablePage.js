@@ -4,7 +4,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { IncidentList, IncidentForms } from '@core/models/Incident.js';
+import { IncidentList, IncidentForms } from '@ext/admin/models/Incident.js';
 import IncidentView from './IncidentView.js';
 
 class IncidentTablePage extends TablePage {

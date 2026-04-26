@@ -1,0 +1,15 @@
+{
+    "name": "FormBuilder",
+    "area": "forms",
+    "route": "forms/form-builder",
+    "title": "FormBuilder — pure HTML generation",
+    "summary": "Generate Bootstrap form HTML directly from a fields config — no FormView, no lifecycle, no validation.",
+    "docs": "docs/web-mojo/forms/FormBuilder.md",
+    "tags": ["form", "html", "builder", "bootstrap", "pure"],
+    "page": "FormBuilderExample.js",
+    "menu": {
+        "section": "Forms",
+        "icon": "bi-tools",
+        "order": 5
+    }
+}

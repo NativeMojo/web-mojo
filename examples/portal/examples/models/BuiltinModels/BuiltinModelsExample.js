@@ -1,19 +1,22 @@
 import { Page, User, UserList } from 'web-mojo';
 
 /**
- * BuiltinModelsExample — showcase of the built-in Model/Collection classes.
+ * BuiltinModelsExample — showcase of the core built-in Model/Collection classes.
  *
  * Doc:    docs/web-mojo/models/BuiltinModels.md
  * Route:  models/builtin-models
  *
  * What this shows:
- *   1. The roster of built-in entities exported from `web-mojo` — User, Group,
- *      Member, Job, Email, Files, Incident, Tickets, Log, Metrics, ApiKey,
- *      etc. — rendered as a quick-reference grid.
- *   2. One concrete usage demo: fetch the current user's `UserList` and
- *      render the first page of results in a small card. This is the simplest
- *      model in the catalog and stands in for the rest — they all follow the
- *      same `new Collection(); await coll.fetch(filters);` pattern.
+ *   1. The roster of CORE built-in entities exported from `web-mojo` — User,
+ *      Group, Member, ApiKey, Files, Log, Metrics, ShortLink — rendered as a
+ *      quick-reference grid.
+ *   2. One concrete usage demo: fetch a UserList and render the first page
+ *      in a small card. The pattern (`new Collection(); await coll.fetch();`)
+ *      generalizes to every model.
+ *
+ * Admin-coupled models (Job, Incident, Email, Push, AWS, Tickets, …) ship
+ * separately from `web-mojo/admin-models` so non-admin consumers don't pay
+ * the bytes for them. See docs/web-mojo/extensions/Admin.md#admin-models.
  *
  * Backend: needs the NativeMojo backend at `localhost:9009`. Without it, the
  * page renders the catalog but the User demo card shows an error state.
@@ -27,22 +30,19 @@ class BuiltinModelsExample extends Page {
             ...options,
             pageName: BuiltinModelsExample.pageName,
             route: BuiltinModelsExample.route,
-            title: 'Built-in Models — User, Group, Job, …',
+            title: 'Built-in Models — core',
             template: BuiltinModelsExample.TEMPLATE,
         });
 
         this.catalog = [
-            { name: 'User',     list: 'UserList',     icon: 'bi-person',       endpoint: '/api/user',     summary: 'User accounts. Has hasPermission(), Forms, DataView.' },
-            { name: 'Group',    list: 'GroupList',    icon: 'bi-diagram-3',    endpoint: '/api/group',    summary: 'Tenants/orgs/teams. GroupKinds enum + Forms.' },
-            { name: 'Member',   list: 'MemberList',   icon: 'bi-people',       endpoint: '/api/member',   summary: 'User membership in a group + role/perms.' },
-            { name: 'Job',      list: 'JobList',      icon: 'bi-cpu',          endpoint: '/api/job',      summary: 'Background tasks; status, progress, result.' },
-            { name: 'Email',    list: 'EmailList',    icon: 'bi-envelope',     endpoint: '/api/email',    summary: 'Queued / sent email messages.' },
-            { name: 'Files',    list: 'FilesList',    icon: 'bi-files',        endpoint: '/api/files',    summary: 'Uploaded files / media assets.' },
-            { name: 'Incident', list: 'IncidentList', icon: 'bi-exclamation-octagon', endpoint: '/api/incident', summary: 'Outage/issue records with severity + status.' },
-            { name: 'Tickets',  list: 'TicketList',   icon: 'bi-ticket-detailed', endpoint: '/api/ticket',  summary: 'Support / task tickets with priority.' },
-            { name: 'Log',      list: 'LogList',      icon: 'bi-journal-text', endpoint: '/api/log',      summary: 'Audit log: actor, action, target, details.' },
-            { name: 'Metrics',  list: 'MetricsList',  icon: 'bi-graph-up',     endpoint: '/api/metrics',  summary: 'Time-series metrics for monitoring.' },
-            { name: 'ApiKey',   list: 'ApiKeyList',   icon: 'bi-key',          endpoint: '/api/apikey',   summary: 'API keys for programmatic access.' },
+            { name: 'User',      list: 'UserList',      icon: 'bi-person',       endpoint: '/api/user',     summary: 'User accounts. Has hasPermission(), Forms, DataView.' },
+            { name: 'Group',     list: 'GroupList',     icon: 'bi-diagram-3',    endpoint: '/api/group',    summary: 'Tenants/orgs/teams. GroupKinds enum + Forms.' },
+            { name: 'Member',    list: 'MemberList',    icon: 'bi-people',       endpoint: '/api/member',   summary: 'User membership in a group + role/perms.' },
+            { name: 'ApiKey',    list: 'ApiKeyList',    icon: 'bi-key',          endpoint: '/api/apikey',   summary: 'API keys for programmatic access.' },
+            { name: 'Files',     list: 'FilesList',     icon: 'bi-files',        endpoint: '/api/files',    summary: 'Uploaded files / media assets.' },
+            { name: 'Log',       list: 'LogList',       icon: 'bi-journal-text', endpoint: '/api/log',      summary: 'Audit log: actor, action, target, details.' },
+            { name: 'Metrics',   list: 'MetricsList',   icon: 'bi-graph-up',     endpoint: '/api/metrics',  summary: 'Time-series metrics for monitoring.' },
+            { name: 'ShortLink', list: 'ShortLinkList', icon: 'bi-link-45deg',   endpoint: '/api/shortlinks', summary: 'Short URLs with click tracking + metadata.' },
         ];
         this.users = null;
         this.userError = null;
@@ -81,6 +81,9 @@ class BuiltinModelsExample extends Page {
             <p class="example-summary">
                 Pre-built <code>Model</code> + <code>Collection</code> classes for the common
                 entities in a multi-tenant app. All follow the same fetch / save / destroy shape.
+                Admin-only models (Job, Incident, Email, Push, …) ship separately from
+                <code>web-mojo/admin-models</code> — see the
+                <a href="#" data-action="open-doc" data-doc="docs/web-mojo/extensions/Admin.md">Admin extension docs</a>.
             </p>
             <p class="example-docs-link">
                 <i class="bi bi-book"></i>

@@ -15,7 +15,7 @@
 import View from '@core/View.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 import TabView from '@core/views/navigation/TabView.js';
-import { JobRunner } from '@core/models/JobRunner.js';
+import { JobRunner } from '@ext/admin/models/JobRunner.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared helpers

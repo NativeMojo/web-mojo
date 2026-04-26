@@ -1,12 +1,21 @@
 # Built-in Models
 
-WEB-MOJO ships with a collection of pre-built [Model](../core/Model.md) and [Collection](../core/Collection.md) classes covering the most common entities in a multi-tenant portal application: users, groups, members, jobs, files, emails, incidents, tickets, metrics, and more.
+WEB-MOJO ships with two sets of pre-built [Model](../core/Model.md) and [Collection](../core/Collection.md) classes:
 
-All built-in models are available from a single import:
+1. **Core models** — documented on this page. Identity primitives, files, settings, logs, short links — the building blocks every portal app needs.
+2. **Admin models** — `Job`, `Incident`, `Email`, `Push`, `Phonehub`, `AWS`, etc. — coupled to the admin extension and shipped separately at [`web-mojo/admin-models`](../extensions/Admin.md#admin-models). They have no UI dependencies, so an API client or Node script can consume them without pulling in the admin pages from `web-mojo/admin`.
+
+Core models are available from the main entry or the dedicated barrel:
 
 ```js
-import { User, Group, Job, Email } from 'web-mojo/models';
-import { UserList, GroupList, JobForms } from 'web-mojo/models';
+import { User, Group, Member, ApiKey, Files } from 'web-mojo';
+import { User, Settings, ShortLink } from 'web-mojo/models';
+```
+
+For admin models, see the Admin extension docs:
+
+```js
+import { Job, Incident, Email, Push } from 'web-mojo/admin-models';
 ```
 
 ---
@@ -17,22 +26,15 @@ import { UserList, GroupList, JobForms } from 'web-mojo/models';
 - [User & UserList](#user--userlist)
 - [Group & GroupList](#group--grouplist)
 - [Member & MemberList](#member--memberlist)
-- [Job & JobList](#job--joblist)
-- [JobRunner & JobRunnerList](#jobrunner--jobrunnerlist)
-- [Email & EmailList](#email--emaillist)
-- [Files & FilesList](#files--fileslist)
-- [Incident & IncidentList](#incident--incidentlist)
-- [Tickets](#tickets)
-- [Log & LogList](#log--loglist)
-- [Metrics](#metrics)
 - [ApiKey & ApiKeyList](#apikey--apikeylist)
-- [Push & PushList](#push--pushlist)
-- [AssistantConversation & AssistantConversationList](#assistantconversation--assistantconversationlist)
+- [Files & FilesList](#files--fileslist)
+- [Settings](#settings)
+- [Metrics](#metrics)
 - [Passkeys](#passkeys)
-- [Phonehub](#phonehub)
-- [AWS](#aws)
 - [System](#system)
+- [Log & LogList](#log--loglist)
 - [ShortLink & ShortLinkClick](#shortlink--shortlinkclick)
+- [Admin models](#admin-models)
 - [Model Conventions](#model-conventions)
 - [Form Configurations](#form-configurations)
 - [DataView Configurations](#dataview-configurations)
@@ -370,100 +372,6 @@ await members.fetch({ group_id: group.get('id') });
 
 ---
 
-## Job & JobList
-
-Represents a background task or scheduled job.
-
-**Endpoint:** `/api/job`
-
-```js
-import { Job, JobList } from 'web-mojo/models';
-
-const job = new Job({ id: 101 });
-await job.fetch();
-
-job.get('id');
-job.get('name');
-job.get('status');       // 'pending', 'running', 'complete', 'failed', 'cancelled'
-job.get('progress');     // 0–100
-job.get('result');       // Job output data
-job.get('error');        // Error message if failed
-job.get('created_at');
-job.get('started_at');
-job.get('completed_at');
-job.get('group');        // Associated group
-
-// Fetch all jobs for a group
-const jobs = new JobList();
-await jobs.fetch({ group_id: groupId, status: 'running' });
-```
-
-### Polling a Job
-
-```js
-async pollUntilComplete(jobId) {
-  while (true) {
-    const job = new Job({ id: jobId });
-    await job.fetch();
-
-    if (['complete', 'failed', 'cancelled'].includes(job.get('status'))) {
-      return job;
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 2000));
-  }
-}
-```
-
----
-
-## JobRunner & JobRunnerList
-
-Represents a worker process that executes jobs. Used for monitoring the job queue infrastructure.
-
-**Endpoint:** `/api/job/runner`
-
-```js
-import { JobRunner, JobRunnerList } from 'web-mojo/models';
-
-const runners = new JobRunnerList();
-await runners.fetch();
-
-runners.forEach(runner => {
-  console.log(runner.get('name'), runner.get('status'), runner.get('jobs_processed'));
-});
-```
-
----
-
-## Email & EmailList
-
-Represents an email message — either queued for sending or already sent.
-
-**Endpoint:** `/api/email`
-
-```js
-import { Email, EmailList } from 'web-mojo/models';
-
-const email = new Email({ id: 55 });
-await email.fetch();
-
-email.get('id');
-email.get('to');          // Recipient address
-email.get('from');        // Sender address
-email.get('subject');
-email.get('body');        // HTML body
-email.get('status');      // 'queued', 'sent', 'failed', 'bounced'
-email.get('sent_at');
-email.get('created_at');
-
-// Fetch sent emails
-const emails = new EmailList();
-await emails.fetch({ status: 'sent', group_id: groupId });
-```
-
----
-
 ## Files & FilesList
 
 Represents a stored file or uploaded media asset.
@@ -488,61 +396,6 @@ file.get('uploaded_by'); // User who uploaded
 // Fetch files for a group
 const files = new FilesList();
 await files.fetch({ group_id: groupId });
-```
-
----
-
-## Incident & IncidentList
-
-Represents a system incident, outage, or issue report.
-
-**Endpoint:** `/api/incident`
-
-```js
-import { Incident, IncidentList } from 'web-mojo/models';
-
-const incident = new Incident({ id: 7 });
-await incident.fetch();
-
-incident.get('id');
-incident.get('title');
-incident.get('description');
-incident.get('status');      // 'open', 'investigating', 'resolved', 'closed'
-incident.get('severity');    // 'low', 'medium', 'high', 'critical'
-incident.get('created_at');
-incident.get('resolved_at');
-incident.get('group');
-
-// Fetch open incidents
-const incidents = new IncidentList();
-await incidents.fetch({ status: 'open', group_id: groupId });
-```
-
----
-
-## Tickets
-
-Represents a support or task ticket.
-
-**Endpoint:** `/api/ticket`
-
-```js
-import { Tickets } from 'web-mojo/models';
-// Also: TicketList (if exported)
-
-const ticket = new Tickets({ id: 99 });
-await ticket.fetch();
-
-ticket.get('id');
-ticket.get('title');
-ticket.get('description');
-ticket.get('status');      // 'open', 'in_progress', 'resolved', 'closed'
-ticket.get('priority');    // 'low', 'normal', 'high', 'urgent'
-ticket.get('assigned_to');
-ticket.get('created_by');
-ticket.get('created_at');
-ticket.get('updated_at');
-ticket.get('group');
 ```
 
 ---
@@ -628,24 +481,6 @@ await keys.fetch({ group_id: groupId });
 
 ---
 
-## Push & PushList
-
-Represents a push notification subscription or message.
-
-**Endpoint:** `/api/push`
-
-```js
-import { Push, PushList } from 'web-mojo/models';
-
-const subscription = new Push();
-
-// Fetch subscriptions for a group
-const subscriptions = new PushList();
-await subscriptions.fetch({ group_id: groupId });
-```
-
----
-
 ## Passkeys
 
 Represents a WebAuthn passkey credential registered by a user.
@@ -657,34 +492,6 @@ import { Passkeys } from 'web-mojo/models';
 
 const passkeys = new Passkeys();
 const resp = await passkeys.rest.GET('/api/passkeys', { user_id: user.get('id') });
-```
-
----
-
-## Phonehub
-
-Represents phone/device hub integration records.
-
-**Endpoint:** `/api/phonehub`
-
-```js
-import { Phonehub } from 'web-mojo/models';
-```
-
----
-
-## AWS
-
-Represents AWS integration configuration and resources.
-
-**Endpoint:** `/api/aws`
-
-```js
-import { AWS } from 'web-mojo/models';
-
-const aws = new AWS();
-// Fetch AWS configuration for a group
-await aws.rest.GET('/api/aws/config', { group_id: groupId });
 ```
 
 ---
@@ -704,36 +511,6 @@ if (resp.success && resp.data.status) {
   this.systemStatus = resp.data.data;
 }
 ```
-
----
-
-## AssistantConversation & AssistantConversationList
-
-Represents an LLM assistant conversation and its message history. Used by the Admin Assistant interface.
-
-**Endpoint:** `/api/assistant/conversation`
-
-```js
-import { AssistantConversation, AssistantConversationList } from 'web-mojo/models';
-
-// Fetch a conversation with full message history
-const conversation = new AssistantConversation({ id: 42 });
-await conversation.fetch();
-const messages = conversation.get('messages'); // Array of message objects
-
-// Fetch the list of the current user's conversations (max 50)
-const list = new AssistantConversationList();
-await list.fetch();
-list.forEach(c => console.log(c.get('id'), c.get('created')));
-
-// Delete a conversation
-const conversation = new AssistantConversation({ id: 42 });
-await conversation.destroy();
-```
-
-`AssistantConversationList` defaults to `size: 50`. Conversations are always scoped to the authenticated user — the API does not expose other users' conversations.
-
-Conversations are created implicitly when the first WebSocket message is sent. There is no explicit `save()` flow for creating a new conversation.
 
 ---
 
@@ -805,6 +582,40 @@ const flat = flattenShortLinkMetadata(link.get('metadata'));
 const payload = extractShortLinkPayload({ url: 'https://...', og_title: 'Hello', ... });
 // payload.metadata = { 'og:title': 'Hello' }
 ```
+
+---
+
+## Admin models
+
+Fourteen Model/Collection sets are coupled to the admin extension and ship from a separate, **UI-free** entry: [`web-mojo/admin-models`](../extensions/Admin.md#admin-models).
+
+```js
+import { Job, JobList, JobForms } from 'web-mojo/admin-models';
+import { Incident, IncidentList, RuleSet } from 'web-mojo/admin-models';
+import { Email, Mailbox, EmailDomain, SentMessage, EmailTemplate } from 'web-mojo/admin-models';
+import { Push, PushDevice, PushTemplate, PushDelivery } from 'web-mojo/admin-models';
+```
+
+| Model | Purpose | Endpoint |
+|---|---|---|
+| `AWS` (S3Bucket) | S3 buckets | `/api/aws/...` |
+| `Assistant` | Assistant conversations + skills | `/api/assistant/...` |
+| `Bouncer` | Fraud-detection device/signal/signature | `/api/account/bouncer/...` |
+| `Email` | Email domain / mailbox / template / sent message | `/api/aws/email/...` |
+| `Incident` | Incident / event / rule set | `/api/incident/...` |
+| `IPSet` | IP allow/block sets | `/api/incident/ipset` |
+| `Job` | Background job + log + event + stats | `/api/jobs/job` |
+| `JobRunner` | Job runner control + ping/shutdown | `/api/jobs/runners` |
+| `LoginEvent` | Geolocated login history | `/api/account/logins` |
+| `PublicMessage` | Contact form / public-facing messages | `/api/messaging/public` |
+| `Push` | Push device / template / config / delivery | `/api/account/devices/push/...` |
+| `Phonehub` | Phone numbers + SMS | `/api/phonehub/...` |
+| `ScheduledTask` | Cron-style task definitions | `/api/jobs/scheduled_task` |
+| `Tickets` | Ticket + ticket notes (cross-references Incident, User) | `/api/incident/ticket` |
+
+The model classes are pure data — no DOM, no Bootstrap, no template deps. You can import them in a Node script, an API client, or any UI library without pulling in the admin pages from `web-mojo/admin`.
+
+For the matching admin **pages** (sidebar, dashboards, table pages, detail views), see [`web-mojo/admin`](../extensions/Admin.md).
 
 ---
 

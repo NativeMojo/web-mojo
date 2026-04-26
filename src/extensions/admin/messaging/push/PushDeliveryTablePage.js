@@ -1,5 +1,5 @@
 import TablePage from '@core/pages/TablePage.js';
-import { PushDeliveryList } from '@core/models/Push.js';
+import { PushDeliveryList } from '@ext/admin/models/Push.js';
 import PushDeliveryView from './PushDeliveryView.js';
 
 class PushDeliveryTablePage extends TablePage {

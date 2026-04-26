@@ -1,5 +1,5 @@
 import TablePage from '@core/pages/TablePage.js';
-import { PushDeviceList } from '@core/models/Push.js';
+import { PushDeviceList } from '@ext/admin/models/Push.js';
 import PushDeviceView from './PushDeviceView.js';
 
 class PushDeviceTablePage extends TablePage {

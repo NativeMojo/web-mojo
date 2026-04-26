@@ -10,7 +10,7 @@ import TabView from '@core/views/navigation/TabView.js';
 import DataView from '@core/views/data/DataView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import Dialog from '@core/views/feedback/Dialog.js';
-import { IPSet, IPSetForms, IPSetKindBadgeOptions, IPSetSourceOptions } from '@core/models/IPSet.js';
+import { IPSet, IPSetForms, IPSetKindBadgeOptions, IPSetSourceOptions } from '@ext/admin/models/IPSet.js';
 
 class IPSetView extends View {
     constructor(options = {}) {

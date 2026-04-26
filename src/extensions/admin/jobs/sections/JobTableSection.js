@@ -6,7 +6,7 @@
  */
 import View from '@core/View.js';
 import TableView from '@core/views/table/TableView.js';
-import { JobList } from '@core/models/Job.js';
+import { JobList } from '@ext/admin/models/Job.js';
 import JobDetailsView from '../JobDetailsView.js';
 
 // ── Default column configs per status ──────────────────────

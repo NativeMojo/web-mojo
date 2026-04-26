@@ -4,7 +4,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { SentMessageList } from '@core/models/Email.js';
+import { SentMessageList } from '@ext/admin/models/Email.js';
 import EmailView from './EmailView.js';
 
 class SentMessageTablePage extends TablePage {

@@ -4,7 +4,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { TicketList, TicketForms, TicketCategories } from '@core/models/Tickets.js';
+import { TicketList, TicketForms, TicketCategories } from '@ext/admin/models/Tickets.js';
 import TicketView from './TicketView.js';
 
 class TicketTablePage extends TablePage {

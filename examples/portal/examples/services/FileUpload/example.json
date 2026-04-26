@@ -1,14 +1,14 @@
 {
     "name": "FileUpload",
-    "area": "extensions",
-    "route": "extensions/file-upload",
+    "area": "services",
+    "route": "services/file-upload",
     "title": "FileUpload",
     "summary": "Drag-and-drop file handling via applyFileDropMixin with validation.",
-    "docs": "docs/web-mojo/extensions/FileUpload.md",
+    "docs": "docs/web-mojo/services/FileUpload.md",
     "tags": ["file", "upload", "drag-drop", "mixin"],
     "page": "FileUploadExample.js",
     "menu": {
-        "section": "Extensions",
+        "section": "Services",
         "icon": "bi-cloud-arrow-up",
         "order": 60
     }

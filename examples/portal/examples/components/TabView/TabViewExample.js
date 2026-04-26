@@ -3,8 +3,8 @@ import { Page, View, TabView } from 'web-mojo';
 /**
  * TabViewExample — canonical demo of the TabView extension.
  *
- * Doc:    docs/web-mojo/extensions/TabView.md
- * Route:  extensions/tab-view
+ * Doc:    docs/web-mojo/components/TabView.md
+ * Route:  components/tab-view
  *
  * TabView is a Bootstrap-styled tabbed interface that automatically collapses
  * to a dropdown when there isn't room. Pass a `tabs:` map of label→View, drop
@@ -16,8 +16,8 @@ import { Page, View, TabView } from 'web-mojo';
  * expect. The status box below subscribes to the `tab:changed` event.
  */
 class TabViewExample extends Page {
-    static pageName = 'extensions/tab-view';
-    static route = 'extensions/tab-view';
+    static pageName = 'components/tab-view';
+    static route = 'components/tab-view';
 
     constructor(options = {}) {
         super({
@@ -64,8 +64,8 @@ class TabViewExample extends Page {
             </p>
             <p class="example-docs-link">
                 <i class="bi bi-book"></i>
-                <a href="#" data-action="open-doc" data-doc="docs/web-mojo/extensions/TabView.md">
-                    docs/web-mojo/extensions/TabView.md
+                <a href="#" data-action="open-doc" data-doc="docs/web-mojo/components/TabView.md">
+                    docs/web-mojo/components/TabView.md
                 </a>
             </p>
 

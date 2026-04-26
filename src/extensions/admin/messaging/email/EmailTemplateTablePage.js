@@ -4,7 +4,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { EmailTemplateList, EmailTemplateForms } from '@core/models/Email.js';
+import { EmailTemplateList, EmailTemplateForms } from '@ext/admin/models/Email.js';
 import EmailTemplateView from './EmailTemplateView.js';
 
 class EmailTemplateTablePage extends TablePage {

@@ -3,7 +3,7 @@ import { TablePage, Collection } from 'web-mojo';
 /**
  * TablePageExample — canonical demo of TablePage with URL sync.
  *
- * Doc:    docs/web-mojo/components/TablePage.md
+ * Doc:    docs/web-mojo/pages/TablePage.md
  * Route:  pages/table-page
  *
  * TablePage is a Page subclass that owns a Collection and a TableView and

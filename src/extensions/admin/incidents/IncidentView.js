@@ -12,9 +12,9 @@ import DataView from '@core/views/data/DataView.js';
 import TableView from '@core/views/table/TableView.js';
 import StackTraceView from '@core/views/data/StackTraceView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
-import { Incident, IncidentForms, IncidentList, IncidentEventList, RuleSet, RuleSetForms, Rule, RuleList, BundleByOptions, MatchByOptions } from '@core/models/Incident.js';
+import { Incident, IncidentForms, IncidentList, IncidentEventList, RuleSet, RuleSetForms, Rule, RuleList, BundleByOptions, MatchByOptions } from '@ext/admin/models/Incident.js';
 import { GeoLocatedIP } from '@core/models/System.js';
-import { Ticket, TicketList, TicketForms } from '@core/models/Tickets.js';
+import { Ticket, TicketList, TicketForms } from '@ext/admin/models/Tickets.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 import GeoIPView from '../account/devices/GeoIPView.js';
 import RuleSetView from './RuleSetView.js';
@@ -583,14 +583,14 @@ class IncidentOverviewSection extends View {
         const showDetails = details && details !== title;
 
         const fields = [
-            { name: 'status', label: 'Status', formatter: 'badge', cols: 3 },
-            { name: 'priority', label: 'Priority', cols: 3 },
-            { name: 'category', label: 'Category', formatter: 'badge', cols: 3 },
-            { name: 'event_count', label: 'Events', cols: 3 },
-            { name: 'scope', label: 'Scope', cols: 3 },
-            { name: 'hostname', label: 'Hostname', cols: 3 },
-            { name: 'created', label: 'Created', formatter: 'epoch|datetime', cols: 3 },
-            { name: 'modified', label: 'Last Updated', formatter: 'epoch|datetime', cols: 3 },
+            { name: 'status', label: 'Status', formatter: 'badge', cols: 4 },
+            { name: 'priority', label: 'Priority', cols: 4 },
+            { name: 'category', label: 'Category', formatter: 'badge', cols: 4 },
+            { name: 'event_count', label: 'Events', cols: 4 },
+            { name: 'scope', label: 'Scope', cols: 4 },
+            { name: 'hostname', label: 'Hostname', cols: 4 },
+            { name: 'created', label: 'Created', formatter: 'epoch|datetime', cols: 4 },
+            { name: 'modified', label: 'Last Updated', formatter: 'epoch|datetime', cols: 4 },
             { name: 'title', label: 'Title', cols: 12 },
         ];
         if (showDetails) {

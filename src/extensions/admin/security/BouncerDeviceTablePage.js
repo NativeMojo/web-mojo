@@ -6,7 +6,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { BouncerDeviceList } from '@core/models/Bouncer.js';
+import { BouncerDeviceList } from '@ext/admin/models/Bouncer.js';
 import BouncerDeviceView from './BouncerDeviceView.js';
 
 export default class BouncerDeviceTablePage extends TablePage {

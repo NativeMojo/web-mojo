@@ -3,7 +3,7 @@ import { TablePage, View, Collection } from 'web-mojo';
 /**
  * TablePageWithDetailViewExample — TablePage with a custom detail View.
  *
- * Doc:    docs/web-mojo/components/TablePage.md#item-view
+ * Doc:    docs/web-mojo/pages/TablePage.md#item-view
  * Route:  pages/table-page/detail-view
  *
  * Setting `itemView` on a TablePage tells it to open this View — wrapped in

@@ -4,7 +4,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { S3BucketList, S3BucketForms } from '@core/models/AWS.js';
+import { S3BucketList, S3BucketForms } from '@ext/admin/models/AWS.js';
 
 class S3BucketTablePage extends TablePage {
     constructor(options = {}) {

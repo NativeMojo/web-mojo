@@ -1,5 +1,5 @@
 import TablePage from '@core/pages/TablePage.js';
-import { PushTemplateList, PushTemplateForms } from '@core/models/Push.js';
+import { PushTemplateList, PushTemplateForms } from '@ext/admin/models/Push.js';
 
 class PushTemplateTablePage extends TablePage {
     constructor(options = {}) {

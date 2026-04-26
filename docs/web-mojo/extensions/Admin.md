@@ -16,6 +16,7 @@
 - [Convenience Helpers (`Class.show(...)`)](#convenience-helpers-classshow)
 - [Admin Assistant](#admin-assistant)
 - [Context-Scoped Assistant Chat](#context-scoped-assistant-chat)
+- [Admin Models](#admin-models)
 - [Common Pitfalls](#common-pitfalls)
 - [Related Docs](#related-docs)
 
@@ -414,6 +415,55 @@ async onActionAskAi() {
 ```
 
 Requirements: `this.model` is set with an `id`; `this.model.get('metadata')` is readable/writable; `this.getApp()` returns the running app. The endpoints used are `POST /api/assistant/context`, `GET /api/assistant/conversation/{id}?graph=detail`, and `POST /api/assistant` (fallback).
+
+---
+
+## Admin Models
+
+Fourteen Model/Collection sets are coupled to the admin extension. They ship from a **separate, UI-free entry** so a Node script, an API client, or a different UI framework can use them without pulling in the admin pages from `web-mojo/admin`.
+
+```js
+import { Job, JobList, JobForms } from 'web-mojo/admin-models';
+import { Incident, RuleSet } from 'web-mojo/admin-models';
+import { Email, Mailbox, EmailDomain } from 'web-mojo/admin-models';
+import { Push, PushDevice, PushTemplate } from 'web-mojo/admin-models';
+```
+
+### What's in `web-mojo/admin-models`
+
+| Model | Purpose | Endpoint |
+|---|---|---|
+| `AWS` (S3Bucket) | S3 buckets | `/api/aws/...` |
+| `Assistant` | Assistant conversations + skills | `/api/assistant/...` |
+| `Bouncer` | Fraud-detection device/signal/signature | `/api/account/bouncer/...` |
+| `Email` | Email domain / mailbox / template / sent message | `/api/aws/email/...` |
+| `Incident` | Incident / event / rule set / rule | `/api/incident/...` |
+| `IPSet` | IP allow/block sets | `/api/incident/ipset` |
+| `Job` | Background job + log + event + stats | `/api/jobs/job` |
+| `JobRunner` | Job runner control (ping/shutdown) | `/api/jobs/runners` |
+| `LoginEvent` | Geolocated login history | `/api/account/logins` |
+| `PublicMessage` | Contact form / public-facing messages | `/api/messaging/public` |
+| `Push` | Push device / template / config / delivery | `/api/account/devices/push/...` |
+| `Phonehub` | Phone numbers + SMS | `/api/phonehub/...` |
+| `ScheduledTask` | Cron-style task definitions | `/api/jobs/scheduled_task` |
+| `Tickets` | Ticket + ticket notes (cross-references Incident, User) | `/api/incident/ticket` |
+
+### Two-entry split
+
+| Entry | What's in it | Pulls UI deps? |
+|---|---|---|
+| `web-mojo/admin` | Pages + views (sidebar, dashboards, table pages, detail views) | **Yes** (Sidebar, TableView, ContextMenu, Bootstrap, …) |
+| `web-mojo/admin-models` | The 14 Model/Collection classes only — pure data | **No** |
+
+Use `web-mojo/admin` when you're building an admin portal that registers admin pages. Use `web-mojo/admin-models` when you need just the data shapes and REST methods.
+
+### Cross-references to core models
+
+Some admin models reference still-core models. Those imports work transparently — `Tickets` imports `User` from `web-mojo/models`, `Push` imports `Group` from `web-mojo/models`, etc. You don't need to do anything special; the bundler resolves the chain.
+
+### Why this split?
+
+Before this version, admin models lived in `src/core/models/` and were re-exported from `'web-mojo'`, which meant every consumer paid the bytes for them whether they used the admin extension or not. Splitting models into a UI-free entry lets non-admin apps stay lean while admin apps still get a clean import path.
 
 ---
 

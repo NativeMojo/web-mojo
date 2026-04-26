@@ -10,7 +10,7 @@ import {
     PublicMessageList,
     PublicMessageKindOptions,
     PublicMessageStatusOptions,
-} from '@core/models/PublicMessage.js';
+} from '@ext/admin/models/PublicMessage.js';
 import PublicMessageView from './PublicMessageView.js';
 
 class PublicMessageTablePage extends TablePage {

@@ -1,4 +1,4 @@
-import { IncidentHistory, IncidentHistoryList } from '@core/models/Incident.js';
+import { IncidentHistory, IncidentHistoryList } from '@ext/admin/models/Incident.js';
 import rest from '@core/Rest.js';
 
 class IncidentHistoryAdapter {

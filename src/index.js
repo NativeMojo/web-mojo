@@ -31,20 +31,17 @@ export { default as Model } from '@core/Model.js';
 export { default as Collection } from '@core/Collection.js';
 export { default as Rest } from '@core/Rest.js';
 
-// Core Models - re-export everything from models/
-export * from '@core/models/AWS.js';
-export * from '@core/models/Email.js';
+// Core Models - re-exported on the main entry. Admin-coupled models
+// (Job, Incident, Email, Push, AWS, Tickets, JobRunner, Assistant, Bouncer,
+// IPSet, LoginEvent, PublicMessage, Phonehub, ScheduledTask) live in
+// src/extensions/admin/models/ and ship via 'web-mojo/admin-models' so
+// non-admin consumers don't pay the bytes for them.
 export * from '@core/models/Files.js';
 export * from '@core/models/Group.js';
-export * from '@core/models/Incident.js';
-export * from '@core/models/Job.js';
-export * from '@core/models/JobRunner.js';
 export * from '@core/models/Log.js';
 export * from '@core/models/Member.js';
 export * from '@core/models/Metrics.js';
-export * from '@core/models/Push.js';
 export * from '@core/models/System.js';
-export * from '@core/models/Tickets.js';
 export * from '@core/models/User.js';
 
 // App classes
@@ -69,6 +66,7 @@ export { default as SimpleSearchView } from '@core/views/navigation/SimpleSearch
 export { default as SideNavView } from '@core/views/navigation/SideNavView.js';
 export { default as DataView } from '@core/views/data/DataView.js';
 export { default as FormView } from '@core/forms/FormView.js';
+export { default as FormBuilder } from '@core/forms/FormBuilder.js';
 export { default as FormPage } from '@core/forms/FormPage.js';
 export { default as FilePreviewView } from '@core/views/data/FilePreviewView.js';
 export { default as FileView } from '@core/views/data/FileView.js';

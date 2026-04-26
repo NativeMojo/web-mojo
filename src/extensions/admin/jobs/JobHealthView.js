@@ -4,7 +4,7 @@
 
 import View from '@core/View.js';
 import Dialog from '@core/views/feedback/Dialog.js';
-import { Job } from '@core/models/Job.js';
+import { Job } from '@ext/admin/models/Job.js';
 
 export default class JobHealthView extends View {
     constructor(options = {}) {

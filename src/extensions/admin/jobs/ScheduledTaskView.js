@@ -7,7 +7,7 @@
 
 import View from '@core/View.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
-import { ScheduledTask, ScheduledTaskForms, TaskResultList, DAY_LABELS } from '@core/models/ScheduledTask.js';
+import { ScheduledTask, ScheduledTaskForms, TaskResultList, DAY_LABELS } from '@ext/admin/models/ScheduledTask.js';
 
 class ScheduledTaskView extends View {
     constructor(options = {}) {

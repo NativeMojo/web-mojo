@@ -3,7 +3,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { AssistantConversationList } from '@core/models/Assistant.js';
+import { AssistantConversationList } from '@ext/admin/models/Assistant.js';
 import AssistantConversationView from './AssistantConversationView.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 

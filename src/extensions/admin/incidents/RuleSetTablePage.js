@@ -1,5 +1,5 @@
 import TablePage from '@core/pages/TablePage.js';
-import { RuleSetList, RuleSetForms, BundleByOptions } from '@core/models/Incident.js';
+import { RuleSetList, RuleSetForms, BundleByOptions } from '@ext/admin/models/Incident.js';
 import RuleSetView from './RuleSetView.js';
 
 class RuleSetTablePage extends TablePage {

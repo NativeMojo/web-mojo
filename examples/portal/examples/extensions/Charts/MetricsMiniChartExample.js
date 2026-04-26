@@ -4,7 +4,7 @@ import { MetricsMiniChartWidget } from 'web-mojo/charts';
 /**
  * MetricsMiniChartExample — backend-driven sparkline tiles.
  *
- * Doc:    docs/web-mojo/extensions/metricsminichartwidget.md
+ * Doc:    docs/web-mojo/extensions/MetricsMiniChartWidget.md
  * Route:  extensions/charts/metrics-mini-chart
  *
  * MetricsMiniChartWidget extends MiniChart with a header (icon, title,
@@ -99,8 +99,8 @@ class MetricsMiniChartExample extends Page {
                 sparkline, and (optionally) a gear-icon settings dropdown that persists.
             </p>
             <p class="example-docs-link">
-                <a href="#" data-action="open-doc" data-doc="docs/web-mojo/extensions/metricsminichartwidget.md">
-                    <i class="bi bi-book"></i> docs/web-mojo/extensions/metricsminichartwidget.md
+                <a href="#" data-action="open-doc" data-doc="docs/web-mojo/extensions/MetricsMiniChartWidget.md">
+                    <i class="bi bi-book"></i> docs/web-mojo/extensions/MetricsMiniChartWidget.md
                 </a>
             </p>
 

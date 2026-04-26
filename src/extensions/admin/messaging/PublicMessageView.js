@@ -11,7 +11,7 @@ import {
     PublicMessage,
     PublicMessageKindOptions,
     PublicMessageMetadataLabels,
-} from '@core/models/PublicMessage.js';
+} from '@ext/admin/models/PublicMessage.js';
 
 const STATUS_BADGE = {
     open: 'bg-warning text-dark',

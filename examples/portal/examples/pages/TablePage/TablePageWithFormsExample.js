@@ -3,7 +3,7 @@ import { TablePage, Collection, Modal } from 'web-mojo';
 /**
  * TablePageWithFormsExample — TablePage with Add and Edit forms.
  *
- * Doc:    docs/web-mojo/components/TablePage.md#forms
+ * Doc:    docs/web-mojo/pages/TablePage.md#forms
  * Route:  pages/table-page/forms
  *
  * Setting `addForm` and `editForm` on a TablePage wires the toolbar's "+ Add"

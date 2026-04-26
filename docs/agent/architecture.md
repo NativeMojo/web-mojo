@@ -58,8 +58,11 @@ The non-optional heart of the framework. Every app depends on these.
 | `Rest.js` | HTTP client with interceptors and file support |
 | `DataFormatter.js` | 80+ pipe formatters used in Mustache templates |
 | `forms/` | FormView, FormBuilder, and all input components |
-| `views/table/` | TableView, TablePage, column/filter system |
+| `views/navigation/` | Sidebar, TopNav, SideNavView, **TabView** |
+| `views/table/` | TableView, column/filter system |
 | `views/list/` | ListView component |
+| `pages/` | TablePage, NotFound/Denied/Error pages |
+| `services/` | Rest, ToastService, WebSocketClient, **FileUpload** |
 | `utils/` | MOJOUtils, DjangoLookups, and other helpers |
 
 ### `src/extensions/`
@@ -67,15 +70,15 @@ Optional modules. Each is a self-contained entry point with its own registration
 
 | Extension | Purpose |
 |---|---|
-| `Charts.js` | Native SVG charts (SeriesChart, PieChart, MetricsChart) |
-| `Admin.js` | Pre-built admin pages and CRUD scaffolding |
-| `MapView.js` | Google Maps integration |
-| `MapLibreView.js` | MapLibre GL integration |
-| `TabView.js` | Tab navigation component |
-| `TimelineView.js` | Timeline / activity feed visualization |
-| `LightBox.js` | Image lightbox viewer |
-| `FileUpload.js` | File upload with drag-and-drop |
-| `Location.js` | Geolocation services and tracking |
+| `charts/` | Native SVG charts (SeriesChart, PieChart, MetricsChart) |
+| `admin/` | Pre-built admin pages and CRUD scaffolding (`web-mojo/admin`) |
+| `admin/models/` | Admin-coupled models (`web-mojo/admin-models`, no UI deps) |
+| `map/` | Leaflet `MapView`, MapLibre GL `MapLibreView`, geolocation |
+| `timeline/` | Timeline / activity feed visualization |
+| `lightbox/` | Image lightbox viewer |
+| `auth/` | Auth pages and AuthManager |
+| `user-profile/` | Profile + settings views |
+| `docit/` | Markdown docs viewer |
 
 ---
 
@@ -85,7 +88,7 @@ Optional modules. Each is a self-contained entry point with its own registration
 |---|---|---|
 | `Page` | `src/core/Page.js` | Extends View with routing lifecycle (`onEnter`/`onExit`), URL params, permissions |
 | `FormPage` | `src/core/FormPage.js` | Extends Page for edit-form screens; auto-loads model from URL param |
-| `TablePage` | `src/core/views/table/TablePage.js` | Page wrapper for TableView with URL-synced filters/pagination |
+| `TablePage` | `src/core/pages/TablePage.js` | Page wrapper for TableView with URL-synced filters/pagination |
 | `ToastService` | `src/core/ToastService.js` | Bootstrap 5 toast notifications, auto-dismiss |
 | `WebSocketClient` | `src/core/WebSocketClient.js` | WS client with auto-reconnect, heartbeat, auth header injection |
 | `Dialog` | `src/core/Dialog.js` | Modal dialogs: alert, confirm, prompt, forms, code view, busy |

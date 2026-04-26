@@ -3,7 +3,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { AssistantSkillList } from '@core/models/Assistant.js';
+import { AssistantSkillList } from '@ext/admin/models/Assistant.js';
 import AssistantSkillView from './AssistantSkillView.js';
 
 const TIER_BADGE = {

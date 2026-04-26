@@ -9,7 +9,7 @@ import TableView from '@core/views/table/TableView.js';
 import MapView from '@ext/map/MapView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import { GeoLocatedIP } from '@core/models/System.js';
-import { IncidentEventList } from '@core/models/Incident.js';
+import { IncidentEventList } from '@ext/admin/models/Incident.js';
 import { LogList } from '@core/models/Log.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 

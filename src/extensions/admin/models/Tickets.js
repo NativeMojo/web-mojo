@@ -1,6 +1,6 @@
 import Collection from '@core/Collection.js';
 import Model from '@core/Model.js';
-import { UserList } from './User.js';
+import { UserList } from '@core/models/User.js';
 import { IncidentList } from './Incident.js';
 
 /* =========================

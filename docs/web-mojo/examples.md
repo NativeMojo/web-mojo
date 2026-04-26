@@ -33,9 +33,9 @@ Single canonical example per documented component. Pages are organized by topic 
 |---|---|---|
 | [Page](../../examples/portal/examples/pages/Page/PageExample.js) | Routed screen base: onEnter/onExit, URL params, permissions. | [pages/Page.md](../../docs/web-mojo/pages/Page.md) |
 | [FormPage](../../examples/portal/examples/pages/FormPage/FormPageExample.js) | Page wrapped around a FormView with model load/save. | [pages/FormPage.md](../../docs/web-mojo/pages/FormPage.md) |
-| [TablePage](../../examples/portal/examples/pages/TablePage/TablePageExample.js) | URL-synced table over a seeded Collection — sort, filter, search, pagination. | [components/TablePage.md](../../docs/web-mojo/components/TablePage.md) |
-| [TablePage — with forms](../../examples/portal/examples/pages/TablePage/TablePageWithFormsExample.js) | Toolbar Add and row-edit open Modal.form dialogs that persist to the Collection. | [components/TablePage.md](../../docs/web-mojo/components/TablePage.md) |
-| [TablePage — with detail view](../../examples/portal/examples/pages/TablePage/TablePageWithDetailViewExample.js) | itemView opens a custom detail View in a Modal, with deep-linkable _item URL param. | [components/TablePage.md](../../docs/web-mojo/components/TablePage.md) |
+| [TablePage](../../examples/portal/examples/pages/TablePage/TablePageExample.js) | URL-synced table over a seeded Collection — sort, filter, search, pagination. | [pages/TablePage.md](../../docs/web-mojo/pages/TablePage.md) |
+| [TablePage — with forms](../../examples/portal/examples/pages/TablePage/TablePageWithFormsExample.js) | Toolbar Add and row-edit open Modal.form dialogs that persist to the Collection. | [pages/TablePage.md](../../docs/web-mojo/pages/TablePage.md) |
+| [TablePage — with detail view](../../examples/portal/examples/pages/TablePage/TablePageWithDetailViewExample.js) | itemView opens a custom detail View in a Modal, with deep-linkable _item URL param. | [pages/TablePage.md](../../docs/web-mojo/pages/TablePage.md) |
 
 ### Services
 
@@ -44,6 +44,7 @@ Single canonical example per documented component. Pages are organized by topic 
 | [Rest](../../examples/portal/examples/services/Rest/RestExample.js) | HTTP client: GET/POST/PUT/DELETE, file upload/download, interceptors. | [services/Rest.md](../../docs/web-mojo/services/Rest.md) |
 | [ToastService](../../examples/portal/examples/services/ToastService/ToastServiceExample.js) | Bootstrap 5 toasts: success/warn/error/info, view-as-toast. | [services/ToastService.md](../../docs/web-mojo/services/ToastService.md) |
 | [WebSocketClient](../../examples/portal/examples/services/WebSocketClient/WebSocketClientExample.js) | WebSocket client with auto-reconnect and heartbeat. | [services/WebSocketClient.md](../../docs/web-mojo/services/WebSocketClient.md) |
+| [FileUpload](../../examples/portal/examples/services/FileUpload/FileUploadExample.js) | Drag-and-drop file handling via applyFileDropMixin with validation. | [services/FileUpload.md](../../docs/web-mojo/services/FileUpload.md) |
 
 ### Models
 
@@ -93,6 +94,8 @@ Single canonical example per documented component. Pages are organized by topic 
 | [Sidebar & TopNav](../../examples/portal/examples/components/SidebarTopNav/SidebarTopNavExample.js) | Portal navigation chrome — sidebar menus and topbar configured via PortalApp. | [components/SidebarTopNav.md](../../docs/web-mojo/components/SidebarTopNav.md) |
 | [Sidebar + Active Group](../../examples/portal/examples/components/ActiveGroup/ActiveGroupExample.js) | app.activeGroup, group:changed events, and sidebar menus filtered by groupKind. | [components/SidebarTopNav.md](../../docs/web-mojo/components/SidebarTopNav.md) |
 | [SideNavView](../../examples/portal/examples/components/SideNavView/SideNavViewExample.js) | Section-based detail layout used inside Modal record viewers (FileView, IPSetView, …). | [components/SideNavView.md](../../docs/web-mojo/components/SideNavView.md) |
+| [TabView](../../examples/portal/examples/components/TabView/TabViewExample.js) | Tab navigation with static tabs and lazy mounting. | [components/TabView.md](../../docs/web-mojo/components/TabView.md) |
+| [TabView — dynamic](../../examples/portal/examples/components/TabView/TabViewDynamicExample.js) | Tabs added and removed at runtime. | [components/TabView.md](../../docs/web-mojo/components/TabView.md) |
 | [ContextMenu](../../examples/portal/examples/components/ContextMenu/ContextMenuExample.js) | Three-dots row menu — items dispatch data-action handlers on the row View. | [components/ContextMenu.md](../../docs/web-mojo/components/ContextMenu.md) |
 | [ContextMenu — right-click row](../../examples/portal/examples/components/ContextMenu/ContextMenuRowExample.js) | Right-click variant — the menu attaches to the row, not a trigger button. | [components/ContextMenu.md](../../docs/web-mojo/components/ContextMenu.md) |
 
@@ -110,6 +113,7 @@ Single canonical example per documented component. Pages are organized by topic 
 |---|---|---|
 | [FormView](../../examples/portal/examples/forms/FormView/FormViewExample.js) | FormView fundamentals: fields, validation, submission. | [forms/FormView.md](../../docs/web-mojo/forms/FormView.md) |
 | [FormView — all field types](../../examples/portal/examples/forms/FormView/AllFieldTypesExample.js) | Comprehensive reference of every supported field type. | [forms/FormView.md](../../docs/web-mojo/forms/FormView.md) |
+| [FormBuilder — pure HTML generation](../../examples/portal/examples/forms/FormBuilder/FormBuilderExample.js) | Generate Bootstrap form HTML directly from a fields config — no FormView, no lifecycle, no validation. | [forms/FormBuilder.md](../../docs/web-mojo/forms/FormBuilder.md) |
 
 ### Field Types
 
@@ -170,13 +174,10 @@ Single canonical example per documented component. Pages are organized by topic 
 | Component | Summary | Doc |
 |---|---|---|
 | [LightBox](../../examples/portal/examples/extensions/LightBox/LightBoxExample.js) | ImageViewer, LightboxGallery, and ImageEditor opened via static dialogs. | [extensions/LightBox.md](../../docs/web-mojo/extensions/LightBox.md) |
-| [FileUpload](../../examples/portal/examples/extensions/FileUpload/FileUploadExample.js) | Drag-and-drop file handling via applyFileDropMixin with validation. | [extensions/FileUpload.md](../../docs/web-mojo/extensions/FileUpload.md) |
 
 ### UI
 
 | Component | Summary | Doc |
 |---|---|---|
-| [TabView](../../examples/portal/examples/extensions/TabView/TabViewExample.js) | Tab navigation with static tabs and lazy mounting. | [extensions/TabView.md](../../docs/web-mojo/extensions/TabView.md) |
-| [TabView — dynamic](../../examples/portal/examples/extensions/TabView/TabViewDynamicExample.js) | Tabs added and removed at runtime. | [extensions/TabView.md](../../docs/web-mojo/extensions/TabView.md) |
 | [TimelineView](../../examples/portal/examples/extensions/TimelineView/TimelineViewExample.js) | Chronological event timeline backed by a Collection. | [extensions/TimelineView.md](../../docs/web-mojo/extensions/TimelineView.md) |
 

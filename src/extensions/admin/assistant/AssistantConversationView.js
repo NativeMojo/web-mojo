@@ -7,7 +7,7 @@
 
 import View from '@core/View.js';
 import ChatView from '@core/views/chat/ChatView.js';
-import { AssistantConversation } from '@core/models/Assistant.js';
+import { AssistantConversation } from '@ext/admin/models/Assistant.js';
 import AssistantMessageView from './AssistantMessageView.js';
 import AssistantView from './AssistantView.js';
 import Dialog from '@core/views/feedback/Dialog.js';

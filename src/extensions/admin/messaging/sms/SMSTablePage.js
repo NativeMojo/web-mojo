@@ -4,7 +4,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { SMSList } from '@core/models/Phonehub.js';
+import { SMSList } from '@ext/admin/models/Phonehub.js';
 import SMSView from './SMSView.js';
 
 class SMSTablePage extends TablePage {

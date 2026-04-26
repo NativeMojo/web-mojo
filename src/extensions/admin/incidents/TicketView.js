@@ -1,7 +1,7 @@
 import View from '@core/View.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
-import { Ticket, TicketForms } from '@core/models/Tickets.js';
-import { Incident } from '@core/models/Incident.js';
+import { Ticket, TicketForms } from '@ext/admin/models/Tickets.js';
+import { Incident } from '@ext/admin/models/Incident.js';
 import { UserList } from '@core/models/User.js';
 import ChatView from '@core/views/chat/ChatView.js';
 import TicketNoteAdapter from './adapters/TicketNoteAdapter.js';

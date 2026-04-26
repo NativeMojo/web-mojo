@@ -7,10 +7,10 @@ import {
 import TabView from '@core/views/navigation/TabView.js';
 import {
     IncidentStats
-} from '@core/models/Incident.js';
+} from '@ext/admin/models/Incident.js';
 import TableView from '@core/views/table/TableView.js';
 import { MetricsCountryMapView } from '@ext/map/index.js';
-import { LoginEventList } from '@core/models/LoginEvent.js';
+import { LoginEventList } from '@ext/admin/models/LoginEvent.js';
 import LoginLocationMapView from '@ext/admin/account/devices/LoginLocationMapView.js';
 
 

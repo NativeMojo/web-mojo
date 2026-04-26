@@ -47,14 +47,14 @@ WEB-MOJO is a component-based JavaScript framework for building data-driven web 
 | Sidebar & TopNav | `docs/web-mojo/components/SidebarTopNav.md` |
 | ListView | `docs/web-mojo/components/ListView.md` |
 | TableView | `docs/web-mojo/components/TableView.md` |
-| TablePage | `docs/web-mojo/components/TablePage.md` |
+| TabView | `docs/web-mojo/components/TabView.md` |
+| TablePage | `docs/web-mojo/pages/TablePage.md` |
 | DataView | `docs/web-mojo/components/DataView.md` |
 | BuiltinModels | `docs/web-mojo/models/BuiltinModels.md` |
 | MOJOUtils | `docs/web-mojo/utils/MOJOUtils.md` |
 | Charts | `docs/web-mojo/extensions/Charts.md` |
-| TabView | `docs/web-mojo/extensions/TabView.md` |
 | MapView / MapLibre | `docs/web-mojo/extensions/MapView.md` |
-| FileUpload | `docs/web-mojo/extensions/FileUpload.md` |
+| FileUpload | `docs/web-mojo/services/FileUpload.md` |
 | LightBox | `docs/web-mojo/extensions/LightBox.md` |
 | TimelineView | `docs/web-mojo/extensions/TimelineView.md` |
 | Location | `docs/web-mojo/extensions/Location.md` |
@@ -81,7 +81,7 @@ WEB-MOJO is a component-based JavaScript framework for building data-driven web 
 | Modal dialogs | `Dialog.md` |
 | Toast notifications | `ToastService.md` |
 | Real-time / WebSocket | `WebSocketClient.md` |
-| Data tables | `TableView.md` + `TablePage.md` |
+| Data tables | `components/TableView.md` + `pages/TablePage.md` |
 | List components | `ListView.md` |
 | Charts / data visualization | `Charts.md` |
 | Tab navigation | `TabView.md` |

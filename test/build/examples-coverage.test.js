@@ -36,18 +36,18 @@ module.exports = async function(testContext) {
             'Model', 'Collection', 'Events', 'WebApp', 'PortalApp', 'PortalWebApp',
         ],
         pages: ['Page', 'FormPage', 'TablePage'],
-        services: ['Rest', 'ToastService', 'WebSocketClient'],
+        services: ['Rest', 'ToastService', 'WebSocketClient', 'FileUpload'],
         components: [
-            'Dialog', 'Modal', 'ListView', 'TableView',
+            'Dialog', 'Modal', 'ListView', 'TableView', 'TabView',
             'DataView', 'FileView', 'ImageFields', 'SidebarTopNav', 'ContextMenu',
-            'SideNavView',
+            'SideNavView', 'ActiveGroup', 'ChatView',
         ],
         extensions: [
             'Charts', 'LightBox', 'MapView', 'MapLibreView', 'TimelineView',
-            'FileUpload', 'TabView', 'Location',
+            'Location',
         ],
         forms: [
-            'FormView', 'TextInputs', 'SelectionFields', 'DateTimeFields',
+            'FormView', 'FormBuilder', 'TextInputs', 'SelectionFields', 'DateTimeFields',
             'FileMediaFields', 'TextareaFields', 'StructuralFields', 'OtherFields',
             'Validation', 'FormLayout', 'MultiStepWizard', 'SearchFilterForm',
         ],

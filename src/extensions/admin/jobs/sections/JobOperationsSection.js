@@ -6,8 +6,8 @@
  */
 import View from '@core/View.js';
 import Dialog from '@core/views/feedback/Dialog.js';
-import { Job } from '@core/models/Job.js';
-import { JobRunner, JobRunnerForms } from '@core/models/JobRunner.js';
+import { Job } from '@ext/admin/models/Job.js';
+import { JobRunner, JobRunnerForms } from '@ext/admin/models/JobRunner.js';
 
 export default class JobOperationsSection extends View {
     constructor(options = {}) {

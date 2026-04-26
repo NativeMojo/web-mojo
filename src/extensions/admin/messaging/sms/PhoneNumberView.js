@@ -12,7 +12,7 @@ import TabView from '@core/views/navigation/TabView.js';
 import DataView from '@core/views/data/DataView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import Dialog from '@core/views/feedback/Dialog.js';
-import { PhoneNumber } from '@core/models/Phonehub.js';
+import { PhoneNumber } from '@ext/admin/models/Phonehub.js';
 
 class PhoneNumberView extends View {
   constructor(options = {}) {

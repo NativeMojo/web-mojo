@@ -6,7 +6,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { BouncerSignalList } from '@core/models/Bouncer.js';
+import { BouncerSignalList } from '@ext/admin/models/Bouncer.js';
 import BouncerSignalView from './BouncerSignalView.js';
 
 export default class BouncerSignalTablePage extends TablePage {

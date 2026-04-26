@@ -9,8 +9,8 @@ import View from '@core/View.js';
 import TabView from '@core/views/navigation/TabView.js';
 import TableView from '@core/views/table/TableView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
-import { BouncerSignalList } from '@core/models/Bouncer.js';
-import { IncidentList } from '@core/models/Incident.js';
+import { BouncerSignalList } from '@ext/admin/models/Bouncer.js';
+import { IncidentList } from '@ext/admin/models/Incident.js';
 
 export default class BouncerDeviceView extends View {
     constructor(options = {}) {

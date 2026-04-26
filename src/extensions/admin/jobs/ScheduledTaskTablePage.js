@@ -3,7 +3,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { ScheduledTask, ScheduledTaskList, ScheduledTaskForms, DAY_LABELS } from '@core/models/ScheduledTask.js';
+import { ScheduledTask, ScheduledTaskList, ScheduledTaskForms, DAY_LABELS } from '@ext/admin/models/ScheduledTask.js';
 import ScheduledTaskView from './ScheduledTaskView.js';
 
 ScheduledTask.ADD_FORM = ScheduledTaskForms.create;

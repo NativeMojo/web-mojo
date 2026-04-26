@@ -2,6 +2,60 @@
 
 ## Unreleased
 
+### Breaking — Admin models moved to a separate package entry
+
+- 14 admin-coupled `Model` / `Collection` classes have moved out of `src/core/models/`
+  into `src/extensions/admin/models/`. The affected models: `AWS`, `Assistant`,
+  `Bouncer`, `Email`, `Incident`, `IPSet`, `Job`, `JobRunner`, `LoginEvent`,
+  `PublicMessage`, `Push`, `Phonehub`, `ScheduledTask`, `Tickets`.
+- 7 of those (`AWS`, `Email`, `Incident`, `Job`, `JobRunner`, `Push`, `Tickets`)
+  were previously re-exported from the main `web-mojo` entry. They are no longer.
+  **Migration**: switch to the new `web-mojo/admin-models` entry.
+  ```js
+  // before
+  import { Job, JobList, Incident } from 'web-mojo';
+  // after
+  import { Job, JobList, Incident } from 'web-mojo/admin-models';
+  ```
+- New package entry `web-mojo/admin-models` ships the 14 admin models as **data
+  only** — no DOM, Bootstrap, or template deps. Use this entry from a Node
+  script, an API client, or any non-portal UI. The `web-mojo/admin` entry
+  remains the way to get the admin **pages** (sidebar, dashboards, table pages).
+- `Log` and `ShortLink` stay in `src/core/models/` because they have legitimate
+  non-admin consumers (`FileView`'s share-link feature, `user-profile`'s
+  activity section). The audit's "admin-only" classification was overzealous on
+  those two; their import paths and main-entry export are unchanged.
+- `docs/web-mojo/models/BuiltinModels.md` now covers only the 10 still-core
+  models. Admin models documented in `docs/web-mojo/extensions/Admin.md`.
+- 73 internal `@core/models/<X>.js` import statements rewritten to
+  `@ext/admin/models/<X>.js` across the 58 admin files that consume them.
+
+### Examples Portal — area-mismatch realignment
+
+- `TabView` moved from `extensions/` → `components/` (source has always been at
+  `src/core/views/navigation/TabView.js`). Routes change:
+  `?page=extensions/tab-view` → `?page=components/tab-view`. Doc moves to
+  `docs/web-mojo/components/TabView.md`.
+- `TablePage` doc moved from `components/` → `pages/` (source is at
+  `src/core/pages/TablePage.js`). Doc path:
+  `docs/web-mojo/pages/TablePage.md`. Example folder unchanged (already at
+  `examples/portal/examples/pages/TablePage/`).
+- `FileUpload` moved from `extensions/` → `services/` (source is at
+  `src/core/services/FileUpload.js`). Routes change:
+  `?page=extensions/file-upload` → `?page=services/file-upload`. Doc moves to
+  `docs/web-mojo/services/FileUpload.md`.
+- `docs/web-mojo/extensions/metricsminichartwidget.md` renamed to
+  `MetricsMiniChartWidget.md` to match sibling-doc casing.
+- New `FormBuilder` example at
+  `examples/portal/examples/forms/FormBuilder/FormBuilderExample.js`. Demos
+  `buildFormHTML()` and `buildFieldsHTML()`. `FormBuilder` is now exported
+  from the main `web-mojo` entry (was previously only available via
+  `@core/forms/FormBuilder.js`).
+- Dead `src/core/views/map/MapView.js` duplicate removed (canonical version
+  is `src/extensions/map/MapView.js`, exported via `web-mojo/map`).
+- `docs/web-mojo/forms/FORMS_DOCUMENTATION_PLAN.md` (an internal planning
+  doc that snuck into published docs) moved to `planning/notes/`.
+
 ### Examples Portal — hub-and-spoke navigation
 
 - Replaced the single 75-item sidebar with a hub menu plus four topic

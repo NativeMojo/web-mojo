@@ -6,7 +6,7 @@
 import TablePage from '@core/pages/TablePage.js';
 import Dialog from '@core/views/feedback/Dialog.js';
 import View from '@core/View.js';
-import { EmailDomain, EmailDomainList, EmailDomainForms } from '@core/models/Email.js';
+import { EmailDomain, EmailDomainList, EmailDomainForms } from '@ext/admin/models/Email.js';
 
 class EmailDomainTablePage extends TablePage {
   constructor(options = {}) {

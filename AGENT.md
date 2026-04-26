@@ -171,9 +171,9 @@ Start with `docs/web-mojo/README.md`, then read the exact topic docs you need:
 - View work → `core/View.md`, `core/ViewChildViews.md`, `core/AdvancedViews.md`
 - Templates → `core/Templates.md`, `core/DataFormatter.md`
 - Data layer → `core/Model.md`, `core/Collection.md`
-- Routed screens → `pages/Page.md`, `pages/FormPage.md`
-- HTTP / realtime → `services/Rest.md`, `services/WebSocketClient.md`
-- Dialogs / tables / lists → `components/Dialog.md`, `components/TableView.md`, `components/TablePage.md`, `components/ListView.md`
+- Routed screens → `pages/Page.md`, `pages/FormPage.md`, `pages/TablePage.md`
+- HTTP / realtime → `services/Rest.md`, `services/WebSocketClient.md`, `services/FileUpload.md`
+- Dialogs / tables / lists → `components/Dialog.md`, `components/TableView.md`, `components/ListView.md`, `components/TabView.md`
 - Extensions → `extensions/*.md`
 - Forms → `forms/README.md`
 

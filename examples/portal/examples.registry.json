@@ -1,6 +1,6 @@
 {
   "generatedAt": "static",
-  "pageCount": 78,
+  "pageCount": 79,
   "pages": [
     {
       "name": "ActiveGroup",
@@ -460,6 +460,48 @@
       "section": "Components",
       "icon": "bi-layout-sidebar",
       "order": 60,
+      "topic": "components",
+      "group": "Navigation"
+    },
+    {
+      "name": "TabView",
+      "area": "components",
+      "route": "components/tab-view",
+      "title": "TabView",
+      "summary": "Tab navigation with static tabs and lazy mounting.",
+      "docs": "docs/web-mojo/components/TabView.md",
+      "tags": [
+        "tabs",
+        "navigation",
+        "responsive"
+      ],
+      "page": "TabViewExample.js",
+      "modulePath": "./examples/components/TabView/TabViewExample.js",
+      "sourcePath": "examples/portal/examples/components/TabView/TabViewExample.js",
+      "section": "Components",
+      "icon": "bi-ui-checks-grid",
+      "order": 100,
+      "topic": "components",
+      "group": "Navigation"
+    },
+    {
+      "name": "TabView",
+      "area": "components",
+      "route": "components/tab-view/dynamic",
+      "title": "TabView — dynamic",
+      "summary": "Tabs added and removed at runtime.",
+      "docs": "docs/web-mojo/components/TabView.md",
+      "tags": [
+        "tabs",
+        "navigation",
+        "responsive"
+      ],
+      "page": "TabViewDynamicExample.js",
+      "modulePath": "./examples/components/TabView/TabViewDynamicExample.js",
+      "sourcePath": "examples/portal/examples/components/TabView/TabViewDynamicExample.js",
+      "section": "Components",
+      "icon": "bi-ui-checks-grid",
+      "order": 101,
       "topic": "components",
       "group": "Navigation"
     },
@@ -925,28 +967,6 @@
       "group": "Charts"
     },
     {
-      "name": "FileUpload",
-      "area": "extensions",
-      "route": "extensions/file-upload",
-      "title": "FileUpload",
-      "summary": "Drag-and-drop file handling via applyFileDropMixin with validation.",
-      "docs": "docs/web-mojo/extensions/FileUpload.md",
-      "tags": [
-        "file",
-        "upload",
-        "drag-drop",
-        "mixin"
-      ],
-      "page": "FileUploadExample.js",
-      "modulePath": "./examples/extensions/FileUpload/FileUploadExample.js",
-      "sourcePath": "examples/portal/examples/extensions/FileUpload/FileUploadExample.js",
-      "section": "Extensions",
-      "icon": "bi-cloud-arrow-up",
-      "order": 60,
-      "topic": "extensions",
-      "group": "Media"
-    },
-    {
       "name": "LightBox",
       "area": "extensions",
       "route": "extensions/light-box",
@@ -1037,48 +1057,6 @@
       "group": "Maps & Location"
     },
     {
-      "name": "TabView",
-      "area": "extensions",
-      "route": "extensions/tab-view",
-      "title": "TabView",
-      "summary": "Tab navigation with static tabs and lazy mounting.",
-      "docs": "docs/web-mojo/extensions/TabView.md",
-      "tags": [
-        "tabs",
-        "navigation",
-        "responsive"
-      ],
-      "page": "TabViewExample.js",
-      "modulePath": "./examples/extensions/TabView/TabViewExample.js",
-      "sourcePath": "examples/portal/examples/extensions/TabView/TabViewExample.js",
-      "section": "Extensions",
-      "icon": "bi-ui-checks-grid",
-      "order": 100,
-      "topic": "extensions",
-      "group": "UI"
-    },
-    {
-      "name": "TabView",
-      "area": "extensions",
-      "route": "extensions/tab-view/dynamic",
-      "title": "TabView — dynamic",
-      "summary": "Tabs added and removed at runtime.",
-      "docs": "docs/web-mojo/extensions/TabView.md",
-      "tags": [
-        "tabs",
-        "navigation",
-        "responsive"
-      ],
-      "page": "TabViewDynamicExample.js",
-      "modulePath": "./examples/extensions/TabView/TabViewDynamicExample.js",
-      "sourcePath": "examples/portal/examples/extensions/TabView/TabViewDynamicExample.js",
-      "section": "Extensions",
-      "icon": "bi-ui-checks-grid",
-      "order": 101,
-      "topic": "extensions",
-      "group": "UI"
-    },
-    {
       "name": "TimelineView",
       "area": "extensions",
       "route": "extensions/timeline-view",
@@ -1144,6 +1122,29 @@
       "order": 50,
       "topic": "forms",
       "group": "Field Types"
+    },
+    {
+      "name": "FormBuilder",
+      "area": "forms",
+      "route": "forms/form-builder",
+      "title": "FormBuilder — pure HTML generation",
+      "summary": "Generate Bootstrap form HTML directly from a fields config — no FormView, no lifecycle, no validation.",
+      "docs": "docs/web-mojo/forms/FormBuilder.md",
+      "tags": [
+        "form",
+        "html",
+        "builder",
+        "bootstrap",
+        "pure"
+      ],
+      "page": "FormBuilderExample.js",
+      "modulePath": "./examples/forms/FormBuilder/FormBuilderExample.js",
+      "sourcePath": "examples/portal/examples/forms/FormBuilder/FormBuilderExample.js",
+      "section": "Forms",
+      "icon": "bi-tools",
+      "order": 5,
+      "topic": "forms",
+      "group": "FormView"
     },
     {
       "name": "FormLayout",
@@ -1651,7 +1652,7 @@
       "route": "pages/table-page",
       "title": "TablePage",
       "summary": "URL-synced table over a seeded Collection — sort, filter, search, pagination.",
-      "docs": "docs/web-mojo/components/TablePage.md",
+      "docs": "docs/web-mojo/pages/TablePage.md",
       "tags": [
         "table",
         "page",
@@ -1675,7 +1676,7 @@
       "route": "pages/table-page/detail-view",
       "title": "TablePage — with detail view",
       "summary": "itemView opens a custom detail View in a Modal, with deep-linkable _item URL param.",
-      "docs": "docs/web-mojo/components/TablePage.md",
+      "docs": "docs/web-mojo/pages/TablePage.md",
       "tags": [
         "table",
         "page",
@@ -1699,7 +1700,7 @@
       "route": "pages/table-page/forms",
       "title": "TablePage — with forms",
       "summary": "Toolbar Add and row-edit open Modal.form dialogs that persist to the Collection.",
-      "docs": "docs/web-mojo/components/TablePage.md",
+      "docs": "docs/web-mojo/pages/TablePage.md",
       "tags": [
         "table",
         "page",
@@ -1716,6 +1717,28 @@
       "order": 31,
       "topic": "architecture",
       "group": "Pages"
+    },
+    {
+      "name": "FileUpload",
+      "area": "services",
+      "route": "services/file-upload",
+      "title": "FileUpload",
+      "summary": "Drag-and-drop file handling via applyFileDropMixin with validation.",
+      "docs": "docs/web-mojo/services/FileUpload.md",
+      "tags": [
+        "file",
+        "upload",
+        "drag-drop",
+        "mixin"
+      ],
+      "page": "FileUploadExample.js",
+      "modulePath": "./examples/services/FileUpload/FileUploadExample.js",
+      "sourcePath": "examples/portal/examples/services/FileUpload/FileUploadExample.js",
+      "section": "Services",
+      "icon": "bi-cloud-arrow-up",
+      "order": 60,
+      "topic": "architecture",
+      "group": "Services"
     },
     {
       "name": "Rest",
@@ -1897,21 +1920,21 @@
               "title": "TablePage",
               "summary": "URL-synced table over a seeded Collection — sort, filter, search, pagination.",
               "icon": "bi-grid-3x3-gap",
-              "docs": "docs/web-mojo/components/TablePage.md"
+              "docs": "docs/web-mojo/pages/TablePage.md"
             },
             {
               "route": "pages/table-page/forms",
               "title": "TablePage — with forms",
               "summary": "Toolbar Add and row-edit open Modal.form dialogs that persist to the Collection.",
               "icon": "bi-grid-3x3-gap",
-              "docs": "docs/web-mojo/components/TablePage.md"
+              "docs": "docs/web-mojo/pages/TablePage.md"
             },
             {
               "route": "pages/table-page/detail-view",
               "title": "TablePage — with detail view",
               "summary": "itemView opens a custom detail View in a Modal, with deep-linkable _item URL param.",
               "icon": "bi-grid-3x3-gap",
-              "docs": "docs/web-mojo/components/TablePage.md"
+              "docs": "docs/web-mojo/pages/TablePage.md"
             }
           ]
         },
@@ -1938,6 +1961,13 @@
               "summary": "WebSocket client with auto-reconnect and heartbeat.",
               "icon": "bi-broadcast",
               "docs": "docs/web-mojo/services/WebSocketClient.md"
+            },
+            {
+              "route": "services/file-upload",
+              "title": "FileUpload",
+              "summary": "Drag-and-drop file handling via applyFileDropMixin with validation.",
+              "icon": "bi-cloud-arrow-up",
+              "docs": "docs/web-mojo/services/FileUpload.md"
             }
           ]
         },
@@ -2126,6 +2156,20 @@
               "docs": "docs/web-mojo/components/SideNavView.md"
             },
             {
+              "route": "components/tab-view",
+              "title": "TabView",
+              "summary": "Tab navigation with static tabs and lazy mounting.",
+              "icon": "bi-ui-checks-grid",
+              "docs": "docs/web-mojo/components/TabView.md"
+            },
+            {
+              "route": "components/tab-view/dynamic",
+              "title": "TabView — dynamic",
+              "summary": "Tabs added and removed at runtime.",
+              "icon": "bi-ui-checks-grid",
+              "docs": "docs/web-mojo/components/TabView.md"
+            },
+            {
               "route": "components/context-menu",
               "title": "ContextMenu",
               "summary": "Three-dots row menu — items dispatch data-action handlers on the row View.",
@@ -2176,6 +2220,13 @@
               "summary": "Comprehensive reference of every supported field type.",
               "icon": "bi-ui-checks-grid",
               "docs": "docs/web-mojo/forms/FormView.md"
+            },
+            {
+              "route": "forms/form-builder",
+              "title": "FormBuilder — pure HTML generation",
+              "summary": "Generate Bootstrap form HTML directly from a fields config — no FormView, no lifecycle, no validation.",
+              "icon": "bi-tools",
+              "docs": "docs/web-mojo/forms/FormBuilder.md"
             }
           ]
         },
@@ -2409,33 +2460,12 @@
               "summary": "ImageViewer, LightboxGallery, and ImageEditor opened via static dialogs.",
               "icon": "bi-image",
               "docs": "docs/web-mojo/extensions/LightBox.md"
-            },
-            {
-              "route": "extensions/file-upload",
-              "title": "FileUpload",
-              "summary": "Drag-and-drop file handling via applyFileDropMixin with validation.",
-              "icon": "bi-cloud-arrow-up",
-              "docs": "docs/web-mojo/extensions/FileUpload.md"
             }
           ]
         },
         {
           "label": "UI",
           "items": [
-            {
-              "route": "extensions/tab-view",
-              "title": "TabView",
-              "summary": "Tab navigation with static tabs and lazy mounting.",
-              "icon": "bi-ui-checks-grid",
-              "docs": "docs/web-mojo/extensions/TabView.md"
-            },
-            {
-              "route": "extensions/tab-view/dynamic",
-              "title": "TabView — dynamic",
-              "summary": "Tabs added and removed at runtime.",
-              "icon": "bi-ui-checks-grid",
-              "docs": "docs/web-mojo/extensions/TabView.md"
-            },
             {
               "route": "extensions/timeline-view",
               "title": "TimelineView",
@@ -2557,28 +2587,28 @@
           "title": "TablePage",
           "summary": "URL-synced table over a seeded Collection — sort, filter, search, pagination.",
           "icon": "bi-grid-3x3-gap",
-          "docs": "docs/web-mojo/components/TablePage.md"
+          "docs": "docs/web-mojo/pages/TablePage.md"
         },
         {
           "route": "pages/table-page/forms",
           "title": "TablePage — with forms",
           "summary": "Toolbar Add and row-edit open Modal.form dialogs that persist to the Collection.",
           "icon": "bi-grid-3x3-gap",
-          "docs": "docs/web-mojo/components/TablePage.md"
+          "docs": "docs/web-mojo/pages/TablePage.md"
         },
         {
           "route": "pages/table-page/detail-view",
           "title": "TablePage — with detail view",
           "summary": "itemView opens a custom detail View in a Modal, with deep-linkable _item URL param.",
           "icon": "bi-grid-3x3-gap",
-          "docs": "docs/web-mojo/components/TablePage.md"
+          "docs": "docs/web-mojo/pages/TablePage.md"
         }
       ]
     },
     {
       "area": "services",
       "section": "Services",
-      "icon": "bi-arrow-left-right",
+      "icon": "bi-cloud-arrow-up",
       "pages": [
         {
           "route": "services/rest",
@@ -2600,6 +2630,13 @@
           "summary": "WebSocket client with auto-reconnect and heartbeat.",
           "icon": "bi-broadcast",
           "docs": "docs/web-mojo/services/WebSocketClient.md"
+        },
+        {
+          "route": "services/file-upload",
+          "title": "FileUpload",
+          "summary": "Drag-and-drop file handling via applyFileDropMixin with validation.",
+          "icon": "bi-cloud-arrow-up",
+          "docs": "docs/web-mojo/services/FileUpload.md"
         }
       ]
     },
@@ -2775,6 +2812,20 @@
           "summary": "Chat thread with composer — ChatView + ChatMessageView + ChatInputView.",
           "icon": "bi-chat-dots",
           "docs": "docs/web-mojo/components/ChatView.md"
+        },
+        {
+          "route": "components/tab-view",
+          "title": "TabView",
+          "summary": "Tab navigation with static tabs and lazy mounting.",
+          "icon": "bi-ui-checks-grid",
+          "docs": "docs/web-mojo/components/TabView.md"
+        },
+        {
+          "route": "components/tab-view/dynamic",
+          "title": "TabView — dynamic",
+          "summary": "Tabs added and removed at runtime.",
+          "icon": "bi-ui-checks-grid",
+          "docs": "docs/web-mojo/components/TabView.md"
         }
       ]
     },
@@ -2847,32 +2898,11 @@
           "docs": "docs/web-mojo/extensions/TimelineView.md"
         },
         {
-          "route": "extensions/file-upload",
-          "title": "FileUpload",
-          "summary": "Drag-and-drop file handling via applyFileDropMixin with validation.",
-          "icon": "bi-cloud-arrow-up",
-          "docs": "docs/web-mojo/extensions/FileUpload.md"
-        },
-        {
           "route": "extensions/location",
           "title": "Location",
           "summary": "Browser geolocation: one-shot fix and live watch with permission handling.",
           "icon": "bi-geo-alt",
           "docs": "docs/web-mojo/extensions/Location.md"
-        },
-        {
-          "route": "extensions/tab-view",
-          "title": "TabView",
-          "summary": "Tab navigation with static tabs and lazy mounting.",
-          "icon": "bi-ui-checks-grid",
-          "docs": "docs/web-mojo/extensions/TabView.md"
-        },
-        {
-          "route": "extensions/tab-view/dynamic",
-          "title": "TabView — dynamic",
-          "summary": "Tabs added and removed at runtime.",
-          "icon": "bi-ui-checks-grid",
-          "docs": "docs/web-mojo/extensions/TabView.md"
         }
       ]
     },
@@ -2881,6 +2911,13 @@
       "section": "Forms",
       "icon": "bi-calendar-event",
       "pages": [
+        {
+          "route": "forms/form-builder",
+          "title": "FormBuilder — pure HTML generation",
+          "summary": "Generate Bootstrap form HTML directly from a fields config — no FormView, no lifecycle, no validation.",
+          "icon": "bi-tools",
+          "docs": "docs/web-mojo/forms/FormBuilder.md"
+        },
         {
           "route": "forms/form-view",
           "title": "FormView",

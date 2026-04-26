@@ -3,8 +3,8 @@ import { Page, View, TabView } from 'web-mojo';
 /**
  * TabViewDynamicExample — sibling demo: tabs added and removed at runtime.
  *
- * Doc:    docs/web-mojo/extensions/TabView.md
- * Route:  extensions/tab-view/dynamic
+ * Doc:    docs/web-mojo/components/TabView.md
+ * Route:  components/tab-view/dynamic
  *
  * Builds on TabViewExample by exercising `addTab(label, view, makeActive?)`
  * and `removeTab(label)`. Each "Add tab" click appends a fresh View; the
@@ -16,8 +16,8 @@ import { Page, View, TabView } from 'web-mojo';
  * inserted view.
  */
 class TabViewDynamicExample extends Page {
-    static pageName = 'extensions/tab-view/dynamic';
-    static route = 'extensions/tab-view/dynamic';
+    static pageName = 'components/tab-view/dynamic';
+    static route = 'components/tab-view/dynamic';
 
     constructor(options = {}) {
         super({
@@ -71,8 +71,8 @@ class TabViewDynamicExample extends Page {
             </p>
             <p class="example-docs-link">
                 <i class="bi bi-book"></i>
-                <a href="#" data-action="open-doc" data-doc="docs/web-mojo/extensions/TabView.md">
-                    docs/web-mojo/extensions/TabView.md
+                <a href="#" data-action="open-doc" data-doc="docs/web-mojo/components/TabView.md">
+                    docs/web-mojo/components/TabView.md
                 </a>
             </p>
 

@@ -4,7 +4,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { IncidentEventList, IncidentEventForms } from '@core/models/Incident.js';
+import { IncidentEventList, IncidentEventForms } from '@ext/admin/models/Incident.js';
 import EventView from './EventView.js';
 
 class EventTablePage extends TablePage {

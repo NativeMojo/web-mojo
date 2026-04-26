@@ -1,7 +1,7 @@
 {
     "name": "TablePage",
     "area": "pages",
-    "docs": "docs/web-mojo/components/TablePage.md",
+    "docs": "docs/web-mojo/pages/TablePage.md",
     "tags": ["table", "page", "url-sync", "collection", "form", "detail-view"],
     "menu": {
         "section": "Pages",

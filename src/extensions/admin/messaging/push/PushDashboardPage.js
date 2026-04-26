@@ -1,7 +1,7 @@
 import Page from '@core/Page.js';
 import { MetricsChart, PieChart } from '@ext/charts/index.js';
 import TableView from '@core/views/table/TableView.js';
-import { PushDeliveryList } from '@core/models/Push.js';
+import { PushDeliveryList } from '@ext/admin/models/Push.js';
 
 class PushDashboardPage extends Page {
     constructor(options = {}) {

@@ -4,7 +4,7 @@
 
 import View from '@core/View.js';
 import TabView from '@core/views/navigation/TabView.js';
-import { SentMessage } from '@core/models/Email.js';
+import { SentMessage } from '@ext/admin/models/Email.js';
 
 class EmailView extends View {
     constructor(options = {}) {
