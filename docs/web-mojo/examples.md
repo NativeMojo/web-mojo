@@ -91,6 +91,7 @@ Single canonical example per documented component. Pages are organized by topic 
 | Component | Summary | Doc |
 |---|---|---|
 | [Sidebar & TopNav](../../examples/portal/examples/components/SidebarTopNav/SidebarTopNavExample.js) | Portal navigation chrome — sidebar menus and topbar configured via PortalApp. | [components/SidebarTopNav.md](../../docs/web-mojo/components/SidebarTopNav.md) |
+| [Sidebar + Active Group](../../examples/portal/examples/components/ActiveGroup/ActiveGroupExample.js) | app.activeGroup, group:changed events, and sidebar menus filtered by groupKind. | [components/SidebarTopNav.md](../../docs/web-mojo/components/SidebarTopNav.md) |
 | [SideNavView](../../examples/portal/examples/components/SideNavView/SideNavViewExample.js) | Section-based detail layout used inside Modal record viewers (FileView, IPSetView, …). | [components/SideNavView.md](../../docs/web-mojo/components/SideNavView.md) |
 | [ContextMenu](../../examples/portal/examples/components/ContextMenu/ContextMenuExample.js) | Three-dots row menu — items dispatch data-action handlers on the row View. | [components/ContextMenu.md](../../docs/web-mojo/components/ContextMenu.md) |
 | [ContextMenu — right-click row](../../examples/portal/examples/components/ContextMenu/ContextMenuRowExample.js) | Right-click variant — the menu attaches to the row, not a trigger button. | [components/ContextMenu.md](../../docs/web-mojo/components/ContextMenu.md) |

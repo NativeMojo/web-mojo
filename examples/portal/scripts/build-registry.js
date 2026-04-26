@@ -119,7 +119,8 @@ const TOPIC_TAXONOMY = [
             {
                 label: 'Files',
                 items: [
-                    { route: 'components/file-view', children: ['components/file-view/inline'] },
+                    'components/file-view',
+                    'components/file-view/inline',
                     'components/image-fields',
                 ],
             },
@@ -127,8 +128,10 @@ const TOPIC_TAXONOMY = [
                 label: 'Navigation',
                 items: [
                     'components/sidebar-top-nav',
+                    'components/active-group',
                     'components/side-nav-view',
-                    { route: 'components/context-menu', children: ['components/context-menu/row'] },
+                    'components/context-menu',
+                    'components/context-menu/row',
                 ],
             },
             {
@@ -145,7 +148,8 @@ const TOPIC_TAXONOMY = [
             {
                 label: 'FormView',
                 items: [
-                    { route: 'forms/form-view', children: ['forms/form-view/all-field-types'] },
+                    'forms/form-view',
+                    'forms/form-view/all-field-types',
                 ],
             },
             {
@@ -175,7 +179,8 @@ const TOPIC_TAXONOMY = [
             {
                 label: 'Patterns',
                 items: [
-                    { route: 'forms/validation', children: ['forms/validation/advanced'] },
+                    'forms/validation',
+                    'forms/validation/advanced',
                     'forms/form-layout',
                     'forms/multi-step-wizard',
                     'forms/search-filter-form',
@@ -209,7 +214,8 @@ const TOPIC_TAXONOMY = [
             {
                 label: 'UI',
                 items: [
-                    { route: 'extensions/tab-view', children: ['extensions/tab-view/dynamic'] },
+                    'extensions/tab-view',
+                    'extensions/tab-view/dynamic',
                     'extensions/timeline-view',
                 ],
             },
@@ -326,7 +332,8 @@ function expandManifest(manifest, manifestPath) {
 
 // Flatten the topic taxonomy into a route → { topic, group, parentRoute? } lookup.
 // Variant routes carry a parentRoute pointer so we can render them as sidebar
-// children of their parent component.
+// children of their parent component. Single-child submenus are a UX bug —
+// flatten such entries to siblings instead. Enforced at build time below.
 const TOPIC_BY_ROUTE = (() => {
     const map = new Map();
     for (const topic of TOPIC_TAXONOMY) {
@@ -335,8 +342,11 @@ const TOPIC_BY_ROUTE = (() => {
                 if (typeof item === 'string') {
                     map.set(item, { topic: topic.name, group: group.label });
                 } else {
+                    if (!item.children || item.children.length < 2) {
+                        fail(`TOPIC_TAXONOMY: '${item.route}' has fewer than 2 children — flatten to siblings instead of a single-child submenu`);
+                    }
                     map.set(item.route, { topic: topic.name, group: group.label });
-                    for (const childRoute of item.children || []) {
+                    for (const childRoute of item.children) {
                         map.set(childRoute, { topic: topic.name, group: group.label, parentRoute: item.route });
                     }
                 }

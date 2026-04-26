@@ -1,7 +1,31 @@
 {
   "generatedAt": "static",
-  "pageCount": 77,
+  "pageCount": 78,
   "pages": [
+    {
+      "name": "ActiveGroup",
+      "area": "components",
+      "route": "components/active-group",
+      "title": "Sidebar + Active Group",
+      "summary": "app.activeGroup, group:changed events, and sidebar menus filtered by groupKind.",
+      "docs": "docs/web-mojo/components/SidebarTopNav.md",
+      "tags": [
+        "sidebar",
+        "topnav",
+        "active-group",
+        "navigation",
+        "portal",
+        "group"
+      ],
+      "page": "ActiveGroupExample.js",
+      "modulePath": "./examples/components/ActiveGroup/ActiveGroupExample.js",
+      "sourcePath": "examples/portal/examples/components/ActiveGroup/ActiveGroupExample.js",
+      "section": "Components",
+      "icon": "bi-diagram-3",
+      "order": 61,
+      "topic": "components",
+      "group": "Navigation"
+    },
     {
       "name": "ChatView",
       "area": "components",
@@ -2071,16 +2095,14 @@
               "title": "FileView",
               "summary": "Modal-hosted file viewer — the canonical pattern for opening a File record.",
               "icon": "bi-file-earmark",
-              "docs": "docs/web-mojo/components/FileView.md",
-              "children": [
-                {
-                  "route": "components/file-view/inline",
-                  "title": "FileView — inline",
-                  "summary": "Rare alternative — embed FileView directly in a page instead of a Modal.",
-                  "icon": "bi-file-earmark",
-                  "docs": "docs/web-mojo/components/FileView.md"
-                }
-              ]
+              "docs": "docs/web-mojo/components/FileView.md"
+            },
+            {
+              "route": "components/file-view/inline",
+              "title": "FileView — inline",
+              "summary": "Rare alternative — embed FileView directly in a page instead of a Modal.",
+              "icon": "bi-file-earmark",
+              "docs": "docs/web-mojo/components/FileView.md"
             },
             {
               "route": "components/image-fields",
@@ -2102,6 +2124,13 @@
               "docs": "docs/web-mojo/components/SidebarTopNav.md"
             },
             {
+              "route": "components/active-group",
+              "title": "Sidebar + Active Group",
+              "summary": "app.activeGroup, group:changed events, and sidebar menus filtered by groupKind.",
+              "icon": "bi-diagram-3",
+              "docs": "docs/web-mojo/components/SidebarTopNav.md"
+            },
+            {
               "route": "components/side-nav-view",
               "title": "SideNavView",
               "summary": "Section-based detail layout used inside Modal record viewers (FileView, IPSetView, …).",
@@ -2113,16 +2142,14 @@
               "title": "ContextMenu",
               "summary": "Three-dots row menu — items dispatch data-action handlers on the row View.",
               "icon": "bi-three-dots-vertical",
-              "docs": "docs/web-mojo/components/ContextMenu.md",
-              "children": [
-                {
-                  "route": "components/context-menu/row",
-                  "title": "ContextMenu — right-click row",
-                  "summary": "Right-click variant — the menu attaches to the row, not a trigger button.",
-                  "icon": "bi-three-dots-vertical",
-                  "docs": "docs/web-mojo/components/ContextMenu.md"
-                }
-              ]
+              "docs": "docs/web-mojo/components/ContextMenu.md"
+            },
+            {
+              "route": "components/context-menu/row",
+              "title": "ContextMenu — right-click row",
+              "summary": "Right-click variant — the menu attaches to the row, not a trigger button.",
+              "icon": "bi-three-dots-vertical",
+              "docs": "docs/web-mojo/components/ContextMenu.md"
             }
           ]
         },
@@ -2153,16 +2180,14 @@
               "title": "FormView",
               "summary": "FormView fundamentals: fields, validation, submission.",
               "icon": "bi-ui-checks-grid",
-              "docs": "docs/web-mojo/forms/FormView.md",
-              "children": [
-                {
-                  "route": "forms/form-view/all-field-types",
-                  "title": "FormView — all field types",
-                  "summary": "Comprehensive reference of every supported field type.",
-                  "icon": "bi-ui-checks-grid",
-                  "docs": "docs/web-mojo/forms/FormView.md"
-                }
-              ]
+              "docs": "docs/web-mojo/forms/FormView.md"
+            },
+            {
+              "route": "forms/form-view/all-field-types",
+              "title": "FormView — all field types",
+              "summary": "Comprehensive reference of every supported field type.",
+              "icon": "bi-ui-checks-grid",
+              "docs": "docs/web-mojo/forms/FormView.md"
             }
           ]
         },
@@ -2282,16 +2307,14 @@
               "title": "Validation",
               "summary": "HTML5 + custom validators, patterns, and error handling.",
               "icon": "bi-shield-check",
-              "docs": "docs/web-mojo/forms/Validation.md",
-              "children": [
-                {
-                  "route": "forms/validation/advanced",
-                  "title": "Validation — advanced",
-                  "summary": "Async validators, real-time feedback, cross-field rules.",
-                  "icon": "bi-shield-check",
-                  "docs": "docs/web-mojo/forms/Validation.md"
-                }
-              ]
+              "docs": "docs/web-mojo/forms/Validation.md"
+            },
+            {
+              "route": "forms/validation/advanced",
+              "title": "Validation — advanced",
+              "summary": "Async validators, real-time feedback, cross-field rules.",
+              "icon": "bi-shield-check",
+              "docs": "docs/web-mojo/forms/Validation.md"
             },
             {
               "route": "forms/form-layout",
@@ -2416,16 +2439,14 @@
               "title": "TabView",
               "summary": "Tab navigation with static tabs and lazy mounting.",
               "icon": "bi-ui-checks-grid",
-              "docs": "docs/web-mojo/extensions/TabView.md",
-              "children": [
-                {
-                  "route": "extensions/tab-view/dynamic",
-                  "title": "TabView — dynamic",
-                  "summary": "Tabs added and removed at runtime.",
-                  "icon": "bi-ui-checks-grid",
-                  "docs": "docs/web-mojo/extensions/TabView.md"
-                }
-              ]
+              "docs": "docs/web-mojo/extensions/TabView.md"
+            },
+            {
+              "route": "extensions/tab-view/dynamic",
+              "title": "TabView — dynamic",
+              "summary": "Tabs added and removed at runtime.",
+              "icon": "bi-ui-checks-grid",
+              "docs": "docs/web-mojo/extensions/TabView.md"
             },
             {
               "route": "extensions/timeline-view",
@@ -2597,7 +2618,7 @@
     {
       "area": "components",
       "section": "Components",
-      "icon": "bi-chat-dots",
+      "icon": "bi-diagram-3",
       "pages": [
         {
           "route": "components/dialog",
@@ -2737,6 +2758,13 @@
           "title": "Sidebar & TopNav",
           "summary": "Portal navigation chrome — sidebar menus and topbar configured via PortalApp.",
           "icon": "bi-layout-sidebar",
+          "docs": "docs/web-mojo/components/SidebarTopNav.md"
+        },
+        {
+          "route": "components/active-group",
+          "title": "Sidebar + Active Group",
+          "summary": "app.activeGroup, group:changed events, and sidebar menus filtered by groupKind.",
+          "icon": "bi-diagram-3",
           "docs": "docs/web-mojo/components/SidebarTopNav.md"
         },
         {
