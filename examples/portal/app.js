@@ -48,27 +48,21 @@ function topicHeader(topic) {
 }
 
 // Translate one registry.topics[i] entry into a Sidebar menu config.
-// Each group becomes a non-clickable label (kind: 'label') followed by its
-// items. Items with `children` render as a one-level collapsible parent.
+// Each group becomes a non-clickable label (kind: 'label') followed by
+// flat leaf items — never collapsible parents. The Sidebar template
+// turns parents-with-children into Bootstrap collapse toggles, which
+// would make the parent's route unreachable from the sidebar.
 // Trailing spacer + "Back to Examples" mirrors the admin menu's exit pattern.
 function buildTopicMenu(topic) {
     const items = [];
     for (const group of topic.groups) {
         items.push({ kind: 'label', text: group.label, className: 'sidebar-section-label' });
         for (const item of group.items) {
-            const entry = {
+            items.push({
                 text: item.title,
                 route: `?page=${item.route}`,
                 icon: item.icon || 'bi-circle',
-            };
-            if (item.children && item.children.length) {
-                entry.children = item.children.map(c => ({
-                    text: c.title,
-                    route: `?page=${c.route}`,
-                    icon: c.icon || 'bi-circle',
-                }));
-            }
-            items.push(entry);
+            });
         }
     }
     items.push({ spacer: true });

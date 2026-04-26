@@ -118,18 +118,24 @@ module.exports = async function(testContext) {
             for (const t of reg.topics) {
                 for (const g of t.groups) {
                     for (const i of g.items) {
-                        const key = i.route;
-                        expect(seen.has(key)).toBe(false);
-                        seen.set(key, `${t.name}/${g.label}`);
-                        for (const c of i.children || []) {
-                            expect(seen.has(c.route)).toBe(false);
-                            seen.set(c.route, `${t.name}/${g.label}`);
-                        }
+                        expect(seen.has(i.route)).toBe(false);
+                        seen.set(i.route, `${t.name}/${g.label}`);
                     }
                 }
             }
             for (const p of reg.pages) {
                 expect(seen.has(p.route)).toBe(true);
+            }
+        });
+
+        it('no topic item has children (collapsible parents are unreachable from the sidebar)', () => {
+            const reg = loadRegistry();
+            for (const t of reg.topics) {
+                for (const g of t.groups) {
+                    for (const i of g.items) {
+                        expect(i.children).toBeUndefined();
+                    }
+                }
             }
         });
 

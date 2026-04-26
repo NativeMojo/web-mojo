@@ -1796,23 +1796,21 @@
               "title": "View",
               "summary": "Base component: lifecycle, templates, data-action, child views.",
               "icon": "bi-box",
-              "docs": "docs/web-mojo/core/View.md",
-              "children": [
-                {
-                  "route": "core/view-child-views",
-                  "title": "View — child views",
-                  "summary": "Full child-view tour: containers, collection iteration, events, action bubbling, remount.",
-                  "icon": "bi-diagram-3",
-                  "docs": "docs/web-mojo/core/ViewChildViews.md"
-                },
-                {
-                  "route": "core/advanced-views",
-                  "title": "Advanced Views — Canvas",
-                  "summary": "Canvas inside a View with onAfterRender setup and onBeforeDestroy cleanup.",
-                  "icon": "bi-easel",
-                  "docs": "docs/web-mojo/core/AdvancedViews.md"
-                }
-              ]
+              "docs": "docs/web-mojo/core/View.md"
+            },
+            {
+              "route": "core/view-child-views",
+              "title": "View — child views",
+              "summary": "Full child-view tour: containers, collection iteration, events, action bubbling, remount.",
+              "icon": "bi-diagram-3",
+              "docs": "docs/web-mojo/core/ViewChildViews.md"
+            },
+            {
+              "route": "core/advanced-views",
+              "title": "Advanced Views — Canvas",
+              "summary": "Canvas inside a View with onAfterRender setup and onBeforeDestroy cleanup.",
+              "icon": "bi-easel",
+              "docs": "docs/web-mojo/core/AdvancedViews.md"
             },
             {
               "route": "core/templates",
@@ -1899,23 +1897,21 @@
               "title": "TablePage",
               "summary": "URL-synced table over a seeded Collection — sort, filter, search, pagination.",
               "icon": "bi-grid-3x3-gap",
-              "docs": "docs/web-mojo/components/TablePage.md",
-              "children": [
-                {
-                  "route": "pages/table-page/forms",
-                  "title": "TablePage — with forms",
-                  "summary": "Toolbar Add and row-edit open Modal.form dialogs that persist to the Collection.",
-                  "icon": "bi-grid-3x3-gap",
-                  "docs": "docs/web-mojo/components/TablePage.md"
-                },
-                {
-                  "route": "pages/table-page/detail-view",
-                  "title": "TablePage — with detail view",
-                  "summary": "itemView opens a custom detail View in a Modal, with deep-linkable _item URL param.",
-                  "icon": "bi-grid-3x3-gap",
-                  "docs": "docs/web-mojo/components/TablePage.md"
-                }
-              ]
+              "docs": "docs/web-mojo/components/TablePage.md"
+            },
+            {
+              "route": "pages/table-page/forms",
+              "title": "TablePage — with forms",
+              "summary": "Toolbar Add and row-edit open Modal.form dialogs that persist to the Collection.",
+              "icon": "bi-grid-3x3-gap",
+              "docs": "docs/web-mojo/components/TablePage.md"
+            },
+            {
+              "route": "pages/table-page/detail-view",
+              "title": "TablePage — with detail view",
+              "summary": "itemView opens a custom detail View in a Modal, with deep-linkable _item URL param.",
+              "icon": "bi-grid-3x3-gap",
+              "docs": "docs/web-mojo/components/TablePage.md"
             }
           ]
         },
@@ -1972,53 +1968,49 @@
               "title": "Dialog",
               "summary": "alert / confirm / prompt / showBusy / showDialog — promise-based modal helpers.",
               "icon": "bi-window",
-              "docs": "docs/web-mojo/components/Dialog.md",
-              "children": [
-                {
-                  "route": "components/dialog/form",
-                  "title": "Dialog — forms",
-                  "summary": "showForm and showModelForm — host a FormView inside a Dialog.",
-                  "icon": "bi-window",
-                  "docs": "docs/web-mojo/components/Dialog.md"
-                },
-                {
-                  "route": "components/dialog/context-menu",
-                  "title": "Dialog — context menu",
-                  "summary": "Header dropdown menu with permission-gated items.",
-                  "icon": "bi-window",
-                  "docs": "docs/web-mojo/components/Dialog.md"
-                },
-                {
-                  "route": "components/dialog/custom-body",
-                  "title": "Dialog — custom body",
-                  "summary": "Mount any View as the dialog body; read its state when the dialog closes.",
-                  "icon": "bi-window",
-                  "docs": "docs/web-mojo/components/Dialog.md"
-                }
-              ]
+              "docs": "docs/web-mojo/components/Dialog.md"
+            },
+            {
+              "route": "components/dialog/form",
+              "title": "Dialog — forms",
+              "summary": "showForm and showModelForm — host a FormView inside a Dialog.",
+              "icon": "bi-window",
+              "docs": "docs/web-mojo/components/Dialog.md"
+            },
+            {
+              "route": "components/dialog/context-menu",
+              "title": "Dialog — context menu",
+              "summary": "Header dropdown menu with permission-gated items.",
+              "icon": "bi-window",
+              "docs": "docs/web-mojo/components/Dialog.md"
+            },
+            {
+              "route": "components/dialog/custom-body",
+              "title": "Dialog — custom body",
+              "summary": "Mount any View as the dialog body; read its state when the dialog closes.",
+              "icon": "bi-window",
+              "docs": "docs/web-mojo/components/Dialog.md"
             },
             {
               "route": "components/modal",
               "title": "Modal",
               "summary": "Modal.show(view) — size matrix (sm/md/lg/xl/xxl/fullscreen), scrollable, static backdrop.",
               "icon": "bi-window-stack",
-              "docs": "docs/web-mojo/components/Modal.md",
-              "children": [
-                {
-                  "route": "components/modal/show-model",
-                  "title": "Modal — showModel",
-                  "summary": "Modal.showModel and showModelById — open a model in its VIEW_CLASS automatically.",
-                  "icon": "bi-window-stack",
-                  "docs": "docs/web-mojo/components/Modal.md"
-                },
-                {
-                  "route": "components/modal/form",
-                  "title": "Modal — form",
-                  "summary": "Modal.form — host a FormView in a modal, resolve with the submitted data.",
-                  "icon": "bi-window-stack",
-                  "docs": "docs/web-mojo/components/Modal.md"
-                }
-              ]
+              "docs": "docs/web-mojo/components/Modal.md"
+            },
+            {
+              "route": "components/modal/show-model",
+              "title": "Modal — showModel",
+              "summary": "Modal.showModel and showModelById — open a model in its VIEW_CLASS automatically.",
+              "icon": "bi-window-stack",
+              "docs": "docs/web-mojo/components/Modal.md"
+            },
+            {
+              "route": "components/modal/form",
+              "title": "Modal — form",
+              "summary": "Modal.form — host a FormView in a modal, resolve with the submitted data.",
+              "icon": "bi-window-stack",
+              "docs": "docs/web-mojo/components/Modal.md"
             }
           ]
         },
@@ -2030,53 +2022,49 @@
               "title": "ListView",
               "summary": "Visual list bound to a Collection — per-row Views with click-to-select.",
               "icon": "bi-list-ul",
-              "docs": "docs/web-mojo/components/ListView.md",
-              "children": [
-                {
-                  "route": "components/list-view/custom-item",
-                  "title": "ListView — custom item class",
-                  "summary": "ListViewItem subclass with avatar, badges, and computed display fields.",
-                  "icon": "bi-list-ul",
-                  "docs": "docs/web-mojo/components/ListView.md"
-                },
-                {
-                  "route": "components/list-view/live-filter",
-                  "title": "ListView — live search filter",
-                  "summary": "Search input above the list, debounced via MOJOUtils.debounce + collection.where().",
-                  "icon": "bi-list-ul",
-                  "docs": "docs/web-mojo/components/ListView.md"
-                }
-              ]
+              "docs": "docs/web-mojo/components/ListView.md"
+            },
+            {
+              "route": "components/list-view/custom-item",
+              "title": "ListView — custom item class",
+              "summary": "ListViewItem subclass with avatar, badges, and computed display fields.",
+              "icon": "bi-list-ul",
+              "docs": "docs/web-mojo/components/ListView.md"
+            },
+            {
+              "route": "components/list-view/live-filter",
+              "title": "ListView — live search filter",
+              "summary": "Search input above the list, debounced via MOJOUtils.debounce + collection.where().",
+              "icon": "bi-list-ul",
+              "docs": "docs/web-mojo/components/ListView.md"
             },
             {
               "route": "components/table-view",
               "title": "TableView",
               "summary": "Sortable, filterable, paginated table over ~25 seeded user rows.",
               "icon": "bi-table",
-              "docs": "docs/web-mojo/components/TableView.md",
-              "children": [
-                {
-                  "route": "components/table-view/batch-actions",
-                  "title": "TableView — batch actions",
-                  "summary": "Multi-select rows + bulk actions wired to the in-memory Collection.",
-                  "icon": "bi-table",
-                  "docs": "docs/web-mojo/components/TableView.md"
-                },
-                {
-                  "route": "components/table-view/custom-row",
-                  "title": "TableView — custom row class",
-                  "summary": "Custom itemClass (TableRow subclass) with avatar, badges, and expand-on-click.",
-                  "icon": "bi-table",
-                  "docs": "docs/web-mojo/components/TableView.md"
-                },
-                {
-                  "route": "components/table-view/server-collection",
-                  "title": "TableView — server collection",
-                  "summary": "Bound to UserList against the live backend, with fetch:error handling.",
-                  "icon": "bi-table",
-                  "docs": "docs/web-mojo/components/TableView.md"
-                }
-              ]
+              "docs": "docs/web-mojo/components/TableView.md"
+            },
+            {
+              "route": "components/table-view/batch-actions",
+              "title": "TableView — batch actions",
+              "summary": "Multi-select rows + bulk actions wired to the in-memory Collection.",
+              "icon": "bi-table",
+              "docs": "docs/web-mojo/components/TableView.md"
+            },
+            {
+              "route": "components/table-view/custom-row",
+              "title": "TableView — custom row class",
+              "summary": "Custom itemClass (TableRow subclass) with avatar, badges, and expand-on-click.",
+              "icon": "bi-table",
+              "docs": "docs/web-mojo/components/TableView.md"
+            },
+            {
+              "route": "components/table-view/server-collection",
+              "title": "TableView — server collection",
+              "summary": "Bound to UserList against the live backend, with fetch:error handling.",
+              "icon": "bi-table",
+              "docs": "docs/web-mojo/components/TableView.md"
             },
             {
               "route": "components/data-view",

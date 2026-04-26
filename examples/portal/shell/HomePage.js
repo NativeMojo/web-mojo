@@ -29,18 +29,7 @@ class HomePage extends Page {
     async onInit() {
         await super.onInit();
 
-        const topics = this.options.topics || [];
-        // Flatten each group's items + their children into a single card list,
-        // since variants are independent runnable examples.
-        this.topics = topics.map(t => ({
-            name: t.name,
-            label: t.label,
-            icon: t.icon,
-            groups: t.groups.map(g => ({
-                label: g.label,
-                items: g.items.flatMap(i => [i, ...(i.children || [])]),
-            })),
-        }));
+        this.topics = this.options.topics || [];
         this.startHere = this.options.startHere || [];
     }
 

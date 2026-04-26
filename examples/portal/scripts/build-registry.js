@@ -66,7 +66,9 @@ const TOPIC_TAXONOMY = [
             {
                 label: 'Core',
                 items: [
-                    { route: 'core/view', children: ['core/view-child-views', 'core/advanced-views'] },
+                    'core/view',
+                    'core/view-child-views',
+                    'core/advanced-views',
                     'core/templates',
                     'core/data-formatter',
                     'core/model',
@@ -83,7 +85,9 @@ const TOPIC_TAXONOMY = [
                 items: [
                     'pages/page',
                     'pages/form-page',
-                    { route: 'pages/table-page', children: ['pages/table-page/forms', 'pages/table-page/detail-view'] },
+                    'pages/table-page',
+                    'pages/table-page/forms',
+                    'pages/table-page/detail-view',
                 ],
             },
             {
@@ -104,15 +108,25 @@ const TOPIC_TAXONOMY = [
             {
                 label: 'Modals & Dialogs',
                 items: [
-                    { route: 'components/dialog', children: ['components/dialog/form', 'components/dialog/context-menu', 'components/dialog/custom-body'] },
-                    { route: 'components/modal', children: ['components/modal/show-model', 'components/modal/form'] },
+                    'components/dialog',
+                    'components/dialog/form',
+                    'components/dialog/context-menu',
+                    'components/dialog/custom-body',
+                    'components/modal',
+                    'components/modal/show-model',
+                    'components/modal/form',
                 ],
             },
             {
                 label: 'Lists & Tables',
                 items: [
-                    { route: 'components/list-view', children: ['components/list-view/custom-item', 'components/list-view/live-filter'] },
-                    { route: 'components/table-view', children: ['components/table-view/batch-actions', 'components/table-view/custom-row', 'components/table-view/server-collection'] },
+                    'components/list-view',
+                    'components/list-view/custom-item',
+                    'components/list-view/live-filter',
+                    'components/table-view',
+                    'components/table-view/batch-actions',
+                    'components/table-view/custom-row',
+                    'components/table-view/server-collection',
                     'components/data-view',
                 ],
             },
@@ -330,26 +344,23 @@ function expandManifest(manifest, manifestPath) {
     return [make(manifest, 0)];
 }
 
-// Flatten the topic taxonomy into a route → { topic, group, parentRoute? } lookup.
-// Variant routes carry a parentRoute pointer so we can render them as sidebar
-// children of their parent component. Single-child submenus are a UX bug —
-// flatten such entries to siblings instead. Enforced at build time below.
+// Flatten the topic taxonomy into a route → { topic, group } lookup.
+//
+// Items must be plain route strings. Collapsible "parent with children"
+// entries are a UX bug: the framework's Sidebar renders a parent's anchor
+// as a Bootstrap collapse toggle (data-bs-toggle="collapse"), so clicking
+// it never navigates to the parent's route — the basic page becomes
+// unreachable from the sidebar. Variants belong as siblings in the same
+// group instead. Enforced at build time below.
 const TOPIC_BY_ROUTE = (() => {
     const map = new Map();
     for (const topic of TOPIC_TAXONOMY) {
         for (const group of topic.groups) {
             for (const item of group.items) {
-                if (typeof item === 'string') {
-                    map.set(item, { topic: topic.name, group: group.label });
-                } else {
-                    if (!item.children || item.children.length < 2) {
-                        fail(`TOPIC_TAXONOMY: '${item.route}' has fewer than 2 children — flatten to siblings instead of a single-child submenu`);
-                    }
-                    map.set(item.route, { topic: topic.name, group: group.label });
-                    for (const childRoute of item.children) {
-                        map.set(childRoute, { topic: topic.name, group: group.label, parentRoute: item.route });
-                    }
+                if (typeof item !== 'string') {
+                    fail(`TOPIC_TAXONOMY: items must be plain route strings; got an object with route '${item.route}'. Collapsible parents are unreachable from the sidebar — list the parent and its variants as flat siblings in the same group instead.`);
                 }
+                map.set(item, { topic: topic.name, group: group.label });
             }
         }
     }
@@ -364,20 +375,10 @@ function buildTopics(pages) {
         const groups = [];
         for (const group of topic.groups) {
             const items = [];
-            for (const item of group.items) {
-                if (typeof item === 'string') {
-                    const page = byRoute.get(item);
-                    if (!page) continue;
-                    items.push(pageEntry(page));
-                } else {
-                    const parent = byRoute.get(item.route);
-                    if (!parent) continue;
-                    const children = (item.children || [])
-                        .map(r => byRoute.get(r))
-                        .filter(Boolean)
-                        .map(pageEntry);
-                    items.push({ ...pageEntry(parent), children });
-                }
+            for (const route of group.items) {
+                const page = byRoute.get(route);
+                if (!page) continue;
+                items.push(pageEntry(page));
             }
             if (items.length) groups.push({ label: group.label, items });
         }
@@ -470,10 +471,6 @@ function buildDocsIndex(topics, pagesByRoute) {
             for (const item of group.items) {
                 const row = renderRow(item);
                 if (row) lines.push(row);
-                for (const child of item.children || []) {
-                    const childRow = renderRow(child);
-                    if (childRow) lines.push(childRow);
-                }
             }
             lines.push('');
         }
@@ -520,13 +517,7 @@ function main() {
     const taxonomyRoutes = new Set();
     for (const t of TOPIC_TAXONOMY) {
         for (const g of t.groups) {
-            for (const i of g.items) {
-                const r = typeof i === 'string' ? i : i.route;
-                taxonomyRoutes.add(r);
-                if (typeof i !== 'string') {
-                    for (const c of i.children || []) taxonomyRoutes.add(c);
-                }
-            }
+            for (const route of g.items) taxonomyRoutes.add(route);
         }
     }
     const knownRoutes = new Set(allPages.map(p => p.route));
