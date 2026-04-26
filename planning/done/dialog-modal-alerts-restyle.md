@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Type | request |
-| Status | planned |
+| Status | done |
 | Date | 2026-04-26 |
 | Priority | high |
 
@@ -287,3 +287,41 @@ Make `Modal` the canonical JavaScript surface for modals/dialogs. The three cano
 - `docs/web-mojo/components/Dialog.md` — strengthen deprecation banner; add pass-through notes under `alert/confirm/prompt`.
 - `CHANGELOG.md` — bug-fix + API-direction + UI entries (next unreleased version).
 - No changes to `docs/web-mojo/services/ToastService.md` or any other doc.
+
+## Resolution
+
+### Implemented (commits `ff27795` + `dc2b377`)
+
+**Bug fix — typed alerts now actually render their type.** `Modal.alert(message, title, options)` is now the canonical implementation and correctly honors all four call signatures including the documented `(message, title?, options?)` form. `Dialog.alert / confirm / prompt` are thin lazy-import pass-throughs that delegate to Modal so existing callers continue to work unchanged. `WebApp.showError / showSuccess / showInfo / showWarning / confirm` re-routed through Modal — they now produce visually distinct typed alerts instead of the pre-fix info-styled identical output.
+
+**Visual refresh — "Hero Band + Tinted Card" direction** (planning/mockups/modals/05-merged-refined.html). Every dialog now has a 6px colored band along the top, a subtle tinted card background (5% accent on light / 10% on dark), rounded 14px corners, and a soft 3-layer drop shadow. Typed alerts use a JetBrains Mono uppercase eyebrow micro-label (INFORMATION / SUCCESS / WARNING / ERROR) above a bold sans-serif headline; the inline colored icon was dropped because the band + tint already carry the type signal. Internal X close button, top-right inside the card. Dark-mode rules under both `prefers-color-scheme: dark` and `data-bs-theme="dark"`.
+
+**New CSS variable** `--mojo-dialog-accent` (default `var(--bs-primary)`) — info-typed accent and brand-color override hook.
+
+### Files changed
+
+- `src/core/views/feedback/Modal.js` — canonical implementation of alert/confirm/prompt; eyebrow + headline title structure
+- `src/core/views/feedback/Dialog.js` — alert/confirm/prompt rewritten as lazy-import pass-throughs to Modal
+- `src/core/WebApp.js` — re-routed five typed/confirm helpers through Modal
+- `src/core/css/core.css` — new "Hero Band + Tinted Card" chrome section, dark-mode rules, accent CSS variable
+- `examples/portal/examples/components/Dialog/DialogExample.js` — flipped imports to Modal as the canonical surface, kept a single Dialog.* footer card to demonstrate the deprecated path still works
+- `test/unit/Modal.alert.test.js` — new (16 tests; arg signature normalization, typed root class, eyebrow/headline structure, Dialog→Modal pass-through)
+- `test/utils/simple-module-loader.js` — added Modal/Dialog to the import-path resolver so the unit tests can load Modal with a mocked Dialog
+- `docs/web-mojo/components/Modal.md` — restructured to position Modal as the canonical surface; documented Modal.alert/confirm/prompt
+- `docs/web-mojo/components/Dialog.md` — strengthened deprecation banner; pass-through notes under each helper
+- `docs/web-mojo/core/WebApp.md` — corrected to reference Modal in the Notifications & Dialogs section
+- `docs/web-mojo/README.md` — Modal.md added to the Components index and quick-lookup row
+- `CHANGELOG.md` — three entries (bug fix, API direction, UI/CSS)
+- `planning/mockups/modals/` — six HTML mockups + index.html, preserved for future reference
+
+### Tests run
+
+- `node test/test-runner.js --suite unit` — 484/486 unit tests pass. The two failures are pre-existing ContextMenu positioning tests, unchanged from the pre-commit baseline. Modal.alert.test.js: 16/16 pass.
+- `npm run lint` — 71 problems (16 errors, 55 warnings), identical to pre-commit baseline. No new lint introduced.
+- Browser preview verification — all four typed alerts (info / success / warning / error) rendered against the dev server and visually compared against the mockup. Hero band, eyebrow, headline, body text, internal X, and shadow all match the merged-refined design direction.
+
+### Agent findings
+
+- **test-runner**: No new failures introduced by the commit. Modal.alert.test.js suite passes (16/16). Pre-existing infrastructure failures in integration/build suites are unchanged.
+- **docs-updater**: Touched 5 doc files — corrected the delegation direction in Modal.md (now says Dialog delegates to Modal, not the reverse), corrected the visual-treatment description in CHANGELOG.md and Modal.md (now says "6px hero band + tinted card bg" instead of the obsolete "left border + colored circle icon"), updated WebApp.md and Dialog.md cross-references, and added Modal.md to docs/web-mojo/README.md.
+- **security-review**: Flagged a HIGH-severity pre-existing XSS surface in the unescaped string interpolation for `message`, `resolvedTitle`, `defaultValue`, and `placeholder` in Modal.alert/confirm/prompt — the pattern was moved from Dialog.js verbatim and was not introduced by this refactor, but the rewrite was a missed opportunity to add `escapeHtml()` wrapping. **Follow-up:** open a separate request to add an HTML-escape helper and apply it at the four interpolation sites in Modal.js. Other findings (lazy import path, `...rest` spread, `--mojo-dialog-accent` CSS variable) are informational and safe.
