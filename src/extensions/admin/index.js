@@ -67,3 +67,7 @@ export { default as MetricsPermissionsTablePage } from './monitoring/MetricsPerm
 export { default as FileManagerTablePage } from './storage/FileManagerTablePage.js';
 export { default as FileTablePage } from './storage/FileTablePage.js';
 export { default as S3BucketTablePage } from './storage/S3BucketTablePage.js';
+
+// Registration helpers — re-exported from src/admin.js so consumers can
+// wire the admin extension via the package surface alone.
+export { registerSystemPages, registerAdminPages, registerAssistant } from '../../admin.js';

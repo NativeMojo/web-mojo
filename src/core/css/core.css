@@ -1374,6 +1374,20 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
     margin-right: 0;
 }
 
+/* ==============================================
+   Modal xxl size
+
+   Bootstrap 5 ships .modal-sm / .modal-lg / .modal-xl but stops there.
+   Dialog accepts size: 'xxl' and emits .modal-xxl, so we provide a
+   matching rule that follows Bootstrap's --bs-modal-width pattern at
+   the xxl breakpoint (1400px).
+   ============================================== */
+@media (min-width: 1400px) {
+    .modal-xxl {
+        --bs-modal-width: 1320px;
+    }
+}
+
 /* ========================================================================
    Field Status Indicators
    ======================================================================== */

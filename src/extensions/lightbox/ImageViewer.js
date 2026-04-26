@@ -141,27 +141,33 @@ export default class ImageViewer extends View {
       this.context.imageSmoothingQuality = 'high';
     }
 
-    // Delay canvas sizing to allow dialog to fully render
-    setTimeout(() => {
-      this.resizeCanvas();
+    // Size the canvas to its container immediately. The container is laid
+    // out by the dialog's flex column (h-100) and has real dimensions as
+    // soon as the dialog body is in the DOM.
+    this.resizeCanvas();
 
-      // If image was already loaded while we were waiting, render it
-      if (this.isLoaded && this.image) {
-        this.renderCanvas();
-      }
-    }, 2000); // 100ms should be enough for dialog animation
+    // Watch for container resize (modal open animation, window resize,
+    // sidebar toggle, etc.) and keep the backing store in sync with the
+    // CSS-displayed size. Without this the canvas's `w-100 h-100` class
+    // can stretch the displayed canvas past its backing store, which
+    // makes drawImage output appear duplicated/tiled.
+    if (typeof ResizeObserver !== 'undefined' && !this._resizeObserver) {
+      this._resizeObserver = new ResizeObserver(() => this.resizeCanvas());
+      this._resizeObserver.observe(this.containerElement);
+    }
   }
 
   resizeCanvas() {
-    if (!this.canvas) return;
+    if (!this.canvas || !this.containerElement) return;
 
-    // Use reasonable viewport-based dimensions
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
-    // Set canvas to reasonable size (80% of viewport with some padding)
-    const canvasWidth = Math.floor(viewportWidth * 0.8);
-    const canvasHeight = Math.floor(viewportHeight * 0.8);
+    // Match the canvas backing store to the *displayed* container size.
+    // The canvas template uses Bootstrap `w-100 h-100`, so the canvas
+    // CSS size always equals the container's content box — sizing the
+    // backing store to anything else (e.g. viewport * 0.8) causes the
+    // browser to stretch the rendered pixels to fit the CSS box and the
+    // image visibly tiles or duplicates.
+    const canvasWidth = Math.max(1, Math.floor(this.containerElement.clientWidth));
+    const canvasHeight = Math.max(1, Math.floor(this.containerElement.clientHeight));
 
     // Don't resize if dimensions haven't changed
     if (canvasWidth === this.canvasWidth && canvasHeight === this.canvasHeight) {
@@ -170,7 +176,7 @@ export default class ImageViewer extends View {
 
     const dpr = window.devicePixelRatio || 1;
 
-    // Store display dimensions
+    // Store logical display dimensions used by render math
     this.canvasWidth = canvasWidth;
     this.canvasHeight = canvasHeight;
 
@@ -178,11 +184,14 @@ export default class ImageViewer extends View {
     this.canvas.width = canvasWidth * dpr;
     this.canvas.height = canvasHeight * dpr;
 
-    // Set display size via style
+    // The canvas's CSS size already comes from `w-100 h-100`, so we
+    // don't need an inline style — but set it explicitly anyway so the
+    // canvas is sized correctly even outside a Bootstrap context.
     this.canvas.style.width = canvasWidth + 'px';
     this.canvas.style.height = canvasHeight + 'px';
 
-    // Reset transform and scale context for high DPI displays
+    // Reset transform and scale context for high DPI displays so render
+    // math can use logical (CSS) pixels.
     this.context.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     // If image is loaded, re-render it
@@ -275,10 +284,13 @@ export default class ImageViewer extends View {
 
     // Ensure canvas is properly sized (with delay if needed)
     const ensureCanvasReady = () => {
-      // Check if canvas has dimensions
+      // Check if canvas has dimensions; if not, the container hasn't
+      // been laid out yet and we'll get sized by the ResizeObserver.
       if (!this.canvasWidth || !this.canvasHeight) {
         this.resizeCanvas();
       }
+
+      if (!this.canvasWidth || !this.canvasHeight) return;
 
       // Initial setup
       if (this.autoFit) {
@@ -291,12 +303,7 @@ export default class ImageViewer extends View {
       this.updateControls();
     };
 
-    // If canvas dimensions are not set yet, wait for dialog to render
-    if (!this.canvasWidth || !this.canvasHeight) {
-      setTimeout(ensureCanvasReady, 2000); // Wait for dialog
-    } else {
-      requestAnimationFrame(ensureCanvasReady);
-    }
+    requestAnimationFrame(ensureCanvasReady);
 
     // Emit event
     const eventBus = this.getApp()?.events;
@@ -680,7 +687,10 @@ export default class ImageViewer extends View {
       this.isDragging = false;
     }
 
-
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect();
+      this._resizeObserver = null;
+    }
 
     // Emit destroy event
     const eventBus = this.getApp()?.events;

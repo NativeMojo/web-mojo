@@ -64,6 +64,7 @@ Single canonical example per documented component. Folder taxonomy mirrors this 
 | [Sidebar](../../examples/portal/examples/components/Sidebar/SidebarExample.js) | Portal navigation chrome — sidebar menus and topbar configured via PortalApp. | [components/SidebarTopNav.md](../../docs/web-mojo/components/SidebarTopNav.md) |
 | [ContextMenu](../../examples/portal/examples/components/ContextMenu/ContextMenuExample.js) | Three-dots row menu — items dispatch data-action handlers on the row View. | [components/ContextMenu.md](../../docs/web-mojo/components/ContextMenu.md) |
 | [ContextMenu](../../examples/portal/examples/components/ContextMenu/ContextMenuExample.js) | Right-click variant — the menu attaches to the row, not a trigger button. | [components/ContextMenu.md](../../docs/web-mojo/components/ContextMenu.md) |
+| [ChatView](../../examples/portal/examples/components/ChatView/ChatViewExample.js) | Chat thread with composer — ChatView + ChatMessageView + ChatInputView. | [components/ChatView.md](../../docs/web-mojo/components/ChatView.md) |
 
 ## Extensions
 

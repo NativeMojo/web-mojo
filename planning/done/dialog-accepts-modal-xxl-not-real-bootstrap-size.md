@@ -1,7 +1,7 @@
 # Dialog accepts `size: 'xxl'` but Bootstrap 5 has no `.modal-xxl` class
 
 **Type**: bug
-**Status**: open
+**Status**: resolved
 **Date**: 2026-04-25
 
 ## Description
@@ -24,4 +24,17 @@ Wave 2.5 ModalExample listed `xxl` as a clickable size; verifying it in the brow
 
 ---
 ## Resolution
-**Status**: open
+**Status**: resolved
+**Date**: 2026-04-25
+
+Shipped the missing `.modal-xxl` CSS rule in `src/core/css/core.css`, following Bootstrap's `--bs-modal-width` pattern at the xxl breakpoint (1400px) with a 1320px modal width:
+
+```css
+@media (min-width: 1400px) {
+    .modal-xxl {
+        --bs-modal-width: 1320px;
+    }
+}
+```
+
+Restored the `xxl` button, action handler (`onActionShowXxl`), and JSDoc size-matrix entry in `examples/portal/examples/components/Modal/ModalExample.js`, plus the manifest summary in `examples/portal/examples/components/Modal/example.json`. No JS changes to `Dialog.js` — it was already emitting the correct class name; only the CSS backing was missing.

@@ -1,0 +1,15 @@
+{
+    "name": "ChatView",
+    "area": "components",
+    "route": "components/chat-view",
+    "title": "ChatView",
+    "summary": "Chat thread with composer — ChatView + ChatMessageView + ChatInputView.",
+    "docs": "docs/web-mojo/components/ChatView.md",
+    "tags": ["chat", "messages", "composer", "websocket"],
+    "page": "ChatViewExample.js",
+    "menu": {
+        "section": "Components",
+        "icon": "bi-chat-dots",
+        "order": 95
+    }
+}

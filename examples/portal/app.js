@@ -14,12 +14,7 @@
  */
 
 import { PortalWebApp, User } from 'web-mojo';
-// registerAdminPages / registerAssistant live in /src/admin.js (the
-// admin extension's package surface — not in `web-mojo/admin` which
-// only re-exports the page CLASSES, not the registration helpers).
-// /src/ imports are allowed in the portal SHELL only — never in the
-// per-component canonical examples under examples/portal/examples/.
-import { registerAdminPages, registerAssistant } from '/src/admin.js';
+import { registerAdminPages, registerAssistant } from 'web-mojo/admin';
 import HomePage from './shell/HomePage.js';
 import DocsModal from './shell/DocsModal.js';
 import { installMockBackend } from './shell/mockBackend.js';

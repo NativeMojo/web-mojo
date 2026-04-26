@@ -1,7 +1,27 @@
 {
   "generatedAt": "static",
-  "pageCount": 74,
+  "pageCount": 75,
   "pages": [
+    {
+      "name": "ChatView",
+      "area": "components",
+      "route": "components/chat-view",
+      "title": "ChatView",
+      "summary": "Chat thread with composer — ChatView + ChatMessageView + ChatInputView.",
+      "docs": "docs/web-mojo/components/ChatView.md",
+      "tags": [
+        "chat",
+        "messages",
+        "composer",
+        "websocket"
+      ],
+      "page": "ChatViewExample.js",
+      "modulePath": "./examples/components/ChatView/ChatViewExample.js",
+      "sourcePath": "examples/portal/examples/components/ChatView/ChatViewExample.js",
+      "section": "Components",
+      "icon": "bi-chat-dots",
+      "order": 95
+    },
     {
       "name": "ContextMenu",
       "area": "components",
@@ -1690,7 +1710,7 @@
     {
       "area": "components",
       "section": "Components",
-      "icon": "bi-three-dots-vertical",
+      "icon": "bi-chat-dots",
       "pages": [
         {
           "route": "components/dialog",
@@ -1845,6 +1865,13 @@
           "summary": "Right-click variant — the menu attaches to the row, not a trigger button.",
           "icon": "bi-three-dots-vertical",
           "docs": "docs/web-mojo/components/ContextMenu.md"
+        },
+        {
+          "route": "components/chat-view",
+          "title": "ChatView",
+          "summary": "Chat thread with composer — ChatView + ChatMessageView + ChatInputView.",
+          "icon": "bi-chat-dots",
+          "docs": "docs/web-mojo/components/ChatView.md"
         }
       ]
     },
