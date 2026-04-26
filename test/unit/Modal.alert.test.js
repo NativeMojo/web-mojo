@@ -130,41 +130,29 @@ module.exports = async function (testContext) {
         });
     });
 
-    describe('Modal.alert — eyebrow + headline structure', () => {
-        it('builds title as eyebrow + headline spans (no inline icon)', async () => {
+    describe('Modal.alert — title structure', () => {
+        it('builds title as a single headline span (no inline icon, no default eyebrow)', async () => {
             await Modal.alert('hi', 'Custom Title', { type: 'success' });
-            expect(lastShowDialogOpts.title).toContain('modal-alert-eyebrow');
             expect(lastShowDialogOpts.title).toContain('modal-alert-headline');
             expect(lastShowDialogOpts.title).toContain('Custom Title');
+            // Eyebrow is opt-in now — no default
+            expect(lastShowDialogOpts.title).not.toContain('modal-alert-eyebrow');
             // Inline colored icon removed — band + tint communicate the type now
             expect(lastShowDialogOpts.title).not.toContain('bi-check-circle-fill');
         });
 
-        it('uses default eyebrow text per type', async () => {
-            await Modal.alert('hi', 'T', { type: 'info' });
-            expect(lastShowDialogOpts.title).toContain('INFORMATION');
-            showDialogSpy.mockClear();
-
-            await Modal.alert('hi', 'T', { type: 'success' });
-            expect(lastShowDialogOpts.title).toContain('SUCCESS');
-            showDialogSpy.mockClear();
-
-            await Modal.alert('hi', 'T', { type: 'warning' });
-            expect(lastShowDialogOpts.title).toContain('WARNING');
-            showDialogSpy.mockClear();
-
-            await Modal.alert('hi', 'T', { type: 'error' });
-            expect(lastShowDialogOpts.title).toContain('ERROR');
-            showDialogSpy.mockClear();
-
-            await Modal.alert('hi', 'T', { type: 'danger' });
-            expect(lastShowDialogOpts.title).toContain('ERROR'); // danger aliases error
+        it('omits the eyebrow by default for every type', async () => {
+            for (const type of ['info', 'success', 'warning', 'error', 'danger']) {
+                showDialogSpy.mockClear();
+                await Modal.alert('hi', 'T', { type });
+                expect(lastShowDialogOpts.title).not.toContain('modal-alert-eyebrow');
+            }
         });
 
-        it('honors a caller-supplied eyebrow override', async () => {
+        it('renders an eyebrow when the caller passes one', async () => {
             await Modal.alert('hi', 'Saved', { type: 'success', eyebrow: 'ACCOUNT / SAVED' });
+            expect(lastShowDialogOpts.title).toContain('modal-alert-eyebrow');
             expect(lastShowDialogOpts.title).toContain('ACCOUNT / SAVED');
-            expect(lastShowDialogOpts.title).not.toContain('SUCCESS<');
         });
 
         it('wraps the message in a modal-alert-message paragraph', async () => {

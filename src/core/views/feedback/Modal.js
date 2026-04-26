@@ -153,21 +153,19 @@ class Modal {
         const typeClass = `modal-alert modal-alert-${typeKey}`;
         const className = [typeClass, callerClassName].filter(Boolean).join(' ');
 
-        // Eyebrow micro-label above the headline. Defaults per type; callers
-        // can override with `eyebrow: 'ACCOUNT / SECURITY'` etc.
-        const defaultEyebrow = {
-            info: 'INFORMATION',
-            success: 'SUCCESS',
-            warning: 'WARNING',
-            error: 'ERROR'
-        };
-        const eyebrowText = (callerEyebrow ?? defaultEyebrow[typeKey] ?? defaultEyebrow.info);
+        // Eyebrow micro-label is opt-in. Callers who want extra context above
+        // the headline can pass `eyebrow: 'ACCOUNT / SECURITY'`. By default the
+        // hero band + tinted card bg already communicate the type, so adding
+        // a "ERROR" eyebrow above an "Error" headline reads as redundant.
+        const eyebrowHtml = callerEyebrow
+            ? `<span class="modal-alert-eyebrow">${callerEyebrow}</span>`
+            : '';
 
-        // Title is structured as eyebrow + headline. The hero band and tinted
-        // card bg communicate the type — no inline icon needed (per the
-        // 05-merged-refined mockup direction).
+        // Title is just the headline (with optional eyebrow). The hero band
+        // and tinted card bg communicate the type — no inline icon needed
+        // (per the 05-merged-refined mockup direction).
         const titleHtml =
-            `<span class="modal-alert-eyebrow">${eyebrowText}</span>` +
+            eyebrowHtml +
             `<span class="modal-alert-headline">${resolvedTitle}</span>`;
 
         return Dialog.showDialog({
