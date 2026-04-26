@@ -1,7 +1,7 @@
 # Charts — Floating crosshair tooltip on line charts
 
 **Type**: request
-**Status**: planned
+**Status**: Resolved — 2026-04-26
 **Date**: 2026-04-26
 **Priority**: low
 
@@ -166,4 +166,65 @@ Add a `crosshairTracking: true` mode to `SeriesChart` (default `false`) that, on
 
 ---
 ## Resolution
-**Status**: open
+**Status**: Resolved — 2026-04-26
+
+**Commit**: `13e36cf` — Charts: floating crosshair tooltip mode for line/area (opt-in)
+
+**What was implemented**
+
+All goals from the plan landed:
+
+- New `crosshairTracking: true` option (default `false`) on `SeriesChart`. When enabled AND `chartType !== 'bar'`, a transparent `<rect class="mini-series-hit">` overlays the plot area as the last child of the SVG and captures `mousemove` / `mouseleave` / `click`.
+- `mousemove` projects cursor X to the nearest column index via linear snap (`Math.round((cursorX - plotLeft) / plotW * (count - 1))`, clamped, returns `-1` when outside bounds or `count < 2`), reveals a vertical crosshair line, places one ghost dot per visible dataset at `(x, y_at_column)`, and shows the existing multi-row tooltip.
+- `mouseleave` hides crosshair, ghosts, and tooltip in one frame via `style.display = 'none'` (no DOM removal — avoids flicker between frames during `setData` tweens).
+- `click` emits `chart:click` with `{ chart, datasetIndex: <first visible>, index, value, label }` — matches Chart.js `mode: 'index'` semantics. Per-dataset clicks remain available with `crosshairTracking: false`.
+- **Bootstrap-theme-aware**: the crosshair `<line>` defaults to `stroke="currentColor"` resolved through `.mini-series-crosshair { color: var(--bs-secondary-color, #6c757d); opacity: 0.4; }`, so it auto-adapts under `data-bs-theme="dark"` without caller action. Override via `crosshairColor` (any CSS color string or `var(--…)` reference). Stroke width via `crosshairWidth` (default `1`).
+- Bar charts silently ignore the flag — verified by test.
+- `_renderChart` calls `_clearCrosshair()` at the top to prevent stale-column geometry during a `setData` tween. The next paint rebuilds the layer.
+
+**Files changed**
+
+Modified:
+- `src/extensions/charts/SeriesChart.js` — constructor (3 new options + 4 cached references), 4 new helpers (`_setupCrosshairTracking`, `_findColumn`, `_paintCrosshair`, `_clearCrosshair`), hook in `_paintFrame` (overlay mounted last), hook in `_renderChart` (clear before rebuild). ~140 LOC added.
+- `src/extensions/charts/css/charts.css` — 25 LOC block: `.mini-series-hit`, `.mini-series-crosshair-layer`, `.mini-series-crosshair`, `.mini-series-ghost`. Uses `var(--bs-secondary-color)` for theme adaptation.
+- `examples/portal/examples/extensions/Charts/SeriesChartExample.js` — 5th demo card "Floating crosshair tooltip" with caption.
+- `test/unit/SeriesChart.test.js` — 5 new tests in a `SeriesChart — crosshair tracking` block.
+- `docs/web-mojo/extensions/Charts.md` — three new option rows in the SeriesChart "Other options" table + a "Floating crosshair tooltip" code block + mode-semantics note.
+- `docs/web-mojo/README.md` line 119 — appended one-sentence callout about `crosshairTracking` (docs-updater agent).
+- `README.md` line 134 — same one-sentence callout (docs-updater agent).
+- `CHANGELOG.md` — `### Added — Charts: floating crosshair tooltip on line charts` block under `## Unreleased`.
+- Plus three stale Chart.js doc references rolled in from the prior native-rebuild commit's docs-updater report (README.md:134/319, AGENT.md:84, docs/web-mojo/AGENT.md:21).
+
+Created:
+- `planning/requests/charts-floating-line-tooltip.md` (now this file, moved to `planning/done/`).
+
+**Tests run**
+
+- `npm run test:unit` → **470/472 pass**. The 2 failures are pre-existing JSDOM positional-layout failures in `ContextMenu.test.js`. All 5 new crosshair tests pass.
+- `npm run lint` → **no new errors**. 16 pre-existing errors in `src/core/{View,Model,Page,Rest,Router,WebApp}.js` unchanged.
+- **Browser verification** at `http://localhost:3000/examples/portal/?page=extensions/charts/series` on the new "Floating crosshair tooltip" card:
+  - Total chart count: 6 SVGs (one for the new card, five existing).
+  - Hit-rect, crosshair layer, and 3 ghost dots present **only on the new card** (other 5 cards untouched — no regression).
+  - Dispatched `mousemove` at mid-plot X → crosshair appears at column "May" (`x = 385.86`), all 3 ghost dots place at `(x = 385.86, y = ds-specific)` and show, tooltip displays with label "May" and 3 dataset rows (Revenue / Profit / Expenses).
+  - Dispatched `mouseleave` → crosshair hidden, all 3 ghost dots hidden in one frame.
+- Screenshot captured showing the working crosshair + tooltip on the demo card.
+
+**Agent findings**
+
+- **test-runner** (a175316db8b22cc62): 470/472 unit tests pass. All 5 new SeriesChart crosshair tests pass cleanly. Integration- and build-suite failures are pre-existing baselines unrelated to this commit. **No regressions introduced by 13e36cf.**
+- **docs-updater** (a6cabb03ceacbaedd): Confirmed the three new option rows are in the Charts.md table. Ran `cross-link-docs.js` (small re-sort of the Examples block) and `build-registry.js` (no diff). Added a one-sentence callout about crosshair tracking to `docs/web-mojo/README.md:119` and top-level `README.md:134`. Possible follow-up: the docs structure-listing block at `docs/web-mojo/README.md:300` could also mention crosshair, but the index entry at line 119 already covers it.
+- **security-review** (a831efb985bba282e): **No findings.** All six concerns clean: `crosshairColor` and `line.color` flow through `_svgEl` / `setAttribute` (SVG-attribute-safe regardless of content), no `style="…"` interpolation, no external resources fetched, click payload uses already-stored internal state, CSS uses only safe Bootstrap variables. Two notes for future hardening (informational, no action required):
+  - Numeric guard on `crosshairWidth` (currently a string passes through to `stroke-width` — works, but `parseFloat` + fallback would be cheap insurance).
+  - Comment in `_setupCrosshairTracking` noting the safe-attribute assumption so future maintainers don't accidentally promote `line.color` to a `style` interpolation.
+
+**Docs updated**
+
+- `docs/web-mojo/extensions/Charts.md` (option rows + code block)
+- `docs/web-mojo/README.md` (line 119 callout)
+- `README.md` (line 134 callout)
+- `AGENT.md`, `docs/web-mojo/AGENT.md` (stale Chart.js wording corrected — rolled in from the native-rebuild docs-updater agent's earlier report)
+- `CHANGELOG.md` (`### Added` block under `## Unreleased`)
+
+**Validation**
+
+End-to-end verified: unit tests pass (5 new), lint clean, browser demonstrates the crosshair snapping to the correct column with all visible-dataset ghost dots and a multi-row tooltip; mouseleave clears the overlay; default mode (no `crosshairTracking`) is unchanged. Security review surfaces zero findings. The feature is opt-in and additive — every existing call site is untouched.
