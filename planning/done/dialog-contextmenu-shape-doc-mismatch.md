@@ -50,4 +50,6 @@ Wave 2 `examples/portal/examples/components/Dialog/DialogContextMenuExample.js` 
 
 ---
 ## Resolution
-**Status**: open
+**Status**: Resolved (docs only) — 2026-04-25
+**Files changed**: `docs/web-mojo/components/Dialog.md`
+**Fix**: Doc updated to show `contextMenu: { items: [...] }` everywhere (option-table type, ContextMenu section example, item-properties table). Added a ⚠️ pitfall callout warning the bare-array form silently renders nothing. Cross-linked the working canonical at `examples/portal/examples/components/Dialog/DialogContextMenuExample.js`. Framework code is unchanged — the source's `{ items: [...] }` shape was correct; only the doc was wrong.

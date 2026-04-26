@@ -21,7 +21,9 @@ globs: ["src/core/views/**/*.js", "src/core/forms/**/*.js", "src/core/pages/**/*
 - `data-action` belongs on clickable or interactive elements, not `<form>`.
 
 ## Child View Lifecycle
-- Use `addChild()` with `containerId`. Never manually call `child.render()` or `child.mount()` after `addChild()`.
+- Use `addChild()` with `containerId`. For children added **before the parent's first render** (in `onInit()` or constructor), the parent renders them automatically — do not call `child.render()` or `child.mount()` yourself.
+- Children added **after the parent has already rendered** (in action handlers, event callbacks, or any post-mount code path) DO need `await child.render()` — otherwise they never appear. See `docs/web-mojo/core/ViewChildViews.md` (Manual Rendering note) and the `appendChild` / Dynamic Children patterns.
+- One `containerId` holds exactly one child. Adding a second child to the same `containerId` replaces the first. To render N items, give each its own container (e.g. `containerId: `row-${item.id}`` with a template loop) or use `ListView` / `TableView`.
 
 ## Template Rules
 - The view instance is the Mustache context. Use `this.someProperty` in JS and `{{someProperty}}` in templates.

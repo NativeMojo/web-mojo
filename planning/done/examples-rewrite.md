@@ -395,9 +395,32 @@ Plus the locked `core/View/` from Wave 1 = **59 routes total across 8 areas**.
 
 ### Wave 3 — pending
 
-### Wave 3 — pending
+### Wave 3 — landed in commit `118e745`
 
-Per-doc cross-links, CHANGELOG entry, smoke tests under `test/build/`. Ready to run as a single sequential agent now that Wave 2 is in.
+**What shipped**
+
+- `examples/portal/scripts/cross-link-docs.js` — walks the registry and refreshes a managed `## Examples` section in every doc referenced by the manifest. Sections are bracketed by `<!-- examples:cross-link begin/end -->` markers so reruns produce byte-identical output. **49 doc files** under `docs/web-mojo/` got example links (multi-example docs like `Dialog`, `TableView`, `FormView`, `Validation`, `TabView`, `BasicTypes` list every variant in one section).
+- `test/build/examples-registry.test.js` — asserts the generator exits 0, page files exist, routes are globally unique, modulePaths stay inside `examples/portal/examples/`, the menu mirrors the docs taxonomy, and re-running yields a byte-identical registry. ~9 it() blocks.
+- `test/build/examples-coverage.test.js` — asserts every component listed in `docs/web-mojo/README.md` has a folder + `<Component>Example.js` + `example.json` (fence one way) and every example folder is named in the required list (fence the other way). 53 + 53 = 106 assertions.
+- Both tests pass under `npm run test:build`. Pre-existing failures (`dist/index.html` missing, `app.json` missing, `src/mojo.js` missing) are unrelated infrastructure gaps confirmed during Wave 1.
+- `.gitignore` — scoped `build/` to the repo root only (was matching `test/build/` too) and added an explicit `!test/build/` exception so the test files can actually be tracked.
+- `CHANGELOG.md` — new Unreleased entries describe the legacy archive, the manifest-driven portal, the doc cross-links, the new auth example, and the three new doc pages.
+
+**Verification**
+
+- `node test/test-runner.js --suite build`: examples-registry + examples-coverage tests all green.
+- `node examples/portal/scripts/cross-link-docs.js`: 49 docs processed; second run reports `unchanged: 49`.
+- `node examples/portal/scripts/build-registry.js`: 59 examples, 8 areas, byte-identical on second run.
+
+### Examples rewrite — final state
+
+- **Wave 1** (`c7a7c65`, `5ac1de2`, `f479098`): legacy archive + portal shell + registry generator + worked example.
+- **Wave 2** (`bd447ed`, `6e95dcb`): 58 canonical examples + new auth, 6 parallel agents.
+- **Wave 3** (`118e745`): doc cross-links + smoke tests + CHANGELOG.
+
+Total: 59 example routes across 8 areas, all loading against `localhost:9009`. Single canonical-and-demo file per component. Manifest-driven registry. LLM-facing contract at `examples/portal/examples.registry.json` for the `find-example` skill bundled by the bootstrap gist.
+
+**Status:** all three waves complete. Moving to `planning/done/`.
 
 ### Status of the related follow-up request
 

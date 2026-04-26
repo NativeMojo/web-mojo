@@ -37,6 +37,7 @@ Child views enable you to build complex UIs by composing smaller, reusable compo
 - [appendChild Pattern](#appendchild-pattern)
 - [Dynamic Children](#dynamic-children)
 - [Conditional Children](#conditional-children)
+- [Repeating Children (Iterating a Collection)](#repeating-children-iterating-a-collection)
 
 ### Template Requirements
 - [Container Elements](#container-elements)
@@ -54,6 +55,7 @@ Child views enable you to build complex UIs by composing smaller, reusable compo
 
 ### Common Pitfalls
 - [Container Mismatches](#container-mismatches)
+- [One Container, One Child](#one-container-one-child)
 - [Lifecycle Timing](#lifecycle-timing)
 - [Manual Rendering](#manual-rendering)
 
@@ -713,6 +715,68 @@ class DashboardView extends View {
 
 ---
 
+## Repeating Children (Iterating a Collection)
+
+⚠️ **One container = one child.** A `data-container="name"` element (or `<div id="name">`) holds **exactly one** child view. The natural-looking "loop and add many children to the same container" pattern does **not** work — `mount()` calls `container.replaceChildren(this.element)`, so each new child wipes out the previous one.
+
+```js
+// ❌ BROKEN — only the last item renders. Earlier siblings get clobbered.
+async onInit() {
+  for (const item of items) {
+    this.addChild(new ItemView({ containerId: 'rows', model: item }));
+  }
+}
+// Template: <div data-container="rows"></div>
+```
+
+### Workaround: one container per item
+
+Render a separate container per item in the template, then bind each child to its own unique `containerId`:
+
+```js
+// ✅ WORKS — every item gets its own slot.
+class ItemListView extends View {
+  constructor(options = {}) {
+    super({
+      template: `
+        <div class="item-list">
+          {{#items}}
+            <div data-container="row-{{id}}"></div>
+          {{/items}}
+        </div>
+      `,
+      ...options
+    });
+
+    this.items = [
+      { id: 1, name: 'Alpha' },
+      { id: 2, name: 'Beta' },
+      { id: 3, name: 'Gamma' }
+    ];
+  }
+
+  async onInit() {
+    await super.onInit();
+    for (const item of this.items) {
+      this.addChild(new ItemView({
+        containerId: `row-${item.id}`,
+        model: item
+      }));
+    }
+  }
+}
+```
+
+The template loop emits one container per item; each `addChild()` targets its own unique slot, so nothing gets clobbered.
+
+### When you have a `Collection`, use `ListView` or `TableView`
+
+If your "list of items" is actually a `Collection` of models, you almost never need to hand-roll the per-id container pattern. `ListView` and `TableView` already manage one-row-per-model rendering for you — see [components/ListView.md](../components/ListView.md) and [components/TableView.md](../components/TableView.md). Reach for the per-id workaround only when the items aren't model-backed (plain data, transient UI rows, etc.) or when you need a fully custom child class per row.
+
+A runnable demonstration of this exact workaround lives at [`examples/portal/examples/core/ViewChildViews/ViewChildViewsExample.js`](../../../examples/portal/examples/core/ViewChildViews/ViewChildViewsExample.js).
+
+---
+
 ## Container Elements
 
 **Parent templates MUST have container elements for children.**
@@ -1043,6 +1107,24 @@ class GoodView extends View {
 
 ---
 
+## One Container, One Child
+
+⚠️ **A container holds exactly one child view.** `mount()` calls `container.replaceChildren(this.element)`, so a second `addChild()` targeting the same `containerId` replaces the first — only the last child remains visible.
+
+```js
+// ❌ WRONG — only the last child renders. The first two get wiped out.
+async onInit() {
+  this.addChild(new RowView({ containerId: 'rows', model: itemA }));
+  this.addChild(new RowView({ containerId: 'rows', model: itemB }));
+  this.addChild(new RowView({ containerId: 'rows', model: itemC }));
+}
+// Template: <div data-container="rows"></div>
+```
+
+**Fix:** give each child its own container. See [Repeating Children (Iterating a Collection)](#repeating-children-iterating-a-collection) for the template-driven pattern. For Collection-of-models lists, prefer [`ListView`](../components/ListView.md) or [`TableView`](../components/TableView.md), which manage row rendering for you.
+
+---
+
 ## Lifecycle Timing
 
 ```javascript
@@ -1084,6 +1166,19 @@ class GoodView extends View {
   }
 }
 ```
+
+> **Note — children added *after* the parent has rendered:** the "don't manually render" rule applies to children added in `onInit()` (or earlier), which the parent renders as part of its own first render pass. Children added **dynamically** — in an action handler, an event callback, or any code path that runs after the parent has already mounted — must be rendered explicitly:
+>
+> ```js
+> async onActionAddRow() {
+>   const row = new RowView({ containerId: `row-${id}`, model: data });
+>   this.addChild(row);
+>   await row.render();   // ← required for late-added children
+>   return true;
+> }
+> ```
+>
+> See the [appendChild Pattern](#appendchild-pattern) and [Dynamic Children](#dynamic-children) sections above — both call `render()` on the late-added child for exactly this reason.
 
 ---
 

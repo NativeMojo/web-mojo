@@ -248,7 +248,7 @@ if (result === 'json') exportAsJson();
 | `autoSize` | `boolean` | Auto-size to content (default: `true`) |
 | `class` | `string` | Additional CSS class on the modal dialog element |
 | `buttons` | `array` | Button configuration array (see below) |
-| `contextMenu` | `array` | Context menu items shown in the header |
+| `contextMenu` | `object` | Context menu config — `{ items: [...], icon?, buttonClass? }`. See [Context Menu](#context-menu) |
 
 **Button Configuration:**
 
@@ -516,7 +516,7 @@ When instantiating `Dialog` directly (rather than using static helpers):
 | `autoSize` | `boolean` | `true` | Auto-size to content |
 | `class` | `string` | `''` | Additional CSS classes on the dialog element |
 | `buttons` | `array` | `[]` | Button configuration array |
-| `contextMenu` | `array` | `[]` | Context menu item array |
+| `contextMenu` | `object` | `null` | Context menu config — `{ items: [...], icon?, buttonClass? }`. See [Context Menu](#context-menu) |
 | `tagName` | `string` | `'div'` | Root element tag |
 | `id` | `string` | *(generated)* | Modal ID attribute |
 
@@ -618,43 +618,60 @@ await dialog.destroy();
 
 ## Context Menu
 
-Dialogs can have a context menu (dropdown) in the header with optional permission checks:
+Dialogs can have a context menu (dropdown) in the header with optional permission checks. The `contextMenu` option is an **object** with an `items` array — not a bare array.
+
+> **⚠️ Pitfall:** the bare-array form (`contextMenu: [ ... ]`) silently renders no menu — it must be wrapped in `{ items: [...] }`.
 
 ```js
 const result = await Dialog.showDialog({
   title: 'User Details',
   body:  userView,
-  contextMenu: [
-    {
-      icon:   'bi-pencil',
-      label:  'Edit User',
-      action: 'edit',
-      value:  'edit'
-    },
-    {
-      icon:        'bi-trash',
-      label:       'Delete User',
-      action:      'delete',
-      value:       'delete',
-      permissions: ['manage_users']  // Only shown if user has this permission
-    }
-  ]
+  contextMenu: {
+    items: [
+      {
+        icon:   'bi-pencil',
+        label:  'Edit User',
+        action: 'edit',
+        value:  'edit'
+      },
+      { type: 'divider' },
+      {
+        icon:        'bi-trash',
+        label:       'Delete User',
+        action:      'delete',
+        value:       'delete',
+        permissions: ['manage_users']  // Only shown if user has this permission
+      }
+    ]
+  }
 });
 
 if (result === 'edit')   openEditDialog();
 if (result === 'delete') confirmDelete();
 ```
 
+**Context Menu Object Properties:**
+
+| Key | Type | Description |
+|---|---|---|
+| `items` | `array` | *(required)* The menu item array (see below) |
+| `icon` | `string` | Trigger button icon (default: `'bi-three-dots-vertical'`) |
+| `buttonClass` | `string` | Trigger button class (default: `'btn btn-link p-1 mojo-modal-context-menu-btn'`) |
+
 **Context Menu Item Properties:**
 
 | Key | Type | Description |
 |---|---|---|
+| `type` | `string` | Set to `'divider'` to render a separator (other keys ignored) |
 | `icon` | `string` | Bootstrap Icons class |
 | `label` | `string` | Menu item text |
-| `action` | `string` | Action identifier resolved when clicked |
+| `action` | `string` | Action identifier — fires `action:<name>` on the dialog when clicked |
+| `href` | `string` | Render as a link instead of an action |
+| `target` | `string` | Link target (when `href` is set) |
 | `value` | `any` | Value the dialog Promise resolves with |
-| `permissions` | `string[]` | Required permissions — item hidden if user lacks them |
-| `class` | `string` | Additional CSS class for the menu item |
+| `permissions` | `string\|string[]` | Required permissions — item hidden if `app.activeUser.hasPermission()` returns false. Items with `permissions` set are also hidden when no active user / permission system is available |
+
+**Working example:** see [`examples/portal/examples/components/Dialog/DialogContextMenuExample.js`](../../../examples/portal/examples/components/Dialog/DialogContextMenuExample.js) for a runnable demonstration including permission gating.
 
 ---
 
