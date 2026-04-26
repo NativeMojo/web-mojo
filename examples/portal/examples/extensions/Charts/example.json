@@ -1,15 +1,31 @@
 {
     "name": "Charts",
     "area": "extensions",
-    "route": "extensions/charts",
-    "title": "Charts",
-    "summary": "SeriesChart (line/bar) and PieChart driven from inline data.",
     "docs": "docs/web-mojo/extensions/Charts.md",
-    "tags": ["chart", "chart.js", "series", "pie", "visualization"],
-    "page": "ChartsExample.js",
+    "tags": ["chart", "minichart", "circular-progress", "sparkline", "native-svg"],
     "menu": {
         "section": "Extensions",
         "icon": "bi-graph-up",
         "order": 10
-    }
+    },
+    "pages": [
+        {
+            "page": "ChartsExample.js",
+            "route": "extensions/charts",
+            "title": "Charts (native)",
+            "summary": "MiniChart + CircularProgress — native SVG, no Chart.js dependency."
+        },
+        {
+            "page": "CircularProgressExample.js",
+            "route": "extensions/charts/circular-progress",
+            "title": "CircularProgress",
+            "summary": "Sizes, variants, themes, multi-segment, and live setValue updates."
+        },
+        {
+            "page": "MetricsMiniChartExample.js",
+            "route": "extensions/charts/metrics-mini-chart",
+            "title": "MetricsMiniChartWidget",
+            "summary": "Backend-driven sparkline tiles with header, trending, and settings popover."
+        }
+    ]
 }

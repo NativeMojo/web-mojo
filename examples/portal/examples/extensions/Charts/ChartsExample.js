@@ -1,23 +1,32 @@
 import { Page } from 'web-mojo';
-import { SeriesChart, PieChart } from 'web-mojo/charts';
+import { MiniChart, CircularProgress } from 'web-mojo/charts';
 
 /**
- * ChartsExample — canonical demo of the Charts extension.
+ * ChartsExample — canonical demo of the framework's NATIVE chart components.
  *
  * Doc:    docs/web-mojo/extensions/Charts.md
  * Route:  extensions/charts
  *
- * Shows the two workhorse chart types side-by-side, each driven from inline
- * static data (no backend). SeriesChart renders a switchable line/bar chart;
- * PieChart renders a clickable pie with auto-percentages. Both are mounted as
- * child views via `addChild() + containerId` — never call render()/mount() on
- * them yourself. The button below toggles the line chart between line and bar
- * via the public `setChartType()` method.
+ * web-mojo ships its own SVG-based charts — no Chart.js dependency. The two
+ * workhorses for dashboards and detail screens are:
  *
- * Copy-paste recipe: pick SeriesChart or PieChart, give it inline `data:` (or
- * an `endpoint:`), drop a `<div data-container="...">` slot, and let the
- * framework handle the rest.
+ *   - MiniChart       — sparkline-style line / bar chart with optional dots,
+ *                       crosshair, tooltip, value formatter, and live updates.
+ *   - CircularProgress — single-arc or multi-segment dial with center content,
+ *                       auto-sized stroke, theme variants, value formatter.
+ *
+ * Both are regular Views — mount via `addChild` + `containerId`, hand them
+ * `data:` / `value:` (or `endpoint:` for live data), and call their public
+ * setters (`setData`, `setValue`, `setChartType`, …) to update without a
+ * full re-render.
+ *
+ * For the heavier MetricsChart / SeriesChart / PieChart variants, see the
+ * sibling example pages.
  */
+const SEED_REVENUE = [12, 19, 14, 23, 18, 25, 31, 28, 35, 30, 40, 38];
+const SEED_VISITS  = [120, 132, 110, 145, 160, 178, 199, 220, 215, 240, 232, 260];
+const SEED_BARS    = [40, 35, 60, 80, 55, 70, 90, 75, 65, 85, 95, 100];
+
 class ChartsExample extends Page {
     static pageName = 'extensions/charts';
     static route = 'extensions/charts';
@@ -27,7 +36,7 @@ class ChartsExample extends Page {
             ...options,
             pageName: ChartsExample.pageName,
             route: ChartsExample.route,
-            title: 'Charts — SeriesChart + PieChart',
+            title: 'Charts — native MiniChart + CircularProgress',
             template: ChartsExample.TEMPLATE,
         });
     }
@@ -35,81 +44,150 @@ class ChartsExample extends Page {
     async onInit() {
         await super.onInit();
 
-        this.salesChart = new SeriesChart({
-            containerId: 'sales-chart',
-            title: 'Monthly revenue',
+        // Sparkline — line, smooth, filled, with crosshair + tooltip.
+        this.revenueChart = new MiniChart({
+            containerId: 'revenue-slot',
             chartType: 'line',
-            allowTypeSwitch: true,
-            tension: 0.4,
-            yAxis: { label: 'Revenue', beginAtZero: true },
-            tooltip: { y: 'currency:USD' },
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                datasets: [{
-                    label: 'Revenue',
-                    data: [15000, 18000, 22000, 19500, 26000, 31000],
-                    borderColor: '#0d6efd',
-                    backgroundColor: 'rgba(13, 110, 253, 0.15)',
-                    fill: true,
-                }],
-            },
-            height: 280,
+            data: SEED_REVENUE,
+            height: 80,
+            color: 'rgba(13, 110, 253, 1)',
+            fillColor: 'rgba(13, 110, 253, 0.12)',
+            fill: true,
+            smoothing: 0.4,
+            showDots: true,
+            showCrosshair: true,
+            showTooltip: true,
+            valueFormat: 'currency',
         });
-        this.addChild(this.salesChart);
+        this.addChild(this.revenueChart);
 
-        this.shareChart = new PieChart({
-            containerId: 'share-chart',
-            title: 'Market share',
-            cutout: 0,
-            colors: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6f42c1'],
-            data: [
-                { label: 'Desktop', value: 45 },
-                { label: 'Mobile', value: 38 },
-                { label: 'Tablet', value: 12 },
-                { label: 'Other', value: 5 },
+        // Bars — discrete buckets, no fill, no crosshair.
+        this.visitsChart = new MiniChart({
+            containerId: 'visits-slot',
+            chartType: 'bar',
+            data: SEED_BARS,
+            height: 80,
+            color: 'rgba(25, 135, 84, 1)',
+            barGap: 3,
+            showTooltip: true,
+        });
+        this.addChild(this.visitsChart);
+
+        // Toggle target — same data, switched between line + bar via the
+        // public setChartType() setter (no full re-render).
+        this.toggleChart = new MiniChart({
+            containerId: 'toggle-slot',
+            chartType: 'line',
+            data: SEED_VISITS,
+            height: 80,
+            color: 'rgba(220, 53, 69, 1)',
+            fillColor: 'rgba(220, 53, 69, 0.10)',
+            fill: true,
+            smoothing: 0.3,
+        });
+        this.addChild(this.toggleChart);
+
+        // Single-arc dial.
+        this.disk = new CircularProgress({
+            containerId: 'disk-slot',
+            value: 64,
+            size: 'md',
+            theme: 'basic',
+            variant: 'primary',
+            label: 'Disk used',
+        });
+        this.addChild(this.disk);
+
+        // Multi-segment dial — three slices.
+        this.budget = new CircularProgress({
+            containerId: 'budget-slot',
+            size: 'md',
+            theme: 'basic',
+            segments: [
+                { value: 35, color: '#198754', label: 'Eng' },
+                { value: 25, color: '#0d6efd', label: 'Sales' },
+                { value: 18, color: '#fd7e14', label: 'Ops' },
             ],
-            height: 280,
+            showValue: true,
+            label: 'Q2 spend',
         });
-        this.addChild(this.shareChart);
+        this.addChild(this.budget);
     }
 
-    async onActionToggleType() {
-        const next = this.salesChart.chartType === 'line' ? 'bar' : 'line';
-        await this.salesChart.setChartType(next);
-    }
+    onActionSwitchLine() { this.toggleChart.setChartType('line'); }
+    onActionSwitchBar()  { this.toggleChart.setChartType('bar'); }
+    onActionRandomDisk() { this.disk.setValue(Math.round(Math.random() * 100)); }
 
     static TEMPLATE = `
         <div class="example-page">
-            <h1>Charts</h1>
+            <h1>Charts (native)</h1>
             <p class="example-summary">
-                Chart.js-backed components: SeriesChart (line/bar) and PieChart, each driven from inline data.
+                Native SVG charts — <code>MiniChart</code> and <code>CircularProgress</code>.
+                No Chart.js. Each is a regular View; update with <code>setData()</code>,
+                <code>setValue()</code>, <code>setChartType()</code> — no full re-render.
             </p>
             <p class="example-docs-link">
-                <i class="bi bi-book"></i>
                 <a href="#" data-action="open-doc" data-doc="docs/web-mojo/extensions/Charts.md">
-                    docs/web-mojo/extensions/Charts.md
+                    <i class="bi bi-book"></i> docs/web-mojo/extensions/Charts.md
                 </a>
             </p>
 
-            <div class="row g-4">
-                <div class="col-lg-7">
+            <div class="row g-3">
+                <div class="col-md-6">
                     <div class="card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <span>SeriesChart</span>
-                            <button class="btn btn-sm btn-outline-primary" data-action="toggle-type">
-                                <i class="bi bi-arrow-left-right"></i> Toggle line / bar
-                            </button>
-                        </div>
                         <div class="card-body">
-                            <div data-container="sales-chart"></div>
+                            <div class="d-flex justify-content-between align-items-baseline mb-2">
+                                <strong>Revenue</strong>
+                                <span class="text-muted small">12-month sparkline · line · filled · dots + tooltip</span>
+                            </div>
+                            <div data-container="revenue-slot"></div>
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-5">
+                <div class="col-md-6">
                     <div class="card">
-                        <div class="card-header">PieChart</div>
                         <div class="card-body">
-                            <div data-container="share-chart"></div>
+                            <div class="d-flex justify-content-between align-items-baseline mb-2">
+                                <strong>Visits</strong>
+                                <span class="text-muted small">12-month sparkline · bars · tooltip</span>
+                            </div>
+                            <div data-container="visits-slot"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-baseline mb-2">
+                        <strong>Switch chart type at runtime</strong>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary" data-action="switch-line">Line</button>
+                            <button class="btn btn-sm btn-outline-primary ms-1" data-action="switch-bar">Bar</button>
+                        </div>
+                    </div>
+                    <div data-container="toggle-slot"></div>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <strong>CircularProgress — single arc</strong>
+                            <div class="d-flex justify-content-center my-3" data-container="disk-slot"></div>
+                            <button class="btn btn-sm btn-outline-secondary" data-action="random-disk">
+                                <i class="bi bi-shuffle"></i> Randomise
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <strong>CircularProgress — multi-segment</strong>
+                            <div class="d-flex justify-content-center my-3" data-container="budget-slot"></div>
+                            <span class="text-muted small">3 colored slices, single component.</span>
                         </div>
                     </div>
                 </div>

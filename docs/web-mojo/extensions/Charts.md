@@ -1552,8 +1552,10 @@ The Charts package seamlessly integrates with the MOJO framework while providing
 
 <!-- examples:cross-link begin -->
 
-Runnable, copy-paste reference in the examples portal:
+Runnable, copy-paste references in the examples portal:
 
-- [`examples/portal/examples/extensions/Charts/ChartsExample.js`](../../../examples/portal/examples/extensions/Charts/ChartsExample.js) — SeriesChart (line/bar) and PieChart driven from inline data.
+- [`examples/portal/examples/extensions/Charts/ChartsExample.js`](../../../examples/portal/examples/extensions/Charts/ChartsExample.js) — MiniChart + CircularProgress — native SVG, no Chart.js dependency.
+- [`examples/portal/examples/extensions/Charts/CircularProgressExample.js`](../../../examples/portal/examples/extensions/Charts/CircularProgressExample.js) — Sizes, variants, themes, multi-segment, and live setValue updates.
+- [`examples/portal/examples/extensions/Charts/MetricsMiniChartExample.js`](../../../examples/portal/examples/extensions/Charts/MetricsMiniChartExample.js) — Backend-driven sparkline tiles with header, trending, and settings popover.
 
 <!-- examples:cross-link end -->

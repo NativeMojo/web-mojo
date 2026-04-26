@@ -13,7 +13,7 @@
  * repo. Per-component example files MUST import from `web-mojo` only.
  */
 
-import { PortalWebApp } from 'web-mojo';
+import { PortalWebApp, User } from 'web-mojo';
 import HomePage from './shell/HomePage.js';
 import DocsModal from './shell/DocsModal.js';
 import registry from './examples.registry.json';
@@ -66,8 +66,76 @@ const app = new PortalWebApp({
         brandIcon: 'bi-lightning-charge',
         brandRoute: '?page=home',
         theme: 'dark',
+        shadow: 'dark',
         showSidebarToggle: true,
+        // Right-side topbar items: docs index, GitHub link, login slot.
+        // The framework swaps `id: 'login'` for `userMenu` the moment
+        // `app.setActiveUser(user)` is called.
+        rightItems: [
+            {
+                id: 'docs-index',
+                icon: 'bi-book',
+                action: 'open-examples-index',
+                tooltip: 'Browse docs index',
+                buttonClass: 'btn btn-link',
+            },
+            {
+                id: 'github',
+                icon: 'bi-github',
+                href: 'https://github.com/NativeMojo/web-mojo',
+                tooltip: 'web-mojo on GitHub',
+            },
+            // Login placeholder — replaced by userMenu after setActiveUser.
+            {
+                id: 'login',
+                icon: 'bi-box-arrow-in-right',
+                label: 'Login',
+                href: '/examples/auth/',
+            },
+        ],
+        // The user menu — even with auth disabled the framework still renders
+        // it. Useful as a copy-paste reference for downstream apps.
+        userMenu: {
+            label: 'Demo User',
+            icon: 'bi-person-circle',
+            items: [
+                { label: 'Profile',         icon: 'bi-person',      action: 'profile' },
+                { label: 'Settings',        icon: 'bi-sliders',     action: 'open-settings' },
+                { divider: true },
+                { label: 'Theme: Light',    icon: 'bi-sun',         action: 'theme-light' },
+                { label: 'Theme: Dark',     icon: 'bi-moon-stars',  action: 'theme-dark' },
+                { divider: true },
+                { label: 'Sign out',        icon: 'bi-box-arrow-right', action: 'logout' },
+            ],
+        },
     },
+});
+
+// Wire the topbar actions. `portal:action` is the canonical event for
+// rightItems / userMenu actions in PortalApp.
+app.events.on('portal:action', ({ action }) => {
+    switch (action) {
+        case 'open-examples-index':
+            DocsModal.open('docs/web-mojo/examples.md');
+            break;
+        case 'profile':
+            app.toast?.info?.('No real user — auth is disabled in this portal.');
+            break;
+        case 'open-settings':
+            app.toast?.info?.('Settings menu would live here in a real app.');
+            break;
+        case 'theme-light':
+            document.documentElement.setAttribute('data-bs-theme', 'light');
+            app.toast?.success?.('Switched to light theme.');
+            break;
+        case 'theme-dark':
+            document.documentElement.setAttribute('data-bs-theme', 'dark');
+            app.toast?.success?.('Switched to dark theme.');
+            break;
+        case 'logout':
+            app.toast?.warn?.('Auth is disabled — nothing to log out of here.');
+            break;
+    }
 });
 
 app.registerPage('home', HomePage, { areas: menuAreas });
@@ -98,7 +166,34 @@ document.addEventListener('click', (event) => {
     DocsModal.open(docPath);
 });
 
+// Workaround for planning/issues/topnav-dropdown-no-auto-attach.md:
+// Bootstrap's data-API isn't auto-attaching to TopNav's dynamically-rendered
+// dropdown toggles. Delegated click handler that lazy-creates the Dropdown
+// instance and toggles it on user click. Until the framework fix lands.
+document.addEventListener('click', (event) => {
+    const toggle = event.target.closest('[data-bs-toggle="dropdown"]');
+    if (!toggle) return;
+    if (window.bootstrap?.Dropdown?.getInstance(toggle)) return; // already wired
+    event.preventDefault();
+    const inst = window.bootstrap.Dropdown.getOrCreateInstance(toggle);
+    inst.toggle();
+});
+
 await app.start();
+
+// Auth is disabled in this portal, but the topbar's userMenu only renders
+// when an active user is set (the framework swaps a `loginMenu` placeholder
+// for the userMenu the moment `setActiveUser` is called). Faking a demo
+// user gives downstream readers a concrete reference for what userMenu
+// looks like in production.
+const demoUser = new User({
+    id: 1,
+    username: 'demo',
+    display_name: 'Demo User',
+    email: 'demo@example.com',
+});
+// Defer one tick so any pending render in start() finishes first.
+setTimeout(() => app.setActiveUser(demoUser), 0);
 
 window.app = app;
 window.DocsModal = DocsModal;

@@ -69,7 +69,9 @@ Single canonical example per documented component. Folder taxonomy mirrors this 
 
 | Component | Summary | Doc |
 |---|---|---|
-| [Charts](../../examples/portal/examples/extensions/Charts/ChartsExample.js) | SeriesChart (line/bar) and PieChart driven from inline data. | [extensions/Charts.md](../../docs/web-mojo/extensions/Charts.md) |
+| [Charts](../../examples/portal/examples/extensions/Charts/ChartsExample.js) | MiniChart + CircularProgress — native SVG, no Chart.js dependency. | [extensions/Charts.md](../../docs/web-mojo/extensions/Charts.md) |
+| [CircularProgress](../../examples/portal/examples/extensions/CircularProgress/CircularProgressExample.js) | Sizes, variants, themes, multi-segment, and live setValue updates. | [extensions/Charts.md](../../docs/web-mojo/extensions/Charts.md) |
+| [MetricsMiniChartWidget](../../examples/portal/examples/extensions/MetricsMiniChartWidget/MetricsMiniChartWidgetExample.js) | Backend-driven sparkline tiles with header, trending, and settings popover. | [extensions/Charts.md](../../docs/web-mojo/extensions/Charts.md) |
 | [LightBox](../../examples/portal/examples/extensions/LightBox/LightBoxExample.js) | ImageViewer, LightboxGallery, and ImageEditor opened via static dialogs. | [extensions/LightBox.md](../../docs/web-mojo/extensions/LightBox.md) |
 | [MapView](../../examples/portal/examples/extensions/MapView/MapViewExample.js) | Leaflet marker map with auto-fit bounds and switchable tile layers. | [extensions/MapView.md](../../docs/web-mojo/extensions/MapView.md) |
 | [MapLibreView](../../examples/portal/examples/extensions/MapLibreView/MapLibreViewExample.js) | Vector-tile MapLibre GL map with 3D pitch and bearing. | [extensions/MapLibreView.md](../../docs/web-mojo/extensions/MapLibreView.md) |
