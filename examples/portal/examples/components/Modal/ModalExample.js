@@ -12,7 +12,7 @@ import { Page, View, Modal } from 'web-mojo';
  *
  * This page demonstrates Modal.show across the full size matrix:
  *
- *   sm | md | lg | xl | xxl | fullscreen
+ *   sm | md | lg | xl | fullscreen
  *
  * Plus the two extra knobs people reach for first:
  *
@@ -94,7 +94,6 @@ class ModalExample extends Page {
     onActionShowMd()         { return this.openAtSize('md'); }
     onActionShowLg()         { return this.openAtSize('lg'); }
     onActionShowXl()         { return this.openAtSize('xl'); }
-    onActionShowXxl()        { return this.openAtSize('xxl'); }
     onActionShowFullscreen() { return this.openAtSize('fullscreen'); }
 
     async onActionShowScrollable() {
@@ -144,7 +143,6 @@ class ModalExample extends Page {
                         <button class="btn btn-primary"   data-action="show-md">md</button>
                         <button class="btn btn-primary"   data-action="show-lg">lg</button>
                         <button class="btn btn-primary"   data-action="show-xl">xl</button>
-                        <button class="btn btn-primary"   data-action="show-xxl">xxl</button>
                         <button class="btn btn-secondary" data-action="show-fullscreen">fullscreen</button>
                     </div>
                 </div>

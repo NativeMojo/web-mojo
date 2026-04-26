@@ -58,6 +58,22 @@ class ContextMenu extends View {
     }
 
     /**
+     * After every render, ensure the Bootstrap Dropdown instance is wired
+     * to our trigger button. Bootstrap's data-API is supposed to handle
+     * this via document delegation, but doesn't reliably attach to
+     * dynamically rendered View markup — without this hook, clicking the
+     * three-dots trigger button silently does nothing.
+     */
+    async onAfterRender() {
+        await super.onAfterRender();
+        if (!this.element) return;
+        const Dropdown = window.bootstrap?.Dropdown;
+        if (!Dropdown) return;
+        const trigger = this.element.querySelector('[data-bs-toggle="dropdown"]');
+        if (trigger) Dropdown.getOrCreateInstance(trigger);
+    }
+
+    /**
      * Build the dropdown menu HTML from the configuration.
      */
     async renderTemplate() {

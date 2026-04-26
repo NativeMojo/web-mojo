@@ -13,7 +13,7 @@
             "page": "ModalExample.js",
             "route": "components/modal",
             "title": "Modal",
-            "summary": "Modal.show(view) — size matrix (sm/md/lg/xl/xxl/fullscreen), scrollable, static backdrop."
+            "summary": "Modal.show(view) — size matrix (sm/md/lg/xl/fullscreen), scrollable, static backdrop."
         },
         {
             "page": "ModalShowModelExample.js",

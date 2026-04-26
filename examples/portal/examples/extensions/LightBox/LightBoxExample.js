@@ -39,13 +39,11 @@ class LightBoxExample extends Page {
 
     async onActionViewImage(event, element) {
         const idx = Number(element.getAttribute('data-index')) || 0;
-        await ImageViewer.showDialog(this.images[idx].src, {
-            title: this.images[idx].alt,
-            showControls: true,
-            allowRotate: true,
-            allowZoom: true,
-            size: 'fullscreen',
-        });
+        // Open the multi-image gallery starting at the clicked index.
+        // (Single-image ImageViewer.showDialog has a known canvas tiling bug
+        // tracked in planning/issues/imageviewer-canvas-renders-image-twice.md;
+        // gallery uses a different rendering path.)
+        LightboxGallery.show(this.images, { startIndex: idx });
     }
 
     async onActionOpenGallery() {
