@@ -369,6 +369,10 @@ class Modal {
             body: composedBody,
             size,
             centered: false,
+            // The drawer header replaces the modal's hero band entirely —
+            // suppress the band so the caller's eyebrow/title/meta block
+            // owns the top of the card cleanly.
+            className: `modal-bandless ${rest.className || ''}`.trim(),
             buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }],
             ...rest
         });

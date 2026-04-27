@@ -91,17 +91,22 @@ class StatusStripPanel extends View {
     }
 
     _openHistoryDrawer(slug) {
+        // Drawer owns the title + eyebrow + meta block. The chart is
+        // pure data — suppress its own header (no "Metrics" h5, no cog,
+        // no type switch) and hide the legend (single series would just
+        // say "Default" or the raw slug).
         const chart = new MetricsChart({
             slugs: [slug],
             account: 'incident',
             granularity: 'days',
             defaultDateRange: '30d',
             chartType: 'line',
+            compactHeader: true,
             showGranularity: false,
             showTypeSwitch: false,
             showDateRange: false,
-            height: 280,
-            title: `<i class="bi bi-graph-up me-2"></i>${slug}`
+            showLegend: false,
+            height: 280
         });
         Modal.drawer({
             eyebrow: 'Metric History',
