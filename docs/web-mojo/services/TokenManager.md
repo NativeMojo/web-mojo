@@ -17,6 +17,7 @@
 - [API](#api)
 - [The Auth Gate (single-flight refresh)](#the-auth-gate-single-flight-refresh)
 - [Auto-refresh](#auto-refresh)
+- [Cross-Origin Auth Handoff](#cross-origin-auth-handoff)
 - [Events](#events)
 - [Common Pitfalls](#common-pitfalls)
 - [Related Docs](#related-docs)
@@ -116,6 +117,8 @@ These all read the current access token; they're convenience wrappers over `getT
 | `startAutoRefresh(app)` | Calls `checkAndRefreshTokens(app)` on a 60-second interval. Idempotent — calling twice doesn't double the timer. |
 | `stopAutoRefresh()` | Clears the interval. |
 | `await ensureValidToken(app)` | The pre-request auth gate. Throws `AuthRequiredError` if the token is expired and refresh fails. See [The Auth Gate](#the-auth-gate-single-flight-refresh). |
+| `await handleAuthCodeFromURL(app)` | Read `?auth_code=` from the URL, scrub it, exchange it. See [Cross-Origin Auth Handoff](#cross-origin-auth-handoff). |
+| `await exchangeAuthCode(app, code)` | Exchange a one-time handoff code for tokens. Single-flight. |
 
 `app` is the running `WebApp` / `PortalApp` instance — `TokenManager` reads `app.rest` to make the refresh POST and `app.events` to emit lifecycle events.
 
@@ -139,15 +142,35 @@ The single-flight guard means a hundred concurrent requests during a refresh sha
 
 `PortalApp` and `DocItApp` call `startAutoRefresh(app)` on login and `stopAutoRefresh()` on logout. The default 60-second cadence is hardcoded — override by subclassing if you need a different interval (rare; the in-line refresh inside `ensureValidToken` covers most race conditions).
 
+## Cross-Origin Auth Handoff
+
+When the auth server lives on a different origin from the consuming app, `localStorage` cannot be shared and a redirect alone leaves the destination unauthenticated. The django-mojo backend mints a one-time `auth_code` and appends it to the redirect URL as `?auth_code=<32-hex>`. The consuming app must POST that code to `/api/auth/exchange` on bootstrap to receive its tokens.
+
+`PortalApp.checkAuthStatus()` does this automatically — it calls `tokenManager.handleAuthCodeFromURL(app)` before deciding whether the user is unauthenticated, so a portal that lands on a protected page with `?auth_code=…` boots straight into the authenticated state with no `/login` bounce.
+
+```js
+// At app construction — already wired by PortalApp / PortalWebApp.
+await app.tokenManager.handleAuthCodeFromURL(app);
+// On success, tokens are stored, app.rest auth header is set, and
+// 'auth:login' is emitted with the user dict. On failure, no tokens are
+// stored and 'auth:exchange:failed' is emitted with the error.
+```
+
+Security: the URL is scrubbed via `history.replaceState` *before* the network call, so analytics scripts that read `location.search` on page-load see the cleaned URL. Concurrent callers share one in-flight POST via the same single-flight pattern as `refreshToken()`.
+
+For a custom (non-Portal) app shell, call `handleAuthCodeFromURL(app)` once at boot, before any route guard. Codes are single-use and 60-second TTL on the server.
+
 ## Events
 
 `TokenManager` emits via `app.events`:
 
 | Event | When |
 |---|---|
+| `auth:login` | A successful `exchangeAuthCode` stored fresh tokens. Payload is the user dict from the response. |
 | `auth:unauthorized` | Token is expired and refresh failed (or no refresh token). The host app should redirect to login. |
 | `auth:token:refresh:failed` | A refresh attempt failed (network, 5xx, malformed response). The host can choose to retry or wait for the next gate. |
 | `auth:token:refreshed` | A refresh succeeded. New token is already in storage. |
+| `auth:exchange:failed` | An `exchangeAuthCode` call failed (invalid code, 401/403, network). Payload is `{ error }`. The URL has already been scrubbed; no tokens were stored. |
 
 `PortalApp` listens to `auth:unauthorized` and triggers its login redirect. Custom apps need to wire this themselves.
 

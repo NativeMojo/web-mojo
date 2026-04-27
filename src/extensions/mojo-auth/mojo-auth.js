@@ -59,7 +59,8 @@
         passkeyLoginComplete: '/api/auth/passkeys/login/complete',
         oauthBegin:         '/api/auth/oauth/{provider}/begin',
         oauthComplete:      '/api/auth/oauth/{provider}/complete',
-        refreshToken:       '/api/refresh_token'
+        refreshToken:       '/api/refresh_token',
+        exchangeAuthCode:   '/api/auth/exchange'
     };
 
     // -------------------------------------------------------------------------
@@ -459,6 +460,44 @@
         /** @deprecated use completeOAuthLogin('google') */
         completeGoogleLogin: function () {
             return MojoAuth.completeOAuthLogin('google');
+        },
+
+        // -----------------------------------------------------------------------
+        // Cross-Origin Auth Handoff
+        // -----------------------------------------------------------------------
+
+        /**
+         * Exchange a one-time auth handoff code for access + refresh tokens.
+         * The auth domain mints the code via /api/auth/handoff and appends it
+         * as ?auth_code= on the redirect to the consuming app. Single-use,
+         * 60s TTL — server-enforced.
+         * Stores tokens on success.
+         * @param {string} code  - 32-hex auth handoff code from ?auth_code=
+         * @returns {Promise<object>} response data ({ access_token, refresh_token, user })
+         */
+        exchangeAuthCode: function (code) {
+            return post(ep('exchangeAuthCode'), { code: code }).then(saveTokens);
+        },
+
+        /**
+         * Convenience: read ?auth_code= from current URL and exchange it for
+         * tokens. Cleans the param from the URL *before* the network call so
+         * a slow exchange can't leak the code to third-party scripts.
+         * @returns {Promise<object|null>} resolves with auth data or null if no code found
+         */
+        handleAuthCodeFromURL: function () {
+            var params = new URLSearchParams(window.location.search);
+            var code = params.get('auth_code');
+            if (!code) return Promise.resolve(null);
+
+            // Scrub before any network call.
+            params.delete('auth_code');
+            var newUrl = window.location.pathname
+                + (params.toString() ? '?' + params.toString() : '')
+                + (window.location.hash || '');
+            window.history.replaceState({}, '', newUrl);
+
+            return MojoAuth.exchangeAuthCode(code);
         },
 
         // -----------------------------------------------------------------------

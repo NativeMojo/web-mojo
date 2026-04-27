@@ -245,4 +245,156 @@ module.exports = async function(testContext) {
             expect(thrown.name).toBe('AuthRequiredError');
         });
     });
+
+    describe('TokenManager — handleAuthCodeFromURL / exchangeAuthCode', () => {
+        // jsdom owns window.location; seed the URL via replaceState then
+        // shadow replaceState with a spy for the assertions.
+        function setUrl(path) {
+            // Use the real (jsdom) replaceState to seed the URL — jsdom allows
+            // replaceState within the same origin.
+            const real = Object.getPrototypeOf(window.history).replaceState;
+            real.call(window.history, {}, '', path);
+        }
+
+        function spyReplaceState() {
+            const calls = [];
+            const installed = (state, title, url) => {
+                calls.push({ state, title, url });
+            };
+            // Shadow with a plain function on the instance so jsdom's
+            // navigation enforcement is bypassed for the assertions below.
+            window.history.replaceState = installed;
+            return calls;
+        }
+
+        function makeExchangeApp({ resp, rejectWith = null } = {}) {
+            const events = makeEvents();
+            const postCalls = [];
+            const setAuthCalls = [];
+            const defer = (fn) => Promise.resolve().then(fn);
+            return {
+                events,
+                postCalls,
+                setAuthCalls,
+                rest: {
+                    POST: (url, body) => {
+                        postCalls.push({ url, body, time: postCalls.length + setAuthCalls.length });
+                        return new Promise((resolve, reject) => {
+                            defer(() => {
+                                if (rejectWith) return reject(rejectWith);
+                                resolve(resp);
+                            });
+                        });
+                    },
+                    setAuthToken: (t) => { setAuthCalls.push(t); }
+                }
+            };
+        }
+
+        function exchangeResp(user = { uid: 'user-1', email: 'a@b' }) {
+            return { data: { data: {
+                access_token: makeJwt(60 * 60),
+                refresh_token: makeJwt(24 * 60 * 60),
+                user
+            } } };
+        }
+
+        it('should scrub ?auth_code= from the URL before issuing the exchange POST', async () => {
+            setUrl('/?auth_code=abc123&keep=1');
+            const replaceCalls = spyReplaceState();
+            const tm = freshManager();
+            const app = makeExchangeApp({ resp: exchangeResp() });
+
+            // Snapshot post count at the moment replaceState fires.
+            const orig = window.history.replaceState;
+            window.history.replaceState = (s, t, url) => {
+                orig(s, t, url);
+                replaceCalls[replaceCalls.length - 1].postsAtCall = app.postCalls.length;
+            };
+
+            await tm.handleAuthCodeFromURL(app);
+
+            expect(replaceCalls).toHaveLength(1);
+            expect(replaceCalls[0].url).toBe('/?keep=1');
+            expect(replaceCalls[0].postsAtCall).toBe(0);
+            expect(app.postCalls).toHaveLength(1);
+            expect(app.postCalls[0].url).toBe('/api/auth/exchange');
+            expect(app.postCalls[0].body).toEqual({ code: 'abc123' });
+        });
+
+        it('should store tokens via setTokens() and emit auth:login on success', async () => {
+            setUrl('/?auth_code=goodcode');
+            spyReplaceState();
+            const tm = freshManager();
+            const access = makeJwt(60 * 60);
+            const refresh = makeJwt(24 * 60 * 60);
+            const user = { uid: 'user-42', email: 'user@example.test' };
+            const app = makeExchangeApp({
+                resp: { data: { data: { access_token: access, refresh_token: refresh, user } } }
+            });
+
+            const result = await tm.handleAuthCodeFromURL(app);
+
+            expect(result).toEqual(user);
+            expect(tm.getToken()).toBe(access);
+            expect(tm.getRefreshToken()).toBe(refresh);
+            expect(app.setAuthCalls).toEqual([access]);
+            const names = app.events.emitted.map(e => e.name);
+            expect(names).toContain('auth:login');
+            const loginEvent = app.events.emitted.find(e => e.name === 'auth:login');
+            expect(loginEvent.payload).toEqual(user);
+        });
+
+        it('should emit auth:exchange:failed and not store tokens on POST failure', async () => {
+            setUrl('/?auth_code=badcode');
+            const replaceCalls = spyReplaceState();
+            const tm = freshManager();
+            const err = Object.assign(new Error('invalid'), { status: 401 });
+            const app = makeExchangeApp({ rejectWith: err });
+
+            const result = await tm.handleAuthCodeFromURL(app);
+
+            expect(result).toBe(null);
+            expect(tm.getToken()).toBe(null);
+            expect(replaceCalls).toHaveLength(1);
+            const names = app.events.emitted.map(e => e.name);
+            expect(names).toContain('auth:exchange:failed');
+            expect(names).not.toContain('auth:login');
+            const failEvent = app.events.emitted.find(e => e.name === 'auth:exchange:failed');
+            expect(failEvent.payload.error).toBe(err);
+        });
+
+        it('should be a fast no-op when ?auth_code= is absent', async () => {
+            setUrl('/?other=1');
+            const replaceCalls = spyReplaceState();
+            const tm = freshManager();
+            const app = makeExchangeApp({ resp: exchangeResp() });
+
+            const result = await tm.handleAuthCodeFromURL(app);
+
+            expect(result).toBe(null);
+            expect(app.postCalls).toHaveLength(0);
+            expect(replaceCalls).toHaveLength(0);
+            expect(app.events.emitted).toHaveLength(0);
+        });
+
+        it('should share a single in-flight POST across concurrent callers', async () => {
+            setUrl('/?auth_code=once');
+            spyReplaceState();
+            const tm = freshManager();
+            const app = makeExchangeApp({ resp: exchangeResp() });
+
+            const results = await Promise.all([
+                tm.handleAuthCodeFromURL(app),
+                tm.handleAuthCodeFromURL(app),
+                tm.handleAuthCodeFromURL(app)
+            ]);
+
+            expect(app.postCalls).toHaveLength(1);
+            expect(results[0]).toBeTruthy();
+            expect(results[1]).toBeTruthy();
+            expect(results[2]).toBeTruthy();
+            expect(tm._exchangePromise).toBe(null);
+        });
+    });
 };

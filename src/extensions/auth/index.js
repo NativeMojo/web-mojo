@@ -45,6 +45,7 @@ export function createAuthClient({
     forgot: '/auth/forgot',
     resetCode: '/auth/password/reset/code',
     resetToken: '/auth/password/reset/token',
+    exchange: '/auth/exchange',
     ...endpoints
   };
 
@@ -108,6 +109,27 @@ export function createAuthClient({
     },
     async resetWithToken({ token, newPassword }) {
       const resp = await post(EP.resetToken, { token, new_password: newPassword });
+      saveAuthData(resp);
+      return parseResponse(resp);
+    },
+    async exchangeAuthCode(code) {
+      const resp = await post(EP.exchange, { code });
+      saveAuthData(resp);
+      return parseResponse(resp);
+    },
+    async handleAuthCodeFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('auth_code');
+      if (!code) return null;
+
+      // Scrub before any network call.
+      params.delete('auth_code');
+      const newUrl = window.location.pathname
+        + (params.toString() ? `?${params.toString()}` : '')
+        + (window.location.hash || '');
+      window.history.replaceState({}, '', newUrl);
+
+      const resp = await post(EP.exchange, { code });
       saveAuthData(resp);
       return parseResponse(resp);
     },

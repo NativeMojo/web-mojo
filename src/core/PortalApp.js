@@ -124,6 +124,12 @@ export default class PortalApp extends WebApp {
     }
 
     async checkAuthStatus() {
+        // Redeem an inbound cross-origin handoff code (?auth_code=…) before
+        // deciding the user is unauthenticated. Single-flight guard inside
+        // handleAuthCodeFromURL makes this safe to call from multiple boot
+        // paths. No-op when the param is absent.
+        await this.tokenManager.handleAuthCodeFromURL(this);
+
         const tokenStatus = this.tokenManager.checkTokenStatus();
 
         // Handle logout scenarios

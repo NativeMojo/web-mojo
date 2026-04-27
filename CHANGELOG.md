@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Feature — Cross-origin auth handoff
+
+- `TokenManager.handleAuthCodeFromURL(app)` and `TokenManager.exchangeAuthCode(app, code)` redeem a `?auth_code=<32-hex>` URL param against `POST /api/auth/exchange` on bootstrap. The URL is scrubbed via `history.replaceState` before the network call (security bullet from the django-mojo review) and concurrent callers share one in-flight POST via the same single-flight pattern as `refreshToken()`.
+- `PortalApp.checkAuthStatus()` calls `handleAuthCodeFromURL` before deciding the user is unauthenticated, so portals deployed on a different origin from the auth server boot directly into the authenticated state — no `/login` bounce, no countdown.
+- Parity helpers added to the standalone auth surfaces: `MojoAuth.handleAuthCodeFromURL()` / `MojoAuth.exchangeAuthCode(code)` in `src/extensions/mojo-auth/mojo-auth.js`, and `auth.handleAuthCodeFromURL()` / `auth.exchangeAuthCode(code)` on the object returned by `createAuthClient` in `web-mojo/auth`.
+- New event: `auth:exchange:failed` with `{ error }` payload. Existing `auth:login` is now also emitted by `TokenManager` on a successful exchange. Same-origin auth flows are unchanged — when no `?auth_code=` is present, `handleAuthCodeFromURL` is a synchronous no-op with no network call and no event.
+
 ### CSS — Admin assistant panel: dark theme coverage
 
 - The Admin extension's AI Assistant panel (`AssistantPanelView` + the

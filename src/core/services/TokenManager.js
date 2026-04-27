@@ -192,10 +192,13 @@ export default class TokenManager {
     constructor() {
         this.tokenKey = 'access_token';
         this.refreshTokenKey = 'refresh_token';
+        this.authCodeKey = 'auth_code';
         this.tokenInstance = null;
         // Single-flight guard for refreshToken(). Holds the in-flight
         // Promise<boolean> while a refresh is pending; null otherwise.
         this._refreshPromise = null;
+        // Single-flight guard for handleAuthCodeFromURL() / exchangeAuthCode().
+        this._exchangePromise = null;
     }
 
     /**
@@ -492,6 +495,96 @@ export default class TokenManager {
                 app.events.emit('auth:token:refresh:failed', { error });
             }
             return false;
+        }
+    }
+
+    /**
+     * Read an `?auth_code=` param from window.location, scrub it from the URL,
+     * and exchange it for tokens. Resolves to the user dict on success or
+     * null when no param is present or the exchange fails. Never throws.
+     *
+     * The URL scrub happens *synchronously*, before any await — the auth
+     * code is held in a closure local so a slow exchange cannot leak it to
+     * third-party scripts that read location.search after page load.
+     *
+     * Single-flight: concurrent callers (e.g. PortalApp boot + a custom
+     * AuthApp boot) share the same in-flight POST.
+     *
+     * @param {object} app - App instance (needs .rest and .events)
+     * @returns {Promise<object|null>} user dict on success, null otherwise
+     */
+    async handleAuthCodeFromURL(app) {
+        if (this._exchangePromise) {
+            return this._exchangePromise;
+        }
+
+        if (typeof window === 'undefined' || !window.location) {
+            return null;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get(this.authCodeKey);
+        if (!code) {
+            return null;
+        }
+
+        // Scrub before any network call.
+        params.delete(this.authCodeKey);
+        const remaining = params.toString();
+        const cleanUrl = window.location.pathname
+            + (remaining ? `?${remaining}` : '')
+            + (window.location.hash || '');
+        window.history.replaceState({}, '', cleanUrl);
+
+        return this.exchangeAuthCode(app, code);
+    }
+
+    /**
+     * Exchange a one-time auth handoff code for access + refresh tokens.
+     * Stores tokens via setTokens() and emits 'auth:login' on success;
+     * emits 'auth:exchange:failed' on any failure. Never throws.
+     *
+     * Single-flight: concurrent callers share one in-flight POST. Mirrors
+     * the refreshToken() pattern.
+     *
+     * @param {object} app - App instance (needs .rest and .events)
+     * @param {string} code - 32-hex auth handoff code
+     * @returns {Promise<object|null>} user dict on success, null on failure
+     */
+    async exchangeAuthCode(app, code) {
+        if (this._exchangePromise) {
+            return this._exchangePromise;
+        }
+
+        this._exchangePromise = this._doExchange(app, code).finally(() => {
+            this._exchangePromise = null;
+        });
+
+        return this._exchangePromise;
+    }
+
+    /**
+     * Perform the actual exchange network call. Always resolves; never
+     * throws. Emits auth:login on success, auth:exchange:failed on failure.
+     * @private
+     */
+    async _doExchange(app, code) {
+        try {
+            const response = await app.rest.POST('/api/auth/exchange', { code });
+            const { access_token, refresh_token, user } = response.data.data;
+
+            // Clear cached instances so new tokens are loaded fresh.
+            this.tokenInstance = null;
+            this._refreshTokenInstance = null;
+
+            this.setTokens(access_token, refresh_token);
+            app.rest.setAuthToken(access_token);
+
+            app.events.emit('auth:login', user);
+            return user;
+        } catch (error) {
+            app.events.emit('auth:exchange:failed', { error });
+            return null;
         }
     }
 

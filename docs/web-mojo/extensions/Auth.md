@@ -126,6 +126,8 @@ const auth = createAuthClient({
 | `await forgot({ email, method })` | POST `/auth/forgot`. `method` is `'code'` or `'link'`. |
 | `await resetWithCode({ email, code, newPassword })` | POST `/auth/password/reset/code`. Used after the user enters the emailed code. Saves tokens on success. |
 | `await resetWithToken({ token, newPassword })` | POST `/auth/password/reset/token`. Used for magic-link flows. Saves tokens on success. |
+| `await exchangeAuthCode(code)` | POST `/auth/exchange`. Redeems a one-time cross-origin handoff code for tokens. Saves tokens on success. |
+| `await handleAuthCodeFromURL()` | Reads `?auth_code=` from the URL, scrubs the param via `history.replaceState`, then calls `exchangeAuthCode`. Resolves to `null` when the param is absent. |
 | `logout()` | Clears `access_token`, `refresh_token`, `user` from storage. |
 | `isAuthenticated()` | `true` if `access_token` is present. |
 | `getToken()` | The raw access token string, or `null`. |
@@ -146,6 +148,7 @@ All four are POST + JSON. Defaults can be overridden via `endpoints`.
 | `POST /auth/forgot` | `{ email, method: 'code' \| 'link' }` | `{}` (200 on success) |
 | `POST /auth/password/reset/code` | `{ email, code, new_password }` | `{ access_token, refresh_token?, user? }` |
 | `POST /auth/password/reset/token` | `{ token, new_password }` | `{ access_token, refresh_token?, user? }` |
+| `POST /auth/exchange` | `{ code }` | `{ access_token, refresh_token?, user? }` |
 
 The client tolerates three response wrappers — `{ data: { data: {...} } }`, `{ data: {...} }`, and a flat object — and unwraps them through `parseResponse`.
 
@@ -160,6 +163,22 @@ The client tolerates three response wrappers — `{ data: { data: {...} } }`, `{
 | `user` | JSON-serialized user object. |
 
 `logout()` clears all three. The keys are not currently overridable; if you need namespacing per-app, wrap the client.
+
+## Cross-Origin Auth Handoff
+
+When the auth screen lives on a different origin from the consuming app, the auth server mints a one-time `auth_code` (32-hex, single-use, ~60s TTL — see the django-mojo `auth_pages.md` Cross-Origin Redirect Handoff section for the upstream contract) and appends it to the redirect URL as `?auth_code=…`. The consuming app calls `handleAuthCodeFromURL()` on bootstrap to redeem it:
+
+```js
+const auth = createAuthClient({ baseURL: 'https://api.example.com/api' });
+
+// On the consuming app's landing page, before any auth-gated routing:
+await auth.handleAuthCodeFromURL();
+if (auth.isAuthenticated()) {
+    // tokens are stored; proceed with normal app boot.
+}
+```
+
+The URL is scrubbed via `history.replaceState` *before* the network call so analytics scripts that read `location.search` synchronously on page-load see the cleaned URL. `mountAuth` does not need this hook — it's the auth-page UI; the handoff is *received* on the consuming app, not the auth page. For full portal apps, `PortalApp.checkAuthStatus()` wires the same flow via [`TokenManager.handleAuthCodeFromURL`](../services/TokenManager.md#cross-origin-auth-handoff) automatically.
 
 ## Redirect Safety
 
