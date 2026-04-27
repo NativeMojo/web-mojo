@@ -52,6 +52,7 @@ Key facts:
 
 - **You own the data layer.** ChatView never talks to REST directly — it calls `adapter.fetch()` once on init and `adapter.addNote(data)` whenever the user sends. Where those go (a `Collection`, a WebSocket frame, an in-memory array) is your decision.
 - **Two themes:** `'compact'` (admin / activity feed style — avatars on the left, timestamps inline) and `'bubbles'` (modern chat with left/right alignment based on `currentUserId`).
+- **Dark theme:** automatically adapts to `data-bs-theme="dark"` — container, bubbles, and input surface are all re-skinned using Bootstrap dark-mode tokens.
 - **Auto-scroll** to bottom on initial render, on every new message added through `addMessage()`, and on `showThinking()`.
 - **Per-visit work belongs in `onEnter()`** when ChatView is hosted inside a [Page](../pages/Page.md) — pages are cached and `onInit()` only runs once.
 

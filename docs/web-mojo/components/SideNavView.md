@@ -33,6 +33,7 @@
 - **Responsive collapse** — when the container drops below `minWidth`, the rail becomes a dropdown selector
 - **Dynamic add/remove** — `addSection()` and `removeSection()` rebuild the nav at runtime
 - **Lifecycle hook** — section views can implement `onSectionActivated()` to react to becoming visible
+- **Dark theme** — rail and dropdown button adapt automatically to `data-bs-theme="dark"` via Bootstrap dark-mode tokens
 
 ---
 

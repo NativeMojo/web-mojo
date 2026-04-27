@@ -15,6 +15,7 @@ TimelineView extends ListView to provide timeline-specific rendering with Collec
 - **Date Formatting**: Multiple date display options via DataFormatter
 - **Responsive**: Automatically adapts to mobile
 - **Bootstrap 5**: Full integration with Bootstrap colors and utilities
+- **Dark theme**: Automatically adapts to `data-bs-theme="dark"` — no extra configuration required
 - **Event system**: Built-in events for item interactions
 - **Loading states**: Automatic loading and empty state handling
 
@@ -23,7 +24,6 @@ TimelineView extends ListView to provide timeline-specific rendering with Collec
 ```js
 import TimelineView from '@core/views/timeline/TimelineView.js';
 import Collection from '@core/Collection.js';
-import '@core/views/timeline/timeline.css';
 
 // Create a collection
 const eventCollection = new Collection(null, {
@@ -392,11 +392,7 @@ class OrderHistoryView extends View {
 
 ## Styling
 
-The component includes complete CSS in `timeline.css`. Import it in your application:
-
-```js
-import '@core/views/timeline/timeline.css';
-```
+The component bundles its styles in `timeline.css`, which is imported automatically by `TimelineView.js` — no manual CSS import is needed. The stylesheet includes both the base layout rules and dark-theme overrides (`data-bs-theme="dark"`), so the timeline surface adapts to the active app theme without any extra work.
 
 ### Custom Colors
 
