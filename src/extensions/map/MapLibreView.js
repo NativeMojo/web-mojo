@@ -40,6 +40,16 @@ class MapLibreView extends View {
         this.mapStyle = options.style || 'streets'; // 'streets', 'satellite', 'dark', 'light', 'terrain'
         this.showNavigationControl = options.showNavigationControl !== false;
         this.autoFitBounds = options.autoFitBounds !== false;
+
+        // Interaction toggles. `interactive` is the master switch; granular
+        // flags override individual handlers when set.
+        const interactive = options.interactive !== false;
+        this.interactive = interactive;
+        this.scrollZoom = options.scrollZoom !== undefined ? !!options.scrollZoom : interactive;
+        this.dragPan = options.dragPan !== undefined ? !!options.dragPan : interactive;
+        this.doubleClickZoom = options.doubleClickZoom !== undefined ? !!options.doubleClickZoom : interactive;
+        this.keyboard = options.keyboard !== undefined ? !!options.keyboard : interactive;
+        this.touchZoom = options.touchZoom !== undefined ? !!options.touchZoom : interactive;
         
         this.map = null;
         this.mapMarkers = [];
@@ -177,7 +187,13 @@ class MapLibreView extends View {
             center: mapCenter,
             zoom: this.zoom,
             pitch: this.pitch,
-            bearing: this.bearing
+            bearing: this.bearing,
+            interactive: this.interactive,
+            scrollZoom: this.scrollZoom,
+            dragPan: this.dragPan,
+            doubleClickZoom: this.doubleClickZoom,
+            keyboard: this.keyboard,
+            touchZoomRotate: this.touchZoom
         });
 
         // Add navigation control

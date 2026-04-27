@@ -48,7 +48,13 @@ class MetricsCountryMapView extends View {
             pitch: this.mapOptions.pitch ?? 20,
             bearing: this.mapOptions.bearing ?? 0,
             showNavigationControl: this.mapOptions.showNavigationControl ?? true,
-            autoFitBounds: this.mapOptions.autoFitBounds ?? false
+            autoFitBounds: this.mapOptions.autoFitBounds ?? false,
+            interactive: this.mapOptions.interactive,
+            scrollZoom: this.mapOptions.scrollZoom,
+            dragPan: this.mapOptions.dragPan,
+            doubleClickZoom: this.mapOptions.doubleClickZoom,
+            keyboard: this.mapOptions.keyboard,
+            touchZoom: this.mapOptions.touchZoom
         });
         this.addChild(this.mapView);
         await this.refresh();

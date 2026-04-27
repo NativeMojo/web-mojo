@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Feature — Map: disable scroll/zoom interaction at construction time
+
+- New constructor options on `MapView`, `MapLibreView`, and (via
+  `mapOptions`) `MetricsCountryMapView`:
+  - `interactive` (default `true`) — master switch; `false` freezes all
+    user interaction (pan, zoom, keyboard, rotate).
+  - `scrollZoom`, `dragPan`, `doubleClickZoom`, `keyboard`, `touchZoom`
+    (all default `true`) — granular per-handler toggles.
+- Cross-cutting names are translated per backend: `scrollZoom` →
+  Leaflet `scrollWheelZoom`, `dragPan` → Leaflet `dragging`, `touchZoom`
+  → MapLibre `touchZoomRotate`. Both views accept the same wrapper API.
+- Defaults preserve today's fully-interactive behavior; existing call
+  sites are unchanged.
+- `showZoomControl` / `showNavigationControl` remain independent — UI
+  buttons can still be shown on a non-interactive map.
+- Programmatic camera changes (`setView()`, `setZoom()`, `flyTo()`,
+  `setPitch()`, `setBearing()`) are unaffected; the flags only gate
+  user input.
+- Portal example pages (`extensions/map-view`, `extensions/map-libre-view`)
+  show both modes side-by-side.
+
 ### CSS — Dark theme: deeper mission-control surface as default
 
 - The framework's `[data-bs-theme="dark"]` palette now uses the deep

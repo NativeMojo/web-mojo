@@ -45,6 +45,16 @@ class MapView extends View {
             streets: 'Streets'
         };
 
+        // Interaction toggles. `interactive` is the master switch; granular
+        // flags override individual handlers when set.
+        const interactive = options.interactive !== false;
+        this.interactive = interactive;
+        this.scrollZoom = options.scrollZoom !== undefined ? !!options.scrollZoom : interactive;
+        this.dragPan = options.dragPan !== undefined ? !!options.dragPan : interactive;
+        this.doubleClickZoom = options.doubleClickZoom !== undefined ? !!options.doubleClickZoom : interactive;
+        this.keyboard = options.keyboard !== undefined ? !!options.keyboard : interactive;
+        this.touchZoom = options.touchZoom !== undefined ? !!options.touchZoom : interactive;
+
         this.map = null;
         this.leafletMarkers = [];
         this._tileLayer = null;
@@ -169,7 +179,14 @@ class MapView extends View {
         this.map = window.L.map(mapElement, {
             center: mapCenter,
             zoom: this.zoom,
-            zoomControl: this.showZoomControl
+            zoomControl: this.showZoomControl,
+            scrollWheelZoom: this.scrollZoom,
+            dragging: this.dragPan,
+            doubleClickZoom: this.doubleClickZoom,
+            keyboard: this.keyboard,
+            touchZoom: this.touchZoom,
+            boxZoom: this.interactive,
+            tap: this.interactive
         });
         // Optionally hide Leaflet branding/prefix (removes Leaflet link/flag in attribution control)
         if (this.map && this.map.attributionControl && this.showLeafletBranding === false) {

@@ -47,6 +47,31 @@ class MapLibreViewExample extends Page {
             style: 'streets',
         });
         this.addChild(this.map);
+
+        const sampleMarker = [{ lng: -122.4194, lat: 37.7749, popup: '<strong>San Francisco</strong>', color: '#0d6efd' }];
+
+        this.staticMap = new MapLibreView({
+            containerId: 'static-map-slot',
+            markers: sampleMarker,
+            center: [-122.4194, 37.7749],
+            zoom: 10,
+            height: 260,
+            style: 'light',
+            interactive: false,
+            showNavigationControl: false,
+        });
+        this.addChild(this.staticMap);
+
+        this.noWheelMap = new MapLibreView({
+            containerId: 'no-wheel-map-slot',
+            markers: sampleMarker,
+            center: [-122.4194, 37.7749],
+            zoom: 10,
+            height: 260,
+            style: 'light',
+            scrollZoom: false,
+        });
+        this.addChild(this.noWheelMap);
     }
 
     onActionSetView(event, element) {
@@ -88,6 +113,32 @@ class MapLibreViewExample extends Page {
                 </div>
                 <div class="card-body p-0">
                     <div data-container="map-slot"></div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <span>Disabled interaction</span>
+                    <small class="text-muted ms-2">
+                        Pass <code>interactive: false</code> for a frozen thumbnail, or
+                        <code>scrollZoom: false</code> to keep panning while letting the page own the wheel.
+                    </small>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="small text-muted mb-2">
+                                <code>interactive: false</code> — no pan, no zoom, no keyboard
+                            </div>
+                            <div data-container="static-map-slot"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="small text-muted mb-2">
+                                <code>scrollZoom: false</code> — pan + buttons work, wheel does not
+                            </div>
+                            <div data-container="no-wheel-map-slot"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

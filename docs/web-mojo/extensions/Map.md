@@ -268,6 +268,12 @@ new MapView(options)
 | `showLayerControl` | Boolean | `false` | Show tile layer selector dropdown |
 | `showLeafletBranding` | Boolean | `false` | Show "Leaflet" text in attribution |
 | `layerOptions` | Object | See below | Custom layer selector options |
+| `interactive` | Boolean | `true` | Master switch — `false` disables all user interaction |
+| `scrollZoom` | Boolean | `true` | Scroll-wheel zoom — set `false` to let the page own the wheel |
+| `dragPan` | Boolean | `true` | Drag-to-pan |
+| `doubleClickZoom` | Boolean | `true` | Double-click zoom |
+| `keyboard` | Boolean | `true` | Keyboard arrow/+/- navigation |
+| `touchZoom` | Boolean | `true` | Pinch-zoom on touch devices |
 
 **Default layerOptions:**
 ```javascript
@@ -378,6 +384,12 @@ new MapLibreView(options)
 | `showNavigationControl` | Boolean | `true` | Show zoom and rotation controls |
 | `autoFitBounds` | Boolean | `true` | Auto-fit bounds to markers |
 | `lineSources` | Array | `[]` | GeoJSON line sources for routes |
+| `interactive` | Boolean | `true` | Master switch — `false` disables all user interaction |
+| `scrollZoom` | Boolean | `true` | Scroll-wheel zoom — set `false` to let the page own the wheel |
+| `dragPan` | Boolean | `true` | Drag-to-pan |
+| `doubleClickZoom` | Boolean | `true` | Double-click zoom |
+| `keyboard` | Boolean | `true` | Keyboard arrow/+/- navigation |
+| `touchZoom` | Boolean | `true` | Pinch-zoom + touch rotate (maps to MapLibre's `touchZoomRotate`) |
 
 **Methods:**
 

@@ -144,12 +144,45 @@ const mapView = new MapLibreView({
     
     // Show navigation controls
     showNavigationControl: true,
-    
+
+    // Interaction toggles — all default to true
+    interactive: true,       // master: false freezes pan + zoom + keyboard + rotate
+    scrollZoom: true,        // false: page wheel-scrolls past the map
+    dragPan: true,           // false: cannot drag-pan
+    doubleClickZoom: true,   // false: double-click does nothing
+    keyboard: true,          // false: keyboard arrow/+/- ignored
+    touchZoom: true,         // false: pinch-zoom + touch rotate disabled
+
     // Standard View options
     className: 'maplibre-view',
     containerId: 'map-container'
 });
 ```
+
+### Disabling Interaction
+
+Pass `interactive: false` for a fully-frozen "thumbnail" map (no pan, no zoom, no keyboard, no rotate) — useful for static location displays where the user shouldn't be able to scroll or drag away from the intended view:
+
+```js
+const staticMap = new MapLibreView({
+    markers: [{ lng: -122.4194, lat: 37.7749 }],
+    center: [-122.4194, 37.7749],
+    zoom: 10,
+    interactive: false,
+    showNavigationControl: false   // optionally hide the nav controls too
+});
+```
+
+Or use the granular flags individually — common case is killing scroll-wheel zoom only, so the page can still scroll past an embedded map:
+
+```js
+const embedded = new MapLibreView({
+    markers: [...],
+    scrollZoom: false   // wheel scrolls the page; drag-pan and zoom buttons still work
+});
+```
+
+`showNavigationControl` is independent of these flags — the +/-/compass cluster can be shown on a non-interactive map and hidden on an interactive one. Programmatic camera changes (`setView()`, `setZoom()`, `flyTo()`, `setPitch()`, `setBearing()`) are unaffected; the flags only gate user input.
 
 ## Map Styles
 
