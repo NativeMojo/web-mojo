@@ -461,7 +461,15 @@ export default class MetricsMiniChartWidget extends View {
     if (!this._settingsPopover) {
       this._initSettingsPopover();
     }
-    this._settingsPopover?.toggle();
+    if (!this._settingsPopover) {
+      // Init failed (e.g., bootstrap.Popover unavailable) — already logged.
+      return;
+    }
+    try {
+      this._settingsPopover.toggle();
+    } catch (err) {
+      console.error('[MetricsMiniChartWidget] settings popover toggle failed:', err);
+    }
   }
 
   /**
@@ -469,20 +477,36 @@ export default class MetricsMiniChartWidget extends View {
    * @private
    */
   _initSettingsPopover() {
-    const button = this.element.querySelector('[data-action="toggle-settings"]');
-    if (!button || !this.settingsView || !this.settingsView.element) return;
-
     if (this._settingsPopover) return; // Already initialized
 
-    // Initialize popover with settings view's element
-    this._settingsPopover = new bootstrap.Popover(button, {
-      content: this.settingsView.element,
-      html: true,
-      placement: 'bottom',
-      trigger: 'manual',
-      sanitize: false,
-      customClass: 'metrics-chart-settings-popover'
-    });
+    const button = this.element.querySelector('[data-action="toggle-settings"]');
+    if (!button) {
+      console.warn('[MetricsMiniChartWidget] settings popover skipped — cog button missing');
+      return;
+    }
+    if (!this.settingsView || !this.settingsView.element) {
+      console.warn('[MetricsMiniChartWidget] settings popover skipped — settingsView not rendered');
+      return;
+    }
+    // Bootstrap 5 attaches `Popover` to `window.bootstrap`. If a host page
+    // bundles Bootstrap as ESM-only (no global), the popover won't work.
+    if (typeof bootstrap === 'undefined' || !bootstrap.Popover) {
+      console.error('[MetricsMiniChartWidget] settings popover skipped — window.bootstrap.Popover not available. Ensure Bootstrap JS is loaded as a global script tag (or expose it via `window.bootstrap = bootstrap`).');
+      return;
+    }
+
+    try {
+      this._settingsPopover = new bootstrap.Popover(button, {
+        content: this.settingsView.element,
+        html: true,
+        placement: 'bottom',
+        trigger: 'manual',
+        sanitize: false,
+        customClass: 'metrics-chart-settings-popover'
+      });
+    } catch (err) {
+      console.error('[MetricsMiniChartWidget] settings popover init failed:', err);
+    }
   }
 
   /**
