@@ -510,7 +510,7 @@ new MetricsCountryMapView(options)
 | `metricLabel` | String | `'Events'` | Label for metric values |
 | `height` | Number | `320` | Map height in pixels |
 | `mapStyle` | String | `'dark'` | MapLibre style key |
-| `mapOptions` | Object | `{}` | Additional MapLibre options |
+| `mapOptions` | Object | `{}` | Forwarded to the inner `MapLibreView` constructor. Use to pass interaction flags (`interactive`, `scrollZoom`, `dragPan`, `doubleClickZoom`, `keyboard`, `touchZoom`) or other `MapLibreView` options. |
 | `showRoutes` | Boolean | `true` | Show routes from origin to destinations |
 | `routeOrigin` | Object | See below | Origin point configuration |
 
