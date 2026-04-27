@@ -25,9 +25,12 @@ class TicketsQueueView extends View {
         });
         this.allowActions = options.allowActions !== false;
         this.size = options.size || 8;
+        // Show both untriaged (new) AND in-flight (open) tickets so the
+        // queue reflects "anything a human still needs to do". Resolved /
+        // paused / ignored are excluded.
         this.collection = new TicketList({
             params: {
-                status: 'new',
+                status__in: 'new,open',
                 sort: '-priority,-created',
                 size: this.size
             }
