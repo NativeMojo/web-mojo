@@ -336,10 +336,9 @@ export default class AdminDashboardPage extends Page {
 
   // Action Handlers
   async onActionRefreshAll(event, element) {
+    const button = element || event?.currentTarget || null;
+    const icon = button?.querySelector?.('i');
     try {
-      // Show loading state
-      const button = element || event?.currentTarget || null;
-      const icon = button?.querySelector?.('i');
       icon?.classList.add('bi-spin');
       if (button) button.disabled = true;
 
@@ -394,8 +393,6 @@ export default class AdminDashboardPage extends Page {
         }, 5000);
       }
     } finally {
-      // Reset button state
-      const icon = element.querySelector('i');
       icon?.classList.remove('bi-spin');
       if (button) button.disabled = false;
     }
