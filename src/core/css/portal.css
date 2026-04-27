@@ -498,6 +498,43 @@ nav.topnav-shadow-dark {
     border-right: 1px solid var(--bs-border-color);
 }
 
+/* Sidebar treatment classes are theme-agnostic (devs can mix `sidebar-light`
+   with `data-bs-theme="dark"`). Override the surface so the rail reads as a
+   step lighter than the page background instead of glaring white. */
+[data-bs-theme="dark"] .sidebar-light {
+    --mojo-sidebar-light-dark-bg: #2a2f36;
+    --mojo-sidebar-light-dark-color: var(--bs-body-color);
+    background-color: var(--mojo-sidebar-light-dark-bg);
+    color: var(--mojo-sidebar-light-dark-color);
+    border-right-color: var(--bs-border-color-translucent);
+}
+
+[data-bs-theme="dark"] .sidebar-light .sidebar-nav .nav-link {
+    color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .sidebar-light .sidebar-nav .nav-link:hover {
+    color: var(--bs-emphasis-color);
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+[data-bs-theme="dark"] .sidebar-light .sidebar-nav .nav-link.active {
+    color: var(--bs-light);
+    background-color: var(--bs-primary);
+}
+
+[data-bs-theme="dark"] .sidebar-light .sidebar-header,
+[data-bs-theme="dark"] .sidebar-light .nav-text-muted,
+[data-bs-theme="dark"] .sidebar-light .text-muted {
+    color: var(--bs-secondary-color) !important;
+}
+
+/* Sanity pass on `sidebar-dark` under the dark global theme — keep the
+   existing dark surface but soften hover so it remains distinguishable. */
+[data-bs-theme="dark"] .sidebar-dark .sidebar-nav .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
 .sidebar-clean {
     background-color: var(--bs-body-bg);
     color: var(--bs-body-color);
@@ -3165,4 +3202,45 @@ nav.topnav-shadow-dark {
 
 .runner-utilization-critical {
     background-color: #dc3545;
+}
+
+/* ========================================
+   SideNavView — dark theme overrides
+
+   The base SideNavView styles live inline in the component template
+   (src/core/views/navigation/SideNavView.js). Those values are tuned for
+   the light theme; under data-bs-theme="dark" we re-skin the rail using
+   Bootstrap dark-mode tokens so the values track the rest of the palette.
+   ======================================== */
+[data-bs-theme="dark"] .side-nav-view .snv-nav {
+    background: var(--bs-tertiary-bg);
+    border-right-color: var(--bs-border-color-translucent);
+}
+
+[data-bs-theme="dark"] .side-nav-view .snv-nav a {
+    color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .side-nav-view .snv-nav a:hover {
+    background: var(--bs-secondary-bg);
+}
+
+[data-bs-theme="dark"] .side-nav-view .snv-nav a.active {
+    background: rgba(13, 110, 253, 0.18);
+    color: var(--bs-primary-text-emphasis, #6ea8fe);
+    border-right-color: var(--bs-primary);
+}
+
+[data-bs-theme="dark"] .side-nav-view .snv-nav-label {
+    color: var(--bs-secondary-color);
+}
+
+[data-bs-theme="dark"] .side-nav-view .snv-select-btn {
+    background: var(--bs-tertiary-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .side-nav-view .snv-select-btn:hover {
+    background: var(--bs-secondary-bg);
 }

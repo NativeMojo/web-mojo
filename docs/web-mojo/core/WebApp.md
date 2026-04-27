@@ -19,6 +19,7 @@ Every MOJO application starts by creating (or extending) a `WebApp` instance.
 - [REST Integration](#rest-integration)
 - [Global Event Bus](#global-event-bus)
 - [Component & Model Registries](#component--model-registries)
+- [Theme](#theme)
 - [Focus Tracking](#focus-tracking)
 - [API Reference](#api-reference)
 - [Common Patterns](#common-patterns)
@@ -458,6 +459,7 @@ See [Rest](../services/Rest.md) for the full REST client API.
 | `'browser:focus'` | Browser tab gained focus | (none) |
 | `'browser:blur'` | Browser tab lost focus | (none) |
 | `'route:changed'` | Router resolved a new route | `{ pageName, params, query }` |
+| `'theme:changed'` | Theme preference or resolved value changed | `{ theme, resolved }` (see [Theme](#theme)) |
 
 ### Subscribing to Events
 
@@ -521,6 +523,46 @@ const UserClass = app.getModel('User');
 const user = new UserClass({ id: 42 });
 await user.fetch();
 ```
+
+---
+
+## Theme
+
+`WebApp` owns the user's light/dark theme preference and applies it to `<html>` via the Bootstrap 5.3 `data-bs-theme` attribute.
+
+The preference is restored from `localStorage` in the constructor — *before* any view renders — so apps load with the correct theme and never flash light→dark.
+
+### API
+
+| Method | Purpose |
+|---|---|
+| `app.setTheme('light' \| 'dark' \| 'system')` | Set the active preference, persist it, apply `data-bs-theme`, emit `'theme:changed'`. |
+| `app.getTheme()` | Returns the stored preference. |
+| `app.getResolvedTheme()` | Returns the currently applied `'light' \| 'dark'` (resolves `'system'` via `prefers-color-scheme`). |
+
+### Default & Persistence
+
+- **Default preference:** `'system'` — auto-detect on first load via `prefers-color-scheme`.
+- **Storage key:** `${appName}:theme` where `appName` is `config.name` lowercased with whitespace replaced by `_` (e.g. `'My App'` → `my_app:theme`). Falls back to `mojo:theme` if no `name` is configured.
+- **`localStorage` is wrapped in try/catch** — private mode and disabled storage degrade gracefully.
+
+### Live system preference
+
+While the preference is `'system'`, a `matchMedia('(prefers-color-scheme: dark)')` listener updates the resolved theme live when the user toggles their OS theme. Picking `'light'` or `'dark'` explicitly detaches the listener; switching back to `'system'` re-attaches it.
+
+### Reacting to theme changes
+
+```js
+app.events.on('theme:changed', ({ theme, resolved }) => {
+  // theme    = 'light' | 'dark' | 'system' (the user's preference)
+  // resolved = 'light' | 'dark'             (what's actually applied)
+  console.log(`Theme is now ${resolved} (preference: ${theme})`);
+});
+```
+
+### Auto-injected toggle UI (PortalApp)
+
+[`PortalApp`](./PortalApp.md) auto-injects Light / Dark / System items into the topbar usermenu by default. Pass `topbar.themeToggle: false` to opt out.
 
 ---
 

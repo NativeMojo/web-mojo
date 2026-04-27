@@ -481,6 +481,10 @@ export default class PortalApp extends WebApp {
     async setupTopbar() {
         if (!this.topbarConfig || Object.keys(this.topbarConfig).length === 0) return;
 
+        // Auto-inject Light / Dark / System items into the user menu unless
+        // the consuming app explicitly opts out with `topbar.themeToggle: false`.
+        this._injectThemeToggleItems();
+
         // Map config to TopNav format
         this.topbar = new TopNav({
             containerId: "portal-topnav",
@@ -498,6 +502,82 @@ export default class PortalApp extends WebApp {
 
         // Legacy support
         this.topnav = this.topbar;
+
+        // Keep the active theme mark in sync after preference changes.
+        this.events.on('theme:changed', () => this._refreshThemeToggleActiveState());
+    }
+
+    /**
+     * Inject the framework theme toggle items (Light / Dark / System) into
+     * the topbar usermenu. Idempotent — safe to call multiple times. No-op
+     * if `topbar.themeToggle === false` or no usermenu is configured.
+     * @private
+     */
+    _injectThemeToggleItems() {
+        if (this.topbarConfig.themeToggle === false) return;
+
+        const userMenu = this._findUserMenuConfig();
+        if (!userMenu || !Array.isArray(userMenu.items)) return;
+        if (userMenu.items.some(item => item && item._themeToggle)) return;
+
+        const current = this.theme?.getPreference?.() || 'system';
+        const themeItems = [
+            { _themeToggle: true, label: 'Theme: Light',  icon: 'bi-sun',         action: 'theme-light',  active: current === 'light' },
+            { _themeToggle: true, label: 'Theme: Dark',   icon: 'bi-moon-stars',  action: 'theme-dark',   active: current === 'dark' },
+            { _themeToggle: true, label: 'Theme: System', icon: 'bi-circle-half', action: 'theme-system', active: current === 'system' }
+        ];
+
+        // Insert before the trailing logout (and any divider that precedes it),
+        // so the existing visual grouping is preserved.
+        const items = userMenu.items;
+        const logoutIdx = items.findIndex(item => item && item.action === 'logout');
+        const insertIdx = (logoutIdx === -1)
+            ? items.length
+            : (logoutIdx > 0 && items[logoutIdx - 1] && items[logoutIdx - 1].divider ? logoutIdx - 1 : logoutIdx);
+
+        const block = [{ _themeToggle: true, divider: true }, ...themeItems];
+        if (logoutIdx !== -1) block.push({ _themeToggle: true, divider: true });
+        items.splice(insertIdx, 0, ...block);
+    }
+
+    /**
+     * Update the `active` flag on the injected theme items and re-render
+     * the topbar so the Bootstrap `.active` class follows the preference.
+     * @private
+     */
+    _refreshThemeToggleActiveState() {
+        const userMenu = this._findUserMenuConfig();
+        if (!userMenu || !Array.isArray(userMenu.items)) return;
+
+        const current = this.theme?.getPreference?.() || 'system';
+        const map = {
+            'theme-light':  current === 'light',
+            'theme-dark':   current === 'dark',
+            'theme-system': current === 'system'
+        };
+        let touched = false;
+        for (const item of userMenu.items) {
+            if (item && item._themeToggle && item.action in map) {
+                item.active = map[item.action];
+                touched = true;
+            }
+        }
+        if (touched && this.topbar?.isMounted?.()) {
+            this.topbar.render();
+        }
+    }
+
+    /**
+     * Locate the user menu inside the topbar config (handles both the
+     * `userMenu` shorthand and a `rightItems` entry tagged `id: 'user'`).
+     * @private
+     */
+    _findUserMenuConfig() {
+        if (this.topbarConfig.userMenu) return this.topbarConfig.userMenu;
+        if (Array.isArray(this.topbarConfig.rightItems)) {
+            return this.topbarConfig.rightItems.find(item => item && item.id === 'user') || null;
+        }
+        return null;
     }
 
     /**
@@ -798,6 +878,18 @@ export default class PortalApp extends WebApp {
                 break;
             case 'change-password':
                 this.changePassword();
+                break;
+            case 'theme-light':
+                this.setTheme('light');
+                this.toast?.success?.('Switched to light theme.');
+                break;
+            case 'theme-dark':
+                this.setTheme('dark');
+                this.toast?.success?.('Switched to dark theme.');
+                break;
+            case 'theme-system':
+                this.setTheme('system');
+                this.toast?.success?.('Theme follows system preference.');
                 break;
             default:
                 console.warn(`Unknown portal action: ${action}`);

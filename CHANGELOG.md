@@ -2,6 +2,58 @@
 
 ## Unreleased
 
+### Feature — App-level theme management
+
+- **`WebApp` now owns the user's light/dark theme.** New public API:
+  - `app.setTheme('light' | 'dark' | 'system')` — persists the preference,
+    applies `data-bs-theme` to `<html>`, emits `'theme:changed'` on
+    `app.events` with `{ theme, resolved }`.
+  - `app.getTheme()` — returns the stored preference.
+  - `app.getResolvedTheme()` — returns the currently applied
+    `'light' | 'dark'` (resolves `'system'` via `prefers-color-scheme`).
+- **Default preference is `'system'`** — first-time visitors automatically
+  get the theme that matches their OS. The `prefers-color-scheme` media
+  listener tracks OS theme changes live while the preference is `'system'`.
+- **Storage:** the preference is persisted to `localStorage` under
+  `${appName}:theme` (mirrors the existing PortalApp sidebar-state
+  pattern). All reads/writes are wrapped in try/catch — private mode and
+  disabled storage degrade gracefully.
+- **No flash:** the manager runs in the WebApp constructor so
+  `data-bs-theme` is set before the first view renders.
+- **PortalApp auto-injects a topbar theme toggle** into the usermenu:
+  Light / Dark / System items with `bi-sun`, `bi-moon-stars`,
+  `bi-circle-half` icons. The currently selected option is marked
+  active. Opt out with `topbar.themeToggle: false`.
+- **TopNav dropdown items now honor an `active: true` flag** — the
+  template renders `class="dropdown-item active"` for selected items
+  (used by the new theme toggle and available to any caller).
+- **`examples/portal/app.js` simplified** — the manual `theme-light` /
+  `theme-dark` action handlers are gone; the framework toggle handles
+  them.
+- **New module:** `src/core/utils/ThemeManager.js`.
+
+### CSS — Dark-theme coverage for sidebar treatments, SideNavView, ChatView, TimelineView
+
+- **`sidebar-light` under `data-bs-theme="dark"`** now renders against a
+  softer dark surface (`#2a2f36`) instead of bright white. Hover, active,
+  group-header, and muted-text selectors all adapt to the dark palette.
+  Treatment classes remain independent of the global theme — devs can
+  still mix `sidebar-light` / `sidebar-dark` with either.
+- **`sidebar-dark` under `data-bs-theme="dark"`** got a sanity-pass hover
+  override so the active state remains distinguishable from the base.
+- **`SideNavView`** now has dark-theme overrides in `portal.css` covering
+  the rail bg, active accent, hover, group-label, and dropdown-collapse
+  mode. Base inline styles in the component template are unchanged.
+- **`ChatView` (`chat.css`)** picks up dark-theme rules for the
+  container, message bubbles (left), input area, attachment states,
+  file-attachment overlay, and the WebKit scrollbar. Bubble `right`
+  keeps `--bs-primary` from the base rule (theme-aware).
+- **`TimelineView`** ships its own `src/extensions/timeline/timeline.css`
+  for the first time — class-based base styles for the connector line,
+  marker, dot, content card, and meta surfaces, plus `data-bs-theme="dark"`
+  overrides where Bootstrap tokens aren't enough on their own.
+  Auto-imported from `TimelineView.js`.
+
 ### Refactor — In-`src/` callers migrated from Dialog.* to Modal.* / ModalView
 
 - **All in-`src/` callers** migrated from the deprecated `Dialog.*` API

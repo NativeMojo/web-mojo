@@ -233,7 +233,7 @@ class TopNav extends View {
                                 {{/isHtml}}
                                 {{^divider}}{{^isHeader}}{{^isHtml}}
                                 <li>
-                                    <a class="dropdown-item" role="button" {{#action}}data-action="{{action}}"{{/action}}>
+                                    <a class="dropdown-item {{#active}}active{{/active}}" role="button" {{#action}}data-action="{{action}}"{{/action}}>
                                         {{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}
                                         {{label}}
                                     </a>

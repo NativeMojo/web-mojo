@@ -381,6 +381,8 @@ The `className` on a menu config controls the full class string on the `<nav>` e
 | `sidebar sidebar-light` | White background, dark text (default) |
 | `sidebar sidebar-dark` | Dark background, light text |
 
+`sidebar-light` and `sidebar-dark` are *theme-agnostic* — they work independently of `data-bs-theme` so you can mix any sidebar treatment with either light or dark global theme. Under `data-bs-theme="dark"`, `sidebar-light` automatically renders against a softer dark surface (a step lighter than the page background) so the visual hierarchy is preserved.
+
 ```js
 // Programmatic switch (applies to current menu)
 app.sidebar.setSidebarTheme('sidebar-dark');

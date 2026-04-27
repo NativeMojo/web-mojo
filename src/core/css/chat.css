@@ -377,3 +377,99 @@
     font-size: 0.7rem;
     padding: 2px 6px;
 }
+
+/* ========================================
+   Dark theme overrides
+
+   The base chat styles use hardcoded light-mode hex values (#fff, #f8f9fa,
+   #6c757d, …). When data-bs-theme="dark" is active we re-skin the same
+   surfaces using Bootstrap dark-mode tokens so the chat blends with the
+   rest of the page.
+   ======================================== */
+[data-bs-theme="dark"] .chat-container {
+    background: var(--bs-body-bg);
+    border-color: var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .chat-messages {
+    background: var(--bs-body-bg);
+}
+
+[data-bs-theme="dark"] .chat-theme-compact .message-item {
+    border-bottom-color: var(--bs-border-color-translucent);
+}
+
+[data-bs-theme="dark"] .chat-theme-compact .message-item:hover {
+    background: var(--bs-tertiary-bg);
+}
+
+[data-bs-theme="dark"] .chat-theme-compact .message-author,
+[data-bs-theme="dark"] .chat-theme-compact .message-text {
+    color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .chat-theme-compact .message-time,
+[data-bs-theme="dark"] .chat-theme-bubbles .message-meta {
+    color: var(--bs-secondary-color);
+}
+
+[data-bs-theme="dark"] .chat-theme-compact .chat-message-system {
+    background: var(--bs-tertiary-bg);
+}
+
+[data-bs-theme="dark"] .chat-theme-bubbles .message-left .message-bubble {
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+}
+
+/* `message-right` keeps `--bs-primary` from the base rule — looks correct
+   in both themes since Bootstrap's primary is theme-aware. */
+
+[data-bs-theme="dark"] .chat-input-view {
+    background: var(--bs-tertiary-bg);
+    border-top-color: var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .chat-input-container.drag-over {
+    background: rgba(13, 110, 253, 0.12);
+}
+
+[data-bs-theme="dark"] .attachment-preview {
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .attachment-preview.upload-complete {
+    background: var(--bs-success-bg-subtle);
+}
+
+[data-bs-theme="dark"] .attachment-preview.upload-error {
+    background: var(--bs-danger-bg-subtle);
+}
+
+[data-bs-theme="dark"] .attachment-size {
+    color: var(--bs-secondary-color);
+}
+
+[data-bs-theme="dark"] .message-text .file-attachment,
+[data-bs-theme="dark"] [data-container="attachments"] .file-attachment {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+[data-bs-theme="dark"] .message-text .file-attachment:hover,
+[data-bs-theme="dark"] [data-container="attachments"] .file-attachment:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+[data-bs-theme="dark"] .chat-messages::-webkit-scrollbar-track {
+    background: var(--bs-tertiary-bg);
+}
+
+[data-bs-theme="dark"] .chat-messages::-webkit-scrollbar-thumb {
+    background: var(--bs-secondary-color);
+}
+
+[data-bs-theme="dark"] .chat-messages::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-emphasis-color);
+}

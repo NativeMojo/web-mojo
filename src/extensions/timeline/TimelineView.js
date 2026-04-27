@@ -36,6 +36,7 @@
 
 import ListView from '@core/views/list/ListView.js';
 import TimelineViewItem from './TimelineViewItem.js';
+import './timeline.css';
 
 class TimelineView extends ListView {
     constructor(options = {}) {

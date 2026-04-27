@@ -138,6 +138,10 @@ class SimpleModuleLoader {
                 path: path.join(this.sourceRoot, 'core/utils/EventBus.js'),
                 dependencies: []
             },
+            'ThemeManager': {
+                path: path.join(this.sourceRoot, 'core/utils/ThemeManager.js'),
+                dependencies: []
+            },
             'EventEmitter': {
                 path: path.join(this.sourceRoot, 'core/mixins/EventEmitter.js'),
                 dependencies: []

@@ -215,9 +215,6 @@ const app = new PortalWebApp({
                 { label: 'Profile',         icon: 'bi-person',      action: 'profile' },
                 { label: 'Settings',        icon: 'bi-sliders',     action: 'open-settings' },
                 { divider: true },
-                { label: 'Theme: Light',    icon: 'bi-sun',         action: 'theme-light' },
-                { label: 'Theme: Dark',     icon: 'bi-moon-stars',  action: 'theme-dark' },
-                { divider: true },
                 { label: 'Sign out',        icon: 'bi-box-arrow-right', action: 'logout' },
             ],
         },
@@ -244,14 +241,6 @@ app.events.on('portal:action', ({ action }) => {
         case 'open-settings':
             app.toast?.info?.('Settings menu would live here in a real app.');
             break;
-        case 'theme-light':
-            document.documentElement.setAttribute('data-bs-theme', 'light');
-            app.toast?.success?.('Switched to light theme.');
-            break;
-        case 'theme-dark':
-            document.documentElement.setAttribute('data-bs-theme', 'dark');
-            app.toast?.success?.('Switched to dark theme.');
-            break;
         case 'logout':
             app.toast?.warn?.('Auth is disabled — nothing to log out of here.');
             break;
@@ -259,20 +248,6 @@ app.events.on('portal:action', ({ action }) => {
 });
 
 app.registerPage('home', HomePage, { topics, startHere: START_HERE });
-
-// Admin extension — same pattern the legacy portal used. Mounts the
-// system/* admin pages and the LLM-backed Assistant. Defer until after
-// app.start() so the sidebar exists when registerAdminPages tries to
-// inject menu items. The framework hides items the user lacks permission
-// for; demoUser (below) gets a wildcard hasPermission to expose everything.
-function mountAdminExtension() {
-    try {
-        registerAdminPages(app, true);
-        registerAssistant(app);
-    } catch (err) {
-        console.warn('[examples] failed to register admin pages:', err);
-    }
-}
 
 for (const ex of examples) {
     try {
@@ -288,6 +263,33 @@ for (const ex of examples) {
     }
 }
 
+// Admin extension — register before app.start() so the system/* routes
+// exist when the router resolves the initial URL. Otherwise a deep link
+// like ?page=system/dashboard hits 404 because the route isn't registered
+// until after router.start() has already fired.
+try {
+    registerAdminPages(app, true);
+    registerAssistant(app);
+} catch (err) {
+    console.warn('[examples] failed to register admin pages:', err);
+}
+
+// Demo user — set before app.start() so permission checks pass on the
+// initial route resolution. Auth is disabled in this portal, but the
+// topbar's userMenu only renders when an active user is set, and admin
+// pages declare permissions that the wildcard hasPermission below
+// satisfies. Production code would NOT stub permissions like this.
+const demoUser = new User({
+    id: 1,
+    username: 'demo',
+    display_name: 'Demo User',
+    email: 'demo@example.com',
+    // Avoids the post-start passkey setup prompt — auth is disabled here.
+    has_passkey: true,
+});
+demoUser.hasPermission = () => true;
+app.setActiveUser(demoUser);
+
 // Global doc-link interceptor: anywhere in the portal, an element marked
 // `<a data-action="open-doc" data-doc="docs/web-mojo/<area>/<File>.md">…</a>`
 // opens the markdown in a Modal instead of navigating the browser.
@@ -301,27 +303,6 @@ document.addEventListener('click', (event) => {
 });
 
 await app.start();
-
-// Auth is disabled in this portal, but the topbar's userMenu only renders
-// when an active user is set (the framework swaps a `loginMenu` placeholder
-// for the userMenu the moment `setActiveUser` is called). Faking a demo
-// user gives downstream readers a concrete reference for what userMenu
-// looks like in production.
-const demoUser = new User({
-    id: 1,
-    username: 'demo',
-    display_name: 'Demo User',
-    email: 'demo@example.com',
-});
-// Wildcard permissions — the admin extension hides items the user lacks
-// permission for, but in this offline demo we want every admin page
-// visible. Production code would NOT do this; permissions are real.
-demoUser.hasPermission = () => true;
-// Defer one tick so any pending render in start() finishes first.
-setTimeout(() => {
-    app.setActiveUser(demoUser);
-    mountAdminExtension();
-}, 0);
 
 window.app = app;
 window.DocsModal = DocsModal;

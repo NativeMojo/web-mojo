@@ -131,10 +131,17 @@ new PortalApp({
     ],
 
     displayMode: 'both',         // 'icon' | 'text' | 'both'
-    showSidebarToggle: true      // Show hamburger toggle button
+    showSidebarToggle: true,     // Show hamburger toggle button
+    themeToggle: true            // Auto-inject Light/Dark/System items (default: true)
   }
 });
 ```
+
+#### Theme toggle
+
+PortalApp auto-injects three items into the topbar `userMenu` (Theme: Light, Theme: Dark, Theme: System) so consuming apps don't have to wire them by hand. Selecting an item calls [`app.setTheme()`](./WebApp.md#theme) and shows a toast. The currently selected option is marked active in the dropdown.
+
+To opt out, pass `topbar.themeToggle: false` and provide your own UI (or none).
 
 ### Page Header Configuration (`pageHeader`)
 

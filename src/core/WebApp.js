@@ -20,6 +20,7 @@
 
 import Router from '@core/Router.js';
 import EventBus from '@core/utils/EventBus.js';
+import ThemeManager from '@core/utils/ThemeManager.js';
 import rest from '@core/Rest.js';
 import Modal from '@core/views/feedback/Modal.js';
 
@@ -78,6 +79,15 @@ class WebApp {
         if (config.api) {
             this.rest.configure(config.api);
         }
+
+        // Theme manager — applies data-bs-theme synchronously so subsequent
+        // view rendering picks up the correct theme (no light→dark flash).
+        const appKey = (this.name || 'mojo').replace(/\s+/g, '_').toLowerCase();
+        this.theme = new ThemeManager({
+            storageKey: `${appKey}:theme`,
+            eventBus: this.events
+        });
+        this.theme.init();
 
         // Initialize router with event integration after EventBus is ready
         this.router = new Router({
@@ -693,6 +703,34 @@ class WebApp {
     async confirm(message, title = 'Confirm', options = {}) {
         const Modal = (await import('./views/feedback/Modal.js')).default;
         return await Modal.confirm(message, title, options);
+    }
+
+    /**
+     * Set the active theme preference. Persists to localStorage and applies
+     * `data-bs-theme` to <html>. Emits `'theme:changed'` on `app.events`
+     * with `{ theme, resolved }`.
+     * @param {'light'|'dark'|'system'} pref
+     */
+    setTheme(pref) {
+        this.theme.set(pref);
+        return this;
+    }
+
+    /**
+     * Get the user's stored theme preference.
+     * @returns {'light'|'dark'|'system'}
+     */
+    getTheme() {
+        return this.theme.getPreference();
+    }
+
+    /**
+     * Get the currently applied theme — resolves `'system'` via
+     * `prefers-color-scheme`.
+     * @returns {'light'|'dark'}
+     */
+    getResolvedTheme() {
+        return this.theme.getResolved();
     }
 
     /**
