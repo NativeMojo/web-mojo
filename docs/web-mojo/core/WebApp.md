@@ -288,7 +288,7 @@ const path = app.buildPagePath(userDetailPage, { id: 42 }, { tab: 'settings' });
 
 ## Notifications & Dialogs
 
-`WebApp` provides convenience methods that delegate to the [Dialog](../components/Dialog.md) component (loaded lazily to avoid circular dependencies). Each method falls back to `app.events.emit('notification', ...)` if Dialog fails to load.
+`WebApp` provides convenience methods for showing modal alerts and confirms. `showError / showSuccess / showInfo / showWarning` route through [Modal.alert](../components/Modal.md#modalalertmessage-title-options) and `confirm` routes through [Modal.confirm](../components/Modal.md#modalconfirmmessage-title-options). Each method falls back to `app.events.emit('notification', ...)` if Modal fails to load.
 
 ### Alert Dialogs
 

@@ -65,8 +65,9 @@ UI Components for displaying and interacting with data:
 - **[ContextMenu](./components/ContextMenu.md)** - Reusable Bootstrap dropdown menu component for row/header actions
 - **[ProgressView](./components/ProgressView.md)** - File-upload progress UI: bar, byte counter, cancel button
 - **[SimpleSearchView](./components/SimpleSearchView.md)** - Searchable, scrollable list bound to a `Collection`; emits `item:selected`
-- **[Modal](./components/Modal.md)** - Canonical modal/dialog surface: alert, confirm, prompt, show, showModel, form
-- **[Dialog](./components/Dialog.md)** - Full dialog system: forms, code view, busy indicator, z-index stacking, context menus; alert/confirm/prompt are pass-throughs to Modal
+- **[Modal](./components/Modal.md)** - Canonical static API: alert, confirm, prompt, dialog, show, showModel, form, modelForm, data, code, htmlPreview, loading
+- **[ModalView](./components/ModalView.md)** - Underlying View class behind every modal; subclass it for custom modal types
+- **[Dialog](./components/Dialog.md)** - Backwards-compatibility shim. `Dialog` is `ModalView` re-exported; every static routes through `Modal.*`
 - **[Sidebar & TopNav](./components/SidebarTopNav.md)** - Portal navigation: sidebar menus, topbar, homeless pages, group switching
 - **[SideNavView](./components/SideNavView.md)** - Section-based detail layout: left rail of sections, responsive collapse to dropdown
 - **[ListView](./components/ListView.md)** - Visual list component for collections
@@ -129,7 +130,7 @@ Optional extensions for charts, maps, admin, and more:
 
 - **[Admin](./extensions/Admin.md)** - 50+ pre-built admin pages (users, jobs, security, files, shortlinks, messaging, push) + LLM-backed Assistant chat panel; wired into a `PortalWebApp` via `registerAdminPages` and `registerAssistant`. Admin **models** ship separately at `web-mojo/admin-models` (no UI deps)
 - **[Auth](./extensions/Auth.md)** - Drop-in sign-in / forgot / reset UI (`mountAuth`) and a low-level auth client (`createAuthClient`)
-- **[Charts](./extensions/Charts.md)** - Native SVG charts (SeriesChart, PieChart, MetricsChart) — no Chart.js dependency; `SeriesChart` supports opt-in `crosshairTracking` for floating crosshair + tooltip on line/area charts
+- **[Charts](./extensions/Charts.md)** - Native SVG charts (SeriesChart, PieChart, MetricsChart) — no Chart.js dependency; `SeriesChart` supports opt-in `crosshairTracking`, Heckbert nice-number Y-axis ticks, and auto-rotating X labels; `MetricsChart` defaults `xLabelFormat` from granularity
 - **[DocIt](./extensions/DocIt.md)** - Markdown documentation portal: books, pages, edit-in-place, search (`DocItApp` extends `WebApp`)
 - **[LightBox](./extensions/LightBox.md)** - Image lightbox viewer
 - **[Location](./extensions/Location.md)** - Geolocation services and tracking — see also the [REST API reference](./extensions/Location_API.md)
@@ -229,7 +230,7 @@ This documentation is structured for easy navigation and understanding.
 | Building a portal app | [PortalApp.md](./core/PortalApp.md) |
 | Portal with auth-gated start + WebSocket | [PortalWebApp.md](./core/PortalWebApp.md) |
 | HTTP requests | [Rest.md](./services/Rest.md) |
-| Modal dialogs | [Modal.md](./components/Modal.md) (canonical), [Dialog.md](./components/Dialog.md) (forms, code view, busy indicator) |
+| Modal dialogs | [Modal.md](./components/Modal.md) (canonical static API), [ModalView.md](./components/ModalView.md) (underlying View class), [Dialog.md](./components/Dialog.md) (compat shim) |
 | Toast notifications | [ToastService.md](./services/ToastService.md) |
 | Real-time / WebSocket | [WebSocketClient.md](./services/WebSocketClient.md) |
 | Data tables | [TableView.md](./components/TableView.md), [TablePage.md](./pages/TablePage.md) |
@@ -305,8 +306,9 @@ web-mojo/
 │   └── FileUpload.md            # Drag-and-drop file upload utilities
 │
 ├── components/                  # UI components
-│   ├── Modal.md                 # Canonical modal surface (alert, confirm, prompt, show, form)
-│   ├── Dialog.md                # Full dialog system (forms, code, busy, stacking, context menus)
+│   ├── Modal.md                 # Canonical static API (alert, confirm, prompt, dialog, show, form, code, ...)
+│   ├── ModalView.md             # Underlying View class — subclass for custom modal types
+│   ├── Dialog.md                # Compat shim (re-exports ModalView; statics route to Modal.*)
 │   ├── ListView.md              # List component for collections
 │   ├── TableView.md             # Advanced data table
 │   ├── TabView.md               # Tab navigation component

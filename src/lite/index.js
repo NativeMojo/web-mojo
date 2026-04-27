@@ -27,6 +27,7 @@ import FormView from '@core/forms/FormView.js';
 import FormPage from '@core/forms/FormPage.js';
 // Basic UI Views
 import Dialog from '@core/views/feedback/Dialog.js';
+import ModalView from '@core/views/feedback/ModalView.js';
 import ProgressView from '@core/views/feedback/ProgressView.js';
 import ListView from '@core/views/list/ListView.js';
 import ListViewItem from '@core/views/list/ListViewItem.js';
@@ -74,6 +75,7 @@ function attachLite(MOJO) {
 
   // Basic UI
   MOJO.Dialog = Dialog;
+  MOJO.ModalView = ModalView;
   MOJO.ProgressView = ProgressView;
   MOJO.ListView = ListView;
   MOJO.ListViewItem = ListViewItem;
@@ -145,6 +147,7 @@ export {
 
   // Basic UI
   Dialog,
+  ModalView,
   ProgressView,
   ListView,
   ListViewItem,

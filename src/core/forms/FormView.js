@@ -1192,11 +1192,10 @@ class FormView extends View {
 
     const htmlContent = textarea.value || '';
 
-    // Dynamically import Dialog to avoid circular dependencies
-    const Dialog = (await import('@core/views/feedback/Dialog.js')).default;
-    
-    // Show HTML preview using Dialog.showHtmlPreview
-    Dialog.showHtmlPreview({
+    // Dynamically import Modal to avoid circular dependencies
+    const Modal = (await import('@core/views/feedback/Modal.js')).default;
+
+    Modal.htmlPreview({
       html: htmlContent,
       title: 'HTML Preview'
     });

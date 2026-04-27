@@ -1,11 +1,11 @@
 # Modal
 
-**Modal** is the canonical JavaScript surface for modals and dialogs in WEB-MOJO. It owns the implementation of the typed-alert / confirm / prompt helpers and provides a clean static API for showing views in modal dialogs — no instance creation, no manual lifecycle management.
+**Modal** is the canonical JavaScript surface for modals and dialogs in WEB-MOJO. It owns the implementation of every modal helper — typed alerts, confirm/prompt, generic dialogs, forms, code/HTML viewers, and the loading overlay — and provides a clean static API with no instance creation or manual lifecycle management.
 
-> **When to use Modal vs Dialog:**
-> **Use `Modal` for all new code.** `Modal.alert / confirm / prompt / show / showModel / form / modelForm / dialog / showBusy` are the canonical entrypoints.
->
-> [`Dialog`](Dialog.md) remains exported as the underlying View class — you can still construct one directly with `new Dialog({...})` for fine-grained control — but `Dialog.alert / confirm / prompt` are now thin pass-throughs that delegate here. Don't call them in new code; call `Modal.*` instead.
+> **When to use Modal vs ModalView vs Dialog:**
+> - **`Modal.*`** — canonical static API. Use this for all new code.
+> - **[`ModalView`](ModalView.md)** — the underlying View class. Use `new ModalView({...})` only when you need a long-lived instance handle (event listeners, dynamic `setContent`, streaming updates).
+> - **[`Dialog`](Dialog.md)** — backwards-compatibility shim. Default-exports `ModalView` and routes every static through `Modal.*`. Existing `new Dialog({...})` and `Dialog.show*()` callers keep working unchanged, but new code should not use it.
 
 ---
 
@@ -79,7 +79,7 @@ await Modal.alert('That action will affect 24 records.', 'Heads up', { type: 'wa
 
 **Returns:** `Promise<*>` — resolves when the OK button is clicked or the dialog is dismissed.
 
-**Visual treatment:** typed alerts get a 4px solid colored left border (info=accent, success=green, warning=yellow, error=red) and a colored circle around the title icon — mirrors the toast notification styling. The accent for info-typed alerts is driven by the `--mojo-dialog-accent` CSS variable, which defaults to `var(--bs-primary)` and can be overridden at `:root` for a custom brand color.
+**Visual treatment:** typed alerts get a 6px colored hero band across the top of the modal card and a subtle tinted card background (5% accent on light, 10% on dark). The accent for info-typed alerts is driven by the `--mojo-dialog-accent` CSS variable, which defaults to `var(--bs-primary)` and can be overridden at `:root` for a custom brand color. Success/warning/error use fixed tokens (`#198754` / `#ffc107` / `#dc3545`) and are not affected by `--mojo-dialog-accent`.
 
 ---
 
@@ -200,28 +200,35 @@ await Modal.showModelById(Group, parentId, { size: 'xl' });
 
 ---
 
-### Convenience Aliases
+### Additional Helpers
 
-These re-export Dialog's static helpers so you never need a separate Dialog import:
+`Modal` owns the full canonical surface — every dialog flavour lives here:
 
 ```js
-// All of these work without importing Dialog
-await Modal.confirm('Delete this record?', 'Confirm');
-await Modal.alert('Success!');
-await Modal.prompt('Enter a name:', 'Rename');
+await Modal.dialog({ title: 'Choose', body: '...', buttons: [...] });
 await Modal.form({ title: 'Add User', fields: [...] });
 await Modal.modelForm({ model, formConfig: UserForms.edit });
 await Modal.data({ title: 'Details', model, fields: [...] });
+await Modal.code({ code: src, language: 'javascript', title: 'Source' });
+await Modal.htmlPreview({ html: '<h1>Preview</h1>', title: 'Email' });
+await Modal.showModelView(userModel);                   // read-only, no buttons
+await Modal.updateModelImage({ model: user, field: 'avatar', upload: true });
 ```
 
-| Method | Delegates to | Description |
-|--------|-------------|-------------|
-| `Modal.confirm(msg, title, opts)` | `Dialog.confirm` | Yes/No confirmation |
-| `Modal.alert(msg, title, opts)` | `Dialog.alert` | Alert with icon |
-| `Modal.prompt(msg, title, opts)` | `Dialog.prompt` | Text input |
-| `Modal.form(opts)` | `Dialog.showForm` | Form without model saving |
-| `Modal.modelForm(opts)` | `Dialog.showModelForm` | Form with auto model.save() |
-| `Modal.data(opts)` | `Dialog.showData` | DataView display |
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `Modal.dialog(opts)` | `Promise<*>` | Generic promise-based dialog with full button-handler protocol |
+| `Modal.form(opts)` | `Promise<object\|null>` | Render a `FormView` for ad-hoc data collection |
+| `Modal.modelForm(opts)` | `Promise<object\|null>` | Render a `FormView` and auto-save to the model on submit |
+| `Modal.data(opts)` | `Promise<*>` | Render a `DataView` for read-only structured data |
+| `Modal.code(opts)` | `Promise<*>` | Syntax-highlighted code (`CodeViewer`) with copy-to-clipboard |
+| `Modal.htmlPreview(opts)` | `Promise<*>` | Sandboxed HTML preview (`HtmlPreview`) with refresh button |
+| `Modal.showModelView(model, opts)` | `Promise<*>` | Read-only model display via the model's `VIEW_CLASS` |
+| `Modal.updateModelImage(opts, fieldOpts)` | `Promise<*>` | Image-upload + model-save flow (avatar uploader pattern) |
+| `Modal.loading(opts)` | `void` | Show full-screen loading overlay (alias: `showBusy`) |
+| `Modal.hideLoading(force?)` | `void` | Hide overlay (alias: `hideBusy`) |
+
+> `Dialog.alert / confirm / prompt / showDialog / showForm / showModelForm / showData / showCode / showHtmlPreview / showBusy / hideBusy` all forward to the matching `Modal.*` method via the [Dialog compat shim](Dialog.md).
 
 ---
 
@@ -284,7 +291,8 @@ if (result === 'pdf') {
 
 ## Related Documentation
 
-- [Dialog](Dialog.md) — Full dialog system with all options
+- [ModalView](ModalView.md) — The underlying View class. Subclass it for custom modal types.
+- [Dialog](Dialog.md) — Backwards-compatibility shim for legacy `new Dialog()` and `Dialog.show*()` callers.
 - [TableView](TableView.md) — Automatic VIEW_CLASS opening on row click
 - [View](../core/View.md) — Base view class
 

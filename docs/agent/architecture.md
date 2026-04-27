@@ -91,7 +91,9 @@ Optional modules. Each is a self-contained entry point with its own registration
 | `TablePage` | `src/core/pages/TablePage.js` | Page wrapper for TableView with URL-synced filters/pagination |
 | `ToastService` | `src/core/ToastService.js` | Bootstrap 5 toast notifications, auto-dismiss |
 | `WebSocketClient` | `src/core/WebSocketClient.js` | WS client with auto-reconnect, heartbeat, auth header injection |
-| `Dialog` | `src/core/Dialog.js` | Modal dialogs: alert, confirm, prompt, forms, code view, busy |
+| `Modal` | `src/core/views/feedback/Modal.js` | Canonical static API for modals: alert, confirm, prompt, dialog, show, form, code, htmlPreview, loading |
+| `ModalView` | `src/core/views/feedback/ModalView.js` | Underlying View class behind every modal — Bootstrap 5 mechanics, sizing, stacking |
+| `Dialog` | `src/core/views/feedback/Dialog.js` | Compat shim — re-exports `ModalView`, every static routes through `Modal.*` |
 
 ---
 

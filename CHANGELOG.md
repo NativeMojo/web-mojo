@@ -2,6 +2,43 @@
 
 ## Unreleased
 
+### Refactor — Dialog.js split into ModalView + Modal + focused helpers
+
+- **`Dialog.js` (1,987 lines) split** into focused modules in
+  `src/core/views/feedback/`:
+  - **`ModalView.js`** — the underlying `View` class. Owns Bootstrap 5
+    modal mechanics (lifecycle, sizing, z-index stacking, header/body/
+    footer composition, button rendering, context menu).
+  - **`Modal.js`** — canonical static API: `dialog`, `show`, `showModel`,
+    `showModelView`, `alert`, `confirm`, `prompt`, `form`, `modelForm`,
+    `data`, `code`, `htmlPreview`, `updateModelImage`, `loading`. A new
+    `_renderAndAwait` helper consolidates ~300 lines of duplicated
+    render/show/resolve/destroy code.
+  - **`BusyIndicator.js`** — singleton frosted-glass loading overlay.
+  - **`CodeViewer.js`** — Prism-highlighted code block view + statics.
+  - **`HtmlPreview.js`** — sandboxed iframe preview view.
+  - **`Dialog.js`** — thin compatibility shim. Default-exports
+    `ModalView`; every legacy static (`Dialog.alert`, `Dialog.showForm`,
+    `Dialog.showBusy`, …) is a one-line forward to the matching
+    `Modal.*` method. Existing `new Dialog({...})` and `Dialog.show*()`
+    callers continue to work unchanged.
+- **Busy-indicator overlays consolidated**. The legacy dark
+  `mojo-busy-indicator` is gone; only the modern frosted-card
+  `mojo-loading-overlay` remains. `Modal.loading()` / `Modal.showBusy()`
+  / `Dialog.showBusy()` all route through the same singleton.
+- **`ModalView` is now a public export** (`src/index.js`,
+  `src/lite/index.js`) — use it directly when you need a long-lived
+  modal handle (streaming `setContent`, external event wiring,
+  subclassing). Most callers should still prefer the static `Modal.*`
+  API.
+- **No consumer change required.** The 24 `new Dialog({...})` and
+  `Dialog.show*()` sites already in `src/` continue to work via the
+  shim. A separate request (`planning/requests/migrate-legacy-dialog-callers.md`)
+  tracks the eventual sweep.
+- New docs: `docs/web-mojo/components/ModalView.md`. Updated:
+  `components/Modal.md`, `components/Dialog.md` (now a deprecation
+  notice + migration table), `README.md`, `docs/agent/architecture.md`.
+
 ### Improved — SeriesChart axis labels (nice numbers, formats, rotation)
 
 - **Y-axis ticks** now snap to clean `1/2/5 × 10ⁿ` values via the Heckbert

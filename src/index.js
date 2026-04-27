@@ -52,6 +52,7 @@ export { default as PortalWebApp } from '@core/PortalWebApp.js';
 // UI helper
 export { default as Dialog } from '@core/views/feedback/Dialog.js';
 export { default as Modal } from '@core/views/feedback/Modal.js';
+export { default as ModalView } from '@core/views/feedback/ModalView.js';
 
 // Selected views (curated for tree-shaking)
 export { default as TableView } from '@core/views/table/TableView.js';

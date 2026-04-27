@@ -195,6 +195,39 @@ class Modal {
      * `value` (or its `action` / index when `value` is omitted), or
      * `null` on dismiss.
      */
+    /**
+     * Build a merged `attributes` object with the `--mojo-eyebrow` CSS
+     * variable set inline so the hero band's `content` picks it up.
+     *
+     * Caller's `eyebrow` option (string | null | '' | false | undefined)
+     * always wins over the helper's default. `null`, `''`, and `false`
+     * all clear the band content. `undefined` falls back to the default.
+     *
+     * @param {string} defaultEyebrow - the helper's default eyebrow text
+     * @param {string|null|false|undefined} callerEyebrow - user override
+     * @param {object} [callerAttributes] - other caller-supplied attributes
+     * @returns {object} merged attributes object suitable for ModalView
+     */
+    static _withEyebrow(defaultEyebrow, callerEyebrow, callerAttributes) {
+        const attributes = { ...(callerAttributes || {}) };
+
+        let finalText;
+        if (callerEyebrow === null || callerEyebrow === false || callerEyebrow === '') {
+            finalText = '';
+        } else if (typeof callerEyebrow === 'string') {
+            finalText = callerEyebrow;
+        } else {
+            finalText = defaultEyebrow || '';
+        }
+
+        // Strip quotes/backslashes to keep the CSS string syntactically valid
+        const safe = String(finalText).replace(/['"\\]/g, '');
+        const styleVar = `--mojo-eyebrow: '${safe}'`;
+        attributes.style = [attributes.style, styleVar].filter(Boolean).join('; ');
+
+        return attributes;
+    }
+
     static async dialog(options = {}) {
         // Legacy signature: (message, title, options)
         if (typeof options === 'string') {
@@ -214,10 +247,16 @@ class Modal {
             centered = true,
             buttons = [{ text: 'OK', class: 'btn-primary', value: true }],
             rejectOnDismiss = false,
+            eyebrow,
+            attributes: callerAttributes,
             ...rest
         } = options;
 
         const resolvedBody = body ?? view ?? message ?? content ?? '';
+
+        // Modal.dialog is the generic surface — band is empty unless the
+        // caller passes an explicit eyebrow.
+        const attributes = Modal._withEyebrow('', eyebrow, callerAttributes);
 
         const modal = new ModalView({
             title,
@@ -225,6 +264,7 @@ class Modal {
             size,
             centered,
             buttons,
+            attributes,
             ...rest
         });
 
@@ -238,6 +278,7 @@ class Modal {
      * (views typically have their own headers). Size defaults to `lg`.
      */
     static async show(view, options = {}) {
+        const { eyebrow, attributes: callerAttributes, ...rest } = options;
         return Modal.dialog({
             header: options.title !== undefined ? !!options.title : false,
             title: options.title || undefined,
@@ -245,7 +286,8 @@ class Modal {
             size: 'lg',
             centered: false,
             buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }],
-            ...options
+            attributes: Modal._withEyebrow('DETAILS', eyebrow, callerAttributes),
+            ...rest
         });
     }
 
@@ -299,12 +341,14 @@ class Modal {
             );
         }
         const viewInstance = new ViewClass({ model });
+        const { eyebrow, attributes: callerAttributes, ...rest } = options;
         return Modal.dialog({
             header: false,
             body: viewInstance,
             size: 'lg',
             centered: false,
-            ...options
+            attributes: Modal._withEyebrow('DETAILS', eyebrow, callerAttributes),
+            ...rest
         });
     }
 
@@ -341,19 +385,16 @@ class Modal {
         const typeClass = `modal-alert modal-alert-${typeKey}`;
         const className = [typeClass, callerClassName].filter(Boolean).join(' ');
 
-        // The hero band carries the type label via CSS — no JS-side eyebrow
-        // markup needed. Default eyebrow text per type lives in the CSS rule
-        // for `.modal.modal-alert-{type} .modal-content::before`. Callers
-        // can override per call by setting the `--mojo-eyebrow` CSS variable
-        // via inline style. `eyebrow: false` clears the band content entirely.
-        const attributes = { ...(callerAttributes || {}) };
-        if (callerEyebrow === false || callerEyebrow === '') {
-            attributes.style = [attributes.style, "--mojo-eyebrow: ''"].filter(Boolean).join('; ');
-        } else if (typeof callerEyebrow === 'string') {
-            // Strip quotes to keep the CSS string syntactically valid
-            const safeEyebrow = callerEyebrow.replace(/['"\\]/g, '');
-            attributes.style = [attributes.style, `--mojo-eyebrow: '${safeEyebrow}'`].filter(Boolean).join('; ');
-        }
+        // Hero band carries the type label. Default per type, override via
+        // `eyebrow: 'CUSTOM'`, suppress with `eyebrow: null|false|''`.
+        const defaultEyebrowMap = {
+            info: 'INFORMATION',
+            success: 'SUCCESS',
+            warning: 'WARNING',
+            error: 'ERROR'
+        };
+        const defaultEyebrow = defaultEyebrowMap[typeKey] ?? defaultEyebrowMap.info;
+        const attributes = Modal._withEyebrow(defaultEyebrow, callerEyebrow, callerAttributes);
 
         // Title is just the headline. The band (CSS) carries the type label;
         // the title region carries the headline and never duplicates it.
@@ -390,6 +431,9 @@ class Modal {
             { text: options.confirmText || 'Confirm', class: options.confirmClass || 'btn-primary', action: 'confirm' }
         ];
 
+        const { eyebrow, attributes: callerAttributes, ...rest } = options;
+        const attributes = Modal._withEyebrow('CONFIRM', eyebrow, callerAttributes);
+
         const modal = new ModalView({
             title,
             body: `<p>${message}</p>`,
@@ -397,7 +441,8 @@ class Modal {
             centered: true,
             backdrop: 'static',
             buttons,
-            ...options
+            attributes,
+            ...rest
         });
 
         const result = await Modal._renderAndAwait(modal, {
@@ -423,6 +468,9 @@ class Modal {
             { text: 'OK', class: 'btn-primary', action: 'ok' }
         ];
 
+        const { eyebrow, attributes: callerAttributes, ...rest } = options;
+        const attributes = Modal._withEyebrow('INPUT', eyebrow, callerAttributes);
+
         const modal = new ModalView({
             title,
             body: `
@@ -437,7 +485,8 @@ class Modal {
             centered: true,
             backdrop: 'static',
             buttons,
-            ...options
+            attributes,
+            ...rest
         });
 
         modal.on('shown', () => {
@@ -478,6 +527,8 @@ class Modal {
             centered = true,
             submitText = 'Submit',
             cancelText = 'Cancel',
+            eyebrow,
+            attributes: callerAttributes,
             ...rest
         } = options;
 
@@ -500,8 +551,15 @@ class Modal {
             { text: submitText, class: 'btn-primary', action: 'submit' }
         ];
 
+        // Form's title becomes the eyebrow (uppercased) by default
+        const attributes = Modal._withEyebrow(
+            String(title || 'FORM').toUpperCase(),
+            eyebrow,
+            callerAttributes
+        );
+
         const modal = new ModalView({
-            title, body: formView, size, centered, buttons, ...rest
+            title, body: formView, size, centered, buttons, attributes, ...rest
         });
 
         return Modal._renderAndAwait(modal, {
@@ -556,6 +614,8 @@ class Modal {
             cancelText = 'Cancel',
             model,
             fields,
+            eyebrow,
+            attributes: callerAttributes,
             ...rest
         } = options;
 
@@ -582,8 +642,15 @@ class Modal {
             { text: submitText, class: 'btn-primary', action: 'submit' }
         ];
 
+        // Form's title becomes the eyebrow (uppercased) by default
+        const attributes = Modal._withEyebrow(
+            String(title || 'EDIT').toUpperCase(),
+            eyebrow,
+            callerAttributes
+        );
+
         const modal = new ModalView({
-            title, body: formView, size, centered, buttons, ...rest
+            title, body: formView, size, centered, buttons, attributes, ...rest
         });
 
         return Modal._renderAndAwait(modal, {
