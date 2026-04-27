@@ -325,7 +325,8 @@ export default class AdminDashboardPage extends Page {
         beginAtZero: true
       },
       tooltip: {
-        y: 'number'
+        // Integer counts; pass 'number:2' if you want decimal precision.
+        y: 'number:0'
       },
       containerId: 'api-metrics-chart'
     });

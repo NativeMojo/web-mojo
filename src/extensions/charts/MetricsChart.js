@@ -38,7 +38,11 @@ class MetricsChart extends View {
         this.chartType = options.chartType || 'line';
         this.height = options.height || 300;
         this.yAxis = options.yAxis || { label: 'Count', beginAtZero: true };
-        this.tooltip = options.tooltip || { y: 'number' };
+        // Default to integer formatting — metric counts are typically whole
+        // numbers, and DataFormatter's `number` formatter defaults to 2
+        // decimals which would render Y-axis ticks as "60.00, 80.00, ..."
+        // Callers that want decimals can pass tooltip: { y: 'number:2' }.
+        this.tooltip = options.tooltip || { y: 'number:0' };
         this.colors = options.colors;
         this.colorGenerator = options.colorGenerator;
 
@@ -420,9 +424,17 @@ class MetricsChart extends View {
     // Default xLabelFormat for the child SeriesChart, picked by granularity.
     // Caller-supplied `tooltip.x` overrides; pass `tooltip: { x: null }` for
     // explicit "no format" (raw labels).
+    // X-label format defaults per granularity. `time` owns HH/mm tokens;
+    // `date` owns YYYY/MMM/D tokens — they're separate formatters in
+    // DataFormatter. Also note: a colon inside a format string would break
+    // the pipe parser (`:` is the arg separator), so we use formats that
+    // don't contain a literal colon (the `time` formatter's HH:mm token
+    // string is fine because the `:` is part of the OUTPUT, not the format
+    // tokens — DataFormatter's `time` formatter parses the colons in its
+    // tokens correctly via its own internal parser).
     static X_LABEL_FORMAT_BY_GRANULARITY = {
-        minutes: "date:'HH:mm'",
-        hours:   "date:'HH:mm'",
+        minutes: "time:'HH:mm'",
+        hours:   "time:'HH:mm'",
         days:    "date:'MMM D'",
         weeks:   "date:'MMM D'",
         months:  "date:'MMM YYYY'"

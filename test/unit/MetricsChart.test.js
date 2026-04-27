@@ -122,8 +122,8 @@ module.exports = async function (testContext) {
 
     describe('MetricsChart — granularity → xLabelFormat default', () => {
         const granularities = [
-            { granularity: 'minutes', expected: "date:'HH:mm'" },
-            { granularity: 'hours',   expected: "date:'HH:mm'" },
+            { granularity: 'minutes', expected: "time:'HH:mm'" },
+            { granularity: 'hours',   expected: "time:'HH:mm'" },
             { granularity: 'days',    expected: "date:'MMM D'" },
             { granularity: 'weeks',   expected: "date:'MMM D'" },
             { granularity: 'months',  expected: "date:'MMM YYYY'" }
