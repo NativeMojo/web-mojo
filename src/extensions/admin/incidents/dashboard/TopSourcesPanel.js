@@ -243,7 +243,7 @@ class TopSourcesPanel extends View {
         const rest = this.getApp()?.rest;
         if (!rest) return;
         try {
-            await rest.POST('/api/account/geolocated_ip', { ip, is_blocked: true });
+            await rest.POST('/api/system/geoip', { ip, is_blocked: true });
             this.getApp()?.toast?.success?.(`Blocked ${ip}`);
         } catch (err) {
             this.getApp()?.toast?.error?.(err?.message || 'Failed to block IP');

@@ -41,7 +41,7 @@ class StatusStripPanel extends View {
             sparklineDays: 7,
             tiles: [
                 {
-                    rest: { endpoint: '/api/incident/incident', params: { status: 'new', size: 1 } },
+                    rest: { endpoint: '/api/incident/incident', params: { status: 'new', size: 0 } },
                     key: 'new-incidents',
                     label: 'New Incidents',
                     severity: 'critical',
@@ -54,7 +54,7 @@ class StatusStripPanel extends View {
                 { slug: 'bouncer:blocks',    label: 'Bouncer Blocks',      tone: 'bad' },
                 { slug: 'login:new_country', label: 'New-Country Logins',  tone: 'bad' },
                 {
-                    rest: { endpoint: '/api/account/geolocated_ip', params: { is_blocked: true, size: 1 } },
+                    rest: { endpoint: '/api/system/geoip', params: { is_blocked: true, size: 0 } },
                     key: 'active-blocks',
                     label: 'Active Blocks',
                     tone: 'bad'
@@ -77,7 +77,11 @@ class StatusStripPanel extends View {
             return;
         }
         if (key === 'active-blocks') {
-            this.getApp()?.showPage?.('system/security/blocked-ips');
+            // GeoLocatedIPTablePage at system/system/geoip is the canonical
+            // "all blocked IPs" view. system/security/blocked-ips is a more
+            // recent BlockedIPs table that focuses on firewall rules; use
+            // the geoip page since the count is sourced from /api/system/geoip.
+            this.getApp()?.showPage?.('system/system/geoip', { is_blocked: 'true' });
             return;
         }
         if (slug) {

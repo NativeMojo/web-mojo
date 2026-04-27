@@ -2,6 +2,89 @@
 
 ## Unreleased
 
+### Feature — Security Dashboard rebuild + new framework primitives
+
+- **`SecurityDashboardPage`** replaces the older tabbed
+  `IncidentDashboardPage` with a single scrolling mission-control page.
+  Route stays `system/incident-dashboard`. Seven sections answer the
+  one question a sysadmin actually asks: *what should I be doing right
+  now?*
+  - **Pulse** — 8 KPI tiles via one batched
+    `/api/metrics/series?with_delta=true` + parallel REST counts. Tiles
+    track NEW incidents (untriaged), not OPEN (already claimed).
+  - **Needs Attention** — list of priority>=8, status=new incidents.
+    Click row opens the existing `IncidentView` modal. Hover-revealed
+    inline resolve/pause actions for users with `manage_security`.
+  - **Threat Composition** — single 30-day stacked bar chart that
+    condenses `incident_events` / `firewall:blocks` / `bouncer:blocks`
+    / `auth:failures` into one view. 7D / 30D / 90D toggle.
+  - **Geography** — `MetricsCountryMapView` with slug-family selector
+    (Events / Incidents / Firewall / Logins).
+  - **Distributions** — three cards: status donut, priority bucket bars,
+    bouncer funnel (assessments → monitors → blocks).
+  - **Top Sources** — top IPs + top categories (last 7d). Tries
+    server-side `group_by` first; falls back to client-side aggregation
+    of recent 500 events when unsupported, with a fallback note in the
+    card subtitle.
+  - **Auth Failures** — uses the new `auth:failures` aggregate slug
+    directly (no client-side composition); 4 sub-tiles for password
+    resets / TOTP failures / sessions revoked / accounts deactivated.
+  - **System Health** — single `/api/incident/health/summary` call,
+    one row per discovered category, color dot from `level`, click row
+    drills into the linked incident.
+  - Sections 3-7 use **lazy mount** so they don't fetch until scrolled
+    into view.
+  - Refresh tiers via `Page.scheduleRefresh`: 60s for pulse +
+    needs-attention; 5min for everything else; manual refresh button
+    fires all tiers.
+  - Drill-downs use `Modal.drawer` for day / country / status-filter /
+    priority-bucket / IP / category / auth sub-tile clicks.
+
+- **New framework primitives** (charts):
+  - **`KPITile`** (`web-mojo/charts`) — compact presentation-only tile:
+    label, big tabular value, color-coded delta badge, embedded
+    `MiniChart` sparkline. Renders pre-fetched data via constructor or
+    `setData()`. Click emits `tile:click`. Sits between `MiniChart`
+    (sparkline only) and `MetricsMiniChartWidget` (rich self-fetching
+    card). Delta rendering rules:
+    - `deltaPct` present → "+12%" / "−8%"
+    - `deltaPct` omitted (prev=0) + `delta` present → "+4" absolute
+    - both null → no badge
+    - never renders `Infinity%`
+    - `severity` (critical/high/warn/info/good) adds left-stripe accent
+    - `tone` ('bad' or 'good') decides whether rising = red or green
+  - **`KPIStrip`** (`web-mojo/charts`) — orchestrator for N `KPITile`s.
+    Single batched `/api/metrics/series?with_delta=true` call populates
+    all metric tiles, parallel REST count calls populate tiles defined
+    with `rest:` config, and one batched `/api/metrics/fetch` populates
+    sparklines for all metric tiles.
+
+- **Extensions to existing components:**
+  - **`PieChart`** — new `centerLabel` and `centerSubLabel` options
+    render text in the donut center (when `cutout > 0`). Accept either
+    a static string or a function called with `({ total, segments })`.
+  - **`MetricsChart`** — new `withDelta` flag passes through to the
+    series endpoint; new `compactHeader` mode hides the gear menu and
+    shrinks the range toggle for use inside dashboard panels.
+  - **`Modal.drawer({ eyebrow, title, meta, view })`** — standardised
+    drill-down modal header (eyebrow tag, title, meta row of icon-
+    prefixed spans). Accepts a `View` instance OR raw HTML body.
+  - **`Page.scheduleRefresh(handler, intervalMs, { tier, immediate })`**
+    — registers a recurring handler that auto-clears in `onExit`.
+    Replaces the `setInterval`/`clearInterval` boilerplate in every
+    dashboard. `runScheduledRefreshes(tier?)` fires all (or one tier).
+  - **`View.addChild(child, { lazyMount: true })`** — defers the
+    child's render until its container scrolls into viewport via
+    `IntersectionObserver`. Container gets a 1px placeholder min-height
+    so the observer can detect 0-content placeholders. Disconnects on
+    destroy. Falls back to immediate render when IO isn't available.
+
+- **Examples portal:**
+  - New `KPIStripExample` at `extensions/charts/kpi-strip` —
+    demonstrates standalone `KPITile`s (delta rules) and `KPIStrip`
+    (batched fetch).
+  - `PieChartExample` updated to show the new doughnut center label.
+
 ### Feature — App-level theme management
 
 - **`WebApp` now owns the user's light/dark theme.** New public API:
