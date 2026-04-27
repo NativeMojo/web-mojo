@@ -29,7 +29,10 @@ The admin extension ships ~50 pre-built admin pages plus an LLM-backed Assistant
 **What you get:**
 
 - **Account** — users, members, groups, devices, GeoIP, API keys, admin dashboard.
-- **Security** — incidents, tickets, events, rule sets, blocked IPs, IP sets, firewall log, bouncer signals/devices, bot signatures, GeoIP.
+- **Security Dashboard** — top-level mission-control link (incident dashboard).
+- **System Security** — tickets, incidents, events, rules.
+- **Network Security** — IPs, IP sets, blocked, firewall log.
+- **Bouncer** — signals, devices, bots.
 - **Job engine** — dashboard, runners, jobs, scheduled tasks.
 - **Messaging** — email domains/mailboxes/templates/sent, public (contact-form) messages, SMS phone numbers, SMS log.
 - **Push notifications** — dashboard, configurations, templates, deliveries, devices.
