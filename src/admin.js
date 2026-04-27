@@ -261,6 +261,12 @@ export function registerSystemPages(app, addToMenu = true) {
                     permissions: ["security"]
                 },
                 {
+                    text: 'Security Dashboard',
+                    route: '?page=system/incident-dashboard',
+                    icon: 'bi-shield-check',
+                    permissions: ["view_security"]
+                },
+                {
                     text: 'Users',
                     route: '?page=system/users',
                     icon: 'bi-people',
@@ -285,25 +291,44 @@ export function registerSystemPages(app, addToMenu = true) {
                     ]
                 },
 
-                // ── Security (unified threat pipeline) ──
+                // ── System Security (incident pipeline) ──
                 {
-                    text: 'Security',
+                    text: 'System Security',
                     route: null,
-                    icon: 'bi-shield-lock',
+                    icon: 'bi-shield-exclamation',
                     permissions: ["view_security"],
                     children: [
-                        { text: 'Dashboard', route: '?page=system/incident-dashboard', icon: 'bi-bar-chart-line', permissions: ["view_security"] },
-                        { text: 'Incidents', route: '?page=system/incidents', icon: 'bi-exclamation-triangle', permissions: ["view_security"] },
                         { text: 'Tickets', route: '?page=system/tickets', icon: 'bi-ticket-detailed', permissions: ["manage_security"] },
+                        { text: 'Incidents', route: '?page=system/incidents', icon: 'bi-exclamation-triangle', permissions: ["view_security"] },
                         { text: 'Events', route: '?page=system/events', icon: 'bi-bell', permissions: ["view_security"] },
-                        { text: 'Rule Engine', route: '?page=system/rulesets', icon: 'bi-funnel', permissions: ["manage_security"] },
-                        { text: 'Blocked IPs', route: '?page=system/security/blocked-ips', icon: 'bi-slash-circle', permissions: ["view_security"] },
+                        { text: 'Rules', route: '?page=system/rulesets', icon: 'bi-funnel', permissions: ["manage_security"] },
+                    ]
+                },
+
+                // ── Network Security (IP filtering / firewall) ──
+                {
+                    text: 'Network Security',
+                    route: null,
+                    icon: 'bi-hdd-network',
+                    permissions: ["view_security"],
+                    children: [
+                        { text: 'IPs', route: '?page=system/system/geoip', icon: 'bi-globe', permissions: ["view_security"] },
                         { text: 'IP Sets', route: '?page=system/security/ipsets', icon: 'bi-shield-shaded', permissions: ["view_security"] },
+                        { text: 'Blocked', route: '?page=system/security/blocked-ips', icon: 'bi-slash-circle', permissions: ["view_security"] },
                         { text: 'Firewall Log', route: '?page=system/security/firewall-log', icon: 'bi-journal-code', permissions: ["view_security"] },
-                        { text: 'GeoIP', route: '?page=system/system/geoip', icon: 'bi-globe', permissions: ["view_security"] },
-                        { text: 'Bouncer Signals', route: '?page=system/security/bouncer-signals', icon: 'bi-activity', permissions: ["view_security"] },
-                        { text: 'Bouncer Devices', route: '?page=system/security/bouncer-devices', icon: 'bi-fingerprint', permissions: ["view_security"] },
-                        { text: 'Bot Signatures', route: '?page=system/security/bot-signatures', icon: 'bi-robot', permissions: ["manage_security"] },
+                    ]
+                },
+
+                // ── Bouncer (signal / device / bot detection) ──
+                {
+                    text: 'Bouncer',
+                    route: null,
+                    icon: 'bi-fingerprint',
+                    permissions: ["view_security"],
+                    children: [
+                        { text: 'Signals', route: '?page=system/security/bouncer-signals', icon: 'bi-activity', permissions: ["view_security"] },
+                        { text: 'Devices', route: '?page=system/security/bouncer-devices', icon: 'bi-fingerprint', permissions: ["view_security"] },
+                        { text: 'Bots', route: '?page=system/security/bot-signatures', icon: 'bi-robot', permissions: ["manage_security"] },
                     ]
                 },
 

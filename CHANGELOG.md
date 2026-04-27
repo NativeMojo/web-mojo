@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Changed — Admin sidebar Security menu restructured
+
+- **Security Dashboard** is now a top-level sidebar item, placed directly
+  below the system **Dashboard** (route `?page=system/incident-dashboard`,
+  icon `bi-shield-check`).
+- The single 12-child **Security** group has been split into three smaller
+  groups: **System Security** (Tickets, Incidents, Events, Rules),
+  **Network Security** (IPs, IP Sets, Blocked, Firewall Log), and
+  **Bouncer** (Signals, Devices, Bots).
+- Labels were tightened: `Rule Engine` → `Rules`, `GeoIP` → `IPs`,
+  `Blocked IPs` → `Blocked`, `Bouncer Signals` → `Signals`,
+  `Bouncer Devices` → `Devices`, `Bot Signatures` → `Bots`.
+- Routes and per-item permissions are unchanged. Pure menu-config edit in
+  `src/admin.js`; no page registrations or framework APIs changed.
+
 ### Feature — SeriesChart axis label visibility
 
 - New `showXLabels` / `showYLabels` options (default `true`) hide the X /
