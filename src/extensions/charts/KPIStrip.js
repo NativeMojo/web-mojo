@@ -126,10 +126,12 @@ class KPIStrip extends View {
         //    `data` map comes back empty. /api/metrics/fetch uses the
         //    singular `slug=` form. Don't unify these — they're
         //    different endpoints with different conventions.
+        // Include sparklineSlugs too so REST tiles that borrow a trail
+        // also get a delta badge.
         let seriesPromise = null;
-        if (slugs.length) {
+        if (sparkSlugs.length) {
             const params = {
-                slugs: slugs.join(','),
+                slugs: sparkSlugs.join(','),
                 account: this.account,
                 granularity: this.granularity,
                 with_delta: true,
@@ -221,15 +223,23 @@ class KPIStrip extends View {
             const resp = await restPromises[restIdx++];
             const count = this._readRestCount(resp);
 
-            // If the tile borrowed a sparkline slug, pick up its trail
-            // from the same batched fetch the metric tiles used.
             const setPayload = { value: count, delta: null, deltaPct: null };
+
+            // If the tile borrowed a sparkline slug, pick up its trail
+            // AND its delta info from the batched series + fetch responses
+            // so the tile gets a "+12%" badge alongside the count.
             if (spec.sparklineSlug) {
                 const slugSeries = sparkInner?.data?.[spec.sparklineSlug];
                 const fallback   = sparkInner?.data?.default;
                 setPayload.sparkline = Array.isArray(slugSeries)
                     ? slugSeries
                     : (Array.isArray(fallback) ? fallback : []);
+
+                const deltaInfo = seriesData?.deltas?.[spec.sparklineSlug];
+                if (deltaInfo) {
+                    setPayload.delta    = deltaInfo.delta    ?? null;
+                    setPayload.deltaPct = deltaInfo.delta_pct ?? null;
+                }
             }
             tile.setData(setPayload);
         }
