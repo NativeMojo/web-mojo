@@ -130,7 +130,7 @@ Optional extensions for charts, maps, admin, and more:
 
 - **[Admin](./extensions/Admin.md)** - 50+ pre-built admin pages (users, jobs, security, files, shortlinks, messaging, push) + LLM-backed Assistant chat panel; wired into a `PortalWebApp` via `registerAdminPages` and `registerAssistant`. Admin **models** ship separately at `web-mojo/admin-models` (no UI deps)
 - **[Auth](./extensions/Auth.md)** - Drop-in sign-in / forgot / reset UI (`mountAuth`) and a low-level auth client (`createAuthClient`)
-- **[Charts](./extensions/Charts.md)** - Native SVG charts (SeriesChart, PieChart, MetricsChart, KPITile, KPIStrip) — no Chart.js dependency; `SeriesChart` supports opt-in `crosshairTracking`, Heckbert nice-number Y-axis ticks, and auto-rotating X labels; `MetricsChart` defaults `xLabelFormat` from granularity
+- **[Charts](./extensions/Charts.md)** - Native SVG charts (SeriesChart, PieChart, MetricsChart, KPITile, KPIStrip) — no Chart.js dependency; `SeriesChart` supports opt-in `crosshairTracking`, Heckbert nice-number Y-axis ticks, auto-rotating X labels, `showXLabels`/`showYLabels` to hide axis-label tracks, and `legendJustify` for legend alignment (default top-left); `MetricsChart` defaults `xLabelFormat` from granularity and plumbs all three new options through
 - **[KPITile](./extensions/KPITile.md)** - Compact presentation-only dashboard tile: label, value, delta badge, embedded sparkline; no fetch
 - **[KPIStrip](./extensions/KPIStrip.md)** - Row of `KPITile`s driven by a single batched metrics series call
 - **[DocIt](./extensions/DocIt.md)** - Markdown documentation portal: books, pages, edit-in-place, search (`DocItApp` extends `WebApp`)

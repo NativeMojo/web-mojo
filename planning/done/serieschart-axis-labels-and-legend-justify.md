@@ -256,5 +256,20 @@ All steps from the plan landed exactly as designed.
 
 ### Agent findings
 
-(To be filled in after spawning test-runner / docs-updater / security-review.)
+**test-runner**
+- 530/531 unit pass. Zero new regressions.
+- All 9 new SeriesChart tests confirmed green (5 in "axis label visibility" + 4 in "legend justify").
+- Sole unit failure (`MetricsChart.test.js` — "includes granularity, account, slugs, date range") is pre-existing, confirmed via `git stash` baseline.
+- Integration + build suite failures are pre-existing infrastructure issues (module-resolution, missing build artifacts) — unrelated to this commit.
+
+**docs-updater**
+- Scanned MetricsMiniChartWidget.md, KPITile.md, KPIStrip.md, Admin.md, examples.md — none reference the new options or need changes (sparkline docs use MiniChart, which doesn't share legend/axis-label code).
+- One file updated: `docs/web-mojo/README.md` line 133 — extended the Charts entry to mention `showXLabels`/`showYLabels` (hide axis-label tracks) and `legendJustify` (default top-left), and noted MetricsChart plumbs all three through.
+
+**security-review**
+- **Clean — no critical/warning findings.**
+- `legendJustify` allowlist gates the value before storage; the wrapper class is safe from injection.
+- Two info-level notes:
+  - `legendPosition` itself has no allowlist today — only matters if its value source ever becomes user-controlled (currently developer-supplied).
+  - `show*` flags use the established `!== false` truthiness pattern (passing `0` / `null` / `""` shows labels, only `false` hides them) — consistent with the rest of the file.
 
