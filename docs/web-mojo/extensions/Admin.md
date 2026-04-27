@@ -368,6 +368,7 @@ Messages stream through `app.ws` as typed events, each filtered by `conversation
 |-------|----------------|
 | `message:assistant_thinking` | Backend starts processing — shows a thinking indicator, disables input. |
 | `message:assistant_tool_call` | Backend calls a tool — updates thinking text to "Calling {tool}...". |
+| `message:assistant_text` | Intermediate prose emitted before tool calls in the same turn — appends an assistant bubble without clearing the thinking indicator or re-enabling input. |
 | `message:assistant_response` | Final response — hides indicator, appends an assistant message, re-enables input. |
 | `message:assistant_error` | Backend error — shows error as a system message, re-enables input. |
 
