@@ -1,11 +1,13 @@
 /**
- * GeographyPanel — world map + country leaderboard with slug-family selector.
+ * GeographyPanel — country leaderboard with slug-family selector.
  *
- * Wraps MetricsCountryMapView with a 4-button selector that switches
- * which `category=` is plotted: Events / Incidents / Firewall / Logins.
+ * Default render is COMPACT — only the leaderboard list shows, plus a
+ * "View Map" toolbar button that opens MetricsCountryMapView in an XL
+ * modal. The map is a heavy widget that competes for screen real
+ * estate; keeping it modal-on-demand cleans up the dashboard.
  *
- * Country leaderboard is its own list rendered alongside the map; click
- * a country in the leaderboard to open a Country Detail drawer.
+ * Pass `inlineMap: true` to render the map in the card itself (legacy
+ * behavior).
  */
 
 import View from '@core/View.js';
@@ -26,6 +28,7 @@ class GeographyPanel extends View {
             className: `sd-geography ${options.className || ''}`.trim()
         });
         this.activeFamily = options.family || 'events';
+        this.inlineMap = options.inlineMap === true;
         this._reflectFamilies();
         // State for the leaderboard list, populated when the map fetches.
         this.leaderboard = [];
@@ -37,60 +40,111 @@ class GeographyPanel extends View {
     }
 
     async getTemplate() {
+        // Inline-map mode: original side-by-side layout with the map in
+        // the card. Compact mode (default): leaderboard only + a toolbar
+        // button that opens the map in an XL modal.
+        const inlineMapHtml = this.inlineMap ? `
+                    <div class="sd-geo-grid">
+                        <div class="sd-geo-map-cell" data-container="inline-map"></div>
+                        ${this._leaderboardHtml()}
+                    </div>` : `
+                    ${this._leaderboardHtml()}`;
+
         return `
-            <div class="card sd-card">
+            <div class="card sd-card h-100">
                 <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-start">
                     <div>
                         <h3 class="card-title sd-card-title mb-0">Geography</h3>
                         <span class="card-subtitle text-muted small">Activity by country, last 7 days</span>
                     </div>
-                    <div class="btn-group btn-group-sm" role="group" aria-label="Slug family">
-                        {{#families}}
-                        <button type="button"
-                                class="btn btn-outline-secondary {{#active|bool}}active{{/active|bool}}"
-                                data-action="set-family"
-                                data-family="{{key}}">{{label}}</button>
-                        {{/families}}
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Slug family">
+                            {{#families}}
+                            <button type="button"
+                                    class="btn btn-outline-secondary {{#active|bool}}active{{/active|bool}}"
+                                    data-action="set-family"
+                                    data-family="{{key}}">{{label}}</button>
+                            {{/families}}
+                        </div>
+                        ${this.inlineMap ? '' : `
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-action="show-map" title="Show map">
+                            <i class="bi bi-globe-americas"></i>
+                        </button>`}
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <div class="sd-geo-grid">
-                        <div class="sd-geo-map-cell" data-container="map"></div>
-                        <ol class="sd-geo-leader list-unstyled mb-0">
-                            {{#leaderboardEmpty|bool}}
-                            <li class="px-3 py-3 text-muted small">No country activity in window.</li>
-                            {{/leaderboardEmpty|bool}}
-                            {{#leaderboard}}
-                            <li class="sd-geo-leader-row" data-action="open-country" data-cc="{{cc}}" data-name="{{name}}" data-total="{{total}}">
-                                <span class="sd-geo-cc sd-mono">{{cc}}</span>
-                                <span class="sd-geo-name">{{name}}</span>
-                                <span class="sd-geo-num sd-mono">{{total}}</span>
-                            </li>
-                            {{/leaderboard}}
-                        </ol>
-                    </div>
+                    ${inlineMapHtml}
                 </div>
             </div>
         `;
     }
 
+    _leaderboardHtml() {
+        return `
+            <ol class="sd-geo-leader sd-geo-leader-full list-unstyled mb-0">
+                {{#leaderboardEmpty|bool}}
+                <li class="px-3 py-3 text-muted small">No country activity in window.</li>
+                {{/leaderboardEmpty|bool}}
+                {{#leaderboard}}
+                <li class="sd-geo-leader-row" data-action="open-country" data-cc="{{cc}}" data-name="{{name}}" data-total="{{total}}">
+                    <span class="sd-geo-cc sd-mono">{{cc}}</span>
+                    <span class="sd-geo-name">{{name}}</span>
+                    <span class="sd-geo-num sd-mono">{{total}}</span>
+                </li>
+                {{/leaderboard}}
+            </ol>
+        `;
+    }
+
     async onInit() {
-        this.map = new MetricsCountryMapView({
-            containerId: 'map',
+        // Inline map only when explicitly opted in. Compact mode mounts
+        // the map lazily inside the modal when "Show map" is clicked.
+        if (this.inlineMap) {
+            this.map = new MetricsCountryMapView({
+                containerId: 'inline-map',
+                category: this._currentCategory(),
+                account: 'incident',
+                granularity: 'days',
+                maxCountries: 20,
+                metricLabel: this._currentLabel(),
+                height: 360,
+                mapStyle: 'dark',
+                mapOptions: { interactive: false }
+            });
+            this.addChild(this.map);
+        }
+        await this._fetchLeaderboard();
+    }
+
+    /**
+     * Open the world map in an XL modal. Built fresh each time so the
+     * MapLibre canvas always sizes correctly to the modal viewport
+     * (the lib doesn't always re-measure cleanly when the host
+     * container resizes).
+     */
+    async onActionShowMap() {
+        const map = new MetricsCountryMapView({
             category: this._currentCategory(),
             account: 'incident',
             granularity: 'days',
-            maxCountries: 20,
+            maxCountries: 30,
             metricLabel: this._currentLabel(),
-            height: 360,
+            height: 560,
             mapStyle: 'dark',
-            // Disable mouse/touch/scroll/keyboard so the map reads as a
-            // visualization, not a navigable embed. Trackpad scroll over
-            // the dashboard scrolls the page, not the map.
-            mapOptions: { interactive: false }
+            // Allow interaction in the modal — the map is the focal
+            // point there, not a thumbnail next to other widgets.
+            mapOptions: { interactive: true }
         });
-        this.addChild(this.map);
-        await this._fetchLeaderboard();
+        await Modal.drawer({
+            eyebrow: 'Geography',
+            title: this._currentLabel() + ' by Country',
+            meta: [
+                { icon: 'bi bi-calendar3', text: 'Last 7 days' },
+                { icon: 'bi bi-cursor', text: 'Drag, zoom, click markers' }
+            ],
+            view: map,
+            size: 'xl'
+        });
     }
 
     async _fetchLeaderboard() {
@@ -139,11 +193,19 @@ class GeographyPanel extends View {
         if (!key || key === this.activeFamily) return;
         this.activeFamily = key;
         this._reflectFamilies();
-        this.map.category = this._currentCategory();
-        this.map.metricLabel = this._currentLabel();
+        if (this.map) {
+            this.map.category = this._currentCategory();
+            this.map.metricLabel = this._currentLabel();
+        }
         await this._fetchLeaderboard();
         await this.render();
-        await this.map.refresh();
+        if (this.map) await this.map.refresh();
+    }
+
+    async refresh() {
+        await this._fetchLeaderboard();
+        if (this.isMounted()) await this.render();
+        if (this.map) return this.map.refresh();
     }
 
     async onActionOpenCountry(event, element) {
@@ -152,12 +214,6 @@ class GeographyPanel extends View {
         const total = element.dataset.total;
         if (!cc) return;
         this.openCountryDrawer({ cc, name, total });
-    }
-
-    async refresh() {
-        await this._fetchLeaderboard();
-        if (this.isMounted()) await this.render();
-        return this.map?.refresh();
     }
 
     _currentCategory() {

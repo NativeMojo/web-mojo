@@ -2269,10 +2269,14 @@
     display: grid;
     gap: 24px;
 }
+.security-dashboard .sd-grid-2 {
+    grid-template-columns: 1fr 1fr;
+}
 .security-dashboard .sd-grid-2-3 {
     grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
 }
 @media (max-width: 1100px) {
+    .security-dashboard .sd-grid-2,
     .security-dashboard .sd-grid-2-3 { grid-template-columns: 1fr; }
 }
 
@@ -2337,6 +2341,12 @@
     border-left: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08));
     overflow-y: auto;
     max-height: 360px;
+}
+/* Compact-mode leaderboard (no inline map) — full card width, no left
+   border (since there's nothing to the left of it). */
+.security-dashboard .sd-geo-leader-full {
+    border-left: 0;
+    max-height: 420px;
 }
 @media (max-width: 1100px) {
     .security-dashboard .sd-geo-leader {

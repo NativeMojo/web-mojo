@@ -28,6 +28,7 @@
 import Page from '@core/Page.js';
 import StatusStripPanel from './StatusStripPanel.js';
 import PriorityQueueView from './PriorityQueueView.js';
+import TicketsQueueView from './TicketsQueueView.js';
 import ThreatCompositionChart from './ThreatCompositionChart.js';
 import GeographyPanel from './GeographyPanel.js';
 import DistributionStrip from './DistributionStrip.js';
@@ -70,13 +71,14 @@ class SecurityDashboardPage extends Page {
                     <div data-container="status-strip"></div>
                 </section>
 
-                <section class="sd-section sd-grid sd-grid-2-3">
+                <section class="sd-section sd-grid sd-grid-2">
                     <div data-container="priority-queue"></div>
-                    <div data-container="composition"></div>
+                    <div data-container="tickets-queue"></div>
                 </section>
 
-                <section class="sd-section">
+                <section class="sd-section sd-grid sd-grid-2-3">
                     <div data-container="geography"></div>
+                    <div data-container="composition"></div>
                 </section>
 
                 <section class="sd-section">
@@ -106,21 +108,28 @@ class SecurityDashboardPage extends Page {
         this.statusStrip = new StatusStripPanel({ containerId: 'status-strip' });
         this.addChild(this.statusStrip);
 
-        // ── Section 2 — Needs Attention + Threat Composition ─────────
+        // ── Section 2 — Needs Attention (Incidents | Tickets) ───────
+        // Two parallel queues: incidents (system noticed) on the left,
+        // tickets (human action items) on the right.
         this.priorityQueue = new PriorityQueueView({
             containerId: 'priority-queue',
             allowActions: canManageSecurity
         });
         this.addChild(this.priorityQueue);
 
+        this.ticketsQueue = new TicketsQueueView({
+            containerId: 'tickets-queue',
+            allowActions: canManageSecurity
+        });
+        this.addChild(this.ticketsQueue);
+
+        // ── Section 3 — Geography (compact) | Threat Composition ────
+        // Geography defaults to compact mode — leaderboard only, with a
+        // "show map" toolbar button that opens the world map in an XL
+        // modal. Keeps the dashboard cleaner.
         this.composition = new ThreatCompositionChart({ containerId: 'composition' });
         this.addChild(this.composition);
 
-        // ── Sections 3–7 ─────────────────────────────────────────────
-        // Eager-mount for now. The framework's IntersectionObserver-based
-        // lazyMount doesn't fire reliably inside PortalApp's separately-
-        // scrolled .portal-content container; tracked as a follow-up.
-        // Eager mount means ~7 fetches on first paint, all parallelizable.
         this.geography = new GeographyPanel({ containerId: 'geography' });
         this.addChild(this.geography);
 
@@ -145,6 +154,7 @@ class SecurityDashboardPage extends Page {
         // Tiered refresh — only the always-visible top section ticks fast.
         this.scheduleRefresh(() => this.statusStrip?.refresh(),    60_000,  { tier: 'fast' });
         this.scheduleRefresh(() => this.priorityQueue?.refresh(),  60_000,  { tier: 'fast' });
+        this.scheduleRefresh(() => this.ticketsQueue?.refresh(),   60_000,  { tier: 'fast' });
         this.scheduleRefresh(() => this.composition?.refresh(),    300_000, { tier: 'slow' });
         this.scheduleRefresh(() => this._refreshLazyMounted(),     300_000, { tier: 'slow' });
     }
