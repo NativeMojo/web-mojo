@@ -14,7 +14,6 @@
 
 import View from '@core/View.js';
 import PieChart from '@ext/charts/PieChart.js';
-import { IncidentList } from '@ext/admin/models/Incident.js';
 import Modal from '@core/views/feedback/Modal.js';
 
 const STATUS_COLORS = {
@@ -135,22 +134,21 @@ class DistributionStrip extends View {
         const rest = this.getApp()?.rest;
         if (!rest) return;
 
-        // Aggregate from a recent page — works without backend group_by.
-        let incidents = [];
-        try {
-            const list = new IncidentList({ params: { sort: '-created', size: 200 } });
-            await list.fetch();
-            incidents = list.models || [];
-        } catch (err) {
-            console.warn('[DistributionStrip] incidents fetch failed:', err);
-        }
+        // Status donut + priority buckets via the generic _mode=top
+        // aggregation surface. One round-trip each — no incident-page
+        // download + client-side aggregation.
+        const [statusRows, priorityRows] = await Promise.all([
+            this._fetchTopByField('status'),
+            this._fetchTopByField('priority')
+        ]);
 
-        this._statusData = this._aggregateByStatus(incidents);
-        this.priorityRows = this._aggregateByPriority(incidents);
-        // Buckets always render (showing 0 against each tier is useful at-
-        // a-glance — confirms there are no Critical/High right now). Only
-        // hide the rows when the API didn't return ANY incidents to bucket.
-        this.priorityEmpty = incidents.length === 0;
+        const totalIncidents = statusRows.reduce((s, r) => s + r.value, 0);
+        this._statusData = this._buildStatusSlices(statusRows);
+        this.priorityRows = this._bucketByPriority(priorityRows);
+        // Hide the rows entirely when the backend reports zero incidents.
+        // Otherwise show the bucket scaffolding even when individual tiers
+        // are 0 — useful "no Critical right now" at-a-glance.
+        this.priorityEmpty = totalIncidents === 0;
 
         // Bouncer funnel — sum the last 7 days of each stage so the
         // funnel reflects cumulative activity, not just today's bucket.
@@ -190,25 +188,55 @@ class DistributionStrip extends View {
         if (this.isMounted()) await this.render();
     }
 
-    _aggregateByStatus(incidents) {
-        const counts = {};
-        for (const inc of incidents) {
-            const s = (inc.get('status') || 'new').toLowerCase();
-            counts[s] = (counts[s] || 0) + 1;
+    /**
+     * Single _mode=top fetch returning [{name, value}] for any field
+     * on /api/incident/incident.
+     */
+    async _fetchTopByField(field) {
+        const rest = this.getApp()?.rest;
+        if (!rest) return [];
+        try {
+            const resp = await rest.GET('/api/incident/incident', {
+                _mode: 'top',
+                _field: field,
+                _size: 50,            // status has ~7 values; priority is 1..12 — generous cap
+                _: Date.now()
+            });
+            const rows = resp?.data?.data;
+            if (!Array.isArray(rows)) return [];
+            return rows.map(r => ({ key: String(r.key ?? ''), value: Number(r.value) || 0 }));
+        } catch (err) {
+            console.warn(`[DistributionStrip] _mode=top fetch failed for ${field}:`, err);
+            return [];
         }
-        return Object.entries(counts).map(([label, value]) => ({
-            label: label.charAt(0).toUpperCase() + label.slice(1),
-            value,
-            color: STATUS_COLORS[label] || 'rgba(108, 117, 125, 0.6)'
-        })).sort((a, b) => b.value - a.value);
     }
 
-    _aggregateByPriority(incidents) {
+    /** Map status rows from _mode=top to donut slices with colors. */
+    _buildStatusSlices(rows) {
+        return rows
+            .filter(r => r.key)
+            .map(r => {
+                const k = r.key.toLowerCase();
+                return {
+                    label: k.charAt(0).toUpperCase() + k.slice(1),
+                    value: r.value,
+                    color: STATUS_COLORS[k] || 'rgba(108, 117, 125, 0.6)'
+                };
+            })
+            .sort((a, b) => b.value - a.value);
+    }
+
+    /**
+     * Bucket priority rows from _mode=top (one row per priority value
+     * 1..12) into the 4 severity tiers (Critical/High/Warn/Info).
+     */
+    _bucketByPriority(rows) {
         const buckets = PRIORITY_BUCKETS.map(b => ({ ...b, value: 0 }));
-        for (const inc of incidents) {
-            const p = parseInt(inc.get('priority'), 10) || 0;
+        for (const row of rows) {
+            const p = parseInt(row.key, 10);
+            if (!Number.isFinite(p)) continue;
             const bucket = buckets.find(b => b.match(p));
-            if (bucket) bucket.value += 1;
+            if (bucket) bucket.value += row.value;
         }
         const max = Math.max(1, ...buckets.map(b => b.value));
         return buckets.map(b => ({

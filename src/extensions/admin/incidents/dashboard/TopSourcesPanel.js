@@ -3,9 +3,9 @@
  *   1. Top Source IPs (last 7d)
  *   2. Top Categories (last 7d)
  *
- * Tries `group_by=source_ip&order_by=-count` on the events endpoint
- * first; if that 400s (backend hasn't shipped group_by), falls back to
- * fetching the most recent 500 events and aggregating client-side.
+ * Backend-aggregated via the generic _mode=top surface on
+ * /api/incident/event. One round-trip per list, no client-side
+ * fallback — the backend does the GROUP BY + ORDER BY + LIMIT.
  *
  * Each row click opens a filtered events drawer. If `allowBlock` is
  * true (manage_security), Top IPs gets an inline "Block IP" action.
@@ -13,7 +13,6 @@
 
 import View from '@core/View.js';
 import Modal from '@core/views/feedback/Modal.js';
-import { IncidentEventList } from '@ext/admin/models/Incident.js';
 
 // Escape backend-sourced values before interpolating them into raw HTML
 // strings passed as Modal.drawer's `body:` parameter. The body is injected
@@ -25,7 +24,6 @@ const escHtml = (s) => {
 };
 
 const WINDOW_DAYS = 7;
-const FALLBACK_PAGE_SIZE = 500;
 const TOP_N = 10;
 
 class TopSourcesPanel extends View {
@@ -40,7 +38,6 @@ class TopSourcesPanel extends View {
         this.cats = [];
         this.ipsEmpty = true;
         this.catsEmpty = true;
-        this.fellBack = false;
     }
 
     async getTemplate() {
@@ -50,7 +47,7 @@ class TopSourcesPanel extends View {
                     <div class="card sd-card h-100">
                         <div class="card-header bg-transparent border-0">
                             <h3 class="card-title sd-card-title mb-0">Top Source IPs</h3>
-                            <span class="card-subtitle text-muted small">Last ${WINDOW_DAYS} days{{#fellBack|bool}} · client-side aggregation{{/fellBack|bool}}</span>
+                            <span class="card-subtitle text-muted small">Last ${WINDOW_DAYS} days</span>
                         </div>
                         <ul class="list-unstyled mb-0 sd-rank-list">
                             {{#ipsEmpty|bool}}<li class="px-3 py-4 text-muted small">No source IPs in window.</li>{{/ipsEmpty|bool}}
@@ -76,7 +73,7 @@ class TopSourcesPanel extends View {
                     <div class="card sd-card h-100">
                         <div class="card-header bg-transparent border-0">
                             <h3 class="card-title sd-card-title mb-0">Top Categories</h3>
-                            <span class="card-subtitle text-muted small">Last ${WINDOW_DAYS} days{{#fellBack|bool}} · client-side aggregation{{/fellBack|bool}}</span>
+                            <span class="card-subtitle text-muted small">Last ${WINDOW_DAYS} days</span>
                         </div>
                         <ul class="list-unstyled mb-0 sd-rank-list">
                             {{#catsEmpty|bool}}<li class="px-3 py-4 text-muted small">No category activity in window.</li>{{/catsEmpty|bool}}
@@ -112,8 +109,10 @@ class TopSourcesPanel extends View {
 
     async _fetch() {
         const drStart = Math.floor((Date.now() - WINDOW_DAYS * 86400000) / 1000);
-        const ipsRaw = await this._fetchIps(drStart);
-        const catsRaw = await this._fetchCategories(drStart);
+        const [ipsRaw, catsRaw] = await Promise.all([
+            this._fetchTop('source_ip', drStart),
+            this._fetchTop('category', drStart)
+        ]);
         this.ips = this._withRank(ipsRaw);
         this.cats = this._withRank(catsRaw);
         this.ipsEmpty = this.ips.length === 0;
@@ -125,79 +124,32 @@ class TopSourcesPanel extends View {
         if (this.isMounted()) await this.render();
     }
 
-    async _fetchIps(drStart) {
+    /**
+     * Fetch top-N for a single field via the framework's _mode=top
+     * aggregation surface. Returns [{name, value}] sorted by value desc.
+     */
+    async _fetchTop(field, drStart) {
         const rest = this.getApp()?.rest;
         if (!rest) return [];
-
-        // Try server-side group_by first.
         try {
             const resp = await rest.GET('/api/incident/event', {
-                group_by: 'source_ip',
-                order_by: '-count',
-                size: TOP_N,
+                _mode: 'top',
+                _field: field,
+                _size: TOP_N,
                 dr_start: drStart,
                 _: Date.now()
             });
-            const rows = this._parseGroupByResponse(resp, 'source_ip');
-            if (rows) {
-                return rows.filter(r => r.name && r.name !== '—').slice(0, TOP_N);
-            }
-        } catch (_e) { /* falls through to client-side */ }
-
-        // Fallback: client-side aggregation of recent events.
-        this.fellBack = true;
-        const list = new IncidentEventList({ params: { dr_start: drStart, size: FALLBACK_PAGE_SIZE, sort: '-created' } });
-        try { await list.fetch(); } catch (_e) { return []; }
-        return this._aggregate(list.models || [], m => m.get('source_ip')).slice(0, TOP_N);
-    }
-
-    async _fetchCategories(drStart) {
-        const rest = this.getApp()?.rest;
-        if (!rest) return [];
-
-        try {
-            const resp = await rest.GET('/api/incident/event', {
-                group_by: 'category',
-                order_by: '-count',
-                size: TOP_N,
-                dr_start: drStart,
-                _: Date.now()
-            });
-            const rows = this._parseGroupByResponse(resp, 'category');
-            if (rows) {
-                return rows.filter(r => r.name && r.name !== '—').slice(0, TOP_N);
-            }
-        } catch (_e) { /* falls through */ }
-
-        // Fallback shares the same incident-events page if we just fetched it.
-        this.fellBack = true;
-        const list = new IncidentEventList({ params: { dr_start: drStart, size: FALLBACK_PAGE_SIZE, sort: '-created' } });
-        try { await list.fetch(); } catch (_e) { return []; }
-        return this._aggregate(list.models || [], m => m.get('category')).slice(0, TOP_N);
-    }
-
-    _parseGroupByResponse(resp, key) {
-        // Mojo group_by responses commonly come back as either:
-        //   { data: { data: [{ source_ip: '...', count: N }, ...] } }
-        // or { data: [{ ... }] }. Be liberal in what we accept.
-        const body = resp?.data?.data ?? resp?.data ?? resp;
-        if (!Array.isArray(body)) return null;
-        return body.map(row => ({
-            name: String(row[key] ?? '—'),
-            value: Number(row.count ?? row.total ?? row.n ?? 0)
-        })).filter(r => r.value > 0);
-    }
-
-    _aggregate(models, picker) {
-        const counts = new Map();
-        for (const m of models) {
-            const key = picker(m);
-            if (!key) continue;
-            counts.set(key, (counts.get(key) || 0) + 1);
+            // _mode=top response: { status, graph, field, agg, size,
+            //                       data: [{key, value, ...}] }
+            const rows = resp?.data?.data;
+            if (!Array.isArray(rows)) return [];
+            return rows
+                .filter(r => r.key && r.key !== '—')
+                .map(r => ({ name: String(r.key), value: Number(r.value) || 0 }));
+        } catch (err) {
+            console.warn(`[TopSourcesPanel] _mode=top fetch failed for ${field}:`, err);
+            return [];
         }
-        return Array.from(counts.entries())
-            .sort((a, b) => b[1] - a[1])
-            .map(([name, value]) => ({ name, value }));
     }
 
     async onActionOpenIp(event, element) {

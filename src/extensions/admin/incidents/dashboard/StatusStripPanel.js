@@ -41,7 +41,7 @@ class StatusStripPanel extends View {
             sparklineDays: 7,
             tiles: [
                 {
-                    rest: { endpoint: '/api/incident/incident', params: { status: 'new', size: 0 } },
+                    rest: { endpoint: '/api/incident/incident', params: { status: 'new', _mode: 'count' } },
                     sparklineSlug: 'incidents',  // borrow the trail from the incidents metric series
                     key: 'new-incidents',
                     label: 'New Incidents',
@@ -55,7 +55,7 @@ class StatusStripPanel extends View {
                 { slug: 'bouncer:blocks',    label: 'Bouncer Blocks',      tone: 'bad' },
                 { slug: 'login:new_country', label: 'New-Country Logins',  tone: 'bad' },
                 {
-                    rest: { endpoint: '/api/system/geoip', params: { is_blocked: true, size: 0 } },
+                    rest: { endpoint: '/api/system/geoip', params: { is_blocked: true, _mode: 'count' } },
                     key: 'active-blocks',
                     label: 'Active Blocks',
                     tone: 'bad'

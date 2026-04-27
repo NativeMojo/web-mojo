@@ -257,6 +257,9 @@ class KPIStrip extends View {
     _readRestCount(response) {
         if (!response) return null;
         const body = response.data || response;
+        // _mode=count returns { status, count } at the top level
+        // (no `data` array). Fall through to the older shape for any
+        // tile spec that hasn't been migrated yet.
         if (typeof body?.count === 'number') return body.count;
         if (typeof body?.data?.count === 'number') return body.data.count;
         return null;
