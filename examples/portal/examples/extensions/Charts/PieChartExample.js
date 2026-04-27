@@ -51,7 +51,11 @@ class PieChartExample extends Page {
             data: SEED,
             cutout: 0.55,
             width: 240, height: 240,
-            legendPosition: 'right'
+            legendPosition: 'right',
+            // Center label demo — function form receives ({ total, segments })
+            // and returns the string to render inside the cutout.
+            centerLabel: ({ total }) => total,
+            centerSubLabel: 'TOTAL'
         });
         this.addChild(this.donut);
 
@@ -106,8 +110,8 @@ class PieChartExample extends Page {
                 </div>
                 <div class="col-lg-6">
                     <div class="card"><div class="card-body">
-                        <strong>Doughnut</strong>
-                        <div class="text-muted small mb-2"><code>cutout: 0.55</code></div>
+                        <strong>Doughnut + center label</strong>
+                        <div class="text-muted small mb-2"><code>cutout: 0.55, centerLabel, centerSubLabel</code></div>
                         <div data-container="donut-slot"></div>
                     </div></div>
                 </div>

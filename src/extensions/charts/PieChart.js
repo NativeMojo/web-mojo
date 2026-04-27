@@ -38,6 +38,14 @@ class PieChart extends View {
         // 0 = solid pie; 0..1 fraction of outer radius for inner hole.
         this.cutout = options.cutout || 0;
 
+        // Donut center label. Static string OR a function called with
+        // ({ total, segments }) returning a string. `centerSubLabel` is
+        // optional smaller text below.
+        // ⚠️ Trust boundary: rendered as raw <text> content via SVG; treat
+        // as developer-controlled (not from user input).
+        this.centerLabel = options.centerLabel ?? null;
+        this.centerSubLabel = options.centerSubLabel ?? null;
+
         this.colors = Array.isArray(options.colors) && options.colors.length
             ? [...options.colors]
             : [...DEFAULT_COLORS];
@@ -353,6 +361,48 @@ class PieChart extends View {
                     ? `${seg.label} (${seg.pct.toFixed(1)}%)`
                     : seg.label;
                 this.svg.appendChild(t);
+            }
+        }
+
+        // Center label (only meaningful when cutout > 0).
+        // Resolve dynamic labels from a function or static string.
+        if (innerR > 0 && (this.centerLabel != null || this.centerSubLabel != null)) {
+            const total = this._segments.reduce((s, seg) => s + seg.value, 0);
+            const ctx = { total, segments: this._segments };
+            const main = typeof this.centerLabel === 'function'
+                ? this.centerLabel(ctx)
+                : this.centerLabel;
+            const sub = typeof this.centerSubLabel === 'function'
+                ? this.centerSubLabel(ctx)
+                : this.centerSubLabel;
+
+            if (main != null) {
+                const mainText = this._svgEl('text', {
+                    x: cx,
+                    y: sub != null ? cy - 2 : cy + 6,
+                    'text-anchor': 'middle',
+                    'dominant-baseline': 'middle',
+                    'font-size': '20',
+                    'font-weight': '500',
+                    fill: 'var(--bs-body-color, #212529)',
+                    class: 'mini-pie-center-label'
+                });
+                mainText.textContent = String(main);
+                this.svg.appendChild(mainText);
+            }
+            if (sub != null) {
+                const subText = this._svgEl('text', {
+                    x: cx,
+                    y: cy + 16,
+                    'text-anchor': 'middle',
+                    'dominant-baseline': 'middle',
+                    'font-size': '9',
+                    'letter-spacing': '0.12em',
+                    fill: 'var(--bs-secondary-color, #6c757d)',
+                    class: 'mini-pie-center-sub'
+                });
+                subText.textContent = String(sub).toUpperCase();
+                this.svg.appendChild(subText);
             }
         }
 

@@ -112,7 +112,7 @@ export class View {
   addChild(childView, options) {
     try {
       if (!childView || typeof childView !== "object") return this;
-      
+
       // Allow overriding containerId and id via options
       if (options) {
         if (options.containerId || options.container) {
@@ -121,8 +121,14 @@ export class View {
         if (options.id) {
           childView.id = options.id;
         }
+        // lazyMount: defer the child's render until its container scrolls
+        // into view. Useful for long dashboards where below-the-fold
+        // panels would otherwise fetch on first paint.
+        if (options.lazyMount === true) {
+          childView._lazyMount = true;
+        }
       }
-      
+
       childView.parent = this;
       if (this.getApp()) childView.app = this.app;
       this.children[childView.id] = childView;
@@ -248,11 +254,59 @@ export class View {
   }
 
   async _renderChildren() {
+    const lazyPending = [];
     for (const id in this.children) {
       const child = this.children[id];
       if (!child) continue;
       child.parent = this;
+      if (child._lazyMount && !child._lazyTriggered) {
+        // Skip render — observer will mount it when its container enters
+        // the viewport. Track it for observer setup below.
+        lazyPending.push(child);
+        continue;
+      }
       await Promise.resolve(child.render()).catch(err => View._warn(`Child render error (${id})`, err));
+    }
+    if (lazyPending.length) this._setupLazyMountObserver(lazyPending);
+  }
+
+  /**
+   * Start an IntersectionObserver per pending lazy child. When the
+   * container scrolls into view, mark the child as triggered and render.
+   * @private
+   */
+  _setupLazyMountObserver(pendingChildren) {
+    if (typeof IntersectionObserver === 'undefined') {
+      // SSR / unsupported — fall back to immediate render so behavior
+      // degrades gracefully.
+      pendingChildren.forEach(c => {
+        c._lazyTriggered = true;
+        Promise.resolve(c.render()).catch(err => View._warn(`Lazy child render error (${c.id})`, err));
+      });
+      return;
+    }
+
+    if (!this._lazyObserver) {
+      this._lazyObserver = new IntersectionObserver((entries, observer) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const child = entry.target.__mojoLazyChild;
+          observer.unobserve(entry.target);
+          if (!child || child._lazyTriggered) continue;
+          child._lazyTriggered = true;
+          Promise.resolve(child.render()).catch(err => View._warn(`Lazy child render error (${child.id})`, err));
+        }
+      }, {
+        rootMargin: '120px 0px',  // start mounting just before scroll-in
+        threshold: 0.01
+      });
+    }
+
+    for (const child of pendingChildren) {
+      const container = this.getChildElement(child.containerId);
+      if (!container) continue;
+      container.__mojoLazyChild = child;
+      this._lazyObserver.observe(container);
     }
   }
 
@@ -352,6 +406,10 @@ export class View {
   async destroy() {
     try {
         this.events.unbind();
+        if (this._lazyObserver) {
+            this._lazyObserver.disconnect();
+            this._lazyObserver = null;
+        }
       // destroy children first (support async or sync destroy)
       for (const id in this.children) {
         const ch = this.children[id];

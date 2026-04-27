@@ -61,6 +61,30 @@ class MetricsChart extends View {
         this.showDateRange = options.showDateRange !== false;
         this.showTypeSwitch = options.showTypeSwitch !== false;
 
+        // Compact header — when true, drop the gear menu entirely and
+        // show only a small inline range toggle. Used by dashboard panels
+        // where the chart is sub-titled by the surrounding card and we
+        // don't want the full granularity picker.
+        this.compactHeader = options.compactHeader === true;
+        if (this.compactHeader) {
+            // In compact mode the gear menu is suppressed; the type switch
+            // is also off by default since dashboard charts pin a type.
+            this.showGranularity = false;
+            this.showTypeSwitch = options.showTypeSwitch === true;
+        }
+
+        // Pass-through to the series API so KPI-style displays elsewhere
+        // (and any caller that wants access to deltas) can request prev_data
+        // + deltas in the same call. Note: this changes which endpoint is
+        // hit — `series` (point-in-time + deltas) instead of `fetch`
+        // (full time-series). Most chart use-cases want `fetch`; only set
+        // this when you need deltas.
+        this.withDelta = options.withDelta === true;
+        if (this.withDelta && options.endpoint === undefined) {
+            // Default endpoint switch — only when caller didn't pin one.
+            this.endpoint = '/api/metrics/series';
+        }
+
         this.granularityOptions = options.granularityOptions || [
             { value: 'minutes', label: 'Minutes' },
             { value: 'hours',   label: 'Hours' },
@@ -292,6 +316,7 @@ class MetricsChart extends View {
             account: this.account,
             with_labels: true
         };
+        if (this.withDelta) params.with_delta = true;
         if (this.slugs) {
             this.slugs.forEach(slug => {
                 if (!params['slugs[]']) params['slugs[]'] = [];

@@ -1,6 +1,6 @@
 {
   "generatedAt": "static",
-  "pageCount": 79,
+  "pageCount": 80,
   "pages": [
     {
       "name": "ActiveGroup",
@@ -888,6 +888,31 @@
       "section": "Extensions",
       "icon": "bi-graph-up",
       "order": 13,
+      "topic": "extensions",
+      "group": "Charts"
+    },
+    {
+      "name": "Charts",
+      "area": "extensions",
+      "route": "extensions/charts/kpi-strip",
+      "title": "KPITile + KPIStrip",
+      "summary": "Compact dashboard tiles fed by ONE batched series-with-deltas fetch + parallel REST counts.",
+      "docs": "docs/web-mojo/extensions/Charts.md",
+      "tags": [
+        "chart",
+        "minichart",
+        "serieschart",
+        "piechart",
+        "circular-progress",
+        "sparkline",
+        "native-svg"
+      ],
+      "page": "KPIStripExample.js",
+      "modulePath": "./examples/extensions/Charts/KPIStripExample.js",
+      "sourcePath": "examples/portal/examples/extensions/Charts/KPIStripExample.js",
+      "section": "Extensions",
+      "icon": "bi-graph-up",
+      "order": 15,
       "topic": "extensions",
       "group": "Charts"
     },
@@ -2437,6 +2462,13 @@
               "summary": "Backend-driven sparkline tiles with header, trending, and settings popover.",
               "icon": "bi-graph-up",
               "docs": "docs/web-mojo/extensions/Charts.md"
+            },
+            {
+              "route": "extensions/charts/kpi-strip",
+              "title": "KPITile + KPIStrip",
+              "summary": "Compact dashboard tiles fed by ONE batched series-with-deltas fetch + parallel REST counts.",
+              "icon": "bi-graph-up",
+              "docs": "docs/web-mojo/extensions/Charts.md"
             }
           ]
         },
@@ -2884,6 +2916,13 @@
           "route": "extensions/charts/metrics-mini-chart",
           "title": "MetricsMiniChartWidget",
           "summary": "Backend-driven sparkline tiles with header, trending, and settings popover.",
+          "icon": "bi-graph-up",
+          "docs": "docs/web-mojo/extensions/Charts.md"
+        },
+        {
+          "route": "extensions/charts/kpi-strip",
+          "title": "KPITile + KPIStrip",
+          "summary": "Compact dashboard tiles fed by ONE batched series-with-deltas fetch + parallel REST counts.",
           "icon": "bi-graph-up",
           "docs": "docs/web-mojo/extensions/Charts.md"
         },

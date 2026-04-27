@@ -32,6 +32,7 @@ import ModalView from './ModalView.js';
 import BusyIndicator from './BusyIndicator.js';
 import CodeViewer from './CodeViewer.js';
 import HtmlPreview from './HtmlPreview.js';
+import View from '@core/View.js';
 import { File as FileModel } from '@core/models/Files.js';
 
 class Modal {
@@ -296,6 +297,89 @@ class Modal {
     }
 
     // ── show / showModel / showModelById ──────────────────────
+
+    /**
+     * Drawer-style modal with a standardized "context · title · meta"
+     * header. Used by dashboard drill-downs (day detail, country detail,
+     * filtered table) so every drawer has the same shape.
+     *
+     * Header layout:
+     *   [eyebrow]
+     *   Big Title
+     *   meta · meta · meta · …
+     *
+     * @param {object} options
+     * @param {string} [options.eyebrow]   - Small uppercase tag above title
+     * @param {string}  options.title      - Drawer title (string only)
+     * @param {Array<string|{icon,text}>} [options.meta] - Subtitle row items
+     * @param {View|string} options.view   - Body content (View or HTML string)
+     * @param {string} [options.size='lg'] - Modal size
+     * @returns {Promise<*>}
+     */
+    static async drawer(options = {}) {
+        const {
+            eyebrow,
+            title,
+            meta = [],
+            view,
+            body,
+            size = 'lg',
+            ...rest
+        } = options;
+
+        const metaHtml = meta.length ? `
+            <div class="modal-drawer-meta">
+                ${meta.map(m => {
+                    if (typeof m === 'string') return `<span>${Modal._esc(m)}</span>`;
+                    const icon = m.icon ? `<i class="${Modal._esc(m.icon)} me-1"></i>` : '';
+                    return `<span>${icon}${Modal._esc(m.text || '')}</span>`;
+                }).join('')}
+            </div>` : '';
+
+        const headerHtml = `
+            <div class="modal-drawer-head">
+                ${eyebrow ? `<span class="modal-drawer-eyebrow">${Modal._esc(eyebrow)}</span>` : ''}
+                <h2 class="modal-drawer-title">${Modal._esc(title || '')}</h2>
+                ${metaHtml}
+            </div>
+        `;
+
+        // Compose the body: drawer header + caller's view/body. The body
+        // accepts a View or a raw HTML string.
+        let composedBody;
+        if (view && typeof view === 'object' && typeof view.render === 'function') {
+            // Wrap the View in a small holder so the modal renders the
+            // header markup AND the caller's View as a child.
+            const Wrapper = class extends View {
+                async getTemplate() {
+                    return `${headerHtml}<div class="modal-drawer-body" data-container="drawer-body"></div>`;
+                }
+                async onInit() {
+                    view.containerId = 'drawer-body';
+                    this.addChild(view);
+                }
+            };
+            composedBody = new Wrapper();
+        } else {
+            composedBody = `${headerHtml}<div class="modal-drawer-body">${body || ''}</div>`;
+        }
+
+        return Modal.dialog({
+            header: false,
+            body: composedBody,
+            size,
+            centered: false,
+            buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }],
+            ...rest
+        });
+    }
+
+    static _esc(s) {
+        const d = (typeof document !== 'undefined') ? document.createElement('div') : null;
+        if (!d) return String(s ?? '');
+        d.textContent = String(s ?? '');
+        return d.innerHTML;
+    }
 
     /**
      * Show a View instance in a modal. Header is hidden by default

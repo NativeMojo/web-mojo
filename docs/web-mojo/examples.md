@@ -160,6 +160,7 @@ Single canonical example per documented component. Pages are organized by topic 
 | [PieChart](../../examples/portal/examples/extensions/Charts/PieChartExample.js) | Native pie + doughnut, slice labels, click drill-down, animated updates. | [extensions/Charts.md](../../docs/web-mojo/extensions/Charts.md) |
 | [CircularProgress](../../examples/portal/examples/extensions/Charts/CircularProgressExample.js) | Sizes, variants, themes, multi-segment, and live setValue updates. | [extensions/Charts.md](../../docs/web-mojo/extensions/Charts.md) |
 | [MetricsMiniChartWidget](../../examples/portal/examples/extensions/Charts/MetricsMiniChartExample.js) | Backend-driven sparkline tiles with header, trending, and settings popover. | [extensions/Charts.md](../../docs/web-mojo/extensions/Charts.md) |
+| [KPITile + KPIStrip](../../examples/portal/examples/extensions/Charts/KPIStripExample.js) | Compact dashboard tiles fed by ONE batched series-with-deltas fetch + parallel REST counts. | [extensions/Charts.md](../../docs/web-mojo/extensions/Charts.md) |
 
 ### Maps & Location
 

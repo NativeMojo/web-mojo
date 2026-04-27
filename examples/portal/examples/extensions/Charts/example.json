@@ -38,6 +38,12 @@
             "route": "extensions/charts/metrics-mini-chart",
             "title": "MetricsMiniChartWidget",
             "summary": "Backend-driven sparkline tiles with header, trending, and settings popover."
+        },
+        {
+            "page": "KPIStripExample.js",
+            "route": "extensions/charts/kpi-strip",
+            "title": "KPITile + KPIStrip",
+            "summary": "Compact dashboard tiles fed by ONE batched series-with-deltas fetch + parallel REST counts."
         }
     ]
 }

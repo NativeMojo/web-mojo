@@ -128,11 +128,72 @@ class Page extends View {
     this.isActive = false;
     this._wasExited = true;
 
+    // Auto-clear any intervals registered via scheduleRefresh()
+    this._clearScheduledRefreshes();
+
     // Emit deactivation event
     this.emit('deactivated', {
       page: this.getMetadata()
     });
     console.log(`Page ${this.pageName} exiting`);
+  }
+
+  /**
+   * Register a recurring handler that auto-clears on page exit.
+   * Use this instead of hand-rolling setInterval / clearInterval pairs
+   * across every dashboard page.
+   *
+   * Multiple cadences are supported by calling scheduleRefresh multiple
+   * times with different intervals. The optional `tier` is a label used
+   * by `runScheduledRefreshes(tier)` to fire only handlers tagged with
+   * that tier (handy for a manual "refresh all" button that wants to
+   * call only the slow tier without waiting for it to tick).
+   *
+   * @param {Function} handler - Called every `intervalMs`. May return a Promise.
+   * @param {number}   intervalMs - Interval in milliseconds.
+   * @param {object}   [options]
+   * @param {string}   [options.tier] - Label e.g. 'fast' / 'slow'
+   * @param {boolean}  [options.immediate=false] - Fire once now, then start interval
+   * @returns {object} A handle with `cancel()` to clear before exit if needed.
+   */
+  scheduleRefresh(handler, intervalMs, options = {}) {
+    if (!this._scheduledRefreshes) this._scheduledRefreshes = [];
+    if (typeof handler !== 'function' || !(intervalMs > 0)) return null;
+
+    const safe = async () => {
+      try { await handler(); }
+      catch (err) { console.warn(`[Page ${this.pageName}] scheduleRefresh handler error:`, err); }
+    };
+
+    if (options.immediate) safe();
+    const id = setInterval(safe, intervalMs);
+    const entry = { id, tier: options.tier || null, handler: safe, intervalMs };
+    this._scheduledRefreshes.push(entry);
+
+    return {
+      cancel: () => {
+        clearInterval(id);
+        this._scheduledRefreshes = (this._scheduledRefreshes || []).filter(e => e !== entry);
+      }
+    };
+  }
+
+  /**
+   * Fire all scheduled handlers immediately. If a `tier` is given, only
+   * handlers registered with that tier label run.
+   */
+  async runScheduledRefreshes(tier = null) {
+    const list = this._scheduledRefreshes || [];
+    const targets = tier ? list.filter(e => e.tier === tier) : list;
+    await Promise.allSettled(targets.map(e => e.handler()));
+  }
+
+  _clearScheduledRefreshes() {
+    if (!this._scheduledRefreshes) return;
+    for (const entry of this._scheduledRefreshes) {
+      clearInterval(entry.id);
+    }
+    this._scheduledRefreshes = [];
   }
 
   /**
