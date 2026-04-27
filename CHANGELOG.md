@@ -13,6 +13,15 @@
 - Plumbed through `MetricsChart` so dashboard panels can hide axis text
   for compact tile-style displays.
 
+### Behavior — SeriesChart hover-dim is now opt-in
+
+- New `highlightOnHover` option on SeriesChart (default `false`). Hovering
+  a bar or dot no longer dims the other series — the dim effect was
+  visually noisy on stacked-bar charts and distracting in dashboard
+  contexts.
+- Pass `highlightOnHover: true` to restore the earlier always-on behavior.
+- Plumbed through `MetricsChart`.
+
 ### Behavior — SeriesChart legend default is now top-left
 
 - New `legendJustify: 'start' | 'center' | 'end'` option (default

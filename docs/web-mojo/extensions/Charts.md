@@ -125,6 +125,7 @@ Bars and area fills derive from the line color with reduced alpha unless you set
 | `legendJustify`     | `'start'`      | `'start'`, `'center'`, `'end'` — alignment of legend items along the legend's row/column. Default `'start'` lands the top legend on the left edge. |
 | `showXLabels`       | `true`         | Hide the X-axis text labels. Gridlines (`showGrid`) are unaffected; the plot reclaims the freed bottom padding. |
 | `showYLabels`       | `true`         | Hide the Y-axis text labels. Gridlines (`showGrid`) are unaffected; the plot reclaims the freed left padding. |
+| `highlightOnHover`  | `false`        | Dim other series on bar/dot hover so the hovered series pops. Off by default — pass `true` to opt in. (Was always-on in earlier releases.) |
 | `showTooltip`       | `true`         | Crosshair tooltip |
 | `valueFormatter`    | `null`         | DataFormatter pipe string OR `(v) => string` |
 | `xLabelFormat`      | `null`         | DataFormatter pipe string for X labels |
@@ -179,6 +180,10 @@ unchanged.
 > **top-left** by default (`legendPosition: 'top'`, `legendJustify: 'start'`).
 > Previously it sat top-center. Pass `legendJustify: 'center'` to restore the
 > earlier look.
+>
+> **Migration note:** the hover-dim behavior (other series fade when you
+> hover a bar or dot) is now off by default. Pass `highlightOnHover: true`
+> to restore it.
 
 ### Methods
 

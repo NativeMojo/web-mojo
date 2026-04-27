@@ -92,6 +92,13 @@ class SeriesChart extends View {
         // Tooltip
         this.showTooltip = options.showTooltip !== false;
 
+        // Hover-highlight: dim all other series when the cursor enters a
+        // bar or dot so the active series pops. Off by default — pass
+        // `highlightOnHover: true` to re-enable. Was on by default in
+        // earlier releases; consumers found the dim flicker distracting on
+        // stacked-bar charts in particular.
+        this.highlightOnHover = options.highlightOnHover === true;
+
         // Colors
         this.colors = Array.isArray(options.colors) && options.colors.length
             ? [...options.colors]
@@ -898,14 +905,14 @@ class SeriesChart extends View {
 
             el.addEventListener('mouseenter', (e) => {
                 if (this.showTooltip) this._showTooltip(col, e);
-                this._fadeOtherSeries(dsIdx);
+                if (this.highlightOnHover) this._fadeOtherSeries(dsIdx);
             });
             el.addEventListener('mousemove', (e) => {
                 if (this.showTooltip) this._moveTooltip(e);
             });
             el.addEventListener('mouseleave', () => {
                 this._hideTooltip();
-                this._clearFade();
+                if (this.highlightOnHover) this._clearFade();
             });
             el.addEventListener('click', () => {
                 const value = this._datasets[dsIdx]?.data[col];
