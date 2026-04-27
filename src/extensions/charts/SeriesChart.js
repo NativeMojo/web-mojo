@@ -55,10 +55,16 @@ class SeriesChart extends View {
         this.width = options.width || '100%';
         this.height = options.height || 200;
 
+        // Axis label visibility — gridlines (showGrid) stay independent.
+        // padBottom/padLeft shrink to a small breathing margin when the
+        // corresponding label set is hidden so the plot reclaims the space.
+        this.showXLabels = options.showXLabels !== false;
+        this.showYLabels = options.showYLabels !== false;
+
         this.padTop = 10;
         this.padRight = 12;
-        this.padBottom = 24;
-        this.padLeft = 40;
+        this.padBottom = this.showXLabels ? 24 : 8;
+        this.padLeft = this.showYLabels ? 40 : 8;
         // Per-paint override (set by _buildGeometry when X-labels need extra
         // room for rotation). Resets every paint; null falls back to padBottom.
         this._padBottomOverride = null;
@@ -81,6 +87,7 @@ class SeriesChart extends View {
         // Legend
         this.showLegend = options.showLegend !== false;
         this.legendPosition = options.legendPosition || 'top';
+        this.legendJustify = this._normalizeLegendJustify(options.legendJustify);
 
         // Tooltip
         this.showTooltip = options.showTooltip !== false;
@@ -135,7 +142,7 @@ class SeriesChart extends View {
         const heightStyle = typeof this.height === 'number' ? `${this.height}px` : this.height;
 
         return `
-            <div class="mini-series-wrapper mini-series-legend-${this.legendPosition}">
+            <div class="mini-series-wrapper mini-series-legend-${this.legendPosition} mini-series-legend-justify-${this.legendJustify}">
                 ${this.showLegend ? '<div class="mini-series-legend"></div>' : ''}
                 <div class="mini-series-svg-area" style="width:${widthStyle}; height:${heightStyle};">
                     <svg class="mini-series-svg" width="100%" height="100%"
@@ -413,20 +420,25 @@ class SeriesChart extends View {
 
         // Pre-flight: format X labels and decide whether they need rotation.
         // Slot width depends on chart type; line/area labels sit AT data
-        // points so the slot is between them.
-        const maxXLabels = Math.max(2, Math.floor(this._plotW / 60));
-        const stepX = Math.max(1, Math.ceil(count / maxXLabels));
+        // points so the slot is between them. Skipped entirely when X labels
+        // are hidden — _padBottomOverride stays null and padBottom (already
+        // shrunk to 8 in the constructor) reclaims the space.
         const formattedX = [];
-        for (let i = 0; i < count; i += stepX) {
-            const raw = this._labels[i] !== undefined ? this._labels[i] : '';
-            formattedX.push({ index: i, text: this._truncateLabel(this._formatXLabel(raw)) });
+        let xLabelsRotated = false;
+        if (this.showXLabels) {
+            const maxXLabels = Math.max(2, Math.floor(this._plotW / 60));
+            const stepX = Math.max(1, Math.ceil(count / maxXLabels));
+            for (let i = 0; i < count; i += stepX) {
+                const raw = this._labels[i] !== undefined ? this._labels[i] : '';
+                formattedX.push({ index: i, text: this._truncateLabel(this._formatXLabel(raw)) });
+            }
+            const slotW = (this.chartType === 'bar')
+                ? this._plotW / Math.max(1, count)
+                : this._plotW / Math.max(1, count - 1);
+            const widest = formattedX.reduce((m, l) => Math.max(m, l.text.length * 6.5), 0);
+            xLabelsRotated = widest > slotW * 0.9;
+            if (xLabelsRotated) this._padBottomOverride = 48;
         }
-        const slotW = (this.chartType === 'bar')
-            ? this._plotW / Math.max(1, count)
-            : this._plotW / Math.max(1, count - 1);
-        const widest = formattedX.reduce((m, l) => Math.max(m, l.text.length * 6.5), 0);
-        const xLabelsRotated = widest > slotW * 0.9;
-        if (xLabelsRotated) this._padBottomOverride = 48;
 
         // baseline / plot dims now reflect the (possibly bumped) padBottom.
         const baseline = this._yToPixel(Math.max(min, Math.min(0, max)), min, max);
@@ -443,19 +455,24 @@ class SeriesChart extends View {
             bars: []
         };
 
-        // Grid + Y-axis labels — anchored to nice tick values.
+        // Grid + Y-axis labels — anchored to nice tick values. Grid lines
+        // always populate (gated separately by showGrid in _paintFrame);
+        // Y-label generation skips when showYLabels is false.
         for (let i = 0; i < tickCount; i++) {
             const value = min + i * tickStep;
             const y = this._yToPixel(value, min, max);
             geom.grid.push({ x1: this._plotLeft, y1: y, x2: this._plotRight, y2: y });
-            geom.yLabels.push({
-                x: this._plotLeft - 4,
-                y: y + 3,
-                text: this._formatAxisValue(value, tickStep)
-            });
+            if (this.showYLabels) {
+                geom.yLabels.push({
+                    x: this._plotLeft - 4,
+                    y: y + 3,
+                    text: this._formatAxisValue(value, tickStep)
+                });
+            }
         }
 
-        // X-axis labels.
+        // X-axis labels. formattedX is empty when showXLabels is false, so
+        // this loop is a no-op in that case.
         for (const { index, text } of formattedX) {
             const x = (this.chartType === 'bar')
                 ? this._barSlotCenter(index, count)
@@ -569,31 +586,35 @@ class SeriesChart extends View {
         }
 
         // Y-axis labels
-        for (const l of geom.yLabels) {
-            const t = this._svgEl('text', {
-                x: l.x, y: l.y, 'text-anchor': 'end',
-                'font-size': '10', fill: 'var(--bs-secondary-color, #6c757d)'
-            });
-            t.textContent = l.text;
-            this.svg.appendChild(t);
+        if (this.showYLabels) {
+            for (const l of geom.yLabels) {
+                const t = this._svgEl('text', {
+                    x: l.x, y: l.y, 'text-anchor': 'end',
+                    'font-size': '10', fill: 'var(--bs-secondary-color, #6c757d)'
+                });
+                t.textContent = l.text;
+                this.svg.appendChild(t);
+            }
         }
 
         // X-axis labels — rotate -45° when they would overlap their slots.
-        for (const l of geom.xLabels) {
-            const attrs = {
-                x: l.x, y: l.y,
-                'font-size': '10',
-                fill: 'var(--bs-secondary-color, #6c757d)'
-            };
-            if (geom.xLabelsRotated) {
-                attrs['text-anchor'] = 'end';
-                attrs.transform = `rotate(-45 ${l.x} ${l.y})`;
-            } else {
-                attrs['text-anchor'] = 'middle';
+        if (this.showXLabels) {
+            for (const l of geom.xLabels) {
+                const attrs = {
+                    x: l.x, y: l.y,
+                    'font-size': '10',
+                    fill: 'var(--bs-secondary-color, #6c757d)'
+                };
+                if (geom.xLabelsRotated) {
+                    attrs['text-anchor'] = 'end';
+                    attrs.transform = `rotate(-45 ${l.x} ${l.y})`;
+                } else {
+                    attrs['text-anchor'] = 'middle';
+                }
+                const t = this._svgEl('text', attrs);
+                t.textContent = l.text;
+                this.svg.appendChild(t);
             }
-            const t = this._svgEl('text', attrs);
-            t.textContent = l.text;
-            this.svg.appendChild(t);
         }
 
         if (geom.chartType === 'bar') {
@@ -990,6 +1011,13 @@ class SeriesChart extends View {
     }
 
     // ── legend ────────────────────────────────────────────────────────
+
+    _normalizeLegendJustify(value) {
+        if (value === undefined) return 'start';
+        if (value === 'start' || value === 'center' || value === 'end') return value;
+        console.warn(`SeriesChart: invalid legendJustify "${value}" — expected 'start' | 'center' | 'end'. Falling back to 'start'.`);
+        return 'start';
+    }
 
     _renderLegend() {
         if (!this.showLegend || !this.legendEl) return;

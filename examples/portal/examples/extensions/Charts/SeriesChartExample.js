@@ -126,6 +126,53 @@ class SeriesChartExample extends Page {
             showLegend: true
         });
         this.addChild(this.crosshairChart);
+
+        // Layout controls — live toggle of axis-label visibility and legend
+        // position/justify. Re-mounts the demo chart on every change because
+        // these options are read once at construction.
+        this.layoutOpts = {
+            showXLabels: true,
+            showYLabels: true,
+            legendPosition: 'top',
+            legendJustify: 'start'
+        };
+        await this._mountLayoutChart();
+    }
+
+    async _mountLayoutChart() {
+        if (this.layoutChart) {
+            this.removeChild(this.layoutChart);
+            await this.layoutChart.destroy?.();
+        }
+        this.layoutChart = new SeriesChart({
+            containerId: 'layout-slot',
+            chartType: 'line',
+            data: SEED_LINES,
+            height: 280,
+            ...this.layoutOpts
+        });
+        this.addChild(this.layoutChart);
+        await this.layoutChart.render();
+    }
+
+    async onActionToggleXLabels() {
+        this.layoutOpts.showXLabels = !this.layoutOpts.showXLabels;
+        await this._mountLayoutChart();
+    }
+
+    async onActionToggleYLabels() {
+        this.layoutOpts.showYLabels = !this.layoutOpts.showYLabels;
+        await this._mountLayoutChart();
+    }
+
+    async onActionSetLegendPosition(_event, el) {
+        this.layoutOpts.legendPosition = el.dataset.position;
+        await this._mountLayoutChart();
+    }
+
+    async onActionSetLegendJustify(_event, el) {
+        this.layoutOpts.legendJustify = el.dataset.justify;
+        await this._mountLayoutChart();
     }
 
     onActionRandomiseAnim() {
@@ -226,6 +273,43 @@ class SeriesChartExample extends Page {
                         and the tooltip shows values for every visible dataset. Theme-aware (try toggling dark mode).
                     </div>
                     <div data-container="crosshair-slot"></div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-baseline mb-2">
+                        <strong>Layout controls</strong>
+                        <span class="text-muted small">
+                            <code>showXLabels</code>, <code>showYLabels</code>,
+                            <code>legendPosition</code>, <code>legendJustify</code>
+                        </span>
+                    </div>
+                    <div class="text-muted small mb-2">
+                        Toggle axis-label visibility and reposition the legend. Default lands at top-left
+                        (<code>legendJustify: 'start'</code>); pick <code>'center'</code> to restore the prior
+                        top-center look.
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        <button class="btn btn-sm btn-outline-secondary" data-action="toggle-x-labels">
+                            <i class="bi bi-eye"></i> Toggle X labels
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" data-action="toggle-y-labels">
+                            <i class="bi bi-eye"></i> Toggle Y labels
+                        </button>
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Legend position">
+                            <button class="btn btn-outline-primary" data-action="set-legend-position" data-position="top">Top</button>
+                            <button class="btn btn-outline-primary" data-action="set-legend-position" data-position="bottom">Bottom</button>
+                            <button class="btn btn-outline-primary" data-action="set-legend-position" data-position="left">Left</button>
+                            <button class="btn btn-outline-primary" data-action="set-legend-position" data-position="right">Right</button>
+                        </div>
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Legend justify">
+                            <button class="btn btn-outline-success" data-action="set-legend-justify" data-justify="start">Start</button>
+                            <button class="btn btn-outline-success" data-action="set-legend-justify" data-justify="center">Center</button>
+                            <button class="btn btn-outline-success" data-action="set-legend-justify" data-justify="end">End</button>
+                        </div>
+                    </div>
+                    <div data-container="layout-slot"></div>
                 </div>
             </div>
         </div>

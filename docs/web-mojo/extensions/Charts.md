@@ -122,6 +122,9 @@ Bars and area fills derive from the line color with reduced alpha unless you set
 | `showGrid`          | `true`         | Horizontal grid lines |
 | `showLegend`        | `true`         | Legend strip; click items to toggle datasets |
 | `legendPosition`    | `'top'`        | `'top'`, `'bottom'`, `'left'`, `'right'` |
+| `legendJustify`     | `'start'`      | `'start'`, `'center'`, `'end'` — alignment of legend items along the legend's row/column. Default `'start'` lands the top legend on the left edge. |
+| `showXLabels`       | `true`         | Hide the X-axis text labels. Gridlines (`showGrid`) are unaffected; the plot reclaims the freed bottom padding. |
+| `showYLabels`       | `true`         | Hide the Y-axis text labels. Gridlines (`showGrid`) are unaffected; the plot reclaims the freed left padding. |
 | `showTooltip`       | `true`         | Crosshair tooltip |
 | `valueFormatter`    | `null`         | DataFormatter pipe string OR `(v) => string` |
 | `xLabelFormat`      | `null`         | DataFormatter pipe string for X labels |
@@ -166,6 +169,16 @@ unchanged.
   all X labels rotate `-45°` and the bottom padding grows to fit. No
   configuration needed; rotation kicks in automatically when labels
   collide.
+- **Hiding labels:** set `showXLabels: false` or `showYLabels: false` to
+  suppress the corresponding text track entirely. Gridlines (`showGrid`)
+  are independent — hide labels and keep the grid, or vice versa. When a
+  label set is hidden, the plot grows into the freed padding (the
+  auto-rotation pad bump is also skipped when X labels are hidden).
+
+> **Migration note:** as of this release the SeriesChart legend lands at
+> **top-left** by default (`legendPosition: 'top'`, `legendJustify: 'start'`).
+> Previously it sat top-center. Pass `legendJustify: 'center'` to restore the
+> earlier look.
 
 ### Methods
 

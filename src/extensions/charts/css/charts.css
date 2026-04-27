@@ -1797,6 +1797,15 @@
     padding: 0.25rem 0.75rem;
 }
 
+/* Legend justify — aligns items along the legend's main axis.
+   - For top/bottom legends (horizontal flex), this is left/center/right.
+   - For left/right legends (column flex), this is top/center/bottom.
+   `start` (default) is also the implicit flex-content default; declared
+   explicitly here so the contract is unambiguous. */
+.mini-series-wrapper.mini-series-legend-justify-start  .mini-series-legend { justify-content: flex-start; }
+.mini-series-wrapper.mini-series-legend-justify-center .mini-series-legend { justify-content: center; }
+.mini-series-wrapper.mini-series-legend-justify-end    .mini-series-legend { justify-content: flex-end; }
+
 .mini-series-legend-item {
     display: inline-flex;
     align-items: center;

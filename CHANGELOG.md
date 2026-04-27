@@ -2,6 +2,42 @@
 
 ## Unreleased
 
+### Feature — SeriesChart axis label visibility
+
+- New `showXLabels` / `showYLabels` options (default `true`) hide the X /
+  Y text labels independently. Gridlines (`showGrid`) are unaffected.
+- When labels are hidden, the plot area grows into the freed padding
+  (`padBottom` 24→8 with `showXLabels: false`, `padLeft` 40→8 with
+  `showYLabels: false`). The X-label auto-rotation extra-padding path is
+  skipped when X labels are hidden.
+- Plumbed through `MetricsChart` so dashboard panels can hide axis text
+  for compact tile-style displays.
+
+### Behavior — SeriesChart legend default is now top-left
+
+- New `legendJustify: 'start' | 'center' | 'end'` option (default
+  `'start'`). Combined with the existing `legendPosition: 'top'` default,
+  the SeriesChart legend now sits **top-left** instead of top-center.
+- `legendJustify` maps to CSS `justify-content` for both the horizontal
+  flex (top/bottom legends) and the column flex (left/right legends).
+- Invalid values fall back to `'start'` with a `console.warn`.
+- To restore the prior top-center look, pass `legendJustify: 'center'`.
+- Plumbed through `MetricsChart` (and via that, every dashboard chart
+  built on the metrics fetch path).
+
+### Fixed — Modal: descendant dropdowns/popovers no longer clipped at the card edge
+
+- `.modal-content` had `overflow: hidden` (added with the hero-band redesign in
+  `ff27795`) which clipped any absolutely-positioned descendant — `MultiSelectDropdown`,
+  `ComboBox`, `CollectionMultiSelect`, plain Bootstrap `.dropdown-menu`, and any
+  context menu rendered inside a modal body.
+- The hero band's `::before` pseudo-element already declares its own matching
+  `border-radius: 14px 14px 0 0`, so the ancestor clip was unnecessary for the
+  rounded chrome. Removing `overflow: hidden` restores Bootstrap's default
+  modal behavior — popovers can escape the card edge.
+- No JS or component changes; the fix is a single CSS-rule removal in
+  `src/core/css/core.css`.
+
 ### Feature — Security Dashboard rebuild + new framework primitives
 
 - **`SecurityDashboardPage`** replaces the older tabbed

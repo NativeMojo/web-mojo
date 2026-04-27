@@ -374,4 +374,99 @@ module.exports = async function (testContext) {
             expect(c._padBottomOverride).toBeNull();
         });
     });
+
+    describe('SeriesChart — axis label visibility', () => {
+        const buildAndPaint = (opts) => {
+            const c = new SeriesChart(opts);
+            c._parseData(c._rawData);
+            c._w = 400; c._h = 200;
+            c.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            c._renderChart({ animate: false });
+            return c;
+        };
+
+        it('defaults: showXLabels and showYLabels are true', () => {
+            const c = new SeriesChart({});
+            expect(c.showXLabels).toBe(true);
+            expect(c.showYLabels).toBe(true);
+            expect(c.padBottom).toBe(24);
+            expect(c.padLeft).toBe(40);
+        });
+
+        it('showXLabels: false shrinks padBottom and produces empty geom.xLabels', () => {
+            const c = buildAndPaint({
+                showXLabels: false,
+                data: { labels: ['a', 'b', 'c'], datasets: [{ label: 'A', data: [1, 2, 3] }] }
+            });
+            expect(c.padBottom).toBe(8);
+            expect(c._currentGeometry.xLabels.length).toBe(0);
+            // Auto-rotation pad bump must NOT fire when labels are hidden.
+            expect(c._padBottomOverride).toBeNull();
+        });
+
+        it('showYLabels: false shrinks padLeft and produces empty geom.yLabels', () => {
+            const c = buildAndPaint({
+                showYLabels: false,
+                data: { labels: ['a', 'b'], datasets: [{ label: 'A', data: [1, 2] }] }
+            });
+            expect(c.padLeft).toBe(8);
+            expect(c._currentGeometry.yLabels.length).toBe(0);
+        });
+
+        it('showYLabels: false still populates geom.grid (independent of showGrid)', () => {
+            const c = buildAndPaint({
+                showYLabels: false,
+                showGrid: true,
+                data: { labels: ['a', 'b'], datasets: [{ label: 'A', data: [1, 2] }] }
+            });
+            expect(c._currentGeometry.grid.length).toBeGreaterThan(0);
+            // And gridlines actually paint.
+            expect(c.svg.querySelectorAll('line').length).toBeGreaterThan(0);
+        });
+
+        it('hiding both label sets removes all <text> Y/X label elements', () => {
+            const c = buildAndPaint({
+                showXLabels: false,
+                showYLabels: false,
+                data: { labels: ['a', 'b', 'c'], datasets: [{ label: 'A', data: [1, 2, 3] }] }
+            });
+            // No <text> nodes in the SVG (gridlines are <line>, marks are circles/paths).
+            expect(c.svg.querySelectorAll('text').length).toBe(0);
+        });
+    });
+
+    describe('SeriesChart — legend justify', () => {
+        it("default legendJustify is 'start' (lands top-left with the default position)", () => {
+            const c = new SeriesChart({});
+            expect(c.legendJustify).toBe('start');
+            expect(c.legendPosition).toBe('top');
+        });
+
+        it("accepts 'start' | 'center' | 'end'", () => {
+            expect(new SeriesChart({ legendJustify: 'start' }).legendJustify).toBe('start');
+            expect(new SeriesChart({ legendJustify: 'center' }).legendJustify).toBe('center');
+            expect(new SeriesChart({ legendJustify: 'end' }).legendJustify).toBe('end');
+        });
+
+        it("falls back to 'start' on invalid input + warns", () => {
+            const originalWarn = console.warn;
+            const calls = [];
+            console.warn = (...args) => calls.push(args);
+            try {
+                const c = new SeriesChart({ legendJustify: 'left' });
+                expect(c.legendJustify).toBe('start');
+                expect(calls.length).toBe(1);
+                expect(String(calls[0][0])).toContain('legendJustify');
+            } finally {
+                console.warn = originalWarn;
+            }
+        });
+
+        it('template wrapper class includes both legend-position and legend-justify suffixes', () => {
+            const c = new SeriesChart({ legendPosition: 'bottom', legendJustify: 'end' });
+            const tpl = c.getTemplate();
+            expect(tpl).toContain('mini-series-legend-bottom');
+            expect(tpl).toContain('mini-series-legend-justify-end');
+        });
+    });
 };
