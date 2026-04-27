@@ -134,25 +134,48 @@ module.exports = async function (testContext) {
             await Modal.alert('hi', 'Saved', { type: 'success', eyebrow: 'ACCOUNT / SAVED' });
             // Eyebrow flows through to the modal root via inline style so CSS
             // can pick it up in the band's `content: var(--mojo-eyebrow, ...)`.
-            expect(lastOpts.attributes).toBeDefined();
-            expect(lastOpts.attributes.style).toContain('--mojo-eyebrow');
-            expect(lastOpts.attributes.style).toContain("ACCOUNT / SAVED");
+            expect(lastOpts.style).toBeDefined();
+            expect(lastOpts.style).toContain('--mojo-eyebrow');
+            expect(lastOpts.style).toContain("ACCOUNT / SAVED");
             // Custom eyebrow does NOT leak into the title markup
             expect(lastOpts.title).not.toContain('ACCOUNT');
         });
 
         it('strips quotes/backslashes from custom eyebrow to keep the CSS string valid', async () => {
             await Modal.alert('hi', 'T', { type: 'info', eyebrow: `it's "great"\\back` });
-            expect(lastOpts.attributes.style).toContain("--mojo-eyebrow");
-            expect(lastOpts.attributes.style).not.toContain('"');
-            expect(lastOpts.attributes.style).not.toContain("'great'");
-            expect(lastOpts.attributes.style).not.toContain('\\');
+            expect(lastOpts.style).toContain("--mojo-eyebrow");
+            expect(lastOpts.style).not.toContain('"');
+            expect(lastOpts.style).not.toContain("'great'");
+            expect(lastOpts.style).not.toContain('\\');
         });
 
         it('clears the band content when caller passes eyebrow: false', async () => {
             await Modal.alert('hi', 'A headline', { type: 'success', eyebrow: false });
             // eyebrow: false sets --mojo-eyebrow to empty string so the band shows nothing
-            expect(lastOpts.attributes.style).toContain("--mojo-eyebrow: ''");
+            expect(lastOpts.style).toContain("--mojo-eyebrow: ''");
+        });
+
+        it('suppresses the header title when it would just duplicate the eyebrow', async () => {
+            // app.showError(msg) calls Modal.alert(msg, 'Error', { type: 'error' })
+            // Band shows "ERROR", header title 'Error' is redundant — should be empty.
+            await Modal.alert('something went wrong', 'Error', { type: 'error' });
+            expect(lastOpts.title).toBe('');
+        });
+
+        it('keeps the header title when it differs from the eyebrow', async () => {
+            await Modal.alert('hi', 'Your changes are live', { type: 'success' });
+            expect(lastOpts.title).toContain('Your changes are live');
+            expect(lastOpts.title).toContain('modal-alert-headline');
+        });
+
+        it('suppresses on case-insensitive match', async () => {
+            await Modal.alert('hi', 'warning', { type: 'warning' });
+            expect(lastOpts.title).toBe('');
+        });
+
+        it('keeps the title when eyebrow override differs', async () => {
+            await Modal.alert('hi', 'Saved', { type: 'success', eyebrow: 'BILLING' });
+            expect(lastOpts.title).toContain('Saved');
         });
 
         it('wraps the message in a modal-alert-message paragraph', async () => {
@@ -163,11 +186,14 @@ module.exports = async function (testContext) {
     });
 
     describe('Modal.showError', () => {
-        it('forwards to Modal.alert with type: error', async () => {
+        it('forwards to Modal.alert with type: error and suppresses the duplicate title', async () => {
             await Modal.showError('oops');
             expect(dialogSpy).toHaveBeenCalledTimes(1);
             expect(lastOpts.className).toContain('modal-alert-error');
-            expect(lastOpts.title).toContain('Error');
+            // Band carries "ERROR"; passed title 'Error' is suppressed so the
+            // header doesn't duplicate it.
+            expect(lastOpts.title).toBe('');
+            expect(lastOpts.style).toContain("--mojo-eyebrow: 'ERROR'");
         });
     });
 };

@@ -1433,11 +1433,10 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
 }
 
 /* Hero band — solid colored slab across the top, with the type label
-   centered inside in white uppercase mono. Default content per type comes
-   from the .modal-alert-{type} cascade below; custom callers override via
-   `--mojo-eyebrow` (set inline by Modal.alert when an `eyebrow` option
-   is passed). Non-alert modals (no .modal-alert class) get an empty band
-   so the chrome stays consistent without a label. */
+   centered and the close X anchored to the right side. Eyebrow text
+   comes from `--mojo-eyebrow` (set inline by each Modal helper). The
+   close X is positioned via separate CSS rules below so it can be
+   interactive (the band itself stays pointer-events: none). */
 .modal-content::before {
     content: var(--mojo-eyebrow, "");
     display: flex;
@@ -1463,12 +1462,9 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
     box-sizing: border-box;
 }
 
-/* Per-type default eyebrow text — caller can still override via
-   `--mojo-eyebrow` inline style (Modal.alert handles this). */
-.modal.modal-alert.modal-alert-info    .modal-content::before { content: var(--mojo-eyebrow, "INFORMATION"); }
-.modal.modal-alert.modal-alert-success .modal-content::before { content: var(--mojo-eyebrow, "SUCCESS"); }
-.modal.modal-alert.modal-alert-warning .modal-content::before { content: var(--mojo-eyebrow, "WARNING"); }
-.modal.modal-alert.modal-alert-error   .modal-content::before { content: var(--mojo-eyebrow, "ERROR"); }
+/* The eyebrow text comes from `--mojo-eyebrow` set inline on the modal
+   root by each Modal helper (alert / confirm / prompt / show / form / etc.).
+   No per-type CSS rules needed — every helper passes its own default. */
 
 /* Warning band uses dark text on yellow for AAA contrast */
 .modal.modal-alert.modal-alert-warning .modal-content::before { color: #1a1a1a; }
@@ -1480,31 +1476,56 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
     border-bottom: none;
     border-radius: 14px 14px 0 0;
     background: transparent;
-    padding: calc(1rem + 28px) 1.5rem 0.5rem;
+    padding: calc(0.75rem + 28px) 1.5rem 0.5rem;
 }
 
-/* Internal X — top-right inside the card, just below the band */
+/* Modal title — when present in the header (i.e. not auto-suppressed
+   because it duplicated the eyebrow), render as a bold sans headline. */
+.modal-header .modal-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.3;
+    margin: 0;
+}
+
+/* Close X — anchored to the right side of the hero band itself. The
+   band has pointer-events: none; the X sits above it (z-index) so
+   clicks register. White on most bands; dark on warning. */
 .modal-header .btn-close {
     position: absolute;
-    top: calc(0.5rem + 28px);
-    right: 0.65rem;
+    top: 0;
+    right: 0.5rem;
     width: 28px;
     height: 28px;
     padding: 0;
-    background-color: transparent;
-    background-size: 11px;
-    border-radius: 8px;
-    opacity: 0.55;
     margin: 0;
-    transition: background-color 0.15s ease-in-out, opacity 0.15s ease-in-out;
+    background-color: transparent;
+    background-size: 10px;
+    border-radius: 6px;
+    opacity: 0.85;
+    z-index: 2;
+    /* Invert the default Bootstrap close-icon SVG so it's white on
+       colored bands. Warning override below restores dark. */
+    filter: brightness(0) invert(1);
+    transition: opacity 0.15s ease-in-out, background-color 0.15s ease-in-out;
 }
 .modal-header .btn-close:hover {
-    background-color: rgba(12, 17, 28, 0.07);
     opacity: 1;
+    background-color: rgba(255, 255, 255, 0.18);
 }
 .modal-header .btn-close:focus {
     opacity: 1;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--mojo-current-accent) 30%, transparent);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+}
+
+/* Warning band uses dark text; restore dark X glyph too */
+.modal.modal-alert.modal-alert-warning .modal-header .btn-close {
+    filter: none;
+}
+.modal.modal-alert.modal-alert-warning .modal-header .btn-close:hover {
+    background-color: rgba(0, 0, 0, 0.1);
 }
 
 /* Footer — clean, no divider line; band/tinted bg already separates regions */

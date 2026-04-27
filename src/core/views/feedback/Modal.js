@@ -196,8 +196,9 @@ class Modal {
      * `null` on dismiss.
      */
     /**
-     * Build a merged `attributes` object with the `--mojo-eyebrow` CSS
-     * variable set inline so the hero band's `content` picks it up.
+     * Build a CSS `style` string with the `--mojo-eyebrow` custom property
+     * set so the hero band's `content` picks it up. View applies the
+     * returned string to `element.style.cssText` on the modal root.
      *
      * Caller's `eyebrow` option (string | null | '' | false | undefined)
      * always wins over the helper's default. `null`, `''`, and `false`
@@ -205,27 +206,48 @@ class Modal {
      *
      * @param {string} defaultEyebrow - the helper's default eyebrow text
      * @param {string|null|false|undefined} callerEyebrow - user override
-     * @param {object} [callerAttributes] - other caller-supplied attributes
-     * @returns {object} merged attributes object suitable for ModalView
+     * @param {string} [callerStyle] - any other style string from the caller
+     * @returns {string} merged style string suitable for opts.style
      */
-    static _withEyebrow(defaultEyebrow, callerEyebrow, callerAttributes) {
-        const attributes = { ...(callerAttributes || {}) };
+    /**
+     * Resolve the eyebrow text a helper will end up showing.
+     * Pure function — no formatting, just the value.
+     */
+    static _resolveEyebrow(defaultEyebrow, callerEyebrow) {
+        if (callerEyebrow === null || callerEyebrow === false || callerEyebrow === '') return '';
+        if (typeof callerEyebrow === 'string') return callerEyebrow;
+        return defaultEyebrow || '';
+    }
 
-        let finalText;
-        if (callerEyebrow === null || callerEyebrow === false || callerEyebrow === '') {
-            finalText = '';
-        } else if (typeof callerEyebrow === 'string') {
-            finalText = callerEyebrow;
-        } else {
-            finalText = defaultEyebrow || '';
+    /**
+     * If the modal-header title would just duplicate the band's eyebrow
+     * (case-insensitive), suppress the header title — the band already
+     * carries it and is the always-on system anchor.
+     */
+    static _suppressDuplicateTitle(title, eyebrowText) {
+        if (!eyebrowText || !title) return title;
+        const t = String(title).trim().toUpperCase();
+        const e = String(eyebrowText).trim().toUpperCase();
+        return t === e ? '' : title;
+    }
+
+    static _eyebrowStyle(defaultEyebrow, callerEyebrow, callerStyle) {
+        // If a higher-level helper already resolved the eyebrow into
+        // callerStyle (e.g. Modal.alert → Modal.dialog), don't clobber it
+        // by appending the current helper's default. Caller's explicit
+        // eyebrow option (when defined) still wins below.
+        if (callerEyebrow === undefined &&
+            typeof callerStyle === 'string' &&
+            callerStyle.includes('--mojo-eyebrow')) {
+            return callerStyle;
         }
+
+        const finalText = Modal._resolveEyebrow(defaultEyebrow, callerEyebrow);
 
         // Strip quotes/backslashes to keep the CSS string syntactically valid
         const safe = String(finalText).replace(/['"\\]/g, '');
         const styleVar = `--mojo-eyebrow: '${safe}'`;
-        attributes.style = [attributes.style, styleVar].filter(Boolean).join('; ');
-
-        return attributes;
+        return [callerStyle, styleVar].filter(Boolean).join('; ');
     }
 
     static async dialog(options = {}) {
@@ -248,7 +270,7 @@ class Modal {
             buttons = [{ text: 'OK', class: 'btn-primary', value: true }],
             rejectOnDismiss = false,
             eyebrow,
-            attributes: callerAttributes,
+            style: callerStyle,
             ...rest
         } = options;
 
@@ -256,15 +278,17 @@ class Modal {
 
         // Modal.dialog is the generic surface — band is empty unless the
         // caller passes an explicit eyebrow.
-        const attributes = Modal._withEyebrow('', eyebrow, callerAttributes);
+        const eyebrowText = Modal._resolveEyebrow('', eyebrow);
+        const finalTitle = Modal._suppressDuplicateTitle(title, eyebrowText);
+        const style = Modal._eyebrowStyle('', eyebrow, callerStyle);
 
         const modal = new ModalView({
-            title,
+            title: finalTitle,
             body: resolvedBody,
             size,
             centered,
             buttons,
-            attributes,
+            style,
             ...rest
         });
 
@@ -278,7 +302,7 @@ class Modal {
      * (views typically have their own headers). Size defaults to `lg`.
      */
     static async show(view, options = {}) {
-        const { eyebrow, attributes: callerAttributes, ...rest } = options;
+        const { eyebrow, style: callerStyle, ...rest } = options;
         return Modal.dialog({
             header: options.title !== undefined ? !!options.title : false,
             title: options.title || undefined,
@@ -286,7 +310,7 @@ class Modal {
             size: 'lg',
             centered: false,
             buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }],
-            attributes: Modal._withEyebrow('DETAILS', eyebrow, callerAttributes),
+            style: Modal._eyebrowStyle('DETAILS', eyebrow, callerStyle),
             ...rest
         });
     }
@@ -341,13 +365,13 @@ class Modal {
             );
         }
         const viewInstance = new ViewClass({ model });
-        const { eyebrow, attributes: callerAttributes, ...rest } = options;
+        const { eyebrow, style: callerStyle, ...rest } = options;
         return Modal.dialog({
             header: false,
             body: viewInstance,
             size: 'lg',
             centered: false,
-            attributes: Modal._withEyebrow('DETAILS', eyebrow, callerAttributes),
+            style: Modal._eyebrowStyle('DETAILS', eyebrow, callerStyle),
             ...rest
         });
     }
@@ -377,7 +401,7 @@ class Modal {
             type = 'info',
             eyebrow: callerEyebrow,
             className: callerClassName,
-            attributes: callerAttributes,
+            style: callerStyle,
             ...rest
         } = opts;
 
@@ -394,11 +418,16 @@ class Modal {
             error: 'ERROR'
         };
         const defaultEyebrow = defaultEyebrowMap[typeKey] ?? defaultEyebrowMap.info;
-        const attributes = Modal._withEyebrow(defaultEyebrow, callerEyebrow, callerAttributes);
+        const eyebrowText = Modal._resolveEyebrow(defaultEyebrow, callerEyebrow);
+        const finalTitle = Modal._suppressDuplicateTitle(resolvedTitle, eyebrowText);
+        const style = Modal._eyebrowStyle(defaultEyebrow, callerEyebrow, callerStyle);
 
         // Title is just the headline. The band (CSS) carries the type label;
-        // the title region carries the headline and never duplicates it.
-        const titleHtml = `<span class="modal-alert-headline">${resolvedTitle}</span>`;
+        // headline is the user-supplied title — UNLESS it would just repeat
+        // the eyebrow, in which case suppress it (the band already shows it).
+        const titleHtml = finalTitle
+            ? `<span class="modal-alert-headline">${finalTitle}</span>`
+            : '';
 
         return Modal.dialog({
             title: titleHtml,
@@ -406,7 +435,7 @@ class Modal {
             size: 'sm',
             centered: true,
             className,
-            attributes,
+            style,
             buttons: [{ text: 'OK', class: 'btn-primary', value: true }],
             ...rest
         });
@@ -431,17 +460,19 @@ class Modal {
             { text: options.confirmText || 'Confirm', class: options.confirmClass || 'btn-primary', action: 'confirm' }
         ];
 
-        const { eyebrow, attributes: callerAttributes, ...rest } = options;
-        const attributes = Modal._withEyebrow('CONFIRM', eyebrow, callerAttributes);
+        const { eyebrow, style: callerStyle, ...rest } = options;
+        const eyebrowText = Modal._resolveEyebrow('CONFIRM', eyebrow);
+        const finalTitle = Modal._suppressDuplicateTitle(title, eyebrowText);
+        const style = Modal._eyebrowStyle('CONFIRM', eyebrow, callerStyle);
 
         const modal = new ModalView({
-            title,
+            title: finalTitle,
             body: `<p>${message}</p>`,
             size: options.size || 'sm',
             centered: true,
             backdrop: 'static',
             buttons,
-            attributes,
+            style,
             ...rest
         });
 
@@ -468,11 +499,13 @@ class Modal {
             { text: 'OK', class: 'btn-primary', action: 'ok' }
         ];
 
-        const { eyebrow, attributes: callerAttributes, ...rest } = options;
-        const attributes = Modal._withEyebrow('INPUT', eyebrow, callerAttributes);
+        const { eyebrow, style: callerStyle, ...rest } = options;
+        const eyebrowText = Modal._resolveEyebrow('INPUT', eyebrow);
+        const finalTitle = Modal._suppressDuplicateTitle(title, eyebrowText);
+        const style = Modal._eyebrowStyle('INPUT', eyebrow, callerStyle);
 
         const modal = new ModalView({
-            title,
+            title: finalTitle,
             body: `
                 <p>${message}</p>
                 <input type="${inputType}"
@@ -485,7 +518,7 @@ class Modal {
             centered: true,
             backdrop: 'static',
             buttons,
-            attributes,
+            style,
             ...rest
         });
 
@@ -528,7 +561,7 @@ class Modal {
             submitText = 'Submit',
             cancelText = 'Cancel',
             eyebrow,
-            attributes: callerAttributes,
+            style: callerStyle,
             ...rest
         } = options;
 
@@ -551,15 +584,15 @@ class Modal {
             { text: submitText, class: 'btn-primary', action: 'submit' }
         ];
 
-        // Form's title becomes the eyebrow (uppercased) by default
-        const attributes = Modal._withEyebrow(
-            String(title || 'FORM').toUpperCase(),
-            eyebrow,
-            callerAttributes
-        );
+        // Form's title becomes the eyebrow (uppercased) by default;
+        // header title is suppressed when it would just duplicate the band.
+        const defaultEyebrow = String(title || 'FORM').toUpperCase();
+        const eyebrowText = Modal._resolveEyebrow(defaultEyebrow, eyebrow);
+        const finalTitle = Modal._suppressDuplicateTitle(title, eyebrowText);
+        const style = Modal._eyebrowStyle(defaultEyebrow, eyebrow, callerStyle);
 
         const modal = new ModalView({
-            title, body: formView, size, centered, buttons, attributes, ...rest
+            title: finalTitle, body: formView, size, centered, buttons, style, ...rest
         });
 
         return Modal._renderAndAwait(modal, {
@@ -615,7 +648,7 @@ class Modal {
             model,
             fields,
             eyebrow,
-            attributes: callerAttributes,
+            style: callerStyle,
             ...rest
         } = options;
 
@@ -642,15 +675,15 @@ class Modal {
             { text: submitText, class: 'btn-primary', action: 'submit' }
         ];
 
-        // Form's title becomes the eyebrow (uppercased) by default
-        const attributes = Modal._withEyebrow(
-            String(title || 'EDIT').toUpperCase(),
-            eyebrow,
-            callerAttributes
-        );
+        // Form's title becomes the eyebrow (uppercased) by default;
+        // header title is suppressed when it would just duplicate the band.
+        const defaultEyebrow = String(title || 'EDIT').toUpperCase();
+        const eyebrowText = Modal._resolveEyebrow(defaultEyebrow, eyebrow);
+        const finalTitle = Modal._suppressDuplicateTitle(title, eyebrowText);
+        const style = Modal._eyebrowStyle(defaultEyebrow, eyebrow, callerStyle);
 
         const modal = new ModalView({
-            title, body: formView, size, centered, buttons, attributes, ...rest
+            title: finalTitle, body: formView, size, centered, buttons, style, ...rest
         });
 
         return Modal._renderAndAwait(modal, {
