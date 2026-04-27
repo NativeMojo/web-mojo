@@ -23,7 +23,10 @@
     --chart-loading-bg: rgba(248, 249, 250, 0.95);
 }
 
-[data-theme="dark"] {
+/* Bootstrap 5.3 sets `data-bs-theme="dark"` on <html>; the framework's
+   ThemeManager (src/core/utils/ThemeManager.js) uses the same attribute.
+   This block swaps the chart palette to match. */
+[data-bs-theme="dark"] {
     /* Dark theme */
     --chart-bg: #212529;
     --chart-content-bg: #2b3035;
