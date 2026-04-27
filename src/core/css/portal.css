@@ -84,6 +84,14 @@
     --mojo-sidebar-dark-bg: #343a40;
 }
 
+/* Under the framework's dark theme, drop the `topnav-dark` / `sidebar-dark`
+   surface to a tone that sits *between* the deep page bg (#0a0d11) and the
+   card surface (#11161d), so portal chrome reads as a band rather than a
+   raised tile. */
+:root[data-bs-theme="dark"] {
+    --mojo-sidebar-dark-bg: #0d1117;
+}
+
 /*
 Dark / Neutral (common in admin dashboards):
 #1E1E2F (very dark blue-gray)
@@ -502,7 +510,7 @@ nav.topnav-shadow-dark {
    with `data-bs-theme="dark"`). Override the surface so the rail reads as a
    step lighter than the page background instead of glaring white. */
 [data-bs-theme="dark"] .sidebar-light {
-    --mojo-sidebar-light-dark-bg: #2a2f36;
+    --mojo-sidebar-light-dark-bg: var(--bs-secondary-bg);
     --mojo-sidebar-light-dark-color: var(--bs-body-color);
     background-color: var(--mojo-sidebar-light-dark-bg);
     color: var(--mojo-sidebar-light-dark-color);

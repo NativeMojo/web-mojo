@@ -173,6 +173,21 @@
     --bs-danger-text-emphasis: #8a1c24;
 }
 
+/* Framework dark theme — deep mission-control surfaces.
+   Re-skins Bootstrap's dark-mode tokens so every dark page in a consuming
+   app reads as NOC tooling instead of the default washed-out gray.
+   No !important — downstream apps that set their own --bs-body-bg etc.
+   under [data-bs-theme="dark"] still win on source order. */
+:root[data-bs-theme="dark"] {
+    --bs-body-bg:                  #0a0d11;
+    --bs-tertiary-bg:              #11161d;
+    --bs-secondary-bg:             #161b22;
+    --bs-border-color:             #1f2630;
+    --bs-border-color-translucent: rgba(255, 255, 255, 0.04);
+    --bs-emphasis-color:           #e6ecf3;
+    --bs-secondary-color:          #8a96a6;
+}
+
 :root {
     /* MOJO Framework Colors - Inherit from Bootstrap */
     --mojo-primary: var(--bs-primary);
@@ -1412,8 +1427,12 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
 }
 
 /* ── Card chrome ───────────────────────────────────────── */
-/* Applies to every dialog. Overflow:hidden so the colored band's
-   top corners get clipped to the card's border-radius. */
+/* Applies to every dialog. NOTE: no overflow:hidden — the hero band's
+   ::before pseudo-element carries its own matching `border-radius:
+   14px 14px 0 0` (see below) so ancestor clipping isn't needed.
+   Keeping overflow visible lets descendant popovers (Bootstrap
+   .dropdown-menu, MultiSelectDropdown, ComboBox, context menus)
+   escape the card edge instead of being clipped. */
 .modal-content {
     --mojo-current-accent: var(--mojo-dialog-accent);
     border-radius: 14px;
@@ -1422,7 +1441,6 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
         0 1px 2px rgba(12, 17, 28, 0.06),
         0 8px 16px -4px rgba(12, 17, 28, 0.1),
         0 30px 60px -12px rgba(12, 17, 28, 0.28);
-    overflow: hidden;
     position: relative;
     background:
         linear-gradient(

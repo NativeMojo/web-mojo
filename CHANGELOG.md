@@ -2,6 +2,45 @@
 
 ## Unreleased
 
+### CSS — Dark theme: deeper mission-control surface as default
+
+- The framework's `[data-bs-theme="dark"]` palette now uses the deep
+  near-black surfaces previously scoped to `SecurityDashboardPage`:
+  page `#0a0d11`, card/tertiary `#11161d`, secondary `#161b22`, border
+  `#1f2630`, emphasis text `#e6ecf3`, muted text `#8a96a6`. Every
+  dark-mode page in consuming apps will look noticeably deeper and
+  more contrasty on upgrade.
+- **Light theme is unchanged.**
+- **Opt out:** apps that want the previous Bootstrap defaults can
+  override `--bs-body-bg`, `--bs-tertiary-bg`, etc. in their own CSS
+  under `[data-bs-theme="dark"]` — the framework block uses no
+  `!important`, so any later/higher-specificity rule wins.
+- **Removed:** the `SecurityDashboardPage`-scoped overrides in
+  `charts.css` (`.portal-layout:has(.security-dashboard-page)`,
+  `.security-dashboard-page`, and the defensive `.page-container` /
+  `.portal-content` fall-throughs). The dashboard now inherits the
+  global palette seamlessly — no visual change.
+- **Removed:** the `KPITile` `[data-bs-theme="dark"]` `--mojo-kpi-tile-*`
+  variable block. The tile component already falls back through
+  `--bs-tertiary-bg` / `--bs-emphasis-color` / `--bs-secondary-color` /
+  `--bs-border-color`, which now match the original dashboard values
+  1:1, so the dedicated overrides became redundant. The
+  delta-badge and hover tints are kept since they don't map to a
+  Bootstrap token.
+- **`--mojo-sidebar-dark-bg`** now drops to `#0d1117` under
+  `[data-bs-theme="dark"]` so `topnav-dark` and `sidebar-dark` sit
+  one tier above the page (`#0a0d11`) and one tier below cards
+  (`#11161d`) — portal chrome reads as a band rather than a raised
+  tile. The light-mode default (`#343a40`) is unchanged.
+- **`[data-bs-theme="dark"] .sidebar-light`** now uses
+  `var(--bs-secondary-bg)` instead of a hardcoded `#2a2f36`, so the
+  rail stays one step above the page automatically and tracks any
+  future palette tweak.
+- **Topbar default unchanged:** `--mojo-topnav-bg` still resolves to
+  `var(--bs-primary)` (brand-blue topbar) when no `topnav-*` class is
+  set. Consumers who want a deep mission-control topbar should use
+  `topnav-dark`, which now picks up the new `#0d1117`.
+
 ### Changed — Admin sidebar Security menu restructured
 
 - **Security Dashboard** is now a top-level sidebar item, placed directly
