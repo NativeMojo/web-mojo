@@ -162,7 +162,7 @@ class DistributionStrip extends View {
         try {
             const drStart = Math.floor((Date.now() - 7 * 86400000) / 1000);
             const resp = await rest.GET('/api/metrics/fetch', {
-                slug: 'bouncer:assessments,bouncer:monitors,bouncer:blocks',
+                slugs: 'bouncer:assessments,bouncer:monitors,bouncer:blocks',
                 account: 'incident',
                 granularity: 'days',
                 with_labels: true,

@@ -146,11 +146,14 @@ class KPIStrip extends View {
 
         // 2) Batched fetch for sparkline data — covers both metric tiles
         //    and any REST tiles with a sparklineSlug.
+        //    Both /api/metrics/series AND /api/metrics/fetch require
+        //    `slugs=a,b,c` (plural). The singular `slug=` form returns
+        //    400 "missing required parameter" on the production backend.
         let sparkPromise = null;
         if (this.includeSparkline && sparkSlugs.length) {
             const drStart = new Date(Date.now() - this.sparklineDays * 86400000);
             const sparkParams = {
-                slug: sparkSlugs.join(','),
+                slugs: sparkSlugs.join(','),
                 account: this.account,
                 granularity: this.sparklineGranularity,
                 with_labels: true,

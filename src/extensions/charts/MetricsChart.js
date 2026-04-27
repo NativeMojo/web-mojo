@@ -333,14 +333,13 @@ class MetricsChart extends View {
         };
         if (this.withDelta) params.with_delta = true;
         if (this.slugs && this.slugs.length) {
-            // Param-name asymmetry between the two endpoints:
-            //   /api/metrics/fetch  → slug=a,b,c  (singular)
-            //   /api/metrics/series → slugs=a,b,c (plural)
-            // The wrong name returns a 400 "missing required parameters".
-            // slugs[]=… collapses all results under a single 'default'
-            // key on either endpoint and is never the right shape.
-            const useSeries = String(this.endpoint || '').includes('/series');
-            params[useSeries ? 'slugs' : 'slug'] = this.slugs.join(',');
+            // Both /api/metrics/fetch AND /api/metrics/series require
+            // `slugs=a,b,c` (plural, comma-separated). The singular
+            // `slug=` form returns 400 "missing required parameter" on
+            // the production backend (dev backend was permissive — this
+            // bit us: empirical "both work" turned out to be wrong).
+            // slugs[]=… also returns 400 / collapses to 'default'.
+            params.slugs = this.slugs.join(',');
         }
         if (this.category) params.category = this.category;
         if (this.dateStart) params.dr_start = Math.floor(this.dateStart.getTime() / 1000);
