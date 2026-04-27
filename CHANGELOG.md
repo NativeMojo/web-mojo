@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Added — Assistant: `assistant_text` event + chart-option passthrough
+
+- **New `assistant_text` WS event** is now handled in `AssistantView`,
+  `AssistantPanelView`, and `AssistantContextChat`. When the model writes
+  prose alongside tool calls in the same turn, that intermediate text now
+  renders as an assistant bubble before the tool-call status indicators.
+  `assistant_response` remains the terminal signal that clears the thinking
+  indicator and re-enables input. Conversations that don't emit
+  `assistant_text` are unchanged.
+- **`AssistantContextChat` gains a small `_adoptConversationId` helper** so
+  all three assistant views handle new-conversation events uniformly. The
+  adapter remains the canonical owner of `conversationId`.
+- **Chart blocks now forward new `SeriesChart` / `PieChart` options** from
+  the LLM into the chart constructor via a strict snake_case → camelCase
+  allowlist. New block-level fields: `stacked`, `grouped`, `crosshair_tracking`,
+  `cutout`, `show_labels`, `show_percentages`, `colors`, `show_legend`,
+  `legend_position`. New per-series fields: `color`, `fill`, `smoothing`.
+  Existing minimal chart blocks render identically.
+- Stale doc comment in `AssistantMessageView._renderChartBlock` corrected
+  (`MiniPieChart`/`MiniSeriesChart` → `PieChart`/`SeriesChart`).
+
 ### Docs — Phase 2 of taxonomy realignment
 
 - New doc pages in `docs/web-mojo/`:

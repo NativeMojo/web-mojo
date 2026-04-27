@@ -166,7 +166,10 @@ class AssistantMessageView extends ChatMessageView {
     }
 
     /**
-     * Render a chart block using MiniPieChart or MiniSeriesChart inside a collapsible card
+     * Render a chart block using PieChart or SeriesChart inside a collapsible
+     * card. Forwards the optional block-level options (snake_case → camelCase
+     * via a strict allowlist) to the chart constructor; the django-mojo server
+     * validator guarantees these fields are well-formed by the time we see them.
      * @private
      */
     async _renderChartBlock(block, container) {
@@ -190,12 +193,38 @@ class AssistantMessageView extends ChatMessageView {
         chartContainer.className = 'assistant-chart-body';
         body.appendChild(chartContainer);
 
+        // Strict allowlist for snake_case → camelCase forwarding from block fields.
+        // The django-mojo server validates these before they reach us; new
+        // server fields will need a corresponding entry here.
+        const FORWARD_SERIES = {
+            stacked:            'stacked',
+            grouped:            'grouped',
+            crosshair_tracking: 'crosshairTracking',
+            colors:             'colors',
+            show_legend:        'showLegend',
+            legend_position:    'legendPosition'
+        };
+        const FORWARD_PIE = {
+            cutout:           'cutout',
+            show_labels:      'showLabels',
+            show_percentages: 'showPercentages',
+            colors:           'colors',
+            legend_position:  'legendPosition'
+        };
+        const forward = (map) => Object.entries(map).reduce((acc, [snake, camel]) => {
+            if (block[snake] !== undefined) acc[camel] = block[snake];
+            return acc;
+        }, {});
+
         const chartData = {
             labels: block.labels || [],
-            datasets: (block.series || []).map(s => ({
-                label: s.name,
-                data: s.values
-            }))
+            datasets: (block.series || []).map(s => {
+                const d = { label: s.name, data: s.values };
+                if (s.color !== undefined) d.color = s.color;
+                if (s.fill !== undefined) d.fill = s.fill;
+                if (s.smoothing !== undefined) d.smoothing = s.smoothing;
+                return d;
+            })
         };
 
         if (isPie) {
@@ -206,6 +235,7 @@ class AssistantMessageView extends ChatMessageView {
                 width: 180,
                 height: 180,
                 legendPosition: 'right',
+                ...forward(FORWARD_PIE),
                 data: chartData
             });
 
@@ -221,6 +251,7 @@ class AssistantMessageView extends ChatMessageView {
                 fill: chartType === 'area',
                 height: 200,
                 legendPosition: 'top',
+                ...forward(FORWARD_SERIES),
                 data: chartData
             });
 

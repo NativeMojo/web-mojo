@@ -11,7 +11,7 @@ import AssistantConversationListView from './AssistantConversationListView.js';
  * - Left: conversation history sidebar
  * - Right: chat area with welcome state, messages, and prominent input
  *
- * WS events: assistant_thinking, assistant_tool_call, assistant_response, assistant_error
+ * WS events: assistant_thinking, assistant_text, assistant_tool_call, assistant_response, assistant_error
  */
 class AssistantView extends View {
     constructor(options = {}) {
@@ -398,6 +398,7 @@ class AssistantView extends View {
         //    → WebSocketClient emits "message:message"
         this._wsHandlers = {
             thinking: (data) => this._onThinking(data),
+            text: (data) => this._onText(data),
             tool_call: (data) => this._onToolCall(data),
             response: (data) => this._onResponse(data),
             error: (data) => this._onError(data),
@@ -411,6 +412,7 @@ class AssistantView extends View {
 
         // Direct events (from WS handler return)
         this.ws.on('message:assistant_thinking', this._wsHandlers.thinking);
+        this.ws.on('message:assistant_text', this._wsHandlers.text);
         this.ws.on('message:assistant_tool_call', this._wsHandlers.tool_call);
         this.ws.on('message:assistant_response', this._wsHandlers.response);
         this.ws.on('message:assistant_error', this._wsHandlers.error);
@@ -428,6 +430,7 @@ class AssistantView extends View {
         if (!this.ws || !this._wsHandlers) return;
 
         this.ws.off('message:assistant_thinking', this._wsHandlers.thinking);
+        this.ws.off('message:assistant_text', this._wsHandlers.text);
         this.ws.off('message:assistant_tool_call', this._wsHandlers.tool_call);
         this.ws.off('message:assistant_response', this._wsHandlers.response);
         this.ws.off('message:assistant_error', this._wsHandlers.error);
@@ -454,6 +457,7 @@ class AssistantView extends View {
 
         switch (inner.type) {
             case 'assistant_thinking':    this._onThinking(inner); break;
+            case 'assistant_text':        this._onText(inner); break;
             case 'assistant_tool_call':   this._onToolCall(inner); break;
             case 'assistant_response':    this._onResponse(inner); break;
             case 'assistant_error':       this._onError(inner); break;
@@ -490,6 +494,34 @@ class AssistantView extends View {
         this._showChatArea();
         this.chatView.showThinking('Thinking...');
         this._setInputEnabled(false, 'Assistant is thinking…');
+    }
+
+    /**
+     * Intermediate prose emitted by the model alongside tool calls in the same
+     * turn. Renders as an assistant bubble using the same path as a final
+     * response, but does NOT clear the thinking indicator or re-enable input —
+     * `assistant_response` remains the terminal signal for the turn.
+     * @private
+     */
+    _onText(data) {
+        if (!this._isMyConversation(data)) return;
+        this._adoptConversationId(data);
+        // Server is still working — refresh the safety timeout so a long
+        // intermediate text bubble doesn't trip the 60s "Request timed out".
+        this._resetResponseTimeout();
+
+        const msg = this._transformMessage({
+            id: data.message_id || `text-${++this._messageIdCounter}`,
+            role: 'assistant',
+            content: data.text || '',
+            blocks: data.blocks || [],
+            tool_calls: [],
+            created: data.created || data.timestamp || new Date().toISOString()
+        });
+
+        if (msg && (msg.content || msg.blocks?.length)) {
+            this.chatView.addMessage(msg);
+        }
     }
 
     _onToolCall(data) {
