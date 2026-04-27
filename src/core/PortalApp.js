@@ -907,6 +907,7 @@ export default class PortalApp extends WebApp {
             const profileView = new UserProfileView({ model: this.activeUser });
 
             await Modal.show(profileView, {
+                eyeBrow: 'User Profile',
                 size: 'lg',
                 noBodyPadding: true,
                 centered: false

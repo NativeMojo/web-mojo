@@ -97,7 +97,7 @@ class ModalView extends View {
         // .modal-content and would otherwise paint over a custom header.
         const headerDisabled = options.header === false || options.header === null;
         const headerCustomized = options.headerContent !== undefined && options.headerContent !== null;
-        const bandlessClass = (headerDisabled || headerCustomized) ? 'modal-bandless' : '';
+        const bandlessClass = '';// (headerDisabled || headerCustomized) ? 'modal-bandless' : '';
 
         super({
             ...options,
@@ -408,7 +408,7 @@ class ModalView extends View {
     async buildBody() {
         if (this.bodyView) {
             this.bodyView.replaceById = true;
-            const bodyClass = this.noBodyPadding ? `modal-body p-0 ${this.bodyClass}` : `modal-body ${this.bodyClass}`;
+            const bodyClass = this.noBodyPadding ? `modal-body p-0 py-4 ${this.bodyClass}` : `modal-body ${this.bodyClass}`;
             return `<div class="${bodyClass}" data-view-container="body">
         <div id="${this.bodyView.id}"></div>
       </div>`;
