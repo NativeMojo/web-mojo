@@ -26,6 +26,12 @@ const escHtml = (s) => {
 const WINDOW_DAYS = 7;
 const TOP_N = 10;
 
+// Categories to exclude from the Top Categories list. Operational /
+// infra-noise categories that would otherwise dominate the rankings
+// without telling the operator anything actionable. Pre-filters
+// server-side via category__not_in so the GROUP BY never sees them.
+const DEFAULT_CATEGORY_EXCLUDES = ['ossec'];
+
 class TopSourcesPanel extends View {
     constructor(options = {}) {
         super({
@@ -33,6 +39,9 @@ class TopSourcesPanel extends View {
             className: `sd-top-sources ${options.className || ''}`.trim()
         });
         this.allowBlock = options.allowBlock !== false;
+        this.excludeCategories = Array.isArray(options.excludeCategories)
+            ? options.excludeCategories
+            : DEFAULT_CATEGORY_EXCLUDES;
         // State on `this` for Mustache resolution.
         this.ips = [];
         this.cats = [];
@@ -109,9 +118,14 @@ class TopSourcesPanel extends View {
 
     async _fetch() {
         const drStart = Math.floor((Date.now() - WINDOW_DAYS * 86400000) / 1000);
+        // Top Categories pre-filters out noise categories server-side
+        // via category__not_in — keeps ossec etc. out of the rankings.
+        const catFilters = this.excludeCategories.length
+            ? { category__not_in: this.excludeCategories.join(',') }
+            : {};
         const [ipsRaw, catsRaw] = await Promise.all([
             this._fetchTop('source_ip', drStart),
-            this._fetchTop('category', drStart)
+            this._fetchTop('category', drStart, catFilters)
         ]);
         this.ips = this._withRank(ipsRaw);
         this.cats = this._withRank(catsRaw);
@@ -127,8 +141,11 @@ class TopSourcesPanel extends View {
     /**
      * Fetch top-N for a single field via the framework's _mode=top
      * aggregation surface. Returns [{name, value}] sorted by value desc.
+     * `extraFilters` lets the caller tack on Django-style lookups
+     * (e.g. category__not_in=ossec) that pre-filter records before the
+     * GROUP BY runs.
      */
-    async _fetchTop(field, drStart) {
+    async _fetchTop(field, drStart, extraFilters = {}) {
         const rest = this.getApp()?.rest;
         if (!rest) return [];
         try {
@@ -137,6 +154,7 @@ class TopSourcesPanel extends View {
                 _field: field,
                 _size: TOP_N,
                 dr_start: drStart,
+                ...extraFilters,
                 _: Date.now()
             });
             // _mode=top response: { status, graph, field, agg, size,
