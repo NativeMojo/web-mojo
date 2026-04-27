@@ -71,17 +71,20 @@ module.exports = async function(testContext) {
         beforeEach(() => { installBootstrapStub(); });
         afterEach(()  => { restoreBootstrapStub(); });
 
-        it('renders the menu, positions the trigger at (x, y), and shows the dropdown', async () => {
+        it('renders the menu, positions the dropdown at (x, y), and shows it', async () => {
             const menu = makeMenu();
             await menu.openAt(123, 456);
 
-            const trigger = menu.element.querySelector('[data-bs-toggle="dropdown"]');
-            expect(trigger).toBeDefined();
-            expect(trigger.style.position).toBe('fixed');
-            expect(trigger.style.left).toBe('123px');
-            expect(trigger.style.top).toBe('456px');
-            expect(shownTriggers).toHaveLength(1);
-            expect(shownTriggers[0]).toBe(trigger);
+            const menuEl = document.body.querySelector(`[aria-labelledby="context-menu-${menu.id}"]`);
+            expect(menuEl).toBeDefined();
+            expect(menuEl.parentElement).toBe(document.body);
+            expect(menuEl.style.position).toBe('fixed');
+            expect(menuEl.style.left).toBe('123px');
+            expect(menuEl.style.top).toBe('456px');
+            expect(menuEl.classList.contains('show')).toBe(true);
+
+            menu.element.remove();
+            menuEl.remove();
         });
 
         it('updates menu.context with the contextItem argument', async () => {
@@ -171,13 +174,14 @@ module.exports = async function(testContext) {
 
             await openPromise;
 
-            const trigger = menu.element.querySelector('[data-bs-toggle="dropdown"]');
-            expect(trigger.style.left).toBe('200px');
-            expect(trigger.style.top).toBe('300px');
-            expect(shownTriggers).toContain(trigger);
+            const menuEl = document.body.querySelector(`[aria-labelledby="context-menu-${menu.id}"]`);
+            expect(menuEl.style.left).toBe('200px');
+            expect(menuEl.style.top).toBe('300px');
+            expect(menuEl.classList.contains('show')).toBe(true);
 
             host.remove();
             if (menu.element.parentNode) menu.element.remove();
+            if (menuEl.parentNode) menuEl.remove();
         });
 
         it('reuses a pre-built ContextMenu when passed via { menu }', () => {
