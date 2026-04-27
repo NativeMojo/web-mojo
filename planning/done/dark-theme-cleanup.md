@@ -334,5 +334,18 @@ All three slices landed in one pass.
 
 ### Agent findings
 
-(To be filled in after spawning test-runner / docs-updater / security-review.)
+**test-runner**
+- Full suite ran: unit (26 files), integration (3 files), build (4 files).
+- **No new failures introduced.** Unit: 520/522 passed; the 2 failures are pre-existing in `test/unit/ContextMenu.test.js` (JSDOM can't simulate Bootstrap Dropdown's real-layout positioning — infrastructure-level, not a trivial fix). Integration: 3 pre-existing failures, all module-resolution issues unrelated to this change.
+- The 16 `ThemeManager.test.js` assertions all pass.
+
+**docs-updater**
+- Three additional docs updated (committed in 5c5f28c):
+  - `docs/web-mojo/extensions/TimelineView.md` — added "Dark theme" feature bullet, removed the now-stale manual `import '@core/views/timeline/timeline.css'` line (auto-imported by `TimelineView.js`), rewrote the Styling section opener.
+  - `docs/web-mojo/components/ChatView.md` — Dark theme bullet in Overview.
+  - `docs/web-mojo/components/SideNavView.md` — Dark theme bullet in Overview.
+
+**security-review**
+- **Clean — no critical or warning-level findings.** One info-level note: the `_themeToggle: true` sentinel attached to injected menu items is visible in the Mustache rendering context (template doesn't reference it, so no current impact, but worth knowing if menu config is ever serialized).
+- `appKey` derivation, `data-bs-theme` setAttribute, and the Mustache `{{#active}}active{{/active}}` section are all safe — values are gated by an allowlist or constrained to two hardcoded strings, and Mustache sections don't interpolate.
 
