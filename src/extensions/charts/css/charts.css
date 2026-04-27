@@ -2027,12 +2027,12 @@
 .mojo-kpi-tile {
     /* button reset */
     appearance: none;
-    border: 1px solid var(--bs-border-color, #dee2e6);
-    /* Tertiary bg gives the tile a tinted surface that's visible
-       against the page body bg (especially under data-bs-theme="dark"
-       where body and surface would otherwise both be near-black). */
-    background: var(--bs-tertiary-bg, #f8f9fa);
-    color: inherit;
+    border: 1px solid var(--mojo-kpi-tile-border, var(--bs-border-color, #dee2e6));
+    /* Tile surface — distinct from page bg via theme-aware vars.
+       Dark theme overrides set a deeper near-black so the tile reads
+       as a discrete card against a slightly lighter page bg. */
+    background: var(--mojo-kpi-tile-bg, var(--bs-tertiary-bg, #f8f9fa));
+    color: var(--mojo-kpi-tile-fg, var(--bs-emphasis-color, var(--bs-body-color)));
     font: inherit;
     cursor: pointer;
 
@@ -2072,7 +2072,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: var(--bs-secondary-color, #6c757d);
+    color: var(--mojo-kpi-tile-label-fg, var(--bs-secondary-color, #6c757d));
 }
 
 .mojo-kpi-tile-value {
@@ -2083,18 +2083,22 @@
     line-height: 1.05;
     margin-top: 6px;
     letter-spacing: -0.01em;
-    color: var(--bs-body-color);
+    color: var(--mojo-kpi-tile-fg, var(--bs-emphasis-color, var(--bs-body-color)));
 }
 
 .mojo-kpi-tile-delta {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     width: fit-content;
-    margin-top: 4px;
-    padding: 1px 7px;
+    margin-top: 6px;
+    padding: 2px 9px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-variant-numeric: tabular-nums;
     font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
     border-radius: 999px;
+    letter-spacing: 0.01em;
 }
 
 .mojo-kpi-tile-delta-neutral {
@@ -2108,21 +2112,36 @@
 }
 
 .mojo-kpi-tile-delta-bad {
-    color: var(--bs-danger-text-emphasis, #b02a37);
-    background: var(--bs-danger-bg-subtle, rgba(220, 53, 69, 0.12));
+    color: #b02a37;
+    background: rgba(220, 53, 69, 0.12);
 }
 
 .mojo-kpi-tile-delta-good {
-    color: var(--bs-success-text-emphasis, #146c43);
-    background: var(--bs-success-bg-subtle, rgba(25, 135, 84, 0.12));
+    color: #146c43;
+    background: rgba(25, 135, 84, 0.12);
 }
 
+/* ── Dark theme: deeper tile surface, brighter text, refined badges ── */
+[data-bs-theme="dark"] {
+    --mojo-kpi-tile-bg: #11161d;
+    --mojo-kpi-tile-fg: #e6ecf3;
+    --mojo-kpi-tile-label-fg: #8a96a6;
+    --mojo-kpi-tile-border: #1f2630;
+}
+[data-bs-theme="dark"] .mojo-kpi-tile:hover {
+    border-color: #2a3441;
+}
 [data-bs-theme="dark"] .mojo-kpi-tile-delta-bad {
     color: #ffb4b4;
+    background: rgba(255, 77, 79, 0.16);
 }
-
 [data-bs-theme="dark"] .mojo-kpi-tile-delta-good {
     color: #b8f5d6;
+    background: rgba(52, 211, 153, 0.14);
+}
+[data-bs-theme="dark"] .mojo-kpi-tile-delta-neutral {
+    color: #9aa6b6;
+    background: rgba(255, 255, 255, 0.04);
 }
 
 .mojo-kpi-tile-spark {
@@ -2250,11 +2269,16 @@
 
 .security-dashboard .sd-card {
     border-radius: 8px;
-    /* Use tertiary bg so cards stand off the page body bg under both
-       light and dark themes. Without this, dark-theme cards melt into
-       the page bg. */
-    background: var(--bs-tertiary-bg, #ffffff);
-    border: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08));
+    /* Use the same theme-aware tile surface as KPITile so the dashboard
+       reads as a unified mission-control surface — distinct from the
+       page bg, brighter text. */
+    background: var(--mojo-kpi-tile-bg, var(--bs-tertiary-bg, #ffffff));
+    border: 1px solid var(--mojo-kpi-tile-border, var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08)));
+    color: var(--mojo-kpi-tile-fg, var(--bs-body-color));
+}
+
+.security-dashboard .sd-card-title {
+    color: var(--mojo-kpi-tile-fg, var(--bs-emphasis-color, var(--bs-body-color)));
 }
 
 /* Geography map + leaderboard side-by-side layout. */
