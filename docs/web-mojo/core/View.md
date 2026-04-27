@@ -1820,6 +1820,7 @@ console.log('Template:', view.template);
 - **[Templates.md](./Templates.md)** - Mustache syntax, formatters, and best practices
 - **[Events.md](./Events.md)** - EventDelegate and convention-based event handling
 - **[AdvancedViews.md](./AdvancedViews.md)** - Custom renders, complex patterns, optimization
+- **[Router.md](./Router.md)** - The router instance returned by `findRouter()`
 - **[Model.md](./Model.md)** - Model data management
 - **[Collection.md](./Collection.md)** - Collection data management
 

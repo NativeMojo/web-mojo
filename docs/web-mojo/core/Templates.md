@@ -1318,6 +1318,7 @@ MOJO templates provide a powerful, readable way to render data:
 **Related Documentation:**
 - [View.md](./View.md) - View component basics
 - [DataFormatter.md](./DataFormatter.md) - Complete formatter reference (100+ formatters)
+- [MustacheFormatter.md](../utils/MustacheFormatter.md) - Lower-level renderer; register custom pipe formatters
 - [Model.md](./Model.md) - Model data management
 - [Collection.md](./Collection.md) - Collection data management
 

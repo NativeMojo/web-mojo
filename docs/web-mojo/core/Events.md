@@ -1881,6 +1881,7 @@ The EventDelegate system provides a powerful, convention-based approach to DOM e
 
 For view development, see [View.md](View.md).  
 For template syntax, see [Templates.md](Templates.md).  
+For routing and navigation, see [Router.md](Router.md).  
 For form handling, see [Form.md](Form.md).
 
 ## Examples

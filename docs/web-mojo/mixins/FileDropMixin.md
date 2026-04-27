@@ -26,6 +26,8 @@ Two ways to use it:
 
 The mixin does NOT upload anything — it hands you `File[]` after a drop. Use [`services/FileUpload.md`](../services/FileUpload.md) or your own `Rest` calls to actually move bytes.
 
+> ⚠️ **Security note**: `acceptedTypes` and `maxFileSize` are **UX hints, not security controls**. The MIME type comes from the browser/OS, is trivial to spoof, and `File.size` can also be misreported by hostile clients. Always re-validate file type, size, and contents on the server. The mixin's job is "don't bother the user with files we know we can't accept"; it is not a defense against malicious uploads.
+
 ## Quick Start
 
 ```js
@@ -42,8 +44,9 @@ class FileDropZone extends View {
     async onInit() {
         await super.onInit();
         this.enableFileDrop({
+            // UX hint only — server MUST re-validate. See the security note above.
             acceptedTypes: ['image/*', 'application/pdf'],
-            maxFileSize: 5 * 1024 * 1024, // 5 MB
+            maxFileSize: 5 * 1024 * 1024, // 5 MB — same caveat
             multiple: true,
         });
     }
