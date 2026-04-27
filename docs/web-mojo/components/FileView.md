@@ -95,7 +95,7 @@ The three-dots menu in the header exposes:
 | `view-file` | `onActionViewFile` | Opens category-specific viewer (Lightbox / PDFViewer / `window.open`) |
 | `download-file` | `onActionDownloadFile` | Synthetic `<a download>` click against the file URL |
 | `copy-url` | `onActionCopyUrl` | Writes the file URL to the clipboard, toasts success/failure |
-| `edit-file` | `onActionEditFile` | Opens `Dialog.showModelForm({ formConfig: FileForms.edit })`; re-renders on save |
+| `edit-file` | `onActionEditFile` | Opens `Modal.modelForm({ formConfig: FileForms.edit })`; re-renders on save |
 | `make-public` / `make-private` | `onActionMakePublic` / `onActionMakePrivate` | `model.save({ is_public: true/false })`; menu item flips on next render |
 | `regenerate-renditions` | `onActionRegenerateRenditions` | Confirms, then POSTs `{ action: 'regenerate_renditions' }` and (re)starts the rendition poll |
 | `delete-file` | `onActionDeleteFile` | `Dialog.confirm` → `model.destroy()` → emits `file:deleted` on success |

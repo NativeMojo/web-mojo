@@ -688,16 +688,16 @@ if (user.isDirty()) {
 
 ## Form Configurations
 
-Most built-in models ship with ready-to-use form configurations for the [Dialog.showModelForm()](../components/Dialog.md#showmodelform) and [Dialog.showForm()](../components/Dialog.md#showform) methods.
+Most built-in models ship with ready-to-use form configurations for the [Modal.modelForm()](../components/Modal.md) and [Modal.form()](../components/Modal.md) methods.
 
 ### Using a Form Config Directly
 
 ```js
 import { User, UserForms } from 'web-mojo/models';
-import Dialog from 'web-mojo/views/feedback/Dialog';
+import Modal from '@core/views/feedback/Modal.js';
 
 // Create a new user
-const result = await Dialog.showForm({
+const result = await Modal.form({
   title:  'Create User',
   fields: UserForms.create.fields,
   size:   'md'
@@ -709,7 +709,7 @@ if (result && result.submitted) {
 }
 
 // Edit an existing user
-const result = await Dialog.showModelForm({
+const result = await Modal.modelForm({
   title:  `Edit ${existingUser.get('display_name')}`,
   model:  existingUser,
   fields: User.EDIT_FORM.fields,
@@ -721,7 +721,7 @@ const result = await Dialog.showModelForm({
 
 ```js
 // Shortcut via static class properties
-await Dialog.showModelForm({
+await Modal.modelForm({
   model:  user,
   ...User.EDIT_FORM   // spreads: { title, fields }
 });
@@ -736,18 +736,18 @@ Models with `DATA_VIEW` configurations work with the DataView component to displ
 ### Using a DataView Config
 
 ```js
-import Dialog from 'web-mojo/views/feedback/Dialog';
+import Modal from '@core/views/feedback/Modal.js';
 import { User } from 'web-mojo/models';
 
 // Show user details in a read-only dialog
-await Dialog.showModelView(User, {
+await Modal.showModelView(User, {
   header: 'User Details',
   body:   new DataView({ model: userModel, fields: User.DATA_VIEW.fields }),
   size:   'lg'
 });
 
 // Or use the convenient static method
-await Dialog.showModelView(null, {
+await Modal.showModelView(null, {
   header: 'User Profile',
   body:   new DataView({ model: user, fields: UserDataView.profile.fields }),
   size:   'md'

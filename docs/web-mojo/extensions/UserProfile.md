@@ -24,17 +24,17 @@
 | `PasskeySetupView` | One-shot post-login prompt. Three actions — *Create*, *Not now*, *Don't ask again*. Hands off to `Passkey` model for WebAuthn registration. | Shown once after login if the user has no passkey and hasn't dismissed it. |
 | 11 `Profile*Section` views | Composable sections inside `UserProfileView`. Listed below — useful when you want a slimmed profile that omits some sections, or when a different host page wants to re-use one section. | Inside a custom profile shell, or as a standalone page. |
 
-Both top-level views are `View` subclasses. Mount them with the standard `Dialog` pattern.
+Both top-level views are `View` subclasses. Mount them with `Modal.dialog` (or `app.modal.dialog`).
 
 ## Quick Start — Profile Dialog
 
 ```js
-import Dialog from 'web-mojo';
+import Modal from '@core/views/feedback/Modal.js';
 import { UserProfileView } from 'web-mojo/user-profile';
 
 const profile = new UserProfileView({ model: app.activeUser });
 
-const dlg = await Dialog.showDialog({
+await Modal.dialog({
     body: profile,
     size: 'xl',
     header: null,
@@ -48,13 +48,13 @@ const dlg = await Dialog.showDialog({
 ## Quick Start — Passkey Prompt
 
 ```js
-import Dialog from 'web-mojo';
+import Modal from '@core/views/feedback/Modal.js';
 import { PasskeySetupView } from 'web-mojo/user-profile';
 
 // Right after a successful login, if the user has no passkey:
 if (!app.activeUser.get('passkey_count')) {
     const view = new PasskeySetupView();
-    Dialog.showDialog({
+    Modal.dialog({
         body: view,
         size: 'sm',
         centered: true,

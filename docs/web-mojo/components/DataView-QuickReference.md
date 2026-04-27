@@ -163,17 +163,17 @@ await dataView.refresh(); // Calls model.fetch()
 ## Dialog Integration
 
 ```js
-import { Dialog } from '../components/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 // Quick data display dialog
-await Dialog.showData({
+await Modal.data({
   title: 'User Details',
   data: userData,
   columns: 2
 });
 
 // Advanced dialog with custom fields
-await Dialog.showData({
+await Modal.data({
   title: 'Profile Information',
   model: userModel,
   fields: [

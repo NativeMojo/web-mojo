@@ -11,10 +11,10 @@ How to upload files and associate them with models in WEB-MOJO.
 The simplest path for image fields on a model. `Dialog.updateModelImage()` handles the entire flow: pick image → upload via `FileUpload` service → save file ID to model.
 
 ```javascript
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 // model = a User (or any model with an image FK field)
-const resp = await Dialog.updateModelImage({
+const resp = await Modal.updateModelImage({
     model: this.model,
     field: 'avatar',          // FK field on the model
     title: 'Change Avatar',

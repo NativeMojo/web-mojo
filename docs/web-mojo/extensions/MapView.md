@@ -84,7 +84,8 @@ await mapView.render(container);
 ### In a Dialog with TabView
 
 ```js
-import { Dialog, TabView } from 'web-mojo';
+import Modal from '@core/views/feedback/Modal.js';
+import { TabView } from 'web-mojo';
 import {MapView} from 'web-mojo/map';
 
 const mapView = new MapView({
@@ -102,9 +103,8 @@ const tabs = {
 
 const tabView = new TabView({ tabs });
 
-Dialog.show({
+await Modal.show(tabView, {
     title: 'Location Details',
-    body: tabView,
     size: 'xl'
 });
 ```
@@ -498,9 +498,8 @@ height: 300
 ### 3. Use XL Size for Dialogs with Maps
 
 ```js
-Dialog.show({
+await Modal.show(mapView, {
     title: 'Location Details',
-    body: mapView,
     size: 'xl'  // Give maps room to breathe
 });
 ```

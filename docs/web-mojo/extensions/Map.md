@@ -1009,7 +1009,7 @@ await MapView.showAsDialog({
 
 ```javascript
 import { MapLibreView } from 'web-mojo/map';
-import Dialog from 'web-mojo/core/views/feedback/Dialog';
+import Modal from '@core/views/feedback/Modal.js';
 
 const map = new MapLibreView({
   markers: [{ lng: -0.1278, lat: 51.5074, popup: 'London' }],
@@ -1017,7 +1017,7 @@ const map = new MapLibreView({
   height: 400
 });
 
-await Dialog.showDialog({
+await Modal.dialog({
   title: 'Map View',
   body: map,
   size: 'xl',

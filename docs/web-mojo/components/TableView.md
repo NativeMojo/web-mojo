@@ -566,6 +566,8 @@ Or use a custom handler:
 Override the default behavior for view, edit, and delete:
 
 ```javascript
+import Modal from '@core/views/feedback/Modal.js';
+
 const table = new TableView({
   collection: userCollection,
   columns: [...],
@@ -585,7 +587,7 @@ const table = new TableView({
   onItemDelete: async (model, event) => {
     // Custom delete with extra logic
     if (model.get('role') === 'admin') {
-      Dialog.showError('Cannot delete admin users');
+      Modal.showError('Cannot delete admin users');
       return;
     }
     await model.destroy();

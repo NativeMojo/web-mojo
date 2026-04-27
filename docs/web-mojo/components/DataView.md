@@ -555,7 +555,7 @@ const apiView = new APIResponseView(response);
 DataView integrates seamlessly with MOJO's Dialog component for quick data display modals:
 
 ```js
-import { Dialog } from '../components/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 // Quick data display dialog
 const userData = {
@@ -566,14 +566,14 @@ const userData = {
   joinDate: '2024-01-15'
 };
 
-await Dialog.showData({
+await Modal.data({
   title: 'User Details',
   data: userData,
   columns: 2
 });
 
 // Advanced dialog with custom configuration
-await Dialog.showData({
+await Modal.data({
   title: 'Profile Information',
   model: userModel,
   fields: [
@@ -589,7 +589,7 @@ await Dialog.showData({
 });
 
 // Listen for DataView events within dialog
-const dialogPromise = Dialog.showData({
+const dialogPromise = Modal.data({
   title: 'Interactive Data',
   data: complexData
 });

@@ -105,9 +105,9 @@ this.addChild(form);
 ### 3. Form in Dialog
 
 ```javascript
-import { Dialog } from 'web-mojo';
+import Modal from '@core/views/feedback/Modal.js';
 
-const formData = await Dialog.showForm({
+const formData = await Modal.form({
   title: 'Create User',
   fields: [
     { type: 'text', name: 'username', label: 'Username', required: true },
@@ -586,7 +586,7 @@ if (!isValid) {
 - [View Documentation](../core/View.md) - Understanding Views
 - [Model Documentation](../core/Model.md) - Working with Models
 - [Templates Documentation](../core/Templates.md) - Template system
-- [Dialog Documentation](../features/Dialog.md) - Dialog.showForm()
+- [Modal Documentation](../components/Modal.md) - Modal.form()
 
 ---
 

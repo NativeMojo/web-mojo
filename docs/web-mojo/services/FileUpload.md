@@ -263,12 +263,12 @@ await this.model.save({ document: fileModel.id });
 
 ### Image Upload via Dialog
 
-For image fields, `Dialog.updateModelImage()` wraps the full flow (pick → upload → save ID) in one call:
+For image fields, `Modal.updateModelImage()` wraps the full flow (pick → upload → save ID) in one call:
 
 ```javascript
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
-const resp = await Dialog.updateModelImage({
+const resp = await Modal.updateModelImage({
     model: this.model,
     field: 'avatar',        // FK field on the model
     title: 'Change Avatar',
