@@ -37,98 +37,20 @@
  */
 
 import View from '@core/View.js';
+import Modal from '@core/views/feedback/Modal.js';
 import MetricsMiniChart from './MetricsMiniChart.js';
 
-/**
- * Settings content view for the popover
- * @private
- */
-class SettingsView extends View {
-  constructor(options = {}) {
-    super({
-      tagName: 'div',
-      className: 'metrics-chart-settings-content',
-      ...options
-    });
-    
-    this.granularity = options.granularity;
-    this.chartType = options.chartType;
-    this.dateStart = options.dateStart;
-    this.dateEnd = options.dateEnd;
-    this.showDateRange = options.showDateRange;
-  }
-  
-  formatDateForInput(date) {
+// Format a Date / ISO / 'YYYY-MM-DD' string as a value suitable for an
+// HTML `<input type="date">`. Used to seed the settings dialog.
+function formatDateForInput(date) {
     if (!date) return '';
-    
-    // If it's already a string in YYYY-MM-DD format, return it
-    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return date;
-    }
-    
-    // Convert Date object to YYYY-MM-DD
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
     const d = date instanceof Date ? date : new Date(date);
     if (isNaN(d.getTime())) return '';
-    
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-  }
-  
-  getTemplate() {
-    return `
-      <div style="min-width: 220px;">
-        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
-          <h6 class="mb-0">Chart Settings</h6>
-          <button type="button" class="btn-close btn-close-sm" data-action="close" aria-label="Close"></button>
-        </div>
-
-        <label class="form-label small mb-1">Granularity</label>
-        <select class="form-select form-select-sm mb-2" data-setting="granularity">
-          <option value="hours" ${this.granularity === 'hours' ? 'selected' : ''}>Hours</option>
-          <option value="days" ${this.granularity === 'days' ? 'selected' : ''}>Days</option>
-          <option value="weeks" ${this.granularity === 'weeks' ? 'selected' : ''}>Weeks</option>
-          <option value="months" ${this.granularity === 'months' ? 'selected' : ''}>Months</option>
-          <option value="years" ${this.granularity === 'years' ? 'selected' : ''}>Years</option>
-        </select>
-        
-        <label class="form-label small mb-1">Chart Type</label>
-        <select class="form-select form-select-sm mb-2" data-setting="chartType">
-          <option value="line" ${this.chartType === 'line' ? 'selected' : ''}>Line</option>
-          <option value="bar" ${this.chartType === 'bar' ? 'selected' : ''}>Bar</option>
-        </select>
-        
-        ${this.showDateRange ? `
-        <label class="form-label small mb-1">Date Range</label>
-        <input type="date" class="form-control form-control-sm mb-1" data-setting="dateStart" value="${this.formatDateForInput(this.dateStart)}" />
-        <input type="date" class="form-control form-control-sm mb-2" data-setting="dateEnd" value="${this.formatDateForInput(this.dateEnd)}" />
-        ` : ''}
-        
-        <div class="d-grid gap-2">
-          <button type="button" class="btn btn-sm btn-primary" data-action="apply">Apply</button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" data-action="cancel">Cancel</button>
-        </div>
-      </div>
-    `;
-  }
-  
-  async onActionApply() {
-    const granularity = this.element.querySelector('[data-setting="granularity"]')?.value;
-    const chartType = this.element.querySelector('[data-setting="chartType"]')?.value;
-    const dateStart = this.element.querySelector('[data-setting="dateStart"]')?.value;
-    const dateEnd = this.element.querySelector('[data-setting="dateEnd"]')?.value;
-    
-    this.emit('settings:apply', { granularity, chartType, dateStart, dateEnd });
-  }
-  
-  async onActionCancel() {
-    this.emit('settings:cancel');
-  }
-  
-  async onActionClose() {
-    this.emit('settings:cancel');
-  }
 }
 
 export default class MetricsMiniChartWidget extends View {
@@ -243,23 +165,10 @@ export default class MetricsMiniChartWidget extends View {
     });
     this.addChild(this.header);
 
-    // Create settings view as a child if enabled
-    if (this.showSettings) {
-      this.settingsView = new SettingsView({
-        containerId: 'settings',
-        granularity: this.chartOptions.granularity,
-        chartType: this.chartOptions.chartType,
-        dateStart: this.chartOptions.dateStart,
-        dateEnd: this.chartOptions.dateEnd,
-        showDateRange: this.showDateRange
-      });
-      
-      // Listen for settings events
-      this.settingsView.on('settings:apply', (data) => this._handleSettingsApply(data));
-      this.settingsView.on('settings:cancel', () => this._handleSettingsCancel());
-      
-      this.addChild(this.settingsView);
-    }
+    // Settings now open as a Modal dialog on cog click (see
+    // `onActionToggleSettings`). No SettingsView child is needed; this
+    // sidesteps the popover-after-re-render bug where the cog stopped
+    // working after navigating away and back.
 
     // Listen for data load events
     if (this.chart?.on) {
@@ -271,11 +180,6 @@ export default class MetricsMiniChartWidget extends View {
 
   async onAfterRender() {
     await super.onAfterRender();
-
-    // Initialize popover if settings are enabled
-    if (this.showSettings && this.settingsView) {
-      this._initSettingsPopover();
-    }
   }
 
   onChildMetricsLoaded() {
@@ -436,18 +340,12 @@ export default class MetricsMiniChartWidget extends View {
         <div class="card-body p-3">
           <div data-container="chart-header"></div>
           <div data-container="chart"></div>
-          <div data-container="settings" style="display: none;"></div>
         </div>
       </div>
     `;
   }
 
   async onBeforeDestroy() {
-    if (this._settingsPopover) {
-      this._settingsPopover.dispose();
-      this._settingsPopover = null;
-    }
-
     if (this.chart?.off) {
       this.chart.off('metrics:loaded', this.onChildMetricsLoaded, this);
     }
@@ -455,58 +353,64 @@ export default class MetricsMiniChartWidget extends View {
   }
 
   /**
-   * Toggle settings popover
+   * Open the settings dialog. Uses `Modal.form` so the chart's settings
+   * UI is a proper modal — easier to use, theme-consistent with the rest
+   * of the framework, and immune to the popover-after-re-render bug.
    */
   async onActionToggleSettings(event, element) {
-    if (!this._settingsPopover) {
-      this._initSettingsPopover();
-    }
-    if (!this._settingsPopover) {
-      // Init failed (e.g., bootstrap.Popover unavailable) — already logged.
-      return;
-    }
-    try {
-      this._settingsPopover.toggle();
-    } catch (err) {
-      console.error('[MetricsMiniChartWidget] settings popover toggle failed:', err);
-    }
-  }
+    const fields = [
+      {
+        name: 'granularity',
+        type: 'select',
+        label: 'Granularity',
+        value: this.chartOptions.granularity || 'hours',
+        options: [
+          { value: 'hours',  label: 'Hours' },
+          { value: 'days',   label: 'Days' },
+          { value: 'weeks',  label: 'Weeks' },
+          { value: 'months', label: 'Months' },
+          { value: 'years',  label: 'Years' }
+        ]
+      },
+      {
+        name: 'chartType',
+        type: 'select',
+        label: 'Chart Type',
+        value: this.chartOptions.chartType || 'line',
+        options: [
+          { value: 'line', label: 'Line' },
+          { value: 'bar',  label: 'Bar' }
+        ]
+      }
+    ];
 
-  /**
-   * Initialize settings popover (once)
-   * @private
-   */
-  _initSettingsPopover() {
-    if (this._settingsPopover) return; // Already initialized
-
-    const button = this.element.querySelector('[data-action="toggle-settings"]');
-    if (!button) {
-      console.warn('[MetricsMiniChartWidget] settings popover skipped — cog button missing');
-      return;
-    }
-    if (!this.settingsView || !this.settingsView.element) {
-      console.warn('[MetricsMiniChartWidget] settings popover skipped — settingsView not rendered');
-      return;
-    }
-    // Bootstrap 5 attaches `Popover` to `window.bootstrap`. If a host page
-    // bundles Bootstrap as ESM-only (no global), the popover won't work.
-    if (typeof bootstrap === 'undefined' || !bootstrap.Popover) {
-      console.error('[MetricsMiniChartWidget] settings popover skipped — window.bootstrap.Popover not available. Ensure Bootstrap JS is loaded as a global script tag (or expose it via `window.bootstrap = bootstrap`).');
-      return;
+    if (this.showDateRange) {
+      fields.push(
+        {
+          name: 'dateStart',
+          type: 'date',
+          label: 'Start date',
+          value: formatDateForInput(this.chartOptions.dateStart)
+        },
+        {
+          name: 'dateEnd',
+          type: 'date',
+          label: 'End date',
+          value: formatDateForInput(this.chartOptions.dateEnd)
+        }
+      );
     }
 
-    try {
-      this._settingsPopover = new bootstrap.Popover(button, {
-        content: this.settingsView.element,
-        html: true,
-        placement: 'bottom',
-        trigger: 'manual',
-        sanitize: false,
-        customClass: 'metrics-chart-settings-popover'
-      });
-    } catch (err) {
-      console.error('[MetricsMiniChartWidget] settings popover init failed:', err);
-    }
+    const data = await Modal.form({
+      title: this.title ? `${this.title} — Settings` : 'Chart Settings',
+      size: 'sm',
+      submitText: 'Apply',
+      cancelText: 'Cancel',
+      fields
+    });
+
+    // Modal.form resolves with the form data on submit, or null on cancel.
+    if (data) await this._handleSettingsApply(data);
   }
 
   /**
@@ -514,10 +418,6 @@ export default class MetricsMiniChartWidget extends View {
    * @private
    */
   async _handleSettingsApply(data) {
-    if (this._settingsPopover) {
-      this._settingsPopover.hide();
-    }
-
     let hasChanges = false;
     let granularityChanged = false;
     let datesExplicitlySet = false;
@@ -592,16 +492,6 @@ export default class MetricsMiniChartWidget extends View {
     if (hasChanges) {
       this._saveSettings();
       await this.chart.refresh();
-    }
-  }
-
-  /**
-   * Handle settings cancel
-   * @private
-   */
-  _handleSettingsCancel() {
-    if (this._settingsPopover) {
-      this._settingsPopover.hide();
     }
   }
 
