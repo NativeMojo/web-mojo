@@ -112,11 +112,13 @@ class KPIStrip extends View {
 
         const promises = [];
 
-        // 1) Batched series call with deltas
+        // 1) Batched series call with deltas. Backend expects
+        //    `slug=a,b,c` (comma-separated); slugs[]=… collapses all
+        //    results under a single 'default' key.
         let seriesPromise = null;
         if (slugs.length) {
             const params = {
-                'slugs[]': slugs,
+                slug: slugs.join(','),
                 account: this.account,
                 granularity: this.granularity,
                 with_delta: true,
@@ -134,7 +136,7 @@ class KPIStrip extends View {
         if (this.includeSparkline && slugs.length) {
             const drStart = new Date(Date.now() - this.sparklineDays * 86400000);
             const sparkParams = {
-                'slugs[]': slugs,
+                slug: slugs.join(','),
                 account: this.account,
                 granularity: this.sparklineGranularity,
                 with_labels: true,

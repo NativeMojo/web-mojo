@@ -46,7 +46,10 @@ class MetricsChart extends View {
         this.colors = options.colors;
         this.colorGenerator = options.colorGenerator;
         this.legendPosition = options.legendPosition || 'top';
+        this.legendJustify = options.legendJustify || 'start';
         this.showLegend = options.showLegend !== false;
+        this.showXLabels = options.showXLabels !== false;
+        this.showYLabels = options.showYLabels !== false;
 
         // API
         this.endpoint = options.endpoint || '/api/metrics/fetch';
@@ -127,7 +130,10 @@ class MetricsChart extends View {
             colors: this.colors,
             colorGenerator: this.colorGenerator,
             showLegend: this.showLegend,
-            legendPosition: this.legendPosition
+            legendPosition: this.legendPosition,
+            legendJustify: this.legendJustify,
+            showXLabels: this.showXLabels,
+            showYLabels: this.showYLabels
         });
         this.addChild(this.chart);
     }
@@ -324,11 +330,13 @@ class MetricsChart extends View {
             with_labels: true
         };
         if (this.withDelta) params.with_delta = true;
-        if (this.slugs) {
-            this.slugs.forEach(slug => {
-                if (!params['slugs[]']) params['slugs[]'] = [];
-                params['slugs[]'].push(slug);
-            });
+        if (this.slugs && this.slugs.length) {
+            // Backend expects comma-separated `slug=a,b,c` — passing
+            // slugs[]=a&slugs[]=b collapses all results under a single
+            // 'default' key. /api/metrics/series accepts the same shape
+            // (also documented as `slugs=` plural in places); the
+            // singular `slug` form works for both endpoints.
+            params.slug = this.slugs.join(',');
         }
         if (this.category) params.category = this.category;
         if (this.dateStart) params.dr_start = Math.floor(this.dateStart.getTime() / 1000);
@@ -408,8 +416,12 @@ class MetricsChart extends View {
     }
 
     formatMetricLabel(metric) {
+        // Split on both `_` and `:` so slugs like `firewall:blocks` and
+        // `incident_events` produce "Firewall Blocks" / "Incident Events"
+        // — clean, capitalized, no slug punctuation in the legend.
         return String(metric)
-            .split('_')
+            .split(/[_:]/)
+            .filter(Boolean)
             .map(w => w.charAt(0).toUpperCase() + w.slice(1))
             .join(' ');
     }

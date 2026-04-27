@@ -149,10 +149,11 @@ class DistributionStrip extends View {
         this.priorityRows = this._aggregateByPriority(incidents);
         this.priorityEmpty = this.priorityRows.length === 0 || this.priorityRows.every(r => r.value === 0);
 
-        // Bouncer funnel from /api/metrics/series
+        // Bouncer funnel from /api/metrics/series. Backend expects
+        // `slug=a,b,c` (comma-separated); slugs[] collapses to 'default'.
         try {
             const resp = await rest.GET('/api/metrics/series', {
-                'slugs[]': ['bouncer:assessments', 'bouncer:monitors', 'bouncer:blocks'],
+                slug: 'bouncer:assessments,bouncer:monitors,bouncer:blocks',
                 account: 'incident',
                 granularity: 'days',
                 _: Date.now()

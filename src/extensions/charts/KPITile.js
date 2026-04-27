@@ -120,7 +120,10 @@ class KPITile extends View {
             info:     'rgba(13, 202, 240, 1)',  // bs-info
             good:     'rgba(25, 135, 84, 1)'    // bs-success
         };
-        return map[this.severity] || 'rgba(108, 117, 125, 1)'; // bs-secondary
+        // Default to info (cyan) when no severity is set — matches the
+        // mockup contract where neutral tiles still get a coloured trend
+        // line. Pure grey blends into the dark surface.
+        return map[this.severity] || 'rgba(13, 202, 240, 1)';
     }
 
     _fillColorFor(stroke) {
