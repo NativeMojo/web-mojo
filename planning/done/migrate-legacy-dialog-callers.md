@@ -1,8 +1,9 @@
 # Migrate Legacy Dialog Callers to Modal
 
 **Type**: request
-**Status**: planned
+**Status**: resolved
 **Date**: 2026-04-26
+**Resolved**: 2026-04-26
 
 ## Description
 Sweep the remaining `new Dialog(...)` and `Dialog.show*()` callers in `src/` over to the canonical `Modal.*` API. After the `ModalView` rewrite (`planning/requests/modalview-rewrite-dialog.md`), `Dialog.js` is a thin compatibility shim that routes everything through `Modal.*` — but ~24 direct instantiation sites and dozens of static-method calls still import `Dialog` directly. This request retires that shim usage so `Dialog.js` can eventually be deleted.
@@ -181,3 +182,61 @@ Add under `## Unreleased`:
 - Migrating `dialog.on('action:foo')` patterns to `buttons[].handler` callbacks (true behavior-preserving rename only).
 - Updating `docs/web-mojo/AGENT.md` (already cleaned in the prior refactor).
 - Any test additions — this is a rename-only change.
+
+---
+
+## Resolution
+
+**Commits**: `0d502c9` (60-file migration sweep + WebApp/Model lazy-import retarget + ImageViewer test fix), `16092bb` (Events.md + FileView.md doc sweep follow-up).
+
+### What was implemented
+
+Every `Dialog.*` caller in `src/` (excluding the shim file itself) is migrated to the canonical `Modal.*` static API or `new ModalView({...})` instance class. After this commit, `grep -rn "Dialog\." src/ --exclude-dir=feedback` returns only legitimate variable/method names (`groupSelectorDialog`, `formDialogConfig`, `PDFViewer.showDialog`, etc.) — zero references to the deprecated `Dialog` shim API.
+
+The `Dialog.js` shim file and the public `Dialog` re-exports in `src/index.js` / `src/lite/index.js` remain in place this PR, per the plan's out-of-scope note. Their removal is held for a separate breaking-change PR so the API removal lands as a single isolated commit.
+
+### Files changed (66 total across both commits)
+
+**Source (60 files)**
+
+- **Static-only migration (47 files, 1:1 method rename)** — all under `src/extensions/admin/{account,assistant,aws,incidents,jobs,messaging,monitoring,security,shared,shortlinks,storage}/`, `src/extensions/charts/`, `src/extensions/lightbox/ImageViewer.js`, `src/extensions/map/location/`, `src/extensions/user-profile/views/`, `src/core/views/data/FileView.js`. Mechanical mapping per the plan's table.
+- **Instance-handle migration (8 files)** — `src/core/forms/SectionedFormView.js`, `src/core/views/navigation/{Sidebar,GroupSelectorButton}.js`, `src/extensions/lightbox/{ImageEditor,ImageFiltersView,ImageCropView,PDFViewer,ImageTransformView}.js`. `import Dialog` → `import ModalView`; `s/new Dialog(/new ModalView(/`. Same instance API (`on`, `setLoading`, `element`, `hide`, `destroy`).
+- **Fire-and-forget collapse (5 files, 7 sites)** — `src/extensions/admin/incidents/{IncidentView,TicketView}.js` (×4), `src/extensions/admin/account/devices/GeoIPView.js`, `src/extensions/admin/messaging/sms/PhoneNumberView.js`, `src/extensions/admin/assistant/AssistantContextChat.js`. Each now `await Modal.show(view, { size, header, title })`. `GeoIPView.show()` and `PhoneNumberView.show()` drop the unused `return dialog`.
+- **`src/core/WebApp.js`** — `showLoading`, `hideLoading`, `showModelView`, `showModelForm`, `showForm`, `showDialog`, `showAlert` lazy imports re-targeted from `Dialog.js` to `Modal.js`. Stale "Dialog is intentionally not imported statically" comment removed (Modal IS the static import now).
+- **`src/core/Model.js`** — `showError` previously called an UNIMPORTED `Dialog.alert(...)` (latent ReferenceError). Now uses dynamic `import('@core/views/feedback/Modal.js')` then `Modal.alert`. **Pre-existing bug fix.**
+- **`src/extensions/admin/jobs/JobHealthView.js`** — pre-existing latent bug where `onActionSystemSettings` called `Dialog.showAlert` (never wired on the shim). Now resolves through `Modal.alert`. **Pre-existing bug fix.**
+
+**Test (1 file)**
+
+- `test/unit/ImageViewer.test.js` — stub regex updated from `/import\s+Dialog\s+from/` to `/import\s+Modal\s+from/` to match the new ImageViewer import line. ModalStub replaces DialogStub.
+
+**Docs (3 files)**
+
+- `CHANGELOG.md` — Unreleased entry added.
+- `docs/web-mojo/core/Events.md` (commit `16092bb`) — error-handling example: `Dialog.alert` → `Modal.alert`; prose "if Dialog is available" → "if Modal is available".
+- `docs/web-mojo/components/FileView.md` (commit `16092bb`) — action table cell: `Dialog.confirm` → `Modal.confirm`.
+
+**Planning**
+
+- This file: Status → resolved, Resolution appended, file moved to `planning/done/`.
+
+### Tests run (matches pre-existing baseline)
+
+- `npm run test:unit` — **502/504 pass** (504/506 in test-runner agent's count, including ImageViewer ESM-load case). The 2 failures are the pre-existing ContextMenu tests; ImageViewer.test.js now passes after the stub regex fix.
+- `npm run test:integration` — 0/3 pass, identical pre-existing failures (alias resolution / missing `src/mojo.js` / component load).
+- `npm run test:build` — 3/10 pass, identical pre-existing failures (missing `dist/index.html` / `app.json` / source map gaps).
+- `npm run lint` — 71 problems (16 errors / 55 warnings), **identical** to base. None of the new method calls or import swaps introduced new issues.
+- `npm run build:lib` — clean build in 3.77s.
+
+### Agent findings
+
+**test-runner** — Clean. Zero new failures across unit / integration / build / lint. Every observed failure was confirmed pre-existing on the base tree.
+
+**docs-updater** — 2 stale references found and folded into commit `16092bb` (`Events.md`, `FileView.md`). Other references to "Dialog" in docs (e.g., `extensions/Admin.md`, `extensions/LightBox.md`, `UserProfile.md`) are descriptive prose or unchanged class-method names (`PDFViewer.showDialog`, `formDialogConfig`) — correctly left alone.
+
+**security-review** — No NEW security issues introduced by this commit. The agent surfaced 2 MEDIUM and 1 LOW finding, all explicitly identified as PRE-EXISTING in `ModalView.js` / `Modal.js` (raw HTML interpolation of `title` / `message` / `setLoading` `message`). These are the same findings called out in the previous refactor's resolution and are tracked under the deferred security follow-up. The `Model.showError` rewrite was confirmed as a strict equivalent to the (broken) pre-existing intent — not a new injection surface. Verbatim from the agent: "the security surface is almost entirely inherited from the pre-existing `Dialog` / `ModalView` codebase. Only one new code path was genuinely introduced" (and that path is correct).
+
+### Follow-ups
+
+- **Public `Dialog` export removal + shim deletion** — separate breaking-change PR. Remove `Dialog` from `src/index.js` and `src/lite/index.js`; delete `src/core/views/feedback/Dialog.js` and the `MOJO.Dialog` attachment in the lite bundle. Coordinate with a CHANGELOG breaking note.
+- **Security findings** — open a `planning/issues/security-modal-html-injection-and-iframe-sandbox.md` issue covering the pre-existing HTML-interpolation findings (`title`, `message`, `setLoading`, `_eyebrowStyle` CSS, `HtmlPreview` iframe sandbox, `window.lastDialog`). All inherited from before this refactor and confirmed not to widen by this PR.

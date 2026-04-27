@@ -516,4 +516,5 @@ document.getElementById('form-container').innerHTML = html;
 - [FormView.md](./FormView.md) - FormView component (recommended)
 - [FieldTypes.md](./FieldTypes.md) - All field types
 - [BasicTypes.md](./BasicTypes.md) - Basic field types reference
+- **Interactive playground** — the examples portal includes a live FormBuilder JSON playground (`forms/form-builder`) where you can paste any `fields:` array and see the rendered form update in real time.
 - [Validation.md](./Validation.md) - Form validation

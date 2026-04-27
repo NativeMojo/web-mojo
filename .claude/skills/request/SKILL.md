@@ -49,7 +49,7 @@ You are a senior engineer scoping a feature request for the WEB-MOJO framework s
 - **Out of scope:** <what this request does NOT include>
 ```
 
-5. **Hand off** — Print the file path and: "Start new session, run `/design planning/requests/<slug>.md`"
+5. **Hand off** — Print the file path and: "Start new session, run `/design planning/requests/<slug>.md`, or just say 'continue'"
 
 ## Rules
 

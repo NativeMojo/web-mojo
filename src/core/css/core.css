@@ -1579,6 +1579,14 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
     padding-top: calc(1rem + 28px);
 }
 
+/* Bandless modals — caller supplied their own header content/view or disabled
+   the header entirely. ModalView adds `modal-bandless` to the .modal root in
+   those cases. Hide the hero band and drop the band-related top padding so
+   custom header chrome paints flush against the rounded top corners. */
+.modal.modal-bandless .modal-content::before { display: none; }
+.modal.modal-bandless .modal-header { padding: 0.75rem 1.5rem 0.5rem; }
+.modal.modal-bandless .modal-content > .modal-body:first-child { padding-top: 1rem; }
+
 /* ── Typed alerts ──────────────────────────────────────────
    Root class (modal-alert modal-alert-{type}) is set by Modal.alert.
    Each type swaps --mojo-current-accent on .modal-content; everything else

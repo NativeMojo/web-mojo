@@ -1,8 +1,9 @@
 # ModalView — Complete Rewrite of Dialog.js
 
 **Type**: request
-**Status**: planned
+**Status**: resolved
 **Date**: 2026-03-17
+**Resolved**: 2026-04-26
 
 ## Description
 Rewrite `Dialog.js` (2,100+ lines) as a clean, modern `ModalView.js` class. The current `Dialog.js` has grown organically and contains:
@@ -205,3 +206,79 @@ The original request claimed only `SectionedFormView`, `GroupSelectorButton`, an
 - Visual redesign of the modal/dialog itself.
 - Removing the `this.Dialog = Modal` backwards-compat alias on `PortalApp`.
 - Splitting `Modal.js` itself further (e.g., `ModalAlert.js`, `ModalConfirm.js`).
+
+---
+
+## Resolution
+
+**Commits**: `f518ecd` (split + new files + initial doc updates), `371720d` (sweep stale `Dialog.*` refs across the wider docs).
+
+### What was implemented
+
+The 1,987-line `src/core/views/feedback/Dialog.js` god-class is split into focused modules; `Dialog.js` survives as a thin compatibility shim so the 24 in-tree `new Dialog(...)` and `Dialog.show*()` callers keep working without change.
+
+| File | Role | Lines |
+|---|---|---|
+| `src/core/views/feedback/ModalView.js` | Bootstrap 5 modal mechanics — lifecycle, sizing, z-index stacking, header/body/footer composition, button rendering, context menu | ~600 |
+| `src/core/views/feedback/Modal.js` | Canonical static API — `dialog`, `show`, `showModel`, `showModelView`, `alert`, `confirm`, `prompt`, `form`, `modelForm`, `data`, `code`, `htmlPreview`, `updateModelImage`, `loading` | ~700 |
+| `src/core/views/feedback/BusyIndicator.js` | Singleton frosted-glass loading overlay (counter-based) | ~140 |
+| `src/core/views/feedback/CodeViewer.js` | Prism-highlighted code block view + `formatCode` / `highlightCodeBlocks` statics | ~95 |
+| `src/core/views/feedback/HtmlPreview.js` | Sandboxed iframe preview view | ~65 |
+| `src/core/views/feedback/Dialog.js` | Compat shim — default-exports `ModalView`; legacy statics one-line forward to `Modal.*` | ~70 |
+
+A new `Modal._renderAndAwait(modal, { buttons, rejectOnDismiss, onAction, cleanup })` helper consolidates ~300 lines of duplicated render/show/resolve/destroy code that previously lived inside each static helper.
+
+The two competing busy-indicator overlays (legacy dark `mojo-busy-indicator` + modern frosted `mojo-loading-overlay`) collapse into the modern frosted-card design only.
+
+### Files changed
+
+**Source (commit `f518ecd`)**
+- `src/core/views/feedback/ModalView.js` — new
+- `src/core/views/feedback/BusyIndicator.js` — new
+- `src/core/views/feedback/CodeViewer.js` — new
+- `src/core/views/feedback/HtmlPreview.js` — new
+- `src/core/views/feedback/Modal.js` — rewritten around the new modules
+- `src/core/views/feedback/Dialog.js` — rewritten as 70-line compat shim
+- `src/core/forms/FormView.js` — single `Dialog.showHtmlPreview` call swapped to `Modal.htmlPreview`
+- `src/index.js` — `ModalView` added to public exports
+- `src/lite/index.js` — `ModalView` added to lite bundle exports + ESM exports
+
+**Docs (commits `f518ecd` + `371720d`)**
+- New: `docs/web-mojo/components/ModalView.md`
+- Rewritten: `docs/web-mojo/components/Dialog.md` (deprecation banner + migration table)
+- Updated: `docs/web-mojo/components/Modal.md`, `docs/web-mojo/core/WebApp.md`, `docs/web-mojo/README.md`, `docs/agent/architecture.md`, `CHANGELOG.md`
+- Sweep: `docs/web-mojo/components/{DataView,DataView-QuickReference,FileView,TableView}.md`, `docs/web-mojo/extensions/{Map,MapView,UserProfile}.md`, `docs/web-mojo/forms/{FileHandling,README}.md`, `docs/web-mojo/models/BuiltinModels.md`, `docs/web-mojo/services/FileUpload.md` — all `Dialog.show*` examples replaced with `Modal.*`
+
+**Planning**
+- This file: `planning/requests/modalview-rewrite-dialog.md` — Status → resolved, Resolution appended, file moved to `planning/done/`
+- New: `planning/requests/migrate-legacy-dialog-callers.md` — tracks the eventual sweep of in-`src/` Dialog callers
+
+### Tests run
+
+- `npm run test:unit` — **500/502 pass**. Two pre-existing ContextMenu failures (`renders the menu, positions the trigger…`, `wires a contextmenu listener…`) confirmed via `git stash` to exist on the base tree before the refactor. Net: zero new failures.
+- `npm run test:integration` — pre-existing 0/3 (missing `@core/utils` alias resolution in Node, missing `src/mojo.js`, component load failure). Identical to base.
+- `npm run test:build` — pre-existing 3/10. Identical to base.
+- `npm run lint` — 71 problems (16 errors / 55 warnings), all in pre-existing files. None of the new modules (`ModalView.js`, `Modal.js`, `BusyIndicator.js`, `CodeViewer.js`, `HtmlPreview.js`) appear in lint output.
+- `npm run build:lib` — clean build in 3.58s.
+- Browser smoke (Vite dev server on `examples/portal/?page=components/dialog`): `Modal.alert`, `Modal.confirm`, `Modal.loading`, plus the legacy `Dialog` shim (default export instantiation + static methods) all confirmed working end-to-end with the live HMR’d code.
+
+### Agent findings
+
+**test-runner** — Clean. All failures observed pre-existed on the base tree.
+
+**docs-updater** — 11 stale `Dialog.*` references across 11 docs swept to `Modal.*`. One stale relative link (`forms/README.md → ../features/Dialog.md`) repointed to `../components/Modal.md`. Changes folded into commit `371720d`.
+
+**security-review** — Surfaced four issues (1 HIGH, 3 MEDIUM) and several LOW/INFO. **Every flagged pattern was confirmed pre-existing in the original `Dialog.js`** (verified via `git show HEAD~1:src/core/views/feedback/Dialog.js` — all four pattern locations exist in the pre-refactor file). The refactor faithfully preserved the existing behavior; it neither introduced nor expanded the surface. Findings, in priority order:
+
+1. **HIGH — `HtmlPreview.js` iframe `sandbox="allow-same-origin"`.** Allows iframe content to access `parent.*`, cookies, and the parent-origin DOM. Pre-existing in `Dialog.js:1306`.
+2. **MEDIUM — Raw HTML interpolation of `title` / `message` in `Modal.alert/confirm/prompt`.** Template-literal concatenation rather than escaping. Pre-existing pattern.
+3. **MEDIUM — `_eyebrowStyle` (was `_withEyebrow`) CSS-injection surface.** Strips quotes/backslashes but not `;`, `)`, `}` — caller-controlled eyebrow text could close the CSS declaration.
+4. **MEDIUM — `ModalView.buildHeader` injects `this.title` raw via `innerHTML`.** Pre-existing in `Dialog.js:442`.
+5. **LOW — `window.lastDialog = this` global leak.** Pre-existing in `Dialog.js:965`. Looks like a debug remnant.
+
+These are tracked as a follow-up: `planning/issues/security-modal-html-injection-and-iframe-sandbox.md` (to be created). They are explicitly **out of scope for this refactor**, whose goal was structural — splitting the file without changing behavior. Folding security fixes into the same commit would have made the structural diff harder to audit.
+
+### Follow-ups
+
+- `planning/requests/migrate-legacy-dialog-callers.md` — sweep the 24 `new Dialog(...)` and `Dialog.show*()` callers in `src/` to use `Modal.*` directly, then eventually retire the shim.
+- New: open a security issue for the five findings above (HtmlPreview sandbox, alert/confirm/prompt escaping, eyebrow CSS, header title escaping, `window.lastDialog`).

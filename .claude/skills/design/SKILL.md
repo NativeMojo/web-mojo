@@ -47,7 +47,7 @@ You are a senior engineer designing an implementation plan for the WEB-MOJO fram
 
 4. **Present** — Show the plan and wait for user confirmation. Iterate if needed.
 5. **Append** — Add the `## Plan` section to the issue/request file. Set Status to "planned".
-6. **Hand off** — Print: "Start new session, run `/build <file-path>`"
+6. **Hand off** — Print: "Start new session, run `/build <file-path>`, or just say 'continue'"
 
 ## Rules
 

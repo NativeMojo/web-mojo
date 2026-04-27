@@ -91,11 +91,19 @@ class ModalView extends View {
     constructor(options = {}) {
         const modalId = options.id || `modal-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
+        // Suppress the colored hero band when the caller owns the top of the
+        // card — i.e. they passed their own header content/view or disabled
+        // the header entirely. The band's `::before` overlays the top 28px of
+        // .modal-content and would otherwise paint over a custom header.
+        const headerDisabled = options.header === false || options.header === null;
+        const headerCustomized = options.headerContent !== undefined && options.headerContent !== null;
+        const bandlessClass = (headerDisabled || headerCustomized) ? 'modal-bandless' : '';
+
         super({
             ...options,
             id: modalId,
             tagName: 'div',
-            className: `modal ${options.fade !== false ? 'fade' : ''} ${options.className || ''}`.trim(),
+            className: `modal ${options.fade !== false ? 'fade' : ''} ${bandlessClass} ${options.className || ''}`.trim().replace(/\s+/g, ' '),
             attributes: {
                 tabindex: '-1',
                 'aria-hidden': 'true',

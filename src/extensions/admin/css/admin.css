@@ -2213,3 +2213,45 @@
         z-index: var(--mojo-zindex-offcanvas, 1045);
     }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   Admin assistant — dark theme overrides
+
+   The assistant view's base styles (above) hardcode light hex
+   values (#fff, #f7f7f8) and dark-on-light hover tints
+   (rgba(0,0,0,...)). When data-bs-theme="dark" is active, re-skin
+   the same surfaces using framework tokens so the panel matches
+   the rest of the dark portal. Pattern mirrors chat.css.
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Modal-fullscreen variant ──────────────────────────── */
+[data-bs-theme="dark"] .assistant-sidebar { background: var(--bs-tertiary-bg); }
+[data-bs-theme="dark"] .assistant-main    { background: var(--bs-body-bg); }
+
+/* ── Conversation rail items (used in sidebar + history) ─ */
+[data-bs-theme="dark"] .conversation-item:hover  { background-color: rgba(255, 255, 255, 0.06); }
+[data-bs-theme="dark"] .conversation-item.active { background-color: rgba(255, 255, 255, 0.10); }
+
+/* ── Welcome / suggestion chips ────────────────────────── */
+[data-bs-theme="dark"] .assistant-suggestion        { background: var(--bs-tertiary-bg); }
+[data-bs-theme="dark"] .assistant-suggestion:hover  { background: var(--bs-secondary-bg); }
+
+/* ── Composer input box ────────────────────────────────── */
+[data-bs-theme="dark"] .assistant-input-box {
+    background: var(--bs-tertiary-bg);
+    box-shadow: none;
+}
+
+/* ── Thinking indicator pill ───────────────────────────── */
+[data-bs-theme="dark"] .chat-thinking-content { background: var(--bs-tertiary-bg); }
+
+/* ── Right-sidebar panel form ──────────────────────────── */
+[data-bs-theme="dark"] .assistant-panel-header  { background: var(--bs-tertiary-bg); }
+[data-bs-theme="dark"] .assistant-panel-history { background: var(--bs-tertiary-bg); }
+[data-bs-theme="dark"] .assistant-panel-chat    { background: var(--bs-body-bg); }
+[data-bs-theme="dark"] .assistant-panel-header-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Conversation search input (history pane) ──────────── */
+[data-bs-theme="dark"] .conversation-search-input { background: var(--bs-body-bg); }

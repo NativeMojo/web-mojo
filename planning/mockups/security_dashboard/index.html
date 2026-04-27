@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Security Dashboard — mock</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <link rel="stylesheet" href="mock.css">
+</head>
+<body class="sd-body">
+
+  <header class="sd-topbar">
+    <div class="sd-topbar-left">
+      <span class="sd-brand-mark">SEC</span>
+      <h1 class="sd-title">Security Dashboard</h1>
+      <span class="sd-scope-pill">acme · production</span>
+    </div>
+    <div class="sd-topbar-right">
+      <span class="sd-meta-item">Updated <span id="updated-ago">14s</span> ago</span>
+      <button class="sd-toggle sd-toggle-on" id="live-toggle" type="button">
+        <span class="sd-pulse-dot"></span>
+        <span>Live</span>
+      </button>
+      <button class="sd-icon-btn" type="button" aria-label="Refresh">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+      <button class="sd-icon-btn" type="button" aria-label="Settings">
+        <i class="bi bi-sliders2"></i>
+      </button>
+    </div>
+  </header>
+
+  <main class="sd-main">
+
+    <!-- ════════════════════════════════════════════════════════
+         SECTION 1 — PULSE / STATUS STRIP
+         8 KPI tiles. Each: label, big number, delta badge, sparkline.
+         Click → opens MetricsHistoryModal (slug detail).
+    ════════════════════════════════════════════════════════ -->
+    <section class="sd-section">
+      <div class="sd-section-head">
+        <h2 class="sd-eyebrow">Pulse</h2>
+        <span class="sd-section-meta">Today · vs yesterday</span>
+      </div>
+
+      <div class="sd-status-strip">
+        <button class="sd-tile sd-tile-critical" data-modal="incident-list" type="button">
+          <span class="sd-tile-label">Open Incidents</span>
+          <span class="sd-tile-value">23</span>
+          <span class="sd-tile-delta sd-up sd-bad">+5</span>
+          <svg class="sd-spark" data-spark="open-inc" data-color="critical"></svg>
+        </button>
+
+        <button class="sd-tile" data-modal="metric-history" data-slug="auth:failures" type="button">
+          <span class="sd-tile-label">Failed Auth</span>
+          <span class="sd-tile-value">147</span>
+          <span class="sd-tile-delta sd-up sd-bad">+51%</span>
+          <svg class="sd-spark" data-spark="auth" data-color="warn"></svg>
+        </button>
+
+        <button class="sd-tile" data-modal="metric-history" data-slug="incidents" type="button">
+          <span class="sd-tile-label">Incidents</span>
+          <span class="sd-tile-value">12</span>
+          <span class="sd-tile-delta sd-up sd-bad">+33%</span>
+          <svg class="sd-spark" data-spark="inc" data-color="warn"></svg>
+        </button>
+
+        <button class="sd-tile" data-modal="metric-history" data-slug="incident_events" type="button">
+          <span class="sd-tile-label">Events</span>
+          <span class="sd-tile-value">4,219</span>
+          <span class="sd-tile-delta sd-up">+8%</span>
+          <svg class="sd-spark" data-spark="events" data-color="info"></svg>
+        </button>
+
+        <button class="sd-tile" data-modal="metric-history" data-slug="firewall:blocks" type="button">
+          <span class="sd-tile-label">Firewall Blocks</span>
+          <span class="sd-tile-value">38</span>
+          <span class="sd-tile-delta sd-down sd-good">−12%</span>
+          <svg class="sd-spark" data-spark="fw" data-color="info"></svg>
+        </button>
+
+        <button class="sd-tile" data-modal="metric-history" data-slug="bouncer:blocks" type="button">
+          <span class="sd-tile-label">Bouncer Blocks</span>
+          <span class="sd-tile-value">812</span>
+          <span class="sd-tile-delta sd-up">+4</span>
+          <svg class="sd-spark" data-spark="bouncer" data-color="info"></svg>
+        </button>
+
+        <button class="sd-tile" data-modal="metric-history" data-slug="login:new_country" type="button">
+          <span class="sd-tile-label">New-Country Logins</span>
+          <span class="sd-tile-value">7</span>
+          <span class="sd-tile-delta sd-flat">±0</span>
+          <svg class="sd-spark" data-spark="newctry" data-color="info"></svg>
+        </button>
+
+        <button class="sd-tile" data-modal="blocked-ips" type="button">
+          <span class="sd-tile-label">Active Blocks</span>
+          <span class="sd-tile-value">1,284</span>
+          <span class="sd-tile-delta sd-up">+18</span>
+          <svg class="sd-spark" data-spark="active" data-color="info"></svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════
+         SECTION 2 — NEEDS ATTENTION + THREAT COMPOSITION
+    ════════════════════════════════════════════════════════ -->
+    <section class="sd-section sd-grid sd-grid-2-3">
+
+      <div class="sd-card">
+        <header class="sd-card-head">
+          <div>
+            <h3 class="sd-card-title">Needs Attention</h3>
+            <span class="sd-card-sub">Top critical &amp; high-priority incidents</span>
+          </div>
+          <a class="sd-link" href="#">All incidents <i class="bi bi-arrow-right-short"></i></a>
+        </header>
+
+        <ol class="sd-priority-list" id="priority-list">
+          <!-- rows injected by JS -->
+        </ol>
+      </div>
+
+      <div class="sd-card">
+        <header class="sd-card-head">
+          <div>
+            <h3 class="sd-card-title">Threat Composition</h3>
+            <span class="sd-card-sub">Daily, stacked · click any day to drill in</span>
+          </div>
+          <div class="sd-segments" data-group="composition-range">
+            <button class="sd-seg" data-range="7" type="button">7D</button>
+            <button class="sd-seg sd-seg-active" data-range="30" type="button">30D</button>
+            <button class="sd-seg" data-range="90" type="button">90D</button>
+          </div>
+        </header>
+
+        <div class="sd-chart-frame">
+          <svg id="composition-chart" class="sd-chart" viewBox="0 0 600 200" preserveAspectRatio="none"></svg>
+        </div>
+
+        <div class="sd-legend">
+          <span class="sd-legend-item"><i style="background:var(--sd-c-events)"></i>Events</span>
+          <span class="sd-legend-item"><i style="background:var(--sd-c-firewall)"></i>Firewall blocks</span>
+          <span class="sd-legend-item"><i style="background:var(--sd-c-bouncer)"></i>Bouncer blocks</span>
+          <span class="sd-legend-item"><i style="background:var(--sd-c-auth)"></i>Auth failures</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════
+         SECTION 3 — GEOGRAPHY
+    ════════════════════════════════════════════════════════ -->
+    <section class="sd-section">
+      <div class="sd-card">
+        <header class="sd-card-head">
+          <div>
+            <h3 class="sd-card-title">Geography</h3>
+            <span class="sd-card-sub">Activity by country, last 7 days</span>
+          </div>
+          <div class="sd-segments" data-group="geo-slug">
+            <button class="sd-seg sd-seg-active" type="button">Events</button>
+            <button class="sd-seg" type="button">Incidents</button>
+            <button class="sd-seg" type="button">Firewall</button>
+            <button class="sd-seg" type="button">Logins</button>
+          </div>
+        </header>
+
+        <div class="sd-geo">
+          <div class="sd-geo-map" id="geo-map">
+            <svg class="sd-geo-grid" viewBox="0 0 600 280" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <pattern id="dotgrid" width="14" height="14" patternUnits="userSpaceOnUse">
+                  <circle cx="1" cy="1" r="1" fill="rgba(255,255,255,0.05)"/>
+                </pattern>
+              </defs>
+              <rect width="600" height="280" fill="url(#dotgrid)"/>
+            </svg>
+            <div class="sd-geo-bubbles" id="geo-bubbles"></div>
+            <div class="sd-geo-caption"><i class="bi bi-globe-americas"></i> world map · click any country marker</div>
+          </div>
+
+          <ol class="sd-geo-leader" id="geo-leader">
+            <!-- rows injected by JS -->
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════
+         SECTION 4 — DISTRIBUTIONS
+    ════════════════════════════════════════════════════════ -->
+    <section class="sd-section sd-grid sd-grid-3">
+
+      <div class="sd-card">
+        <header class="sd-card-head"><h3 class="sd-card-title">Incidents by Status</h3></header>
+        <div class="sd-donut-wrap">
+          <svg id="status-donut" class="sd-donut" viewBox="0 0 160 160"></svg>
+          <ul class="sd-donut-legend" id="status-legend"></ul>
+        </div>
+      </div>
+
+      <div class="sd-card">
+        <header class="sd-card-head"><h3 class="sd-card-title">Priority Buckets</h3></header>
+        <ul class="sd-bucket-list" id="priority-buckets"></ul>
+      </div>
+
+      <div class="sd-card">
+        <header class="sd-card-head"><h3 class="sd-card-title">Bouncer Funnel</h3></header>
+        <div class="sd-funnel" id="bouncer-funnel"></div>
+      </div>
+
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════
+         SECTION 5 — TOP SOURCES
+    ════════════════════════════════════════════════════════ -->
+    <section class="sd-section sd-grid sd-grid-2">
+
+      <div class="sd-card">
+        <header class="sd-card-head">
+          <div>
+            <h3 class="sd-card-title">Top Source IPs</h3>
+            <span class="sd-card-sub">Last 7 days · click to inspect</span>
+          </div>
+        </header>
+        <ul class="sd-rank-list" id="top-ips"></ul>
+      </div>
+
+      <div class="sd-card">
+        <header class="sd-card-head">
+          <div>
+            <h3 class="sd-card-title">Top Categories</h3>
+            <span class="sd-card-sub">Last 7 days · grouped event categories</span>
+          </div>
+        </header>
+        <ul class="sd-rank-list" id="top-cats"></ul>
+      </div>
+
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════
+         SECTION 6 — AUTH FAILURES
+    ════════════════════════════════════════════════════════ -->
+    <section class="sd-section">
+      <div class="sd-card">
+        <header class="sd-card-head">
+          <div>
+            <h3 class="sd-card-title">Auth Failures</h3>
+            <span class="sd-card-sub">Aggregate slug <code class="sd-code">auth:failures</code> · 30 days</span>
+          </div>
+          <div class="sd-segments">
+            <button class="sd-seg" type="button">7D</button>
+            <button class="sd-seg sd-seg-active" type="button">30D</button>
+          </div>
+        </header>
+
+        <div class="sd-chart-frame sd-chart-frame-sm">
+          <svg id="auth-chart" class="sd-chart" viewBox="0 0 600 160" preserveAspectRatio="none"></svg>
+        </div>
+
+        <div class="sd-auth-tiles">
+          <div class="sd-auth-tile">
+            <span class="sd-auth-label">Password Resets <small>24h</small></span>
+            <span class="sd-auth-value">14</span>
+          </div>
+          <div class="sd-auth-tile">
+            <span class="sd-auth-label">TOTP Failures <small>24h</small></span>
+            <span class="sd-auth-value">31</span>
+          </div>
+          <div class="sd-auth-tile">
+            <span class="sd-auth-label">Sessions Revoked <small>24h</small></span>
+            <span class="sd-auth-value">6</span>
+          </div>
+          <div class="sd-auth-tile">
+            <span class="sd-auth-label">Accounts Deactivated <small>24h</small></span>
+            <span class="sd-auth-value">2</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════
+         SECTION 7 — HEALTH STRIP
+    ════════════════════════════════════════════════════════ -->
+    <section class="sd-section">
+      <details class="sd-card sd-health" open>
+        <summary class="sd-health-summary">
+          <div class="sd-health-summary-left">
+            <span class="sd-eyebrow">System Health</span>
+            <span class="sd-health-rollup">
+              <span class="sd-dot sd-dot-good"></span>
+              <span class="sd-dot sd-dot-warn"></span>
+              <span class="sd-dot sd-dot-good"></span>
+              <span class="sd-health-text">1 system warning · 2 healthy</span>
+            </span>
+          </div>
+          <span class="sd-health-toggle">
+            <i class="bi bi-chevron-up"></i>
+          </span>
+        </summary>
+
+        <ul class="sd-health-list" id="health-list"></ul>
+      </details>
+    </section>
+
+    <footer class="sd-foot">
+      <span>web-mojo · static mockup · no live data</span>
+      <span>tile cadence 60s · chart cadence 5m</span>
+    </footer>
+
+  </main>
+
+  <!-- ════════════════════════════════════════════════════════
+       MODAL — Incident drill-down (would mount IncidentView)
+  ════════════════════════════════════════════════════════ -->
+  <div class="sd-modal" data-modal-id="incident" hidden>
+    <div class="sd-modal-backdrop" data-close></div>
+    <div class="sd-modal-panel sd-modal-xl">
+      <header class="sd-modal-head">
+        <div>
+          <span class="sd-eyebrow">Incident · #4912</span>
+          <h2 class="sd-modal-title">Brute force burst from 185.220.101.7</h2>
+          <div class="sd-modal-meta">
+            <span class="sd-pri sd-pri-critical">CRIT 12</span>
+            <span><i class="bi bi-clock"></i> 4m ago</span>
+            <span><i class="bi bi-geo-alt"></i> RU · Moscow</span>
+            <span><i class="bi bi-collection"></i> 47 events</span>
+          </div>
+        </div>
+        <button class="sd-icon-btn" data-close type="button" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </header>
+
+      <div class="sd-modal-body">
+        <div class="sd-modal-section-grid">
+          <div>
+            <h4 class="sd-eyebrow">Timeline</h4>
+            <ol class="sd-timeline">
+              <li><time>04:14:22</time><span>First failed login attempt</span></li>
+              <li><time>04:14:26</time><span>Threshold reached (10 failures / 60s)</span></li>
+              <li><time>04:14:26</time><span>Handler fired: <code class="sd-code">block://?ttl=3600,ticket://?priority=8</code></span></li>
+              <li><time>04:14:27</time><span>IP added to firewall block list (TTL 1h)</span></li>
+              <li><time>04:14:27</time><span>Ticket #221 created and assigned</span></li>
+              <li><time>04:18:10</time><span>Bouncer escalation: pre-screen rejected 12 follow-up requests</span></li>
+            </ol>
+          </div>
+          <div>
+            <h4 class="sd-eyebrow">Geo &amp; Device</h4>
+            <dl class="sd-kv">
+              <dt>Country</dt><dd>Russia (RU)</dd>
+              <dt>Region</dt><dd>Moscow</dd>
+              <dt>ASN</dt><dd>AS9009 — M247 Europe SRL</dd>
+              <dt>User-Agent</dt><dd class="sd-ua">curl/8.4.0 — flagged automation</dd>
+              <dt>First seen</dt><dd>2026-04-26 04:14:22 UTC</dd>
+              <dt>Last seen</dt><dd>2026-04-26 04:18:10 UTC</dd>
+            </dl>
+
+            <h4 class="sd-eyebrow sd-eyebrow-mt">Quick Actions</h4>
+            <div class="sd-action-row">
+              <button class="sd-btn sd-btn-good" type="button"><i class="bi bi-check2"></i> Resolve</button>
+              <button class="sd-btn" type="button"><i class="bi bi-pause"></i> Pause</button>
+              <button class="sd-btn sd-btn-bad" type="button"><i class="bi bi-shield-fill-x"></i> Permanent block</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="sd-modal-foot-note">
+          <i class="bi bi-info-circle"></i>
+          In production this modal mounts the existing <code class="sd-code">IncidentView</code> (SideNavView with Overview / Events / Rule Engine / Tickets / History / Forensics).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       MODAL — Day drill-down (stacked-bar click)
+  ════════════════════════════════════════════════════════ -->
+  <div class="sd-modal" data-modal-id="day" hidden>
+    <div class="sd-modal-backdrop" data-close></div>
+    <div class="sd-modal-panel sd-modal-lg">
+      <header class="sd-modal-head">
+        <div>
+          <span class="sd-eyebrow">Day Drill-Down</span>
+          <h2 class="sd-modal-title">Tuesday, 22 April 2026</h2>
+          <div class="sd-modal-meta">
+            <span><i class="bi bi-graph-up"></i> 312 events</span>
+            <span><i class="bi bi-exclamation-triangle"></i> 18 incidents</span>
+            <span><i class="bi bi-shield-x"></i> 14 blocks</span>
+            <span><i class="bi bi-key"></i> 41 auth failures</span>
+          </div>
+        </div>
+        <button class="sd-icon-btn" data-close type="button" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </header>
+
+      <div class="sd-modal-body">
+        <h4 class="sd-eyebrow">Top incidents that day</h4>
+        <ol class="sd-priority-list sd-priority-list-compact">
+          <li class="sd-pri-row" data-modal="incident">
+            <span class="sd-pri sd-pri-critical">CRIT</span>
+            <div class="sd-pri-body">
+              <span class="sd-pri-title">Credential stuffing burst — 3 IPs in /24</span>
+              <span class="sd-pri-meta">06:48 UTC · 24 events</span>
+            </div>
+          </li>
+          <li class="sd-pri-row" data-modal="incident">
+            <span class="sd-pri sd-pri-high">HIGH</span>
+            <div class="sd-pri-body">
+              <span class="sd-pri-title">TOTP brute force on 4 active accounts</span>
+              <span class="sd-pri-meta">11:02 UTC · 12 events</span>
+            </div>
+          </li>
+          <li class="sd-pri-row" data-modal="incident">
+            <span class="sd-pri sd-pri-warn">WARN</span>
+            <div class="sd-pri-body">
+              <span class="sd-pri-title">Bouncer pre-screen catches uptick from PT</span>
+              <span class="sd-pri-meta">15:30 UTC · 6 events</span>
+            </div>
+          </li>
+        </ol>
+
+        <h4 class="sd-eyebrow sd-eyebrow-mt">Composition</h4>
+        <div class="sd-day-bars">
+          <div class="sd-day-row"><span>Events</span><div class="sd-day-track"><span style="width:78%; background:var(--sd-c-events)"></span></div><span class="sd-day-num">312</span></div>
+          <div class="sd-day-row"><span>Auth failures</span><div class="sd-day-track"><span style="width:14%; background:var(--sd-c-auth)"></span></div><span class="sd-day-num">41</span></div>
+          <div class="sd-day-row"><span>Incidents</span><div class="sd-day-track"><span style="width:6%; background:var(--sd-warn)"></span></div><span class="sd-day-num">18</span></div>
+          <div class="sd-day-row"><span>Firewall blocks</span><div class="sd-day-track"><span style="width:5%; background:var(--sd-c-firewall)"></span></div><span class="sd-day-num">14</span></div>
+          <div class="sd-day-row"><span>Bouncer blocks</span><div class="sd-day-track"><span style="width:32%; background:var(--sd-c-bouncer)"></span></div><span class="sd-day-num">96</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       MODAL — Country detail (map click)
+  ════════════════════════════════════════════════════════ -->
+  <div class="sd-modal" data-modal-id="country" hidden>
+    <div class="sd-modal-backdrop" data-close></div>
+    <div class="sd-modal-panel sd-modal-md">
+      <header class="sd-modal-head">
+        <div>
+          <span class="sd-eyebrow">Country Detail</span>
+          <h2 class="sd-modal-title"><span id="country-flag">RU</span> · <span id="country-name">Russia</span></h2>
+          <div class="sd-modal-meta">
+            <span><i class="bi bi-graph-up"></i> 187 events / 7d</span>
+            <span><i class="bi bi-people"></i> 14 unique IPs</span>
+            <span><i class="bi bi-shield-x"></i> 22 blocks</span>
+          </div>
+        </div>
+        <button class="sd-icon-btn" data-close type="button" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </header>
+
+      <div class="sd-modal-body">
+        <div class="sd-chart-frame sd-chart-frame-xs">
+          <svg id="country-chart" class="sd-chart" viewBox="0 0 600 120" preserveAspectRatio="none"></svg>
+        </div>
+
+        <h4 class="sd-eyebrow sd-eyebrow-mt">Top IPs from this country</h4>
+        <ul class="sd-rank-list">
+          <li>
+            <span class="sd-rank-no">1</span>
+            <span class="sd-rank-name sd-mono">185.220.101.7</span>
+            <span class="sd-rank-bar"><span style="width:84%"></span></span>
+            <span class="sd-rank-num">62</span>
+          </li>
+          <li>
+            <span class="sd-rank-no">2</span>
+            <span class="sd-rank-name sd-mono">45.155.205.233</span>
+            <span class="sd-rank-bar"><span style="width:48%"></span></span>
+            <span class="sd-rank-num">35</span>
+          </li>
+          <li>
+            <span class="sd-rank-no">3</span>
+            <span class="sd-rank-name sd-mono">194.26.135.18</span>
+            <span class="sd-rank-bar"><span style="width:31%"></span></span>
+            <span class="sd-rank-num">23</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="mock.js"></script>
+</body>
+</html>

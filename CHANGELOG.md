@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### CSS — Admin assistant panel: dark theme coverage
+
+- The Admin extension's AI Assistant panel (`AssistantPanelView` + the
+  modal-fullscreen `AssistantView`) now honors `[data-bs-theme="dark"]`.
+  Previously the panel header, empty-state hero, suggestion chips,
+  composer input, history rail, conversation search, and thinking
+  indicator all rendered against hardcoded `#fff` / `#f7f7f8` surfaces —
+  loud against the framework's dark portal page (and especially loud
+  against the new `#0a0d11` mission-control palette). Each surface now
+  picks up `--bs-body-bg` / `--bs-tertiary-bg` / `--bs-secondary-bg`
+  under the dark theme. Hover/active states on conversation rows and
+  panel header buttons swap their `rgba(0, 0, 0, ...)` tints for the
+  matching `rgba(255, 255, 255, ...)` values. Light theme is unchanged;
+  no `!important`.
+
 ### Feature — Map: disable scroll/zoom interaction at construction time
 
 - New constructor options on `MapView`, `MapLibreView`, and (via
