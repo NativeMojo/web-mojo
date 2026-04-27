@@ -121,11 +121,12 @@ class KPIStrip extends View {
         const promises = [];
 
         // 1) Batched series call with deltas. Param-name convention
-        //    matters — /api/metrics/series expects `slugs=a,b,c` (plural)
-        //    per the request docs; `slug=` is silently ignored and the
-        //    `data` map comes back empty. /api/metrics/fetch uses the
-        //    singular `slug=` form. Don't unify these — they're
-        //    different endpoints with different conventions.
+        //    matters — both /api/metrics/series AND /api/metrics/fetch
+        //    require `slugs=a,b,c` (plural, comma-separated) on the
+        //    production backend. The singular `slug=` form returns 400
+        //    "missing required parameter" (dev backend was permissive,
+        //    which masked the bug for a while). See the matching note
+        //    on the sparkline fetch below + MetricsChart.buildApiParams.
         // Include sparklineSlugs too so REST tiles that borrow a trail
         // also get a delta badge.
         let seriesPromise = null;
