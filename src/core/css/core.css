@@ -1469,6 +1469,25 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
 /* Warning band uses dark text on yellow for AAA contrast */
 .modal.modal-alert.modal-alert-warning .modal-content::before { color: #1a1a1a; }
 
+/* Primary action button picks up the type color so visual hierarchy is
+   consistent: red band → red button, green band → green button, etc.
+   --mojo-current-accent cascades from .modal-content. */
+.modal.modal-alert .modal-footer .btn-primary {
+    --bs-btn-bg: var(--mojo-current-accent);
+    --bs-btn-border-color: var(--mojo-current-accent);
+    --bs-btn-hover-bg: color-mix(in srgb, var(--mojo-current-accent) 88%, #000);
+    --bs-btn-hover-border-color: color-mix(in srgb, var(--mojo-current-accent) 85%, #000);
+    --bs-btn-active-bg: color-mix(in srgb, var(--mojo-current-accent) 80%, #000);
+    --bs-btn-active-border-color: color-mix(in srgb, var(--mojo-current-accent) 78%, #000);
+}
+
+/* Warning button needs dark text on yellow for AAA contrast */
+.modal.modal-alert.modal-alert-warning .modal-footer .btn-primary {
+    --bs-btn-color: #1a1a1a;
+    --bs-btn-hover-color: #1a1a1a;
+    --bs-btn-active-color: #1a1a1a;
+}
+
 /* Header — flush against the band, no divider of its own
    (the band + card-bg communicate the boundary). */
 .modal-header {
