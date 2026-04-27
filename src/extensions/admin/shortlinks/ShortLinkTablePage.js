@@ -10,7 +10,6 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import Dialog from '@core/views/feedback/Dialog.js';
 import Modal from '@core/views/feedback/Modal.js';
 import {
     ShortLink,
@@ -243,7 +242,7 @@ class ShortLinkTablePage extends TablePage {
     async onActionBatchDelete() {
         const selected = this.tableView?.getSelectedItems?.() || [];
         if (!selected.length) return;
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Delete ${selected.length} shortlink(s)? This cannot be undone.`,
             'Delete Shortlinks',
             { confirmText: 'Delete', confirmClass: 'btn-danger' },

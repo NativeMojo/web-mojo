@@ -7,7 +7,7 @@
  * Can be opened in a Dialog via the static show() method.
  */
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import CloudWatchChart from './CloudWatchChart.js';
 
 const METRIC_CATEGORIES = {
@@ -154,7 +154,7 @@ export default class CloudWatchResourceView extends View {
         const icon = TYPE_ICONS[resourceType] || 'bi-cloud';
         const typeLabel = TYPE_LABELS[resourceType] || 'Resource';
 
-        await Dialog.showDialog(view, {
+        await Modal.dialog(view, {
             header: `<i class="bi ${icon} me-2"></i>${slug} <small class="text-muted">— ${typeLabel}</small>`,
             size: 'xl',
             scrollable: true

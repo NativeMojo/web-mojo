@@ -6,7 +6,7 @@
  * Uses model.save() against /api/user/<id> (admin endpoint).
  */
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 export default class AdminProfileSection extends View {
     constructor(options = {}) {
@@ -136,7 +136,7 @@ export default class AdminProfileSection extends View {
     // ── Verification overrides ──────────────────────
 
     async onActionForceVerifyEmail() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Mark <strong>${this.model.get('email')}</strong> as verified? This bypasses the normal verification flow.`,
             'Force Verify Email'
         );
@@ -146,7 +146,7 @@ export default class AdminProfileSection extends View {
     }
 
     async onActionUnverifyEmail() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Mark email as unverified? The user will need to re-verify their email.',
             'Unverify Email'
         );
@@ -156,7 +156,7 @@ export default class AdminProfileSection extends View {
     }
 
     async onActionForceVerifyPhone() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Mark <strong>${this.model.get('phone_number')}</strong> as verified? This bypasses the normal verification flow.`,
             'Force Verify Phone'
         );
@@ -166,7 +166,7 @@ export default class AdminProfileSection extends View {
     }
 
     async onActionUnverifyPhone() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Mark phone as unverified? The user will need to re-verify their phone number.',
             'Unverify Phone'
         );
@@ -178,7 +178,7 @@ export default class AdminProfileSection extends View {
     // ── Contact editing ─────────────────────────────
 
     async onActionChangeEmail() {
-        const email = await Dialog.prompt(
+        const email = await Modal.prompt(
             'Enter the new email address for this user:',
             'Change Email',
             { defaultValue: this.model.get('email') || '' }
@@ -189,7 +189,7 @@ export default class AdminProfileSection extends View {
     }
 
     async onActionChangePhone() {
-        const phone = await Dialog.prompt(
+        const phone = await Modal.prompt(
             'Enter the new phone number for this user:',
             'Change Phone',
             { defaultValue: this.model.get('phone_number') || '' }
@@ -200,7 +200,7 @@ export default class AdminProfileSection extends View {
     }
 
     async onActionSetPhone() {
-        const phone = await Dialog.prompt(
+        const phone = await Modal.prompt(
             'Enter a phone number for this user:',
             'Set Phone Number',
             { placeholder: '(415) 555-0123' }
@@ -211,7 +211,7 @@ export default class AdminProfileSection extends View {
     }
 
     async onActionRemovePhone() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Remove this user\'s phone number?',
             'Remove Phone'
         );
@@ -229,7 +229,7 @@ export default class AdminProfileSection extends View {
     }
 
     async onActionEditUsername() {
-        const username = await Dialog.prompt(
+        const username = await Modal.prompt(
             'Username:',
             'Edit Username',
             { defaultValue: this.model.get('username') || '' }

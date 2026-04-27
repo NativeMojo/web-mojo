@@ -3,7 +3,7 @@
  */
 
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import { Job } from '@ext/admin/models/Job.js';
 
 export default class JobHealthView extends View {
@@ -203,7 +203,7 @@ export default class JobHealthView extends View {
     }
 
     async onActionSystemSettings() {
-        await Dialog.showAlert({
+        await Modal.alert({
             title: 'System Settings',
             message: 'System settings interface coming soon!',
             type: 'info'

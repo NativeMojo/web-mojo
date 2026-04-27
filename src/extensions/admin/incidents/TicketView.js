@@ -5,7 +5,7 @@ import { Incident } from '@ext/admin/models/Incident.js';
 import { UserList } from '@core/models/User.js';
 import ChatView from '@core/views/chat/ChatView.js';
 import TicketNoteAdapter from './adapters/TicketNoteAdapter.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import IncidentView from './IncidentView.js';
 import rest from '@core/Rest.js';
 import { openAssistantChat } from '../assistant/AssistantContextChat.js';
@@ -121,14 +121,7 @@ class LinkedIncidentCard extends View {
             const incident = new Incident({ id: this.incidentId });
             await incident.fetch({ params: { graph: 'detailed' } });
             const view = new IncidentView({ model: incident });
-            const dialog = new Dialog({
-                header: false,
-                size: 'xl',
-                body: view,
-                buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }]
-            });
-            await dialog.render(true, document.body);
-            dialog.show();
+            await Modal.show(view, { size: 'xl', header: false });
         } catch (e) {
             this.getApp()?.toast?.error('Failed to load incident');
         }
@@ -286,7 +279,7 @@ class TicketView extends View {
     // ── Context Menu Actions ──
 
     async onActionEditTicket() {
-        const resp = await Dialog.showModelForm({
+        const resp = await Modal.modelForm({
             title: `Edit Ticket #${this.model.get('id')}`,
             model: this.model,
             size: 'lg',
@@ -299,7 +292,7 @@ class TicketView extends View {
 
     async onActionChangeStatus() {
         const statuses = ['new', 'open', 'in_progress', 'pending', 'resolved', 'qa', 'closed', 'ignored'];
-        const result = await Dialog.showForm({
+        const result = await Modal.form({
             title: 'Change Status',
             icon: 'bi-tag',
             size: 'sm',
@@ -316,7 +309,7 @@ class TicketView extends View {
     }
 
     async onActionSetPriority() {
-        const result = await Dialog.showForm({
+        const result = await Modal.form({
             title: 'Set Priority',
             icon: 'bi-flag',
             size: 'sm',
@@ -341,7 +334,7 @@ class TicketView extends View {
     }
 
     async onActionAssignUser() {
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: 'Assign User',
             icon: 'bi-person-plus',
             size: 'sm',
@@ -359,7 +352,7 @@ class TicketView extends View {
     }
 
     async onActionCloseTicket() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Close ticket #${this.model.get('id')}?`,
             'Close Ticket',
             { confirmText: 'Close', confirmClass: 'btn-warning' }

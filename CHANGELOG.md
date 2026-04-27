@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+### Refactor — In-`src/` callers migrated from Dialog.* to Modal.* / ModalView
+
+- **All in-`src/` callers** migrated from the deprecated `Dialog.*` API
+  to the canonical `Modal.*` (static API) / `ModalView` (instance class)
+  surface. 60 files touched across `src/core/`, `src/extensions/admin/*`,
+  `src/extensions/lightbox/*`, `src/extensions/charts/*`,
+  `src/extensions/map/*`, `src/extensions/user-profile/*`.
+  - **Pure fire-and-forget `new Dialog({...})` sites** (7) collapsed to
+    one-line `Modal.show(view, { size, header, title })` calls.
+  - **Instance-handle `new Dialog({...})` sites** (11) now use
+    `new ModalView({...})` — same instance API (`on('action:*')`,
+    `setLoading`, `element`, `hide()`, `destroy()`) since `Dialog`
+    already re-exported `ModalView` under the hood.
+  - **`Dialog.show*()` static calls** mechanically renamed: `showDialog
+    → dialog`, `showForm → form`, `showModelForm → modelForm`, `showData
+    → data`, `showCode → code`, `showModelView → showModelView`,
+    `updateModelImage → updateModelImage`, `showBusy/hideBusy` (alias
+    preserved on `Modal.*`), `alert/confirm/prompt` (identical signatures).
+  - **`WebApp.showLoading/hideLoading/showModelView/showModelForm/showForm/
+    showDialog/showAlert`** internal lazy imports now resolve `Modal.js`
+    instead of `Dialog.js`.
+- **Pre-existing bug fixed**: `JobHealthView.onActionSystemSettings()`
+  called `Dialog.showAlert(...)` — `showAlert` was never wired on the
+  shim. The System Settings button now resolves through `Modal.alert`.
+- **`Model.showError()`** also migrated from a (broken, unimported)
+  `Dialog.alert(...)` global reference to a dynamic `Modal.alert`
+  import, matching the lazy-import pattern WebApp uses.
+- **Public surface unchanged**: the `Dialog.js` shim and the public
+  `Dialog` re-exports in `src/index.js` / `src/lite/index.js` remain in
+  place for downstream consumers. Their removal is a separate breaking
+  change PR.
+
 ### Refactor — Dialog.js split into ModalView + Modal + focused helpers
 
 - **`Dialog.js` (1,987 lines) split** into focused modules in

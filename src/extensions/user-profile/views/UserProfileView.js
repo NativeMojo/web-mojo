@@ -8,7 +8,7 @@
  * Thin accent bar + compact header with avatar, name, and status badges.
  */
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import { File as FileModel } from '@core/models/Files.js';
 import ProfileOverviewSection from './ProfileOverviewSection.js';
 import ProfilePersonalSection from './ProfilePersonalSection.js';
@@ -186,7 +186,7 @@ export default class UserProfileView extends View {
     }
 
     async onActionChangeAvatar() {
-        const resp = await Dialog.updateModelImage({
+        const resp = await Modal.updateModelImage({
             model: this.model,
             field: 'avatar',
             title: 'Change Avatar',
@@ -217,7 +217,7 @@ export default class UserProfileView extends View {
         const rest = app.rest;
 
         // Step 1: Collect new email
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: 'Change Email Address',
             size: 'sm',
             submitText: 'Send Code',
@@ -246,7 +246,7 @@ export default class UserProfileView extends View {
         }
 
         // Step 3: Prompt for the 6-digit code
-        const code = await Dialog.prompt(
+        const code = await Modal.prompt(
             `Enter the 6-digit code sent to <strong>${data.new_email_address}</strong>`,
             'Confirm Email Change',
             { placeholder: '000000' }
@@ -281,7 +281,7 @@ export default class UserProfileView extends View {
         }
 
         // Step 1: Collect new phone + password
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: 'Change Phone Number',
             size: 'sm',
             submitText: 'Send Code',
@@ -312,7 +312,7 @@ export default class UserProfileView extends View {
         const sessionToken = sendResp.data?.session_token;
 
         // Step 3: Prompt for the 6-digit code
-        const code = await Dialog.prompt(
+        const code = await Modal.prompt(
             `Enter the 6-digit code sent to <strong>${data.new_phone}</strong>`,
             'Confirm Phone Change',
             { placeholder: '000000' }

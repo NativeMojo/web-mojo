@@ -11,7 +11,7 @@ import View from '@core/View.js';
 import TabView from '@core/views/navigation/TabView.js';
 import DataView from '@core/views/data/DataView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import { SMS } from '@ext/admin/models/Phonehub.js';
 
 class SMSView extends View {
@@ -159,7 +159,7 @@ class SMSView extends View {
   async onActionDeleteSms() {
     const title = 'Confirm Deletion';
     const msg = `Are you sure you want to delete this message?`;
-    const confirmed = await Dialog.confirm(msg, title, {
+    const confirmed = await Modal.confirm(msg, title, {
       confirmClass: 'btn-danger',
       confirmText: 'Delete'
     });

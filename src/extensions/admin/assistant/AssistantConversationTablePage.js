@@ -5,7 +5,7 @@
 import TablePage from '@core/pages/TablePage.js';
 import { AssistantConversationList } from '@ext/admin/models/Assistant.js';
 import AssistantConversationView from './AssistantConversationView.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 class AssistantConversationTablePage extends TablePage {
     constructor(options = {}) {
@@ -68,7 +68,7 @@ class AssistantConversationTablePage extends TablePage {
         const selected = this.tableView.getSelectedItems();
         if (!selected || selected.length === 0) return;
 
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Delete ${selected.length} conversation${selected.length > 1 ? 's' : ''}? This cannot be undone.`,
             'Delete Conversations',
             { confirmText: 'Delete', confirmClass: 'btn-danger' }

@@ -16,7 +16,6 @@ import { Ticket } from '@ext/admin/models/Tickets.js';
 import { Job } from '@ext/admin/models/Job.js';
 import { Log } from '@core/models/Log.js';
 import { ApiKey } from '@core/models/ApiKey.js';
-import Dialog from '@core/views/feedback/Dialog.js';
 import IncidentView from './IncidentView.js';
 
 /**
@@ -154,7 +153,7 @@ class EventView extends View {
         }
         const incident = new Incident({ id: incidentId });
         const view = new IncidentView({ model: incident });
-        await Dialog.showDialog({
+        await Modal.dialog({
             title: 'Incident Details',
             body: view,
             size: 'xl',
@@ -189,7 +188,7 @@ class EventView extends View {
     }
 
     async onActionDeleteEvent() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Are you sure you want to delete this event? This action cannot be undone.`,
             'Confirm Deletion',
             { confirmClass: 'btn-danger', confirmText: 'Delete' }

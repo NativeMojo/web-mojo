@@ -4,7 +4,7 @@
  */
 
 import ImageCanvasView from './ImageCanvasView.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import ModalView from '@core/views/feedback/ModalView.js';
 
 export default class ImageCropView extends ImageCanvasView {
   constructor(options = {}) {
@@ -1183,7 +1183,7 @@ export default class ImageCropView extends ImageCanvasView {
       autoFit
     });
 
-    const dialog = new Dialog({
+    const dialog = new ModalView({
       title,
       body: cropView,
       size,

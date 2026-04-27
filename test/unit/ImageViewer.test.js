@@ -27,11 +27,11 @@ const { loadModule } = require('../utils/simple-module-loader');
  *
  * The shared simple-module-loader's transform pipeline doesn't understand
  * `export default class Foo extends Bar { ... }` (the regex assumes the
- * default export is a single expression terminated by `;`), and Dialog
+ * default export is a single expression terminated by `;`), and Modal
  * is at a path the loader doesn't know about. So strip the imports we
  * care about, drop everything else, and run the file in a sandbox where
- * View is the View we already loaded and Dialog is a stub (the test
- * never calls the static showDialog method that uses it).
+ * View is the View we already loaded and Modal is a stub (the test
+ * never calls the static methods that use it).
  */
 function loadImageViewer(View) {
     const filePath = path.resolve(
@@ -46,8 +46,8 @@ function loadImageViewer(View) {
         'const View = __View;'
     );
     src = src.replace(
-        /import\s+Dialog\s+from\s+['"][^'"]+['"];?/,
-        'const Dialog = __Dialog;'
+        /import\s+Modal\s+from\s+['"][^'"]+['"];?/,
+        'const Modal = __Modal;'
     );
 
     // Strip `export default` from the class declaration so the class
@@ -58,12 +58,12 @@ function loadImageViewer(View) {
     src += '\nreturn ImageViewer;';
 
     const factory = new Function(
-        '__View', '__Dialog', 'window', 'document', 'console', 'global', 'setTimeout',
+        '__View', '__Modal', 'window', 'document', 'console', 'global', 'setTimeout',
         src
     );
 
-    const DialogStub = { showDialog: () => Promise.resolve(null) };
-    return factory(View, DialogStub, global.window, global.document, console, global, setTimeout);
+    const ModalStub = { dialog: () => Promise.resolve(null), show: () => Promise.resolve(null) };
+    return factory(View, ModalStub, global.window, global.document, console, global, setTimeout);
 }
 
 module.exports = async function(testContext) {

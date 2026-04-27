@@ -5,7 +5,7 @@
  * clearing stuck jobs, purging old data, and broadcasting commands.
  */
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import { Job } from '@ext/admin/models/Job.js';
 import { JobRunner, JobRunnerForms } from '@ext/admin/models/JobRunner.js';
 
@@ -52,7 +52,7 @@ export default class JobOperationsSection extends View {
     // ── Action handlers ────────────────────────────────────
 
     async onActionRunSimpleJob(event, element) {
-        const confirmed = await Dialog.showConfirm({
+        const confirmed = await Modal.confirm({
             title: 'Run Simple Job',
             message: 'This will run a simple test job to verify the job system is working correctly.',
             confirmText: 'Run Test',
@@ -65,7 +65,7 @@ export default class JobOperationsSection extends View {
     }
 
     async onActionRunTestJobs(event, element) {
-        const confirmed = await Dialog.showConfirm({
+        const confirmed = await Modal.confirm({
             title: 'Run Test Jobs',
             message: 'This will run a suite of test jobs to verify all job functionalities.',
             confirmText: 'Run Tests',
@@ -84,7 +84,7 @@ export default class JobOperationsSection extends View {
             ...channels.map(ch => ({ value: ch.channel, label: ch.channel }))
         ];
 
-        const result = await Dialog.showForm({
+        const result = await Modal.form({
             title: 'Clear Stuck Jobs',
             formConfig: {
                 fields: [
@@ -117,7 +117,7 @@ export default class JobOperationsSection extends View {
         const channels = this.options.getChannels?.() || [];
         const channelOptions = channels.map(ch => ({ value: ch.channel, label: ch.channel }));
 
-        const result = await Dialog.showForm({
+        const result = await Modal.form({
             title: 'Clear Channel',
             formConfig: {
                 fields: [
@@ -143,7 +143,7 @@ export default class JobOperationsSection extends View {
     }
 
     async onActionPurgeJobs(event, element) {
-        const result = await Dialog.showForm({
+        const result = await Modal.form({
             title: 'Purge Old Jobs',
             formConfig: {
                 fields: [
@@ -172,7 +172,7 @@ export default class JobOperationsSection extends View {
     }
 
     async onActionCleanupConsumers(event, element) {
-        const confirmed = await Dialog.showConfirm({
+        const confirmed = await Modal.confirm({
             title: 'Cleanup Consumers',
             message: 'This will remove stale consumer records from the system. This is generally safe.',
             confirmText: 'Cleanup',
@@ -192,7 +192,7 @@ export default class JobOperationsSection extends View {
     }
 
     async onActionRunnerBroadcast() {
-        const result = await Dialog.showForm({
+        const result = await Modal.form({
             title: 'Broadcast Command to All Runners',
             formConfig: JobRunnerForms.broadcast
         });

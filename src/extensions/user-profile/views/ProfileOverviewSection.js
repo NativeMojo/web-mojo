@@ -12,7 +12,7 @@
  *   last_login, last_activity, date_joined
  */
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import rest from '@core/Rest.js';
 import { User } from '@core/models/User.js';
 
@@ -194,7 +194,7 @@ export default class ProfileOverviewSection extends View {
 
     async onActionDeactivateAccount() {
         const app = this.getApp();
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Are you sure you want to deactivate your account? A confirmation email will be sent to complete the process. This action cannot be undone.',
             'Deactivate Account'
         );
@@ -221,7 +221,7 @@ export default class ProfileOverviewSection extends View {
         }
 
         // Step 2: Prompt for code
-        const code = await Dialog.prompt(
+        const code = await Modal.prompt(
             `Enter the 6-digit code sent to <strong>${email}</strong>`,
             'Verify Email',
             { placeholder: '000000' }
@@ -252,7 +252,7 @@ export default class ProfileOverviewSection extends View {
         }
 
         // Step 2: Prompt for code
-        const code = await Dialog.prompt(
+        const code = await Modal.prompt(
             `Enter the 6-digit code sent to <strong>${phone}</strong>`,
             'Verify Phone',
             { placeholder: '000000' }
@@ -275,7 +275,7 @@ export default class ProfileOverviewSection extends View {
         const app = this.getApp();
 
         // Step 1: Collect phone number
-        const phone = await Dialog.prompt(
+        const phone = await Modal.prompt(
             'Enter your phone number:',
             'Add Phone Number',
             { placeholder: '(415) 555-0123' }
@@ -298,7 +298,7 @@ export default class ProfileOverviewSection extends View {
         }
 
         // Step 4: Prompt for code
-        const code = await Dialog.prompt(
+        const code = await Modal.prompt(
             `Enter the 6-digit code sent to <strong>${phone.trim()}</strong>`,
             'Verify Phone',
             { placeholder: '000000' }
@@ -323,7 +323,7 @@ export default class ProfileOverviewSection extends View {
 
     async onActionRemovePhone() {
         const app = this.getApp();
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Remove your phone number? You will need to add it again to use phone-based verification.',
             'Remove Phone'
         );

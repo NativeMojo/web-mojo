@@ -15,7 +15,7 @@ import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import { UserDeviceLocation } from '@core/models/User.js';
 import { IncidentEventList } from '@ext/admin/models/Incident.js';
 import { LogList } from '@core/models/Log.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 class UserDeviceLocationView extends View {
     constructor(options = {}) {
@@ -432,7 +432,7 @@ class UserDeviceLocationView extends View {
     }
 
     async onActionDeleteRecord() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Are you sure you want to delete this location record?',
             'Delete Location Record'
         );
@@ -449,14 +449,14 @@ class UserDeviceLocationView extends View {
         const model = new UserDeviceLocation({ id });
         await model.fetch();
         if (model.id) {
-            return Dialog.showDialog({
+            return Modal.dialog({
                 title: false,
                 size: 'lg',
                 body: new UserDeviceLocationView({ model }),
                 buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }]
             });
         }
-        Dialog.alert({ message: `Could not find location record: ${id}`, type: 'warning' });
+        Modal.alert({ message: `Could not find location record: ${id}`, type: 'warning' });
         return null;
     }
 }

@@ -4,7 +4,7 @@
  */
 
 import ImageCanvasView from './ImageCanvasView.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import ModalView from '@core/views/feedback/ModalView.js';
 
 export default class ImageTransformView extends ImageCanvasView {
   constructor(options = {}) {
@@ -504,7 +504,7 @@ export default class ImageTransformView extends ImageCanvasView {
       allowRotate
     });
 
-    const dialog = new Dialog({
+    const dialog = new ModalView({
       title,
       body: transformView,
       size,

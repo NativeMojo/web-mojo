@@ -6,7 +6,8 @@
 import View from '@core/View.js';
 import GroupSearchView from './GroupSearchView.js';
 import {GroupList, Group} from '@core/models/Group.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
+import ModalView from '@core/views/feedback/ModalView.js';
 
 
 class Sidebar extends View {
@@ -145,7 +146,7 @@ class Sidebar extends View {
     async onActionSelectGroupParent() {
         // select-group-parent
         const group = this.getApp().activeGroup;
-        const result = await Dialog.confirm(`Are you sure you want to navigate to the '${group.get("parent.name")}'?`);
+        const result = await Modal.confirm(`Are you sure you want to navigate to the '${group.get("parent.name")}'?`);
         if (result) {
             this.getApp().showLoading();
             let parent = new Group({id: group.get("parent.id")});
@@ -161,7 +162,7 @@ class Sidebar extends View {
         if (!activeGroup) return;
         if (!app.activeUser?.hasPermission(["manage_groups", "manage_group"])) return;
         try {
-            Dialog.showDialog({
+            Modal.dialog({
                 title: false,
                 size: 'lg',
                 header: null,
@@ -201,7 +202,7 @@ class Sidebar extends View {
         });
 
         // Create dialog
-        this.groupSelectorDialog = new Dialog({
+        this.groupSelectorDialog = new ModalView({
             body: searchView,
             size: 'md',
             header: null,

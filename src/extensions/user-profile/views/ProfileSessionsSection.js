@@ -6,7 +6,7 @@
  * Click a row to see full session detail in a dialog.
  */
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import TableView from '@core/views/table/TableView.js';
 import TableRow from '@core/views/table/TableRow.js';
 import { UserDeviceLocationList } from '@core/models/User.js';
@@ -137,7 +137,7 @@ export default class ProfileSessionsSection extends View {
                 <div style="flex:1; font-size:0.85rem;">${value || '—'}</div>
             </div>`;
 
-        Dialog.showDialog({
+        Modal.dialog({
             title: `<i class="bi bi-clock-history me-2"></i>${browser} on ${device}`,
             size: 'sm',
             centered: true,

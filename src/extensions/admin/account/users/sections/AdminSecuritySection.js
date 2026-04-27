@@ -6,7 +6,7 @@
  * Uses admin endpoints and model.save() against /api/user/<id>.
  */
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import rest from '@core/Rest.js';
 import { PasskeyList, PasskeyForms } from '@core/models/Passkeys.js';
 
@@ -135,7 +135,7 @@ export default class AdminSecuritySection extends View {
         const app = this.getApp();
         const email = this.model.get('email');
 
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Send a password reset email to <strong>${email}</strong>?`,
             'Send Password Reset'
         );
@@ -154,7 +154,7 @@ export default class AdminSecuritySection extends View {
         const app = this.getApp();
         const email = this.model.get('email');
 
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Send a verification email to <strong>${email}</strong>?`,
             'Send Email Verification'
         );
@@ -173,7 +173,7 @@ export default class AdminSecuritySection extends View {
         const app = this.getApp();
         const email = this.model.get('email');
 
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Send a magic login link to <strong>${email}</strong>? They will be able to sign in with one click.`,
             'Send Magic Login Link'
         );
@@ -190,7 +190,7 @@ export default class AdminSecuritySection extends View {
 
     async onActionSetPassword() {
         const app = this.getApp();
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: 'Set Password',
             size: 'sm',
             fields: [
@@ -221,7 +221,7 @@ export default class AdminSecuritySection extends View {
         const currentMfa = this.model.get('requires_mfa');
         const action = currentMfa ? 'disable' : 'enable';
 
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `${currentMfa ? 'Disable' : 'Enable'} MFA requirement for this user?`,
             `${currentMfa ? 'Disable' : 'Enable'} MFA`
         );
@@ -239,7 +239,7 @@ export default class AdminSecuritySection extends View {
 
     async onActionDisableTotp() {
         const app = this.getApp();
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Disable the authenticator app for this user? They will no longer need a TOTP code to sign in.',
             'Disable Authenticator'
         );
@@ -304,14 +304,14 @@ export default class AdminSecuritySection extends View {
             const id = el.dataset.id;
             const passkey = items.find(p => String(p.id) === String(id));
             if (passkey) {
-                await Dialog.showModelForm({ title: 'Edit Passkey', model: passkey, fields: PasskeyForms.edit.fields, size: 'sm' });
+                await Modal.modelForm({ title: 'Edit Passkey', model: passkey, fields: PasskeyForms.edit.fields, size: 'sm' });
             }
             return true;
         };
 
         view.onActionDeletePasskey = async (event, el) => {
             const id = el.dataset.id;
-            const confirmed = await Dialog.confirm('Delete this passkey?', 'Delete Passkey');
+            const confirmed = await Modal.confirm('Delete this passkey?', 'Delete Passkey');
             if (confirmed) {
                 const passkey = items.find(p => String(p.id) === String(id));
                 if (passkey) {
@@ -322,7 +322,7 @@ export default class AdminSecuritySection extends View {
             return true;
         };
 
-        await Dialog.showDialog({
+        await Modal.dialog({
             title: 'Passkeys',
             body: view,
             size: 'md',
@@ -357,7 +357,7 @@ export default class AdminSecuritySection extends View {
         view.remaining = remaining;
         view.codes = codes || [];
 
-        await Dialog.showDialog({
+        await Modal.dialog({
             title: 'Recovery Codes',
             body: view,
             size: 'sm',
@@ -370,7 +370,7 @@ export default class AdminSecuritySection extends View {
 
     async onActionRevokeAllSessions() {
         const app = this.getApp();
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Revoke all sessions for this user? They will be signed out of all devices immediately.',
             'Revoke All Sessions'
         );

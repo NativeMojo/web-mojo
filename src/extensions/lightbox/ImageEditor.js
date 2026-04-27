@@ -4,7 +4,7 @@
  */
 
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import ModalView from '@core/views/feedback/ModalView.js';
 import ImageTransformView from './ImageTransformView.js';
 import ImageCropView from './ImageCropView.js';
 import ImageFiltersView from './ImageFiltersView.js';
@@ -585,7 +585,7 @@ export default class ImageEditor extends View {
       cropOptions
     });
 
-    const dialog = new Dialog({
+    const dialog = new ModalView({
       title,
       body: editor,
       size,

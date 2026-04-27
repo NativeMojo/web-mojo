@@ -16,7 +16,7 @@
  */
 
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import SeriesChart from './SeriesChart.js';
 
 class MetricsChart extends View {
@@ -238,7 +238,7 @@ class MetricsChart extends View {
 
     async onActionShowDateRangeDialog() {
         try {
-            const data = await Dialog.showForm({
+            const data = await Modal.form({
                 title: 'Select Date Range',
                 size: 'sm',
                 fields: [

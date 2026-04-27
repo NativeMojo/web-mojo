@@ -11,7 +11,7 @@ import View from '@core/View.js';
 import TabView from '@core/views/navigation/TabView.js';
 import DataView from '@core/views/data/DataView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import { PhoneNumber } from '@ext/admin/models/Phonehub.js';
 
 class PhoneNumberView extends View {
@@ -185,7 +185,7 @@ class PhoneNumberView extends View {
   }
 
   async onActionDeletePhone() {
-    const confirmed = await Dialog.confirm(
+    const confirmed = await Modal.confirm(
       `Are you sure you want to delete the record for "${this.model.get('phone_number') || 'this number'}"?`,
       'Confirm Deletion',
       { confirmClass: 'btn-danger', confirmText: 'Delete' }
@@ -209,18 +209,10 @@ class PhoneNumberView extends View {
       const resp = await PhoneNumber.lookup(phone_number);
       if (resp?.model) {
           const view = new PhoneNumberView({ model: resp.model });
-          const dialog = new Dialog({
-              header: false,
-              size: 'lg',
-              body: view,
-              buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }]
-          });
-          await dialog.render(true, document.body);
-          dialog.show();
-          return dialog;
+          await Modal.show(view, { size: 'lg', header: false });
+          return;
       }
-      Dialog.alert({ message: `Could not find phone data for number: ${phone_number}`, type: 'warning' });
-      return null;
+      Modal.alert({ message: `Could not find phone data for number: ${phone_number}`, type: 'warning' });
   }
 }
 

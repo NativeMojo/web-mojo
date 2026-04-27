@@ -4,7 +4,7 @@ import DataView from '@core/views/data/DataView.js';
 import TableView from '@core/views/table/TableView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import { RuleSet, RuleList, BundleByOptions, MatchByOptions } from '@ext/admin/models/Incident.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import HandlerBuilderView from '../security/HandlerBuilderView.js';
 
 class RuleSetView extends View {
@@ -164,7 +164,7 @@ class RuleSetView extends View {
             value: this.model.get('handler') || ''
         });
 
-        const result = await Dialog.showDialog({
+        const result = await Modal.dialog({
             title: 'Configure Handler',
             body: builder,
             size: 'md',
@@ -193,7 +193,7 @@ class RuleSetView extends View {
      * Action handler: Edit RuleSet
      */
     async onActionEditRuleset() {
-        const resp = await Dialog.showModelForm({
+        const resp = await Modal.modelForm({
             title: `Edit RuleSet - ${this.model.get('name')}`,
             model: this.model,
             formConfig: RuleSet.EDIT_FORM,
@@ -224,7 +224,7 @@ class RuleSetView extends View {
      * Action handler: Delete RuleSet
      */
     async onActionDeleteRuleset() {
-        const confirmed = await Dialog.confirm({
+        const confirmed = await Modal.confirm({
             title: 'Delete RuleSet',
             message: `Are you sure you want to delete the ruleset "${this.model.get('name')}"? This action cannot be undone.`,
             confirmText: 'Delete',

@@ -13,7 +13,7 @@ import TabView from '@core/views/navigation/TabView.js';
 import TableView from '@core/views/table/TableView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import { Job, JobEventList, JobLogList, JobForms } from '@ext/admin/models/Job.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 class JobDetailsView extends View {
     constructor(options = {}) {
@@ -309,7 +309,7 @@ class JobDetailsView extends View {
     }
 
     async onActionRetryJob() {
-        const retryData = await Dialog.showForm({
+        const retryData = await Modal.form({
             title: 'Retry Job',
             formConfig: JobForms.retry
         });
@@ -362,7 +362,7 @@ class JobDetailsView extends View {
     static async show(job, options = {}) {
         const view = new JobDetailsView({ model: job });
 
-        return await Dialog.showDialog({
+        return await Modal.dialog({
             title: `<i class="bi bi-info-circle me-2"></i>Job Details - ${job.get('id')}`,
             body: view,
             size: 'xl',

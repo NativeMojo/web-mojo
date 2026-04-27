@@ -6,7 +6,7 @@
  * Click a row to see full device detail in a dialog.
  */
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import TableView from '@core/views/table/TableView.js';
 import TableRow from '@core/views/table/TableRow.js';
 import { UserDeviceList } from '@core/models/User.js';
@@ -120,7 +120,7 @@ export default class ProfileDevicesSection extends View {
                 <div style="flex:1; font-size:0.85rem;">${value || '—'}</div>
             </div>`;
 
-        Dialog.showDialog({
+        Modal.dialog({
             title: `<i class="bi ${isMobile ? 'bi-phone' : 'bi-laptop'} me-2"></i>${device}`,
             size: 'sm',
             centered: true,

@@ -4,7 +4,7 @@
  */
 
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import ModalView from '@core/views/feedback/ModalView.js';
 import SimpleSearchView from '@core/views/navigation/SimpleSearchView.js';
 import { GroupList } from '@core/models/Group.js';
 
@@ -97,8 +97,9 @@ class GroupSelectorButton extends View {
             showExitButton: false
         });
 
-        // Create dialog directly (not using showDialog helper to avoid promise issues)
-        this.dialog = new Dialog({
+        // Use ModalView directly so we keep an instance handle for hide(),
+        // on('hidden'), and destroy() — Modal.show() returns a Promise.
+        this.dialog = new ModalView({
             title: this.headerText,
             body: searchView,
             size: 'md',

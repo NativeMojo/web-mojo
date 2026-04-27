@@ -20,8 +20,6 @@
 
 import Router from '@core/Router.js';
 import EventBus from '@core/utils/EventBus.js';
-// Dialog is intentionally not imported statically to avoid circular deps and reduce initial bundle size.
-// It will be loaded lazily inside helper methods when needed.
 import rest from '@core/Rest.js';
 import Modal from '@core/views/feedback/Modal.js';
 
@@ -606,8 +604,8 @@ class WebApp {
             opts = { message: opts };
         }
         try {
-            const Dialog = (await import('./views/feedback/Dialog.js')).default;
-            Dialog.showBusy(opts);
+            const Modal = (await import('./views/feedback/Modal.js')).default;
+            Modal.showBusy(opts);
         } catch (e) {
             if (typeof window !== 'undefined' && window?.console) {
                 console.warn('[WebApp] showLoading fallback:', e, opts);
@@ -622,8 +620,8 @@ class WebApp {
      */
     async hideLoading() {
         try {
-            const Dialog = (await import('./views/feedback/Dialog.js')).default;
-            Dialog.hideBusy();
+            const Modal = (await import('./views/feedback/Modal.js')).default;
+            Modal.hideBusy();
         } catch (e) {
             if (typeof window !== 'undefined' && window?.console) {
                 console.warn('[WebApp] hideLoading fallback:', e);
@@ -634,8 +632,8 @@ class WebApp {
 
     async showModelView(model, options = {}) {
         try {
-            const Dialog = (await import('./views/feedback/Dialog.js')).default;
-            return await Dialog.showModelView(model, options);
+            const Modal = (await import('./views/feedback/Modal.js')).default;
+            return await Modal.showModelView(model, options);
         } catch (e) {
             if (typeof window !== 'undefined' && window?.console) {
                 console.error('[WebApp] showModelForm failed:', e);
@@ -646,8 +644,8 @@ class WebApp {
 
     async showModelForm(options = {}) {
         try {
-            const Dialog = (await import('./views/feedback/Dialog.js')).default;
-            return await Dialog.showModelForm(options);
+            const Modal = (await import('./views/feedback/Modal.js')).default;
+            return await Modal.modelForm(options);
         } catch (e) {
             if (typeof window !== 'undefined' && window?.console) {
                 console.error('[WebApp] showModelForm failed:', e);
@@ -658,8 +656,8 @@ class WebApp {
 
     async showForm(options = {}) {
         try {
-            const Dialog = (await import('./views/feedback/Dialog.js')).default;
-            return await Dialog.showForm(options);
+            const Modal = (await import('./views/feedback/Modal.js')).default;
+            return await Modal.form(options);
         } catch (e) {
             if (typeof window !== 'undefined' && window?.console) {
                 console.error('[WebApp] showForm failed:', e);
@@ -670,8 +668,8 @@ class WebApp {
 
     async showDialog(options = {}) {
         try {
-            const Dialog = (await import('./views/feedback/Dialog.js')).default;
-            return await Dialog.showDialog(options);
+            const Modal = (await import('./views/feedback/Modal.js')).default;
+            return await Modal.dialog(options);
         } catch (e) {
             if (typeof window !== 'undefined' && window?.console) {
                 console.error('[WebApp] showDialog failed:', e);
@@ -682,8 +680,8 @@ class WebApp {
 
     async showAlert(options = {}) {
         try {
-            const Dialog = (await import('./views/feedback/Dialog.js')).default;
-            return await Dialog.showDialog(options);
+            const Modal = (await import('./views/feedback/Modal.js')).default;
+            return await Modal.dialog(options);
         } catch (e) {
             if (typeof window !== 'undefined' && window?.console) {
                 console.error('[WebApp] showDialog failed:', e);

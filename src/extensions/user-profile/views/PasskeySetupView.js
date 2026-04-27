@@ -5,7 +5,7 @@
  * users to register a passkey. Create / Skip / Don't ask again.
  */
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import { Passkey } from '@core/models/Passkeys.js';
 
 export default class PasskeySetupView extends View {
@@ -45,7 +45,7 @@ export default class PasskeySetupView extends View {
 
     async _askPasskeyName() {
         const suggested = Passkey.suggestName();
-        return Dialog.showDialog({
+        return Modal.dialog({
             title: '<i class="bi bi-fingerprint me-2"></i>Register a Passkey',
             size: 'sm',
             centered: true,
@@ -79,7 +79,7 @@ export default class PasskeySetupView extends View {
     }
 
     static showSuccess(name) {
-        return Dialog.showDialog({
+        return Modal.dialog({
             title: '<span class="text-success"><i class="bi bi-check-circle-fill me-2"></i>Passkey Registered</span>',
             size: 'sm',
             centered: true,
@@ -101,7 +101,7 @@ export default class PasskeySetupView extends View {
     }
 
     static showError(message) {
-        return Dialog.alert({
+        return Modal.alert({
             title: 'Passkey Error',
             message: message || 'Something went wrong during passkey registration.',
             type: 'error'

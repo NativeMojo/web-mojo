@@ -17,7 +17,7 @@ import { MemberList } from '@core/models/Member.js';
 import { IncidentEventList } from '@ext/admin/models/Incident.js';
 import { LogList } from '@core/models/Log.js';
 import { ApiKeyList, ApiKeyForms } from '@core/models/ApiKey.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import AdminMetadataSection from '../../shared/AdminMetadataSection.js';
 
 class GroupView extends View {
@@ -327,7 +327,7 @@ class GroupView extends View {
     // ── Actions ─────────────────────────────────
 
     async onActionEditGroup() {
-        const resp = await Dialog.showModelForm({
+        const resp = await Modal.modelForm({
             title: `Edit Group — ${this.model.get('name')}`,
             model: this.model,
             size: 'lg',
@@ -347,7 +347,7 @@ class GroupView extends View {
             event.preventDefault();
             event.stopPropagation();
         }
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: `Invite User to ${this.model.get('name')}`,
             size: 'sm',
             fields: [
@@ -374,7 +374,7 @@ class GroupView extends View {
     }
 
     async onActionAddChildGroup() {
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: `Add Sub-Group to ${this.model.get('name')}`,
             size: 'sm',
             fields: GroupForms.create.fields.filter(f => f.name !== 'parent')
@@ -396,7 +396,7 @@ class GroupView extends View {
     }
 
     async onActionDeactivateGroup() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Are you sure you want to deactivate <strong>${this.model.get('name')}</strong>?`,
             'Deactivate Group'
         );
@@ -413,7 +413,7 @@ class GroupView extends View {
     }
 
     async onActionActivateGroup() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Are you sure you want to activate <strong>${this.model.get('name')}</strong>?`,
             'Activate Group'
         );
@@ -436,7 +436,7 @@ class GroupView extends View {
         const parent = new Group({ id: parentId });
         await parent.fetch();
         if (parent.id) {
-            Dialog.showDialog({
+            Modal.dialog({
                 title: false,
                 size: 'lg',
                 body: new GroupView({ model: parent }),

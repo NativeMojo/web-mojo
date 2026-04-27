@@ -5,7 +5,7 @@
 
 import TablePage from '@core/pages/TablePage.js';
 import { MailboxList, MailboxForms, Mailbox } from '@ext/admin/models/Email.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 class EmailMailboxTablePage extends TablePage {
     constructor(options = {}) {
@@ -65,7 +65,7 @@ class EmailMailboxTablePage extends TablePage {
     async onActionSendEmail(event, element) {
         const item = this.collection.get(element.dataset.id);
         // Implement send email action
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: 'Send Email',
             fields: [
                 { name: 'to', label: 'To', type: 'email', required: true },
@@ -92,7 +92,7 @@ class EmailMailboxTablePage extends TablePage {
     async onActionSendTemplateEmail(event, element) {
         const item = this.collection.get(element.dataset.id);
         // Implement send email action
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: 'Send Email',
             fields: [
                 { name: 'to', label: 'To', type: 'email', required: true },

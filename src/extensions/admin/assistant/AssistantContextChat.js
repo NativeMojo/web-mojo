@@ -15,7 +15,7 @@ import ChatView from '@core/views/chat/ChatView.js';
 import { AssistantConversation } from '@ext/admin/models/Assistant.js';
 import AssistantMessageView from './AssistantMessageView.js';
 import AssistantView from './AssistantView.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 
 // ── Adapter ────────────────────────────────────────────────
@@ -635,16 +635,10 @@ async function openAssistantChat(view, modelName) {
         adapter
     });
 
-    const dialog = new Dialog({
-        header: true,
+    await Modal.show(chatView, {
         title: 'AI Assistant',
-        size: 'xl',
-        body: chatView,
-        buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }]
+        size: 'xl'
     });
-
-    await dialog.render(true, document.body);
-    dialog.show();
 }
 
 

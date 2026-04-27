@@ -5,7 +5,7 @@
 
 import TablePage from '@core/pages/TablePage.js';
 import { FileManagerList, FileManagerForms } from '@core/models/Files.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 class FileManagerTablePage extends TablePage {
     constructor(options = {}) {
@@ -112,7 +112,7 @@ class FileManagerTablePage extends TablePage {
 
     async onActionEditOwners(event, element) {
         const item = this.collection.get(element.dataset.id);
-        const result = await Dialog.showModelForm({
+        const result = await Modal.modelForm({
             title: 'Edit Owners',
             model: item,
             fields: FileManagerForms.owners.fields
@@ -130,7 +130,7 @@ class FileManagerTablePage extends TablePage {
         const result = await item.save({check_cors: true});
         if (result.success && result.data.status) {
             // this.getApp().toast.success(result.data.result);
-            await Dialog.showData({
+            await Modal.data({
                 title: `Audit Report - ${item._.name}`,
                 data: result.data,
                 size: 'lg'
@@ -154,7 +154,7 @@ class FileManagerTablePage extends TablePage {
 
     async onActionEditCredentials(event, element) {
         const item = this.collection.get(element.dataset.id);
-        const result = await Dialog.showModelForm({
+        const result = await Modal.modelForm({
             title: 'Edit Credentials',
             model: item,
             fields: FileManagerForms.credentials.fields
@@ -172,7 +172,7 @@ class FileManagerTablePage extends TablePage {
 
     async onActionClone(event, element) {
 
-        const confirmed = await Dialog.showConfirm({
+        const confirmed = await Modal.confirm({
             title: 'Clone File Manager',
             message: 'This will create a clone with the same credentials.',
         });

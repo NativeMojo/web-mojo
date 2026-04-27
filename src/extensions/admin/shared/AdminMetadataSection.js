@@ -5,7 +5,7 @@
  * Saves changes via standard model CRUD (model.save()).
  */
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 export default class AdminMetadataSection extends View {
     constructor(options = {}) {
@@ -89,7 +89,7 @@ export default class AdminMetadataSection extends View {
     }
 
     async onActionAddEntry() {
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: 'Add Metadata Entry',
             icon: 'bi-braces',
             size: 'sm',
@@ -126,7 +126,7 @@ export default class AdminMetadataSection extends View {
         const currentValue = metadata[key];
         const displayValue = typeof currentValue === 'object' ? JSON.stringify(currentValue) : String(currentValue);
 
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: `Edit "${key}"`,
             icon: 'bi-braces',
             size: 'sm',
@@ -157,7 +157,7 @@ export default class AdminMetadataSection extends View {
         const key = el.dataset.key;
         if (!key) return true;
 
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Remove metadata key "<strong>${this._escapeHtml(key)}</strong>"?`,
             'Remove Entry'
         );

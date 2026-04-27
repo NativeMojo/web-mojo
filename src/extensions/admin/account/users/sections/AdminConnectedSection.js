@@ -5,7 +5,7 @@
  * Uses admin-scoped endpoints.
  */
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import rest from '@core/Rest.js';
 
 const PROVIDER_ICONS = {
@@ -76,7 +76,7 @@ export default class AdminConnectedSection extends View {
         const connection = this.connections.find(c => String(c.id) === String(id));
         const provider = connection?.provider || 'this account';
 
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Unlink ${provider} for this user?`,
             'Unlink Account'
         );

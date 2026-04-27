@@ -22,7 +22,7 @@ import { LogList } from '@core/models/Log.js';
 import { IncidentEventList } from '@ext/admin/models/Incident.js';
 import { MemberList } from '@core/models/Member.js';
 import { PushDeviceList } from '@ext/admin/models/Push.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import FormView from '@core/forms/FormView.js';
 import LoginLocationMapView from '../devices/LoginLocationMapView.js';
 import AdminProfileSection from './sections/AdminProfileSection.js';
@@ -443,7 +443,7 @@ class UserView extends View {
     // ── Context menu actions ────────────────────────
 
     async onActionEditUser() {
-        await Dialog.showModelForm({
+        await Modal.modelForm({
             title: `EDIT - #${this.model.id} ${this.options.modelName}`,
             model: this.model,
             formConfig: UserForms.edit,
@@ -451,7 +451,7 @@ class UserView extends View {
     }
 
     async onActionClearAvatar() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Remove this user\'s avatar? They will see the default placeholder.',
             'Clear Avatar'
         );
@@ -468,7 +468,7 @@ class UserView extends View {
 
     async onActionSendPasswordReset() {
         const email = this.model.get('email');
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Send a password reset email to <strong>${email}</strong>?`,
             'Send Password Reset'
         );
@@ -485,7 +485,7 @@ class UserView extends View {
 
     async onActionSendMagicLink() {
         const email = this.model.get('email');
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Send a magic login link to <strong>${email}</strong>?`,
             'Send Magic Login Link'
         );
@@ -501,7 +501,7 @@ class UserView extends View {
     }
 
     async onActionRevokeAllSessions() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Revoke all sessions? The user will be signed out of all devices immediately.',
             'Revoke All Sessions'
         );
@@ -518,7 +518,7 @@ class UserView extends View {
 
     async onActionSendEmailVerification() {
         const email = this.model.get('email');
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Send a verification email to <strong>${email}</strong>?`,
             'Send Email Verification'
         );
@@ -534,7 +534,7 @@ class UserView extends View {
     }
 
     async onActionForceVerifyEmail() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Mark <strong>${this.model.get('email')}</strong> as verified?`,
             'Force Verify Email'
         );
@@ -550,7 +550,7 @@ class UserView extends View {
     }
 
     async onActionForceVerifyPhone() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Mark <strong>${this.model.get('phone_number')}</strong> as verified?`,
             'Force Verify Phone'
         );
@@ -574,7 +574,7 @@ class UserView extends View {
     }
 
     async onActionDeactivateUser() {
-        const confirmed = await Dialog.confirm("Are you sure you want to deactivate this user?");
+        const confirmed = await Modal.confirm("Are you sure you want to deactivate this user?");
         if (!confirmed) return true;
 
         const resp = await this.model.save({ is_active: false });
@@ -587,7 +587,7 @@ class UserView extends View {
     }
 
     async onActionActivateUser() {
-        const confirmed = await Dialog.confirm("Are you sure you want to activate this user?");
+        const confirmed = await Modal.confirm("Are you sure you want to activate this user?");
         if (!confirmed) return true;
 
         const resp = await this.model.save({ is_active: true });

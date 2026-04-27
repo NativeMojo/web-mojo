@@ -15,7 +15,7 @@ import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import { Incident, IncidentForms, IncidentList, IncidentEventList, RuleSet, RuleSetForms, Rule, RuleList, BundleByOptions, MatchByOptions } from '@ext/admin/models/Incident.js';
 import { GeoLocatedIP } from '@core/models/System.js';
 import { Ticket, TicketList, TicketForms } from '@ext/admin/models/Tickets.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import GeoIPView from '../account/devices/GeoIPView.js';
 import RuleSetView from './RuleSetView.js';
 import IncidentHistoryAdapter from './adapters/IncidentHistoryAdapter.js';
@@ -232,7 +232,7 @@ class GeoIPSummaryCard extends View {
     }
 
     async onActionBlockIp() {
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: `Block IP — ${this.sourceIP}`,
             icon: 'bi-slash-circle',
             size: 'sm',
@@ -272,7 +272,7 @@ class GeoIPSummaryCard extends View {
     }
 
     async onActionUnblockIp() {
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: `Unblock IP — ${this.sourceIP}`,
             icon: 'bi-unlock',
             size: 'sm',
@@ -299,7 +299,7 @@ class GeoIPSummaryCard extends View {
     }
 
     async onActionWhitelistIp() {
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: `Whitelist IP — ${this.sourceIP}`,
             icon: 'bi-check-circle',
             size: 'sm',
@@ -522,14 +522,7 @@ class LLMAnalysisResultsView extends View {
             const ruleset = new RuleSet({ id: this.proposedRulesetId });
             await ruleset.fetch();
             const view = new RuleSetView({ model: ruleset });
-            const dialog = new Dialog({
-                header: false,
-                size: 'xl',
-                body: view,
-                buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }]
-            });
-            await dialog.render(true, document.body);
-            dialog.show();
+            await Modal.show(view, { size: 'xl', header: false });
         } catch (e) {
             this.getApp()?.toast?.error('Could not load proposed RuleSet');
         }
@@ -946,7 +939,7 @@ class RuleEngineSection extends View {
 
     async onActionEditLinkedRuleset() {
         if (!this.rulesetModel) return;
-        const resp = await Dialog.showModelForm({
+        const resp = await Modal.modelForm({
             title: `Edit RuleSet — ${this.rulesetModel.get('name')}`,
             model: this.rulesetModel,
             formConfig: RuleSetForms.edit,
@@ -960,14 +953,7 @@ class RuleEngineSection extends View {
     async onActionViewLinkedRuleset() {
         if (!this.rulesetModel) return;
         const view = new RuleSetView({ model: this.rulesetModel });
-        const dialog = new Dialog({
-            header: false,
-            size: 'xl',
-            body: view,
-            buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }]
-        });
-        await dialog.render(true, document.body);
-        dialog.show();
+        await Modal.show(view, { size: 'xl', header: false });
     }
 
     async onActionCreateRuleFromIncident() {
@@ -978,7 +964,7 @@ class RuleEngineSection extends View {
         const metadata = incident.get('metadata') || {};
 
         // Step 1: Create the RuleSet using the standard form
-        const resp = await Dialog.showForm({
+        const resp = await Modal.form({
             title: 'Create RuleSet from Incident',
             icon: 'bi-gear-wide-connected',
             formConfig: RuleSetForms.create,
@@ -1026,14 +1012,7 @@ class RuleEngineSection extends View {
 
         // Open the full RuleSet view so user can review
         const view = new RuleSetView({ model: ruleset });
-        const dialog = new Dialog({
-            header: false,
-            size: 'xl',
-            body: view,
-            buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }]
-        });
-        await dialog.render(true, document.body);
-        dialog.show();
+        await Modal.show(view, { size: 'xl', header: false });
     }
 
     /**
@@ -1077,7 +1056,7 @@ class RuleEngineSection extends View {
             }))
         ];
 
-        const pickerResp = await Dialog.showForm({
+        const pickerResp = await Modal.form({
             title: 'Create Rules from Metadata',
             icon: 'bi-list-check',
             size: 'lg',
@@ -1178,7 +1157,7 @@ class IncidentTicketsSection extends View {
             })
         };
 
-        const data = await Dialog.showForm(formConfig);
+        const data = await Modal.form(formConfig);
         if (!data) return;
 
         const ticket = new Ticket();
@@ -1624,7 +1603,7 @@ class IncidentView extends View {
     // ── Priority ──
 
     async onActionChangePriority() {
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: 'Change Priority',
             icon: 'bi-arrow-up-circle',
             size: 'sm',
@@ -1657,7 +1636,7 @@ class IncidentView extends View {
     // ── Edit ──
 
     async onActionEditIncident() {
-        const resp = await Dialog.showModelForm({
+        const resp = await Modal.modelForm({
             title: `Edit Incident #${this.model.id}`,
             model: this.model,
             formConfig: IncidentForms.edit,
@@ -1678,7 +1657,7 @@ class IncidentView extends View {
             return;
         }
 
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: `Block IP — ${this._sourceIP}`,
             icon: 'bi-slash-circle',
             size: 'sm',
@@ -1725,7 +1704,7 @@ class IncidentView extends View {
     async _handleCreateTicket() {
         const title = `Incident #${this.model.get('id')}: ${this.model.get('category') || this.model.get('title') || 'Investigation'}`;
 
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             ...TicketForms.create,
             fields: TicketForms.create.fields.map(f => {
                 if (f.name === 'title') return { ...f, value: title };
@@ -1749,7 +1728,7 @@ class IncidentView extends View {
     // ── Merge ──
 
     async onActionMergeIncidents() {
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: 'Merge Incidents',
             icon: 'bi-union',
             size: 'sm',
@@ -1791,7 +1770,7 @@ class IncidentView extends View {
     }
 
     async _handleAnalyzeLlm() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Run LLM analysis on this incident? The AI agent will review all events, ' +
             'attempt to merge related incidents, and propose a new rule to catch similar patterns. ' +
             'The incident status will be set to "investigating".',
@@ -1864,7 +1843,7 @@ class IncidentView extends View {
     // ── Delete ──
 
     async onActionDeleteIncident() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Are you sure you want to delete incident #${this.model.id}? This action cannot be undone.`,
             'Confirm Deletion',
             { confirmClass: 'btn-danger', confirmText: 'Delete' }

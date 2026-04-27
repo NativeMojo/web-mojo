@@ -631,7 +631,8 @@ class Model {
   }
 
   async showError(message) {
-      await Dialog.alert(message, 'Error', {
+      const Modal = (await import('@core/views/feedback/Modal.js')).default;
+      await Modal.alert(message, 'Error', {
         size: 'md',
         class: 'text-danger'
       });

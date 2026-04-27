@@ -4,7 +4,7 @@
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import View from '@core/View.js';
 import { EmailDomain, EmailDomainList, EmailDomainForms } from '@ext/admin/models/Email.js';
 
@@ -112,7 +112,7 @@ class EmailDomainTablePage extends TablePage {
 
     async onActionEditAwsCreds(event, element) {
         const item = this.collection.get(element.dataset.id);
-        const result = await Dialog.showModelForm({
+        const result = await Modal.modelForm({
                 model: item,
                 formConfig: EmailDomainForms.credentials,
             }
@@ -124,7 +124,7 @@ class EmailDomainTablePage extends TablePage {
     const item = this.collection.get(element.dataset.id);
     const model = new EmailDomain({ id: item.id });
 
-    const formData = await Dialog.showForm(EmailDomainForms.onboard);
+    const formData = await Modal.form(EmailDomainForms.onboard);
     if (!formData) return;
 
     try {
@@ -158,7 +158,7 @@ class EmailDomainTablePage extends TablePage {
       }
 
       const result = resp.data?.data || {};
-      await Dialog.showDialog({
+      await Modal.dialog({
         title: `Audit Report - ${item.name}`,
         body: new View({
           template: `

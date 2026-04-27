@@ -6,7 +6,7 @@
 
 import View from '@core/View.js';
 import { AssistantSkill } from '@ext/admin/models/Assistant.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 const TIER_BADGE = {
     global: 'bg-primary',
@@ -179,7 +179,7 @@ class AssistantSkillView extends View {
     }
 
     async onActionDeleteSkill() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Delete skill "${this.model.get('name')}"? This cannot be undone.`,
             'Delete Skill',
             { confirmText: 'Delete', confirmClass: 'btn-danger' }

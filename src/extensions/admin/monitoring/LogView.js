@@ -7,7 +7,7 @@ import TabView from '@core/views/navigation/TabView.js';
 import DataView from '@core/views/data/DataView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import { Log } from '@core/models/Log.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import DeviceView from '../account/devices/DeviceView.js';
 import GeoIPView from '../account/devices/GeoIPView.js';
 
@@ -152,7 +152,7 @@ class LogView extends View {
     }
 
     async onActionDeleteLog() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Are you sure you want to delete this log entry? This action cannot be undone.`,
             'Confirm Deletion',
             { confirmClass: 'btn-danger', confirmText: 'Delete' }

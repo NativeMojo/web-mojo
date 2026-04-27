@@ -13,7 +13,7 @@
  */
 
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import TabView from '@core/views/navigation/TabView.js';
 import { JobRunner } from '@ext/admin/models/JobRunner.js';
 
@@ -645,7 +645,7 @@ class RunnerJobsTab extends View {
 
   async onActionCancelJob(event, element) {
     const jobId = element.dataset.jobId;
-    const ok = await Dialog.confirm(
+    const ok = await Modal.confirm(
       'Cancel this job? The runner will receive a cooperative cancel signal.',
       'Cancel Job',
       { confirmText: 'Cancel Job', confirmClass: 'btn-warning' }
@@ -934,7 +934,7 @@ class RunnerActionsTab extends View {
   }
 
   async onActionShutdown() {
-    const ok = await Dialog.confirm(
+    const ok = await Modal.confirm(
       `Send a graceful shutdown to <strong class="font-monospace">${this.model.get('runner_id')}</strong>?`
         + '<br><br>The runner will finish its current job then exit. This is fire-and-forget.',
       'Shutdown Runner',
@@ -964,16 +964,16 @@ class RunnerActionsTab extends View {
     const command = commandEl ? commandEl.value : 'status';
     const timeout = timeoutEl ? (parseFloat(timeoutEl.value) || 2.0) : 2.0;
 
-    Dialog.showBusy({ message: `Broadcasting "${command}" to all runners…` });
+    Modal.showBusy({ message: `Broadcasting "${command}" to all runners…` });
     try {
       const resp = await this.getApp().rest.POST('/api/jobs/runners/broadcast', {
         command,
         timeout
       });
-      Dialog.hideBusy();
+      Modal.hideBusy();
 
       if (resp.success && resp.data) {
-        await Dialog.showCode(
+        await Modal.code(
           JSON.stringify(resp.data, null, 2),
           'json',
           { title: `Broadcast Response — ${command}`, size: 'lg' }
@@ -982,7 +982,7 @@ class RunnerActionsTab extends View {
         this.showError((resp.data && resp.data.error) || 'Broadcast failed.');
       }
     } catch (e) {
-      Dialog.hideBusy();
+      Modal.hideBusy();
       this.showError('Broadcast failed: ' + e.message);
     }
   }
@@ -1166,14 +1166,14 @@ export default class RunnerDetailsView extends View {
    * Open this view in a Dialog.
    *
    * @param {object} runner  — runner object from GET /api/jobs/runners
-   * @param {object} options — extra options forwarded to Dialog.showDialog()
+   * @param {object} options — extra options forwarded to Modal.dialog()
    * @returns {Promise<any>}
    */
   static async show(runner, options = {}) {
     const model = runner instanceof JobRunner ? runner : new JobRunner(runner);
     const view = new RunnerDetailsView({ model });
 
-    return await Dialog.showDialog({
+    return await Modal.dialog({
       title: `<i class="bi bi-cpu me-2"></i><span class="font-monospace">${model.get('runner_id')}</span>`,
       body: view,
       size: 'xl',

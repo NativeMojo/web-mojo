@@ -6,7 +6,7 @@
  * Token is shown only once after generation.
  */
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import rest from '@core/Rest.js';
 
 export default class ProfileApiKeysSection extends View {
@@ -138,7 +138,7 @@ export default class ProfileApiKeysSection extends View {
     }
 
     async onActionGenerateKey() {
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: 'Generate API Key',
             icon: 'bi-key',
             fields: [
@@ -207,7 +207,7 @@ export default class ProfileApiKeysSection extends View {
         const id = el.dataset.id;
         if (!id) return true;
 
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Are you sure you want to delete this API key? Any applications using it will lose access immediately.',
             'Delete API Key'
         );

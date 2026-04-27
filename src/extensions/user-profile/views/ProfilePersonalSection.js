@@ -6,7 +6,7 @@
  * Address fields are stored in user.metadata.
  */
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 export default class ProfilePersonalSection extends View {
     constructor(options = {}) {
@@ -125,7 +125,7 @@ export default class ProfilePersonalSection extends View {
     }
 
     async onActionEditDisplayName() {
-        const name = await Dialog.prompt(
+        const name = await Modal.prompt(
             'Enter your display name:',
             'Display Name',
             { defaultValue: this.model.get('display_name') || '' }
@@ -143,7 +143,7 @@ export default class ProfilePersonalSection extends View {
     }
 
     async onActionEditFirstName() {
-        const name = await Dialog.prompt(
+        const name = await Modal.prompt(
             'Enter your first name:',
             'First Name',
             { defaultValue: this.model.get('first_name') || '' }
@@ -161,7 +161,7 @@ export default class ProfilePersonalSection extends View {
     }
 
     async onActionEditLastName() {
-        const name = await Dialog.prompt(
+        const name = await Modal.prompt(
             'Enter your last name:',
             'Last Name',
             { defaultValue: this.model.get('last_name') || '' }
@@ -179,7 +179,7 @@ export default class ProfilePersonalSection extends View {
     }
 
     async onActionEditDob() {
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: 'Date of Birth',
             size: 'sm',
             fields: [{
@@ -204,7 +204,7 @@ export default class ProfilePersonalSection extends View {
 
     async onActionEditTimezone() {
         const meta = this.model.get('metadata') || {};
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: 'Change Timezone',
             fields: [{
                 name: 'timezone',
@@ -245,7 +245,7 @@ export default class ProfilePersonalSection extends View {
 
     async onActionEditAddress() {
         const meta = this.model.get('metadata') || {};
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: 'Edit Address',
             size: 'md',
             fields: [

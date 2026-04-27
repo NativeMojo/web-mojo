@@ -11,7 +11,7 @@ import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import { GeoLocatedIP } from '@core/models/System.js';
 import { IncidentEventList } from '@ext/admin/models/Incident.js';
 import { LogList } from '@core/models/Log.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 class GeoIPView extends View {
     constructor(options = {}) {
@@ -390,7 +390,7 @@ class GeoIPView extends View {
     }
 
     async onActionEditLocation() {
-        const resp = await Dialog.showModelForm({
+        const resp = await Modal.modelForm({
             title: `Edit Location - ${this.model.get('ip_address')}`,
             model: this.model,
             formConfig: GeoLocatedIP.EDIT_LOCATION_FORM,
@@ -403,7 +403,7 @@ class GeoIPView extends View {
     }
 
     async onActionEditSecurity() {
-        const resp = await Dialog.showModelForm({
+        const resp = await Modal.modelForm({
             title: `Edit Security - ${this.model.get('ip_address')}`,
             model: this.model,
             formConfig: GeoLocatedIP.EDIT_SECURITY_FORM,
@@ -416,7 +416,7 @@ class GeoIPView extends View {
     }
 
     async onActionEditNetwork() {
-        const resp = await Dialog.showModelForm({
+        const resp = await Modal.modelForm({
             title: `Edit Network - ${this.model.get('ip_address')}`,
             model: this.model,
             formConfig: GeoLocatedIP.EDIT_NETWORK_FORM,
@@ -435,7 +435,7 @@ class GeoIPView extends View {
     }
 
     async onActionBlockIp() {
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: 'Block IP',
             icon: 'bi-slash-circle',
             size: 'sm',
@@ -470,7 +470,7 @@ class GeoIPView extends View {
     }
 
     async onActionUnblockIp() {
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: 'Unblock IP',
             icon: 'bi-unlock',
             size: 'sm',
@@ -493,7 +493,7 @@ class GeoIPView extends View {
     }
 
     async onActionWhitelistIp() {
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: 'Whitelist IP',
             icon: 'bi-check-circle',
             size: 'sm',
@@ -516,7 +516,7 @@ class GeoIPView extends View {
     }
 
     async onActionUnwhitelistIp() {
-        const confirmed = await Dialog.confirm('Remove this IP from the whitelist?', 'Remove Whitelist');
+        const confirmed = await Modal.confirm('Remove this IP from the whitelist?', 'Remove Whitelist');
         if (!confirmed) return true;
 
         const resp = await this.model.save({
@@ -559,7 +559,7 @@ class GeoIPView extends View {
     }
 
     async onActionDeleteGeoip() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Are you sure you want to delete the GeoIP record for "${this.model.get('ip_address')}"?`,
             'Confirm Deletion',
             { confirmClass: 'btn-danger', confirmText: 'Delete' }
@@ -576,18 +576,10 @@ class GeoIPView extends View {
         const model = await GeoLocatedIP.lookup(ip);
         if (model) {
             const view = new GeoIPView({ model });
-            const dialog = new Dialog({
-                header: false,
-                size: 'lg',
-                body: view,
-                buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }]
-            });
-            await dialog.render(true, document.body);
-            dialog.show();
-            return dialog;
+            await Modal.show(view, { size: 'lg', header: false });
+            return;
         }
-        Dialog.alert({ message: `Could not find geolocation data for IP: ${ip}`, type: 'warning' });
-        return null;
+        Modal.alert({ message: `Could not find geolocation data for IP: ${ip}`, type: 'warning' });
     }
 }
 

@@ -2,7 +2,7 @@ import View from '@core/View.js';
 import DataView from '@core/views/data/DataView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import { MetricsPermission, MetricsForms } from '@core/models/Metrics.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 class MetricsPermissionsView extends View {
     constructor(options = {}) {
@@ -52,7 +52,7 @@ class MetricsPermissionsView extends View {
     }
 
     async onActionEdit() {
-        const resp = await Dialog.showModelForm({
+        const resp = await Modal.modelForm({
             title: `Edit Permissions for ${this.model.get('account')}`,
             model: this.model,
             formConfig: MetricsForms.edit
@@ -64,7 +64,7 @@ class MetricsPermissionsView extends View {
     }
 
     async onActionDelete() {
-        const confirmed = await Dialog.confirm(`Are you sure you want to delete all permissions for ${this.model.get('account')}?`);
+        const confirmed = await Modal.confirm(`Are you sure you want to delete all permissions for ${this.model.get('account')}?`);
         if (confirmed) {
             await this.model.destroy();
             this.emit('deleted', this.model);

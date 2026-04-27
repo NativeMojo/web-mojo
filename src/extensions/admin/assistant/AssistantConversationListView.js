@@ -1,5 +1,5 @@
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import dataFormatter from '@core/utils/DataFormatter.js';
 
 /**
@@ -221,7 +221,7 @@ class AssistantConversationListView extends View {
      */
     async onActionDeleteConversation(event, element) {
         const id = element.dataset.id;
-        const confirmed = await Dialog.confirm({
+        const confirmed = await Modal.confirm({
             title: 'Delete Conversation',
             message: 'Are you sure you want to delete this conversation? This cannot be undone.',
             confirmText: 'Delete',

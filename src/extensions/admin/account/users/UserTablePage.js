@@ -5,7 +5,7 @@
 
 import TablePage from '@core/pages/TablePage.js';
 import {UserList, UserForms} from '@core/models/User.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import MOJOUtils from '@core/utils/MOJOUtils.js';
 import UserView from './UserView.js';
 
@@ -168,7 +168,7 @@ class UserTablePage extends TablePage {
 
         event.preventDefault();
         const item = this.collection.get(element.dataset.id);
-        const result = await Dialog.showModelForm({
+        const result = await Modal.modelForm({
           model: item,
           size: 'lg',
           title: `Edit Permissions for "${item._.username}"`,
@@ -179,7 +179,7 @@ class UserTablePage extends TablePage {
     async onActionChangePassword(event, element) {
         // Implement password change logic here
         const item = this.collection.get(element.dataset.id);
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: `Change Password for "${item._.username}"`,
             fields: [
                 {

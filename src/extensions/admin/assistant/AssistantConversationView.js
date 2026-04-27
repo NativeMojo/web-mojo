@@ -10,7 +10,7 @@ import ChatView from '@core/views/chat/ChatView.js';
 import { AssistantConversation } from '@ext/admin/models/Assistant.js';
 import AssistantMessageView from './AssistantMessageView.js';
 import AssistantView from './AssistantView.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 class AssistantConversationView extends View {
     constructor(options = {}) {
@@ -140,7 +140,7 @@ class AssistantConversationView extends View {
     }
 
     async onActionDeleteConversation() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Delete this conversation? This cannot be undone.`,
             'Delete Conversation',
             { confirmText: 'Delete', confirmClass: 'btn-danger' }

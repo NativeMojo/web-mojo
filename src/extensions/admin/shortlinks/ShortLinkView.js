@@ -14,7 +14,6 @@ import SideNavView from '@core/views/navigation/SideNavView.js';
 import DataView from '@core/views/data/DataView.js';
 import TableView from '@core/views/table/TableView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
-import Dialog from '@core/views/feedback/Dialog.js';
 import Modal from '@core/views/feedback/Modal.js';
 import FormView from '@core/forms/FormView.js';
 import { MetricsChart } from '@ext/charts/index.js';
@@ -437,7 +436,7 @@ class ShortLinkView extends View {
     }
 
     async onActionDisableShortlink() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Disable this shortlink? Visitors will be redirected to the fallback URL.',
             'Disable Shortlink',
         );
@@ -475,7 +474,7 @@ class ShortLinkView extends View {
     }
 
     async onActionDeleteShortlink() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Delete shortlink "${this.model.get('code')}"? This cannot be undone.`,
             'Delete Shortlink',
             { confirmText: 'Delete', confirmClass: 'btn-danger' },

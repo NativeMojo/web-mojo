@@ -13,7 +13,7 @@ import TableView from '@core/views/table/TableView.js';
 import TableRow from '@core/views/table/TableRow.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import { UserDevice, UserDeviceLocationList } from '@core/models/User.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 // ── Location row for multiline table ──
 
@@ -291,7 +291,7 @@ class DeviceView extends View {
     }
 
     async onActionDeleteDevice() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Are you sure you want to delete this device record?',
             'Delete Device'
         );
@@ -307,14 +307,14 @@ class DeviceView extends View {
     static async show(duid) {
         const model = await UserDevice.getByDuid(duid);
         if (model) {
-            return Dialog.showDialog({
+            return Modal.dialog({
                 title: false,
                 size: 'lg',
                 body: new DeviceView({ model }),
                 buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }]
             });
         }
-        Dialog.alert({ message: `Could not find device with DUID: ${duid}`, type: 'warning' });
+        Modal.alert({ message: `Could not find device with DUID: ${duid}`, type: 'warning' });
         return null;
     }
 }

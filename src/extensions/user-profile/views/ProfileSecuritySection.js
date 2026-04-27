@@ -5,7 +5,7 @@
  * Sessions, Devices, Activity navigate to their own nav sections.
  */
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import rest from '@core/Rest.js';
 import PasskeySetupView from './PasskeySetupView.js';
 import { Passkey, PasskeyList, PasskeyForms } from '@core/models/Passkeys.js';
@@ -146,7 +146,7 @@ export default class ProfileSecuritySection extends View {
             const id = el.dataset.id;
             const passkey = items.find(p => String(p.id) === String(id));
             if (passkey) {
-                await Dialog.showModelForm({
+                await Modal.modelForm({
                     title: 'Edit Passkey',
                     model: passkey,
                     fields: PasskeyForms.edit.fields,
@@ -158,7 +158,7 @@ export default class ProfileSecuritySection extends View {
 
         view.onActionDeletePasskey = async (event, el) => {
             const id = el.dataset.id;
-            const confirmed = await Dialog.confirm('Delete this passkey? You won\'t be able to use it to sign in anymore.', 'Delete Passkey');
+            const confirmed = await Modal.confirm('Delete this passkey? You won\'t be able to use it to sign in anymore.', 'Delete Passkey');
             if (confirmed) {
                 const passkey = items.find(p => String(p.id) === String(id));
                 if (passkey) {
@@ -169,7 +169,7 @@ export default class ProfileSecuritySection extends View {
             return true;
         };
 
-        const result = await Dialog.showDialog({
+        const result = await Modal.dialog({
             title: 'Passkeys',
             body: view,
             size: 'md',
@@ -188,7 +188,7 @@ export default class ProfileSecuritySection extends View {
     async _addPasskey() {
         // Ask for name via rich dialog
         const suggested = Passkey.suggestName();
-        const friendlyName = await Dialog.showDialog({
+        const friendlyName = await Modal.dialog({
             title: '<i class="bi bi-fingerprint me-2"></i>Register a Passkey',
             size: 'sm',
             centered: true,
@@ -245,7 +245,7 @@ export default class ProfileSecuritySection extends View {
 
         if (isMfaEnabled) {
             // Already enabled — offer to disable
-            const confirmed = await Dialog.confirm(
+            const confirmed = await Modal.confirm(
                 'Disable authenticator app? You will no longer need a TOTP code to sign in.',
                 'Disable Authenticator'
             );
@@ -289,7 +289,7 @@ export default class ProfileSecuritySection extends View {
         setupView.qrCode = qr_code;
         setupView.secret = secret;
 
-        const result = await Dialog.showDialog({
+        const result = await Modal.dialog({
             title: 'Set Up Authenticator',
             body: setupView,
             size: 'sm',
@@ -302,7 +302,7 @@ export default class ProfileSecuritySection extends View {
         if (result !== 'next') return true;
 
         // Step 3: Prompt for the first TOTP code to confirm
-        const code = await Dialog.prompt(
+        const code = await Modal.prompt(
             'Enter the 6-digit code from your authenticator app to verify setup:',
             'Verify Authenticator',
             { placeholder: '000000' }
@@ -355,7 +355,7 @@ export default class ProfileSecuritySection extends View {
         view.remaining = remaining;
         view.codes = codes || [];
 
-        const result = await Dialog.showDialog({
+        const result = await Modal.dialog({
             title: 'Recovery Codes',
             body: view,
             size: 'sm',
@@ -367,7 +367,7 @@ export default class ProfileSecuritySection extends View {
 
         if (result === 'regenerate') {
             // Require current TOTP code to regenerate
-            const code = await Dialog.prompt(
+            const code = await Modal.prompt(
                 'Enter your current authenticator code to regenerate recovery codes:',
                 'Regenerate Recovery Codes',
                 { placeholder: '000000' }
@@ -402,7 +402,7 @@ export default class ProfileSecuritySection extends View {
                 });
                 newView.newCodes = newCodes;
 
-                await Dialog.showDialog({
+                await Modal.dialog({
                     title: 'New Recovery Codes',
                     body: newView,
                     size: 'sm',
@@ -429,13 +429,13 @@ export default class ProfileSecuritySection extends View {
     async onActionRevokeAllSessions() {
         const app = this.getApp();
 
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'This will sign you out of all other devices and sessions. Your current session will remain active. This cannot be undone.',
             'Revoke All Sessions'
         );
         if (!confirmed) return true;
 
-        const password = await Dialog.prompt(
+        const password = await Modal.prompt(
             'Enter your current password to confirm:',
             'Confirm Password',
             { placeholder: 'Current password' }

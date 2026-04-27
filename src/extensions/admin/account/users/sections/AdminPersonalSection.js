@@ -5,7 +5,7 @@
  * Uses model.save() against /api/user/<id> (admin endpoint).
  */
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 export default class AdminPersonalSection extends View {
     constructor(options = {}) {
@@ -131,7 +131,7 @@ export default class AdminPersonalSection extends View {
     // ── Verification overrides ────────────────────────
 
     async onActionForceVerifyDob() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Mark date of birth as verified?',
             'Force Verify DOB'
         );
@@ -141,7 +141,7 @@ export default class AdminPersonalSection extends View {
     }
 
     async onActionUnverifyDob() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Mark date of birth as unverified?',
             'Unverify DOB'
         );
@@ -153,7 +153,7 @@ export default class AdminPersonalSection extends View {
     // ── Action handlers ─────────────────────────────
 
     async onActionEditDisplayName() {
-        const name = await Dialog.prompt(
+        const name = await Modal.prompt(
             'Display name:',
             'Edit Display Name',
             { defaultValue: this.model.get('display_name') || '' }
@@ -165,7 +165,7 @@ export default class AdminPersonalSection extends View {
     }
 
     async onActionEditFirstName() {
-        const name = await Dialog.prompt(
+        const name = await Modal.prompt(
             'First name:',
             'Edit First Name',
             { defaultValue: this.model.get('first_name') || '' }
@@ -177,7 +177,7 @@ export default class AdminPersonalSection extends View {
     }
 
     async onActionEditLastName() {
-        const name = await Dialog.prompt(
+        const name = await Modal.prompt(
             'Last name:',
             'Edit Last Name',
             { defaultValue: this.model.get('last_name') || '' }
@@ -189,7 +189,7 @@ export default class AdminPersonalSection extends View {
     }
 
     async onActionEditDob() {
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: 'Date of Birth',
             size: 'sm',
             fields: [{ name: 'dob', type: 'date', label: 'Date of Birth', cols: 12 }],
@@ -202,7 +202,7 @@ export default class AdminPersonalSection extends View {
 
     async onActionEditTimezone() {
         const meta = this.model.get('metadata') || {};
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: 'Change Timezone',
             size: 'sm',
             fields: [{
@@ -235,7 +235,7 @@ export default class AdminPersonalSection extends View {
 
     async onActionEditAddress() {
         const meta = this.model.get('metadata') || {};
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: 'Edit Address',
             size: 'md',
             fields: [

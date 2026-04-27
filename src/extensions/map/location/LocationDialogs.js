@@ -8,7 +8,7 @@
  *      -> Opens a dialog with an address search box, suggestion list, and live preview map. Returns the chosen details or null.
  */
 
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import View from '@core/View.js';
 import LocationClient from './LocationClient.js';
 import LocationDetailsView from './LocationDetailsView.js';
@@ -55,7 +55,7 @@ export async function showLocationDetailsDialog({
     tileLayer
   });
 
-  return Dialog.showDialog({
+  return Modal.dialog({
     title,
     body: view,
     size: 'md',
@@ -327,7 +327,7 @@ export async function showLocationPickerDialog({
     tileLayer
   });
 
-  const result = await Dialog.showDialog({
+  const result = await Modal.dialog({
     title,
     body: view,
     size: 'md',

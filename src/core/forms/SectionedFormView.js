@@ -25,7 +25,7 @@
 import View from '@core/View.js';
 import TabView from '@core/views/navigation/TabView.js';
 import FormView from '@core/forms/FormView.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import ModalView from '@core/views/feedback/ModalView.js';
 
 class SectionedFormView extends View {
   constructor(options = {}) {
@@ -269,7 +269,7 @@ class SectionedFormView extends View {
           { text: submitText, class: 'btn-primary', action: 'submit' }
         ];
 
-    const dialog = new Dialog({
+    const dialog = new ModalView({
       title,
       body: this,
       size,

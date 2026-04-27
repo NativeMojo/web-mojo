@@ -5,7 +5,7 @@
  * Uses standard CRUD endpoints with user filter.
  */
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import rest from '@core/Rest.js';
 
 export default class AdminApiKeysSection extends View {
@@ -132,7 +132,7 @@ export default class AdminApiKeysSection extends View {
     }
 
     async onActionGenerateKey() {
-        const data = await Dialog.showForm({
+        const data = await Modal.form({
             title: `Generate API Key for ${this.model.get('display_name') || this.model.get('email')}`,
             icon: 'bi-key',
             fields: [
@@ -202,7 +202,7 @@ export default class AdminApiKeysSection extends View {
         const id = el.dataset.id;
         if (!id) return true;
 
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Revoke this API key? Any applications using it will lose access immediately.',
             'Revoke API Key'
         );

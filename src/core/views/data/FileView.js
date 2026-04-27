@@ -26,7 +26,6 @@ import SideNavView from '@core/views/navigation/SideNavView.js';
 import DataView from '@core/views/data/DataView.js';
 import TableView from '@core/views/table/TableView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
-import Dialog from '@core/views/feedback/Dialog.js';
 import Modal from '@core/views/feedback/Modal.js';
 import { File, FileForms } from '@core/models/Files.js';
 import { ShortLinkList } from '@core/models/ShortLink.js';
@@ -632,7 +631,7 @@ class FileSharesSection extends View {
         const target = this._sharesCollection?.get?.(id);
         if (!target) return;
 
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Revoke this share? Anyone with the short URL will get a 404 — the audit row is preserved.',
             'Revoke Share',
             { confirmText: 'Revoke', confirmClass: 'btn-danger' }
@@ -884,7 +883,7 @@ class FileView extends View {
     }
 
     async onActionEditFile() {
-        const resp = await Dialog.showModelForm({
+        const resp = await Modal.modelForm({
             title: `Edit File - ${this.model.get('filename')}`,
             model: this.model,
             formConfig: FileForms.edit
@@ -982,7 +981,7 @@ class FileView extends View {
                 ${data.shortlink_code ? `<dt class="col-4 text-muted">Code</dt><dd class="col-8"><code>${escapeHtml(data.shortlink_code)}</code></dd>` : ''}
             </dl>
         `;
-        await Dialog.alert(summary, 'Share link created', { type: 'success' });
+        await Modal.alert(summary, 'Share link created', { type: 'success' });
 
         // Step 4 — refresh the Shares section if it's mounted.
         try {
@@ -993,7 +992,7 @@ class FileView extends View {
     }
 
     async onActionRegenerateRenditions() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Rebuild all previews and thumbnails for this file? Existing renditions will be replaced. Generation runs in the background and may take several minutes for video.',
             'Regenerate Previews',
             { confirmText: 'Regenerate' }
@@ -1054,7 +1053,7 @@ class FileView extends View {
     }
 
     async onActionDeleteFile() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Are you sure you want to delete the file "${this.model.get('filename')}"? This action cannot be undone.`,
             'Confirm Deletion',
             { confirmClass: 'btn-danger', confirmText: 'Delete' }

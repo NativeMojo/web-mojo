@@ -4,7 +4,7 @@
  */
 
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 export default class ImageViewer extends View {
   constructor(options = {}) {
@@ -753,7 +753,7 @@ export default class ImageViewer extends View {
       autoFit: true
     });
 
-    return Dialog.showDialog({
+    return Modal.dialog({
         title,
         body: viewer,
         size,

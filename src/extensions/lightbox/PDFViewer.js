@@ -4,7 +4,7 @@
  */
 
 import View from '@core/View.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import ModalView from '@core/views/feedback/ModalView.js';
 
 export default class PDFViewer extends View {
   constructor(options = {}) {
@@ -733,7 +733,7 @@ if (this.pdfUrl) {
       showPageNumbers
     });
 
-    const dialog = new Dialog({
+    const dialog = new ModalView({
       title,
       body: viewer,
       size,

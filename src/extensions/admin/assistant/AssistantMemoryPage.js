@@ -7,7 +7,7 @@
 
 import Page from '@core/Page.js';
 import rest from '@core/Rest.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 const TIER_CONFIG = {
     global: { label: 'Global', icon: 'bi-globe', badge: 'bg-primary', description: 'Visible to all assistant users' },
@@ -196,7 +196,7 @@ class AssistantMemoryPage extends Page {
         const key = element.dataset.key || element.closest('[data-key]')?.dataset.key;
         if (!tier || !key) return;
 
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Delete memory "${key}" from ${TIER_CONFIG[tier]?.label || tier}?`,
             'Delete Memory',
             { confirmText: 'Delete', confirmClass: 'btn-danger' }

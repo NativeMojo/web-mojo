@@ -9,7 +9,7 @@ import View from '@core/View.js';
 import TabView from '@core/views/navigation/TabView.js';
 import DataView from '@core/views/data/DataView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
-import Dialog from '@core/views/feedback/Dialog.js';
+import Modal from '@core/views/feedback/Modal.js';
 import { IPSet, IPSetForms, IPSetKindBadgeOptions, IPSetSourceOptions } from '@ext/admin/models/IPSet.js';
 
 class IPSetView extends View {
@@ -231,7 +231,7 @@ class IPSetView extends View {
     }
 
     async onActionDisableIpset() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             'Disable this IP set? It will be removed from iptables on all fleet instances.',
             'Disable IP Set'
         );
@@ -247,7 +247,7 @@ class IPSetView extends View {
     }
 
     async onActionEditIpset() {
-        const resp = await Dialog.showModelForm({
+        const resp = await Modal.modelForm({
             title: `Edit IP Set — ${this.model.get('name')}`,
             model: this.model,
             formConfig: IPSetForms.edit,
@@ -259,7 +259,7 @@ class IPSetView extends View {
     }
 
     async onActionDeleteIpset() {
-        const confirmed = await Dialog.confirm(
+        const confirmed = await Modal.confirm(
             `Delete IP set "${this.model.get('name')}"? This will remove it from all fleet instances. This cannot be undone.`,
             'Delete IP Set',
             { confirmText: 'Delete', confirmClass: 'btn-danger' }
