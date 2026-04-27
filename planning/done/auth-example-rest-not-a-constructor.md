@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Type | bug |
-| Status | planned |
+| Status | resolved |
 | Date | 2026-04-27 |
 | Severity | high |
 
@@ -280,3 +280,92 @@ barrel API or breaking other examples.
   bug fix.
 - Cleaning up the unrelated `"Container not found for map"` console errors
   visible from another page in the dev session — different bug.
+
+## Resolution
+
+**Commit:** `9f4d527` — *examples/auth: use rest singleton + containerId, fix Rest is not a constructor*
+
+### What was implemented
+Plan executed exactly as specified — three surgical edits to
+`examples/auth/login.js` plus a one-sentence README clarification:
+
+1. `import { Page, FormView, Rest } from 'web-mojo'` →
+   `import { Page, FormView, Rest as rest } from 'web-mojo'`
+   (rename-on-import; `Rest` from the barrel is the singleton instance, not
+   the class).
+2. Removed `const rest = new Rest();`. Kept
+   `rest.configure({ baseURL: API_BASE });`.
+3. Added `containerId: 'app'` to the `super(...)` options in the
+   `LoginPage` constructor — the framework now mounts into `#app` via
+   `View.mount()`, removing the `"Container not found for null"` console
+   error.
+4. Removed the manual
+   `document.getElementById('app').appendChild(page.element)` at the
+   bottom; `await page.render()` now does the mount.
+5. `examples/auth/README.md` — Files section now notes the example uses the
+   shared `rest` singleton.
+
+### Files changed
+- `examples/auth/login.js` (4 lines net)
+- `examples/auth/README.md` (1 sentence)
+- `planning/issues/auth-example-rest-not-a-constructor.md` → moved to
+  `planning/done/`
+
+No `src/`, no public-API surfaces, no build/tooling files touched.
+
+### Validation
+- **Manual smoke (primary, per plan):** `http://localhost:3000/examples/auth/`
+  via the running dev server.
+  - Page renders the card, two inputs (`username`, `password`), and "Sign
+    in" button — verified via `preview_eval` on the rendered DOM and a
+    `preview_screenshot`.
+  - No new console errors on this page (the residual
+    `"Container not found for map"` lines are stale, from a prior
+    SecurityDashboard navigation in the same browser session — explicitly
+    out of scope per the plan; a fresh dynamic `import()` of the patched
+    module returned `{ ok: true, errors: [] }`).
+  - Empty-form submit: 2 inputs flagged invalid, `was-validated` class
+    applied, no network request, no alert. ✓
+  - Bad-cred submit (backend live): inline alert "Invalid username or
+    password" appeared, button re-enabled, `localStorage.access_token`
+    not set, no redirect. ✓
+- **Lint:** `npm run lint` — pre-existing errors only (16 errors / 55
+  warnings, all in `src/`). Baseline unchanged; ESLint scope is
+  `src/**/*.js` and the diff doesn't touch `src/`.
+
+### Agent findings
+
+- **security-review:** Diff is clean. No new concerns. The removal of
+  `new Rest()` strictly reduces attack surface (no second token-state
+  object). No template content, API handling, or auth flow changed.
+- **docs-updater:** No doc updates needed.
+  `docs/web-mojo/services/Rest.md` already documents the singleton pattern
+  the example now uses; `CHANGELOG.md` requires no entry (example-only
+  fix, the project's bar is behavioral/API changes).
+- **test-runner:** Pre-existing failures only — none caused by this
+  commit.
+  - Unit: 530/531 passed. The single failure is in
+    `test/unit/MetricsChart.test.js:105`
+    (`MetricsChart.buildApiParams` returning `undefined` where `["x","y"]`
+    expected). Production-code logic bug in MetricsChart, unrelated to
+    `examples/auth/`.
+  - Integration: 0/3. All three are pre-existing harness/environment
+    problems (`@core` alias not resolved in the integration runner;
+    missing `src/mojo.js` entry path) — they fail at module load before
+    any of our code runs.
+  - Build: 2/10. Pre-existing structural/artifact issues (missing
+    `dist/index.html`, `app.json`, oversized bundle, missing source
+    mappings). All independent of the `examples/` diff.
+  Two follow-up bugs worth filing separately: (a) MetricsChart unit-test
+  regression, (b) integration & build harnesses broken from environment
+  state. Neither blocks closing this issue.
+
+### Follow-ups (not part of this fix)
+- Add `web-mojo/Rest` alias in `vite.config.js` and a `./Rest` export in
+  `package.json` so the docs-recommended `import rest from 'web-mojo/Rest'`
+  path actually resolves in dev and prod.
+- Decide whether to expose the `Rest` *class* via the package barrel
+  (issue's "Design question" Option 1). Public-API change; deserves its
+  own design + CHANGELOG entry.
+- File issues for the MetricsChart unit failure and the integration/build
+  harness breakage surfaced by test-runner.
