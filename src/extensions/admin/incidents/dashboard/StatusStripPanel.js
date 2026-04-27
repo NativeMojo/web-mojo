@@ -42,6 +42,7 @@ class StatusStripPanel extends View {
             tiles: [
                 {
                     rest: { endpoint: '/api/incident/incident', params: { status: 'new', size: 0 } },
+                    sparklineSlug: 'incidents',  // borrow the trail from the incidents metric series
                     key: 'new-incidents',
                     label: 'New Incidents',
                     severity: 'critical',

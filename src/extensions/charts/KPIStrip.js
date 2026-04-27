@@ -108,7 +108,15 @@ class KPIStrip extends View {
 
         const metricSpecs = this.tiles.filter(t => t.slug);
         const restSpecs   = this.tiles.filter(t => t.rest);
-        const slugs       = metricSpecs.map(t => t.slug);
+
+        // Sparkline fetch slugs: metric-tile slugs PLUS any REST tile's
+        // sparklineSlug (so a "New Incidents" REST count tile can borrow
+        // the trail from the matching `incidents` metric series). Dedupe.
+        const sparkSlugs = Array.from(new Set([
+            ...metricSpecs.map(t => t.slug),
+            ...restSpecs.map(t => t.sparklineSlug).filter(Boolean)
+        ]));
+        const slugs = metricSpecs.map(t => t.slug);
 
         const promises = [];
 
@@ -134,12 +142,13 @@ class KPIStrip extends View {
             promises.push(seriesPromise);
         }
 
-        // 2) Batched fetch for sparkline data
+        // 2) Batched fetch for sparkline data — covers both metric tiles
+        //    and any REST tiles with a sparklineSlug.
         let sparkPromise = null;
-        if (this.includeSparkline && slugs.length) {
+        if (this.includeSparkline && sparkSlugs.length) {
             const drStart = new Date(Date.now() - this.sparklineDays * 86400000);
             const sparkParams = {
-                slug: slugs.join(','),
+                slug: sparkSlugs.join(','),
                 account: this.account,
                 granularity: this.sparklineGranularity,
                 with_labels: true,
@@ -211,7 +220,18 @@ class KPIStrip extends View {
             if (!tile) continue;
             const resp = await restPromises[restIdx++];
             const count = this._readRestCount(resp);
-            tile.setData({ value: count, delta: null, deltaPct: null });
+
+            // If the tile borrowed a sparkline slug, pick up its trail
+            // from the same batched fetch the metric tiles used.
+            const setPayload = { value: count, delta: null, deltaPct: null };
+            if (spec.sparklineSlug) {
+                const slugSeries = sparkInner?.data?.[spec.sparklineSlug];
+                const fallback   = sparkInner?.data?.default;
+                setPayload.sparkline = Array.isArray(slugSeries)
+                    ? slugSeries
+                    : (Array.isArray(fallback) ? fallback : []);
+            }
+            tile.setData(setPayload);
         }
 
         this.emit?.('strip:refreshed');
