@@ -24,8 +24,10 @@ the form renders fine but every login attempt errors out.
 ## Files
 
 - `index.html` — Bootstrap-5.3 + Bootstrap Icons shell, mounts `#app`.
-- `login.js` — `LoginPage` class (extends `Page`); FormView + Rest; one
-  `data-action="login"` button on a non-form button (NOT on `<form>`).
+- `login.js` — `LoginPage` class (extends `Page`); uses `FormView` and the
+  shared `rest` singleton from `web-mojo` (configured once at module load
+  with the example's `baseURL`); one `data-action="login"` on a non-form
+  button (NOT on `<form>`).
 
 ## Endpoint
 

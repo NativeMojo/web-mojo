@@ -1,4 +1,4 @@
-import { Page, FormView, Rest } from 'web-mojo';
+import { Page, FormView, Rest as rest } from 'web-mojo';
 
 /**
  * Standalone login example for the web-mojo examples portal.
@@ -24,7 +24,6 @@ const PROD_API = '/api';
 const API_BASE = window.location.hostname === 'localhost' ? DEV_API : PROD_API;
 const REDIRECT_AFTER_LOGIN = '/examples/portal/';
 
-const rest = new Rest();
 rest.configure({ baseURL: API_BASE });
 
 class LoginPage extends Page {
@@ -38,6 +37,7 @@ class LoginPage extends Page {
             route: LoginPage.route,
             title: 'Sign in',
             template: LoginPage.TEMPLATE,
+            containerId: 'app',
         });
         this.error = null;
         this.busy = false;
@@ -128,4 +128,3 @@ class LoginPage extends Page {
 
 const page = new LoginPage();
 await page.render();
-document.getElementById('app').appendChild(page.element);
