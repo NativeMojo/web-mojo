@@ -149,11 +149,14 @@ class DistributionStrip extends View {
         this.priorityRows = this._aggregateByPriority(incidents);
         this.priorityEmpty = this.priorityRows.length === 0 || this.priorityRows.every(r => r.value === 0);
 
-        // Bouncer funnel from /api/metrics/series. Backend expects
-        // `slug=a,b,c` (comma-separated); slugs[] collapses to 'default'.
+        // Bouncer funnel from /api/metrics/series. Backend's series
+        // endpoint uses `slugs=a,b,c` (plural) — the singular `slug=`
+        // form returns a 400 "missing required parameters: slugs".
+        // (See KPIStrip for the same param-name asymmetry between
+        // /api/metrics/series and /api/metrics/fetch.)
         try {
             const resp = await rest.GET('/api/metrics/series', {
-                slug: 'bouncer:assessments,bouncer:monitors,bouncer:blocks',
+                slugs: 'bouncer:assessments,bouncer:monitors,bouncer:blocks',
                 account: 'incident',
                 granularity: 'days',
                 _: Date.now()
