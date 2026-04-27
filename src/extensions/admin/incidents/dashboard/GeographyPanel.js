@@ -83,7 +83,11 @@ class GeographyPanel extends View {
             maxCountries: 20,
             metricLabel: this._currentLabel(),
             height: 360,
-            mapStyle: 'dark'
+            mapStyle: 'dark',
+            // Disable mouse/touch/scroll/keyboard so the map reads as a
+            // visualization, not a navigable embed. Trackpad scroll over
+            // the dashboard scrolls the page, not the map.
+            mapOptions: { interactive: false }
         });
         this.addChild(this.map);
         await this._fetchLeaderboard();
