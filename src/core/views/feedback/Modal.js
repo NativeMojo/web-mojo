@@ -598,7 +598,14 @@ class Modal {
         return Modal._renderAndAwait(modal, {
             buttons,
             onAction: async (action) => {
-                if (action === 'cancel') return null;
+                if (action === 'cancel') {
+                    // _renderAndAwait treats `null` as "keep dialog open", so we
+                    // can't just return null to mean "resolve null". Explicitly
+                    // hide() — the `hidden` event handler in _renderAndAwait then
+                    // resolves the promise with null via the dismissal path.
+                    modal.hide();
+                    return null;
+                }
                 if (action !== 'submit') return null;
 
                 if (!formView.validate()) {
@@ -689,7 +696,14 @@ class Modal {
         return Modal._renderAndAwait(modal, {
             buttons,
             onAction: async (action) => {
-                if (action === 'cancel') return null;
+                if (action === 'cancel') {
+                    // _renderAndAwait treats `null` as "keep dialog open", so we
+                    // can't just return null to mean "resolve null". Explicitly
+                    // hide() — the `hidden` event handler in _renderAndAwait then
+                    // resolves the promise with null via the dismissal path.
+                    modal.hide();
+                    return null;
+                }
                 if (action !== 'submit') return null;
 
                 modal.setLoading(true, 'Saving...');
