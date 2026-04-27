@@ -65,23 +65,22 @@ class DistributionStrip extends View {
                         <div class="card-header bg-transparent border-0">
                             <h3 class="card-title sd-card-title mb-0">Priority Buckets</h3>
                         </div>
-                        <div class="card-body sd-bucket-host">
-                            {{#priorityRows}}
-                            <div class="sd-bucket-row mb-2" data-action="open-priority" data-bucket="{{key}}">
-                                <div class="d-flex justify-content-between small mb-1">
-                                    <span class="fw-semibold">{{label}} <span class="text-muted">{{range}}</span></span>
-                                    <span class="sd-mono">{{value}}</span>
-                                </div>
-                                <div class="progress sd-progress" style="height:8px;">
-                                    <div class="progress-bar"
-                                         role="progressbar"
-                                         style="width:{{percent}}%; background:{{color}};"
-                                         aria-valuenow="{{percent}}" aria-valuemin="0" aria-valuemax="100"></div>
-                                </div>
-                            </div>
-                            {{/priorityRows}}
+                        <div class="card-body">
                             {{#priorityEmpty|bool}}
                             <div class="text-muted small">No incidents in window.</div>
+                            {{/priorityEmpty|bool}}
+                            {{^priorityEmpty|bool}}
+                            <ul class="list-unstyled mb-0 sd-bucket-list">
+                                {{#priorityRows}}
+                                <li class="sd-bucket-row" data-action="open-priority" data-bucket="{{key}}">
+                                    <span class="sd-bucket-label" style="color:{{color}};">
+                                        {{label}}<span class="sd-bucket-range">{{range}}</span>
+                                    </span>
+                                    <span class="sd-bucket-bar"><span style="width:{{percent}}%; background:{{color}};"></span></span>
+                                    <span class="sd-bucket-num sd-mono">{{value}}</span>
+                                </li>
+                                {{/priorityRows}}
+                            </ul>
                             {{/priorityEmpty|bool}}
                         </div>
                     </div>
@@ -90,18 +89,19 @@ class DistributionStrip extends View {
                     <div class="card sd-card h-100">
                         <div class="card-header bg-transparent border-0">
                             <h3 class="card-title sd-card-title mb-0">Bouncer Funnel</h3>
+                            <span class="card-subtitle text-muted small">Last 7 days</span>
                         </div>
                         <div class="card-body">
-                            {{#funnelRows}}
-                            <div class="d-flex justify-content-between align-items-center mb-2 sd-funnel-row">
-                                <div class="sd-funnel-bar" style="width:100%; background:rgba(255,255,255,0.04); border-radius:6px; overflow:hidden; min-height:30px; position:relative;">
-                                    <div style="width:{{percent}}%; min-width:fit-content; background:{{color}}; padding:6px 10px; color:#fff; font-weight:600; font-size:11px; border-radius:6px; white-space:nowrap;">
-                                        {{label}}
+                            <div class="sd-funnel">
+                                {{#funnelRows}}
+                                <div class="sd-funnel-row">
+                                    <div class="sd-funnel-bar">
+                                        <span class="sd-funnel-fill" style="width:{{percent}}%; background:{{color}};">{{label}}</span>
                                     </div>
+                                    <span class="sd-funnel-num sd-mono">{{value}}</span>
                                 </div>
-                                <span class="sd-mono small ms-2">{{value}}</span>
+                                {{/funnelRows}}
                             </div>
-                            {{/funnelRows}}
                             {{#funnelEmpty|bool}}
                             <div class="text-muted small">No bouncer activity in window.</div>
                             {{/funnelEmpty|bool}}
@@ -147,22 +147,34 @@ class DistributionStrip extends View {
 
         this._statusData = this._aggregateByStatus(incidents);
         this.priorityRows = this._aggregateByPriority(incidents);
-        this.priorityEmpty = this.priorityRows.length === 0 || this.priorityRows.every(r => r.value === 0);
+        // Buckets always render (showing 0 against each tier is useful at-
+        // a-glance — confirms there are no Critical/High right now). Only
+        // hide the rows when the API didn't return ANY incidents to bucket.
+        this.priorityEmpty = incidents.length === 0;
 
-        // Bouncer funnel from /api/metrics/series. Backend's series
-        // endpoint uses `slugs=a,b,c` (plural) — the singular `slug=`
-        // form returns a 400 "missing required parameters: slugs".
-        // (See KPIStrip for the same param-name asymmetry between
-        // /api/metrics/series and /api/metrics/fetch.)
+        // Bouncer funnel — sum the last 7 days of each stage so the
+        // funnel reflects cumulative activity, not just today's bucket.
+        // /api/metrics/series returns the current bucket only, which
+        // shows zeros if there's been no bouncer traffic today even
+        // when the week has plenty.
         try {
-            const resp = await rest.GET('/api/metrics/series', {
-                slugs: 'bouncer:assessments,bouncer:monitors,bouncer:blocks',
+            const drStart = Math.floor((Date.now() - 7 * 86400000) / 1000);
+            const resp = await rest.GET('/api/metrics/fetch', {
+                slug: 'bouncer:assessments,bouncer:monitors,bouncer:blocks',
                 account: 'incident',
                 granularity: 'days',
+                with_labels: true,
+                dr_start: drStart,
                 _: Date.now()
             });
-            const data = resp?.data?.data || {};
-            this.funnelRows = this._buildFunnel(data);
+            // /api/metrics/fetch nests one level deeper than /series:
+            //   resp.data = { status, data: { labels:[], data: { slug: [...values] } } }
+            const seriesData = resp?.data?.data?.data || {};
+            const sums = {};
+            for (const [slug, values] of Object.entries(seriesData)) {
+                sums[slug] = (Array.isArray(values) ? values : []).reduce((s, v) => s + (Number(v) || 0), 0);
+            }
+            this.funnelRows = this._buildFunnel(sums);
         } catch (err) {
             console.warn('[DistributionStrip] bouncer fetch failed:', err);
             this.funnelRows = [];
@@ -211,9 +223,9 @@ class DistributionStrip extends View {
 
     _buildFunnel(seriesData) {
         const stages = [
-            { key: 'bouncer:assessments', label: 'Assessments', color: 'rgba(13, 202, 240, 0.85)' },
-            { key: 'bouncer:monitors',    label: 'Monitors',    color: 'rgba(255, 193, 7, 0.85)' },
-            { key: 'bouncer:blocks',      label: 'Blocks',      color: 'rgba(220, 53, 69, 0.85)' }
+            { key: 'bouncer:assessments', label: 'Assessments', color: 'rgba(76, 201, 240, 0.95)' },
+            { key: 'bouncer:monitors',    label: 'Monitors',    color: 'rgba(245, 165, 36, 0.95)' },
+            { key: 'bouncer:blocks',      label: 'Blocks',      color: 'rgba(255, 90, 90, 0.95)' }
         ];
         const values = stages.map(s => ({ ...s, value: Number(seriesData[s.key] ?? 0) }));
         // If all zero, return empty so the empty-state message renders cleanly
@@ -222,7 +234,8 @@ class DistributionStrip extends View {
         const max = Math.max(1, ...values.map(s => s.value));
         return values.map(s => ({
             ...s,
-            percent: Math.round((s.value / max) * 100)
+            value: s.value.toLocaleString(),  // thousand separators
+            percent: Math.max(12, Math.round((s.value / max) * 100))  // floor 12% so labels don't squish
         }));
     }
 

@@ -2482,12 +2482,93 @@
 }
 .security-dashboard .sd-pri-row:hover .sd-pri-actions { opacity: 1; }
 
-/* Distributions — bucket bars */
+/* Distributions — Priority Buckets (matches mockup contract).
+   3-col grid: [70px label/range stack | bar | num] */
+.security-dashboard .sd-bucket-list {
+    display: grid;
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+}
 .security-dashboard .sd-bucket-row {
+    display: grid;
+    grid-template-columns: 70px 1fr auto;
+    gap: 12px;
+    align-items: center;
     cursor: pointer;
 }
-.security-dashboard .sd-progress {
-    background: var(--bs-tertiary-bg, rgba(0, 0, 0, 0.05));
+.security-dashboard .sd-bucket-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.25;
+}
+.security-dashboard .sd-bucket-range {
+    display: block;
+    font-weight: 400;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    opacity: 0.6;
+    margin-top: 2px;
+}
+.security-dashboard .sd-bucket-bar {
+    position: relative;
+    display: block;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.security-dashboard .sd-bucket-bar > span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    transition: width 200ms ease;
+}
+.security-dashboard .sd-bucket-num {
+    font-size: 13px;
+    color: var(--mojo-kpi-tile-fg, var(--bs-body-color));
+}
+
+/* Distributions — Bouncer Funnel (matches mockup contract).
+   Each row: 36px-tall track with a coloured fill that contains the
+   stage label, plus the count to the right. */
+.security-dashboard .sd-funnel {
+    display: grid;
+    gap: 10px;
+}
+.security-dashboard .sd-funnel-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: center;
+}
+.security-dashboard .sd-funnel-bar {
+    position: relative;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.security-dashboard .sd-funnel-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    border-radius: 6px;
+    color: #061018;
+    font-weight: 600;
+    font-size: 12px;
+    white-space: nowrap;
+    transition: width 200ms ease;
+}
+.security-dashboard .sd-funnel-num {
+    font-size: 13px;
+    color: var(--mojo-kpi-tile-fg, var(--bs-body-color));
 }
 
 /* Top sources — rank rows */
