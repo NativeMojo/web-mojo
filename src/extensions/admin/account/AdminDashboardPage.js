@@ -318,7 +318,7 @@ export default class AdminDashboardPage extends Page {
       granularity: 'hours',
       slugs: ['api_calls', 'api_errors'],
       account: 'global',
-      chartType: 'line',
+      chartType: 'bar',
       showDateRange: false,
       yAxis: {
         label: 'Count',
