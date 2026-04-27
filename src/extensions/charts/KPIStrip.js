@@ -163,8 +163,12 @@ class KPIStrip extends View {
         // ── distribute results ───────────────────────────────────────
         const seriesResp = seriesPromise ? await seriesPromise : null;
         const sparkResp  = sparkPromise  ? await sparkPromise  : null;
-        const seriesData = this._unwrap(seriesResp);
-        const sparkData  = this._unwrap(sparkResp);
+        // /api/metrics/series → response.data = { status, data: {slug: N},
+        //                       prev_data, deltas: {slug: {delta, delta_pct?}}, ... }
+        // /api/metrics/fetch  → response.data = { status, data: { labels: [...],
+        //                       data: { slug: [...values], ... } } }
+        const seriesData = this._unwrap(seriesResp);     // -> response.data
+        const sparkInner = this._unwrap(sparkResp)?.data; // -> { labels, data: {slug:[]}}
 
         // metric tiles
         for (const spec of metricSpecs) {
@@ -177,13 +181,20 @@ class KPIStrip extends View {
             const delta = deltaInfo.delta ?? null;
             // delta_pct is intentionally omitted by backend when prev=0
             const deltaPct = deltaInfo.delta_pct ?? null;
-            const sparkSeries = sparkData?.data?.[spec.slug] ?? [];
+
+            // Sparkline values: prefer slug key; fall back to 'default' which
+            // the backend uses when a single-slug fetch is collapsed.
+            const slugSeries = sparkInner?.data?.[spec.slug];
+            const fallbackSeries = sparkInner?.data?.default;
+            const sparkSeries = Array.isArray(slugSeries)
+                ? slugSeries
+                : (Array.isArray(fallbackSeries) ? fallbackSeries : []);
 
             tile.setData({
                 value,
                 delta,
                 deltaPct,
-                sparkline: Array.isArray(sparkSeries) ? sparkSeries : []
+                sparkline: sparkSeries
             });
         }
 

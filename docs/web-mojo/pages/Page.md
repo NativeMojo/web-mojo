@@ -245,6 +245,8 @@ async onExit() {
 }
 ```
 
+> Timers registered with `scheduleRefresh()` are cleared automatically in `onExit()` — you do not need to cancel them yourself.
+
 ### `onParams(params, query)`
 
 Called every time the page is shown (including the first time), with the current route parameters and query string. Override to react to URL changes within the same page.
@@ -666,6 +668,13 @@ If a page displays group-scoped data but has no `onGroupChange`, the user will s
 | `canEnter()` | Return `false` to block access — triggers the `'denied'` page |
 | `async onGroupChange(group)` | Called by `PortalApp` when the active group changes — implement on any page with group-scoped data |
 
+### Refresh Methods
+
+| Method | Returns | Description |
+|---|---|---|
+| `scheduleRefresh(handler, intervalMs, opts?)` | `{ cancel() }` | Register a recurring handler that auto-clears on `onExit()` |
+| `runScheduledRefreshes(tier?)` | `Promise<void>` | Fire all (or one tier of) scheduled handlers immediately |
+
 ### Navigation Methods
 
 | Method | Returns | Description |
@@ -809,29 +818,17 @@ class BillingPage extends Page {
 
 ### Page with Polling
 
+Prefer `scheduleRefresh` over raw `setInterval` — it clears automatically on exit and supports named tiers for manual refresh buttons.
+
 ```js
 class MonitoringPage extends Page {
   static pageName = 'monitoring';
 
   async onEnter() {
     await super.onEnter();
-    await this.refresh();
 
-    // Poll every 30 seconds while the page is active
-    this.pollTimer = setInterval(() => {
-      if (this.isActive) this.refresh();
-    }, 30000);
-
-    // Also refresh when the user returns to the tab
-    this.getApp().events.on('browser:focus', this._onFocus = async () => {
-      if (this.isActive) await this.refresh();
-    });
-  }
-
-  async onExit() {
-    clearInterval(this.pollTimer);
-    this.getApp().events.off('browser:focus', this._onFocus);
-    await super.onExit();
+    // Runs immediately, then every 30s; auto-cleared on onExit()
+    this.scheduleRefresh(this.refresh.bind(this), 30_000, { immediate: true });
   }
 
   async refresh() {
@@ -839,8 +836,74 @@ class MonitoringPage extends Page {
     this.status = resp.data?.data;
     await this.render();
   }
+
+  async onActionRefresh() {
+    // Manual button fires all handlers right now
+    await this.runScheduledRefreshes();
+  }
 }
 ```
+
+If you need a raw `setInterval` for a reason not covered by `scheduleRefresh`, clear it in `onExit()`:
+
+```js
+async onExit() {
+  clearInterval(this.pollTimer);
+  this.getApp().events.off('browser:focus', this._onFocus);
+  await super.onExit();
+}
+```
+
+### Dashboard Page with scheduleRefresh
+
+`scheduleRefresh` replaces hand-rolled `setInterval` / `clearInterval` pairs. Intervals are automatically cleared when the page exits. An optional `tier` label lets you fire only a subset of handlers on demand (e.g. a manual "Refresh" button that hits only the slow-polling tier).
+
+```js
+class SecurityDashboardPage extends Page {
+  static pageName = 'security-dashboard';
+
+  async onInit() {
+    await super.onInit();
+    this.pulse  = new KPIStrip({ containerId: 'pulse', /* ... */ });
+    this.mapPanel = new GeographyPanel({ containerId: 'map', /* ... */ });
+    this.addChild(this.pulse);
+    this.addChild(this.mapPanel, { lazyMount: true }); // defer until scrolled into view
+  }
+
+  async onEnter() {
+    await super.onEnter();
+
+    // Fast tier: refresh every 60 seconds
+    this.scheduleRefresh(() => this.pulse.refresh(),    60_000, { tier: 'fast' });
+
+    // Slow tier: refresh every 5 minutes
+    this.scheduleRefresh(() => this.mapPanel.refresh(), 300_000, { tier: 'slow' });
+  }
+
+  async onActionRefresh() {
+    // Manual refresh button fires all tiers immediately
+    await this.runScheduledRefreshes();
+  }
+}
+```
+
+`scheduleRefresh` options:
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `tier` | `string` | `null` | Label used to filter which handlers `runScheduledRefreshes(tier)` fires |
+| `immediate` | `boolean` | `false` | Fire the handler once now before the first interval tick |
+
+The returned handle has a `cancel()` method if you need to stop a specific timer before the page exits:
+
+```js
+const handle = this.scheduleRefresh(this.pollStatus.bind(this), 30_000);
+
+// Stop early (e.g. on a user action)
+handle.cancel();
+```
+
+---
 
 ### Page Defined from Plain Object
 

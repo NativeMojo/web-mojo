@@ -41,9 +41,12 @@ class DistributionStrip extends View {
             ...options,
             className: `sd-distributions ${options.className || ''}`.trim()
         });
+        // State on `this` for Mustache resolution.
         this._statusData = [];
-        this._priorityData = [];
-        this._funnelData = [];
+        this.priorityRows = [];
+        this.priorityEmpty = true;
+        this.funnelRows = [];
+        this.funnelEmpty = true;
     }
 
     async getTemplate() {
@@ -91,8 +94,8 @@ class DistributionStrip extends View {
                         <div class="card-body">
                             {{#funnelRows}}
                             <div class="d-flex justify-content-between align-items-center mb-2 sd-funnel-row">
-                                <div class="sd-funnel-bar" style="width:100%; background:rgba(255,255,255,0.04); border-radius:6px; overflow:hidden;">
-                                    <div style="width:{{percent}}%; background:{{color}}; padding:6px 10px; color:#fff; font-weight:600; font-size:11px; border-radius:6px;">
+                                <div class="sd-funnel-bar" style="width:100%; background:rgba(255,255,255,0.04); border-radius:6px; overflow:hidden; min-height:30px; position:relative;">
+                                    <div style="width:{{percent}}%; min-width:fit-content; background:{{color}}; padding:6px 10px; color:#fff; font-weight:600; font-size:11px; border-radius:6px; white-space:nowrap;">
                                         {{label}}
                                     </div>
                                 </div>
@@ -109,16 +112,6 @@ class DistributionStrip extends View {
         `;
     }
 
-    async getViewData() {
-        return {
-            ...this.data,
-            priorityRows: this._priorityData,
-            priorityEmpty: this._priorityData.length === 0,
-            funnelRows: this._funnelData,
-            funnelEmpty: this._funnelData.length === 0
-        };
-    }
-
     async onInit() {
         this.statusDonut = new PieChart({
             containerId: 'status-donut',
@@ -132,17 +125,13 @@ class DistributionStrip extends View {
         });
         this.statusDonut.on?.('chart:click', ({ slice }) => this._openStatusDrawer(slice));
         this.addChild(this.statusDonut);
+
+        // Fetch BEFORE first render so {{priorityRows}} / {{funnelRows}}
+        // resolve from this on the first template pass.
+        await this._fetch();
     }
 
-    async onAfterRender() {
-        // First-paint fetch; subsequent refreshes call refresh() directly.
-        if (!this._fetched) {
-            this._fetched = true;
-            await this.refresh();
-        }
-    }
-
-    async refresh() {
+    async _fetch() {
         const rest = this.getApp()?.rest;
         if (!rest) return;
 
@@ -157,7 +146,8 @@ class DistributionStrip extends View {
         }
 
         this._statusData = this._aggregateByStatus(incidents);
-        this._priorityData = this._aggregateByPriority(incidents);
+        this.priorityRows = this._aggregateByPriority(incidents);
+        this.priorityEmpty = this.priorityRows.length === 0 || this.priorityRows.every(r => r.value === 0);
 
         // Bouncer funnel from /api/metrics/series
         try {
@@ -168,14 +158,20 @@ class DistributionStrip extends View {
                 _: Date.now()
             });
             const data = resp?.data?.data || {};
-            this._funnelData = this._buildFunnel(data);
+            this.funnelRows = this._buildFunnel(data);
         } catch (err) {
             console.warn('[DistributionStrip] bouncer fetch failed:', err);
-            this._funnelData = [];
+            this.funnelRows = [];
         }
+        this.funnelEmpty = this.funnelRows.length === 0 || this.funnelRows.every(r => r.value === 0);
 
+        // Donut updates directly via setData (no need to wait for render).
         this.statusDonut?.setData(this._statusData);
-        await this.render();
+    }
+
+    async refresh() {
+        await this._fetch();
+        if (this.isMounted()) await this.render();
     }
 
     _aggregateByStatus(incidents) {
@@ -216,16 +212,20 @@ class DistributionStrip extends View {
             { key: 'bouncer:blocks',      label: 'Blocks',      color: 'rgba(220, 53, 69, 0.85)' }
         ];
         const values = stages.map(s => ({ ...s, value: Number(seriesData[s.key] ?? 0) }));
+        // If all zero, return empty so the empty-state message renders cleanly
+        // (instead of three 0-width bars with vertically-wrapped labels).
+        if (values.every(v => v.value === 0)) return [];
         const max = Math.max(1, ...values.map(s => s.value));
         return values.map(s => ({
             ...s,
             percent: Math.round((s.value / max) * 100)
-        })).filter(s => s.value > 0 || values.every(v => v.value === 0));
+        }));
     }
 
     _openStatusDrawer(slice) {
         if (!slice) return;
         const status = String(slice.label).toLowerCase();
+        const safeLabel = this._esc(slice.label);
         Modal.drawer({
             eyebrow: 'Status Filter',
             title: `Incidents · ${slice.label}`,
@@ -235,11 +235,17 @@ class DistributionStrip extends View {
             body: `
                 <p class="small text-muted">View the full incident list filtered by this status.</p>
                 <a href="?page=system/incidents&status=${encodeURIComponent(status)}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-list-ul me-1"></i>Open Incidents (${slice.label})
+                    <i class="bi bi-list-ul me-1"></i>Open Incidents (${safeLabel})
                 </a>
             `,
             size: 'md'
         });
+    }
+
+    _esc(s) {
+        const d = document.createElement('div');
+        d.textContent = String(s ?? '');
+        return d.innerHTML;
     }
 
     async onActionOpenPriority(event, element) {

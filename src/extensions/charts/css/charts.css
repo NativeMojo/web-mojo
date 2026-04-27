@@ -1995,10 +1995,19 @@
     width: 100%;
 }
 
+/* Default to 4 tiles per row at desktop, dropping to 2 on tablet and 1
+   on mobile. The grid is responsive but never tries to fit 8 tiles in
+   a single row — that visual is too dense to read at a glance. */
 .mojo-kpi-strip-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px;
+}
+@media (max-width: 1100px) {
+    .mojo-kpi-strip-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+    .mojo-kpi-strip-grid { grid-template-columns: 1fr; }
 }
 
 .mojo-kpi-strip-cell {
@@ -2010,7 +2019,10 @@
     /* button reset */
     appearance: none;
     border: 1px solid var(--bs-border-color, #dee2e6);
-    background: var(--bs-body-bg, #ffffff);
+    /* Tertiary bg gives the tile a tinted surface that's visible
+       against the page body bg (especially under data-bs-theme="dark"
+       where body and surface would otherwise both be near-black). */
+    background: var(--bs-tertiary-bg, #f8f9fa);
     color: inherit;
     font: inherit;
     cursor: pointer;
@@ -2229,6 +2241,65 @@
 
 .security-dashboard .sd-card {
     border-radius: 8px;
+    /* Use tertiary bg so cards stand off the page body bg under both
+       light and dark themes. Without this, dark-theme cards melt into
+       the page bg. */
+    background: var(--bs-tertiary-bg, #ffffff);
+    border: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08));
+}
+
+/* Geography map + leaderboard side-by-side layout. */
+.security-dashboard .sd-geo-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 2fr);
+    gap: 0;
+    align-items: stretch;
+}
+@media (max-width: 1100px) {
+    .security-dashboard .sd-geo-grid { grid-template-columns: 1fr; }
+}
+.security-dashboard .sd-geo-map-cell {
+    padding: 0;
+}
+.security-dashboard .sd-geo-leader {
+    border-left: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08));
+    overflow-y: auto;
+    max-height: 360px;
+}
+@media (max-width: 1100px) {
+    .security-dashboard .sd-geo-leader {
+        border-left: 0;
+        border-top: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08));
+    }
+}
+.security-dashboard .sd-geo-leader-row {
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.06));
+    cursor: pointer;
+    transition: background-color 100ms ease;
+    font-size: 12.5px;
+}
+.security-dashboard .sd-geo-leader-row:last-child { border-bottom: 0; }
+.security-dashboard .sd-geo-leader-row:hover {
+    background: var(--bs-secondary-bg, rgba(0, 0, 0, 0.03));
+}
+.security-dashboard .sd-geo-cc {
+    font-weight: 600;
+    color: var(--bs-secondary-color, #6c757d);
+    letter-spacing: 0.04em;
+}
+.security-dashboard .sd-geo-name {
+    color: var(--bs-body-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.security-dashboard .sd-geo-num {
+    color: var(--bs-secondary-color, #6c757d);
 }
 
 .security-dashboard .sd-card-title {

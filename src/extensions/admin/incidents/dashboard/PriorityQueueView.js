@@ -38,6 +38,14 @@ class PriorityQueueView extends View {
                 size: this.size
             }
         });
+        // State read by the Mustache template — must be on `this` (not on
+        // `this.data`) for Mustache to resolve {{items}} / {{isEmpty}} / etc.
+        this.items = [];
+        this.isLoading = true;
+        this.hasError = false;
+        this.error = '';
+        this.isEmpty = false;
+        this.showActions = this.allowActions;
     }
 
     async getTemplate() {
@@ -76,34 +84,26 @@ class PriorityQueueView extends View {
         `;
     }
 
-    async getViewData() {
-        const data = await this._fetchSafely();
-        return data;
+    async onInit() {
+        await this._fetchSafely();
     }
 
     async _fetchSafely() {
         try {
             await this.collection.fetch();
             const models = this.collection.models || [];
-            const items = models.map(m => this._rowFor(m));
-            return {
-                items,
-                isLoading: false,
-                hasError: false,
-                error: '',
-                isEmpty: items.length === 0,
-                showActions: this.allowActions
-            };
+            this.items = models.map(m => this._rowFor(m));
+            this.isLoading = false;
+            this.hasError = false;
+            this.error = '';
+            this.isEmpty = this.items.length === 0;
         } catch (err) {
             console.warn('[PriorityQueueView] fetch failed:', err);
-            return {
-                items: [],
-                isLoading: false,
-                hasError: true,
-                error: 'Could not load incidents.',
-                isEmpty: false,
-                showActions: this.allowActions
-            };
+            this.items = [];
+            this.isLoading = false;
+            this.hasError = true;
+            this.error = 'Could not load incidents.';
+            this.isEmpty = false;
         }
     }
 
@@ -136,7 +136,8 @@ class PriorityQueueView extends View {
     }
 
     async refresh() {
-        return this.render();
+        await this._fetchSafely();
+        if (this.isMounted()) await this.render();
     }
 
     // ── action handlers ────────────────────────────────────────────────

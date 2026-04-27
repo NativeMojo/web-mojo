@@ -314,6 +314,24 @@ export class View {
         container.style.minHeight = '1px';
       }
       this._lazyObserver.observe(container);
+
+      // Belt-and-suspenders: IntersectionObserver's initial callback can
+      // be flaky inside scrolled sub-containers (the dashboard renders
+      // inside a separately-scrolled .portal-content panel). On the next
+      // tick, manually check whether the container is in the viewport and
+      // trigger if so. The normal observer still handles future scrolls.
+      requestAnimationFrame(() => {
+        if (child._lazyTriggered) return;
+        const rect = container.getBoundingClientRect();
+        const vh = (typeof window !== 'undefined') ? window.innerHeight : 0;
+        const vw = (typeof window !== 'undefined') ? window.innerWidth  : 0;
+        const visible = rect.top < (vh + 120) && rect.bottom > -120 && rect.left < vw && rect.right > 0;
+        if (visible) {
+          child._lazyTriggered = true;
+          this._lazyObserver?.unobserve(container);
+          Promise.resolve(child.render()).catch(err => View._warn(`Lazy child render error (${child.id})`, err));
+        }
+      });
     }
   }
 

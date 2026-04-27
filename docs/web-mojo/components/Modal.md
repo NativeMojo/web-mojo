@@ -154,6 +154,55 @@ await Modal.show(new GeoIPView({ model: geo }), {
 
 ---
 
+### Modal.drawer(options)
+
+Show a standardized drill-down drawer with a structured header: an optional small eyebrow tag, a large title, and an optional row of meta items (icon + text pairs). The body is a `View` instance or a raw HTML string.
+
+```js
+// Simplest form — title + view
+await Modal.drawer({
+    title: 'April 26',
+    view: new DayDetailView({ date: '2026-04-26' })
+});
+
+// With eyebrow and meta row
+await Modal.drawer({
+    eyebrow: 'Country',
+    title: 'United States',
+    meta: [
+        { icon: 'bi bi-geo-alt', text: 'North America' },
+        { icon: 'bi bi-shield',  text: '142 events' }
+    ],
+    view: new CountryDetailView({ country: 'US' }),
+    size: 'xl'
+});
+
+// Plain HTML body (no child view)
+await Modal.drawer({
+    eyebrow: 'Status',
+    title: 'Open Incidents',
+    meta: ['Last 30 days'],
+    body: '<p>34 open incidents</p>'
+});
+```
+
+**Parameters:**
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `title` | `string` | `''` | Drawer title (large heading) |
+| `eyebrow` | `string` | — | Small uppercase tag above the title |
+| `meta` | `Array<string\|{icon, text}>` | `[]` | Subtitle row items. Strings render as plain spans; objects render an icon + text span. |
+| `view` | `View` | — | View instance to display as the body |
+| `body` | `string` | — | Raw HTML body (used when `view` is not supplied) |
+| `size` | `string` | `'lg'` | Modal size: `sm`, `md`, `lg`, `xl`, `xxl`, `fullscreen` |
+
+**Returns:** `Promise<*>` — resolves when the Close button is clicked or the drawer is dismissed.
+
+The drawer always renders with `centered: false` and a single Close button in the footer. To add action buttons, use `Modal.show()` with `options.buttons` instead.
+
+---
+
 ### Modal.showModel(model, options?)
 
 Look up `model.constructor.VIEW_CLASS`, instantiate it, and show in a modal. Throws if no `VIEW_CLASS` is defined.

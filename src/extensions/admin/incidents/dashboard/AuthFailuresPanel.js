@@ -24,7 +24,7 @@ class AuthFailuresPanel extends View {
             ...options,
             className: `sd-auth-failures ${options.className || ''}`.trim()
         });
-        this._subCounts = SUB_TILE_CATEGORIES.map(c => ({ ...c, value: null }));
+        this.tiles = SUB_TILE_CATEGORIES.map(c => ({ ...c, value: null, display: '—' }));
     }
 
     async getTemplate() {
@@ -56,13 +56,6 @@ class AuthFailuresPanel extends View {
         `;
     }
 
-    async getViewData() {
-        return {
-            ...this.data,
-            tiles: this._subCounts.map(t => ({ ...t, display: t.value == null ? '—' : String(t.value) }))
-        };
-    }
-
     async onInit() {
         this.chart = new MetricsChart({
             containerId: 'chart-host',
@@ -73,6 +66,9 @@ class AuthFailuresPanel extends View {
             chartType: 'bar',
             compactHeader: true,
             showDateRange: false,
+            showGranularity: false,
+            showTypeSwitch: false,
+            showLegend: false,         // single series — legend would just say "Default"
             height: 200,
             colors: ['rgba(179, 136, 255, 0.85)'],
             yAxis: { label: 'Failures', beginAtZero: true },
@@ -80,14 +76,7 @@ class AuthFailuresPanel extends View {
             title: ''
         });
         this.addChild(this.chart);
-    }
-
-    async onAfterRender() {
-        if (!this._fetchedSubs) {
-            this._fetchedSubs = true;
-            await this._fetchSubTiles();
-            await this.render();
-        }
+        await this._fetchSubTiles();
     }
 
     async refresh() {
@@ -95,7 +84,7 @@ class AuthFailuresPanel extends View {
             this.chart?.fetchData?.(),
             this._fetchSubTiles()
         ]);
-        await this.render();
+        if (this.isMounted()) await this.render();
     }
 
     async _fetchSubTiles() {
@@ -103,25 +92,31 @@ class AuthFailuresPanel extends View {
         if (!rest) return;
         const drStart = Math.floor((Date.now() - 86400000) / 1000);
 
-        await Promise.all(this._subCounts.map(async (tile, i) => {
+        const next = await Promise.all(this.tiles.map(async (tile) => {
             try {
                 const resp = await rest.GET('/api/incident/event', {
                     category: tile.key,
                     dr_start: drStart,
-                    size: 1,
+                    size: 0,
                     _: Date.now()
                 });
                 const count = resp?.data?.count ?? resp?.data?.data?.count ?? null;
-                this._subCounts[i] = { ...tile, value: typeof count === 'number' ? count : 0 };
+                const value = typeof count === 'number' ? count : 0;
+                return { ...tile, value, display: String(value) };
             } catch (_e) {
-                this._subCounts[i] = { ...tile, value: null };
+                return { ...tile, value: null, display: '—' };
             }
         }));
+        this.tiles = next;
     }
 
     async onActionOpenSubTile(event, element) {
         const cat = element.dataset.category;
         if (!cat) return;
+        // Defensive escape — today `cat` is always a hardcoded constant from
+        // SUB_TILE_CATEGORIES, but data attributes get re-decoded on read so
+        // belt-and-suspenders here keeps the pattern XSS-safe regardless.
+        const safeCat = this._esc(cat);
         Modal.drawer({
             eyebrow: 'Auth Failure Category',
             title: cat,
@@ -129,11 +124,17 @@ class AuthFailuresPanel extends View {
             body: `
                 <p class="small text-muted">Open the events table filtered by this category.</p>
                 <a href="?page=system/events&category=${encodeURIComponent(cat)}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-list-ul me-1"></i>Open Events · ${cat}
+                    <i class="bi bi-list-ul me-1"></i>Open Events · ${safeCat}
                 </a>
             `,
             size: 'sm'
         });
+    }
+
+    _esc(s) {
+        const d = document.createElement('div');
+        d.textContent = String(s ?? '');
+        return d.innerHTML;
     }
 }
 

@@ -15,6 +15,15 @@ import View from '@core/View.js';
 import Modal from '@core/views/feedback/Modal.js';
 import { IncidentEventList } from '@ext/admin/models/Incident.js';
 
+// Escape backend-sourced values before interpolating them into raw HTML
+// strings passed as Modal.drawer's `body:` parameter. The body is injected
+// as innerHTML by ModalView, so any unescaped value is a stored-XSS vector.
+const escHtml = (s) => {
+    const d = document.createElement('div');
+    d.textContent = String(s ?? '');
+    return d.innerHTML;
+};
+
 const WINDOW_DAYS = 7;
 const FALLBACK_PAGE_SIZE = 500;
 const TOP_N = 10;
@@ -26,9 +35,12 @@ class TopSourcesPanel extends View {
             className: `sd-top-sources ${options.className || ''}`.trim()
         });
         this.allowBlock = options.allowBlock !== false;
-        this._ips = [];
-        this._cats = [];
-        this._fellBackToClient = false;
+        // State on `this` for Mustache resolution.
+        this.ips = [];
+        this.cats = [];
+        this.ipsEmpty = true;
+        this.catsEmpty = true;
+        this.fellBack = false;
     }
 
     async getTemplate() {
@@ -85,18 +97,6 @@ class TopSourcesPanel extends View {
         `;
     }
 
-    async getViewData() {
-        return {
-            ...this.data,
-            ips: this._withRank(this._ips),
-            cats: this._withRank(this._cats),
-            ipsEmpty: this._ips.length === 0,
-            catsEmpty: this._cats.length === 0,
-            allowBlock: this.allowBlock,
-            fellBack: this._fellBackToClient
-        };
-    }
-
     _withRank(items) {
         const max = Math.max(1, ...items.map(i => i.value));
         return items.map((item, i) => ({
@@ -106,25 +106,28 @@ class TopSourcesPanel extends View {
         }));
     }
 
-    async onAfterRender() {
-        if (!this._fetched) {
-            this._fetched = true;
-            await this.refresh();
-        }
+    async onInit() {
+        await this._fetch();
+    }
+
+    async _fetch() {
+        const drStart = Math.floor((Date.now() - WINDOW_DAYS * 86400000) / 1000);
+        const ipsRaw = await this._fetchIps(drStart);
+        const catsRaw = await this._fetchCategories(drStart);
+        this.ips = this._withRank(ipsRaw);
+        this.cats = this._withRank(catsRaw);
+        this.ipsEmpty = this.ips.length === 0;
+        this.catsEmpty = this.cats.length === 0;
     }
 
     async refresh() {
-        const drStart = Math.floor((Date.now() - WINDOW_DAYS * 86400000) / 1000);
-        await Promise.allSettled([
-            this._fetchIps(drStart),
-            this._fetchCategories(drStart)
-        ]);
-        await this.render();
+        await this._fetch();
+        if (this.isMounted()) await this.render();
     }
 
     async _fetchIps(drStart) {
         const rest = this.getApp()?.rest;
-        if (!rest) return;
+        if (!rest) return [];
 
         // Try server-side group_by first.
         try {
@@ -137,21 +140,20 @@ class TopSourcesPanel extends View {
             });
             const rows = this._parseGroupByResponse(resp, 'source_ip');
             if (rows) {
-                this._ips = rows.filter(r => r.name && r.name !== '—').slice(0, TOP_N);
-                return;
+                return rows.filter(r => r.name && r.name !== '—').slice(0, TOP_N);
             }
         } catch (_e) { /* falls through to client-side */ }
 
         // Fallback: client-side aggregation of recent events.
-        this._fellBackToClient = true;
+        this.fellBack = true;
         const list = new IncidentEventList({ params: { dr_start: drStart, size: FALLBACK_PAGE_SIZE, sort: '-created' } });
-        try { await list.fetch(); } catch (_e) { return; }
-        this._ips = this._aggregate(list.models || [], m => m.get('source_ip')).slice(0, TOP_N);
+        try { await list.fetch(); } catch (_e) { return []; }
+        return this._aggregate(list.models || [], m => m.get('source_ip')).slice(0, TOP_N);
     }
 
     async _fetchCategories(drStart) {
         const rest = this.getApp()?.rest;
-        if (!rest) return;
+        if (!rest) return [];
 
         try {
             const resp = await rest.GET('/api/incident/event', {
@@ -163,16 +165,15 @@ class TopSourcesPanel extends View {
             });
             const rows = this._parseGroupByResponse(resp, 'category');
             if (rows) {
-                this._cats = rows.filter(r => r.name && r.name !== '—').slice(0, TOP_N);
-                return;
+                return rows.filter(r => r.name && r.name !== '—').slice(0, TOP_N);
             }
         } catch (_e) { /* falls through */ }
 
         // Fallback shares the same incident-events page if we just fetched it.
-        this._fellBackToClient = true;
+        this.fellBack = true;
         const list = new IncidentEventList({ params: { dr_start: drStart, size: FALLBACK_PAGE_SIZE, sort: '-created' } });
-        try { await list.fetch(); } catch (_e) { return; }
-        this._cats = this._aggregate(list.models || [], m => m.get('category')).slice(0, TOP_N);
+        try { await list.fetch(); } catch (_e) { return []; }
+        return this._aggregate(list.models || [], m => m.get('category')).slice(0, TOP_N);
     }
 
     _parseGroupByResponse(resp, key) {
@@ -203,6 +204,7 @@ class TopSourcesPanel extends View {
         if (event.target.closest('[data-action="block-ip"]')) return;
         const ip = element.dataset.ip;
         if (!ip) return;
+        const safeIp = escHtml(ip);
         Modal.drawer({
             eyebrow: 'Source IP',
             title: ip,
@@ -210,7 +212,7 @@ class TopSourcesPanel extends View {
             body: `
                 <p class="small text-muted">Open the events table filtered by this source IP.</p>
                 <a href="?page=system/events&source_ip=${encodeURIComponent(ip)}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-list-ul me-1"></i>Open Events from ${ip}
+                    <i class="bi bi-list-ul me-1"></i>Open Events from ${safeIp}
                 </a>
             `,
             size: 'sm'
@@ -220,6 +222,7 @@ class TopSourcesPanel extends View {
     async onActionOpenCategory(event, element) {
         const cat = element.dataset.cat;
         if (!cat) return;
+        const safeCat = escHtml(cat);
         Modal.drawer({
             eyebrow: 'Category',
             title: cat,
@@ -227,7 +230,7 @@ class TopSourcesPanel extends View {
             body: `
                 <p class="small text-muted">Open the events table filtered by this category.</p>
                 <a href="?page=system/events&category=${encodeURIComponent(cat)}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-list-ul me-1"></i>Open Events · ${cat}
+                    <i class="bi bi-list-ul me-1"></i>Open Events · ${safeCat}
                 </a>
             `,
             size: 'sm'
@@ -238,7 +241,8 @@ class TopSourcesPanel extends View {
         event.stopPropagation();
         const ip = element.dataset.ip;
         if (!ip) return;
-        const ok = await Modal.confirm(`Add ${ip} to the firewall block list?`);
+        // Modal.confirm renders message as raw HTML — escape backend-sourced ip.
+        const ok = await Modal.confirm(`Add ${escHtml(ip)} to the firewall block list?`);
         if (!ok) return;
         const rest = this.getApp()?.rest;
         if (!rest) return;

@@ -130,7 +130,9 @@ Optional extensions for charts, maps, admin, and more:
 
 - **[Admin](./extensions/Admin.md)** - 50+ pre-built admin pages (users, jobs, security, files, shortlinks, messaging, push) + LLM-backed Assistant chat panel; wired into a `PortalWebApp` via `registerAdminPages` and `registerAssistant`. Admin **models** ship separately at `web-mojo/admin-models` (no UI deps)
 - **[Auth](./extensions/Auth.md)** - Drop-in sign-in / forgot / reset UI (`mountAuth`) and a low-level auth client (`createAuthClient`)
-- **[Charts](./extensions/Charts.md)** - Native SVG charts (SeriesChart, PieChart, MetricsChart) — no Chart.js dependency; `SeriesChart` supports opt-in `crosshairTracking`, Heckbert nice-number Y-axis ticks, and auto-rotating X labels; `MetricsChart` defaults `xLabelFormat` from granularity
+- **[Charts](./extensions/Charts.md)** - Native SVG charts (SeriesChart, PieChart, MetricsChart, KPITile, KPIStrip) — no Chart.js dependency; `SeriesChart` supports opt-in `crosshairTracking`, Heckbert nice-number Y-axis ticks, and auto-rotating X labels; `MetricsChart` defaults `xLabelFormat` from granularity
+- **[KPITile](./extensions/KPITile.md)** - Compact presentation-only dashboard tile: label, value, delta badge, embedded sparkline; no fetch
+- **[KPIStrip](./extensions/KPIStrip.md)** - Row of `KPITile`s driven by a single batched metrics series call
 - **[DocIt](./extensions/DocIt.md)** - Markdown documentation portal: books, pages, edit-in-place, search (`DocItApp` extends `WebApp`)
 - **[LightBox](./extensions/LightBox.md)** - Image lightbox viewer
 - **[Location](./extensions/Location.md)** - Geolocation services and tracking — see also the [REST API reference](./extensions/Location_API.md)
@@ -321,7 +323,9 @@ web-mojo/
 ├── extensions/                  # Optional framework extensions
 │   ├── Admin.md                 # Pre-built admin pages and views
 │   ├── Auth.md                  # mountAuth() + createAuthClient()
-│   ├── Charts.md                # Native SVG charts (SeriesChart, PieChart, MetricsChart)
+│   ├── Charts.md                # Native SVG charts (SeriesChart, PieChart, MetricsChart, KPITile, KPIStrip)
+│   ├── KPITile.md               # Compact presentation-only dashboard tile
+│   ├── KPIStrip.md              # Row of KPITiles driven by a batched metrics fetch
 │   ├── DocIt.md                 # Markdown documentation portal (DocItApp)
 │   ├── LightBox.md              # Image lightbox viewer
 │   ├── MapView.md               # Map view component (Leaflet)

@@ -45,6 +45,8 @@ class MetricsChart extends View {
         this.tooltip = options.tooltip || { y: 'number:0' };
         this.colors = options.colors;
         this.colorGenerator = options.colorGenerator;
+        this.legendPosition = options.legendPosition || 'top';
+        this.showLegend = options.showLegend !== false;
 
         // API
         this.endpoint = options.endpoint || '/api/metrics/fetch';
@@ -124,8 +126,8 @@ class MetricsChart extends View {
             xLabelFormat: this._resolveXLabelFormat(),
             colors: this.colors,
             colorGenerator: this.colorGenerator,
-            showLegend: true,
-            legendPosition: 'top'
+            showLegend: this.showLegend,
+            legendPosition: this.legendPosition
         });
         this.addChild(this.chart);
     }
@@ -148,15 +150,20 @@ class MetricsChart extends View {
     // ── template ──────────────────────────────────────────────────────
 
     async getTemplate() {
-        return `
-            <div class="mojo-metrics-chart-container">
+        // In compact mode, suppress the header row entirely — no <h5>, no
+        // gear menu, no type switch. Used by dashboard panels that have
+        // their own card header above the chart.
+        const headerHtml = this.compactHeader ? '' : `
                 <div class="d-flex justify-content-between align-items-center mb-2 mojo-metrics-chart-header">
                     <h5 class="mb-0 mojo-metrics-chart-title">{{{title}}}</h5>
                     <div class="btn-toolbar" role="toolbar">
                         ${this._renderGearMenuHtml()}
                         ${this._renderTypeSwitchHtml()}
                     </div>
-                </div>
+                </div>`;
+        return `
+            <div class="mojo-metrics-chart-container">
+                ${headerHtml}
                 <div class="position-relative" style="min-height:${typeof this.height === 'number' ? this.height + 'px' : this.height};">
                     <div data-container="chart"></div>
                     <div class="chart-overlay d-none" data-loading>

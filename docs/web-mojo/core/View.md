@@ -670,12 +670,16 @@ async onAfterRender() {
 
 ## Child Management Methods
 
-### addChild(childView)
+### addChild(childView, options?)
 
 Adds a child view for lifecycle management.
 
 **Parameters:**
 - `childView` (View) - Child view instance
+- `options` (object, optional) - Additional options:
+  - `containerId` (string) - Override the child's `containerId`
+  - `id` (string) - Override the child's `id`
+  - `lazyMount` (boolean) - Defer the child's render until its container scrolls into the viewport
 
 **Returns:** `View` - The child view
 
@@ -695,6 +699,23 @@ template = `
   </div>
 `;
 ```
+
+**`lazyMount: true` — deferred rendering**
+
+Pass `{ lazyMount: true }` to defer a child's render until its container element scrolls into the viewport. This is useful for long dashboard pages where below-the-fold panels would otherwise fetch data on the initial paint.
+
+```javascript
+async onInit() {
+  // Renders immediately (above the fold)
+  this.addChild(new PulseStrip({ containerId: 'pulse' }));
+
+  // Deferred — only fetches and renders when scrolled into view
+  this.addChild(new GeographyPanel({ containerId: 'geography' }), { lazyMount: true });
+  this.addChild(new TopSourcesPanel({ containerId: 'top-sources' }), { lazyMount: true });
+}
+```
+
+The framework installs an `IntersectionObserver` after the parent mounts. When a lazy container enters the viewport, the child renders normally. If `IntersectionObserver` is unavailable, the child falls back to immediate rendering.
 
 **Important:**
 - Prefer adding children in `onInit()` for lazy loading

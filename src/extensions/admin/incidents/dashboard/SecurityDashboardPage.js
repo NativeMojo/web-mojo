@@ -116,24 +116,28 @@ class SecurityDashboardPage extends Page {
         this.composition = new ThreatCompositionChart({ containerId: 'composition' });
         this.addChild(this.composition);
 
-        // ── Sections 3–7 — lazy-mount below the fold ─────────────────
+        // ── Sections 3–7 ─────────────────────────────────────────────
+        // Eager-mount for now. The framework's IntersectionObserver-based
+        // lazyMount doesn't fire reliably inside PortalApp's separately-
+        // scrolled .portal-content container; tracked as a follow-up.
+        // Eager mount means ~7 fetches on first paint, all parallelizable.
         this.geography = new GeographyPanel({ containerId: 'geography' });
-        this.addChild(this.geography, { lazyMount: true });
+        this.addChild(this.geography);
 
         this.distributions = new DistributionStrip({ containerId: 'distributions' });
-        this.addChild(this.distributions, { lazyMount: true });
+        this.addChild(this.distributions);
 
         this.topSources = new TopSourcesPanel({
             containerId: 'top-sources',
             allowBlock: canManageSecurity
         });
-        this.addChild(this.topSources, { lazyMount: true });
+        this.addChild(this.topSources);
 
         this.authFailures = new AuthFailuresPanel({ containerId: 'auth-failures' });
-        this.addChild(this.authFailures, { lazyMount: true });
+        this.addChild(this.authFailures);
 
         this.healthStrip = new HealthStrip({ containerId: 'health-strip' });
-        this.addChild(this.healthStrip, { lazyMount: true });
+        this.addChild(this.healthStrip);
     }
 
     async onEnter() {

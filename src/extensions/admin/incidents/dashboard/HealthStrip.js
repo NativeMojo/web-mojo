@@ -25,7 +25,11 @@ class HealthStrip extends View {
             tagName: 'div',
             className: `sd-health ${options.className || ''}`.trim()
         });
-        this._rows = [];
+        // State on `this` for Mustache resolution.
+        this.rows = [];
+        this.dots = [{ dot: 'good' }];
+        this.summary = 'Loading…';
+        this.empty = false;
         this._fetchedOnce = false;
     }
 
@@ -63,45 +67,40 @@ class HealthStrip extends View {
         `;
     }
 
-    async getViewData() {
-        const dotPriority = { crit: 3, warn: 2, good: 1 };
-        const summary = this._buildSummary();
-        const dots = this._rows.length
-            ? this._rows.map(r => ({ dot: r.dot }))
-            : [{ dot: 'good' }];
-        return {
-            ...this.data,
-            rows: this._rows,
-            empty: this._rows.length === 0 && this._fetchedOnce,
-            summary,
-            dots
-        };
-    }
-
-    async onAfterRender() {
-        if (!this._fetchedOnce) {
-            await this.refresh();
-        }
+    async onInit() {
+        await this._fetch();
     }
 
     async refresh() {
+        await this._fetch();
+        if (this.isMounted()) await this.render();
+    }
+
+    async _fetch() {
         const rest = this.getApp()?.rest;
         if (!rest) {
-            this._rows = [];
+            this.rows = [];
             this._fetchedOnce = true;
+            this._reflectState();
             return;
         }
         try {
             const resp = await rest.GET('/api/incident/health/summary', { _: Date.now() });
             const rows = resp?.data?.data || [];
-            this._rows = rows.map(r => this._normalize(r));
+            this.rows = rows.map(r => this._normalize(r));
         } catch (err) {
             console.warn('[HealthStrip] fetch failed:', err);
-            this._rows = [];
+            this.rows = [];
         } finally {
             this._fetchedOnce = true;
-            await this.render();
+            this._reflectState();
         }
+    }
+
+    _reflectState() {
+        this.empty = this.rows.length === 0 && this._fetchedOnce;
+        this.dots = this.rows.length ? this.rows.map(r => ({ dot: r.dot })) : [{ dot: 'good' }];
+        this.summary = this._buildSummary();
     }
 
     _normalize(row) {
@@ -119,12 +118,12 @@ class HealthStrip extends View {
     }
 
     _buildSummary() {
-        if (!this._rows.length) {
+        if (!this.rows.length) {
             return this._fetchedOnce ? 'All systems healthy' : 'Loading…';
         }
-        const crit = this._rows.filter(r => r.dot === 'crit').length;
-        const warn = this._rows.filter(r => r.dot === 'warn').length;
-        const good = this._rows.filter(r => r.dot === 'good').length;
+        const crit = this.rows.filter(r => r.dot === 'crit').length;
+        const warn = this.rows.filter(r => r.dot === 'warn').length;
+        const good = this.rows.filter(r => r.dot === 'good').length;
         const parts = [];
         if (crit) parts.push(`${crit} critical`);
         if (warn) parts.push(`${warn} warning${warn > 1 ? 's' : ''}`);

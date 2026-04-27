@@ -23,6 +23,13 @@ class ThreatCompositionChart extends View {
             className: `sd-composition ${options.className || ''}`.trim()
         });
         this.range = options.range || '30d';
+        this._reflectRange();
+    }
+
+    _reflectRange() {
+        this.is7d  = this.range === '7d';
+        this.is30d = this.range === '30d';
+        this.is90d = this.range === '90d';
     }
 
     async getTemplate() {
@@ -44,15 +51,6 @@ class ThreatCompositionChart extends View {
         `;
     }
 
-    async getViewData() {
-        return {
-            ...this.data,
-            is7d:  this.range === '7d',
-            is30d: this.range === '30d',
-            is90d: this.range === '90d'
-        };
-    }
-
     async onInit() {
         this.chart = new MetricsChart({
             containerId: 'chart-host',
@@ -62,6 +60,10 @@ class ThreatCompositionChart extends View {
             chartType: 'bar',          // SeriesChart defaults bar = stacked
             defaultDateRange: this.range,
             compactHeader: true,
+            showGranularity: false,
+            showTypeSwitch: false,
+            showDateRange: false,
+            legendPosition: 'bottom',  // mock contract: legend below chart
             height: 280,
             yAxis: { label: 'Count', beginAtZero: true },
             tooltip: { y: 'number:0' },
@@ -86,6 +88,7 @@ class ThreatCompositionChart extends View {
         const range = element.dataset.range;
         if (!range || range === this.range) return;
         this.range = range;
+        this._reflectRange();
         this.chart?.setQuickRange?.(range);
         await this.chart?.fetchData?.();
         await this.render();

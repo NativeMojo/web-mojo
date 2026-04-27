@@ -14,6 +14,8 @@ circular progress, plus a `/api/metrics/fetch`-aware metrics chart.
 | `MiniChart`                | Single-series sparkline (no axes, no legend — small footprint) |
 | `MetricsMiniChart`         | Sparkline backed by metrics endpoint |
 | `MetricsMiniChartWidget`   | Sparkline tile with header, trending, settings popover |
+| `KPITile`                  | Compact presentation-only tile: label, value, delta badge, sparkline — no fetch |
+| `KPIStrip`                 | Row of `KPITile`s populated by a single batched series + optional sparkline fetch |
 | `CircularProgress`         | Multi-segment SVG arc dial |
 | `exportChartPng(chart)`    | One-shot helper: serialize any SVG chart to a PNG download |
 
@@ -26,7 +28,9 @@ import {
     MetricsChart,
     MiniChart,
     CircularProgress,
-    exportChartPng
+    exportChartPng,
+    KPITile,
+    KPIStrip
 } from 'web-mojo/charts';
 ```
 
@@ -213,6 +217,8 @@ this.addChild(pie);
 | Option              | Default    | Notes |
 |---|---|---|
 | `cutout`            | `0`        | `0..1` fraction of outer radius for doughnut hole |
+| `centerLabel`       | `null`     | Text or `({ total, segments }) => string` rendered in the donut center. Requires `cutout > 0`. |
+| `centerSubLabel`    | `null`     | Smaller text below `centerLabel`. Same string-or-function shape. |
 | `legendPosition`    | `'right'`  | `'right'`, `'bottom'`, `'none'` |
 | `showLabels`        | `false`    | Slice-edge labels |
 | `showPercentages`   | `true`     | Show `%` next to slice label |
@@ -235,6 +241,30 @@ pie.refresh();   // re-fetch the endpoint, if one was configured
 | Event          | Payload |
 |---|---|
 | `chart:click`  | `{ chart, slice, index, value, label }` |
+
+### Donut center label
+
+When `cutout > 0` (doughnut mode), use `centerLabel` and `centerSubLabel` to display text in the hole:
+
+```js
+new PieChart({
+    containerId: 'status-donut',
+    cutout: 0.65,
+    data: [
+        { label: 'Open',     value: 34 },
+        { label: 'Resolved', value: 92 }
+    ],
+    // Static string
+    centerLabel: '126',
+    centerSubLabel: 'total',
+
+    // Or a function — called with { total, segments }
+    centerLabel: ({ total }) => String(total),
+    centerSubLabel: 'incidents'
+});
+```
+
+The function form is re-evaluated every time `setData()` is called, so the center stays in sync after live updates.
 
 ---
 
@@ -290,10 +320,63 @@ re-applied when `setGranularity()` is called.
 See the [DataFormatter `date`](../core/DataFormatter.md#date) reference for
 all format tokens.
 
+### Additional options
+
+| Option | Type | Default | Notes |
+|---|---|---|---|
+| `withDelta` | `boolean` | `false` | Appends `with_delta=true` to the fetch call. Switches the default endpoint to `/api/metrics/series` (point-in-time + deltas) instead of `/api/metrics/fetch` (full time-series). Only set this when the caller needs delta values; most chart use-cases want `fetch`. |
+| `compactHeader` | `boolean` | `false` | Hides the gear menu and the chart-type switch. Leaves a minimal quick-range toggle. Useful for sub-charts inside dashboard cards where the surrounding card already carries a title and controls. |
+
+```js
+// Inside a dashboard card that pins bar+7d — no gear needed
+new MetricsChart({
+    containerId: 'funnel-chart',
+    title: 'Bouncer Funnel',
+    slugs: ['bouncer:assessments', 'bouncer:monitors', 'bouncer:blocks'],
+    account: 'incident',
+    granularity: 'days',
+    chartType: 'bar',
+    compactHeader: true,   // hide gear menu
+    height: 200
+});
+```
+
 ### Notes
 
 - Bar charts default to stacked (because `MetricsChart` delegates to `SeriesChart`).
 - `MetricsChart.export()` was removed — use `exportChartPng(this.metrics.chart)` instead.
+
+---
+
+## KPITile and KPIStrip
+
+For compact dashboard "pulse" rows where one batched fetch populates many tiles, see the dedicated docs:
+
+- **[KPITile](./KPITile.md)** — Presentation-only tile: label, value, delta badge, sparkline.
+- **[KPIStrip](./KPIStrip.md)** — Orchestrator that issues one batched series call + optional sparklines for N tiles.
+
+### Quick KPIStrip example
+
+```js
+import { KPIStrip } from 'web-mojo/charts';
+
+this.pulse = new KPIStrip({
+    containerId: 'pulse-strip',
+    account: 'incident',
+    granularity: 'days',
+    tiles: [
+        { slug: 'incidents',     label: 'New Incidents', tone: 'bad',  severity: 'high' },
+        { slug: 'auth:failures', label: 'Auth Failures', tone: 'bad',  severity: 'warn' },
+        { slug: 'resolved',      label: 'Resolved',      tone: 'good', severity: 'good' }
+    ]
+});
+this.addChild(this.pulse);
+
+// Listen for tile clicks
+this.pulse.on?.('tile:click', ({ key }) => {
+    // open a drill-down drawer for the clicked slug
+});
+```
 
 ---
 
