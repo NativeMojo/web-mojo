@@ -1372,7 +1372,7 @@ class MyView extends View {
     console.error('Action error:', action, error);
     
     // Show user-friendly message
-    await Dialog.alert(
+    await Modal.alert(
       `Failed to ${action}: ${error.message}`,
       'Error',
       { class: 'text-danger' }
@@ -1381,7 +1381,7 @@ class MyView extends View {
 }
 ```
 
-Default `handleActionError` shows an error dialog (if Dialog is available).
+Default `handleActionError` shows an error dialog (if Modal is available).
 
 ---
 

@@ -98,7 +98,7 @@ The three-dots menu in the header exposes:
 | `edit-file` | `onActionEditFile` | Opens `Modal.modelForm({ formConfig: FileForms.edit })`; re-renders on save |
 | `make-public` / `make-private` | `onActionMakePublic` / `onActionMakePrivate` | `model.save({ is_public: true/false })`; menu item flips on next render |
 | `regenerate-renditions` | `onActionRegenerateRenditions` | Confirms, then POSTs `{ action: 'regenerate_renditions' }` and (re)starts the rendition poll |
-| `delete-file` | `onActionDeleteFile` | `Dialog.confirm` → `model.destroy()` → emits `file:deleted` on success |
+| `delete-file` | `onActionDeleteFile` | `Modal.confirm` → `model.destroy()` → emits `file:deleted` on success |
 
 ## Events
 
