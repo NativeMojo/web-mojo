@@ -84,7 +84,7 @@ export { default as EventDelegate } from '@core/mixins/EventDelegate.js';
 export { default as EventBus } from '@core/utils/EventBus.js';
 export { default as dataFormatter } from '@core/utils/DataFormatter.js';
 export { default as MustacheFormatter } from '@core/utils/MustacheFormatter.js';
-export { default as MOJOUtils, DataWrapper } from '@core/utils/MOJOUtils.js';
+export { default as MOJOUtils } from '@core/utils/MOJOUtils.js';
 export { default as ConsoleSilencer } from '@core/utils/ConsoleSilencer.js';
 export { installConsoleSilencer } from '@core/utils/ConsoleSilencer.js';
 export { default as DjangoLookups, parseFilterKey, formatFilterDisplay, LOOKUPS } from '@core/utils/DjangoLookups.js';

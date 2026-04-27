@@ -96,3 +96,37 @@ This request is **parallelizable** — each item is a self-contained doc agent t
 
 ## Resolution
 **Status**: open
+
+---
+
+## Resolution (2026-04-26)
+
+**Status**: Resolved across two phases.
+
+### Phase 2 (`9828ebf` + `dce1b1d`) covered 4 of the original items
+- `services/TokenManager.md` ✅
+- `utils/ConsoleSilencer.md` ✅
+- `utils/DjangoLookups.md` ✅
+- `extensions/UserProfile.md` (UserProfileView + PasskeySetupView) ✅
+- `components/SideNavView.md` was already in place pre-request.
+
+### Phase 3 (this commit) covered the remaining 6 — with one triage outcome
+- `core/Router.md` ✅
+- `components/ProgressView.md` ✅
+- `components/SimpleSearchView.md` ✅
+- `utils/MustacheFormatter.md` ✅
+- `mixins/FileDropMixin.md` ✅
+- **`DataWrapper`**: triaged as INTERNAL — zero `src/` consumers, no examples, no tests. Per this request's own rule ("If a doc determines that the export is no longer needed, file a follow-up issue to remove it from `src/index.js`"), the named re-export was **removed from `src/index.js`** rather than documented. The class still lives in `src/core/utils/MOJOUtils.js`; only the public surface is trimmed.
+- **`EventDelegate`**: judgement call — kept the existing coverage in `core/Events.md` rather than create a near-duplicate page. README link points to the existing section.
+
+### Files changed (Phase 3)
+- 5 new docs: `docs/web-mojo/{core/Router,components/ProgressView,components/SimpleSearchView,utils/MustacheFormatter,mixins/FileDropMixin}.md`
+- 1 export removed: `DataWrapper` from `src/index.js`
+- 3 cross-link updates: `docs/web-mojo/README.md`, `docs/web-mojo/AGENT.md`, `CHANGELOG.md`
+
+### Validation
+- `npm run build:lib` — bundle compiles cleanly without the `DataWrapper` re-export.
+- `node test/test-runner.js --suite build` — registry + coverage assertions all green.
+- Grep confirms no remaining `import { DataWrapper } from 'web-mojo'` in `src/`, `examples/`, or `test/`.
+
+After this, every export from `src/index.js` either has a doc page or has its non-public status made explicit in source comments. The follow-up audit note on `TemplateResolver.js` (orphan code) remains in `planning/notes/taxonomy-audit.md` for a separate cleanup pass.

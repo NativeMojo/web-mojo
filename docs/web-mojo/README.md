@@ -30,6 +30,7 @@ Essential framework components every MOJO developer should understand:
 - **[DataFormatter](./core/DataFormatter.md)** - 80+ built-in formatters (dates, numbers, badges, etc.)
 - **[Model](./core/Model.md)** - Data models with REST API integration
 - **[Collection](./core/Collection.md)** - Collections of models with querying and pagination
+- **[Router](./core/Router.md)** - `?page=…` URL routing: `navigate`, `route:changed`/`route:notfound` events
 - **[Events](./core/Events.md)** - EventBus and EventEmitter patterns
 
 ---
@@ -62,6 +63,8 @@ UI Components for displaying and interacting with data:
 
 - **[ChatView](./components/ChatView.md)** - Chat interface (ChatView + ChatMessageView + ChatInputView): adapter-driven messages, file drop, streaming-ready
 - **[ContextMenu](./components/ContextMenu.md)** - Reusable Bootstrap dropdown menu component for row/header actions
+- **[ProgressView](./components/ProgressView.md)** - File-upload progress UI: bar, byte counter, cancel button
+- **[SimpleSearchView](./components/SimpleSearchView.md)** - Searchable, scrollable list bound to a `Collection`; emits `item:selected`
 - **[Modal](./components/Modal.md)** - Canonical modal/dialog surface: alert, confirm, prompt, show, showModel, form
 - **[Dialog](./components/Dialog.md)** - Full dialog system: forms, code view, busy indicator, z-index stacking, context menus; alert/confirm/prompt are pass-throughs to Modal
 - **[Sidebar & TopNav](./components/SidebarTopNav.md)** - Portal navigation: sidebar menus, topbar, homeless pages, group switching
@@ -104,6 +107,7 @@ Reusable behaviour mixed into framework classes:
 
 - **[EventEmitter](./core/Events.md)** - Instance-level event system used by View, Model, Collection
 - **[EventDelegate](./core/Events.md)** - Convention-based DOM event delegation via `data-action` attributes
+- **[FileDropMixin](./mixins/FileDropMixin.md)** - Drag-and-drop file handling for any View (`applyFileDropMixin(ViewClass)`)
 
 ---
 
@@ -113,6 +117,7 @@ Helper classes and functions:
 
 - **[MOJOUtils](./utils/MOJOUtils.md)** - Static helpers: deepClone, deepMerge, debounce, throttle, generateId, escapeHtml, password utilities, query string parsing
 - **[DataFormatter](./core/DataFormatter.md)** - 80+ formatters for use in templates and programmatic code
+- **[MustacheFormatter](./utils/MustacheFormatter.md)** - Lower-level template renderer behind `View.render()`; register custom pipe formatters
 - **[DjangoLookups](./utils/DjangoLookups.md)** - Django-style `field__lookup` filter parsing and pill-text formatting (used by TableView)
 - **[ConsoleSilencer](./utils/ConsoleSilencer.md)** - Filter `console.*` output by level — installed by default at `warn`. URL/`localStorage` runtime overrides.
 
@@ -284,6 +289,7 @@ web-mojo/
 │   ├── DataFormatter.md         # 80+ built-in formatters reference
 │   ├── Model.md                 # Data models with REST integration
 │   ├── Collection.md            # Collections of models
+│   ├── Router.md                # ?page= URL routing
 │   └── Events.md                # EventBus and EventEmitter patterns
 │
 ├── pages/                       # Page-level routing components
@@ -306,7 +312,9 @@ web-mojo/
 │   ├── TabView.md               # Tab navigation component
 │   ├── DataView.md              # Structured data display
 │   ├── FileView.md              # File display and management
-│   └── ImageFields.md           # Image field components
+│   ├── ImageFields.md           # Image field components
+│   ├── ProgressView.md          # File-upload progress UI
+│   └── SimpleSearchView.md      # Searchable list bound to a Collection
 │
 ├── extensions/                  # Optional framework extensions
 │   ├── Admin.md                 # Pre-built admin pages and views
@@ -326,10 +334,12 @@ web-mojo/
 │
 ├── utils/                       # Utility classes
 │   ├── MOJOUtils.md             # Static helpers: clone, merge, debounce, password, etc.
+│   ├── MustacheFormatter.md     # Lower-level template renderer behind View
 │   ├── DjangoLookups.md         # Django-style filter key parsing
 │   └── ConsoleSilencer.md       # Console-level filtering with runtime overrides
 │
-├── mixins/                      # Reusable mixins (documented in core/Events.md)
+├── mixins/                      # Reusable mixins
+│   └── FileDropMixin.md         # Drag-and-drop file handling for any View
 │
 └── pending_update/              # Documentation awaiting review
 ```

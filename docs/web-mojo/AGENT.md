@@ -36,6 +36,7 @@ WEB-MOJO is a component-based JavaScript framework for building data-driven web 
 | Model | `docs/web-mojo/core/Model.md` |
 | Collection | `docs/web-mojo/core/Collection.md` |
 | Events | `docs/web-mojo/core/Events.md` |
+| Router | `docs/web-mojo/core/Router.md` |
 | Child Views | `docs/web-mojo/core/ViewChildViews.md` |
 | Advanced Views | `docs/web-mojo/core/AdvancedViews.md` |
 | Page | `docs/web-mojo/pages/Page.md` |
@@ -49,12 +50,16 @@ WEB-MOJO is a component-based JavaScript framework for building data-driven web 
 | ListView | `docs/web-mojo/components/ListView.md` |
 | TableView | `docs/web-mojo/components/TableView.md` |
 | TabView | `docs/web-mojo/components/TabView.md` |
+| ProgressView | `docs/web-mojo/components/ProgressView.md` |
+| SimpleSearchView | `docs/web-mojo/components/SimpleSearchView.md` |
 | TablePage | `docs/web-mojo/pages/TablePage.md` |
 | DataView | `docs/web-mojo/components/DataView.md` |
 | BuiltinModels | `docs/web-mojo/models/BuiltinModels.md` |
 | MOJOUtils | `docs/web-mojo/utils/MOJOUtils.md` |
+| MustacheFormatter | `docs/web-mojo/utils/MustacheFormatter.md` |
 | DjangoLookups | `docs/web-mojo/utils/DjangoLookups.md` |
 | ConsoleSilencer | `docs/web-mojo/utils/ConsoleSilencer.md` |
+| FileDropMixin | `docs/web-mojo/mixins/FileDropMixin.md` |
 | Charts | `docs/web-mojo/extensions/Charts.md` |
 | MapView / MapLibre | `docs/web-mojo/extensions/MapView.md` |
 | FileUpload | `docs/web-mojo/services/FileUpload.md` |

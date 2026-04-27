@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Docs — Phase 3 of taxonomy realignment (undocumented public exports)
+
+- New doc pages in `docs/web-mojo/`:
+  - `core/Router.md` — `Router` class: `?page=` URL handling, `navigate`, route patterns, `route:changed` / `route:notfound` events.
+  - `components/ProgressView.md` — file-upload progress UI; `updateProgress`, `markCompleted`, etc.
+  - `components/SimpleSearchView.md` — searchable list bound to a `Collection`; emits `item:selected`.
+  - `utils/MustacheFormatter.md` — lower-level template renderer behind `View`; `registerFormatter` for custom pipes.
+  - `mixins/FileDropMixin.md` — `applyFileDropMixin(ViewClass)` + `enableFileDrop({…})` + `onFileDrop(files, …)`.
+- **Breaking**: `DataWrapper` named export removed from `src/index.js`. Triage found zero consumers (no `src/`, no `examples/`, no `test/` references). The class itself remains in `src/core/utils/MOJOUtils.js`; only the public re-export is gone.
+- README + AGENT cross-links updated to surface the new pages.
+
 ### Added — Assistant: `assistant_text` event + chart-option passthrough
 
 - **New `assistant_text` WS event** is now handled in `AssistantView`,
