@@ -170,12 +170,16 @@ start()
   ↓
 checkAuthStatus()
   ↓
+TokenManager.handleAuthCodeFromURL()  ← exchanges ?auth_code= on cross-origin handoff
+  ↓
 TokenManager.checkTokenStatus()
   ↓
   ├── 'ok'      → Load user from API → setActiveUser()
   ├── 'refresh' → TokenManager.checkAndRefreshTokens() → Load user
   └── 'logout'  → emit 'auth:unauthorized' → stop
 ```
+
+For cross-origin auth handoff details see [`TokenManager` — Cross-Origin Auth Handoff](../services/TokenManager.md#cross-origin-auth-handoff).
 
 If authentication fails at any point, `app.events.emit('auth:unauthorized')` is fired and the user is **not** directed to the router.
 
@@ -472,6 +476,8 @@ In addition to all [WebApp events](./WebApp.md#global-event-bus), `PortalApp` em
 |---|---|---|
 | `'auth:unauthorized'` | Token invalid/expired, login required | `{ app }` |
 | `'auth:logout'` | User logged out | (none) |
+| `'auth:login'` | Cross-origin auth code exchanged successfully | user dict |
+| `'auth:exchange:failed'` | Auth code exchange failed | `{ error }` |
 | `'group:loaded'` | Active group loaded at startup | `{ group }` |
 | `'group:changed'` | Active group changed via `setActiveGroup()` | `{ group, previousGroup, app }` |
 | `'portal:action'` | Sidebar/topbar action triggered | `{ action, ...data }` |

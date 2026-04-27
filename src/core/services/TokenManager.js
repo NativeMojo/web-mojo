@@ -571,7 +571,16 @@ export default class TokenManager {
     async _doExchange(app, code) {
         try {
             const response = await app.rest.POST('/api/auth/exchange', { code });
-            const { access_token, refresh_token, user } = response.data.data;
+            // Tolerate the same response wrappers the rest of the codebase
+            // does: { data: { data: {...} } } | { data: {...} } | flat.
+            const payload = response?.data?.data || response?.data || response;
+            const access_token = payload?.access_token;
+            const refresh_token = payload?.refresh_token;
+            const user = payload?.user;
+
+            if (!access_token) {
+                throw new Error('No access_token in /api/auth/exchange response');
+            }
 
             // Clear cached instances so new tokens are loaded fresh.
             this.tokenInstance = null;

@@ -139,6 +139,7 @@ app.start()
   │       ↳ Done BEFORE auth check to prevent race conditions
   │
   ├─ 2. checkAuthStatus()          [if auth enabled]
+  │       ├── handleAuthCodeFromURL() ← cross-origin ?auth_code= exchange (see TokenManager)
   │       ├── success → emit 'user:ready'
   │       └── failure → onAuthFailed(error) → countdown redirect
   │                     returns { success: false, error }

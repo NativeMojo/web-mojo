@@ -49,6 +49,10 @@ export function createAuthClient({
     ...endpoints
   };
 
+  // Single-flight guard for exchangeAuthCode / handleAuthCodeFromURL —
+  // a single-use auth_code must not be POSTed twice if two boot paths race.
+  let _exchangePromise = null;
+
   async function post(path, body) {
     const res = await fetchImpl(`${baseURL}${path}`, {
       method: 'POST',
@@ -113,11 +117,20 @@ export function createAuthClient({
       return parseResponse(resp);
     },
     async exchangeAuthCode(code) {
-      const resp = await post(EP.exchange, { code });
-      saveAuthData(resp);
-      return parseResponse(resp);
+      if (_exchangePromise) return _exchangePromise;
+      _exchangePromise = (async () => {
+        try {
+          const resp = await post(EP.exchange, { code });
+          saveAuthData(resp);
+          return parseResponse(resp);
+        } finally {
+          _exchangePromise = null;
+        }
+      })();
+      return _exchangePromise;
     },
     async handleAuthCodeFromURL() {
+      if (typeof window === 'undefined' || !window.location) return null;
       const params = new URLSearchParams(window.location.search);
       const code = params.get('auth_code');
       if (!code) return null;
@@ -129,9 +142,7 @@ export function createAuthClient({
         + (window.location.hash || '');
       window.history.replaceState({}, '', newUrl);
 
-      const resp = await post(EP.exchange, { code });
-      saveAuthData(resp);
-      return parseResponse(resp);
+      return this.exchangeAuthCode(code);
     },
     logout() {
       storage.removeItem(KEYS.access);
