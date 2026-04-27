@@ -50,6 +50,7 @@ class MetricsChart extends View {
         this.showLegend = options.showLegend !== false;
         this.showXLabels = options.showXLabels !== false;
         this.showYLabels = options.showYLabels !== false;
+        this.highlightOnHover = options.highlightOnHover === true;
 
         // API
         this.endpoint = options.endpoint || '/api/metrics/fetch';
@@ -133,7 +134,8 @@ class MetricsChart extends View {
             legendPosition: this.legendPosition,
             legendJustify: this.legendJustify,
             showXLabels: this.showXLabels,
-            showYLabels: this.showYLabels
+            showYLabels: this.showYLabels,
+            highlightOnHover: this.highlightOnHover
         });
         this.addChild(this.chart);
     }

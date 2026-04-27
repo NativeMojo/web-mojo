@@ -2206,13 +2206,38 @@
     padding: 0 8px;
 }
 
+/* ── Dashboard-scoped dark theme tuning ──────────────────────────────
+   The mock contract uses a deeper near-black for the page surface and
+   a slightly lighter shade for cards/tiles — the inverse of Bootstrap's
+   default dark-theme behavior. Scope the override to the dashboard so
+   other dark-theme pages keep Bootstrap defaults.
+
+   Page bg     = #0a0d11 (mock --sd-bg)
+   Card surface = #11161d (mock --sd-surface) — already wired through
+                  --mojo-kpi-tile-bg in the dark-theme block higher up.
+   Border       = #1f2630 — a step up from card surface, low contrast.
+   Hairlines    = subtle white at 4% for in-card dividers.
+   ──────────────────────────────────────────────────────────────────── */
+[data-bs-theme="dark"] .security-dashboard-page {
+    background: #0a0d11;
+    --bs-body-bg: #0a0d11;
+    --bs-border-color-translucent: rgba(255, 255, 255, 0.04);
+}
+
+/* Push the Bootstrap dark page bg behind the dashboard too — so the
+   page-container's bg (set elsewhere) doesn't bleed through if the
+   page is shorter than the viewport. */
+[data-bs-theme="dark"] .page-container:has(.security-dashboard-page) {
+    background: #0a0d11;
+}
+
 .sd-page-head {
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    padding: 12px 4px 16px;
+    padding: 14px 4px 18px;
     border-bottom: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08));
-    margin-bottom: 16px;
+    margin-bottom: 24px;
 }
 
 .sd-page-title {
@@ -2220,13 +2245,13 @@
     font-size: 22px;
     font-weight: 600;
     letter-spacing: -0.005em;
-    color: var(--bs-body-color);
+    color: var(--mojo-kpi-tile-fg, var(--bs-emphasis-color, var(--bs-body-color)));
 }
 
 .sd-page-controls {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
 }
 
 .security-dashboard .sd-eyebrow {
@@ -2239,15 +2264,17 @@
     color: var(--bs-secondary-color, #6c757d);
 }
 
+/* Generous gutters between sections — the mockup has 32px of breathing
+   room between cards, which lets each section read as a unit. */
 .security-dashboard .sd-section {
-    margin-bottom: 24px;
+    margin-bottom: 32px;
 }
 
 .security-dashboard .sd-section-head {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     padding: 0 2px;
 }
 
@@ -2258,7 +2285,7 @@
 /* grid helpers — used by SecurityDashboardPage's hero row */
 .security-dashboard .sd-grid {
     display: grid;
-    gap: 16px;
+    gap: 24px;
 }
 .security-dashboard .sd-grid-2-3 {
     grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
@@ -2267,18 +2294,48 @@
     .security-dashboard .sd-grid-2-3 { grid-template-columns: 1fr; }
 }
 
+/* Cards: shared mission-control surface, hairline border, subtle inner
+   divider between header and body. */
 .security-dashboard .sd-card {
-    border-radius: 8px;
-    /* Use the same theme-aware tile surface as KPITile so the dashboard
-       reads as a unified mission-control surface — distinct from the
-       page bg, brighter text. */
+    border-radius: 10px;
     background: var(--mojo-kpi-tile-bg, var(--bs-tertiary-bg, #ffffff));
     border: 1px solid var(--mojo-kpi-tile-border, var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08)));
     color: var(--mojo-kpi-tile-fg, var(--bs-body-color));
 }
 
+.security-dashboard .sd-card .card-header {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--bs-border-color-translucent, rgba(255, 255, 255, 0.04));
+}
+
+.security-dashboard .sd-card .card-body {
+    padding: 16px 20px;
+}
+
 .security-dashboard .sd-card-title {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
     color: var(--mojo-kpi-tile-fg, var(--bs-emphasis-color, var(--bs-body-color)));
+}
+
+.security-dashboard .sd-card .card-subtitle {
+    margin-top: 3px;
+    font-size: 11.5px;
+    color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Bootstrap btn-outline-secondary needs higher contrast against the
+   deep dashboard surface — bump border + text + hover saturation. */
+[data-bs-theme="dark"] .security-dashboard .btn-outline-secondary {
+    color: #cfd6e0;
+    border-color: #2a3441;
+}
+[data-bs-theme="dark"] .security-dashboard .btn-outline-secondary:hover,
+[data-bs-theme="dark"] .security-dashboard .btn-outline-secondary.active {
+    color: var(--bs-emphasis-color, #fff);
+    background: #1c232c;
+    border-color: #3a4452;
 }
 
 /* Geography map + leaderboard side-by-side layout. */
