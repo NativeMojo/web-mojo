@@ -112,13 +112,16 @@ class KPIStrip extends View {
 
         const promises = [];
 
-        // 1) Batched series call with deltas. Backend expects
-        //    `slug=a,b,c` (comma-separated); slugs[]=… collapses all
-        //    results under a single 'default' key.
+        // 1) Batched series call with deltas. Param-name convention
+        //    matters — /api/metrics/series expects `slugs=a,b,c` (plural)
+        //    per the request docs; `slug=` is silently ignored and the
+        //    `data` map comes back empty. /api/metrics/fetch uses the
+        //    singular `slug=` form. Don't unify these — they're
+        //    different endpoints with different conventions.
         let seriesPromise = null;
         if (slugs.length) {
             const params = {
-                slug: slugs.join(','),
+                slugs: slugs.join(','),
                 account: this.account,
                 granularity: this.granularity,
                 with_delta: true,
