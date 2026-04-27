@@ -1,7 +1,7 @@
 # Charts — cleaner X / Y axis labels (nice numbers, DataFormatter, auto-rotate)
 
 **Type**: request
-**Status**: planned
+**Status**: Resolved — 2026-04-26
 **Date**: 2026-04-26
 **Priority**: medium
 
@@ -460,4 +460,60 @@ All three live behind existing options (`gridLines`, `xLabelFormat`, `valueForma
 
 ---
 ## Resolution
-**Status**: open
+**Status**: Resolved — 2026-04-26
+
+**Commits**:
+- `9b8eacf` — Charts: nice-number Y-axis ticks, X-rotation, granularity-driven X format
+- `d60fa63` — Charts: fix MetricsChart formatter defaults — time vs date, integer counts
+
+**What was implemented**
+
+Both phases of the plan landed, plus a follow-up commit fixing two formatter bugs surfaced by browser testing the live AdminDashboardPage.
+
+- **Y-axis nice numbers** — `_niceNumber(range, round)` and `_niceTicks(min, max, target)` helpers (~25 LOC) implement the Heckbert algorithm. `_buildGeometry` rebinds `min`/`max` to the snapped boundaries so plot, baselines, and labels share one scale. `gridLines` becomes a target hint, not a hard count. `_formatAxisValue` gains a `B` (billion) branch and step-aware decimal precision so very small or very large nice-tick ranges read cleanly.
+- **X-axis auto-rotation** — pre-flight pass in `_buildGeometry` measures `formatted.length × 6.5px`; if any label exceeds 90% of the slot width, sets `geom.xLabelsRotated = true` and bumps `_padBottomOverride` from null to 48. `_paintFrame`'s X-label loop branches on the flag: `text-anchor='end'` and `transform="rotate(-45 x y)"`. `_plotBottom` getter reads the override (per-paint) instead of the static `padBottom`. Truncation cap raised 10 → 24 chars (rotation handles long labels; truncation is fallback).
+- **MetricsChart granularity → xLabelFormat default** — new static map `X_LABEL_FORMAT_BY_GRANULARITY` plus a `_resolveXLabelFormat()` helper. `onActionGranularityChanged` and `setGranularity` push the new format into the child SeriesChart via `chart.xLabelFormat = ...`. Caller-supplied `tooltip.x` always wins (including explicit `null`).
+- **Follow-up: formatter bugs surfaced in live testing** (commit `d60fa63`):
+  - Granularity map used `date:'HH:mm'` for minutes/hours, but `HH/mm` are `time` formatter tokens, not `date`. The `date` formatter returned the literal format string. **Fixed**: switched to `time:'HH:mm'`. Verified live against DataFormatter — `time:'HH:mm'` on ISO `2026-04-26T17:00:00Z` returns `"10:00"`.
+  - `MetricsChart` default `tooltip.y = 'number'` resolved to 2-decimal precision (DataFormatter default), so integer ticks rendered as `60.00, 80.00, 100.00`. **Fixed**: default changed to `'number:0'`. AdminDashboardPage's explicit `tooltip: { y: 'number' }` updated to `'number:0'` for the same reason. Callers wanting decimals can pass `'number:2'`.
+
+**Files changed**
+
+Modified:
+- `src/extensions/charts/SeriesChart.js` — new `_niceNumber`, `_niceTicks`, `_padBottomOverride` field, `_plotBottom` getter using override, `_buildGeometry` rewritten with nice ticks + rotation pre-flight, `_paintFrame` X-label loop branches on rotation, `_formatAxisValue` gains `B` branch + step-aware decimals, `_truncateLabel` cap 10→24.
+- `src/extensions/charts/MetricsChart.js` — new `X_LABEL_FORMAT_BY_GRANULARITY` static map, new `_resolveXLabelFormat()` helper, `onInit` resolves format from helper, `onActionGranularityChanged` and `setGranularity` push the new format. Default `tooltip.y` changed from `'number'` to `'number:0'`.
+- `src/extensions/admin/account/AdminDashboardPage.js` — `tooltip.y` updated `'number'` → `'number:0'`.
+- `docs/web-mojo/extensions/Charts.md` — new "Axis label formatting" subsection on SeriesChart, new "X-axis label format defaults" subsection on MetricsChart with the granularity table; `gridLines` row describes target-count semantics.
+- `docs/web-mojo/README.md`, `README.md` — Charts blurb extended (docs-updater agent).
+- `CHANGELOG.md` — `### Improved — SeriesChart axis labels` block under `## Unreleased`.
+- `test/unit/SeriesChart.test.js` — new `describe('SeriesChart — axis labels (nice numbers)')` and `describe('SeriesChart — axis labels (X-rotation)')` blocks.
+- `test/unit/MetricsChart.test.js` — new `describe('MetricsChart — granularity → xLabelFormat default')` block (with format strings updated post-fix).
+
+**Tests run**
+
+- `npm run test:unit` → **501/503**. Only the 2 pre-existing JSDOM `ContextMenu` failures remain. All new tests pass: `_niceNumber`/`_niceTicks` math, X-rotation flag in both directions, granularity-format mapping for all five values + caller overrides.
+- `npm run lint` → **no new errors**. 16 pre-existing in `src/core/{View,Model,Page,Rest,Router,WebApp}.js` unchanged.
+- **Browser verification** at `?page=extensions/charts/series`: all 6 demo charts show clean Y-tick labels (`0, 10, 20, 30, 40` / `0, 50, 100, 150, 200` / `0, 20, 40, 60, 80, 100, 120` / etc.). When slots are tight, X labels rotate `-45°` automatically (visible on the grouped-bars card).
+- **Live DataFormatter validation** (post-fix): `time:'HH:mm'` on ISO datetime returns `"10:00"`; `date:'MMM D'` returns `"Apr 26"`; `date:'MMM YYYY'` returns `"Apr 2026"`; `number:0` on `67` returns `"67"`; `number:2` on `67` returns `"67.00"`.
+
+**Agent findings**
+
+- **test-runner** (afd629694c2a3d895): No new failures from `9b8eacf`. All failures match pre-existing baseline (2 ContextMenu unit, 3 integration alias, build artifacts). All 4 nice-number tests + 2 X-rotation tests + 7 granularity-format tests pass.
+- **docs-updater** (a2572c4be60c2ef8a): Confirmed the new subsections in `Charts.md` are accurate and the granularity table matches the source. Added Charts blurb extensions to `README.md:134` and `docs/web-mojo/README.md:132` mentioning nice-number ticks, auto-rotation, and granularity defaults. Possible follow-up (not touched): the directory listing in `docs/web-mojo/README.md:323` describes Charts.md as just "Native SVG charts" — could be aligned with the prose blurb above it, but cosmetic only.
+- **security-review** (a30aa048ef7738405): **No findings.** All four concerns clean:
+  - `xLabelFormat` flows through `dataFormatter.pipe()` which uses a registered-formatter lookup, no `eval` or `new Function`. A malicious format string fails to match any formatter and falls through with the raw label.
+  - `transform="rotate(-45 ${x} ${y})"` values are pure arithmetic results from `_xToPixel` / `_plotBottom` — no user string ever interpolated.
+  - `X_LABEL_FORMAT_BY_GRANULARITY[granularity]` prototype-pollution attempt: lookup of `__proto__`/`constructor` returns non-string; `dataFormatter.pipe` would throw on `.split('|')` and the try/catch returns the raw label. `|| null` fallback handles it cleanly.
+  - All `_formatXLabel` outputs are written via `.textContent`, not `innerHTML`.
+  - One **informational hardening note**: replacing the plain-object `X_LABEL_FORMAT_BY_GRANULARITY` with a `Map` would eliminate the theoretical prototype-key ambiguity entirely. No behavior issue today.
+
+**Docs updated**
+
+- `docs/web-mojo/extensions/Charts.md` (new subsections + table)
+- `docs/web-mojo/README.md:132` (Charts blurb extension)
+- `README.md:134` (Charts blurb extension)
+- `CHANGELOG.md` (`### Improved` block under `## Unreleased`)
+
+**Validation**
+
+End-to-end verified: unit tests pass with no regressions, lint clean, `npm run test:integration` results match the pre-existing baseline, browser shows all 6 SeriesChart demo cards rendering with clean integer Y-ticks. The two formatter bugs surfaced from live testing the granularity → time-format flow against the actual DataFormatter, confirming the round-trip works against the framework's own pipe parser. Both axis-label improvements and the formatter fix are non-breaking and additive.
