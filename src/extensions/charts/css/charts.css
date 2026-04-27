@@ -2447,6 +2447,23 @@
 }
 .security-dashboard .sd-pri-row:hover .sd-pri-actions { opacity: 1; }
 
+/* PieChart inside a dashboard card: never let its fixed-pixel
+   width (e.g. 200px) push the legend past the card edge at narrow
+   viewports. Constrains the SVG area to its parent and lets the
+   legend wrap naturally. */
+.security-dashboard .mini-pie-chart,
+.security-dashboard .mini-pie-wrapper {
+    max-width: 100%;
+}
+.security-dashboard .mini-pie-svg-area {
+    max-width: 100%;
+    flex-shrink: 0;
+}
+.security-dashboard .mini-pie-legend {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
 /* Distributions — Priority Buckets (matches mockup contract).
    3-col grid: [70px label/range stack | bar | num] */
 .security-dashboard .sd-bucket-list {
@@ -2559,6 +2576,27 @@
 }
 .security-dashboard .sd-auth-tile:hover {
     border-color: var(--bs-secondary-border-subtle, #adb5bd);
+}
+.security-dashboard .sd-auth-tile-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--bs-secondary-color, #6c757d);
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.security-dashboard .sd-auth-tile-suffix {
+    margin-left: 4px;
+    font-weight: 500;
+    opacity: 0.6;
+}
+.security-dashboard .sd-auth-tile-value {
+    font-size: 22px;
+    margin-top: 2px;
+    color: var(--mojo-kpi-tile-fg, var(--bs-body-color));
 }
 
 /* Health strip */

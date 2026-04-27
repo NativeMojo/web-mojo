@@ -11,11 +11,13 @@ import View from '@core/View.js';
 import MetricsChart from '@ext/charts/MetricsChart.js';
 import Modal from '@core/views/feedback/Modal.js';
 
+// Punchy labels keep all four sub-tiles on a single line at typical
+// dashboard widths. The full category strings live in `key`.
 const SUB_TILE_CATEGORIES = [
-    { key: 'password_reset',     label: 'Password Resets' },
-    { key: 'totp:login_failed',  label: 'TOTP Failures' },
-    { key: 'sessions:revoked',   label: 'Sessions Revoked' },
-    { key: 'account:deactivated',label: 'Accounts Deactivated' }
+    { key: 'password_reset',     label: 'Pwd Resets' },
+    { key: 'totp:login_failed',  label: 'TOTP Fails' },
+    { key: 'sessions:revoked',   label: 'Revoked' },
+    { key: 'account:deactivated',label: 'Deactivated' }
 ];
 
 class AuthFailuresPanel extends View {
@@ -44,8 +46,8 @@ class AuthFailuresPanel extends View {
                                     data-action="open-sub-tile"
                                     data-category="{{key}}">
                                 <div class="card-body py-2 px-3">
-                                    <div class="text-muted small text-uppercase fw-semibold" style="letter-spacing:0.06em;">{{label}} <small class="opacity-75 ms-1">24h</small></div>
-                                    <div class="sd-mono fs-4">{{display}}</div>
+                                    <div class="sd-auth-tile-label">{{label}} <span class="sd-auth-tile-suffix">24H</span></div>
+                                    <div class="sd-mono sd-auth-tile-value">{{display}}</div>
                                 </div>
                             </button>
                         </div>

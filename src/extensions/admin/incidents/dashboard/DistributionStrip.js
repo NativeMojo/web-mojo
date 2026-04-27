@@ -118,7 +118,11 @@ class DistributionStrip extends View {
             cutout: 0.6,
             width: 200,
             height: 200,
-            legendPosition: 'right',
+            // Bottom legend keeps the card responsive — right-positioned
+            // legend competes for horizontal space and overflows the card
+            // edge below ~1500px viewport (where the 3-col Distribution
+            // row collapses each card to a narrow column).
+            legendPosition: 'bottom',
             centerLabel: ({ total }) => total,
             centerSubLabel: 'TOTAL'
         });
