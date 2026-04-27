@@ -119,4 +119,42 @@ module.exports = async function (testContext) {
             expect(params.dr_end).toBeGreaterThan(params.dr_start);
         });
     });
+
+    describe('MetricsChart — granularity → xLabelFormat default', () => {
+        const granularities = [
+            { granularity: 'minutes', expected: "date:'HH:mm'" },
+            { granularity: 'hours',   expected: "date:'HH:mm'" },
+            { granularity: 'days',    expected: "date:'MMM D'" },
+            { granularity: 'weeks',   expected: "date:'MMM D'" },
+            { granularity: 'months',  expected: "date:'MMM YYYY'" }
+        ];
+
+        for (const { granularity, expected } of granularities) {
+            it(`maps granularity:'${granularity}' to ${expected}`, () => {
+                const m = new MetricsChart({ granularity });
+                expect(m._resolveXLabelFormat()).toBe(expected);
+            });
+        }
+
+        it('caller-supplied tooltip.x overrides the granularity default', () => {
+            const m = new MetricsChart({
+                granularity: 'hours',
+                tooltip: { x: "date:'YYYY-MM-DD'" }
+            });
+            expect(m._resolveXLabelFormat()).toBe("date:'YYYY-MM-DD'");
+        });
+
+        it('explicit tooltip.x: null preserves no-format intent', () => {
+            const m = new MetricsChart({
+                granularity: 'hours',
+                tooltip: { x: null }
+            });
+            expect(m._resolveXLabelFormat()).toBeNull();
+        });
+
+        it('unrecognized granularity falls back to null', () => {
+            const m = new MetricsChart({ granularity: 'fortnights' });
+            expect(m._resolveXLabelFormat()).toBeNull();
+        });
+    });
 };

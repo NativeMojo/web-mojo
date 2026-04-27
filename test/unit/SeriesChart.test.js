@@ -287,4 +287,91 @@ module.exports = async function (testContext) {
             expect(c.svg.querySelector('.mini-series-hit')).toBeFalsy();
         });
     });
+
+    describe('SeriesChart — axis labels (nice numbers)', () => {
+        it('_niceNumber picks the next 1/2/5 × 10ⁿ ceiling (round=false)', () => {
+            const c = new SeriesChart({});
+            expect(c._niceNumber(143.85, false)).toBe(200);
+            expect(c._niceNumber(75, false)).toBe(100);
+            // 0.5 is itself 5 × 10⁻¹ — already nice, stays as-is.
+            expect(c._niceNumber(0.5, false)).toBe(0.5);
+            expect(c._niceNumber(0.4, false)).toBe(0.5);
+            expect(c._niceNumber(11, false)).toBe(20);
+            expect(c._niceNumber(45, false)).toBe(50);
+        });
+
+        it('_niceNumber rounds to the nearest 1/2/5 × 10ⁿ (round=true)', () => {
+            const c = new SeriesChart({});
+            expect(c._niceNumber(7.5, true)).toBe(10);
+            expect(c._niceNumber(2.5, true)).toBe(2);
+            expect(c._niceNumber(4, true)).toBe(5);
+            expect(c._niceNumber(1.2, true)).toBe(1);
+        });
+
+        it('_niceTicks produces clean step + bounds enclosing the data', () => {
+            const c = new SeriesChart({});
+            const t1 = c._niceTicks(0, 137.5, 5);
+            // step must be a 1/2/5 × 10ⁿ value; bounds must enclose [0, 137.5].
+            expect(t1.niceMin).toBeLessThanOrEqual(0);
+            expect(t1.niceMax).toBeGreaterThanOrEqual(137.5);
+            expect(t1.niceMax % t1.step).toBe(0);
+            // count is integer ≥ 2.
+            expect(t1.count).toBeGreaterThanOrEqual(2);
+
+            const t2 = c._niceTicks(13, 87, 5);
+            expect(t2.niceMin).toBeLessThanOrEqual(13);
+            expect(t2.niceMax).toBeGreaterThanOrEqual(87);
+            // Steps remain a clean factor.
+            const factor = t2.step / Math.pow(10, Math.floor(Math.log10(t2.step)));
+            expect([1, 2, 5, 10]).toContain(factor);
+        });
+
+        it('builds geometry yLabels at nice tick values', () => {
+            const c = new SeriesChart({
+                data: { labels: ['a', 'b', 'c'], datasets: [{ label: 'A', data: [10, 80, 137] }] }
+            });
+            c._parseData(c._rawData);
+            c._w = 400; c._h = 200;
+            c.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            c._renderChart({ animate: false });
+            // First yLabel sits at the niceMax tick; texts should be clean integers (no decimals).
+            const labelTexts = c._currentGeometry.yLabels.map(l => l.text);
+            for (const text of labelTexts) {
+                // Either an integer string, or a K/M/B suffix — but never the
+                // raw "28.7" decimals from the old linear loop.
+                expect(/^-?\d+(\.\d)?[KMB]?$/.test(text) || /^\d+$/.test(text)).toBe(true);
+            }
+        });
+    });
+
+    describe('SeriesChart — axis labels (X-rotation)', () => {
+        const setup = (opts) => {
+            const c = new SeriesChart(opts);
+            c._parseData(c._rawData);
+            c._w = 400; c._h = 200;
+            c.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            c._renderChart({ animate: false });
+            return c;
+        };
+
+        it('flags rotation when labels exceed slot width', () => {
+            const longLabels = Array.from({ length: 8 }, (_, i) => `2026-04-26T${i.toString().padStart(2, '0')}:00:00.000Z`);
+            const c = setup({
+                chartType: 'line',
+                data: { labels: longLabels, datasets: [{ label: 'A', data: longLabels.map((_, i) => i + 1) }] }
+            });
+            expect(c._currentGeometry.xLabelsRotated).toBe(true);
+            // padBottom override should kick in.
+            expect(c._padBottomOverride).toBe(48);
+        });
+
+        it('does NOT flag rotation when labels fit', () => {
+            const c = setup({
+                chartType: 'line',
+                data: { labels: ['Jan', 'Feb', 'Mar'], datasets: [{ label: 'A', data: [1, 2, 3] }] }
+            });
+            expect(c._currentGeometry.xLabelsRotated).toBe(false);
+            expect(c._padBottomOverride).toBeNull();
+        });
+    });
 };

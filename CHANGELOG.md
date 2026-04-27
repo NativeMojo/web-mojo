@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### Improved — SeriesChart axis labels (nice numbers, formats, rotation)
+
+- **Y-axis ticks** now snap to clean `1/2/5 × 10ⁿ` values via the Heckbert
+  nice-number algorithm. The "API Metrics" chart and similar `MetricsChart`
+  consumers now show `0, 25, 50, 75, 100` instead of `0, 28.77, 57.54,
+  86.31, 115.08, 143.85`. `gridLines` becomes a target count; the algorithm
+  picks the closest clean fit.
+- **X-axis labels auto-rotate** `-45°` when they would overlap their slots.
+  The chart's bottom padding expands automatically. No configuration
+  required; rotation kicks in when labels collide.
+- **`MetricsChart` defaults `xLabelFormat`** based on `granularity`:
+  `minutes`/`hours` → `date:'HH:mm'` (`17:00`), `days`/`weeks` → `date:'MMM
+  D'` (`Apr 26`), `months` → `date:'MMM YYYY'` (`Apr 2026`). Caller-supplied
+  `tooltip.x` still wins. The default is re-applied when `setGranularity()`
+  is called.
+- Truncation cap raised from 10 → 24 chars (rotation handles long labels;
+  truncation is the fallback for pathological cases like UUIDs).
+- `_formatAxisValue` adds a `B` (billion) branch and step-aware decimal
+  precision so very small or very large nice-tick ranges read cleanly.
+
 ### Docs — Phase 3 of taxonomy realignment (undocumented public exports)
 
 - New doc pages in `docs/web-mojo/`:

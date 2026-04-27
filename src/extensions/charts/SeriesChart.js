@@ -59,6 +59,9 @@ class SeriesChart extends View {
         this.padRight = 12;
         this.padBottom = 24;
         this.padLeft = 40;
+        // Per-paint override (set by _buildGeometry when X-labels need extra
+        // room for rotation). Resets every paint; null falls back to padBottom.
+        this._padBottomOverride = null;
 
         // Line / area
         this.strokeWidth = options.strokeWidth || 2;
@@ -295,7 +298,7 @@ class SeriesChart extends View {
     get _plotLeft() { return this.padLeft; }
     get _plotTop() { return this.padTop; }
     get _plotRight() { return this._w - this.padRight; }
-    get _plotBottom() { return this._h - this.padBottom; }
+    get _plotBottom() { return this._h - (this._padBottomOverride ?? this.padBottom); }
     get _plotW() { return this._plotRight - this._plotLeft; }
     get _plotH() { return this._plotBottom - this._plotTop; }
 
@@ -397,40 +400,67 @@ class SeriesChart extends View {
     }
 
     _buildGeometry(min, max, count) {
+        // Reset per-paint pad override; pre-flight may bump it for rotation.
+        this._padBottomOverride = null;
+
+        // Snap (min, max) to "nice" tick boundaries so Y labels read as
+        // 0/25/50/75/100 instead of 0/28.77/57.54/...
+        const ticks = this._niceTicks(min, max, this.gridLines);
+        min = ticks.niceMin;
+        max = ticks.niceMax;
+        const tickStep = ticks.step;
+        const tickCount = ticks.count;
+
+        // Pre-flight: format X labels and decide whether they need rotation.
+        // Slot width depends on chart type; line/area labels sit AT data
+        // points so the slot is between them.
+        const maxXLabels = Math.max(2, Math.floor(this._plotW / 60));
+        const stepX = Math.max(1, Math.ceil(count / maxXLabels));
+        const formattedX = [];
+        for (let i = 0; i < count; i += stepX) {
+            const raw = this._labels[i] !== undefined ? this._labels[i] : '';
+            formattedX.push({ index: i, text: this._truncateLabel(this._formatXLabel(raw)) });
+        }
+        const slotW = (this.chartType === 'bar')
+            ? this._plotW / Math.max(1, count)
+            : this._plotW / Math.max(1, count - 1);
+        const widest = formattedX.reduce((m, l) => Math.max(m, l.text.length * 6.5), 0);
+        const xLabelsRotated = widest > slotW * 0.9;
+        if (xLabelsRotated) this._padBottomOverride = 48;
+
+        // baseline / plot dims now reflect the (possibly bumped) padBottom.
         const baseline = this._yToPixel(Math.max(min, Math.min(0, max)), min, max);
         const visible = this._visibleDatasets();
 
         const geom = {
             chartType: this.chartType,
             min, max, count, baseline,
+            xLabelsRotated,
             grid: [],
             yLabels: [],
             xLabels: [],
-            lines: [],   // [{ color, fillColor, fill, points: [{x,y}], smoothing }]
-            bars: []     // [{ color, fillColor, x, y, w, h, dsIdx, dataIdx, value, label }]
+            lines: [],
+            bars: []
         };
 
-        // Grid + Y-axis labels
-        if (this.showGrid || true) {
-            const steps = this.gridLines;
-            for (let i = 0; i <= steps; i++) {
-                const y = this._plotTop + (i / steps) * this._plotH;
-                geom.grid.push({ x1: this._plotLeft, y1: y, x2: this._plotRight, y2: y });
-                const value = max - (i / steps) * (max - min);
-                geom.yLabels.push({ x: this._plotLeft - 4, y: y + 3, text: this._formatAxisValue(value) });
-            }
+        // Grid + Y-axis labels — anchored to nice tick values.
+        for (let i = 0; i < tickCount; i++) {
+            const value = min + i * tickStep;
+            const y = this._yToPixel(value, min, max);
+            geom.grid.push({ x1: this._plotLeft, y1: y, x2: this._plotRight, y2: y });
+            geom.yLabels.push({
+                x: this._plotLeft - 4,
+                y: y + 3,
+                text: this._formatAxisValue(value, tickStep)
+            });
         }
 
-        // X-axis labels
-        const maxXLabels = Math.max(2, Math.floor(this._plotW / 60));
-        const stepX = Math.max(1, Math.ceil(count / maxXLabels));
-        for (let i = 0; i < count; i += stepX) {
+        // X-axis labels.
+        for (const { index, text } of formattedX) {
             const x = (this.chartType === 'bar')
-                ? this._barSlotCenter(i, count)
-                : this._xToPixel(i, count);
-            const raw = this._labels[i] !== undefined ? this._labels[i] : '';
-            const formatted = this._formatXLabel(raw);
-            geom.xLabels.push({ x, y: this._plotBottom + 14, text: this._truncateLabel(formatted) });
+                ? this._barSlotCenter(index, count)
+                : this._xToPixel(index, count);
+            geom.xLabels.push({ x, y: this._plotBottom + 14, text });
         }
 
         if (this.chartType === 'bar') {
@@ -548,12 +578,20 @@ class SeriesChart extends View {
             this.svg.appendChild(t);
         }
 
-        // X-axis labels
+        // X-axis labels — rotate -45° when they would overlap their slots.
         for (const l of geom.xLabels) {
-            const t = this._svgEl('text', {
-                x: l.x, y: l.y, 'text-anchor': 'middle',
-                'font-size': '10', fill: 'var(--bs-secondary-color, #6c757d)'
-            });
+            const attrs = {
+                x: l.x, y: l.y,
+                'font-size': '10',
+                fill: 'var(--bs-secondary-color, #6c757d)'
+            };
+            if (geom.xLabelsRotated) {
+                attrs['text-anchor'] = 'end';
+                attrs.transform = `rotate(-45 ${l.x} ${l.y})`;
+            } else {
+                attrs['text-anchor'] = 'middle';
+            }
+            const t = this._svgEl('text', attrs);
             t.textContent = l.text;
             this.svg.appendChild(t);
         }
@@ -998,20 +1036,62 @@ class SeriesChart extends View {
         return String(label);
     }
 
-    _formatAxisValue(value) {
+    // ── nice-number axis tick helpers ─────────────────────────────────
+    // Heckbert "Nice Numbers for Graph Labels" (Graphics Gems, 1990).
+    // Snaps a range to the nearest 1/2/5 × 10ⁿ value so axis labels read
+    // as 0/25/50/75/100 instead of 0/28.77/57.54/...
+
+    _niceNumber(range, round) {
+        if (!isFinite(range) || range <= 0) return 1;
+        const exponent = Math.floor(Math.log10(range));
+        const fraction = range / Math.pow(10, exponent);
+        let nice;
+        if (round) {
+            if (fraction < 1.5)      nice = 1;
+            else if (fraction < 3)   nice = 2;
+            else if (fraction < 7)   nice = 5;
+            else                     nice = 10;
+        } else {
+            if (fraction <= 1)       nice = 1;
+            else if (fraction <= 2)  nice = 2;
+            else if (fraction <= 5)  nice = 5;
+            else                     nice = 10;
+        }
+        return nice * Math.pow(10, exponent);
+    }
+
+    _niceTicks(min, max, target) {
+        if (min === max) { min -= 1; max += 1; }
+        const range = this._niceNumber(max - min, false);
+        const step = this._niceNumber(range / Math.max(1, target - 1), true);
+        const niceMin = Math.floor(min / step) * step;
+        const niceMax = Math.ceil(max / step) * step;
+        const count = Math.round((niceMax - niceMin) / step) + 1;
+        return { niceMin, niceMax, step, count };
+    }
+
+    _formatAxisValue(value, step) {
         if (this.valueFormatter) {
             if (typeof this.valueFormatter === 'function') return this.valueFormatter(value);
             return this.dataFormatter.pipe(value, this.valueFormatter);
         }
+        if (Math.abs(value) >= 1_000_000_000) return (value / 1_000_000_000).toFixed(1) + 'B';
         if (Math.abs(value) >= 1_000_000) return (value / 1_000_000).toFixed(1) + 'M';
         if (Math.abs(value) >= 1_000) return (value / 1_000).toFixed(1) + 'K';
         if (Number.isInteger(value)) return String(value);
-        return value.toFixed(1);
+        // Pick decimal precision from the tick step so a step of 0.001 doesn't
+        // collapse to "0.0". Caller passes step for nice-tick contexts.
+        const decimals = step && step > 0 && step < 1
+            ? Math.max(0, -Math.floor(Math.log10(step)))
+            : 1;
+        return value.toFixed(decimals);
     }
 
+    // Rotated labels need more headroom; truncation is a fallback for the
+    // pathological case (UUIDs, multi-field labels).
     _truncateLabel(text) {
         const s = String(text);
-        return s.length > 10 ? s.substring(0, 9) + '…' : s;
+        return s.length > 24 ? s.substring(0, 23) + '…' : s;
     }
 
     // ── color helpers ─────────────────────────────────────────────────

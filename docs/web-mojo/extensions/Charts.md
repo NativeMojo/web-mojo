@@ -124,6 +124,7 @@ Bars and area fills derive from the line color with reduced alpha unless you set
 | `xLabelFormatter`   | `null`         | `(label) => string` (function form) |
 | `colors`            | (10-palette)   | Array of color strings |
 | `colorGenerator`    | (golden-angle) | `(i) => string` for palette overflow |
+| `gridLines`         | `5`            | Target Y-tick count. Algorithm picks the closest "nice" fit (1/2/5 × 10ⁿ steps), so the actual count may differ slightly. |
 | `animate`           | `true`         | Animate `setData` updates |
 | `animationDuration` | `300`          | ms |
 | `crosshairTracking` | `false`        | Line/area only. Cursor anywhere over the plot snaps to the nearest column and shows a multi-row tooltip + per-dataset ghost dot. Bar charts ignore this flag. |
@@ -144,6 +145,23 @@ In tracking mode, `chart:click` emits the column for the first visible
 dataset (matches Chart.js `mode: 'index'`). For per-dataset click events,
 leave `crosshairTracking: false` and the existing per-dot click flow stays
 unchanged.
+
+#### Axis label formatting
+
+- **Y-axis ticks** snap to clean `1/2/5 × 10ⁿ` values (Heckbert nice-number
+  algorithm). `gridLines` is a target count, not a hard count — the
+  algorithm picks whatever lands cleanest near it.
+- **Y-axis text** routes through `valueFormatter` (DataFormatter pipe string
+  or `(v) => string` function). When unset, large values get `K`/`M`/`B`
+  suffixes; small fractional ranges auto-pick decimal precision from the
+  step.
+- **X-axis text** routes through `xLabelFormat` (pipe string) or
+  `xLabelFormatter` (function). When neither is set, raw labels render.
+  See [DataFormatter](../core/DataFormatter.md) for the available pipes.
+- **X-axis auto-rotation:** if any formatted label is wider than its slot,
+  all X labels rotate `-45°` and the bottom padding grows to fit. No
+  configuration needed; rotation kicks in automatically when labels
+  collide.
 
 ### Methods
 
@@ -253,6 +271,24 @@ this.metrics.setDateRange(startDate, endDate);
 this.metrics.setMetrics(['user_activity_day']);
 this.metrics.getStats();
 ```
+
+### X-axis label format defaults
+
+`MetricsChart` picks a sensible default `xLabelFormat` for the child
+`SeriesChart` based on the current `granularity`:
+
+| `granularity` | Default `xLabelFormat` | Example output |
+|---|---|---|
+| `minutes` / `hours` | `date:'HH:mm'` | `17:00` |
+| `days` / `weeks` | `date:'MMM D'` | `Apr 26` |
+| `months` | `date:'MMM YYYY'` | `Apr 2026` |
+
+Pass `tooltip: { x: 'date:\'YYYY-MM-DD\'' }` (or any pipe string) to override.
+Pass `tooltip: { x: null }` for no formatting (raw labels). The default is
+re-applied when `setGranularity()` is called.
+
+See the [DataFormatter `date`](../core/DataFormatter.md#date) reference for
+all format tokens.
 
 ### Notes
 

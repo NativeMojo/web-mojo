@@ -93,13 +93,24 @@ class MetricsChart extends View {
             chartType: this.chartType,
             height: this.height,
             valueFormatter: this.tooltip?.y || null,
-            xLabelFormat: this.tooltip?.x || null,
+            xLabelFormat: this._resolveXLabelFormat(),
             colors: this.colors,
             colorGenerator: this.colorGenerator,
             showLegend: true,
             legendPosition: 'top'
         });
         this.addChild(this.chart);
+    }
+
+    /**
+     * Resolve the xLabelFormat for the child chart. Caller-supplied
+     * `tooltip.x` always wins (including explicit `null` for no formatting);
+     * otherwise default from the granularity.
+     * @private
+     */
+    _resolveXLabelFormat() {
+        if (this.tooltip && this.tooltip.x !== undefined) return this.tooltip.x;
+        return MetricsChart.X_LABEL_FORMAT_BY_GRANULARITY[this.granularity] || null;
     }
 
     async onAfterRender() {
@@ -205,6 +216,11 @@ class MetricsChart extends View {
         this.granularity = v;
         this.setQuickRange(MetricsChart.GRANULARITY_DEFAULTS[v] || '24h');
         this._updateDropdownActive('granularity-changed', v, 'value');
+        // Update the child chart's xLabelFormat to match the new granularity
+        // unless the caller pinned `tooltip.x`.
+        if (this.chart && (!this.tooltip || this.tooltip.x === undefined)) {
+            this.chart.xLabelFormat = this._resolveXLabelFormat();
+        }
         await this.fetchData();
     }
 
@@ -401,6 +417,17 @@ class MetricsChart extends View {
         months:  '30d'
     };
 
+    // Default xLabelFormat for the child SeriesChart, picked by granularity.
+    // Caller-supplied `tooltip.x` overrides; pass `tooltip: { x: null }` for
+    // explicit "no format" (raw labels).
+    static X_LABEL_FORMAT_BY_GRANULARITY = {
+        minutes: "date:'HH:mm'",
+        hours:   "date:'HH:mm'",
+        days:    "date:'MMM D'",
+        weeks:   "date:'MMM D'",
+        months:  "date:'MMM YYYY'"
+    };
+
     setQuickRange(range) {
         const now = new Date();
         let start;
@@ -429,6 +456,9 @@ class MetricsChart extends View {
 
     setGranularity(granularity) {
         this.granularity = granularity;
+        if (this.chart && (!this.tooltip || this.tooltip.x === undefined)) {
+            this.chart.xLabelFormat = this._resolveXLabelFormat();
+        }
         return this.fetchData();
     }
 
