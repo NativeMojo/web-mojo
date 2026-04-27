@@ -15,7 +15,7 @@ export { default as ApiKeyTablePage } from './account/api_keys/ApiKeyTablePage.j
 export { default as ApiKeyView } from './account/api_keys/ApiKeyView.js';
 
 // Incidents
-export { default as IncidentDashboardPage } from './incidents/IncidentDashboardPage.js';
+export { default as IncidentDashboardPage } from './incidents/dashboard/SecurityDashboardPage.js';
 export { default as IncidentTablePage } from './incidents/IncidentTablePage.js';
 export { default as EventTablePage } from './incidents/EventTablePage.js';
 export { default as TicketTablePage } from './incidents/TicketTablePage.js';

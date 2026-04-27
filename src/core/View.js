@@ -306,6 +306,13 @@ export class View {
       const container = this.getChildElement(child.containerId);
       if (!container) continue;
       container.__mojoLazyChild = child;
+      // IntersectionObserver doesn't fire on 0-height elements. Give the
+      // placeholder a minimal height so the observer can measure it; this
+      // is overridden once the real child mounts and fills the container.
+      if (!container.style.minHeight) {
+        container.classList.add('mojo-lazy-placeholder');
+        container.style.minHeight = '1px';
+      }
       this._lazyObserver.observe(container);
     }
   }

@@ -2155,4 +2155,220 @@
     padding: 16px 20px 20px;
 }
 
+/* ==========================================================================
+   Security Dashboard layout — single-page mission-control.
+   Visual contract documented in planning/mockups/security_dashboard.
+   ========================================================================== */
+
+.security-dashboard-page .security-dashboard {
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 0 8px;
+}
+
+.sd-page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 12px 4px 16px;
+    border-bottom: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.08));
+    margin-bottom: 16px;
+}
+
+.sd-page-title {
+    margin: 4px 0 0;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    color: var(--bs-body-color);
+}
+
+.sd-page-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.security-dashboard .sd-eyebrow {
+    display: inline-block;
+    margin: 0;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--bs-secondary-color, #6c757d);
+}
+
+.security-dashboard .sd-section {
+    margin-bottom: 24px;
+}
+
+.security-dashboard .sd-section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    padding: 0 2px;
+}
+
+.security-dashboard .sd-section-meta {
+    font-variant-numeric: tabular-nums;
+}
+
+/* grid helpers — used by SecurityDashboardPage's hero row */
+.security-dashboard .sd-grid {
+    display: grid;
+    gap: 16px;
+}
+.security-dashboard .sd-grid-2-3 {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+}
+@media (max-width: 1100px) {
+    .security-dashboard .sd-grid-2-3 { grid-template-columns: 1fr; }
+}
+
+.security-dashboard .sd-card {
+    border-radius: 8px;
+}
+
+.security-dashboard .sd-card-title {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+}
+
+.security-dashboard .sd-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Priority queue — list rows */
+.security-dashboard .sd-priority-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.security-dashboard .sd-pri-row {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    gap: 14px;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, 0.06));
+    cursor: pointer;
+    transition: background-color 100ms ease;
+}
+.security-dashboard .sd-pri-row:last-child { border-bottom: 0; }
+.security-dashboard .sd-pri-row:hover { background: var(--bs-tertiary-bg, rgba(0, 0, 0, 0.025)); }
+
+.security-dashboard .sd-pri {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    padding: 3px 0;
+    border-radius: 3px;
+    text-align: center;
+    width: 100%;
+    color: #fff;
+}
+.security-dashboard .sd-pri-critical { background: var(--bs-danger,  #dc3545); }
+.security-dashboard .sd-pri-high     { background: var(--bs-orange,  #fd7e14); }
+.security-dashboard .sd-pri-warn     { background: var(--bs-warning, #ffc107); color: #1a1300; }
+.security-dashboard .sd-pri-info     { background: var(--bs-info,    #0dcaf0); color: #001823; }
+
+.security-dashboard .sd-pri-body { min-width: 0; }
+.security-dashboard .sd-pri-title {
+    display: block;
+    font-weight: 500;
+    color: var(--bs-body-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.security-dashboard .sd-pri-meta {
+    display: block;
+    margin-top: 2px;
+    font-size: 11.5px;
+    color: var(--bs-secondary-color, #6c757d);
+    font-variant-numeric: tabular-nums;
+}
+.security-dashboard .sd-pri-actions {
+    display: inline-flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 100ms ease;
+}
+.security-dashboard .sd-pri-row:hover .sd-pri-actions { opacity: 1; }
+
+/* Distributions — bucket bars */
+.security-dashboard .sd-bucket-row {
+    cursor: pointer;
+}
+.security-dashboard .sd-progress {
+    background: var(--bs-tertiary-bg, rgba(0, 0, 0, 0.05));
+}
+
+/* Top sources — rank rows */
+.security-dashboard .sd-rank-list {
+    margin: 0;
+}
+.security-dashboard .sd-rank-row {
+    cursor: pointer;
+    transition: background-color 100ms ease;
+}
+.security-dashboard .sd-rank-row:hover {
+    background: var(--bs-tertiary-bg, rgba(0, 0, 0, 0.025));
+}
+
+/* Auth sub-tiles — small clickable tiles below the chart */
+.security-dashboard .sd-auth-tile {
+    appearance: none;
+    background: var(--bs-body-bg);
+    color: inherit;
+    border-color: var(--bs-border-color);
+    cursor: pointer;
+    transition: border-color 120ms ease;
+}
+.security-dashboard .sd-auth-tile:hover {
+    border-color: var(--bs-secondary-border-subtle, #adb5bd);
+}
+
+/* Health strip */
+.security-dashboard .sd-health-summary {
+    cursor: pointer;
+    list-style: none;
+}
+.security-dashboard .sd-health-summary::-webkit-details-marker { display: none; }
+.security-dashboard .sd-health-card[open] .sd-health-toggle { transform: rotate(0deg); }
+.security-dashboard .sd-health-card:not([open]) .sd-health-toggle { transform: rotate(180deg); }
+.security-dashboard .sd-health-toggle { transition: transform 150ms ease; }
+
+.security-dashboard .sd-health-row-link { cursor: pointer; }
+.security-dashboard .sd-health-row-link:hover { background: var(--bs-tertiary-bg, rgba(0, 0, 0, 0.025)); }
+
+.security-dashboard .sd-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bs-tertiary-color, #adb5bd);
+}
+.security-dashboard .sd-dot-good { background: var(--bs-success, #198754); box-shadow: 0 0 6px rgba(25, 135, 84, 0.4); }
+.security-dashboard .sd-dot-warn { background: var(--bs-warning, #ffc107); box-shadow: 0 0 6px rgba(255, 193, 7, 0.4); }
+.security-dashboard .sd-dot-crit { background: var(--bs-danger,  #dc3545); box-shadow: 0 0 8px rgba(220, 53, 69, 0.55); }
+
+/* Refresh button spinner */
+.bi-spin {
+    animation: bi-spin-anim 1s linear infinite;
+    display: inline-block;
+}
+@keyframes bi-spin-anim {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
 

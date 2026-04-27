@@ -18,7 +18,7 @@ export { default as ApiKeyTablePage } from '@ext/admin/account/api_keys/ApiKeyTa
 export { default as CloudWatchDashboardPage } from '@ext/admin/aws/CloudWatchDashboardPage.js';
 export { default as CloudWatchChart } from '@ext/admin/aws/CloudWatchChart.js';
 
-export { default as IncidentDashboardPage } from '@ext/admin/incidents/IncidentDashboardPage.js';
+export { default as IncidentDashboardPage } from '@ext/admin/incidents/dashboard/SecurityDashboardPage.js';
 export { default as IncidentTablePage } from '@ext/admin/incidents/IncidentTablePage.js';
 export { default as EventTablePage } from '@ext/admin/incidents/EventTablePage.js';
 export { default as TicketTablePage } from '@ext/admin/incidents/TicketTablePage.js';
@@ -139,7 +139,7 @@ import GeoLocatedIPTablePageClass from '@ext/admin/account/devices/GeoLocatedIPT
 import ApiKeyTablePageClass from '@ext/admin/account/api_keys/ApiKeyTablePage.js';
 import CloudWatchDashboardPageClass from '@ext/admin/aws/CloudWatchDashboardPage.js';
 
-import IncidentDashboardPageClass from '@ext/admin/incidents/IncidentDashboardPage.js';
+import IncidentDashboardPageClass from '@ext/admin/incidents/dashboard/SecurityDashboardPage.js';
 import IncidentTablePageClass from '@ext/admin/incidents/IncidentTablePage.js';
 import EventTablePageClass from '@ext/admin/incidents/EventTablePage.js';
 import TicketTablePageClass from '@ext/admin/incidents/TicketTablePage.js';
