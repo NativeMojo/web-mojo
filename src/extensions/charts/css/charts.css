@@ -2209,25 +2209,39 @@
 /* ── Dashboard-scoped dark theme tuning ──────────────────────────────
    The mock contract uses a deeper near-black for the page surface and
    a slightly lighter shade for cards/tiles — the inverse of Bootstrap's
-   default dark-theme behavior. Scope the override to the dashboard so
-   other dark-theme pages keep Bootstrap defaults.
+   default dark-theme behavior.
 
-   Page bg     = #0a0d11 (mock --sd-bg)
-   Card surface = #11161d (mock --sd-surface) — already wired through
-                  --mojo-kpi-tile-bg in the dark-theme block higher up.
-   Border       = #1f2630 — a step up from card surface, low contrast.
+   Override --mojo-portal-bg at the `.portal-layout` level (using
+   :has() to scope to when the dashboard page is active) so the dark
+   surface extends across all portal chrome — the gap around the
+   page-container, the area beneath a short dashboard, etc. — not just
+   the page element itself. Without this, the lighter Bootstrap default
+   bleeds through every padding edge.
+
+   Page bg      = #0a0d11 (mock --sd-bg)
+   Card surface = #11161d (mock --sd-surface) — wired via
+                  --mojo-kpi-tile-bg in the [data-bs-theme="dark"]
+                  block higher up.
+   Border       = #1f2630 — one step up from card surface.
    Hairlines    = subtle white at 4% for in-card dividers.
    ──────────────────────────────────────────────────────────────────── */
+[data-bs-theme="dark"] .portal-layout:has(.security-dashboard-page) {
+    --mojo-portal-bg: #0a0d11;
+    background: #0a0d11;
+}
+
 [data-bs-theme="dark"] .security-dashboard-page {
     background: #0a0d11;
     --bs-body-bg: #0a0d11;
     --bs-border-color-translucent: rgba(255, 255, 255, 0.04);
 }
 
-/* Push the Bootstrap dark page bg behind the dashboard too — so the
-   page-container's bg (set elsewhere) doesn't bleed through if the
-   page is shorter than the viewport. */
-[data-bs-theme="dark"] .page-container:has(.security-dashboard-page) {
+/* Defensive fall-throughs for the page-container and portal-content,
+   in case the layout's :has() doesn't apply (older browsers, alternate
+   shells). The bg is harmless when the dashboard isn't visible because
+   the selectors require the dashboard page to be present. */
+[data-bs-theme="dark"] .page-container:has(.security-dashboard-page),
+[data-bs-theme="dark"] .portal-content:has(.security-dashboard-page) {
     background: #0a0d11;
 }
 
