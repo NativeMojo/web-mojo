@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Type | bug |
-| Status | planned |
+| Status | resolved |
 | Date | 2026-04-27 |
 | Severity | medium |
 
@@ -403,3 +403,137 @@ Light theme is untouched. No `!important`. Single-file CSS change.
   `.message-text` which the chat.css dark overrides already cover.
   Only re-tone if the screenshot pass shows a regression.
 - **Light theme polish.** Strictly no light-mode changes.
+
+---
+
+## Resolution
+**Status**: Resolved — 2026-04-27
+
+**Commit**: `b67a36c` — *lots of cleanup and examples* (the user
+folded my CSS slice into a broader sweep commit; the
+assistant-panel block landed verbatim, see `git show b67a36c --
+src/extensions/admin/css/admin.css`).
+
+**Files changed (my slice of `b67a36c`)**:
+- `src/extensions/admin/css/admin.css` — appended a 42-line trailing
+  block of `[data-bs-theme="dark"]` overrides covering 13 selectors:
+  `.assistant-sidebar`, `.assistant-main`, `.conversation-item:hover`,
+  `.conversation-item.active`, `.assistant-suggestion`,
+  `.assistant-suggestion:hover`, `.assistant-input-box` (with
+  `box-shadow: none`), `.chat-thinking-content`,
+  `.assistant-panel-header`, `.assistant-panel-history`,
+  `.assistant-panel-chat`, `.assistant-panel-header-btn:hover`,
+  `.conversation-search-input`. Pattern mirrors the `chat.css` and
+  `portal.css` "base-light + dark-overrides" convention.
+- `CHANGELOG.md` — entry under `## Unreleased` documenting the fix
+  and the no-`!important` opt-out path.
+- `planning/issues/assistant-panel-dark-theme.md` — Plan + this
+  Resolution.
+
+**Tests run**:
+- `npm run lint` — 71 problems (16 errors, 55 warnings) — **identical
+  to the pre-change baseline**. CSS isn't linted; JS untouched.
+- `npm run test:unit` — 530/531 passed. The 1 failure ("includes
+  granularity, account, slugs, date range") is **pre-existing** and
+  unrelated to CSS.
+- Browser preview verification (dev server on port 3000): forced
+  `app.setTheme('dark')`, then injected a synthetic DOM mirroring the
+  `AssistantPanelView` template off-screen and read computed
+  background colors against the new tokens. Every measurement
+  matched the planned hex values:
+
+  | Selector | Computed bg | Token |
+  |---|---|---|
+  | `.assistant-sidebar` | `rgb(17, 22, 29)` | `--bs-tertiary-bg` ✓ |
+  | `.assistant-main` | `rgb(10, 13, 17)` | `--bs-body-bg` ✓ |
+  | `.assistant-panel-header` | `rgb(17, 22, 29)` | `--bs-tertiary-bg` ✓ |
+  | `.assistant-panel-history` | `rgb(17, 22, 29)` | `--bs-tertiary-bg` ✓ |
+  | `.assistant-panel-chat` | `rgb(10, 13, 17)` | `--bs-body-bg` ✓ |
+  | `.assistant-suggestion` | `rgb(17, 22, 29)` | `--bs-tertiary-bg` ✓ |
+  | `.assistant-input-box` | `rgb(17, 22, 29)` (shadow `none`) | `--bs-tertiary-bg` ✓ |
+  | `.chat-thinking-content` | `rgb(17, 22, 29)` | `--bs-tertiary-bg` ✓ |
+  | `.conversation-item.active` | `rgba(255, 255, 255, 0.1)` | white tint ✓ |
+  | `.conversation-search-input` | `rgb(10, 13, 17)` | `--bs-body-bg` ✓ |
+
+  Then forced `app.setTheme('light')` and re-measured the same
+  surfaces — all returned **byte-identical** to the pre-change
+  values:
+
+  | Selector | Light bg |
+  |---|---|
+  | `.assistant-sidebar` | `rgb(247, 247, 248)` (= `#f7f7f8`) |
+  | `.assistant-main` | `rgb(255, 255, 255)` (= `#fff`) |
+  | `.assistant-panel-header` | `rgb(247, 247, 248)` |
+  | `.assistant-panel-history` | `rgb(247, 247, 248)` |
+  | `.assistant-panel-chat` | `rgb(255, 255, 255)` |
+  | `.assistant-suggestion` | `rgb(255, 255, 255)` |
+  | `.assistant-input-box` | `rgb(255, 255, 255)` (shadow preserved: `rgba(0, 0, 0, 0.06) 0px 1px 6px 0px`) |
+  | `.chat-thinking-content` | `rgb(247, 247, 248)` |
+  | `.conversation-item.active` | `rgba(0, 0, 0, 0.1)` |
+  | `.conversation-search-input` | `rgb(255, 255, 255)` |
+
+  Light theme acceptance criterion confirmed: zero changes.
+
+**Follow-up agents** (post-commit, all clean):
+- **test-runner** — full suite. No new regressions; unit tests still
+  530/531, integration baseline still 0/3 (pre-existing infra
+  errors), build baseline still 3/10 (pre-existing missing-`dist/`),
+  lint still 71. The CSS-only addition didn't move any metric.
+- **docs-updater** — confirmed `docs/web-mojo/extensions/Admin.md`
+  and `docs/web-mojo/components/ChatView.md` carry no hex values,
+  CSS-hook claims, or "light only" statements about the assistant
+  panel. The plan's "no doc updates needed" call was correct. No
+  changes.
+- **security-review** — no findings. Pure cosmetic CSS. The 14
+  selectors all target the literal string `[data-bs-theme="dark"]`
+  (CSS attribute selectors match exact string only), no `url()` /
+  `expression()` / `attr()` calls, no `!important`, no
+  security-relevant UI elements masked, no secrets in the CHANGELOG.
+
+**Docs updated**:
+- `CHANGELOG.md` ✓
+- `docs/web-mojo/` — no changes (confirmed by docs-updater agent).
+
+**Validation**:
+The browser-preview measurement pass (CSS custom properties +
+computed-style inspection across 11 selectors in both themes)
+confirms every acceptance criterion:
+- The assistant's empty-state hero, header strip, suggestion chips,
+  composer input, history rail, conversation search, and thinking
+  pill all render against dark surfaces under
+  `[data-bs-theme="dark"]`.
+- Suggestion chips read against `--bs-tertiary-bg` (`#11161d`)
+  surface with `--bs-border-color` (`#1f2630`) borders and
+  `--bs-secondary-bg` (`#161b22`) hover — text uses
+  `var(--bs-body-color)` which falls through to Bootstrap's dark
+  default (`#dee2e6`) and reads cleanly.
+- Light theme byte-identical to pre-change.
+- No `!important` introduced (security-review confirmed).
+
+**Acceptance criteria**:
+- [x] Hero, header strip, suggestion chips, composer input, history
+      rail, and `assistant-main` modal-fullscreen surface all render
+      against dark surfaces under `[data-bs-theme="dark"]`.
+- [x] Suggestion chips remain readable (text, border, hover).
+- [x] Conversation-item hover/active states have a dark-mode
+      counterpart so row separation remains visible against a dark
+      rail (rgba white tints at the same opacity as the original
+      black tints).
+- [x] Light theme is unchanged (verified byte-identical).
+- [x] No `!important` introduced (verified by security-review
+      agent).
+
+**Known follow-up (out of scope for this fix, separate issue
+warranted)**:
+- The cream/yellow disconnected banner is still cream/yellow under
+  dark mode. Per this issue's "Related but separate" section, the
+  root cause is `src/core/css/core.css:30` defining
+  `--bs-warning-bg-subtle: #fef7e0` in the framework's *unscoped*
+  base `:root` block, which leaks the light-mode token into dark
+  theme. Same pattern applies to all
+  `--bs-{primary,success,info,danger,warning}-bg-subtle`,
+  `--bs-*-border-subtle`, and `--bs-*-text-emphasis` declarations
+  in that block. Fix requires either scoping those to
+  `:root[data-bs-theme="light"]` or deleting them so Bootstrap's
+  dark-theme values win. Worth a focused `/bug` filing to track
+  separately.
