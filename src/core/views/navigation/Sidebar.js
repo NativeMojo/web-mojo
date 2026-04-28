@@ -205,6 +205,7 @@ class Sidebar extends View {
         this.groupSelectorDialog = new ModalView({
             body: searchView,
             size: 'md',
+            eyebrow: "Select Group",
             header: null,
             noBodyPadding: true,
             scrollable: false,

@@ -2,6 +2,130 @@
 
 ## Unreleased
 
+### Feature — Modal eyebrow band: redesign + global controls
+
+- `ModalView` now accepts an `eyebrow` constructor option directly:
+  - `eyebrow: 'TEXT'` sets the band's label via the `--mojo-eyebrow` CSS
+    custom property (no need to drop down to inline `style`).
+  - `eyebrow: false` / `eyebrow: null` adds `modal-bandless` to the
+    modal root, suppressing the colored slab entirely.
+  - `eyebrow: undefined` keeps the default behavior (band visible,
+    label whatever the helper supplied).
+- New global toggles on `Modal`:
+  - `Modal.setEyebrowEnabled(boolean)` — adds/removes the
+    `mojo-no-eyebrow` class on `<html>`. SSR-safe (no-op when
+    `document` is undefined).
+  - `Modal.isEyebrowEnabled()` — reads the current state.
+  - The CSS-only path is still equivalent — set `class="mojo-no-eyebrow"`
+    on `<html>` or `<body>` directly if you prefer.
+- Per-modal `eyebrow` and `modal-bandless` overrides still win when
+  the global toggle is on, so individual dialogs can opt back in.
+- Bug fix in `Modal.confirm()`: clicking **Confirm** previously
+  resolved to `false` because the inner `onAction` returned literal
+  `true`, which `_renderAndAwait` interpreted as "use the button's
+  default action string" and substituted `'confirm'`. Final equality
+  check `result === true` then always failed. Removed the wrapper and
+  compare against the action string directly. Cancel/dismiss still
+  resolves to `false`.
+
+### CSS — Modal chrome: stock Bootstrap 5 look, custom eyebrow only
+
+- Stripped the custom `.modal-content` overrides (14px radius, custom
+  border, custom shadow stack) and the bespoke `.modal-header` /
+  `.modal-footer` / `.modal-body` padding rules. The card now reads as
+  a stock Bootstrap 5 modal driven by `--bs-modal-*` tokens (border
+  radius, padding, border, header/footer dividers).
+- The eyebrow band's top corners use
+  `var(--bs-modal-inner-border-radius)` so they always track Bootstrap's
+  card radius — no hardcoded `14px` left.
+- Removed `border-bottom` on `.modal-header` and `border-top` on
+  `.modal-footer`. The eyebrow band already separates header from body,
+  and the footer's button cluster anchors itself.
+- Default eyebrow is now neutral and theme-aware:
+  `--mojo-current-accent: var(--bs-secondary-bg)` and
+  `--mojo-current-eyebrow-fg: var(--bs-secondary-color)`. Quiet gray
+  band in light mode, dark slab in dark mode.
+- Typed alerts (`.modal-alert.modal-alert-{success|warning|error}`)
+  override `--mojo-current-accent`, `--mojo-current-tint`, and
+  `--mojo-current-eyebrow-fg` at higher specificity, so they keep their
+  vivid colored bands. Untyped alerts (`Modal.alert` without a `type`)
+  fall back to `--mojo-dialog-accent`.
+- Brought back the subtle card-background tint as a separate concept
+  via the new `--mojo-current-tint` variable. Default modals get a
+  brand-color tint at 5% (light) / 10% (dark); typed alerts tint with
+  their type color. The band and the tint can now diverge — quiet
+  band, branded surface.
+- New `.modal-body.modal-body-flush:last-child` rule: edge-to-edge
+  bodies (e.g. `noBodyPadding: true` with no footer) clip their
+  bottom corners to `var(--bs-modal-inner-border-radius)` so content
+  doesn't square off against the rounded card. `overflow: hidden` is
+  scoped to the body — descendant popovers from `.modal-content`
+  (dropdowns, MultiSelectDropdown, ContextMenu) still escape the card.
+- Eyebrow-disabled modes (`.modal-bandless` and the global
+  `.mojo-no-eyebrow`) now reset the close X back to Bootstrap's
+  default flex-positioned button: `position: static`, `1em` size,
+  cleared filter (with `[data-bs-theme="dark"]` restoring the white
+  filter via `var(--bs-btn-close-white-filter)`). The band-anchored
+  white close X is now scoped to `.modal.modal-alert` only.
+- Dark-mode modal box-shadow: Bootstrap ships none by default, so the
+  card vanished against the dark backdrop. Added a soft white inner
+  halo (`rgba(255, 255, 255, 0.08)`) plus a deep drop shadow so the
+  card edge reads and the elevation still feels lifted.
+
+### Fix — `ModalView.buildBody`: `noBodyPadding` consistency
+
+- The `bodyView` branch was emitting `px-0 pt-4 pb-3` (Bootstrap
+  utilities, all `!important`), while the string branch emitted `p-0`.
+  The View-branch values clobbered the band-clearance CSS rules and
+  the bottom-padding default, leaving headerless body-views stuck
+  under the eyebrow band and a wide empty gap above the bottom edge.
+  Both branches now emit a single `modal-body-flush` class, with all
+  spacing/clipping handled by CSS (band-aware top reserve, edge-to-edge
+  sides, rounded bottom corners).
+
+### Fix — `SimpleSearchView`: theme-aware sticky header & footer
+
+- Replaced the hardcoded `bg-light` Bootstrap utility (which paints
+  `#f8f9fa` regardless of theme) with `bg-body-tertiary` on the
+  sticky search header, the empty-state footer, and the result-count
+  footer. Dark mode no longer flashes white slabs at the top and
+  bottom of the search view.
+
+### CSS — TopNav responsive collapse
+
+- When `nav.navbar.navbar-expand-lg` collapses below `992px` and the
+  hamburger is opened, `.navbar-collapse > .navbar-nav` items now lay
+  out as a horizontal row instead of Bootstrap's default vertical
+  stack: `flex-direction: row`, right-justified for `.ms-auto`,
+  tighter `nav-link` padding, and dropdowns kept `position: absolute`
+  so menus float instead of expanding inline. Reads as a clean
+  horizontal continuation of the topbar instead of full-width links
+  cascading down the screen.
+
+### Feature — Examples portal: display settings panel
+
+- New "Display settings" right-item in the topbar (sliders icon)
+  opens a small modal exposing:
+  - **Theme** — Light / Dark / System radio group wired to
+    `app.setTheme()` (the existing `ThemeManager`).
+  - **Modal chrome** — `Show eyebrow band` toggle wired to
+    `Modal.setEyebrowEnabled()`. Choice is persisted to
+    `localStorage` under `examples-portal:eyebrow` and restored at
+    app boot before any modal renders.
+
+### Docs — Modal & ModalView
+
+- `docs/web-mojo/components/ModalView.md` — added `eyebrow` to the
+  options table, clarified `title` vs `eyebrow` vs `header`
+  distinctions, and added a **Hero Band & Eyebrow** section with
+  examples.
+- `docs/web-mojo/components/Modal.md` — added a **Hero Band & Eyebrow**
+  section covering per-modal override, empty-text, and full
+  suppression patterns; documented the global `Modal.setEyebrowEnabled`
+  helper and the `mojo-no-eyebrow` CSS class; noted that the close
+  button reverts to Bootstrap's default automatically when the band
+  is suppressed.
+
 ### Feature — Cross-origin auth handoff
 
 - `TokenManager.handleAuthCodeFromURL(app)` and `TokenManager.exchangeAuthCode(app, code)` redeem a `?auth_code=<32-hex>` URL param against `POST /api/auth/exchange` on bootstrap. The URL is scrubbed via `history.replaceState` before the network call (security bullet from the django-mojo review) and concurrent callers share one in-flight POST via the same single-flight pattern as `refreshToken()`.

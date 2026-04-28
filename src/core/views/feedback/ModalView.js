@@ -97,13 +97,27 @@ class ModalView extends View {
         // .modal-content and would otherwise paint over a custom header.
         const headerDisabled = options.header === false || options.header === null;
         const headerCustomized = options.headerContent !== undefined && options.headerContent !== null;
-        const bandlessClass = '';// (headerDisabled || headerCustomized) ? 'modal-bandless' : '';
+
+        // `eyebrow: false` (or null) suppresses the colored hero band entirely
+        // via the `modal-bandless` class. A truthy string sets the band's text
+        // through the --mojo-eyebrow CSS variable. `undefined` leaves the band
+        // alone (default behavior).
+        let resolvedStyle = options.style;
+        let bandlessClass = '';
+        if (options.eyebrow === false || options.eyebrow === null) {
+            bandlessClass = 'modal-bandless';
+        } else if (options.eyebrow) {
+            const safe = String(options.eyebrow).replace(/['"\\]/g, '');
+            const styleVar = `--mojo-eyebrow: '${safe}'`;
+            resolvedStyle = [resolvedStyle, styleVar].filter(Boolean).join('; ');
+        }
 
         super({
             ...options,
             id: modalId,
             tagName: 'div',
             className: `modal ${options.fade !== false ? 'fade' : ''} ${bandlessClass} ${options.className || ''}`.trim().replace(/\s+/g, ' '),
+            style: resolvedStyle,
             attributes: {
                 tabindex: '-1',
                 'aria-hidden': 'true',
@@ -406,9 +420,13 @@ class ModalView extends View {
     }
 
     async buildBody() {
+        // `noBodyPadding` paints body content edge-to-edge. CSS handles the band
+        // clearance: 28px top reserve when banded, 0 when bandless. See
+        // .modal-body-flush rules in core.css.
+        const bodyClass = `modal-body ${this.noBodyPadding ? 'modal-body-flush' : ''} ${this.bodyClass}`.replace(/\s+/g, ' ').trim();
+
         if (this.bodyView) {
             this.bodyView.replaceById = true;
-            const bodyClass = this.noBodyPadding ? `modal-body p-0 py-4 ${this.bodyClass}` : `modal-body ${this.bodyClass}`;
             return `<div class="${bodyClass}" data-view-container="body">
         <div id="${this.bodyView.id}"></div>
       </div>`;
@@ -416,7 +434,6 @@ class ModalView extends View {
 
         if (!this.body && this.body !== '') return '';
 
-        const bodyClass = this.noBodyPadding ? `modal-body p-0 ${this.bodyClass}` : `modal-body ${this.bodyClass}`;
         return `<div class="${bodyClass}">${this.body}</div>`;
     }
 

@@ -309,6 +309,52 @@ Models with `VIEW_CLASS` defined:
 
 ---
 
+## Hero Band & Eyebrow
+
+Every modal renders a 28px colored band across the top, with optional uppercase "eyebrow" text inside it. Each helper supplies a sensible default (`'CONFIRM'` for `Modal.confirm`, `'INPUT'` for `Modal.prompt`, `'ERROR'`/`'WARNING'`/etc. for typed alerts). Override or suppress the text via the `eyebrow` option:
+
+```js
+// Override the eyebrow text
+Modal.dialog({ title: 'Save changes?', eyebrow: 'UNSAVED' });
+
+// Empty the eyebrow text — the colored band still renders, no label
+Modal.confirm('Are you sure?', 'Confirm', { eyebrow: false });
+// (`null`, `false`, and `''` are equivalent here.)
+
+// Hide the band entirely (and reclaim the 28px of top padding)
+Modal.dialog({ title: 'No band', className: 'modal-bandless' });
+```
+
+`eyebrow` and `title` are independent. `title` populates `<h5 class="modal-title">` inside the header bar; `eyebrow` populates the band above it. Setting both to the same string auto-suppresses the title (the band already carries it).
+
+When constructing `new ModalView()` directly, `eyebrow: false`/`null` is a shorthand for `className: 'modal-bandless'`. See [ModalView › Hero Band & Eyebrow](ModalView.md#hero-band--eyebrow).
+
+### Disabling the band globally
+
+Apps that don't want the eyebrow band on any modal can disable it through the `Modal.setEyebrowEnabled` helper:
+
+```js
+import Modal from '@core/views/feedback/Modal.js';
+
+Modal.setEyebrowEnabled(false);  // turn the band off everywhere
+Modal.setEyebrowEnabled(true);   // turn it back on
+Modal.isEyebrowEnabled();        // → boolean
+```
+
+Call it once at app boot to ship without bands, or toggle at runtime — the change applies to already-open modals without re-rendering.
+
+Under the hood this just toggles `class="mojo-no-eyebrow"` on `<html>`, so you can also set it directly in markup if you prefer:
+
+```html
+<html class="mojo-no-eyebrow">
+```
+
+This applies the same rules as per-modal `modal-bandless` to every modal in the app. Per-modal `eyebrow` text and `modal-bandless` overrides still work — the global toggle just drops the default-on behavior.
+
+When the band is suppressed (per-modal or globally), the close X reverts to Bootstrap's default flex-positioned button in the header (top-right via `justify-content: space-between`), with the dark-mode filter restored automatically. Nothing extra needs to be configured.
+
+---
+
 ## Common Patterns
 
 ### Opening a parent/related model

@@ -164,6 +164,38 @@ Light / Subtle Neutral (good if rest of portal is bright):
 }
 
 /* ========================================================================
+   TopNav Responsive Collapse
+   ------------------------------------------------------------------------
+   When the navbar collapses under .navbar-expand-lg (<992px), Bootstrap
+   stacks all .navbar-nav items vertically. Our right-side items (settings,
+   github, user menu, etc.) are typically a small fixed set, so a horizontal
+   row justified to the right reads better than a vertical stack of full-
+   width links. Left-side navItems (rare in this app) follow the same
+   layout for consistency.
+   ======================================================================== */
+@media (max-width: 991.98px) {
+    nav.navbar.navbar-expand-lg .navbar-collapse .navbar-nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    nav.navbar.navbar-expand-lg .navbar-collapse .navbar-nav.ms-auto {
+        justify-content: flex-end;
+        margin-left: auto !important;
+    }
+    nav.navbar.navbar-expand-lg .navbar-collapse .navbar-nav .nav-link {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    /* Dropdowns (e.g. user menu) — keep them anchored as floating menus
+       instead of expanding inline (Bootstrap's default in collapse mode). */
+    nav.navbar.navbar-expand-lg .navbar-collapse .dropdown-menu {
+        position: absolute;
+    }
+}
+
+/* ========================================================================
    TopNav Themes (Applied directly to the <nav> element by TopNav.js)
    ======================================================================== */
 

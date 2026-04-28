@@ -37,6 +37,28 @@ import { File as FileModel } from '@core/models/Files.js';
 
 class Modal {
 
+    // ── Global eyebrow toggle ──────────────────────────────────
+    //
+    // The eyebrow band can be disabled app-wide by setting the
+    // `mojo-no-eyebrow` class on <html>. These helpers just wrap that so
+    // callers don't have to touch the DOM directly.
+    //
+    // Modal.setEyebrowEnabled(false);  // turn the band off everywhere
+    // Modal.setEyebrowEnabled(true);   // turn it back on
+    // if (Modal.isEyebrowEnabled()) ...
+
+    /** Enable or disable the eyebrow band on every modal in the app. */
+    static setEyebrowEnabled(enabled) {
+        if (typeof document === 'undefined') return;
+        document.documentElement.classList.toggle('mojo-no-eyebrow', !enabled);
+    }
+
+    /** True when the eyebrow band is enabled (the default). */
+    static isEyebrowEnabled() {
+        if (typeof document === 'undefined') return true;
+        return !document.documentElement.classList.contains('mojo-no-eyebrow');
+    }
+
     // ── Internal: shared render → show → resolve helper ────────
     //
     // Most static helpers want the same lifecycle: render the modal into
@@ -564,12 +586,8 @@ class Modal {
             ...rest
         });
 
-        const result = await Modal._renderAndAwait(modal, {
-            buttons,
-            onAction: async (action) => (action === 'confirm' ? true : false)
-        });
-
-        return result === true;
+        const result = await Modal._renderAndAwait(modal, { buttons });
+        return result === 'confirm';
     }
 
     /**

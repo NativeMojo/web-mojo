@@ -62,7 +62,7 @@ class ResultsView extends View {
                 </div>
 
                 {{#data.showResultsCount}}
-                <div class="border-top bg-light p-2 text-center">
+                <div class="border-top bg-body-tertiary p-2 text-center">
                     <small class="text-muted">
                         {{data.filteredCount}} of {{data.totalCount}}
                     </small>
@@ -106,7 +106,7 @@ class SimpleSearchView extends View {
         super({
             className: 'simple-search-view d-flex flex-column',
             template: `
-                <div class="p-3 border-bottom bg-light">
+                <div class="p-3 border-bottom bg-body-tertiary">
                     {{#data.headerText}}
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <h6 class="text-muted fw-semibold mb-0">
@@ -145,7 +145,7 @@ class SimpleSearchView extends View {
                 <div data-container="results"></div>
 
                 {{#data.showFooter}}
-                <div class="p-3 border-top bg-light">
+                <div class="p-3 border-top bg-body-tertiary">
                     <small class="text-muted">
                         <i class="{{data.footerIcon}} me-1"></i>
                         {{{data.footerContent}}}

@@ -13,7 +13,7 @@
  * repo. Per-component example files MUST import from `web-mojo` only.
  */
 
-import { PortalWebApp, User } from 'web-mojo';
+import { PortalWebApp, User, Modal } from 'web-mojo';
 import { registerAdminPages, registerAssistant } from 'web-mojo/admin';
 import HomePage from './shell/HomePage.js';
 import DocsModal from './shell/DocsModal.js';
@@ -189,6 +189,14 @@ const app = new PortalWebApp({
                 href: 'https://github.com/NativeMojo/web-mojo',
                 tooltip: 'web-mojo on GitHub',
             },
+            // Display settings — theme + framework UI toggles.
+            {
+                id: 'display-settings',
+                icon: 'bi-sliders',
+                action: 'open-display-settings',
+                tooltip: 'Display settings',
+                buttonClass: 'btn btn-link',
+            },
             // Admin shortcut — switches the sidebar to the `system` menu.
             {
                 id: 'admin',
@@ -221,6 +229,67 @@ const app = new PortalWebApp({
     },
 });
 
+// Display settings — persisted in localStorage so reload restores them.
+const EYEBROW_KEY = 'examples-portal:eyebrow';
+function readEyebrowPref() {
+    try { return localStorage.getItem(EYEBROW_KEY) !== '0'; } catch { return true; }
+}
+function writeEyebrowPref(enabled) {
+    try { localStorage.setItem(EYEBROW_KEY, enabled ? '1' : '0'); } catch { /* private mode */ }
+}
+// Apply on boot before any modal renders.
+Modal.setEyebrowEnabled(readEyebrowPref());
+
+function openDisplaySettings() {
+    const pref = app.getTheme();           // 'light' | 'dark' | 'system'
+    const eyebrow = Modal.isEyebrowEnabled();
+    const themeOpt = (value, label, icon) =>
+        `<label class="d-flex align-items-center gap-2 px-3 py-2 rounded ${pref === value ? 'bg-body-secondary' : ''}" style="cursor: pointer;">
+            <input type="radio" name="theme" value="${value}" class="form-check-input m-0" ${pref === value ? 'checked' : ''}>
+            <i class="${icon}"></i>
+            <span>${label}</span>
+        </label>`;
+    Modal.dialog({
+        title: 'Display settings',
+        eyebrow: 'SETTINGS',
+        size: 'sm',
+        body: `
+            <div class="mb-3">
+                <div class="text-uppercase small text-muted mb-2" style="letter-spacing: 0.08em;">Theme</div>
+                <div class="d-flex flex-column gap-1" data-settings-section="theme">
+                    ${themeOpt('light',  'Light',  'bi-sun')}
+                    ${themeOpt('dark',   'Dark',   'bi-moon-stars')}
+                    ${themeOpt('system', 'System', 'bi-circle-half')}
+                </div>
+            </div>
+            <div>
+                <div class="text-uppercase small text-muted mb-2" style="letter-spacing: 0.08em;">Modal chrome</div>
+                <div class="px-3 py-2">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="cfg-eyebrow" ${eyebrow ? 'checked' : ''}>
+                        <label class="form-check-label" for="cfg-eyebrow">
+                            Show eyebrow band
+                            <div class="small text-muted">Colored slab at the top of every modal.</div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        `,
+        buttons: [{ text: 'Done', class: 'btn-primary', dismiss: true }],
+        onShown: (event) => {
+            const root = event?.target;
+            if (!root) return;
+            root.querySelectorAll('input[name="theme"]').forEach(el => {
+                el.addEventListener('change', () => app.setTheme(el.value));
+            });
+            root.querySelector('#cfg-eyebrow')?.addEventListener('change', (e) => {
+                Modal.setEyebrowEnabled(e.target.checked);
+                writeEyebrowPref(e.target.checked);
+            });
+        },
+    });
+}
+
 // Wire the topbar actions. `portal:action` is the canonical event for
 // rightItems / userMenu actions in PortalApp.
 app.events.on('portal:action', ({ action }) => {
@@ -235,11 +304,14 @@ app.events.on('portal:action', ({ action }) => {
         case 'exit-admin':
             switchToMenu('hub');
             break;
+        case 'open-display-settings':
+            openDisplaySettings();
+            break;
         case 'profile':
             app.toast?.info?.('No real user — auth is disabled in this portal.');
             break;
         case 'open-settings':
-            app.toast?.info?.('Settings menu would live here in a real app.');
+            openDisplaySettings();
             break;
         case 'logout':
             app.toast?.warn?.('Auth is disabled — nothing to log out of here.');
