@@ -91,33 +91,11 @@ class ModalView extends View {
     constructor(options = {}) {
         const modalId = options.id || `modal-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
-        // Suppress the colored hero band when the caller owns the top of the
-        // card — i.e. they passed their own header content/view or disabled
-        // the header entirely. The band's `::before` overlays the top 28px of
-        // .modal-content and would otherwise paint over a custom header.
-        const headerDisabled = options.header === false || options.header === null;
-        const headerCustomized = options.headerContent !== undefined && options.headerContent !== null;
-
-        // `eyebrow: false` (or null) suppresses the colored hero band entirely
-        // via the `modal-bandless` class. A truthy string sets the band's text
-        // through the --mojo-eyebrow CSS variable. `undefined` leaves the band
-        // alone (default behavior).
-        let resolvedStyle = options.style;
-        let bandlessClass = '';
-        if (options.eyebrow === false || options.eyebrow === null) {
-            bandlessClass = 'modal-bandless';
-        } else if (options.eyebrow) {
-            const safe = String(options.eyebrow).replace(/['"\\]/g, '');
-            const styleVar = `--mojo-eyebrow: '${safe}'`;
-            resolvedStyle = [resolvedStyle, styleVar].filter(Boolean).join('; ');
-        }
-
         super({
             ...options,
             id: modalId,
             tagName: 'div',
-            className: `modal ${options.fade !== false ? 'fade' : ''} ${bandlessClass} ${options.className || ''}`.trim().replace(/\s+/g, ' '),
-            style: resolvedStyle,
+            className: `modal ${options.fade !== false ? 'fade' : ''} ${options.className || ''}`.trim().replace(/\s+/g, ' '),
             attributes: {
                 tabindex: '-1',
                 'aria-hidden': 'true',
@@ -420,9 +398,8 @@ class ModalView extends View {
     }
 
     async buildBody() {
-        // `noBodyPadding` paints body content edge-to-edge. CSS handles the band
-        // clearance: 28px top reserve when banded, 0 when bandless. See
-        // .modal-body-flush rules in core.css.
+        // `noBodyPadding` paints body content edge-to-edge. The .modal-body-flush
+        // class zeroes padding and rounds the bottom corners (when last child).
         const bodyClass = `modal-body ${this.noBodyPadding ? 'modal-body-flush' : ''} ${this.bodyClass}`.replace(/\s+/g, ' ').trim();
 
         if (this.bodyView) {

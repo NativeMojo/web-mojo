@@ -309,49 +309,31 @@ Models with `VIEW_CLASS` defined:
 
 ---
 
-## Hero Band & Eyebrow
+## Type signaling — stripe + icon + tint
 
-Every modal renders a 28px colored band across the top, with optional uppercase "eyebrow" text inside it. Each helper supplies a sensible default (`'CONFIRM'` for `Modal.confirm`, `'INPUT'` for `Modal.prompt`, `'ERROR'`/`'WARNING'`/etc. for typed alerts). Override or suppress the text via the `eyebrow` option:
+Default modals (`Modal.dialog`, `Modal.show`, `Modal.confirm`, `Modal.prompt`, `Modal.form`) ship as **stock Bootstrap 5 cards** — no custom chrome, no colored bands. Only `Modal.alert` calls (success / warning / error / info) get layered type signaling. Three cues, all driven by the same `--mojo-current-accent` CSS variable:
 
-```js
-// Override the eyebrow text
-Modal.dialog({ title: 'Save changes?', eyebrow: 'UNSAVED' });
+1. **4px top accent stripe** — Stripe-style colored line that hugs the card's inner radius.
+2. **Outline leading icon** — `bi-info-circle` / `bi-check-circle` / `bi-exclamation-triangle` / `bi-x-circle` in the type color, sitting next to the title in the header.
+3. **Soft full-card tint** — 5% of the type color in light mode, 10% in dark, applied as a top-to-bottom gradient.
 
-// Empty the eyebrow text — the colored band still renders, no label
-Modal.confirm('Are you sure?', 'Confirm', { eyebrow: false });
-// (`null`, `false`, and `''` are equivalent here.)
-
-// Hide the band entirely (and reclaim the 28px of top padding)
-Modal.dialog({ title: 'No band', className: 'modal-bandless' });
-```
-
-`eyebrow` and `title` are independent. `title` populates `<h5 class="modal-title">` inside the header bar; `eyebrow` populates the band above it. Setting both to the same string auto-suppresses the title (the band already carries it).
-
-When constructing `new ModalView()` directly, `eyebrow: false`/`null` is a shorthand for `className: 'modal-bandless'`. See [ModalView › Hero Band & Eyebrow](ModalView.md#hero-band--eyebrow).
-
-### Disabling the band globally
-
-Apps that don't want the eyebrow band on any modal can disable it through the `Modal.setEyebrowEnabled` helper:
+Together they read as Linear / Stripe / Notion 2025+ modal language. The icon outline keeps the visual weight balanced — the stripe carries the loud signal, the icon supports it, the type-colored primary button completes the hierarchy.
 
 ```js
-import Modal from '@core/views/feedback/Modal.js';
+// Default: clean stock Bootstrap card, no chrome additions
+Modal.dialog({ title: 'Settings', body: settingsView });
 
-Modal.setEyebrowEnabled(false);  // turn the band off everywhere
-Modal.setEyebrowEnabled(true);   // turn it back on
-Modal.isEyebrowEnabled();        // → boolean
+// Typed alerts: stripe + icon + tint
+Modal.alert('All set!', 'Saved', { type: 'success' });
+Modal.alert('You have unsaved changes.', 'Heads up', { type: 'warning' });
+Modal.alert('Network unreachable.', 'Connection lost', { type: 'error' });
+
+// Override the icon (or suppress with `null`)
+Modal.alert('Custom icon!', 'Note', { type: 'info', icon: 'bi-stars' });
+Modal.alert('Bare alert.', 'Plain', { type: 'info', icon: null });
 ```
 
-Call it once at app boot to ship without bands, or toggle at runtime — the change applies to already-open modals without re-rendering.
-
-Under the hood this just toggles `class="mojo-no-eyebrow"` on `<html>`, so you can also set it directly in markup if you prefer:
-
-```html
-<html class="mojo-no-eyebrow">
-```
-
-This applies the same rules as per-modal `modal-bandless` to every modal in the app. Per-modal `eyebrow` text and `modal-bandless` overrides still work — the global toggle just drops the default-on behavior.
-
-When the band is suppressed (per-modal or globally), the close X reverts to Bootstrap's default flex-positioned button in the header (top-right via `justify-content: space-between`), with the dark-mode filter restored automatically. Nothing extra needs to be configured.
+The default icons are bundled with Bootstrap Icons; bring `bootstrap-icons.css` into your app or pass `icon: null` to suppress.
 
 ---
 

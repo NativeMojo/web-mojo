@@ -1406,17 +1406,18 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
 /* ==============================================
    Dialog / Modal Chrome — "Hero Band + Tinted Card"
 
-   Direction picked from planning/mockups/modals/05-merged-refined.html.
-   - 6px colored hero band along the top of the card carries the type signal
-   - Tinted card background (5% accent on white, 10% accent on dark)
-     makes the type color felt across the whole surface, not just a stripe
-   - Header gets no separate tint — the band + card-bg do the work
-   - The X close button sits inside the card, top-right
-   - Accent color comes from --mojo-dialog-accent (defaults to var(--bs-primary))
-     and the four typed variants (success/warning/error/danger) override it.
-     Modal.alert sets `modal-alert modal-alert-{type}` on the modal root.
-   - Untyped surfaces (Modal.show / Modal.showForm without a type, etc.) inherit
-     the default info accent, so every dialog reads as part of the same family.
+   Direction picked from planning/mockups/modals/10-stripe-icon-tint.html.
+   - Default modals = stock Bootstrap. No custom chrome at all.
+   - Typed alerts (modal-alert + modal-alert-{success|warning|error|info})
+     get three layered cues:
+       1) 4px top accent stripe in the type color (Stripe-style)
+       2) 1.25rem outline icon next to the title (Modal.alert injects the
+          markup; CSS colors it via --mojo-current-accent)
+       3) Soft full-card tint (5% light / 10% dark) so the brand color
+          is felt across the whole surface
+   - Bootstrap's native border / radius / shadow / padding tokens drive
+     everything else, so the card looks like a stock Bootstrap 5 modal
+     with three small overlays on typed alerts only.
    ============================================== */
 
 :root {
@@ -1426,33 +1427,7 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
     --mojo-dialog-error:   #dc3545;
 }
 
-/* ── Card chrome ───────────────────────────────────────── */
-/* The default modal eyebrow band is neutral and theme-aware (so it reads as
-   structural chrome, not a status signal). Typed alerts (.modal-alert.*)
-   override --mojo-current-accent / --mojo-current-tint at higher specificity
-   to paint vivid colored bands and tinted card backgrounds.
-
-   --mojo-current-accent     → band background color
-   --mojo-current-eyebrow-fg → eyebrow text color
-   --mojo-current-tint       → card-background tint (felt across the surface) */
-.modal-content {
-    --mojo-current-accent: var(--bs-secondary-bg);
-    --mojo-current-eyebrow-fg: var(--bs-emphasis-color);
-    --mojo-current-tint: var(--mojo-dialog-accent);
-    /* Gradient is confined to the band area (~96px) instead of the whole
-       card so custom body views with their own opaque chrome don't expose a
-       visible colored strip between the band and the body. The tint is felt
-       around the eyebrow; below that the card is plain modal-bg. */
-    background:
-        linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--mojo-current-tint) 5%, var(--bs-modal-bg, #fff)) 0%,
-            var(--bs-modal-bg, #fff) 96px
-        );
-}
-
-/* No header/footer dividers — the band separates header from body, and the
-   footer's button cluster anchors itself. Removes Bootstrap's 1px lines. */
+/* No header/footer dividers — modern OS-native sheets don't have them. */
 .modal-header { border-bottom: 0; }
 .modal-footer { border-top: 0; }
 
@@ -1464,50 +1439,63 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
     box-shadow:
         0 0 0 1px rgba(255, 255, 255, 0.08),
         0 24px 48px -12px rgba(0, 0, 0, 0.7);
-    background:
-        linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--mojo-current-tint) 10%, var(--bs-modal-bg, #14181f)) 0%,
-            var(--bs-modal-bg, #14181f) 96px
-        );
 }
 
-/* Hero band — solid colored slab across the top with the eyebrow label
-   centered and the close X anchored to the right. Eyebrow text comes from
-   `--mojo-eyebrow` (set per-modal). The band's top corners track Bootstrap's
-   inner radius so it always matches the card. */
-.modal-content::before {
-    content: var(--mojo-eyebrow, "");
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* ── Typed alerts — chrome scoped strictly to .modal.modal-alert ── */
+
+/* 4px top accent stripe — Stripe-style. Hugs the card's inner radius so
+   it never squares off against the rounded corners. */
+.modal.modal-alert .modal-content::before {
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    height: 28px;
-    padding: 0 1.5rem;
+    height: 4px;
     background: var(--mojo-current-accent);
-    color: var(--mojo-current-eyebrow-fg, #fff);
-    font-family: ui-monospace, "JetBrains Mono", "SF Mono", "SFMono-Regular", Menlo, Consolas, monospace;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    line-height: 1;
-    border-radius: var(--bs-modal-inner-border-radius) var(--bs-modal-inner-border-radius) 0 0;
+    border-top-left-radius: var(--bs-modal-inner-border-radius);
+    border-top-right-radius: var(--bs-modal-inner-border-radius);
     pointer-events: none;
     z-index: 1;
-    box-sizing: border-box;
 }
 
-/* The eyebrow text comes from `--mojo-eyebrow` set inline on the modal
-   root by each Modal helper (alert / confirm / prompt / show / form / etc.).
-   No per-type CSS rules needed — every helper passes its own default. */
+/* Soft full-card tint — felt across the surface without screaming.
+   Light = 5% accent mix, dark = 10% (dark surfaces absorb color). */
+.modal.modal-alert .modal-content {
+    background:
+        linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--mojo-current-accent) 5%, var(--bs-modal-bg, #fff)) 0%,
+            var(--bs-modal-bg, #fff) 100%
+        );
+}
+[data-bs-theme="dark"] .modal.modal-alert .modal-content {
+    background:
+        linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--mojo-current-accent) 10%, var(--bs-modal-bg, #14181f)) 0%,
+            var(--bs-modal-bg, #14181f) 100%
+        );
+}
 
-/* Primary action button picks up the type color so visual hierarchy is
-   consistent: red band → red button, green band → green button, etc.
-   --mojo-current-accent cascades from .modal-content. */
+/* Leading outline icon next to the title. Modal.alert injects
+   <i class="bi bi-{icon} modal-alert-icon"></i> at the start of the title. */
+.modal-alert-icon {
+    display: inline-block;
+    font-size: 1.25rem;
+    margin-right: 0.625rem;
+    vertical-align: -0.15em;
+    color: var(--mojo-current-accent);
+    flex-shrink: 0;
+}
+
+/* Per-type accent color — drives stripe, icon, tint, and primary button. */
+.modal.modal-alert.modal-alert-info    .modal-content { --mojo-current-accent: var(--mojo-dialog-accent); }
+.modal.modal-alert.modal-alert-success .modal-content { --mojo-current-accent: var(--mojo-dialog-success); }
+.modal.modal-alert.modal-alert-warning .modal-content { --mojo-current-accent: var(--mojo-dialog-warning); }
+.modal.modal-alert.modal-alert-error   .modal-content { --mojo-current-accent: var(--mojo-dialog-error); }
+
+/* Primary action button picks up the type color. */
 .modal.modal-alert .modal-footer .btn-primary {
     --bs-btn-bg: var(--mojo-current-accent);
     --bs-btn-border-color: var(--mojo-current-accent);
@@ -1524,161 +1512,24 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
     --bs-btn-active-color: #1a1a1a;
 }
 
-/* Header — bump just the top padding so content clears the 28px band.
-   Bootstrap's other padding values (sides, bottom) come through unchanged
-   via --bs-modal-header-padding. */
-.modal-header {
-    padding-top: calc(1rem + 28px);
-}
-
-/* Close X — anchored to the right side of the hero band itself. The band has
-   pointer-events: none; the X sits above it (z-index) so clicks register.
-   Color/hover are left to Bootstrap (dark glyph in light mode, white in dark
-   via [data-bs-theme="dark"]) — typed alerts override below for the colored
-   bands where Bootstrap's default would be too dim. */
-.modal-header .btn-close {
-    position: absolute;
-    top: 0;
-    right: 0.5rem;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    margin: 0;
-    background-color: transparent;
-    background-size: 10px;
-    border-radius: 6px;
-    z-index: 2;
-}
-
-/* Typed alerts have a saturated band — force a white X with white-tinted
-   hover/focus so the close button reads against the accent color. */
-.modal.modal-alert .modal-header .btn-close {
-    filter: brightness(0) invert(1);
-    transition: opacity 0.15s ease-in-out, background-color 0.15s ease-in-out;
-}
-.modal.modal-alert .modal-header .btn-close:hover {
-    background-color: rgba(255, 255, 255, 0.18);
-}
-.modal.modal-alert .modal-header .btn-close:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
-}
-
-/* Warning band uses dark text → restore dark X glyph and dark hover tint */
-.modal.modal-alert.modal-alert-warning .modal-header .btn-close {
-    filter: none;
-}
-.modal.modal-alert.modal-alert-warning .modal-header .btn-close:hover {
-    background-color: rgba(0, 0, 0, 0.1);
-}
-
-/* Modals without a header still need the band to clear the body padding */
-.modal-content > .modal-body:first-child {
-    padding-top: calc(1rem + 28px);
-}
-
-/* Edge-to-edge body. Caller (ModalView with noBodyPadding) wants body content
-   flush against the modal walls. Top padding is exactly the band height when a
-   band is present so content starts right under the band; zero when bandless. */
+/* Edge-to-edge body. ModalView sets `modal-body-flush` when the caller
+   passes `noBodyPadding: true`. The body paints to the card walls — top,
+   sides, and bottom included. We round the bottom corners to match the
+   card's inner radius so footerless flush bodies don't square off. */
 .modal-content > .modal-body.modal-body-flush {
-    padding: 28px 0 0 0;
-}
-.modal.modal-bandless .modal-content > .modal-body.modal-body-flush {
     padding: 0;
 }
-/* Footerless flush body: clip its bottom corners to match Bootstrap's modal
-   inner radius so edge-to-edge content doesn't square off against the rounded
-   .modal-content. (overflow:hidden is scoped to the body itself — popovers from
-   .modal-content can still escape the card.) */
 .modal-content > .modal-body.modal-body-flush:last-child {
     border-bottom-left-radius: var(--bs-modal-inner-border-radius);
     border-bottom-right-radius: var(--bs-modal-inner-border-radius);
     overflow: hidden;
 }
 
-/* Global eyebrow opt-out. Apps that don't want the colored hero band on any
-   modal can set `class="mojo-no-eyebrow"` on <html> or <body>. Mirrors the
-   per-modal `modal-bandless` rules across every .modal. */
-.mojo-no-eyebrow .modal .modal-content::before { display: none; }
-.mojo-no-eyebrow .modal .modal-header { padding-top: 1rem; }
-.mojo-no-eyebrow .modal .modal-content > .modal-body:first-child { padding-top: 1rem; }
-.mojo-no-eyebrow .modal .modal-content > .modal-body.modal-body-flush { padding: 0; }
-/* No band → restore Bootstrap's default close button (in-flow, default glyph). */
-.mojo-no-eyebrow .modal .modal-header .btn-close {
-    position: static;
-    width: 1em;
-    height: 1em;
-    filter: none;
-    background-color: transparent;
-}
-[data-bs-theme="dark"] .mojo-no-eyebrow .modal .modal-header .btn-close,
-[data-bs-theme="dark"].mojo-no-eyebrow .modal .modal-header .btn-close {
-    filter: var(--bs-btn-close-white-filter);
-}
-
-/* Bandless modals — caller supplied their own header content/view or disabled
-   the band per-modal via `eyebrow: false`. ModalView adds `modal-bandless`
-   to the .modal root. Hide the band, drop the band-related padding, and
-   restore Bootstrap's default close button (otherwise it stays pinned to
-   the corner with a white-on-white filter). */
-.modal.modal-bandless .modal-content::before { display: none; }
-.modal.modal-bandless .modal-header { padding-top: 1rem; }
-.modal.modal-bandless .modal-content > .modal-body:first-child { padding-top: 1rem; }
-.modal.modal-bandless .modal-header .btn-close {
-    position: static;
-    width: 1em;
-    height: 1em;
-    filter: none;
-    background-color: transparent;
-}
-[data-bs-theme="dark"] .modal.modal-bandless .modal-header .btn-close {
-    filter: var(--bs-btn-close-white-filter);
-}
-
-/* ── Typed alerts ──────────────────────────────────────────
-   Root class (modal-alert modal-alert-{type}) is set by Modal.alert.
-   Each type swaps --mojo-current-accent (band/button color) and
-   --mojo-current-eyebrow-fg (eyebrow text). Default modals stay neutral. */
-
-.modal.modal-alert .modal-content {
-    --mojo-current-accent: var(--mojo-dialog-accent);
-    --mojo-current-eyebrow-fg: #fff;
-    /* Typed alerts have short bodies and no nested chrome — let the tint
-       gradient extend across the whole card for full-surface brand presence. */
-    background:
-        linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--mojo-current-tint) 5%, var(--bs-modal-bg, #fff)) 0%,
-            var(--bs-modal-bg, #fff) 100%
-        );
-}
-[data-bs-theme="dark"] .modal.modal-alert .modal-content {
-    background:
-        linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--mojo-current-tint) 10%, var(--bs-modal-bg, #14181f)) 0%,
-            var(--bs-modal-bg, #14181f) 100%
-        );
-}
-.modal.modal-alert.modal-alert-success .modal-content {
-    --mojo-current-accent: var(--mojo-dialog-success);
-    --mojo-current-tint:   var(--mojo-dialog-success);
-}
-.modal.modal-alert.modal-alert-warning .modal-content {
-    --mojo-current-accent: var(--mojo-dialog-warning);
-    --mojo-current-tint:   var(--mojo-dialog-warning);
-    --mojo-current-eyebrow-fg: #1a1a1a;
-}
-.modal.modal-alert.modal-alert-error .modal-content {
-    --mojo-current-accent: var(--mojo-dialog-error);
-    --mojo-current-tint:   var(--mojo-dialog-error);
-}
-
-/* Title typography for typed alerts — eyebrow micro-label above headline.
-   Both spans live inside Bootstrap's <h5 class="modal-title"> wrapper; we
-   reset that h5 so our spans control the styling. */
+/* Typed-alert title typography — let the modal-alert-headline span control
+   the styling instead of Bootstrap's h5 defaults. */
 .modal.modal-alert .modal-title {
-    display: block;
+    display: flex;
+    align-items: center;
     font-size: inherit;
     font-weight: inherit;
     line-height: inherit;
@@ -1686,12 +1537,9 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
     padding-right: 1.75rem; /* clear the close X */
 }
 
-/* Headline = the actual title text. The hero band's eyebrow carries the
-   type label; the headline is just the user-supplied title. */
 .modal-alert-headline {
-    display: block;
-    font-size: 1.125rem;
-    font-weight: 700;
+    font-size: 1.0625rem;
+    font-weight: 600;
     letter-spacing: -0.015em;
     line-height: 1.3;
     color: var(--bs-body-color, #212529);
@@ -1702,13 +1550,6 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
     font-size: 0.9375rem;
     line-height: 1.55;
     color: var(--bs-secondary-color, #5b6478);
-}
-
-/* Backwards-compat: any inline `<i class="bi">` still passed in via custom
-   title HTML just renders inline (no synthetic colored circle). */
-.modal.modal-alert .modal-title i.bi {
-    margin-right: 0.4rem;
-    vertical-align: -0.05em;
 }
 
 /* ── Dark mode ─────────────────────────────────────────────

@@ -41,10 +41,9 @@ modal.on('hidden', () => {
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `title` | `string` | `''` | Header title (HTML allowed). Renders as `<h5 class="modal-title">` inside the header bar. Distinct from `eyebrow` |
-| `eyebrow` | `string \| false \| null` | — | Small uppercase tag rendered in the colored hero band at the top of the card. Pass a string to set the text; pass `false` or `null` to suppress the band entirely (adds `modal-bandless`). Omit to leave the band visible with no text |
+| `title` | `string` | `''` | Header title (HTML allowed). Renders as `<h5 class="modal-title">` inside the header bar |
 | `body` | `string \| View \| Function \| Promise<View>` | `''` | Body content. Aliases: `view`, `message`, `content`. Priority: body > view > message > content |
-| `header` | `boolean \| string \| View` | `true` | `false` to hide the header bar; a string/View overrides the entire header. Independent of `eyebrow` — the band can still show even when the header is hidden |
+| `header` | `boolean \| string \| View` | `true` | `false` to hide the header bar; a string/View overrides the entire header |
 | `headerContent` | `string \| View \| Function` | `null` | Custom header inside the modal-header wrapper |
 | `footer` | `string \| View \| null` | `null` | Custom footer (overrides the buttons array) |
 | `buttons` | `Array<ButtonConfig>` | `null` | Footer buttons (see below) |
@@ -126,29 +125,6 @@ modal.on('hidden', () => {
 | `ModalView.getMountTarget()` | Returns the active `.table-fullscreen` element or `document.body` |
 | `ModalView._openDialogs` | The shared open-modal stack. Aliased by `Dialog._openDialogs` |
 | `ModalView._baseZIndex` | `{ backdrop: 1050, modal: 1055 }` — the default Bootstrap-aligned base |
-
----
-
-## Hero Band & Eyebrow
-
-Every modal renders a 28px colored slab across the top of the card (the "hero band"), painted by `.modal-content::before`. The band's text comes from the `--mojo-eyebrow` CSS custom property; its color comes from `--mojo-current-accent`.
-
-```js
-// Set the eyebrow text
-new ModalView({ eyebrow: 'Select Group', body: groupSearchView });
-
-// Hide the band entirely (also drops the band-related top padding)
-new ModalView({ eyebrow: false, body: customView });
-
-// Default — band is visible but renders no eyebrow text
-new ModalView({ body: someView });
-```
-
-`eyebrow` and `title` are independent: `title` populates `<h5 class="modal-title">` inside the header bar; `eyebrow` populates the band above it. `header: false` removes the header bar but does **not** remove the band — pass `eyebrow: false` for that.
-
-When you call `Modal.dialog()` / `Modal.alert()` / `Modal.confirm()` / etc., each helper supplies its own default eyebrow (e.g. `'CONFIRM'`, `'INPUT'`). Pass `eyebrow: 'CUSTOM'` to override or `eyebrow: false` to suppress.
-
-Behind the scenes, suppression sets the `modal-bandless` class on the modal root (see `core.css`).
 
 ---
 

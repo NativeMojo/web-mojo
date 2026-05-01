@@ -50,7 +50,6 @@ export default class UserProfileView extends View {
                     .up-nav a.active { background: #e7f1ff; color: #0d6efd; font-weight: 600; border-right: 2px solid #0d6efd; }
                     .up-nav a i { width: 18px; text-align: center; font-size: 0.9rem; }
                     .up-content { flex: 1; overflow-y: auto; padding: 1.5rem 2.5rem; }
-                    .up-accent { height: 4px; background: linear-gradient(90deg, #1a73e8, #4fc3f7); border-radius: var(--bs-modal-border-radius, 0.5rem) var(--bs-modal-border-radius, 0.5rem) 0 0; }
                     .up-header { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem; border-bottom: 1px solid #e9ecef; }
                     .up-avatar-wrap { position: relative; flex-shrink: 0; cursor: pointer; }
                     .up-avatar-wrap img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; }
@@ -73,7 +72,6 @@ export default class UserProfileView extends View {
                     }
                 </style>
                 <div class="up-layout" style="flex-direction: column; min-height: 480px;">
-                    <div class="up-accent"></div>
                     <div class="up-header">
                         <div class="up-avatar-wrap" data-action="change-avatar" title="Change avatar">
                             {{{model.avatar|avatar}}}

@@ -2,6 +2,52 @@
 
 ## Unreleased
 
+### Feature — Modal chrome: stripe + outline icon + tint (typed alerts only)
+
+Pivoted away from the eyebrow band entirely. The 28px colored slab + uppercase tracking-letterspaced label was a 2015-2018 dev-tool aesthetic that aged poorly; modern reference apps (Linear, Stripe, Notion, Vercel, Apple HIG, Material 3) use minimal default chrome and reserve type signaling for typed alerts only.
+
+**New design — see [`planning/mockups/modals/10-stripe-icon-tint.html`](planning/mockups/modals/10-stripe-icon-tint.html):**
+
+- **Default modals** (`Modal.dialog`, `Modal.show`, `Modal.confirm`, `Modal.prompt`, `Modal.form`, `Modal.modelForm`, `Modal.showModel*`) — stock Bootstrap 5 cards. No stripe, no tint, no extra chrome. Header/footer dividers were already removed.
+- **Typed alerts only** (`Modal.alert` with `type: 'info' | 'success' | 'warning' | 'error'`) get three layered cues, all driven by `--mojo-current-accent`:
+  1. **4px top accent stripe** in the type color (Stripe-style; hugs the card's inner radius).
+  2. **Outline leading icon** — `bi-info-circle` / `bi-check-circle` / `bi-exclamation-triangle` / `bi-x-circle` — sitting next to the title in the header. Color follows the type accent.
+  3. **Soft full-card tint** — 5% type color in light mode, 10% in dark, applied as a top-to-bottom gradient.
+- New `Modal.alert` option: `icon: 'bi-...'` to override the default icon, or `icon: null` to suppress it.
+- Type-colored primary button preserved (red band → red OK button, etc.).
+
+**Removed plumbing (was unreleased — no migration required):**
+
+- `ModalView` constructor option `eyebrow` (string / `false` / `null`) — gone.
+- `Modal.setEyebrowEnabled(boolean)` / `Modal.isEyebrowEnabled()` static helpers — gone.
+- CSS classes `modal-bandless` and `mojo-no-eyebrow` — gone.
+- Internal helpers `Modal._eyebrowStyle`, `Modal._resolveEyebrow`, `Modal._suppressDuplicateTitle` — gone.
+- `eyebrow` parameter on `Modal.dialog` / `Modal.alert` / `Modal.confirm` / `Modal.prompt` / `Modal.form` / `Modal.modelForm` / `Modal.show` / `Modal.showModelView` — gone.
+- CSS variables `--mojo-eyebrow`, `--mojo-current-eyebrow-fg`, `--mojo-current-tint` — gone (the band's `::before` content var, the eyebrow text color, and the separate tint var).
+- The 28px band-clearance padding rules for `.modal-header` and `.modal-body:first-child` — gone (no band to clear).
+
+`Modal.drawer` keeps its own `eyebrow` option — that's a separate concept (a small uppercase label inside the drawer's custom header markup, unrelated to the band).
+
+### CSS — Sidebar group selector: clean stock card
+
+- `Sidebar.showGroupSearchDialog()` no longer passes an `eyebrow` to its `ModalView`. The selector renders as a clean Bootstrap card with the search header, group rows, and footer count — same as before, just without the band.
+
+### CSS — User profile dialog: drop the hardcoded blue gradient strip
+
+- `UserProfileView` had its own `.up-accent` element painting a blue 4px linear gradient at the top of the dialog (independent of the framework's modal chrome). Removed — the user profile now reads as a clean default modal, consistent with the new design system.
+
+### Feature — Examples portal: simplified display settings
+
+- The Display settings dialog drops the "Show eyebrow band" toggle (no eyebrow to toggle anymore). Theme picker (Light / Dark / System) is unchanged. The `examples-portal:eyebrow` localStorage key is no longer read or written.
+
+### Mockups — `planning/mockups/modals/`
+
+- **08-stripe-minimal.html** — 4px stripe only, no icon, no tint.
+- **09-stripe-and-icon.html** — 4px stripe + leading icon, no tint.
+- **10-stripe-icon-tint.html** — full pattern (stripe + outline icon + tint). **Implemented.**
+- **11-icon-only.html** — Apple HIG / Material 3 icon-badge alternative.
+- Each mockup demos the same five scenarios side-by-side in light + dark: a custom-body modal (Alice Adams), a default confirm, and the four typed alerts.
+
 ### Feature — Modal eyebrow band: redesign + global controls
 
 - `ModalView` now accepts an `eyebrow` constructor option directly:
@@ -50,14 +96,15 @@
   `--mojo-current-eyebrow-fg` at higher specificity, so they keep their
   vivid colored bands. Untyped alerts (`Modal.alert` without a `type`)
   fall back to `--mojo-dialog-accent`.
-- Brought back the subtle card-background tint as a separate concept
-  via the new `--mojo-current-tint` variable. Default modals get a
-  brand-color tint at 5% (light) / 10% (dark) confined to the top
-  ~96px of the card so a custom body view (with its own opaque chrome)
-  can't expose a colored strip between the band and the body. Typed
-  alerts (`Modal.alert`) keep the tint over the full card height
-  since their bodies are short text. The band and the tint can now
-  diverge — quiet band, branded surface.
+- Default modals now use a flat `--bs-modal-bg` surface — no background
+  tint. Earlier iterations tinted the whole card or just the top ~96px,
+  but a body view with its own opaque chrome (e.g. a custom user-detail
+  view) inevitably exposed the gradient as a thin colored strip between
+  the band and the view's surface. The eyebrow band already carries the
+  structural signal; the card itself stays clean.
+- Typed alerts (`.modal-alert.*`) keep the full-height tint — their
+  bodies are short text and benefit from full-surface brand presence.
+  `--mojo-current-tint` is set per type to drive the gradient.
 - Eyebrow text color uses `var(--bs-emphasis-color)` (high-contrast)
   by default rather than `var(--bs-secondary-color)` (muted) so the
   uppercase label stays legible on the neutral band in both themes.
