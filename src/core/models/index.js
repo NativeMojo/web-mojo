@@ -7,7 +7,7 @@
  * Usage examples:
  *   import { ApiKey } from 'web-mojo/models';
  *
- * Generated on: 2026-04-28T16:37:59.825Z
+ * Generated on: 2026-05-01T18:05:51.652Z
  */
 
 // ApiKey model exports

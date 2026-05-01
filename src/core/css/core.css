@@ -1437,13 +1437,17 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
    --mojo-current-tint       → card-background tint (felt across the surface) */
 .modal-content {
     --mojo-current-accent: var(--bs-secondary-bg);
-    --mojo-current-eyebrow-fg: var(--bs-secondary-color);
+    --mojo-current-eyebrow-fg: var(--bs-emphasis-color);
     --mojo-current-tint: var(--mojo-dialog-accent);
+    /* Gradient is confined to the band area (~96px) instead of the whole
+       card so custom body views with their own opaque chrome don't expose a
+       visible colored strip between the band and the body. The tint is felt
+       around the eyebrow; below that the card is plain modal-bg. */
     background:
         linear-gradient(
             180deg,
             color-mix(in srgb, var(--mojo-current-tint) 5%, var(--bs-modal-bg, #fff)) 0%,
-            var(--bs-modal-bg, #fff) 100%
+            var(--bs-modal-bg, #fff) 96px
         );
 }
 
@@ -1464,7 +1468,7 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
         linear-gradient(
             180deg,
             color-mix(in srgb, var(--mojo-current-tint) 10%, var(--bs-modal-bg, #14181f)) 0%,
-            var(--bs-modal-bg, #14181f) 100%
+            var(--bs-modal-bg, #14181f) 96px
         );
 }
 
@@ -1639,8 +1643,22 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
 .modal.modal-alert .modal-content {
     --mojo-current-accent: var(--mojo-dialog-accent);
     --mojo-current-eyebrow-fg: #fff;
-    /* tint defaults to --mojo-dialog-accent already; explicit for typed
-       alerts below where band and tint share the same type token */
+    /* Typed alerts have short bodies and no nested chrome — let the tint
+       gradient extend across the whole card for full-surface brand presence. */
+    background:
+        linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--mojo-current-tint) 5%, var(--bs-modal-bg, #fff)) 0%,
+            var(--bs-modal-bg, #fff) 100%
+        );
+}
+[data-bs-theme="dark"] .modal.modal-alert .modal-content {
+    background:
+        linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--mojo-current-tint) 10%, var(--bs-modal-bg, #14181f)) 0%,
+            var(--bs-modal-bg, #14181f) 100%
+        );
 }
 .modal.modal-alert.modal-alert-success .modal-content {
     --mojo-current-accent: var(--mojo-dialog-success);

@@ -52,9 +52,16 @@
   fall back to `--mojo-dialog-accent`.
 - Brought back the subtle card-background tint as a separate concept
   via the new `--mojo-current-tint` variable. Default modals get a
-  brand-color tint at 5% (light) / 10% (dark); typed alerts tint with
-  their type color. The band and the tint can now diverge — quiet
-  band, branded surface.
+  brand-color tint at 5% (light) / 10% (dark) confined to the top
+  ~96px of the card so a custom body view (with its own opaque chrome)
+  can't expose a colored strip between the band and the body. Typed
+  alerts (`Modal.alert`) keep the tint over the full card height
+  since their bodies are short text. The band and the tint can now
+  diverge — quiet band, branded surface.
+- Eyebrow text color uses `var(--bs-emphasis-color)` (high-contrast)
+  by default rather than `var(--bs-secondary-color)` (muted) so the
+  uppercase label stays legible on the neutral band in both themes.
+  Typed alerts continue to render white text on their colored bands.
 - New `.modal-body.modal-body-flush:last-child` rule: edge-to-edge
   bodies (e.g. `noBodyPadding: true` with no footer) clip their
   bottom corners to `var(--bs-modal-inner-border-radius)` so content

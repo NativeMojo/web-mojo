@@ -7,7 +7,7 @@
  * Usage examples:
  *   import { AWS } from 'web-mojo/admin-models';
  *
- * Generated on: 2026-04-28T16:37:59.826Z
+ * Generated on: 2026-05-01T18:05:51.653Z
  */
 
 // AWS model exports
