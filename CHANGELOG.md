@@ -2,6 +2,33 @@
 
 ## Unreleased
 
+### Behavior — PortalApp: collapsed theme menu into a single `Theme settings` entry
+
+- The auto-injected topbar usermenu used to add **three rows** (Theme:
+  Light / Theme: Dark / Theme: System) and re-render the topbar on
+  every preference change to keep the active mark in sync. It's now a
+  **single row** — `Theme settings` (icon `bi-palette`, action
+  `theme-settings`) — that opens a small dialog with the three radios
+  wired to `app.setTheme()`. The dialog is the same shape consumers
+  were already building by hand (see the previous example portal's
+  `openDisplaySettings()` helper).
+- **New public method:** `app.showThemeSettings()` returns the
+  underlying `Modal.dialog` promise. Wired to the auto-injected
+  menu item, but also callable from any consumer hook (sidebar gear
+  icon, slash command, etc.).
+- **Backward compat:** the legacy `theme-light` / `theme-dark` /
+  `theme-system` `portal:action` cases still work — apps that wired
+  their own buttons to those actions don't need to change. The
+  framework's auto-injected menu just no longer emits them.
+- **Opt-out unchanged:** set `topbar.themeToggle: false` to skip the
+  auto-inject entirely.
+- **Removed:** the private `_refreshThemeToggleActiveState()` helper
+  and the `theme:changed` topbar re-render listener (a single item
+  has no active mark to track).
+- The example portal (`examples/portal/app.js`) was updated to remove
+  its own `Settings` userMenu row and `bi-sliders` topbar gear, both
+  of which duplicated the framework's auto-injected entry.
+
 ### Feature — Examples: landing page, legacy removal, automated example tests
 
 - **`examples/index.html` (new)** — visiting `http://localhost:3000/examples/` is no longer a blank page. A static landing card-grid links to the **Examples Portal** (canonical demos) and the standalone **Auth** login flow. No JS, no module imports — works even if the framework build is broken.

@@ -13,7 +13,7 @@
  * repo. Per-component example files MUST import from `web-mojo` only.
  */
 
-import { PortalWebApp, User, Modal } from 'web-mojo';
+import { PortalWebApp, User } from 'web-mojo';
 import { registerAdminPages, registerAssistant } from 'web-mojo/admin';
 import HomePage from './shell/HomePage.js';
 import DocsModal from './shell/DocsModal.js';
@@ -189,14 +189,6 @@ const app = new PortalWebApp({
                 href: 'https://github.com/NativeMojo/web-mojo',
                 tooltip: 'web-mojo on GitHub',
             },
-            // Display settings — theme + framework UI toggles.
-            {
-                id: 'display-settings',
-                icon: 'bi-sliders',
-                action: 'open-display-settings',
-                tooltip: 'Display settings',
-                buttonClass: 'btn btn-link',
-            },
             // Admin shortcut — switches the sidebar to the `system` menu.
             {
                 id: 'admin',
@@ -216,53 +208,24 @@ const app = new PortalWebApp({
         ],
         // The user menu — even with auth disabled the framework still renders
         // it. Useful as a copy-paste reference for downstream apps.
+        // PortalApp auto-injects a `Theme settings` row above `Sign out`.
         userMenu: {
             label: 'Demo User',
             icon: 'bi-person-circle',
             items: [
-                { label: 'Profile',         icon: 'bi-person',      action: 'profile' },
-                { label: 'Settings',        icon: 'bi-sliders',     action: 'open-settings' },
+                { label: 'Profile',  icon: 'bi-person',          action: 'profile' },
                 { divider: true },
-                { label: 'Sign out',        icon: 'bi-box-arrow-right', action: 'logout' },
+                { label: 'Sign out', icon: 'bi-box-arrow-right', action: 'logout' },
             ],
         },
     },
 });
 
-function openDisplaySettings() {
-    const pref = app.getTheme();           // 'light' | 'dark' | 'system'
-    const themeOpt = (value, label, icon) =>
-        `<label class="d-flex align-items-center gap-2 px-3 py-2 rounded ${pref === value ? 'bg-body-secondary' : ''}" style="cursor: pointer;">
-            <input type="radio" name="theme" value="${value}" class="form-check-input m-0" ${pref === value ? 'checked' : ''}>
-            <i class="${icon}"></i>
-            <span>${label}</span>
-        </label>`;
-    Modal.dialog({
-        title: 'Display settings',
-        size: 'sm',
-        body: `
-            <div>
-                <div class="text-uppercase small text-muted mb-2" style="letter-spacing: 0.08em;">Theme</div>
-                <div class="d-flex flex-column gap-1" data-settings-section="theme">
-                    ${themeOpt('light',  'Light',  'bi-sun')}
-                    ${themeOpt('dark',   'Dark',   'bi-moon-stars')}
-                    ${themeOpt('system', 'System', 'bi-circle-half')}
-                </div>
-            </div>
-        `,
-        buttons: [{ text: 'Done', class: 'btn-primary', dismiss: true }],
-        onShown: (event) => {
-            const root = event?.target;
-            if (!root) return;
-            root.querySelectorAll('input[name="theme"]').forEach(el => {
-                el.addEventListener('change', () => app.setTheme(el.value));
-            });
-        },
-    });
-}
-
 // Wire the topbar actions. `portal:action` is the canonical event for
-// rightItems / userMenu actions in PortalApp.
+// rightItems / userMenu actions in PortalApp. The framework handles
+// `theme-settings` itself (it auto-injects the row and opens
+// `app.showThemeSettings()`); apps only need to wire their own
+// custom actions here.
 app.events.on('portal:action', ({ action }) => {
     switch (action) {
         case 'open-examples-index':
@@ -275,14 +238,8 @@ app.events.on('portal:action', ({ action }) => {
         case 'exit-admin':
             switchToMenu('hub');
             break;
-        case 'open-display-settings':
-            openDisplaySettings();
-            break;
         case 'profile':
             app.toast?.info?.('No real user — auth is disabled in this portal.');
-            break;
-        case 'open-settings':
-            openDisplaySettings();
             break;
         case 'logout':
             app.toast?.warn?.('Auth is disabled — nothing to log out of here.');

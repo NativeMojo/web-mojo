@@ -132,16 +132,26 @@ new PortalApp({
 
     displayMode: 'both',         // 'icon' | 'text' | 'both'
     showSidebarToggle: true,     // Show hamburger toggle button
-    themeToggle: true            // Auto-inject Light/Dark/System items (default: true)
+    themeToggle: true            // Auto-inject the Theme settings entry (default: true)
   }
 });
 ```
 
 #### Theme toggle
 
-PortalApp auto-injects three items into the topbar `userMenu` (Theme: Light, Theme: Dark, Theme: System) so consuming apps don't have to wire them by hand. Selecting an item calls [`app.setTheme()`](./WebApp.md#theme) and shows a toast. The currently selected option is marked active in the dropdown.
+PortalApp auto-injects a single **Theme settings** row into the topbar `userMenu` (icon `bi-palette`, action `theme-settings`). Clicking it opens a small dialog with Light / Dark / System radios wired to [`app.setTheme()`](./WebApp.md#theme). The active option is highlighted while the dialog is open and updates live as the user picks a different one.
 
-To opt out, pass `topbar.themeToggle: false` and provide your own UI (or none).
+The dialog is also exposed as a public method:
+
+```js
+app.showThemeSettings();   // returns the underlying Modal.dialog promise
+```
+
+Call it from any custom hook (a sidebar gear icon, a slash command, a settings page) — no need to dispatch `theme-settings` through `portal:action` from inside your own code.
+
+To opt out of the auto-inject, pass `topbar.themeToggle: false` and provide your own UI (or none).
+
+**Backward compatibility:** the legacy `theme-light` / `theme-dark` / `theme-system` `portal:action` values still work for consumers who wired their own buttons to set a specific theme directly. The framework's auto-injected menu no longer emits those — it dispatches `theme-settings` and lets the dialog do the picking.
 
 ### Page Header Configuration (`pageHeader`)
 
