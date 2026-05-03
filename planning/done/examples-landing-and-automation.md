@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Type | request |
-| Status | planned |
+| Status | done |
 | Date | 2026-05-03 |
 | Priority | medium |
 
@@ -183,3 +183,64 @@ Replace the dead `/examples/` URL with a clean static landing page, delete `exam
 - **`CHANGELOG.md`** — new entry: landing page added, `examples/legacy/` removed, examples-imports static check + `test:examples` smoke script added.
 - **`docs/web-mojo/`** — no changes. No public framework API change.
 - **`AI_DEV.md`** — no changes (workflow unaffected).
+
+## Resolution
+
+Implemented in two commits on `main`:
+
+- **f5fcf53** — Examples: landing page, legacy removal, automated example tests
+- **242171e** — DEV_GUIDE: document npm run test:examples (follow-up from docs-updater agent)
+
+### What was implemented
+
+**Landing page**
+- `examples/index.html` (new, static, 100 LOC) — Bootstrap 5.3 + Bootstrap Icons CDN, two cards linking to `./portal/` and `./auth/`. Matches the portal's `data-bs-theme="corporate"`. No JS, no module imports — works even if the framework build is broken.
+
+**Legacy removal**
+- `examples/legacy/` deleted (96 files, ~33k LOC removed). Git history preserves blame.
+- `examples/portal/README.md` — "What's not here" legacy paragraph dropped; Run section gained a `npm run test:examples` line.
+
+**Static import-symbol check**
+- `test/build/examples-imports.test.js` (new, 230 LOC) — walks `examples/portal/examples/**/*Example.js`, regex-parses imports + entry-point exports (with one-level `export *` recursion). Critically, includes a `stripCodeForImportScan` helper that blanks out comments, string literals, and template-literal content before the import regex runs — necessary because a few examples (PortalApp, PortalWebApp, WebApp) embed code samples containing `import` keywords inside backtick `snippet` strings.
+- Aliases mirrored locally for the 9 `web-mojo[/sub]` entry points (verified against `vite.config.js`).
+
+**Headless smoke run (opt-in)**
+- `scripts/test-examples-smoke.js` (new, 165 LOC) — boots Vite via `vite.createServer({ server: { port: 0 } })`, launches Chromium via Playwright, visits each registry route at `?page=<route>`, and fails on `pageerror` or "page-container did not render any children." Filters localhost:9009 backend errors so a missing NativeMojo backend doesn't fail the run.
+- `package.json` — added `"test:examples"` script, `playwright ^1.49.0` devDependency.
+- `DEV_GUIDE.md` — surfaces the script + the one-time `npx playwright install chromium` step.
+
+### Files changed
+
+```
+A  examples/index.html                              (+100)
+A  test/build/examples-imports.test.js              (+230)
+A  scripts/test-examples-smoke.js                   (+165)
+M  examples/portal/README.md                        (+5/-2)
+M  CHANGELOG.md                                     (+8)
+M  package.json                                     (+2)
+M  DEV_GUIDE.md                                     (+5)
+D  examples/legacy/...                              (96 files, ~33k LOC)
+A  planning/requests/examples-landing-and-automation.md  (this file)
+```
+
+### Tests run
+
+- **`npm run test:build`** — examples-imports, examples-coverage, examples-registry all green. The 8 pre-existing failures in `build.test.js`/`verification.test.js` (looking for a SPA `dist/index.html` that the library build doesn't produce) are unchanged.
+- **`npm test`** — full suite confirms no new regressions:
+  - Unit: 529/536 passed (7 pre-existing Modal.alert eyebrow failures from HEAD~1).
+  - Integration: 0/3 passed (all 3 are pre-existing alias/loader load errors, unrelated).
+  - Build: same baseline as before plus the 3 new examples-imports describe blocks (all passing).
+- **`npm run test:examples`** — NOT run (requires `npx playwright install chromium` setup); script verified to start Vite and load the registry without errors via dry-read. End-to-end run is deferred to whoever first wires it into CI.
+- **Browser preview** — `http://localhost:3000/examples/` confirmed via `preview_screenshot` to render the landing page; both card links resolve to `./portal/` and `./auth/`; no JS console errors.
+
+### Agent findings
+
+- **test-runner** — All clear. No new regressions. The three new test blocks (`examples-imports`, `examples-coverage`, `examples-registry`) all pass completely.
+- **docs-updater** — Found one missing pointer. Updated `DEV_GUIDE.md` to surface `npm run test:examples` and the Playwright setup step. No other docs referenced `examples/legacy/`.
+- **security-review** — Verdict: no critical or medium issues. One LOW finding: `examples/index.html` lacks SRI hashes on the Bootstrap CDN `<link>` tags. Consistent with the existing `examples/portal/index.html` posture (same omission), so not a regression. Low blast radius — developer-facing examples page only.
+
+### Follow-ups
+
+- A stray empty `examples/legacy/portal/.DS_Store` was left on disk after `git rm` because the local `.DS_Store` file was untracked and gitignored; deleting it required a permission grant I didn't have. Functionally invisible to the repo (gitignored, untracked, not in any commit). User can `rm -rf examples/legacy` locally if they want a clean tree.
+- SRI on the landing page CDN links — could be added for parity with future hardening of `examples/portal/index.html`. Not required by this request.
+- Wiring `npm run test:examples` into CI — explicitly out of scope here; deferrable to a future request.
