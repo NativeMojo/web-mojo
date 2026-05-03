@@ -410,8 +410,8 @@ Custom themes are easy — just add your own CSS:
 | `brand` | `string` | `'MOJO App'` | Brand text |
 | `brandIcon` | `string` | `'bi bi-play-circle'` | Bootstrap Icon class for brand |
 | `brandRoute` | `string` | `'/'` | Route navigated to when brand is clicked |
-| `theme` | `string` | `'light'` | Named theme: `'light'`, `'dark'`, `'clean'`, `'gradient'` |
-| `shadow` | `string` | — | Optional shadow class suffix (e.g. `'sm'` → `topnav-shadow-sm`) |
+| `theme` | `string` | `'light'` | Named theme: `'light'`, `'dark'`, `'clean'`, `'gradient'`, or `'auto'` (follow `<html data-bs-theme>` live — see [Auto theme](#auto-theme)) |
+| `shadow` | `string` | — | Optional shadow class suffix (e.g. `'sm'` → `topnav-shadow-sm`, or `'auto'` to follow `<html data-bs-theme>` live) |
 | `displayMode` | `string` | `'both'` | What to show left of the nav — see [Display Modes](#display-modes) |
 | `showSidebarToggle` | `boolean` | `false` | Show sidebar collapse toggle in the navbar |
 | `sidebarToggleAction` | `string` | `'toggle-sidebar'` | Action name for the toggle button |
@@ -464,6 +464,23 @@ topbar: { theme: 'dark' }  // then in CSS:
 ```css
 .topnav-dark { background: #1a1a2e; }
 ```
+
+#### Auto theme
+
+Pass `theme: 'auto'` (and optionally `shadow: 'auto'`) to follow the framework's global theme live:
+
+```js
+topbar: {
+    theme: 'auto',     // 'light' or 'dark' from <html data-bs-theme>
+    shadow: 'auto'     // matches the resolved theme (light or dark shadow)
+}
+```
+
+`'auto'` resolves to `'light'` or `'dark'` at construction time (read from `<html data-bs-theme>`, defaulting to `'light'` if unset). A `MutationObserver` then watches `<html>` for `data-bs-theme` changes and surgically swaps the navbar's theme class tokens (`navbar-light`/`navbar-dark`, `topnav-light`/`topnav-dark`, `topnav-shadow-light`/`topnav-shadow-dark`) on the fly. Consumer-supplied classes on the navbar element are preserved — only the framework-managed tokens are touched.
+
+The observer is automatically disconnected on `destroy()`.
+
+`'clean'` and `'gradient'` are static themes — `'auto'` only resolves to `'light'` or `'dark'`. If you want a clean-style topbar that follows dark mode, build it with custom CSS rather than `'auto'`.
 
 ---
 

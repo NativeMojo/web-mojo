@@ -6,6 +6,11 @@
 import View from '@core/View.js';
 import GroupSelectorButton from '@core/views/navigation/GroupSelectorButton.js';
 
+// Theme tokens TopNav manages on its <nav> root. Used by the auto-theme
+// observer to swap class state without touching consumer-added classes.
+const TOPNAV_THEME_TOKENS = ['navbar-light', 'navbar-dark', 'topnav-light', 'topnav-dark', 'topnav-clean', 'topnav-gradient'];
+const TOPNAV_SHADOW_TOKENS = ['topnav-shadow-light', 'topnav-shadow-dark'];
+
 class TopNav extends View {
     constructor(options = {}) {
         // Define theme-to-class mappings
@@ -16,13 +21,24 @@ class TopNav extends View {
             gradient: 'navbar navbar-expand-lg navbar-dark topnav-gradient',
         };
 
-        // Set a default theme and determine the final class string
+        // Theme & shadow each accept the literal string `'auto'`, which means
+        // "follow `<html data-bs-theme>` live". Resolve once at construction;
+        // if either was 'auto' we install a MutationObserver after super() so
+        // the class state mirrors the page theme as the user toggles it.
         const themeName = options.theme || 'light';
-        let navbarClass = themes[themeName] || themes.light;
+        const shadowName = options.shadow || null;
+        const isAutoTheme = themeName === 'auto';
+        const isAutoShadow = shadowName === 'auto';
+        const resolveAuto = () => {
+            if (typeof document === 'undefined') return 'light';
+            return document.documentElement?.dataset?.bsTheme === 'dark' ? 'dark' : 'light';
+        };
+        const resolvedTheme = isAutoTheme ? resolveAuto() : themeName;
+        const resolvedShadow = isAutoShadow ? resolveAuto() : shadowName;
 
-        // Add shadow class if specified
-        if (options.shadow) {
-            navbarClass += ` topnav-shadow-${options.shadow}`;
+        let navbarClass = themes[resolvedTheme] || themes.light;
+        if (resolvedShadow) {
+            navbarClass += ` topnav-shadow-${resolvedShadow}`;
         }
 
         super({
@@ -32,6 +48,12 @@ class TopNav extends View {
             style: 'position: relative; z-index: 1030;',
             ...options
         });
+
+        // Stash for the auto-sync observer (initialised lazily below).
+        this._themes = themes;
+        this._themeOption = themeName;
+        this._shadowOption = shadowName;
+        this._themeObserver = null;
 
         // Display mode configuration
         // 'menu' | 'page' | 'both' | 'group' | 'group_page_titles'
@@ -71,6 +93,62 @@ class TopNav extends View {
 
         // Track current group for display modes
         this.currentGroup = null;
+
+        // Wire the auto-theme observer if either knob asked for it.
+        if (isAutoTheme || isAutoShadow) {
+            this._installAutoThemeSync();
+        }
+    }
+
+    /**
+     * Watch `<html data-bs-theme>` and re-apply theme/shadow class tokens on
+     * the root `<nav>` whenever it flips. Only installed when the constructor
+     * was called with `theme: 'auto'` and/or `shadow: 'auto'`.
+     *
+     * Surgical class swap — only the framework-managed theme tokens are
+     * removed/added, so any consumer-supplied classes on the navbar element
+     * are preserved.
+     * @private
+     */
+    _installAutoThemeSync() {
+        if (typeof window === 'undefined' || typeof MutationObserver === 'undefined') return;
+
+        const html = document.documentElement;
+        const isAutoTheme = this._themeOption === 'auto';
+        const isAutoShadow = this._shadowOption === 'auto';
+
+        const apply = () => {
+            if (!this.element) return;
+            const resolved = html?.dataset?.bsTheme === 'dark' ? 'dark' : 'light';
+            if (isAutoTheme) {
+                const themeClasses = (this._themes[resolved] || this._themes.light).split(/\s+/);
+                this.element.classList.remove(...TOPNAV_THEME_TOKENS);
+                themeClasses
+                    .filter(c => TOPNAV_THEME_TOKENS.includes(c))
+                    .forEach(c => this.element.classList.add(c));
+            }
+            if (isAutoShadow) {
+                this.element.classList.remove(...TOPNAV_SHADOW_TOKENS);
+                this.element.classList.add(`topnav-shadow-${resolved}`);
+            }
+        };
+
+        this._themeObserver = new MutationObserver((mutations) => {
+            for (const m of mutations) {
+                if (m.type === 'attributes' && m.attributeName === 'data-bs-theme') {
+                    apply();
+                    break;
+                }
+            }
+        });
+        this._themeObserver.observe(html, { attributes: true, attributeFilter: ['data-bs-theme'] });
+    }
+
+    async onBeforeDestroy() {
+        if (this._themeObserver) {
+            this._themeObserver.disconnect();
+            this._themeObserver = null;
+        }
     }
 
     findMenuItem(id) {

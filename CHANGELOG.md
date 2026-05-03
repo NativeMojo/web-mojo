@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+### Feature — TopNav: `theme: 'auto'` follows the global dark/light preference live
+
+- New value `'auto'` for `TopNav`'s `theme` and `shadow` constructor
+  options. With `theme: 'auto'`, the navbar resolves to `'light'` or
+  `'dark'` at construction time by reading `<html data-bs-theme>`
+  (default `'light'` if unset), then installs a `MutationObserver` on
+  `<html>` so subsequent `data-bs-theme` flips swap the
+  `navbar-light` / `navbar-dark` / `topnav-light` / `topnav-dark`
+  class tokens live. `shadow: 'auto'` follows the same rule for
+  `topnav-shadow-light` / `topnav-shadow-dark`.
+- The class swap is surgical — only the framework-managed theme
+  tokens are removed/added, so any consumer-supplied classes on the
+  navbar element are preserved.
+- The observer is disconnected automatically in `onBeforeDestroy()`.
+- `'clean'` and `'gradient'` remain static themes — `'auto'` only
+  resolves to `'light'` or `'dark'`. Apps that want a clean-style
+  topbar that follows dark mode should build it with custom CSS.
+- **Migration:** apps that were syncing the topbar theme by hand
+  (reading `<html data-bs-theme>` at boot + installing their own
+  `MutationObserver` to swap `navbar-light`/`navbar-dark` etc.) can
+  drop that helper and pass `theme: 'auto'` / `shadow: 'auto'`
+  instead.
+
 ### Behavior — PortalApp: collapsed theme menu into a single `Theme settings` entry
 
 - The auto-injected topbar usermenu used to add **three rows** (Theme:
