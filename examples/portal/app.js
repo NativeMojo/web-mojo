@@ -169,8 +169,8 @@ const app = new PortalWebApp({
         brand: 'web-mojo Examples',
         brandIcon: 'bi-lightning-charge',
         brandRoute: '?page=home',
-        theme: 'dark',
-        shadow: 'dark',
+        theme: 'auto',                 // Follow <html data-bs-theme> live
+        shadow: 'auto',                // Match the resolved theme
         showSidebarToggle: true,
         // Right-side topbar items: docs index, GitHub link, login slot.
         // The framework swaps `id: 'login'` for `userMenu` the moment
