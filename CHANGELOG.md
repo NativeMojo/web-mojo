@@ -29,6 +29,82 @@
   its own `Settings` userMenu row and `bi-sliders` topbar gear, both
   of which duplicated the framework's auto-injected entry.
 
+### Feature — Extensible `User` permission registry
+
+Two related fixes that make the `User` permission registry behave correctly when apps extend it. Both bugs had the same root cause: framework-only state computed once at module load with no recompute path, so app-level mutations after import had no effect on the UI or the gate-checker.
+
+**1. `User.registerCategoryMap()` — app categories implicitly satisfy app granular gates**
+
+The user-permission gate already falls back from a granular permission to its parent *category* via `User.GRANULAR_TO_CATEGORY` — so a user holding `permissions.security` automatically satisfies a page gated `permissions: ["view_security"]`. But `GRANULAR_TO_CATEGORY` was built once from the framework-only `User.CATEGORY_GRANULAR_MAP` with no extension point, so app categories registered through `User.APP_CATEGORY_PERMISSIONS` could never satisfy app granular gates. Apps had to list both names in every gate array.
+
+- **New** `User.registerCategoryMap(map)` — apps register their own category → granular relationships. Pass an object of the same shape as `CATEGORY_GRANULAR_MAP`:
+  ```js
+  User.registerCategoryMap({ app_cat: ['view_app_thing', 'manage_app_thing'] });
+  ```
+  Merges into `User.CATEGORY_GRANULAR_MAP` (extending existing categories without dropping prior entries) and triggers `rebuildPermissions()`. After registration, a user with `permissions.app_cat === true` passes a gate of `permissions: ["view_app_thing"]` automatically.
+- No change to `User.hasPermission` / `_hasPermission` — they already consult `GRANULAR_TO_CATEGORY`.
+- `Member.hasPermission` still does literal-only matching (no category fallback) — pre-existing, separate.
+
+**2. `User.rebuildPermissions()` — UI picks up extended permission tabs and "App" tabset**
+
+`User.PERMISSIONS`, `User.PERMISSION_FIELDS`, `User.CATEGORY_PERMISSION_FIELDS`, and `User.GRANULAR_PERMISSION_FIELDS` were computed by IIFEs at module-load time and never re-read their source arrays. Apps documented to extend `User.GRANULAR_PERMISSION_TABS.push(...)` / `User.APP_CATEGORY_PERMISSIONS.push(...)` / `User.CATEGORY_GRANULAR_MAP.x = [...]` after import saw no change in the rendered "Permissions" or "Adv Permissions" forms — the cached field arrays were already frozen.
+
+- **New** `User.rebuildPermissions()` — recomputes every cached structure from the live source arrays. Idempotent. Apps call it once after their registry edits:
+  ```js
+  User.GRANULAR_PERMISSION_TABS.push({
+      label: 'Custom',
+      permissions: [
+          { name: 'view_app_thing',   label: 'View App Thing' },
+          { name: 'manage_app_thing', label: 'Manage App Thing' }
+      ]
+  });
+  User.APP_CATEGORY_PERMISSIONS.push({ name: 'app_cat', label: 'App Category' });
+  User.CATEGORY_GRANULAR_MAP.app_cat = ['view_app_thing', 'manage_app_thing'];
+
+  User.rebuildPermissions();
+  ```
+- **Mutates caches in place** so existing references stay live. `UserForms.permissions.fields` (which captures `User.PERMISSION_FIELDS` at module-load) reflects post-rebuild updates without re-import.
+- Replaces the previous IIFE-built initial state — there's now a single `User.rebuildPermissions()` call at the bottom of `User.js` instead. Initial behavior is identical to before.
+- `User.registerCategoryMap()` calls `rebuildPermissions()` automatically; apps mutating `CATEGORY_GRANULAR_MAP` directly should call it themselves.
+
+**3. `User.registerPermissions()` — atomic one-shot extension API**
+
+Higher-level wrapper for apps that want to declare every extension in a single call rather than push to four separate arrays:
+
+```js
+User.registerPermissions({
+    categories:           [{ name: 'app_cat', label: 'App Category' }],
+    granularPermissions:  [{ name: 'app_perm', label: 'App Perm' }],
+    granularTabs:         [{
+        label: 'Custom',
+        permissions: [{ name: 'view_app_thing', label: 'View App Thing' }]
+    }],
+    categoryGranularMap:  { app_cat: ['view_app_thing'] }
+});
+```
+
+All four keys are optional. Arrays append, the map merges + dedupes, then `rebuildPermissions()` runs once. Equivalent to the imperative pattern but with no chance of forgetting the rebuild.
+
+**4. `User._permSwitch` — exposed field builder**
+
+The internal `_permSwitch(p) → { name: 'permissions.<p.name>', type: 'switch', ... }` helper is now `User._permSwitch` so apps building custom permission forms can use it directly and stay aligned with the framework's switch-field shape (no copy-paste drift if the shape evolves).
+
+### Feature — `Member` permission registry parity
+
+`Member.PERMISSIONS` had no extension point and was a literal source array — apps wanting custom member permissions had to redefine it themselves, breaking on every framework update that added new entries. Mirroring the `User` treatment:
+
+- **New** `Member.BASE_PERMISSIONS` — the framework-defined list (renamed from the old `Member.PERMISSIONS` source).
+- **New** `Member.APP_PERMISSIONS` — empty array; apps push their own entries here.
+- **New** `Member.rebuildPermissions()` — recomputes `Member.PERMISSIONS` and `Member.PERMISSION_FIELDS` from `BASE_PERMISSIONS + APP_PERMISSIONS`. Idempotent. Mutates caches in place so cached references (e.g. forms holding `Member.PERMISSION_FIELDS`) stay current.
+- `Member.PERMISSIONS` and `Member.PERMISSION_FIELDS` are now live caches; reading them works exactly as before. Any code that *wrote* directly to `Member.PERMISSIONS` should switch to `APP_PERMISSIONS` (or `BASE_PERMISSIONS` for framework-level edits).
+- `Member.hasPermission` is unchanged — still does literal-only matching with no category fallback (Member has no category concept; this matches existing behavior).
+
+**Tests / loader**
+
+- New `test/unit/User.test.js` (17 tests) covers: granular→category fallback, `registerCategoryMap` merge semantics + array-form gates + superuser bypass, `rebuildPermissions` picking up extended granular tabs, the "App" tabset appearing when `APP_CATEGORY_PERMISSIONS` is non-empty, `CATEGORY_GRANULAR_MAP` updates flowing through to `GRANULAR_TO_CATEGORY`, idempotency, in-place mutation preserving held references, and `registerPermissions` atomic registration end-to-end (including the gate-check round-trip).
+- New `test/unit/Member.test.js` (6 tests) covers: initial `BASE_PERMISSIONS` exposure through the live cache, switch-field shape, `APP_PERMISSIONS` pickup, in-place mutation invariant, idempotency, and the literal-matching contract for `Member.hasPermission`.
+- `test/utils/simple-module-loader.js` gained `User` and `Member` entries with fallback returns, and now handles aliased named imports (`import { X as Y } from ...`) and unresolved relative named imports (declaring locals as `undefined` so module-load doesn't ReferenceError when names appear only in metadata literals).
+
 ### Feature — Examples: landing page, legacy removal, automated example tests
 
 - **`examples/index.html` (new)** — visiting `http://localhost:3000/examples/` is no longer a blank page. A static landing card-grid links to the **Examples Portal** (canonical demos) and the standalone **Auth** login flow. No JS, no module imports — works even if the framework build is broken.

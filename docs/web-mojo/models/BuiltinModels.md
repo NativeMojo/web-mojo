@@ -95,8 +95,11 @@ Most built-in models expose static properties for use with dialogs and forms:
 | `Model.EDIT_FORM` | `object` | Form config for editing an existing record |
 | `Model.CREATE_FORM` | `object` | Alias for `ADD_FORM` (some models) |
 | `Model.DATA_VIEW` | `object` | DataView config for displaying a record |
-| `Model.PERMISSIONS` | `array` | Permission definitions (User only) |
-| `Model.PERMISSION_FIELDS` | `array` | Form fields for editing permissions (User only) |
+| `Model.PERMISSIONS` | `array` | Permission definitions (User, Member) — live cache, see [Extending the User permission registry](#extending-the-user-permission-registry) |
+| `Model.PERMISSION_FIELDS` | `array` | Form fields for editing permissions (User, Member) — live cache |
+| `Model.CATEGORY_PERMISSION_FIELDS` | `array` | Tabset of category permissions (User only) |
+| `Model.GRANULAR_PERMISSION_FIELDS` | `array` | Tabset of granular permissions (User only) |
+| `Model.GRANULAR_TO_CATEGORY` | `object` | Reverse map: granular permission name → parent category (User only) |
 
 ---
 
@@ -182,6 +185,105 @@ User.PERMISSIONS
 //   { name: 'manage_aws',     label: 'Manage AWS' },
 //   { name: 'manage_docit',   label: 'Manage DocIt' }
 // ]
+```
+
+### Category fallback
+
+A page or view gate written against a *granular* permission is automatically satisfied when the user holds the parent *category*. The mapping lives in `User.CATEGORY_GRANULAR_MAP` (forward) and `User.GRANULAR_TO_CATEGORY` (reverse).
+
+```js
+// CATEGORY_GRANULAR_MAP entry:
+//   security: ['view_security', 'manage_security']
+
+// User holds the broad category:
+new User({ permissions: { security: true } })
+    .hasPermission('view_security'); // → true (granted via category)
+```
+
+`Member.hasPermission` does not have this fallback — it does literal name matching only.
+
+### Extending the User permission registry
+
+Apps can add their own categories, granular permissions, granular tabs, and category→granular mappings. The framework caches every UI structure (`PERMISSIONS`, `PERMISSION_FIELDS`, `CATEGORY_PERMISSION_FIELDS`, `GRANULAR_PERMISSION_FIELDS`, `GRANULAR_TO_CATEGORY`) — call `User.rebuildPermissions()` after any extension, or use one of the helpers that calls it for you.
+
+The cleanest path is the atomic helper:
+
+```js
+import { User } from 'web-mojo';
+
+User.registerPermissions({
+    categories: [
+        { name: 'app_cat', label: 'App Category' }
+    ],
+    granularPermissions: [
+        { name: 'app_perm', label: 'App Perm' }
+    ],
+    granularTabs: [{
+        label: 'Custom',
+        permissions: [
+            { name: 'view_app_thing',   label: 'View App Thing' },
+            { name: 'manage_app_thing', label: 'Manage App Thing' }
+        ]
+    }],
+    categoryGranularMap: {
+        app_cat: ['view_app_thing', 'manage_app_thing']
+    }
+});
+```
+
+All four keys are optional. Arrays append; the map merges and dedupes; `rebuildPermissions()` runs once at the end.
+
+**Equivalent imperative form** — push directly to the source arrays, then rebuild:
+
+```js
+User.APP_CATEGORY_PERMISSIONS.push({ name: 'app_cat', label: 'App Category' });
+User.APP_GRANULAR_PERMISSIONS.push({ name: 'app_perm', label: 'App Perm' });
+User.GRANULAR_PERMISSION_TABS.push({
+    label: 'Custom',
+    permissions: [
+        { name: 'view_app_thing',   label: 'View App Thing' },
+        { name: 'manage_app_thing', label: 'Manage App Thing' }
+    ]
+});
+User.CATEGORY_GRANULAR_MAP.app_cat = ['view_app_thing', 'manage_app_thing'];
+
+User.rebuildPermissions();
+```
+
+**Just the category→granular map** — `registerCategoryMap` rebuilds for you:
+
+```js
+User.registerCategoryMap({
+    app_cat: ['view_app_thing', 'manage_app_thing']
+});
+```
+
+After registration, a user holding `permissions.app_cat === true` automatically passes a gate of `permissions: ["view_app_thing"]`.
+
+#### Source arrays vs. live caches
+
+| Identifier | Role | Mutate directly? |
+|---|---|---|
+| `User.CATEGORY_PERMISSIONS` | Source — framework categories | No (framework-owned) |
+| `User.GRANULAR_PERMISSION_TABS` | Source — framework granular tabs | Yes (push your own tabs) |
+| `User.CATEGORY_GRANULAR_MAP` | Source — category → granular relationships | Yes (add/extend entries) |
+| `User.APP_CATEGORY_PERMISSIONS` | Source — app-level categories | Yes |
+| `User.APP_GRANULAR_PERMISSIONS` | Source — app-level granulars | Yes |
+| `User.PERMISSIONS` | **Live cache** — flat list of all registered permissions | No |
+| `User.PERMISSION_FIELDS` | **Live cache** — flat switch-field list (used by `UserForms.permissions`) | No |
+| `User.CATEGORY_PERMISSION_FIELDS` | **Live cache** — categories tabset | No |
+| `User.GRANULAR_PERMISSION_FIELDS` | **Live cache** — granular tabset | No |
+| `User.GRANULAR_TO_CATEGORY` | **Live cache** — reverse map for the gate-checker | No |
+
+Live caches are mutated *in place* by `rebuildPermissions()`, so any reference captured at module-load time (e.g. `UserForms.permissions.fields = User.PERMISSION_FIELDS`) stays current after re-registration without re-import.
+
+#### `User._permSwitch(p)` — switch-field builder
+
+Exposed for apps building custom permission forms. Returns a switch field config aligned with the framework's shape, so app-built forms don't drift if the field shape evolves:
+
+```js
+User._permSwitch({ name: 'app_perm', label: 'App Perm', tooltip: 'optional' });
+// → { name: 'permissions.app_perm', type: 'switch', label: 'App Perm', columns: 6, tooltip: 'optional' }
 ```
 
 ### User Forms & DataView
@@ -364,6 +466,34 @@ Member models also expose `hasPermission()`:
 // Check group-level permissions (on the member record)
 user.member.hasPermission('manage_billing');
 ```
+
+`Member.hasPermission` does *literal* name matching only — there is no category fallback. If you want category→granular fallback for member permissions, check it explicitly in your code or layer it on top.
+
+### Extending the Member permission registry
+
+Mirrors the User pattern but flatter — Member has no categories or tabs, just a single list.
+
+```js
+import { Member } from 'web-mojo';
+
+Member.APP_PERMISSIONS.push(
+    { name: 'app_perm_a', label: 'App Perm A' },
+    { name: 'app_perm_b', label: 'App Perm B' }
+);
+
+Member.rebuildPermissions();
+```
+
+After the rebuild, `Member.PERMISSIONS` and `Member.PERMISSION_FIELDS` reflect both the framework defaults and the app additions.
+
+| Identifier | Role | Mutate directly? |
+|---|---|---|
+| `Member.BASE_PERMISSIONS` | Source — framework-defined member permissions | No (framework-owned) |
+| `Member.APP_PERMISSIONS` | Source — app-level member permissions | Yes |
+| `Member.PERMISSIONS` | **Live cache** — `BASE` + `APP`, flat | No |
+| `Member.PERMISSION_FIELDS` | **Live cache** — switch-field list | No |
+
+Live caches are mutated in place by `Member.rebuildPermissions()`, so cached references (e.g. forms holding `Member.PERMISSION_FIELDS`) stay current.
 
 ### MemberList
 

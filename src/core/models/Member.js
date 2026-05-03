@@ -73,7 +73,8 @@ const MemberForms = {
 };
 
 
-Member.PERMISSIONS = [
+// ── Source: framework-defined member permissions ──────────────────
+Member.BASE_PERMISSIONS = [
     { name: "manage_group", label: "Group Admin" },
     { name: "view_metrics", label: "View Metrics" },
     { name: "view_logs", label: "View Logs" },
@@ -83,14 +84,41 @@ Member.PERMISSIONS = [
     { name: "view_billing", label: "View Billing" }
 ];
 
-Member.PERMISSION_FIELDS = [
-    ...Member.PERMISSIONS.map(permission => ({
-        name: `permissions.${permission.name}`,
-        type: 'switch',
-        label: permission.label,
-        columns: 6
-    }))
-];
+// ── App-level extension point (empty by default) ──────────────────
+// Mutate (push, splice) this array, then call Member.rebuildPermissions()
+// to refresh the cached field arrays the UI reads from.
+Member.APP_PERMISSIONS = [];
+
+// ── Live caches — populated by rebuildPermissions() ───────────────
+// Initialized here so consumers (e.g. forms that capture
+// Member.PERMISSION_FIELDS at module-load) can hold a reference;
+// rebuildPermissions() mutates these in place to keep cached
+// references current across re-registrations.
+Member.PERMISSIONS = [];
+Member.PERMISSION_FIELDS = [];
+
+// Field-shape builder — kept aligned with User._permSwitch.
+const _permSwitch = (p) => ({
+    name: `permissions.${p.name}`,
+    type: 'switch',
+    label: p.label,
+    columns: 6,
+    ...(p.tooltip ? { tooltip: p.tooltip } : {})
+});
+
+// Recompute the cached permission structures from the live source
+// arrays (BASE_PERMISSIONS + APP_PERMISSIONS). Idempotent. Mutates
+// caches in place so existing references stay live.
+Member.rebuildPermissions = function() {
+    Member.PERMISSIONS.length = 0;
+    Member.PERMISSIONS.push(...Member.BASE_PERMISSIONS, ...Member.APP_PERMISSIONS);
+
+    Member.PERMISSION_FIELDS.length = 0;
+    Member.PERMISSION_FIELDS.push(...Member.PERMISSIONS.map(_permSwitch));
+};
+
+// Initial population — produces the same flat list as before.
+Member.rebuildPermissions();
 
 Member.EDIT_FORM = MemberForms.edit;
 Member.ADD_FORM = MemberForms.create;

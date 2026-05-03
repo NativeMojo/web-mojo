@@ -149,60 +149,149 @@ User.CATEGORY_GRANULAR_MAP = {
     files: ["view_fileman", "manage_files", "view_vault", "manage_vault"]
 };
 
-// Reverse lookup: granular perm name → category name
-User.GRANULAR_TO_CATEGORY = {};
-for (const [category, perms] of Object.entries(User.CATEGORY_GRANULAR_MAP)) {
-    for (const perm of perms) {
-        User.GRANULAR_TO_CATEGORY[perm] = category;
-    }
-}
-
 // ── App-level extension points (empty by default) ─────────────────
+// Mutate (push, splice, key-set) these source structures, then call
+// User.rebuildPermissions() to refresh the cached field arrays the UI
+// reads from. Apps may also extend User.GRANULAR_PERMISSION_TABS and
+// User.CATEGORY_GRANULAR_MAP and have rebuildPermissions() pick them up.
 User.APP_CATEGORY_PERMISSIONS = [];
 User.APP_GRANULAR_PERMISSIONS = [];
 
-// ── Backwards-compatible flat list ────────────────────────────────
-User.PERMISSIONS = [
-    ...User.CATEGORY_PERMISSIONS,
-    ...User.GRANULAR_PERMISSION_TABS.flatMap(tab => tab.permissions),
-    ...User.APP_CATEGORY_PERMISSIONS,
-    ...User.APP_GRANULAR_PERMISSIONS,
-];
-
-User.PERMISSION_FIELDS = [
-    ...User.PERMISSIONS.map(permission => ({
-        name: `permissions.${permission.name}`,
+// ── Field builder ─────────────────────────────────────────────────
+// Public so apps building custom permission forms can reuse the exact
+// shape (avoids drift if the framework's switch field shape evolves).
+User._permSwitch = function(p) {
+    return {
+        name: `permissions.${p.name}`,
         type: 'switch',
-        label: permission.label,
-        columns: 6
-    }))
-];
+        label: p.label,
+        columns: 6,
+        ...(p.tooltip ? { tooltip: p.tooltip } : {})
+    };
+};
 
-// ── Field builders for UI ─────────────────────────────────────────
-const _permSwitch = (p) => ({ name: `permissions.${p.name}`, type: 'switch', label: p.label, columns: 6, ...(p.tooltip ? { tooltip: p.tooltip } : {}) });
+// ── Live caches — populated by rebuildPermissions() ───────────────
+// Initialized here so consumers (e.g. UserForms.permissions.fields)
+// can hold a reference; rebuildPermissions() mutates these arrays in
+// place to keep cached references current across re-registrations.
+User.PERMISSIONS = [];
+User.PERMISSION_FIELDS = [];
+User.CATEGORY_PERMISSION_FIELDS = [];
+User.GRANULAR_PERMISSION_FIELDS = [];
+User.GRANULAR_TO_CATEGORY = {};
 
-// "Permissions" sidenav section — tabset with System (+ App when non-empty)
-User.CATEGORY_PERMISSION_FIELDS = (() => {
-    const tabs = [
-        { label: 'System', fields: User.CATEGORY_PERMISSIONS.map(_permSwitch) },
+// Recompute every cached permission structure from the live source
+// arrays (CATEGORY_PERMISSIONS, GRANULAR_PERMISSION_TABS, the APP_*
+// extension points, CATEGORY_GRANULAR_MAP). Idempotent — safe to call
+// multiple times. Mutates caches in place so existing references stay
+// live; UI code that read User.PERMISSION_FIELDS once still sees the
+// updated list after a rebuild.
+User.rebuildPermissions = function() {
+    const _ps = User._permSwitch;
+
+    // Flat list of every registered permission.
+    User.PERMISSIONS.length = 0;
+    User.PERMISSIONS.push(
+        ...User.CATEGORY_PERMISSIONS,
+        ...User.GRANULAR_PERMISSION_TABS.flatMap(tab => tab.permissions),
+        ...User.APP_CATEGORY_PERMISSIONS,
+        ...User.APP_GRANULAR_PERMISSIONS
+    );
+
+    // Flat field list (flat form, no tabs).
+    User.PERMISSION_FIELDS.length = 0;
+    User.PERMISSION_FIELDS.push(...User.PERMISSIONS.map(_ps));
+
+    // "Permissions" sidenav section — tabset with System (+ App when non-empty).
+    const categoryTabs = [
+        { label: 'System', fields: User.CATEGORY_PERMISSIONS.map(_ps) }
     ];
     if (User.APP_CATEGORY_PERMISSIONS.length > 0) {
-        tabs.push({ label: 'App', fields: User.APP_CATEGORY_PERMISSIONS.map(_permSwitch) });
+        categoryTabs.push({ label: 'App', fields: User.APP_CATEGORY_PERMISSIONS.map(_ps) });
     }
-    return [{ type: 'tabset', tabs }];
-})();
+    User.CATEGORY_PERMISSION_FIELDS.length = 0;
+    User.CATEGORY_PERMISSION_FIELDS.push({ type: 'tabset', tabs: categoryTabs });
 
-// "Adv Permissions" sidenav section — tabset with Account, Communication, Platform (+ App when non-empty)
-User.GRANULAR_PERMISSION_FIELDS = (() => {
-    const tabs = User.GRANULAR_PERMISSION_TABS.map(tab => ({
+    // "Adv Permissions" sidenav section — one tab per registered tab (+ App when non-empty).
+    const granularTabs = User.GRANULAR_PERMISSION_TABS.map(tab => ({
         label: tab.label,
-        fields: tab.permissions.map(_permSwitch)
+        fields: tab.permissions.map(_ps)
     }));
     if (User.APP_GRANULAR_PERMISSIONS.length > 0) {
-        tabs.push({ label: 'App', fields: User.APP_GRANULAR_PERMISSIONS.map(_permSwitch) });
+        granularTabs.push({ label: 'App', fields: User.APP_GRANULAR_PERMISSIONS.map(_ps) });
     }
-    return [{ type: 'tabset', tabs }];
-})();
+    User.GRANULAR_PERMISSION_FIELDS.length = 0;
+    User.GRANULAR_PERMISSION_FIELDS.push({ type: 'tabset', tabs: granularTabs });
+
+    // Reverse lookup: granular perm name → category name.
+    for (const k of Object.keys(User.GRANULAR_TO_CATEGORY)) {
+        delete User.GRANULAR_TO_CATEGORY[k];
+    }
+    for (const [category, perms] of Object.entries(User.CATEGORY_GRANULAR_MAP)) {
+        for (const perm of perms) {
+            User.GRANULAR_TO_CATEGORY[perm] = category;
+        }
+    }
+};
+
+// Register app-level category → granular mappings so a held category
+// permission implicitly satisfies a gate listing one of its granulars.
+// Pass an object of the same shape as CATEGORY_GRANULAR_MAP, e.g.:
+//   User.registerCategoryMap({ app_cat: ['view_app_thing', 'manage_app_thing'] });
+// Merges with any existing entries for the same category and triggers
+// rebuildPermissions() so caches stay coherent.
+User.registerCategoryMap = function(map) {
+    if (!map) return;
+    let touched = false;
+    for (const [category, perms] of Object.entries(map)) {
+        if (!Array.isArray(perms)) continue;
+        const existing = User.CATEGORY_GRANULAR_MAP[category] || [];
+        User.CATEGORY_GRANULAR_MAP[category] = Array.from(new Set([...existing, ...perms]));
+        touched = true;
+    }
+    if (touched) User.rebuildPermissions();
+};
+
+// One-shot atomic registration of app permissions. Bundles every
+// extension-point mutation into a single call followed by one
+// rebuildPermissions() at the end, so apps don't have to know which
+// arrays to push and which map to merge.
+//
+//   User.registerPermissions({
+//       categories: [{ name: 'app_cat', label: 'App Category' }],
+//       granularPermissions: [{ name: 'app_perm', label: 'App Perm' }],
+//       granularTabs: [{
+//           label: 'Custom',
+//           permissions: [{ name: 'view_app_thing', label: 'View App Thing' }]
+//       }],
+//       categoryGranularMap: { app_cat: ['view_app_thing'] }
+//   });
+//
+// All four keys are optional. Arrays are appended; the map is merged
+// (existing category entries are preserved + deduped).
+User.registerPermissions = function(spec) {
+    if (!spec) return;
+    if (Array.isArray(spec.categories)) {
+        User.APP_CATEGORY_PERMISSIONS.push(...spec.categories);
+    }
+    if (Array.isArray(spec.granularPermissions)) {
+        User.APP_GRANULAR_PERMISSIONS.push(...spec.granularPermissions);
+    }
+    if (Array.isArray(spec.granularTabs)) {
+        User.GRANULAR_PERMISSION_TABS.push(...spec.granularTabs);
+    }
+    if (spec.categoryGranularMap) {
+        for (const [category, perms] of Object.entries(spec.categoryGranularMap)) {
+            if (!Array.isArray(perms)) continue;
+            const existing = User.CATEGORY_GRANULAR_MAP[category] || [];
+            User.CATEGORY_GRANULAR_MAP[category] = Array.from(new Set([...existing, ...perms]));
+        }
+    }
+    User.rebuildPermissions();
+};
+
+// Initial population — mirrors the old IIFE-built state exactly.
+User.rebuildPermissions();
 
 const UserForms = {
     create: {

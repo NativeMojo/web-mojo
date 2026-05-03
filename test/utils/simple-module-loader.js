@@ -212,6 +212,14 @@ class SimpleModuleLoader {
             'Modal': {
                 path: path.join(this.sourceRoot, 'core/views/feedback/Modal.js'),
                 dependencies: []
+            },
+            'User': {
+                path: path.join(this.sourceRoot, 'core/models/User.js'),
+                dependencies: ['Model', 'Collection']
+            },
+            'Member': {
+                path: path.join(this.sourceRoot, 'core/models/Member.js'),
+                dependencies: ['Model', 'Collection']
             }
         };
 
@@ -294,14 +302,20 @@ class SimpleModuleLoader {
             return `// Import (unresolved): ${match}\n`;
         });
 
-        // Named imports: `import { a, b } from 'path';`
+        // Named imports: `import { a, b as c } from 'path';`
         code = code.replace(/import\s*\{\s*([^}]+)\s*\}\s*from\s+['"]([^'"]+)['"];?\s*\n?/g, (match, imports, importPath) => {
             const globalName = this.importPathToGlobal(importPath);
+            // Each entry may be `Name` or `Name as Alias` — bind the local name (the alias if present).
+            const entries = imports.split(',').map(n => n.trim()).filter(Boolean).map(spec => {
+                const m = spec.match(/^(\S+)\s+as\s+(\S+)$/);
+                return m ? { source: m[1], local: m[2] } : { source: spec, local: spec };
+            });
             if (globalName) {
-                const names = imports.split(',').map(n => n.trim()).filter(Boolean);
-                return names.map(n => `const ${n} = global.${globalName} && global.${globalName}.${n};`).join('\n') + '\n';
+                return entries.map(e => `const ${e.local} = global.${globalName} && global.${globalName}.${e.source};`).join('\n') + '\n';
             }
-            return `// Named imports (unresolved): ${imports} from ${importPath}\n`;
+            // Unresolved relative import: declare locals as undefined so module-load
+            // doesn't ReferenceError when names appear in metadata literals.
+            return entries.map(e => `const ${e.local} = undefined;`).join('\n') + '\n';
         });
 
         // Named export statements: `export { a, b };` — drop them
@@ -325,7 +339,9 @@ class SimpleModuleLoader {
                 Router: 'Router',
                 Rest: 'Rest',
                 Model: 'Model',
-                Collection: 'Collection'
+                Collection: 'Collection',
+                User: 'User',
+                Member: 'Member'
             };
             if (fallbackReturns[moduleName]) {
                 code += `\nreturn ${fallbackReturns[moduleName]};`;
