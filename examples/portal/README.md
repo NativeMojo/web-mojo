@@ -5,8 +5,10 @@ Single canonical demo for every component documented in [`docs/web-mojo/`](../..
 ## Run
 
 ```bash
-npm run examples:registry   # generate examples.registry.json
+npm run examples:registry    # generate examples.registry.json
 npm run dev                  # vite dev server
+npm run test:examples        # headless smoke test of every registry route
+                             # (one-time setup: npx playwright install chromium)
 ```
 
 Visit `http://localhost:3000/examples/portal/` and pick a component from the sidebar.
@@ -83,8 +85,6 @@ The example files are public-facing reference code. They have to be the cleanest
 ## What's not here
 
 The portal is a showcase, not an admin app. It does not register `web-mojo/admin` views — those are production code, not examples. To see admin views in action, look at the production usage of `web-mojo/admin` directly.
-
-The legacy portal lives at [`examples/legacy/portal/`](../legacy/portal/) — it's frozen. Do not port code from it without verifying APIs against current source; the audit found cases where legacy code called methods that no longer exist.
 
 ## Registry contract
 

@@ -1,5 +1,0 @@
-<div>
-    <p>Escaped: {{htmlContent}}</p>
-    <p>Unescaped (triple braces): {{{htmlContent}}}</p>
-    <p>Unescaped (ampersand): {{&htmlContent}}</p>
-</div>

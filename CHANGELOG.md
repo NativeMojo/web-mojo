@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Feature — Examples: landing page, legacy removal, automated example tests
+
+- **`examples/index.html` (new)** — visiting `http://localhost:3000/examples/` is no longer a blank page. A static landing card-grid links to the **Examples Portal** (canonical demos) and the standalone **Auth** login flow. No JS, no module imports — works even if the framework build is broken.
+- **`examples/legacy/` removed** — the previous portal and one-off HTML demos (frozen on 2026-04-25) are deleted from the working tree. Git history preserves blame; there's nothing to port from. References in `examples/portal/README.md` are gone; references in `planning/done/*.md` and historical CHANGELOG entries are intentionally left as-is (historical record).
+- **Static import-symbol check (`test/build/examples-imports.test.js`)** — runs in `npm test` and `npm run test:build`. For every `*Example.js` under `examples/portal/examples/`, it parses the `import` statements and verifies each named symbol from `'web-mojo'` / `'web-mojo/<sub>'` is actually exported by the corresponding source-tree entry. Catches "this example imports a symbol that no longer exists" without booting a browser.
+- **Headless smoke runner (`scripts/test-examples-smoke.js`, `npm run test:examples`)** — opt-in, NOT wired into the default test run. Boots Vite on an ephemeral port, launches Chromium via Playwright, visits every registry route, and fails on `pageerror` or unhandled rejections. One-time setup: `npx playwright install chromium`. `playwright` is now a `devDependency`.
+
 ### Feature — Modal chrome: stripe + outline icon + tint (typed alerts only)
 
 Pivoted away from the eyebrow band entirely. The 28px colored slab + uppercase tracking-letterspaced label was a 2015-2018 dev-tool aesthetic that aged poorly; modern reference apps (Linear, Stripe, Notion, Vercel, Apple HIG, Material 3) use minimal default chrome and reserve type signaling for typed alerts only.
