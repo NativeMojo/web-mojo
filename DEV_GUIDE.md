@@ -383,6 +383,7 @@ dist/
 - `npm run lint:fix` - Auto-fix ESLint issues  
 - `npm test` - Run test suite
 - `npm run test:watch` - Watch mode testing
+- `npm run test:examples` - Opt-in headless smoke run (Playwright/Chromium; NOT in default `npm test`)
 
 ### Utilities
 - `npm run generate:models` - Auto-generate model exports ✨
@@ -420,6 +421,10 @@ npm run test:watch
 
 # Coverage report
 npm run test:coverage
+
+# Headless smoke run (opt-in — NOT in default npm test)
+# One-time setup: npx playwright install chromium
+npm run test:examples
 ```
 
 ## Common Development Tasks
