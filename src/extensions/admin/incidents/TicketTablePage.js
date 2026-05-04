@@ -25,7 +25,7 @@ class TicketTablePage extends TablePage {
 
             defaultQuery: {
                 sort: '-priority',
-                status: "open"
+                status__in: "new,open"
             },
 
             // Column definitions
