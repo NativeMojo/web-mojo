@@ -22,6 +22,7 @@ TableView extends [ListView](./ListView.md) to render collections as full-featur
 - [Constructor Options](#constructor-options)
 - [Column Configuration](#column-configuration)
 - [Column Visibility (Responsive)](#column-visibility-responsive)
+- [Cell Alignment](#cell-alignment)
 - [Column Formatters](#column-formatters)
 - [Column Filters](#column-filters)
 - [Footer Totals](#footer-totals)
@@ -425,6 +426,31 @@ Valid breakpoints: `'sm'`, `'md'`, `'lg'`, `'xl'`, `'xxl'`
 
 ---
 
+## Cell Alignment
+
+Set `align` on a column to control horizontal alignment. The class is applied to the **header `<th>`**, every **body `<td>`**, and the **footer total cell** in lockstep, so the column reads as a single visual unit:
+
+```javascript
+columns: [
+  { key: 'name', label: 'Name' },                          // default (left)
+  { key: 'status', label: 'Status', align: 'center' },     // centered
+  { key: 'total|currency', label: 'Total',
+    align: 'right', footer_total: true },                  // right-aligned, sums in footer
+]
+```
+
+| Value | Result |
+|-------|--------|
+| `'left'` (or `'start'`) | `text-start` — also the default when `align` is omitted |
+| `'center'` | `text-center` |
+| `'right'` (or `'end'`) | `text-end` |
+
+**Header sort dropdown follows the alignment.** When `align: 'right'` or `'center'` is set, the inner flex container of the header switches to `justify-content-end` / `justify-content-center` so the label and sort dropdown sit on the correct side rather than always hugging the left.
+
+**Footer cells default to left.** Footer cells without an explicit `align` render left-aligned (matching the body default). Set `align: 'right'` on numeric `footer_total` columns if you want totals right-justified in the column.
+
+---
+
 ## Column Formatters
 
 Formatters transform the raw model value for display. You can specify them in two ways:
@@ -493,12 +519,14 @@ Add `footer_total: true` to any numeric column to show a sum in the table footer
 ```javascript
 columns: [
   { key: 'product', label: 'Product' },
-  { key: 'quantity', label: 'Qty', footer_total: true },
-  { key: 'amount|currency', label: 'Amount', footer_total: true }
+  { key: 'quantity', label: 'Qty', footer_total: true, align: 'right' },
+  { key: 'amount|currency', label: 'Amount', footer_total: true, align: 'right' }
 ]
 ```
 
 Totals are automatically recalculated when the collection changes (add, remove, reset).
+
+**Alignment.** Footer cells follow the column's [`align`](#cell-alignment) — they default to **left** and you typically want `align: 'right'` on numeric columns so the total lines up under the body values.
 
 ---
 
