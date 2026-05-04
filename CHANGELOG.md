@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### TableView — Column `align` property
+
+- New `align` property on column definitions: `'left'`, `'center'`,
+  or `'right'` (with `'start'`/`'end'` aliases). Applied to the
+  header `<th>`, body `<td>`, and footer total cell in lockstep so
+  the column reads as a single visual unit.
+- Footer cells now default to **left** alignment (previously hard-
+  coded right). Set `align: 'right'` on numeric `footer_total`
+  columns to restore the old right-aligned look.
+
 ### CSS — UserProfile extension: dark theme coverage + consolidated stylesheet
 
 - Every view in the `user-profile` extension (`UserProfileView`, the

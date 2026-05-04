@@ -117,7 +117,10 @@ class TableRow extends ListViewItem {
       const cellClass = column.class || column.className || '';
       const responsiveClasses = this.getResponsiveClasses(column.visibility);
       const editableClass = column.editable ? 'editable-cell' : '';
-      const combinedClasses = [cellClass, responsiveClasses, editableClass].filter(c => c).join(' ');
+      const alignClass = this.tableView && this.tableView.getAlignClass
+        ? this.tableView.getAlignClass(column.align)
+        : '';
+      const combinedClasses = [cellClass, responsiveClasses, editableClass, alignClass].filter(c => c).join(' ');
       const cellContent = this.buildCellTemplate(column, columnIndex);
 
       // Determine cell action

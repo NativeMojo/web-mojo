@@ -363,6 +363,7 @@ Each column is an object with the following properties:
 | `filter` | `object` | `null` | Filter configuration for this column |
 | `footer_total` | `boolean` | `false` | Show sum total in the footer |
 | `formatter` | `string` | `null` | DataFormatter name (alternative to pipe in `key`) |
+| `align` | `string` | `null` | Cell alignment: `'left'`, `'center'`, or `'right'`. Applied to header, body, and footer cells in lockstep. Defaults to left. |
 
 ### Examples
 
@@ -390,7 +391,10 @@ columns: [
   }},
 
   // Column with footer total
-  { key: 'revenue|currency', label: 'Revenue', footer_total: true }
+  { key: 'revenue|currency', label: 'Revenue', footer_total: true },
+
+  // Right-aligned numeric column (header, body, and footer all align right)
+  { key: 'quantity', label: 'Qty', align: 'right', footer_total: true }
 ]
 ```
 

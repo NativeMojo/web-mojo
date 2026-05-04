@@ -202,6 +202,28 @@ class TableView extends ListView {
   }
 
   /**
+   * Get Bootstrap text-alignment class for a column.
+   * Accepts 'left', 'center', 'right' (and 'start'/'end' aliases).
+   * Returns '' when no align is set.
+   */
+  getAlignClass(align) {
+    if (!align) return '';
+    const map = {
+      left: 'text-start',
+      start: 'text-start',
+      center: 'text-center',
+      right: 'text-end',
+      end: 'text-end'
+    };
+    const cls = map[String(align).toLowerCase()];
+    if (!cls) {
+      console.warn(`Invalid column align: ${align}. Valid options are: left, center, right`);
+      return '';
+    }
+    return cls;
+  }
+
+  /**
    * Extract column key and formatter from combined key (e.g., "sales_amount|currency")
    */
   parseColumnKey(key) {
@@ -766,9 +788,16 @@ class TableView extends ListView {
         </div>
       ` : '';
 
+      const alignClass = this.getAlignClass(column.align);
+      const headerJustify = alignClass === 'text-center'
+        ? 'justify-content-center'
+        : alignClass === 'text-end'
+          ? 'justify-content-end'
+          : '';
+
       headerCells += `
-        <th class="${sortable ? 'sortable' : ''} ${responsiveClasses}">
-          <div class="d-flex align-items-center">
+        <th class="${sortable ? 'sortable' : ''} ${responsiveClasses} ${alignClass}">
+          <div class="d-flex align-items-center ${headerJustify}">
             <span>${label}</span>
             ${sortDropdown}
           </div>
@@ -807,6 +836,7 @@ class TableView extends ListView {
     let totalColumnIndex = 0;
     this.columns.forEach((column, index) => {
       const responsiveClasses = this.getResponsiveClasses(column.visibility);
+      const alignClass = this.getAlignClass(column.align);
 
       if (column.footer_total) {
         // Use safe key for Mustache template
@@ -820,14 +850,14 @@ class TableView extends ListView {
           cellContent = `{{footerTotals.${safeKey}.value}}`;
         }
 
-        footerCells += `<td class="table-footer-total ${responsiveClasses}" data-total-column="${safeKey}">${cellContent}</td>`;
+        footerCells += `<td class="table-footer-total ${responsiveClasses} ${alignClass}" data-total-column="${safeKey}">${cellContent}</td>`;
         totalColumnIndex++;
       } else if (index === 0) {
         // First column shows "Totals" label
-        footerCells += `<td class="table-footer-label ${responsiveClasses}"><strong>Totals</strong></td>`;
+        footerCells += `<td class="table-footer-label ${responsiveClasses} ${alignClass}"><strong>Totals</strong></td>`;
       } else {
         // Empty cell for non-total columns
-        footerCells += `<td class="${responsiveClasses}"></td>`;
+        footerCells += `<td class="${responsiveClasses} ${alignClass}"></td>`;
       }
     });
 

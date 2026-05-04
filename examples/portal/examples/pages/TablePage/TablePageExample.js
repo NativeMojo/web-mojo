@@ -69,8 +69,8 @@ class TablePageExample extends TablePage {
                     visibility: 'md',
                     filter: { type: 'select', options: ['NA', 'EU', 'APAC'] },
                 },
-                { key: 'total|currency', label: 'Total', sortable: true, visibility: 'md', footer_total: true },
-                { key: 'created|date', label: 'Created', sortable: true, visibility: 'lg' },
+                { key: 'total|currency', label: 'Total', sortable: true, visibility: 'md', footer_total: true, align: 'right' },
+                { key: 'created|date', label: 'Created', sortable: true, visibility: 'lg', align: 'right' },
             ],
 
             actions: ['view'],
