@@ -39,3 +39,4 @@ globs: ["src/core/views/**/*.js", "src/core/forms/**/*.js", "src/core/pages/**/*
 ## Styling
 - Use Bootstrap 5.3 classes and Bootstrap Icons.
 - For user-visible async waits, use `showLoading()` / `hideLoading()` around the async work.
+- New components must render correctly under both `[data-bs-theme="light"]` and `[data-bs-theme="dark"]` from day one — see `.claude/rules/theming.md` for the conventions (Bootstrap tokens over hex literals, dark-override pattern for inline `<style>` blocks, modal cascade behavior, audit signal).
