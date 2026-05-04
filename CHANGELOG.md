@@ -2,6 +2,42 @@
 
 ## Unreleased
 
+### CSS — UserProfile extension: dark theme coverage + consolidated stylesheet
+
+- Every view in the `user-profile` extension (`UserProfileView`, the
+  12 `Profile*Section` views, and `PasskeySetupView`) now renders
+  correctly under `[data-bs-theme="dark"]`. Previously the dialog
+  rendered against hardcoded white surfaces (~99 hex declarations
+  across 14 files, zero dark overrides) — the extension predated the
+  framework's dark-theme cleanup.
+- **New stylesheet:** `src/extensions/user-profile/css/user-profile.css`
+  consolidates the 12 inline `<style>` blocks previously emitted from
+  each view's `getTemplate()`. Light-theme values are byte-identical
+  to before. A `[data-bs-theme="dark"]` cluster at the bottom adds
+  dark companions following the chat.css / portal.css / admin.css
+  convention. Auto-imported from `src/extensions/user-profile/index.js`.
+- **Inline `style="…"` attributes** that paint surfaces (icon tints,
+  hero gradient circles, helper paragraphs, the TOTP secret-key code
+  block, the QR border, the Sessions/Devices "label: value" detail
+  rows) are now class-based so the same surfaces can carry light +
+  dark variants without `!important`. New shared utility classes:
+  `.up-hero-circle-primary`, `.up-hero-circle-success`,
+  `.up-help-text`, `.up-help-text-bottom`, `.up-secret-code`,
+  `.up-qr-image`, `.up-qr-hint`, `.up-detail-row`, `.up-detail-label`,
+  `.up-detail-value`, `.ps-icon-purple`, `.ps-icon-danger`,
+  `.po-danger-zone`.
+- **Selector names preserved verbatim** — apps that override the
+  extension's CSS continue to work. No public API changes.
+- **Light theme is byte-identical.** No template-structure changes,
+  no JS behavior changes.
+- **Known-deferred:** the `--bs-{warning,success,danger,info,primary}-bg-subtle`
+  tokens are still leaking light-mode values into dark theme via
+  `core.css`'s unscoped base `:root` block (separate issue). Status
+  pills (`*-badge-warn` / `*-badge-ok` / `pak-warning` / `rc-warning`
+  / `pak-result` etc.) in this fix use hand-tuned `rgba()` literals
+  rather than reaching for those subtle tokens. Once the leak is
+  fixed, those literals are good candidates for a follow-up cleanup.
+
 ### Feature — TopNav: `theme: 'auto'` follows the global dark/light preference live
 
 - New value `'auto'` for `TopNav`'s `theme` and `shadow` constructor

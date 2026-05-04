@@ -14,27 +14,6 @@ export default class ProfileApiKeysSection extends View {
         super({
             className: 'profile-api-keys-section',
             template: `
-                <style>
-                    .pak-warning { padding: 0.75rem 1rem; background: #fff3cd; border: 1px solid #ffecb5; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.82rem; color: #664d03; display: flex; align-items: flex-start; gap: 0.6rem; }
-                    .pak-warning i { font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
-                    .pak-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-                    .pak-header h6 { margin: 0; font-weight: 600; }
-                    .pak-list { border: 1px solid #e9ecef; border-radius: 8px; overflow: hidden; }
-                    .pak-item { display: flex; align-items: center; padding: 0.75rem 1rem; border-bottom: 1px solid #f0f0f0; gap: 1rem; }
-                    .pak-item:last-child { border-bottom: none; }
-                    .pak-item-icon { color: #6c757d; font-size: 1.1rem; flex-shrink: 0; }
-                    .pak-item-info { flex: 1; min-width: 0; }
-                    .pak-item-name { font-weight: 600; font-size: 0.85rem; }
-                    .pak-item-meta { font-size: 0.75rem; color: #6c757d; display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.15rem; }
-                    .pak-item-actions { flex-shrink: 0; }
-                    .pak-empty { padding: 2rem; text-align: center; color: #6c757d; font-size: 0.85rem; }
-                    .pak-result { padding: 1rem; background: #d1e7dd; border: 1px solid #badbcc; border-radius: 8px; margin-bottom: 1rem; }
-                    .pak-result-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #0f5132; margin-bottom: 0.5rem; }
-                    .pak-token-wrap { display: flex; gap: 0.5rem; align-items: center; }
-                    .pak-token { flex: 1; font-family: monospace; font-size: 0.78rem; padding: 0.5rem 0.75rem; background: #fff; border: 1px solid #dee2e6; border-radius: 4px; word-break: break-all; max-height: 80px; overflow-y: auto; }
-                    .pak-token-warning { font-size: 0.75rem; color: #dc3545; margin-top: 0.5rem; font-weight: 600; }
-                </style>
-
                 <div class="pak-warning">
                     <i class="bi bi-exclamation-triangle-fill"></i>
                     <div>

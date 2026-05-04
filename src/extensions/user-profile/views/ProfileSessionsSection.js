@@ -62,11 +62,6 @@ export default class ProfileSessionsSection extends View {
         super({
             className: 'profile-sessions-section',
             template: `
-                <style>
-                    .pss-primary { font-size: 0.85rem; font-weight: 500; }
-                    .pss-secondary { font-size: 0.73rem; color: #6c757d; margin-top: 0.15rem; }
-                    .pss-icon { color: #6c757d; font-size: 1.1rem; vertical-align: middle; margin-right: 0.35rem; }
-                </style>
                 <div id="sessions-table"></div>
             `,
             ...options
@@ -132,9 +127,9 @@ export default class ProfileSessionsSection extends View {
         if (geo.is_known_attacker) flags.push('<span class="badge bg-danger">Known Attacker</span>');
 
         const row = (label, value) => `
-            <div style="display:flex; padding:0.4rem 0; border-bottom:1px solid #f0f0f0;">
-                <div style="width:120px; font-size:0.8rem; color:#6c757d; flex-shrink:0;">${label}</div>
-                <div style="flex:1; font-size:0.85rem;">${value || '—'}</div>
+            <div class="up-detail-row">
+                <div class="up-detail-label">${label}</div>
+                <div class="up-detail-value">${value || '—'}</div>
             </div>`;
 
         Modal.dialog({

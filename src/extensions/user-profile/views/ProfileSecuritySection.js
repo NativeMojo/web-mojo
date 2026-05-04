@@ -15,19 +15,6 @@ export default class ProfileSecuritySection extends View {
         super({
             className: 'profile-security-section',
             template: `
-                <style>
-                    .ps-section-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #adb5bd; margin-bottom: 0.5rem; margin-top: 1.75rem; }
-                    .ps-section-label:first-child { margin-top: 0; }
-                    .ps-item { display: flex; align-items: center; gap: 0.85rem; padding: 0.85rem 1rem; border: 1px solid #f0f0f0; border-radius: 8px; margin-bottom: 0.5rem; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
-                    .ps-item:hover { border-color: #dee2e6; background: #fafbfd; }
-                    .ps-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
-                    .ps-info { flex: 1; min-width: 0; }
-                    .ps-title { font-weight: 600; font-size: 0.88rem; }
-                    .ps-desc { font-size: 0.78rem; color: #6c757d; }
-                    .ps-badge { font-size: 0.72rem; padding: 0.15em 0.5em; border-radius: 3px; flex-shrink: 0; }
-                    .ps-chevron { color: #ced4da; font-size: 0.8rem; flex-shrink: 0; }
-                </style>
-
                 <div class="ps-section-label">Authentication</div>
 
                 <div class="ps-item" data-action="change-password">
@@ -49,7 +36,7 @@ export default class ProfileSecuritySection extends View {
                 </div>
 
                 <div class="ps-item" data-action="manage-totp">
-                    <div class="ps-icon bg-purple bg-opacity-10" style="background: rgba(111,66,193,0.1); color: #6f42c1;"><i class="bi bi-shield-lock"></i></div>
+                    <div class="ps-icon ps-icon-purple"><i class="bi bi-shield-lock"></i></div>
                     <div class="ps-info">
                         <div class="ps-title">Authenticator App</div>
                         <div class="ps-desc">Two-factor authentication with TOTP codes</div>
@@ -64,7 +51,7 @@ export default class ProfileSecuritySection extends View {
 
                 {{#model.requires_mfa|bool}}
                 <div class="ps-item" data-action="manage-recovery-codes">
-                    <div class="ps-icon" style="background: rgba(111,66,193,0.1); color: #6f42c1;"><i class="bi bi-file-earmark-lock"></i></div>
+                    <div class="ps-icon ps-icon-purple"><i class="bi bi-file-earmark-lock"></i></div>
                     <div class="ps-info">
                         <div class="ps-title">Recovery Codes</div>
                         <div class="ps-desc">Backup codes for when you lose your authenticator</div>
@@ -76,7 +63,7 @@ export default class ProfileSecuritySection extends View {
                 <div class="ps-section-label">Sessions</div>
 
                 <div class="ps-item" data-action="revoke-all-sessions">
-                    <div class="ps-icon" style="background: rgba(220,53,69,0.1); color: #dc3545;"><i class="bi bi-box-arrow-right"></i></div>
+                    <div class="ps-icon ps-icon-danger"><i class="bi bi-box-arrow-right"></i></div>
                     <div class="ps-info">
                         <div class="ps-title">Revoke All Sessions</div>
                         <div class="ps-desc">Sign out of all devices except this one</div>
@@ -108,17 +95,6 @@ export default class ProfileSecuritySection extends View {
         const items = collection.models || [];
         const view = new View({
             template: `
-                <style>
-                    .pk-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.75rem; border: 1px solid #f0f0f0; border-radius: 8px; margin-bottom: 0.4rem; }
-                    .pk-icon { width: 32px; height: 32px; background: #e7f1ff; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #0d6efd; font-size: 0.9rem; flex-shrink: 0; }
-                    .pk-info { flex: 1; min-width: 0; }
-                    .pk-name { font-weight: 600; font-size: 0.85rem; }
-                    .pk-meta { font-size: 0.73rem; color: #6c757d; }
-                    .pk-actions { display: flex; gap: 0.25rem; }
-                    .pk-actions .btn { padding: 0.2rem 0.4rem; font-size: 0.75rem; }
-                    .pk-empty { text-align: center; padding: 2rem 1rem; color: #6c757d; }
-                    .pk-empty i { font-size: 2rem; color: #ced4da; display: block; margin-bottom: 0.5rem; }
-                </style>
                 {{#passkeys}}
                     <div class="pk-row">
                         <div class="pk-icon"><i class="bi bi-fingerprint"></i></div>
@@ -194,10 +170,10 @@ export default class ProfileSecuritySection extends View {
             centered: true,
             body: `
                 <div style="text-align:center; padding: 0.5rem 0 1rem;">
-                    <div style="width:72px; height:72px; background:linear-gradient(135deg, #e7f1ff 0%, #d0e2ff 100%); border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:2rem; color:#0d6efd; margin-bottom:1rem;">
+                    <div class="up-hero-circle-primary">
                         <i class="bi bi-fingerprint"></i>
                     </div>
-                    <p style="font-size:0.85rem; color:#6c757d; margin-bottom:1.25rem; line-height:1.5;">
+                    <p class="up-help-text">
                         Passkeys replace passwords with biometrics — fingerprint, face, or device PIN.
                         The private key never leaves your device.
                     </p>
@@ -275,13 +251,13 @@ export default class ProfileSecuritySection extends View {
         const setupView = new View({
             template: `
                 <div style="text-align: center; padding: 0.5rem 0;">
-                    <p style="font-size: 0.85rem; color: #6c757d; margin-bottom: 1rem;">
+                    <p class="up-help-text" style="margin-bottom: 1rem;">
                         Scan this QR code with your authenticator app (Google Authenticator, Authy, 1Password, etc.)
                     </p>
-                    <img src="{{{qrCode}}}" alt="TOTP QR Code" style="width: 200px; height: 200px; margin: 0 auto; display: block; border: 1px solid #e9ecef; border-radius: 8px; padding: 8px;" />
+                    <img src="{{{qrCode}}}" alt="TOTP QR Code" class="up-qr-image" />
                     <div style="margin-top: 1rem;">
-                        <p style="font-size: 0.75rem; color: #adb5bd; margin-bottom: 0.25rem;">Or enter this key manually:</p>
-                        <code style="font-size: 0.85rem; letter-spacing: 0.1em; user-select: all; padding: 0.35rem 0.75rem; background: #f8f9fa; border-radius: 4px;">{{secret}}</code>
+                        <p class="up-qr-hint">Or enter this key manually:</p>
+                        <code class="up-secret-code">{{secret}}</code>
                     </div>
                 </div>
             `
@@ -336,12 +312,6 @@ export default class ProfileSecuritySection extends View {
 
         const view = new View({
             template: `
-                <style>
-                    .rc-info { font-size: 0.82rem; color: #6c757d; margin-bottom: 1rem; }
-                    .rc-remaining { font-weight: 600; color: #495057; }
-                    .rc-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; }
-                    .rc-code { font-family: monospace; font-size: 0.85rem; padding: 0.35rem 0.6rem; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; text-align: center; }
-                </style>
                 <div class="rc-info">
                     <span class="rc-remaining">{{remaining}}</span> recovery codes remaining
                 </div>
@@ -384,11 +354,6 @@ export default class ProfileSecuritySection extends View {
 
                 const newView = new View({
                     template: `
-                        <style>
-                            .rc-warning { padding: 0.65rem 0.85rem; background: #fff3cd; border: 1px solid #ffecb5; border-radius: 6px; margin-bottom: 1rem; font-size: 0.8rem; color: #664d03; }
-                            .rc-new-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; margin-bottom: 1rem; }
-                            .rc-new-code { font-family: monospace; font-size: 0.85rem; padding: 0.35rem 0.6rem; background: #d1e7dd; border: 1px solid #badbcc; border-radius: 4px; text-align: center; }
-                        </style>
                         <div class="rc-warning">
                             <i class="bi bi-exclamation-triangle me-1"></i>
                             <strong>Save these codes now.</strong> They will not be shown again. Old codes are invalidated.

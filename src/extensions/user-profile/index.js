@@ -8,6 +8,10 @@
  * Also includes the post-login passkey setup prompt.
  */
 
+// Consolidated stylesheet (replaces the 12 inline <style> blocks the
+// view files used to emit; includes [data-bs-theme="dark"] coverage).
+import './css/user-profile.css';
+
 // Main views
 export { default as UserProfileView } from './views/UserProfileView.js';
 export { default as PasskeySetupView } from './views/PasskeySetupView.js';

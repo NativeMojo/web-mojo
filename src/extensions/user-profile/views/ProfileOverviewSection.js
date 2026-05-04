@@ -21,24 +21,6 @@ export default class ProfileOverviewSection extends View {
         super({
             className: 'profile-overview-section',
             template: `
-                <style>
-                    .po-section-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #adb5bd; margin-bottom: 0.5rem; margin-top: 1.75rem; }
-                    .po-section-label:first-child { margin-top: 0; }
-                    .po-field-row { display: flex; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid #f0f0f0; }
-                    .po-field-row:last-child { border-bottom: none; }
-                    .po-field-label { width: 130px; font-size: 0.8rem; color: #6c757d; flex-shrink: 0; }
-                    .po-field-value { flex: 1; font-size: 0.88rem; color: #212529; display: flex; align-items: center; gap: 0.4rem; }
-                    .po-field-action { color: #6c757d; cursor: pointer; font-size: 0.8rem; margin-left: auto; padding: 0.15rem 0.4rem; border-radius: 4px; background: none; border: none; }
-                    .po-field-action:hover { background: #f0f0f0; color: #0d6efd; }
-                    .po-badge-warn { font-size: 0.65rem; padding: 0.15em 0.45em; background: #fff3cd; color: #856404; border-radius: 3px; }
-                    .po-badge-ok { font-size: 0.65rem; padding: 0.15em 0.45em; background: #d1e7dd; color: #0f5132; border-radius: 3px; }
-                    .po-badge-muted { font-size: 0.65rem; padding: 0.15em 0.45em; background: #f0f0f0; color: #6c757d; border-radius: 3px; }
-                    .po-not-set { color: #adb5bd; font-style: italic; font-size: 0.85rem; }
-                    .po-perm-pill { display: inline-block; font-size: 0.72rem; padding: 0.2em 0.55em; background: #e7f1ff; color: #0d6efd; border-radius: 3px; margin: 0.1rem; }
-                    .po-perm-more { font-size: 0.72rem; color: #6c757d; cursor: pointer; }
-                    .po-perm-more:hover { color: #0d6efd; text-decoration: underline; }
-                </style>
-
                 <!-- Contact -->
                 <div class="po-section-label">Contact</div>
                 <div class="po-field-row">
@@ -123,7 +105,7 @@ export default class ProfileOverviewSection extends View {
 
 
                 <!-- Danger zone -->
-                <div style="margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #f0f0f0;">
+                <div class="po-danger-zone">
                     <button type="button" class="btn btn-link text-danger p-0" style="font-size: 0.8rem; text-decoration: none;" data-action="deactivate-account">
                         <i class="bi bi-exclamation-triangle me-1"></i>Deactivate Account
                     </button>

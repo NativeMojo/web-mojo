@@ -12,23 +12,6 @@ export default class ProfilePermissionsSection extends View {
         super({
             className: 'profile-permissions-section',
             template: `
-                <style>
-                    .pp-role-bar { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 1rem; background: #f0f0ff; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.85rem; }
-                    .pp-role-bar i { color: #6f42c1; font-size: 1rem; }
-                    .pp-role-bar strong { color: #6f42c1; }
-                    .pp-section-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #adb5bd; margin-bottom: 0.5rem; margin-top: 1.75rem; }
-                    .pp-section-label:first-child { margin-top: 0; }
-                    .pp-grid { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 1.25rem; }
-                    .pp-tag { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; padding: 0.25em 0.6em; background: #f8f9fc; border: 1px solid #e9ecef; border-radius: 4px; color: #495057; }
-                    .pp-tag i { font-size: 0.65rem; color: #198754; }
-                    .pp-tag-group { background: #e7f1ff; border-color: #b6d4fe; }
-                    .pp-tag-group i { color: #0d6efd; }
-                    .pp-note { font-size: 0.78rem; color: #adb5bd; margin-top: 1rem; }
-                    .pp-empty { color: #6c757d; font-style: italic; font-size: 0.85rem; padding: 0.5rem 0; }
-                    .pp-group-header { display: flex; align-items: center; gap: 0.5rem; }
-                    .pp-group-name { font-size: 0.78rem; font-weight: 400; color: #6c757d; }
-                </style>
-
                 {{#model.is_superuser|bool}}
                     <div class="pp-role-bar">
                         <i class="bi bi-star-fill"></i>

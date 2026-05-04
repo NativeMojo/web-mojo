@@ -13,19 +13,6 @@ export default class PasskeySetupView extends View {
         super({
             className: 'passkey-setup-view',
             template: `
-                <style>
-                    .pks-body { padding: 2rem 1.75rem 1rem; text-align: center; }
-                    .pks-icon { width: 56px; height: 56px; background: #e7f1ff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #0d6efd; margin-bottom: 1rem; }
-                    .pks-body h5 { font-weight: 700; font-size: 1.05rem; margin-bottom: 0.35rem; }
-                    .pks-body p { font-size: 0.83rem; color: #6c757d; margin-bottom: 1.25rem; line-height: 1.45; }
-                    .pks-footer { padding: 0 1.75rem 1.5rem; display: flex; flex-direction: column; gap: 0.4rem; }
-                    .pks-footer .btn-create { padding: 0.6rem; font-weight: 600; font-size: 0.9rem; border-radius: 8px; }
-                    .pks-footer .btn-skip { background: none; border: none; color: #6c757d; font-size: 0.82rem; padding: 0.4rem; cursor: pointer; }
-                    .pks-footer .btn-skip:hover { color: #495057; }
-                    .pks-dont-show { text-align: center; padding: 0 1.75rem 1.25rem; }
-                    .pks-dont-show label { font-size: 0.73rem; color: #adb5bd; cursor: pointer; }
-                </style>
-
                 <div class="pks-body">
                     <div class="pks-icon"><i class="bi bi-fingerprint"></i></div>
                     <h5>Add a Passkey</h5>
@@ -51,10 +38,10 @@ export default class PasskeySetupView extends View {
             centered: true,
             body: `
                 <div style="text-align:center; padding: 0.5rem 0 1rem;">
-                    <div style="width:72px; height:72px; background:linear-gradient(135deg, #e7f1ff 0%, #d0e2ff 100%); border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:2rem; color:#0d6efd; margin-bottom:1rem;">
+                    <div class="up-hero-circle-primary">
                         <i class="bi bi-fingerprint"></i>
                     </div>
-                    <p style="font-size:0.85rem; color:#6c757d; margin-bottom:1.25rem; line-height:1.5;">
+                    <p class="up-help-text">
                         Passkeys use your device's biometrics — fingerprint, face, or PIN — instead of a password.
                         They're <strong>phishing-resistant</strong> and the private key never leaves your device.
                     </p>
@@ -85,11 +72,11 @@ export default class PasskeySetupView extends View {
             centered: true,
             body: `
                 <div style="text-align:center; padding: 0.5rem 0 0.75rem;">
-                    <div style="width:72px; height:72px; background:linear-gradient(135deg, #d1e7dd 0%, #badbcc 100%); border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:2rem; color:#198754; margin-bottom:1rem;">
+                    <div class="up-hero-circle-success">
                         <i class="bi bi-shield-lock-fill"></i>
                     </div>
                     <h6 class="fw-bold mb-2">${name || 'Your passkey'} is ready</h6>
-                    <p style="font-size:0.85rem; color:#6c757d; line-height:1.5; margin-bottom:0;">
+                    <p class="up-help-text-bottom">
                         Next time you sign in, choose <strong>"Login with Passkey"</strong> — no username or password needed.
                         Just your fingerprint, face, or device PIN.
                     </p>

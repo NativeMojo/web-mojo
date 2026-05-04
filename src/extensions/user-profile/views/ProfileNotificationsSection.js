@@ -20,19 +20,6 @@ export default class ProfileNotificationsSection extends View {
         super({
             className: 'profile-notifications-section',
             template: `
-                <style>
-                    .pn-table { width: 100%; border-collapse: collapse; }
-                    .pn-table th { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #adb5bd; padding: 0.5rem 0.75rem; border-bottom: 2px solid #e9ecef; }
-                    .pn-table th:first-child { text-align: left; }
-                    .pn-table th:not(:first-child) { text-align: center; width: 80px; }
-                    .pn-table td { padding: 0.65rem 0.75rem; border-bottom: 1px solid #f0f0f0; }
-                    .pn-table td:first-child { font-size: 0.88rem; font-weight: 500; text-transform: capitalize; }
-                    .pn-table td:not(:first-child) { text-align: center; }
-                    .pn-table tr:last-child td { border-bottom: none; }
-                    .pn-empty { text-align: center; padding: 2rem 1rem; color: #6c757d; }
-                    .pn-empty i { font-size: 2rem; color: #ced4da; display: block; margin-bottom: 0.5rem; }
-                </style>
-
                 {{#hasPreferences|bool}}
                 <table class="pn-table">
                     <thead>

@@ -41,36 +41,6 @@ export default class UserProfileView extends View {
         super({
             className: 'user-profile-view',
             template: `
-                <style>
-                    .up-layout { display: flex; height: 100%; }
-                    .up-nav { width: 200px; background: #f8f9fc; border-right: 1px solid #e9ecef; padding: 0.75rem 0; flex-shrink: 0; overflow-y: auto; }
-                    .up-nav-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #adb5bd; padding: 0.75rem 1.25rem 0.25rem; }
-                    .up-nav a { color: #495057; padding: 0.45rem 1.25rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; text-decoration: none; }
-                    .up-nav a:hover { background: #e9ecef; }
-                    .up-nav a.active { background: #e7f1ff; color: #0d6efd; font-weight: 600; border-right: 2px solid #0d6efd; }
-                    .up-nav a i { width: 18px; text-align: center; font-size: 0.9rem; }
-                    .up-content { flex: 1; overflow-y: auto; padding: 1.5rem 2.5rem; }
-                    .up-header { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem; border-bottom: 1px solid #e9ecef; }
-                    .up-avatar-wrap { position: relative; flex-shrink: 0; cursor: pointer; }
-                    .up-avatar-wrap img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; }
-                    .up-avatar-initials { width: 56px; height: 56px; border-radius: 50%; background: #e7f1ff; color: #0d6efd; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 700; }
-                    .up-header-info { flex: 1; min-width: 0; }
-                    .up-header-name { display: flex; align-items: center; gap: 0.5rem; }
-                    .up-header-name h5 { margin: 0; font-weight: 700; font-size: 1.05rem; }
-                    .up-header-badge { font-size: 0.65rem; padding: 0.15em 0.5em; border-radius: 3px; font-weight: 600; }
-                    .up-header-badge-staff { background: #e7f1ff; color: #0d6efd; }
-                    .up-header-badge-su { background: #fff3cd; color: #856404; }
-                    .up-header-sub { font-size: 0.78rem; color: #6c757d; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
-                    .up-header-sub .up-dot { color: #ced4da; }
-                    .up-header-verified { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.72rem; color: #198754; }
-                    .up-header-verified i { font-size: 0.7rem; }
-                    .up-close { flex-shrink: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; background: none; color: #6c757d; font-size: 1.1rem; border-radius: 6px; cursor: pointer; padding: 0; align-self: flex-start; margin-top: -0.15rem; }
-                    .up-close:hover { background: #f0f0f0; color: #212529; }
-                    @media (max-width: 576px) {
-                        .up-nav { display: none; }
-                        .up-content { padding: 1.25rem; }
-                    }
-                </style>
                 <div class="up-layout" style="flex-direction: column; min-height: 480px;">
                     <div class="up-header">
                         <div class="up-avatar-wrap" data-action="change-avatar" title="Change avatar">

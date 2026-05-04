@@ -13,20 +13,6 @@ export default class ProfilePersonalSection extends View {
         super({
             className: 'profile-personal-section',
             template: `
-                <style>
-                    .pp-section-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #adb5bd; margin-bottom: 0.5rem; margin-top: 1.75rem; }
-                    .pp-section-label:first-child { margin-top: 0; }
-                    .pp-field-row { display: flex; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid #f0f0f0; }
-                    .pp-field-row:last-child { border-bottom: none; }
-                    .pp-field-label { width: 130px; font-size: 0.8rem; color: #6c757d; flex-shrink: 0; }
-                    .pp-field-value { flex: 1; font-size: 0.88rem; color: #212529; display: flex; align-items: center; gap: 0.4rem; }
-                    .pp-field-action { color: #6c757d; cursor: pointer; font-size: 0.8rem; margin-left: auto; padding: 0.15rem 0.4rem; border-radius: 4px; background: none; border: none; }
-                    .pp-field-action:hover { background: #f0f0f0; color: #0d6efd; }
-                    .pp-badge-ok { font-size: 0.65rem; padding: 0.15em 0.45em; background: #d1e7dd; color: #0f5132; border-radius: 3px; }
-                    .pp-badge-warn { font-size: 0.65rem; padding: 0.15em 0.45em; background: #fff3cd; color: #856404; border-radius: 3px; }
-                    .pp-not-set { color: #adb5bd; font-style: italic; font-size: 0.85rem; }
-                </style>
-
                 <!-- Name -->
                 <div class="pp-section-label">Name</div>
                 <div class="pp-field-row">

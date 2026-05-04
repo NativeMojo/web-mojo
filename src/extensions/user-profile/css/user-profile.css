@@ -1,0 +1,456 @@
+/**
+ * User Profile Extension — consolidated styles
+ *
+ * This file consolidates the 12 inline <style> blocks previously emitted
+ * from views/*.js into a single source of truth, with dark-theme
+ * companions clustered at the bottom. Pattern mirrors chat.css /
+ * portal.css / admin.css. See `.claude/rules/theming.md`.
+ *
+ * Light-theme values are byte-identical to the previous inline blocks.
+ *
+ * Selector prefix legend:
+ *   .up-*  — UserProfileView chrome (rail, header, avatar, badge, close)
+ *   .po-*  — ProfileOverviewSection
+ *   .pp-*  — ProfilePersonalSection AND ProfilePermissionsSection
+ *            (distinct selector names; .pp-section-label is shared and
+ *            identical in both)
+ *   .ps-*  — ProfileSecuritySection (top-level row list)
+ *   .pk-*  — ProfileSecuritySection passkey list sub-view
+ *   .rc-*  — ProfileSecuritySection recovery-codes sub-view
+ *   .pss-* — ProfileSessionsSection (table cell helpers)
+ *   .pds-* — ProfileDevicesSection (table cell helpers)
+ *   .pc-*  — ProfileConnectedSection
+ *   .pn-*  — ProfileNotificationsSection
+ *   .pak-* — ProfileApiKeysSection
+ *   .pg-*  — ProfileGroupsSection
+ *   .pks-* — PasskeySetupView
+ *
+ *   Shared utility classes added during this consolidation:
+ *   .up-detail-row / .up-detail-label / .up-detail-value — the "label:
+ *     value" rows used by Sessions and Devices detail dialogs.
+ *   .up-hero-circle-primary / .up-hero-circle-success — gradient hero
+ *     circles in PasskeySetup + Security passkey-naming dialogs.
+ *   .up-help-text — paragraph helper text inside dialogs.
+ *   .up-secret-code — TOTP secret-key code block.
+ *   .up-qr-image — TOTP QR <img>.
+ *   .up-qr-hint — "Or enter this key manually" muted hint.
+ *   .ps-icon-purple / .ps-icon-danger / .ps-icon-primary / .ps-icon-success —
+ *     security-row icon tints (replaces inline style="" attributes).
+ *   .po-danger-zone — separator above the Deactivate Account button.
+ */
+
+/* ================================================================
+   UserProfileView chrome (.up-*)
+   ================================================================ */
+.up-layout { display: flex; height: 100%; }
+.up-nav { width: 200px; background: #f8f9fc; border-right: 1px solid #e9ecef; padding: 0.75rem 0; flex-shrink: 0; overflow-y: auto; }
+.up-nav-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #adb5bd; padding: 0.75rem 1.25rem 0.25rem; }
+.up-nav a { color: #495057; padding: 0.45rem 1.25rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; text-decoration: none; }
+.up-nav a:hover { background: #e9ecef; }
+.up-nav a.active { background: #e7f1ff; color: #0d6efd; font-weight: 600; border-right: 2px solid #0d6efd; }
+.up-nav a i { width: 18px; text-align: center; font-size: 0.9rem; }
+.up-content { flex: 1; overflow-y: auto; padding: 1.5rem 2.5rem; }
+.up-header { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem; border-bottom: 1px solid #e9ecef; }
+.up-avatar-wrap { position: relative; flex-shrink: 0; cursor: pointer; }
+.up-avatar-wrap img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; }
+.up-avatar-initials { width: 56px; height: 56px; border-radius: 50%; background: #e7f1ff; color: #0d6efd; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 700; }
+.up-header-info { flex: 1; min-width: 0; }
+.up-header-name { display: flex; align-items: center; gap: 0.5rem; }
+.up-header-name h5 { margin: 0; font-weight: 700; font-size: 1.05rem; }
+.up-header-badge { font-size: 0.65rem; padding: 0.15em 0.5em; border-radius: 3px; font-weight: 600; }
+.up-header-badge-staff { background: #e7f1ff; color: #0d6efd; }
+.up-header-badge-su { background: #fff3cd; color: #856404; }
+.up-header-sub { font-size: 0.78rem; color: #6c757d; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.up-header-sub .up-dot { color: #ced4da; }
+.up-header-verified { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.72rem; color: #198754; }
+.up-header-verified i { font-size: 0.7rem; }
+.up-close { flex-shrink: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; background: none; color: #6c757d; font-size: 1.1rem; border-radius: 6px; cursor: pointer; padding: 0; align-self: flex-start; margin-top: -0.15rem; }
+.up-close:hover { background: #f0f0f0; color: #212529; }
+
+@media (max-width: 576px) {
+    .up-nav { display: none; }
+    .up-content { padding: 1.25rem; }
+}
+
+/* ================================================================
+   ProfileOverviewSection (.po-*)
+   ================================================================ */
+.po-section-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #adb5bd; margin-bottom: 0.5rem; margin-top: 1.75rem; }
+.po-section-label:first-child { margin-top: 0; }
+.po-field-row { display: flex; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid #f0f0f0; }
+.po-field-row:last-child { border-bottom: none; }
+.po-field-label { width: 130px; font-size: 0.8rem; color: #6c757d; flex-shrink: 0; }
+.po-field-value { flex: 1; font-size: 0.88rem; color: #212529; display: flex; align-items: center; gap: 0.4rem; }
+.po-field-action { color: #6c757d; cursor: pointer; font-size: 0.8rem; margin-left: auto; padding: 0.15rem 0.4rem; border-radius: 4px; background: none; border: none; }
+.po-field-action:hover { background: #f0f0f0; color: #0d6efd; }
+.po-badge-warn { font-size: 0.65rem; padding: 0.15em 0.45em; background: #fff3cd; color: #856404; border-radius: 3px; }
+.po-badge-ok { font-size: 0.65rem; padding: 0.15em 0.45em; background: #d1e7dd; color: #0f5132; border-radius: 3px; }
+.po-badge-muted { font-size: 0.65rem; padding: 0.15em 0.45em; background: #f0f0f0; color: #6c757d; border-radius: 3px; }
+.po-not-set { color: #adb5bd; font-style: italic; font-size: 0.85rem; }
+.po-perm-pill { display: inline-block; font-size: 0.72rem; padding: 0.2em 0.55em; background: #e7f1ff; color: #0d6efd; border-radius: 3px; margin: 0.1rem; }
+.po-perm-more { font-size: 0.72rem; color: #6c757d; cursor: pointer; }
+.po-perm-more:hover { color: #0d6efd; text-decoration: underline; }
+.po-danger-zone { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #f0f0f0; }
+
+/* ================================================================
+   ProfilePersonalSection (.pp-* — Personal half)
+   ================================================================ */
+.pp-section-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #adb5bd; margin-bottom: 0.5rem; margin-top: 1.75rem; }
+.pp-section-label:first-child { margin-top: 0; }
+.pp-field-row { display: flex; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid #f0f0f0; }
+.pp-field-row:last-child { border-bottom: none; }
+.pp-field-label { width: 130px; font-size: 0.8rem; color: #6c757d; flex-shrink: 0; }
+.pp-field-value { flex: 1; font-size: 0.88rem; color: #212529; display: flex; align-items: center; gap: 0.4rem; }
+.pp-field-action { color: #6c757d; cursor: pointer; font-size: 0.8rem; margin-left: auto; padding: 0.15rem 0.4rem; border-radius: 4px; background: none; border: none; }
+.pp-field-action:hover { background: #f0f0f0; color: #0d6efd; }
+.pp-badge-ok { font-size: 0.65rem; padding: 0.15em 0.45em; background: #d1e7dd; color: #0f5132; border-radius: 3px; }
+.pp-badge-warn { font-size: 0.65rem; padding: 0.15em 0.45em; background: #fff3cd; color: #856404; border-radius: 3px; }
+.pp-not-set { color: #adb5bd; font-style: italic; font-size: 0.85rem; }
+
+/* ================================================================
+   ProfilePermissionsSection (.pp-* — Permissions half)
+   .pp-section-label is shared with ProfilePersonalSection above
+   (definition is identical so it collapses to one rule).
+   ================================================================ */
+.pp-role-bar { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 1rem; background: #f0f0ff; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.85rem; }
+.pp-role-bar i { color: #6f42c1; font-size: 1rem; }
+.pp-role-bar strong { color: #6f42c1; }
+.pp-grid { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 1.25rem; }
+.pp-tag { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; padding: 0.25em 0.6em; background: #f8f9fc; border: 1px solid #e9ecef; border-radius: 4px; color: #495057; }
+.pp-tag i { font-size: 0.65rem; color: #198754; }
+.pp-tag-group { background: #e7f1ff; border-color: #b6d4fe; }
+.pp-tag-group i { color: #0d6efd; }
+.pp-note { font-size: 0.78rem; color: #adb5bd; margin-top: 1rem; }
+.pp-empty { color: #6c757d; font-style: italic; font-size: 0.85rem; padding: 0.5rem 0; }
+.pp-group-header { display: flex; align-items: center; gap: 0.5rem; }
+.pp-group-name { font-size: 0.78rem; font-weight: 400; color: #6c757d; }
+
+/* ================================================================
+   ProfileSecuritySection — top-level row list (.ps-*)
+   ================================================================ */
+.ps-section-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #adb5bd; margin-bottom: 0.5rem; margin-top: 1.75rem; }
+.ps-section-label:first-child { margin-top: 0; }
+.ps-item { display: flex; align-items: center; gap: 0.85rem; padding: 0.85rem 1rem; border: 1px solid #f0f0f0; border-radius: 8px; margin-bottom: 0.5rem; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.ps-item:hover { border-color: #dee2e6; background: #fafbfd; }
+.ps-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+.ps-icon-purple { background: rgba(111, 66, 193, 0.1); color: #6f42c1; }
+.ps-icon-danger { background: rgba(220, 53, 69, 0.1); color: #dc3545; }
+.ps-info { flex: 1; min-width: 0; }
+.ps-title { font-weight: 600; font-size: 0.88rem; }
+.ps-desc { font-size: 0.78rem; color: #6c757d; }
+.ps-badge { font-size: 0.72rem; padding: 0.15em 0.5em; border-radius: 3px; flex-shrink: 0; }
+.ps-chevron { color: #ced4da; font-size: 0.8rem; flex-shrink: 0; }
+
+/* ================================================================
+   ProfileSecuritySection — passkey list sub-view (.pk-*)
+   ================================================================ */
+.pk-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.75rem; border: 1px solid #f0f0f0; border-radius: 8px; margin-bottom: 0.4rem; }
+.pk-icon { width: 32px; height: 32px; background: #e7f1ff; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #0d6efd; font-size: 0.9rem; flex-shrink: 0; }
+.pk-info { flex: 1; min-width: 0; }
+.pk-name { font-weight: 600; font-size: 0.85rem; }
+.pk-meta { font-size: 0.73rem; color: #6c757d; }
+.pk-actions { display: flex; gap: 0.25rem; }
+.pk-actions .btn { padding: 0.2rem 0.4rem; font-size: 0.75rem; }
+.pk-empty { text-align: center; padding: 2rem 1rem; color: #6c757d; }
+.pk-empty i { font-size: 2rem; color: #ced4da; display: block; margin-bottom: 0.5rem; }
+
+/* ================================================================
+   ProfileSecuritySection — recovery-codes sub-views (.rc-*)
+   ================================================================ */
+.rc-info { font-size: 0.82rem; color: #6c757d; margin-bottom: 1rem; }
+.rc-remaining { font-weight: 600; color: #495057; }
+.rc-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; }
+.rc-code { font-family: monospace; font-size: 0.85rem; padding: 0.35rem 0.6rem; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; text-align: center; }
+.rc-warning { padding: 0.65rem 0.85rem; background: #fff3cd; border: 1px solid #ffecb5; border-radius: 6px; margin-bottom: 1rem; font-size: 0.8rem; color: #664d03; }
+.rc-new-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; margin-bottom: 1rem; }
+.rc-new-code { font-family: monospace; font-size: 0.85rem; padding: 0.35rem 0.6rem; background: #d1e7dd; border: 1px solid #badbcc; border-radius: 4px; text-align: center; }
+
+/* ================================================================
+   ProfileSessionsSection (.pss-*) and ProfileDevicesSection (.pds-*)
+   ================================================================ */
+.pss-primary { font-size: 0.85rem; font-weight: 500; }
+.pss-secondary { font-size: 0.73rem; color: #6c757d; margin-top: 0.15rem; }
+.pss-icon { color: #6c757d; font-size: 1.1rem; vertical-align: middle; margin-right: 0.35rem; }
+
+.pds-primary { font-size: 0.85rem; font-weight: 500; }
+.pds-model { font-weight: 400; color: #6c757d; }
+.pds-secondary { font-size: 0.73rem; color: #6c757d; margin-top: 0.15rem; }
+.pds-icon { color: #6c757d; font-size: 1.1rem; vertical-align: middle; margin-right: 0.35rem; }
+
+/* ================================================================
+   ProfileConnectedSection (.pc-*)
+   ================================================================ */
+.pc-row { display: flex; align-items: center; gap: 0.85rem; padding: 0.85rem 1rem; border: 1px solid #f0f0f0; border-radius: 8px; margin-bottom: 0.5rem; }
+.pc-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; background: #f0f0f0; color: #495057; }
+.pc-info { flex: 1; min-width: 0; }
+.pc-provider { font-weight: 600; font-size: 0.88rem; text-transform: capitalize; }
+.pc-meta { font-size: 0.78rem; color: #6c757d; }
+.pc-actions { flex-shrink: 0; }
+.pc-actions .btn { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
+.pc-empty { text-align: center; padding: 2rem 1rem; color: #6c757d; }
+.pc-empty i { font-size: 2rem; color: #ced4da; display: block; margin-bottom: 0.5rem; }
+
+/* ================================================================
+   ProfileNotificationsSection (.pn-*)
+   ================================================================ */
+.pn-table { width: 100%; border-collapse: collapse; }
+.pn-table th { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #adb5bd; padding: 0.5rem 0.75rem; border-bottom: 2px solid #e9ecef; }
+.pn-table th:first-child { text-align: left; }
+.pn-table th:not(:first-child) { text-align: center; width: 80px; }
+.pn-table td { padding: 0.65rem 0.75rem; border-bottom: 1px solid #f0f0f0; }
+.pn-table td:first-child { font-size: 0.88rem; font-weight: 500; text-transform: capitalize; }
+.pn-table td:not(:first-child) { text-align: center; }
+.pn-table tr:last-child td { border-bottom: none; }
+.pn-empty { text-align: center; padding: 2rem 1rem; color: #6c757d; }
+.pn-empty i { font-size: 2rem; color: #ced4da; display: block; margin-bottom: 0.5rem; }
+
+/* ================================================================
+   ProfileApiKeysSection (.pak-*)
+   ================================================================ */
+.pak-warning { padding: 0.75rem 1rem; background: #fff3cd; border: 1px solid #ffecb5; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.82rem; color: #664d03; display: flex; align-items: flex-start; gap: 0.6rem; }
+.pak-warning i { font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+.pak-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.pak-header h6 { margin: 0; font-weight: 600; }
+.pak-list { border: 1px solid #e9ecef; border-radius: 8px; overflow: hidden; }
+.pak-item { display: flex; align-items: center; padding: 0.75rem 1rem; border-bottom: 1px solid #f0f0f0; gap: 1rem; }
+.pak-item:last-child { border-bottom: none; }
+.pak-item-icon { color: #6c757d; font-size: 1.1rem; flex-shrink: 0; }
+.pak-item-info { flex: 1; min-width: 0; }
+.pak-item-name { font-weight: 600; font-size: 0.85rem; }
+.pak-item-meta { font-size: 0.75rem; color: #6c757d; display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.15rem; }
+.pak-item-actions { flex-shrink: 0; }
+.pak-empty { padding: 2rem; text-align: center; color: #6c757d; font-size: 0.85rem; }
+.pak-result { padding: 1rem; background: #d1e7dd; border: 1px solid #badbcc; border-radius: 8px; margin-bottom: 1rem; }
+.pak-result-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #0f5132; margin-bottom: 0.5rem; }
+.pak-token-wrap { display: flex; gap: 0.5rem; align-items: center; }
+.pak-token { flex: 1; font-family: monospace; font-size: 0.78rem; padding: 0.5rem 0.75rem; background: #fff; border: 1px solid #dee2e6; border-radius: 4px; word-break: break-all; max-height: 80px; overflow-y: auto; }
+.pak-token-warning { font-size: 0.75rem; color: #dc3545; margin-top: 0.5rem; font-weight: 600; }
+
+/* ================================================================
+   ProfileGroupsSection (.pg-*)
+   ================================================================ */
+.pg-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0; border-bottom: 1px solid #f0f0f0; }
+.pg-row:last-child { border-bottom: none; }
+.pg-avatar { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+.pg-info { flex: 1; }
+.pg-name { font-weight: 600; font-size: 0.88rem; }
+.pg-meta { font-size: 0.73rem; color: #6c757d; }
+.pg-role { font-size: 0.7rem; }
+.pg-perms { display: flex; flex-wrap: wrap; gap: 0.25rem; justify-content: flex-end; }
+.pg-perm-tag { display: inline-flex; align-items: center; font-size: 0.68rem; padding: 0.15em 0.45em; background: #f0f4ff; border: 1px solid #d4deff; border-radius: 3px; color: #4a6cf7; }
+
+/* ================================================================
+   PasskeySetupView (.pks-*)
+   ================================================================ */
+.pks-body { padding: 2rem 1.75rem 1rem; text-align: center; }
+.pks-icon { width: 56px; height: 56px; background: #e7f1ff; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #0d6efd; margin-bottom: 1rem; }
+.pks-body h5 { font-weight: 700; font-size: 1.05rem; margin-bottom: 0.35rem; }
+.pks-body p { font-size: 0.83rem; color: #6c757d; margin-bottom: 1.25rem; line-height: 1.45; }
+.pks-footer { padding: 0 1.75rem 1.5rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.pks-footer .btn-create { padding: 0.6rem; font-weight: 600; font-size: 0.9rem; border-radius: 8px; }
+.pks-footer .btn-skip { background: none; border: none; color: #6c757d; font-size: 0.82rem; padding: 0.4rem; cursor: pointer; }
+.pks-footer .btn-skip:hover { color: #495057; }
+.pks-dont-show { text-align: center; padding: 0 1.75rem 1.25rem; }
+.pks-dont-show label { font-size: 0.73rem; color: #adb5bd; cursor: pointer; }
+
+/* ================================================================
+   Shared utility classes (replace formerly inline style="" attrs)
+   ================================================================ */
+
+/* Hero gradient circles in PasskeySetup + Security passkey-naming. */
+.up-hero-circle-primary {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, #e7f1ff 0%, #d0e2ff 100%);
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 2rem; color: #0d6efd;
+    margin-bottom: 1rem;
+}
+.up-hero-circle-success {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, #d1e7dd 0%, #badbcc 100%);
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 2rem; color: #198754;
+    margin-bottom: 1rem;
+}
+
+/* Centered helper paragraph inside Modal.dialog bodies. */
+.up-help-text { font-size: 0.85rem; color: #6c757d; margin-bottom: 1.25rem; line-height: 1.5; }
+.up-help-text-bottom { font-size: 0.85rem; color: #6c757d; line-height: 1.5; margin-bottom: 0; }
+
+/* TOTP secret key + QR code helpers. */
+.up-secret-code {
+    font-size: 0.85rem; letter-spacing: 0.1em; user-select: all;
+    padding: 0.35rem 0.75rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+.up-qr-image {
+    width: 200px; height: 200px;
+    margin: 0 auto;
+    display: block;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 8px;
+}
+.up-qr-hint { font-size: 0.75rem; color: #adb5bd; margin-bottom: 0.25rem; }
+
+/* Detail-row "label: value" helper used by Sessions / Devices detail
+   dialogs (formerly inline style="" attributes inlined into a JS
+   template string). */
+.up-detail-row { display: flex; padding: 0.4rem 0; border-bottom: 1px solid #f0f0f0; }
+.up-detail-label { width: 120px; font-size: 0.8rem; color: #6c757d; flex-shrink: 0; }
+.up-detail-value { flex: 1; font-size: 0.85rem; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   Dark theme overrides
+
+   Pattern mirrors chat.css / portal.css / admin.css. Surface tokens
+   come from the framework's `:root[data-bs-theme="dark"]` palette
+   in core.css (`--bs-body-bg`, `--bs-tertiary-bg`, `--bs-secondary-bg`,
+   `--bs-border-color`, `--bs-border-color-translucent`,
+   `--bs-emphasis-color`, `--bs-secondary-color`).
+
+   Status pills (.po-badge-*, .pp-badge-*, .pak-warning, .rc-warning,
+   .rc-new-code, .pak-result) use hand-tuned rgba() literals rather
+   than reaching for `--bs-warning-bg-subtle` / `--bs-success-bg-subtle`
+   etc. — those are still leaking light-mode values from core.css's
+   unscoped `:root` block. Tracked separately; see
+   planning/issues/user-profile-dark-theme.md "Out of scope".
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── UserProfileView chrome ──────────────────────────────────── */
+[data-bs-theme="dark"] .up-nav { background: var(--bs-tertiary-bg); border-right-color: var(--bs-border-color-translucent); }
+[data-bs-theme="dark"] .up-nav-label { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .up-nav a { color: var(--bs-body-color); }
+[data-bs-theme="dark"] .up-nav a:hover { background: var(--bs-secondary-bg); }
+[data-bs-theme="dark"] .up-nav a.active { background: rgba(13, 110, 253, 0.18); color: var(--bs-primary); border-right-color: var(--bs-primary); }
+[data-bs-theme="dark"] .up-header { border-bottom-color: var(--bs-border-color-translucent); }
+[data-bs-theme="dark"] .up-avatar-initials { background: rgba(13, 110, 253, 0.18); color: var(--bs-primary); }
+[data-bs-theme="dark"] .up-header-badge-staff { background: rgba(13, 110, 253, 0.18); color: var(--bs-primary); }
+[data-bs-theme="dark"] .up-header-badge-su { background: rgba(255, 193, 7, 0.16); color: #ffda6a; }
+[data-bs-theme="dark"] .up-header-sub { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .up-header-sub .up-dot { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .up-close { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .up-close:hover { background: var(--bs-tertiary-bg); color: var(--bs-emphasis-color); }
+
+/* ── Section labels (12 selector variants, single rule) ───────── */
+[data-bs-theme="dark"] :is(
+    .po-section-label,
+    .pp-section-label,
+    .ps-section-label
+) { color: var(--bs-secondary-color); }
+
+/* ── Field rows / labels / values / actions (overview + personal) ── */
+[data-bs-theme="dark"] :is(.po-field-row, .pp-field-row) { border-bottom-color: var(--bs-border-color-translucent); }
+[data-bs-theme="dark"] :is(.po-field-label, .pp-field-label) { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] :is(.po-field-value, .pp-field-value) { color: var(--bs-emphasis-color); }
+[data-bs-theme="dark"] :is(.po-field-action, .pp-field-action) { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] :is(.po-field-action, .pp-field-action):hover { background: var(--bs-tertiary-bg); color: var(--bs-primary); }
+[data-bs-theme="dark"] :is(.po-not-set, .pp-not-set) { color: var(--bs-secondary-color); }
+
+/* ── Status pills (overview + personal + permissions tag) ─────── */
+[data-bs-theme="dark"] :is(.po-badge-warn, .pp-badge-warn) { background: rgba(255, 193, 7, 0.16); color: #ffda6a; }
+[data-bs-theme="dark"] :is(.po-badge-ok, .pp-badge-ok) { background: rgba(25, 135, 84, 0.18); color: #75d8a4; }
+[data-bs-theme="dark"] .po-badge-muted { background: rgba(255, 255, 255, 0.06); color: var(--bs-secondary-color); }
+
+/* ── Overview perm pills + danger zone ────────────────────────── */
+[data-bs-theme="dark"] .po-perm-pill { background: rgba(13, 110, 253, 0.18); color: var(--bs-primary); }
+[data-bs-theme="dark"] .po-perm-more { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .po-perm-more:hover { color: var(--bs-primary); }
+[data-bs-theme="dark"] .po-danger-zone { border-top-color: var(--bs-border-color-translucent); }
+
+/* ── Permissions section (.pp-* permissions half) ─────────────── */
+[data-bs-theme="dark"] .pp-role-bar { background: rgba(111, 66, 193, 0.18); }
+[data-bs-theme="dark"] .pp-role-bar i,
+[data-bs-theme="dark"] .pp-role-bar strong { color: #b48eff; }
+[data-bs-theme="dark"] .pp-tag { background: var(--bs-tertiary-bg); border-color: var(--bs-border-color); color: var(--bs-body-color); }
+[data-bs-theme="dark"] .pp-tag i { color: #75d8a4; }
+[data-bs-theme="dark"] .pp-tag-group { background: rgba(13, 110, 253, 0.18); border-color: rgba(13, 110, 253, 0.32); }
+[data-bs-theme="dark"] .pp-tag-group i { color: var(--bs-primary); }
+[data-bs-theme="dark"] .pp-note { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .pp-empty { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .pp-group-name { color: var(--bs-secondary-color); }
+
+/* ── Security section row list (.ps-*) ─────────────────────────── */
+[data-bs-theme="dark"] .ps-item { border-color: var(--bs-border-color-translucent); }
+[data-bs-theme="dark"] .ps-item:hover { border-color: var(--bs-border-color); background: var(--bs-secondary-bg); }
+[data-bs-theme="dark"] .ps-icon-purple { background: rgba(180, 142, 255, 0.18); color: #b48eff; }
+[data-bs-theme="dark"] .ps-icon-danger { background: rgba(220, 53, 69, 0.22); color: #ff8a95; }
+[data-bs-theme="dark"] .ps-desc { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .ps-chevron { color: var(--bs-secondary-color); }
+
+/* ── Passkey list sub-view (.pk-*) ────────────────────────────── */
+[data-bs-theme="dark"] .pk-row { border-color: var(--bs-border-color-translucent); }
+[data-bs-theme="dark"] .pk-icon { background: rgba(13, 110, 253, 0.18); color: var(--bs-primary); }
+[data-bs-theme="dark"] .pk-meta { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .pk-empty { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .pk-empty i { color: var(--bs-secondary-color); }
+
+/* ── Recovery codes sub-view (.rc-*) ──────────────────────────── */
+[data-bs-theme="dark"] .rc-info { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .rc-remaining { color: var(--bs-emphasis-color); }
+[data-bs-theme="dark"] .rc-code { background: var(--bs-tertiary-bg); border-color: var(--bs-border-color); color: var(--bs-body-color); }
+[data-bs-theme="dark"] .rc-warning { background: rgba(255, 193, 7, 0.16); border-color: rgba(255, 193, 7, 0.32); color: #ffda6a; }
+[data-bs-theme="dark"] .rc-new-code { background: rgba(25, 135, 84, 0.18); border-color: rgba(25, 135, 84, 0.32); color: #75d8a4; }
+
+/* ── Sessions / Devices table cells ───────────────────────────── */
+[data-bs-theme="dark"] :is(.pss-secondary, .pds-secondary, .pds-model) { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] :is(.pss-icon, .pds-icon) { color: var(--bs-secondary-color); }
+
+/* ── Connected accounts (.pc-*) ───────────────────────────────── */
+[data-bs-theme="dark"] .pc-row { border-color: var(--bs-border-color-translucent); }
+[data-bs-theme="dark"] .pc-icon { background: var(--bs-tertiary-bg); color: var(--bs-body-color); }
+[data-bs-theme="dark"] .pc-meta { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .pc-empty { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .pc-empty i { color: var(--bs-secondary-color); }
+
+/* ── Notifications (.pn-*) ────────────────────────────────────── */
+[data-bs-theme="dark"] .pn-table th { color: var(--bs-secondary-color); border-bottom-color: var(--bs-border-color); }
+[data-bs-theme="dark"] .pn-table td { border-bottom-color: var(--bs-border-color-translucent); }
+[data-bs-theme="dark"] .pn-empty { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .pn-empty i { color: var(--bs-secondary-color); }
+
+/* ── API keys (.pak-*) ────────────────────────────────────────── */
+[data-bs-theme="dark"] .pak-warning { background: rgba(255, 193, 7, 0.16); border-color: rgba(255, 193, 7, 0.32); color: #ffda6a; }
+[data-bs-theme="dark"] .pak-list { border-color: var(--bs-border-color-translucent); }
+[data-bs-theme="dark"] .pak-item { border-bottom-color: var(--bs-border-color-translucent); }
+[data-bs-theme="dark"] .pak-item-icon { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .pak-item-meta { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .pak-empty { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .pak-result { background: rgba(25, 135, 84, 0.18); border-color: rgba(25, 135, 84, 0.32); }
+[data-bs-theme="dark"] .pak-result-label { color: #75d8a4; }
+[data-bs-theme="dark"] .pak-token { background: var(--bs-tertiary-bg); border-color: var(--bs-border-color); color: var(--bs-body-color); }
+[data-bs-theme="dark"] .pak-token-warning { color: #ff8a95; }
+
+/* ── Groups (.pg-*) ───────────────────────────────────────────── */
+/* .pg-avatar background is set inline per-row from a hash of the group
+   name (saturated colors that read on both themes) — leave as-is. */
+[data-bs-theme="dark"] .pg-row { border-bottom-color: var(--bs-border-color-translucent); }
+[data-bs-theme="dark"] .pg-meta { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .pg-perm-tag { background: rgba(74, 108, 247, 0.22); border-color: rgba(74, 108, 247, 0.4); color: #97aaff; }
+
+/* ── Passkey setup view (.pks-*) ──────────────────────────────── */
+[data-bs-theme="dark"] .pks-icon { background: rgba(13, 110, 253, 0.18); color: var(--bs-primary); }
+[data-bs-theme="dark"] .pks-body p { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .pks-footer .btn-skip { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .pks-footer .btn-skip:hover { color: var(--bs-emphasis-color); }
+[data-bs-theme="dark"] .pks-dont-show label { color: var(--bs-secondary-color); }
+
+/* ── Shared utility classes ───────────────────────────────────── */
+[data-bs-theme="dark"] .up-hero-circle-primary {
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.22) 0%, rgba(13, 110, 253, 0.06) 100%);
+    color: var(--bs-primary);
+}
+[data-bs-theme="dark"] .up-hero-circle-success {
+    background: linear-gradient(135deg, rgba(25, 135, 84, 0.22) 0%, rgba(25, 135, 84, 0.06) 100%);
+    color: #75d8a4;
+}
+[data-bs-theme="dark"] :is(.up-help-text, .up-help-text-bottom) { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .up-secret-code { background: var(--bs-tertiary-bg); color: var(--bs-body-color); }
+[data-bs-theme="dark"] .up-qr-image { border-color: var(--bs-border-color); background: #fff; /* QR must stay light to scan */ }
+[data-bs-theme="dark"] .up-qr-hint { color: var(--bs-secondary-color); }
+[data-bs-theme="dark"] .up-detail-row { border-bottom-color: var(--bs-border-color-translucent); }
+[data-bs-theme="dark"] .up-detail-label { color: var(--bs-secondary-color); }

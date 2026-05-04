@@ -23,18 +23,6 @@ export default class ProfileConnectedSection extends View {
         super({
             className: 'profile-connected-section',
             template: `
-                <style>
-                    .pc-row { display: flex; align-items: center; gap: 0.85rem; padding: 0.85rem 1rem; border: 1px solid #f0f0f0; border-radius: 8px; margin-bottom: 0.5rem; }
-                    .pc-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; background: #f0f0f0; color: #495057; }
-                    .pc-info { flex: 1; min-width: 0; }
-                    .pc-provider { font-weight: 600; font-size: 0.88rem; text-transform: capitalize; }
-                    .pc-meta { font-size: 0.78rem; color: #6c757d; }
-                    .pc-actions { flex-shrink: 0; }
-                    .pc-actions .btn { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
-                    .pc-empty { text-align: center; padding: 2rem 1rem; color: #6c757d; }
-                    .pc-empty i { font-size: 2rem; color: #ced4da; display: block; margin-bottom: 0.5rem; }
-                </style>
-
                 {{#connections}}
                     <div class="pc-row">
                         <div class="pc-icon"><i class="bi {{.icon}}"></i></div>

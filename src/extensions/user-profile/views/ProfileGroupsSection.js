@@ -71,17 +71,6 @@ export default class ProfileGroupsSection extends View {
         super({
             className: 'profile-groups-section',
             template: `
-                <style>
-                    .pg-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0; border-bottom: 1px solid #f0f0f0; }
-                    .pg-row:last-child { border-bottom: none; }
-                    .pg-avatar { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #fff; flex-shrink: 0; }
-                    .pg-info { flex: 1; }
-                    .pg-name { font-weight: 600; font-size: 0.88rem; }
-                    .pg-meta { font-size: 0.73rem; color: #6c757d; }
-                    .pg-role { font-size: 0.7rem; }
-                    .pg-perms { display: flex; flex-wrap: wrap; gap: 0.25rem; justify-content: flex-end; }
-                    .pg-perm-tag { display: inline-flex; align-items: center; font-size: 0.68rem; padding: 0.15em 0.45em; background: #f0f4ff; border: 1px solid #d4deff; border-radius: 3px; color: #4a6cf7; }
-                </style>
                 <div id="groups-list"></div>
             `,
             ...options
