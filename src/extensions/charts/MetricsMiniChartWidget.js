@@ -503,12 +503,12 @@ export default class MetricsMiniChartWidget extends View {
     if (icon) {
       icon.classList.add('spin');
     }
-    
+
     if (this.chart) {
-      if (this.account) this.chart.account = this.account;
+      if (this.chartOptions.account) this.chart.account = this.chartOptions.account;
       await this.chart.refresh();
     }
-    
+
     if (icon) {
       icon.classList.remove('spin');
     }
@@ -516,9 +516,17 @@ export default class MetricsMiniChartWidget extends View {
 
   refresh() {
     if (this.chart) {
-      if (this.account) this.chart.account = this.account;
+      if (this.chartOptions.account) this.chart.account = this.chartOptions.account;
       this.chart.refresh();
     }
+  }
+
+  // Update account and trigger a refetch in one call. Returns the
+  // fetch promise so callers can `await` completion.
+  setAccount(account) {
+    this.chartOptions.account = account;
+    if (!this.chart) return Promise.resolve();
+    return this.chart.setAccount(account);
   }
 
   _loadSettings() {

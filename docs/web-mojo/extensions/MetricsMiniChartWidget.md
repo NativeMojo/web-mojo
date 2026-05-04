@@ -290,6 +290,14 @@ Chart (forwarded to MetricsMiniChart)
 - showDots, dotRadius
 - animate, animationDuration
 
+## Methods
+
+- `setAccount(account)` — Update the chart's account context AND trigger a refetch in one call. Mutates `chartOptions.account` so subsequent `refresh()` calls stay in sync. Returns the chart's fetch promise (or a resolved promise if the chart is not yet attached) so callers can `await` completion.
+  ```js
+  await widget.setAccount('group-42'); // chart now reflects group-42 data
+  ```
+- `refresh()` — Refetch using the current `chartOptions`. Useful after the dashboard has manually mutated other options.
+
 ## Behavior and events
 - The widget internally creates a header subview and a MetricsMiniChart child.
 - It listens to the chart's metrics load event to update header values (total, now_value, trend, labels) and re-render the header only.

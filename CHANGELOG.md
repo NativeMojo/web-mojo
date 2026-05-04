@@ -12,6 +12,23 @@
   coded right). Set `align: 'right'` on numeric `footer_total`
   columns to restore the old right-aligned look.
 
+### Charts — `MetricsMiniChartWidget.setAccount(account)` (and `MetricsMiniChart.setAccount`)
+
+- New `setAccount(account)` method on both `MetricsMiniChartWidget`
+  and the inner `MetricsMiniChart`. Mutates the account context AND
+  triggers a refetch in one call — callers no longer have to
+  remember to call `refresh()` after assigning a new account.
+  Returns the underlying fetch promise so
+  `await widget.setAccount(...)` works.
+- Aligns with the existing `setGranularity` / `setDateRange` /
+  `setMetrics` shape on `MetricsMiniChart`.
+- **Bug fix:** `MetricsMiniChartWidget.refresh()` and
+  `onActionRefreshChart()` previously gated account propagation on
+  `this.account`, which is never set (the constructor stores it as
+  `this.chartOptions.account`). They now read from
+  `this.chartOptions.account`, so manual refreshes correctly carry
+  the most recent account assignment.
+
 ### CSS — UserProfile extension: dark theme coverage + consolidated stylesheet
 
 - Every view in the `user-profile` extension (`UserProfileView`, the

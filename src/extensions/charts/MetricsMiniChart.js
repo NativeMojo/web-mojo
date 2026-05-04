@@ -206,6 +206,11 @@ export default class MetricsMiniChart extends MiniChart {
     return this.fetchData();
   }
 
+  setAccount(account) {
+    this.account = account;
+    return this.fetchData();
+  }
+
   refresh() {
     return this.fetchData();
   }
