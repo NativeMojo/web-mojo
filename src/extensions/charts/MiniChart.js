@@ -44,6 +44,12 @@ export default class MiniChart extends View {
     this.minValue = options.minValue;
     this.maxValue = options.maxValue;
 
+    // Bar-chart soft bounds (opt-in). softMax/softMin act as a target reference
+    // that bars normalize to, but expand if data exceeds them. Distinct from
+    // minValue/maxValue, which are hard crops. Bar charts only.
+    this.softMin = options.softMin;
+    this.softMax = options.softMax;
+
     // Show dots on line chart
     this.showDots = options.showDots || false;
     this.dotRadius = options.dotRadius || 2;
@@ -308,20 +314,76 @@ export default class MiniChart extends View {
 
   renderBar(min, max) {
     const values = this.data.map(d => typeof d === 'object' ? d.value : d);
-    const points = this.calculatePoints(values, min, max);
+    if (values.length === 0) return;
+
+    const dataMin = Math.min(...values);
+    const dataMax = Math.max(...values);
+
+    // Bar-specific bounds: always include zero; soft bounds expand if data exceeds.
+    // Hard crops (minValue/maxValue) win over both.
+    const effectiveMin = (this.minValue !== undefined)
+      ? this.minValue
+      : Math.min(0, this.softMin ?? 0, dataMin);
+    const effectiveMax = (this.maxValue !== undefined)
+      ? this.maxValue
+      : Math.max(0, this.softMax ?? 0, dataMax);
+
+    // Degenerate range guard
+    let lo = effectiveMin;
+    let hi = effectiveMax;
+    if (hi === lo) hi = lo + 1;
 
     const width = this.getActualWidth();
     const height = this.getActualHeight();
+    const drawTop = this.padding;
+    const drawBottom = height - this.padding;
+    const drawHeight = drawBottom - drawTop;
+    const yScale = drawHeight / (hi - lo);
+
+    // Empty-state: all values are zero AND no caller bounds. Render a thin
+    // dashed line at drawBottom so the card communicates "alive, just zero"
+    // instead of looking broken.
+    const allZero = dataMin === 0 && dataMax === 0;
+    const callerBounds = this.minValue !== undefined || this.maxValue !== undefined
+                      || this.softMin !== undefined || this.softMax !== undefined;
+    if (allZero && !callerBounds) {
+      const baseline = this.createSVGElement('line', {
+        x1: this.padding,
+        y1: drawBottom,
+        x2: width - this.padding,
+        y2: drawBottom,
+        stroke: this.color,
+        'stroke-width': 1,
+        'stroke-opacity': 0.4,
+        'stroke-dasharray': '2,2',
+        class: 'mini-chart-empty-baseline'
+      });
+      this.svg.appendChild(baseline);
+      return;
+    }
+
+    // y-coord of zero baseline, clamped to drawable area
+    const yZeroRaw = drawBottom - ((0 - lo) * yScale);
+    const yBase = Math.max(drawTop, Math.min(drawBottom, yZeroRaw));
+
+    // Reuse calculatePoints with the line-style bounds purely for x-positions
+    // so x-spacing stays identical to the previous behavior. We ignore point.y.
+    const points = this.calculatePoints(values, min, max);
+
     const barWidth = (width - this.padding * 2 - (this.barGap * (values.length - 1))) / values.length;
 
     points.forEach((point, index) => {
-      const barHeight = height - this.padding * 2 - point.y + this.padding;
+      const value = values[index];
+      const yValueRaw = drawBottom - ((value - lo) * yScale);
+      const yValue = Math.max(drawTop, Math.min(drawBottom, yValueRaw));
+      const topY = Math.min(yValue, yBase);
+      const bottomY = Math.max(yValue, yBase);
+      const barHeight = bottomY - topY;
       const x = point.x - barWidth / 2;
-      const y = point.y;
 
       const bar = this.createSVGElement('rect', {
         x: x,
-        y: y,
+        y: topY,
         width: barWidth,
         height: barHeight,
         fill: this.color,

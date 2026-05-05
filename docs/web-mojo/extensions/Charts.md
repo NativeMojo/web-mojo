@@ -433,6 +433,31 @@ new MiniChart({
 
 For multi-dataset, axes, or legend → use `SeriesChart` instead.
 
+### Bar-chart bounds
+
+Bar charts auto-baseline at zero so a value at the data minimum still renders
+with a visible bar. Three layers of caller control are available, in priority
+order:
+
+1. **`minValue` / `maxValue` — hard crop.** The y-axis ceiling/floor; data
+   outside is clamped to the drawable area. Use when you need a strict
+   axis range and accept that bars at `minValue` will have zero height.
+2. **`softMin` / `softMax` — soft target.** The y-axis reference, but the
+   bounds expand if data exceeds them. Use for percentage-like or
+   known-scale metrics where you want consistent visual scale most of the
+   time but still want spikes to be visible. Example: `softMax: 100` on a
+   battery-percent series — typical values render at their natural fraction,
+   a 110% spike still draws as the new tallest bar.
+3. **Auto.** When neither hard nor soft bounds are supplied, the chart uses
+   `Math.min(0, dataMin)` and `Math.max(0, dataMax)` — i.e. always include
+   zero in the y-axis.
+
+When every value is zero and no caller bounds are set, the chart renders a
+thin dashed baseline at the chart bottom in the chart color (low opacity) so
+the card communicates "alive, just zero" instead of looking broken.
+
+Line charts ignore `softMin` / `softMax`.
+
 ---
 
 ## CircularProgress

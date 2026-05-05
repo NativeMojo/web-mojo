@@ -287,6 +287,11 @@ Chart (forwarded to MetricsMiniChart)
 - showCrosshair, crosshairColor, crosshairWidth
 - xAxisColor, xAxisWidth, xAxisDashed
 - padding, minValue, maxValue
+- softMin, softMax — bar-chart soft bounds. Bars normalize to this reference
+  but the bounds expand if data exceeds them. Distinct from minValue/maxValue
+  (hard crops). Useful for known-scale metrics like percentages — pass
+  `softMax: 100` and a 110% spike still draws as the new tallest bar. Bar
+  charts only.
 - showDots, dotRadius
 - animate, animationDuration
 

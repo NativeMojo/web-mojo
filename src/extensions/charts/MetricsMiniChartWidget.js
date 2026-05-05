@@ -124,6 +124,8 @@ export default class MetricsMiniChartWidget extends View {
       padding: options.padding,
       minValue: options.minValue,
       maxValue: options.maxValue,
+      softMin: options.softMin,
+      softMax: options.softMax,
       showDots: options.showDots,
       dotRadius: options.dotRadius,
       animate: options.animate,

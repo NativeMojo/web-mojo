@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+### MiniChart — bar charts baseline at zero
+
+- **Fixed:** bar charts now baseline at zero so minimum-value bars are
+  always visible. Previously a series like `[3,3,4,3,4]` rendered every
+  value-3 bar with `height=0` because the auto-calculated bounds used the
+  data minimum as the baseline. Negative-only and mixed-sign series are
+  now also handled correctly (bars hang from / grow up from a zero line).
+- **Fixed:** when every value is zero, the chart renders a thin dashed
+  baseline at the chart bottom in the chart color (low opacity) instead of
+  rendering nothing, so the card communicates "alive, just zero" rather
+  than looking broken. Suppressed when any of `minValue`/`maxValue`/
+  `softMin`/`softMax` is set.
+- **Fixed:** out-of-range bars (caller-supplied `maxValue` smaller than
+  `dataMax`, etc.) are clamped to the drawable area instead of producing
+  negative or off-canvas heights.
+- **Added:** `softMin` / `softMax` options on `MiniChart` (and pass-through
+  on `MetricsMiniChartWidget`). Soft bounds: bars normalize to the soft
+  target, but the bounds expand if data exceeds it. Distinct from
+  `minValue`/`maxValue`, which are hard crops. Bar charts only.
+- Caller-supplied `minValue` continues to behave as a hard crop —
+  callers who explicitly cropped to a non-zero floor still get that.
+- No changes to line charts, animation, tooltips, or x-axis.
+
 ### TimePicker / DateTimePicker — completes the picker rebuild
 
 - New `timepicker` field type — HH:MM stepper with hour and minute
