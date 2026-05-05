@@ -2457,10 +2457,32 @@ class TableView extends ListView {
   async onActionClearAllFilters(event, element) {
     if (!this.collection) return;
 
-    // Clear all filters except pagination and sorting
+    // Preserve pagination/sorting and any params hidden via
+    // `hideActivePillNames` (those are not user-removable filters — e.g.
+    // tenant scope, account context, always-on permission filters).
     const { start, size, sort } = this.collection.params;
-    this.collection.params = { start, size };
-    if (sort) this.collection.params.sort = sort;
+    const preserved = { start, size };
+    if (sort) preserved.sort = sort;
+
+    if (Array.isArray(this.hideActivePillNames) && this.hideActivePillNames.length > 0) {
+      this.hideActivePillNames.forEach((key) => {
+        if (this.collection.params[key] !== undefined) {
+          preserved[key] = this.collection.params[key];
+        }
+        // For hidden daterange filters, keep the dr_* trio together.
+        const filterConfig = this.getFilterConfig(key);
+        if (filterConfig && filterConfig.type === 'daterange') {
+          const startName = filterConfig.startName || 'dr_start';
+          const endName = filterConfig.endName || 'dr_end';
+          const fieldName = filterConfig.fieldName || 'dr_field';
+          if (this.collection.params[startName] !== undefined) preserved[startName] = this.collection.params[startName];
+          if (this.collection.params[endName] !== undefined) preserved[endName] = this.collection.params[endName];
+          if (this.collection.params[fieldName] !== undefined) preserved[fieldName] = this.collection.params[fieldName];
+        }
+      });
+    }
+
+    this.collection.params = preserved;
 
     // Clear all search inputs
     this.updateSearchInputs('');

@@ -124,4 +124,100 @@ module.exports = async function (testContext) {
       expect(b.placeholder).toBe('camel');
     });
   });
+
+  describe('TableView.onActionClearAllFilters', () => {
+    const clearAll = TableView.prototype.onActionClearAllFilters;
+
+    function makeCtx(params, opts = {}) {
+      return {
+        collection: { params: { ...params }, restEnabled: false },
+        hideActivePillNames: opts.hideActivePillNames || [],
+        getFilterConfig: opts.getFilterConfig || (() => null),
+        updateSearchInputs: () => {},
+        render: () => {},
+        updateFilterPills: () => {},
+        emit: () => {},
+      };
+    }
+
+    it('clears all filters but preserves start, size, and sort', async () => {
+      const ctx = makeCtx({
+        start: 0, size: 25, sort: 'name',
+        status: 'active', priority: 'high',
+      });
+      await clearAll.call(ctx);
+      expect(ctx.collection.params).toEqual({ start: 0, size: 25, sort: 'name' });
+    });
+
+    it('preserves params whose keys are in hideActivePillNames', async () => {
+      const ctx = makeCtx(
+        { start: 0, size: 25, account: 'acme', tenant: 't1', status: 'active' },
+        { hideActivePillNames: ['account', 'tenant'] },
+      );
+      await clearAll.call(ctx);
+      expect(ctx.collection.params).toEqual({
+        start: 0, size: 25, account: 'acme', tenant: 't1',
+      });
+      // user-visible filters were cleared
+      expect(ctx.collection.params.status).toBeUndefined();
+    });
+
+    it('preserves dr_* trio when a hidden filter is daterange', async () => {
+      const ctx = makeCtx(
+        {
+          start: 0, size: 25,
+          dr_field: 'created', dr_start: '2026-05-01', dr_end: '2026-05-31',
+          status: 'open',
+        },
+        {
+          hideActivePillNames: ['created'],
+          getFilterConfig: (key) => key === 'created'
+            ? { type: 'daterange', startName: 'dr_start', endName: 'dr_end', fieldName: 'dr_field' }
+            : null,
+        },
+      );
+      await clearAll.call(ctx);
+      expect(ctx.collection.params.dr_field).toBe('created');
+      expect(ctx.collection.params.dr_start).toBe('2026-05-01');
+      expect(ctx.collection.params.dr_end).toBe('2026-05-31');
+      expect(ctx.collection.params.status).toBeUndefined();
+    });
+
+    it('honors custom startName/endName/fieldName on a hidden daterange', async () => {
+      const ctx = makeCtx(
+        {
+          start: 0, size: 25,
+          period_field: 'logged_at', period_from: '2026-01-01', period_to: '2026-12-31',
+          status: 'open',
+        },
+        {
+          hideActivePillNames: ['logged_at'],
+          getFilterConfig: (key) => key === 'logged_at'
+            ? { type: 'daterange', startName: 'period_from', endName: 'period_to', fieldName: 'period_field' }
+            : null,
+        },
+      );
+      await clearAll.call(ctx);
+      expect(ctx.collection.params.period_field).toBe('logged_at');
+      expect(ctx.collection.params.period_from).toBe('2026-01-01');
+      expect(ctx.collection.params.period_to).toBe('2026-12-31');
+      expect(ctx.collection.params.status).toBeUndefined();
+    });
+
+    it('emits filters:clear and params-changed', async () => {
+      const events = [];
+      const ctx = makeCtx({ start: 0, size: 25, status: 'open' });
+      ctx.emit = (name) => events.push(name);
+      await clearAll.call(ctx);
+      expect(events).toContain('filters:clear');
+      expect(events).toContain('params-changed');
+    });
+
+    it('no-ops when collection is null', async () => {
+      const ctx = { collection: null };
+      // should not throw
+      await clearAll.call(ctx);
+      expect(ctx.collection).toBeNull();
+    });
+  });
 };
