@@ -28,8 +28,10 @@ For a master quick reference of ALL field types, see [FieldTypes.md](../FieldTyp
 
 | Component | Type | Description | Best For |
 |-----------|------|-------------|----------|
-| [DatePicker](./DatePicker.md) | `datepicker` | Enhanced date selection | Better UX than native date picker |
+| [DatePicker](./DatePicker.md) | `datepicker` | Enhanced date selection (day / month / year via `precision`) | Better UX than native date picker |
 | [DateRangePicker](./DateRangePicker.md) | `daterange` | Select date range | Start/end date selection |
+| [TimePicker](./TimePicker.md) | `timepicker` | HH:MM stepper picker with optional 12h / IANA timezone | Scheduling, recurring time fields |
+| [DateTimePicker](./DateTimePicker.md) | `datetimepicker` | Combined date + time + optional timezone | Event start, meeting times |
 
 ### File & Media
 
@@ -398,6 +400,8 @@ Click on any component below for detailed documentation:
 - [TagInput](./TagInput.md) - Tag/chip input for keywords and labels
 - [DatePicker](./DatePicker.md) - In-house date selection with day/month/year precision
 - [DateRangePicker](./DateRangePicker.md) - Date range selection
+- [TimePicker](./TimePicker.md) - HH:MM stepper picker with optional 12h / timezone
+- [DateTimePicker](./DateTimePicker.md) - Combined date + time + optional timezone
 - [MultiSelectDropdown](./MultiSelectDropdown.md) - Multi-select with checkboxes
 - [ComboInput](./ComboInput.md) - Editable dropdown with autocomplete
 - [CollectionSelect](./CollectionSelect.md) - Single select from Collection/API

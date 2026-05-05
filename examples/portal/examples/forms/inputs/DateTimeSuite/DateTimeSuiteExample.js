@@ -1,15 +1,16 @@
 import { Page, FormView } from 'web-mojo';
 
 /**
- * DateTimeSuiteExample — full showcase of the DatePicker / DateRangePicker
- * surface area in one page.
+ * DateTimeSuiteExample — overview / landing page for the four
+ * date+time pickers. One preview card per component with a "Show
+ * config" button that dumps the exact `fields:` snippet used to
+ * build the FormView.
  *
- * Doc:    docs/web-mojo/forms/inputs/DatePicker.md, DateRangePicker.md
+ * Doc:    docs/web-mojo/forms/inputs/{DatePicker,DateRangePicker,TimePicker,DateTimePicker}.md
  * Route:  forms/inputs/date-time-suite
  *
- * Each card is a self-contained `FormView` mounted into its own
- * container. Click "Show form data" on any card to dump that form's
- * current values.
+ * For full per-component example coverage (every option, every
+ * variant), see the dedicated example pages linked from each card.
  */
 class DateTimeSuiteExample extends Page {
     static pageName = 'forms/inputs/date-time-suite';
@@ -20,376 +21,244 @@ class DateTimeSuiteExample extends Page {
             ...options,
             pageName: DateTimeSuiteExample.pageName,
             route: DateTimeSuiteExample.route,
-            title: 'Date & Time Suite — full DatePicker showcase',
+            title: 'Date & Time Pickers — Overview',
             template: DateTimeSuiteExample.TEMPLATE,
         });
         this.snapshots = {};
+        this.configs = {};
     }
 
     async onInit() {
         await super.onInit();
 
         const today = new Date();
-        const fmt = (d) => d.toISOString().split('T')[0];
+        const pad2 = (n) => (n < 10 ? '0' + n : String(n));
+        const fmt = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
         const todayStr = fmt(today);
         const monthStr = todayStr.slice(0, 7);
-        const yearStr = todayStr.slice(0, 4);
 
-        const ago = (n) => {
-            const d = new Date();
-            d.setDate(today.getDate() - n);
-            return fmt(d);
-        };
+        // ─── DatePicker preview ─────────────────────────────────
+        const dateFields = [
+            { type: 'datepicker', name: 'event_date', label: 'Day', columns: { md: 4 } },
+            { type: 'monthpicker', name: 'reporting_month', label: 'Month', value: monthStr, columns: { md: 4 } },
+            { type: 'yearpicker', name: 'fiscal_year', label: 'Year', value: String(today.getFullYear()), columns: { md: 4 } },
+        ];
+        this.dateForm = new FormView({ containerId: 'date-preview', fields: dateFields });
+        this.addChild(this.dateForm);
+        this.configs.date = JSON.stringify({ fields: dateFields }, null, 2);
 
-        // ─── Card 1 — DatePicker precision: day / month / year ───────
-        this.dayMonthYearForm = new FormView({
-            containerId: 'day-month-year-form',
-            fields: [
-                {
-                    type: 'datepicker',
-                    name: 'event_date',
-                    label: 'Day precision',
-                    placeholder: 'Pick a date...',
-                    columns: { md: 4 },
-                },
-                {
-                    type: 'monthpicker',
-                    name: 'reporting_month',
-                    label: 'Month precision',
-                    placeholder: 'Pick a month...',
-                    value: monthStr,
-                    columns: { md: 4 },
-                },
-                {
-                    type: 'yearpicker',
-                    name: 'fiscal_year',
-                    label: 'Year precision',
-                    placeholder: 'Pick a year...',
-                    value: yearStr,
-                    columns: { md: 4 },
-                },
-            ],
-        });
-        this.addChild(this.dayMonthYearForm);
-
-        // ─── Card 2 — DateRangePicker, all three precisions ──────────
-        this.rangeForm = new FormView({
-            containerId: 'range-form',
-            fields: [
-                {
-                    type: 'daterange',
-                    name: 'day_range',
-                    label: 'Day range',
-                    startDate: ago(29),
-                    endDate: todayStr,
-                    separator: ' to ',
-                    columns: { md: 12 },
-                },
-                {
-                    type: 'monthrange',
-                    name: 'month_range',
-                    label: 'Month range',
-                    startDate: monthStr,
-                    endDate: monthStr,
-                    columns: { md: 6 },
-                },
-                {
-                    type: 'yearrange',
-                    name: 'year_range',
-                    label: 'Year range',
-                    startDate: String(today.getFullYear() - 4),
-                    endDate: yearStr,
-                    columns: { md: 6 },
-                },
-            ],
-        });
+        // ─── DateRangePicker preview ────────────────────────────
+        const rangeFields = [
+            {
+                type: 'daterange',
+                name: 'reporting',
+                label: 'Reporting period',
+                startDate: fmt(new Date(today.getTime() - 29 * 86400000)),
+                endDate: todayStr,
+                presets: 'default',
+                help: 'Pick a preset or use the calendar.',
+            },
+        ];
+        this.rangeForm = new FormView({ containerId: 'range-preview', fields: rangeFields });
         this.addChild(this.rangeForm);
+        this.configs.range = JSON.stringify({ fields: rangeFields }, null, 2);
 
-        // ─── Card 3 — Range with Stripe-style preset sidebar ─────────
-        this.presetForm = new FormView({
-            containerId: 'preset-form',
-            fields: [
-                {
-                    type: 'daterange',
-                    name: 'reporting',
-                    label: 'Reporting period (with presets)',
-                    startDate: ago(29),
-                    endDate: todayStr,
-                    presets: 'default',
-                    help: 'Click the trigger to open the picker. Pick a preset or use the calendar.',
-                },
-                {
-                    type: 'monthrange',
-                    name: 'fiscal_period',
-                    label: 'Fiscal period (month presets)',
-                    startDate: monthStr,
-                    endDate: monthStr,
-                    presets: 'default',
-                    help: 'Month-precision presets: This month / YTD / Last 12 months / etc.',
-                },
-            ],
-        });
-        this.addChild(this.presetForm);
+        // ─── TimePicker preview ─────────────────────────────────
+        const timeFields = [
+            {
+                type: 'timepicker',
+                name: 'meeting_time',
+                label: 'Meeting time',
+                format: '12h',
+                timezone: true,
+                value: '09:30',
+                help: 'Stored as ISO HH:MM±HH:MM (e.g. "09:30-07:00").',
+            },
+        ];
+        this.timeForm = new FormView({ containerId: 'time-preview', fields: timeFields });
+        this.addChild(this.timeForm);
+        this.configs.time = JSON.stringify({ fields: timeFields }, null, 2);
 
-        // ─── Card 4 — Constraints: min, max, disabledDates, inline ───
-        const tomorrow = new Date();
-        tomorrow.setDate(today.getDate() + 1);
-        const sixMonthsOut = new Date();
-        sixMonthsOut.setMonth(today.getMonth() + 6);
-        // Disable the next two Sundays as a demo.
-        const disabled = [];
-        for (let i = 0; i < 7; i++) {
-            const d = new Date();
-            d.setDate(today.getDate() + i);
-            if (d.getDay() === 0) disabled.push(fmt(d));
-        }
-
-        this.constraintsForm = new FormView({
-            containerId: 'constraints-form',
-            fields: [
-                {
-                    type: 'datepicker',
-                    name: 'appointment',
-                    label: 'Future date only',
-                    min: fmt(tomorrow),
-                    max: fmt(sixMonthsOut),
-                    placeholder: 'Tomorrow through ~6 months out',
-                    help: 'Past dates and dates beyond 6 months are disabled.',
-                    columns: { md: 6 },
-                },
-                {
-                    type: 'datepicker',
-                    name: 'workday',
-                    label: 'Skip Sundays',
-                    min: todayStr,
-                    disabledDates: disabled,
-                    placeholder: 'Sundays disabled...',
-                    help: 'Specific dates can be disabled via `disabledDates`.',
-                    columns: { md: 6 },
-                },
-            ],
-        });
-        this.addChild(this.constraintsForm);
-
-        // ─── Card 5 — Inline calendar ────────────────────────────────
-        this.inlineForm = new FormView({
-            containerId: 'inline-form',
-            fields: [
-                {
-                    type: 'datepicker',
-                    name: 'check_in',
-                    label: 'Check-in (inline)',
-                    inline: true,
-                    min: todayStr,
-                    columns: { md: 6 },
-                },
-                {
-                    type: 'monthpicker',
-                    name: 'travel_month',
-                    label: 'Travel month (inline)',
-                    inline: true,
-                    value: monthStr,
-                    columns: { md: 6 },
-                },
-            ],
-        });
-        this.addChild(this.inlineForm);
-
-        // ─── Card 6 — Custom display formats ─────────────────────────
-        this.formatForm = new FormView({
-            containerId: 'format-form',
-            fields: [
-                {
-                    type: 'datepicker',
-                    name: 'us_format',
-                    label: 'US format',
-                    displayFormat: 'MM/DD/YYYY',
-                    placeholder: '01/15/2026',
-                    columns: { md: 4 },
-                },
-                {
-                    type: 'datepicker',
-                    name: 'iso_format',
-                    label: 'ISO format',
-                    displayFormat: 'YYYY-MM-DD',
-                    placeholder: '2026-01-15',
-                    columns: { md: 4 },
-                },
-                {
-                    type: 'datepicker',
-                    name: 'long_format',
-                    label: 'Long format',
-                    displayFormat: 'MMMM DD, YYYY',
-                    placeholder: 'January 15, 2026',
-                    columns: { md: 4 },
-                },
-            ],
-        });
-        this.addChild(this.formatForm);
+        // ─── DateTimePicker preview ─────────────────────────────
+        const dtFields = [
+            {
+                type: 'datetimepicker',
+                name: 'scheduled_at',
+                label: 'Scheduled at',
+                timezone: true,
+                timeFormat: '12h',
+                value: `${todayStr} 10:00`,
+                help: 'Stored as ISO 8601 with offset — recommended for backend interop.',
+            },
+        ];
+        this.dtForm = new FormView({ containerId: 'datetime-preview', fields: dtFields });
+        this.addChild(this.dtForm);
+        this.configs.datetime = JSON.stringify({ fields: dtFields }, null, 2);
     }
 
-    // ─── Action handlers ─────────────────────────────────────────────
-
-    async onActionShowDmy() {
-        this.snapshots.dmy = JSON.stringify(await this.dayMonthYearForm.getFormData(), null, 2);
+    // Show form data
+    async onActionShowData(event, el) {
+        const which = el.dataset.which;
+        const form = this[`${which}Form`];
+        if (!form) return;
+        this.snapshots[which] = { kind: 'data', text: JSON.stringify(await form.getFormData(), null, 2) };
         this.render();
     }
-    async onActionShowRange() {
-        this.snapshots.range = JSON.stringify(await this.rangeForm.getFormData(), null, 2);
+    // Show config
+    onActionShowConfig(event, el) {
+        const which = el.dataset.which;
+        this.snapshots[which] = { kind: 'config', text: this.configs[which] };
         this.render();
     }
-    async onActionShowPreset() {
-        this.snapshots.preset = JSON.stringify(await this.presetForm.getFormData(), null, 2);
-        this.render();
-    }
-    async onActionShowConstraints() {
-        this.snapshots.constraints = JSON.stringify(await this.constraintsForm.getFormData(), null, 2);
-        this.render();
-    }
-    async onActionShowInline() {
-        this.snapshots.inline = JSON.stringify(await this.inlineForm.getFormData(), null, 2);
-        this.render();
-    }
-    async onActionShowFormat() {
-        this.snapshots.format = JSON.stringify(await this.formatForm.getFormData(), null, 2);
+    // Hide
+    onActionHideSnap(event, el) {
+        const which = el.dataset.which;
+        delete this.snapshots[which];
         this.render();
     }
 
     static TEMPLATE = `
         <div class="example-page">
-            <h1>Date &amp; Time Suite</h1>
+            <h1>Date &amp; Time Pickers — Overview</h1>
             <p class="example-summary">
-                The full DatePicker / DateRangePicker surface area, all on one page.
-                Day / month / year precision · ranges · presets · min/max · disabled dates · inline · custom formats.
-            </p>
-            <p class="example-docs-link">
-                <i class="bi bi-book"></i>
-                <a href="#" data-action="open-doc" data-doc="docs/web-mojo/forms/inputs/DatePicker.md">
-                    docs/web-mojo/forms/inputs/DatePicker.md
-                </a>
-                ·
-                <a href="#" data-action="open-doc" data-doc="docs/web-mojo/forms/inputs/DateRangePicker.md">
-                    DateRangePicker.md
-                </a>
+                Four pickers, one engine. Click any "Show config" to copy the exact
+                <code>fields:</code> snippet, or jump into a dedicated example page
+                for the full surface area of each component.
             </p>
 
-            <!-- Card 1 — Precision -->
+            <!-- DatePicker -->
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <span><strong>1. Precision</strong> — day / month / year, same engine</span>
-                    <code class="small">datepicker · monthpicker · yearpicker</code>
+                    <span><strong>DatePicker</strong> — single-value date, day / month / year precision</span>
+                    <a href="#" class="small" data-action="open-page" data-page="forms/inputs/date-picker">
+                        See full examples <i class="bi bi-arrow-right-short"></i>
+                    </a>
                 </div>
                 <div class="card-body">
-                    <div data-container="day-month-year-form"></div>
-                    <div class="d-flex justify-content-between align-items-start mt-3">
-                        <button type="button" class="btn btn-sm btn-primary" data-action="show-dmy">
-                            <i class="bi bi-eye"></i> Show form data
-                        </button>
-                        {{#snapshots.dmy|bool}}
-                            <pre class="mb-0 small flex-grow-1 ms-3"><code>{{snapshots.dmy}}</code></pre>
-                        {{/snapshots.dmy|bool}}
-                    </div>
+                    <div data-container="date-preview"></div>
+                    {{#snapshots.date}}
+                        <div class="mt-3 d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="badge bg-secondary me-2">{{snapshots.date.kind}}</span>
+                                <button type="button" class="btn btn-sm btn-link" data-action="hide-snap" data-which="date">Hide</button>
+                            </div>
+                        </div>
+                        <pre class="mb-0 small mt-2"><code>{{snapshots.date.text}}</code></pre>
+                    {{/snapshots.date}}
+                    {{^snapshots.date}}
+                        <div class="mt-3 d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-primary" data-action="show-data" data-which="date">
+                                <i class="bi bi-eye"></i> Show form data
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-action="show-config" data-which="date">
+                                <i class="bi bi-code-square"></i> Show config
+                            </button>
+                        </div>
+                    {{/snapshots.date}}
                 </div>
             </div>
 
-            <!-- Card 2 — Ranges -->
+            <!-- DateRangePicker -->
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <span><strong>2. Ranges</strong> — day, month, year. Cross-page anchor persistence.</span>
-                    <code class="small">daterange · monthrange · yearrange</code>
+                    <span><strong>DateRangePicker</strong> — start/end ranges with optional preset sidebar</span>
+                    <a href="#" class="small" data-action="open-page" data-page="forms/inputs/date-range-picker">
+                        See full examples <i class="bi bi-arrow-right-short"></i>
+                    </a>
                 </div>
                 <div class="card-body">
-                    <div data-container="range-form"></div>
-                    <div class="d-flex justify-content-between align-items-start mt-3">
-                        <button type="button" class="btn btn-sm btn-primary" data-action="show-range">
-                            <i class="bi bi-eye"></i> Show form data
-                        </button>
-                        {{#snapshots.range|bool}}
-                            <pre class="mb-0 small flex-grow-1 ms-3"><code>{{snapshots.range}}</code></pre>
-                        {{/snapshots.range|bool}}
-                    </div>
+                    <div data-container="range-preview"></div>
+                    {{#snapshots.range}}
+                        <div class="mt-3 d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="badge bg-secondary me-2">{{snapshots.range.kind}}</span>
+                                <button type="button" class="btn btn-sm btn-link" data-action="hide-snap" data-which="range">Hide</button>
+                            </div>
+                        </div>
+                        <pre class="mb-0 small mt-2"><code>{{snapshots.range.text}}</code></pre>
+                    {{/snapshots.range}}
+                    {{^snapshots.range}}
+                        <div class="mt-3 d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-primary" data-action="show-data" data-which="range">
+                                <i class="bi bi-eye"></i> Show form data
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-action="show-config" data-which="range">
+                                <i class="bi bi-code-square"></i> Show config
+                            </button>
+                        </div>
+                    {{/snapshots.range}}
                 </div>
             </div>
 
-            <!-- Card 3 — Presets -->
+            <!-- TimePicker -->
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <span><strong>3. Preset sidebar</strong> — Stripe-style quick ranges</span>
-                    <code class="small">presets: 'default'</code>
+                    <span><strong>TimePicker</strong> — HH:MM stepper, optional 12h / IANA timezone</span>
+                    <a href="#" class="small" data-action="open-page" data-page="forms/inputs/time-picker">
+                        See full examples <i class="bi bi-arrow-right-short"></i>
+                    </a>
                 </div>
                 <div class="card-body">
-                    <div data-container="preset-form"></div>
-                    <div class="d-flex justify-content-between align-items-start mt-3">
-                        <button type="button" class="btn btn-sm btn-primary" data-action="show-preset">
-                            <i class="bi bi-eye"></i> Show form data
-                        </button>
-                        {{#snapshots.preset|bool}}
-                            <pre class="mb-0 small flex-grow-1 ms-3"><code>{{snapshots.preset}}</code></pre>
-                        {{/snapshots.preset|bool}}
-                    </div>
+                    <div data-container="time-preview"></div>
+                    {{#snapshots.time}}
+                        <div class="mt-3 d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="badge bg-secondary me-2">{{snapshots.time.kind}}</span>
+                                <button type="button" class="btn btn-sm btn-link" data-action="hide-snap" data-which="time">Hide</button>
+                            </div>
+                        </div>
+                        <pre class="mb-0 small mt-2"><code>{{snapshots.time.text}}</code></pre>
+                    {{/snapshots.time}}
+                    {{^snapshots.time}}
+                        <div class="mt-3 d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-primary" data-action="show-data" data-which="time">
+                                <i class="bi bi-eye"></i> Show form data
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-action="show-config" data-which="time">
+                                <i class="bi bi-code-square"></i> Show config
+                            </button>
+                        </div>
+                    {{/snapshots.time}}
                 </div>
             </div>
 
-            <!-- Card 4 — Constraints -->
+            <!-- DateTimePicker -->
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <span><strong>4. Constraints</strong> — min, max, disabledDates</span>
-                    <code class="small">min · max · disabledDates</code>
+                    <span><strong>DateTimePicker</strong> — calendar + time + optional timezone, ISO 8601 storage</span>
+                    <a href="#" class="small" data-action="open-page" data-page="forms/inputs/date-time-picker">
+                        See full examples <i class="bi bi-arrow-right-short"></i>
+                    </a>
                 </div>
                 <div class="card-body">
-                    <div data-container="constraints-form"></div>
-                    <div class="d-flex justify-content-between align-items-start mt-3">
-                        <button type="button" class="btn btn-sm btn-primary" data-action="show-constraints">
-                            <i class="bi bi-eye"></i> Show form data
-                        </button>
-                        {{#snapshots.constraints|bool}}
-                            <pre class="mb-0 small flex-grow-1 ms-3"><code>{{snapshots.constraints}}</code></pre>
-                        {{/snapshots.constraints|bool}}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Card 5 — Inline -->
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span><strong>5. Inline mode</strong> — calendar always visible</span>
-                    <code class="small">inline: true</code>
-                </div>
-                <div class="card-body">
-                    <div data-container="inline-form"></div>
-                    <div class="d-flex justify-content-between align-items-start mt-3">
-                        <button type="button" class="btn btn-sm btn-primary" data-action="show-inline">
-                            <i class="bi bi-eye"></i> Show form data
-                        </button>
-                        {{#snapshots.inline|bool}}
-                            <pre class="mb-0 small flex-grow-1 ms-3"><code>{{snapshots.inline}}</code></pre>
-                        {{/snapshots.inline|bool}}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Card 6 — Display formats -->
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span><strong>6. Display formats</strong> — what the user sees vs. what's stored</span>
-                    <code class="small">displayFormat</code>
-                </div>
-                <div class="card-body">
-                    <div data-container="format-form"></div>
-                    <div class="d-flex justify-content-between align-items-start mt-3">
-                        <button type="button" class="btn btn-sm btn-primary" data-action="show-format">
-                            <i class="bi bi-eye"></i> Show form data
-                        </button>
-                        {{#snapshots.format|bool}}
-                            <pre class="mb-0 small flex-grow-1 ms-3"><code>{{snapshots.format}}</code></pre>
-                        {{/snapshots.format|bool}}
-                    </div>
+                    <div data-container="datetime-preview"></div>
+                    {{#snapshots.datetime}}
+                        <div class="mt-3 d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="badge bg-secondary me-2">{{snapshots.datetime.kind}}</span>
+                                <button type="button" class="btn btn-sm btn-link" data-action="hide-snap" data-which="datetime">Hide</button>
+                            </div>
+                        </div>
+                        <pre class="mb-0 small mt-2"><code>{{snapshots.datetime.text}}</code></pre>
+                    {{/snapshots.datetime}}
+                    {{^snapshots.datetime}}
+                        <div class="mt-3 d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-primary" data-action="show-data" data-which="datetime">
+                                <i class="bi bi-eye"></i> Show form data
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-action="show-config" data-which="datetime">
+                                <i class="bi bi-code-square"></i> Show config
+                            </button>
+                        </div>
+                    {{/snapshots.datetime}}
                 </div>
             </div>
 
             <p class="text-muted small mt-4 mb-0">
-                Storage is always the canonical form regardless of <code>displayFormat</code>:
-                day → <code>YYYY-MM-DD</code>, month → <code>YYYY-MM</code>, year → <code>YYYY</code>.
+                Storage: day → <code>YYYY-MM-DD</code>, month → <code>YYYY-MM</code>,
+                year → <code>YYYY</code>, time → <code>HH:MM</code> (24h),
+                datetime → ISO 8601 with offset (recommended) — e.g.
+                <code>2026-05-04T14:30:00-07:00</code>.
             </p>
         </div>
     `;

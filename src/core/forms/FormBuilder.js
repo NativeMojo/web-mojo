@@ -812,6 +812,12 @@ class FormBuilder {
       case 'yearrange':
         fieldHTML = this.renderDateRangeField({ ...field, precision: 'year' });
         break;
+      case 'timepicker':
+        fieldHTML = this.renderTimePickerField(field);
+        break;
+      case 'datetimepicker':
+        fieldHTML = this.renderDateTimePickerField(field);
+        break;
       case 'checklistdropdown':
         fieldHTML = this.renderChecklistDropdownField(field);
         break;
@@ -2383,6 +2389,128 @@ class FormBuilder {
                separator,
                months,
                presets,
+               autoApply,
+               inline,
+               disabled,
+               readonly,
+               required
+             })}'></div>
+        ${help ? `<div class="${this.options.helpClass}">${this.escapeHtml(help)}</div>` : ''}
+        ${error ? `<div class="${this.options.errorClass}">${this.escapeHtml(error)}</div>` : ''}
+      </div>
+    `;
+  }
+
+  /**
+   * Render time picker placeholder. Hydrated by FormView.initializeTimePickers().
+   */
+  renderTimePickerField(field) {
+    const {
+      name,
+      label,
+      value = '',
+      format = '24h',
+      step = 1,
+      min = null,
+      max = null,
+      placeholder,
+      required = false,
+      disabled = false,
+      readonly = false,
+      timezone = false,
+      timezones = null,
+      outputFormat = 'string',
+      autoApply = false,
+      inline = false,
+      help = field.helpText || field.help || ''
+    } = field;
+
+    const fieldId = this.getFieldId(name);
+    const error = this.errors[name];
+    const fieldValue = (this.getFieldValue(name) ?? value);
+
+    return `
+      <div class="mojo-form-control">
+        ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}${this.renderTooltipIcon(field)}</label>` : ''}
+        <div class="time-picker-placeholder"
+             data-field-name="${name}"
+             data-field-type="timepicker"
+             data-field-config='${JSON.stringify({
+               name,
+               value: fieldValue,
+               format,
+               step,
+               min,
+               max,
+               placeholder,
+               timezone,
+               timezones,
+               outputFormat,
+               autoApply,
+               inline,
+               disabled,
+               readonly,
+               required
+             })}'></div>
+        ${help ? `<div class="${this.options.helpClass}">${this.escapeHtml(help)}</div>` : ''}
+        ${error ? `<div class="${this.options.errorClass}">${this.escapeHtml(error)}</div>` : ''}
+      </div>
+    `;
+  }
+
+  /**
+   * Render datetime picker placeholder. Hydrated by FormView.initializeDateTimePickers().
+   */
+  renderDateTimePickerField(field) {
+    const {
+      name,
+      label,
+      value = '',
+      displayFormat = null,
+      timeFormat = '24h',
+      timeStep = 1,
+      min = null,
+      max = null,
+      placeholder,
+      required = false,
+      disabled = false,
+      readonly = false,
+      disabledDates = [],
+      firstDay = 1,
+      lang = 'en-US',
+      timezone = false,
+      timezones = null,
+      outputFormat = 'string',
+      autoApply = false,
+      inline = false,
+      help = field.helpText || field.help || ''
+    } = field;
+
+    const fieldId = this.getFieldId(name);
+    const error = this.errors[name];
+    const fieldValue = (this.getFieldValue(name) ?? value);
+
+    return `
+      <div class="mojo-form-control">
+        ${label ? `<label for="${fieldId}" class="${this.options.labelClass}">${this.escapeHtml(label)}${required ? '<span class="text-danger">*</span>' : ''}${this.renderTooltipIcon(field)}</label>` : ''}
+        <div class="datetime-picker-placeholder"
+             data-field-name="${name}"
+             data-field-type="datetimepicker"
+             data-field-config='${JSON.stringify({
+               name,
+               value: fieldValue,
+               displayFormat,
+               timeFormat,
+               timeStep,
+               min,
+               max,
+               placeholder,
+               disabledDates,
+               firstDay,
+               lang,
+               timezone,
+               timezones,
+               outputFormat,
                autoApply,
                inline,
                disabled,

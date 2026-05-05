@@ -10,6 +10,9 @@ import CollectionMultiSelect from './CollectionMultiSelect.js';
 import MultiSelectDropdown from './MultiSelectDropdown.js';
 import DatePicker from './DatePicker.js';
 import DateRangePicker from './DateRangePicker.js';
+import TimePicker from './TimePicker.js';
+import DateTimePicker from './DateTimePicker.js';
+import TimezoneSelect from './TimezoneSelect.js';
 import ComboInput from './ComboInput.js';
 import ComboBox from './ComboBox.js';
 
@@ -21,6 +24,9 @@ export {
   MultiSelectDropdown,
   DatePicker,
   DateRangePicker,
+  TimePicker,
+  DateTimePicker,
+  TimezoneSelect,
   ComboInput,
   ComboBox
 };
@@ -37,9 +43,12 @@ export default {
   MultiSelectDropdown,
   DatePicker,
   DateRangePicker,
+  TimePicker,
+  DateTimePicker,
+  TimezoneSelect,
   ComboInput,
   ComboBox,
-  
+
   // Legacy aliases
   TagInputView: TagInput,
   CollectionSelectView: CollectionSelect,
@@ -64,6 +73,8 @@ export const INPUT_TYPES = {
   daterange: DateRangePicker,
   monthrange: DateRangePicker,
   yearrange: DateRangePicker,
+  timepicker: TimePicker,
+  datetimepicker: DateTimePicker,
   combo: ComboBox,
   combobox: ComboBox,
   autocomplete: ComboBox

@@ -6,7 +6,8 @@
 | Status | resolved |
 | Date | 2026-05-04 |
 | Priority | high |
-| Resolved | 2026-05-04 |
+| Phase 1+2 shipped | 2026-05-04 |
+| Phase 3+4 shipped | 2026-05-05 |
 
 ## Description
 
@@ -327,9 +328,9 @@ Time picker takes Apple's column-wheel pattern adapted to desktop: hours/minutes
 
 ---
 
-## Resolution
+## Resolution — Phase 1 + 2
 
-**Status:** Resolved — 2026-05-04 (Phase 1 + Phase 2 shipped as MVP; Phase 3 + 4 deferred to follow-up)
+**Status:** Phase 1 + Phase 2 shipped 2026-05-04 as MVP. Phase 3 + 4 reopened (see Plan — Phase 3 + 4 below).
 
 **Commits:**
 - `3dfac51` — DatePicker rebuild: in-house Calendar engine, day/month/year precision, range cross-page
@@ -381,3 +382,192 @@ Time picker takes Apple's column-wheel pattern adapted to desktop: hours/minutes
 - Type-ahead natural-language input ("next friday")
 - Locale packs beyond what `Intl` already provides
 
+
+---
+
+## Plan — Phase 3 + 4 (reopened)
+
+Phase 1 + 2 shipped on 2026-05-04 as the MVP rebuild — the in-house Calendar engine, CalendarPopover, PresetSidebar, DatePicker rewrite, DateRangePicker rewrite, and Easepick removal are all in production. The original acceptance criteria for Phase 3 (TimePicker, TimezoneSelect, DateTimePicker) and Phase 4 (docs + examples for the new components) were never delivered, and the request was prematurely moved to `done/`. This plan completes the original scope.
+
+### Objective
+
+Ship the remaining components and surface them throughout the framework:
+
+1. **TimePicker** — HH:MM time picker (stepper variant per locked mockup), with optional IANA timezone selector (stacked layout per locked mockup).
+2. **TimezoneSelect** — internal searchable combobox built on top of the existing `ComboBox`, populated from `Intl.supportedValuesOf('timeZone')`.
+3. **DateTimePicker** — composition of Calendar + time strip + optional TZ in one popover (locked variant A).
+4. **Docs + examples + CHANGELOG** updated to reflect the new field types.
+
+### Mockup Variants Locked (from `planning/mockups/datepicker/README.md`)
+
+| Surface | Locked variant | How the plan applies it |
+|---|---|---|
+| 7 — Time (HH:MM) | **B · Stepper buttons** | TimePicker uses up/down stepper columns with direct numeric typing. Wheels deferred. |
+| 8 — Time + timezone | **A · Stacked** | TimezoneSelect renders below the time spinner inside the popover. |
+| 9 — Date + Time (+ TZ) | **A · Calendar + strip** | DateTimePicker uses a flex row: Calendar on left, time strip on right, TZ stacked below the time strip when enabled. Single `datetimepicker` field type with `timezone: false \| true \| string[]`. When `timezone: false`, the TZ block hides and the strip collapses to time only. |
+
+### Steps
+
+#### Phase 3 — Components
+
+1. **`src/core/utils/dateFns.js`** *(extend)* — Add narrow time utilities: `parseTime(str)` → `{ hours, minutes }` accepting `HH:MM`, `H:MM`, `h:mm am/pm`; `formatTime({ hours, minutes }, format)` → `'14:30'` or `'2:30 PM'`; `parseDateTime(str)` → `{ date, time, timezone? }`; `formatDateTime(parsed, displayFormat, timeFormat)`.
+2. **`src/core/forms/inputs/TimezoneSelect.js`** *(new)* — extends `View`. Wraps `ComboBox` via `addChild()` with `containerId`. Populates options from `Intl.supportedValuesOf('timeZone')` with curated ~50-zone fallback list (logged once via `console.warn` if the API throws). Each option labels the zone with current UTC offset via `Intl.DateTimeFormat`. Default value: `Intl.DateTimeFormat().resolvedOptions().timeZone`. Emits `'change'` with `{ value }`.
+3. **`src/core/forms/inputs/TimePicker.js`** *(new)* — extends `View`. Trigger button (clock icon + display text + clear) following DatePicker's exact pattern. Hidden `<input>` for form serialization. Reuses `CalendarPopover` for the popover. Inside the popover: `.mojo-time-spinner` with hour column (up arrow / numeric value / down arrow) + minute column + optional AM/PM toggle (12h mode only). Direct keyboard entry: clicking a value selects it for typing. Tab moves between hour → minute → AM/PM. When `timezone: true`, mounts a `TimezoneSelect` child below the spinner. Storage: 24h canonical `'HH:MM'` always; with TZ → `'HH:MM TZ'` string or `{ time, timezone }` object per `outputFormat`. Emits `'change'` with `{ value, formatted, oldValue }`. Public API mirrors DatePicker (`setValue`, `getValue`, `getFormValue`, `setFormValue`, `clear`, `setEnabled`, `setReadonly`, `focus`, `show`, `hide`, `onBeforeDestroy`).
+4. **`src/core/forms/inputs/DateTimePicker.js`** *(new)* — extends `View`. Trigger displays e.g. `"May 04, 2026 14:30"` (or with TZ). Inside one `CalendarPopover`: flex row with `Calendar` (constructed directly, like DatePicker does) on the left and a time spinner on the right; `TimezoneSelect` stacked below the time strip when enabled. Storage: `'YYYY-MM-DD HH:MM'` (or with TZ) per `outputFormat`. Time defaults to `'00:00'` if user picks a date without setting a time.
+5. **`src/core/forms/inputs/calendar/calendar.css`** *(extend)* — Append styles for `.mojo-time-trigger` (mirrors `.mojo-date-trigger`), `.mojo-time-spinner` (column layout with stepper buttons), `.mojo-time-ampm` (toggle), `.mojo-datetime-popover` (flex row), `.mojo-timezone-select` wrapper. All under both light defaults and `[data-bs-theme="dark"]` overrides clustered with the existing dark block at the bottom.
+6. **`src/core/forms/inputs/index.js`** *(extend)* — Import + export `TimePicker`, `TimezoneSelect` (named export, not in `INPUT_TYPES`), `DateTimePicker`. Add `INPUT_TYPES.timepicker = TimePicker`, `INPUT_TYPES.datetimepicker = DateTimePicker`.
+7. **`src/core/forms/FormBuilder.js`** *(extend)* — Add `case 'timepicker'` and `case 'datetimepicker'` in the field renderer switch (line 745 area). Add `renderTimePickerField(field)` and `renderDateTimePickerField(field)` methods that emit a placeholder `<div data-field-type="timepicker" data-field-name="..." data-field-config="...">` (and `datetimepicker`) — same pattern as `renderDatePickerField`.
+8. **`src/core/forms/FormView.js`** *(extend)* — Import `TimePicker` and `DateTimePicker`. Add `initializeTimePickers()` and `initializeDateTimePickers()` methods mirroring `initializeDatePickers()` (line 611). Call both from `onAfterMount()` (line ~224) and `initializeCustomComponents()` (line ~254).
+
+#### Phase 4 — Docs & Examples
+
+9. **`docs/web-mojo/forms/inputs/TimePicker.md`** *(new)* — Constructor options, storage formats, timezone integration, 12h/24h, stepper behavior, keyboard interaction, FormBuilder field config, public API. Same structure as `DatePicker.md`.
+10. **`docs/web-mojo/forms/inputs/DateTimePicker.md`** *(new)* — Composition explainer, options table (deferring to DatePicker.md / TimePicker.md for shared options), output formats (string vs object), popover layout, timezone option.
+11. **`docs/web-mojo/forms/inputs/README.md`** *(extend)* — Add TimePicker and DateTimePicker to component comparison tables.
+12. **`docs/web-mojo/forms/FieldTypes.md`** *(extend)* — Add `timepicker` and `datetimepicker` to the Date & Time table; update decision tree, "By Data Type" table, "By Use Case" sections.
+13. **`docs/web-mojo/forms/BasicTypes.md`** *(extend)* — Pointer notes from native `time` and `datetime-local` to the framework-grade `timepicker`/`datetimepicker` components (mirroring the existing `date` → `datepicker` note).
+14. **`examples/portal/examples/forms/inputs/TimePicker/`** *(new)* — `example.json` + `TimePickerExample.js` showing 24h, 12h, with timezone, with `step: 15`, with min/max constraints. Each card has "Show form data" dump.
+15. **`examples/portal/examples/forms/inputs/DateTimePicker/`** *(new)* — `example.json` + `DateTimePickerExample.js` showing basic datetime, with timezone, 12h format, with constraints.
+16. **`examples/portal/examples/forms/inputs/DateTimeSuite/`** *(restore + extend)* — Recreate the deleted DateTimeSuite example (currently shown as deleted in working tree) and add cards for TimePicker and DateTimePicker alongside the existing date picker cards. This is the comprehensive showcase.
+17. **`examples/portal/examples.registry.json`** *(extend)* — Register TimePicker, DateTimePicker, restore DateTimeSuite registration.
+18. **`CHANGELOG.md`** *(extend)* — Non-breaking entry: new `timepicker` field type (HH:MM, 12h/24h, optional IANA timezone), new `datetimepicker` field type (date + time composition with optional timezone), completes the DatePicker rebuild (Phase 3 + 4).
+
+### Design Decisions
+
+- **Stepper UI, not wheel.** Locked variant B from mockup table. Desktop-native stepper with direct numeric typing. Wheels are a future `mobileMode: true` follow-up, not in scope.
+- **Reuse CalendarPopover.** TimePicker and DateTimePicker share the same portal popover; no new popover code, automatic z-index above modals, click-outside dismiss for free.
+- **Wrap ComboBox for timezone.** `TimezoneSelect` wraps the existing `ComboBox` rather than reinventing a searchable dropdown. Inherits Bootstrap styling and keyboard nav. `Intl.supportedValuesOf('timeZone')` populates options with a curated fallback.
+- **DateTimePicker creates Calendar directly, not via DatePicker.** Nesting full DatePicker (with its own popover) inside DateTimePicker's popover would double-popover. Instead DateTimePicker constructs `new Calendar(...)` itself and a lightweight time spinner DOM, both mounted inside one `CalendarPopover`. This matches how DatePicker already works internally.
+- **24h canonical storage.** Time is always stored as `'HH:MM'` regardless of `format: '12h'`. Display handles the conversion. Same principle as DatePicker storing `YYYY-MM-DD` regardless of `displayFormat`.
+- **Single `datetimepicker` field type.** Per locked mockup #9 — the TZ slot lives inside the picker via the `timezone` option, not as a separate field.
+- **Same trigger pattern.** TimePicker/DateTimePicker triggers visually match DatePicker (button + icon + display text + clear). Visual consistency across all date/time inputs.
+- **FormView wiring follows existing pattern.** `initializeTimePickers()` / `initializeDateTimePickers()` are copies of `initializeDatePickers()` with class swap. No new abstractions.
+
+### Edge Cases
+
+- **12h AM/PM boundary.** 12:00 AM = 00:00; 12:00 PM = 12:00. Stepper wraps minute → hour: 12:59 PM + 1 → 1:00 PM; 11:59 AM + 1 → 12:00 PM; 11:59 PM + 1 → 12:00 AM (wraps in time-only mode; date does NOT roll in TimePicker).
+- **`step > 1`.** Stepper increments by `step` minutes. Direct numeric typing is allowed at any granularity (matches native `<input type="time" step>` browser behavior).
+- **Min/max time.** `min: '09:00', max: '17:00'` disables stepper beyond bounds. Direct typing outside bounds shows the trigger as `is-invalid` until corrected.
+- **Timezone fallback.** `Intl.supportedValuesOf` is supported in modern browsers per `inputs/README.md`'s declared matrix; if it throws, fall back to a curated ~50-zone list and `console.warn` once.
+- **DateTimePicker partial state.** If user picks a date but no time, default to `'00:00'`. Trigger displays the date with `00:00` once a date is committed.
+- **Clear behavior.** Clearing resets both date and time on DateTimePicker. There is no separate "clear time" affordance.
+- **Portal popover z-index.** Inherits `CalendarPopover`'s `z-index: 10000`, escapes modals and overflow:hidden tables.
+- **Form serialization.** `getFormValue()` returns string or object per `outputFormat`. FormView's `handleFieldChange` routes by field name — no special handling needed.
+- **Existing native `time`/`datetime` field types stay.** `renderTimeField()` / `renderDateTimeField()` still render native HTML5 inputs for the `time` and `datetime`/`datetime-local` types. The new `timepicker`/`datetimepicker` are separate, opt-in.
+- **Cleanup.** `onBeforeDestroy()` destroys the popover (removes from `document.body`) and nulls spinner/calendar/timezone references. Same pattern as DatePicker.
+
+### Testing
+
+- **`test/unit/TimePicker.test.js`** — 12h/24h formatting, step increment, min/max constraints, AM/PM boundary, timezone selection, `outputFormat: 'string' | 'object'`, getFormValue round-trip.
+- **`test/unit/DateTimePicker.test.js`** — composition, timezone option, output formats, display formatting, clear behavior.
+- **`test/unit/dateFns.test.js`** *(extend)* — `parseTime`, `formatTime`, `parseDateTime`, `formatDateTime` cases.
+- **`test/utils/simple-module-loader.js`** *(extend)* — register `TimePicker`, `TimezoneSelect`, `DateTimePicker` so loadModule works.
+- **Narrowest commands:** `npm run test:unit`, `npm run lint`, `npm run build`.
+- **Manual smoke:** `npm run dev`, exercise the new examples under both light and dark themes per `.claude/rules/theming.md`. Use preview tools to verify TimePicker stepper, AM/PM toggle, timezone search, and the DateTimePicker layout.
+
+### Docs Impact
+
+- New: `docs/web-mojo/forms/inputs/TimePicker.md`, `docs/web-mojo/forms/inputs/DateTimePicker.md`
+- Updated: `docs/web-mojo/forms/inputs/README.md`, `docs/web-mojo/forms/FieldTypes.md`, `docs/web-mojo/forms/BasicTypes.md`, `CHANGELOG.md`
+
+### Out of Scope (still)
+
+- Wheel/scroll-based time picker (mobile fallback) — future `mobileMode: true` follow-up
+- `datetimerange` field type (stretch goal in original request) — defer
+- Type-ahead natural-language input ("next friday")
+- Locale packs beyond `Intl`
+- Server-side timezone conversion / storage policy
+
+---
+
+## Resolution — Phase 3 + 4
+
+**Status:** Resolved — 2026-05-05. Phase 3 (TimePicker, TimezoneSelect, DateTimePicker) and Phase 4 (docs + examples) shipped, completing the original scope of this request.
+
+### What was implemented (Phase 3 + 4)
+
+1. **TimePicker** — `src/core/forms/inputs/TimePicker.js`. HH:MM stepper-button picker (locked variant B). Hour/minute columns with up/down buttons + direct numeric typing on the value. Options: `format: '24h' | '12h'`, `step` (minutes), `min`, `max`, `timezone`, `outputFormat`. AM/PM toggle in 12h mode. Reuses `CalendarPopover`.
+2. **TimezoneSelect** — `src/core/forms/inputs/TimezoneSelect.js`. Internal searchable combobox built on `ComboBox`, populated from `Intl.supportedValuesOf('timeZone')` with a curated ~50-zone fallback. Default selection: user's local zone via `Intl.DateTimeFormat().resolvedOptions().timeZone`. Inner field name defaults to `'timezone'`.
+3. **DateTimePicker** — `src/core/forms/inputs/DateTimePicker.js`. Composition of Calendar + time stepper + optional IANA timezone in one popover (locked variant A — calendar on left, time strip on right, timezone full-width below). Single `datetimepicker` field type with the timezone toggled by the `timezone` option.
+4. **ISO 8601 by default** — addressing backend-interop concerns:
+   - DateTimePicker defaults to ISO 8601 strings: `'2026-05-04T14:30:00'` (no tz) or `'2026-05-04T14:30:00-07:00'` (with tz).
+   - TimePicker defaults to canonical 24h `'HH:MM'` (no tz) or ISO-style `'HH:MM±HH:MM'` (with tz).
+   - Legacy `'YYYY-MM-DD HH:MM IANA/Zone'` form is opt-in via `outputFormat: 'iana'`.
+   - `outputFormat: 'object'` returns `{ date, time, timezone? }` / `{ time, timezone }` for callers that want the IANA name preserved as a separate field.
+5. **dateFns extensions** — `parseTime`, `formatTime`, `compareTime`, `addMinutes`, `parseDateTime`, `formatDateTime`, `formatDateTimeForDisplay`, `ianaOffset` (DST-aware via `Intl.DateTimeFormat` `shortOffset`). `parseDateTime` accepts both ISO-with-offset (`'…T14:30:00-07:00'`, `'…Z'`, `'…+05:30'`) and the legacy IANA-suffix form.
+6. **CSS** — extended `src/core/forms/inputs/calendar/calendar.css` with `.mojo-time-trigger`, `.mojo-time-stepper`, `.mojo-time-ampm`, `.mojo-time-tz-host`, `.mojo-datetime-trigger`, `.mojo-datetime-row` (flex calendar+time), `.mojo-datetime-tz-row` (full-width TZ slot), `.mojo-datetime-foot`. Light + dark theme overrides clustered with the existing dark block per `.claude/rules/theming.md`.
+7. **FormBuilder + FormView wiring** — `INPUT_TYPES` gained `timepicker` and `datetimepicker`. `FormBuilder.renderTimePickerField` / `renderDateTimePickerField` emit placeholders. `FormView.initializeTimePickers` / `initializeDateTimePickers` hydrate the components, mirroring `initializeDatePickers` exactly. Existing `type: 'date'` / `'time'` / `'datetime'` / `'datetime-local'` / `'daterange'` field types are unchanged.
+8. **Docs** — new `docs/web-mojo/forms/inputs/TimePicker.md` and `DateTimePicker.md`. Updated `docs/web-mojo/forms/inputs/README.md`, `docs/web-mojo/forms/FieldTypes.md` (added entries to Date & Time table, decision tree, By Data Type), `docs/web-mojo/forms/BasicTypes.md` (pointer notes from native `time` / `datetime-local` to framework-grade equivalents), and `CHANGELOG.md`.
+9. **Examples** —
+   - New `examples/portal/examples/forms/inputs/TimePicker/` and `DateTimePicker/` example pages.
+   - **Restored and slimmed** `examples/portal/examples/forms/inputs/DateTimeSuite/` from 7 duplicate-coverage cards to 4 overview cards (one per component) with "See full examples →" links. Renamed to "Date & Time Pickers — Overview" via `example.json`.
+   - **Show config button** on every card across all 5 example pages (DatePicker, DateRangePicker, TimePicker, DateTimePicker, Suite) — dumps the literal `fields:` snippet used to build the FormView, so users can copy-paste exact config.
+   - **"Skip Sundays" example fixed** — the prior `fmt = d => d.toISOString().split('T')[0]` was UTC-shifted in negative-UTC zones (Sunday May 10 became Monday May 11). Replaced with local-date components, and widened to disable every Sunday in the next ~3 months for a more useful demo.
+   - `examples/portal/examples.registry.json` rebuilt (registry script's TOPIC_TAXONOMY updated with the three new routes).
+10. **Stale Easepick mention scrubbed** from `examples/portal/examples/forms/DateTimeFields/DateTimeFieldsExample.js` ("Easepick-backed" → "in-house").
+11. **Tests** — new `test/unit/TimePicker.test.js` and `test/unit/DateTimePicker.test.js`. `test/unit/dateFns.test.js` extended with time-parsing, datetime-parsing, ISO-with-offset, and `formatDateTime` cases. `test/utils/simple-module-loader.js` registered `ComboBox`, `TimezoneSelect`, `TimePicker`, `DateTimePicker` and gained a fallback for named imports of single-class modules. **All 5 picker / dateFns suites green** (646/646 — the prior 7 pre-existing failures were resolved separately and tracked in `planning/issues/`).
+
+### Backward-compatibility audit
+
+Every existing consumer was traced end-to-end and verified unchanged:
+
+- **TableView daterange filters** (10 admin pages — IncidentTablePage, EventTablePage, LogTablePage, GeoIPView, FirewallLogTablePage, BouncerSignalTablePage, UserTablePage, UserView, GroupView, MemberView). The filter-dialog pipeline (`buildFilterDialogField` → DateRangePicker → hidden inputs `dr_start`/`dr_end` → `extractFilterValue` → `setFilter`) verified live in the browser with the exact filter config TableView passes (`name='created'`, `startName='dr_start'`, `endName='dr_end'`, `fieldName='dr_field'`). Hidden inputs render with the correct names and ISO date values.
+- **Collection.dr_field cache slug** (`Collection.js:386`) — reads `params.dr_field`/`dr_start`/`dr_end` set by TableView. DateRangePicker still produces `{start, end}` in the same `YYYY-MM-DD` shape as the pre-rebuild API. Unchanged.
+- **DjangoLookups.formatFilterDisplay** — reads `value.start` / `value.end`. Unchanged.
+- **Native HTML5 form types** (`type: 'date'`, `'time'`, `'datetime'`, `'datetime-local'`) — still routed through FormBuilder's existing `renderDateField` / `renderTimeField` / `renderDateTimeField` methods which emit native browser inputs. Untouched. Used by `AdminPersonalSection` (dob), `ProfilePersonalSection`, `MetricsMiniChartWidget`, `MetricsChart`, `Job.js`.
+- **Model column formatters** (`type: 'datetime'` in `User.js`, `System.js`) — used by `dataFormatter` for table-column display, not FormBuilder. Untouched.
+
+### Files changed (Phase 3+4)
+
+**New:**
+- `src/core/forms/inputs/TimePicker.js`
+- `src/core/forms/inputs/DateTimePicker.js`
+- `src/core/forms/inputs/TimezoneSelect.js`
+- `docs/web-mojo/forms/inputs/TimePicker.md`
+- `docs/web-mojo/forms/inputs/DateTimePicker.md`
+- `examples/portal/examples/forms/inputs/TimePicker/` (example.json + TimePickerExample.js)
+- `examples/portal/examples/forms/inputs/DateTimePicker/` (example.json + DateTimePickerExample.js)
+- `test/unit/TimePicker.test.js`
+- `test/unit/DateTimePicker.test.js`
+- `planning/issues/modal-alert-eyebrow-tests-failing.md` (now resolved)
+- `planning/issues/metricschart-buildapiparams-test-failing.md` (now resolved)
+
+**Modified:**
+- `src/core/utils/dateFns.js` (time + datetime + ianaOffset utilities; ISO-with-offset parsing)
+- `src/core/forms/inputs/index.js` (TimePicker / DateTimePicker / TimezoneSelect exports + INPUT_TYPES entries)
+- `src/core/forms/FormBuilder.js` (renderTimePickerField, renderDateTimePickerField, switch cases)
+- `src/core/forms/FormView.js` (TimePicker / DateTimePicker imports + initializers)
+- `src/core/forms/inputs/calendar/calendar.css` (time/datetime/timezone styles + dark overrides)
+- `test/unit/dateFns.test.js` (time + datetime parsing tests)
+- `test/utils/simple-module-loader.js` (registered new modules + named-import fallback)
+- `docs/web-mojo/forms/inputs/README.md`
+- `docs/web-mojo/forms/FieldTypes.md`
+- `docs/web-mojo/forms/BasicTypes.md`
+- `CHANGELOG.md`
+- `examples/portal/examples/forms/inputs/DateTimeSuite/{example.json,DateTimeSuiteExample.js}` (restored, slimmed to overview)
+- `examples/portal/examples/forms/inputs/DatePicker/DatePickerExample.js` (Show config button)
+- `examples/portal/examples/forms/inputs/DateRangePicker/DateRangePickerExample.js` (Show config button)
+- `examples/portal/examples/forms/DateTimeFields/DateTimeFieldsExample.js` (stale Easepick mention scrubbed)
+- `examples/portal/scripts/build-registry.js` (TOPIC_TAXONOMY: added time-picker, date-time-picker, date-time-suite routes)
+- `examples/portal/examples.registry.json` (regenerated)
+- `docs/web-mojo/examples.md` (regenerated)
+
+### Validation
+
+- `npm run test:unit` — 646/646 pass after the prior pre-existing failures were resolved as separate issues.
+- `npm run lint` — no new errors in any file I touched (16 errors / 55 warnings remaining are all pre-existing in `src/core/{Collection,Model,Page,PortalApp,Rest,Router,View,WebApp}.js` and `src/utils/mustache.js`).
+- `npm run build` — clean.
+- `npm run examples:registry` — 83 examples across 4 topics, no orphans.
+- **Live verification in the browser preview**:
+  - TimePicker with timezone shows ISO output `'09:30-07:00'` in the hidden input, AM/PM toggle works, IANA combobox renders in the popover.
+  - DateTimePicker with timezone produces `'2026-05-04T14:30:00-07:00'` ISO 8601 strings — `getFormData()` returns exactly what the backend expects.
+  - DateRangePicker filter contract verified end-to-end against TableView (hidden inputs `dr_start`/`dr_end`/combined `created` render with correct names and ISO date values).
+  - All five example pages render, Show data / Show config buttons work on every card across DatePicker, DateRangePicker, TimePicker, DateTimePicker, and the slimmed Date & Time Pickers — Overview page.
+  - Light + dark theme verified on the new components.
+
+### Original deferrals (still out of scope)
+
+- Wheel/scroll-based time picker (mobile fallback) — future `mobileMode: true` follow-up.
+- `datetimerange` field type — stretch goal in original request, deferred.
+- Type-ahead natural-language input ("next friday") — captured for a future Phase 5 follow-up if requested.
+- Locale packs beyond what `Intl` already provides.

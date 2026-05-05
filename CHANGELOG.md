@@ -2,6 +2,52 @@
 
 ## Unreleased
 
+### TimePicker / DateTimePicker — completes the picker rebuild
+
+- New `timepicker` field type — HH:MM stepper with hour and minute
+  columns, `▲`/`▼` buttons, and direct numeric typing on the value.
+  Supports `format: '24h' | '12h'` (AM/PM toggle in 12h mode),
+  `step` (minute increment, e.g. `15`), and `min`/`max` clamping.
+- New `datetimepicker` field type — Calendar on the left, time
+  stepper on the right, optional IANA timezone stacked full-width
+  below in one popover. Single field type with `timezone: false |
+  true` toggle (locked mockup variant A — single field type, the
+  TZ slot is part of the picker, not a separate field).
+- Optional IANA timezone selector built on the existing `ComboBox`,
+  populated from `Intl.supportedValuesOf('timeZone')` with a curated
+  ~50-zone fallback. Default value is the user's local zone via
+  `Intl.DateTimeFormat().resolvedOptions().timeZone`. Inner field
+  name defaults to `'timezone'` so it lines up with backend
+  expectations.
+- Time is **always stored as 24h canonical `'HH:MM'`** regardless of
+  display format. With timezone, the default storage is ISO-style
+  `'HH:MM±HH:MM'` (e.g. `'14:30-07:00'`); legacy `'HH:MM IANA/Zone'`
+  is opt-in via `outputFormat: 'iana'`; `outputFormat: 'object'`
+  yields `{ time, timezone }`.
+- DateTime defaults to **ISO 8601** — `'2026-05-04T14:30:00'` without
+  timezone, `'2026-05-04T14:30:00-07:00'` with timezone. Backends
+  expecting JSON / Postgres-style timestamps handle this directly.
+  `outputFormat: 'iana'` falls back to `'YYYY-MM-DD HH:MM IANA/Zone'`,
+  and `outputFormat: 'object'` yields `{ date, time, timezone? }`.
+- New `ianaOffset(zone, refDate)` helper resolves an IANA zone to its
+  current `±HH:MM` offset (DST-aware via `Intl.DateTimeFormat`).
+- `parseDateTime` now also accepts ISO 8601 strings with offset
+  (`'2026-05-04T14:30:00-07:00'`, `'…Z'`, `'…+05:30'`) and round-trips
+  the offset back through the picker.
+- New utilities in `dateFns.js`: `parseTime`, `formatTime`,
+  `compareTime`, `addMinutes`, `parseDateTime`, `formatDateTime`,
+  `formatDateTimeForDisplay`.
+- Reuses `CalendarPopover` so the popover portal-mounts to
+  `document.body` and escapes clipping containers (modals,
+  overflow:hidden tables).
+- Bootstrap-tokened theming. Light + dark from day one.
+- Docs: new `docs/web-mojo/forms/inputs/TimePicker.md` and
+  `DateTimePicker.md`. Field-type tables and basic-types pointer
+  notes refreshed.
+- Examples: new `TimePicker` and `DateTimePicker` example pages, and
+  the `DateTimeSuite` showcase grew two new cards covering the new
+  components.
+
 ### DatePicker / DateRangePicker — in-house Calendar engine
 
 - Replaced the prior Easepick-based pickers with an in-house `Calendar`

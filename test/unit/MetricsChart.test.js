@@ -113,7 +113,10 @@ module.exports = async function (testContext) {
             const params = m.buildApiParams();
             expect(params.granularity).toBe('days');
             expect(params.account).toBe('acme');
-            expect(params['slugs[]']).toEqual(['x', 'y']);
+            // Backend requires `slugs=a,b,c` (plural, comma-joined). The
+            // bracketed `slugs[]=` form returns 400 on production — see
+            // MetricsChart.buildApiParams comment.
+            expect(params.slugs).toBe('x,y');
             expect(typeof params.dr_start).toBe('number');
             expect(typeof params.dr_end).toBe('number');
             expect(params.dr_end).toBeGreaterThan(params.dr_start);

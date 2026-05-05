@@ -1084,6 +1084,8 @@ fields: [
 }
 ```
 
+> **Framework-grade datetime picker** — for cross-browser consistency, optional IANA timezone, and Bootstrap-tokened theming, prefer the `datetimepicker` field type. See [DateTimePicker.md](./inputs/DateTimePicker.md).
+
 ---
 
 ### `time` - Time Picker
@@ -1108,6 +1110,8 @@ fields: [
   max: '17:00'
 }
 ```
+
+> **Framework-grade time picker** — for cross-browser consistency, 12h/24h display options, and optional IANA timezone, prefer the `timepicker` field type. See [TimePicker.md](./inputs/TimePicker.md).
 
 ---
 

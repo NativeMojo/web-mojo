@@ -11,8 +11,9 @@ import { Page, FormView } from 'web-mojo';
  *   - time            — `HH:MM`, optional `step` (seconds)
  *   - datetime-local  — `YYYY-MM-DDTHH:MM`
  *
- * For richer pickers (themed, range, locale-aware), use the Easepick-backed
- * `datepicker` and `daterange` types — see the inputs/ examples.
+ * For richer pickers (themed, range, locale-aware, with optional timezone),
+ * use the in-house `datepicker`, `daterange`, `timepicker`, and
+ * `datetimepicker` types — see the inputs/ examples.
  */
 class DateTimeFieldsExample extends Page {
     static pageName = 'forms/date-time-fields';

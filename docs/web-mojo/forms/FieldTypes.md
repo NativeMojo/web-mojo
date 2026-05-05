@@ -64,6 +64,8 @@ Complete reference of all available field types in WEB-MOJO forms. Use this as a
 | `daterange` | Date range picker | Cross-page anchor, optional preset sidebar | [inputs/DateRangePicker](./inputs/DateRangePicker.md) |
 | `monthrange` | Month range picker | Stores YYYY-MM × 2 | [inputs/DateRangePicker](./inputs/DateRangePicker.md) |
 | `yearrange` | Year range picker | Stores YYYY × 2 | [inputs/DateRangePicker](./inputs/DateRangePicker.md) |
+| `timepicker` | In-house time picker | HH:MM stepper, 12h/24h, optional IANA timezone | [inputs/TimePicker](./inputs/TimePicker.md) |
+| `datetimepicker` | In-house datetime picker | Calendar + time + optional timezone in one popover | [inputs/DateTimePicker](./inputs/DateTimePicker.md) |
 
 ### Advanced Input Components
 
@@ -156,8 +158,8 @@ Complete reference of all available field types in WEB-MOJO forms. Use this as a
 | **Single Choice** | `radio`, `select`, `buttongroup` |
 | **Multiple Choice** | `checkbox` (multiple), `multiselect`, `checklistdropdown` |
 | **Date** | `date`, `datepicker` |
-| **Time** | `time` |
-| **DateTime** | `datetime-local`, `datepicker` |
+| **Time** | `time`, `timepicker` |
+| **DateTime** | `datetime-local`, `datetimepicker` |
 | **Date Range** | `daterange` |
 | **Color** | `color`, `hex` |
 | **File** | `file`, `image` |
@@ -200,8 +202,10 @@ Need user input?
 │  │  ├─ Simple date → date (native)
 │  │  ├─ Enhanced date → datepicker
 │  │  ├─ Date range → daterange
-│  │  ├─ Time only → time
-│  │  └─ Date + Time → datetime-local
+│  │  ├─ Time only (native) → time
+│  │  ├─ Time only (themed, with timezone) → timepicker
+│  │  ├─ Date + Time (native) → datetime-local
+│  │  └─ Date + Time (themed, with timezone) → datetimepicker
 │  │
 │  ├─ File upload?
 │  │  ├─ Any file → file

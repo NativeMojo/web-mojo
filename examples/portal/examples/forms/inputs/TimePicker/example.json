@@ -1,0 +1,15 @@
+{
+    "name": "TimePicker",
+    "area": "forms/inputs",
+    "route": "forms/inputs/time-picker",
+    "title": "TimePicker",
+    "summary": "HH:MM stepper picker with optional 12h/24h format and IANA timezone.",
+    "docs": "docs/web-mojo/forms/inputs/TimePicker.md",
+    "tags": ["form", "input", "time", "timezone"],
+    "page": "TimePickerExample.js",
+    "menu": {
+        "section": "Form Inputs",
+        "icon": "bi-clock",
+        "order": 35
+    }
+}

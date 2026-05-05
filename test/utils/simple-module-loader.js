@@ -244,6 +244,22 @@ class SimpleModuleLoader {
             'DateRangePicker': {
                 path: path.join(this.sourceRoot, 'core/forms/inputs/DateRangePicker.js'),
                 dependencies: ['View', 'Calendar', 'CalendarPopover', 'PresetSidebar', 'dateFns']
+            },
+            'ComboBox': {
+                path: path.join(this.sourceRoot, 'core/forms/inputs/ComboBox.js'),
+                dependencies: ['View']
+            },
+            'TimezoneSelect': {
+                path: path.join(this.sourceRoot, 'core/forms/inputs/TimezoneSelect.js'),
+                dependencies: ['View', 'ComboBox']
+            },
+            'TimePicker': {
+                path: path.join(this.sourceRoot, 'core/forms/inputs/TimePicker.js'),
+                dependencies: ['View', 'CalendarPopover', 'TimezoneSelect', 'dateFns']
+            },
+            'DateTimePicker': {
+                path: path.join(this.sourceRoot, 'core/forms/inputs/DateTimePicker.js'),
+                dependencies: ['View', 'Calendar', 'CalendarPopover', 'TimePicker', 'TimezoneSelect', 'dateFns']
             }
         };
 
@@ -335,7 +351,12 @@ class SimpleModuleLoader {
                 return m ? { source: m[1], local: m[2] } : { source: spec, local: spec };
             });
             if (globalName) {
-                return entries.map(e => `const ${e.local} = global.${globalName} && global.${globalName}.${e.source};`).join('\n') + '\n';
+                // Try the named export first, then fall back to the module
+                // itself when the named binding is undefined. This handles
+                // modules that expose a single class via both `export class X`
+                // and `export default X` — at test time the module value
+                // is the class, so `global.X.X` is undefined.
+                return entries.map(e => `const ${e.local} = (global.${globalName} && global.${globalName}.${e.source}) || global.${globalName};`).join('\n') + '\n';
             }
             // Unresolved relative import: declare locals as undefined so module-load
             // doesn't ReferenceError when names appear in metadata literals.
@@ -371,7 +392,11 @@ class SimpleModuleLoader {
                 CalendarPopover: 'CalendarPopover',
                 PresetSidebar: 'PresetSidebar',
                 DatePicker: 'DatePicker',
-                DateRangePicker: 'DateRangePicker'
+                DateRangePicker: 'DateRangePicker',
+                ComboBox: 'ComboBox',
+                TimezoneSelect: 'TimezoneSelect',
+                TimePicker: 'TimePicker',
+                DateTimePicker: 'DateTimePicker'
             };
             if (fallbackReturns[moduleName]) {
                 code += `\nreturn ${fallbackReturns[moduleName]};`;
@@ -407,7 +432,11 @@ class SimpleModuleLoader {
             { test: /dateFns(\.js)?$/, name: 'dateFns' },
             { test: /\/Calendar(\.js)?$/, name: 'Calendar' },
             { test: /CalendarPopover(\.js)?$/, name: 'CalendarPopover' },
-            { test: /PresetSidebar(\.js)?$/, name: 'PresetSidebar' }
+            { test: /PresetSidebar(\.js)?$/, name: 'PresetSidebar' },
+            { test: /\/ComboBox(\.js)?$/, name: 'ComboBox' },
+            { test: /TimezoneSelect(\.js)?$/, name: 'TimezoneSelect' },
+            { test: /\/TimePicker(\.js)?$/, name: 'TimePicker' },
+            { test: /\/DateTimePicker(\.js)?$/, name: 'DateTimePicker' }
         ];
         for (const rule of rules) {
             if (rule.test.test(importPath)) return rule.name;

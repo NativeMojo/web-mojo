@@ -1,6 +1,6 @@
 {
   "generatedAt": "static",
-  "pageCount": 81,
+  "pageCount": 83,
   "pages": [
     {
       "name": "ActiveGroup",
@@ -1329,19 +1329,44 @@
       "group": "Specialized Inputs"
     },
     {
+      "name": "DateTimePicker",
+      "area": "forms/inputs",
+      "route": "forms/inputs/date-time-picker",
+      "title": "DateTimePicker",
+      "summary": "Combined date + time picker with optional timezone in one popover.",
+      "docs": "docs/web-mojo/forms/inputs/DateTimePicker.md",
+      "tags": [
+        "form",
+        "input",
+        "date",
+        "time",
+        "timezone",
+        "datetime"
+      ],
+      "page": "DateTimePickerExample.js",
+      "modulePath": "./examples/forms/inputs/DateTimePicker/DateTimePickerExample.js",
+      "sourcePath": "examples/portal/examples/forms/inputs/DateTimePicker/DateTimePickerExample.js",
+      "section": "Form Inputs",
+      "icon": "bi-calendar-event",
+      "order": 36,
+      "topic": "forms",
+      "group": "Specialized Inputs"
+    },
+    {
       "name": "DateTimeSuite",
       "area": "forms/inputs",
       "route": "forms/inputs/date-time-suite",
-      "title": "Date & Time Suite",
-      "summary": "Full DatePicker / DateRangePicker showcase — day/month/year precision, ranges, presets, constraints, inline, custom formats.",
+      "title": "Date & Time Pickers — Overview",
+      "summary": "Landing page for all four date/time pickers — one preview each, Show config / Show form data buttons, links to dedicated example pages.",
       "docs": "docs/web-mojo/forms/inputs/DatePicker.md",
       "tags": [
         "form",
         "input",
         "date",
-        "calendar",
-        "range",
-        "showcase"
+        "time",
+        "datetime",
+        "timezone",
+        "overview"
       ],
       "page": "DateTimeSuiteExample.js",
       "modulePath": "./examples/forms/inputs/DateTimeSuite/DateTimeSuiteExample.js",
@@ -1417,6 +1442,28 @@
       "section": "Form Inputs",
       "icon": "bi-tags",
       "order": 10,
+      "topic": "forms",
+      "group": "Specialized Inputs"
+    },
+    {
+      "name": "TimePicker",
+      "area": "forms/inputs",
+      "route": "forms/inputs/time-picker",
+      "title": "TimePicker",
+      "summary": "HH:MM stepper picker with optional 12h/24h format and IANA timezone.",
+      "docs": "docs/web-mojo/forms/inputs/TimePicker.md",
+      "tags": [
+        "form",
+        "input",
+        "time",
+        "timezone"
+      ],
+      "page": "TimePickerExample.js",
+      "modulePath": "./examples/forms/inputs/TimePicker/TimePickerExample.js",
+      "sourcePath": "examples/portal/examples/forms/inputs/TimePicker/TimePickerExample.js",
+      "section": "Form Inputs",
+      "icon": "bi-clock",
+      "order": 35,
       "topic": "forms",
       "group": "Specialized Inputs"
     },
@@ -2371,9 +2418,23 @@
               "docs": "docs/web-mojo/forms/inputs/DateRangePicker.md"
             },
             {
+              "route": "forms/inputs/time-picker",
+              "title": "TimePicker",
+              "summary": "HH:MM stepper picker with optional 12h/24h format and IANA timezone.",
+              "icon": "bi-clock",
+              "docs": "docs/web-mojo/forms/inputs/TimePicker.md"
+            },
+            {
+              "route": "forms/inputs/date-time-picker",
+              "title": "DateTimePicker",
+              "summary": "Combined date + time picker with optional timezone in one popover.",
+              "icon": "bi-calendar-event",
+              "docs": "docs/web-mojo/forms/inputs/DateTimePicker.md"
+            },
+            {
               "route": "forms/inputs/date-time-suite",
-              "title": "Date & Time Suite",
-              "summary": "Full DatePicker / DateRangePicker showcase — day/month/year precision, ranges, presets, constraints, inline, custom formats.",
+              "title": "Date & Time Pickers — Overview",
+              "summary": "Landing page for all four date/time pickers — one preview each, Show config / Show form data buttons, links to dedicated example pages.",
               "icon": "bi-calendar-week",
               "docs": "docs/web-mojo/forms/inputs/DatePicker.md"
             },
@@ -3127,8 +3188,8 @@
         },
         {
           "route": "forms/inputs/date-time-suite",
-          "title": "Date & Time Suite",
-          "summary": "Full DatePicker / DateRangePicker showcase — day/month/year precision, ranges, presets, constraints, inline, custom formats.",
+          "title": "Date & Time Pickers — Overview",
+          "summary": "Landing page for all four date/time pickers — one preview each, Show config / Show form data buttons, links to dedicated example pages.",
           "icon": "bi-calendar-week",
           "docs": "docs/web-mojo/forms/inputs/DatePicker.md"
         },
@@ -3138,6 +3199,20 @@
           "summary": "Start/end date range in a single combined picker.",
           "icon": "bi-calendar-range",
           "docs": "docs/web-mojo/forms/inputs/DateRangePicker.md"
+        },
+        {
+          "route": "forms/inputs/time-picker",
+          "title": "TimePicker",
+          "summary": "HH:MM stepper picker with optional 12h/24h format and IANA timezone.",
+          "icon": "bi-clock",
+          "docs": "docs/web-mojo/forms/inputs/TimePicker.md"
+        },
+        {
+          "route": "forms/inputs/date-time-picker",
+          "title": "DateTimePicker",
+          "summary": "Combined date + time picker with optional timezone in one popover.",
+          "icon": "bi-calendar-event",
+          "docs": "docs/web-mojo/forms/inputs/DateTimePicker.md"
         },
         {
           "route": "forms/inputs/multi-select",

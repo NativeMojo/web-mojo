@@ -1,0 +1,15 @@
+{
+    "name": "DateTimePicker",
+    "area": "forms/inputs",
+    "route": "forms/inputs/date-time-picker",
+    "title": "DateTimePicker",
+    "summary": "Combined date + time picker with optional timezone in one popover.",
+    "docs": "docs/web-mojo/forms/inputs/DateTimePicker.md",
+    "tags": ["form", "input", "date", "time", "timezone", "datetime"],
+    "page": "DateTimePickerExample.js",
+    "menu": {
+        "section": "Form Inputs",
+        "icon": "bi-calendar-event",
+        "order": 36
+    }
+}

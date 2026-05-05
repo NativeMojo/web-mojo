@@ -148,5 +148,102 @@ module.exports = async function (testContext) {
         expect(wd[0].toLowerCase()).toMatch(/^mon/);
       });
     });
+
+    describe('time parsers / formatters', () => {
+      const { parseTime, formatTime, addMinutes, compareTime, parseDateTime, formatDateTime } = dateFns;
+
+      it('parses HH:MM 24h', () => {
+        expect(parseTime('14:30')).toEqual({ hours: 14, minutes: 30 });
+        expect(parseTime('09:05')).toEqual({ hours: 9, minutes: 5 });
+        expect(parseTime('00:00')).toEqual({ hours: 0, minutes: 0 });
+      });
+
+      it('parses 12h with am/pm', () => {
+        expect(parseTime('2:30 pm')).toEqual({ hours: 14, minutes: 30 });
+        expect(parseTime('12:00 AM')).toEqual({ hours: 0, minutes: 0 });
+        expect(parseTime('12:00 PM')).toEqual({ hours: 12, minutes: 0 });
+        expect(parseTime('11:59 PM')).toEqual({ hours: 23, minutes: 59 });
+      });
+
+      it('returns null for invalid time', () => {
+        expect(parseTime('')).toBeNull();
+        expect(parseTime('25:00')).toBeNull();
+        expect(parseTime('14:99')).toBeNull();
+        expect(parseTime('not a time')).toBeNull();
+      });
+
+      it('strips trailing TZ token', () => {
+        expect(parseTime('14:30 America/New_York')).toEqual({ hours: 14, minutes: 30 });
+      });
+
+      it('formats time in 24h and 12h', () => {
+        const t = { hours: 14, minutes: 30 };
+        expect(formatTime(t, '24h')).toBe('14:30');
+        expect(formatTime(t, '12h')).toBe('2:30 PM');
+        expect(formatTime({ hours: 0, minutes: 0 }, '12h')).toBe('12:00 AM');
+        expect(formatTime({ hours: 12, minutes: 0 }, '12h')).toBe('12:00 PM');
+      });
+
+      it('addMinutes wraps within 24h', () => {
+        expect(addMinutes({ hours: 23, minutes: 59 }, 1)).toEqual({ hours: 0, minutes: 0 });
+        expect(addMinutes({ hours: 0, minutes: 0 }, -1)).toEqual({ hours: 23, minutes: 59 });
+        expect(addMinutes({ hours: 9, minutes: 0 }, 30)).toEqual({ hours: 9, minutes: 30 });
+      });
+
+      it('compareTime', () => {
+        expect(compareTime({ hours: 9, minutes: 0 }, { hours: 17, minutes: 0 })).toBe(-1);
+        expect(compareTime({ hours: 17, minutes: 0 }, { hours: 9, minutes: 0 })).toBe(1);
+        expect(compareTime({ hours: 9, minutes: 0 }, { hours: 9, minutes: 0 })).toBe(0);
+      });
+
+      it('parses datetime with optional timezone', () => {
+        expect(parseDateTime('2026-05-04 14:30')).toEqual({
+          date: { y: 2026, m: 5, d: 4 },
+          time: { hours: 14, minutes: 30 },
+          timezone: null,
+        });
+        expect(parseDateTime('2026-05-04 14:30 America/New_York')).toEqual({
+          date: { y: 2026, m: 5, d: 4 },
+          time: { hours: 14, minutes: 30 },
+          timezone: 'America/New_York',
+        });
+        // ISO with T separator, no offset
+        expect(parseDateTime('2026-05-04T14:30')).toEqual({
+          date: { y: 2026, m: 5, d: 4 },
+          time: { hours: 14, minutes: 30 },
+          timezone: null,
+        });
+      });
+
+      it('parses ISO 8601 with offset', () => {
+        expect(parseDateTime('2026-05-04T14:30:00-07:00')).toEqual({
+          date: { y: 2026, m: 5, d: 4 },
+          time: { hours: 14, minutes: 30 },
+          timezone: '-07:00',
+        });
+        expect(parseDateTime('2026-05-04T14:30:00Z')).toEqual({
+          date: { y: 2026, m: 5, d: 4 },
+          time: { hours: 14, minutes: 30 },
+          timezone: '+00:00',
+        });
+        expect(parseDateTime('2026-05-04T14:30:00+05:30')).toEqual({
+          date: { y: 2026, m: 5, d: 4 },
+          time: { hours: 14, minutes: 30 },
+          timezone: '+05:30',
+        });
+      });
+
+      it('formatDateTime stringifies canonical form', () => {
+        expect(formatDateTime({
+          date: { y: 2026, m: 5, d: 4 },
+          time: { hours: 14, minutes: 30 },
+        })).toBe('2026-05-04 14:30');
+        expect(formatDateTime({
+          date: { y: 2026, m: 5, d: 4 },
+          time: { hours: 14, minutes: 30 },
+          timezone: 'America/New_York',
+        })).toBe('2026-05-04 14:30 America/New_York');
+      });
+    });
   });
 };

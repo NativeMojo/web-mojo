@@ -10,7 +10,7 @@ import applyFileDropMixin from '@core/mixins/FileDropMixin.js';
 import MOJOUtils from '@core/utils/MOJOUtils.js';
 import { FormPlugins } from '@core/forms/FormPlugins.js';
 
-import { TagInput, CollectionSelect, CollectionMultiSelect, DatePicker, DateRangePicker, ComboInput, ComboBox } from './inputs/index.js';
+import { TagInput, CollectionSelect, CollectionMultiSelect, DatePicker, DateRangePicker, TimePicker, DateTimePicker, ComboInput, ComboBox } from './inputs/index.js';
 import MultiSelectDropdown from './inputs/MultiSelectDropdown.js';
 
 class FormView extends View {
@@ -223,6 +223,8 @@ class FormView extends View {
     this.initializeCollectionMultiSelects();
     this.initializeDatePickers();
     this.initializeDateRangePickers();
+    this.initializeTimePickers();
+    this.initializeDateTimePickers();
     this.initializePasswordFields();
   }
 
@@ -258,6 +260,8 @@ class FormView extends View {
     this.initializeCollectionMultiSelects();
     this.initializeDatePickers();
     this.initializeDateRangePickers();
+    this.initializeTimePickers();
+    this.initializeDateTimePickers();
     this.initializeComboInputs();
 
     // Give plugins a chance to initialize fields (autocomplete, masks, etc.)
@@ -671,6 +675,66 @@ class FormView extends View {
 
       } catch (error) {
         // DateRangePicker initialization failed
+      }
+    });
+  }
+
+  /**
+   * Initialize TimePicker components
+   */
+  initializeTimePickers() {
+    const placeholders = this.element.querySelectorAll('[data-field-type="timepicker"]');
+
+    placeholders.forEach(placeholder => {
+      try {
+        const fieldName = placeholder.getAttribute('data-field-name');
+        const configData = placeholder.getAttribute('data-field-config');
+        const config = JSON.parse(configData);
+
+        const timePicker = new TimePicker({
+          ...config,
+          containerId: null
+        });
+
+        timePicker.render(true, placeholder);
+        this.customComponents.set(fieldName, timePicker);
+
+        timePicker.on('change', (data) => {
+          this.handleFieldChange(fieldName, data.value);
+        });
+
+      } catch (error) {
+        // TimePicker initialization failed
+      }
+    });
+  }
+
+  /**
+   * Initialize DateTimePicker components
+   */
+  initializeDateTimePickers() {
+    const placeholders = this.element.querySelectorAll('[data-field-type="datetimepicker"]');
+
+    placeholders.forEach(placeholder => {
+      try {
+        const fieldName = placeholder.getAttribute('data-field-name');
+        const configData = placeholder.getAttribute('data-field-config');
+        const config = JSON.parse(configData);
+
+        const dtPicker = new DateTimePicker({
+          ...config,
+          containerId: null
+        });
+
+        dtPicker.render(true, placeholder);
+        this.customComponents.set(fieldName, dtPicker);
+
+        dtPicker.on('change', (data) => {
+          this.handleFieldChange(fieldName, data.value);
+        });
+
+      } catch (error) {
+        // DateTimePicker initialization failed
       }
     });
   }

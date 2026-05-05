@@ -2,10 +2,10 @@
     "name": "DateTimeSuite",
     "area": "forms/inputs",
     "route": "forms/inputs/date-time-suite",
-    "title": "Date & Time Suite",
-    "summary": "Full DatePicker / DateRangePicker showcase — day/month/year precision, ranges, presets, constraints, inline, custom formats.",
+    "title": "Date & Time Pickers — Overview",
+    "summary": "Landing page for all four date/time pickers — one preview each, Show config / Show form data buttons, links to dedicated example pages.",
     "docs": "docs/web-mojo/forms/inputs/DatePicker.md",
-    "tags": ["form", "input", "date", "calendar", "range", "showcase"],
+    "tags": ["form", "input", "date", "time", "datetime", "timezone", "overview"],
     "page": "DateTimeSuiteExample.js",
     "menu": {
         "section": "Form Inputs",
