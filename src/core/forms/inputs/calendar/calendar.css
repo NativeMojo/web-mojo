@@ -276,8 +276,28 @@
   border-radius: var(--mojo-cal-radius-sm);
 }
 
-.mojo-calendar-cell:not(.mojo-calendar-cell-blank):not(.mojo-calendar-cell-disabled):hover .mojo-calendar-cell-inner {
+/* Hover only paints the inner pill on cells that aren't already part of a range
+   or an anchor. Otherwise the gray hover would sit on top of the blue range fill
+   and read as an off-color blob. */
+.mojo-calendar-cell:not(.mojo-calendar-cell-blank)
+                  :not(.mojo-calendar-cell-disabled)
+                  :not(.mojo-calendar-cell-in-range)
+                  :not(.mojo-calendar-cell-in-preview)
+                  :not(.mojo-calendar-cell-anchor):hover .mojo-calendar-cell-inner {
   background: var(--bs-secondary-bg);
+}
+
+/* For day-grid cells that ARE in-range, the hover deepens the blue tint slightly
+   instead of swapping to gray — keeps the range visually continuous. */
+.mojo-calendar-grid-day .mojo-calendar-cell-in-range:not(.mojo-calendar-cell-anchor):hover::before,
+.mojo-calendar-grid-day .mojo-calendar-cell-in-preview:not(.mojo-calendar-cell-anchor):hover::before {
+  background: var(--mojo-cal-range-fill-hover);
+}
+.mojo-calendar-grid-month .mojo-calendar-cell-in-range:not(.mojo-calendar-cell-anchor):hover::before,
+.mojo-calendar-grid-month .mojo-calendar-cell-in-preview:not(.mojo-calendar-cell-anchor):hover::before,
+.mojo-calendar-grid-year .mojo-calendar-cell-in-range:not(.mojo-calendar-cell-anchor):hover::before,
+.mojo-calendar-grid-year .mojo-calendar-cell-in-preview:not(.mojo-calendar-cell-anchor):hover::before {
+  background: var(--mojo-cal-range-fill-hover);
 }
 
 /* Today */
