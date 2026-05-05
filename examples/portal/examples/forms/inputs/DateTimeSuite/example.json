@@ -1,0 +1,15 @@
+{
+    "name": "DateTimeSuite",
+    "area": "forms/inputs",
+    "route": "forms/inputs/date-time-suite",
+    "title": "Date & Time Suite",
+    "summary": "Full DatePicker / DateRangePicker showcase — day/month/year precision, ranges, presets, constraints, inline, custom formats.",
+    "docs": "docs/web-mojo/forms/inputs/DatePicker.md",
+    "tags": ["form", "input", "date", "calendar", "range", "showcase"],
+    "page": "DateTimeSuiteExample.js",
+    "menu": {
+        "section": "Form Inputs",
+        "icon": "bi-calendar-week",
+        "order": 25
+    }
+}

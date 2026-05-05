@@ -205,6 +205,7 @@ const TOPIC_TAXONOMY = [
                     'forms/inputs/tag-input',
                     'forms/inputs/date-picker',
                     'forms/inputs/date-range-picker',
+                    'forms/inputs/date-time-suite',
                     'forms/inputs/multi-select',
                     'forms/inputs/combo-input',
                     'forms/inputs/collection-select',

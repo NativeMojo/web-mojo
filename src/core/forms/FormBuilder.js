@@ -797,8 +797,20 @@ class FormBuilder {
       case 'datepicker':
         fieldHTML = this.renderDatePickerField(field);
         break;
+      case 'monthpicker':
+        fieldHTML = this.renderDatePickerField({ ...field, precision: 'month' });
+        break;
+      case 'yearpicker':
+        fieldHTML = this.renderDatePickerField({ ...field, precision: 'year' });
+        break;
       case 'daterange':
         fieldHTML = this.renderDateRangeField(field);
+        break;
+      case 'monthrange':
+        fieldHTML = this.renderDateRangeField({ ...field, precision: 'month' });
+        break;
+      case 'yearrange':
+        fieldHTML = this.renderDateRangeField({ ...field, precision: 'year' });
         break;
       case 'checklistdropdown':
         fieldHTML = this.renderChecklistDropdownField(field);

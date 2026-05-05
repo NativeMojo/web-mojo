@@ -1,6 +1,6 @@
 {
   "generatedAt": "static",
-  "pageCount": 80,
+  "pageCount": 81,
   "pages": [
     {
       "name": "ActiveGroup",
@@ -1329,6 +1329,30 @@
       "group": "Specialized Inputs"
     },
     {
+      "name": "DateTimeSuite",
+      "area": "forms/inputs",
+      "route": "forms/inputs/date-time-suite",
+      "title": "Date & Time Suite",
+      "summary": "Full DatePicker / DateRangePicker showcase — day/month/year precision, ranges, presets, constraints, inline, custom formats.",
+      "docs": "docs/web-mojo/forms/inputs/DatePicker.md",
+      "tags": [
+        "form",
+        "input",
+        "date",
+        "calendar",
+        "range",
+        "showcase"
+      ],
+      "page": "DateTimeSuiteExample.js",
+      "modulePath": "./examples/forms/inputs/DateTimeSuite/DateTimeSuiteExample.js",
+      "sourcePath": "examples/portal/examples/forms/inputs/DateTimeSuite/DateTimeSuiteExample.js",
+      "section": "Form Inputs",
+      "icon": "bi-calendar-week",
+      "order": 25,
+      "topic": "forms",
+      "group": "Specialized Inputs"
+    },
+    {
       "name": "ImageField",
       "area": "forms/inputs",
       "route": "forms/inputs/image-field",
@@ -2347,6 +2371,13 @@
               "docs": "docs/web-mojo/forms/inputs/DateRangePicker.md"
             },
             {
+              "route": "forms/inputs/date-time-suite",
+              "title": "Date & Time Suite",
+              "summary": "Full DatePicker / DateRangePicker showcase — day/month/year precision, ranges, presets, constraints, inline, custom formats.",
+              "icon": "bi-calendar-week",
+              "docs": "docs/web-mojo/forms/inputs/DatePicker.md"
+            },
+            {
               "route": "forms/inputs/multi-select",
               "title": "MultiSelectDropdown",
               "summary": "Compact multi-select dropdown with optional search and select-all.",
@@ -3092,6 +3123,13 @@
           "title": "DatePicker",
           "summary": "Calendar date picker with min/max, inline mode, and custom formats.",
           "icon": "bi-calendar-date",
+          "docs": "docs/web-mojo/forms/inputs/DatePicker.md"
+        },
+        {
+          "route": "forms/inputs/date-time-suite",
+          "title": "Date & Time Suite",
+          "summary": "Full DatePicker / DateRangePicker showcase — day/month/year precision, ranges, presets, constraints, inline, custom formats.",
+          "icon": "bi-calendar-week",
           "docs": "docs/web-mojo/forms/inputs/DatePicker.md"
         },
         {
