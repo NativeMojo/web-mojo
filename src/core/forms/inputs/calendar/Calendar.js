@@ -185,8 +185,7 @@ class Calendar extends View {
   }
 
   _dayHeadLabel(year, month) {
-    const names = monthNames(this.locale, 'long');
-    return `${names[month - 1]} <span class="mojo-calendar-year">${year}</span>`;
+    return { kind: 'day', year, month };
   }
 
   _buildWeekdayHeader() {
@@ -384,16 +383,27 @@ class Calendar extends View {
 
   // ── Header (label + nav) ──────────────────────────────────────
 
-  _buildHead(labelHTML, level, showPrev, showNext) {
+  _buildHead(labelSpec, level, showPrev, showNext) {
     const head = document.createElement('div');
     head.className = 'mojo-calendar-head';
 
     const label = document.createElement('button');
     label.type = 'button';
     label.className = 'mojo-calendar-head-label';
-    label.innerHTML = labelHTML;
     label.dataset.level = level;
     label.dataset.action = 'zoom-out';
+
+    if (typeof labelSpec === 'string') {
+      label.textContent = labelSpec;
+    } else if (labelSpec && labelSpec.kind === 'day') {
+      const names = monthNames(this.locale, 'long');
+      label.appendChild(document.createTextNode(`${names[labelSpec.month - 1]} `));
+      const yearSpan = document.createElement('span');
+      yearSpan.className = 'mojo-calendar-year';
+      yearSpan.textContent = String(labelSpec.year);
+      label.appendChild(yearSpan);
+    }
+
     head.appendChild(label);
 
     const nav = document.createElement('div');

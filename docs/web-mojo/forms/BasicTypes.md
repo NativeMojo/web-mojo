@@ -1111,6 +1111,10 @@ fields: [
 
 ---
 
+> **Framework-grade month and year pickers** — for month or year selection with consistent cross-browser UI, prefer the framework's `monthpicker`, `yearpicker`, `monthrange`, and `yearrange` field types over the native HTML5 `<input type="month">`. They render a polished dropdown calendar, support presets, and are documented in [DatePicker.md](./inputs/DatePicker.md) and [DateRangePicker.md](./inputs/DateRangePicker.md).
+
+---
+
 ## Other Input Types
 
 ### `color` - Color Picker
