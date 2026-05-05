@@ -260,6 +260,13 @@ class SimpleModuleLoader {
             'DateTimePicker': {
                 path: path.join(this.sourceRoot, 'core/forms/inputs/DateTimePicker.js'),
                 dependencies: ['View', 'Calendar', 'CalendarPopover', 'TimePicker', 'TimezoneSelect', 'dateFns']
+            },
+            'TableView': {
+                // We only test pure helper methods that don't touch DOM /
+                // dependencies — register with no deps so the class loads
+                // even though imports like ListView resolve to undefined.
+                path: path.join(this.sourceRoot, 'core/views/table/TableView.js'),
+                dependencies: ['View']
             }
         };
 
@@ -339,7 +346,11 @@ class SimpleModuleLoader {
             if (globalName) {
                 return `const ${importName} = global.${globalName};\n`;
             }
-            return `// Import (unresolved): ${match}\n`;
+            // Declare unresolved import as a stub class so module-load doesn't
+            // ReferenceError when names appear in `class X extends Y` etc.
+            // The stub is callable and extendable; tests must register a
+            // proper module if they invoke methods on it.
+            return `const ${importName} = class { constructor(){} }; // (unresolved import stub)\n`;
         });
 
         // Named imports: `import { a, b as c } from 'path';`
@@ -396,7 +407,8 @@ class SimpleModuleLoader {
                 ComboBox: 'ComboBox',
                 TimezoneSelect: 'TimezoneSelect',
                 TimePicker: 'TimePicker',
-                DateTimePicker: 'DateTimePicker'
+                DateTimePicker: 'DateTimePicker',
+                TableView: 'TableView'
             };
             if (fallbackReturns[moduleName]) {
                 code += `\nreturn ${fallbackReturns[moduleName]};`;
@@ -436,7 +448,8 @@ class SimpleModuleLoader {
             { test: /\/ComboBox(\.js)?$/, name: 'ComboBox' },
             { test: /TimezoneSelect(\.js)?$/, name: 'TimezoneSelect' },
             { test: /\/TimePicker(\.js)?$/, name: 'TimePicker' },
-            { test: /\/DateTimePicker(\.js)?$/, name: 'DateTimePicker' }
+            { test: /\/DateTimePicker(\.js)?$/, name: 'DateTimePicker' },
+            { test: /\/TableView(\.js)?$/, name: 'TableView' }
         ];
         for (const rule of rules) {
             if (rule.test.test(importPath)) return rule.name;

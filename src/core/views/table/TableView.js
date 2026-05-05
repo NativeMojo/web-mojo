@@ -2233,13 +2233,20 @@ class TableView extends ListView {
    * Build filter dialog field configuration
    */
   buildFilterDialogField(filterConfig, currentValue, filterKey) {
+    // Strip `name` and `value` from the filter config before spreading —
+    // they are routing concerns that belong to the filter registration
+    // (resolved via `f.name || f.key` in getAllAvailableFilters), not to
+    // the dialog field. If they leak through, the form field's `name`
+    // gets clobbered and `extractFilterValue` reads `undefined` from
+    // `formResult.filter_value`. (See planning/issues for the
+    // additionalFilters regression that surfaced this.)
+    const { name: _filterName, value: _filterValue, ...rest } = filterConfig;
     const field = {
+      ...rest,
       name: 'filter_value',
-      label: filterConfig.label,
+      label: rest.label,
       value: currentValue,
-      ...filterConfig,
-      // Ensure placeholder is passed through (support both casings)
-      placeholder: filterConfig.placeholder || filterConfig.placeHolder
+      placeholder: rest.placeholder || rest.placeHolder
     };
 
     // Set current value appropriately based on filter type
