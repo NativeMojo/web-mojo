@@ -67,6 +67,8 @@ class MetricsChart extends View {
         this.showDateRange = options.showDateRange !== false;
         this.showTypeSwitch = options.showTypeSwitch !== false;
         this.showRefresh = options.showRefresh !== false;
+        this.showStats = options.showStats !== false;
+        this.showDataTable = options.showDataTable !== false;
 
         // When true (default), render granularity as an inline Yahoo-style
         // toggle (`MIN HR DAY WK MO YR`) instead of a section in the gear
@@ -85,6 +87,8 @@ class MetricsChart extends View {
             this.showTypeSwitch = options.showTypeSwitch === true;
             this.showRefresh = options.showRefresh === true;
             this.inlineGranularity = false;
+            this.showStats = options.showStats === true;
+            this.showDataTable = options.showDataTable === true;
         }
 
         // Pass-through to the series API so KPI-style displays elsewhere
@@ -176,6 +180,8 @@ class MetricsChart extends View {
                         ${this._renderGranularityToggleHtml()}
                         ${this._renderGearMenuHtml()}
                         ${this._renderTypeSwitchHtml()}
+                        ${this._renderStatsButtonHtml()}
+                        ${this._renderDataTableButtonHtml()}
                         ${this._renderRefreshButtonHtml()}
                     </div>
                 </div>`;
@@ -312,6 +318,22 @@ class MetricsChart extends View {
             </div>`;
     }
 
+    _renderStatsButtonHtml() {
+        if (!this.showStats) return '';
+        return `
+            <div class="btn-group btn-group-sm ms-2" role="group">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-action="show-stats" title="Stats"><i class="bi bi-info-circle"></i></button>
+            </div>`;
+    }
+
+    _renderDataTableButtonHtml() {
+        if (!this.showDataTable) return '';
+        return `
+            <div class="btn-group btn-group-sm ms-1" role="group">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-action="show-data-table" title="View data"><i class="bi bi-table"></i></button>
+            </div>`;
+    }
+
     // ── escape helpers (for the few HTML-string interpolation points) ─
 
     _escHtml(s) {
@@ -391,6 +413,151 @@ class MetricsChart extends View {
 
     async onActionRetryFetch() {
         return this.fetchData();
+    }
+
+    async onActionShowStats() {
+        const cleanTitle = this.chartTitle
+            || (typeof this.title === 'string' ? this.title.replace(/<[^>]*>/g, '').trim() : '')
+            || 'Stats';
+        return Modal.dialog({
+            title: cleanTitle ? `${cleanTitle} — Stats` : 'Stats',
+            body: this._renderStatsHtml(),
+            size: 'md',
+            buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }]
+        });
+    }
+
+    async onActionShowDataTable() {
+        const datasets = Array.isArray(this._lastChartData?.datasets) ? this._lastChartData.datasets : null;
+        const labels = Array.isArray(this._lastChartData?.labels) ? this._lastChartData.labels : null;
+        if (!datasets || datasets.length === 0 || !labels || labels.length === 0) {
+            return Modal.alert({ title: this.chartTitle || this.title || 'Data', message: 'No data to display.' });
+        }
+        const rowCount = labels.length;
+        const headers = ['Label', ...datasets.map(d => d.label || '')];
+
+        const rows = [];
+        for (let i = 0; i < rowCount; i++) {
+            const row = { label: labels[i], values: datasets.map(d => d.data?.[i] ?? null) };
+            rows.push(row);
+        }
+
+        const tableHtml = `
+            <div class="table-responsive" style="max-height: 60vh;">
+                <table class="table table-sm table-striped mb-0 mc-data-table">
+                    <thead class="sticky-top bg-body">
+                        <tr>${headers.map((h, i) => `<th${i === 0 ? '' : ' class="text-end"'}>${this._escHtml(h)}</th>`).join('')}</tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(r => `
+                            <tr>
+                                <td>${this._escHtml(r.label)}</td>
+                                ${r.values.map(v => `<td class="text-end">${this._formatStatNumber(typeof v === 'number' ? v : (parseFloat(v) || 0))}</td>`).join('')}
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+
+        const result = await Modal.dialog({
+            title: this.chartTitle || (typeof this.title === 'string' ? this.title.replace(/<[^>]*>/g, '').trim() : 'Chart data') || 'Chart data',
+            body: tableHtml,
+            size: 'lg',
+            buttons: [
+                { text: 'Download CSV', class: 'btn-outline-primary', value: 'csv' },
+                { text: 'Close', class: 'btn-secondary', dismiss: true }
+            ]
+        });
+        if (result === 'csv') this._downloadCsv(rows, headers);
+    }
+
+    _computeStats() {
+        const datasets = Array.isArray(this._lastChartData?.datasets) ? this._lastChartData.datasets : null;
+        if (!datasets || datasets.length === 0) return null;
+        return datasets.map(d => {
+            const values = (d.data || []).map(v => typeof v === 'number' ? v : (parseFloat(v) || 0));
+            if (values.length === 0) return { label: d.label || '', count: 0 };
+            const sorted = [...values].sort((a, b) => a - b);
+            const sum = values.reduce((a, b) => a + b, 0);
+            const mid = Math.floor(sorted.length / 2);
+            const median = sorted.length % 2 === 0
+                ? (sorted[mid - 1] + sorted[mid]) / 2
+                : sorted[mid];
+            return {
+                label: d.label || '',
+                count: values.length,
+                sum,
+                avg: sum / values.length,
+                median,
+                min: sorted[0],
+                max: sorted[sorted.length - 1],
+                latest: values[values.length - 1]
+            };
+        });
+    }
+
+    _formatStatNumber(n) {
+        if (n === null || n === undefined || Number.isNaN(n)) return '–';
+        const fmt = this.tooltip?.y;
+        if (fmt && this.chart?.dataFormatter) {
+            return this.chart.dataFormatter.pipe(n, fmt);
+        }
+        if (Number.isInteger(n)) return n.toLocaleString();
+        return Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+    }
+
+    _renderStatsHtml() {
+        const stats = this._computeStats();
+        if (!stats || stats.length === 0) return '<div class="text-muted small">No data</div>';
+        const cols = ['Latest', 'Min', 'Max', 'Avg', 'Median', 'Sum'];
+        const fmt = (n) => this._formatStatNumber(n);
+        return `
+            <div class="table-responsive">
+                <table class="table table-sm mb-0 mc-stats-table">
+                    <thead>
+                        <tr>
+                            <th class="fw-normal text-muted">Series</th>
+                            ${cols.map(c => `<th class="text-end fw-normal text-muted">${c}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${stats.map(s => `
+                            <tr>
+                                <td class="pe-3">${this._escHtml(s.label)}</td>
+                                <td class="text-end">${fmt(s.latest)}</td>
+                                <td class="text-end">${fmt(s.min)}</td>
+                                <td class="text-end">${fmt(s.max)}</td>
+                                <td class="text-end">${fmt(s.avg)}</td>
+                                <td class="text-end">${fmt(s.median)}</td>
+                                <td class="text-end">${fmt(s.sum)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+    }
+
+    _downloadCsv(rows, headers) {
+        const escapeCell = (v) => {
+            const s = String(v ?? '');
+            return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+        };
+        const lines = [headers.map(escapeCell).join(',')];
+        for (const r of rows) {
+            lines.push([escapeCell(r.label), ...r.values.map(v => escapeCell(typeof v === 'number' ? v : (parseFloat(v) || 0)))].join(','));
+        }
+        const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const today = new Date().toISOString().slice(0, 10);
+        const titleStr = this.chartTitle || (typeof this.title === 'string' ? this.title.replace(/<[^>]*>/g, '').trim() : '') || 'chart-data';
+        const slug = String(titleStr).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'chart-data';
+        a.href = url;
+        a.download = `${slug}-${today}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 
     async onActionRefreshChart(event, element) {
@@ -518,6 +685,9 @@ class MetricsChart extends View {
     }
 
     async setData(chartData) {
+        // Cache the processed payload so stats / data-table can read it
+        // without reaching into the SeriesChart child's private state.
+        this._lastChartData = chartData;
         if (this.chart) this.chart.setData(chartData);
     }
 

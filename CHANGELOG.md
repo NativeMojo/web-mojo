@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### MetricsChart / MetricsMiniChartWidget — stats modal + data table modal
+
+- **Added:** stats modal — click the `bi-info-circle` toolbar button to
+  open a modal showing `Latest / Min / Max / Avg / Median / Sum / Count`
+  over the chart's currently-loaded data. `MetricsChart` shows one row
+  per dataset; `MetricsMiniChartWidget` shows a single set since it's
+  one series.
+- **Added:** data table modal — click the `bi-table` toolbar button to
+  open a modal with the chart's labels and values as a sortable table,
+  plus a "Download CSV" button. Filename is `<title-slug>-<YYYY-MM-DD>.csv`.
+- Both opt-out via `showStats: false` / `showDataTable: false`. Default
+  on; auto-suppressed in `MetricsChart`'s `compactHeader` mode.
+- `MetricsChart` now caches the most recent processed payload
+  (`{labels, datasets}`) on `_lastChartData` so the stats and data-table
+  modals can read it without reaching into the SeriesChart child's
+  private state.
+
 ### MetricsChart — inline granularity toggle
 
 - **Changed:** granularity selection moved out of the gear dropdown into

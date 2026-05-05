@@ -73,6 +73,8 @@ export default class MetricsMiniChartWidget extends View {
     this.settingsKey = options.settingsKey || null;
     this.showDateRange = options.showDateRange || false;
     this.showRefresh = options.showRefresh !== false;
+    this.showStats = options.showStats !== false;
+    this.showDataTable = options.showDataTable !== false;
 
     // Trending options/state
     this.showTrending = !!options.showTrending;
@@ -323,17 +325,29 @@ export default class MetricsMiniChartWidget extends View {
   }
 
   async getTemplate() {
+    const anyAction = this.showRefresh || this.showSettings || this.showStats || this.showDataTable;
+    const colorStyle = this.textColor ? `color: ${this.textColor} !important` : '';
     return `
       <div class="card h-100 shadow-sm" style="${this.cardStyle}; position: relative;">
-        ${this.showRefresh || this.showSettings ? `
+        ${anyAction ? `
         <div class="metrics-chart-actions">
+          ${this.showStats ? `
+            <button class="btn btn-link p-0 text-muted metrics-stats-btn" type="button" data-action="show-stats" title="Stats" style="${colorStyle}">
+              <i class="bi bi-info-circle"></i>
+            </button>
+          ` : ''}
+          ${this.showDataTable ? `
+            <button class="btn btn-link p-0 text-muted metrics-data-btn" type="button" data-action="show-data-table" title="View data" style="${colorStyle}">
+              <i class="bi bi-table"></i>
+            </button>
+          ` : ''}
           ${this.showRefresh ? `
-            <button class="btn btn-link p-0 text-muted metrics-refresh-btn" type="button" data-action="refresh-chart" style="${this.textColor ? `color: ${this.textColor} !important` : ''}">
+            <button class="btn btn-link p-0 text-muted metrics-refresh-btn" type="button" data-action="refresh-chart" style="${colorStyle}">
               <i class="bi bi-arrow-clockwise"></i>
             </button>
           ` : ''}
           ${this.showSettings ? `
-            <button class="btn btn-link p-0 text-muted metrics-settings-btn" type="button" data-action="toggle-settings" style="${this.textColor ? `color: ${this.textColor} !important` : ''}">
+            <button class="btn btn-link p-0 text-muted metrics-settings-btn" type="button" data-action="toggle-settings" style="${colorStyle}">
               <i class="bi bi-gear-fill"></i>
             </button>
           ` : ''}
@@ -352,6 +366,151 @@ export default class MetricsMiniChartWidget extends View {
       this.chart.off('metrics:loaded', this.onChildMetricsLoaded, this);
     }
     await super.onBeforeDestroy();
+  }
+
+  /**
+   * Compute simple summary statistics over the chart's currently-loaded
+   * data series. Returns null when there's nothing to summarize.
+   */
+  _computeStats() {
+    const raw = Array.isArray(this.chart?.data) ? this.chart.data : null;
+    if (!raw || raw.length === 0) return null;
+    const values = raw.map(v => (typeof v === 'object' && v !== null) ? v.value : v)
+                      .map(v => typeof v === 'number' ? v : (parseFloat(v) || 0));
+    const sorted = [...values].sort((a, b) => a - b);
+    const sum = values.reduce((a, b) => a + b, 0);
+    const mid = Math.floor(sorted.length / 2);
+    const median = sorted.length % 2 === 0
+      ? (sorted[mid - 1] + sorted[mid]) / 2
+      : sorted[mid];
+    return {
+      count: values.length,
+      sum,
+      avg: sum / values.length,
+      median,
+      min: sorted[0],
+      max: sorted[sorted.length - 1],
+      latest: values[values.length - 1]
+    };
+  }
+
+  _formatStatNumber(n) {
+    if (n === null || n === undefined || Number.isNaN(n)) return '–';
+    // Match the chart's tooltip formatter when available; otherwise toLocaleString.
+    if (this.chartOptions.valueFormat && this.chart?.dataFormatter) {
+      return this.chart.dataFormatter.pipe(n, this.chartOptions.valueFormat);
+    }
+    if (typeof this.chartOptions.tooltipFormatter === 'function') {
+      return this.chartOptions.tooltipFormatter(n);
+    }
+    if (Number.isInteger(n)) return n.toLocaleString();
+    return Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  }
+
+  _renderStatsHtml() {
+    const s = this._computeStats();
+    if (!s) return '<div class="text-muted small">No data</div>';
+    const rows = [
+      ['Latest', s.latest],
+      ['Min',    s.min],
+      ['Max',    s.max],
+      ['Avg',    s.avg],
+      ['Median', s.median],
+      ['Sum',    s.sum],
+      ['Count',  s.count]
+    ];
+    return `
+      <table class="table table-sm mb-0 mc-stats-table">
+        <tbody>
+          ${rows.map(([k, v]) => `
+            <tr>
+              <th class="fw-normal text-muted pe-3 py-1">${k}</th>
+              <td class="text-end py-1">${k === 'Count' ? v : this._formatStatNumber(v)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  async onActionShowStats() {
+    return Modal.dialog({
+      title: this.title ? `${this.title.replace(/<[^>]*>/g, '').trim()} — Stats` : 'Stats',
+      body: this._renderStatsHtml(),
+      size: 'sm',
+      buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }]
+    });
+  }
+
+  async onActionShowDataTable() {
+    const labels = Array.isArray(this.chart?.labels) ? this.chart.labels : null;
+    const values = Array.isArray(this.chart?.data) ? this.chart.data : null;
+    if (!values || values.length === 0) {
+      return Modal.alert({ title: this.title || 'Data', message: 'No data to display.' });
+    }
+    const rows = values.map((v, i) => ({
+      label: labels?.[i] ?? String(i + 1),
+      value: (typeof v === 'object' && v !== null) ? v.value : v
+    }));
+
+    const tableHtml = `
+      <div class="table-responsive" style="max-height: 60vh;">
+        <table class="table table-sm table-striped mb-0 mc-data-table">
+          <thead class="sticky-top bg-body">
+            <tr>
+              <th>Label</th>
+              <th class="text-end">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => `
+              <tr>
+                <td>${this._escHtml(r.label)}</td>
+                <td class="text-end">${this._formatStatNumber(typeof r.value === 'number' ? r.value : parseFloat(r.value) || 0)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+
+    const result = await Modal.dialog({
+      title: this.title || 'Chart data',
+      body: tableHtml,
+      size: 'md',
+      buttons: [
+        { text: 'Download CSV', class: 'btn-outline-primary', value: 'csv' },
+        { text: 'Close', class: 'btn-secondary', dismiss: true }
+      ]
+    });
+    if (result === 'csv') this._downloadCsv(rows);
+  }
+
+  _downloadCsv(rows) {
+    const escapeCell = (v) => {
+      const s = String(v ?? '');
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = ['Label,Value'];
+    for (const r of rows) {
+      const v = typeof r.value === 'number' ? r.value : (parseFloat(r.value) || 0);
+      lines.push(`${escapeCell(r.label)},${escapeCell(v)}`);
+    }
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const today = new Date().toISOString().slice(0, 10);
+    const slug = String(this.title || 'chart-data').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'chart-data';
+    a.href = url;
+    a.download = `${slug}-${today}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  _escHtml(s) {
+    return String(s ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   /**
