@@ -250,10 +250,21 @@ class MetricsChart extends View {
             return `<button type="button" class="${cls}" data-action="granularity-changed" data-value="${this._escAttr(opt.value)}" title="${this._escAttr(opt.label || opt.value)}">${this._escHtml(label)}</button>`;
         }).join('');
 
+        const selectOptions = this.granularityOptions.map(opt => {
+            const sel = opt.value === this.granularity ? ' selected' : '';
+            return `<option value="${this._escAttr(opt.value)}"${sel}>${this._escHtml(opt.label || opt.value)}</option>`;
+        }).join('');
+
+        // Container query: when the chart container is narrower than 360px the
+        // inline button toggle hides and a compact native <select> takes over.
+        // Same data-action wiring; the framework's data-action handler fires
+        // on `change` events for form controls, so the existing handler picks
+        // up the new source.
         return `
             <style>
-                .mojo-metrics-chart .mc-gran-toggle { display:inline-flex; align-items:center; gap:0.05rem; margin-right:0.5rem; }
-                .mojo-metrics-chart .mc-gran-btn {
+                .mojo-metrics-chart-container { container-type: inline-size; }
+                .mojo-metrics-chart-container .mc-gran-toggle { display:inline-flex; align-items:center; gap:0.05rem; margin-right:0.5rem; }
+                .mojo-metrics-chart-container .mc-gran-btn {
                     background: transparent;
                     border: 0;
                     color: var(--bs-secondary-color);
@@ -266,10 +277,22 @@ class MetricsChart extends View {
                     cursor: pointer;
                     transition: color 0.15s, background-color 0.15s;
                 }
-                .mojo-metrics-chart .mc-gran-btn:hover { color: var(--bs-body-color); background: var(--bs-secondary-bg); }
-                .mojo-metrics-chart .mc-gran-btn.mc-selected { color: var(--bs-body-color); font-weight: 600; background: var(--bs-secondary-bg); }
+                .mojo-metrics-chart-container .mc-gran-btn:hover { color: var(--bs-body-color); background: var(--bs-secondary-bg); }
+                .mojo-metrics-chart-container .mc-gran-btn.mc-selected { color: var(--bs-body-color); font-weight: 600; background: var(--bs-secondary-bg); }
+                .mojo-metrics-chart-container .mc-gran-select { display: none; }
+                @container (max-width: 360px) {
+                    .mojo-metrics-chart-container .mc-gran-toggle { display: none; }
+                    .mojo-metrics-chart-container .mc-gran-select {
+                        display: inline-block;
+                        width: auto;
+                        font-size: 0.75rem;
+                        padding: 0.1rem 1.5rem 0.1rem 0.4rem;
+                        margin-right: 0.5rem;
+                    }
+                }
             </style>
-            <div class="mc-gran-toggle" role="group" aria-label="Granularity">${buttons}</div>`;
+            <div class="mc-gran-toggle" role="group" aria-label="Granularity">${buttons}</div>
+            <select class="form-select form-select-sm mc-gran-select" data-action="granularity-changed" aria-label="Granularity">${selectOptions}</select>`;
     }
 
     _renderTypeSwitchHtml() {
@@ -307,11 +330,15 @@ class MetricsChart extends View {
     // ── action handlers ───────────────────────────────────────────────
 
     async onActionGranularityChanged(event, element) {
-        const v = element.dataset?.value;
+        // Source can be a <button> (data-value) or a <select> (element.value).
+        const v = element.tagName === 'SELECT' ? element.value : element.dataset?.value;
         if (!v || v === this.granularity) return;
         this.granularity = v;
         this.setQuickRange(MetricsChart.GRANULARITY_DEFAULTS[v] || '24h');
         this._updateDropdownActive('granularity-changed', v, 'value');
+        // Keep the dropdown <select> in sync when the change came from a button.
+        const sel = this.element?.querySelector('select.mc-gran-select');
+        if (sel && sel.value !== v) sel.value = v;
         // Update the child chart's xLabelFormat to match the new granularity
         // unless the caller pinned `tooltip.x`.
         if (this.chart && (!this.tooltip || this.tooltip.x === undefined)) {

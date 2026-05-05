@@ -9,6 +9,12 @@
   Quiet styling — text-only buttons with subtle hover/active background,
   selected option in `--bs-body-color` and bold weight. One click instead
   of two.
+- **Responsive:** below 360px container width (CSS container query), the
+  inline toggle automatically swaps to a compact native `<select>`. Same
+  granularity values, same action wiring; the two surfaces stay in sync.
+  Zero JS — the breakpoint is container-aware (not viewport-aware), so
+  charts in narrow dashboard columns get the dropdown even on a wide
+  screen.
 - The gear menu now contains only the Date Range section (quick ranges +
   Custom Range dialog). It's auto-suppressed when no items remain.
 - **Added:** `inlineGranularity` option (default `true`). Pass `false`
