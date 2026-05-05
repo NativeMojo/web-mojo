@@ -97,6 +97,10 @@
   padding: 16px;
   box-shadow: var(--mojo-cal-shadow);
   font-family: inherit;
+  /* Day grid is naturally ~280px from the 7-column layout. Month/year tile
+     grids are 4-column and will collapse to whatever the trigger width is
+     unless we set a sensible floor. */
+  min-width: 260px;
 }
 .mojo-calendar-popover.is-open { display: block; }
 
@@ -219,8 +223,8 @@
 
 .mojo-calendar-grid { display: grid; gap: 0; }
 .mojo-calendar-grid-day { grid-template-columns: repeat(7, 1fr); }
-.mojo-calendar-grid-month { grid-template-columns: repeat(4, 1fr); }
-.mojo-calendar-grid-year { grid-template-columns: repeat(4, 1fr); }
+.mojo-calendar-grid-month { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.mojo-calendar-grid-year { grid-template-columns: repeat(4, 1fr); gap: 6px; }
 
 .mojo-calendar-weekday {
   font-size: 10px;
@@ -248,7 +252,7 @@
 }
 .mojo-calendar-grid-month .mojo-calendar-cell,
 .mojo-calendar-grid-year .mojo-calendar-cell {
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 5 / 3;
   border-radius: var(--mojo-cal-radius-sm);
 }
 .mojo-calendar-cell-blank { cursor: default; }
