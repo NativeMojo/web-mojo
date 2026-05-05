@@ -1067,7 +1067,13 @@ class SeriesChart extends View {
     _formatXLabel(label) {
         if (label === null || label === undefined) return '';
         if (this.xLabelFormatter) return this.xLabelFormatter(label);
-        if (this.xLabelFormat) return this.dataFormatter.pipe(label, this.xLabelFormat);
+        if (this.xLabelFormat) {
+            const formatted = this.dataFormatter.pipe(label, this.xLabelFormat);
+            // Pre-formatted backend labels (e.g. "16:00") are not parseable as
+            // timestamps and the formatter returns ''. Fall back to the raw
+            // label rather than dropping it from the axis.
+            if (formatted) return formatted;
+        }
         return String(label);
     }
 

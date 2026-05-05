@@ -66,6 +66,7 @@ class MetricsChart extends View {
         this.showGranularity = options.showGranularity !== false;
         this.showDateRange = options.showDateRange !== false;
         this.showTypeSwitch = options.showTypeSwitch !== false;
+        this.showRefresh = options.showRefresh !== false;
 
         // Compact header — when true, drop the gear menu entirely and
         // show only a small inline range toggle. Used by dashboard panels
@@ -77,6 +78,7 @@ class MetricsChart extends View {
             // is also off by default since dashboard charts pin a type.
             this.showGranularity = false;
             this.showTypeSwitch = options.showTypeSwitch === true;
+            this.showRefresh = options.showRefresh === true;
         }
 
         // Pass-through to the series API so KPI-style displays elsewhere
@@ -167,6 +169,7 @@ class MetricsChart extends View {
                     <div class="btn-toolbar" role="toolbar">
                         ${this._renderGearMenuHtml()}
                         ${this._renderTypeSwitchHtml()}
+                        ${this._renderRefreshButtonHtml()}
                     </div>
                 </div>`;
         return `
@@ -235,6 +238,14 @@ class MetricsChart extends View {
             <div class="btn-group btn-group-sm" role="group">
                 <button type="button" class="btn ${lineActive} btn-sm" data-action="set-chart-type" data-type="line" title="Line"><i class="bi bi-graph-up"></i></button>
                 <button type="button" class="btn ${barActive} btn-sm"  data-action="set-chart-type" data-type="bar"  title="Bar"><i class="bi bi-bar-chart"></i></button>
+            </div>`;
+    }
+
+    _renderRefreshButtonHtml() {
+        if (!this.showRefresh) return '';
+        return `
+            <div class="btn-group btn-group-sm ms-2 refresh-btn" role="group">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-action="refresh-chart" title="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
             </div>`;
     }
 
@@ -313,6 +324,16 @@ class MetricsChart extends View {
 
     async onActionRetryFetch() {
         return this.fetchData();
+    }
+
+    async onActionRefreshChart(event, element) {
+        const icon = element?.querySelector('i');
+        icon?.classList.add('spin');
+        try {
+            await this.fetchData();
+        } finally {
+            icon?.classList.remove('spin');
+        }
     }
 
     _updateDropdownActive(action, activeValue, dataKey) {

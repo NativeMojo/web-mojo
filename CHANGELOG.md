@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### MetricsChart / SeriesChart — refresh button + x-axis label fallback
+
+- **Added:** `MetricsChart` now renders a refresh button in its header
+  toolbar by default, matching the convention from `MetricsMiniChartWidget`.
+  Opt-out with `showRefresh: false`. Suppressed automatically in
+  `compactHeader` mode.
+- **Fixed:** `SeriesChart` x-axis labels disappeared when the backend
+  returned pre-formatted strings (e.g. `"16:00"`) and `xLabelFormat`
+  was set to a `time:`/`date:` pipe. The DataFormatter pipe couldn't
+  parse the already-formatted string, returned empty, and every tick
+  rendered blank. `_formatXLabel` now falls back to the raw label when
+  the formatter produces an empty result. This unblocks the
+  `MetricsChart` defaults for `granularity: 'hours'` and `'minutes'`.
+
 ### MiniChart — bar charts baseline at zero
 
 - **Fixed:** bar charts now baseline at zero so minimum-value bars are
