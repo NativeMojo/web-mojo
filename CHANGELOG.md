@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### MetricsChart — collapsible secondary toolbar
+
+- **Changed:** the secondary toolbar (gear, type switch, stats, data, refresh)
+  now collapses behind a kebab `⋯` trigger and slides into view on hover or
+  focus-within of the cluster. The granularity toggle stays visible since
+  it's the primary control. Reduces visual clutter when the chart isn't
+  being interacted with.
+- The kebab uses `btn-link` styling (transparent border / background) so
+  it reads as a quiet trigger rather than a button.
+- Pure CSS — `max-width` + `opacity` transition, no JS. Touch-friendly:
+  tapping the kebab focuses it, `:focus-within` reveals the cluster, and
+  the cluster stays visible while focus remains inside (e.g. while a
+  modal opened from a cluster button is interacted with).
+
 ### MetricsChart / MetricsMiniChartWidget — stats modal + data table modal
 
 - **Added:** stats modal — click the `bi-info-circle` toolbar button to

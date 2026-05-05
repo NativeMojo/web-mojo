@@ -1655,6 +1655,39 @@
     box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
 }
 
+/* MetricsChart toolbar — collapsing secondary cluster.
+ * The kebab "⋯" trigger is always visible. The extras (gear, type, stats,
+ * data, refresh) sit in a width:0 container to the LEFT of the kebab and
+ * slide in when the user hovers / tabs / taps the cluster. The kebab has
+ * no side-effect on click; tapping it just focuses it which fires
+ * :focus-within and reveals the extras (touch-friendly). */
+.mojo-metrics-chart-container .mc-secondary-actions {
+    display: inline-flex;
+    align-items: center;
+}
+
+.mojo-metrics-chart-container .mc-secondary-extras {
+    display: inline-flex;
+    align-items: center;
+    max-width: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-width 0.25s ease, opacity 0.18s ease;
+}
+
+.mojo-metrics-chart-container .mc-secondary-actions:hover .mc-secondary-extras,
+.mojo-metrics-chart-container .mc-secondary-actions:focus-within .mc-secondary-extras {
+    max-width: 480px; /* enough to hold gear + type-switch + stats + data + refresh */
+    opacity: 1;
+}
+
+/* Active-state polish: tinted kebab so the user knows the cluster is open. */
+.mojo-metrics-chart-container .mc-secondary-actions:hover .mc-actions-trigger,
+.mojo-metrics-chart-container .mc-secondary-actions:focus-within .mc-actions-trigger {
+    background-color: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
+}
+
 /* Floating actions container - top right corner */
 .metrics-chart-actions {
     position: absolute;

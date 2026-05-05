@@ -178,11 +178,16 @@ class MetricsChart extends View {
                     <h5 class="mb-0 mojo-metrics-chart-title">{{{title}}}</h5>
                     <div class="btn-toolbar align-items-center" role="toolbar">
                         ${this._renderGranularityToggleHtml()}
-                        ${this._renderGearMenuHtml()}
-                        ${this._renderTypeSwitchHtml()}
-                        ${this._renderStatsButtonHtml()}
-                        ${this._renderDataTableButtonHtml()}
-                        ${this._renderRefreshButtonHtml()}
+                        <div class="mc-secondary-actions">
+                            <div class="mc-secondary-extras">
+                                ${this._renderGearMenuHtml()}
+                                ${this._renderTypeSwitchHtml()}
+                                ${this._renderStatsButtonHtml()}
+                                ${this._renderDataTableButtonHtml()}
+                                ${this._renderRefreshButtonHtml()}
+                            </div>
+                            <button type="button" class="btn btn-link btn-sm mc-actions-trigger ms-1 px-2" tabindex="0" aria-label="More actions" title="More actions"><i class="bi bi-three-dots-vertical"></i></button>
+                        </div>
                     </div>
                 </div>`;
         return `
