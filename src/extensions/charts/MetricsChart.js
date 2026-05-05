@@ -280,13 +280,11 @@ class MetricsChart extends View {
                 .mojo-metrics-chart-container .mc-gran-btn:hover { color: var(--bs-body-color); background: var(--bs-secondary-bg); }
                 .mojo-metrics-chart-container .mc-gran-btn.mc-selected { color: var(--bs-body-color); font-weight: 600; background: var(--bs-secondary-bg); }
                 .mojo-metrics-chart-container .mc-gran-select { display: none; }
-                @container (max-width: 360px) {
+                @container (max-width: 560px) {
                     .mojo-metrics-chart-container .mc-gran-toggle { display: none; }
                     .mojo-metrics-chart-container .mc-gran-select {
                         display: inline-block;
                         width: auto;
-                        font-size: 0.75rem;
-                        padding: 0.1rem 1.5rem 0.1rem 0.4rem;
                         margin-right: 0.5rem;
                     }
                 }
