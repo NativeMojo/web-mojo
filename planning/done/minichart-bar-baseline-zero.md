@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Type | request (bug fix) |
-| Status | planned |
+| Status | done |
 | Date | 2026-05-04 |
 | Priority | high |
 
@@ -256,3 +256,38 @@ This contradicts user expectation for a bar chart. `renderLine()` is fine — a 
 - `docs/web-mojo/extensions/MetricsMiniChartWidget.md` — document the new `softMax` / `softMin` widget options.
 - `CHANGELOG.md` — Fixed entry (bar baseline + empty-state); Added entry (`softMax` / `softMin`).
 - No new doc files; no index updates.
+
+## Resolution
+
+### What was implemented
+
+- Rewrote `MiniChart.renderBar()` with bar-specific y-axis math, decoupled from `calculateBounds()`. Three layers of caller control: hard crop (`minValue`/`maxValue`), soft target (`softMin`/`softMax`), or auto (always include zero). Out-of-range values are clamped to the drawable area.
+- Added two new opt-in options: `softMin` and `softMax`. Default `undefined`. Bar charts only.
+- Added an empty-state dashed baseline (`<line class="mini-chart-empty-baseline">`) when every value is zero AND no caller bounds are set, so the card communicates "alive, just zero" instead of looking broken.
+- Wired `softMin` / `softMax` through `MetricsMiniChartWidget`'s `chartOptions` pass-through.
+- 8 new unit-test cases covering the original bug, hard-crop opt-out, all-zero empty-state, all-zero with `softMax` (suppresses empty-state), constant non-zero, out-of-range clamping, `softMax` normalize, and `softMax` expand-on-exceed.
+
+### Files changed
+
+- `src/extensions/charts/MiniChart.js` — `softMin`/`softMax` options + rewritten `renderBar()`.
+- `src/extensions/charts/MetricsMiniChartWidget.js` — pass-through in `chartOptions`.
+- `test/unit/MiniChart.bar-baseline.test.js` — 8 new test cases (new file).
+- `docs/web-mojo/extensions/Charts.md` — new "Bar-chart bounds" subsection.
+- `docs/web-mojo/extensions/MetricsMiniChartWidget.md` — `softMin`/`softMax` documented.
+- `CHANGELOG.md` — "Unreleased" entry.
+
+### Tests run
+
+- `npm run test:unit` — 667/667 passed (including all 8 new bar-baseline cases).
+- `npm test` (via test-runner agent) — full suite. Unit suite all green; integration and build suite failures all pre-existing infrastructure issues (Vite alias resolution, missing dist artifacts), identical before and after this commit.
+- Browser preview verification — rendered all five visual cases (original bug data, constant non-zero, all-zero, `softMax` normalize, `softMax` expand). All bars visible and proportions match expected ratios. No console errors.
+
+### Agent findings
+
+- **test-runner**: 667/667 unit tests passed. Integration/build failures are pre-existing, not introduced by this commit.
+- **docs-updater**: All three doc surfaces (Charts.md, MetricsMiniChartWidget.md, CHANGELOG.md) accurate and complete. KPITile/KPIStrip don't need updates — KPITile hardcodes `chartType: 'line'`, so the bar-only options are irrelevant.
+- **security-review**: Clean. No new injection vectors. SVG attribute construction uses standard `setAttribute()`; all values are computed numerics or hardcoded literals; `this.color` trust level unchanged from before.
+
+### Commit
+
+`dcc1570` — MiniChart: bar charts baseline at zero so minimum-value bars stay visible.
