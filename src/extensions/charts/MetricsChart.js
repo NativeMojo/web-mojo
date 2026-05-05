@@ -68,6 +68,11 @@ class MetricsChart extends View {
         this.showTypeSwitch = options.showTypeSwitch !== false;
         this.showRefresh = options.showRefresh !== false;
 
+        // When true (default), render granularity as an inline Yahoo-style
+        // toggle (`MIN HR DAY WK MO YR`) instead of a section in the gear
+        // dropdown. Set false to keep granularity inside the gear menu.
+        this.inlineGranularity = options.inlineGranularity !== false;
+
         // Compact header — when true, drop the gear menu entirely and
         // show only a small inline range toggle. Used by dashboard panels
         // where the chart is sub-titled by the surrounding card and we
@@ -79,6 +84,7 @@ class MetricsChart extends View {
             this.showGranularity = false;
             this.showTypeSwitch = options.showTypeSwitch === true;
             this.showRefresh = options.showRefresh === true;
+            this.inlineGranularity = false;
         }
 
         // Pass-through to the series API so KPI-style displays elsewhere
@@ -94,11 +100,11 @@ class MetricsChart extends View {
         }
 
         this.granularityOptions = options.granularityOptions || [
-            { value: 'minutes', label: 'Minutes' },
-            { value: 'hours',   label: 'Hours' },
-            { value: 'days',    label: 'Days' },
-            { value: 'weeks',   label: 'Weeks' },
-            { value: 'months',  label: 'Months' }
+            { value: 'minutes', label: 'Minutes', shortLabel: 'MIN' },
+            { value: 'hours',   label: 'Hours',   shortLabel: 'HR' },
+            { value: 'days',    label: 'Days',    shortLabel: 'DAY' },
+            { value: 'weeks',   label: 'Weeks',   shortLabel: 'WK' },
+            { value: 'months',  label: 'Months',  shortLabel: 'MO' }
         ];
 
         this.quickRanges = options.quickRanges || [
@@ -166,7 +172,8 @@ class MetricsChart extends View {
         const headerHtml = this.compactHeader ? '' : `
                 <div class="d-flex justify-content-between align-items-center mb-2 mojo-metrics-chart-header">
                     <h5 class="mb-0 mojo-metrics-chart-title">{{{title}}}</h5>
-                    <div class="btn-toolbar" role="toolbar">
+                    <div class="btn-toolbar align-items-center" role="toolbar">
+                        ${this._renderGranularityToggleHtml()}
                         ${this._renderGearMenuHtml()}
                         ${this._renderTypeSwitchHtml()}
                         ${this._renderRefreshButtonHtml()}
@@ -199,7 +206,9 @@ class MetricsChart extends View {
 
     _renderGearMenuHtml() {
         const items = [];
-        if (this.showGranularity) {
+        // Granularity is shown inline when inlineGranularity is true (default);
+        // skip the dropdown section in that case to avoid duplication.
+        if (this.showGranularity && !this.inlineGranularity) {
             items.push('<li><h6 class="dropdown-header">Granularity</h6></li>');
             for (const opt of this.granularityOptions) {
                 const sel = opt.value === this.granularity ? ' mc-selected' : '';
@@ -228,6 +237,39 @@ class MetricsChart extends View {
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end mc-gear-menu">${items.join('')}</ul>
             </div>`;
+    }
+
+    _renderGranularityToggleHtml() {
+        if (!this.inlineGranularity || !this.showGranularity) return '';
+        if (!this.granularityOptions?.length) return '';
+
+        const buttons = this.granularityOptions.map(opt => {
+            const isActive = opt.value === this.granularity;
+            const cls = isActive ? 'mc-gran-btn mc-selected' : 'mc-gran-btn';
+            const label = opt.shortLabel || opt.label || opt.value;
+            return `<button type="button" class="${cls}" data-action="granularity-changed" data-value="${this._escAttr(opt.value)}" title="${this._escAttr(opt.label || opt.value)}">${this._escHtml(label)}</button>`;
+        }).join('');
+
+        return `
+            <style>
+                .mojo-metrics-chart .mc-gran-toggle { display:inline-flex; align-items:center; gap:0.05rem; margin-right:0.5rem; }
+                .mojo-metrics-chart .mc-gran-btn {
+                    background: transparent;
+                    border: 0;
+                    color: var(--bs-secondary-color);
+                    font-size: 0.7rem;
+                    font-weight: 500;
+                    letter-spacing: 0.03em;
+                    padding: 0.2rem 0.45rem;
+                    border-radius: 0.25rem;
+                    line-height: 1;
+                    cursor: pointer;
+                    transition: color 0.15s, background-color 0.15s;
+                }
+                .mojo-metrics-chart .mc-gran-btn:hover { color: var(--bs-body-color); background: var(--bs-secondary-bg); }
+                .mojo-metrics-chart .mc-gran-btn.mc-selected { color: var(--bs-body-color); font-weight: 600; background: var(--bs-secondary-bg); }
+            </style>
+            <div class="mc-gran-toggle" role="group" aria-label="Granularity">${buttons}</div>`;
     }
 
     _renderTypeSwitchHtml() {

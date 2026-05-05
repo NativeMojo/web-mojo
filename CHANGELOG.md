@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### MetricsChart — inline granularity toggle
+
+- **Changed:** granularity selection moved out of the gear dropdown into
+  an inline Yahoo-style toggle (`MIN HR DAY WK MO`) in the chart header.
+  Quiet styling — text-only buttons with subtle hover/active background,
+  selected option in `--bs-body-color` and bold weight. One click instead
+  of two.
+- The gear menu now contains only the Date Range section (quick ranges +
+  Custom Range dialog). It's auto-suppressed when no items remain.
+- **Added:** `inlineGranularity` option (default `true`). Pass `false`
+  to revert to the old gear-menu-only flow.
+- **Added:** `shortLabel` field on `granularityOptions`. Defaults:
+  `minutes → MIN`, `hours → HR`, `days → DAY`, `weeks → WK`, `months → MO`.
+  Override per option to customize.
+- `compactHeader` mode disables the inline toggle automatically (it was
+  already suppressing the rest of the toolbar).
+
 ### MetricsChart / SeriesChart — refresh button + x-axis label fallback
 
 - **Added:** `MetricsChart` now renders a refresh button in its header
