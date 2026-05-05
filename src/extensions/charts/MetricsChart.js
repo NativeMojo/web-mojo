@@ -513,10 +513,12 @@ class MetricsChart extends View {
 
     _renderStatsHtml() {
         const stats = this._computeStats();
-        if (!stats || stats.length === 0) return '<div class="text-muted small">No data</div>';
+        const header = this._renderStatsHeader(stats?.[0]?.count);
+        if (!stats || stats.length === 0) return `${header}<div class="text-muted small">No data</div>`;
         const cols = ['Latest', 'Min', 'Max', 'Avg', 'Median', 'Sum'];
         const fmt = (n) => this._formatStatNumber(n);
         return `
+            ${header}
             <div class="table-responsive">
                 <table class="table table-sm mb-0 mc-stats-table">
                     <thead>
@@ -540,6 +542,14 @@ class MetricsChart extends View {
                     </tbody>
                 </table>
             </div>`;
+    }
+
+    _renderStatsHeader(count) {
+        const map = { minutes: 'Per minute', hours: 'Hourly', days: 'Daily', weeks: 'Weekly', months: 'Monthly', years: 'Yearly' };
+        const gran = this.granularity || 'days';
+        const label = map[gran] || gran;
+        const points = count ?? (Array.isArray(this._lastChartData?.labels) ? this._lastChartData.labels.length : 0);
+        return `<div class="text-muted small mb-2">${label} · ${points} ${points === 1 ? 'point' : 'points'}</div>`;
     }
 
     _downloadCsv(rows, headers) {

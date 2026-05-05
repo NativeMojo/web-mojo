@@ -409,7 +409,8 @@ export default class MetricsMiniChartWidget extends View {
 
   _renderStatsHtml() {
     const s = this._computeStats();
-    if (!s) return '<div class="text-muted small">No data</div>';
+    const header = this._renderStatsHeader(s?.count);
+    if (!s) return `${header}<div class="text-muted small">No data</div>`;
     const rows = [
       ['Latest', s.latest],
       ['Min',    s.min],
@@ -420,6 +421,7 @@ export default class MetricsMiniChartWidget extends View {
       ['Count',  s.count]
     ];
     return `
+      ${header}
       <table class="table table-sm mb-0 mc-stats-table">
         <tbody>
           ${rows.map(([k, v]) => `
@@ -430,6 +432,14 @@ export default class MetricsMiniChartWidget extends View {
           `).join('')}
         </tbody>
       </table>`;
+  }
+
+  _renderStatsHeader(count) {
+    const map = { minutes: 'Per minute', hours: 'Hourly', days: 'Daily', weeks: 'Weekly', months: 'Monthly', years: 'Yearly' };
+    const gran = this.chartOptions.granularity || 'days';
+    const label = map[gran] || gran;
+    const points = count ?? (Array.isArray(this.chart?.data) ? this.chart.data.length : 0);
+    return `<div class="text-muted small mb-2">${label} · ${points} ${points === 1 ? 'point' : 'points'}</div>`;
   }
 
   async onActionShowStats() {

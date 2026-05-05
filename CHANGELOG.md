@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### MetricsChart / MetricsMiniChartWidget — granularity in stats header
+
+- The stats modal now shows the granularity and bucket count above the
+  table (e.g. "Hourly · 24 points"). Makes it clear what window the
+  stats are computed over without having to look back at the chart.
+
 ### MetricsChart — collapsible secondary toolbar
 
 - **Changed:** the secondary toolbar (gear, type switch, stats, data, refresh)
