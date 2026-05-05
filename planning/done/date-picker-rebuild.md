@@ -3,9 +3,10 @@
 | Field | Value |
 |-------|-------|
 | Type | request |
-| Status | planned (mockups locked) |
+| Status | resolved |
 | Date | 2026-05-04 |
 | Priority | high |
+| Resolved | 2026-05-04 |
 
 ## Description
 
@@ -322,3 +323,61 @@ Time picker takes Apple's column-wheel pattern adapted to desktop: hours/minutes
 - Locale packs beyond `Intl`.
 - Migration of existing downstream consumer field configs (they keep working).
 - General-purpose date library — `src/core/utils/dateFns.js` is narrow to picker needs only.
+
+
+---
+
+## Resolution
+
+**Status:** Resolved — 2026-05-04 (Phase 1 + Phase 2 shipped as MVP; Phase 3 + 4 deferred to follow-up)
+
+**Commits:**
+- `3dfac51` — DatePicker rebuild: in-house Calendar engine, day/month/year precision, range cross-page
+- `c5baba8` — DatePicker: replace innerHTML in calendar header with textContent (security follow-up)
+
+**What was implemented (Phase 1 + 2):**
+
+1. **Calendar engine** — internal `Calendar` view that renders day-grid / month-grid / year-grid based on `precision`. Same engine drives all three precisions. Drill-down zoom: header click moves up one level (day → month → year). Cross-page anchor persistence in range mode. Backwards selection auto-swaps. Min/max constraints, disabled dates, keyboard nav (PageUp/PageDown/Escape).
+2. **CalendarPopover** — portal-based popover wrapper that mounts to `document.body` so popovers escape clipping containers (modals, overflow:hidden tables). Click-outside-to-dismiss, scroll-aware repositioning.
+3. **PresetSidebar** — Stripe-style preset list with sensible defaults per precision (Day: Today / Last 7 days / Last 30 days / etc; Month: This month / YTD / Last 12 months; Year: This year / Last 5 years).
+4. **DatePicker rewrite** on `Calendar`. New `precision` option. Backwards compatible — existing `datepicker` configs keep working with `precision` defaulting to `day`.
+5. **DateRangePicker rewrite** on `Calendar`. Two-month side-by-side default at day precision. New `presets` and `precision` options. Cross-page anchor persistence.
+6. **Field-type aliases** — `monthpicker`, `yearpicker`, `monthrange`, `yearrange` resolve to the same classes with `precision` pre-set.
+7. **`dateFns` utility** — narrow date math (parse / format / compare / span counts) at all three precisions. Local-date components only (no UTC offset, DST-safe).
+8. **calendar.css** — Bootstrap-tokened styling. Light + dark from day one per `.claude/rules/theming.md`.
+9. **FormView + FormBuilder** — pass `precision`, `presets`, `months`, `inline` through `data-field-config`. Easepick-specific helper text removed.
+10. **Easepick CDN dependency removed.** No more `cdn.jsdelivr.net/npm/@easepick` runtime fetch.
+
+**Files changed:**
+- New: `src/core/forms/inputs/calendar/{Calendar,CalendarPopover,PresetSidebar}.js`, `src/core/forms/inputs/calendar/calendar.css`, `src/core/utils/dateFns.js`
+- Rewrite: `src/core/forms/inputs/{DatePicker,DateRangePicker}.js`
+- Modified: `src/core/forms/inputs/index.js` (aliases), `src/core/forms/FormBuilder.js` (placeholder render), `src/index.js` (CSS bundle import)
+- Tests: `test/unit/{dateFns,Calendar,DatePicker,DateRangePicker}.test.js`, `test/build/no-easepick.test.js`, `test/test-runner.js` (added `not.toBeNull/Defined/Undefined` matchers per `.claude/rules/testing.md`), `test/utils/simple-module-loader.js` (registered new modules)
+- Docs: `docs/web-mojo/forms/inputs/{DatePicker,DateRangePicker,README}.md`, `docs/web-mojo/forms/{README,FieldTypes,BasicTypes}.md`, `CHANGELOG.md`
+- Examples: `examples/portal/examples/forms/inputs/DatePicker/DatePickerExample.js`
+- Mockups: `planning/mockups/datepicker/{index.html,mock.css,mock.js,README.md}`
+
+**Tests run:**
+- `node test/test-runner.js` — 614/621 unit tests pass; the 7 failing tests are all pre-existing on main (Modal.alert eyebrow tests for an unimplemented feature, MetricsChart slugs format change). All Calendar / DatePicker / DateRangePicker / dateFns tests pass.
+- `npm run build` — clean
+- `npm run build:lib` — clean
+- `npm run lint` — no new errors (16 pre-existing in WebApp.js)
+- `test/build/no-easepick.test.js` — confirms src/, docs/, dist/ all clean of Easepick references
+
+**Validation:**
+- Live verification at `http://localhost:3000/examples/portal/?page=forms/inputs/date-picker` — popover opens correctly anchored to trigger, day click commits with displayFormat-rendered text in trigger and YYYY-MM-DD in hidden input.
+- Live verification at `?page=forms/inputs/date-range-picker` — two-month layout, range fill across week rows, chevron anchors, cross-page anchor persistence (clicked Apr 15 → paged to May/June → clicked Jun 12 → range "Apr 15, 2026 to Jun 12, 2026" committed correctly).
+- Both light and dark themes render cleanly.
+- Mockups under `planning/mockups/datepicker/` cover all 9 surfaces with selected variants recorded.
+
+**Agent findings:**
+- **test-runner:** 614/621 pass. No new failures. All target suites (Calendar, DatePicker, DateRangePicker, dateFns) green.
+- **docs-updater:** Confirmed no remaining Easepick mentions in `docs/`. Added a pointer note from `BasicTypes.md` (HTML5 `<input type="month">`) to the framework-grade `monthpicker` component.
+- **security-review:** One info-level finding — `innerHTML` sink in calendar header label. Addressed in commit `c5baba8` by switching to `createElement` + `textContent`. Otherwise clean: no XSS risk (other surfaces use `textContent` or escape via `_attr()` for HTML attributes), no prototype pollution, no DoS, CDN dependency removal verified.
+
+**Out of scope (deferred to follow-up):**
+- Phase 3 — TimePicker, TimezoneSelect, DateTimePicker (with TZ slot per locked mockup)
+- Phase 4 docs/examples for the time/datetime components
+- Type-ahead natural-language input ("next friday")
+- Locale packs beyond what `Intl` already provides
+
