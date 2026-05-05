@@ -47,6 +47,10 @@ export default {
 };
 
 // Input type registry for FormBuilder integration
+//
+// Precision aliases (`monthpicker`, `yearpicker`, `monthrange`, `yearrange`)
+// resolve to the same DatePicker / DateRangePicker classes with `precision`
+// pre-set on the options. createInput() handles that mapping.
 export const INPUT_TYPES = {
   tag: TagInput,
   tags: TagInput,
@@ -55,10 +59,21 @@ export const INPUT_TYPES = {
   'collection-multiselect': CollectionMultiSelect,
   multiselect: MultiSelectDropdown,
   datepicker: DatePicker,
+  monthpicker: DatePicker,
+  yearpicker: DatePicker,
   daterange: DateRangePicker,
+  monthrange: DateRangePicker,
+  yearrange: DateRangePicker,
   combo: ComboBox,
   combobox: ComboBox,
   autocomplete: ComboBox
+};
+
+const PRECISION_ALIASES = {
+  monthpicker: 'month',
+  yearpicker: 'year',
+  monthrange: 'month',
+  yearrange: 'year',
 };
 
 // Factory function for creating inputs by type
@@ -67,5 +82,7 @@ export function createInput(type, options = {}) {
   if (!InputClass) {
     throw new Error(`Unknown input type: ${type}`);
   }
-  return new InputClass(options);
+  const precision = PRECISION_ALIASES[type];
+  const opts = precision ? { precision, ...options, precision: options.precision || precision } : options;
+  return new InputClass(opts);
 }

@@ -2258,14 +2258,20 @@ class FormBuilder {
       name,
       label,
       value = '',
-      placeholder = 'Select date...',
+      precision = 'day',
+      placeholder,
       required = false,
       disabled = false,
       readonly = false,
       min = null,
       max = null,
-      format = 'YYYY-MM-DD',
-      displayFormat = 'MMM DD, YYYY',
+      format = null,
+      displayFormat = null,
+      disabledDates = [],
+      firstDay = 1,
+      lang = 'en-US',
+      autoApply = true,
+      inline = false,
       help = field.helpText || field.help || ''
     } = field;
 
@@ -2282,29 +2288,21 @@ class FormBuilder {
              data-field-config='${JSON.stringify({
                name,
                value: fieldValue,
+               precision,
                placeholder,
                min,
                max,
                format,
                displayFormat,
+               disabledDates,
+               firstDay,
+               lang,
+               autoApply,
+               inline,
                disabled,
                readonly,
                required
-             })}'>
-          <input type="date"
-                 id="${fieldId}"
-                 name="${name}"
-                 class="${this.options.inputClass}${error ? ' is-invalid' : ''}"
-                 value="${this.escapeHtml(fieldValue)}"
-                 placeholder="${this.escapeHtml(placeholder)}"
-                 ${min ? `min="${min}"` : ''}
-                 ${max ? `max="${max}"` : ''}
-                 ${disabled ? 'disabled' : ''}
-                 ${readonly ? 'readonly' : ''}
-                 ${required ? 'required' : ''}
-
-          <small class="form-text text-muted">This will be enhanced with Easepick DatePicker</small>
-        </div>
+             })}'></div>
         ${help ? `<div class="${this.options.helpClass}">${this.escapeHtml(help)}</div>` : ''}
         ${error ? `<div class="${this.options.errorClass}">${this.escapeHtml(error)}</div>` : ''}
       </div>
@@ -2325,16 +2323,21 @@ class FormBuilder {
       label,
       startDate = '',
       endDate = '',
-      placeholder = 'Select date range...',
+      precision = 'day',
+      placeholder,
       required = false,
       disabled = false,
       readonly = false,
       min = null,
       max = null,
-      format = 'YYYY-MM-DD',
-      displayFormat = 'MMM DD, YYYY',
+      format = null,
+      displayFormat = null,
       outputFormat = 'date',
-      separator = ' - ',
+      separator = ' – ',
+      months = null,
+      presets = null,
+      autoApply = true,
+      inline = false,
       help = field.helpText || field.help || ''
     } = field;
 
@@ -2358,6 +2361,7 @@ class FormBuilder {
                fieldName,
                startDate: startValue,
                endDate: endValue,
+               precision,
                placeholder,
                min,
                max,
@@ -2365,45 +2369,14 @@ class FormBuilder {
                displayFormat,
                outputFormat,
                separator,
+               months,
+               presets,
+               autoApply,
+               inline,
                disabled,
                readonly,
                required
-             })}'>
-          <div class="row g-2">
-            <div class="col">
-              <input type="date"
-                     id="${fieldId}_start"
-                     name="${name}_start"
-                     class="${this.options.inputClass}${error ? ' is-invalid' : ''}"
-                     value="${this.escapeHtml(startValue)}"
-                     placeholder="Start date..."
-                     ${min ? `min="${min}"` : ''}
-                     ${max ? `max="${max}"` : ''}
-                     ${disabled ? 'disabled' : ''}
-                     ${readonly ? 'readonly' : ''}
-                     ${required ? 'required' : ''}
-
-            </div>
-            <div class="col-auto d-flex align-items-center">
-              <span class="text-muted">${this.escapeHtml(separator.trim())}</span>
-            </div>
-            <div class="col">
-              <input type="date"
-                     id="${fieldId}_end"
-                     name="${name}_end"
-                     class="${this.options.inputClass}${error ? ' is-invalid' : ''}"
-                     value="${this.escapeHtml(endValue)}"
-                     placeholder="End date..."
-                     ${min ? `min="${min}"` : ''}
-                     ${max ? `max="${max}"` : ''}
-                     ${disabled ? 'disabled' : ''}
-                     ${readonly ? 'readonly' : ''}
-                     ${required ? 'required' : ''}
-
-            </div>
-          </div>
-          <small class="form-text text-muted">This will be enhanced with Easepick DateRangePicker</small>
-        </div>
+             })}'></div>
         ${help ? `<div class="${this.options.helpClass}">${this.escapeHtml(help)}</div>` : ''}
         ${error ? `<div class="${this.options.errorClass}">${this.escapeHtml(error)}</div>` : ''}
       </div>

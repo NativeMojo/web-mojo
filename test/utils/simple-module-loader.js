@@ -184,7 +184,7 @@ class SimpleModuleLoader {
             },
             'View': {
                 path: path.join(this.sourceRoot, 'core/View.js'),
-                dependencies: ['MOJOUtils', 'EventDelegate', 'MojoMustache']
+                dependencies: ['MOJOUtils', 'EventDelegate', 'MojoMustache', 'EventEmitter']
             },
             'Page': {
                 path: path.join(this.sourceRoot, 'core/Page.js'),
@@ -220,6 +220,30 @@ class SimpleModuleLoader {
             'Member': {
                 path: path.join(this.sourceRoot, 'core/models/Member.js'),
                 dependencies: ['Model', 'Collection']
+            },
+            'dateFns': {
+                path: path.join(this.sourceRoot, 'core/utils/dateFns.js'),
+                dependencies: []
+            },
+            'Calendar': {
+                path: path.join(this.sourceRoot, 'core/forms/inputs/calendar/Calendar.js'),
+                dependencies: ['View', 'dateFns']
+            },
+            'CalendarPopover': {
+                path: path.join(this.sourceRoot, 'core/forms/inputs/calendar/CalendarPopover.js'),
+                dependencies: []
+            },
+            'PresetSidebar': {
+                path: path.join(this.sourceRoot, 'core/forms/inputs/calendar/PresetSidebar.js'),
+                dependencies: ['View', 'dateFns']
+            },
+            'DatePicker': {
+                path: path.join(this.sourceRoot, 'core/forms/inputs/DatePicker.js'),
+                dependencies: ['View', 'Calendar', 'CalendarPopover', 'dateFns']
+            },
+            'DateRangePicker': {
+                path: path.join(this.sourceRoot, 'core/forms/inputs/DateRangePicker.js'),
+                dependencies: ['View', 'Calendar', 'CalendarPopover', 'PresetSidebar', 'dateFns']
             }
         };
 
@@ -341,7 +365,13 @@ class SimpleModuleLoader {
                 Model: 'Model',
                 Collection: 'Collection',
                 User: 'User',
-                Member: 'Member'
+                Member: 'Member',
+                dateFns: 'dateFns',
+                Calendar: 'Calendar',
+                CalendarPopover: 'CalendarPopover',
+                PresetSidebar: 'PresetSidebar',
+                DatePicker: 'DatePicker',
+                DateRangePicker: 'DateRangePicker'
             };
             if (fallbackReturns[moduleName]) {
                 code += `\nreturn ${fallbackReturns[moduleName]};`;
@@ -373,7 +403,11 @@ class SimpleModuleLoader {
             { test: /\/Dialog(\.js)?$/, name: 'Dialog' },
             { test: /\/Modal(\.js)?$/, name: 'Modal' },
             { test: /\/View(\.js)?$/, name: 'View' },
-            { test: /\/Page(\.js)?$/, name: 'Page' }
+            { test: /\/Page(\.js)?$/, name: 'Page' },
+            { test: /dateFns(\.js)?$/, name: 'dateFns' },
+            { test: /\/Calendar(\.js)?$/, name: 'Calendar' },
+            { test: /CalendarPopover(\.js)?$/, name: 'CalendarPopover' },
+            { test: /PresetSidebar(\.js)?$/, name: 'PresetSidebar' }
         ];
         for (const rule of rules) {
             if (rule.test.test(importPath)) return rule.name;

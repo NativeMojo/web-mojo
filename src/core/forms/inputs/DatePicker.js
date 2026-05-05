@@ -1,547 +1,310 @@
 /**
- * DatePicker - Enhanced date picker input with Easepick integration
- * Falls back to native HTML5 date input if Easepick is unavailable
- * 
- * Features:
- * - Dynamic CDN loading of Easepick
- * - Configurable date formats and constraints
- * - Keyboard navigation and accessibility
- * - Form integration with FormBuilder
- * - Graceful fallback to native date input
- * 
- * Example Usage:
- * ```javascript
- * const datePicker = new DatePicker({
- *   name: 'birth_date',
- *   value: '2023-01-15',
- *   format: 'YYYY-MM-DD',
- *   min: '1900-01-01',
- *   max: '2030-12-31',
- *   placeholder: 'Select date...'
- * });
- * ```
+ * DatePicker — single-value picker built on the in-house Calendar engine.
+ *
+ * Supports `precision: 'year' | 'month' | 'day'` (default 'day').
+ * No CDN dependency, no native HTML5 fallback branch — the Calendar engine
+ * handles every browser uniformly.
+ *
+ * Public option set:
+ *   name, value, format, displayFormat, min, max, placeholder, disabled,
+ *   readonly, required, inline, disabledDates, firstDay, lang, autoApply.
+ *
+ * New options:
+ *   precision           'year' | 'month' | 'day' (default 'day')
+ *
+ * Emits 'change' with { value, formatted, oldValue }.
  */
 
 import View from '@core/View.js';
+import Calendar from '@core/forms/inputs/calendar/Calendar.js';
+import CalendarPopover from '@core/forms/inputs/calendar/CalendarPopover.js';
+import {
+  parseByPrecision, formatByPrecision, formatForDisplay,
+} from '@core/utils/dateFns.js';
+
+const DEFAULT_DISPLAY_FORMAT = {
+  day: 'MMM DD, YYYY',
+  month: 'MMM YYYY',
+  year: 'YYYY',
+};
 
 class DatePicker extends View {
   constructor(options = {}) {
     const {
       name,
       value = '',
-      format = 'YYYY-MM-DD',
-      displayFormat = 'MMM DD, YYYY',
+      precision = 'day',
+      format = null,
+      displayFormat = null,
       min = null,
       max = null,
-      placeholder = 'Select date...',
+      placeholder = null,
       disabled = false,
       readonly = false,
       required = false,
       class: containerClass = '',
       inputClass = 'form-control',
-      autoApply = true,
       inline = false,
+      disabledDates = [],
+      firstDay = 1,
+      lang = 'en-US',
+      autoApply = true,
       ...viewOptions
     } = options;
 
     super({
       tagName: 'div',
-      className: `date-picker-view ${containerClass}`,
-      ...viewOptions
+      className: `mojo-date-picker mojo-date-picker-${precision} ${containerClass}`.trim(),
+      ...viewOptions,
     });
 
-    // Configuration
     this.name = name;
-    this.format = format;
-    this.displayFormat = displayFormat;
+    this.precision = precision;
+    this.format = format; // explicit format wins when set; else precision-default
+    this.displayFormat = displayFormat || DEFAULT_DISPLAY_FORMAT[precision] || DEFAULT_DISPLAY_FORMAT.day;
     this.min = min;
     this.max = max;
-    this.placeholder = placeholder;
+    this.placeholder = placeholder ?? this._defaultPlaceholder(precision);
     this.disabled = disabled;
     this.readonly = readonly;
     this.required = required;
     this.inputClass = inputClass;
-    this.autoApply = autoApply;
     this.inline = inline;
+    this.disabledDates = disabledDates;
+    this.firstDay = firstDay;
+    this.lang = lang;
+    this.autoApply = autoApply;
 
-    // State
-    this.currentValue = value;
-    this.picker = null;
-    this.useNative = false;
-    this.easepickLoaded = false;
+    this.currentValue = value || '';
 
-    // Check if Easepick is available
-    this.checkEasepickAvailability();
+    this._calendar = null;
+    this._popover = null;
   }
 
-  /**
-   * Check if Easepick is available and load if needed
-   */
-  async checkEasepickAvailability() {
-    if (typeof window !== 'undefined' && window.easepick) {
-      this.easepickLoaded = true;
-      return true;
-    }
-
-    // Try to load Easepick from CDN
-    try {
-      await this.loadEasepick();
-      this.easepickLoaded = true;
-      return true;
-    } catch (error) {
-      console.warn('Easepick failed to load, falling back to native date input:', error);
-      this.useNative = true;
-      return false;
-    }
+  _defaultPlaceholder(precision) {
+    if (precision === 'year') return 'Select year...';
+    if (precision === 'month') return 'Select month...';
+    return 'Select date...';
   }
 
-  /**
-   * Dynamically load Easepick from CDN
-   */
-  async loadEasepick() {
-    return new Promise((resolve, reject) => {
-      // Check if already loaded
-      if (window.easepick) {
-        resolve();
-        return;
-      }
+  // ── Render ─────────────────────────────────────────────────────
 
-      // Load CSS first
-      const css = document.createElement('link');
-      css.rel = 'stylesheet';
-      css.href = 'https://cdn.jsdelivr.net/npm/@easepick/bundle@1.2.1/dist/index.css';
-      document.head.appendChild(css);
-
-      // Load JavaScript
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/@easepick/bundle@1.2.1/dist/index.umd.min.js';
-      script.onload = () => {
-        if (window.easepick) {
-          resolve();
-        } else {
-          reject(new Error('Easepick not available after loading'));
-        }
-      };
-      script.onerror = () => reject(new Error('Failed to load Easepick script'));
-      document.head.appendChild(script);
-    });
-  }
-
-  /**
-   * Render the date picker component
-   */
   async renderTemplate() {
-    const inputId = this.getInputId();
-    const inputType = this.useNative ? 'date' : 'text';
-    const inputValue = this.formatValueForInput(this.currentValue);
-    
+    const inputId = this._inputId();
+    const text = this._displayText(this.currentValue);
+    const isEmpty = !this.currentValue;
+
+    if (this.inline) {
+      // Inline mode: render the calendar directly, skip the trigger.
+      return `
+        <input type="hidden" name="${this._attr(this.name || '')}" value="${this._attr(this.currentValue)}" data-hidden-value />
+        <div data-cal-host class="mojo-date-picker-inline${this.hasError() ? ' is-invalid' : ''}"></div>
+      `;
+    }
+
     return `
-      <div class="date-picker-container">
-        <input 
-          type="${inputType}"
-          id="${inputId}"
-          name="${this.name || ''}"
-          class="${this.inputClass}${this.hasError() ? ' is-invalid' : ''}"
-          value="${this.escapeHtml(inputValue)}"
-          placeholder="${this.escapeHtml(this.placeholder)}"
-          ${this.min ? `min="${this.min}"` : ''}
-          ${this.max ? `max="${this.max}"` : ''}
-          ${this.disabled ? 'disabled' : ''}
-          ${this.readonly ? 'readonly' : ''}
-          ${this.required ? 'required' : ''}
-          autocomplete="off"
-          data-change-action="date-changed"
-        />
-        <div class="date-picker-feedback"></div>
-      </div>
+      <button type="button" id="${inputId}" class="mojo-date-trigger${this.hasError() ? ' is-invalid' : ''}"
+              ${this.disabled ? 'disabled' : ''}
+              data-trigger>
+        <i class="bi bi-calendar3"></i>
+        <span class="mojo-date-trigger-text${isEmpty ? ' is-empty' : ''}" data-trigger-text>${this._attr(text || this.placeholder)}</span>
+        ${!this.required && !this.disabled && !this.readonly ? `<button type="button" class="mojo-date-trigger-clear" data-clear aria-label="Clear" tabindex="-1">&#x2715;</button>` : ''}
+      </button>
+      <input type="hidden" name="${this._attr(this.name || '')}" value="${this._attr(this.currentValue)}" data-hidden-value />
     `;
   }
 
-  /**
-   * Initialize after render
-   */
   async onAfterRender() {
-    await super.onAfterRender();
-    
-    if (this.easepickLoaded && !this.useNative) {
-      await this.initializeEasepick();
+    if (this.inline) {
+      this._mountCalendarInline();
     } else {
-      this.initializeNativeFallback();
+      this._wireTrigger();
     }
   }
 
-  /**
-   * Initialize Easepick date picker
-   */
-  async initializeEasepick() {
-    const input = this.getInputElement();
-    if (!input || !window.easepick) return;
+  _wireTrigger() {
+    const trigger = this.element.querySelector('[data-trigger]');
+    const clear = this.element.querySelector('[data-clear]');
+    if (!trigger) return;
 
-    try {
-      const config = {
-        element: input,
-        css: [
-          'https://cdn.jsdelivr.net/npm/@easepick/bundle@1.2.1/dist/index.css',
-        ],
-        format: this.displayFormat,
-        lang: 'en-US',
-        autoApply: this.autoApply,
-        inline: this.inline,
-        readonly: this.readonly,
-        zIndex: 9999,
-      };
+    trigger.addEventListener('click', (event) => {
+      // Ignore clicks on the clear button
+      if (event.target.closest('[data-clear]')) return;
+      this._togglePopover(trigger);
+    });
 
-      // Add date constraints
-      if (this.min) {
-        config.minDate = new Date(this.min);
-      }
-      if (this.max) {
-        config.maxDate = new Date(this.max);
-      }
-
-      // Add event handlers
-      config.setup = (picker) => {
-        picker.on('select', (e) => {
-          const date = e.detail.date;
-          this.handleDateChange(date ? this.formatDate(date, this.format) : '');
-        });
-
-        picker.on('clear', () => {
-          this.handleDateChange('');
-        });
-
-        picker.on('show', () => {
-          this.emit('picker:show');
-        });
-
-        picker.on('hide', () => {
-          this.emit('picker:hide');
-        });
-      };
-
-      this.picker = new window.easepick.create(config);
-
-      // Set initial value if provided
-      if (this.currentValue) {
-        this.picker.setDate(this.currentValue);
-      }
-
-    } catch (error) {
-      console.error('Failed to initialize Easepick:', error);
-      this.useNative = true;
-      this.initializeNativeFallback();
-    }
-  }
-
-  /**
-   * Initialize native HTML5 date input fallback
-   */
-  initializeNativeFallback() {
-    const input = this.getInputElement();
-    if (!input) return;
-
-    // Convert to HTML5 date format if needed
-    input.type = 'date';
-    if (this.currentValue) {
-      input.value = this.formatDate(this.currentValue, 'YYYY-MM-DD');
-    }
-  }
-
-  // ========================================
-  // Event Handlers
-  // ========================================
-
-  /**
-   * Handle date change from input
-   */
-  async onChangeDateChanged(action, event, element) {
-    const value = element.value;
-    this.handleDateChange(value);
-  }
-
-  /**
-   * Handle date change logic
-   */
-  handleDateChange(value) {
-    const oldValue = this.currentValue;
-    this.currentValue = value;
-
-    // Update hidden input if exists
-    this.updateHiddenInput();
-
-    // Emit change events
-    if (oldValue !== value) {
-      this.emit('change', { 
-        value: value, 
-        formatted: this.formatValueForDisplay(value),
-        oldValue: oldValue 
+    if (clear) {
+      clear.addEventListener('click', (event) => {
+        event.stopPropagation();
+        this._setValue('');
       });
-      this.emit('date:changed', { value, oldValue });
     }
   }
 
-  // ========================================
-  // Utility Methods
-  // ========================================
-
-  /**
-   * Format date for different contexts
-   */
-  formatDate(date, format = this.format) {
-    if (!date) return '';
-    
-    // Simple date formatting (can be enhanced)
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return '';
-
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    
-    switch (format) {
-      case 'YYYY-MM-DD':
-        return `${year}-${month}-${day}`;
-      case 'MM/DD/YYYY':
-        return `${month}/${day}/${year}`;
-      case 'DD/MM/YYYY':
-        return `${day}/${month}/${year}`;
-      case 'MMM DD, YYYY':
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        return `${monthNames[d.getMonth()]} ${day}, ${year}`;
-      default:
-        return `${year}-${month}-${day}`;
+  _togglePopover(anchor) {
+    if (this.disabled || this.readonly) return;
+    if (!this._popover) {
+      this._popover = new CalendarPopover({ anchor });
+    } else {
+      this._popover.setAnchor(anchor);
     }
+
+    if (this._popover.isOpen()) {
+      this._popover.close();
+      return;
+    }
+
+    if (!this._calendar) {
+      this._calendar = this._buildCalendar();
+    }
+
+    this._popover.setContent(this._calendar.element);
+    this._popover.open();
+    // Element is already attached by setContent — don't let render() re-mount.
+    this._calendar.render(false);
   }
 
-  /**
-   * Format value for input display
-   */
-  formatValueForInput(value) {
-    if (!value) return '';
-    return this.useNative ? this.formatDate(value, 'YYYY-MM-DD') : value;
+  _mountCalendarInline() {
+    const host = this.element.querySelector('[data-cal-host]');
+    if (!host) return;
+    if (!this._calendar) {
+      this._calendar = this._buildCalendar();
+    }
+    host.appendChild(this._calendar.element);
+    this._calendar.render(false);
   }
 
-  /**
-   * Format value for display
-   */
-  formatValueForDisplay(value) {
-    if (!value) return '';
-    return this.formatDate(value, this.displayFormat);
+  _buildCalendar() {
+    const cal = new Calendar({
+      precision: this.precision,
+      mode: 'single',
+      months: 1,
+      value: this.currentValue || null,
+      min: this.min,
+      max: this.max,
+      disabledDates: this.disabledDates,
+      firstDay: this.firstDay,
+      locale: this.lang,
+    });
+    cal.on('select', ({ value }) => {
+      this._setValue(value);
+      if (this.autoApply && this._popover && this._popover.isOpen()) {
+        this._popover.close();
+      }
+    });
+    return cal;
   }
 
-  /**
-   * Get unique input ID
-   */
-  getInputId() {
-    return this.name ? `datepicker_${this.name}_${Date.now()}` : `datepicker_${Date.now()}`;
-  }
+  // ── Value handling ─────────────────────────────────────────────
 
-  /**
-   * Get input element
-   */
-  getInputElement() {
-    return this.element?.querySelector('input');
-  }
-
-  /**
-   * Update hidden input for form submission
-   */
-  updateHiddenInput() {
-    // This method can be used if we need a separate hidden input
-    // for form submission with a different format
-  }
-
-  /**
-   * Check if field has error
-   */
-  hasError() {
-    return false; // Can be enhanced with validation
-  }
-
-  /**
-   * Escape HTML to prevent XSS
-   */
-  escapeHtml(str) {
-    if (str == null) return '';
-    const div = document.createElement('div');
-    div.textContent = String(str);
-    return div.innerHTML;
-  }
-
-  // ========================================
-  // Public API Methods
-  // ========================================
-
-  /**
-   * Set the date value
-   */
-  setValue(value) {
+  _setValue(rawValue) {
+    const old = this.currentValue;
+    let value = '';
+    if (rawValue) {
+      const parsed = parseByPrecision(rawValue, this.precision);
+      if (parsed) {
+        value = formatByPrecision(parsed, this.precision);
+      }
+    }
     this.currentValue = value;
-    
-    if (this.picker && this.easepickLoaded) {
-      this.picker.setDate(value || null);
-    } else {
-      const input = this.getInputElement();
-      if (input) {
-        input.value = this.formatValueForInput(value);
-      }
+
+    // Update DOM in place (no re-render needed)
+    const text = this._displayText(value);
+    const triggerText = this.element.querySelector('[data-trigger-text]');
+    if (triggerText) {
+      triggerText.textContent = text || this.placeholder;
+      triggerText.classList.toggle('is-empty', !value);
     }
-    
-    this.emit('value:set', { value });
-  }
+    const hidden = this.element.querySelector('[data-hidden-value]');
+    if (hidden) hidden.value = value;
 
-  /**
-   * Get the current date value
-   */
-  getValue() {
-    return this.currentValue;
-  }
+    if (this._calendar) {
+      this._calendar.setValue(value);
+    }
 
-  /**
-   * Get formatted date value
-   */
-  getFormattedValue(format = this.displayFormat) {
-    return this.formatDate(this.currentValue, format);
-  }
-
-  /**
-   * Clear the date value
-   */
-  clear() {
-    this.setValue('');
-  }
-
-  /**
-   * Set min date constraint
-   */
-  setMin(minDate) {
-    this.min = minDate;
-    if (this.picker && this.easepickLoaded) {
-      this.picker.options.minDate = new Date(minDate);
-    } else {
-      const input = this.getInputElement();
-      if (input) {
-        input.min = minDate;
-      }
+    if (old !== value) {
+      this.emit('change', { value, formatted: text, oldValue: old });
+      this.emit('date:changed', { value, oldValue: old });
     }
   }
 
-  /**
-   * Set max date constraint
-   */
-  setMax(maxDate) {
-    this.max = maxDate;
-    if (this.picker && this.easepickLoaded) {
-      this.picker.options.maxDate = new Date(maxDate);
-    } else {
-      const input = this.getInputElement();
-      if (input) {
-        input.max = maxDate;
-      }
-    }
+  _displayText(value) {
+    if (!value) return '';
+    const parsed = parseByPrecision(value, this.precision);
+    if (!parsed) return '';
+    return formatForDisplay(parsed, this._stripIncompatibleTokens(this.displayFormat));
   }
 
-  /**
-   * Enable/disable the picker
-   */
+  /** Drop tokens that don't apply to current precision (e.g. DD when month/year). */
+  _stripIncompatibleTokens(fmt) {
+    if (this.precision === 'day') return fmt;
+    if (this.precision === 'month') return fmt.replace(/\bDD\b|\bD\b/g, '').replace(/[\s\-\/]+$/, '').trim();
+    if (this.precision === 'year') return fmt.replace(/MMMM|MMM|MM|M|DD|D/g, '').replace(/[\s\-\/]+$/, '').trim() || 'YYYY';
+    return fmt;
+  }
+
+  // ── Public API ─────────────────────────────────────────────────
+
+  setValue(value) { this._setValue(value); }
+  getValue() { return this.currentValue; }
+  getFormattedValue() { return this._displayText(this.currentValue); }
+  clear() { this._setValue(''); }
+
+  setMin(v) { this.min = v; if (this._calendar) this._calendar.setMin(v); }
+  setMax(v) { this.max = v; if (this._calendar) this._calendar.setMax(v); }
+
   setEnabled(enabled) {
     this.disabled = !enabled;
-    const input = this.getInputElement();
-    if (input) {
-      input.disabled = this.disabled;
-    }
-    if (this.picker && this.easepickLoaded) {
-      // Easepick doesn't have direct disable method, so we handle it via input
-      if (this.disabled) {
-        this.picker.hide();
-      }
-    }
+    const trigger = this.element.querySelector('[data-trigger]');
+    if (trigger) trigger.disabled = !enabled;
+    if (!enabled && this._popover && this._popover.isOpen()) this._popover.close();
   }
 
-  /**
-   * Set readonly state
-   */
   setReadonly(readonly) {
     this.readonly = readonly;
-    const input = this.getInputElement();
-    if (input) {
-      input.readonly = readonly;
-    }
+    if (readonly && this._popover && this._popover.isOpen()) this._popover.close();
   }
 
-  /**
-   * Focus the input
-   */
   focus() {
-    const input = this.getInputElement();
-    if (input) {
-      input.focus();
-    }
+    const t = this.element.querySelector('[data-trigger]');
+    if (t) t.focus();
   }
 
-  /**
-   * Show the picker (if using Easepick)
-   */
-  show() {
-    if (this.picker && this.easepickLoaded) {
-      this.picker.show();
-    }
+  show() { const t = this.element.querySelector('[data-trigger]'); if (t) this._togglePopover(t); }
+  hide() { if (this._popover) this._popover.close(); }
+
+  // FormBuilder integration
+  getFormValue() { return this.getValue(); }
+  async setFormValue(v) { this._setValue(v); }
+
+  hasError() { return false; }
+
+  // ── Helpers ────────────────────────────────────────────────────
+
+  _inputId() { return this.name ? `mojo-date-${this.name}-${this.id}` : `mojo-date-${this.id}`; }
+
+  _attr(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   }
 
-  /**
-   * Hide the picker (if using Easepick)
-   */
-  hide() {
-    if (this.picker && this.easepickLoaded) {
-      this.picker.hide();
-    }
-  }
+  // ── Lifecycle ──────────────────────────────────────────────────
 
-  // ========================================
-  // FormBuilder Integration
-  // ========================================
-
-  /**
-   * Get form value (for FormBuilder integration)
-   */
-  getFormValue() {
-    return this.getValue();
-  }
-
-  /**
-   * Set form value (for FormBuilder integration)
-   */
-  async setFormValue(value) {
-    this.setValue(value);
-  }
-
-  // ========================================
-  // Lifecycle Methods
-  // ========================================
-
-  /**
-   * Cleanup when component is destroyed
-   */
   async onBeforeDestroy() {
-    if (this.picker && this.easepickLoaded) {
-      try {
-        this.picker.destroy();
-      } catch (error) {
-        console.warn('Error destroying Easepick instance:', error);
-      }
+    if (this._popover) {
+      this._popover.destroy();
+      this._popover = null;
     }
-    
-    this.picker = null;
+    this._calendar = null;
     await super.onBeforeDestroy();
   }
 
-  /**
-   * Static factory method
-   */
-  static create(options = {}) {
-    return new DatePicker(options);
-  }
+  static create(options = {}) { return new DatePicker(options); }
 }
 
 export default DatePicker;
+export { DatePicker };

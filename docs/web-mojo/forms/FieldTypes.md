@@ -58,8 +58,12 @@ Complete reference of all available field types in WEB-MOJO forms. Use this as a
 | `date` | Date picker (native) | Min/max date constraints | [BasicTypes](./BasicTypes.md#date---date-picker) |
 | `datetime-local` | Date & time picker | Native HTML5 picker | [BasicTypes](./BasicTypes.md#datetime-local---date--time) |
 | `time` | Time picker | 12/24 hour, step intervals | [BasicTypes](./BasicTypes.md#time---time-picker) |
-| `datepicker` | Enhanced date picker | Easepick library, themes | [inputs/DatePicker](./inputs/DatePicker.md) |
-| `daterange` | Date range picker | Start/end date selection | [inputs/DateRangePicker](./inputs/DateRangePicker.md) |
+| `datepicker` | In-house date picker | Day precision (default); use `monthpicker` / `yearpicker` aliases for month/year | [inputs/DatePicker](./inputs/DatePicker.md) |
+| `monthpicker` | Month picker | Stores YYYY-MM | [inputs/DatePicker](./inputs/DatePicker.md) |
+| `yearpicker` | Year picker | Stores YYYY | [inputs/DatePicker](./inputs/DatePicker.md) |
+| `daterange` | Date range picker | Cross-page anchor, optional preset sidebar | [inputs/DateRangePicker](./inputs/DateRangePicker.md) |
+| `monthrange` | Month range picker | Stores YYYY-MM × 2 | [inputs/DateRangePicker](./inputs/DateRangePicker.md) |
+| `yearrange` | Year range picker | Stores YYYY × 2 | [inputs/DateRangePicker](./inputs/DateRangePicker.md) |
 
 ### Advanced Input Components
 
@@ -321,12 +325,14 @@ Some field types have multiple names for convenience:
 
 ### Date vs DatePicker
 
-| Feature | date (native) | datepicker (Easepick) |
+| Feature | date (native) | datepicker (in-house) |
 |---------|---------------|----------------------|
-| Browser support | All modern | All (with polyfill) |
-| Customization | Limited | Full themes |
-| Visual style | Browser default | Consistent |
-| Use case | Simple date input | Enhanced UX |
+| Browser support | All modern | All modern (no CDN dependency) |
+| Customization | Limited | Bootstrap-tokened, automatic dark theme |
+| Visual style | Browser default | Consistent across browsers |
+| Precision | Day only | Day, month, or year via `precision` |
+| Range support | Two separate inputs | First-class with cross-page anchor & presets |
+| Use case | Simple native input | Day/month/year selection, ranges, reports |
 
 ### File vs Image
 

@@ -1,14 +1,15 @@
 # DatePicker Component
 
-Enhanced date selection component powered by [Easepick](https://easepick.com/). Provides a consistent, feature-rich date picker across all browsers.
+In-house single-value date picker. Renders a tokened, Bootstrap-themed calendar that supports day / month / year precision via a single `precision` option, plus drill-down zoom (click the header label to move from day-grid → month-grid → year-grid). Uniform behavior across browsers — no runtime CDN dependency.
 
-**Field Type:** `datepicker`
+**Field Types:** `datepicker` (default day precision), `monthpicker` (precision: 'month'), `yearpicker` (precision: 'year')
 
 ---
 
 ## Quick Start
 
 ```javascript
+// Day precision (default)
 {
   type: 'datepicker',
   name: 'start_date',
@@ -16,7 +17,33 @@ Enhanced date selection component powered by [Easepick](https://easepick.com/). 
   format: 'YYYY-MM-DD',
   placeholder: 'Select a date...'
 }
+
+// Month precision — stores 'YYYY-MM'
+{
+  type: 'monthpicker',
+  name: 'period',
+  label: 'Period',
+}
+
+// Year precision — stores 'YYYY'
+{
+  type: 'yearpicker',
+  name: 'fiscal_year',
+  label: 'Fiscal Year',
+}
 ```
+
+## Precision
+
+`precision: 'year' | 'month' | 'day'` (default `'day'`) controls what the user can select.
+
+| Precision | Stored value | Default display | Field-type alias |
+|---|---|---|---|
+| `day` | `YYYY-MM-DD` | `MMM DD, YYYY` | `datepicker` |
+| `month` | `YYYY-MM` | `MMM YYYY` | `monthpicker` |
+| `year` | `YYYY` | `YYYY` | `yearpicker` |
+
+Drill-down navigation is uniform: clicking the header label of a day-grid zooms out to a month-grid; clicking that header zooms out to a year-grid. The picker commits at whichever precision was configured.
 
 ---
 
@@ -320,24 +347,19 @@ datePicker.on('hide', () => {
 
 ### Custom CSS Variables
 
+The picker uses Bootstrap 5.3 tokens directly — no separate namespace. To customise, override the `--bs-*` variables (or set picker-scoped overrides):
+
 ```css
-:root {
-  --easepick-primary-color: #007bff;
-  --easepick-secondary-color: #6c757d;
-  --easepick-border-color: #dee2e6;
-  --easepick-border-radius: 0.375rem;
+.mojo-date-picker {
+  --mojo-cal-radius: 12px;
+  --mojo-cal-anchor-fill: var(--bs-primary);
+  --mojo-cal-range-fill: rgba(13, 110, 253, 0.10);
 }
 ```
 
 ### Dark Theme
 
-```css
-[data-bs-theme="dark"] {
-  --easepick-primary-color: #0d6efd;
-  --easepick-bg-color: #212529;
-  --easepick-text-color: #f8f9fa;
-}
-```
+Dark theme is automatic — the calendar reads `[data-bs-theme="dark"]` from the document root and adjusts surface, text, range, and tooltip colors. No additional setup required.
 
 ---
 
@@ -382,13 +404,13 @@ fields: [
 
 ## Browser Support
 
-DatePicker works consistently across all browsers:
-- ✅ Chrome/Edge
+DatePicker works consistently across all modern browsers:
+- ✅ Chrome / Edge
 - ✅ Firefox
 - ✅ Safari
 - ✅ Mobile browsers
 
-Unlike native `<input type="date">`, DatePicker provides identical UX everywhere.
+Unlike native `<input type="date">`, DatePicker provides identical UX everywhere. No runtime CDN dependency.
 
 ---
 

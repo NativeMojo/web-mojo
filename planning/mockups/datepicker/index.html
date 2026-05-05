@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DatePicker Rebuild — Mockups</title>
+
+  <!-- Bootstrap 5.3 (matches the framework's runtime so colors/tokens line up) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <!-- Distinctive type pairing: Fraunces for displays/headlines, Inter Tight for UI, JetBrains Mono for tabular numerals.
+       (Inter Tight is variable-width; tabular-nums feature flag handled in mock.css.) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="mock.css">
+</head>
+<body class="dp-body">
+
+  <header class="dp-topbar">
+    <div class="dp-topbar-left">
+      <span class="dp-brand-mark">DP</span>
+      <h1 class="dp-title">DatePicker Rebuild</h1>
+      <span class="dp-scope-pill">mockups · planning only</span>
+    </div>
+    <div class="dp-topbar-right">
+      <span class="dp-meta-item" id="active-label">Day · Range · Variant A</span>
+      <div class="dp-theme-toggle" role="group" aria-label="Theme">
+        <button type="button" data-theme-set="light" class="dp-theme-btn is-active">
+          <i class="bi bi-sun"></i><span>Light</span>
+        </button>
+        <button type="button" data-theme-set="dark" class="dp-theme-btn">
+          <i class="bi bi-moon-stars"></i><span>Dark</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="dp-shell">
+
+    <!-- ════════════════════════════════════════════════════════
+         LEFT RAIL — variant index
+         Each surface lists its A/B/C variants. Click loads into stage.
+    ════════════════════════════════════════════════════════ -->
+    <aside class="dp-rail">
+
+      <div class="dp-rail-section">
+        <div class="dp-rail-eyebrow">Day</div>
+        <button class="dp-rail-link" data-variant="day-single-a">Single · A — Stripe popover</button>
+        <button class="dp-rail-link" data-variant="day-single-b">Single · B — Linear inline</button>
+        <button class="dp-rail-link" data-variant="day-single-c">Single · C — Notion type-ahead</button>
+        <button class="dp-rail-link is-active" data-variant="day-range-a">Range · A — Easepick clone</button>
+        <button class="dp-rail-link" data-variant="day-range-b">Range · B — Stripe presets</button>
+        <button class="dp-rail-link" data-variant="day-range-c">Range · C — Linear condensed</button>
+      </div>
+
+      <div class="dp-rail-section">
+        <div class="dp-rail-eyebrow">Month</div>
+        <button class="dp-rail-link" data-variant="month-single-a">Single · A — Tile grid</button>
+        <button class="dp-rail-link" data-variant="month-single-b">Single · B — Wheel columns</button>
+        <button class="dp-rail-link" data-variant="month-range-a">Range · A — Two-year frames</button>
+        <button class="dp-rail-link" data-variant="month-range-b">Range · B — Presets</button>
+      </div>
+
+      <div class="dp-rail-section">
+        <div class="dp-rail-eyebrow">Year</div>
+        <button class="dp-rail-link" data-variant="year-single-a">Single · A — Decade grid</button>
+        <button class="dp-rail-link" data-variant="year-single-b">Single · B — Scroll list</button>
+        <button class="dp-rail-link" data-variant="year-range-a">Range · A — Two decades</button>
+        <button class="dp-rail-link" data-variant="year-range-b">Range · B — Single decade</button>
+      </div>
+
+      <div class="dp-rail-section">
+        <div class="dp-rail-eyebrow">Time</div>
+        <button class="dp-rail-link" data-variant="time-a">A — Wheel columns</button>
+        <button class="dp-rail-link" data-variant="time-b">B — Stepper buttons</button>
+        <button class="dp-rail-link" data-variant="time-c">C — Type-ahead</button>
+        <button class="dp-rail-link" data-variant="time-tz-a">+TZ · A — Stacked</button>
+        <button class="dp-rail-link" data-variant="time-tz-b">+TZ · B — Side-by-side</button>
+      </div>
+
+      <div class="dp-rail-section">
+        <div class="dp-rail-eyebrow">Date + Time</div>
+        <button class="dp-rail-link" data-variant="dt-a">A — Calendar + strip</button>
+        <button class="dp-rail-link" data-variant="dt-b">B — Tabs</button>
+      </div>
+
+      <div class="dp-rail-section">
+        <a class="dp-rail-readme" href="README.md">
+          <i class="bi bi-file-earmark-text"></i>
+          <span>README · selections</span>
+        </a>
+      </div>
+
+    </aside>
+
+    <!-- ════════════════════════════════════════════════════════
+         STAGE — variant viewport
+    ════════════════════════════════════════════════════════ -->
+    <main class="dp-stage">
+      <div class="dp-stage-frame" id="stage-frame">
+        <!-- variants render here -->
+      </div>
+
+      <footer class="dp-stage-foot" id="stage-foot">
+        <div class="dp-stage-notes" id="stage-notes"></div>
+      </footer>
+    </main>
+
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       VARIANT TEMPLATES
+       Each template is the inert markup for one variant.
+       mock.js clones them into the stage when the rail is clicked.
+  ════════════════════════════════════════════════════════ -->
+
+  <!-- ───── Day · Range · Variant A — Easepick clone ───── -->
+  <template id="tpl-day-range-a">
+    <div class="dp-frame dp-frame-popover dp-frame-narrow">
+      <div class="dp-input-row">
+        <div class="dp-trigger" role="button" tabindex="0">
+          <i class="bi bi-calendar3"></i>
+          <span class="dp-trigger-text" data-trigger-text>May 6 – May 22, 2026</span>
+          <span class="dp-trigger-spacer"></span>
+          <span class="dp-trigger-clear" title="Clear">
+            <i class="bi bi-x"></i>
+          </span>
+        </div>
+      </div>
+
+      <div class="dp-popover dp-popover-open" data-cal data-cal-mode="range" data-cal-precision="day" data-cal-months="1" data-cal-anchor-start="2026-05-06" data-cal-anchor-end="2026-05-22" data-cal-tooltip-day="2026-05-22">
+        <!-- rendered by mock.js -->
+      </div>
+
+      <div class="dp-callout">
+        <strong>Variant A — Easepick clone.</strong> Single-month popover. Range fill across week rows. Anchors are solid primary with an inward chevron (right-chevron on the start, left-chevron on the end). Floating "N days" tooltip tracks the cursor. Today marker is a text-color shift only (no ring). Out-of-month leading cells are blank.
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Day · Range · Variant B — Stripe presets + two months ───── -->
+  <template id="tpl-day-range-b">
+    <div class="dp-frame dp-frame-popover dp-frame-wide">
+      <div class="dp-input-row">
+        <div class="dp-trigger" role="button" tabindex="0">
+          <i class="bi bi-calendar3-range"></i>
+          <span class="dp-trigger-text">Apr 14 – May 13, 2026</span>
+          <span class="dp-trigger-spacer"></span>
+          <span class="dp-trigger-meta">Last 30 days</span>
+        </div>
+      </div>
+
+      <div class="dp-popover dp-popover-open dp-popover-with-presets">
+        <div class="dp-presets" role="listbox" aria-label="Quick ranges">
+          <div class="dp-presets-eyebrow">Quick range</div>
+          <button class="dp-preset" type="button">Today</button>
+          <button class="dp-preset" type="button">Yesterday</button>
+          <button class="dp-preset" type="button">Last 7 days</button>
+          <button class="dp-preset is-active" type="button">Last 30 days</button>
+          <button class="dp-preset" type="button">Last 90 days</button>
+          <div class="dp-presets-divider"></div>
+          <button class="dp-preset" type="button">This month</button>
+          <button class="dp-preset" type="button">Last month</button>
+          <button class="dp-preset" type="button">This quarter</button>
+          <button class="dp-preset" type="button">This year</button>
+          <div class="dp-presets-divider"></div>
+          <button class="dp-preset" type="button">Custom…</button>
+        </div>
+
+        <div class="dp-cal-wrap" data-cal data-cal-mode="range" data-cal-precision="day" data-cal-months="2" data-cal-anchor-start="2026-04-14" data-cal-anchor-end="2026-05-13">
+          <!-- rendered by mock.js -->
+        </div>
+
+        <div class="dp-popover-foot">
+          <div class="dp-range-summary">
+            <span class="dp-range-label">From</span>
+            <span class="dp-range-input">Apr 14, 2026</span>
+            <i class="bi bi-arrow-right dp-range-arrow"></i>
+            <span class="dp-range-label">To</span>
+            <span class="dp-range-input">May 13, 2026</span>
+            <span class="dp-range-count">30 days</span>
+          </div>
+          <div class="dp-popover-actions">
+            <button class="btn btn-link btn-sm" type="button">Cancel</button>
+            <button class="btn btn-primary btn-sm" type="button">Apply</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dp-callout">
+        <strong>Variant B — Stripe presets + two months.</strong> Preset sidebar is the primary path; calendar is the escape hatch. Two months side-by-side. From/To text inputs in the foot let users hand-edit. <em>Apply</em> button (auto-apply optional).
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Day · Range · Variant C — Linear condensed ───── -->
+  <template id="tpl-day-range-c">
+    <div class="dp-frame dp-frame-popover dp-frame-narrow">
+      <div class="dp-input-row dp-input-row-split">
+        <div class="dp-split-input">
+          <span class="dp-split-label">From</span>
+          <input class="form-control form-control-sm" value="May 6, 2026" />
+        </div>
+        <i class="bi bi-arrow-right dp-split-arrow"></i>
+        <div class="dp-split-input">
+          <span class="dp-split-label">To</span>
+          <input class="form-control form-control-sm" value="May 22, 2026" />
+        </div>
+      </div>
+
+      <div class="dp-popover dp-popover-open">
+        <div class="dp-relative-chips">
+          <button type="button" class="dp-chip">Today</button>
+          <button type="button" class="dp-chip">±7d</button>
+          <button type="button" class="dp-chip is-active">±30d</button>
+          <button type="button" class="dp-chip">QTD</button>
+          <button type="button" class="dp-chip">YTD</button>
+        </div>
+        <div data-cal data-cal-mode="range" data-cal-precision="day" data-cal-months="1" data-cal-anchor-start="2026-05-06" data-cal-anchor-end="2026-05-22"></div>
+      </div>
+
+      <div class="dp-callout">
+        <strong>Variant C — Linear condensed.</strong> Two side-by-side text inputs with an arrow between them; a strip of relative-range chips above the calendar; single month grid. Smallest popover footprint of the three.
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Day · Single · A — Stripe popover ───── -->
+  <template id="tpl-day-single-a">
+    <div class="dp-frame dp-frame-popover dp-frame-narrow">
+      <div class="dp-input-row">
+        <div class="dp-trigger" role="button" tabindex="0">
+          <i class="bi bi-calendar3"></i>
+          <span class="dp-trigger-text">May 13, 2026</span>
+        </div>
+      </div>
+      <div class="dp-popover dp-popover-open" data-cal data-cal-mode="single" data-cal-precision="day" data-cal-months="1" data-cal-selected="2026-05-13"></div>
+      <div class="dp-callout">
+        <strong>Variant A — Stripe popover.</strong> Single month, modest popover, anchor input shows the formatted date. Closest to today's DatePicker behavior, refined.
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Day · Single · B — Linear inline ───── -->
+  <template id="tpl-day-single-b">
+    <div class="dp-frame dp-frame-inline">
+      <div data-cal data-cal-mode="single" data-cal-precision="day" data-cal-months="1" data-cal-selected="2026-05-13"></div>
+      <div class="dp-inline-foot">
+        <button type="button" class="dp-chip is-active">Today</button>
+        <button type="button" class="dp-chip">Tomorrow</button>
+        <button type="button" class="dp-chip">+1 week</button>
+        <button type="button" class="dp-chip">+1 month</button>
+      </div>
+      <div class="dp-callout">
+        <strong>Variant B — Linear inline.</strong> No popover. Calendar is the field. Quick-action chips below for relative jumps. Best for forms where a date is mandatory and visible at a glance.
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Day · Single · C — Notion type-ahead ───── -->
+  <template id="tpl-day-single-c">
+    <div class="dp-frame dp-frame-popover dp-frame-narrow">
+      <div class="dp-input-row">
+        <div class="dp-trigger dp-trigger-typed">
+          <i class="bi bi-magic"></i>
+          <input class="form-control form-control-sm" value="next friday" placeholder="Type a date or phrase…" />
+        </div>
+      </div>
+      <div class="dp-popover dp-popover-open">
+        <div class="dp-typed-suggestions">
+          <button type="button" class="dp-typed-suggestion is-active">
+            <i class="bi bi-calendar2-event"></i>
+            <span class="dp-typed-primary">Friday, May 8, 2026</span>
+            <span class="dp-typed-secondary">in 4 days</span>
+          </button>
+          <button type="button" class="dp-typed-suggestion">
+            <i class="bi bi-calendar2-event"></i>
+            <span class="dp-typed-primary">Friday, May 15, 2026</span>
+            <span class="dp-typed-secondary">in 11 days</span>
+          </button>
+        </div>
+        <div data-cal data-cal-mode="single" data-cal-precision="day" data-cal-months="1" data-cal-selected="2026-05-08"></div>
+      </div>
+      <div class="dp-callout">
+        <strong>Variant C — Notion type-ahead.</strong> Input parses natural language ("next friday", "in 3 days", "2026-05-08"). Suggestions list above the calendar. Calendar reflects the parsed result. <em>Phase 5 stretch.</em>
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Month · Single · A — Tile grid ───── -->
+  <template id="tpl-month-single-a">
+    <div class="dp-frame dp-frame-popover dp-frame-narrow">
+      <div class="dp-input-row">
+        <div class="dp-trigger" role="button" tabindex="0">
+          <i class="bi bi-calendar3"></i>
+          <span class="dp-trigger-text">May 2026</span>
+        </div>
+      </div>
+      <div class="dp-popover dp-popover-open" data-cal data-cal-mode="single" data-cal-precision="month" data-cal-view="month" data-cal-anchor-year="2026" data-cal-selected-month="2026-05"></div>
+      <div class="dp-callout">
+        <strong>Variant A — Tile grid.</strong> 4×3 month tiles inside the chosen year. Year header is clickable and zooms out to the year-grid (drill-down). Same engine, same hover/select behavior — just a different cell shape.
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Month · Single · B — Wheel columns ───── -->
+  <template id="tpl-month-single-b">
+    <div class="dp-frame dp-frame-popover dp-frame-narrow">
+      <div class="dp-input-row">
+        <div class="dp-trigger" role="button" tabindex="0">
+          <i class="bi bi-calendar3"></i>
+          <span class="dp-trigger-text">May 2026</span>
+        </div>
+      </div>
+      <div class="dp-popover dp-popover-open dp-wheel-popover">
+        <div class="dp-wheel" data-wheel="month"></div>
+        <div class="dp-wheel" data-wheel="year-narrow"></div>
+      </div>
+      <div class="dp-callout">
+        <strong>Variant B — Wheel columns.</strong> Apple-style scroll wheels for month and year. Compact, touch-friendly. Tradeoff — no quick year jumping; less efficient on desktop.
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Month · Range · A — Two year frames ───── -->
+  <template id="tpl-month-range-a">
+    <div class="dp-frame dp-frame-popover dp-frame-wide">
+      <div class="dp-input-row">
+        <div class="dp-trigger" role="button" tabindex="0">
+          <i class="bi bi-calendar3-range"></i>
+          <span class="dp-trigger-text">Mar 2026 – Aug 2026</span>
+        </div>
+      </div>
+      <div class="dp-popover dp-popover-open" data-cal data-cal-mode="range" data-cal-precision="month" data-cal-view="month" data-cal-anchor-year="2026" data-cal-anchor-year-2="2026" data-cal-anchor-start-month="2026-03" data-cal-anchor-end-month="2026-08"></div>
+      <div class="dp-callout">
+        <strong>Variant A — Two-year frames at month-precision.</strong> Same Easepick range pattern lifted up one zoom level: two year-frames side-by-side, fill across rows of months, anchor chevrons on the start/end month tiles, "N months" tooltip.
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Month · Range · B — Presets ───── -->
+  <template id="tpl-month-range-b">
+    <div class="dp-frame dp-frame-popover dp-frame-wide">
+      <div class="dp-input-row">
+        <div class="dp-trigger" role="button" tabindex="0">
+          <i class="bi bi-calendar3-range"></i>
+          <span class="dp-trigger-text">YTD · Jan – May 2026</span>
+        </div>
+      </div>
+      <div class="dp-popover dp-popover-open dp-popover-with-presets">
+        <div class="dp-presets" role="listbox">
+          <div class="dp-presets-eyebrow">Month range</div>
+          <button class="dp-preset" type="button">This month</button>
+          <button class="dp-preset" type="button">Last month</button>
+          <button class="dp-preset" type="button">Last 3 months</button>
+          <button class="dp-preset" type="button">Last 6 months</button>
+          <button class="dp-preset is-active" type="button">YTD</button>
+          <button class="dp-preset" type="button">Last year</button>
+          <button class="dp-preset" type="button">Last 12 months</button>
+          <div class="dp-presets-divider"></div>
+          <button class="dp-preset" type="button">Custom…</button>
+        </div>
+        <div class="dp-cal-wrap" data-cal data-cal-mode="range" data-cal-precision="month" data-cal-view="month" data-cal-anchor-year="2026" data-cal-anchor-year-2="2026" data-cal-anchor-start-month="2026-01" data-cal-anchor-end-month="2026-05"></div>
+      </div>
+      <div class="dp-callout">
+        <strong>Variant B — Month-range with presets.</strong> Most reporting flows want a named period (YTD, Last 12 months) more than a custom pick. Presets first, calendar as escape hatch.
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Year · Single · A — Decade grid ───── -->
+  <template id="tpl-year-single-a">
+    <div class="dp-frame dp-frame-popover dp-frame-narrow">
+      <div class="dp-input-row">
+        <div class="dp-trigger" role="button" tabindex="0">
+          <i class="bi bi-calendar3"></i>
+          <span class="dp-trigger-text">2026</span>
+        </div>
+      </div>
+      <div class="dp-popover dp-popover-open" data-cal data-cal-mode="single" data-cal-precision="year" data-cal-view="year" data-cal-anchor-decade="2020" data-cal-selected-year="2026"></div>
+      <div class="dp-callout">
+        <strong>Variant A — Decade grid.</strong> 4×3 year tiles per decade page. Prev/next decade arrows. Decade label header zooms out to a century list (only if needed — &gt;100 year span configured).
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Year · Single · B — Scroll list ───── -->
+  <template id="tpl-year-single-b">
+    <div class="dp-frame dp-frame-popover dp-frame-narrow">
+      <div class="dp-input-row">
+        <div class="dp-trigger" role="button" tabindex="0">
+          <i class="bi bi-calendar3"></i>
+          <span class="dp-trigger-text">2026</span>
+        </div>
+      </div>
+      <div class="dp-popover dp-popover-open dp-year-scroll" data-year-scroll>
+        <!-- rendered by mock.js -->
+      </div>
+      <div class="dp-callout">
+        <strong>Variant B — Scroll list.</strong> Vertical year list with sticky decade headers. Better for wide year ranges (e.g. birth date, founding year). Scroll-snap on rows.
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Year · Range · A — Two decades ───── -->
+  <template id="tpl-year-range-a">
+    <div class="dp-frame dp-frame-popover dp-frame-wide">
+      <div class="dp-input-row">
+        <div class="dp-trigger" role="button" tabindex="0">
+          <i class="bi bi-calendar3-range"></i>
+          <span class="dp-trigger-text">2020 – 2026</span>
+        </div>
+      </div>
+      <div class="dp-popover dp-popover-open" data-cal data-cal-mode="range" data-cal-precision="year" data-cal-view="year" data-cal-anchor-decade="2020" data-cal-anchor-decade-2="2020" data-cal-anchor-start-year="2020" data-cal-anchor-end-year="2026"></div>
+      <div class="dp-callout">
+        <strong>Variant A — Two decades.</strong> Same pattern at year precision. Range fill across year tiles, chevron anchors, "N years" tooltip.
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Year · Range · B — Single decade ───── -->
+  <template id="tpl-year-range-b">
+    <div class="dp-frame dp-frame-popover dp-frame-narrow">
+      <div class="dp-input-row dp-input-row-split">
+        <div class="dp-split-input">
+          <span class="dp-split-label">From</span>
+          <input class="form-control form-control-sm" value="2020" />
+        </div>
+        <i class="bi bi-arrow-right dp-split-arrow"></i>
+        <div class="dp-split-input">
+          <span class="dp-split-label">To</span>
+          <input class="form-control form-control-sm" value="2026" />
+        </div>
+      </div>
+      <div class="dp-popover dp-popover-open" data-cal data-cal-mode="range" data-cal-precision="year" data-cal-view="year" data-cal-anchor-decade="2020" data-cal-anchor-start-year="2020" data-cal-anchor-end-year="2026"></div>
+      <div class="dp-callout">
+        <strong>Variant B — Single decade.</strong> Smaller footprint. Two text inputs with arrow between. Calendar shows one decade at a time; if start &amp; end span decades, prev/next jumps the page.
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Time · A — Wheel columns ───── -->
+  <template id="tpl-time-a">
+    <div class="dp-frame dp-frame-popover dp-frame-narrow">
+      <div class="dp-input-row">
+        <div class="dp-trigger" role="button" tabindex="0">
+          <i class="bi bi-clock"></i>
+          <span class="dp-trigger-text">14:30</span>
+        </div>
+      </div>
+      <div class="dp-popover dp-popover-open dp-time-popover">
+        <div class="dp-time-input-row">
+          <input class="form-control form-control-sm dp-time-num" value="14" maxlength="2" />
+          <span class="dp-time-sep">:</span>
+          <input class="form-control form-control-sm dp-time-num" value="30" maxlength="2" />
+        </div>
+        <div class="dp-time-wheels">
+          <div class="dp-wheel" data-wheel="hours-24"></div>
+          <div class="dp-wheel" data-wheel="minutes-5"></div>
+        </div>
+        <div class="dp-time-foot">
+          <button type="button" class="btn btn-link btn-sm">Now</button>
+          <button type="button" class="btn btn-primary btn-sm">Set</button>
+        </div>
+      </div>
+      <div class="dp-callout">
+        <strong>Variant A — Wheel columns.</strong> Apple-style scrolling wheels. Numeric input above for typing. "Now" button jumps to current time. Best touch UX; passable on desktop with mouse-wheel scroll.
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Time · B — Stepper buttons ───── -->
+  <template id="tpl-time-b">
+    <div class="dp-frame dp-frame-popover dp-frame-narrow">
+      <div class="dp-input-row">
+        <div class="dp-trigger" role="button" tabindex="0">
+          <i class="bi bi-clock"></i>
+          <span class="dp-trigger-text">14:30</span>
+        </div>
+      </div>
+      <div class="dp-popover dp-popover-open dp-time-popover">
+        <div class="dp-stepper-row">
+          <div class="dp-stepper">
+            <button type="button" class="dp-stepper-btn"><i class="bi bi-chevron-up"></i></button>
+            <div class="dp-stepper-value">14</div>
+            <button type="button" class="dp-stepper-btn"><i class="bi bi-chevron-down"></i></button>
+            <div class="dp-stepper-label">Hour</div>
+          </div>
+          <div class="dp-stepper-sep">:</div>
+          <div class="dp-stepper">
+            <button type="button" class="dp-stepper-btn"><i class="bi bi-chevron-up"></i></button>
+            <div class="dp-stepper-value">30</div>
+            <button type="button" class="dp-stepper-btn"><i class="bi bi-chevron-down"></i></button>
+            <div class="dp-stepper-label">Minute</div>
+          </div>
+        </div>
+        <div class="dp-time-foot">
+          <button type="button" class="btn btn-link btn-sm">Now</button>
+          <button type="button" class="btn btn-primary btn-sm">Set</button>
+        </div>
+      </div>
+      <div class="dp-callout">
+        <strong>Variant B — Stepper buttons.</strong> Click ▲/▼ to bump. Click value to type directly. Most desktop-native feel. Tradeoff — slow for far-away times unless you can type.
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Time · C — Type-ahead ───── -->
+  <template id="tpl-time-c">
+    <div class="dp-frame dp-frame-popover dp-frame-narrow">
+      <div class="dp-input-row">
+        <div class="dp-trigger dp-trigger-typed">
+          <i class="bi bi-clock"></i>
+          <input class="form-control form-control-sm" value="2:30 pm" placeholder="14:30 / 2:30 pm" />
+        </div>
+      </div>
+      <div class="dp-popover dp-popover-open">
+        <div class="dp-time-list" data-time-list></div>
+      </div>
+      <div class="dp-callout">
+        <strong>Variant C — Type-ahead.</strong> Lean on the input. Dropdown shows matching candidates at a `step` interval (every 30 min by default). 12h or 24h auto-detected from input. Bias toward keyboard users.
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Time + TZ · A — Stacked ───── -->
+  <template id="tpl-time-tz-a">
+    <div class="dp-frame dp-frame-popover dp-frame-narrow">
+      <div class="dp-input-row">
+        <div class="dp-trigger" role="button" tabindex="0">
+          <i class="bi bi-globe"></i>
+          <span class="dp-trigger-text">14:30 · Los Angeles</span>
+          <span class="dp-trigger-meta">UTC−7</span>
+        </div>
+      </div>
+      <div class="dp-popover dp-popover-open dp-time-popover">
+        <div class="dp-stepper-row">
+          <div class="dp-stepper"><button type="button" class="dp-stepper-btn"><i class="bi bi-chevron-up"></i></button><div class="dp-stepper-value">14</div><button type="button" class="dp-stepper-btn"><i class="bi bi-chevron-down"></i></button><div class="dp-stepper-label">Hour</div></div>
+          <div class="dp-stepper-sep">:</div>
+          <div class="dp-stepper"><button type="button" class="dp-stepper-btn"><i class="bi bi-chevron-up"></i></button><div class="dp-stepper-value">30</div><button type="button" class="dp-stepper-btn"><i class="bi bi-chevron-down"></i></button><div class="dp-stepper-label">Minute</div></div>
+        </div>
+        <div class="dp-tz-row">
+          <label class="dp-tz-label">Timezone</label>
+          <div class="dp-tz-combo">
+            <i class="bi bi-search"></i>
+            <input class="form-control form-control-sm" value="America/Los_Angeles" />
+            <span class="dp-tz-offset">UTC−7</span>
+          </div>
+        </div>
+        <div class="dp-time-foot">
+          <button type="button" class="btn btn-link btn-sm">Use my timezone</button>
+          <button type="button" class="btn btn-primary btn-sm">Set</button>
+        </div>
+      </div>
+      <div class="dp-callout">
+        <strong>Variant A — Stacked.</strong> Time on top, timezone combobox below. "Use my timezone" auto-fills via <code>Intl.DateTimeFormat().resolvedOptions().timeZone</code>. Reads top-to-bottom; safe default.
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Time + TZ · B — Side by side ───── -->
+  <template id="tpl-time-tz-b">
+    <div class="dp-frame dp-frame-popover dp-frame-wide">
+      <div class="dp-input-row">
+        <div class="dp-trigger" role="button" tabindex="0">
+          <i class="bi bi-globe"></i>
+          <span class="dp-trigger-text">14:30 · Los Angeles</span>
+          <span class="dp-trigger-meta">UTC−7</span>
+        </div>
+      </div>
+      <div class="dp-popover dp-popover-open dp-time-popover dp-time-popover-row">
+        <div class="dp-time-side">
+          <div class="dp-side-eyebrow">Time</div>
+          <div class="dp-stepper-row">
+            <div class="dp-stepper"><button type="button" class="dp-stepper-btn"><i class="bi bi-chevron-up"></i></button><div class="dp-stepper-value">14</div><button type="button" class="dp-stepper-btn"><i class="bi bi-chevron-down"></i></button><div class="dp-stepper-label">Hour</div></div>
+            <div class="dp-stepper-sep">:</div>
+            <div class="dp-stepper"><button type="button" class="dp-stepper-btn"><i class="bi bi-chevron-up"></i></button><div class="dp-stepper-value">30</div><button type="button" class="dp-stepper-btn"><i class="bi bi-chevron-down"></i></button><div class="dp-stepper-label">Minute</div></div>
+          </div>
+        </div>
+        <div class="dp-time-divider"></div>
+        <div class="dp-time-side">
+          <div class="dp-side-eyebrow">Timezone</div>
+          <div class="dp-tz-list">
+            <button type="button" class="dp-tz-item is-active"><span>America/Los_Angeles</span><span class="dp-tz-offset">UTC−7</span></button>
+            <button type="button" class="dp-tz-item"><span>America/Denver</span><span class="dp-tz-offset">UTC−6</span></button>
+            <button type="button" class="dp-tz-item"><span>America/Chicago</span><span class="dp-tz-offset">UTC−5</span></button>
+            <button type="button" class="dp-tz-item"><span>America/New_York</span><span class="dp-tz-offset">UTC−4</span></button>
+            <button type="button" class="dp-tz-item"><span>UTC</span><span class="dp-tz-offset">UTC</span></button>
+            <button type="button" class="dp-tz-item"><span>Europe/London</span><span class="dp-tz-offset">UTC+1</span></button>
+          </div>
+        </div>
+      </div>
+      <div class="dp-callout">
+        <strong>Variant B — Side-by-side.</strong> Time on left, timezone list on right. Faster scan when picking a non-local timezone (e.g. scheduling for someone abroad). Wider footprint.
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Date+Time+TZ · A — Calendar + strip ───── -->
+  <template id="tpl-dt-a">
+    <div class="dp-frame dp-frame-popover dp-frame-wide">
+      <div class="dp-input-row">
+        <div class="dp-trigger" role="button" tabindex="0">
+          <i class="bi bi-calendar2-event"></i>
+          <span class="dp-trigger-text">May 13, 2026 · 14:30 · Los Angeles</span>
+          <span class="dp-trigger-meta">UTC−7</span>
+        </div>
+      </div>
+      <div class="dp-popover dp-popover-open dp-dt-popover">
+        <div data-cal data-cal-mode="single" data-cal-precision="day" data-cal-months="1" data-cal-selected="2026-05-13"></div>
+        <div class="dp-dt-time-strip">
+          <div class="dp-dt-time-eyebrow">Time</div>
+          <div class="dp-stepper-row">
+            <div class="dp-stepper"><button type="button" class="dp-stepper-btn"><i class="bi bi-chevron-up"></i></button><div class="dp-stepper-value">14</div><button type="button" class="dp-stepper-btn"><i class="bi bi-chevron-down"></i></button><div class="dp-stepper-label">Hour</div></div>
+            <div class="dp-stepper-sep">:</div>
+            <div class="dp-stepper"><button type="button" class="dp-stepper-btn"><i class="bi bi-chevron-up"></i></button><div class="dp-stepper-value">30</div><button type="button" class="dp-stepper-btn"><i class="bi bi-chevron-down"></i></button><div class="dp-stepper-label">Minute</div></div>
+          </div>
+          <div class="dp-dt-tz-block">
+            <div class="dp-dt-time-eyebrow">Timezone</div>
+            <div class="dp-tz-combo">
+              <i class="bi bi-globe"></i>
+              <input class="form-control form-control-sm" value="America/Los_Angeles" />
+              <span class="dp-tz-offset">UTC−7</span>
+            </div>
+            <button type="button" class="dp-tz-link">Use my timezone</button>
+          </div>
+        </div>
+      </div>
+      <div class="dp-callout">
+        <strong>Variant A — Calendar + strip (Date + Time + Timezone).</strong> Day-grid on the left, time strip on the right, timezone combobox stacked below time. All three values visible at once. No tabs, no mode switch. <em>Timezone slot is opt-in via <code>timezone: true</code> — when off, the TZ block hides and the strip collapses to time only.</em>
+      </div>
+    </div>
+  </template>
+
+  <!-- ───── Date+Time · B — Tabs ───── -->
+  <template id="tpl-dt-b">
+    <div class="dp-frame dp-frame-popover dp-frame-narrow">
+      <div class="dp-input-row">
+        <div class="dp-trigger" role="button" tabindex="0">
+          <i class="bi bi-calendar2-event"></i>
+          <span class="dp-trigger-text">May 13, 2026 · 14:30 · LA</span>
+        </div>
+      </div>
+      <div class="dp-popover dp-popover-open">
+        <div class="dp-tabs">
+          <button type="button" class="dp-tab is-active">Date</button>
+          <button type="button" class="dp-tab">Time</button>
+          <button type="button" class="dp-tab">Timezone</button>
+        </div>
+        <div data-cal data-cal-mode="single" data-cal-precision="day" data-cal-months="1" data-cal-selected="2026-05-13"></div>
+      </div>
+      <div class="dp-callout">
+        <strong>Variant B — Tabs.</strong> Date / Time / Timezone as separate tabs in one popover. Smallest footprint. Best when timezone is rarely changed and shouldn't crowd the picker.
+      </div>
+    </div>
+  </template>
+
+  <script src="mock.js"></script>
+</body>
+</html>

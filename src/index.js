@@ -8,6 +8,7 @@ import '@core/css/portal.css';
 import '@core/css/table.css';
 import '@core/css/toast.css';
 import '@core/css/chat.css';
+import '@core/forms/inputs/calendar/calendar.css';
 
 import ConsoleSilencer from '@core/utils/ConsoleSilencer.js';
 // Reduce console noise globally: errors only by default (suppress logs, info, and warnings)

@@ -1,21 +1,78 @@
 # DateRangePicker Component
 
-Select start and end dates in a single, intuitive interface. Perfect for date range filters, booking systems, and report generation.
+Select a start/end range at day, month, or year precision. Built on the same in-house `Calendar` engine as `DatePicker`. Defaults to a two-month side-by-side day-grid; supports a Stripe-style preset sidebar; cross-page anchor persistence so the user can pick start in May and end in June without losing the start cell off-screen.
 
-**Field Type:** `daterange`
+**Field Types:** `daterange` (default day precision), `monthrange` (precision: 'month'), `yearrange` (precision: 'year')
 
 ---
 
 ## Quick Start
 
 ```javascript
+// Day-precision range, two-month layout (default)
 {
   type: 'daterange',
   name: 'date_range',
   startName: 'start_date',
   endName: 'end_date',
   label: 'Date Range',
-  placeholder: 'Select date range...'
+}
+
+// With Stripe-style presets sidebar
+{
+  type: 'daterange',
+  name: 'period',
+  label: 'Reporting period',
+  presets: 'default',   // Today, Last 7 days, Last 30 days, This month, etc.
+}
+
+// Month-precision range — stores YYYY-MM
+{
+  type: 'monthrange',
+  name: 'period',
+  label: 'Period',
+  presets: 'default',   // YTD, Last 12 months, etc.
+}
+
+// Year-precision range
+{
+  type: 'yearrange',
+  name: 'years',
+  label: 'Years',
+}
+```
+
+## Precision
+
+`precision: 'year' | 'month' | 'day'` (default `'day'`) controls the resolution of the range.
+
+| Precision | Stored values | Default display | Field-type alias |
+|---|---|---|---|
+| `day` | `YYYY-MM-DD` × 2 | `MMM DD, YYYY` | `daterange` |
+| `month` | `YYYY-MM` × 2 | `MMM YYYY` | `monthrange` |
+| `year` | `YYYY` × 2 | `YYYY` | `yearrange` |
+
+## Cross-page anchor persistence
+
+When the user clicks a start anchor and then pages forward (or backward) with the calendar arrows or PageUp/PageDown, the anchor is remembered. They can commit the end cell on a different page; hover preview tints visible cells up to the cursor even when the anchor is off-screen, and the "N days / months / years" tooltip updates against the persisted anchor. Backwards selection (later cell first, then earlier) auto-swaps on commit.
+
+## Presets
+
+Set `presets: 'default'` (or `true`) to render a precision-appropriate sidebar with quick ranges:
+
+- **Day:** Today, Yesterday, Last 7 days, Last 30 days, Last 90 days, This month, Last month, This year
+- **Month:** This month, Last month, Last 3 months, Last 6 months, YTD, Last 12 months
+- **Year:** This year, Last year, Last 3 years, Last 5 years, Last 10 years
+
+Or supply a custom array:
+
+```javascript
+{
+  type: 'daterange',
+  presets: [
+    { label: 'Today', range: () => { const t = new Date(); return { start: t, end: t }; } },
+    { label: 'My custom range', range: () => ({ start: '2025-01-01', end: '2025-12-31' }) },
+  ]
 }
 ```
 

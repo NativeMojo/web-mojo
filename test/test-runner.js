@@ -709,6 +709,24 @@ class TestRunner {
                             cur = cur[k];
                         }
                         throw new Error(`Expected ${fmt(actual)} NOT to have property ${propPath}`);
+                    },
+                    toBeNull: () => {
+                        if (actual === null) {
+                            throw new Error(`Expected ${fmt(actual)} not to be null`);
+                        }
+                        return expectObj;
+                    },
+                    toBeDefined: () => {
+                        if (actual !== undefined) {
+                            throw new Error(`Expected ${fmt(actual)} not to be defined`);
+                        }
+                        return expectObj;
+                    },
+                    toBeUndefined: () => {
+                        if (actual === undefined) {
+                            throw new Error(`Expected ${fmt(actual)} not to be undefined`);
+                        }
+                        return expectObj;
                     }
                 }
             };

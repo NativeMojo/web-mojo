@@ -1,0 +1,405 @@
+/* ====================================================================
+   Calendar / DatePicker styles — production
+   --------------------------------------------------------------------
+   Tokened against Bootstrap 5.3 variables. Light-theme defaults at the
+   top, [data-bs-theme="dark"] overrides clustered at the bottom per
+   .claude/rules/theming.md.
+   ==================================================================== */
+
+:root {
+  --mojo-cal-radius-sm: 6px;
+  --mojo-cal-radius: 10px;
+  --mojo-cal-radius-lg: 14px;
+  --mojo-cal-shadow:
+    0 1px 1px rgba(15, 23, 42, 0.04),
+    0 8px 24px rgba(15, 23, 42, 0.08),
+    0 24px 48px rgba(15, 23, 42, 0.06);
+  --mojo-cal-anchor-fill: var(--bs-primary);
+  --mojo-cal-anchor-text: #ffffff;
+  --mojo-cal-range-fill: rgba(13, 110, 253, 0.10);
+  --mojo-cal-range-fill-hover: rgba(13, 110, 253, 0.18);
+  --mojo-cal-tooltip-bg: #1f2630;
+  --mojo-cal-tooltip-text: #f5f6fa;
+}
+
+/* ── Trigger input ─────────────────────────────────────────────── */
+
+.mojo-date-picker {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.mojo-date-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--mojo-cal-radius);
+  padding: 9px 12px;
+  font-size: 14px;
+  color: var(--bs-emphasis-color);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  text-align: left;
+}
+.mojo-date-trigger:hover,
+.mojo-date-trigger:focus-within {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12);
+  outline: none;
+}
+.mojo-date-trigger.is-invalid {
+  border-color: var(--bs-danger);
+}
+.mojo-date-trigger > i {
+  color: var(--bs-secondary-color);
+  font-size: 15px;
+}
+.mojo-date-trigger-text {
+  flex: 1;
+  font-feature-settings: "tnum" on;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mojo-date-trigger-text.is-empty {
+  color: var(--bs-secondary-color);
+}
+.mojo-date-trigger-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  background: transparent;
+  border-radius: 50%;
+  color: var(--bs-secondary-color);
+  cursor: pointer;
+}
+.mojo-date-trigger-clear:hover {
+  background: var(--bs-secondary-bg);
+  color: var(--bs-emphasis-color);
+}
+
+/* ── Popover ──────────────────────────────────────────────────── */
+
+.mojo-calendar-popover {
+  display: none;
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--mojo-cal-radius-lg);
+  padding: 16px;
+  box-shadow: var(--mojo-cal-shadow);
+  font-family: inherit;
+}
+.mojo-calendar-popover.is-open { display: block; }
+
+.mojo-calendar-popover-with-presets {
+  display: none;
+  grid-template-columns: 168px 1fr;
+  padding: 0;
+  overflow: hidden;
+}
+.mojo-calendar-popover-with-presets.is-open { display: grid; }
+.mojo-calendar-popover-with-presets > .mojo-calendar-cal-wrap { padding: 16px; }
+
+.mojo-calendar-popover-foot {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--bs-border-color);
+  background: var(--bs-tertiary-bg);
+}
+
+/* ── Preset sidebar ───────────────────────────────────────────── */
+
+.mojo-calendar-presets {
+  background: var(--bs-tertiary-bg);
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-right: 1px solid var(--bs-border-color);
+}
+.mojo-calendar-presets-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  padding: 6px 10px 8px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+.mojo-calendar-preset {
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--bs-body-color);
+  border-radius: var(--mojo-cal-radius-sm);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.mojo-calendar-preset:hover { background: rgba(0, 0, 0, 0.04); }
+.mojo-calendar-preset.is-active {
+  background: var(--bs-primary);
+  color: #fff;
+  font-weight: 500;
+}
+.mojo-calendar-presets-divider {
+  height: 1px;
+  background: var(--bs-border-color);
+  margin: 6px 8px;
+}
+
+/* ── Calendar grid ────────────────────────────────────────────── */
+
+.mojo-calendar {
+  font-feature-settings: "tnum" on;
+  font-variant-numeric: tabular-nums;
+}
+.mojo-calendar-multi {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.mojo-calendar-pane { display: flex; flex-direction: column; gap: 10px; }
+
+.mojo-calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+.mojo-calendar-head-label {
+  background: transparent;
+  border: 0;
+  padding: 4px 6px;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--bs-emphasis-color);
+  border-radius: var(--mojo-cal-radius-sm);
+  cursor: pointer;
+}
+.mojo-calendar-head-label:hover { background: var(--bs-secondary-bg); }
+.mojo-calendar-head-label .mojo-calendar-year {
+  color: var(--bs-secondary-color);
+  font-weight: 500;
+  margin-left: 6px;
+}
+
+.mojo-calendar-nav { display: inline-flex; gap: 2px; }
+.mojo-calendar-nav-btn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--mojo-cal-radius-sm);
+  color: var(--bs-secondary-color);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+.mojo-calendar-nav-btn:hover {
+  background: var(--bs-secondary-bg);
+  color: var(--bs-emphasis-color);
+}
+
+.mojo-calendar-grid { display: grid; gap: 0; }
+.mojo-calendar-grid-day { grid-template-columns: repeat(7, 1fr); }
+.mojo-calendar-grid-month { grid-template-columns: repeat(4, 1fr); }
+.mojo-calendar-grid-year { grid-template-columns: repeat(4, 1fr); }
+
+.mojo-calendar-weekday {
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  text-align: center;
+  padding: 8px 0 6px;
+  font-weight: 500;
+}
+
+.mojo-calendar-cell {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--bs-body-color);
+  cursor: pointer;
+  user-select: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+.mojo-calendar-grid-month .mojo-calendar-cell,
+.mojo-calendar-grid-year .mojo-calendar-cell {
+  aspect-ratio: 16 / 9;
+  border-radius: var(--mojo-cal-radius-sm);
+}
+.mojo-calendar-cell-blank { cursor: default; }
+.mojo-calendar-cell-disabled {
+  color: var(--bs-secondary-color);
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mojo-calendar-cell-inner {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  position: relative;
+  z-index: 2;
+  transition: background 0.10s ease, color 0.10s ease;
+}
+.mojo-calendar-grid-month .mojo-calendar-cell-inner,
+.mojo-calendar-grid-year .mojo-calendar-cell-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--mojo-cal-radius-sm);
+}
+
+.mojo-calendar-cell:not(.mojo-calendar-cell-blank):not(.mojo-calendar-cell-disabled):hover .mojo-calendar-cell-inner {
+  background: var(--bs-secondary-bg);
+}
+
+/* Today */
+.mojo-calendar-cell-today .mojo-calendar-cell-inner {
+  color: var(--bs-danger);
+  font-weight: 600;
+}
+
+/* Range fill (committed) */
+.mojo-calendar-cell-in-range::before {
+  content: "";
+  position: absolute;
+  inset: 4px 0;
+  background: var(--mojo-cal-range-fill);
+  z-index: 1;
+}
+/* Range preview (in-progress) */
+.mojo-calendar-cell-in-preview::before {
+  content: "";
+  position: absolute;
+  inset: 4px 0;
+  background: var(--mojo-cal-range-fill-hover);
+  z-index: 1;
+}
+
+/* Anchor cells */
+.mojo-calendar-cell-anchor .mojo-calendar-cell-inner {
+  background: var(--mojo-cal-anchor-fill);
+  color: var(--mojo-cal-anchor-text);
+  font-weight: 600;
+}
+.mojo-calendar-cell-selected .mojo-calendar-cell-inner {
+  background: var(--bs-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Anchor chevrons — day grid only */
+.mojo-calendar-grid-day .mojo-calendar-cell-anchor-start::after,
+.mojo-calendar-grid-day .mojo-calendar-cell-anchor-end::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  z-index: 3;
+}
+.mojo-calendar-grid-day .mojo-calendar-cell-anchor-start::after {
+  right: -1px;
+  transform: translateY(-50%);
+  border-width: 6px 0 6px 6px;
+  border-color: transparent transparent transparent var(--mojo-cal-anchor-fill);
+}
+.mojo-calendar-grid-day .mojo-calendar-cell-anchor-end::after {
+  left: -1px;
+  transform: translateY(-50%);
+  border-width: 6px 6px 6px 0;
+  border-color: transparent var(--mojo-cal-anchor-fill) transparent transparent;
+}
+.mojo-calendar-cell-anchor-solo::after { display: none !important; }
+
+/* Month / year ranges fill the rounded tile */
+.mojo-calendar-grid-month .mojo-calendar-cell-in-range::before,
+.mojo-calendar-grid-year .mojo-calendar-cell-in-range::before,
+.mojo-calendar-grid-month .mojo-calendar-cell-in-preview::before,
+.mojo-calendar-grid-year .mojo-calendar-cell-in-preview::before {
+  inset: 2px;
+  border-radius: var(--mojo-cal-radius-sm);
+}
+
+/* ── Range summary footer ─────────────────────────────────────── */
+
+.mojo-calendar-range-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-feature-settings: "tnum" on;
+  font-variant-numeric: tabular-nums;
+}
+.mojo-calendar-range-summary .label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  font-weight: 500;
+}
+.mojo-calendar-range-summary .value {
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--mojo-cal-radius-sm);
+  padding: 4px 8px;
+}
+.mojo-calendar-range-summary .arrow { color: var(--bs-secondary-color); }
+.mojo-calendar-range-summary .count {
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--bs-secondary-color);
+  background: var(--bs-secondary-bg);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+/* ── Dark theme overrides ─────────────────────────────────────── */
+
+[data-bs-theme="dark"] {
+  --mojo-cal-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.5),
+    0 8px 24px rgba(0, 0, 0, 0.45),
+    0 24px 48px rgba(0, 0, 0, 0.35);
+  --mojo-cal-range-fill: rgba(110, 168, 254, 0.18);
+  --mojo-cal-range-fill-hover: rgba(110, 168, 254, 0.30);
+  --mojo-cal-tooltip-bg: #e6ecf3;
+  --mojo-cal-tooltip-text: #11161d;
+}
+
+[data-bs-theme="dark"] .mojo-date-trigger:hover,
+[data-bs-theme="dark"] .mojo-date-trigger:focus-within {
+  box-shadow: 0 0 0 3px rgba(110, 168, 254, 0.18);
+}
+
+[data-bs-theme="dark"] .mojo-calendar-preset:hover {
+  background: rgba(255, 255, 255, 0.04);
+}

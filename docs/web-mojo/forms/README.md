@@ -268,8 +268,8 @@ For image fields, `Dialog.updateModelImage()` wraps this entire flow in one call
 5. **[inputs/](./inputs/README.md)** - Advanced Components
    - **Overview** - Component comparison tables, when to use each
    - **[TagInput](./inputs/TagInput.md)** - Tag/chip input with autocomplete
-   - **[DatePicker](./inputs/DatePicker.md)** - Enhanced date picker (Easepick)
-   - **[DateRangePicker](./inputs/DateRangePicker.md)** - Date range selection
+   - **[DatePicker](./inputs/DatePicker.md)** - In-house date picker · day/month/year precision
+   - **[DateRangePicker](./inputs/DateRangePicker.md)** - Date range with cross-page anchor & presets
    - **[MultiSelectDropdown](./inputs/MultiSelectDropdown.md)** - Multi-select with checkboxes
    - **[ComboInput](./inputs/ComboInput.md)** - Editable dropdown/autocomplete
    - **[CollectionSelect](./inputs/CollectionSelect.md)** - Single select from API

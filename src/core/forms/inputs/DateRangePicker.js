@@ -1,30 +1,38 @@
 /**
- * DateRangePicker - Enhanced date range picker with Easepick integration
- * Falls back to two native HTML5 date inputs if Easepick is unavailable
- * 
- * Features:
- * - Dynamic CDN loading of Easepick
- * - Start and end date validation
- * - Configurable date formats and constraints
- * - Keyboard navigation and accessibility
- * - Form integration with FormBuilder
- * - Graceful fallback to native date inputs
- * 
- * Example Usage:
- * ```javascript
- * const dateRangePicker = new DateRangePicker({
- *   name: 'date_range',
- *   startDate: '2023-01-01',
- *   endDate: '2023-01-31',
- *   format: 'YYYY-MM-DD',
- *   min: '2020-01-01',
- *   max: '2030-12-31',
- *   placeholder: 'Select date range...'
- * });
- * ```
+ * DateRangePicker — range picker built on the in-house Calendar engine.
+ *
+ * Supports `precision: 'year' | 'month' | 'day'` (default 'day') and an
+ * optional `presets` sidebar. Cross-page anchor persistence: once a start
+ * anchor is committed, paging the calendar with prev/next does not clear
+ * it — the user can commit the end cell on a different page.
+ *
+ * Public option set:
+ *   name, startName, endName, fieldName, startDate, endDate, format,
+ *   displayFormat, outputFormat, min, max, placeholder, disabled, readonly,
+ *   required, inline, separator, autoApply.
+ *
+ * New options:
+ *   precision  'year' | 'month' | 'day' (default 'day')
+ *   months     1 | 2 (default 2 for day precision, 1 for month/year)
+ *   presets    'default' | true | array of { label, range: () => ({start,end}) }
+ *
+ * Emits 'change' with { startDate, endDate, combined, formatted, oldStartDate, oldEndDate }.
  */
 
 import View from '@core/View.js';
+import Calendar from '@core/forms/inputs/calendar/Calendar.js';
+import CalendarPopover from '@core/forms/inputs/calendar/CalendarPopover.js';
+import PresetSidebar from '@core/forms/inputs/calendar/PresetSidebar.js';
+import {
+  parseByPrecision, formatByPrecision, formatForDisplay,
+  unitsBetweenInclusive,
+} from '@core/utils/dateFns.js';
+
+const DEFAULT_DISPLAY_FORMAT = {
+  day: 'MMM DD, YYYY',
+  month: 'MMM YYYY',
+  year: 'YYYY',
+};
 
 class DateRangePicker extends View {
   constructor(options = {}) {
@@ -35,834 +43,360 @@ class DateRangePicker extends View {
       fieldName,
       startDate = '',
       endDate = '',
-      format = 'YYYY-MM-DD',
-      displayFormat = 'MMM DD, YYYY',
-      outputFormat = 'date', // 'date', 'epoch', 'iso'
+      precision = 'day',
+      format = null,
+      displayFormat = null,
+      outputFormat = 'date',          // 'date' | 'string' | 'object'
       min = null,
       max = null,
-      placeholder = 'Select date range...',
-      startPlaceholder = 'Start date...',
-      endPlaceholder = 'End date...',
+      placeholder = null,
       disabled = false,
       readonly = false,
       required = false,
       class: containerClass = '',
       inputClass = 'form-control',
-      autoApply = true,
       inline = false,
-      separator = ' - ',
+      separator = ' – ',
+      autoApply = true,
+      months = null,
+      presets = null,
       ...viewOptions
     } = options;
 
     super({
       tagName: 'div',
-      className: `date-range-picker-view ${containerClass}`,
-      ...viewOptions
+      className: `mojo-date-picker mojo-date-range-picker mojo-date-picker-${precision} ${containerClass}`.trim(),
+      ...viewOptions,
     });
 
-    // Configuration
     this.name = name;
     this.startName = startName;
     this.endName = endName;
     this.fieldName = fieldName;
+    this.precision = precision;
     this.format = format;
-    this.displayFormat = displayFormat;
+    this.displayFormat = displayFormat || DEFAULT_DISPLAY_FORMAT[precision] || DEFAULT_DISPLAY_FORMAT.day;
     this.outputFormat = outputFormat;
     this.min = min;
     this.max = max;
-    this.placeholder = placeholder;
-    this.startPlaceholder = startPlaceholder;
-    this.endPlaceholder = endPlaceholder;
+    this.placeholder = placeholder ?? this._defaultPlaceholder(precision);
     this.disabled = disabled;
     this.readonly = readonly;
     this.required = required;
     this.inputClass = inputClass;
-    this.autoApply = autoApply;
     this.inline = inline;
     this.separator = separator;
+    this.autoApply = autoApply;
+    this.months = months ?? (precision === 'day' ? 2 : 1);
+    this.presets = presets;
 
-    // State
-    this.currentStartDate = startDate;
-    this.currentEndDate = endDate;
-    this.picker = null;
-    this.useNative = false;
-    this.easepickLoaded = false;
+    this.currentStartDate = startDate || '';
+    this.currentEndDate = endDate || '';
 
-    // Check if Easepick is available
-    this.checkEasepickAvailability();
+    this._calendar = null;
+    this._popover = null;
+    this._presetSidebar = null;
   }
 
-  /**
-   * Check if Easepick is available and load if needed
-   */
-  async checkEasepickAvailability() {
-    if (typeof window !== 'undefined' && window.easepick) {
-      this.easepickLoaded = true;
-      return true;
-    }
-
-    // Try to load Easepick from CDN
-    try {
-      await this.loadEasepick();
-      this.easepickLoaded = true;
-      return true;
-    } catch (error) {
-      console.warn('Easepick failed to load, falling back to native date inputs:', error);
-      this.useNative = true;
-      return false;
-    }
+  _defaultPlaceholder(precision) {
+    if (precision === 'year') return 'Select year range...';
+    if (precision === 'month') return 'Select month range...';
+    return 'Select date range...';
   }
 
-  /**
-   * Dynamically load Easepick from CDN
-   */
-  async loadEasepick() {
-    return new Promise((resolve, reject) => {
-      // Check if already loaded
-      if (window.easepick) {
-        resolve();
-        return;
-      }
+  // ── Render ─────────────────────────────────────────────────────
 
-      // Load CSS first
-      const css = document.createElement('link');
-      css.rel = 'stylesheet';
-      css.href = 'https://cdn.jsdelivr.net/npm/@easepick/bundle@1.2.1/dist/index.css';
-      document.head.appendChild(css);
-
-      // Load JavaScript
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/@easepick/bundle@1.2.1/dist/index.umd.min.js';
-      script.onload = () => {
-        if (window.easepick) {
-          resolve();
-        } else {
-          reject(new Error('Easepick not available after loading'));
-        }
-      };
-      script.onerror = () => reject(new Error('Failed to load Easepick script'));
-      document.head.appendChild(script);
-    });
-  }
-
-  /**
-   * Render the date range picker component
-   */
   async renderTemplate() {
-    const inputId = this.getInputId();
-    const displayValue = this.getDisplayValue();
-    
-    if (this.useNative) {
-      // Render two separate date inputs for native fallback
-      return this.renderNativeTemplate(inputId);
+    const inputId = this._inputId();
+    const text = this._displayText();
+    const isEmpty = !this.currentStartDate;
+
+    const startField = this.startName || (this.name ? `${this.name}_start` : '');
+    const endField = this.endName || (this.name ? `${this.name}_end` : '');
+
+    const hidden = `
+      ${this.name ? `<input type="hidden" name="${this._attr(this.name)}" value="${this._attr(this.getCombinedValue())}" data-combined-value />` : ''}
+      ${startField ? `<input type="hidden" name="${this._attr(startField)}" value="${this._attr(this.currentStartDate)}" data-start-value />` : ''}
+      ${endField ? `<input type="hidden" name="${this._attr(endField)}" value="${this._attr(this.currentEndDate)}" data-end-value />` : ''}
+    `;
+
+    if (this.inline) {
+      return `
+        ${hidden}
+        <div data-cal-host class="mojo-date-picker-inline${this.hasError() ? ' is-invalid' : ''}"></div>
+      `;
     }
 
-    // Determine field names
-    const startFieldName = this.startName || (this.name ? `${this.name}_start` : '');
-    const endFieldName = this.endName || (this.name ? `${this.name}_end` : '');
-    
-    // Get formatted values for output
-    const startValue = this.currentStartDate ? this.formatForOutput(this.currentStartDate) : '';
-    const endValue = this.currentEndDate ? this.formatForOutput(this.currentEndDate) : '';
-
     return `
-      <div class="date-range-picker-container">
-        <input 
-          type="text"
-          id="${inputId}"
-          ${this.name ? `name="${this.name}"` : ''}
-          class="${this.inputClass} date-range-picker-input${this.hasError() ? ' is-invalid' : ''}"
-          value="${this.escapeHtml(displayValue)}"
-          placeholder="${this.escapeHtml(this.placeholder)}"
-          ${this.disabled ? 'disabled' : ''}
-          ${this.readonly ? 'readonly' : ''}
-          ${this.required ? 'required' : ''}
-          autocomplete="off"
-          data-change-action="range-changed"
-          style="background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><path fill=%22%236c757d%22 fill-rule=%22evenodd%22 d=%22M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z%22/></svg>'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 16px 12px; padding-right: 2.25rem; cursor: pointer;"
-        />
-        
-        <!-- Hidden inputs for form submission -->
-        ${startFieldName ? `<input type="hidden" name="${startFieldName}" value="${this.escapeHtml(startValue)}" />` : ''}
-        ${endFieldName ? `<input type="hidden" name="${endFieldName}" value="${this.escapeHtml(endValue)}" />` : ''}
-        ${this.fieldName ? `<input type="hidden" name="${this.fieldName}" value="${this.escapeHtml(this.name || '')}" />` : ''}
-        
-        <div class="date-range-picker-feedback"></div>
-      </div>
+      <button type="button" id="${inputId}" class="mojo-date-trigger${this.hasError() ? ' is-invalid' : ''}"
+              ${this.disabled ? 'disabled' : ''}
+              data-trigger>
+        <i class="bi bi-calendar3-range"></i>
+        <span class="mojo-date-trigger-text${isEmpty ? ' is-empty' : ''}" data-trigger-text>${this._attr(text || this.placeholder)}</span>
+        ${!this.required && !this.disabled && !this.readonly ? `<button type="button" class="mojo-date-trigger-clear" data-clear aria-label="Clear" tabindex="-1">&#x2715;</button>` : ''}
+      </button>
+      ${hidden}
     `;
   }
 
-  /**
-   * Render native fallback template with two date inputs
-   */
-  renderNativeTemplate(inputId) {
-    return `
-      <div class="date-range-picker-container date-range-native">
-        <div class="row g-2">
-          <div class="col">
-            <input 
-              type="date"
-              id="${inputId}_start"
-              name="${this.name}_start"
-              class="${this.inputClass}${this.hasError() ? ' is-invalid' : ''}"
-              value="${this.escapeHtml(this.formatDate(this.currentStartDate, 'YYYY-MM-DD'))}"
-              placeholder="${this.escapeHtml(this.startPlaceholder)}"
-              ${this.min ? `min="${this.min}"` : ''}
-              ${this.max ? `max="${this.max}"` : ''}
-              ${this.disabled ? 'disabled' : ''}
-              ${this.readonly ? 'readonly' : ''}
-              ${this.required ? 'required' : ''}
-              data-change-action="start-date-changed"
-            />
-          </div>
-          <div class="col-auto d-flex align-items-center">
-            <span class="text-muted">${this.escapeHtml(this.separator.trim())}</span>
-          </div>
-          <div class="col">
-            <input 
-              type="date"
-              id="${inputId}_end"
-              name="${this.name}_end"
-              class="${this.inputClass}${this.hasError() ? ' is-invalid' : ''}"
-              value="${this.escapeHtml(this.formatDate(this.currentEndDate, 'YYYY-MM-DD'))}"
-              placeholder="${this.escapeHtml(this.endPlaceholder)}"
-              ${this.min ? `min="${this.min}"` : ''}
-              ${this.max ? `max="${this.max}"` : ''}
-              ${this.disabled ? 'disabled' : ''}
-              ${this.readonly ? 'readonly' : ''}
-              ${this.required ? 'required' : ''}
-              data-change-action="end-date-changed"
-            />
-          </div>
-        </div>
-        
-        <!-- Hidden input for combined value -->
-        <input type="hidden" name="${this.name}" value="${this.escapeHtml(this.getCombinedValue())}" />
-        ${this.fieldName ? `<input type="hidden" name="${this.fieldName}" value="${this.escapeHtml(this.name || '')}" />` : ''}
-        
-        <div class="date-range-picker-feedback"></div>
-      </div>
-    `;
-  }
-
-  /**
-   * Initialize after render
-   */
   async onAfterRender() {
-    await super.onAfterRender();
-    
-    if (this.easepickLoaded && !this.useNative) {
-      await this.initializeEasepick();
+    if (this.inline) {
+      this._mountInline();
     } else {
-      this.initializeNativeFallback();
+      this._wireTrigger();
     }
   }
 
-  /**
-   * Initialize Easepick date range picker
-   */
-  async initializeEasepick() {
-    const input = this.getInputElement();
-    if (!input || !window.easepick) return;
+  _wireTrigger() {
+    const trigger = this.element.querySelector('[data-trigger]');
+    const clear = this.element.querySelector('[data-clear]');
+    if (!trigger) return;
 
-    try {
-      const config = {
-        element: input,
-        css: [
-          'https://cdn.jsdelivr.net/npm/@easepick/bundle@1.2.1/dist/index.css',
-        ],
-        format: this.displayFormat,
-        lang: 'en-US',
-        autoApply: this.autoApply,
-        inline: this.inline,
-        readonly: this.readonly,
-        zIndex: 9999,
-        plugins: ['RangePlugin'],
-        RangePlugin: {
-          tooltip: true,
-          locale: {
-            one: 'day',
-            other: 'days'
-          }
-        }
-      };
-
-      // Add date constraints
-      if (this.min) {
-        config.minDate = new Date(this.min);
-      }
-      if (this.max) {
-        config.maxDate = new Date(this.max);
-      }
-
-      // Add event handlers
-      config.setup = (picker) => {
-        picker.on('select', (e) => {
-          const { start, end } = e.detail;
-          // Easepick returns DateTime objects, convert to local date strings
-          const startDate = start ? this.normalizeDateFromPicker(start) : '';
-          const endDate = end ? this.normalizeDateFromPicker(end) : '';
-          this.handleRangeChange(startDate, endDate);
-        });
-
-        picker.on('clear', () => {
-          this.handleRangeChange('', '');
-        });
-
-        picker.on('show', () => {
-          this.emit('picker:show');
-        });
-
-        picker.on('hide', () => {
-          this.emit('picker:hide');
-        });
-
-        picker.on('ready', () => {
-          this.applyInitialRange(picker);
-        });
-      };
-
-      this.picker = new window.easepick.create(config);
-
-      // Apply initial range immediately as well (in case ready already fired)
-      this.applyInitialRange(this.picker);
-
-    } catch (error) {
-      console.error('Failed to initialize Easepick range picker:', error);
-      this.useNative = true;
-      await this.render(); // Re-render with native template
-      this.initializeNativeFallback();
-    }
-  }
-
-  /**
-   * Initialize native HTML5 date inputs fallback
-   */
-  initializeNativeFallback() {
-    // Native inputs are already set up in template
-    // Just ensure proper constraint relationships
-    this.updateConstraints();
-  }
-
-  // ========================================
-  // Event Handlers
-  // ========================================
-
-  /**
-   * Handle range change from Easepick
-   */
-  async onChangeRangeChanged(_action, _event, _element) {
-    // This is handled by Easepick setup callback
-  }
-
-  /**
-   * Handle start date change in native mode
-   */
-  async onChangeStartDateChanged(action, event, element) {
-    const startDate = element.value;
-    this.handleRangeChange(startDate, this.currentEndDate);
-    this.updateConstraints();
-  }
-
-  /**
-   * Handle end date change in native mode
-   */
-  async onChangeEndDateChanged(action, event, element) {
-    const endDate = element.value;
-    this.handleRangeChange(this.currentStartDate, endDate);
-    this.updateConstraints();
-  }
-
-  /**
-   * Handle date range change logic
-   */
-  handleRangeChange(startDate, endDate) {
-    const oldStartDate = this.currentStartDate;
-    const oldEndDate = this.currentEndDate;
-    
-    this.currentStartDate = startDate;
-    this.currentEndDate = endDate;
-
-    // Update hidden inputs
-    this.updateHiddenInputs();
-
-    // Emit change events
-    if (oldStartDate !== startDate || oldEndDate !== endDate) {
-      this.emit('change', {
-        startDate,
-        endDate,
-        combined: this.getCombinedValue(),
-        formatted: this.getDisplayValue(),
-        oldStartDate,
-        oldEndDate
-      });
-      
-      this.emit('range:changed', {
-        startDate,
-        endDate,
-        oldStartDate,
-        oldEndDate
-      });
-    }
-  }
-
-  /**
-   * Update constraints for native inputs
-   */
-  updateConstraints() {
-    if (!this.useNative) return;
-
-    const startInput = this.element?.querySelector(`[name="${this.name}_start"]`);
-    const endInput = this.element?.querySelector(`[name="${this.name}_end"]`);
-
-    if (startInput && endInput) {
-      // End date should be >= start date
-      if (this.currentStartDate) {
-        endInput.min = this.currentStartDate;
-      }
-      
-      // Start date should be <= end date
-      if (this.currentEndDate) {
-        startInput.max = this.currentEndDate;
-      }
-    }
-  }
-
-  // ========================================
-  // Utility Methods
-  // ========================================
-
-  /**
-   * Normalize date from Easepick DateTime object
-   * Easepick DateTime objects may have timezone issues, so extract the date components directly
-   */
-  normalizeDateFromPicker(dateObj) {
-    if (!dateObj) return '';
-    
-    // If it's an Easepick DateTime object, it has a toJSDate() method
-    if (typeof dateObj.toJSDate === 'function') {
-      const jsDate = dateObj.toJSDate();
-      return this.formatDate(jsDate, this.format);
-    }
-    
-    // If it has getFullYear/getMonth/getDate methods (like DateTime)
-    if (typeof dateObj.getFullYear === 'function') {
-      const year = dateObj.getFullYear();
-      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-      const day = String(dateObj.getDate()).padStart(2, '0');
-      
-      switch (this.format) {
-        case 'YYYY-MM-DD':
-          return `${year}-${month}-${day}`;
-        case 'MM/DD/YYYY':
-          return `${month}/${day}/${year}`;
-        case 'DD/MM/YYYY':
-          return `${day}/${month}/${year}`;
-        default:
-          return `${year}-${month}-${day}`;
-      }
-    }
-    
-    // Fallback to formatDate
-    return this.formatDate(dateObj, this.format);
-  }
-
-  /**
-   * Format date for different contexts
-   */
-  formatDate(date, format = this.format) {
-    if (!date) return '';
-    
-    let year, month, day, d;
-    
-    // If date is a YYYY-MM-DD string, parse it manually to avoid timezone issues
-    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      const parts = date.split('-');
-      year = parseInt(parts[0]);
-      month = String(parseInt(parts[1])).padStart(2, '0');
-      day = String(parseInt(parts[2])).padStart(2, '0');
-    } else {
-      // Handle Date objects or other string formats
-      if (date instanceof Date) {
-        d = date;
-      } else {
-        d = new Date(date);
-      }
-      
-      if (isNaN(d.getTime())) return '';
-
-      // Use getFullYear, getMonth, getDate (local time methods)
-      year = d.getFullYear();
-      month = String(d.getMonth() + 1).padStart(2, '0');
-      day = String(d.getDate()).padStart(2, '0');
-    }
-    
-    switch (format) {
-      case 'YYYY-MM-DD':
-        return `${year}-${month}-${day}`;
-      case 'MM/DD/YYYY':
-        return `${month}/${day}/${year}`;
-      case 'DD/MM/YYYY':
-        return `${day}/${month}/${year}`;
-      case 'MMM DD, YYYY': {
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const monthIndex = parseInt(month) - 1;
-        return `${monthNames[monthIndex]} ${day}, ${year}`;
-      }
-      default:
-        return `${year}-${month}-${day}`;
-    }
-  }
-
-  /**
-   * Format date for output based on outputFormat setting
-   */
-  formatForOutput(date) {
-    if (!date) return '';
-    
-    // If date is already a string in YYYY-MM-DD format, don't re-parse it
-    // to avoid timezone issues
-    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      switch (this.outputFormat) {
-        case 'epoch':
-          // For epoch, we need to parse but use local midnight
-          const parts = date.split('-');
-          const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-          return Math.floor(d.getTime() / 1000).toString();
-        case 'iso':
-          return new Date(date + 'T00:00:00').toISOString();
-        case 'date':
-        default:
-          return date; // Already in the correct format
-      }
-    }
-    
-    // For Date objects or other formats, parse and convert
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return '';
-
-    switch (this.outputFormat) {
-      case 'epoch':
-        return Math.floor(d.getTime() / 1000).toString();
-      case 'iso':
-        return d.toISOString();
-      case 'date':
-      default:
-        return this.formatDate(date, this.format);
-    }
-  }
-
-  /**
-   * Get display value for the input
-   */
-  getDisplayValue() {
-    if (!this.currentStartDate && !this.currentEndDate) return '';
-    
-    const startFormatted = this.currentStartDate ? 
-      this.formatDate(this.currentStartDate, this.displayFormat) : '';
-    const endFormatted = this.currentEndDate ? 
-      this.formatDate(this.currentEndDate, this.displayFormat) : '';
-
-    if (startFormatted && endFormatted) {
-      return `${startFormatted}${this.separator}${endFormatted}`;
-    } else if (startFormatted) {
-      return startFormatted;
-    } else if (endFormatted) {
-      return endFormatted;
-    }
-    
-    return '';
-  }
-
-  /**
-   * Get combined value for form submission
-   */
-  getCombinedValue() {
-    if (!this.currentStartDate && !this.currentEndDate) return '';
-    
-    return JSON.stringify({
-      start: this.currentStartDate,
-      end: this.currentEndDate
+    trigger.addEventListener('click', (event) => {
+      if (event.target.closest('[data-clear]')) return;
+      this._togglePopover(trigger);
     });
-  }
 
-  /**
-   * Get unique input ID
-   */
-  getInputId() {
-    return this.name ? `daterange_${this.name}_${Date.now()}` : `daterange_${Date.now()}`;
-  }
-
-  /**
-   * Get main input element
-   */
-  getInputElement() {
-    return this.element?.querySelector('input[type="text"], input[name="' + this.name + '"]');
-  }
-
-  /**
-   * Update hidden inputs for form submission
-   */
-  updateHiddenInputs() {
-    const startFieldName = this.startName || (this.name ? `${this.name}_start` : '');
-    const endFieldName = this.endName || (this.name ? `${this.name}_end` : '');
-    
-    const startInput = startFieldName ? this.element?.querySelector(`[name="${startFieldName}"]`) : null;
-    const endInput = endFieldName ? this.element?.querySelector(`[name="${endFieldName}"]`) : null;
-    const combinedInput = this.name ? this.element?.querySelector(`[name="${this.name}"]`) : null;
-    const fieldNameInput = this.fieldName ? this.element?.querySelector(`[name="${this.fieldName}"]`) : null;
-
-    const startValue = this.currentStartDate ? this.formatForOutput(this.currentStartDate) : '';
-    const endValue = this.currentEndDate ? this.formatForOutput(this.currentEndDate) : '';
-    
-    if (startInput) startInput.value = startValue;
-    if (endInput) endInput.value = endValue;
-    if (combinedInput) combinedInput.value = this.getDisplayValue();
-    if (fieldNameInput) fieldNameInput.value = this.name || '';
-  }
-
-  /**
-   * Check if field has error
-   */
-  hasError() {
-    // Basic validation: end date should be after start date
-    if (this.currentStartDate && this.currentEndDate) {
-      return new Date(this.currentEndDate) < new Date(this.currentStartDate);
+    if (clear) {
+      clear.addEventListener('click', (event) => {
+        event.stopPropagation();
+        this._setRange('', '');
+      });
     }
-    return false;
   }
 
-  /**
-   * Escape HTML to prevent XSS
-   */
-  escapeHtml(str) {
-    if (str == null) return '';
-    const div = document.createElement('div');
-    div.textContent = String(str);
-    return div.innerHTML;
-  }
-
-  // ========================================
-  // Public API Methods
-  // ========================================
-
-  /**
-   * Set the date range values
-   */
-  setRange(startDate, endDate) {
-    this.currentStartDate = startDate;
-    this.currentEndDate = endDate;
-    
-      if (this.picker && this.easepickLoaded) {
-        const start = this.normalizeDateValue(startDate);
-        const end = this.normalizeDateValue(endDate);
-        this.picker.setDateRange(start || null, end || null);
-    } else if (this.useNative) {
-      const startInput = this.element?.querySelector(`[name="${this.name}_start"]`);
-      const endInput = this.element?.querySelector(`[name="${this.name}_end"]`);
-      
-      if (startInput) startInput.value = this.formatDate(startDate, 'YYYY-MM-DD');
-      if (endInput) endInput.value = this.formatDate(endDate, 'YYYY-MM-DD');
+  _togglePopover(anchor) {
+    if (this.disabled || this.readonly) return;
+    if (!this._popover) {
+      const hasPresets = this._hasPresets();
+      this._popover = new CalendarPopover({
+        anchor,
+        classNames: hasPresets ? 'mojo-calendar-popover-with-presets' : '',
+      });
     } else {
-      const input = this.getInputElement();
-      if (input) {
-        input.value = this.getDisplayValue();
-      }
+      this._popover.setAnchor(anchor);
     }
-    
-    this.updateHiddenInputs();
-    this.emit('range:set', { startDate, endDate });
-  }
 
-  applyInitialRange(picker) {
-    if (!picker || !(this.currentStartDate || this.currentEndDate)) {
+    if (this._popover.isOpen()) {
+      this._popover.close();
       return;
     }
-    const start = this.normalizeDateValue(this.currentStartDate);
-    const end = this.normalizeDateValue(this.currentEndDate);
-    if (start || end) {
-      picker.setDateRange(start || null, end || null);
+
+    if (!this._calendar) this._calendar = this._buildCalendar();
+    if (this._hasPresets() && !this._presetSidebar) this._presetSidebar = this._buildPresetSidebar();
+
+    const wrap = this._buildPopoverContent();
+    this._popover.setContent(wrap);
+    this._popover.open();
+    // Elements already attached by _buildPopoverContent — skip remount.
+    this._calendar.render(false);
+    if (this._presetSidebar) this._presetSidebar.render(false);
+  }
+
+  _mountInline() {
+    const host = this.element.querySelector('[data-cal-host]');
+    if (!host) return;
+    if (!this._calendar) this._calendar = this._buildCalendar();
+    if (this._hasPresets() && !this._presetSidebar) this._presetSidebar = this._buildPresetSidebar();
+    host.appendChild(this._buildPopoverContent());
+    this._calendar.render(false);
+    if (this._presetSidebar) this._presetSidebar.render(false);
+  }
+
+  _buildPopoverContent() {
+    const wrap = document.createElement('div');
+    wrap.className = 'mojo-calendar-popover-inner';
+    wrap.style.display = 'contents';
+
+    if (this._presetSidebar) {
+      wrap.appendChild(this._presetSidebar.element);
     }
+
+    const calWrap = document.createElement('div');
+    calWrap.className = 'mojo-calendar-cal-wrap';
+    calWrap.appendChild(this._calendar.element);
+    wrap.appendChild(calWrap);
+
+    return wrap;
   }
 
-  normalizeDateValue(value) {
-    if (!value && value !== 0) return null;
-    if (value instanceof Date) {
-      return isNaN(value) ? null : value;
-    }
-    const str = String(value).trim();
-    if (!str) return null;
-
-    // YYYY-MM-DD -> treat as local date (no timezone shift)
-    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-      const [year, month, day] = str.split('-').map(Number);
-      const date = new Date(year, month - 1, day);
-      return isNaN(date) ? null : date;
-    }
-
-    // Numeric timestamp (seconds or milliseconds)
-    if (/^-?\d+$/.test(str)) {
-      const num = Number(str);
-      const ms = str.length <= 10 ? num * 1000 : num;
-      const date = new Date(ms);
-      return isNaN(date) ? null : date;
-    }
-
-    const date = new Date(str);
-    return isNaN(date) ? null : date;
-  }
-
-  /**
-   * Get the current date range
-   */
-  getRange() {
-    return {
-      start: this.currentStartDate,
-      end: this.currentEndDate,
-      combined: this.getCombinedValue()
-    };
-  }
-
-  /**
-   * Clear the date range
-   */
-  clear() {
-    this.setRange('', '');
-  }
-
-  /**
-   * Set start date only
-   */
-  setStartDate(startDate) {
-    this.setRange(startDate, this.currentEndDate);
-  }
-
-  /**
-   * Set end date only
-   */
-  setEndDate(endDate) {
-    this.setRange(this.currentStartDate, endDate);
-  }
-
-  /**
-   * Get start date
-   */
-  getStartDate() {
-    return this.currentStartDate;
-  }
-
-  /**
-   * Get end date
-   */
-  getEndDate() {
-    return this.currentEndDate;
-  }
-
-  /**
-   * Enable/disable the picker
-   */
-  setEnabled(enabled) {
-    this.disabled = !enabled;
-    const inputs = this.element?.querySelectorAll('input');
-    inputs?.forEach(input => {
-      input.disabled = this.disabled;
+  _buildCalendar() {
+    const cal = new Calendar({
+      precision: this.precision,
+      mode: 'range',
+      months: this.months,
+      startValue: this.currentStartDate || null,
+      endValue: this.currentEndDate || null,
+      min: this.min,
+      max: this.max,
+      firstDay: 1,
+      locale: 'en-US',
     });
-  }
-
-  /**
-   * Set readonly state
-   */
-  setReadonly(readonly) {
-    this.readonly = readonly;
-    const inputs = this.element?.querySelectorAll('input:not([type="hidden"])');
-    inputs?.forEach(input => {
-      input.readonly = readonly;
-    });
-  }
-
-  /**
-   * Focus the input
-   */
-  focus() {
-    const input = this.getInputElement();
-    if (input) {
-      input.focus();
-    }
-  }
-
-  /**
-   * Show the picker (if using Easepick)
-   */
-  show() {
-    if (this.picker && this.easepickLoaded) {
-      this.picker.show();
-    }
-  }
-
-  /**
-   * Hide the picker (if using Easepick)
-   */
-  hide() {
-    if (this.picker && this.easepickLoaded) {
-      this.picker.hide();
-    }
-  }
-
-  // ========================================
-  // FormBuilder Integration
-  // ========================================
-
-  /**
-   * Get form value (for FormBuilder integration)
-   */
-  getFormValue() {
-    return this.getRange();
-  }
-
-  /**
-   * Set form value (for FormBuilder integration)
-   */
-  async setFormValue(value) {
-    if (typeof value === 'string') {
-      try {
-        const parsed = JSON.parse(value);
-        this.setRange(parsed.start, parsed.end);
-      } catch {
-        // If not JSON, treat as start date only
-        this.setRange(value, '');
+    cal.on('range:select', ({ start, end }) => {
+      this._setRange(start, end);
+      if (this.autoApply && this._popover && this._popover.isOpen()) {
+        this._popover.close();
       }
-    } else if (value && typeof value === 'object') {
-      this.setRange(value.start || '', value.end || '');
+    });
+    cal.on('range:start', () => {
+      if (this._presetSidebar) this._presetSidebar.setActive(-1);
+    });
+    return cal;
+  }
+
+  _hasPresets() {
+    return this.presets === true || this.presets === 'default' || (Array.isArray(this.presets) && this.presets.length > 0);
+  }
+
+  _buildPresetSidebar() {
+    const sidebar = new PresetSidebar({
+      precision: this.precision,
+      presets: this.presets,
+    });
+    sidebar.on('preset:select', ({ start, end }) => {
+      this._setRange(start, end);
+      if (this._calendar) this._calendar.setRange(start, end);
+      if (this.autoApply && this._popover && this._popover.isOpen()) {
+        this._popover.close();
+      }
+    });
+    return sidebar;
+  }
+
+  // ── Value handling ─────────────────────────────────────────────
+
+  _setRange(start, end) {
+    const oldS = this.currentStartDate;
+    const oldE = this.currentEndDate;
+
+    let s = '', e = '';
+    if (start) {
+      const p = parseByPrecision(start, this.precision);
+      if (p) s = formatByPrecision(p, this.precision);
+    }
+    if (end) {
+      const p = parseByPrecision(end, this.precision);
+      if (p) e = formatByPrecision(p, this.precision);
+    }
+    this.currentStartDate = s;
+    this.currentEndDate = e;
+
+    // Update DOM
+    const triggerText = this.element.querySelector('[data-trigger-text]');
+    if (triggerText) {
+      const text = this._displayText();
+      triggerText.textContent = text || this.placeholder;
+      triggerText.classList.toggle('is-empty', !s);
+    }
+    this._updateHidden();
+
+    if (oldS !== s || oldE !== e) {
+      this.emit('change', {
+        startDate: s, endDate: e,
+        combined: this.getCombinedValue(),
+        formatted: this._displayText(),
+        oldStartDate: oldS, oldEndDate: oldE,
+      });
+      this.emit('range:changed', { startDate: s, endDate: e, oldStartDate: oldS, oldEndDate: oldE });
     }
   }
 
-  // ========================================
-  // Lifecycle Methods
-  // ========================================
+  _updateHidden() {
+    const startEl = this.element.querySelector('[data-start-value]');
+    const endEl = this.element.querySelector('[data-end-value]');
+    const combinedEl = this.element.querySelector('[data-combined-value]');
+    if (startEl) startEl.value = this.currentStartDate;
+    if (endEl) endEl.value = this.currentEndDate;
+    if (combinedEl) combinedEl.value = this.getCombinedValue();
+  }
 
-  /**
-   * Cleanup when component is destroyed
-   */
+  _displayText() {
+    const ps = this.currentStartDate ? parseByPrecision(this.currentStartDate, this.precision) : null;
+    const pe = this.currentEndDate ? parseByPrecision(this.currentEndDate, this.precision) : null;
+    if (!ps && !pe) return '';
+    const fmt = this._stripIncompatibleTokens(this.displayFormat);
+    if (ps && pe) return `${formatForDisplay(ps, fmt)}${this.separator}${formatForDisplay(pe, fmt)}`;
+    if (ps) return formatForDisplay(ps, fmt);
+    return formatForDisplay(pe, fmt);
+  }
+
+  _stripIncompatibleTokens(fmt) {
+    if (this.precision === 'day') return fmt;
+    if (this.precision === 'month') return fmt.replace(/\bDD\b|\bD\b/g, '').replace(/[\s\-\/]+$/, '').trim();
+    if (this.precision === 'year') return fmt.replace(/MMMM|MMM|MM|M|DD|D/g, '').replace(/[\s\-\/]+$/, '').trim() || 'YYYY';
+    return fmt;
+  }
+
+  getCombinedValue() {
+    if (!this.currentStartDate && !this.currentEndDate) return '';
+
+    if (this.outputFormat === 'string') {
+      return `${this.currentStartDate}${this.separator}${this.currentEndDate}`;
+    }
+    if (this.outputFormat === 'object') {
+      return JSON.stringify({ start: this.currentStartDate, end: this.currentEndDate });
+    }
+    // 'date' default — startName/endName fields hold the values; combined returns a join
+    return `${this.currentStartDate}${this.separator}${this.currentEndDate}`;
+  }
+
+  // ── Public API ─────────────────────────────────────────────────
+
+  setRange(start, end) { this._setRange(start, end); if (this._calendar) this._calendar.setRange(start, end); }
+  setStartDate(v) { this._setRange(v, this.currentEndDate); }
+  setEndDate(v) { this._setRange(this.currentStartDate, v); }
+  getStartDate() { return this.currentStartDate; }
+  getEndDate() { return this.currentEndDate; }
+  getRange() { return { start: this.currentStartDate, end: this.currentEndDate }; }
+  clear() { this._setRange('', ''); }
+
+  setMin(v) { this.min = v; if (this._calendar) this._calendar.setMin(v); }
+  setMax(v) { this.max = v; if (this._calendar) this._calendar.setMax(v); }
+
+  focus() { const t = this.element.querySelector('[data-trigger]'); if (t) t.focus(); }
+  show() { const t = this.element.querySelector('[data-trigger]'); if (t) this._togglePopover(t); }
+  hide() { if (this._popover) this._popover.close(); }
+
+  // FormBuilder integration
+  getFormValue() { return this.getCombinedValue(); }
+  async setFormValue(v) {
+    if (!v) { this._setRange('', ''); return; }
+    if (typeof v === 'object' && v.start) {
+      this._setRange(v.start, v.end);
+    } else if (typeof v === 'string' && v.includes(this.separator.trim())) {
+      const [s, e] = v.split(this.separator.trim()).map((p) => p.trim());
+      this._setRange(s, e);
+    } else {
+      this._setRange(v, this.currentEndDate);
+    }
+  }
+
+  hasError() { return false; }
+
+  // ── Helpers ────────────────────────────────────────────────────
+
+  _inputId() { return this.name ? `mojo-daterange-${this.name}-${this.id}` : `mojo-daterange-${this.id}`; }
+
+  _attr(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  // ── Lifecycle ──────────────────────────────────────────────────
+
   async onBeforeDestroy() {
-    if (this.picker && this.easepickLoaded) {
-      try {
-        this.picker.destroy();
-      } catch (error) {
-        console.warn('Error destroying Easepick range picker instance:', error);
-      }
-    }
-    
-    this.picker = null;
+    if (this._popover) { this._popover.destroy(); this._popover = null; }
+    this._calendar = null;
+    this._presetSidebar = null;
     await super.onBeforeDestroy();
   }
 
-  /**
-   * Static factory method
-   */
-  static create(options = {}) {
-    return new DateRangePicker(options);
-  }
+  static create(options = {}) { return new DateRangePicker(options); }
 }
 
 export default DateRangePicker;
+export { DateRangePicker };

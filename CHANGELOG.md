@@ -2,6 +2,32 @@
 
 ## Unreleased
 
+### DatePicker / DateRangePicker — in-house Calendar engine
+
+- Replaced the prior Easepick-based pickers with an in-house `Calendar`
+  view that supports day, month, and year precision via a single
+  `precision` option. Same engine, three precisions — drill-down zoom
+  is the precision system (header click → month grid → year grid).
+- New field-type aliases: `monthpicker`, `yearpicker`, `monthrange`,
+  `yearrange`. Existing `datepicker` and `daterange` configs keep
+  working unchanged with `precision` defaulting to `'day'`.
+- DateRangePicker — best-in-class range selection: continuous range
+  fill, inward chevron anchors on start/end day cells, hover preview
+  between anchor and cursor, and **cross-page anchor persistence**
+  (click start in May, page to June, click end — no anchor loss).
+  Backwards selection auto-swaps start/end. Two-month side-by-side
+  default at day precision.
+- Optional Stripe-style **preset sidebar** via `presets: 'default'`
+  with sensible defaults per precision (Today, Last 7 / 30 / 90 days,
+  This month, YTD, Last 12 months, etc.) or a custom array.
+- No runtime CDN dependency, no native HTML5 fallback branch,
+  uniform behavior across all modern browsers.
+- Bootstrap-tokened theming. Light + dark themes from day one — the
+  calendar reads `[data-bs-theme]` from the document root.
+- New low-level utilities: `src/core/utils/dateFns.js` (parse / format
+  / compare / span counts at all three precisions; not a general-
+  purpose date library).
+
 ### TableView — Column `align` property
 
 - New `align` property on column definitions: `'left'`, `'center'`,

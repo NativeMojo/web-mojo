@@ -90,7 +90,7 @@ For a master quick reference of ALL field types, see [FieldTypes.md](../FieldTyp
 | Need | Use | Features |
 |------|-----|----------|
 | Simple date | `date` (native) | Browser default |
-| Enhanced UX | `datepicker` | Easepick library, themes |
+| Enhanced UX | `datepicker` | In-house Calendar engine; day/month/year precision via `precision` option |
 | Date range | `daterange` | Start + end dates |
 | Date + time | `datetime-local` (native) | Browser default |
 
@@ -224,7 +224,7 @@ form.on('field:change:start_date', (value) => {
 Most advanced components have minimal dependencies:
 
 - **TagInput**: No external dependencies
-- **DatePicker/DateRangePicker**: Easepick library (included)
+- **DatePicker/DateRangePicker**: In-house Calendar engine (no external dependency)
 - **CollectionSelect**: Requires Collection class
 - **MultiSelectDropdown**: No external dependencies
 - **ImageField**: No external dependencies
@@ -316,7 +316,7 @@ All components support:
 - ✅ Mobile browsers (iOS Safari, Chrome Mobile)
 
 Polyfills included for:
-- Date picker (Easepick works in all browsers)
+- Date picker (in-house Calendar engine works in all modern browsers; no CDN dependency)
 - File API (modern browsers only)
 
 ---
@@ -396,7 +396,7 @@ form.setFieldValue('tags', ['tag1', 'tag2']);
 Click on any component below for detailed documentation:
 
 - [TagInput](./TagInput.md) - Tag/chip input for keywords and labels
-- [DatePicker](./DatePicker.md) - Enhanced date selection with Easepick
+- [DatePicker](./DatePicker.md) - In-house date selection with day/month/year precision
 - [DateRangePicker](./DateRangePicker.md) - Date range selection
 - [MultiSelectDropdown](./MultiSelectDropdown.md) - Multi-select with checkboxes
 - [ComboInput](./ComboInput.md) - Editable dropdown with autocomplete

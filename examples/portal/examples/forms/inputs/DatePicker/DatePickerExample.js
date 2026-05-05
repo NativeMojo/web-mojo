@@ -7,12 +7,13 @@ import { Page, FormView } from 'web-mojo';
  * Route:  forms/inputs/date-picker
  *
  * What this shows:
- *   1. The Easepick-backed calendar UI — consistent across browsers, unlike
- *      native `<input type="date">`.
+ *   1. The in-house Calendar engine — consistent across browsers, unlike
+ *      native `<input type="date">`. No CDN dependency.
  *   2. `min` constraints — appointment is restricted to today onward.
  *   3. `displayFormat` vs `format` — the input shows a friendly format while
  *      `getFormData()` returns the canonical `YYYY-MM-DD` string.
  *   4. Inline mode — the calendar is always visible (no popover).
+ *   5. `precision: 'month' | 'year'` — same engine, different commit level.
  */
 class DatePickerExample extends Page {
     static pageName = 'forms/inputs/date-picker';
@@ -78,8 +79,8 @@ class DatePickerExample extends Page {
         <div class="example-page">
             <h1>DatePicker</h1>
             <p class="example-summary">
-                Calendar UI date picker (Easepick). Consistent across browsers; supports min/max,
-                disabled dates, inline calendars, and custom display formats.
+                Calendar UI date picker. Consistent across browsers; supports min/max,
+                disabled dates, inline calendars, custom display formats, and day/month/year precision.
             </p>
             <p class="example-docs-link">
                 <i class="bi bi-book"></i>
