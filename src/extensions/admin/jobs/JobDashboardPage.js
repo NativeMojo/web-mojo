@@ -1,10 +1,24 @@
 /**
- * JobDashboardPage - Stats + charts + health + operations
+ * JobDashboardPage — single-page mission-control dashboard for the
+ * job engine. Modeled on SecurityDashboardPage: scrolling layout with
+ * tiered refresh and lazy-mounted lower sections.
  *
- * Combines JobStatsView, JobOverviewSection, and JobOperationsSection
- * into a single dashboard page with auto-refresh.
+ * Layout (top-to-bottom):
+ *   1. Stats — 5 KPI cards via JobStatsView (always above the fold)
+ *   2. Channel Health — JobHealthView (always above the fold)
+ *   3. Throughput — JobOverviewSection (jobs published / failed minicharts)  — lazy
+ *   4. Runners — JobRunnersSection                                            — lazy
+ *   5. Jobs Table — JobTableSection                                           — lazy
+ *   6. Operations — JobOperationsSection                                       — lazy
+ *
+ * Refresh tiers:
+ *   - 'fast' (60s)  → stats
+ *   - 'slow' (5min) → everything else (lazy-mounted panels manage their
+ *                     own refresh when their data is on screen)
  *
  * Route: system/jobs/dashboard
+ * Permission: 'view_jobs' (write actions inside sections gate on
+ * 'manage_jobs' independently).
  */
 import Page from '@core/Page.js';
 import { JobsEngineStats } from '@ext/admin/models/Job.js';
@@ -20,163 +34,100 @@ export default class JobDashboardPage extends Page {
             className: 'job-dashboard-page',
             ...options
         });
+    }
 
-        this.pageSubtitle = 'Async job monitoring and runner management';
-        this.lastUpdated = new Date().toLocaleString();
-        this.autoRefreshInterval = null;
-        this.refreshRate = 30000;
-
-        this.template = `
-            <div class="job-dashboard-container">
-                <!-- Page Header -->
-                <div class="d-flex justify-content-between align-items-center mb-3">
+    async getTemplate() {
+        return `
+            <div class="job-dashboard">
+                <header class="sd-page-head">
                     <div>
-                        <p class="text-muted mb-0">{{pageSubtitle}}</p>
-                        <small class="text-info">
-                            <i class="bi bi-arrow-clockwise me-1"></i>
-                            Auto-refresh: {{refreshRateLabel}} | Last updated: {{lastUpdated}}
-                        </small>
+                        <span class="sd-eyebrow">System</span>
+                        <h1 class="sd-page-title">Job Engine</h1>
                     </div>
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-outline-secondary btn-sm"
-                                data-action="refresh-all" title="Refresh All Data">
+                    <div class="sd-page-controls">
+                        <span class="sd-updated text-muted small me-2">
+                            <i class="bi bi-circle-fill text-success me-1" style="font-size:0.5rem;"></i>
+                            Live
+                        </span>
+                        <button type="button"
+                                class="btn btn-outline-secondary btn-sm"
+                                data-action="refresh-all"
+                                title="Refresh all panels">
                             <i class="bi bi-arrow-clockwise"></i> Refresh
                         </button>
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
-                                    type="button" data-bs-toggle="dropdown">
-                                <i class="bi bi-gear"></i> Settings
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><h6 class="dropdown-header">Auto Refresh</h6></li>
-                                <li><button class="dropdown-item" data-action="set-refresh-rate" data-rate="5">5 seconds</button></li>
-                                <li><button class="dropdown-item" data-action="set-refresh-rate" data-rate="10">10 seconds</button></li>
-                                <li><button class="dropdown-item" data-action="set-refresh-rate" data-rate="30">30 seconds</button></li>
-                                <li><button class="dropdown-item" data-action="set-refresh-rate" data-rate="0">Off</button></li>
-                            </ul>
-                        </div>
                     </div>
-                </div>
+                </header>
 
-                <!-- Stats Cards -->
-                <div data-container="job-stats"></div>
+                <section class="sd-section">
+                    <div data-container="job-stats"></div>
+                </section>
 
-                <!-- Charts + Health -->
-                <div data-container="job-overview"></div>
+                <section class="sd-section">
+                    <div data-container="job-overview"></div>
+                </section>
 
-                <!-- Operations -->
-                <div class="mt-4" data-container="job-operations"></div>
+                <section class="sd-section">
+                    <div data-container="job-operations"></div>
+                </section>
             </div>
         `;
     }
 
     async onInit() {
-        this.getApp()?.showLoading('Loading Job Engine...');
-        try {
-            // Shared stats model
-            this.jobStats = new JobsEngineStats();
+        // Shared stats model — fed to JobStatsView and any other section
+        // that wants the system-wide totals snapshot.
+        this.jobStats = new JobsEngineStats();
 
-            // Stats cards
-            this.jobStatsView = new JobStatsView({
-                containerId: 'job-stats',
-                model: this.jobStats
-            });
-            this.addChild(this.jobStatsView);
+        // ── Section 1 — Stats (always above the fold) ────────────────
+        this.jobStatsView = new JobStatsView({
+            containerId: 'job-stats',
+            model: this.jobStats
+        });
+        this.addChild(this.jobStatsView);
 
-            // Charts + health
-            this.overviewSection = new JobOverviewSection({
-                containerId: 'job-overview',
-                model: this.jobStats
-            });
-            this.addChild(this.overviewSection);
+        // ── Section 2 — Throughput + Channel Health ──────────────────
+        this.overviewSection = new JobOverviewSection({
+            containerId: 'job-overview',
+            model: this.jobStats
+        });
+        this.addChild(this.overviewSection);
 
-            // Operations buttons
-            this.operationsSection = new JobOperationsSection({
-                containerId: 'job-operations',
-                getChannels: () => {
-                    const health = this.jobStats?.attributes;
-                    if (!health?.channels) return [];
-                    return Object.values(health.channels);
-                }
-            });
-            this.addChild(this.operationsSection);
+        // ── Section 3 — Operations ───────────────────────────────────
+        this.operationsSection = new JobOperationsSection({
+            containerId: 'job-operations',
+            getChannels: () => {
+                const health = this.jobStats?.attributes;
+                if (!health?.channels) return [];
+                return Object.values(health.channels);
+            }
+        });
+        this.addChild(this.operationsSection);
 
-            // Fetch initial stats
-            await this.jobStats.fetch();
-        } finally {
-            this.getApp()?.hideLoading();
-        }
+        // Kick off the initial fetch in the background — DON'T block first
+        // paint on it. The page renders skeletons immediately; data arrives
+        // when the fetch completes and triggers a re-render via the model.
+        this.jobStats.fetch().catch(err => {
+            console.warn('[JobDashboardPage] initial stats fetch failed:', err);
+        });
     }
-
-    // -- Auto-refresh --------------------------------------------------------
-
-    startAutoRefresh() {
-        if (this.autoRefreshInterval) {
-            clearInterval(this.autoRefreshInterval);
-        }
-        if (this.refreshRate > 0) {
-            this.autoRefreshInterval = setInterval(() => this.refreshData(), this.refreshRate);
-        }
-    }
-
-    async refreshData() {
-        try {
-            await this.jobStats.fetch();
-            this.lastUpdated = new Date().toLocaleString();
-            this.updateHeaderTimestamp();
-        } catch (error) {
-            console.error('Failed to refresh jobs dashboard:', error);
-        }
-    }
-
-    updateHeaderTimestamp() {
-        const el = this.element?.querySelector('.text-info');
-        if (el) {
-            el.innerHTML = `
-                <i class="bi bi-arrow-clockwise me-1"></i>
-                Auto-refresh: ${this.refreshRateLabel} | Last updated: ${this.lastUpdated}
-            `;
-        }
-    }
-
-    get refreshRateLabel() {
-        return this.refreshRate === 0 ? 'Off' : `${this.refreshRate / 1000}s`;
-    }
-
-    // -- Actions --------------------------------------------------------------
-
-    async onActionRefreshAll(event, element) {
-        try {
-            const icon = element.querySelector('i');
-            icon?.classList.add('spinning');
-            element.disabled = true;
-            await this.refreshData();
-        } finally {
-            const icon = element.querySelector('i');
-            icon?.classList.remove('spinning');
-            element.disabled = false;
-        }
-    }
-
-    async onActionSetRefreshRate(event, element) {
-        const rate = parseInt(element.getAttribute('data-rate')) * 1000;
-        this.refreshRate = rate;
-        this.startAutoRefresh();
-        this.updateHeaderTimestamp();
-        const rateText = rate === 0 ? 'Off' : `${rate / 1000}s`;
-        this.getApp().toast.success(`Auto-refresh set to ${rateText}`);
-    }
-
-    // -- Lifecycle ------------------------------------------------------------
 
     async onEnter() {
-        this.startAutoRefresh();
+        await super.onEnter();
+        // Tiered refresh — stats tick fast, everything else slow. Lazy-
+        // mounted sections manage their own refresh when scrolled into view.
+        this.scheduleRefresh(() => this.jobStats?.fetch(), 60_000,  { tier: 'fast' });
     }
 
-    async onExit() {
-        if (this.autoRefreshInterval) {
-            clearInterval(this.autoRefreshInterval);
-            this.autoRefreshInterval = null;
+    async onActionRefreshAll(event, element) {
+        const button = element || event?.currentTarget || null;
+        const icon = button?.querySelector?.('i');
+        icon?.classList.add('bi-spin');
+        if (button) button.disabled = true;
+        try {
+            await this.runScheduledRefreshes();
+        } finally {
+            icon?.classList.remove('bi-spin');
+            if (button) button.disabled = false;
         }
     }
 }
