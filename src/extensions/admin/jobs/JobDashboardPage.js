@@ -92,7 +92,7 @@ export default class JobDashboardPage extends Page {
         });
         this.addChild(this.overviewSection);
 
-        // ── Section 3 — Operations ───────────────────────────────────
+        // ── Section 3 — Operations (lazy-mounted, below the fold) ────
         this.operationsSection = new JobOperationsSection({
             containerId: 'job-operations',
             getChannels: () => {
@@ -101,7 +101,7 @@ export default class JobDashboardPage extends Page {
                 return Object.values(health.channels);
             }
         });
-        this.addChild(this.operationsSection);
+        this.addChild(this.operationsSection, { lazyMount: true });
 
         // Kick off the initial fetch in the background — DON'T block first
         // paint on it. The page renders skeletons immediately; data arrives
