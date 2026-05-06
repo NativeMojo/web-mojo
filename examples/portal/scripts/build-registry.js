@@ -240,6 +240,7 @@ const TOPIC_TAXONOMY = [
                     'extensions/charts/series',
                     'extensions/charts/pie',
                     'extensions/charts/circular-progress',
+                    'extensions/charts/metrics-chart',
                     'extensions/charts/metrics-mini-chart',
                     'extensions/charts/kpi-strip',
                 ],

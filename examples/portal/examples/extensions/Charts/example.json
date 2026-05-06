@@ -2,7 +2,7 @@
     "name": "Charts",
     "area": "extensions",
     "docs": "docs/web-mojo/extensions/Charts.md",
-    "tags": ["chart", "minichart", "serieschart", "piechart", "circular-progress", "sparkline", "native-svg"],
+    "tags": ["chart", "minichart", "metricschart", "serieschart", "piechart", "circular-progress", "sparkline", "native-svg"],
     "menu": {
         "section": "Extensions",
         "icon": "bi-graph-up",
@@ -32,6 +32,12 @@
             "route": "extensions/charts/circular-progress",
             "title": "CircularProgress",
             "summary": "Sizes, variants, themes, multi-segment, and live setValue updates."
+        },
+        {
+            "page": "MetricsChartExample.js",
+            "route": "extensions/charts/metrics-chart",
+            "title": "MetricsChart (full toolbar)",
+            "summary": "Multi-dataset time-series with the full dashboard toolbar — granularity toggle, kebab cluster, stats + data-table modals, CSV export."
         },
         {
             "page": "MetricsMiniChartExample.js",

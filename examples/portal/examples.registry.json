@@ -1,6 +1,6 @@
 {
   "generatedAt": "static",
-  "pageCount": 83,
+  "pageCount": 84,
   "pages": [
     {
       "name": "ActiveGroup",
@@ -851,6 +851,7 @@
       "tags": [
         "chart",
         "minichart",
+        "metricschart",
         "serieschart",
         "piechart",
         "circular-progress",
@@ -876,6 +877,7 @@
       "tags": [
         "chart",
         "minichart",
+        "metricschart",
         "serieschart",
         "piechart",
         "circular-progress",
@@ -901,6 +903,7 @@
       "tags": [
         "chart",
         "minichart",
+        "metricschart",
         "serieschart",
         "piechart",
         "circular-progress",
@@ -912,7 +915,33 @@
       "sourcePath": "examples/portal/examples/extensions/Charts/KPIStripExample.js",
       "section": "Extensions",
       "icon": "bi-graph-up",
-      "order": 15,
+      "order": 16,
+      "topic": "extensions",
+      "group": "Charts"
+    },
+    {
+      "name": "Charts",
+      "area": "extensions",
+      "route": "extensions/charts/metrics-chart",
+      "title": "MetricsChart (full toolbar)",
+      "summary": "Multi-dataset time-series with the full dashboard toolbar — granularity toggle, kebab cluster, stats + data-table modals, CSV export.",
+      "docs": "docs/web-mojo/extensions/Charts.md",
+      "tags": [
+        "chart",
+        "minichart",
+        "metricschart",
+        "serieschart",
+        "piechart",
+        "circular-progress",
+        "sparkline",
+        "native-svg"
+      ],
+      "page": "MetricsChartExample.js",
+      "modulePath": "./examples/extensions/Charts/MetricsChartExample.js",
+      "sourcePath": "examples/portal/examples/extensions/Charts/MetricsChartExample.js",
+      "section": "Extensions",
+      "icon": "bi-graph-up",
+      "order": 14,
       "topic": "extensions",
       "group": "Charts"
     },
@@ -926,6 +955,7 @@
       "tags": [
         "chart",
         "minichart",
+        "metricschart",
         "serieschart",
         "piechart",
         "circular-progress",
@@ -937,7 +967,7 @@
       "sourcePath": "examples/portal/examples/extensions/Charts/MetricsMiniChartExample.js",
       "section": "Extensions",
       "icon": "bi-graph-up",
-      "order": 14,
+      "order": 15,
       "topic": "extensions",
       "group": "Charts"
     },
@@ -951,6 +981,7 @@
       "tags": [
         "chart",
         "minichart",
+        "metricschart",
         "serieschart",
         "piechart",
         "circular-progress",
@@ -976,6 +1007,7 @@
       "tags": [
         "chart",
         "minichart",
+        "metricschart",
         "serieschart",
         "piechart",
         "circular-progress",
@@ -2549,6 +2581,13 @@
               "docs": "docs/web-mojo/extensions/Charts.md"
             },
             {
+              "route": "extensions/charts/metrics-chart",
+              "title": "MetricsChart (full toolbar)",
+              "summary": "Multi-dataset time-series with the full dashboard toolbar — granularity toggle, kebab cluster, stats + data-table modals, CSV export.",
+              "icon": "bi-graph-up",
+              "docs": "docs/web-mojo/extensions/Charts.md"
+            },
+            {
               "route": "extensions/charts/metrics-mini-chart",
               "title": "MetricsMiniChartWidget",
               "summary": "Backend-driven sparkline tiles with header, trending, and settings popover.",
@@ -3001,6 +3040,13 @@
           "route": "extensions/charts/circular-progress",
           "title": "CircularProgress",
           "summary": "Sizes, variants, themes, multi-segment, and live setValue updates.",
+          "icon": "bi-graph-up",
+          "docs": "docs/web-mojo/extensions/Charts.md"
+        },
+        {
+          "route": "extensions/charts/metrics-chart",
+          "title": "MetricsChart (full toolbar)",
+          "summary": "Multi-dataset time-series with the full dashboard toolbar — granularity toggle, kebab cluster, stats + data-table modals, CSV export.",
           "icon": "bi-graph-up",
           "docs": "docs/web-mojo/extensions/Charts.md"
         },
