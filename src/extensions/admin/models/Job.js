@@ -75,6 +75,19 @@ class Job extends Model {
         return ['pending', 'running'].includes(status);
     }
 
+    /**
+     * A pending job with a future `run_at` is "scheduled" — it isn't
+     * actively waiting in the queue, it'll be enqueued when run_at hits.
+     * Treat it as a distinct UI state.
+     */
+    isScheduled() {
+        if (this.get('status') !== 'pending') return false;
+        const runAt = this.get('run_at');
+        if (!runAt) return false;
+        const ms = (typeof runAt === 'number' && runAt < 1e11) ? runAt * 1000 : new Date(runAt).getTime();
+        return Number.isFinite(ms) && ms > Date.now();
+    }
+
     isTerminal() {
         const status = this.get('status');
         return ['completed', 'failed', 'canceled', 'expired'].includes(status);

@@ -135,6 +135,20 @@ const COLUMNS = {
             }
         },
         {
+            key: 'run_at',
+            label: 'Scheduled',
+            formatter: (value) => {
+                if (!value) return '<span class="text-muted small">—</span>';
+                const ms = (typeof value === 'number' && value < 1e11) ? value * 1000 : value;
+                const d = new Date(ms);
+                if (isNaN(d.getTime())) return '<span class="text-muted small">—</span>';
+                const future = d.getTime() > Date.now();
+                const cls = future ? 'text-warning' : 'text-muted';
+                const icon = future ? 'bi-clock-fill' : 'bi-clock-history';
+                return `<span class="${cls} small"><i class="${icon} me-1"></i>${d.toLocaleString()}</span>`;
+            }
+        },
+        {
             key: 'created',
             label: 'Created',
             formatter: 'datetime'

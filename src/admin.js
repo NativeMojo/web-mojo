@@ -41,7 +41,6 @@ export { default as JobDashboardPage } from '@ext/admin/jobs/JobDashboardPage.js
 export { default as JobRunnersPage } from '@ext/admin/jobs/JobRunnersPage.js';
 export { default as JobsTablePage } from '@ext/admin/jobs/JobsTablePage.js';
 export { default as RunnerDetailsView } from '@ext/admin/jobs/RunnerDetailsView.js';
-export { default as ScheduledTaskTablePage } from '@ext/admin/jobs/ScheduledTaskTablePage.js';
 
 // Security Pages
 export { default as BlockedIPsTablePage } from '@ext/admin/security/BlockedIPsTablePage.js';
@@ -95,7 +94,6 @@ export { default as PushDeviceView } from '@ext/admin/messaging/push/PushDeviceV
 export { default as JobDetailsView } from '@ext/admin/jobs/JobDetailsView.js';
 export { default as JobHealthView } from '@ext/admin/jobs/JobHealthView.js';
 export { default as JobStatsView } from '@ext/admin/jobs/JobStatsView.js';
-export { default as ScheduledTaskView } from '@ext/admin/jobs/ScheduledTaskView.js';
 
 export { default as LogView } from '@ext/admin/monitoring/LogView.js';
 export { default as MetricsPermissionsView } from '@ext/admin/monitoring/MetricsPermissionsView.js';
@@ -199,7 +197,6 @@ export function registerSystemPages(app, addToMenu = true) {
     app.registerPage('system/jobs/dashboard', JobDashboardPageClass, {permissions: ["view_jobs", "manage_jobs"]});
     app.registerPage('system/jobs/runners', JobRunnersPageClass, {permissions: ["view_jobs"]});
     app.registerPage('system/jobs/list', JobsTablePageClass, {permissions: ["view_jobs"]});
-    app.registerPage('system/jobs/scheduled-tasks', ScheduledTaskTablePageClass, {permissions: ["view_scheduled_tasks", "manage_scheduled_tasks"]});
     app.registerPage('system/users', UserTablePageClass, {permissions: ["view_users", "manage_users"]});
     app.registerPage('system/groups', GroupTablePageClass, {permissions: ["view_groups", "manage_groups"]});
     app.registerPage('system/members', MemberTablePageClass, {permissions: ["view_members", "manage_groups"]});
@@ -286,8 +283,7 @@ export function registerSystemPages(app, addToMenu = true) {
                     children: [
                         { text: 'Dashboard', route: '?page=system/jobs/dashboard', icon: 'bi-bar-chart-line', permissions: ["jobs", "view_jobs", "manage_jobs"] },
                         { text: 'Runners', route: '?page=system/jobs/runners', icon: 'bi-cpu', permissions: ["jobs", "view_jobs", "manage_jobs"] },
-                        { text: 'Jobs', route: '?page=system/jobs/list', icon: 'bi-list-task', permissions: ["jobs", "view_jobs", "manage_jobs"] },
-                        { text: 'Scheduled Tasks', route: '?page=system/jobs/scheduled-tasks', icon: 'bi-clock-history', permissions: ["jobs", "view_jobs", "manage_jobs"] },
+                        { text: 'Jobs', route: '?page=system/jobs/list', icon: 'bi-list-task', permissions: ["jobs", "view_jobs", "manage_jobs"] }
                     ]
                 },
 

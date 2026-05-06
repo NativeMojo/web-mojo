@@ -30,7 +30,12 @@ export default class JobsTablePage extends Page {
         this.jobTableSection = new JobTableSection({
             containerId: 'jobs-section',
             sort: '-created',
-            title: 'All Jobs'
+            title: 'All Jobs',
+            // Enable per-row checkboxes + the top batch-action bar with
+            // "Cancel Jobs" wired up. JobTableSection's onInit handles the
+            // batch-cancel-jobs action by calling model.cancel() on each
+            // selected row in parallel.
+            selectable: true
         });
         this.addChild(this.jobTableSection);
     }
