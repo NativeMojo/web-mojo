@@ -2285,8 +2285,7 @@
     gap: 10px;
 }
 
-.security-dashboard .sd-eyebrow,
-.job-dashboard .sd-eyebrow {
+.security-dashboard .sd-eyebrow {
     display: inline-block;
     margin: 0;
     font-size: 11px;
@@ -2298,8 +2297,7 @@
 
 /* Generous gutters between sections — the mockup has 32px of breathing
    room between cards, which lets each section read as a unit. */
-.security-dashboard .sd-section,
-.job-dashboard .sd-section {
+.security-dashboard .sd-section {
     margin-bottom: 32px;
 }
 
