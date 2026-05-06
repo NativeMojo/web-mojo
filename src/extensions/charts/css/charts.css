@@ -1655,6 +1655,47 @@
     box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
 }
 
+/* MetricsChart header — toolbar floats over the title so a long title +
+ * an expanding cluster can never push each other around. Without this,
+ * the toolbar would line-wrap when crowded, which moved the hover target
+ * away from the cursor, collapsed the cluster, un-wrapped, and re-armed
+ * the hover — an infinite flicker.
+ *
+ * The title gets padding-right reserving space for the collapsed toolbar
+ * (granularity toggle + kebab). When the cluster expands, it overlays the
+ * title — .mc-secondary-extras has an opaque background so the title text
+ * underneath is hidden cleanly.
+ */
+.mojo-metrics-chart-container .mojo-metrics-chart-header {
+    position: relative;
+    min-height: 36px;
+}
+
+.mojo-metrics-chart-container .mojo-metrics-chart-title {
+    /* Reserve space for the collapsed toolbar (granularity ~190px + gap +
+     * kebab ~40px). At narrow chart widths the granularity collapses to a
+     * <select> via the existing CQ, so the reservation drops too. */
+    padding-right: 240px;
+    margin: 0;
+}
+
+.mojo-metrics-chart-container .mojo-metrics-chart-toolbar {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    flex-wrap: nowrap;
+    align-items: center;
+    background: var(--bs-body-bg);
+    z-index: 5;
+}
+
+@container (max-width: 560px) {
+    .mojo-metrics-chart-container .mojo-metrics-chart-title {
+        padding-right: 140px;
+    }
+}
+
 /* MetricsChart toolbar — collapsing secondary cluster.
  * The kebab "⋯" trigger is always visible. The extras (gear, type, stats,
  * data, refresh) sit in a width:0 container to the LEFT of the kebab and
@@ -1673,6 +1714,10 @@
     opacity: 0;
     overflow: hidden;
     transition: max-width 0.25s ease, opacity 0.18s ease;
+    /* The toolbar floats over the title; when the cluster expands it
+     * overlays the title text. A solid background keeps the title from
+     * bleeding through. */
+    background: var(--bs-body-bg);
 }
 
 .mojo-metrics-chart-container .mc-secondary-actions:hover .mc-secondary-extras,

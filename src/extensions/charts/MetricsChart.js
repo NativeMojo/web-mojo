@@ -174,9 +174,9 @@ class MetricsChart extends View {
         // gear menu, no type switch. Used by dashboard panels that have
         // their own card header above the chart.
         const headerHtml = this.compactHeader ? '' : `
-                <div class="d-flex justify-content-between align-items-center mb-2 mojo-metrics-chart-header">
+                <div class="mb-2 mojo-metrics-chart-header">
                     <h5 class="mb-0 mojo-metrics-chart-title">{{{title}}}</h5>
-                    <div class="btn-toolbar align-items-center" role="toolbar">
+                    <div class="btn-toolbar align-items-center mojo-metrics-chart-toolbar" role="toolbar">
                         ${this._renderGranularityToggleHtml()}
                         <div class="mc-secondary-actions">
                             <div class="mc-secondary-extras">
