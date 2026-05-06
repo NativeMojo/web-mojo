@@ -1724,6 +1724,10 @@
 .mojo-metrics-chart-container .mc-secondary-actions:focus-within .mc-secondary-extras {
     max-width: 480px; /* enough to hold gear + type-switch + stats + data + refresh */
     opacity: 1;
+    /* Once expanded, let descendants escape — the gear's Bootstrap
+     * dropdown is absolutely positioned and was being clipped by the
+     * collapsed-state overflow:hidden. */
+    overflow: visible;
 }
 
 /* Active-state polish: tinted kebab so the user knows the cluster is open. */
