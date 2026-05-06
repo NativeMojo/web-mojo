@@ -1,28 +1,26 @@
 /**
- * JobOverviewSection — throughput sparklines + per-channel health strip.
+ * JobOverviewSection — throughput sparklines (jobs published / failed).
  *
- * Two minichart widgets show jobs published / failed over time. They
- * automatically pick up the chart extension's stats modal, data-table
- * modal, and softMin/softMax bounds — no per-widget config needed.
+ * Both widgets are MetricsMiniChartWidget instances and automatically
+ * inherit the chart extension's stats modal, data-table modal, and
+ * softMin/softMax bound features.
  *
- * Below them, a JobsHealthStrip summarises the state of every job
- * channel (unclaimed / pending / stuck / runner counts) using the
- * SecurityDashboard's collapsible-health-strip visual language.
+ * Channel health used to live here too — it's now at the top of
+ * JobDashboardPage as JobsHealthStrip since runner availability is the
+ * primary alert signal.
  */
 import View from '@core/View.js';
 import { MetricsMiniChartWidget } from '@ext/charts/index.js';
-import JobsHealthStrip from '../JobsHealthStrip.js';
 
 export default class JobOverviewSection extends View {
     constructor(options = {}) {
         super({
             className: 'job-overview-section',
             template: `
-                <div class="row mb-4 g-3 align-items-stretch">
+                <div class="row g-3 align-items-stretch">
                     <div class="col-lg-6" data-container="jobs-published-chart"></div>
                     <div class="col-lg-6" data-container="jobs-failed-chart"></div>
                 </div>
-                <div data-container="job-health"></div>
             `,
             ...options
         });
@@ -60,21 +58,5 @@ export default class JobOverviewSection extends View {
             showDateRange: false
         });
         this.addChild(this.jobsFailedChart);
-
-        this.jobsHealthStrip = new JobsHealthStrip({
-            containerId: 'job-health'
-        });
-        this.addChild(this.jobsHealthStrip);
-    }
-
-    /**
-     * Refresh the per-channel health strip. The minichart widgets manage
-     * their own refresh cadence via the page-level scheduleRefresh and
-     * the auto-refetch logic inside MetricsMiniChart.
-     */
-    async refresh() {
-        if (typeof this.jobsHealthStrip?.refresh === 'function') {
-            await this.jobsHealthStrip.refresh();
-        }
     }
 }

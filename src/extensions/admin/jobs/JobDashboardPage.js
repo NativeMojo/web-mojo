@@ -23,6 +23,7 @@
 import Page from '@core/Page.js';
 import { JobsEngineStats } from '@ext/admin/models/Job.js';
 import JobStatsView from './JobStatsView.js';
+import JobsHealthStrip from './JobsHealthStrip.js';
 import JobOverviewSection from './sections/JobOverviewSection.js';
 import JobOperationsSection from './sections/JobOperationsSection.js';
 
@@ -59,6 +60,10 @@ export default class JobDashboardPage extends Page {
                 </header>
 
                 <section class="sd-section">
+                    <div data-container="job-health"></div>
+                </section>
+
+                <section class="sd-section">
                     <div data-container="job-stats"></div>
                 </section>
 
@@ -78,21 +83,27 @@ export default class JobDashboardPage extends Page {
         // that wants the system-wide totals snapshot.
         this.jobStats = new JobsEngineStats();
 
-        // ── Section 1 — Stats (always above the fold) ────────────────
+        // ── Section 1 — Channel Health (top, runners-down alert signal) ──
+        this.jobsHealthStrip = new JobsHealthStrip({
+            containerId: 'job-health'
+        });
+        this.addChild(this.jobsHealthStrip);
+
+        // ── Section 2 — Stats (system-wide totals) ───────────────────
         this.jobStatsView = new JobStatsView({
             containerId: 'job-stats',
             model: this.jobStats
         });
         this.addChild(this.jobStatsView);
 
-        // ── Section 2 — Throughput + Channel Health ──────────────────
+        // ── Section 3 — Throughput sparklines ────────────────────────
         this.overviewSection = new JobOverviewSection({
             containerId: 'job-overview',
             model: this.jobStats
         });
         this.addChild(this.overviewSection);
 
-        // ── Section 3 — Operations (lazy-mounted, below the fold) ────
+        // ── Section 4 — Operations (lazy-mounted, below the fold) ────
         this.operationsSection = new JobOperationsSection({
             containerId: 'job-operations',
             getChannels: () => {
@@ -113,10 +124,10 @@ export default class JobDashboardPage extends Page {
 
     async onEnter() {
         await super.onEnter();
-        // Tiered refresh — stats tick fast, channel health and lazy-mounted
-        // sections tick slow.
-        this.scheduleRefresh(() => this.jobStats?.fetch(),         60_000,  { tier: 'fast' });
-        this.scheduleRefresh(() => this.overviewSection?.refresh?.(), 300_000, { tier: 'slow' });
+        // Tiered refresh — channel health and stats tick fast (alerting
+        // signals), throughput charts and lazy-mounted sections tick slow.
+        this.scheduleRefresh(() => this.jobsHealthStrip?.refresh?.(), 60_000,  { tier: 'fast' });
+        this.scheduleRefresh(() => this.jobStats?.fetch(),            60_000,  { tier: 'fast' });
     }
 
     async onActionRefreshAll(event, element) {
