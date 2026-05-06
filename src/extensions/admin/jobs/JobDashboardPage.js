@@ -113,9 +113,10 @@ export default class JobDashboardPage extends Page {
 
     async onEnter() {
         await super.onEnter();
-        // Tiered refresh — stats tick fast, everything else slow. Lazy-
-        // mounted sections manage their own refresh when scrolled into view.
-        this.scheduleRefresh(() => this.jobStats?.fetch(), 60_000,  { tier: 'fast' });
+        // Tiered refresh — stats tick fast, channel health and lazy-mounted
+        // sections tick slow.
+        this.scheduleRefresh(() => this.jobStats?.fetch(),         60_000,  { tier: 'fast' });
+        this.scheduleRefresh(() => this.overviewSection?.refresh?.(), 300_000, { tier: 'slow' });
     }
 
     async onActionRefreshAll(event, element) {

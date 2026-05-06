@@ -1,12 +1,17 @@
 /**
- * JobOverviewSection - Overview metrics and health status
+ * JobOverviewSection — throughput sparklines + per-channel health strip.
  *
- * Displays mini chart widgets for jobs published/failed and
- * the JobHealthView channel status below them.
+ * Two minichart widgets show jobs published / failed over time. They
+ * automatically pick up the chart extension's stats modal, data-table
+ * modal, and softMin/softMax bounds — no per-widget config needed.
+ *
+ * Below them, a JobsHealthStrip summarises the state of every job
+ * channel (unclaimed / pending / stuck / runner counts) using the
+ * SecurityDashboard's collapsible-health-strip visual language.
  */
 import View from '@core/View.js';
 import { MetricsMiniChartWidget } from '@ext/charts/index.js';
-import JobHealthView from '../JobHealthView.js';
+import JobsHealthStrip from '../JobsHealthStrip.js';
 
 export default class JobOverviewSection extends View {
     constructor(options = {}) {
@@ -56,10 +61,20 @@ export default class JobOverviewSection extends View {
         });
         this.addChild(this.jobsFailedChart);
 
-        this.jobHealthView = new JobHealthView({
-            containerId: 'job-health',
-            model: this.options.model
+        this.jobsHealthStrip = new JobsHealthStrip({
+            containerId: 'job-health'
         });
-        this.addChild(this.jobHealthView);
+        this.addChild(this.jobsHealthStrip);
+    }
+
+    /**
+     * Refresh the per-channel health strip. The minichart widgets manage
+     * their own refresh cadence via the page-level scheduleRefresh and
+     * the auto-refetch logic inside MetricsMiniChart.
+     */
+    async refresh() {
+        if (typeof this.jobsHealthStrip?.refresh === 'function') {
+            await this.jobsHealthStrip.refresh();
+        }
     }
 }
