@@ -19,6 +19,13 @@ export default class MetricsMiniChart extends MiniChart {
     this.dateEnd = options.dateEnd || null;
     this.defaultDateRange = options.defaultDateRange || null;
 
+    // Group fan-out (Mode 2 of /api/metrics/fetch). When `childKind` is set,
+    // the backend sums the metric across active descendants of
+    // `account=group-<id>` whose kind matches. Mode 3 (`breakdown=true`) is
+    // intentionally NOT supported here — MiniChart is single-series; for a
+    // per-child breakdown use a row of MiniCharts (or KPIStrip).
+    this.childKind = options.childKind || null;
+
     // State
     this.isLoading = false;
     this.lastFetch = null;
@@ -66,6 +73,10 @@ export default class MetricsMiniChart extends MiniChart {
 
     if (this.category) {
       params.category = this.category;
+    }
+
+    if (this.childKind) {
+      params.child_kind = this.childKind;
     }
 
     // Date range
@@ -208,6 +219,11 @@ export default class MetricsMiniChart extends MiniChart {
 
   setAccount(account) {
     this.account = account;
+    return this.fetchData();
+  }
+
+  setChildKind(kind) {
+    this.childKind = kind || null;
     return this.fetchData();
   }
 

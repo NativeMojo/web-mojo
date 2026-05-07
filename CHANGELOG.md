@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Charts — group fan-out (parent rollup + per-child breakdown)
+
+- **Added:** `MetricsChart` accepts `childKind: string` and `breakdown: boolean` constructor options that drive Modes 2 and 3 of `/api/metrics/fetch`. With `childKind` set on a `account: 'group-<id>'` chart, the backend sums the metric across all active descendants of that kind (Mode 2 — same response shape as Mode 1). Add `breakdown: true` and the backend returns one series per child group plus a `groups` map (name → child id) for drill-in (Mode 3 — single slug only).
+- **Added:** `MetricsChart.setChildKind(kind)` and `setBreakdown(flag)` runtime setters that refetch (mirroring `setGranularity` / `setMetrics`). `getStats()` now reports `childKind` and `breakdown`.
+- **Added:** the `metrics:data-loaded` event payload now includes a `groups` field — `null` in Modes 1 and 2, populated in Mode 3. The map is also cached as `this._lastGroups`. In breakdown mode the chart uses raw response keys (e.g. `Downtown` / `Downtown#15` for collisions) verbatim — no slug-style title-casing.
+- **Added:** `MetricsMiniChart` and `MetricsMiniChartWidget` accept the same `childKind` option for Mode 2 rollups. Mode 3 (`breakdown`) is intentionally not supported on the mini variant — sparklines are single-series; for a per-child breakdown use a row of mini charts or a `KPIStrip`.
+- **Docs:** new "Group fan-out" subsection in `docs/web-mojo/extensions/Charts.md`; option entry added to `docs/web-mojo/extensions/MetricsMiniChartWidget.md`. The `MetricsChartExample` portal page now demonstrates Mode 2 and Mode 3 with stubbed data so the patterns are interactive without a backend.
+
 ### TableView — `fetchOnView` auto-refreshes model before detail dialog
 
 - **Added:** `fetchOnView` option (default `true`). When enabled, TableView calls `model.fetch()` before opening the view dialog, ensuring the detail view always has the latest server data. Set to `false` to use the row data as-is. Skipped when a custom `onItemView` handler is provided.

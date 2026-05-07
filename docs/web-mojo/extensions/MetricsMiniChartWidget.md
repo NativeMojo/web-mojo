@@ -268,6 +268,7 @@ Chart (forwarded to MetricsMiniChart)
 - granularity: 'hours' | 'days' | ...
 - slugs: string | string[]
 - category: string | null
+- childKind: string | null — group fan-out kind. When set with `account: 'group-<id>'`, the backend sums the metric across all active descendants of that kind (Mode 2 of `/api/metrics/fetch`). Mode 3 (`breakdown=true`) is intentionally not supported on the mini variant — sparklines are single-series. See [Charts → Group fan-out](./Charts.md#group-fan-out-rollup--per-child-breakdown).
 - dateStart, dateEnd: Date | null
 - defaultDateRange: string (e.g., '24h', '7d', '30d')
 - refreshInterval: number (ms) for auto-refresh

@@ -121,6 +121,120 @@ module.exports = async function (testContext) {
             expect(typeof params.dr_end).toBe('number');
             expect(params.dr_end).toBeGreaterThan(params.dr_start);
         });
+
+        // Mode 1 regression: callers that don't pass childKind/breakdown
+        // must produce identical query params to today.
+        it('Mode 1 — omits child_kind and breakdown when unset', () => {
+            const m = new MetricsChart({ slugs: ['x'], account: 'group-1' });
+            const params = m.buildApiParams();
+            expect(params.child_kind).toBeUndefined();
+            expect(params.breakdown).toBeUndefined();
+        });
+
+        it('Mode 2 — childKind emits child_kind, no breakdown', () => {
+            const m = new MetricsChart({
+                slugs: ['visits'],
+                account: 'group-42',
+                childKind: 'location'
+            });
+            const params = m.buildApiParams();
+            expect(params.child_kind).toBe('location');
+            expect(params.breakdown).toBeUndefined();
+        });
+
+        it('Mode 3 — childKind + breakdown emit both', () => {
+            const m = new MetricsChart({
+                slugs: ['visits'],
+                account: 'group-42',
+                childKind: 'location',
+                breakdown: true
+            });
+            const params = m.buildApiParams();
+            expect(params.child_kind).toBe('location');
+            expect(params.breakdown).toBe(true);
+        });
+
+        it('breakdown=false (default) does not emit the param', () => {
+            const m = new MetricsChart({
+                slugs: ['visits'],
+                account: 'group-42',
+                childKind: 'location',
+                breakdown: false
+            });
+            const params = m.buildApiParams();
+            expect(params.breakdown).toBeUndefined();
+        });
+    });
+
+    describe('MetricsChart — breakdown mode label handling', () => {
+        it('does NOT recase keys when breakdown=true', () => {
+            const m = new MetricsChart({
+                slugs: ['visits'],
+                account: 'group-42',
+                childKind: 'location',
+                breakdown: true
+            });
+            const out = m.processMetricsData({
+                labels: ['t1', 't2'],
+                data: {
+                    'Downtown':    [10, 20],
+                    'Downtown#15': [5, 15],
+                    'uptown_north': [3, 7]
+                }
+            });
+            const labels = out.datasets.map(d => d.label);
+            // Verbatim keys — no `_`/`:` splitting, no title-casing.
+            expect(labels).toContain('Downtown');
+            expect(labels).toContain('Downtown#15');
+            expect(labels).toContain('uptown_north');
+        });
+
+        it('still recases keys when breakdown=false (Mode 1/2)', () => {
+            const m = new MetricsChart({ slugs: ['x'] });
+            const out = m.processMetricsData({
+                labels: ['t1', 't2'],
+                data: { user_activity_day: [1, 2] }
+            });
+            expect(out.datasets[0].label).toBe('User Activity Day');
+        });
+    });
+
+    describe('MetricsChart — setChildKind / setBreakdown', () => {
+        it('setChildKind updates the field and triggers fetchData', () => {
+            const m = new MetricsChart({});
+            let called = 0;
+            m.fetchData = () => { called++; return 'ok'; };
+            const result = m.setChildKind('location');
+            expect(m.childKind).toBe('location');
+            expect(called).toBe(1);
+            expect(result).toBe('ok');
+        });
+
+        it('setChildKind(null) clears the field', () => {
+            const m = new MetricsChart({ childKind: 'location' });
+            m.fetchData = () => 'ok';
+            m.setChildKind(null);
+            expect(m.childKind).toBeNull();
+        });
+
+        it('setBreakdown updates the field and triggers fetchData', () => {
+            const m = new MetricsChart({});
+            let called = 0;
+            m.fetchData = () => { called++; return 'ok'; };
+            m.setBreakdown(true);
+            expect(m.breakdown).toBe(true);
+            expect(called).toBe(1);
+            m.setBreakdown(false);
+            expect(m.breakdown).toBe(false);
+            expect(called).toBe(2);
+        });
+
+        it('getStats includes childKind and breakdown', () => {
+            const m = new MetricsChart({ childKind: 'location', breakdown: true });
+            const stats = m.getStats();
+            expect(stats.childKind).toBe('location');
+            expect(stats.breakdown).toBe(true);
+        });
     });
 
     describe('MetricsChart — granularity → xLabelFormat default', () => {

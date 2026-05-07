@@ -62,6 +62,14 @@ class MetricsChart extends View {
         this.dateEnd = options.dateEnd || null;
         this.defaultDateRange = options.defaultDateRange || '24h';
 
+        // Group fan-out (Mode 2 / Mode 3 of /api/metrics/fetch). When
+        // `childKind` is set, the backend sums (or breaks down, with
+        // `breakdown=true`) the metric across all active descendants of
+        // `account=group-<id>` whose kind matches. Validation lives on the
+        // backend — bad combos surface as 400 in the existing error overlay.
+        this.childKind = options.childKind || null;
+        this.breakdown = options.breakdown === true;
+
         // Controls
         this.showGranularity = options.showGranularity !== false;
         this.showDateRange = options.showDateRange !== false;
@@ -602,6 +610,8 @@ class MetricsChart extends View {
             with_labels: true
         };
         if (this.withDelta) params.with_delta = true;
+        if (this.childKind) params.child_kind = this.childKind;
+        if (this.breakdown) params.breakdown = true;
         if (this.slugs && this.slugs.length) {
             // Both /api/metrics/fetch AND /api/metrics/series require
             // `slugs=a,b,c` (plural, comma-separated). The singular
@@ -634,12 +644,17 @@ class MetricsChart extends View {
             if (!response.data?.status) throw new Error(response.data?.error || 'Server error');
 
             const metrics = response.data.data;
+            // Mode 3 (breakdown) responses carry a `groups` map keyed by
+            // child-group name → child id, used by callers for drill-in.
+            // Always overwrite (with `|| null`) so a previous breakdown
+            // fetch's map doesn't leak into a subsequent Mode 1/2 fetch.
+            this._lastGroups = metrics?.groups || null;
             const chartData = this.processMetricsData(metrics);
             await this.setData(chartData);
             this.lastFetch = new Date();
             this._hideError();
 
-            this.emit?.('metrics:data-loaded', { chart: this, data: metrics, params });
+            this.emit?.('metrics:data-loaded', { chart: this, data: metrics, params, groups: this._lastGroups });
         } catch (err) {
             console.error('Failed to fetch metrics:', err);
             this._showError(`Failed to load metrics: ${err.message}`);
@@ -680,8 +695,12 @@ class MetricsChart extends View {
         }
 
         const all = other ? [...visible, other] : visible;
+        // In breakdown mode the keys are child-group names (e.g. "Downtown",
+        // or "Downtown#15" when name collisions are disambiguated by id).
+        // formatMetricLabel splits on `_`/`:` for slug-style names — fine for
+        // Modes 1/2 but unnecessary noise for human-typed group names.
         const datasets = all.map(entry => ({
-            label: this.formatMetricLabel(entry.metric),
+            label: this.breakdown ? entry.metric : this.formatMetricLabel(entry.metric),
             data: entry.values
         }));
 
@@ -805,13 +824,25 @@ class MetricsChart extends View {
         return this.fetchData();
     }
 
+    setChildKind(kind) {
+        this.childKind = kind || null;
+        return this.fetchData();
+    }
+
+    setBreakdown(flag) {
+        this.breakdown = flag === true;
+        return this.fetchData();
+    }
+
     getStats() {
         return {
             isLoading: this.isLoading,
             lastFetch: this.lastFetch,
             granularity: this.granularity,
             slugs: this.slugs ? [...this.slugs] : [],
-            dateRange: { start: this.dateStart, end: this.dateEnd }
+            dateRange: { start: this.dateStart, end: this.dateEnd },
+            childKind: this.childKind,
+            breakdown: this.breakdown
         };
     }
 }

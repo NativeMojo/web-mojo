@@ -48,6 +48,43 @@ function generateSeed() {
     };
 }
 
+// 14 days of synthetic per-location data, used to demo group fan-out
+// (Mode 2 = summed rollup, Mode 3 = per-child breakdown).
+function generateLocationSeed({ breakdown = false } = {}) {
+    const days = 14;
+    const labels = [];
+    const today = new Date();
+    for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+        labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+    }
+    const series = (base, jitter = 30) =>
+        Array.from({ length: days }, () => Math.max(0, Math.round(base + (Math.random() - 0.5) * jitter)));
+
+    if (breakdown) {
+        // Mode 3 — one series per child group. Includes a name-collision
+        // case (two "Downtown"s) to demo the `name#<id>` disambiguation.
+        const downtown1 = series(60);
+        const downtown2 = series(40);
+        const uptown    = series(45);
+        return {
+            labels,
+            datasets: [
+                { label: 'Downtown#12', data: downtown1 },
+                { label: 'Downtown#15', data: downtown2 },
+                { label: 'Uptown',      data: uptown }
+            ]
+        };
+    }
+
+    // Mode 2 — single summed series across every active descendant.
+    const summed = series(150, 50);
+    return {
+        labels,
+        datasets: [{ label: 'Visits', data: summed }]
+    };
+}
+
 class MetricsChartExample extends Page {
     static pageName = 'extensions/charts/metrics-chart';
     static route = 'extensions/charts/metrics-chart';
@@ -100,6 +137,47 @@ class MetricsChartExample extends Page {
             defaultDateRange: '24h',
         });
         this.addChild(this.liveChart);
+
+        // Chart #3 — Mode 2 (parent-group rollup, summed). The `childKind`
+        // option tells the backend to sum the metric across every active
+        // descendant of `account=group-<id>` whose kind matches. Same
+        // response shape as Mode 1; one series per slug.
+        this.rollupChart = new MetricsChart({
+            containerId: 'metrics-rollup',
+            title: 'Visits — All Locations (rollup)',
+            chartType: 'line',
+            height: 240,
+            granularity: 'days',
+            slugs: ['visits'],
+            account: 'group-42',
+            childKind: 'location',
+            tooltip: { y: 'number:0' },
+        });
+        this.rollupChart.fetchData = async () => {
+            await this.rollupChart.setData(generateLocationSeed({ breakdown: false }));
+        };
+        this.addChild(this.rollupChart);
+
+        // Chart #4 — Mode 3 (per-child breakdown). Adds `breakdown=true`;
+        // backend returns one series PER CHILD GROUP plus a `groups` map
+        // (name → child id) for drill-in. Single slug only — multi-slug +
+        // breakdown returns 400.
+        this.breakdownChart = new MetricsChart({
+            containerId: 'metrics-breakdown',
+            title: 'Visits by Location (breakdown)',
+            chartType: 'bar',
+            height: 240,
+            granularity: 'days',
+            slugs: ['visits'],
+            account: 'group-42',
+            childKind: 'location',
+            breakdown: true,
+            tooltip: { y: 'number:0' },
+        });
+        this.breakdownChart.fetchData = async () => {
+            await this.breakdownChart.setData(generateLocationSeed({ breakdown: true }));
+        };
+        this.addChild(this.breakdownChart);
     }
 
     static TEMPLATE = `
@@ -136,6 +214,28 @@ class MetricsChartExample extends Page {
                 this renders empty, which is expected.
             </p>
             <div data-container="metrics-live"></div>
+
+            <h5 class="mt-5">Group fan-out (Mode 2) — parent-group rollup</h5>
+            <p class="text-muted small">
+                Pass <code>childKind: 'location'</code> with
+                <code>account: 'group-&lt;id&gt;'</code> and the backend sums
+                the metric across every active descendant. Same response
+                shape as Mode 1 — one series per slug.
+            </p>
+            <div data-container="metrics-rollup"></div>
+
+            <h5 class="mt-5">Group fan-out (Mode 3) — per-child breakdown</h5>
+            <p class="text-muted small">
+                Add <code>breakdown: true</code> to get one series
+                <strong>per child group</strong> instead of the sum. Single
+                slug only. Keys in the response are child-group names; if
+                two children share a name both keys become
+                <code>name#&lt;id&gt;</code> (see "Downtown#12" and
+                "Downtown#15" in the legend). The
+                <code>metrics:data-loaded</code> event payload includes a
+                <code>groups</code> map for drill-in.
+            </p>
+            <div data-container="metrics-breakdown"></div>
 
             <h5 class="mt-5">Try this</h5>
             <ul class="text-muted small">

@@ -104,6 +104,46 @@ module.exports = async function (testContext) {
         });
     });
 
+    describe('MetricsMiniChart — group fan-out', () => {
+        it('omits child_kind when childKind is unset', () => {
+            const chart = new MetricsMiniChart({ slugs: ['x'], account: 'group-1' });
+            const params = chart.buildApiParams();
+            expect(params.child_kind).toBeUndefined();
+        });
+
+        it('emits child_kind when childKind is set', () => {
+            const chart = new MetricsMiniChart({
+                slugs: ['visits'],
+                account: 'group-42',
+                childKind: 'location'
+            });
+            const params = chart.buildApiParams();
+            expect(params.child_kind).toBe('location');
+        });
+
+        it('setChildKind updates the field and triggers fetchData', () => {
+            const chart = new MetricsMiniChart({});
+            let called = 0;
+            chart.fetchData = () => { called++; return 'ok'; };
+            chart.setChildKind('location');
+            expect(chart.childKind).toBe('location');
+            expect(called).toBe(1);
+        });
+    });
+
+    describe('MetricsMiniChartWidget — childKind pass-through', () => {
+        it('forwards childKind from widget options into chartOptions', () => {
+            const widget = Object.create(MetricsMiniChartWidget.prototype);
+            // Re-run the constructor body's chartOptions assembly by invoking
+            // it manually. The widget's constructor calls super(...), which
+            // we don't want here — bypass with Object.create + a direct
+            // constructor invocation on a fresh stand-in.
+            const W = MetricsMiniChartWidget;
+            const ctorCalled = new W({ childKind: 'location', slugs: ['x'] });
+            expect(ctorCalled.chartOptions.childKind).toBe('location');
+        });
+    });
+
     describe('MetricsMiniChartWidget.setAccount', () => {
         let widget;
 
