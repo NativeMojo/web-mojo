@@ -668,12 +668,19 @@ export function registerTicketPanel(app) {
         if (panelEl) panelEl.remove();
     }
 
-    async function openTicketPanel(ticketId) {
+    async function openTicketPanel(modelOrId) {
         const { default: TicketPanelView } = await import('@ext/admin/incidents/TicketPanelView.js');
         const { Ticket } = await import('@ext/admin/models/Tickets.js');
 
-        const ticket = new Ticket({ id: ticketId });
-        await ticket.fetch();
+        let ticket;
+        if (modelOrId && typeof modelOrId === 'object' && modelOrId.get) {
+            // Reuse the caller's model instance so saves propagate to the list collection.
+            ticket = modelOrId;
+            await ticket.fetch();
+        } else {
+            ticket = new Ticket({ id: modelOrId });
+            await ticket.fetch();
+        }
 
         if (app._ticketPanel && app._ticketPanel.isMounted()) {
             app._ticketPanel.setTicket(ticket);

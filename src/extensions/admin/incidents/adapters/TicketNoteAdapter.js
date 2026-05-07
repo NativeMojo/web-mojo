@@ -10,9 +10,11 @@ class TicketNoteAdapter {
     async fetch() {
         await this.collection.fetch();
         const messages = this.collection.models.map(note => this.transform(note));
-        // Render markdown for system/LLM-generated notes
         await Promise.all(messages.map(async (msg) => {
-            if (msg.content) {
+            // System events (e.g. status_change) are pre-rendered HTML — don't
+            // pipe through the markdown renderer, which would escape the tags.
+            if (msg.content && msg.type !== 'system_event') {
+                msg._rawContent = msg.content;
                 msg.content = await this._renderMarkdown(msg.content);
             }
         }));
@@ -20,6 +22,7 @@ class TicketNoteAdapter {
     }
 
     transform(note) {
+        const metadata = note.get('metadata') || {};
         const msg = {
             id: note.get('id'),
             type: note.get('user') ? 'user_comment' : 'system_event',
@@ -32,10 +35,40 @@ class TicketNoteAdapter {
             content: note.get('note'),
             attachments: note.get('media') ? [note.get('media')] : []
         };
-        const metadata = note.get('metadata');
-        if (metadata?.action) msg.action = metadata.action;
-        if (metadata?.action_response) msg.actionResponse = metadata.action_response;
+        if (metadata.type === 'status_change' && (metadata.old_status || metadata.new_status)) {
+            // Render as a compact system line "status changed from X to Y" — replace
+            // the note's body with rendered pills so ChatMessageView's system_event
+            // template prints it as muted text.
+            msg.type = 'system_event';
+            msg.content = this._renderStatusChange(metadata.old_status, metadata.new_status);
+        } else if (metadata.action && typeof metadata.action === 'object') {
+            msg.action = metadata.action;
+        } else if (metadata.type === 'context' && metadata.references) {
+            // Compat: some test data has the context block at metadata root instead of metadata.action
+            msg.action = { type: 'context', references: metadata.references };
+        }
+        if (metadata.action_response) msg.actionResponse = metadata.action_response;
+        msg._metadata = metadata;
         return msg;
+    }
+
+    _renderStatusChange(oldStatus, newStatus) {
+        const pill = (s) => {
+            if (!s) return '<span class="badge bg-secondary">unknown</span>';
+            const cls = {
+                new:         'bg-info',
+                open:        'bg-success',
+                in_progress: 'bg-warning text-dark',
+                pending:     'bg-warning text-dark',
+                resolved:    'bg-success',
+                qa:          'bg-success',
+                closed:      'bg-secondary',
+                ignored:     'bg-secondary'
+            }[s] || 'bg-secondary';
+            const safe = String(s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c]).replace(/_/g, ' ');
+            return `<span class="badge ${cls}">${safe}</span>`;
+        };
+        return `Status changed from ${pill(oldStatus)} to ${pill(newStatus)}`;
     }
 
     async addNote(data) {

@@ -159,24 +159,35 @@ class TableRow extends ListViewItem {
        const path = `model.${column.key}`;
        // Support both 'formatter' and 'format' for consistency with DataView
        const formatter = column.formatter || column.format;
+       // editable cells need a `.cell-content` wrapper because enterEditMode()
+       // hides it and inserts the editor in its place.
+       const editableAttr = column.editable ? ` class="cell-content" data-field="${column.key}"` : '';
        if (formatter) {
          // For string formatters that are pipe expressions
          if (typeof formatter === 'string') {
+           if (column.editable) {
+             return `<span${editableAttr}>{{{${path}|${formatter}}}}</span>`;
+           }
            return `{{{${path}|${formatter}}}}`;
          } else if (typeof formatter === 'function') {
            // Keep legacy data-formatter key selector for compatibility, but
            // use a per-column id so duplicate keys can be formatted correctly.
-           return `<span data-formatter="${column.key}" data-formatter-id="${columnIndex}">{{${path}}}</span>`;
+           const cls = column.editable ? 'cell-content' : '';
+           const fieldAttr = column.editable ? ` data-field="${column.key}"` : '';
+           return `<span class="${cls}" data-formatter="${column.key}" data-formatter-id="${columnIndex}"${fieldAttr}>{{${path}}}</span>`;
          }
        }
 
        if (column.template) {
+         if (column.editable) {
+           return `<span${editableAttr}>${column.template}</span>`;
+         }
          return column.template;
        }
 
        // For editable cells, wrap content in a span for easy replacement
        if (column.editable) {
-         return `<span class="cell-content" data-field="${column.key}">{{{${path}}}}</span>`;
+         return `<span${editableAttr}>{{{${path}}}}</span>`;
        }
 
        return `{{{${path}}}}`;

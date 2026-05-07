@@ -58,6 +58,11 @@ class ActionCardView extends View {
         }
     }
 
+    onActionToggleCompact() {
+        const acEl = this.element?.querySelector('.ac.resolved');
+        if (acEl) acEl.classList.toggle('compact');
+    }
+
     _buildContextTemplate() {
         const refs = (this.action.references || []).filter(ref => ALLOWED_REFS.has(ref.model));
         const refItems = refs.map(ref => {
@@ -87,11 +92,12 @@ class ActionCardView extends View {
             refHtml = `<div class="ac-detail"><span class="ac-ref" data-action="open-ref" data-model="${esc(target.model)}" data-pk="${esc(target.pk)}"><i class="bi bi-box-arrow-up-right"></i>${label}</span></div>`;
         }
         this.template = `
-            <div class="ac resolved">
-                <div class="ac-top">
+            <div class="ac resolved compact">
+                <div class="ac-top" data-action="toggle-compact" title="Click to toggle">
                     <span class="ac-dot ${this.dotClass}"></span>
                     <span class="ac-label">${esc(this.action.label) || 'Action'}</span>
                     <span class="ac-badge ${badgeClass}">${badgeText}</span>
+                    <i class="bi bi-chevron-down ac-chevron"></i>
                 </div>
                 ${refHtml}
             </div>

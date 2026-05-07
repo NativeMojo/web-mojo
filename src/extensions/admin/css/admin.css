@@ -2338,6 +2338,15 @@
 
 .ac-badge.approved { background: rgba(var(--bs-success-rgb), 0.1); color: var(--bs-success); }
 .ac-badge.denied   { background: rgba(var(--bs-danger-rgb), 0.1); color: var(--bs-danger); }
+.ac-badge.pending  { background: var(--bs-secondary-bg); color: var(--bs-secondary-color); }
+
+.ac.resolved .ac-top { cursor: pointer; }
+.ac.resolved .ac-top:hover { background: var(--bs-tertiary-bg); }
+.ac-chevron { font-size: 0.6rem; color: var(--bs-secondary-color); flex-shrink: 0; transition: transform 0.15s; }
+.ac.resolved:not(.compact) .ac-chevron { transform: rotate(180deg); }
+.ac.resolved.compact .ac-detail { display: none; }
+.ac.resolved.compact .ac-label { font-weight: 400; color: var(--bs-secondary-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.ac.resolved.compact .ac-top { min-width: 0; }
 
 .ac-detail {
     padding: 6px 12px 0;

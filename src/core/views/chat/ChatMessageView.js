@@ -35,12 +35,13 @@ class ChatMessageView extends View {
     }
 
     getTemplate() {
-        // System event messages (same for both themes)
+        // System event messages (same for both themes). Content may contain
+        // pre-rendered HTML (e.g. status-change badges), so use triple-brace.
         if (this.message.type === 'system_event') {
             return `
                 <div class="chat-message-system text-center text-muted small py-2">
                     <i class="bi bi-info-circle me-1"></i>
-                    {{message.content}}
+                    {{{message.content}}}
                 </div>
             `;
         }
@@ -63,7 +64,7 @@ class ChatMessageView extends View {
         return `
             <div class="message-item">
                 <div class="message-avatar ${isAssistant ? 'bg-dark' : userClass}">
-                    ${isAssistant ? '<i class="bi bi-robot"></i>' : `
+                    ${isAssistant ? '<img src="https://mojo-verify.s3.amazonaws.com/signatures/14e7aab75c2749cb846f7d57298691ac/mojo_ai_7c0322e9.png" class="mojo-avatar-icon" alt="">' : `
                     {{#message.author.avatarUrl}}
                         <img src="{{message.author.avatarUrl}}" alt="{{message.author.name}}" class="w-100 h-100 rounded-circle">
                     {{/message.author.avatarUrl}}
@@ -75,7 +76,7 @@ class ChatMessageView extends View {
                 <div class="message-content">
                     <div class="message-header">
                         <div class="message-author">
-                            ${isAssistant ? 'Assistant' : '{{message.author.name}}'}
+                            ${isAssistant ? 'Mojo' : '{{message.author.name}}'}
                             {{#isCurrentUser}}
                                 <span class="badge bg-primary badge-sm ms-1">You</span>
                             {{/isCurrentUser}}
@@ -100,7 +101,7 @@ class ChatMessageView extends View {
         return `
             <div class="message-bubble-wrapper">
                 <div class="message-meta">
-                    <strong>${isAssistant ? '<i class="bi bi-robot me-1"></i>Assistant' : '{{message.author.name}}'}</strong>
+                    <strong>${isAssistant ? '<img src="https://mojo-verify.s3.amazonaws.com/signatures/14e7aab75c2749cb846f7d57298691ac/mojo_ai_7c0322e9.png" class="mojo-avatar-icon me-1" alt="">Mojo' : '{{message.author.name}}'}</strong>
                     <span class="text-muted">· {{message.timestamp|relative}}</span>
                 </div>
                 <div class="message-bubble">
@@ -146,10 +147,16 @@ class ChatMessageView extends View {
     }
 
     async onAfterRender() {
-        // Render attachments if any
+        // Render attachments if any. Clean up any prior FilePreview children first
+        // so a re-render doesn't duplicate them.
         if (this.message.attachments && this.message.attachments.length > 0) {
             const attachmentsContainer = this.element.querySelector('[data-container="attachments"]');
             if (attachmentsContainer) {
+                attachmentsContainer.innerHTML = '';
+                for (const id in this.children) {
+                    const child = this.children[id];
+                    if (child instanceof FilePreviewView) this.removeChild(child);
+                }
                 this.message.attachments.forEach(file => {
                     const filePreview = new FilePreviewView({ file });
                     this.addChild(filePreview);

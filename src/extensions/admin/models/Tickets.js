@@ -84,8 +84,8 @@ const TicketForms = {
     edit: {
         title: 'Edit Ticket',
         fields: [
+            // Description has its own dedicated edit dialog (with markdown helpers).
             { name: 'title', type: 'text', label: 'Title', required: true, cols: 12 },
-            { name: 'description', type: 'textarea', label: 'Description', required: false, cols: 12 },
             { name: "category", type: "select", label: "Category", options: TicketCategoriesOptions, cols: 12 },
             { name: 'priority', type: 'number', label: 'Priority', cols: 6 },
             { name: 'status', type: 'select', label: 'Status', options: ["new", "open", "paused", "resolved", "qa", "ignored"], cols: 6 },
