@@ -119,7 +119,7 @@ class TicketPanelView extends View {
             <div class="tp-header">
                 <div class="tp-topbar">
                     <span class="tp-id">#{{model.id}}</span>
-                    <span class="tp-pill tp-${this.statusPill}" data-action="change-status" title="Change status">${this.statusLabel} <i class="bi bi-chevron-down" style="font-size:0.5rem;"></i></span>
+                    <span class="tp-pill tp-${this.statusPill}" data-action="change-status" title="Change status">{{statusLabel}} <i class="bi bi-chevron-down" style="font-size:0.5rem;"></i></span>
                     <span class="tp-time"><i class="bi bi-clock"></i> {{model.created|relative}}</span>
                     <div class="tp-btns">
                         <div class="tp-ai-switch form-check form-switch">
@@ -136,22 +136,22 @@ class TicketPanelView extends View {
                 <div class="tp-meta">
                     <div class="tp-fields">
                         <span class="tp-field" data-action="change-priority" title="Change priority">
-                            <i class="bi bi-flag-fill" style="color:${this.priorityColor};"></i>${this.priorityLabel}
+                            <i class="bi bi-flag-fill" style="color:${this.priorityColor};"></i>{{priorityLabel}}
                             <i class="bi bi-chevron-down caret"></i>
                         </span>
                         <span class="tp-sep">&middot;</span>
                         <span class="tp-field" data-action="change-assignee" title="Assign">
-                            <i class="bi bi-person"></i>${this.assigneeName}
+                            <i class="bi bi-person"></i>{{assigneeName}}
                             <i class="bi bi-chevron-down caret"></i>
                         </span>
                         <span class="tp-sep">&middot;</span>
                         <span class="tp-field" data-action="change-category" title="Change category">
-                            <i class="bi bi-tag"></i>${this.categoryLabel}
+                            <i class="bi bi-tag"></i>{{categoryLabel}}
                             <i class="bi bi-chevron-down caret"></i>
                         </span>
                         <span class="tp-sep">&middot;</span>
                         <span class="tp-field" data-action="change-group" title="Change group">
-                            <i class="bi bi-people"></i>${this.groupName}
+                            <i class="bi bi-people"></i>{{groupName}}
                             <i class="bi bi-chevron-down caret"></i>
                         </span>
                     </div>
@@ -161,7 +161,7 @@ class TicketPanelView extends View {
             {{#hasIncident|bool}}
             <div class="tp-linked">
                 <i class="bi bi-exclamation-triangle-fill"></i>
-                <a href="#" data-action="view-incident">Incident #${this.model.get('incident.id')}</a>
+                <a href="#" data-action="view-incident">Incident #{{model.incident.id}}</a>
                 {{#model.incident.status}}<span class="lpill">{{model.incident.status}}</span>{{/model.incident.status}}
                 {{#model.incident.event_count}}<span>&middot; {{model.incident.event_count}} events</span>{{/model.incident.event_count}}
             </div>
@@ -379,11 +379,19 @@ class TicketPanelView extends View {
     }
 
     async onActionShowDescription() {
-        let html = this.model.get('description') || '';
+        const raw = this.model.get('description') || '';
+        let rendered = false;
+        let html = '';
         try {
-            const resp = await rest.post('/api/docit/render', { markdown: html });
-            html = resp?.data?.data?.html || resp?.data?.html || html;
-        } catch (_e) { /* use raw */ }
+            const resp = await rest.post('/api/docit/render', { markdown: raw });
+            html = resp?.data?.data?.html || resp?.data?.html || '';
+            rendered = !!html;
+        } catch (_e) { /* fallback to escaped text */ }
+        if (!rendered) {
+            const div = document.createElement('div');
+            div.textContent = raw;
+            html = `<pre style="white-space:pre-wrap;">${div.innerHTML}</pre>`;
+        }
         await Modal.dialog({
             title: `Ticket #${this.model.get('id')} — Description`,
             body: `<div style="font-size:0.85rem; line-height:1.65;">${html}</div>`,
