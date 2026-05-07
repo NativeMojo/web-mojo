@@ -255,5 +255,6 @@ class RuleSetView extends View {
 }
 
 RuleSetView.VIEW_CLASS = RuleSetView;
+RuleSet.MODEL_REF = 'incident.RuleSet';
 
 export default RuleSetView;

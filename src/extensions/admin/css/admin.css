@@ -620,7 +620,20 @@
     }
 }
 
-/* ─── Admin Assistant ─────────────────────────────────── */
+/* ─── Mojo ───────────────────────────────────────────── */
+
+.mojo-nav-icon {
+    width: 18px;
+    height: 18px;
+    vertical-align: -3px;
+    margin-right: 0.5rem;
+}
+
+.mojo-avatar-icon {
+    width: 16px;
+    height: 16px;
+    vertical-align: -2px;
+}
 
 /* ═══════════════════════════════════════════════════════════════
    Assistant Chat Interface
@@ -816,10 +829,12 @@
 }
 
 .assistant-welcome-icon {
-    font-size: 2.5rem;
-    color: var(--bs-primary);
     margin-bottom: 16px;
-    opacity: 0.8;
+}
+
+.assistant-welcome-icon img {
+    width: 48px;
+    height: 48px;
 }
 
 .assistant-welcome-title {
@@ -2146,8 +2161,9 @@
     padding: 24px 16px;
 }
 
-.assistant-panel-view .assistant-welcome-icon {
-    font-size: 2rem;
+.assistant-panel-view .assistant-welcome-icon img {
+    width: 36px;
+    height: 36px;
 }
 
 .assistant-panel-view .assistant-welcome-title {
@@ -2255,3 +2271,210 @@
 
 /* ── Conversation search input (history pane) ──────────── */
 [data-bs-theme="dark"] .conversation-search-input { background: var(--bs-body-bg); }
+
+
+/* ═══════════════════════════════════════════════════════════
+   Ticket Panel — slide-over layout
+   ═══════════════════════════════════════════════════════════ */
+
+.ticket-page-layout {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+}
+
+.ticket-page-table {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-y: auto;
+    transition: all 0.25s ease;
+}
+
+.ticket-page-panel {
+    width: 0;
+    overflow: hidden;
+    flex-shrink: 0;
+    border-left: 1px solid var(--bs-border-color);
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ticket-page-panel.open {
+    width: 460px;
+}
+
+.ticket-page-panel > [data-container] {
+    width: 460px;
+    height: 100%;
+}
+
+/* ── Action card styles ──────────────────────────────────── */
+
+.ac {
+    margin: 8px 16px 4px;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 10px;
+    background: var(--bs-body-bg);
+    overflow: hidden;
+}
+
+.ac-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px 0;
+}
+
+.ac-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.ac-dot.accent  { background: var(--bs-primary); }
+.ac-dot.red     { background: var(--bs-danger); }
+.ac-dot.green   { background: var(--bs-success); }
+.ac-dot.amber   { background: var(--bs-warning); }
+.ac-dot.context { background: var(--bs-secondary-color); }
+
+.ac-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--bs-emphasis-color);
+    flex: 1;
+}
+
+.ac-badge {
+    font-size: 0.65rem;
+    font-weight: 500;
+    padding: 1px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.ac-badge.approved { background: rgba(var(--bs-success-rgb), 0.1); color: var(--bs-success); }
+.ac-badge.denied   { background: rgba(var(--bs-danger-rgb), 0.1); color: var(--bs-danger); }
+
+.ac-detail {
+    padding: 6px 12px 0;
+    font-size: 0.74rem;
+    color: var(--bs-secondary-color);
+    line-height: 1.5;
+}
+
+.ac-ref {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.72rem;
+    color: var(--bs-primary);
+    cursor: pointer;
+    padding: 3px 8px;
+    margin-top: 4px;
+    border-radius: 5px;
+    transition: all 0.12s;
+}
+
+.ac-ref:hover {
+    background: rgba(var(--bs-primary-rgb), 0.06);
+    text-decoration: underline;
+}
+
+.ac-ref i { font-size: 0.65rem; }
+
+.ac-foot {
+    padding: 8px 12px 10px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.btn-approve, .btn-deny {
+    font-size: 0.74rem;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.12s;
+}
+
+.btn-approve {
+    background: var(--bs-success);
+    color: #fff;
+}
+
+.btn-approve:hover { filter: brightness(1.08); }
+
+.btn-deny {
+    background: transparent;
+    color: var(--bs-secondary-color);
+    border: 1px solid var(--bs-border-color);
+}
+
+.btn-deny:hover {
+    background: rgba(var(--bs-danger-rgb), 0.05);
+    color: var(--bs-danger);
+    border-color: var(--bs-danger);
+}
+
+.btn-approve:disabled, .btn-deny:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Resolved card */
+.ac.resolved { border-color: var(--bs-border-color-translucent); }
+.ac.resolved .ac-top { padding-bottom: 10px; }
+.ac.resolved .ac-label { color: var(--bs-secondary-color); font-weight: 400; }
+
+/* Context card */
+.ac.ac-context { border-style: dashed; }
+
+/* ── Resolved actions summary ────────────────────────────── */
+
+.actions-summary {
+    margin: 6px 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 7px;
+    border: 1px dashed var(--bs-border-color);
+    transition: all 0.12s;
+    font-size: 0.74rem;
+    color: var(--bs-secondary-color);
+}
+
+.actions-summary:hover {
+    background: var(--bs-tertiary-bg);
+    border-color: var(--bs-primary);
+    color: var(--bs-body-color);
+}
+
+.actions-summary i { font-size: 0.7rem; }
+.actions-summary .count { font-weight: 500; }
+.actions-summary .dots { display: flex; gap: 3px; margin-left: auto; }
+.actions-summary .sdot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.sdot-accent { background: var(--bs-primary); }
+.sdot-red    { background: var(--bs-danger); }
+.sdot-green  { background: var(--bs-success); }
+.sdot-amber  { background: var(--bs-warning); }
+
+.actions-expanded { display: none; }
+.actions-expanded.show { display: block; }
+.actions-collapse-btn {
+    display: block;
+    margin: 4px 16px 6px;
+    font-size: 0.72rem;
+    color: var(--bs-primary);
+    cursor: pointer;
+    padding: 3px 0;
+}
+.actions-collapse-btn:hover { text-decoration: underline; }

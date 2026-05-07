@@ -20,7 +20,7 @@ class TicketNoteAdapter {
     }
 
     transform(note) {
-        return {
+        const msg = {
             id: note.get('id'),
             type: note.get('user') ? 'user_comment' : 'system_event',
             author: {
@@ -32,19 +32,38 @@ class TicketNoteAdapter {
             content: note.get('note'),
             attachments: note.get('media') ? [note.get('media')] : []
         };
+        const metadata = note.get('metadata');
+        if (metadata?.action) msg.action = metadata.action;
+        if (metadata?.action_response) msg.actionResponse = metadata.action_response;
+        return msg;
     }
 
     async addNote(data) {
         const note = new TicketNote();
-        const resp = await note.save({
+        const payload = {
             parent: this.ticketId,
             note: data.text,
             media: data.files && data.files.length > 0 ? data.files[0].id : null
-        });
+        };
+        if (data.metadata) payload.metadata = data.metadata;
+        const resp = await note.save(payload);
         if (resp.success) {
             await this.collection.fetch();
         }
         return resp;
+    }
+
+    async addActionResponse(actionNote, action) {
+        return this.addNote({
+            text: action === 'approve' ? 'Approved' : 'Denied',
+            metadata: {
+                action_response: {
+                    handler: actionNote.action.handler,
+                    action,
+                    context: actionNote.action.context
+                }
+            }
+        });
     }
 
     async _renderMarkdown(markdown) {

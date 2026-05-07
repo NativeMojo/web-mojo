@@ -137,6 +137,10 @@ import GeoLocatedIPTablePageClass from '@ext/admin/account/devices/GeoLocatedIPT
 import ApiKeyTablePageClass from '@ext/admin/account/api_keys/ApiKeyTablePage.js';
 import CloudWatchDashboardPageClass from '@ext/admin/aws/CloudWatchDashboardPage.js';
 
+import { Incident, IncidentEvent, RuleSet } from '@ext/admin/models/Incident.js';
+import { Ticket } from '@ext/admin/models/Tickets.js';
+import { GeoLocatedIP } from '@core/models/System.js';
+
 import IncidentDashboardPageClass from '@ext/admin/incidents/dashboard/SecurityDashboardPage.js';
 import IncidentTablePageClass from '@ext/admin/incidents/IncidentTablePage.js';
 import EventTablePageClass from '@ext/admin/incidents/EventTablePage.js';
@@ -395,11 +399,11 @@ export function registerSystemPages(app, addToMenu = true) {
                     ]
                 },
 
-                // ── AI Assistant ──
+                // ── Mojo ──
                 {
-                    text: 'AI Assistant',
+                    text: 'Mojo',
                     route: null,
-                    icon: 'bi-robot',
+                    iconHtml: '<img src="https://mojo-verify.s3.amazonaws.com/signatures/14e7aab75c2749cb846f7d57298691ac/mojo_logo_ai_bb896864.svg" class="mojo-nav-icon" alt="">',
                     permissions: ["view_admin", "assistant"],
                     children: [
                         { text: 'Skills', route: '?page=system/assistant/skills', icon: 'bi-lightning', permissions: ["view_admin", "assistant"] },
@@ -431,12 +435,19 @@ export function registerSystemPages(app, addToMenu = true) {
         }
     }
 
+    // Register MODEL_REF mappings for action card context resolution
+    const modelRefs = [Incident, IncidentEvent, RuleSet, Ticket, GeoLocatedIP];
+    for (const ModelClass of modelRefs) {
+        if (ModelClass.MODEL_REF) {
+            app.registerModelRef(ModelClass.MODEL_REF, ModelClass);
+        }
+    }
 }
 
 export { registerSystemPages as registerAdminPages };
 
 /**
- * Register the Admin Assistant topbar button
+ * Register the Mojo topbar button
  * Auto-selects display mode based on viewport width:
  *   >= 1000px → right sidebar panel (reflow layout)
  *   <  1000px → fullscreen modal
@@ -532,7 +543,7 @@ export function registerAssistant(app) {
         });
 
         popup.document.write(`<!DOCTYPE html>
-<html><head><title>AI Assistant</title>${styleHTML}
+<html><head><title>Mojo</title>${styleHTML}
 <style>
     body { margin: 0; height: 100vh; overflow: hidden; }
     #assistant-popup-root { height: 100vh; }
@@ -604,11 +615,11 @@ export function registerAssistant(app) {
 
     const assistantItem = {
         id: 'assistant',
-        icon: 'bi-robot',
+        iconHtml: '<img src="https://mojo-verify.s3.amazonaws.com/signatures/14e7aab75c2749cb846f7d57298691ac/mojo_logo_ai_bb896864.svg" class="mojo-nav-icon" alt="">',
         action: 'open-assistant',
         isButton: true,
         buttonClass: 'btn btn-link nav-link',
-        tooltip: 'Admin Assistant',
+        tooltip: 'Mojo',
         permissions: ['view_admin'],
         handler: async () => {
             // Toggle sidebar if already open

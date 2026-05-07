@@ -365,5 +365,6 @@ class TicketView extends View {
 }
 
 Ticket.VIEW_CLASS = TicketView;
+Ticket.MODEL_REF = 'incident.Ticket';
 
 export default TicketView;

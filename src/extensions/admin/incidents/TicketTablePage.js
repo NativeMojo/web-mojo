@@ -1,11 +1,11 @@
 /**
- * TicketTablePage - Ticket management using TablePage component
- * Clean implementation using TablePage with minimal overrides
+ * TicketTablePage - Ticket management with slide-over panel
  */
 
 import TablePage from '@core/pages/TablePage.js';
-import { TicketList, TicketForms, TicketCategories } from '@ext/admin/models/Tickets.js';
+import { Ticket, TicketList, TicketForms, TicketCategories } from '@ext/admin/models/Tickets.js';
 import TicketView from './TicketView.js';
+import TicketPanelView from './TicketPanelView.js';
 
 class TicketTablePage extends TablePage {
     constructor(options = {}) {
@@ -28,7 +28,6 @@ class TicketTablePage extends TablePage {
                 status__in: "new,open"
             },
 
-            // Column definitions
             columns: [
                 { key: 'id', label: 'ID', width: '70px', sortable: true, class: 'text-muted' },
                 { key: 'title', label: 'Title', sortable: true},
@@ -69,33 +68,75 @@ class TicketTablePage extends TablePage {
                 },
                 { key: 'assignee.display_name', label: 'Assignee', sortable: true, formatter: "default('Unassigned')" },
                 { key: 'incident.id', label: 'Incident ID', sortable: true },
-                { key: 'created', label: 'Created', sortable: true, formatter: 'datetime' }
+                { key: 'created', label: 'Created', sortable: true, formatter: 'datetime' },
+                { key: 'last_activity', label: 'Activity', sortable: true, formatter: 'relative' }
             ],
 
-            // Table features
             selectable: true,
             searchable: true,
             sortable: true,
             filterable: true,
             paginated: true,
 
-            // Toolbar
             showRefresh: true,
             showAdd: true,
             showExport: true,
 
-            // Empty state
             emptyMessage: 'No tickets found.',
 
-            // Table display options
             tableOptions: {
                 striped: true,
                 bordered: false,
                 hover: true,
                 responsive: false
             },
+
+            onItemView: (model) => this._openPanel(model),
+
+            template: `
+                <div class="ticket-page-layout">
+                    <div class="ticket-page-table">
+                        <div class="table-page-container">
+                            <div class="table-container" data-container="table"></div>
+                        </div>
+                    </div>
+                    <div class="ticket-page-panel" data-ref="panel-wrapper">
+                        <div data-container="ticket-panel"></div>
+                    </div>
+                </div>
+            `,
+
             ...options,
         });
+    }
+
+    async _openPanel(model) {
+        const ticket = new Ticket(model.toJSON ? model.toJSON() : model.data || {});
+        await ticket.fetch();
+
+        if (this.panelView) {
+            this.panelView.off('panel:close');
+            this.removeChild(this.panelView);
+        }
+
+        this.panelView = new TicketPanelView({
+            containerId: 'ticket-panel',
+            model: ticket
+        });
+        this.panelView.on('panel:close', () => this._closePanel());
+        this.addChild(this.panelView);
+        await this.panelView.render();
+
+        this.getRef('panel-wrapper')?.classList.add('open');
+    }
+
+    _closePanel() {
+        this.getRef('panel-wrapper')?.classList.remove('open');
+        if (this.panelView) {
+            this.panelView.off('panel:close');
+            this.removeChild(this.panelView);
+            this.panelView = null;
+        }
     }
 }
 

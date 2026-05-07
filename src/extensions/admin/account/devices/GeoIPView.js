@@ -584,5 +584,6 @@ class GeoIPView extends View {
 }
 
 GeoLocatedIP.VIEW_CLASS = GeoIPView;
+GeoLocatedIP.MODEL_REF = 'account.GeoLocatedIP';
 
 export default GeoIPView;

@@ -1868,5 +1868,6 @@ class IncidentView extends View {
 }
 
 Incident.VIEW_CLASS = IncidentView;
+Incident.MODEL_REF = 'incident.Incident';
 
 export default IncidentView;

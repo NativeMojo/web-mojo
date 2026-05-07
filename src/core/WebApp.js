@@ -118,6 +118,7 @@ class WebApp {
         this.pageClasses = new Map();   // pageName -> {PageClass, constructorOptions}
         this.componentClasses = new Map(); // componentName -> ComponentClass
         this.modelClasses = new Map();  // modelName -> ModelClass
+        this.modelRefClasses = new Map(); // 'app.Model' -> ModelClass
 
         // Current page reference
         this.currentPage = null;
@@ -868,6 +869,14 @@ class WebApp {
      */
     getModel(name) {
         return this.modelClasses.get(name);
+    }
+
+    registerModelRef(ref, ModelClass) {
+        this.modelRefClasses.set(ref, ModelClass);
+    }
+
+    getModelByRef(ref) {
+        return this.modelRefClasses.get(ref);
     }
 
     /**

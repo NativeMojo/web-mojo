@@ -203,5 +203,6 @@ class EventView extends View {
 }
 
 IncidentEvent.VIEW_CLASS = EventView;
+IncidentEvent.MODEL_REF = 'incident.Event';
 
 export default EventView;
