@@ -122,7 +122,8 @@ The injected link uses `data-action="group-settings"` and is appended after any 
 |---|---|---|
 | `text` | `string` | Label displayed next to the icon |
 | `route` | `string` | URL or query string passed to the router |
-| `icon` | `string` | Bootstrap Icon class (`bi-*`) |
+| `icon` | `string` | Bootstrap Icon class (`bi-*`) — preferred for standard icons |
+| `iconHtml` | `string` | Raw HTML rendered in place of `icon` (triple-brace, unescaped). Use for custom SVG images or non-Bootstrap icon markup. Takes precedence over `icon` when both are set. |
 | `badge` | `Object` | `{ text, class }` — optional badge shown at the right |
 | `tooltip` | `string` | Tooltip shown in collapsed state |
 | `disabled` | `boolean` | Grays out and disables the item |
@@ -501,7 +502,7 @@ Right items appear at the far right of the navbar. Each item's rendered type is 
 }
 ```
 
-A right item becomes a **button** when `buttonClass` is provided.
+A right item becomes a **button** when `buttonClass` is provided. Use `icon` for a Bootstrap Icon class (`bi-*`) or `iconHtml` for a raw HTML string (e.g. an `<img>` tag) — `iconHtml` takes precedence when both are set.
 
 #### Dropdown menu
 

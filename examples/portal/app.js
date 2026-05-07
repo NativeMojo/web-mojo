@@ -17,7 +17,7 @@ import { PortalWebApp, User } from 'web-mojo';
 import { registerAdminPages, registerAssistant, registerTicketPanel } from 'web-mojo/admin';
 import HomePage from './shell/HomePage.js';
 import DocsModal from './shell/DocsModal.js';
-import { installMockBackend } from './shell/mockBackend.js';
+import { installMockBackend, uninstallMockBackend } from './shell/mockBackend.js';
 import registry from './examples.registry.json';
 
 // Mock REST layer — short-circuits known endpoints with synthetic data so
@@ -25,7 +25,9 @@ import registry from './examples.registry.json';
 // fetch for un-mocked URLs, so a running NativeMojo server still wins
 // on those routes. MUST install before app.start() so the very first
 // boot-time fetches are intercepted.
-installMockBackend();
+const MOCK_KEY = 'examples:mockBackend';
+let mockEnabled = localStorage.getItem(MOCK_KEY) !== 'off';
+if (mockEnabled) installMockBackend();
 
 const examples = Array.isArray(registry?.pages) ? registry.pages : [];
 const topics = Array.isArray(registry?.topics) ? registry.topics : [];
@@ -215,6 +217,8 @@ const app = new PortalWebApp({
             items: [
                 { label: 'Profile',  icon: 'bi-person',          action: 'profile' },
                 { divider: true },
+                { label: mockEnabled ? 'Mock API: ON' : 'Mock API: OFF', icon: mockEnabled ? 'bi-toggle-on' : 'bi-toggle-off', action: 'toggle-mock' },
+                { divider: true },
                 { label: 'Sign out', icon: 'bi-box-arrow-right', action: 'logout' },
             ],
         },
@@ -240,6 +244,13 @@ app.events.on('portal:action', ({ action }) => {
             break;
         case 'profile':
             app.toast?.info?.('No real user — auth is disabled in this portal.');
+            break;
+        case 'toggle-mock':
+            mockEnabled = !mockEnabled;
+            localStorage.setItem(MOCK_KEY, mockEnabled ? 'on' : 'off');
+            if (mockEnabled) { installMockBackend(); } else { uninstallMockBackend(); }
+            app.toast?.info?.(`Mock API ${mockEnabled ? 'enabled' : 'disabled'} — reloading…`);
+            setTimeout(() => window.location.reload(), 600);
             break;
         case 'logout':
             app.toast?.warn?.('Auth is disabled — nothing to log out of here.');
@@ -275,21 +286,25 @@ try {
     console.warn('[examples] failed to register admin pages:', err);
 }
 
-// Demo user — set before app.start() so permission checks pass on the
-// initial route resolution. Auth is disabled in this portal, but the
-// topbar's userMenu only renders when an active user is set, and admin
-// pages declare permissions that the wildcard hasPermission below
-// satisfies. Production code would NOT stub permissions like this.
-const demoUser = new User({
-    id: 1,
-    username: 'demo',
-    display_name: 'Demo User',
-    email: 'demo@example.com',
-    // Avoids the post-start passkey setup prompt — auth is disabled here.
-    has_passkey: true,
-});
-demoUser.hasPermission = () => true;
-app.setActiveUser(demoUser);
+// Try to load the real user from the backend session (app.rest already
+// has the JWT). Falls back to a stub demo user when no backend is
+// reachable (pure-mock mode).
+let activeUser;
+try {
+    const resp = await app.rest.get('/api/account/user/me');
+    const data = resp?.data?.data || resp?.data;
+    if (data?.id) {
+        activeUser = new User({ ...data, has_passkey: true });
+    }
+} catch (_e) { /* backend not reachable */ }
+if (!activeUser) {
+    activeUser = new User({
+        id: 1, username: 'demo', display_name: 'Demo User',
+        email: 'demo@example.com', has_passkey: true,
+    });
+}
+activeUser.hasPermission = () => true;
+app.setActiveUser(activeUser);
 
 // Global doc-link interceptor: anywhere in the portal, an element marked
 // `<a data-action="open-doc" data-doc="docs/web-mojo/<area>/<File>.md">…</a>`

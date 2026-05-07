@@ -324,13 +324,13 @@ class TopNav extends View {
                         {{^isDropdown}}
                         {{#isButton}}
                         <button class="{{buttonClass}}" data-action="{{action}}" data-id="{{id}}" {{#tooltip}}data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="{{tooltip}}"{{/tooltip}}>
-                            {{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}
+                            {{#iconHtml}}{{{iconHtml}}}{{/iconHtml}}{{^iconHtml}}{{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}{{/iconHtml}}
                             {{label}}
                         </button>
                         {{/isButton}}
                         {{^isButton}}
                         <a class="nav-link" href="{{href}}" {{#action}}data-action="{{action}}"{{/action}} {{#tooltip}}data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="{{tooltip}}"{{/tooltip}}>
-                            {{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}
+                            {{#iconHtml}}{{{iconHtml}}}{{/iconHtml}}{{^iconHtml}}{{#icon}}<i class="{{icon}} me-1"></i>{{/icon}}{{/iconHtml}}
                             {{label}}
                         </a>
                         {{/isButton}}

@@ -150,13 +150,18 @@ class SecurityDashboardPage extends Page {
     }
 
     async onEnter() {
+        // On re-entry to a cached page, child views' onInit() has already
+        // run and won't re-fetch — so refresh immediately to avoid showing
+        // stale data until the next interval tick.
+        const isReturning = this._wasExited;
         await super.onEnter();
-        // Tiered refresh — only the always-visible top section ticks fast.
-        this.scheduleRefresh(() => this.statusStrip?.refresh(),    60_000,  { tier: 'fast' });
-        this.scheduleRefresh(() => this.priorityQueue?.refresh(),  60_000,  { tier: 'fast' });
-        this.scheduleRefresh(() => this.ticketsQueue?.refresh(),   60_000,  { tier: 'fast' });
-        this.scheduleRefresh(() => this.composition?.refresh(),    300_000, { tier: 'slow' });
-        this.scheduleRefresh(() => this._refreshLazyMounted(),     300_000, { tier: 'slow' });
+        const fast = { tier: 'fast', immediate: isReturning };
+        const slow = { tier: 'slow', immediate: isReturning };
+        this.scheduleRefresh(() => this.statusStrip?.refresh(),    60_000,  fast);
+        this.scheduleRefresh(() => this.priorityQueue?.refresh(),  60_000,  fast);
+        this.scheduleRefresh(() => this.ticketsQueue?.refresh(),   60_000,  fast);
+        this.scheduleRefresh(() => this.composition?.refresh(),    300_000, slow);
+        this.scheduleRefresh(() => this._refreshLazyMounted(),     300_000, slow);
     }
 
     async onActionRefreshAll(event, element) {

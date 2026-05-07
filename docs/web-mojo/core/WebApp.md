@@ -524,6 +524,31 @@ const user = new UserClass({ id: 42 });
 await user.fetch();
 ```
 
+### Model Ref Registry
+
+The model ref registry maps backend dotted-type strings (e.g. `'incident.Incident'`) to frontend Model classes. This is the mechanism that lets action cards and other generic UI resolve a backend model reference to a class that knows how to fetch and display it.
+
+Model classes declare their ref string via the static `MODEL_REF` property. `registerAdminPages` automatically registers all built-in admin models.
+
+```web-mojo/docs/core/WebApp.md#L1-1
+// In the model class
+class Incident extends Model {
+    static MODEL_REF = 'incident.Incident';
+    // ...
+}
+
+// In app setup (registerAdminPages does this automatically for admin models)
+app.registerModelRef(Incident.MODEL_REF, Incident);
+
+// In any view — resolve a ref string to a class
+const ModelClass = app.getModelByRef('incident.Incident');
+if (ModelClass?.VIEW_CLASS) {
+    Modal.showModel(new ModelClass({ id: pk }));
+}
+```
+
+`getModelByRef` returns `undefined` if the ref is not registered.
+
 ---
 
 ## Theme
@@ -655,6 +680,8 @@ const app = WebApp.create(config); // static factory
 | `getComponent(name)` | `Class\|undefined` | Get a component class by name |
 | `registerModel(name, Class)` | `void` | Register a model class by name |
 | `getModel(name)` | `Class\|undefined` | Get a model class by name |
+| `registerModelRef(ref, Class)` | `void` | Register a Model class by its backend dotted-type string (e.g. `'incident.Incident'`) |
+| `getModelByRef(ref)` | `Class\|undefined` | Look up a Model class by its backend dotted-type string |
 
 ### Utility Methods
 

@@ -52,7 +52,8 @@ module.exports = async function(testContext) {
             'Validation', 'FormLayout', 'MultiStepWizard', 'SearchFilterForm',
         ],
         'forms/inputs': [
-            'TagInput', 'DatePicker', 'DateRangePicker', 'MultiSelect',
+            'TagInput', 'DatePicker', 'DateRangePicker', 'TimePicker',
+            'DateTimePicker', 'DateTimeSuite', 'MultiSelect',
             'ComboInput', 'CollectionSelect', 'ImageField',
         ],
         models: ['BuiltinModels'],

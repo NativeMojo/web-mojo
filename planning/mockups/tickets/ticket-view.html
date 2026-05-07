@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TicketView Redesign — Mockup</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        /* ── Page chrome (mockup only) ────────────────────── */
+        body { background: var(--bs-body-bg); padding: 20px; }
+        .mockup-shell {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--bs-body-bg);
+            border: 1px solid var(--bs-border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+        }
+        .theme-toggle {
+            position: fixed; top: 12px; right: 16px; z-index: 9999;
+        }
+
+        /* ── Ticket header strip ──────────────────────────── */
+        .ticket-header {
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid var(--bs-border-color-translucent);
+        }
+        .ticket-id {
+            font-size: 0.8rem;
+            color: var(--bs-secondary-color);
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+        .ticket-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--bs-body-color);
+            margin: 2px 0 0;
+            line-height: 1.35;
+        }
+        .ticket-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: var(--bs-secondary-color);
+            flex-wrap: wrap;
+        }
+        .ticket-meta .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* ── Header toolbar ───────────────────────────────── */
+        .ticket-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .ai-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 1px solid var(--bs-border-color);
+            background: var(--bs-tertiary-bg);
+            color: var(--bs-secondary-color);
+        }
+        .ai-toggle.active {
+            background: rgba(13, 110, 253, 0.1);
+            border-color: rgba(13, 110, 253, 0.3);
+            color: var(--bs-primary);
+        }
+        .ai-toggle .form-check-input {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        /* ── Linked incident bar ──────────────────────────── */
+        .linked-incident {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 24px;
+            background: rgba(255, 193, 7, 0.06);
+            border-bottom: 1px solid var(--bs-border-color-translucent);
+            font-size: 0.82rem;
+        }
+        .linked-incident .bi-exclamation-triangle-fill { color: var(--bs-warning); }
+        .linked-incident a { text-decoration: none; font-weight: 500; }
+
+        /* ── Conversation area ─────────────────────────────── */
+        .ticket-conversation {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 24px;
+        }
+
+        /* ── Note (message) row ────────────────────────────── */
+        .note-row {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+        }
+        .note-row + .note-row {
+            border-top: 1px solid var(--bs-border-color-translucent);
+        }
+        .note-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .note-avatar.user { background: var(--bs-primary); }
+        .note-avatar.bot  { background: #1a1a2e; }
+        .note-body { flex: 1; min-width: 0; }
+        .note-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        .note-author {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--bs-body-color);
+        }
+        .note-time {
+            font-size: 0.75rem;
+            color: var(--bs-secondary-color);
+        }
+        .note-badge {
+            font-size: 0.65rem;
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+        .note-content {
+            font-size: 0.875rem;
+            color: var(--bs-body-color);
+            line-height: 1.55;
+        }
+
+        /* ── Action card ──────────────────────────────────── */
+        .action-card {
+            margin-top: 10px;
+            border: 1px solid var(--bs-border-color);
+            border-radius: 10px;
+            overflow: hidden;
+            background: var(--bs-body-bg);
+        }
+        .action-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: var(--bs-tertiary-bg);
+            border-bottom: 1px solid var(--bs-border-color-translucent);
+        }
+        .action-card-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        .action-card-icon.rule     { background: rgba(13, 110, 253, 0.1); color: var(--bs-primary); }
+        .action-card-icon.block    { background: rgba(220, 53, 69, 0.1);  color: var(--bs-danger); }
+        .action-card-icon.escalate { background: rgba(255, 193, 7, 0.1);  color: var(--bs-warning); }
+        .action-card-icon.update   { background: rgba(25, 135, 84, 0.1);  color: var(--bs-success); }
+        .action-card-label {
+            font-weight: 600;
+            font-size: 0.88rem;
+            color: var(--bs-body-color);
+        }
+        .action-card-handler {
+            font-size: 0.72rem;
+            color: var(--bs-secondary-color);
+            font-family: var(--bs-font-monospace);
+        }
+        .action-card-body {
+            padding: 14px 16px;
+        }
+        .action-card-context {
+            font-size: 0.82rem;
+            color: var(--bs-secondary-color);
+            margin-bottom: 12px;
+        }
+        .action-card-context dt {
+            font-weight: 500;
+            color: var(--bs-body-color);
+            display: inline;
+        }
+        .action-card-context dd {
+            display: inline;
+            margin: 0 12px 0 0;
+        }
+        .action-card-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* ── Diff view (rule update) ──────────────────────── */
+        .rule-diff {
+            border: 1px solid var(--bs-border-color-translucent);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            font-size: 0.8rem;
+        }
+        .rule-diff-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+        .rule-diff-col-header {
+            padding: 6px 12px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            background: var(--bs-tertiary-bg);
+            border-bottom: 1px solid var(--bs-border-color-translucent);
+        }
+        .rule-diff-col-header:first-child {
+            border-right: 1px solid var(--bs-border-color-translucent);
+        }
+        .rule-diff-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+        .rule-diff-row + .rule-diff-row {
+            border-top: 1px solid var(--bs-border-color-translucent);
+        }
+        .rule-diff-cell {
+            padding: 6px 12px;
+            font-family: var(--bs-font-monospace);
+            font-size: 0.78rem;
+        }
+        .rule-diff-cell:first-child {
+            border-right: 1px solid var(--bs-border-color-translucent);
+        }
+        .rule-diff-cell.removed {
+            background: rgba(220, 53, 69, 0.06);
+            text-decoration: line-through;
+            color: var(--bs-danger);
+        }
+        .rule-diff-cell.added {
+            background: rgba(25, 135, 84, 0.06);
+            color: var(--bs-success);
+        }
+
+        /* ── Resolved action card ─────────────────────────── */
+        .action-card.resolved {
+            opacity: 0.85;
+        }
+        .action-card.resolved .action-card-header {
+            background: var(--bs-tertiary-bg);
+        }
+        .action-resolved-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 4px;
+        }
+        .action-resolved-badge.approved {
+            background: rgba(25, 135, 84, 0.1);
+            color: var(--bs-success);
+        }
+        .action-resolved-badge.denied {
+            background: rgba(220, 53, 69, 0.1);
+            color: var(--bs-danger);
+        }
+
+        /* ── Requires-approval indicator (ticket list) ───── */
+        .approval-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            color: var(--bs-warning);
+            font-size: 0.78rem;
+            font-weight: 500;
+        }
+
+        /* ── Input area ───────────────────────────────────── */
+        .ticket-input {
+            border-top: 1px solid var(--bs-border-color);
+            padding: 12px 24px;
+            background: var(--bs-tertiary-bg);
+        }
+
+        /* ── Dark theme overrides ─────────────────────────── */
+        [data-bs-theme="dark"] .linked-incident {
+            background: rgba(255, 193, 7, 0.04);
+        }
+        [data-bs-theme="dark"] .note-avatar.bot {
+            background: #2d3748;
+        }
+        [data-bs-theme="dark"] .rule-diff-cell.removed {
+            background: rgba(220, 53, 69, 0.1);
+        }
+        [data-bs-theme="dark"] .rule-diff-cell.added {
+            background: rgba(25, 135, 84, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+<!-- Theme toggle -->
+<button class="btn btn-sm btn-outline-secondary theme-toggle" onclick="toggleTheme()">
+    <i class="bi bi-circle-half me-1"></i>Toggle Theme
+</button>
+
+<!-- ════════════════════════════════════════════════════════════
+     MOCKUP 1: Full TicketView (modal content)
+     ════════════════════════════════════════════════════════════ -->
+<h5 class="text-muted mb-3" style="max-width:900px;margin:0 auto;">TicketView — Redesigned Modal</h5>
+<div class="mockup-shell d-flex flex-column" style="height: 85vh;">
+
+    <!-- ── Header ──────────────────────────────────── -->
+    <div class="ticket-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="ticket-id">#1042</span>
+                    <span class="badge bg-info"><i class="bi bi-bell-fill me-1"></i>new</span>
+                    <span class="badge bg-secondary">security</span>
+                </div>
+                <div class="ticket-title">SSH brute force from 185.220.101.45 — 847 failed attempts</div>
+                <div class="ticket-meta">
+                    <span class="meta-item"><i class="bi bi-flag-fill"></i>Priority 8</span>
+                    <span class="meta-item"><i class="bi bi-person-fill"></i>Unassigned</span>
+                    <span class="meta-item"><i class="bi bi-clock"></i>2 hours ago</span>
+                    <span class="meta-item"><i class="bi bi-link-45deg"></i>Incident #389</span>
+                </div>
+            </div>
+            <div class="ticket-toolbar">
+                <div class="ai-toggle active" title="LLM agent is monitoring this ticket">
+                    <i class="bi bi-robot"></i>
+                    <span>AI Active</span>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" checked>
+                    </div>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-three-dots-vertical"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Linked Incident (compact bar) ───────────── -->
+    <div class="linked-incident">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>Linked to</span>
+        <a href="#">Incident #389: SSH Brute Force Attack</a>
+        <span class="badge bg-warning text-dark">investigating</span>
+        <span class="text-muted">·</span>
+        <span>847 events</span>
+    </div>
+
+    <!-- ── Conversation ────────────────────────────── -->
+    <div class="ticket-conversation">
+
+        <!-- System note -->
+        <div class="note-row">
+            <div class="note-avatar bot"><i class="bi bi-robot"></i></div>
+            <div class="note-body">
+                <div class="note-header">
+                    <span class="note-author">LLM Agent</span>
+                    <span class="note-badge bg-dark text-light">system</span>
+                    <span class="note-time">2 hours ago</span>
+                </div>
+                <div class="note-content">
+                    Ticket auto-created from Incident #389. Detected SSH brute force pattern:
+                    <strong>847 failed login attempts</strong> from <code>185.220.101.45</code>
+                    over a 6-hour window. Source IP is a known TOR exit node.
+                    Analyzing event patterns and preparing recommended actions...
+                </div>
+            </div>
+        </div>
+
+        <!-- LLM agent proposes rule approval -->
+        <div class="note-row">
+            <div class="note-avatar bot"><i class="bi bi-robot"></i></div>
+            <div class="note-body">
+                <div class="note-header">
+                    <span class="note-author">LLM Agent</span>
+                    <span class="note-badge bg-dark text-light">system</span>
+                    <span class="note-time">1 hour ago</span>
+                </div>
+                <div class="note-content">
+                    I've created a detection rule for this attack pattern. The rule will match
+                    SSH login failures from any single IP exceeding 100 attempts within 30 minutes.
+                    Please review and approve to activate.
+                </div>
+
+                <!-- ACTION CARD: Rule approval (pending) -->
+                <div class="action-card">
+                    <div class="action-card-header">
+                        <div class="action-card-icon rule"><i class="bi bi-shield-check"></i></div>
+                        <div>
+                            <div class="action-card-label">Approve rule proposal "SSH brute force blocker"?</div>
+                            <div class="action-card-handler">incident.rule_approval</div>
+                        </div>
+                    </div>
+                    <div class="action-card-body">
+                        <div class="action-card-context">
+                            <dl class="mb-0 d-flex flex-wrap gap-1">
+                                <dt>RuleSet:</dt><dd>SSH brute force blocker (#42)</dd>
+                                <dt>Category:</dt><dd>auth:ssh</dd>
+                                <dt>Match:</dt><dd>ALL conditions</dd>
+                                <dt>Trigger:</dt><dd>100 events / 30 min</dd>
+                            </dl>
+                        </div>
+                        <div class="action-card-buttons">
+                            <button class="btn btn-success btn-sm"><i class="bi bi-check-lg me-1"></i>Approve</button>
+                            <button class="btn btn-outline-danger btn-sm"><i class="bi bi-x-lg me-1"></i>Deny</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin comment -->
+        <div class="note-row">
+            <div class="note-avatar user">IS</div>
+            <div class="note-body">
+                <div class="note-header">
+                    <span class="note-author">Ian</span>
+                    <span class="note-badge bg-primary text-light">You</span>
+                    <span class="note-time">45 min ago</span>
+                </div>
+                <div class="note-content">
+                    Good catch. Let's also block the source IP. What about the other IPs from that same /24 subnet?
+                </div>
+            </div>
+        </div>
+
+        <!-- LLM agent proposes IP block -->
+        <div class="note-row">
+            <div class="note-avatar bot"><i class="bi bi-robot"></i></div>
+            <div class="note-body">
+                <div class="note-header">
+                    <span class="note-author">LLM Agent</span>
+                    <span class="note-badge bg-dark text-light">system</span>
+                    <span class="note-time">40 min ago</span>
+                </div>
+                <div class="note-content">
+                    I checked the /24 subnet — 3 other IPs from <code>185.220.101.0/24</code> have
+                    also been flagged in the last 24 hours. All are known TOR exit nodes. Recommending
+                    a block on the primary source IP for now. I can create a broader subnet block if you want.
+                </div>
+
+                <!-- ACTION CARD: IP block (pending) -->
+                <div class="action-card">
+                    <div class="action-card-header">
+                        <div class="action-card-icon block"><i class="bi bi-slash-circle"></i></div>
+                        <div>
+                            <div class="action-card-label">Block IP address 185.220.101.45?</div>
+                            <div class="action-card-handler">incident.block_confirm</div>
+                        </div>
+                    </div>
+                    <div class="action-card-body">
+                        <div class="action-card-context">
+                            <dl class="mb-0 d-flex flex-wrap gap-1">
+                                <dt>IP:</dt><dd><code>185.220.101.45</code></dd>
+                                <dt>ISP:</dt><dd>Tor Exit Node</dd>
+                                <dt>Country:</dt><dd>Germany (DE)</dd>
+                                <dt>Threat:</dt><dd><span class="badge bg-danger">High</span></dd>
+                            </dl>
+                        </div>
+                        <div class="action-card-buttons">
+                            <button class="btn btn-success btn-sm"><i class="bi bi-check-lg me-1"></i>Approve</button>
+                            <button class="btn btn-outline-danger btn-sm"><i class="bi bi-x-lg me-1"></i>Deny</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LLM agent proposes rule UPDATE with diff -->
+        <div class="note-row">
+            <div class="note-avatar bot"><i class="bi bi-robot"></i></div>
+            <div class="note-body">
+                <div class="note-header">
+                    <span class="note-author">LLM Agent</span>
+                    <span class="note-badge bg-dark text-light">system</span>
+                    <span class="note-time">30 min ago</span>
+                </div>
+                <div class="note-content">
+                    I noticed the existing "Login Rate Limiter" ruleset only checks
+                    <code>auth:web</code> events. I recommend updating it to also cover
+                    <code>auth:ssh</code> so it catches both vectors.
+                </div>
+
+                <!-- ACTION CARD: Rule update with diff -->
+                <div class="action-card">
+                    <div class="action-card-header">
+                        <div class="action-card-icon update"><i class="bi bi-pencil-square"></i></div>
+                        <div>
+                            <div class="action-card-label">Update rules on "Login Rate Limiter"?</div>
+                            <div class="action-card-handler">incident.rule_update</div>
+                        </div>
+                    </div>
+                    <div class="action-card-body">
+                        <div class="rule-diff">
+                            <div class="rule-diff-header">
+                                <div class="rule-diff-col-header">Current</div>
+                                <div class="rule-diff-col-header">Proposed</div>
+                            </div>
+                            <div class="rule-diff-row">
+                                <div class="rule-diff-cell">category == "auth:web"</div>
+                                <div class="rule-diff-cell added">category == "auth:*"</div>
+                            </div>
+                            <div class="rule-diff-row">
+                                <div class="rule-diff-cell">trigger_count: 50</div>
+                                <div class="rule-diff-cell added">trigger_count: 100</div>
+                            </div>
+                            <div class="rule-diff-row">
+                                <div class="rule-diff-cell">trigger_window: 60</div>
+                                <div class="rule-diff-cell">trigger_window: 60</div>
+                            </div>
+                        </div>
+                        <div class="action-card-buttons">
+                            <button class="btn btn-success btn-sm"><i class="bi bi-check-lg me-1"></i>Approve</button>
+                            <button class="btn btn-outline-danger btn-sm"><i class="bi bi-x-lg me-1"></i>Deny</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESOLVED action (already approved) -->
+        <div class="note-row">
+            <div class="note-avatar bot"><i class="bi bi-robot"></i></div>
+            <div class="note-body">
+                <div class="note-header">
+                    <span class="note-author">LLM Agent</span>
+                    <span class="note-badge bg-dark text-light">system</span>
+                    <span class="note-time">20 min ago</span>
+                </div>
+                <div class="note-content">
+                    High-severity alert detected. Recommending escalation to on-call.
+                </div>
+
+                <!-- ACTION CARD: Escalation (resolved — approved) -->
+                <div class="action-card resolved">
+                    <div class="action-card-header">
+                        <div class="action-card-icon escalate"><i class="bi bi-megaphone"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="action-card-label">Escalate to on-call team?</div>
+                            <div class="action-card-handler">incident.escalate</div>
+                        </div>
+                        <span class="action-resolved-badge approved">
+                            <i class="bi bi-check-circle-fill"></i>Approved
+                        </span>
+                    </div>
+                    <div class="action-card-body">
+                        <div class="action-card-context">
+                            <span class="text-muted"><i class="bi bi-person-fill me-1"></i>Approved by Ian · 15 min ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESOLVED action (denied) -->
+        <div class="note-row">
+            <div class="note-avatar bot"><i class="bi bi-robot"></i></div>
+            <div class="note-body">
+                <div class="note-header">
+                    <span class="note-author">LLM Agent</span>
+                    <span class="note-badge bg-dark text-light">system</span>
+                    <span class="note-time">10 min ago</span>
+                </div>
+                <div class="note-content">
+                    Another batch of attempts from a different IP in the same subnet. Recommending subnet-wide block.
+                </div>
+
+                <!-- ACTION CARD: Block (resolved — denied) -->
+                <div class="action-card resolved">
+                    <div class="action-card-header">
+                        <div class="action-card-icon block"><i class="bi bi-slash-circle"></i></div>
+                        <div class="flex-grow-1">
+                            <div class="action-card-label">Block subnet 185.220.101.0/24?</div>
+                            <div class="action-card-handler">incident.block_confirm</div>
+                        </div>
+                        <span class="action-resolved-badge denied">
+                            <i class="bi bi-x-circle-fill"></i>Denied
+                        </span>
+                    </div>
+                    <div class="action-card-body">
+                        <div class="action-card-context">
+                            <span class="text-muted"><i class="bi bi-person-fill me-1"></i>Denied by Ian · 8 min ago — "Too broad, some are legit Tor users"</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── Input ───────────────────────────────────── -->
+    <div class="ticket-input">
+        <div class="d-flex gap-2 align-items-end">
+            <textarea class="form-control form-control-sm" rows="1" placeholder="Add a note..." style="resize:none;"></textarea>
+            <button class="btn btn-primary btn-sm"><i class="bi bi-send-fill"></i></button>
+        </div>
+    </div>
+
+</div>
+
+<!-- spacer -->
+<div style="height:40px;"></div>
+
+<!-- ════════════════════════════════════════════════════════════
+     MOCKUP 2: Ticket List Row with requires_approval indicator
+     ════════════════════════════════════════════════════════════ -->
+<h5 class="text-muted mb-3" style="max-width:900px;margin:0 auto;">Ticket List — requires_approval indicator</h5>
+<div class="mockup-shell" style="padding:0;">
+    <table class="table table-hover mb-0" style="font-size:0.85rem;">
+        <thead>
+            <tr>
+                <th style="width:60px">ID</th>
+                <th>Title</th>
+                <th style="width:110px">Status</th>
+                <th style="width:80px">Priority</th>
+                <th style="width:110px">Category</th>
+                <th style="width:120px">Assignee</th>
+                <th style="width:130px">Created</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="text-muted">1042</td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <span>SSH brute force from 185.220.101.45</span>
+                        <span class="approval-indicator" title="Awaiting approval">
+                            <i class="bi bi-exclamation-circle-fill"></i>
+                            <span>Action pending</span>
+                        </span>
+                    </div>
+                </td>
+                <td><span class="badge bg-info">new</span></td>
+                <td>8</td>
+                <td><span class="badge bg-secondary">security</span></td>
+                <td class="text-muted">Unassigned</td>
+                <td class="text-muted">2 hours ago</td>
+            </tr>
+            <tr>
+                <td class="text-muted">1041</td>
+                <td>User migration batch #12 — verify data integrity</td>
+                <td><span class="badge bg-primary">open</span></td>
+                <td>5</td>
+                <td><span class="badge bg-secondary">ticket</span></td>
+                <td>Sarah</td>
+                <td class="text-muted">5 hours ago</td>
+            </tr>
+            <tr>
+                <td class="text-muted">1040</td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <span>Suspicious API key usage from unknown client</span>
+                        <span class="approval-indicator" title="Awaiting approval">
+                            <i class="bi bi-exclamation-circle-fill"></i>
+                            <span>Action pending</span>
+                        </span>
+                    </div>
+                </td>
+                <td><span class="badge bg-info">new</span></td>
+                <td>7</td>
+                <td><span class="badge bg-secondary">security</span></td>
+                <td class="text-muted">Unassigned</td>
+                <td class="text-muted">1 day ago</td>
+            </tr>
+            <tr>
+                <td class="text-muted">1039</td>
+                <td>Deploy monitoring dashboard to staging</td>
+                <td><span class="badge bg-success">resolved</span></td>
+                <td>3</td>
+                <td><span class="badge bg-secondary">ticket</span></td>
+                <td>Mike</td>
+                <td class="text-muted">2 days ago</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- spacer -->
+<div style="height:40px;"></div>
+
+<!-- ════════════════════════════════════════════════════════════
+     MOCKUP 3: Disabled state (ticket closed)
+     ════════════════════════════════════════════════════════════ -->
+<h5 class="text-muted mb-3" style="max-width:900px;margin:0 auto;">Action Card — Disabled (ticket closed)</h5>
+<div class="mockup-shell" style="padding:20px;">
+    <div class="action-card" style="opacity:0.7;">
+        <div class="action-card-header">
+            <div class="action-card-icon rule"><i class="bi bi-shield-check"></i></div>
+            <div>
+                <div class="action-card-label">Approve rule proposal "SSH brute force blocker"?</div>
+                <div class="action-card-handler">incident.rule_approval</div>
+            </div>
+        </div>
+        <div class="action-card-body">
+            <div class="action-card-context">
+                <dl class="mb-0 d-flex flex-wrap gap-1">
+                    <dt>RuleSet:</dt><dd>SSH brute force blocker (#42)</dd>
+                </dl>
+            </div>
+            <div class="action-card-buttons">
+                <button class="btn btn-success btn-sm" disabled title="Ticket is closed"><i class="bi bi-check-lg me-1"></i>Approve</button>
+                <button class="btn btn-outline-danger btn-sm" disabled title="Ticket is closed"><i class="bi bi-x-lg me-1"></i>Deny</button>
+                <span class="text-muted small ms-2"><i class="bi bi-lock-fill me-1"></i>Ticket is closed</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="height:60px;"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleTheme() {
+    const html = document.documentElement;
+    html.dataset.bsTheme = html.dataset.bsTheme === 'dark' ? 'light' : 'dark';
+}
+</script>
+</body>
+</html>

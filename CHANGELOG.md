@@ -2,6 +2,41 @@
 
 ## Unreleased
 
+### Ticket panel — app-shell slide-over with action blocks
+
+- **Added:** `registerTicketPanel(app)` — new registration helper that attaches `app.openTicketPanel(modelOrId)` and `app.closeTicketPanel()` to the running app instance. The panel (`TicketPanelView`) mounts as a flex child of `.portal-layout` (like `AssistantPanelView`) and persists across page navigation. `openTicketPanel` accepts either a Ticket model instance OR an id; the table passes the model directly so the panel and table share the same instance and updates propagate without a re-fetch.
+- **Changed:** `TicketTablePage` now delegates to `app.openTicketPanel(model)` instead of managing the panel internally. This moves the panel to the app-shell level so it survives route changes. The table also got mockup-style styling — colored status pills, severity-colored priority chips, category dot+label, monospace IDs, single hairline borders — via custom function formatters and scoped CSS in `buildTemplate()`.
+- **Changed:** `TicketPanelView` panel UI cleaned up — the AI-enable toggle was removed from the panel header and moved to the ticket edit form (`TicketForms`). The kebab `⋯` menu item changed from "Close Ticket" (which prompted a status change to `closed`) to "Close Window" (which dismisses the panel). The panel no longer shows a standalone close button in the header. The kebab menu now also includes "Ask AI" which opens an Assistant chat scoped to the current ticket.
+- **Added:** `TicketPanelView` — 460 px slide-over detail view. Supports switching between tickets without closing the panel. Header has inline-editable status / priority / category / assignee / group dropdowns (each picks unique action ids — `pick-0`, `pick-1`, ... — so `ContextMenu`'s `find()`-by-action correctly resolves the clicked item). Saves go through `_saveAndSync()` which `save()` + `fetch()`-es the model and refreshes notes (so backend-side `metadata.type === 'status_change'` notes appear immediately).
+- **Added:** Description chip in the panel header. Tickets with a description show "Description" — click to view rendered markdown with `Edit` / `Close` buttons. Tickets without a description show "Add description" — click jumps straight to edit. The edit modal is a large textarea with markdown shortcuts (`Cmd/Ctrl+B` bold, `Cmd/Ctrl+I` italic, `Shift+Enter` continues lists, ``` ``` ``` opens a code fence, bracket auto-pairing). Description was removed from `TicketForms.edit.fields` since it now has its own editor.
+- **Added:** `ActionCardView` — renders LLM agent action blocks from ticket notes inline directly under each note. Approval-type blocks show Approve / Deny buttons; resolved blocks render a compact one-line chip (label + Approved/Denied badge + chevron) that expands per-note on click to show the full card with reference links; context-type blocks show clickable model-reference links. Emits `action:respond` when the user responds; `TicketPanelView` writes the response back as a new note via `TicketNoteAdapter.addActionResponse`.
+- **Changed:** `TicketNoteAdapter.transform` now also detects `metadata.type === 'status_change'` and renders the note as a muted system-event row with colored badges for `old_status` → `new_status`. System-event content skips the markdown-render pass so the badge HTML isn't escaped. `ChatMessageView`'s system-event template uses `{{{message.content}}}` (unescaped) so pre-rendered HTML lands intact.
+- **Added:** `TicketNoteAdapter.addActionResponse(actionNote, action)` — convenience method that posts an approve/deny response note with the correct metadata shape.
+
+### TableRow — `editable + formatter` cells now work
+
+- **Changed:** `TableRow.buildCellTemplate` adds the `cell-content` class to the wrapper span when a column is `editable: true` — even when a `formatter` (string or function) or `template` is set. Previously these branches skipped the wrapper, so `enterEditMode()`'s `querySelector('.cell-content')` came back empty and silently no-op'd. Tables can now combine custom rendering (e.g. status pills) with inline editing.
+
+### ChatMessageView — cleaner re-renders
+
+- **Fixed:** the attachments container is cleared and prior `FilePreviewView` children are removed before re-rendering, so files no longer multiply on each re-render of a message.
+- **Changed:** the `system_event` body uses `{{{message.content}}}` (unescaped) so callers can inject pre-rendered HTML (e.g. status-change badges).
+
+### WebApp — MODEL_REF registry (`registerModelRef` / `getModelByRef`)
+
+- **Added:** `app.registerModelRef(ref, ModelClass)` and `app.getModelByRef(ref)` — a registry that maps backend dotted-type strings (e.g. `'incident.Incident'`) to frontend Model classes.
+- **Added:** `MODEL_REF` static property convention on Model classes — the string that identifies the class in the backend type system (analogous to `VIEW_CLASS`).
+- **Changed:** `registerAdminPages` now calls `app.registerModelRef` for `Incident`, `IncidentEvent`, `RuleSet`, `Ticket`, and `GeoLocatedIP` automatically. Consumer apps do not need extra wiring for these types.
+
+### Sidebar & TopNav — `iconHtml` field on nav items
+
+- **Added:** `iconHtml` field on Sidebar and TopNav item configs. When set, the raw HTML string is rendered (triple-brace, unescaped) in place of the `icon` Bootstrap Icon. This allows custom SVG images or other HTML in sidebar/topbar item icons. `icon` remains the preferred option for Bootstrap Icons.
+
+### Admin Assistant — renamed to "Mojo"
+
+- **Changed:** The AI assistant is now displayed as "Mojo" throughout the admin extension — `AssistantPanelView`, `AssistantView`, `AssistantContextChat`, `AssistantConversationView`, `ChatMessageView`, and `AssistantMemoryPage` all use "Mojo" as the author name and panel title. The permission label in `User.CATEGORY_PERMISSIONS` changed from "AI Assistant" to "Mojo". The `assistant` permission key is unchanged.
+- **Changed:** Assistant avatar in `ChatMessageView` and the welcome icon in `AssistantPanelView` / `AssistantView` changed from the `bi-robot` Bootstrap Icon to the Mojo logo image.
+
 ### MetricsChart / MetricsMiniChartWidget — granularity in stats header
 
 - The stats modal now shows the granularity and bucket count above the

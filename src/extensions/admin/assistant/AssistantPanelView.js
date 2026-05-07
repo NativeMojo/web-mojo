@@ -67,7 +67,7 @@ class AssistantPanelView extends View {
                     <div class="assistant-welcome" data-ref="welcome">
                         <div class="assistant-welcome-content">
                             <div class="assistant-welcome-icon">
-                                <i class="bi bi-stars"></i>
+                                <img src="https://mojo-verify.s3.amazonaws.com/signatures/14e7aab75c2749cb846f7d57298691ac/mojo_ai_7c0322e9.png" alt="Mojo">
                             </div>
                             <h3 class="assistant-welcome-title">Hi ${userName}</h3>
                             <p class="assistant-welcome-subtitle">How can I help you today?</p>
@@ -87,7 +87,7 @@ class AssistantPanelView extends View {
                     <div class="assistant-input-wrapper">
                         <div class="assistant-input-status d-none" data-ref="input-status"></div>
                         <div class="assistant-input-box">
-                            <textarea class="assistant-input" placeholder="Message the assistant..." rows="1" data-ref="input"></textarea>
+                            <textarea class="assistant-input" placeholder="Message Mojo..." rows="1" data-ref="input"></textarea>
                             <button class="assistant-send-btn" data-action="send" type="button" title="Send message" data-ref="send-btn">
                                 <i class="bi bi-arrow-up"></i>
                             </button>
@@ -390,7 +390,7 @@ class AssistantPanelView extends View {
     _updateTitle(title) {
         const el = this.element?.querySelector('[data-ref="panel-title"]');
         if (!el) return;
-        el.textContent = title || (this.conversationId ? 'Assistant' : 'New conversation');
+        el.textContent = title || (this.conversationId ? 'Mojo' : 'New conversation');
     }
 
     // ── Chat Adapter ─────────────────────────────────────────
@@ -644,7 +644,7 @@ class AssistantPanelView extends View {
         this.chatView.addMessage({
             id: `plan-${plan.plan_id}`,
             role: 'assistant',
-            author: { name: 'Assistant' },
+            author: { name: 'Mojo' },
             content: '',
             timestamp: new Date().toISOString(),
             blocks: [{ type: 'progress', ...plan }],
@@ -740,7 +740,7 @@ class AssistantPanelView extends View {
             id: msg.id,
             role: msg.role || 'user',
             author: msg.role === 'assistant'
-                ? { name: 'Assistant' }
+                ? { name: 'Mojo' }
                 : msg.author || {
                     name: msg.user?.display_name || this.app?.activeUser?.get('display_name') || 'You',
                     id: msg.user?.id || currentUserId

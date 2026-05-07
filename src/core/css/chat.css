@@ -70,6 +70,11 @@
     overflow: hidden;
 }
 
+.chat-theme-compact .message-avatar .mojo-avatar-icon {
+    width: 22px;
+    height: 22px;
+}
+
 .chat-theme-compact .message-content {
     flex: 1;
     min-width: 0;

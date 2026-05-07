@@ -9,6 +9,7 @@
 - [API Reference](#api-reference)
   - [`registerAdminPages(app, addToMenu)`](#registeradminpagesapp-addtomenu)
   - [`registerAssistant(app)`](#registerassistantapp)
+  - [`registerTicketPanel(app)`](#registerticketpanelapp)
 - [The `system` Sidebar Menu](#the-system-sidebar-menu)
 - [Topbar Wiring](#topbar-wiring)
 - [Permissions](#permissions)
@@ -42,17 +43,18 @@ The admin extension ships ~50 pre-built admin pages plus an LLM-backed Assistant
 - **System** — settings, API keys.
 - **AI Assistant** — skills, memory, conversations admin pages, plus a topbar-triggered chat panel (`AssistantPanelView` on wide viewports, `AssistantView` fullscreen modal on narrow viewports).
 
-**Two integration helpers do the heavy lifting:**
+**Three integration helpers do the heavy lifting:**
 
 | Helper | What it does |
 |--------|--------------|
 | `registerAdminPages(app, addToMenu)` | Registers every `system/*` page on the app and (optionally) injects a fully-wired sidebar menu into your `system` menu config. |
 | `registerAssistant(app)` | Adds a `bi-robot` topbar button that opens the Assistant chat panel/modal. Lazy-loads `AssistantPanelView` / `AssistantView` so they aren't in your initial bundle. |
+| `registerTicketPanel(app)` | Adds app-shell-level ticket slide-over support — attaches `app.openTicketPanel(id)` and `app.closeTicketPanel()`. The panel persists across page navigation, exactly like the Assistant panel. |
 
 **Import path:**
 
 ```js
-import { registerAdminPages, registerAssistant } from 'web-mojo/admin';
+import { registerAdminPages, registerAssistant, registerTicketPanel } from 'web-mojo/admin';
 ```
 
 > ✅ Always import from `web-mojo/admin`. Never deep-import `web-mojo/src/extensions/admin/...` — those paths are not part of the public surface.
@@ -65,7 +67,7 @@ Minimal portal wiring with admin pages and the Assistant. The full working refer
 
 ```js
 import { PortalWebApp, User } from 'web-mojo';
-import { registerAdminPages, registerAssistant } from 'web-mojo/admin';
+import { registerAdminPages, registerAssistant, registerTicketPanel } from 'web-mojo/admin';
 
 const app = new PortalWebApp({
     name: 'Acme Portal',
@@ -113,6 +115,9 @@ registerAdminPages(app, true);
 
 // 3) Register the Assistant topbar button (lazy-loads on click)
 registerAssistant(app);
+
+// 4) Register the ticket slide-over panel (optional — omit if you don't use tickets)
+registerTicketPanel(app);
 ```
 
 **Order matters.** `app.start()` builds the sidebar and topbar; `registerAdminPages` and `registerAssistant` then mutate them. Calling either before `start()` either no-ops the menu injection or registers items that your topbar never renders.
@@ -140,6 +145,8 @@ registerAdminPages(app, true);
 
 `registerAdminPages` is also exported as `registerSystemPages`. Both names refer to the same function.
 
+In addition to page and menu registration, `registerAdminPages` calls `app.registerModelRef` for each built-in admin model that declares a `MODEL_REF` static property (`Incident`, `IncidentEvent`, `RuleSet`, `Ticket`, `GeoLocatedIP`). This wires the model-ref registry so generic UI (action cards in `TicketPanelView`, etc.) can resolve backend type strings to concrete classes and open the correct detail dialog.
+
 ### `registerAssistant(app)`
 
 ```js
@@ -163,6 +170,28 @@ registerAssistant(app);
 5. Adds a debounced `resize` listener: if the panel is open and the viewport drops below 1000 px, it auto-switches to the fullscreen modal. The active conversation is preserved across mode switches via `app._assistantConversationId`.
 
 > ✅ Calling `registerAssistant` before `app.start()` is fine — it falls back to mutating `app.topbarConfig.rightItems` so the button shows up the moment the topbar mounts. Calling it after `start()` works the same way and re-renders the topbar if needed.
+
+### `registerTicketPanel(app)`
+
+```js
+import { registerTicketPanel } from 'web-mojo/admin';
+
+registerTicketPanel(app);
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `app` | `WebApp` / `PortalApp` / `PortalWebApp` | The running app instance. |
+
+**What it does:**
+
+1. Attaches `app.openTicketPanel(ticketId)` — fetches the ticket, then mounts `TicketPanelView` as a 460 px flex child of `.portal-layout` (appended as `#ticket-panel`). If the panel is already mounted, switches to the new ticket without reopening.
+2. Attaches `app.closeTicketPanel()` — removes the panel element and clears `app._ticketPanel`.
+3. `TicketPanelView` and the `Ticket` model are loaded with dynamic `import()` — not in your initial bundle.
+
+The panel persists across page navigation because it lives at the app-shell level (`.portal-layout`), not inside any individual page. This is the same pattern used by `AssistantPanelView`.
+
+**`TicketTablePage`** calls `app.openTicketPanel(id)` automatically when a table row is clicked — no additional wiring is needed on the page side. Calling `registerTicketPanel` before `TicketTablePage` loads is fine (the import is asynchronous).
 
 ---
 
@@ -285,7 +314,7 @@ import {
 
     // Views — Detail/dialog views (composable, often opened via row clicks)
     DeviceView, GeoIPView, GroupView, MemberView, UserView, ApiKeyView,
-    IncidentView, EventView, TicketView, RuleSetView,
+    IncidentView, EventView, TicketView, TicketPanelView, ActionCardView, ResolvedActionsSummaryView, RuleSetView,
     JobDetailsView, JobHealthView, JobStatsView, RunnerDetailsView, ScheduledTaskView,
     EmailTemplateView, EmailView, PublicMessageView, PhoneNumberView, PushDeliveryView, PushDeviceView,
     ShortLinkView, BouncerSignalView, BouncerDeviceView, IPSetView,
@@ -399,6 +428,20 @@ Assistant responses can include `blocks` rendered inline:
 | `POST` | `/api/assistant` | REST fallback when WebSocket is unavailable. |
 
 > Cross-link: see [ChatView](../components/ChatView.md) for the underlying chat UI used by the Assistant — adapter-driven messages, file drop, and streaming hooks.
+
+---
+
+## Ticket Slide-Over Panel
+
+`TicketTablePage` opens ticket details in a 460 px slide-over panel (`TicketPanelView`) anchored to the right of the table, replacing the previous modal-based detail view. The panel includes:
+
+- A compact header with status pill (clickable — inline status selector), priority, assignee, category, and group fields. All fields are editable in-place via context menus or modals.
+- A kebab `⋯` menu for edit, refresh notes, and close window. The AI-enable toggle was moved to the ticket edit form (`TicketForms`) — it is no longer in the panel header.
+- A chat conversation (via `ChatView` + `TicketNoteAdapter`) with a note-input bar at the bottom.
+- **Action blocks** — LLM agent notes that include a `metadata.action` payload render as `ActionCardView` cards below the chat. Approval-type actions show Approve/Deny buttons. Context-type actions show clickable model-reference links that open the referenced object's detail dialog (using `app.getModelByRef`). Resolved actions collapse behind a `ResolvedActionsSummaryView` bar.
+- A linked-incident strip when the ticket is associated with an incident.
+
+The panel opens when a table row is clicked (via `onItemView`) and closes via the `panel:close` event. Clicking a different row switches the panel to that ticket. The previous `TicketView` modal is still exported and usable standalone.
 
 ---
 

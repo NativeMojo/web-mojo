@@ -31,6 +31,7 @@ The `Model` class is the foundation for managing individual data resources in MO
 - [Validation Methods](#validation-methods)
 - [Dirty Tracking Methods](#dirty-tracking-methods)
 - [Event Methods](#event-methods)
+- [Static Properties](#static-properties)
 - [Static Methods](#static-methods)
 - [Utility Methods](#utility-methods)
 
@@ -853,6 +854,38 @@ user.emit('custom-event', { data: 'value' });
 **Parameters:**
 - `event` (String) - Event name
 - `...args` - Arguments to pass to listeners
+
+---
+
+## Static Properties
+
+### MODEL_REF
+
+A static string that identifies the model's backend dotted type. Used by the `WebApp` model-ref registry to resolve a generic backend reference (e.g. from an LLM action block) to a concrete class.
+
+```javascript
+class Incident extends Model {
+    static MODEL_REF = 'incident.Incident';
+    // ...
+}
+```
+
+Registration happens automatically when you call `registerAdminPages`. In your own model classes, declare the property and register it with `app.registerModelRef`:
+
+```javascript
+app.registerModelRef(MyModel.MODEL_REF, MyModel);
+```
+
+Pairing `MODEL_REF` with `VIEW_CLASS` lets any generic UI (action cards, chat annotations, etc.) open the correct detail dialog for any model ref it receives from the backend:
+
+```javascript
+const ModelClass = app.getModelByRef(refString);
+if (ModelClass?.VIEW_CLASS) {
+    Modal.showModel(new ModelClass({ id: pk }));
+}
+```
+
+See [`WebApp` — Model Ref Registry](./WebApp.md#model-ref-registry) for full usage.
 
 ---
 

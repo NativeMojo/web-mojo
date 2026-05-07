@@ -10,7 +10,7 @@ import rest from '@core/Rest.js';
 import Modal from '@core/views/feedback/Modal.js';
 
 const TIER_CONFIG = {
-    global: { label: 'Global', icon: 'bi-globe', badge: 'bg-primary', description: 'Visible to all assistant users' },
+    global: { label: 'Global', icon: 'bi-globe', badge: 'bg-primary', description: 'Visible to all Mojo users' },
     user:   { label: 'Personal', icon: 'bi-person', badge: 'bg-info', description: 'Private to you' },
     group:  { label: 'Group', icon: 'bi-people', badge: 'bg-warning text-dark', description: 'Shared with your group' }
 };
@@ -18,7 +18,7 @@ const TIER_CONFIG = {
 class AssistantMemoryPage extends Page {
     constructor(options = {}) {
         super({
-            pageName: 'Assistant Memory',
+            pageName: 'Mojo Memory',
             className: 'mojo-page assistant-memory-page',
             ...options
         });
@@ -31,8 +31,8 @@ class AssistantMemoryPage extends Page {
             <div class="container-fluid py-3">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
-                        <h4 class="mb-0"><i class="bi bi-lightbulb me-2"></i>Assistant Memory</h4>
-                        <p class="text-muted small mb-0">Facts and preferences the assistant has learned during conversations.</p>
+                        <h4 class="mb-0"><i class="bi bi-lightbulb me-2"></i>Mojo Memory</h4>
+                        <p class="text-muted small mb-0">Facts and preferences Mojo has learned during conversations.</p>
                     </div>
                     <button class="btn btn-outline-secondary btn-sm" data-action="refresh">
                         <i class="bi bi-arrow-clockwise me-1"></i>Refresh

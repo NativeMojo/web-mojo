@@ -120,7 +120,7 @@ class AssistantContextAdapter {
             id: msg.id,
             role: msg.role || 'user',
             author: msg.role === 'assistant'
-                ? { name: 'Assistant' }
+                ? { name: 'Mojo' }
                 : msg.author || {
                     name: msg.user?.display_name || this.app?.activeUser?.get('display_name') || 'You',
                     id: msg.user?.id || this.app?.activeUser?.id
@@ -530,7 +530,7 @@ class AssistantContextChat extends View {
         this.chatView.addMessage({
             id: `plan-${plan.plan_id}`,
             role: 'assistant',
-            author: { name: 'Assistant' },
+            author: { name: 'Mojo' },
             content: '',
             timestamp: new Date().toISOString(),
             blocks: [{ type: 'progress', ...plan }],
@@ -636,7 +636,7 @@ async function openAssistantChat(view, modelName) {
     });
 
     await Modal.show(chatView, {
-        title: 'AI Assistant',
+        title: 'Mojo',
         size: 'xl'
     });
 }

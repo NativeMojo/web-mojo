@@ -465,7 +465,7 @@ class Sidebar extends View {
                        role="button"
                        aria-expanded="{{#active}}true{{/active}}{{^active}}false{{/active}}"
                        data-action="toggle-submenu">
-                        {{#icon}}<i class="{{icon}} me-2"></i>{{/icon}}
+                        {{#iconHtml}}{{{iconHtml}}}{{/iconHtml}}{{^iconHtml}}{{#icon}}<i class="{{icon}} me-2"></i>{{/icon}}{{/iconHtml}}
                         <span class="nav-text">{{text}}</span>
                         {{#badge}}
                         <span class="{{badge.class}} ms-auto">{{badge.text}}</span>
@@ -479,7 +479,7 @@ class Sidebar extends View {
                                 <a class="nav-link {{#active}}active{{/active}}"
                                    {{#action}}data-action="{{action}}"{{/action}}
                                    {{#href}}href="{{href}}"{{/href}}>
-                                    {{#icon}}<i class="{{icon}} me-2"></i>{{/icon}}
+                                    {{#iconHtml}}{{{iconHtml}}}{{/iconHtml}}{{^iconHtml}}{{#icon}}<i class="{{icon}} me-2"></i>{{/icon}}{{/iconHtml}}
                                     <span class="nav-text">{{text}}</span>
                                     {{#badge}}
                                     <span class="{{badge.class}} ms-auto">{{badge.text}}</span>
@@ -495,7 +495,7 @@ class Sidebar extends View {
                     <a class="nav-link {{#active}}active{{/active}} {{#disabled}}disabled{{/disabled}}"
                        {{#action}}{{^disabled}}data-action="{{action}}"{{/disabled}}{{/action}}
                        {{#href}}{{^disabled}}href="{{href}}"{{/disabled}}{{/href}}>
-                        {{#icon}}<i class="{{icon}} me-2"></i>{{/icon}}
+                        {{#iconHtml}}{{{iconHtml}}}{{/iconHtml}}{{^iconHtml}}{{#icon}}<i class="{{icon}} me-2"></i>{{/icon}}{{/iconHtml}}
                         <span class="nav-text">{{text}}</span>
                         {{#badge}}
                         <span class="{{badge.class}} ms-auto">{{badge.text}}</span>

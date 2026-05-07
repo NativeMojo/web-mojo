@@ -12,6 +12,12 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "4173", "--directory", "planning/mockups/security_dashboard"],
       "port": 4173
+    },
+    {
+      "name": "ticket-mockup",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4174", "--directory", "planning/mockups/tickets"],
+      "port": 4174
     }
   ]
 }

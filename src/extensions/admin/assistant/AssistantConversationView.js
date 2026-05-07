@@ -114,7 +114,7 @@ class AssistantConversationView extends View {
         // Build author from message data or conversation-level user
         let author;
         if (msg.role === 'assistant') {
-            author = { name: 'Assistant' };
+            author = { name: 'Mojo' };
         } else if (msg.author) {
             author = msg.author;
         } else {
