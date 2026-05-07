@@ -127,11 +127,11 @@ class TicketTablePage extends TablePage {
         this.addChild(this.panelView);
         await this.panelView.render();
 
-        this.getRef('panel-wrapper')?.classList.add('open');
+        this.element?.querySelector('[data-ref="panel-wrapper"]')?.classList.add('open');
     }
 
     _closePanel() {
-        this.getRef('panel-wrapper')?.classList.remove('open');
+        this.element?.querySelector('[data-ref="panel-wrapper"]')?.classList.remove('open');
         if (this.panelView) {
             this.panelView.off('panel:close');
             this.removeChild(this.panelView);

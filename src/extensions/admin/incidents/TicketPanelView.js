@@ -308,25 +308,25 @@ class TicketPanelView extends View {
         this.getApp()?.toast?.success(enabled ? 'AI enabled' : 'AI disabled');
     }
 
-    async onActionChangeStatus() {
+    async onActionChangeStatus(event) {
         const items = STATUS_OPTIONS.map(s => ({
             label: s.replace(/_/g, ' '),
             value: s,
             active: s === this.model.get('status')
         }));
-        const result = await this._showInlineSelect(items);
+        const result = await this._showInlineSelect(items, event);
         if (!result) return;
         await this.model.save({ status: result });
         this.render();
     }
 
-    async onActionChangePriority() {
+    async onActionChangePriority(event) {
         const items = PRIORITY_OPTIONS.map(p => ({
             label: p.label,
             value: p.value,
             active: p.value === this.model.get('priority')
         }));
-        const result = await this._showInlineSelect(items);
+        const result = await this._showInlineSelect(items, event);
         if (!result) return;
         await this.model.save({ priority: parseInt(result) });
         this.render();
@@ -349,13 +349,13 @@ class TicketPanelView extends View {
         this.render();
     }
 
-    async onActionChangeCategory() {
+    async onActionChangeCategory(event) {
         const items = Object.entries(TicketCategories).map(([key, label]) => ({
             label,
             value: key,
             active: key === this.model.get('category')
         }));
-        const result = await this._showInlineSelect(items);
+        const result = await this._showInlineSelect(items, event);
         if (!result) return;
         await this.model.save({ category: result });
         this.render();
@@ -432,30 +432,33 @@ class TicketPanelView extends View {
         this.render();
     }
 
-    async _showInlineSelect(items) {
+    async _showInlineSelect(items, event) {
         return new Promise((resolve) => {
+            let picked = false;
             const menu = new ContextMenu({
-                context: this.model,
                 config: {
                     items: items.map(item => ({
                         label: item.label,
-                        action: `select-${item.value}`,
-                        class: item.active ? 'fw-bold' : ''
+                        action: 'pick',
+                        class: item.active ? 'fw-bold' : '',
+                        handler: () => {
+                            picked = true;
+                            this.removeChild(menu);
+                            resolve(item.value);
+                        }
                     }))
                 }
             });
-            menu.on('action', (action) => {
-                const value = action.replace('select-', '');
-                menu.destroy();
-                resolve(value);
-            });
-            menu.on('close', () => {
-                menu.destroy();
-                resolve(null);
-            });
+            const origClose = menu.closeDropdown.bind(menu);
+            menu.closeDropdown = () => {
+                origClose();
+                if (!picked) {
+                    this.removeChild(menu);
+                    resolve(null);
+                }
+            };
             this.addChild(menu);
-            menu.render();
-            menu.show();
+            menu.openAt(event.clientX, event.clientY);
         });
     }
 
