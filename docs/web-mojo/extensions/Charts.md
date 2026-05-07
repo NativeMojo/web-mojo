@@ -403,7 +403,7 @@ Runtime setters:
 ```js
 chart.setChildKind('region');   // refetch as Mode 2
 chart.setBreakdown(true);       // refetch as Mode 3
-chart.setChildKind(null);       // back to Mode 1
+chart.setChildKind(null);       // back to Mode 1 (also call setBreakdown(false) if breakdown was set)
 ```
 
 **Mode 3 response carries a `groups` map** (`{ "Downtown": 12, "Uptown": 13 }`) keying child-group name → child id. The map is surfaced on the existing `metrics:data-loaded` event and cached on the instance as `this._lastGroups` for drill-in:
