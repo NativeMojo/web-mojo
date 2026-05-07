@@ -1,7 +1,7 @@
 # Ticket Action Blocks UI
 
 **Type**: request
-**Status**: planned
+**Status**: done
 **Date**: 2026-05-06
 
 ## Description
@@ -324,3 +324,44 @@ Update `Ticket.VIEW_CLASS` assignment (line 367) to remain `TicketView` (no chan
 - Refactoring EventView's MODEL_REGISTRY to use the new MODEL_REF pattern (separate cleanup task)
 - WebSocket live-update of ticket notes (future enhancement)
 - Panel resize handle (intentionally omitted — fixed width)
+
+## Resolution
+
+### What was implemented
+
+Replaced modal-based TicketView with a 460px slide-over TicketPanelView on the ticket table page. Added MODEL_REF registry pattern to WebApp for resolving backend model references to frontend classes. Action blocks from LLM agent notes render as interactive cards with Approve/Deny buttons (approval type) or clickable model reference links (context type). Resolved actions collapse behind a summary bar.
+
+### Files changed
+
+**New files:**
+- `src/extensions/admin/incidents/TicketPanelView.js` — slide-over panel view (460 lines)
+- `src/extensions/admin/incidents/ActionCardView.js` — action block card (approval + context modes)
+- `src/extensions/admin/incidents/ResolvedActionsSummaryView.js` — collapsed summary bar
+
+**Modified files:**
+- `src/core/WebApp.js` — `modelRefClasses` Map + `registerModelRef()`/`getModelByRef()`
+- `src/admin.js` — MODEL_REF registration for 5 admin models in `registerSystemPages()`
+- `src/extensions/admin/incidents/adapters/TicketNoteAdapter.js` — action/actionResponse passthrough + `addActionResponse()`
+- `src/extensions/admin/incidents/TicketTablePage.js` — panel layout, `onItemView` override, activity column
+- `src/extensions/admin/incidents/TicketView.js` — added `Ticket.MODEL_REF`
+- `src/extensions/admin/incidents/IncidentView.js` — added `Incident.MODEL_REF`
+- `src/extensions/admin/incidents/RuleSetView.js` — added `RuleSet.MODEL_REF`
+- `src/extensions/admin/incidents/EventView.js` — added `IncidentEvent.MODEL_REF`
+- `src/extensions/admin/account/devices/GeoIPView.js` — added `GeoLocatedIP.MODEL_REF`
+- `src/extensions/admin/css/admin.css` — panel layout, action card, resolved summary styles
+
+### Tests run
+
+- `npm run test:unit` — 667/667 passed
+- `npm run build:lib` — clean build
+- `npm run lint` — zero errors on new/changed files (16 pre-existing errors in other files)
+
+### Agent findings
+
+**Security review** — Found 2 critical XSS issues in initial implementation:
+1. ActionCardView: unescaped metadata strings (label, detail, model/pk) in template literals → fixed with `esc()` helper + ALLOWED_REFS allowlist + numeric pk validation
+2. TicketPanelView: raw description injection on API failure fallback → fixed with textContent escaping; user-controlled fields (assigneeName, etc.) switched from template literals to Mustache tokens for auto-escaping
+
+**Docs updater** — Updated WebApp.md, Model.md, Admin.md, CHANGELOG.md
+
+**Test runner** — All 667 unit tests pass. Integration/build failures are pre-existing.
