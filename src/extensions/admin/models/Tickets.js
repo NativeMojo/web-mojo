@@ -91,6 +91,7 @@ const TicketForms = {
             { name: 'status', type: 'select', label: 'Status', options: ["new", "open", "paused", "resolved", "qa", "ignored"], cols: 6 },
             { type: 'collection', name: 'assignee', label: 'Assignee', Collection: UserList, labelField: 'display_name', valueField: 'id', cols: 12 },
             { type: 'collection', name: 'incident', label: 'Incident', Collection: IncidentList, labelField: 'title', valueField: 'id', cols: 12 },
+            { name: 'enable_llm', type: 'checkbox', label: 'Enable AI agent', cols: 12 },
         ]
     }
 };

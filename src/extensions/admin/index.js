@@ -70,4 +70,4 @@ export { default as S3BucketTablePage } from './storage/S3BucketTablePage.js';
 
 // Registration helpers — re-exported from src/admin.js so consumers can
 // wire the admin extension via the package surface alone.
-export { registerSystemPages, registerAdminPages, registerAssistant } from '../../admin.js';
+export { registerSystemPages, registerAdminPages, registerAssistant, registerTicketPanel } from '../../admin.js';

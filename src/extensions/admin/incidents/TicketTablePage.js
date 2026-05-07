@@ -1,11 +1,6 @@
-/**
- * TicketTablePage - Ticket management with slide-over panel
- */
-
 import TablePage from '@core/pages/TablePage.js';
-import { Ticket, TicketList, TicketForms, TicketCategories } from '@ext/admin/models/Tickets.js';
+import { TicketList, TicketForms, TicketCategories } from '@ext/admin/models/Tickets.js';
 import TicketView from './TicketView.js';
-import TicketPanelView from './TicketPanelView.js';
 
 class TicketTablePage extends TablePage {
     constructor(options = {}) {
@@ -91,52 +86,15 @@ class TicketTablePage extends TablePage {
                 responsive: false
             },
 
-            onItemView: (model) => this._openPanel(model),
-
-            template: `
-                <div class="ticket-page-layout">
-                    <div class="ticket-page-table">
-                        <div class="table-page-container">
-                            <div class="table-container" data-container="table"></div>
-                        </div>
-                    </div>
-                    <div class="ticket-page-panel" data-ref="panel-wrapper">
-                        <div data-container="ticket-panel"></div>
-                    </div>
-                </div>
-            `,
+            onItemView: (model) => {
+                const app = this.getApp();
+                if (app?.openTicketPanel) {
+                    app.openTicketPanel(model.get('id'));
+                }
+            },
 
             ...options,
         });
-    }
-
-    async _openPanel(model) {
-        const ticket = new Ticket(model.toJSON ? model.toJSON() : model.data || {});
-        await ticket.fetch();
-
-        if (this.panelView) {
-            this.panelView.off('panel:close');
-            this.removeChild(this.panelView);
-        }
-
-        this.panelView = new TicketPanelView({
-            containerId: 'ticket-panel',
-            model: ticket
-        });
-        this.panelView.on('panel:close', () => this._closePanel());
-        this.addChild(this.panelView);
-        await this.panelView.render();
-
-        this.element?.querySelector('[data-ref="panel-wrapper"]')?.classList.add('open');
-    }
-
-    _closePanel() {
-        this.element?.querySelector('[data-ref="panel-wrapper"]')?.classList.remove('open');
-        if (this.panelView) {
-            this.panelView.off('panel:close');
-            this.removeChild(this.panelView);
-            this.panelView = null;
-        }
     }
 }
 

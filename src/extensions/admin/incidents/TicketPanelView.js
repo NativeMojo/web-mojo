@@ -52,7 +52,6 @@ class TicketPanelView extends View {
         this.groupName = this.model.get('group.name') || this.model.get('group') || 'None';
         this.hasDescription = !!this.model.get('description');
         this.hasIncident = !!(this.model.get('incident') && typeof this.model.get('incident') === 'object' && this.model.get('incident').id);
-        this.aiEnabled = !!this.model.get('metadata.enable_llm');
         this.priorityColor = (this.model.get('priority') || 5) >= 7 ? 'var(--bs-danger)' : 'var(--bs-secondary-color)';
 
         this.template = `
@@ -105,15 +104,8 @@ class TicketPanelView extends View {
                 .tp-input textarea::placeholder { color: var(--bs-secondary-color); }
                 .tp-send-btn { width: 32px; height: 32px; border-radius: 8px; border: none; background: var(--bs-primary); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; font-size: 0.85rem; transition: filter 0.12s; }
                 .tp-send-btn:hover { filter: brightness(1.1); }
-                .tp-input-tools { display: flex; gap: 2px; margin-top: 4px; }
-                .tp-tool-btn { border: none; background: none; color: var(--bs-secondary-color); font-size: 0.78rem; padding: 2px 5px; border-radius: 4px; cursor: pointer; transition: all 0.12s; }
-                .tp-tool-btn:hover { background: var(--bs-tertiary-bg); color: var(--bs-body-color); }
-
-                .tp-ai-switch { display: flex; align-items: center; gap: 5px; margin-right: 6px; }
-                .tp-ai-switch label { font-size: 0.7rem; font-weight: 500; color: var(--bs-secondary-color); cursor: pointer; margin: 0; user-select: none; }
-                .tp-ai-switch .form-check-input:checked ~ label { color: var(--bs-primary); }
-                .tp-ai-switch .form-check-input { width: 1.8em; height: 1em; margin: 0; cursor: pointer; }
-                .tp-ai-switch .form-check-input:focus { box-shadow: none; }
+                .tp-input-hint { display: flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 0.7rem; color: var(--bs-secondary-color); }
+                .tp-input-hint i { font-size: 0.75rem; }
             </style>
 
             <div class="tp-header">
@@ -122,12 +114,7 @@ class TicketPanelView extends View {
                     <span class="tp-pill tp-${this.statusPill}" data-action="change-status" title="Change status">{{statusLabel}} <i class="bi bi-chevron-down" style="font-size:0.5rem;"></i></span>
                     <span class="tp-time"><i class="bi bi-clock"></i> {{model.created|relative}}</span>
                     <div class="tp-btns">
-                        <div class="tp-ai-switch form-check form-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" data-action="toggle-ai" ${this.aiEnabled ? 'checked' : ''}>
-                            <label>AI</label>
-                        </div>
                         <div data-container="panel-menu"></div>
-                        <button class="tp-btn" data-action="close" title="Close"><i class="bi bi-x-lg"></i></button>
                     </div>
                 </div>
                 <div class="tp-title" ${this.hasDescription ? 'data-action="show-description"' : ''} ${this.hasDescription ? 'title="View full description"' : ''}>
@@ -176,8 +163,8 @@ class TicketPanelView extends View {
                     <textarea rows="1" placeholder="Add a note..." data-action="note-input"></textarea>
                     <button class="tp-send-btn" data-action="send-note" title="Send"><i class="bi bi-arrow-up"></i></button>
                 </div>
-                <div class="tp-input-tools">
-                    <button class="tp-tool-btn" title="Attach file" data-action="attach-file"><i class="bi bi-paperclip"></i></button>
+                <div class="tp-input-hint">
+                    <i class="bi bi-paperclip"></i> Drag &amp; drop files to attach
                 </div>
             </div>
         `;
@@ -207,7 +194,7 @@ class TicketPanelView extends View {
                     { type: 'divider' },
                     { label: 'Refresh Notes', action: 'refresh-notes', icon: 'bi-arrow-clockwise' },
                     { type: 'divider' },
-                    { label: 'Close Ticket', action: 'close-ticket', icon: 'bi-x-circle', class: 'text-danger' }
+                    { label: 'Close Window', action: 'close', icon: 'bi-x-lg' }
                 ]
             }
         });
@@ -300,12 +287,6 @@ class TicketPanelView extends View {
             event.preventDefault();
             this.onActionSendNote();
         }
-    }
-
-    async onActionToggleAi(_event, el) {
-        const enabled = el.checked;
-        await this.model.save(enabled ? { enable_llm: true } : { disable_llm: true });
-        this.getApp()?.toast?.success(enabled ? 'AI enabled' : 'AI disabled');
     }
 
     async onActionChangeStatus(event) {
@@ -419,17 +400,6 @@ class TicketPanelView extends View {
     async onActionRefreshNotes() {
         await this.chatView.refresh();
         this.getApp()?.toast?.success('Notes refreshed');
-    }
-
-    async onActionCloseTicket() {
-        const confirmed = await Modal.confirm(
-            `Close ticket #${this.model.get('id')}?`,
-            'Close Ticket',
-            { confirmText: 'Close', confirmClass: 'btn-warning' }
-        );
-        if (!confirmed) return;
-        await this.model.save({ status: 'closed' });
-        this.render();
     }
 
     async _showInlineSelect(items, event) {

@@ -14,7 +14,7 @@
  */
 
 import { PortalWebApp, User } from 'web-mojo';
-import { registerAdminPages, registerAssistant } from 'web-mojo/admin';
+import { registerAdminPages, registerAssistant, registerTicketPanel } from 'web-mojo/admin';
 import HomePage from './shell/HomePage.js';
 import DocsModal from './shell/DocsModal.js';
 import { installMockBackend } from './shell/mockBackend.js';
@@ -270,6 +270,7 @@ for (const ex of examples) {
 try {
     registerAdminPages(app, true);
     registerAssistant(app);
+    registerTicketPanel(app);
 } catch (err) {
     console.warn('[examples] failed to register admin pages:', err);
 }

@@ -403,7 +403,7 @@ export function registerSystemPages(app, addToMenu = true) {
                 {
                     text: 'Mojo',
                     route: null,
-                    iconHtml: '<img src="https://mojo-verify.s3.amazonaws.com/signatures/14e7aab75c2749cb846f7d57298691ac/mojo_logo_ai_bb896864.svg" class="mojo-nav-icon" alt="">',
+                    icon: 'bi-robot',
                     permissions: ["view_admin", "assistant"],
                     children: [
                         { text: 'Skills', route: '?page=system/assistant/skills', icon: 'bi-lightning', permissions: ["view_admin", "assistant"] },
@@ -615,7 +615,7 @@ export function registerAssistant(app) {
 
     const assistantItem = {
         id: 'assistant',
-        iconHtml: '<img src="https://mojo-verify.s3.amazonaws.com/signatures/14e7aab75c2749cb846f7d57298691ac/mojo_logo_ai_bb896864.svg" class="mojo-nav-icon" alt="">',
+        icon: 'bi-robot',
         action: 'open-assistant',
         isButton: true,
         buttonClass: 'btn btn-link nav-link',
@@ -647,4 +647,59 @@ export function registerAssistant(app) {
         if (!app.topbarConfig.rightItems) app.topbarConfig.rightItems = [];
         app.topbarConfig.rightItems.unshift(assistantItem);
     }
+}
+
+
+/**
+ * Register ticket panel sidebar — app-shell level slide-over for ticket conversations.
+ * Persists across page navigation, same pattern as the assistant panel.
+ *
+ * @param {WebApp} app - The WebApp/PortalApp instance
+ */
+export function registerTicketPanel(app) {
+
+    function closeTicketPanel() {
+        if (!app._ticketPanel) return;
+        const layout = document.querySelector('.portal-layout');
+        if (layout) layout.classList.remove('ticket-panel-open');
+        app._ticketPanel.destroy();
+        app._ticketPanel = null;
+        const panelEl = document.getElementById('ticket-panel');
+        if (panelEl) panelEl.remove();
+    }
+
+    async function openTicketPanel(ticketId) {
+        const { default: TicketPanelView } = await import('@ext/admin/incidents/TicketPanelView.js');
+        const { Ticket } = await import('@ext/admin/models/Tickets.js');
+
+        const ticket = new Ticket({ id: ticketId });
+        await ticket.fetch();
+
+        if (app._ticketPanel && app._ticketPanel.isMounted()) {
+            app._ticketPanel.setTicket(ticket);
+            return;
+        }
+
+        const layout = document.querySelector('.portal-layout');
+        if (!layout) return;
+
+        let panelEl = document.getElementById('ticket-panel');
+        if (!panelEl) {
+            panelEl = document.createElement('div');
+            panelEl.id = 'ticket-panel';
+            layout.appendChild(panelEl);
+        }
+
+        const view = new TicketPanelView({ model: ticket, app });
+        view.on('panel:close', () => closeTicketPanel());
+        await view.render(true, panelEl);
+        app._ticketPanel = view;
+
+        requestAnimationFrame(() => {
+            layout.classList.add('ticket-panel-open');
+        });
+    }
+
+    app.openTicketPanel = openTicketPanel;
+    app.closeTicketPanel = closeTicketPanel;
 }

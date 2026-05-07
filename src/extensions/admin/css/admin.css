@@ -833,8 +833,8 @@
 }
 
 .assistant-welcome-icon img {
-    width: 48px;
-    height: 48px;
+    width: 100px;
+    height: 100px;
 }
 
 .assistant-welcome-title {
@@ -2162,8 +2162,8 @@
 }
 
 .assistant-panel-view .assistant-welcome-icon img {
-    width: 36px;
-    height: 36px;
+    width: 84px;
+    height: 84px;
 }
 
 .assistant-panel-view .assistant-welcome-title {
@@ -2277,34 +2277,18 @@
    Ticket Panel — slide-over layout
    ═══════════════════════════════════════════════════════════ */
 
-.ticket-page-layout {
-    display: flex;
-    height: 100%;
-    min-height: 0;
-}
-
-.ticket-page-table {
-    flex: 1 1 auto;
-    min-width: 0;
-    overflow-y: auto;
-    transition: all 0.25s ease;
-}
-
-.ticket-page-panel {
+#ticket-panel {
     width: 0;
     overflow: hidden;
     flex-shrink: 0;
     border-left: 1px solid var(--bs-border-color);
-    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: width 0.25s ease;
+    position: relative;
+    z-index: var(--mojo-zindex-fixed, 1030);
 }
 
-.ticket-page-panel.open {
+.ticket-panel-open #ticket-panel {
     width: 460px;
-}
-
-.ticket-page-panel > [data-container] {
-    width: 460px;
-    height: 100%;
 }
 
 /* ── Action card styles ──────────────────────────────────── */
