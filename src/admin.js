@@ -196,6 +196,11 @@ import AssistantSkillTablePageClass from '@ext/admin/assistant/AssistantSkillTab
 import AssistantConversationTablePageClass from '@ext/admin/assistant/AssistantConversationTablePage.js';
 import AssistantMemoryPageClass from '@ext/admin/assistant/AssistantMemoryPage.js';
 
+import AssistantPanelView from '@ext/admin/assistant/AssistantPanelView.js';
+import AssistantViewClass from '@ext/admin/assistant/AssistantView.js';
+import TicketPanelView from '@ext/admin/incidents/TicketPanelView.js';
+import Modal from '@core/views/feedback/Modal.js';
+
 /**
  * Register all admin pages to a WebApp instance
  * @param {WebApp} app - The WebApp instance to register pages to
@@ -453,6 +458,8 @@ export function registerSystemPages(app, addToMenu = true) {
             app.registerModelRef(ModelClass.MODEL_REF, ModelClass);
         }
     }
+
+    registerTicketPanel(app);
 }
 
 export { registerSystemPages as registerAdminPages };
@@ -486,8 +493,6 @@ export function registerAssistant(app) {
             app._assistantPanel.focusInput();
             return;
         }
-
-        const { default: AssistantPanelView } = await import('@ext/admin/assistant/AssistantPanelView.js');
 
         // Create mount point inside .portal-layout
         const layout = document.querySelector('.portal-layout');
@@ -566,8 +571,6 @@ export function registerAssistant(app) {
 </body></html>`);
         popup.document.close();
 
-        const { default: AssistantPanelView } = await import('@ext/admin/assistant/AssistantPanelView.js');
-
         const view = new AssistantPanelView({
             app,
             conversationId: conversationId || app._assistantConversationId || null
@@ -597,8 +600,6 @@ export function registerAssistant(app) {
         // Close sidebar if open, preserving conversation ID
         closeSidebarPanel();
 
-        const { default: AssistantViewClass } = await import('@ext/admin/assistant/AssistantView.js');
-        const { default: Modal } = await import('@core/views/feedback/Modal.js');
         const view = new AssistantViewClass({ app });
         Modal.show(view, {
             size: 'fullscreen',
@@ -680,9 +681,6 @@ export function registerTicketPanel(app) {
     }
 
     async function openTicketPanel(modelOrId) {
-        const { default: TicketPanelView } = await import('@ext/admin/incidents/TicketPanelView.js');
-        const { Ticket } = await import('@ext/admin/models/Tickets.js');
-
         let ticket;
         if (modelOrId && typeof modelOrId === 'object' && modelOrId.get) {
             // Reuse the caller's model instance so saves propagate to the list collection.

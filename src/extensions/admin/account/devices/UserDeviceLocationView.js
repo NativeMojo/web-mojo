@@ -15,6 +15,7 @@ import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import { UserDeviceLocation } from '@core/models/User.js';
 import { IncidentEventList } from '@ext/admin/models/Incident.js';
 import { LogList } from '@core/models/Log.js';
+import MapView from '@ext/map/MapView.js';
 import Modal from '@core/views/feedback/Modal.js';
 
 class UserDeviceLocationView extends View {
@@ -314,7 +315,6 @@ class UserDeviceLocationView extends View {
         // Map (if coordinates)
         if (this.hasCoordinates) {
             try {
-                const MapView = (await import('@ext/map/MapView.js')).default;
                 const mapView = new MapView({
                     markers: [{
                         lat: this._geo.latitude,

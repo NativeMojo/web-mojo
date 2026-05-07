@@ -2,6 +2,9 @@ import ChatMessageView from '@core/views/chat/ChatMessageView.js';
 import Collection from '@core/Collection.js';
 import Model from '@core/Model.js';
 import Modal from '@core/views/feedback/Modal.js';
+import TableView from '@core/views/table/TableView.js';
+import PieChart from '../../charts/PieChart.js';
+import SeriesChart from '../../charts/SeriesChart.js';
 
 /**
  * AssistantMessageView - Extended message view for assistant responses
@@ -124,8 +127,6 @@ class AssistantMessageView extends ChatMessageView {
      * @private
      */
     async _renderTableBlock(block, container) {
-        const { default: TableView } = await import('@core/views/table/TableView.js');
-
         const rowCount = (block.rows || []).length;
         const colCount = (block.columns || []).length;
         const { body } = this._createCollapsibleCard(container, {
@@ -233,7 +234,6 @@ class AssistantMessageView extends ChatMessageView {
         if (isPie) {
             // PieChart is native SVG — no canvas sizing issues, renders fine
             // even in hidden containers.
-            const { default: PieChart } = await import('../../charts/PieChart.js');
             const chartView = new PieChart({
                 width: 180,
                 height: 180,
@@ -248,7 +248,6 @@ class AssistantMessageView extends ChatMessageView {
             chartView.render(false);
         } else {
             // SeriesChart is native SVG — no canvas sizing issues.
-            const { default: SeriesChart } = await import('../../charts/SeriesChart.js');
             const chartView = new SeriesChart({
                 chartType: chartType === 'area' ? 'line' : chartType,
                 fill: chartType === 'area',

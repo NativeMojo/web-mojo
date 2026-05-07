@@ -14,6 +14,8 @@ import TableView from '@core/views/table/TableView.js';
 import FormView from '@core/forms/FormView.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import { Member, MemberForms } from '@core/models/Member.js';
+import { User } from '@core/models/User.js';
+import { Group } from '@core/models/Group.js';
 import { LogList } from '@core/models/Log.js';
 import Modal from '@core/views/feedback/Modal.js';
 
@@ -227,7 +229,6 @@ class MemberView extends View {
     async onActionViewUser() {
         const userId = this.model.get('user')?.id;
         if (!userId) return true;
-        const { User } = await import('@core/models/User.js');
         await Modal.showModelById(User, userId);
         return true;
     }
@@ -236,7 +237,6 @@ class MemberView extends View {
         const groupId = this.model.get('group')?.id;
         if (!groupId) return true;
 
-        const { Group } = await import('@core/models/Group.js');
         await Modal.showModelById(Group, groupId);
         return true;
     }

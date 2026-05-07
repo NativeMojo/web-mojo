@@ -13,6 +13,7 @@
  */
 
 import View from '@core/View.js';
+import MapLibreView from '@ext/map/MapLibreView.js';
 
 class LoginLocationMapView extends View {
     constructor(options = {}) {
@@ -51,7 +52,6 @@ class LoginLocationMapView extends View {
 
     async onInit() {
         try {
-            const MapLibreView = (await import('@ext/map/MapLibreView.js')).default;
             this.mapView = new MapLibreView({
                 containerId: 'map',
                 height: this.height,

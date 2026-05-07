@@ -9,6 +9,8 @@ import { UserList } from '@core/models/User.js';
 import TicketNoteAdapter from './adapters/TicketNoteAdapter.js';
 import ActionCardView from './ActionCardView.js';
 import { openAssistantChat } from '../assistant/AssistantContextChat.js';
+import { File as FileModel } from '@core/models/Files.js';
+import { TicketNote } from '@ext/admin/models/Tickets.js';
 import rest from '@core/Rest.js';
 
 
@@ -490,7 +492,6 @@ class TicketPanelView extends View {
             zone.classList.remove('tp-dragover');
             const files = Array.from(e.dataTransfer?.files || []);
             if (!files.length) return;
-            const { File: FileModel } = await import('@core/models/Files.js');
             for (const file of files) {
                 const chipId = Date.now() + Math.random();
                 this._addAttachChip(chipId, file.name, true);
@@ -624,7 +625,6 @@ class TicketPanelView extends View {
             }]
         });
         if (!data) return;
-        const { TicketNote } = await import('@ext/admin/models/Tickets.js');
         const note = new TicketNote({ id: msg.id });
         const payload = { note: data.note };
         if (data.metadata_json) {
