@@ -1,6 +1,7 @@
 import ChatMessageView from '@core/views/chat/ChatMessageView.js';
 import Collection from '@core/Collection.js';
 import Model from '@core/Model.js';
+import Modal from '@core/views/feedback/Modal.js';
 
 /**
  * AssistantMessageView - Extended message view for assistant responses
@@ -59,6 +60,8 @@ class AssistantMessageView extends ChatMessageView {
                     this._renderProgressBlock(block, wrapper);
                 } else if (block.type === 'file') {
                     this._renderFileBlock(block, wrapper);
+                } else if (block.type === 'context') {
+                    this._renderContextBlock(block, wrapper);
                 }
             } catch (err) {
                 console.error('Failed to render block:', block.type, err);
@@ -483,6 +486,56 @@ class AssistantMessageView extends ChatMessageView {
         `;
 
         container.appendChild(card);
+    }
+
+    /**
+     * Render context reference chips for model links.
+     * @private
+     */
+    _renderContextBlock(block, container) {
+        const refs = block.references;
+        if (!refs || refs.length === 0) {
+            container.remove();
+            return;
+        }
+
+        const esc = this._escapeHtml.bind(this);
+        const app = this.getApp();
+        const row = document.createElement('div');
+        row.className = 'assistant-context-refs';
+
+        refs.forEach(ref => {
+            const refStr = `${ref.app_name}.${ref.model_name}`;
+            const pk = String(ref.pk);
+            const label = ref.label || `${ref.model_name} #${pk}`;
+            const ModelClass = app?.getModelByRef(refStr);
+            const clickable = ModelClass?.VIEW_CLASS;
+
+            const chip = document.createElement('span');
+            chip.className = clickable ? 'assistant-context-chip clickable' : 'assistant-context-chip';
+            if (clickable) {
+                chip.setAttribute('data-action', 'open-context-ref');
+                chip.dataset.ref = esc(refStr);
+                chip.dataset.pk = esc(pk);
+                chip.innerHTML = `<i class="bi bi-box-arrow-up-right"></i>${esc(label)}`;
+            } else {
+                chip.textContent = label;
+            }
+            row.appendChild(chip);
+        });
+
+        container.appendChild(row);
+    }
+
+    async onActionOpenContextRef(_event, el) {
+        const modelRef = el.dataset.ref;
+        const pk = el.dataset.pk;
+        if (!modelRef || !/^\d+$/.test(pk)) return;
+        const app = this.getApp();
+        const ModelClass = app?.getModelByRef(modelRef);
+        if (ModelClass?.VIEW_CLASS) {
+            Modal.showModel(new ModelClass({ id: pk }));
+        }
     }
 
     /**

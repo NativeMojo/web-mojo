@@ -1795,6 +1795,39 @@
     color: var(--bs-primary);
 }
 
+/* ── Context reference chips ────────────────────────────── */
+
+.assistant-context-refs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.assistant-context-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.74rem;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--bs-border-color);
+    background: var(--bs-body-bg);
+    color: var(--bs-secondary-color);
+}
+
+.assistant-context-chip.clickable {
+    cursor: pointer;
+    color: var(--bs-primary);
+}
+
+.assistant-context-chip.clickable:hover {
+    background: rgba(var(--bs-primary-rgb), 0.06);
+    text-decoration: underline;
+}
+
+.assistant-context-chip i { font-size: 0.65rem; }
+
 /* ── List blocks (key/value detail) ──────────────────────── */
 
 .assistant-list-card {
@@ -2271,6 +2304,9 @@
 
 /* ── Conversation search input (history pane) ──────────── */
 [data-bs-theme="dark"] .conversation-search-input { background: var(--bs-body-bg); }
+
+/* ── Context reference chips ─────────────────────────────── */
+[data-bs-theme="dark"] .assistant-context-chip { background: var(--bs-tertiary-bg); }
 
 
 /* ═══════════════════════════════════════════════════════════
