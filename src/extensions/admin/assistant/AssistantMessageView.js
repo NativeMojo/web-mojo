@@ -515,8 +515,8 @@ class AssistantMessageView extends ChatMessageView {
             chip.className = clickable ? 'assistant-context-chip clickable' : 'assistant-context-chip';
             if (clickable) {
                 chip.setAttribute('data-action', 'open-context-ref');
-                chip.dataset.ref = esc(refStr);
-                chip.dataset.pk = esc(pk);
+                chip.dataset.ref = refStr;
+                chip.dataset.pk = pk;
                 chip.innerHTML = `<i class="bi bi-box-arrow-up-right"></i>${esc(label)}`;
             } else {
                 chip.textContent = label;
