@@ -455,7 +455,21 @@ class TablePage extends Page {
     // Update URL with _item param
     this._setItemParam(model.id);
 
-    // Open the dialog using the same logic as TableView._onRowView
+    // Fetch latest model data before showing the dialog
+    if (this.tableView.fetchOnView) {
+      try {
+        Modal.loading();
+        await model.fetch();
+      } catch (error) {
+        Modal.hideLoading(true);
+        Modal.showError(error?.data?.error || error?.message || 'Failed to load item details');
+        this._clearItemParam();
+        return;
+      } finally {
+        Modal.hideLoading(true);
+      }
+    }
+
     const ViewClass = this.tableView.getItemViewClass(model);
 
     if (ViewClass) {

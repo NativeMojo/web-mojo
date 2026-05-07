@@ -299,6 +299,7 @@ await table.mount('#users-table');
 | `editForm` | `Array<object>` | `null` | Form field config for the Edit dialog |
 | `deleteTemplate` | `string` | `null` | Mustache template for delete confirmation message |
 | `itemView` | `Class` | `null` | Custom View class for the row-view dialog |
+| `fetchOnView` | `boolean` | `true` | Fetch the latest model data from the server before opening the view dialog. Set to `false` to use the model as-is from the table row. Skipped when `onItemView` is provided. |
 | `formDialogConfig` | `object` | `{}` | Extra options passed to form dialogs (e.g., `size`, `centered`) |
 | `viewDialogOptions` | `object` | `{}` | Extra options passed to the view dialog |
 
@@ -1107,6 +1108,20 @@ const table = new TableView({
 ```
 
 If no `itemView` is set, TableView checks `ModelClass.VIEW_CLASS`, and falls back to a generic DataView dialog.
+
+By default, `fetchOnView: true` causes TableView to call `model.fetch()` before opening the dialog, so the detail view always has the latest server data. Set `fetchOnView: false` to skip the fetch and use the model data already in the table row:
+
+```javascript
+const table = new TableView({
+  collection: userCollection,
+  columns: [...],
+  actions: ['view'],
+  itemView: UserDetailView,
+  fetchOnView: false  // use row data as-is
+});
+```
+
+The fetch is skipped when a custom `onItemView` handler is provided — the handler owns the entire flow.
 
 ---
 

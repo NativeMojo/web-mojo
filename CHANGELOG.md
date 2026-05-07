@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### TableView — `fetchOnView` auto-refreshes model before detail dialog
+
+- **Added:** `fetchOnView` option (default `true`). When enabled, TableView calls `model.fetch()` before opening the view dialog, ensuring the detail view always has the latest server data. Set to `false` to use the row data as-is. Skipped when a custom `onItemView` handler is provided.
+
 ### Ticket panel — app-shell slide-over with action blocks
 
 - **Added:** `registerTicketPanel(app)` — new registration helper that attaches `app.openTicketPanel(modelOrId)` and `app.closeTicketPanel()` to the running app instance. The panel (`TicketPanelView`) mounts as a flex child of `.portal-layout` (like `AssistantPanelView`) and persists across page navigation. `openTicketPanel` accepts either a Ticket model instance OR an id; the table passes the model directly so the panel and table share the same instance and updates propagate without a re-fetch.

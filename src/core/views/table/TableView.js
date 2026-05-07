@@ -55,6 +55,7 @@ class TableView extends ListView {
     this.filterable = options.filterable !== false;
     this.paginated = options.paginated !== false;
     this.clickAction = options.clickAction || "view";
+    this.fetchOnView = options.fetchOnView !== false;
 
     // Model operation configurations
     this.itemView = options.itemView;
@@ -1178,10 +1179,22 @@ class TableView extends ListView {
       return;
     }
 
+    if (this.fetchOnView) {
+      try {
+        Modal.loading();
+        await event.model.fetch();
+      } catch (error) {
+        Modal.hideLoading(true);
+        Modal.showError(error?.data?.error || error?.message || 'Failed to load item details');
+        return;
+      } finally {
+        Modal.hideLoading(true);
+      }
+    }
+
     const ViewClass = this.getItemViewClass(event.model);
 
     if (ViewClass) {
-      // Use custom view class
       const viewInstance = new ViewClass({ model: event.model, collection: this.collection });
       await Modal.dialog({
         header: false,
@@ -1192,7 +1205,6 @@ class TableView extends ListView {
         ...this.viewDialogOptions
       });
     } else {
-      // Fallback to data view
       await Modal.data({
         title: `View ${this.getModelName(event.model)} #${event.model.id}`,
         model: event.model
