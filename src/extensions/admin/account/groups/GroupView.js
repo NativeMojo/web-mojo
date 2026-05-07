@@ -468,5 +468,6 @@ class GroupView extends View {
 }
 
 Group.VIEW_CLASS = GroupView;
+Group.MODEL_REF = 'account.Group';
 
 export default GroupView;

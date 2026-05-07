@@ -1129,5 +1129,6 @@ function formatBytes(bytes) {
 }
 
 File.VIEW_CLASS = FileView;
+File.MODEL_REF = 'fileman.File';
 
 export default FileView;

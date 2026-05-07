@@ -417,6 +417,7 @@ Assistant responses can include `blocks` rendered inline:
 | `chart` (pie) | `PieChart` |
 | `stat` | Bootstrap stat cards in a flex row |
 | `file` | Downloadable card. Requires `filename` and `url`; only `https://`, `http://`, and `/`-rooted URLs accepted. |
+| `context` | Clickable model-reference chips. Each entry in `references` renders as a compact chip with a label and display name. Chips are clickable when the model type is registered via `app.registerModelRef` and the class declares a `VIEW_CLASS` — clicking opens `Modal.showModel`. Unknown types render as plain text. |
 
 ### REST endpoints
 

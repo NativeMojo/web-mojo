@@ -308,5 +308,6 @@ class MemberView extends View {
 }
 
 Member.VIEW_CLASS = MemberView;
+Member.MODEL_REF = 'account.Member';
 
 export default MemberView;

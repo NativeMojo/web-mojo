@@ -32,6 +32,10 @@
 
 - **Added:** `iconHtml` field on Sidebar and TopNav item configs. When set, the raw HTML string is rendered (triple-brace, unescaped) in place of the `icon` Bootstrap Icon. This allows custom SVG images or other HTML in sidebar/topbar item icons. `icon` remains the preferred option for Bootstrap Icons.
 
+### Admin Assistant — context reference blocks in chat messages
+
+- **Added:** `AssistantMessageView` now renders `block.type === 'context'` blocks as clickable model-reference chips inline in chat messages. Each reference in the block's `references` array renders as a compact chip with the model label and instance display name. If the referenced model is registered via `app.registerModelRef` and declares a `VIEW_CLASS`, clicking the chip opens the detail dialog (`Modal.showModel`). Unregistered or unknown model types render as plain text. All user-controlled fields are HTML-escaped; the `pk` value is validated against `/^\d+$/` before use to prevent XSS.
+
 ### Admin Assistant — renamed to "Mojo"
 
 - **Changed:** The AI assistant is now displayed as "Mojo" throughout the admin extension — `AssistantPanelView`, `AssistantView`, `AssistantContextChat`, `AssistantConversationView`, `ChatMessageView`, and `AssistantMemoryPage` all use "Mojo" as the author name and panel title. The permission label in `User.CATEGORY_PERMISSIONS` changed from "AI Assistant" to "Mojo". The `assistant` permission key is unchanged.

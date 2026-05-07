@@ -140,6 +140,14 @@ import CloudWatchDashboardPageClass from '@ext/admin/aws/CloudWatchDashboardPage
 import { Incident, IncidentEvent, RuleSet } from '@ext/admin/models/Incident.js';
 import { Ticket } from '@ext/admin/models/Tickets.js';
 import { GeoLocatedIP } from '@core/models/System.js';
+import { User } from '@core/models/User.js';
+import { Group } from '@core/models/Group.js';
+import { Member } from '@core/models/Member.js';
+import { Job } from '@ext/admin/models/Job.js';
+import { JobRunner } from '@ext/admin/models/JobRunner.js';
+import { File } from '@core/models/Files.js';
+import { Log } from '@core/models/Log.js';
+import { ShortLink } from '@core/models/ShortLink.js';
 
 import IncidentDashboardPageClass from '@ext/admin/incidents/dashboard/SecurityDashboardPage.js';
 import IncidentTablePageClass from '@ext/admin/incidents/IncidentTablePage.js';
@@ -436,7 +444,10 @@ export function registerSystemPages(app, addToMenu = true) {
     }
 
     // Register MODEL_REF mappings for action card context resolution
-    const modelRefs = [Incident, IncidentEvent, RuleSet, Ticket, GeoLocatedIP];
+    const modelRefs = [
+        Incident, IncidentEvent, RuleSet, Ticket, GeoLocatedIP,
+        User, Group, Member, Job, JobRunner, File, Log, ShortLink
+    ];
     for (const ModelClass of modelRefs) {
         if (ModelClass.MODEL_REF) {
             app.registerModelRef(ModelClass.MODEL_REF, ModelClass);

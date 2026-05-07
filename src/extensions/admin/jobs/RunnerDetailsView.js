@@ -1188,3 +1188,4 @@ export default class RunnerDetailsView extends View {
 
 
 JobRunner.VIEW_CLASS = RunnerDetailsView;
+JobRunner.MODEL_REF = 'jobs.JobRunner';

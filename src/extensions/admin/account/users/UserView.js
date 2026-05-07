@@ -629,5 +629,6 @@ class UserView extends View {
 }
 
 User.VIEW_CLASS = UserView;
+User.MODEL_REF = 'account.User';
 
 export default UserView;

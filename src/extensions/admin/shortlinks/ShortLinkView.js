@@ -508,6 +508,7 @@ class ShortLinkView extends View {
 }
 
 ShortLink.VIEW_CLASS = ShortLinkView;
+ShortLink.MODEL_REF = 'shortlink.ShortLink';
 
 export default ShortLinkView;
 export { getShortUrl };

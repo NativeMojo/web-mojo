@@ -167,5 +167,6 @@ class LogView extends View {
 }
 
 Log.VIEW_CLASS = LogView;
+Log.MODEL_REF = 'logs.Log';
 
 export default LogView;

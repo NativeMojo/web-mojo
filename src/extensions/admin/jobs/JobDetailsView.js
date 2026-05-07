@@ -457,5 +457,6 @@ class JobDetailsView extends View {
 }
 
 Job.VIEW_CLASS = JobDetailsView;
+Job.MODEL_REF = 'jobs.Job';
 
 export default JobDetailsView;
