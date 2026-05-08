@@ -104,5 +104,25 @@ module.exports = async function(testContext) {
             const tpl = '{{#merchants}}|{{.group.__proto__.x}}|{{/merchants}}';
             expect(Mustache.render(tpl, viewLike(data))).toBe('||||');
         });
+
+        // Single-segment dot-prefix path that resolves to an Object.prototype
+        // builtin. The dot-prefix branch's single-segment fallback would
+        // otherwise auto-invoke `view.toString()` and render
+        // "[object Object]"; the Object.prototype reference-equality guard
+        // in the fallback now blocks it.
+        it('does not auto-invoke Object.prototype.toString via {{.toString}}', () => {
+            const tpl = '{{#merchants}}|{{.toString}}|{{/merchants}}';
+            expect(Mustache.render(tpl, viewLike(data))).toBe('||||');
+        });
+
+        it('does not auto-invoke hasOwnProperty via {{.hasOwnProperty}}', () => {
+            const tpl = '{{#merchants}}|{{.hasOwnProperty}}|{{/merchants}}';
+            expect(Mustache.render(tpl, viewLike(data))).toBe('||||');
+        });
+
+        it('blocks {{.constructor}} (segment in FORBIDDEN_KEYS)', () => {
+            const tpl = '{{#merchants}}|{{.constructor}}|{{/merchants}}';
+            expect(Mustache.render(tpl, viewLike(data))).toBe('||||');
+        });
     });
 };

@@ -165,4 +165,53 @@ module.exports = async function(testContext) {
             expect(w.getContextValue('nested.id')).toBe(7);
         });
     });
+
+    describe('Mustache.render — prototype keys do not leak end-to-end', () => {
+        // Confirms that the residual surface in Mustache.Context.lookup
+        // (the non-prefix-branch fallback and the post-loop function
+        // invocation) is also closed. Before this fix, {{__proto__}} and
+        // {{toString}} rendered "[object Object]" and {{constructor}}
+        // crashed the renderer with a class-constructor TypeError.
+        const Mustache = loadModule('MojoMustache');
+
+        it('renders empty for {{__proto__}} against a plain data object', () => {
+            expect(Mustache.render('|{{__proto__}}|', { name: 'A' })).toBe('||');
+        });
+
+        it('renders empty for {{toString}} against a plain data object', () => {
+            expect(Mustache.render('|{{toString}}|', { name: 'A' })).toBe('||');
+        });
+
+        it('renders empty for {{valueOf}} against a plain data object', () => {
+            expect(Mustache.render('|{{valueOf}}|', { name: 'A' })).toBe('||');
+        });
+
+        it('renders empty for {{hasOwnProperty}} against a plain data object', () => {
+            expect(Mustache.render('|{{hasOwnProperty}}|', { name: 'A' })).toBe('||');
+        });
+
+        it('does not crash on {{constructor}}', () => {
+            expect(() => Mustache.render('|{{constructor}}|', { name: 'A' }))
+                .not.toThrow();
+            expect(Mustache.render('|{{constructor}}|', { name: 'A' })).toBe('||');
+        });
+
+        it('renders empty for nested {{a.constructor.name}}', () => {
+            expect(Mustache.render('|{{a.constructor.name}}|', { a: {} })).toBe('||');
+        });
+
+        it('still renders normal field values', () => {
+            // Sanity: hardening must not affect legitimate templates.
+            expect(Mustache.render('Hello {{name}}!', { name: 'Alice' })).toBe('Hello Alice!');
+            expect(Mustache.render('{{user.email}}', { user: { email: 'a@b.c' } })).toBe('a@b.c');
+        });
+
+        it('still auto-invokes user-overridden toString', () => {
+            // A custom toString is a different function reference than
+            // Object.prototype.toString, so the guard correctly lets it
+            // through.
+            const ctx = { toString() { return 'custom-output'; } };
+            expect(Mustache.render('|{{toString}}|', ctx)).toBe('|custom-output|');
+        });
+    });
 };
