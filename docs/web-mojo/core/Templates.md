@@ -700,9 +700,10 @@ Current item in iterations:
   <span class="tag">{{.}}</span>
 {{/tags}}
 
-// Nested properties
+// Nested properties — dot-prefix supports any depth of dotted path
 {{#users}}
   <p>{{.profile.bio}}</p>
+  <p>{{.profile.address.city}}</p>
 {{/users}}
 ```
 
