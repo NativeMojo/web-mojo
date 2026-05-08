@@ -919,7 +919,7 @@ class RuleSetMetadataSection extends View {
                     <div data-container="metadata-known"></div>
                 {{/hasKnown|bool}}
                 <h6 class="text-body-secondary small text-uppercase mt-4 mb-2" style="letter-spacing: 0.06em;">Raw JSON</h6>
-                <pre class="bg-body-tertiary border rounded p-3 small mb-0" style="white-space: pre-wrap; word-break: break-word;"><code>{{{model.metadata|json}}}</code></pre>
+                <pre class="bg-body-tertiary border rounded p-3 small mb-0" style="white-space: pre-wrap; word-break: break-word;"><code>{{model.metadata|json}}</code></pre>
             `,
             ...options
         });

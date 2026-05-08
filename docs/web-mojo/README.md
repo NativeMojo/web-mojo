@@ -320,7 +320,9 @@ web-mojo/
 │   ├── FileView.md              # File display and management
 │   ├── ImageFields.md           # Image field components
 │   ├── ProgressView.md          # File-upload progress UI
-│   └── SimpleSearchView.md      # Searchable list bound to a Collection
+│   ├── SimpleSearchView.md      # Searchable list bound to a Collection
+│   ├── MetricCard.md            # At-a-glance KPI card (label / value / hint / tone)
+│   └── SegmentControl.md        # Compact pill-button group for one-of-N selection
 │
 ├── extensions/                  # Optional framework extensions
 │   ├── Admin.md                 # Pre-built admin pages and views

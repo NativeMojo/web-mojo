@@ -283,9 +283,9 @@ class SideNavView extends View {
                 return `<div class="snv-nav-label">${this.escapeHtml(config.label)}</div>`;
             }
             const isActive = config.key === this.activeSection;
-            const icon = config.icon ? `<i class="bi ${config.icon}"></i>` : '';
+            const icon = config.icon ? `<i class="bi ${this.escapeHtml(config.icon)}"></i>` : '';
             const badge = this._renderBadge(config);
-            return `<a role="button" class="${isActive ? 'active' : ''}" data-action="navigate" data-section="${config.key}">${icon} ${this.escapeHtml(config.label)}${badge}</a>`;
+            return `<a role="button" class="${isActive ? 'active' : ''}" data-action="navigate" data-section="${this.escapeHtml(config.key)}">${icon} ${this.escapeHtml(config.label)}${badge}</a>`;
         }).join('');
     }
 
@@ -307,9 +307,9 @@ class SideNavView extends View {
                     <li>
                         <button class="dropdown-item ${isActive ? 'active' : ''}"
                                 data-action="navigate"
-                                data-section="${config.key}"
+                                data-section="${this.escapeHtml(config.key)}"
                                 type="button">
-                            ${config.icon ? `<i class="bi ${config.icon} me-2"></i>` : ''}
+                            ${config.icon ? `<i class="bi ${this.escapeHtml(config.icon)} me-2"></i>` : ''}
                             ${this.escapeHtml(config.label)}
                             ${badge}
                             ${isActive ? '<i class="bi bi-check-lg ms-2"></i>' : ''}
