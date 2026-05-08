@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Type | request |
-| Status | planned |
+| Status | resolved |
 | Date | 2026-05-08 |
 | Priority | high |
 
@@ -392,3 +392,70 @@ Narrowest commands:
 ---
 
 **Next step:** Start a new session, run `/build planning/requests/ruleset-view-redesign.md`, or just say "continue".
+
+---
+
+## Resolution
+
+**Status:** Resolved — 2026-05-08
+
+### What was implemented
+
+All seven steps from the plan landed in two commits:
+
+- **`01e3722`** — main implementation (SideNavView badges + dark-theme migration, SegmentControl, MetricCard, RuleSetForms updates, RuleSetView rewrite, docs, smoke tests).
+- **`4d37d4a`** — security fix and docs cross-references surfaced by the review agents.
+
+The redesigned [`RuleSetView`](src/extensions/admin/incidents/RuleSetView.js) replaces the 2-tab `TabView` with a header card + `SideNavView` and seven sections in operator-priority order: **Overview** (4 KPI cards + summary panels), **Conditions** (rule conditions table), **Triggering** (Match → Bundle → Threshold → Re-trigger as a 4-step visual flow with friendly empty-state copy), **Handler** (parsed handler chain rendered as icon cards with tone accents), **Agent Prompt** (new `metadata.agent_prompt` field, contextual hint based on `llm://` presence), **Incidents** (`IncidentList` filtered by `rule_set` with a 7d/30d/90d range picker), **Metadata** (known fields + raw JSON, hidden when empty).
+
+The headline missing feature — `metadata.agent_prompt` — is editable both via the Agent Prompt section's textarea and via the new "Agent" tab in `RuleSetForms.create` and `RuleSetForms.edit`. The Thresholds tab is restructured from a cramped 3-across `columns: 4` row into a numbered full-width step layout.
+
+### Files changed
+
+**Framework primitives:**
+- [`src/core/views/navigation/SideNavView.js`](src/core/views/navigation/SideNavView.js) — badge schema field, `setBadge(key, value)` instance method, dark-theme migration of the inline `<style>` block (Bootstrap tokens + clustered `[data-bs-theme="dark"]` overrides), defensive `escapeHtml` on `data-section` / icon class attributes
+- [`src/core/views/navigation/SegmentControl.js`](src/core/views/navigation/SegmentControl.js) — new
+- [`src/core/views/data/MetricCard.js`](src/core/views/data/MetricCard.js) — new
+
+**Extension:**
+- [`src/extensions/admin/incidents/RuleSetView.js`](src/extensions/admin/incidents/RuleSetView.js) — full rewrite (TabView → SideNavView with header card + 7 sections)
+- [`src/extensions/admin/models/Incident.js`](src/extensions/admin/models/Incident.js) — Agent tab in `RuleSetForms.create/edit`, Thresholds tab numbered-step layout, `BundleMinutesOptions` added to exports
+
+**Tests + tooling:**
+- [`test/unit/SegmentControl.test.js`](test/unit/SegmentControl.test.js) — new (6 cases)
+- [`test/unit/MetricCard.test.js`](test/unit/MetricCard.test.js) — new (7 cases)
+- [`test/utils/simple-module-loader.js`](test/utils/simple-module-loader.js) — registered new components
+
+**Smoke verification harness:**
+- [`examples/ruleset-smoke/`](examples/ruleset-smoke/) — synthetic-data harness used to verify the rewrite + new components in a real browser
+
+**Docs + CHANGELOG:**
+- [`docs/web-mojo/components/SegmentControl.md`](docs/web-mojo/components/SegmentControl.md) — new
+- [`docs/web-mojo/components/MetricCard.md`](docs/web-mojo/components/MetricCard.md) — new
+- [`docs/web-mojo/components/SideNavView.md`](docs/web-mojo/components/SideNavView.md) — Badges section + `setBadge` method
+- [`docs/web-mojo/README.md`](docs/web-mojo/README.md) — component rows + directory-tree entries
+- [`docs/web-mojo/AGENT.md`](docs/web-mojo/AGENT.md) — fetch-table rows
+- [`docs/agent/architecture.md`](docs/agent/architecture.md) — source-map rows
+- [`CHANGELOG.md`](CHANGELOG.md) — Unreleased entries for all four pieces
+
+### Tests run
+
+- `npm run test:unit` — **749/749 passed** (up from 736 pre-change; +13 cases from the new SegmentControl + MetricCard smoke tests).
+- `npm run lint` — clean for new and edited files. The 16 pre-existing errors in `src/core/PortalApp.js` (dynamic-import ESLint rule) are unrelated and untouched.
+- Manual smoke verification in light + dark themes via the [`examples/ruleset-smoke/`](examples/ruleset-smoke/) harness — all 7 sections render correctly, parsed handler chain shows correct icons + tones, Agent Prompt textarea renders the synthetic prompt with the contextual `llm://` banner, Metadata section shows known fields + raw JSON.
+- `npm test` (full suite) — pre-existing build/integration failures noted by the test-runner agent are unrelated to this commit (stale `dist/`, ESM alias resolution outside Vite). No new failures introduced.
+
+### Agent findings
+
+**test-runner:** Clean. 749/749 unit tests pass. Integration and build suite failures are pre-existing infrastructure issues (missing `dist/` artifacts, `@core/utils` alias unresolvable outside Vite); no new regressions from this work.
+
+**docs-updater:** Three doc files needed cross-reference updates the build skill missed: `docs/agent/architecture.md` source map (`views/navigation/` row + new `views/data/` row), `docs/web-mojo/AGENT.md` fetch table, and the directory-tree listing in `docs/web-mojo/README.md`. Landed in commit `4d37d4a`.
+
+**security-review:** Caught one **medium** finding — `RuleSetView.js` Metadata section was emitting `{{{model.metadata|json}}}` (triple-brace, raw HTML), enabling stored XSS via `metadata.agent_prompt` (operator-editable) or `metadata.reasoning` (LLM-written). Fixed in commit `4d37d4a` by switching to double braces; output is now Mustache-escaped and rendered identically inside the `<pre>` (which preserves whitespace). One **info** finding — `data-section` / icon-class attributes in `SideNavView` were unescaped; safe with current static keys but defensive `escapeHtml` was applied as future-proofing. Two clean confirmations: `{{model.handler}}` and `{{model.metadata.reasoning}}` use double braces and are safe; `metadata.agent_prompt` save uses a JSON body (not URL interpolation).
+
+### Validation
+
+- All seven [Acceptance Criteria](#acceptance-criteria) met.
+- Both bundled framework primitives shipped with smoke tests per `.claude/rules/testing.md`.
+- Light + dark theme verified in browser.
+- Open questions resolved at build time: `Model.save({ 'metadata.agent_prompt': value })` works (dotted-path semantics) — backend auto-merges JSONFields; `IncidentList` filter param `rule_set=<id>` is the natural shape and the framework view sends it (backend support is the consumer-app's responsibility, not framework-side).
