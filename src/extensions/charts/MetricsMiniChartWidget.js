@@ -215,7 +215,12 @@ export default class MetricsMiniChartWidget extends View {
     this.header.total = nums.reduce((a, b) => a + b, 0);
     const offset = Math.max(0, parseInt(this.trendOffset || 0, 10) || 0);
     const endIndex = Math.max(0, nums.length - 1 - offset);
-    this.header.now_value = nums[endIndex];
+    // `now_value` is the displayed "current" value — always the latest
+    // bucket so subtitles like '{{now_value}} Today' render correctly.
+    // `endIndex` (offset-shifted by trendOffset) is reused below to anchor
+    // the trending comparison window only. Callers who want the
+    // offset-shifted windowed sum should use {{lastValue}} instead.
+    this.header.now_value = nums[nums.length - 1];
     
     // Set dynamic labels based on granularity
     this._updateGranularityLabels();

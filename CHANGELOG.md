@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### MetricsMiniChartWidget — fix: `{{now_value}}` showed yesterday's value when `trendOffset > 0`
+
+- **Fixed:** `{{now_value}}` in the subtitle template now always reads from the latest bucket, independent of `trendOffset`. Previously it was shifted back by `trendOffset` buckets — so a widget with `trendOffset: 1` and a subtitle like `'{{now_value}} Today'` rendered yesterday's value next to the static "Today" label. The chart's tooltip on the rightmost bar showed the correct (today's) value, exposing the mismatch.
+- **Behavior change for callers using `trendOffset > 0`:** `{{now_value}}` now jumps from "N back" to the latest bucket. Migration: callers who genuinely want the offset-shifted windowed sum should switch to `{{lastValue}}` (already documented; already respects `trendOffset` and `trendRange`). Callers using the default `trendOffset: 0` see no change.
+- **Unchanged:** `trendOffset` still shifts the trending comparison window (`lastValue`, `prevValue`, `trendingPercent`) — that's its remaining purpose, and the original use case (skip an incomplete current bucket in trending math) still works.
+
 ### Charts — `apiParams` passthrough on metrics-aware components
 
 - **Added:** `MetricsChart` and `MetricsMiniChart` accept an `apiParams: object` constructor option — a passthrough map for arbitrary `/api/metrics/fetch` query params the framework doesn't yet promote to first-class options. `MetricsMiniChartWidget` forwards the option through `chartOptions` to its inner mini chart.

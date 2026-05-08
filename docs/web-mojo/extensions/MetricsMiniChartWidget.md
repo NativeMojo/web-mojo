@@ -70,9 +70,9 @@ The widget renders the subtitle as raw HTML in its header template, allowing Mus
 Available values in subtitle:
 - **total**: sum of all visible data points (e.g., last 24h)
 - **total_label**: dynamic label based on granularity (e.g., "Total (24h)", "Total (Period)")
-- **now_value**: value of the "current" bucket (respects trendOffset)
+- **now_value**: value of the **latest** bucket. Independent of `trendOffset` — always the rightmost / most recent data point so subtitle templates that hard-code labels like `Today` / `This Hour` render the matching value. If you want a value that follows `trendOffset` (e.g. the offset-shifted windowed sum used for trending), use `{{lastValue}}` instead.
 - **now_label**: dynamic label based on granularity (e.g., "Today", "This Hour", "This Week")
-- **lastValue**: sum of the "last" window used for trending
+- **lastValue**: sum of the "last" window used for trending (windowed by `trendRange`, shifted by `trendOffset`)
 - **prevValue**: sum of the "previous" window used for trending
 - **trendingPercent, trendingLabel, trendingUp**: computed when showTrending is enabled
 

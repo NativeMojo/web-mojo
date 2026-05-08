@@ -189,6 +189,50 @@ module.exports = async function (testContext) {
         });
     });
 
+    // Regression for: now_value respects trendOffset, so a widget configured
+    // with `trendOffset: 1` (per the docs example to skip an incomplete bucket)
+    // displays yesterday's value while the static "Today" label in the
+    // subtitle template still says "Today" — label/value mismatch.
+    // See planning/issues/metrics-mini-widget-now-value-trendoffset.md
+    describe('MetricsMiniChartWidget — now_value should be the latest bucket', () => {
+        it('now_value is the last bucket regardless of trendOffset', () => {
+            const widget = new MetricsMiniChartWidget({
+                slugs: ['x'],
+                trendOffset: 1,
+                trendRange: 4,
+                showTrending: true
+            });
+            // Set up just enough state for updateFromChartData to run.
+            widget.chart = { data: [100, 110, 120, 130, 140] }; // today = 140
+            widget.header = {};
+            widget.updateFromChartData({ render: false });
+            // BUG: currently this is 130 (yesterday) because trendOffset=1
+            // shifts endIndex back by 1. Expected: 140 (today, the latest
+            // bucket) so the "Today" subtitle label reads correctly.
+            expect(widget.header.now_value).toBe(140);
+        });
+
+        it('trendOffset still shifts the trending comparison window', () => {
+            // trendOffset must remain useful for skipping the incomplete
+            // current bucket in the trending math — only `now_value` is
+            // decoupled.
+            const widget = new MetricsMiniChartWidget({
+                slugs: ['x'],
+                trendOffset: 1,
+                trendRange: 4,
+                showTrending: true
+            });
+            widget.chart = { data: [10, 10, 100, 100, 999] }; // today's spike
+            widget.header = {};
+            widget.updateFromChartData({ render: false });
+            // With trendOffset=1, k=2: lastSum = nums[2]+nums[3] = 100+100 = 200,
+            // prevSum = nums[0]+nums[1] = 10+10 = 20. Today's 999 must NOT
+            // contaminate the trending sums.
+            expect(widget.header.lastValue).toBe(200);
+            expect(widget.header.prevValue).toBe(20);
+        });
+    });
+
     describe('MetricsMiniChartWidget.setAccount', () => {
         let widget;
 
