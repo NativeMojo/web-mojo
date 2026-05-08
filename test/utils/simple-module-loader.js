@@ -275,6 +275,14 @@ class SimpleModuleLoader {
             'MetricCard': {
                 path: path.join(this.sourceRoot, 'core/views/data/MetricCard.js'),
                 dependencies: ['View']
+            },
+            'SideNavView': {
+                path: path.join(this.sourceRoot, 'core/views/navigation/SideNavView.js'),
+                dependencies: ['View']
+            },
+            'DetailView': {
+                path: path.join(this.sourceRoot, 'core/views/data/DetailView.js'),
+                dependencies: ['View', 'SideNavView']
             }
         };
 
@@ -457,7 +465,12 @@ class SimpleModuleLoader {
             { test: /TimezoneSelect(\.js)?$/, name: 'TimezoneSelect' },
             { test: /\/TimePicker(\.js)?$/, name: 'TimePicker' },
             { test: /\/DateTimePicker(\.js)?$/, name: 'DateTimePicker' },
-            { test: /\/TableView(\.js)?$/, name: 'TableView' }
+            { test: /\/TableView(\.js)?$/, name: 'TableView' },
+            { test: /\/SideNavView(\.js)?$/, name: 'SideNavView' },
+            { test: /\/ContextMenu(\.js)?$/, name: 'ContextMenu' },
+            { test: /\/SegmentControl(\.js)?$/, name: 'SegmentControl' },
+            { test: /\/MetricCard(\.js)?$/, name: 'MetricCard' },
+            { test: /\/DetailView(\.js)?$/, name: 'DetailView' }
         ];
         for (const rule of rules) {
             if (rule.test.test(importPath)) return rule.name;

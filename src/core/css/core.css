@@ -415,11 +415,89 @@
     border-color: none;
 }
 
-/* Badges that use bg-primary */
-.badge.bg-primary {
-    --bs-badge-color: #fff;
-    --bs-badge-bg: var(--bs-primary);
+/* ========================================================================
+   Soft badges by default
+   ========================================================================
+   web-mojo softens Bootstrap's default loud badges to a tinted-pill look
+   that matches modern design systems (Linear / Stripe / Vercel). The
+   variant CSS variables are remapped to use Bootstrap's `*-bg-subtle` +
+   `*-text-emphasis` tokens, so any consumer writing `<span class="badge
+   bg-primary">` or `<span class="badge text-bg-success">` automatically
+   picks up the soft look — no markup change required.
+
+   For the rare attention case (notification dots, critical alerts,
+   call-to-action chips) opt into the loud variant with `.badge-loud`.
+*/
+.badge {
+    border-radius: 999px;          /* pill shape */
+    font-weight: 600;
+    padding: 0.3em 0.7em;
+    border: 1px solid transparent; /* keeps height stable when a caller adds `border` */
 }
+
+.badge.bg-primary,
+.badge.text-bg-primary {
+    --bs-badge-color: var(--bs-primary-text-emphasis);
+    --bs-badge-bg:    var(--bs-primary-bg-subtle);
+    background-color: var(--bs-primary-bg-subtle) !important;
+    color:            var(--bs-primary-text-emphasis) !important;
+    border-color:     transparent;
+}
+.badge.bg-secondary,
+.badge.text-bg-secondary {
+    background-color: var(--bs-secondary-bg-subtle) !important;
+    color:            var(--bs-secondary-text-emphasis) !important;
+    border-color:     transparent;
+}
+.badge.bg-success,
+.badge.text-bg-success {
+    background-color: var(--bs-success-bg-subtle) !important;
+    color:            var(--bs-success-text-emphasis) !important;
+    border-color:     transparent;
+}
+.badge.bg-danger,
+.badge.text-bg-danger {
+    background-color: var(--bs-danger-bg-subtle) !important;
+    color:            var(--bs-danger-text-emphasis) !important;
+    border-color:     transparent;
+}
+.badge.bg-warning,
+.badge.text-bg-warning {
+    background-color: var(--bs-warning-bg-subtle) !important;
+    color:            var(--bs-warning-text-emphasis) !important;
+    border-color:     transparent;
+}
+.badge.bg-info,
+.badge.text-bg-info {
+    background-color: var(--bs-info-bg-subtle) !important;
+    color:            var(--bs-info-text-emphasis) !important;
+    border-color:     transparent;
+}
+.badge.bg-light,
+.badge.text-bg-light {
+    background-color: var(--bs-tertiary-bg) !important;
+    color:            var(--bs-body-color) !important;
+    border-color:     transparent;
+}
+.badge.bg-dark,
+.badge.text-bg-dark {
+    background-color: var(--bs-emphasis-bg, var(--bs-secondary-bg)) !important;
+    color:            var(--bs-emphasis-color, var(--bs-body-color)) !important;
+    border-color:     transparent;
+}
+
+/*
+ * Loud opt-in: restore Bootstrap's solid-color attention treatment for cases
+ * where you really do want a punchy badge (notification dots, critical alerts).
+ * Apply alongside any `bg-*` / `text-bg-*` class — the loud rule wins on
+ * specificity.
+ */
+.badge.badge-loud.bg-primary,   .badge.badge-loud.text-bg-primary   { background-color: var(--bs-primary)   !important; color: #fff !important; border-color: transparent; }
+.badge.badge-loud.bg-secondary, .badge.badge-loud.text-bg-secondary { background-color: var(--bs-secondary) !important; color: #fff !important; border-color: transparent; }
+.badge.badge-loud.bg-success,   .badge.badge-loud.text-bg-success   { background-color: var(--bs-success)   !important; color: #fff !important; border-color: transparent; }
+.badge.badge-loud.bg-danger,    .badge.badge-loud.text-bg-danger    { background-color: var(--bs-danger)    !important; color: #fff !important; border-color: transparent; }
+.badge.badge-loud.bg-warning,   .badge.badge-loud.text-bg-warning   { background-color: var(--bs-warning)   !important; color: #000 !important; border-color: transparent; }
+.badge.badge-loud.bg-info,      .badge.badge-loud.text-bg-info      { background-color: var(--bs-info)      !important; color: #000 !important; border-color: transparent; }
 
 /* Nav pills & tabs */
 .nav-pills {
@@ -2282,3 +2360,317 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
 .group-search-view .simple-search-item:hover {
     background-color: var(--bs-light);
 }
+
+/* ========================================================================
+   MetricCard
+   ========================================================================
+   Compact KPI card — label / value / hint with an optional left-border
+   tone accent. Used in record-detail Overview rows and dashboard panels.
+*/
+.metric-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.6rem 0.8rem;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-left-width: 3px;
+    border-left-color: var(--bs-border-color);
+    border-radius: 0.5rem;
+    color: var(--bs-body-color);
+    font: inherit;
+    text-align: left;
+    min-width: 0;
+    width: 100%;
+}
+button.metric-card { cursor: pointer; }
+button.metric-card:hover { background: var(--bs-secondary-bg); }
+button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: -1px; }
+
+.metric-card-tone-success { border-left-color: var(--bs-success); }
+.metric-card-tone-warning { border-left-color: var(--bs-warning); }
+.metric-card-tone-danger  { border-left-color: var(--bs-danger);  }
+.metric-card-tone-info    { border-left-color: var(--bs-info);    }
+.metric-card-tone-primary { border-left-color: var(--bs-primary); }
+
+.metric-card-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.metric-card-icon { font-size: 0.85rem; opacity: 0.75; }
+
+.metric-card-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.25;
+    font-variant-numeric: tabular-nums;
+    color: var(--bs-emphasis-color, var(--bs-body-color));
+    word-break: break-word;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.metric-card-value-icon { font-size: 0.9rem; flex-shrink: 0; }
+.metric-card-tone-success .metric-card-value-icon { color: var(--bs-success); }
+.metric-card-tone-warning .metric-card-value-icon { color: var(--bs-warning); }
+.metric-card-tone-danger  .metric-card-value-icon { color: var(--bs-danger);  }
+.metric-card-tone-info    .metric-card-value-icon { color: var(--bs-info);    }
+.metric-card-tone-primary .metric-card-value-icon { color: var(--bs-primary); }
+
+.metric-card-hint {
+    font-size: 0.75rem;
+    color: var(--bs-secondary-color);
+}
+
+/* ========================================================================
+   DetailView / DetailHeaderView
+   ========================================================================
+   Standard record-detail layout: flat header (icon, title, subtitle, chips,
+   active toggle, actions, X close) + SideNavView. The shell flexes to fill
+   the modal body so the rail extends to the bottom edge.
+*/
+.detail-view, .detail-view-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    height: 100%;
+}
+.detail-view-body { flex: 1 1 auto; min-height: 0; display: flex; }
+.detail-view-body > .side-nav-view { flex: 1 1 auto; min-height: 0; }
+
+.detail-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--bs-border-color);
+    position: relative;
+}
+/* Right-side action cluster floats out of flex flow so the title block
+   (subtitle + chips) can use the full row width below it. The cluster only
+   occupies the top row vertically, so chips never collide with it. */
+.detail-header .dh-actions {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.5rem;
+    z-index: 1;
+}
+/* Reserve space on the right of the title row so a long name doesn't run
+   under the absolute-positioned actions. */
+.detail-header .dh-meta { padding-right: 200px; }
+@media (max-width: 540px) {
+    .detail-header .dh-actions { position: static; margin-top: 0.5rem; }
+    .detail-header .dh-meta { padding-right: 0; }
+}
+
+.detail-header .dh-icon {
+    width: 44px; height: 44px;
+    border-radius: 0.5rem;
+    background: rgba(13, 110, 253, 0.10);
+    color: var(--bs-primary);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+.detail-header .dh-name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 0.15rem;
+    color: var(--bs-emphasis-color, var(--bs-body-color));
+}
+.detail-header .dh-subtitle {
+    color: var(--bs-secondary-color);
+    font-size: 0.875rem;
+    margin: 0 0 0.5rem;
+    max-width: 720px;
+    line-height: 1.45;
+}
+.detail-header .dh-subtitle-empty {
+    font-style: italic;
+    color: var(--bs-tertiary-color, var(--bs-secondary-color));
+    opacity: 0.85;
+}
+.detail-header .dh-subtitle-empty[role="button"] { cursor: pointer; }
+.detail-header .dh-subtitle-empty[role="button"]:hover {
+    color: var(--bs-primary);
+    opacity: 1;
+}
+.detail-header .dh-chips {
+    display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;
+}
+
+/* Ghost-style action — quieter than Bootstrap's default outline buttons */
+.detail-header .dh-action {
+    background: transparent;
+    color: var(--bs-secondary-color);
+    border: 1px solid transparent;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.85rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    line-height: 1.2;
+    display: inline-flex; align-items: center; gap: 0.25rem;
+}
+.detail-header .dh-action:hover {
+    background: var(--bs-tertiary-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+.detail-header .dh-close {
+    padding: 0.25rem 0.45rem;
+    color: var(--bs-tertiary-color, var(--bs-secondary-color));
+    margin-left: 0.15rem;
+}
+
+/* Vertical hairline between Group 1 (record actions) and Group 2 (modal chrome) */
+.detail-header .dh-group-sep {
+    display: inline-block;
+    width: 1px;
+    height: 18px;
+    background: var(--bs-border-color);
+    margin: 0 0.45rem 0 0.35rem;
+    opacity: 0.6;
+}
+
+.dh-active-switch {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    cursor: pointer; user-select: none;
+    font-size: 0.85rem;
+    color: var(--bs-secondary-color);
+}
+.dh-active-switch input { display: none; }
+.dh-active-switch .dh-track {
+    width: 34px; height: 19px;
+    background: var(--bs-secondary-bg);
+    border-radius: 999px;
+    position: relative;
+    transition: background 0.15s;
+}
+.dh-active-switch .dh-track::after {
+    content: '';
+    position: absolute; top: 2px; left: 2px;
+    width: 15px; height: 15px;
+    background: #fff; border-radius: 999px;
+    transition: transform 0.15s;
+}
+.dh-active-switch input:checked + .dh-track { background: var(--bs-success); }
+.dh-active-switch input:checked + .dh-track::after { transform: translateX(15px); }
+.dh-active-switch input:checked ~ .dh-track-label {
+    color: var(--bs-body-color);
+    font-weight: 500;
+}
+
+[data-bs-theme="dark"] .detail-header .dh-icon {
+    background: rgba(77, 139, 255, 0.16);
+}
+
+/* ========================================================================
+   SideNavView
+   ========================================================================
+   Sectioned detail layout — left rail of nav links beside a content panel
+   that mounts one child view at a time. Width and content padding are
+   applied per-instance via inline `style="..."` attributes from the JS
+   template (the only two values that vary per consumer).
+*/
+.snv-layout { display: flex; height: 100%; min-height: 0; }
+.snv-nav {
+    background: var(--bs-tertiary-bg);
+    border-right: 1px solid var(--bs-border-color);
+    padding: 0.75rem 0;
+    flex-shrink: 0;
+    overflow-y: auto;
+}
+.snv-nav a {
+    color: var(--bs-secondary-color);
+    padding: 0.45rem 1.25rem;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    cursor: pointer;
+}
+.snv-nav a:hover {
+    background: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
+}
+.snv-nav a.active {
+    background: rgba(13, 110, 253, 0.10);
+    color: var(--bs-primary);
+    font-weight: 600;
+    border-right: 2px solid var(--bs-primary);
+}
+.snv-nav a i { width: 18px; text-align: center; font-size: 0.9rem; }
+.snv-nav-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bs-tertiary-color, var(--bs-secondary-color));
+    padding: 0.75rem 1.25rem 0.25rem;
+}
+
+/* Section badges — right-aligned pills inside nav links */
+.snv-badge {
+    margin-left: auto;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.05rem 0.45rem;
+    border-radius: 999px;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+}
+.snv-badge-muted   { background: var(--bs-secondary-bg); color: var(--bs-secondary-color); }
+.snv-badge-primary { background: var(--bs-primary); color: #fff; }
+.snv-badge-success { background: var(--bs-success); color: #fff; }
+.snv-badge-warning { background: var(--bs-warning); color: #000; }
+.snv-badge-danger  { background: var(--bs-danger);  color: #fff; }
+.snv-nav a.active .snv-badge-muted {
+    background: var(--bs-primary);
+    color: #fff;
+}
+
+.snv-content {
+    flex: 1;
+    overflow-y: auto;
+    min-width: 0;
+}
+.snv-content > .snv-section { display: none; }
+.snv-content > .snv-section.snv-active { display: block; }
+
+.snv-dropdown { margin-bottom: 0.75rem; }
+.snv-select-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 1rem;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.375rem;
+    font-size: 0.85rem;
+    color: var(--bs-body-color);
+    cursor: pointer;
+}
+.snv-select-btn:hover { background: var(--bs-secondary-bg); }
+.snv-select-btn::after {
+    content: '';
+    display: inline-block;
+    margin-left: auto;
+    border-top: 0.3em solid;
+    border-right: 0.3em solid transparent;
+    border-left: 0.3em solid transparent;
+}
+
+@media (max-width: 576px) {
+    .snv-nav { display: none; }
+    .snv-content { padding: 1.25rem !important; }
+}
+
+[data-bs-theme="dark"] .snv-nav a.active {
+    background: rgba(77, 139, 255, 0.16);
+}
+[data-bs-theme="dark"] .snv-badge-warning { color: #000; }

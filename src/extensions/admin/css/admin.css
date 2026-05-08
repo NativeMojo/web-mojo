@@ -2507,3 +2507,197 @@
     padding: 3px 0;
 }
 .actions-collapse-btn:hover { text-decoration: underline; }
+
+/* ========================================================================
+   RuleSetView — Overview section cards
+   ========================================================================
+   The KPI row uses a CSS grid that's container-aware (auto-fit + minmax),
+   not viewport-aware Bootstrap columns. That way 4 cards fit side-by-side
+   any time the section is at least ~660px wide — including in a modal at
+   sub-md viewport widths where Bootstrap's `col-md-3` would have wrapped.
+*/
+.ruleset-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+@media (max-width: 575px) {
+    .ruleset-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+.ruleset-overview-pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+@media (max-width: 575px) {
+    .ruleset-overview-pair { grid-template-columns: 1fr; }
+}
+.ruleset-overview-card { padding: 0.6rem 0.75rem; }
+.ruleset-overview-card h6 {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+    margin: 0 0 0.4rem;
+}
+.ruleset-overview-card ul {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    padding-left: 0.9rem;
+    margin: 0;
+    color: var(--bs-body-color);
+}
+.ruleset-overview-card ul li { margin-bottom: 0.1rem; }
+.ruleset-overview-card ul li:last-child { margin-bottom: 0; }
+.ruleset-overview-card code {
+    font-size: 0.72rem;
+    word-break: break-word;
+}
+
+/* ========================================================================
+   RuleSetView — Triggering section flow
+   ========================================================================
+   Match → Bundle → Threshold → Re-trigger as a 4-column visual flow with
+   chevron arrows between cards.
+*/
+.rs-flow {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+.rs-flow-step {
+    padding: 1rem 1.05rem;
+    background: var(--bs-body-bg);
+    position: relative;
+    min-width: 0;
+}
+.rs-flow-step + .rs-flow-step { border-left: 1px solid var(--bs-border-color); }
+.rs-flow-step::after {
+    content: '';
+    position: absolute;
+    right: -8px; top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+    width: 14px; height: 14px;
+    background: var(--bs-body-bg);
+    border-top: 1px solid var(--bs-border-color);
+    border-right: 1px solid var(--bs-border-color);
+    z-index: 1;
+}
+.rs-flow-step:last-child::after { display: none; }
+.rs-flow-num {
+    font-family: var(--bs-font-monospace);
+    font-size: 0.7rem;
+    color: var(--bs-tertiary-color, var(--bs-secondary-color));
+    font-weight: 600;
+}
+.rs-flow-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0.15rem 0 0.4rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+    color: var(--bs-emphasis-color, var(--bs-body-color));
+}
+.rs-flow-title .btn { padding: 0.1rem 0.4rem; font-size: 0.75rem; }
+.rs-flow-value { font-size: 0.95rem; color: var(--bs-body-color); font-weight: 500; }
+.rs-flow-empty { color: var(--bs-secondary-color); font-style: italic; font-weight: 400; }
+.rs-flow-hint  { font-size: 0.78rem; color: var(--bs-secondary-color); margin-top: 0.3rem; }
+@media (max-width: 768px) {
+    .rs-flow { grid-template-columns: 1fr 1fr; }
+    .rs-flow-step:nth-child(2)::after { display: none; }
+}
+@media (max-width: 480px) {
+    .rs-flow { grid-template-columns: 1fr; }
+    .rs-flow-step + .rs-flow-step { border-left: none; border-top: 1px solid var(--bs-border-color); }
+    .rs-flow-step::after { display: none; }
+}
+
+/* ========================================================================
+   RuleSetView — Handler chain cards
+   ======================================================================== */
+.rs-chain {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    align-items: stretch;
+    margin-bottom: 0.75rem;
+}
+.rs-chain-step {
+    flex: 1 1 200px;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-left-width: 3px;
+    border-radius: 0.5rem;
+    padding: 0.85rem 0.95rem;
+    display: flex;
+    gap: 0.7rem;
+    align-items: flex-start;
+    position: relative;
+}
+.rs-chain-step.tone-info    { border-left-color: var(--bs-info); }
+.rs-chain-step.tone-warning { border-left-color: var(--bs-warning); }
+.rs-chain-step.tone-danger  { border-left-color: var(--bs-danger); }
+.rs-chain-step.tone-primary { border-left-color: var(--bs-primary); }
+.rs-chain-icon {
+    width: 32px; height: 32px;
+    border-radius: 0.375rem;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 1rem;
+    background: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
+}
+.rs-chain-step.tone-info    .rs-chain-icon { background: rgba(13, 110, 253, 0.12); color: var(--bs-info); }
+.rs-chain-step.tone-warning .rs-chain-icon { background: rgba(255, 193, 7, 0.16);  color: var(--bs-warning); }
+.rs-chain-step.tone-danger  .rs-chain-icon { background: rgba(220, 53, 69, 0.16);  color: var(--bs-danger); }
+.rs-chain-step.tone-primary .rs-chain-icon { background: rgba(13, 110, 253, 0.12); color: var(--bs-primary); }
+.rs-chain-label  { font-weight: 600; font-size: 0.9rem; color: var(--bs-emphasis-color, var(--bs-body-color)); }
+.rs-chain-detail { font-size: 0.8rem; color: var(--bs-secondary-color); word-break: break-all; }
+.rs-chain-raw {
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--bs-secondary-bg);
+    border-radius: 0.375rem;
+    font-family: var(--bs-font-monospace);
+    font-size: 0.78rem;
+    color: var(--bs-secondary-color);
+    word-break: break-all;
+}
+
+/* ========================================================================
+   RuleSetView — Agent Prompt textarea
+   ======================================================================== */
+.rs-prompt {
+    width: 100%;
+    min-height: 220px;
+    background: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    padding: 0.85rem 1rem;
+    font-family: var(--bs-font-monospace);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    resize: vertical;
+}
+.rs-prompt:focus { outline: 2px solid var(--bs-primary); outline-offset: -1px; border-color: transparent; }
+
+/* ========================================================================
+   RuleSetView — Incidents table title ellipsis
+   ========================================================================
+   max-width:0 + width:100% on the cell tricks the table layout into letting
+   the title respect text-overflow without making the row grow.
+*/
+.ruleset-incidents-section td.rs-incident-title {
+    max-width: 0;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

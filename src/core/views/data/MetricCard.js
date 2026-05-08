@@ -31,6 +31,7 @@ class MetricCard extends View {
             label,
             value,
             icon = null,
+            valueIcon = null,
             tone = 'default',
             hint = null,
             action = null,
@@ -46,6 +47,7 @@ class MetricCard extends View {
         this.label = label || '';
         this.value = value;
         this.icon = icon;
+        this.valueIcon = valueIcon;  // optional Bootstrap Icons class shown left of value
         this.tone = VALID_TONES.has(tone) ? tone : 'default';
         this.hint = hint;
         this.action = action;
@@ -58,6 +60,9 @@ class MetricCard extends View {
         const iconHtml = this.icon
             ? `<i class="bi ${this.escapeHtml(this.icon)} metric-card-icon"></i>`
             : '';
+        const valueIconHtml = this.valueIcon
+            ? `<i class="bi ${this.escapeHtml(this.valueIcon)} metric-card-value-icon"></i>`
+            : '';
         const hintHtml = this.hint
             ? `<div class="metric-card-hint">${this.escapeHtml(String(this.hint))}</div>`
             : '';
@@ -65,57 +70,12 @@ class MetricCard extends View {
         // Outer element styling is handled by `className` + the tone class on the root.
         // We toggle the tone via classList in onAfterRender to avoid stomping
         // the user's className override.
+        // Stylesheet is injected once at module load (see bottom of file) so
+        // multiple MetricCard instances don't duplicate `<style>` blocks that
+        // would fight in the cascade.
         return `
-            <style>
-                .metric-card {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 0.25rem;
-                    padding: 0.75rem 0.95rem;
-                    background: var(--bs-tertiary-bg);
-                    border: 1px solid var(--bs-border-color);
-                    border-left-width: 3px;
-                    border-left-color: var(--bs-border-color);
-                    border-radius: 0.5rem;
-                    color: var(--bs-body-color);
-                    font: inherit;
-                    text-align: left;
-                    min-width: 0;
-                }
-                button.metric-card { cursor: pointer; }
-                button.metric-card:hover { background: var(--bs-secondary-bg); }
-                button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: -1px; }
-                .metric-card-tone-success { border-left-color: var(--bs-success); }
-                .metric-card-tone-warning { border-left-color: var(--bs-warning); }
-                .metric-card-tone-danger  { border-left-color: var(--bs-danger);  }
-                .metric-card-tone-info    { border-left-color: var(--bs-info);    }
-                .metric-card-tone-primary { border-left-color: var(--bs-primary); }
-                .metric-card-label {
-                    font-size: 0.7rem;
-                    text-transform: uppercase;
-                    letter-spacing: 0.06em;
-                    font-weight: 600;
-                    color: var(--bs-secondary-color);
-                    display: flex;
-                    align-items: center;
-                    gap: 0.35rem;
-                }
-                .metric-card-icon { font-size: 0.95rem; opacity: 0.8; }
-                .metric-card-value {
-                    font-size: 1.5rem;
-                    font-weight: 600;
-                    line-height: 1.2;
-                    font-variant-numeric: tabular-nums;
-                    color: var(--bs-emphasis-color, var(--bs-body-color));
-                    word-break: break-word;
-                }
-                .metric-card-hint {
-                    font-size: 0.78rem;
-                    color: var(--bs-secondary-color);
-                }
-            </style>
             <div class="metric-card-label">${iconHtml}<span>${this.escapeHtml(this.label)}</span></div>
-            <div class="metric-card-value">${valueText}</div>
+            <div class="metric-card-value">${valueIconHtml}<span>${valueText}</span></div>
             ${hintHtml}
         `.trim();
     }
@@ -153,8 +113,15 @@ class MetricCard extends View {
     setValue(value) {
         this.value = value;
         if (!this.element) return;
-        const slot = this.element.querySelector('.metric-card-value');
-        if (slot) slot.innerHTML = this._renderValue();
+        // Update only the text span; preserve the optional valueIcon.
+        const valueEl = this.element.querySelector('.metric-card-value');
+        if (!valueEl) return;
+        const span = valueEl.querySelector(':scope > span');
+        if (span) {
+            span.innerHTML = this._renderValue();
+        } else {
+            valueEl.innerHTML = `<span>${this._renderValue()}</span>`;
+        }
     }
 
     /**
@@ -179,5 +146,7 @@ class MetricCard extends View {
         }
     }
 }
+
+// Stylesheet for MetricCard lives in src/core/css/core.css under "MetricCard".
 
 export default MetricCard;

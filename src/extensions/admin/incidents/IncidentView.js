@@ -953,7 +953,7 @@ class RuleEngineSection extends View {
     async onActionViewLinkedRuleset() {
         if (!this.rulesetModel) return;
         const view = new RuleSetView({ model: this.rulesetModel });
-        await Modal.show(view, { size: 'xl', header: false });
+        await Modal.detail(view);
     }
 
     async onActionCreateRuleFromIncident() {
@@ -1012,7 +1012,7 @@ class RuleEngineSection extends View {
 
         // Open the full RuleSet view so user can review
         const view = new RuleSetView({ model: ruleset });
-        await Modal.show(view, { size: 'xl', header: false });
+        await Modal.detail(view);
     }
 
     /**

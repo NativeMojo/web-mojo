@@ -122,120 +122,24 @@ class SideNavView extends View {
     // ───────────────────────────────────────────────
 
     async renderTemplate() {
+        // Stylesheet lives in src/core/css/core.css under "SideNavView".
+        // Two instance-specific values (`navWidth`, `contentPadding`) are
+        // applied as inline `style="..."` attributes below.
         const nav = this.currentMode === 'dropdown'
             ? this._buildDropdownNav()
             : this._buildSidebarNav();
 
+        const navWidthStyle = `width: ${this.navWidth}px`;
+        const contentPaddingStyle = `padding: ${this.contentPadding}`;
+
         return `
-            <style>
-                .snv-layout { display: flex; height: 100%; min-height: 0; }
-                .snv-nav {
-                    width: ${this.navWidth}px;
-                    background: var(--bs-tertiary-bg);
-                    border-right: 1px solid var(--bs-border-color);
-                    padding: 0.75rem 0;
-                    flex-shrink: 0;
-                    overflow-y: auto;
-                }
-                .snv-nav a {
-                    color: var(--bs-secondary-color);
-                    padding: 0.45rem 1.25rem;
-                    font-size: 0.85rem;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                    text-decoration: none;
-                    cursor: pointer;
-                }
-                .snv-nav a:hover {
-                    background: var(--bs-secondary-bg);
-                    color: var(--bs-body-color);
-                }
-                .snv-nav a.active {
-                    background: rgba(13, 110, 253, 0.10);
-                    color: var(--bs-primary);
-                    font-weight: 600;
-                    border-right: 2px solid var(--bs-primary);
-                }
-                .snv-nav a i { width: 18px; text-align: center; font-size: 0.9rem; }
-                .snv-nav-label {
-                    font-size: 0.65rem;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 0.06em;
-                    color: var(--bs-tertiary-color, var(--bs-secondary-color));
-                    padding: 0.75rem 1.25rem 0.25rem;
-                }
-
-                /* Badges */
-                .snv-badge {
-                    margin-left: auto;
-                    font-size: 0.7rem;
-                    font-weight: 600;
-                    padding: 0.05rem 0.45rem;
-                    border-radius: 999px;
-                    line-height: 1.4;
-                    font-variant-numeric: tabular-nums;
-                }
-                .snv-badge-muted   { background: var(--bs-secondary-bg); color: var(--bs-secondary-color); }
-                .snv-badge-primary { background: var(--bs-primary); color: #fff; }
-                .snv-badge-success { background: var(--bs-success); color: #fff; }
-                .snv-badge-warning { background: var(--bs-warning); color: #000; }
-                .snv-badge-danger  { background: var(--bs-danger);  color: #fff; }
-                .snv-nav a.active .snv-badge-muted {
-                    background: var(--bs-primary);
-                    color: #fff;
-                }
-
-                .snv-content {
-                    flex: 1;
-                    overflow-y: auto;
-                    padding: ${this.contentPadding};
-                    min-width: 0;
-                }
-                .snv-content > .snv-section { display: none; }
-                .snv-content > .snv-section.snv-active { display: block; }
-                .snv-dropdown { margin-bottom: 0.75rem; }
-                .snv-select-btn {
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                    width: 100%;
-                    padding: 0.5rem 1rem;
-                    background: var(--bs-tertiary-bg);
-                    border: 1px solid var(--bs-border-color);
-                    border-radius: 0.375rem;
-                    font-size: 0.85rem;
-                    color: var(--bs-body-color);
-                    cursor: pointer;
-                }
-                .snv-select-btn:hover { background: var(--bs-secondary-bg); }
-                .snv-select-btn::after {
-                    content: '';
-                    display: inline-block;
-                    margin-left: auto;
-                    border-top: 0.3em solid;
-                    border-right: 0.3em solid transparent;
-                    border-left: 0.3em solid transparent;
-                }
-                @media (max-width: 576px) {
-                    .snv-nav { display: none; }
-                    .snv-content { padding: 1.25rem; }
-                }
-
-                /* Dark-theme overrides — clustered per .claude/rules/theming.md */
-                [data-bs-theme="dark"] .snv-nav a.active {
-                    background: rgba(77, 139, 255, 0.16);
-                }
-                [data-bs-theme="dark"] .snv-badge-warning { color: #000; }
-            </style>
             ${this.currentMode === 'dropdown' ? `
                 <div class="snv-dropdown">${nav}</div>
-                <div class="snv-content" data-container="snv-content"></div>
+                <div class="snv-content" data-container="snv-content" style="${contentPaddingStyle}"></div>
             ` : `
                 <div class="snv-layout">
-                    <nav class="snv-nav">${nav}</nav>
-                    <div class="snv-content" data-container="snv-content"></div>
+                    <nav class="snv-nav" style="${navWidthStyle}">${nav}</nav>
+                    <div class="snv-content" data-container="snv-content" style="${contentPaddingStyle}"></div>
                 </div>
             `}
         `;

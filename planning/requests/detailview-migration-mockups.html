@@ -1,0 +1,2269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DetailView migration — mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap" rel="stylesheet">
+<style>
+
+/* ─────────────────────────────────────────────────────────────────
+   Design tokens
+   ─────────────────────────────────────────────────────────────── */
+:root {
+    --bg:          #0a0d11;
+    --bg-1:        #11161d;
+    --bg-2:        #171d26;
+    --bg-3:        #1d242e;
+    --border:      #1f2630;
+    --border-soft: #181e26;
+    --hairline:    rgba(230, 236, 243, 0.06);
+    --text:        #e6ecf3;
+    --text-2:      #c2cad6;
+    --text-mute:   #8a96a6;
+    --text-faint:  #5b6776;
+
+    --teal:   #5eead4;
+    --teal-2: #2dd4bf;
+    --rose:   #fb7185;
+    --rose-2: #f43f5e;
+    --amber:  #fbbf24;
+    --amber-2:#f59e0b;
+    --blue:   #60a5fa;
+    --blue-2: #38bdf8;
+    --violet: #c4b5fd;
+    --green:  #86efac;
+
+    --shadow-1: 0 1px 0 rgba(255,255,255,0.02), 0 8px 24px rgba(0,0,0,0.36);
+    --shadow-2: 0 24px 60px rgba(0,0,0,0.55);
+
+    --radius:    10px;
+    --radius-sm: 6px;
+    --radius-lg: 14px;
+
+    --grid: linear-gradient(transparent 31px, var(--hairline) 32px) 0 0/100% 32px;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Reset + base
+   ─────────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+    background-image:
+        radial-gradient(1200px 600px at 80% -20%, rgba(94, 234, 212, 0.04), transparent),
+        radial-gradient(900px 500px at 0% 110%, rgba(96, 165, 250, 0.04), transparent);
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+a { color: var(--blue); text-decoration: none; }
+a:hover { color: var(--blue-2); }
+
+.mono, code, pre {
+    font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+    font-feature-settings: 'zero', 'ss05';
+}
+.tabular { font-variant-numeric: tabular-nums; }
+.up { text-transform: uppercase; letter-spacing: 0.08em; }
+.muted { color: var(--text-mute); }
+.faint { color: var(--text-faint); }
+
+/* ─────────────────────────────────────────────────────────────────
+   Page chrome
+   ─────────────────────────────────────────────────────────────── */
+.page {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+}
+
+.page-eyebrow {
+    color: var(--text-mute);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.page-title {
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 36px;
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    font-weight: 600;
+    margin: 0 0 8px;
+}
+.page-title .accent {
+    color: var(--teal);
+    font-weight: 500;
+}
+
+.page-lede {
+    color: var(--text-mute);
+    font-size: 15px;
+    max-width: 720px;
+    margin: 0 0 28px;
+}
+
+.switcher {
+    display: inline-flex;
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px;
+    margin-bottom: 32px;
+    box-shadow: var(--shadow-1);
+}
+.switcher button {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--text-mute);
+    padding: 8px 16px;
+    border-radius: 999px;
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color .12s, background .12s;
+}
+.switcher button:hover { color: var(--text); }
+.switcher button.is-active {
+    background: var(--bg-3);
+    color: var(--text);
+    box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.mockup { display: none; }
+.mockup.is-active { display: block; }
+
+/* ─────────────────────────────────────────────────────────────────
+   DetailView shell — frame for the mockup
+   ─────────────────────────────────────────────────────────────── */
+.dv-frame {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-2);
+    overflow: hidden;
+}
+
+/* ─── Header ─── */
+.dv-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+    padding: 22px 26px;
+    border-bottom: 1px solid var(--border);
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.015), transparent),
+        var(--bg-1);
+    position: relative;
+}
+
+.dv-icon {
+    width: 56px; height: 56px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    font-size: 26px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    flex: 0 0 auto;
+}
+.dv-icon.tone-rose   { color: var(--rose);   background: linear-gradient(180deg, rgba(251,113,133,.12), rgba(251,113,133,.04)); border-color: rgba(251,113,133,.25); }
+.dv-icon.tone-amber  { color: var(--amber);  background: linear-gradient(180deg, rgba(251,191,36,.10),  rgba(251,191,36,.03));  border-color: rgba(251,191,36,.22); }
+.dv-icon.tone-teal   { color: var(--teal);   background: linear-gradient(180deg, rgba(94,234,212,.10),  rgba(94,234,212,.03));  border-color: rgba(94,234,212,.22); }
+.dv-icon.tone-blue   { color: var(--blue);   background: linear-gradient(180deg, rgba(96,165,250,.10),  rgba(96,165,250,.03));  border-color: rgba(96,165,250,.22); }
+
+.dv-title-block { min-width: 0; flex: 1; }
+.dv-title {
+    font-family: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.012em;
+    margin: 0 0 4px;
+    line-height: 1.15;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.dv-title .id-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--text-mute);
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+.dv-subtitle {
+    color: var(--text-mute);
+    font-size: 14px;
+    margin: 0 0 12px;
+}
+.dv-subtitle .link { color: var(--text-2); border-bottom: 1px dashed var(--border); }
+.dv-subtitle .link:hover { color: var(--text); }
+
+.dv-chips {
+    display: flex; gap: 6px; flex-wrap: wrap;
+}
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.5;
+}
+.chip i { font-size: 11px; opacity: .8; }
+.chip.tone-rose   { background: rgba(251,113,133,.08); border-color: rgba(251,113,133,.25); color: #ffc1cb; }
+.chip.tone-amber  { background: rgba(251,191,36,.08); border-color: rgba(251,191,36,.22); color: #ffe5a3; }
+.chip.tone-teal   { background: rgba(94,234,212,.08);  border-color: rgba(94,234,212,.22); color: #b6f7e7; }
+.chip.tone-blue   { background: rgba(96,165,250,.08);  border-color: rgba(96,165,250,.22); color: #c5dcff; }
+.chip.tone-violet { background: rgba(196,181,253,.08); border-color: rgba(196,181,253,.22); color: #e0d7ff; }
+
+.chip.dot::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 999px;
+    background: currentColor;
+    box-shadow: 0 0 0 3px rgba(94,234,212,.18);
+}
+.chip.live::before { animation: pulse 2.4s ease-in-out infinite; }
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0px rgba(94,234,212,.4); }
+    50%      { opacity: .7; box-shadow: 0 0 0 6px rgba(94,234,212,0); }
+}
+
+.dv-actions {
+    display: flex; gap: 6px; align-items: center;
+    flex: 0 0 auto;
+}
+.btn {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--bg-2);
+    color: var(--text);
+    padding: 7px 13px;
+    border-radius: var(--radius-sm);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background .12s, border-color .12s, transform .04s;
+}
+.btn:hover  { background: var(--bg-3); border-color: #2a3340; }
+.btn:active { transform: translateY(1px); }
+.btn.primary {
+    background: linear-gradient(180deg, rgba(94,234,212,.18), rgba(94,234,212,.08));
+    border-color: rgba(94,234,212,.35);
+    color: var(--teal);
+}
+.btn.primary:hover { background: linear-gradient(180deg, rgba(94,234,212,.28), rgba(94,234,212,.12)); }
+.btn.danger { color: var(--rose); border-color: rgba(251,113,133,.3); background: rgba(251,113,133,.06); }
+.btn.danger:hover { background: rgba(251,113,133,.12); }
+.btn.icon { padding: 7px 9px; }
+
+.toggle {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    padding: 5px 10px 5px 6px;
+    border-radius: 999px;
+    font-size: 12px;
+    color: var(--text-2);
+    cursor: pointer;
+}
+.toggle .bullet {
+    width: 24px; height: 14px;
+    background: var(--teal-2);
+    border-radius: 999px;
+    position: relative;
+}
+.toggle .bullet::after {
+    content: ''; position: absolute;
+    width: 10px; height: 10px;
+    background: white;
+    border-radius: 999px;
+    top: 2px; right: 2px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.4);
+}
+
+/* ─── Body shell ─── */
+.dv-body { display: grid; grid-template-columns: 220px 1fr; min-height: 640px; }
+
+/* ─── Side rail ─── */
+.rail {
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.012), transparent 240px),
+        var(--bg);
+    border-right: 1px solid var(--border);
+    padding: 16px 12px;
+}
+.rail-divider {
+    color: var(--text-faint);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 600;
+    padding: 14px 12px 6px;
+    display: flex; align-items: center; gap: 10px;
+}
+.rail-divider::after {
+    content: '';
+    flex: 1; height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+}
+.rail-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    color: var(--text-mute);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: 1px;
+    position: relative;
+    transition: background .12s, color .12s;
+}
+.rail-link i { font-size: 14px; width: 16px; text-align: center; }
+.rail-link:hover { background: var(--bg-1); color: var(--text); }
+.rail-link.is-active {
+    background: var(--bg-2);
+    color: var(--text);
+}
+.rail-link.is-active::before {
+    content: ''; position: absolute;
+    left: 0; top: 6px; bottom: 6px;
+    width: 2px;
+    background: var(--teal);
+    border-radius: 0 2px 2px 0;
+}
+.rail-badge {
+    margin-left: auto;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    color: var(--text-mute);
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+.rail-badge.tone-rose { background: rgba(251,113,133,.08); color: #ffc1cb; border-color: rgba(251,113,133,.22); }
+.rail-badge.tone-amber{ background: rgba(251,191,36,.08); color: #ffe5a3; border-color: rgba(251,191,36,.22); }
+
+/* ─── Section content ─── */
+.section {
+    padding: 24px 28px 32px;
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.01), transparent 200px),
+        var(--bg-1);
+}
+.section[data-section-key] { display: none; }
+.section[data-section-key].is-active { display: block; }
+
+.section-empty {
+    text-align: center;
+    padding: 80px 24px 100px;
+    color: var(--text-faint);
+    background:
+        radial-gradient(420px 220px at 50% 30%, rgba(96, 165, 250, 0.04), transparent),
+        var(--bg-1);
+    border-radius: var(--radius);
+}
+.section-empty .icon-large {
+    width: 56px; height: 56px;
+    border-radius: 14px;
+    display: inline-grid; place-items: center;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    color: var(--text-mute);
+    font-size: 22px;
+    margin-bottom: 16px;
+}
+.section-empty h4 {
+    font-family: 'IBM Plex Sans Condensed', sans-serif;
+    font-size: 18px;
+    color: var(--text-2);
+    margin: 0 0 6px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+}
+.section-empty p {
+    font-size: 13px;
+    max-width: 360px;
+    margin: 0 auto 18px;
+    line-height: 1.55;
+}
+.section-empty .empty-link {
+    font-size: 12px;
+    color: var(--text-mute);
+    border: 1px solid var(--border);
+    background: var(--bg-2);
+    padding: 6px 14px;
+    border-radius: 999px;
+    display: inline-flex; align-items: center; gap: 6px;
+    text-decoration: none;
+}
+.section-empty .empty-link:hover { color: var(--text); border-color: #2a3340; }
+
+.section-eyebrow {
+    color: var(--text-faint);
+    font-size: 10.5px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.section-eyebrow::after {
+    content: '';
+    flex: 1;
+    border-top: 1px dashed var(--border);
+    height: 1px;
+}
+.section-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 16px;
+    letter-spacing: -0.005em;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Status panel — hero banner for state-driven records
+   ─────────────────────────────────────────────────────────────── */
+.status-panel {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 18px;
+    overflow: hidden;
+    position: relative;
+    background: var(--bg-2);
+}
+.status-panel::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        linear-gradient(transparent 23px, var(--hairline) 24px),
+        linear-gradient(90deg, transparent 23px, var(--hairline) 24px);
+    background-size: 24px 24px;
+    opacity: .6;
+    pointer-events: none;
+    mask: linear-gradient(180deg, rgba(0,0,0,.55), transparent 70%);
+}
+.status-panel.tone-rose   { background: linear-gradient(180deg, rgba(251,113,133,.10), rgba(251,113,133,.02)); border-color: rgba(251,113,133,.28); }
+.status-panel.tone-amber  { background: linear-gradient(180deg, rgba(251,191,36,.10), rgba(251,191,36,.02));  border-color: rgba(251,191,36,.25); }
+.status-panel.tone-blue   { background: linear-gradient(180deg, rgba(96,165,250,.10),  rgba(96,165,250,.02));  border-color: rgba(96,165,250,.26); }
+.status-panel.tone-teal   { background: linear-gradient(180deg, rgba(94,234,212,.10),  rgba(94,234,212,.02));  border-color: rgba(94,234,212,.26); }
+
+.status-headline { position: relative; }
+.status-state {
+    font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: inline-flex; align-items: center; gap: 8px;
+}
+.status-state .dot {
+    width: 8px; height: 8px;
+    background: currentColor;
+    border-radius: 999px;
+    box-shadow: 0 0 0 4px currentColor;
+    box-shadow: 0 0 12px currentColor;
+}
+.tone-rose .status-state  { color: var(--rose); }
+.tone-amber .status-state { color: var(--amber); }
+.tone-blue .status-state  { color: var(--blue); }
+.tone-teal .status-state  { color: var(--teal); }
+
+.status-line {
+    font-family: 'IBM Plex Sans Condensed', sans-serif;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+}
+.status-meta {
+    color: var(--text-mute);
+    font-size: 13px;
+}
+.status-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+/* ─────────────────────────────────────────────────────────────────
+   KPI strip
+   ─────────────────────────────────────────────────────────────── */
+.kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 18px;
+}
+.kpi {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color .14s, transform .14s;
+}
+.kpi:hover { border-color: #2c3540; transform: translateY(-1px); }
+.kpi-label {
+    color: var(--text-mute);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+.kpi-value {
+    font-family: 'IBM Plex Sans Condensed', sans-serif;
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.018em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    display: flex; align-items: baseline; gap: 8px;
+}
+.kpi-value .unit {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-mute);
+    letter-spacing: 0;
+}
+.kpi-value .delta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(94,234,212,.1);
+    color: var(--teal);
+    border: 1px solid rgba(94,234,212,.22);
+    align-self: center;
+}
+.kpi-value .delta.neg {
+    background: rgba(251,113,133,.1);
+    color: var(--rose);
+    border-color: rgba(251,113,133,.22);
+}
+.kpi-spark {
+    position: absolute;
+    right: 12px; bottom: 10px;
+    height: 26px;
+    width: 80px;
+    opacity: .9;
+}
+.kpi.tone-rose .kpi-value  { color: var(--rose); }
+.kpi.tone-amber .kpi-value { color: var(--amber); }
+.kpi.tone-teal .kpi-value  { color: var(--teal); }
+.kpi.tone-blue .kpi-value  { color: var(--blue); }
+
+/* ─────────────────────────────────────────────────────────────────
+   Two-card row
+   ─────────────────────────────────────────────────────────────── */
+.cards-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+.card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+}
+.card-header {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-2);
+    margin-bottom: 12px;
+}
+.card-header i { color: var(--text-mute); }
+
+.kv-list { list-style: none; padding: 0; margin: 0; }
+.kv-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-top: 1px dashed var(--border);
+    font-size: 13px;
+}
+.kv-list li:first-child { border-top: none; padding-top: 0; }
+.kv-list .k { color: var(--text-mute); }
+.kv-list .v { color: var(--text); font-weight: 500; }
+.kv-list .v code, .kv-list .v.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; }
+
+/* ─────────────────────────────────────────────────────────────────
+   Timeline (vertical)
+   ─────────────────────────────────────────────────────────────── */
+.timeline {
+    list-style: none;
+    margin: 0; padding: 0 0 0 18px;
+    position: relative;
+}
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 6px; top: 8px; bottom: 8px;
+    width: 1px;
+    background: linear-gradient(180deg, var(--border), transparent);
+}
+.timeline-item {
+    position: relative;
+    padding: 6px 0 14px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+}
+.timeline-item::before {
+    content: ''; position: absolute;
+    left: -18px; top: 11px;
+    width: 9px; height: 9px;
+    border-radius: 999px;
+    background: var(--bg-2);
+    border: 1.5px solid var(--text-faint);
+}
+.timeline-item.tone-rose::before  { border-color: var(--rose); }
+.timeline-item.tone-amber::before { border-color: var(--amber); }
+.timeline-item.tone-teal::before  { border-color: var(--teal); }
+.timeline-item.tone-blue::before  { border-color: var(--blue); }
+.timeline-item.tone-blue.live::before {
+    background: var(--blue);
+    box-shadow: 0 0 0 3px rgba(96,165,250,.2);
+    animation: pulse 2.2s infinite;
+}
+.tl-headline {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 500;
+}
+.tl-detail {
+    font-size: 12px;
+    color: var(--text-mute);
+}
+.tl-when {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    align-self: start;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Flow strip (Match → Bundle → Threshold → Re-trigger)
+   ─────────────────────────────────────────────────────────────── */
+.flow {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin-bottom: 18px;
+}
+.flow-step {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+    position: relative;
+}
+.flow-step + .flow-step { border-left: none; }
+.flow-step:first-child { border-top-left-radius: var(--radius); border-bottom-left-radius: var(--radius); }
+.flow-step:last-child  { border-top-right-radius: var(--radius); border-bottom-right-radius: var(--radius); }
+.flow-step + .flow-step::before {
+    content: '›';
+    position: absolute;
+    left: -7px; top: 50%;
+    transform: translateY(-50%);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    width: 14px; height: 14px;
+    border-radius: 999px;
+    display: grid; place-items: center;
+    color: var(--text-mute);
+    font-size: 11px; font-weight: 700;
+    line-height: 1;
+}
+.flow-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.16em;
+    margin-bottom: 6px;
+}
+.flow-title {
+    font-size: 12px;
+    color: var(--text-mute);
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+.flow-value {
+    font-family: 'IBM Plex Sans Condensed', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    letter-spacing: -0.005em;
+}
+.flow-hint {
+    color: var(--text-faint);
+    font-size: 11.5px;
+    line-height: 1.45;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Avatar + identity strip (UserView)
+   ─────────────────────────────────────────────────────────────── */
+.avatar {
+    width: 56px; height: 56px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #5eead4 0%, #60a5fa 50%, #c4b5fd 100%);
+    display: grid; place-items: center;
+    font-family: 'IBM Plex Sans Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: #0a0d11;
+    flex: 0 0 auto;
+}
+
+.identity-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+/* Threat tag pile */
+.tags {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin-top: 6px;
+}
+.tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    color: var(--text-mute);
+}
+.tag.alert { color: var(--rose); border-color: rgba(251,113,133,.3); background: rgba(251,113,133,.08); }
+.tag.warn  { color: var(--amber); border-color: rgba(251,191,36,.3);  background: rgba(251,191,36,.08); }
+
+/* Inline preview / banner / error */
+.error-block {
+    background: rgba(251,113,133,.06);
+    border: 1px solid rgba(251,113,133,.25);
+    border-radius: var(--radius-sm);
+    padding: 26px 14px 12px;
+    margin-top: 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: #ffd1d8;
+    white-space: pre-wrap;
+    line-height: 1.5;
+    position: relative;
+    overflow: hidden;
+}
+.error-block::before {
+    content: 'ERROR';
+    position: absolute;
+    top: 8px; right: 12px;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    color: var(--rose);
+    opacity: .7;
+}
+
+/* Notes */
+.note {
+    color: var(--text-faint);
+    font-size: 12px;
+    margin-top: 8px;
+    line-height: 1.5;
+}
+.note kbd {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 5px;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Field-card (Profile section)
+   ─────────────────────────────────────────────────────────────── */
+.field-card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+.field-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(255,255,255,0.015), transparent);
+}
+.field-card-header h4 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex; align-items: center; gap: 8px;
+}
+.field-card-header h4 i { color: var(--text-mute); }
+.field-card-header .pencil {
+    color: var(--text-mute);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    display: inline-flex; align-items: center; gap: 5px;
+}
+.field-card-header .pencil:hover {
+    color: var(--text);
+    border-color: var(--border);
+    background: var(--bg-3);
+}
+.field-card-body {
+    padding: 4px 18px 14px;
+}
+.field-row {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 16px;
+    padding: 10px 0;
+    border-top: 1px dashed var(--border);
+    align-items: center;
+    font-size: 13px;
+}
+.field-row:first-child { border-top: none; }
+.field-row .label { color: var(--text-mute); font-size: 12px; }
+.field-row .value { color: var(--text); font-weight: 500; }
+.field-row .value.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; }
+.field-row .verify-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    margin-left: 8px;
+    font-size: 11px;
+    color: var(--teal);
+}
+.field-row .oauth-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    color: var(--text-2);
+    margin-right: 6px;
+}
+.field-row .oauth-chip .gprov {
+    width: 14px; height: 14px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #4285f4, #34a853, #fbbc04, #ea4335);
+    flex: 0 0 auto;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Permissions grid
+   ─────────────────────────────────────────────────────────────── */
+.perm-toolbar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 18px;
+    gap: 12px;
+}
+.perm-toolbar .search {
+    flex: 0 1 280px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 7px 12px;
+    font: inherit;
+    font-size: 12.5px;
+}
+.perm-toolbar .search::placeholder { color: var(--text-faint); }
+.perm-toolbar .search:focus { outline: none; border-color: var(--blue); }
+.segment {
+    display: inline-flex;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2px;
+}
+.segment button {
+    appearance: none;
+    border: none; background: transparent;
+    color: var(--text-mute);
+    font: inherit; font-size: 12px; font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.segment button.is-active {
+    background: var(--bg-3);
+    color: var(--text);
+    box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.perm-group {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+}
+.perm-group-header {
+    padding: 10px 18px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.015), transparent);
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.perm-group-header h5 {
+    margin: 0;
+    font-size: 11px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    font-weight: 600;
+}
+.perm-group-meta {
+    color: var(--text-faint);
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+}
+.perm-row {
+    display: grid;
+    grid-template-columns: 1fr 56px;
+    gap: 16px;
+    padding: 12px 18px;
+    border-top: 1px dashed var(--border);
+    align-items: center;
+}
+.perm-row:first-of-type { border-top: none; }
+.perm-row .perm-name {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 500;
+}
+.perm-row .perm-name .perm-key {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+    font-weight: 400;
+    margin-top: 2px;
+}
+.switch {
+    width: 36px; height: 20px;
+    background: var(--bg-3);
+    border-radius: 999px;
+    position: relative;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background .12s, border-color .12s;
+}
+.switch::after {
+    content: '';
+    position: absolute;
+    width: 14px; height: 14px;
+    background: var(--text-mute);
+    border-radius: 999px;
+    top: 2px; left: 2px;
+    transition: left .14s, background .14s;
+}
+.switch.on {
+    background: rgba(94,234,212,.18);
+    border-color: rgba(94,234,212,.32);
+}
+.switch.on::after {
+    left: 18px;
+    background: var(--teal);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Devices unified table
+   ─────────────────────────────────────────────────────────────── */
+.dtable {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+.dtable thead th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-mute);
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(255,255,255,0.015), transparent);
+}
+.dtable tbody td {
+    padding: 12px 14px;
+    border-top: 1px dashed var(--border);
+    font-size: 13px;
+    vertical-align: middle;
+}
+.dtable tbody tr:first-child td { border-top: none; }
+.dtable tbody tr:hover { background: rgba(255,255,255,0.012); }
+.dtable td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; }
+
+.kind-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-2);
+    font-weight: 500;
+}
+.kind-pill.kind-browser { color: var(--blue); border-color: rgba(96,165,250,.22); background: rgba(96,165,250,.08); }
+.kind-pill.kind-push    { color: var(--violet); border-color: rgba(196,181,253,.22); background: rgba(196,181,253,.08); }
+
+.device-line { line-height: 1.35; }
+.device-line .name { color: var(--text); font-weight: 500; }
+.device-line .sub { color: var(--text-mute); font-size: 11.5px; font-family: 'IBM Plex Mono', monospace; }
+
+.threat-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.threat-tags .tag { padding: 1px 6px; font-size: 10px; }
+
+.row-actions {
+    display: flex; gap: 4px; justify-content: flex-end;
+}
+.row-actions button {
+    appearance: none;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-mute);
+    font: inherit; font-size: 12px;
+    padding: 4px 7px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.row-actions button:hover {
+    color: var(--text);
+    background: var(--bg-3);
+    border-color: var(--border);
+}
+.row-actions button.danger:hover { color: var(--rose); border-color: rgba(251,113,133,.3); }
+
+/* ─────────────────────────────────────────────────────────────────
+   Audit log entries
+   ─────────────────────────────────────────────────────────────── */
+.audit-toolbar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 14px;
+    gap: 12px;
+}
+.audit-list {
+    list-style: none; margin: 0; padding: 0;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+.audit-entry {
+    display: grid;
+    grid-template-columns: 28px 80px 1fr 130px;
+    gap: 14px;
+    padding: 12px 16px;
+    border-top: 1px dashed var(--border);
+    align-items: center;
+    font-size: 13px;
+}
+.audit-entry:first-child { border-top: none; }
+.audit-entry:hover { background: rgba(255,255,255,0.012); }
+.audit-icon {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    display: grid; place-items: center;
+    font-size: 13px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    color: var(--text-mute);
+}
+.audit-icon.tone-rose  { color: var(--rose);  background: rgba(251,113,133,.08);  border-color: rgba(251,113,133,.22); }
+.audit-icon.tone-amber { color: var(--amber); background: rgba(251,191,36,.08);  border-color: rgba(251,191,36,.22); }
+.audit-icon.tone-teal  { color: var(--teal);  background: rgba(94,234,212,.08);   border-color: rgba(94,234,212,.22); }
+.audit-icon.tone-blue  { color: var(--blue);  background: rgba(96,165,250,.08);   border-color: rgba(96,165,250,.22); }
+.audit-source {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    color: var(--text-faint);
+    font-family: 'IBM Plex Mono', monospace;
+}
+.audit-text { color: var(--text); }
+.audit-text .muted { color: var(--text-mute); }
+.audit-text code { font-size: 12px; }
+.audit-when {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--text-faint);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Footer note */
+.footer-note {
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 12px;
+    margin-top: 32px;
+    letter-spacing: 0.04em;
+}
+
+/* Bootstrap-icons fallback (since we're not loading Bootstrap Icons here) */
+i.bi { font-style: normal; }
+
+/* ─────────────────────────────────────────────────────────────────
+   Bootstrap Icons subset via inline SVG sprite (a few common ones)
+   We use simple unicode glyphs as placeholders for icon classes so
+   the mockup reads without external icon fonts.
+   ─────────────────────────────────────────────────────────────── */
+.bi-shield-exclamation::before { content: '⚠'; }
+.bi-gear-wide::before          { content: '⚙'; }
+.bi-person::before             { content: '◉'; }
+.bi-clock::before              { content: '◷'; }
+.bi-arrow-clockwise::before    { content: '↻'; }
+.bi-x-lg::before               { content: '✕'; }
+.bi-three-dots::before         { content: '⋯'; }
+.bi-pencil::before             { content: '✎'; }
+.bi-funnel::before             { content: '⏷'; }
+.bi-list-ul::before            { content: '☰'; }
+.bi-globe2::before             { content: '◯'; }
+.bi-code-square::before        { content: '⌗'; }
+.bi-tools::before              { content: '⚒'; }
+.bi-ticket::before             { content: '◫'; }
+.bi-chat::before               { content: '◖'; }
+.bi-diagram::before            { content: '⌬'; }
+.bi-braces::before             { content: '{}'; }
+.bi-stars::before              { content: '✦'; }
+.bi-bell::before               { content: '◔'; }
+.bi-key::before                { content: '⚿'; }
+.bi-shield::before             { content: '⛨'; }
+.bi-grid::before               { content: '▦'; }
+.bi-laptop::before             { content: '▭'; }
+.bi-geo-alt::before            { content: '◎'; }
+.bi-ticket-detailed::before    { content: '◰'; }
+.bi-slash::before              { content: '⊘'; }
+.bi-envelope::before           { content: '✉'; }
+.bi-stopwatch::before          { content: '◴'; }
+.bi-people::before             { content: '◐'; }
+.bi-files::before              { content: '⎙'; }
+.bi-broadcast::before          { content: '📡'; }
+.bi-cpu::before                { content: '⊞'; }
+.bi-hourglass::before          { content: '◷'; }
+
+</style>
+</head>
+<body>
+<div class="page">
+
+    <div class="page-eyebrow">web-mojo · admin portal · redesign mockup</div>
+    <h1 class="page-title">DetailView <span class="accent">migration</span> mockups</h1>
+    <p class="page-lede">
+        Three of the highest-impact admin record screens redrawn against the
+        new <code class="mono">DetailView</code> primitive. IBM Plex throughout,
+        mission-control palette, dark theme primary. Switch between views
+        below.
+    </p>
+
+    <div class="switcher" role="tablist">
+        <button class="is-active" data-target="incident">Incident</button>
+        <button data-target="job">Job</button>
+        <button data-target="user">User</button>
+    </div>
+
+
+    <!-- ─────────────────────────────────────────────────────────────
+         MOCKUP 1 — IncidentView
+         ─────────────────────────────────────────────────────────── -->
+    <div class="mockup is-active" data-mockup="incident">
+        <div class="dv-frame">
+
+            <!-- Header -->
+            <div class="dv-header">
+                <div class="dv-icon tone-rose"><i class="bi bi-shield-exclamation"></i></div>
+                <div class="dv-title-block">
+                    <h2 class="dv-title">
+                        Brute-force login attempts on api.checkout
+                        <span class="id-badge">#48217</span>
+                    </h2>
+                    <p class="dv-subtitle">
+                        Triggered by rule <a class="link" href="#">Auth · Repeated failed logins</a>
+                        · scope <code class="mono">auth.failed</code>
+                    </p>
+                    <div class="dv-chips">
+                        <span class="chip tone-rose"><i class="bi bi-shield-exclamation"></i>P1 · Critical</span>
+                        <span class="chip tone-amber"><i class="bi bi-clock"></i>Active · 2h 14m</span>
+                        <span class="chip">api-gateway-2</span>
+                        <span class="chip"><i class="bi bi-list-ul"></i>47 events</span>
+                        <span class="chip"><i class="bi bi-globe2"></i>3 sources</span>
+                        <span class="chip tone-violet"><i class="bi bi-shield"></i>Protected</span>
+                    </div>
+                </div>
+                <div class="dv-actions">
+                    <button class="btn primary"><i class="bi bi-arrow-clockwise"></i> Resolve</button>
+                    <button class="btn"><i class="bi bi-person"></i> Assign</button>
+                    <button class="btn icon" title="More"><i class="bi bi-three-dots"></i></button>
+                    <button class="btn icon" title="Close"><i class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+
+            <!-- Body: rail + section -->
+            <div class="dv-body">
+
+                <!-- Side rail -->
+                <nav class="rail">
+                    <div class="rail-link is-active" data-section="overview"><i class="bi bi-grid"></i> Overview</div>
+                    <div class="rail-link" data-section="events"><i class="bi bi-list-ul"></i> Events <span class="rail-badge tone-rose">47</span></div>
+
+                    <div class="rail-divider">Investigation</div>
+                    <div class="rail-link" data-section="source"><i class="bi bi-globe2"></i> Source</div>
+                    <div class="rail-link" data-section="request"><i class="bi bi-funnel"></i> Request</div>
+                    <div class="rail-link" data-section="stack-trace"><i class="bi bi-code-square"></i> Stack Trace</div>
+
+                    <div class="rail-divider">Response</div>
+                    <div class="rail-link" data-section="rule-engine"><i class="bi bi-tools"></i> Rule Engine</div>
+                    <div class="rail-link" data-section="tickets"><i class="bi bi-ticket-detailed"></i> Tickets <span class="rail-badge tone-amber">2</span></div>
+                    <div class="rail-link" data-section="history"><i class="bi bi-chat"></i> History</div>
+
+                    <div class="rail-divider">Related</div>
+                    <div class="rail-link" data-section="related"><i class="bi bi-diagram"></i> Related <span class="rail-badge">12</span></div>
+                    <div class="rail-link" data-section="detail"><i class="bi bi-braces"></i> Detail</div>
+                </nav>
+
+                <!-- Section -->
+                <div class="section is-active" data-section-key="overview">
+                    <div class="section-eyebrow">Section · Overview</div>
+                    <h3 class="section-title">At a glance</h3>
+
+                    <!-- Status panel -->
+                    <div class="status-panel tone-rose">
+                        <div class="status-headline">
+                            <div class="status-state"><span class="dot"></span>Active · firing</div>
+                            <p class="status-line">In flight for 2h 14m</p>
+                            <div class="status-meta">
+                                Last event <strong class="mono tabular">4m</strong> ago ·
+                                47 events from 3 source IPs ·
+                                Handler chain ran 12 times
+                            </div>
+                        </div>
+                        <div class="status-actions">
+                            <button class="btn primary">Resolve incident</button>
+                            <button class="btn">Assign to me</button>
+                        </div>
+                    </div>
+
+                    <!-- KPI strip -->
+                    <div class="kpis">
+                        <div class="kpi tone-rose">
+                            <div class="kpi-label">Events</div>
+                            <div class="kpi-value tabular">47<span class="delta neg">+12 / 1h</span></div>
+                            <svg class="kpi-spark" viewBox="0 0 80 26" preserveAspectRatio="none">
+                                <polyline fill="none" stroke="currentColor" stroke-width="1.4" points="0,22 8,20 16,18 24,16 32,17 40,12 48,13 56,8 64,9 72,4 80,2"></polyline>
+                            </svg>
+                        </div>
+                        <div class="kpi">
+                            <div class="kpi-label">Sources</div>
+                            <div class="kpi-value tabular">3<span class="unit">IPs</span></div>
+                        </div>
+                        <div class="kpi">
+                            <div class="kpi-label">Last fired</div>
+                            <div class="kpi-value">4<span class="unit">min ago</span></div>
+                        </div>
+                        <div class="kpi">
+                            <div class="kpi-label">Related</div>
+                            <div class="kpi-value tabular">12<span class="unit">7d</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Two-card row -->
+                    <div class="cards-row">
+                        <div class="card">
+                            <div class="card-header"><i class="bi bi-funnel"></i>What triggered this</div>
+                            <ul class="kv-list">
+                                <li><span class="k">Rule</span><span class="v"><a href="#">Auth · Repeated failed logins</a></span></li>
+                                <li><span class="k">Category</span><span class="v mono">auth.failed</span></li>
+                                <li><span class="k">Threshold</span><span class="v">5 events / 60s</span></li>
+                                <li><span class="k">Source IP</span><span class="v mono">198.51.100.42</span></li>
+                                <li><span class="k">Targeted user</span><span class="v"><a href="#">jamie@example.com</a></span></li>
+                                <li><span class="k">Hostname</span><span class="v mono">api-gateway-2</span></li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><i class="bi bi-tools"></i>What happened next</div>
+                            <ol class="timeline">
+                                <li class="timeline-item tone-rose">
+                                    <div>
+                                        <div class="tl-headline">Handler chain fired</div>
+                                        <div class="tl-detail"><code class="mono">block://?ttl=86400</code> → <code class="mono">ticket://?priority=8</code> → <code class="mono">llm://</code></div>
+                                    </div>
+                                    <span class="tl-when">2h 14m ago</span>
+                                </li>
+                                <li class="timeline-item tone-amber">
+                                    <div>
+                                        <div class="tl-headline">Source IP blocked</div>
+                                        <div class="tl-detail">198.51.100.42 added to firewall · expires in 21h 46m</div>
+                                    </div>
+                                    <span class="tl-when">2h 14m ago</span>
+                                </li>
+                                <li class="timeline-item tone-amber">
+                                    <div>
+                                        <div class="tl-headline">Ticket created</div>
+                                        <div class="tl-detail"><a href="#">#4821</a> · priority 8 · open · assigned to <a href="#">on-call</a></div>
+                                    </div>
+                                    <span class="tl-when">2h 14m ago</span>
+                                </li>
+                                <li class="timeline-item tone-blue">
+                                    <div>
+                                        <div class="tl-headline">LLM triage completed</div>
+                                        <div class="tl-detail">Verdict: <strong>credential-stuffing</strong> · confidence 0.92</div>
+                                    </div>
+                                    <span class="tl-when">2h 13m ago</span>
+                                </li>
+                                <li class="timeline-item tone-blue live">
+                                    <div>
+                                        <div class="tl-headline">Awaiting on-call ack</div>
+                                        <div class="tl-detail">Auto-escalates in 45m if unacknowledged</div>
+                                    </div>
+                                    <span class="tl-when">just now</span>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <p class="note">
+                        <strong>Notes for the migration:</strong> the status panel is a new
+                        <code class="mono">StatusPanel</code> primitive shared with JobDetailsView and
+                        RunnerDetailsView. The right-hand "What happened next" card uses the new
+                        <code class="mono">Timeline</code> primitive — also reused by the History
+                        section and by JobDetailsView's Events section.
+                    </p>
+                </div>
+
+                <!-- Fallback empty-state for sections not yet mocked -->
+                <div class="section" data-section-key="__placeholder__">
+                    <div class="section-empty">
+                        <div class="icon-large"><i class="bi bi-grid"></i></div>
+                        <h4 data-empty-name>Section preview pending</h4>
+                        <p>Overview is the only section mocked for this view. The full
+                           section list and per-section content lives in the migration plan.</p>
+                        <a class="empty-link" href="detailview-migration.md">↗ View plan</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ─────────────────────────────────────────────────────────────
+         MOCKUP 2 — JobDetailsView
+         ─────────────────────────────────────────────────────────── -->
+    <div class="mockup" data-mockup="job">
+        <div class="dv-frame">
+
+            <div class="dv-header">
+                <div class="dv-icon tone-amber"><i class="bi bi-hourglass"></i></div>
+                <div class="dv-title-block">
+                    <h2 class="dv-title">
+                        <code class="mono" style="font-size: 22px; color: var(--text);">billing.invoices.generate_monthly</code>
+                        <span class="id-badge">#92410</span>
+                    </h2>
+                    <p class="dv-subtitle">
+                        Failed on attempt <strong>3</strong> of 5 · last error
+                        <code class="mono" style="color: var(--rose);">DBConnectionError: pool exhausted</code>
+                    </p>
+                    <div class="dv-chips">
+                        <span class="chip tone-rose"><i class="bi bi-shield-exclamation"></i>Failed</span>
+                        <span class="chip tone-blue"><i class="bi bi-broadcast"></i>billing</span>
+                        <span class="chip"><i class="bi bi-cpu"></i>runner-7</span>
+                        <span class="chip">attempt 3/5</span>
+                        <span class="chip tabular">duration 38s</span>
+                        <span class="chip">cancel-on-shutdown</span>
+                    </div>
+                </div>
+                <div class="dv-actions">
+                    <button class="btn primary"><i class="bi bi-arrow-clockwise"></i> Retry</button>
+                    <button class="btn danger"><i class="bi bi-slash"></i> Cancel</button>
+                    <button class="btn icon" title="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
+                    <button class="btn icon" title="More"><i class="bi bi-three-dots"></i></button>
+                    <button class="btn icon" title="Close"><i class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+
+            <div class="dv-body">
+
+                <nav class="rail">
+                    <div class="rail-link is-active" data-section="overview"><i class="bi bi-grid"></i> Overview</div>
+                    <div class="rail-link" data-section="payload"><i class="bi bi-braces"></i> Payload</div>
+
+                    <div class="rail-divider">Activity</div>
+                    <div class="rail-link" data-section="events"><i class="bi bi-list-ul"></i> Events <span class="rail-badge">14</span></div>
+                    <div class="rail-link" data-section="logs"><i class="bi bi-code-square"></i> Logs <span class="rail-badge tone-rose">128</span></div>
+
+                    <div class="rail-divider">Related</div>
+                    <div class="rail-link" data-section="retry-history"><i class="bi bi-arrow-clockwise"></i> Retry History <span class="rail-badge">2</span></div>
+                    <div class="rail-link" data-section="similar"><i class="bi bi-files"></i> Similar <span class="rail-badge">87</span></div>
+                    <div class="rail-link" data-section="detail"><i class="bi bi-braces"></i> Detail</div>
+                </nav>
+
+                <div class="section is-active" data-section-key="overview">
+                    <div class="section-eyebrow">Section · Overview</div>
+                    <h3 class="section-title">Job execution</h3>
+
+                    <div class="status-panel tone-rose">
+                        <div class="status-headline">
+                            <div class="status-state"><span class="dot"></span>Failed</div>
+                            <p class="status-line">Failed after 38s · 12m ago</p>
+                            <div class="status-meta">
+                                Attempt <strong class="tabular">3</strong> of <strong class="tabular">5</strong> ·
+                                next retry in <strong class="mono tabular">2m 14s</strong> with backoff
+                            </div>
+                        </div>
+                        <div class="status-actions">
+                            <button class="btn primary">Retry now</button>
+                            <button class="btn">Cancel remaining</button>
+                        </div>
+                    </div>
+
+                    <div class="kpis">
+                        <div class="kpi tone-amber">
+                            <div class="kpi-label">Attempt</div>
+                            <div class="kpi-value tabular">3<span class="unit">/ 5</span></div>
+                        </div>
+                        <div class="kpi">
+                            <div class="kpi-label">Runtime</div>
+                            <div class="kpi-value tabular">38<span class="unit">s</span></div>
+                        </div>
+                        <div class="kpi">
+                            <div class="kpi-label">Retries left</div>
+                            <div class="kpi-value tabular">2</div>
+                        </div>
+                        <div class="kpi tone-blue">
+                            <div class="kpi-label">Next attempt</div>
+                            <div class="kpi-value tabular">in 2m<span class="unit">14s</span></div>
+                        </div>
+                    </div>
+
+                    <div class="cards-row">
+                        <div class="card">
+                            <div class="card-header"><i class="bi bi-cpu"></i>Execution</div>
+                            <ul class="kv-list">
+                                <li><span class="k">Function</span><span class="v mono">billing.invoices.generate_monthly</span></li>
+                                <li><span class="k">Channel</span><span class="v mono">billing</span></li>
+                                <li><span class="k">Runner</span><span class="v"><a href="#" class="mono">runner-7</a></span></li>
+                                <li><span class="k">Started</span><span class="v mono tabular">02:00:38 UTC</span></li>
+                                <li><span class="k">Finished</span><span class="v mono tabular">02:01:16 UTC</span></li>
+                                <li><span class="k">Next attempt</span><span class="v mono tabular">02:03:30 UTC · 2m 14s</span></li>
+                            </ul>
+                            <div class="error-block">DBConnectionError: pool exhausted (max=20, in_use=20)
+  at billing.db._acquire_connection (db.py:142)
+  at billing.invoices.generate_monthly (invoices.py:78)
+  at jobs.runner._dispatch (runner.py:331)</div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header"><i class="bi bi-list-ul"></i>Lifecycle</div>
+                            <ol class="timeline">
+                                <li class="timeline-item tone-blue">
+                                    <div>
+                                        <div class="tl-headline">Enqueued</div>
+                                        <div class="tl-detail">queued by <a href="#">scheduler</a> on channel <code class="mono">billing</code></div>
+                                    </div>
+                                    <span class="tl-when">02:00:00</span>
+                                </li>
+                                <li class="timeline-item tone-blue">
+                                    <div>
+                                        <div class="tl-headline">Started · attempt 1</div>
+                                        <div class="tl-detail">picked up by <code class="mono">runner-3</code></div>
+                                    </div>
+                                    <span class="tl-when">02:00:01</span>
+                                </li>
+                                <li class="timeline-item tone-rose">
+                                    <div>
+                                        <div class="tl-headline">Failed · attempt 1</div>
+                                        <div class="tl-detail"><code class="mono">DBConnectionError</code> after 32s</div>
+                                    </div>
+                                    <span class="tl-when">02:00:33</span>
+                                </li>
+                                <li class="timeline-item tone-rose">
+                                    <div>
+                                        <div class="tl-headline">Failed · attempt 2</div>
+                                        <div class="tl-detail">same error after 14s — backoff doubled</div>
+                                    </div>
+                                    <span class="tl-when">02:00:50</span>
+                                </li>
+                                <li class="timeline-item tone-rose live">
+                                    <div>
+                                        <div class="tl-headline">Failed · attempt 3</div>
+                                        <div class="tl-detail">runner switched to <code class="mono">runner-7</code> · next retry in 2m 14s</div>
+                                    </div>
+                                    <span class="tl-when">02:01:16</span>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <p class="note">
+                        <strong>What changes vs. today:</strong> the status panel + lifecycle
+                        timeline replace the current Details section's flat field grid plus
+                        scattered status badges. Retry history becomes its own section
+                        because admins regularly ask "did it succeed on attempt 3?"
+                        Similar-jobs section gets a real count badge.
+                    </p>
+                </div>
+
+                <!-- Fallback empty-state for sections not yet mocked -->
+                <div class="section" data-section-key="__placeholder__">
+                    <div class="section-empty">
+                        <div class="icon-large"><i class="bi bi-grid"></i></div>
+                        <h4 data-empty-name>Section preview pending</h4>
+                        <p>Overview is the only section mocked for this view. The full
+                           section list and per-section content lives in the migration plan.</p>
+                        <a class="empty-link" href="detailview-migration.md">↗ View plan</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ─────────────────────────────────────────────────────────────
+         MOCKUP 3 — UserView
+         ─────────────────────────────────────────────────────────── -->
+    <div class="mockup" data-mockup="user">
+        <div class="dv-frame">
+
+            <div class="dv-header">
+                <div class="avatar">JS</div>
+                <div class="dv-title-block">
+                    <h2 class="dv-title">
+                        Jamie Suzuki
+                        <span class="id-badge">user · 8412</span>
+                    </h2>
+                    <p class="dv-subtitle">
+                        <a class="link" href="#">jamie@example.com</a> ·
+                        <span class="mono">+1 415 555 0114</span> ·
+                        last seen <strong>4h ago</strong> from San Francisco
+                    </p>
+                    <div class="dv-chips">
+                        <span class="chip tone-teal dot live">Online</span>
+                        <span class="chip tone-blue">staff</span>
+                        <span class="chip"><i class="bi bi-shield"></i>Email verified</span>
+                        <span class="chip"><i class="bi bi-shield"></i>Phone verified</span>
+                        <span class="chip">2FA enabled</span>
+                        <span class="chip tone-violet">SSO · Google</span>
+                    </div>
+                </div>
+                <div class="dv-actions">
+                    <span class="toggle"><span class="bullet"></span>Active</span>
+                    <button class="btn primary"><i class="bi bi-envelope"></i> Magic link</button>
+                    <button class="btn"><i class="bi bi-key"></i> Reset password</button>
+                    <button class="btn icon" title="More"><i class="bi bi-three-dots"></i></button>
+                    <button class="btn icon" title="Close"><i class="bi bi-x-lg"></i></button>
+                </div>
+            </div>
+
+            <div class="dv-body">
+
+                <nav class="rail">
+                    <div class="rail-link is-active" data-section="overview"><i class="bi bi-grid"></i> Overview</div>
+                    <div class="rail-link" data-section="profile"><i class="bi bi-person"></i> Profile</div>
+
+                    <div class="rail-divider">Access</div>
+                    <div class="rail-link" data-section="groups"><i class="bi bi-people"></i> Groups <span class="rail-badge">4</span></div>
+                    <div class="rail-link" data-section="permissions"><i class="bi bi-shield"></i> Permissions</div>
+                    <div class="rail-link" data-section="api-keys"><i class="bi bi-key"></i> API Keys <span class="rail-badge">2</span></div>
+
+                    <div class="rail-divider">Activity</div>
+                    <div class="rail-link" data-section="devices"><i class="bi bi-laptop"></i> Devices <span class="rail-badge">5</span></div>
+                    <div class="rail-link" data-section="locations"><i class="bi bi-geo-alt"></i> Locations</div>
+                    <div class="rail-link" data-section="audit"><i class="bi bi-list-ul"></i> Audit <span class="rail-badge">142</span></div>
+
+                    <div class="rail-divider">Settings</div>
+                    <div class="rail-link" data-section="notifications"><i class="bi bi-bell"></i> Notifications</div>
+                    <div class="rail-link" data-section="detail"><i class="bi bi-braces"></i> Detail</div>
+                </nav>
+
+                <div class="section is-active" data-section-key="overview">
+                    <div class="section-eyebrow">Section · Overview</div>
+                    <h3 class="section-title">Account snapshot</h3>
+
+                    <!-- KPI strip -->
+                    <div class="kpis">
+                        <div class="kpi">
+                            <div class="kpi-label">Devices</div>
+                            <div class="kpi-value tabular">5</div>
+                            <svg class="kpi-spark" viewBox="0 0 80 26" preserveAspectRatio="none">
+                                <polyline fill="none" stroke="var(--text-faint)" stroke-width="1.2" points="0,18 16,16 32,17 48,12 64,11 80,8"></polyline>
+                            </svg>
+                        </div>
+                        <div class="kpi tone-teal">
+                            <div class="kpi-label">Active sessions</div>
+                            <div class="kpi-value tabular">3</div>
+                        </div>
+                        <div class="kpi">
+                            <div class="kpi-label">Last login</div>
+                            <div class="kpi-value">4<span class="unit">h ago</span></div>
+                        </div>
+                        <div class="kpi">
+                            <div class="kpi-label">Groups</div>
+                            <div class="kpi-value tabular">4</div>
+                        </div>
+                    </div>
+
+                    <div class="cards-row">
+                        <!-- Identity / quick info -->
+                        <div class="card">
+                            <div class="card-header"><i class="bi bi-person"></i>Identity</div>
+                            <ul class="kv-list">
+                                <li><span class="k">Display name</span><span class="v">Jamie Suzuki</span></li>
+                                <li><span class="k">Email</span><span class="v"><a href="#">jamie@example.com</a></span></li>
+                                <li><span class="k">Phone</span><span class="v mono">+1 415 555 0114</span></li>
+                                <li><span class="k">Account type</span><span class="v">Staff</span></li>
+                                <li><span class="k">Joined</span><span class="v mono tabular">2024-08-12</span></li>
+                                <li><span class="k">Linked accounts</span><span class="v"><span class="chip tone-violet" style="font-size: 11px;">Google</span></span></li>
+                            </ul>
+                        </div>
+
+                        <!-- Recent activity -->
+                        <div class="card">
+                            <div class="card-header"><i class="bi bi-list-ul"></i>Recent activity</div>
+                            <ol class="timeline">
+                                <li class="timeline-item tone-blue live">
+                                    <div>
+                                        <div class="tl-headline">Logged in</div>
+                                        <div class="tl-detail">macOS · Chrome 122 · San Francisco · <code class="mono">198.51.100.42</code></div>
+                                    </div>
+                                    <span class="tl-when">4h ago</span>
+                                </li>
+                                <li class="timeline-item tone-teal">
+                                    <div>
+                                        <div class="tl-headline">Generated API key</div>
+                                        <div class="tl-detail"><code class="mono">ak_8f12…</code> · scopes: read, write</div>
+                                    </div>
+                                    <span class="tl-when">2d ago</span>
+                                </li>
+                                <li class="timeline-item">
+                                    <div>
+                                        <div class="tl-headline">Joined group</div>
+                                        <div class="tl-detail"><a href="#">Engineering · Backend</a> as member</div>
+                                    </div>
+                                    <span class="tl-when">3d ago</span>
+                                </li>
+                                <li class="timeline-item tone-amber">
+                                    <div>
+                                        <div class="tl-headline">Login from new device</div>
+                                        <div class="tl-detail">iPhone 15 · Safari · approved by user</div>
+                                    </div>
+                                    <span class="tl-when">8d ago</span>
+                                </li>
+                                <li class="timeline-item">
+                                    <div>
+                                        <div class="tl-headline">Verified phone</div>
+                                        <div class="tl-detail">+1 415 555 0114</div>
+                                    </div>
+                                    <span class="tl-when">14d ago</span>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <p class="note">
+                        <strong>What this collapses:</strong> Profile + Personal + OAuth merge
+                        into a single Profile section behind a pencil. Permissions + Adv
+                        Permissions merge into one with a "show advanced" segment. Devices +
+                        Push Devices merge into one Devices section with a kind column.
+                        Three Activity tabs (Events / Activity Log / Object Logs) collapse to
+                        one Audit section with a source filter. 12 sections → 9.
+                    </p>
+                </div>
+
+                <!-- ─── Profile section ─── -->
+                <div class="section" data-section-key="profile">
+                    <div class="section-eyebrow">Section · Profile</div>
+                    <h3 class="section-title">Identity &amp; account</h3>
+
+                    <div class="field-card">
+                        <div class="field-card-header">
+                            <h4><i class="bi bi-person"></i>Personal</h4>
+                            <button class="pencil"><i class="bi bi-pencil"></i> Edit</button>
+                        </div>
+                        <div class="field-card-body">
+                            <div class="field-row">
+                                <div class="label">Display name</div>
+                                <div class="value">Jamie Suzuki</div>
+                            </div>
+                            <div class="field-row">
+                                <div class="label">Email</div>
+                                <div class="value">
+                                    jamie@example.com
+                                    <span class="verify-tag"><i class="bi bi-shield"></i>verified</span>
+                                </div>
+                            </div>
+                            <div class="field-row">
+                                <div class="label">Phone</div>
+                                <div class="value mono">
+                                    +1 415 555 0114
+                                    <span class="verify-tag"><i class="bi bi-shield"></i>verified</span>
+                                </div>
+                            </div>
+                            <div class="field-row">
+                                <div class="label">Avatar</div>
+                                <div class="value">
+                                    <span style="display: inline-flex; align-items: center; gap: 10px;">
+                                        <span class="avatar" style="width: 32px; height: 32px; font-size: 13px; border-radius: 8px;">JS</span>
+                                        <a href="#">Upload new</a>
+                                        <span class="faint">·</span>
+                                        <a href="#" style="color: var(--text-mute);">Clear</a>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field-card">
+                        <div class="field-card-header">
+                            <h4><i class="bi bi-grid"></i>Account</h4>
+                            <button class="pencil"><i class="bi bi-pencil"></i> Edit</button>
+                        </div>
+                        <div class="field-card-body">
+                            <div class="field-row">
+                                <div class="label">Account type</div>
+                                <div class="value">Staff <span class="faint">·</span> <span class="muted">elevated session permissions</span></div>
+                            </div>
+                            <div class="field-row">
+                                <div class="label">Status</div>
+                                <div class="value">
+                                    <span class="chip tone-teal" style="font-size: 11px;">Active</span>
+                                </div>
+                            </div>
+                            <div class="field-row">
+                                <div class="label">Joined</div>
+                                <div class="value mono tabular">2024-08-12 · 287 days ago</div>
+                            </div>
+                            <div class="field-row">
+                                <div class="label">Last seen</div>
+                                <div class="value">4h ago <span class="muted">— from San Francisco, US</span></div>
+                            </div>
+                            <div class="field-row">
+                                <div class="label">Locale</div>
+                                <div class="value">en-US <span class="faint">·</span> <span class="mono">America/Los_Angeles</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field-card">
+                        <div class="field-card-header">
+                            <h4><i class="bi bi-key"></i>Linked accounts</h4>
+                            <button class="pencil"><i class="bi bi-pencil"></i> Manage</button>
+                        </div>
+                        <div class="field-card-body">
+                            <div class="field-row">
+                                <div class="label">SSO providers</div>
+                                <div class="value">
+                                    <span class="oauth-chip">
+                                        <span class="gprov"></span>
+                                        Google
+                                        <span class="faint" style="margin-left: 6px;">jamie@example.com</span>
+                                    </span>
+                                    <a href="#" style="font-size: 12px; color: var(--text-mute);">+ Add provider</a>
+                                </div>
+                            </div>
+                            <div class="field-row">
+                                <div class="label">2-factor</div>
+                                <div class="value">
+                                    <span class="chip tone-teal" style="font-size: 11px;">Enabled · TOTP</span>
+                                    <a href="#" style="font-size: 12px; margin-left: 8px;">Manage</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="note">
+                        Three previous sections (Profile, Personal, OAuth) collapse into one. Each
+                        card opens its own focused mini-form via <code class="mono">Modal.modelForm</code>
+                        — same pattern as RuleSetView's per-step pencils.
+                    </p>
+                </div>
+
+                <!-- ─── Permissions section ─── -->
+                <div class="section" data-section-key="permissions">
+                    <div class="section-eyebrow">Section · Permissions</div>
+                    <h3 class="section-title">What this user can do</h3>
+
+                    <div class="perm-toolbar">
+                        <input class="search" placeholder="Filter permissions…" />
+                        <div class="segment">
+                            <button class="is-active">Common</button>
+                            <button>Advanced</button>
+                            <button>Effective</button>
+                        </div>
+                    </div>
+
+                    <div class="perm-group">
+                        <div class="perm-group-header">
+                            <h5>Account</h5>
+                            <span class="perm-group-meta">2 / 3 granted</span>
+                        </div>
+                        <div class="perm-row">
+                            <div class="perm-name">
+                                View users
+                                <span class="perm-key">account.users.view</span>
+                            </div>
+                            <span class="switch on" title="On"></span>
+                        </div>
+                        <div class="perm-row">
+                            <div class="perm-name">
+                                Edit users
+                                <span class="perm-key">account.users.edit</span>
+                            </div>
+                            <span class="switch on" title="On"></span>
+                        </div>
+                        <div class="perm-row">
+                            <div class="perm-name">
+                                Impersonate users
+                                <span class="perm-key">account.users.impersonate</span>
+                            </div>
+                            <span class="switch" title="Off"></span>
+                        </div>
+                    </div>
+
+                    <div class="perm-group">
+                        <div class="perm-group-header">
+                            <h5>Groups</h5>
+                            <span class="perm-group-meta">3 / 3 granted · inherited from <a href="#">Engineering · Backend</a></span>
+                        </div>
+                        <div class="perm-row">
+                            <div class="perm-name">
+                                View groups
+                                <span class="perm-key">account.groups.view</span>
+                            </div>
+                            <span class="switch on"></span>
+                        </div>
+                        <div class="perm-row">
+                            <div class="perm-name">
+                                Manage members
+                                <span class="perm-key">account.groups.manage_members</span>
+                            </div>
+                            <span class="switch on"></span>
+                        </div>
+                        <div class="perm-row">
+                            <div class="perm-name">
+                                Invite users
+                                <span class="perm-key">account.groups.invite</span>
+                            </div>
+                            <span class="switch on"></span>
+                        </div>
+                    </div>
+
+                    <div class="perm-group">
+                        <div class="perm-group-header">
+                            <h5>API</h5>
+                            <span class="perm-group-meta">1 / 2 granted</span>
+                        </div>
+                        <div class="perm-row">
+                            <div class="perm-name">
+                                Read API keys
+                                <span class="perm-key">api.keys.view</span>
+                            </div>
+                            <span class="switch on"></span>
+                        </div>
+                        <div class="perm-row">
+                            <div class="perm-name">
+                                Manage API keys
+                                <span class="perm-key">api.keys.manage</span>
+                            </div>
+                            <span class="switch"></span>
+                        </div>
+                    </div>
+
+                    <p class="note">
+                        Today's separate "Permissions" and "Adv Permissions" sections merge here.
+                        The <strong>Common / Advanced / Effective</strong> segment swaps the visible
+                        rows: Common is the curated set most admins want to grant; Advanced
+                        exposes everything (including dangerous flags); Effective shows the
+                        computed permissions including group inheritance.
+                    </p>
+                </div>
+
+                <!-- ─── Devices section ─── -->
+                <div class="section" data-section-key="devices">
+                    <div class="section-eyebrow">Section · Devices · 5 active</div>
+                    <h3 class="section-title">Devices &amp; sessions</h3>
+
+                    <div class="audit-toolbar">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <div class="segment">
+                                <button class="is-active">All</button>
+                                <button>Browser</button>
+                                <button>Push</button>
+                            </div>
+                            <span class="muted" style="font-size: 12px;">5 active · 12 historical</span>
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <button class="btn"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                            <button class="btn danger"><i class="bi bi-slash"></i> Revoke all</button>
+                        </div>
+                    </div>
+
+                    <table class="dtable">
+                        <thead>
+                            <tr>
+                                <th style="width: 100px;">Kind</th>
+                                <th>Device</th>
+                                <th style="width: 120px;">Last seen</th>
+                                <th style="width: 180px;">Location · IP</th>
+                                <th style="width: 140px;">Signals</th>
+                                <th style="width: 110px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="kind-pill kind-browser"><i class="bi bi-laptop"></i>Browser</span></td>
+                                <td>
+                                    <div class="device-line">
+                                        <div class="name">Chrome 122 · macOS Sonoma</div>
+                                        <div class="sub">duid · f8c2…7a91</div>
+                                    </div>
+                                </td>
+                                <td class="mono tabular">4h ago</td>
+                                <td>
+                                    <div class="device-line">
+                                        <div class="name">San Francisco, US</div>
+                                        <div class="sub">198.51.100.42</div>
+                                    </div>
+                                </td>
+                                <td><span class="threat-tags"><span class="tag">trusted</span></span></td>
+                                <td><div class="row-actions">
+                                    <button>View</button>
+                                    <button class="danger">Revoke</button>
+                                </div></td>
+                            </tr>
+                            <tr>
+                                <td><span class="kind-pill kind-browser"><i class="bi bi-laptop"></i>Browser</span></td>
+                                <td>
+                                    <div class="device-line">
+                                        <div class="name">Safari 17 · iPadOS 17</div>
+                                        <div class="sub">duid · 3a91…0d44</div>
+                                    </div>
+                                </td>
+                                <td class="mono tabular">2d ago</td>
+                                <td>
+                                    <div class="device-line">
+                                        <div class="name">San Francisco, US</div>
+                                        <div class="sub">198.51.100.42</div>
+                                    </div>
+                                </td>
+                                <td><span class="threat-tags"><span class="tag">trusted</span></span></td>
+                                <td><div class="row-actions">
+                                    <button>View</button>
+                                    <button class="danger">Revoke</button>
+                                </div></td>
+                            </tr>
+                            <tr>
+                                <td><span class="kind-pill kind-push"><i class="bi bi-bell"></i>Push</span></td>
+                                <td>
+                                    <div class="device-line">
+                                        <div class="name">iPhone 15 Pro · iOS 17</div>
+                                        <div class="sub">apns · expo / efb6…</div>
+                                    </div>
+                                </td>
+                                <td class="mono tabular">4h ago</td>
+                                <td>
+                                    <div class="device-line">
+                                        <div class="name">San Francisco, US</div>
+                                        <div class="sub">— mobile network —</div>
+                                    </div>
+                                </td>
+                                <td><span class="threat-tags"><span class="tag">trusted</span></span></td>
+                                <td><div class="row-actions">
+                                    <button>View</button>
+                                    <button class="danger">Revoke</button>
+                                </div></td>
+                            </tr>
+                            <tr>
+                                <td><span class="kind-pill kind-browser"><i class="bi bi-laptop"></i>Browser</span></td>
+                                <td>
+                                    <div class="device-line">
+                                        <div class="name">Firefox 121 · Ubuntu 22.04</div>
+                                        <div class="sub">duid · 7c4e…b201</div>
+                                    </div>
+                                </td>
+                                <td class="mono tabular">8d ago</td>
+                                <td>
+                                    <div class="device-line">
+                                        <div class="name">London, UK</div>
+                                        <div class="sub">203.0.113.18</div>
+                                    </div>
+                                </td>
+                                <td><span class="threat-tags">
+                                    <span class="tag warn">VPN</span>
+                                    <span class="tag warn">PROXY</span>
+                                </span></td>
+                                <td><div class="row-actions">
+                                    <button>View</button>
+                                    <button class="danger">Revoke</button>
+                                </div></td>
+                            </tr>
+                            <tr>
+                                <td><span class="kind-pill kind-browser"><i class="bi bi-laptop"></i>Browser</span></td>
+                                <td>
+                                    <div class="device-line">
+                                        <div class="name">Chrome 121 · Android 14</div>
+                                        <div class="sub">duid · 6f02…a4e9</div>
+                                    </div>
+                                </td>
+                                <td class="mono tabular">14d ago</td>
+                                <td>
+                                    <div class="device-line">
+                                        <div class="name">Mountain View, US</div>
+                                        <div class="sub">— mobile network —</div>
+                                    </div>
+                                </td>
+                                <td><span class="threat-tags"><span class="tag">trusted</span></span></td>
+                                <td><div class="row-actions">
+                                    <button>View</button>
+                                    <button class="danger">Revoke</button>
+                                </div></td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <p class="note">
+                        Browser sessions and push-notification devices share one table now —
+                        the <strong>kind</strong> column distinguishes them. Threat signals
+                        (VPN/Tor/Proxy) light up in the same Signals column rather than
+                        living in a separate sub-tab.
+                    </p>
+                </div>
+
+                <!-- ─── Audit section ─── -->
+                <div class="section" data-section-key="audit">
+                    <div class="section-eyebrow">Section · Audit · 142 entries (30d)</div>
+                    <h3 class="section-title">What this account did</h3>
+
+                    <div class="audit-toolbar">
+                        <div class="segment">
+                            <button class="is-active">All</button>
+                            <button>Incidents</button>
+                            <button>Activity</button>
+                            <button>Object changes</button>
+                        </div>
+                        <div class="segment">
+                            <button>1d</button>
+                            <button>7d</button>
+                            <button class="is-active">30d</button>
+                            <button>90d</button>
+                        </div>
+                    </div>
+
+                    <ul class="audit-list">
+                        <li class="audit-entry">
+                            <div class="audit-icon tone-blue"><i class="bi bi-key"></i></div>
+                            <div class="audit-source">login</div>
+                            <div class="audit-text">
+                                Signed in from <code class="mono">198.51.100.42</code>
+                                <span class="muted">· macOS · Chrome 122 · San Francisco</span>
+                            </div>
+                            <div class="audit-when">4h ago</div>
+                        </li>
+                        <li class="audit-entry">
+                            <div class="audit-icon tone-teal"><i class="bi bi-key"></i></div>
+                            <div class="audit-source">api</div>
+                            <div class="audit-text">
+                                Generated API key <code class="mono">ak_8f12…</code>
+                                <span class="muted">· scopes: read, write</span>
+                            </div>
+                            <div class="audit-when">2d ago</div>
+                        </li>
+                        <li class="audit-entry">
+                            <div class="audit-icon"><i class="bi bi-people"></i></div>
+                            <div class="audit-source">object</div>
+                            <div class="audit-text">
+                                Joined group <a href="#">Engineering · Backend</a>
+                                <span class="muted">· role: member · invited by Sam</span>
+                            </div>
+                            <div class="audit-when">3d ago</div>
+                        </li>
+                        <li class="audit-entry">
+                            <div class="audit-icon tone-rose"><i class="bi bi-shield-exclamation"></i></div>
+                            <div class="audit-source">incident</div>
+                            <div class="audit-text">
+                                Targeted by incident <a href="#">#48217</a>
+                                <span class="muted">· brute-force login attempts · P1</span>
+                            </div>
+                            <div class="audit-when">2h 14m ago</div>
+                        </li>
+                        <li class="audit-entry">
+                            <div class="audit-icon tone-amber"><i class="bi bi-laptop"></i></div>
+                            <div class="audit-source">login</div>
+                            <div class="audit-text">
+                                Login from new device · <span class="muted">iPhone 15 · Safari · approved</span>
+                            </div>
+                            <div class="audit-when">8d ago</div>
+                        </li>
+                        <li class="audit-entry">
+                            <div class="audit-icon"><i class="bi bi-pencil"></i></div>
+                            <div class="audit-source">object</div>
+                            <div class="audit-text">
+                                Updated profile · <span class="muted">phone_number, locale</span>
+                            </div>
+                            <div class="audit-when">14d ago</div>
+                        </li>
+                        <li class="audit-entry">
+                            <div class="audit-icon tone-teal"><i class="bi bi-shield"></i></div>
+                            <div class="audit-source">login</div>
+                            <div class="audit-text">
+                                Verified phone <code class="mono">+1 415 555 0114</code>
+                            </div>
+                            <div class="audit-when">14d ago</div>
+                        </li>
+                        <li class="audit-entry">
+                            <div class="audit-icon"><i class="bi bi-person"></i></div>
+                            <div class="audit-source">object</div>
+                            <div class="audit-text">
+                                Account created <span class="muted">· via Google SSO · invited to org by Alex</span>
+                            </div>
+                            <div class="audit-when">2024-08-12</div>
+                        </li>
+                    </ul>
+
+                    <p class="note">
+                        Three current sections (<strong>Events</strong> from incidents,
+                        <strong>Activity Log</strong> for sessions, and <strong>Object Logs</strong>
+                        for record changes) collapse into a single audit feed with a source
+                        filter. The icon + source label communicate where each entry came from.
+                    </p>
+                </div>
+
+                <!-- Fallback empty-state for sections not yet mocked -->
+                <div class="section" data-section-key="__placeholder__">
+                    <div class="section-empty">
+                        <div class="icon-large"><i class="bi bi-grid"></i></div>
+                        <h4 data-empty-name>Section preview pending</h4>
+                        <p>Mocked: Overview, Profile, Permissions, Devices, Audit. The
+                           remaining sections (Groups, API Keys, Locations, Notifications,
+                           Detail) follow the same patterns and live in the migration plan.</p>
+                        <a class="empty-link" href="detailview-migration.md">↗ View plan</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <p class="footer-note">
+        Mockup · IBM Plex Sans + IBM Plex Mono · Mission-control palette ·
+        Data is illustrative
+    </p>
+
+</div>
+
+<script>
+    // Switcher between mockups
+    document.querySelectorAll('.switcher button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = btn.dataset.target;
+            document.querySelectorAll('.switcher button').forEach(b => b.classList.toggle('is-active', b === btn));
+            document.querySelectorAll('.mockup').forEach(m => {
+                m.classList.toggle('is-active', m.dataset.mockup === target);
+            });
+        });
+    });
+
+    // Rail navigation within each mockup
+    document.querySelectorAll('.mockup').forEach(mockup => {
+        const rail = mockup.querySelector('.rail');
+        if (!rail) return;
+        rail.addEventListener('click', (e) => {
+            const link = e.target.closest('.rail-link');
+            if (!link || !link.dataset.section) return;
+            const key = link.dataset.section;
+
+            // Update active rail link
+            mockup.querySelectorAll('.rail-link').forEach(l => l.classList.toggle('is-active', l === link));
+
+            // Show matching section, fall back to placeholder
+            const sections = mockup.querySelectorAll('.section[data-section-key]');
+            let matched = false;
+            sections.forEach(s => {
+                if (s.dataset.sectionKey === key) {
+                    s.classList.add('is-active');
+                    matched = true;
+                } else {
+                    s.classList.remove('is-active');
+                }
+            });
+            if (!matched) {
+                const fallback = mockup.querySelector('.section[data-section-key="__placeholder__"]');
+                if (fallback) {
+                    fallback.classList.add('is-active');
+                    const labelText = (link.childNodes ? Array.from(link.childNodes)
+                        .filter(n => n.nodeType === Node.TEXT_NODE)
+                        .map(n => n.textContent.trim())
+                        .filter(Boolean)
+                        .join(' ') : key);
+                    const nameEl = fallback.querySelector('[data-empty-name]');
+                    if (nameEl) nameEl.textContent = labelText
+                        ? `${labelText} · preview pending`
+                        : 'Section preview pending';
+                }
+            }
+
+            // Scroll the body to top so the new section reads from the top
+            const body = mockup.querySelector('.dv-body');
+            if (body) body.scrollTo?.({ top: 0, behavior: 'instant' });
+        });
+    });
+</script>
+
+</body>
+</html>
