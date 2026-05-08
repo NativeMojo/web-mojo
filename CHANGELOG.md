@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Mustache — fix: dot-prefixed multi-segment paths inside iteration
+
+- **Fixed:** `{{.foo.bar}}` (dot-prefix with two or more dotted segments) inside `{{#items}} ... {{/items}}` now resolves to the current iteration item's nested property. Previously the dot-prefix lookup branch did a single-key access on the joined name (`view['foo.bar']`), which always returned `undefined` for plain-object iteration items, so templates like `{{#merchants}}{{.group.name}}{{/merchants}}` rendered empty cells. The single-segment form `{{.rank}}` and the bare form `{{group.name}}` were already correct; only the dot-prefixed multi-segment form was broken. The fix delegates nested walks in the dot-prefix branch to the existing `MOJOUtils.getNestedValue` helper while keeping the walk scoped strictly to the current view (no parent-chain climb), so the leading-dot semantic is preserved.
+
 ### MetricsMiniChartWidget — fix: `{{now_value}}` showed yesterday's value when `trendOffset > 0`
 
 - **Fixed:** `{{now_value}}` in the subtitle template now always reads from the latest bucket, independent of `trendOffset`. Previously it was shifted back by `trendOffset` buckets — so a widget with `trendOffset: 1` and a subtitle like `'{{now_value}} Today'` rendered yesterday's value next to the static "Today" label. The chart's tooltip on the rightmost bar showed the correct (today's) value, exposing the mismatch.

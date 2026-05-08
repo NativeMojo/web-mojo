@@ -165,11 +165,19 @@ class Context {
           }
         }
 
-        // Direct property access if get didn't work
-        if (value === undefined && actualName in this.view) {
-          value = this.view[actualName];
-          if (isFunction(value)) {
-            value = value.call(this.view);
+        // Direct property access if get didn't work — supports nested dot
+        // paths (e.g. ".group.name") by walking against the current view
+        // only. The leading-dot semantic ("do not climb the parent context
+        // chain") is preserved because the walk is scoped to this.view; the
+        // parent walk only happens in the non-prefix branch below.
+        if (value === undefined) {
+          if (actualName.indexOf('.') > 0) {
+            value = MOJOUtils.getNestedValue(this.view, actualName);
+          } else if (actualName in this.view) {
+            value = this.view[actualName];
+            if (isFunction(value)) {
+              value = value.call(this.view);
+            }
           }
         }
 
