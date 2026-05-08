@@ -78,5 +78,31 @@ module.exports = async function(testContext) {
             const tpl = '{{#rows}}[{{.user.profile.name}}]{{/rows}}';
             expect(Mustache.render(tpl, nested)).toBe('[Alice][Bob]');
         });
+
+        // Adversarial: the multi-segment dot-prefix walk must not let templates
+        // read prototype-chain properties on iteration items. `getNestedValue`'s
+        // first-key `hasOwnProperty` guard blocks `__proto__` and `constructor`
+        // at depth 0; intermediate-step access does not return the bare
+        // prototype object either. These tests lock in the safe behavior so a
+        // future refactor of the lookup path can't silently regress it.
+        it('does not expose __proto__ via dot-prefix multi-segment lookup', () => {
+            const tpl = '{{#merchants}}|{{.__proto__.polluted}}|{{/merchants}}';
+            expect(Mustache.render(tpl, viewLike(data))).toBe('||||');
+        });
+
+        it('does not expose constructor.name via dot-prefix lookup', () => {
+            const tpl = '{{#merchants}}|{{.constructor.name}}|{{/merchants}}';
+            expect(Mustache.render(tpl, viewLike(data))).toBe('||||');
+        });
+
+        it('does not expose nested.constructor.prototype via dot-prefix lookup', () => {
+            const tpl = '{{#merchants}}|{{.group.constructor.prototype}}|{{/merchants}}';
+            expect(Mustache.render(tpl, viewLike(data))).toBe('||||');
+        });
+
+        it('does not expose nested.__proto__ via dot-prefix lookup', () => {
+            const tpl = '{{#merchants}}|{{.group.__proto__.x}}|{{/merchants}}';
+            expect(Mustache.render(tpl, viewLike(data))).toBe('||||');
+        });
     });
 };
