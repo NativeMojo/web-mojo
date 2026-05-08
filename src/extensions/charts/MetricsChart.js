@@ -862,9 +862,16 @@ class MetricsChart extends View {
             dateRange: { start: this.dateStart, end: this.dateEnd },
             childKind: this.childKind,
             breakdown: this.breakdown,
-            // Defensive copy — mutating the returned map must not leak
-            // back into the chart's internal state.
-            apiParams: { ...this.apiParams }
+            // Defensive copy — mutating the returned map (or any array
+            // value within it) must not leak back into the chart's
+            // internal state. Arrays are the only non-primitive shape
+            // that buildQueryString accepts, so a one-level array clone
+            // covers the realistic surface.
+            apiParams: Object.fromEntries(
+                Object.entries(this.apiParams).map(
+                    ([k, v]) => [k, Array.isArray(v) ? [...v] : v]
+                )
+            )
         };
     }
 }

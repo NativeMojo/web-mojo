@@ -310,6 +310,17 @@ module.exports = async function (testContext) {
             stats.apiParams.region = 'mutated';
             expect(m.apiParams.region).toBe('us-east');
         });
+
+        // Regression: shallow `{...this.apiParams}` would share array
+        // references. buildQueryString accepts array values, so callers
+        // can pass them — and mutating them via getStats must not leak.
+        it('getStats clones array values inside apiParams', () => {
+            const m = new MetricsChart({ apiParams: { tags: ['a', 'b'] } });
+            const stats = m.getStats();
+            expect(stats.apiParams.tags).toEqual(['a', 'b']);
+            stats.apiParams.tags.push('c');
+            expect(m.apiParams.tags).toEqual(['a', 'b']);
+        });
     });
 
     describe('MetricsChart — granularity → xLabelFormat default', () => {
