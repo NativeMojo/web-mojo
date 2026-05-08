@@ -5,6 +5,16 @@
 
 import dataFormatter from './DataFormatter.js';
 
+// Keys that must never be reachable via dot-notation lookups — blocks
+// prototype-chain traversal at every depth as defense in depth.
+const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+// hasOwnProperty bound to Object.prototype so a payload with a shadowed
+// `hasOwnProperty` field (e.g. JSON-from-API with `hasOwnProperty: 1`)
+// doesn't break the walker.
+const hasOwn = (obj, key) =>
+  obj != null && Object.prototype.hasOwnProperty.call(obj, key);
+
 class MOJOUtils {
   /**
    * Get data from context with support for:
@@ -69,14 +79,23 @@ class MOJOUtils {
       return undefined;
     }
 
+    // Block prototype-chain keys at every depth (defense in depth). Rejects
+    // adversarial paths like `__proto__`, `user.constructor.prototype`, etc.
+    if (path.split('.').some(seg => FORBIDDEN_KEYS.has(seg))) {
+      return undefined;
+    }
+
     // If no dots, simple property lookup
     if (!path.includes('.')) {
-      // Direct property access - never call get() on top level
-      // Check if property exists (including prototype chain for methods)
+      // Direct property access — never call get() on top level. Walk the
+      // prototype chain so view methods defined on a class (e.g. getStatus)
+      // remain reachable, but skip Object.prototype builtins (toString,
+      // valueOf, hasOwnProperty, etc.) so they don't auto-invoke and leak
+      // incidental data through templates.
       if (path in context) {
         const value = context[path];
-        // Check if it's a method (like getStatus, getButtonClass)
         if (typeof value === 'function') {
+          if (value === Object.prototype[path]) return undefined;
           return value.call(context);
         }
         return value;
@@ -99,7 +118,7 @@ class MOJOUtils {
       // For the first key, never use get() (it's the top-level context)
       if (i === 0) {
         // Direct property access
-        if (current.hasOwnProperty(key)) {
+        if (hasOwn(current, key)) {
           const value = current[key];
           // Check if it's a method and call it
           if (typeof value === 'function') {
@@ -118,14 +137,15 @@ class MOJOUtils {
           return current.getContextValue(remainingPath);
         }
 
-        // Standard property access
+        // Standard property access. Note: depth-≥1 inherited-method
+        // auto-invocation (e.g. `{{a.b.toString}}`) was intentionally
+        // dropped — no documented use case, and it auto-invoked
+        // `Object.prototype` builtins.
         if (Array.isArray(current) && !isNaN(key)) {
           // Array index access
           current = current[parseInt(key)];
-        } else if (current.hasOwnProperty(key)) {
+        } else if (hasOwn(current, key)) {
           current = current[key];
-        } else if (typeof current[key] === 'function') {
-          current = current[key].call(current);
         } else {
           return undefined;
         }
@@ -611,8 +631,11 @@ class DataWrapper {
     // Get value - supports both direct properties and dot-notation paths
     let value;
     
-    // First check if it's a direct property on the wrapper (already wrapped)
-    if (field in this && field !== '_data' && field !== '_rootContext') {
+    // First check if it's a direct property on the wrapper (already wrapped).
+    // Block prototype-chain keys here too so the shortcut doesn't bypass
+    // the protections in getNestedValue.
+    if (field in this && !FORBIDDEN_KEYS.has(field)
+        && field !== '_data' && field !== '_rootContext') {
       value = this[field];
     } else {
       // Try to get nested value using dot-notation path

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### MOJOUtils — security: harden dot-path lookup against prototype-chain keys
+
+- **Hardened:** `MOJOUtils.getNestedValue` and `DataWrapper.getContextValue` now return `undefined` for any path segment matching `__proto__`, `constructor`, or `prototype` (at every depth). The no-dot fast path no longer auto-invokes `Object.prototype` builtins (`toString`, `valueOf`, `hasOwnProperty`, `propertyIsEnumerable`, `isPrototypeOf`, `toLocaleString`) — calls are skipped when the function is reference-equal to the inherited builtin. The depth-≥1 inherited-method invocation branch was removed; nested inherited functions (e.g. `{{a.b.toString}}`) now resolve to `undefined` instead of auto-calling.
+- **Robustness:** the walker uses `Object.prototype.hasOwnProperty.call(...)` so payloads with a shadowed `hasOwnProperty` field (e.g. `{ hasOwnProperty: 1, name: 'A' }` from an API) no longer break.
+- **Custom methods unaffected:** view methods like `getStatus()` defined on a class subclass — own functions on a context literal — and user-overridden `toString` (different function reference than the builtin) all continue to auto-invoke at the top level. Existing `MOJOUtils.test.js` and `View-get.test.js` cases pass unchanged.
+- **Note (residual):** Mustache's non-prefix-branch fallback at `src/core/utils/mustache.js:285` still does direct `context.view[name]` access when `getContextValue` returns `undefined`, so top-level template literals like `{{__proto__}}` or `{{toString}}` against a wrapped data object are not yet fully blocked end-to-end. Tracked as a follow-up against `mustache.js`.
+
 ### Mustache — fix: dot-prefixed multi-segment paths inside iteration
 
 - **Fixed:** `{{.foo.bar}}` (dot-prefix with two or more dotted segments) inside `{{#items}} ... {{/items}}` now resolves to the current iteration item's nested property. Previously the dot-prefix lookup branch did a single-key access on the joined name (`view['foo.bar']`), which always returned `undefined` for plain-object iteration items, so templates like `{{#merchants}}{{.group.name}}{{/merchants}}` rendered empty cells. The single-segment form `{{.rank}}` and the bare form `{{group.name}}` were already correct; only the dot-prefixed multi-segment form was broken. The fix delegates nested walks in the dot-prefix branch to the existing `MOJOUtils.getNestedValue` helper while keeping the walk scoped strictly to the current view (no parent-chain climb), so the leading-dot semantic is preserved.
