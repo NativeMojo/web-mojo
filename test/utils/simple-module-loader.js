@@ -267,6 +267,14 @@ class SimpleModuleLoader {
                 // even though imports like ListView resolve to undefined.
                 path: path.join(this.sourceRoot, 'core/views/table/TableView.js'),
                 dependencies: ['View']
+            },
+            'SegmentControl': {
+                path: path.join(this.sourceRoot, 'core/views/navigation/SegmentControl.js'),
+                dependencies: ['View']
+            },
+            'MetricCard': {
+                path: path.join(this.sourceRoot, 'core/views/data/MetricCard.js'),
+                dependencies: ['View']
             }
         };
 

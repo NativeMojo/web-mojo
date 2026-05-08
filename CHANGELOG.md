@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### RuleSetView — full redesign + supporting framework primitives
+
+- **Redesigned:** `src/extensions/admin/incidents/RuleSetView.js` replaces the 2-tab `TabView` (Configuration / Rules) with a header card + `SideNavView`. Sections in operator-priority order: **Overview** (4 KPI cards + summary panels), **Conditions** (rule conditions table), **Triggering** (Match → Bundle → Threshold → Re-trigger as a 4-step visual flow with friendly empty-state copy in place of `—`), **Handler** (parsed handler chain rendered as icon cards with tone accents), **Agent Prompt** (new, see below), **Incidents** (`IncidentList` filtered by `rule_set` with a 7d/30d/90d range picker), **Metadata** (known fields + raw JSON, hidden when empty).
+- **Added — `metadata.agent_prompt`:** new editable LLM agent prompt persisted on the RuleSet's metadata. The Agent Prompt section in `RuleSetView` shows a contextual hint based on whether `llm://` is in the handler chain. Saved via partial dotted-path `model.save({ 'metadata.agent_prompt': value })` (backend auto-merges JSONFields).
+- **Form updates** in `src/extensions/admin/models/Incident.js`: `RuleSetForms.create` and `RuleSetForms.edit` gain an "Agent" tab with a `metadata.agent_prompt` textarea. The Thresholds tab is restructured from a cramped 3-across `columns: 4` row into a numbered step layout — each threshold field is full-width with its own inline label.
+- **Header card** surfaces `metadata.reasoning` as the subtitle, an `assistant_proposed` indicator, an inline Active toggle (saves immediately, reverts on error), and a context menu including new actions `edit-agent-prompt` and `view-incidents`.
+
+### SideNavView — badge support + dark-theme migration
+
+- **Added:** Section configs accept an optional `badge` field — `number`, `string`, or `{ text, variant }`. Variants: `'muted'` (default), `'primary'`, `'success'`, `'warning'`, `'danger'`. The active section's `muted` badge automatically inverts to white-on-primary so it stays readable. Falsy values render no badge.
+- **Added:** new instance method `sideNav.setBadge(key, value)` updates a section's badge dynamically without re-rendering the whole nav. Critical for live counts (Incidents, Conditions) populated after the section fetches.
+- **Fixed (long-standing):** the inline `<style>` block was hardcoded light-theme hex literals (`#f8f9fc`, `#0d6efd`, etc.) with zero `[data-bs-theme="dark"]` overrides — the doc had claimed dark support that didn't exist. Migrated to Bootstrap tokens (`var(--bs-tertiary-bg)`, `var(--bs-body-color)`, `var(--bs-secondary-bg)`, `var(--bs-border-color)`, `var(--bs-primary)`) and added the missing dark-mode rules clustered at the bottom of the style block per `.claude/rules/theming.md`. Existing callers see no behavior change in light mode; dark-mode rendering now matches the documented behavior.
+
+### SegmentControl — new component
+
+- **Added:** `src/core/views/navigation/SegmentControl.js` — a small horizontal pill-button group bound to a single value. Constructor accepts `options: [{ value, label, icon? }, …]`, `value`, `size: 'sm'|'md'`, `ariaLabel`. Emits `change` with `{ value, previous }` on selection. Public API: `getValue()`, `setValue(value, { silent })`. Themed via Bootstrap `btn-primary` + `btn-outline-secondary` so dark-mode is automatic. Smoke tests in `test/unit/SegmentControl.test.js`.
+
+### MetricCard — new component
+
+- **Added:** `src/core/views/data/MetricCard.js` — at-a-glance KPI card (label / big value / optional icon / optional hint / optional tone left-border accent). Constructor accepts `label`, `value`, `icon`, `tone: 'default'|'success'|'warning'|'danger'|'info'|'primary'`, `hint`, `action`. When `action` is set the root renders as a `<button data-action="…">` so clicks flow through the standard MOJO action pipeline. Public API: `setValue(value)`, `setHint(hint)`. Themed via `var(--bs-tertiary-bg)`, `var(--bs-border-color)`, and `var(--bs-{tone})` so dark-mode is automatic. Smoke tests in `test/unit/MetricCard.test.js`.
+
 ### MOJOUtils — security: harden dot-path lookup against prototype-chain keys
 
 - **Hardened:** `MOJOUtils.getNestedValue` and `DataWrapper.getContextValue` now return `undefined` for any path segment matching `__proto__`, `constructor`, or `prototype` (at every depth). The no-dot fast path no longer auto-invokes `Object.prototype` builtins (`toString`, `valueOf`, `hasOwnProperty`, `propertyIsEnumerable`, `isPrototypeOf`, `toLocaleString`) — calls are skipped when the function is reference-equal to the inherited builtin. The depth-≥1 inherited-method invocation branch was removed; nested inherited functions (e.g. `{{a.b.toString}}`) now resolve to `undefined` instead of auto-calling.

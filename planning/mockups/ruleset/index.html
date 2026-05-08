@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RuleSet Detail — mock</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <link rel="stylesheet" href="mock.css">
+</head>
+<body>
+
+  <div class="rs-chrome">
+
+    <header class="rs-topbar">
+      <div class="rs-topbar-left">
+        <span class="rs-crumb">Admin · Incidents · <strong>RuleSet #74</strong></span>
+      </div>
+      <div class="rs-topbar-right">
+        <button class="rs-icon-btn" id="theme-toggle" type="button" title="Toggle theme">
+          <i class="bi bi-moon-stars"></i>
+        </button>
+        <button class="rs-icon-btn" type="button" title="Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </header>
+
+    <main class="rs-stage">
+      <div class="rs-shell">
+
+        <!-- ════════════════════════════════════════════════════════
+             HEADER CARD
+        ════════════════════════════════════════════════════════ -->
+        <header class="rs-header">
+          <div class="rs-header-id">
+            <div class="rs-header-icon">
+              <i class="bi bi-gear-wide-connected"></i>
+            </div>
+            <div class="rs-header-meta">
+              <h1 class="rs-header-name">User Permission Denied — Bundle by IP</h1>
+              <p class="rs-header-reasoning">
+                Bundle permission denied events by source IP over 24 hours. If volume exceeds 6, raise a ticket for investigation — could indicate privilege escalation, misconfigured app, or a user hitting walls they shouldn't be.
+              </p>
+              <div class="rs-header-chips">
+                <span class="rs-chip rs-chip-primary"><i class="bi bi-tag-fill"></i> user_permission_denied</span>
+                <span class="rs-chip"><i class="bi bi-flag"></i> Priority 0</span>
+                <span class="rs-chip rs-chip-faint"><i class="bi bi-hash"></i> ID 74</span>
+                <span class="rs-chip rs-chip-warning"><i class="bi bi-stars"></i> AI-proposed</span>
+                <span class="rs-chip rs-chip-faint"><i class="bi bi-clock-history"></i> Modified 2 hours ago</span>
+              </div>
+            </div>
+          </div>
+          <div class="rs-header-actions">
+            <label class="rs-switch">
+              <input type="checkbox" checked>
+              <span class="rs-switch-track"></span>
+              <span class="rs-switch-label">Active</span>
+            </label>
+            <button class="rs-btn"><i class="bi bi-pencil"></i> Edit</button>
+            <button class="rs-icon-btn" title="More actions"><i class="bi bi-three-dots-vertical"></i></button>
+          </div>
+        </header>
+
+        <!-- ════════════════════════════════════════════════════════
+             BODY: rail + content
+        ════════════════════════════════════════════════════════ -->
+        <div class="rs-body">
+
+          <nav class="rs-rail" id="rail">
+            <button class="rs-rail-link is-active" data-section="overview">
+              <i class="bi bi-grid-1x2"></i> Overview
+            </button>
+            <button class="rs-rail-link" data-section="conditions">
+              <i class="bi bi-funnel"></i> Conditions <span class="rs-pill">3</span>
+            </button>
+            <button class="rs-rail-link" data-section="triggering">
+              <i class="bi bi-stopwatch"></i> Triggering
+            </button>
+            <button class="rs-rail-link" data-section="handler">
+              <i class="bi bi-tools"></i> Handler
+            </button>
+            <button class="rs-rail-link" data-section="agent">
+              <i class="bi bi-stars"></i> Agent Prompt
+            </button>
+
+            <div class="rs-rail-divider">Activity</div>
+            <button class="rs-rail-link" data-section="incidents">
+              <i class="bi bi-shield-exclamation"></i> Incidents <span class="rs-pill">42</span>
+            </button>
+
+            <div class="rs-rail-divider">Detail</div>
+            <button class="rs-rail-link" data-section="metadata">
+              <i class="bi bi-braces"></i> Metadata
+            </button>
+          </nav>
+
+          <div class="rs-content">
+
+            <!-- ──────────────────────────────────────────
+                 OVERVIEW
+            ────────────────────────────────────────── -->
+            <section class="rs-section is-active" data-section="overview">
+              <div class="rs-section-head">
+                <div>
+                  <div class="rs-eyebrow">At a glance</div>
+                  <h2>Overview</h2>
+                </div>
+              </div>
+
+              <div class="rs-grid-4" style="margin-bottom: 1rem;">
+                <div class="rs-card-sunken">
+                  <div class="rs-kv-label">Status</div>
+                  <div class="rs-kv-value"><span class="rs-status rs-status-resolved"><i class="bi bi-check-circle-fill"></i> Active</span></div>
+                </div>
+                <div class="rs-card-sunken">
+                  <div class="rs-kv-label">Incidents (30d)</div>
+                  <div class="rs-kv-value rs-kv-value-mono">42</div>
+                </div>
+                <div class="rs-card-sunken">
+                  <div class="rs-kv-label">Last fired</div>
+                  <div class="rs-kv-value">14 minutes ago</div>
+                </div>
+                <div class="rs-card-sunken">
+                  <div class="rs-kv-label">Match logic</div>
+                  <div class="rs-kv-value">ALL conditions must match</div>
+                </div>
+              </div>
+
+              <div class="rs-grid-2">
+                <div class="rs-card">
+                  <h3 style="margin-top:0; font-size:0.95rem;"><i class="bi bi-funnel me-1"></i> What triggers this rule</h3>
+                  <ul style="margin:0; padding-left:1rem; color: var(--rs-text-muted); font-size:0.88rem;">
+                    <li>Event category is <code>user_permission_denied</code></li>
+                    <li>Bundles every event from the same source IP for 24 hours</li>
+                    <li>Fires after <strong>6</strong> events accumulate</li>
+                    <li>Fires once per bundle (no re-trigger)</li>
+                  </ul>
+                </div>
+                <div class="rs-card">
+                  <h3 style="margin-top:0; font-size:0.95rem;"><i class="bi bi-tools me-1"></i> What happens when it fires</h3>
+                  <ul style="margin:0; padding-left:1rem; color: var(--rs-text-muted); font-size:0.88rem;">
+                    <li>Sends an in-app + push notification to anyone with <code>manage_security</code></li>
+                    <li>No LLM triage configured — <a href="#" style="color:var(--rs-primary)">add one</a></li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            <!-- ──────────────────────────────────────────
+                 CONDITIONS
+            ────────────────────────────────────────── -->
+            <section class="rs-section" data-section="conditions">
+              <div class="rs-section-head">
+                <div>
+                  <div class="rs-eyebrow">3 conditions · ALL must match</div>
+                  <h2>Conditions</h2>
+                </div>
+                <button class="rs-btn rs-btn-primary"><i class="bi bi-plus-lg"></i> Add condition</button>
+              </div>
+
+              <table class="rs-table">
+                <thead>
+                  <tr>
+                    <th style="width:60px">ID</th>
+                    <th>Name</th>
+                    <th>Field</th>
+                    <th style="width:130px">Comparator</th>
+                    <th>Value</th>
+                    <th style="width:80px">Type</th>
+                    <th style="width:80px"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="rs-faint rs-mono">412</td>
+                    <td>Match category</td>
+                    <td><code>category</code></td>
+                    <td>Equal (==)</td>
+                    <td><code>user_permission_denied</code></td>
+                    <td><span class="rs-chip rs-chip-faint">str</span></td>
+                    <td><button class="rs-btn-ghost rs-btn rs-btn-sm"><i class="bi bi-three-dots"></i></button></td>
+                  </tr>
+                  <tr>
+                    <td class="rs-faint rs-mono">413</td>
+                    <td>Has source IP</td>
+                    <td><code>source_ip</code></td>
+                    <td>Regex</td>
+                    <td><code>^.+$</code></td>
+                    <td><span class="rs-chip rs-chip-faint">str</span></td>
+                    <td><button class="rs-btn-ghost rs-btn rs-btn-sm"><i class="bi bi-three-dots"></i></button></td>
+                  </tr>
+                  <tr>
+                    <td class="rs-faint rs-mono">414</td>
+                    <td>Severity floor</td>
+                    <td><code>severity</code></td>
+                    <td>≥</td>
+                    <td><code>3</code></td>
+                    <td><span class="rs-chip rs-chip-faint">int</span></td>
+                    <td><button class="rs-btn-ghost rs-btn rs-btn-sm"><i class="bi bi-three-dots"></i></button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+
+            <!-- ──────────────────────────────────────────
+                 TRIGGERING — visual flow
+            ────────────────────────────────────────── -->
+            <section class="rs-section" data-section="triggering">
+              <div class="rs-section-head">
+                <div>
+                  <div class="rs-eyebrow">Match → Bundle → Threshold → Re-trigger</div>
+                  <h2>Triggering</h2>
+                </div>
+                <button class="rs-btn"><i class="bi bi-pencil"></i> Edit all</button>
+              </div>
+
+              <div class="rs-flow" style="margin-bottom:1rem;">
+                <div class="rs-flow-step">
+                  <div class="rs-flow-step-num">STEP 1</div>
+                  <div class="rs-flow-step-title">Match <button class="rs-btn rs-btn-ghost"><i class="bi bi-pencil"></i></button></div>
+                  <div class="rs-flow-step-value">ALL conditions</div>
+                  <div class="rs-flow-step-hint">Every condition listed under "Conditions" must match the event.</div>
+                </div>
+                <div class="rs-flow-step">
+                  <div class="rs-flow-step-num">STEP 2</div>
+                  <div class="rs-flow-step-title">Bundle <button class="rs-btn rs-btn-ghost"><i class="bi bi-pencil"></i></button></div>
+                  <div class="rs-flow-step-value">By source IP</div>
+                  <div class="rs-flow-step-hint">Group events from the same source over <strong>24 hours</strong> into one incident. Bundle scoped to this rule.</div>
+                </div>
+                <div class="rs-flow-step">
+                  <div class="rs-flow-step-num">STEP 3</div>
+                  <div class="rs-flow-step-title">Threshold <button class="rs-btn rs-btn-ghost"><i class="bi bi-pencil"></i></button></div>
+                  <div class="rs-flow-step-value">After 6 events</div>
+                  <div class="rs-flow-step-hint">All events counted (no time window). Until the 6th event, incident stays in <code>pending</code>.</div>
+                </div>
+                <div class="rs-flow-step">
+                  <div class="rs-flow-step-num">STEP 4</div>
+                  <div class="rs-flow-step-title">Re-trigger <button class="rs-btn rs-btn-ghost"><i class="bi bi-pencil"></i></button></div>
+                  <div class="rs-flow-step-empty">Fire once only</div>
+                  <div class="rs-flow-step-hint">Handler chain runs the first time the threshold is crossed; subsequent events are appended silently.</div>
+                </div>
+              </div>
+
+              <div class="rs-card-sunken" style="font-size:0.85rem; color: var(--rs-text-muted);">
+                <i class="bi bi-info-circle" style="color: var(--rs-primary);"></i>
+                Events accumulate in <code>pending</code> status. Once the trigger count is crossed, the handler chain (see <a href="#" data-go="handler" style="color:var(--rs-primary)">Handler</a>) fires and the incident becomes <code>new</code>. Leave Threshold empty to fire on the very first event.
+              </div>
+            </section>
+
+            <!-- ──────────────────────────────────────────
+                 HANDLER CHAIN
+            ────────────────────────────────────────── -->
+            <section class="rs-section" data-section="handler">
+              <div class="rs-section-head">
+                <div>
+                  <div class="rs-eyebrow">1 handler in chain</div>
+                  <h2>Handler</h2>
+                </div>
+                <button class="rs-btn rs-btn-primary"><i class="bi bi-tools"></i> Edit chain</button>
+              </div>
+
+              <div class="rs-chain">
+                <div class="rs-chain-step">
+                  <div class="rs-chain-icon rs-chain-icon-info"><i class="bi bi-bell"></i></div>
+                  <div>
+                    <div class="rs-chain-label">Push notification</div>
+                    <div class="rs-chain-detail">to users with <code>manage_security</code></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rs-chain-raw">notify://?perm=manage_security</div>
+
+              <div class="rs-card-sunken" style="margin-top:1rem; font-size:0.85rem; color: var(--rs-text-muted);">
+                <strong style="color: var(--rs-text);">Tip:</strong>
+                Chain handlers with commas — e.g. <code>block://?ttl=86400, ticket://?priority=8, llm://</code>.
+                Add an <code>llm://</code> step to use the prompt configured in <a href="#" data-go="agent" style="color:var(--rs-primary)">Agent Prompt</a>.
+              </div>
+            </section>
+
+            <!-- ──────────────────────────────────────────
+                 AGENT PROMPT — the headline new feature
+            ────────────────────────────────────────── -->
+            <section class="rs-section" data-section="agent">
+              <div class="rs-section-head">
+                <div>
+                  <div class="rs-eyebrow">metadata.agent_prompt</div>
+                  <h2>Agent Prompt</h2>
+                </div>
+                <button class="rs-btn rs-btn-primary"><i class="bi bi-save"></i> Save prompt</button>
+              </div>
+
+              <div class="rs-agent-banner is-warning">
+                <i class="bi bi-exclamation-triangle"></i>
+                Add <code>llm://</code> to your <a href="#" data-go="handler" style="color:inherit; text-decoration:underline;">handler chain</a> to use this prompt — it's saved either way.
+              </div>
+
+              <textarea class="rs-prompt" spellcheck="false">You are a security analyst triaging a permission-denied incident.
+
+Context to consider:
+- The user attempted an action they don't have permission for.
+- Events have been bundled by source IP over the last 24h.
+- A volume of 6+ such events from the same source crossed the threshold.
+
+Decide:
+1. Is this likely a misconfigured app or stale role assignment? (low risk)
+2. A user repeatedly probing endpoints? (medium risk)
+3. Credential abuse / privilege escalation attempt? (high risk)
+
+Output:
+- A 2-sentence summary aimed at an on-call engineer.
+- A risk score from 1–10.
+- A recommended action: dismiss, ticket, or block IP.
+</textarea>
+
+              <div class="rs-prompt-actions">
+                <span><i class="bi bi-info-circle"></i> The LLM handler receives this prompt plus a structured incident summary on every fire.</span>
+                <span class="rs-mono">412 chars</span>
+              </div>
+            </section>
+
+            <!-- ──────────────────────────────────────────
+                 INCIDENTS
+            ────────────────────────────────────────── -->
+            <section class="rs-section" data-section="incidents">
+              <div class="rs-section-head">
+                <div>
+                  <div class="rs-eyebrow">42 incidents in last 30 days</div>
+                  <h2>Incidents fired by this rule</h2>
+                </div>
+                <div style="display:flex; gap:0.4rem;">
+                  <button class="rs-btn rs-btn-sm">7d</button>
+                  <button class="rs-btn rs-btn-sm rs-btn-primary">30d</button>
+                  <button class="rs-btn rs-btn-sm">90d</button>
+                </div>
+              </div>
+
+              <table class="rs-table">
+                <thead>
+                  <tr>
+                    <th style="width:60px">ID</th>
+                    <th style="width:160px">Created</th>
+                    <th style="width:110px">Status</th>
+                    <th style="width:80px">Priority</th>
+                    <th>Title</th>
+                    <th style="width:80px; text-align:right">Events</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="rs-faint rs-mono">8842</td>
+                    <td><div>2026-05-08 14:23</div><div class="rs-faint" style="font-size:0.75rem">14 min ago</div></td>
+                    <td><span class="rs-status rs-status-new">New</span></td>
+                    <td><span class="rs-prio rs-prio-med">5</span></td>
+                    <td>Permission denied burst from 198.51.100.42 — 9 events</td>
+                    <td class="rs-mono" style="text-align:right">9</td>
+                  </tr>
+                  <tr>
+                    <td class="rs-faint rs-mono">8801</td>
+                    <td><div>2026-05-08 09:11</div><div class="rs-faint" style="font-size:0.75rem">5h ago</div></td>
+                    <td><span class="rs-status rs-status-open">Open</span></td>
+                    <td><span class="rs-prio rs-prio-high">8</span></td>
+                    <td>Permission denied burst from 203.0.113.7 — 14 events</td>
+                    <td class="rs-mono" style="text-align:right">14</td>
+                  </tr>
+                  <tr>
+                    <td class="rs-faint rs-mono">8744</td>
+                    <td><div>2026-05-07 22:44</div><div class="rs-faint" style="font-size:0.75rem">1d ago</div></td>
+                    <td><span class="rs-status rs-status-resolved">Resolved</span></td>
+                    <td><span class="rs-prio rs-prio-low">3</span></td>
+                    <td>Permission denied burst from 192.0.2.18 — 6 events</td>
+                    <td class="rs-mono" style="text-align:right">6</td>
+                  </tr>
+                  <tr>
+                    <td class="rs-faint rs-mono">8702</td>
+                    <td><div>2026-05-07 11:02</div><div class="rs-faint" style="font-size:0.75rem">1d ago</div></td>
+                    <td><span class="rs-status rs-status-resolved">Resolved</span></td>
+                    <td><span class="rs-prio rs-prio-med">5</span></td>
+                    <td>Permission denied burst from 198.51.100.42 — 8 events</td>
+                    <td class="rs-mono" style="text-align:right">8</td>
+                  </tr>
+                  <tr>
+                    <td class="rs-faint rs-mono">8651</td>
+                    <td><div>2026-05-06 18:30</div><div class="rs-faint" style="font-size:0.75rem">2d ago</div></td>
+                    <td><span class="rs-status rs-status-pending">Pending</span></td>
+                    <td><span class="rs-prio rs-prio-low">3</span></td>
+                    <td>Permission denied accumulating from 203.0.113.55 — 4 events</td>
+                    <td class="rs-mono" style="text-align:right">4</td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+
+            <!-- ──────────────────────────────────────────
+                 METADATA — known + raw
+            ────────────────────────────────────────── -->
+            <section class="rs-section" data-section="metadata">
+              <div class="rs-section-head">
+                <div>
+                  <div class="rs-eyebrow">Every key on ruleset.metadata</div>
+                  <h2>Metadata</h2>
+                </div>
+              </div>
+
+              <h3 style="font-size:0.85rem; color: var(--rs-text-muted); text-transform:uppercase; letter-spacing:0.06em; margin: 0 0 0.5rem;">Known fields</h3>
+              <div class="rs-meta-known">
+                <div>
+                  <div class="rs-kv-label">Reasoning</div>
+                  <div class="rs-kv-value">Bundle permission denied events by source IP over 24 hours. If volume exceeds 6, raise a ticket for investigation — could indicate privilege escalation, misconfigured app, or a user hitting walls they shouldn't be.</div>
+                </div>
+                <div>
+                  <div class="rs-kv-label">Assistant Proposed</div>
+                  <div class="rs-kv-value"><i class="bi bi-check-circle-fill" style="color: var(--rs-success);"></i> Yes</div>
+                </div>
+                <div>
+                  <div class="rs-kv-label">Delete on Resolution</div>
+                  <div class="rs-kv-value"><i class="bi bi-x-circle" style="color: var(--rs-text-faint);"></i> No</div>
+                </div>
+                <div>
+                  <div class="rs-kv-label">Agent Prompt</div>
+                  <div class="rs-kv-value"><span class="rs-chip rs-chip-success"><i class="bi bi-check2"></i> Configured · 412 chars</span></div>
+                </div>
+              </div>
+
+              <h3 style="font-size:0.85rem; color: var(--rs-text-muted); text-transform:uppercase; letter-spacing:0.06em; margin: 1rem 0 0.5rem;">Raw JSON</h3>
+              <pre class="rs-json" id="raw-json"></pre>
+            </section>
+
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="mock.js"></script>
+</body>
+</html>

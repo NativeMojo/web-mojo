@@ -556,28 +556,40 @@ const RuleSetForms = {
                                 </div>`
                             },
                             {
+                                type: 'html', columns: 12,
+                                html: `<div class="text-muted small fw-semibold mb-1"><span class="badge bg-secondary me-1">1</span> Count — events before fire</div>`
+                            },
+                            {
                                 name: 'trigger_count',
                                 type: 'number',
-                                label: 'Trigger Count',
-                                placeholder: 'Empty = immediate',
+                                label: '',
+                                placeholder: 'Empty = fire immediately on first event',
                                 tooltip: 'Number of events before the handler fires',
-                                columns: 4
+                                columns: 12
+                            },
+                            {
+                                type: 'html', columns: 12,
+                                html: `<div class="text-muted small fw-semibold mt-3 mb-1"><span class="badge bg-secondary me-1">2</span> Within window — count only events in this many minutes</div>`
                             },
                             {
                                 name: 'trigger_window',
                                 type: 'number',
-                                label: 'Trigger Window (min)',
-                                placeholder: 'Empty = all events',
+                                label: '',
+                                placeholder: 'Empty = count all events regardless of age',
                                 tooltip: 'Only count events within this many minutes',
-                                columns: 4
+                                columns: 12
+                            },
+                            {
+                                type: 'html', columns: 12,
+                                html: `<div class="text-muted small fw-semibold mt-3 mb-1"><span class="badge bg-secondary me-1">3</span> Re-trigger — re-fire handler every N additional events</div>`
                             },
                             {
                                 name: 'retrigger_every',
                                 type: 'number',
-                                label: 'Re-trigger Every',
-                                placeholder: 'Empty = once',
+                                label: '',
+                                placeholder: 'Empty = fire once only',
                                 tooltip: 'Re-fire handler every N additional events after initial trigger',
-                                columns: 4
+                                columns: 12
                             }
                         ]
                     },
@@ -604,6 +616,28 @@ const RuleSetForms = {
                                     <code>llm://</code> — LLM triage agent<br>
                                     <code>job://myapp.module.function</code> — Async job
                                 </div>`
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Agent',
+                        fields: [
+                            {
+                                type: 'html', columns: 12,
+                                html: `<div class="alert alert-info small mb-3">
+                                    <i class="bi bi-stars me-1"></i>
+                                    Used by the <code>llm://</code> handler when triaging incidents created by this rule.
+                                    Saved either way — even if no <code>llm://</code> step is in the chain.
+                                </div>`
+                            },
+                            {
+                                name: 'metadata.agent_prompt',
+                                type: 'textarea',
+                                label: 'Agent Prompt',
+                                rows: 12,
+                                columns: 12,
+                                placeholder: 'You are a security analyst triaging…',
+                                tooltip: 'Free-form prompt the LLM handler receives alongside the structured incident summary'
                             }
                         ]
                     }
@@ -715,28 +749,40 @@ const RuleSetForms = {
                                 </div>`
                             },
                             {
+                                type: 'html', columns: 12,
+                                html: `<div class="text-muted small fw-semibold mb-1"><span class="badge bg-secondary me-1">1</span> Count — events before fire</div>`
+                            },
+                            {
                                 name: 'trigger_count',
                                 type: 'number',
-                                label: 'Trigger Count',
-                                placeholder: 'Empty = immediate',
+                                label: '',
+                                placeholder: 'Empty = fire immediately on first event',
                                 tooltip: 'Number of events before the handler fires',
-                                columns: 4
+                                columns: 12
+                            },
+                            {
+                                type: 'html', columns: 12,
+                                html: `<div class="text-muted small fw-semibold mt-3 mb-1"><span class="badge bg-secondary me-1">2</span> Within window — count only events in this many minutes</div>`
                             },
                             {
                                 name: 'trigger_window',
                                 type: 'number',
-                                label: 'Trigger Window (min)',
-                                placeholder: 'Empty = all events',
+                                label: '',
+                                placeholder: 'Empty = count all events regardless of age',
                                 tooltip: 'Only count events within this window toward the trigger count',
-                                columns: 4
+                                columns: 12
+                            },
+                            {
+                                type: 'html', columns: 12,
+                                html: `<div class="text-muted small fw-semibold mt-3 mb-1"><span class="badge bg-secondary me-1">3</span> Re-trigger — re-fire handler every N additional events</div>`
                             },
                             {
                                 name: 'retrigger_every',
                                 type: 'number',
-                                label: 'Re-trigger Every',
-                                placeholder: 'Empty = once',
+                                label: '',
+                                placeholder: 'Empty = fire once only',
                                 tooltip: 'Re-fire handler every N additional events after initial trigger',
-                                columns: 4
+                                columns: 12
                             }
                         ]
                     },
@@ -763,6 +809,28 @@ const RuleSetForms = {
                                     <code>llm://</code> — LLM triage agent<br>
                                     <code>job://myapp.module.function</code> — Async job
                                 </div>`
+                            }
+                        ]
+                    },
+                    {
+                        label: 'Agent',
+                        fields: [
+                            {
+                                type: 'html', columns: 12,
+                                html: `<div class="alert alert-info small mb-3">
+                                    <i class="bi bi-stars me-1"></i>
+                                    Used by the <code>llm://</code> handler when triaging incidents created by this rule.
+                                    Saved either way — even if no <code>llm://</code> step is in the chain.
+                                </div>`
+                            },
+                            {
+                                name: 'metadata.agent_prompt',
+                                type: 'textarea',
+                                label: 'Agent Prompt',
+                                rows: 12,
+                                columns: 12,
+                                placeholder: 'You are a security analyst triaging…',
+                                tooltip: 'Free-form prompt the LLM handler receives alongside the structured incident summary'
                             }
                         ]
                     }
@@ -927,6 +995,7 @@ export {
     RuleForms,
     IncidentStats,
     BundleByOptions,
+    BundleMinutesOptions,
     MatchByOptions,
     ComparatorOptions,
     ValueTypeOptions,

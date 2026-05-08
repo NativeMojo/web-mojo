@@ -131,14 +131,14 @@ class SideNavView extends View {
                 .snv-layout { display: flex; height: 100%; min-height: 0; }
                 .snv-nav {
                     width: ${this.navWidth}px;
-                    background: #f8f9fc;
-                    border-right: 1px solid #e9ecef;
+                    background: var(--bs-tertiary-bg);
+                    border-right: 1px solid var(--bs-border-color);
                     padding: 0.75rem 0;
                     flex-shrink: 0;
                     overflow-y: auto;
                 }
                 .snv-nav a {
-                    color: #495057;
+                    color: var(--bs-secondary-color);
                     padding: 0.45rem 1.25rem;
                     font-size: 0.85rem;
                     display: flex;
@@ -147,12 +147,15 @@ class SideNavView extends View {
                     text-decoration: none;
                     cursor: pointer;
                 }
-                .snv-nav a:hover { background: #e9ecef; }
+                .snv-nav a:hover {
+                    background: var(--bs-secondary-bg);
+                    color: var(--bs-body-color);
+                }
                 .snv-nav a.active {
-                    background: #e7f1ff;
-                    color: #0d6efd;
+                    background: rgba(13, 110, 253, 0.10);
+                    color: var(--bs-primary);
                     font-weight: 600;
-                    border-right: 2px solid #0d6efd;
+                    border-right: 2px solid var(--bs-primary);
                 }
                 .snv-nav a i { width: 18px; text-align: center; font-size: 0.9rem; }
                 .snv-nav-label {
@@ -160,9 +163,30 @@ class SideNavView extends View {
                     font-weight: 700;
                     text-transform: uppercase;
                     letter-spacing: 0.06em;
-                    color: #adb5bd;
+                    color: var(--bs-tertiary-color, var(--bs-secondary-color));
                     padding: 0.75rem 1.25rem 0.25rem;
                 }
+
+                /* Badges */
+                .snv-badge {
+                    margin-left: auto;
+                    font-size: 0.7rem;
+                    font-weight: 600;
+                    padding: 0.05rem 0.45rem;
+                    border-radius: 999px;
+                    line-height: 1.4;
+                    font-variant-numeric: tabular-nums;
+                }
+                .snv-badge-muted   { background: var(--bs-secondary-bg); color: var(--bs-secondary-color); }
+                .snv-badge-primary { background: var(--bs-primary); color: #fff; }
+                .snv-badge-success { background: var(--bs-success); color: #fff; }
+                .snv-badge-warning { background: var(--bs-warning); color: #000; }
+                .snv-badge-danger  { background: var(--bs-danger);  color: #fff; }
+                .snv-nav a.active .snv-badge-muted {
+                    background: var(--bs-primary);
+                    color: #fff;
+                }
+
                 .snv-content {
                     flex: 1;
                     overflow-y: auto;
@@ -178,14 +202,14 @@ class SideNavView extends View {
                     gap: 0.5rem;
                     width: 100%;
                     padding: 0.5rem 1rem;
-                    background: #f8f9fc;
-                    border: 1px solid #dee2e6;
+                    background: var(--bs-tertiary-bg);
+                    border: 1px solid var(--bs-border-color);
                     border-radius: 0.375rem;
                     font-size: 0.85rem;
-                    color: #495057;
+                    color: var(--bs-body-color);
                     cursor: pointer;
                 }
-                .snv-select-btn:hover { background: #e9ecef; }
+                .snv-select-btn:hover { background: var(--bs-secondary-bg); }
                 .snv-select-btn::after {
                     content: '';
                     display: inline-block;
@@ -198,6 +222,12 @@ class SideNavView extends View {
                     .snv-nav { display: none; }
                     .snv-content { padding: 1.25rem; }
                 }
+
+                /* Dark-theme overrides — clustered per .claude/rules/theming.md */
+                [data-bs-theme="dark"] .snv-nav a.active {
+                    background: rgba(77, 139, 255, 0.16);
+                }
+                [data-bs-theme="dark"] .snv-badge-warning { color: #000; }
             </style>
             ${this.currentMode === 'dropdown' ? `
                 <div class="snv-dropdown">${nav}</div>
@@ -212,6 +242,37 @@ class SideNavView extends View {
     }
 
     /**
+     * Normalize a badge config value into { text, variant } or null.
+     * Accepts: number, string, { text, variant }, or falsy → null.
+     * @param {*} badge
+     * @returns {{text: string, variant: string} | null}
+     * @private
+     */
+    _normalizeBadge(badge) {
+        if (badge === null || badge === undefined || badge === false || badge === '') return null;
+        if (typeof badge === 'number' || typeof badge === 'string') {
+            return { text: String(badge), variant: 'muted' };
+        }
+        if (typeof badge === 'object' && badge.text !== undefined && badge.text !== null && badge.text !== '') {
+            const variant = badge.variant || 'muted';
+            return { text: String(badge.text), variant };
+        }
+        return null;
+    }
+
+    /**
+     * Render a badge HTML fragment for a section config.
+     * @param {object} config
+     * @returns {string}
+     * @private
+     */
+    _renderBadge(config) {
+        const badge = this._normalizeBadge(config.badge);
+        if (!badge) return '';
+        return `<span class="snv-badge snv-badge-${this.escapeHtml(badge.variant)}">${this.escapeHtml(badge.text)}</span>`;
+    }
+
+    /**
      * Build sidebar navigation HTML
      * @returns {string}
      * @private
@@ -223,7 +284,8 @@ class SideNavView extends View {
             }
             const isActive = config.key === this.activeSection;
             const icon = config.icon ? `<i class="bi ${config.icon}"></i>` : '';
-            return `<a role="button" class="${isActive ? 'active' : ''}" data-action="navigate" data-section="${config.key}">${icon} ${this.escapeHtml(config.label)}</a>`;
+            const badge = this._renderBadge(config);
+            return `<a role="button" class="${isActive ? 'active' : ''}" data-action="navigate" data-section="${config.key}">${icon} ${this.escapeHtml(config.label)}${badge}</a>`;
         }).join('');
     }
 
@@ -240,6 +302,7 @@ class SideNavView extends View {
             .filter(c => c.type !== 'divider')
             .map(config => {
                 const isActive = config.key === this.activeSection;
+                const badge = this._renderBadge(config);
                 return `
                     <li>
                         <button class="dropdown-item ${isActive ? 'active' : ''}"
@@ -248,6 +311,7 @@ class SideNavView extends View {
                                 type="button">
                             ${config.icon ? `<i class="bi ${config.icon} me-2"></i>` : ''}
                             ${this.escapeHtml(config.label)}
+                            ${badge}
                             ${isActive ? '<i class="bi bi-check-lg ms-2"></i>' : ''}
                         </button>
                     </li>
@@ -609,6 +673,32 @@ class SideNavView extends View {
         }
 
         this.emit('section:removed', { key });
+        return true;
+    }
+
+    /**
+     * Update a section's badge dynamically without re-rendering the whole nav.
+     * Accepts the same shapes as the schema: number, string, { text, variant }, or falsy to clear.
+     * @param {string} key - Section key
+     * @param {*} value - Badge value
+     * @returns {boolean} true if the section exists and was updated
+     */
+    setBadge(key, value) {
+        const config = this.sectionConfigs.find(c => c.key === key);
+        if (!config) return false;
+
+        config.badge = value;
+
+        if (!this.element) return true; // not rendered yet — schema update is enough
+
+        // Update both sidebar (<a>) and dropdown-item (<button>) instances
+        const links = this.element.querySelectorAll(`[data-section="${key}"]`);
+        links.forEach(link => {
+            const existing = link.querySelector('.snv-badge');
+            const html = this._renderBadge(config);
+            if (existing) existing.remove();
+            if (html) link.insertAdjacentHTML('beforeend', html);
+        });
         return true;
     }
 

@@ -74,6 +74,8 @@ UI Components for displaying and interacting with data:
 - **[TableView](./components/TableView.md)** - Advanced data table with sorting, filtering, pagination
 - **[TabView](./components/TabView.md)** - Tab navigation component
 - **[DataView](./components/DataView.md)** - Structured data display component
+- **[MetricCard](./components/MetricCard.md)** - At-a-glance KPI card (label / value / hint / tone) for Overview rows
+- **[SegmentControl](./components/SegmentControl.md)** - Compact pill-button group for one-of-N filters (range pickers, view modes)
 - **[FileView](./components/FileView.md)** - Canonical viewer for File records (preview, details, renditions, metadata)
 - **[ImageFields](./components/ImageFields.md)** - Image field components
 
