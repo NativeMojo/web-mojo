@@ -344,6 +344,7 @@ all format tokens.
 |---|---|---|---|
 | `withDelta` | `boolean` | `false` | Appends `with_delta=true` to the fetch call. Switches the default endpoint to `/api/metrics/series` (point-in-time + deltas) instead of `/api/metrics/fetch` (full time-series). Only set this when the caller needs delta values; most chart use-cases want `fetch`. |
 | `compactHeader` | `boolean` | `false` | Hides the gear menu and the chart-type switch. Leaves a minimal quick-range toggle. Useful for sub-charts inside dashboard cards where the surrounding card already carries a title and controls. |
+| `apiParams` | `object` | `{}` | Forward-compatible passthrough for arbitrary `/api/metrics/fetch` query params the framework doesn't promote to first-class options. Hardcoded constructor options always win — see the [Forward-compatible params](#forward-compatible-params-apiparams) subsection below. |
 
 ```js
 // Inside a dashboard card that pins bar+7d — no gear needed
@@ -428,6 +429,34 @@ chart.on('metrics:data-loaded', ({ groups }) => {
 - `403` — caller is not a member of the parent group or any ancestor with `view_metrics` / `metrics`.
 
 `MetricsMiniChart` and `MetricsMiniChartWidget` accept the same `childKind` option (Mode 2 only). Mode 3 is not supported on the mini variant — sparklines are single-series; for a per-child breakdown use a row of mini charts or a `KPIStrip`.
+
+### Forward-compatible params (`apiParams`)
+
+`apiParams` is a passthrough map for arbitrary query params the framework doesn't yet promote to first-class options. Use it when the backend grows a new knob (a feature flag, a region filter, an experiment bucket, future pagination, …) and you don't want to wait for a framework release to wire it up.
+
+```js
+new MetricsChart({
+    slugs: ['visits'],
+    account: 'group-42',
+    apiParams: { region: 'us-east', experiment: 'b' }
+});
+
+chart.setApiParams({ region: 'eu-west' });   // replaces the whole map; refetches
+```
+
+**Precedence rule.** `apiParams` is spread *first* into the request; hardcoded constructor options (`granularity`, `account`, `slugs`, `category`, `dateStart` / `dateEnd`, `withDelta`, `childKind`, `breakdown`) overwrite anything that overlaps. The `_` cache-buster always wins. So `apiParams: { granularity: 'minutes' }` will lose to a constructor `granularity: 'days'` — that's by design. `apiParams` is a base layer, not an override surface.
+
+**`apiParams` is purely a query-string mechanic.** Some constructor options have side effects beyond URL params — e.g. `withDelta: true` *also* switches the default endpoint to `/api/metrics/series`. Passing `apiParams: { with_delta: true }` will emit the param but will **not** switch the endpoint. If you need the side effect, use the first-class option.
+
+**`setApiParams(next)` replaces the map** rather than merging. Callers wanting a merge do it explicitly:
+
+```js
+chart.setApiParams({ ...chart.apiParams, region: 'eu-west' });
+```
+
+**Trust boundary**: values land directly in the URL. Treat `apiParams` as developer-controlled (same convention as `title:` — see the trust note at the top of the constructor). Do **not** pipe user input through it without sanitizing at the call site.
+
+`MetricsMiniChart` and `MetricsMiniChartWidget` accept the same `apiParams` option with identical precedence semantics.
 
 ---
 

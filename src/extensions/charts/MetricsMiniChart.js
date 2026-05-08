@@ -26,6 +26,12 @@ export default class MetricsMiniChart extends MiniChart {
     // per-child breakdown use a row of MiniCharts (or KPIStrip).
     this.childKind = options.childKind || null;
 
+    // Forward-compatible passthrough for arbitrary /api/metrics/fetch query
+    // params. Spread first in `buildApiParams`; hardcoded fields overwrite.
+    // ⚠️ Trust boundary: developer-controlled. Never feed user input through
+    // this option without sanitizing at the call site.
+    this.apiParams = options.apiParams || {};
+
     // State
     this.isLoading = false;
     this.lastFetch = null;
@@ -57,7 +63,10 @@ export default class MetricsMiniChart extends MiniChart {
   }
 
   buildApiParams() {
+    // Spread `apiParams` first so hardcoded fields overwrite any overlap.
+    // The `_` cache-buster is stamped last and always wins.
     const params = {
+      ...this.apiParams,
       granularity: this.granularity,
       account: this.account,
       with_labels: true
@@ -224,6 +233,12 @@ export default class MetricsMiniChart extends MiniChart {
 
   setChildKind(kind) {
     this.childKind = kind || null;
+    return this.fetchData();
+  }
+
+  setApiParams(next) {
+    // Replaces (does not merge). See MetricsChart.setApiParams.
+    this.apiParams = next || {};
     return this.fetchData();
   }
 

@@ -144,6 +144,51 @@ module.exports = async function (testContext) {
         });
     });
 
+    describe('MetricsMiniChart — apiParams passthrough', () => {
+        it('omitting apiParams produces no extra params', () => {
+            const chart = new MetricsMiniChart({ slugs: ['x'], account: 'group-1' });
+            const params = chart.buildApiParams();
+            const expectedKeys = new Set([
+                'granularity', 'account', 'with_labels', 'slugs[]', '_'
+            ]);
+            for (const key of Object.keys(params)) {
+                expect(expectedKeys.has(key)).toBe(true);
+            }
+        });
+
+        it('hardcoded options win over apiParams', () => {
+            const chart = new MetricsMiniChart({
+                slugs: ['x'],
+                granularity: 'days',
+                account: 'group-1',
+                apiParams: { granularity: 'minutes', account: 'public', region: 'us-east' }
+            });
+            const params = chart.buildApiParams();
+            expect(params.granularity).toBe('days');
+            expect(params.account).toBe('group-1');
+            expect(params.region).toBe('us-east');
+        });
+
+        it('setApiParams replaces and triggers fetchData', () => {
+            const chart = new MetricsMiniChart({ apiParams: { a: 1 } });
+            let called = 0;
+            chart.fetchData = () => { called++; return 'ok'; };
+            chart.setApiParams({ b: 2 });
+            expect(chart.apiParams).toEqual({ b: 2 });
+            expect(called).toBe(1);
+        });
+    });
+
+    describe('MetricsMiniChartWidget — apiParams pass-through', () => {
+        it('forwards apiParams from widget options into chartOptions', () => {
+            const widget = new MetricsMiniChartWidget({
+                apiParams: { region: 'us-east', experiment: 'b' },
+                slugs: ['x']
+            });
+            expect(widget.chartOptions.apiParams).toEqual({ region: 'us-east', experiment: 'b' });
+        });
+    });
+
     describe('MetricsMiniChartWidget.setAccount', () => {
         let widget;
 

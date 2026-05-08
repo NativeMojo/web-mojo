@@ -237,6 +237,81 @@ module.exports = async function (testContext) {
         });
     });
 
+    describe('MetricsChart — apiParams passthrough', () => {
+        // Most important: prove every existing caller is byte-identical to today.
+        it('omitting apiParams produces no extra params', () => {
+            const m = new MetricsChart({
+                slugs: ['x'],
+                granularity: 'hours',
+                account: 'group-1'
+            });
+            const params = m.buildApiParams();
+            // Today's keys: granularity, account, with_labels, slugs, dr_start, dr_end, _
+            const expectedKeys = new Set([
+                'granularity', 'account', 'with_labels', 'slugs', 'dr_start', 'dr_end', '_'
+            ]);
+            for (const key of Object.keys(params)) {
+                expect(expectedKeys.has(key)).toBe(true);
+            }
+        });
+
+        it('passes through arbitrary keys', () => {
+            const m = new MetricsChart({
+                slugs: ['x'],
+                apiParams: { region: 'us-east', experiment: 'b' }
+            });
+            const params = m.buildApiParams();
+            expect(params.region).toBe('us-east');
+            expect(params.experiment).toBe('b');
+        });
+
+        it('hardcoded options win over apiParams', () => {
+            const m = new MetricsChart({
+                slugs: ['x'],
+                granularity: 'days',
+                account: 'group-1',
+                apiParams: { granularity: 'minutes', account: 'public' }
+            });
+            const params = m.buildApiParams();
+            expect(params.granularity).toBe('days');
+            expect(params.account).toBe('group-1');
+        });
+
+        it('cache-buster `_` always wins', () => {
+            const m = new MetricsChart({
+                apiParams: { _: 'forever' }
+            });
+            const params = m.buildApiParams();
+            expect(typeof params._).toBe('number');
+        });
+
+        it('setApiParams replaces (not merges) and triggers fetchData', () => {
+            const m = new MetricsChart({ apiParams: { a: 1 } });
+            let called = 0;
+            m.fetchData = () => { called++; return 'ok'; };
+            const result = m.setApiParams({ b: 2 });
+            expect(m.apiParams).toEqual({ b: 2 }); // `a` gone, `b` present
+            expect(called).toBe(1);
+            expect(result).toBe('ok');
+        });
+
+        it('setApiParams(null) clears the map', () => {
+            const m = new MetricsChart({ apiParams: { a: 1 } });
+            m.fetchData = () => 'ok';
+            m.setApiParams(null);
+            expect(m.apiParams).toEqual({});
+        });
+
+        it('getStats exposes apiParams as a defensive copy', () => {
+            const m = new MetricsChart({ apiParams: { region: 'us-east' } });
+            const stats = m.getStats();
+            expect(stats.apiParams).toEqual({ region: 'us-east' });
+            // Mutating the returned object must not leak back.
+            stats.apiParams.region = 'mutated';
+            expect(m.apiParams.region).toBe('us-east');
+        });
+    });
+
     describe('MetricsChart — granularity → xLabelFormat default', () => {
         const granularities = [
             { granularity: 'minutes', expected: "time:'HH:mm'" },

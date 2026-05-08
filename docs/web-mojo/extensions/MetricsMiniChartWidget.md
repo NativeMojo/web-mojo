@@ -269,6 +269,7 @@ Chart (forwarded to MetricsMiniChart)
 - slugs: string | string[]
 - category: string | null
 - childKind: string | null — group fan-out kind. When set with `account: 'group-<id>'`, the backend sums the metric across all active descendants of that kind (Mode 2 of `/api/metrics/fetch`). Mode 3 (`breakdown=true`) is intentionally not supported on the mini variant — sparklines are single-series. See [Charts → Group fan-out](./Charts.md#group-fan-out-rollup--per-child-breakdown).
+- apiParams: object — forward-compatible passthrough for arbitrary `/api/metrics/fetch` query params. Hardcoded options (`account`, `slugs`, `granularity`, `childKind`, …) always win over keys in `apiParams`. See [Charts → Forward-compatible params](./Charts.md#forward-compatible-params-apiparams) for the full precedence rule and trust-boundary note.
 - dateStart, dateEnd: Date | null
 - defaultDateRange: string (e.g., '24h', '7d', '30d')
 - refreshInterval: number (ms) for auto-refresh

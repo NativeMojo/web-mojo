@@ -70,6 +70,15 @@ class MetricsChart extends View {
         this.childKind = options.childKind || null;
         this.breakdown = options.breakdown === true;
 
+        // Forward-compatible passthrough for arbitrary /api/metrics/fetch
+        // query params the framework doesn't promote to first-class options.
+        // Spread into `params` first in `buildApiParams`; hardcoded fields
+        // (granularity, account, slugs, …) overwrite anything in apiParams.
+        // ⚠️ Trust boundary: developer-controlled. Values land directly in
+        // the URL — never feed user input through this option without
+        // sanitizing at the call site.
+        this.apiParams = options.apiParams || {};
+
         // Controls
         this.showGranularity = options.showGranularity !== false;
         this.showDateRange = options.showDateRange !== false;
@@ -604,7 +613,10 @@ class MetricsChart extends View {
     // ── data ──────────────────────────────────────────────────────────
 
     buildApiParams() {
+        // Spread `apiParams` first so hardcoded fields below overwrite any
+        // overlap. The `_` cache-buster is stamped last and always wins.
         const params = {
+            ...this.apiParams,
             granularity: this.granularity,
             account: this.account,
             with_labels: true
@@ -834,6 +846,13 @@ class MetricsChart extends View {
         return this.fetchData();
     }
 
+    setApiParams(next) {
+        // Replaces (does not merge). Callers wanting a merge do
+        // `chart.setApiParams({ ...chart.apiParams, key: value })` explicitly.
+        this.apiParams = next || {};
+        return this.fetchData();
+    }
+
     getStats() {
         return {
             isLoading: this.isLoading,
@@ -842,7 +861,10 @@ class MetricsChart extends View {
             slugs: this.slugs ? [...this.slugs] : [],
             dateRange: { start: this.dateStart, end: this.dateEnd },
             childKind: this.childKind,
-            breakdown: this.breakdown
+            breakdown: this.breakdown,
+            // Defensive copy — mutating the returned map must not leak
+            // back into the chart's internal state.
+            apiParams: { ...this.apiParams }
         };
     }
 }

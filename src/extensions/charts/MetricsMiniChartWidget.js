@@ -99,6 +99,7 @@ export default class MetricsMiniChartWidget extends View {
       slugs: options.slugs,
       category: options.category,
       childKind: options.childKind,
+      apiParams: options.apiParams,
       dateStart: options.dateStart,
       dateEnd: options.dateEnd,
       defaultDateRange: options.defaultDateRange,

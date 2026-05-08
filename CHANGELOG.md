@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Charts — `apiParams` passthrough on metrics-aware components
+
+- **Added:** `MetricsChart` and `MetricsMiniChart` accept an `apiParams: object` constructor option — a passthrough map for arbitrary `/api/metrics/fetch` query params the framework doesn't yet promote to first-class options. `MetricsMiniChartWidget` forwards the option through `chartOptions` to its inner mini chart.
+- **Added:** `MetricsChart.setApiParams(next)` and `MetricsMiniChart.setApiParams(next)` runtime setters that replace (not merge) the map and refetch. Callers wanting a merge do `chart.setApiParams({ ...chart.apiParams, key: value })` explicitly.
+- **Added:** `MetricsChart.getStats()` now reports `apiParams` (defensive copy).
+- **Precedence:** `apiParams` is spread *first* into `buildApiParams`; hardcoded options (`granularity`, `account`, `slugs`, `category`, `dateStart`/`End`, `withDelta`, `childKind`, `breakdown`) overwrite anything that overlaps. The `_` cache-buster always wins. Empty / omitted `apiParams` produces query strings byte-identical to today — no impact on existing callers. Use `apiParams` as a base layer for forward-compatible / experimental keys, not as an override surface.
+- **Note:** `apiParams` is purely a query-string mechanic. Constructor options with non-URL side effects (e.g. `withDelta: true` switches the default endpoint to `/api/metrics/series`) require the first-class option.
+- **Trust boundary:** `apiParams` values land directly in the URL — treat as developer-controlled (same convention as `title:`). Never pipe user input through it without sanitizing at the call site.
+
 ### Charts — group fan-out (parent rollup + per-child breakdown)
 
 - **Added:** `MetricsChart` accepts `childKind: string` and `breakdown: boolean` constructor options that drive Modes 2 and 3 of `/api/metrics/fetch`. With `childKind` set on a `account: 'group-<id>'` chart, the backend sums the metric across all active descendants of that kind (Mode 2 — same response shape as Mode 1). Add `breakdown: true` and the backend returns one series per child group plus a `groups` map (name → child id) for drill-in (Mode 3 — single slug only).
