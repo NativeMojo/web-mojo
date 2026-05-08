@@ -170,7 +170,7 @@ How it's computed:
   - prev window: [endIndex - 2k + 1 .. endIndex - k]
   - trendingPercent = ((lastSum - prevSum) / |prevSum|) * 100 (with zero-safe behavior)
   - If not enough data, it falls back to single-point (last vs prev).
-- trendOffset: Shifts the "current" endIndex back by N buckets. Use this to skip an incomplete bucket (e.g., the current day/hour).
+- trendOffset: Shifts the trending comparison window's anchor (`endIndex`) back by N buckets. Use this to skip an incomplete bucket (e.g., the current day/hour) in trending math. Does **not** affect `{{now_value}}`, which is always the latest bucket.
 - prevTrendOffset: Shifts the previous window/index back by N buckets to align comparisons to a prior period (e.g., 7 for days, 24 for hours).
 
 Examples:
@@ -258,7 +258,7 @@ Card/Header
   - If set (>= 2): compares last vs previous windows (sums, windowed)
   - k = floor(trendRange/2)
 - trendOffset: number (default 0)
-  - Shift comparison back by N buckets (skip incomplete bucket)
+  - Shift the trending comparison window back by N buckets (skip an incomplete current bucket). Does not affect `{{now_value}}`, which always reads the latest bucket.
 - prevTrendOffset: number (default 0)
   - Shift the previous window/index back by N buckets to align to a prior period (e.g., 7 for days = same day last week; 24 for hours = same hour yesterday)
 
