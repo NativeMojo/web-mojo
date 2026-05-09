@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Admin models — new section-driven Collections
+
+- **Added** `SimilarJobsList` (`@ext/admin/models/Job.js`) — thin `JobList` subclass with default `params: { ordering: '-created' }` plus optional `func` constructor arg. Backs JobDetailsView's "Similar Jobs" section. Endpoint: `GET /api/jobs/job?func=<name>&ordering=-created`.
+- **Added** `ActiveJobsList` (`@ext/admin/models/Job.js`) — thin `JobList` subclass defaulting to `?status=running`, with optional `runnerId` constructor arg. Backs RunnerDetailsView's "Active Jobs" section. Endpoint: `GET /api/jobs/job?runner_id=<id>&status=running`.
+- **Added** `RelatedIncidentsList` (`@ext/admin/models/Incident.js`) — thin `IncidentList` subclass accepting any subset of `sourceIp`, `ruleSet`, `group`, `hostname`, `category`, `status` constructor args; emits the matching `?source_ip=`, `?rule_set=`, etc. filters. Backs IncidentView's "Related Incidents" section. Note: Incident has no `user` FK — only `group` — and the constructor reflects that.
+- **Note:** `IncidentEventList` (already at `/api/incident/event`), `IncidentHistoryList` (already at `/api/incident/incident/history`), and `ShortLinkClickList` (already at `/api/shortlink/history`) already cover the remaining new-section data needs. No new collection classes for those — consumer views just call `fetch({ incident: id })` etc. on the existing collections.
+- **No backend HTTP API changes.** Every endpoint and filter referenced is verified to exist.
+
 ### KnownFieldsCard — new `@core` primitive
 
 - **Added:** `src/core/views/data/KnownFieldsCard.js` — "promote known JSON keys, keep the raw blob accessible" pattern. Promotes selected keys to a 2-column label/value grid (using the `.detail-flat-row` family) with the raw JSON in a collapsible `<details>` block underneath. Constructor: `data` (object OR `(model) => object`), `knownKeys` (array OR `(model) => array`), `rawCollapsed`, `rawLabel`, `showRaw`, `emptyText`. Each known-key spec is `{ key, label, formatter?, hideEmpty? }`. `formatter` may be a `DataFormatter` pipe name (string) or a `(value, key, data) => htmlString` function — both treat output as trusted HTML. Dotted-path keys (`os.family`, `user_agent.major`) work for nested objects. Missing values render the muted "—" placeholder unless `hideEmpty: true` is set.

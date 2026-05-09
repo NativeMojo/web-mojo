@@ -293,6 +293,59 @@ class IncidentHistoryList extends Collection {
     }
 }
 
+/**
+ * RelatedIncidentsList - Incidents related by source / rule / group / host / category / status.
+ *
+ * Backs IncidentView's "Related Incidents" section. Pass any subset of:
+ *   - `sourceIp` → `?source_ip=<ip>`
+ *   - `ruleSet`  → `?rule_set=<id>`
+ *   - `group`    → `?group=<id>`
+ *   - `hostname` → `?hostname=<host>`
+ *   - `category` → `?category=<value>`
+ *   - `status`   → `?status=<value>`
+ *
+ * Note: Incident has no `user` FK — only `group`. Don't pass `user`;
+ * use `group` to scope to a user's primary group.
+ *
+ * @example
+ *   const related = new RelatedIncidentsList({
+ *       sourceIp: incident.get('source_ip'),
+ *       ruleSet:  incident.get('rule_set'),
+ *       status:   'new'
+ *   });
+ *   await related.fetch();
+ */
+class RelatedIncidentsList extends IncidentList {
+    constructor(options = {}) {
+        const {
+            sourceIp,
+            ruleSet,
+            group,
+            hostname,
+            category,
+            status,
+            params = {},
+            ...rest
+        } = options;
+
+        const filterParams = {
+            ordering: '-modified',
+            ...(sourceIp != null ? { source_ip: sourceIp } : {}),
+            ...(ruleSet  != null ? { rule_set:  ruleSet  } : {}),
+            ...(group    != null ? { group:     group    } : {}),
+            ...(hostname != null ? { hostname:  hostname } : {}),
+            ...(category != null ? { category:  category } : {}),
+            ...(status   != null ? { status:    status   } : {}),
+            ...params
+        };
+
+        super({
+            params: filterParams,
+            ...rest,
+        });
+    }
+}
+
 
 export {
     IncidentEvent,
@@ -306,7 +359,8 @@ export {
     IncidentRule,
     IncidentRuleList,
     IncidentHistory,
-    IncidentHistoryList
+    IncidentHistoryList,
+    RelatedIncidentsList
 };
 
 /* =========================
