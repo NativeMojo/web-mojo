@@ -1688,6 +1688,6 @@ Runnable, copy-paste references in the examples portal:
 
 - [`examples/portal/examples/components/TabView/TabViewExample.js`](../../../examples/portal/examples/components/TabView/TabViewExample.js) — Tab navigation with static tabs and lazy mounting.
 - [`examples/portal/examples/components/TabView/TabViewDynamicExample.js`](../../../examples/portal/examples/components/TabView/TabViewDynamicExample.js) — Tabs added and removed at runtime.
-- [`examples/portal/examples/components/TabView/TabViewVariantsExample.js`](../../../examples/portal/examples/components/TabView/TabViewVariantsExample.js) — Flip through the five visual variants live.
+- [`examples/portal/examples/components/TabView/TabViewVariantsExample.js`](../../../examples/portal/examples/components/TabView/TabViewVariantsExample.js) — Flip through the eight visual variants live.
 
 <!-- examples:cross-link end -->

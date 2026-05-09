@@ -510,7 +510,7 @@
       "area": "components",
       "route": "components/tab-view/variants",
       "title": "TabView — variants",
-      "summary": "Flip through the five visual variants live.",
+      "summary": "Flip through the eight visual variants live.",
       "docs": "docs/web-mojo/components/TabView.md",
       "tags": [
         "tabs",
@@ -2330,7 +2330,7 @@
             {
               "route": "components/tab-view/variants",
               "title": "TabView — variants",
-              "summary": "Flip through the five visual variants live.",
+              "summary": "Flip through the eight visual variants live.",
               "icon": "bi-ui-checks-grid",
               "docs": "docs/web-mojo/components/TabView.md"
             },
@@ -3039,7 +3039,7 @@
         {
           "route": "components/tab-view/variants",
           "title": "TabView — variants",
-          "summary": "Flip through the five visual variants live.",
+          "summary": "Flip through the eight visual variants live.",
           "icon": "bi-ui-checks-grid",
           "docs": "docs/web-mojo/components/TabView.md"
         }
