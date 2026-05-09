@@ -299,6 +299,15 @@ class SimpleModuleLoader {
             'DetailView': {
                 path: path.join(this.sourceRoot, 'core/views/data/DetailView.js'),
                 dependencies: ['View', 'SideNavView']
+            },
+            'JobDetailsView': {
+                // TableView is intentionally NOT a dependency here — the real
+                // TableView extends ListView which the simple-module-loader
+                // doesn't register, and instantiating it inside the
+                // JobDetailsView constructor blows up on `this.options.showExport`.
+                // Tests stub `global.TableView` before calling loadModule.
+                path: path.join(this.sourceRoot, 'extensions/admin/jobs/JobDetailsView.js'),
+                dependencies: ['View', 'DetailView', 'Modal', 'StatusPanel', 'Timeline', 'MOJOUtils']
             }
         };
 
@@ -490,7 +499,8 @@ class SimpleModuleLoader {
             { test: /\/Timeline(\.js)?$/, name: 'Timeline' },
             { test: /\/FlowStrip(\.js)?$/, name: 'FlowStrip' },
             { test: /\/KnownFieldsCard(\.js)?$/, name: 'KnownFieldsCard' },
-            { test: /\/DetailView(\.js)?$/, name: 'DetailView' }
+            { test: /\/DetailView(\.js)?$/, name: 'DetailView' },
+            { test: /admin\/models\/Job(\.js)?$/, name: 'JobModelsStub' }
         ];
         for (const rule of rules) {
             if (rule.test.test(importPath)) return rule.name;

@@ -954,18 +954,41 @@ File: `src/extensions/admin/shortlinks/ShortLinkView.js`
 
 ---
 
-## Resolution (Partial — Wave 1 done, Wave 2 partial, Wave 3 pending)
+## Resolution (Wave 1 + Wave 2 done, Wave 3 partial)
 
 ### Status
 
 - **Wave 1 — Foundations: ✅ COMPLETE** (5 of 5 tracks)
-- **Wave 2 — Models, theme, RuleSet, JobDetailsView: 3 of 4 tracks complete**
+- **Wave 2 — Models, theme, RuleSet, JobDetailsView: ✅ COMPLETE** (4 of 4 tracks)
   - B1 ✅ (theme cleanup)
   - B2 ✅ (admin model collections)
   - B3 ✅ (no-op — RuleSetView has no `btn-group` segmentation; already
     uses SideNavView at top level)
-  - B4 ⏳ **PENDING** (JobDetailsView precedent migration)
-- **Wave 3 — Per-view sweep: ⏳ NOT STARTED** (8 tracks pending)
+  - B4 ✅ (JobDetailsView precedent migration — see below)
+- **Wave 3 — Per-view sweep: in progress** (per-view tracks landing
+  separately; consult per-track CHANGELOG entries)
+
+### Wave 2 B4 summary
+
+The local `JobStatusPanel` and `JobLifecycleCard` classes inside
+`src/extensions/admin/jobs/JobDetailsView.js` are deleted; the Overview
+section now mounts `StatusPanel` and `Timeline` from `@core` directly,
+with all narratives resolved via function-valued constructor options
+that re-resolve against the current model state. `JobExecutionCard` and
+`JobPayloadSection` are now Mustache-string templates with DataFormatter
+pipes (`{{model.created|datetime}}`, `{{model.func|default:'—'}}`,
+`{{#hasRunner|bool}}…{{/}}`); the per-view `escapeHtml()` calls along
+the template path are gone, replaced by Mustache's auto-escape and view-
+level getters for derived flags. Two new sections — Retry History
+(`Timeline` driven by `JobEventList?event=retry`) and Similar Jobs
+(`TableView` over `SimilarJobsList`) — were added with side-nav
+badges. Header `auxFn` replaces the synthetic-`_subtitle` round-trip
+with a structured presence-dot + main + muted-relative readout that
+re-resolves against the model. Header `actions[]` stays empty — Retry /
+Cancel live on the StatusPanel; long-tail (Refresh, Retry, Cancel
+duplicates) on the context menu. Six regression tests added under
+`test/unit/JobDetailsView.test.js`. Full unit suite: **807/807 passing**.
+Lint clean on the touched files.
 
 ### Commits landed (8)
 
@@ -1000,8 +1023,10 @@ d997411  Wave 1 A1: foundations
 
 ### What's still pending
 
-- **Wave 2 B4 — JobDetailsView precedent migration**. Swap `JobStatusPanel` and `JobLifecycleCard` for `@core` `StatusPanel` / `Timeline`; convert section views from `_buildTemplate()` to Mustache + DataFormatter; add Retry History section (using existing `JobEventList` filtered by `?event=retry`); add Similar Jobs section (using `SimilarJobsList`). Also: header `auxFn` for state-aware metadata. Regression test recommended.
-- **Wave 3 — 8 per-view sweeps**. Each gets its own session/PR using JobDetailsView as the canonical example after B4 lands. Briefing template documented in this file's Phase E section. Distribute as parallel worktree agents or sequential focused sessions.
+- **Wave 3 — 8 per-view sweeps**. Each gets its own session/PR using
+  JobDetailsView (post Wave 2 B4) as the canonical example. Briefing
+  template documented in this file's Phase E section. Distribute as
+  parallel worktree agents or sequential focused sessions.
 
 ### Recommended next session
 
