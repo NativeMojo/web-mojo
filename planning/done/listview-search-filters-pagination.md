@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Type | request |
-| Status | planned |
+| Status | resolved |
 | Date | 2026-05-09 |
 | Priority | medium |
 
@@ -310,3 +310,42 @@ Yes:
 - `docs/web-mojo/forms/SearchFilterForms.md` — small steerage update
 - `docs/web-mojo/core/Collection.md` — `fetchMore()` entry
 - `CHANGELOG.md` — entry under next minor version
+
+---
+
+## Resolution
+**Status**: Resolved — 2026-05-09
+
+Shipped across three commits on `main`:
+
+- **`66340ba`** — toolbar / filters / pagination hoisted from TableView to ListView. New options: `searchable`, `filterable`, `filters`, `paginated`, `paginationMode`, `pageSize`, `sortOptions`, `title`, `eyebrow`, `showRefresh`, `toolbarButtons`, `toolbarRight`, `hideActivePills`, `hideActivePillNames`, `persistSelection`. New `Collection.fetchMore({ pageDelta })` helper + fix to the per-call `reset: false` opt-out. New `paginationMode: 'more'` (Show More button). New examples (toolbar, paginated). 22 new tests.
+- **`a9f7c84`** — `onItemClick(model, event)` callback + `clickable` styling for whole-row click. Defense-in-depth XSS escaping for filter labels, filter pill display text, paramKey attribute, and toolbarButtons fields (label/icon/title/variant/className/action) on both ListView and TableView. 8 new tests.
+- **`94adb39`** — full model lifecycle hoisted from TableView. New options: `clickAction` (`'view' | 'edit' | 'select' | 'none' | function`), `onItemView`, `onItemEdit`, `onItemDelete`, `onAdd`, `onRowClick`, `itemView`, `addForm`, `editForm`, `deleteTemplate`, `formDialogConfig`, `viewDialogOptions`, `fetchOnView`, `showAdd`, `showExport`, `exportOptions`, `exportSource`. Item templates can drop `data-action="view"|"edit"|"delete"` buttons and they fire the standard dialog flow. ListView defaults `clickAction: 'none'` (no surprise behavior); TableView keeps `'view'`. 9 new tests.
+
+**Files changed:**
+- `src/core/Collection.js` — new `fetchMore()`; `_performFetch` reset-bug fix.
+- `src/core/views/list/ListView.js` — major expansion (toolbar, filters, pagination, show-more, sort dropdown, click-on-row, full model lifecycle).
+- `src/core/views/list/ListViewItem.js` — `clickable` flag + `_wireClickableHandler`; `onActionView`/`Edit`/`Delete` handlers.
+- `src/core/views/table/TableView.js` — slimmed from 2700 to ~1100 lines; inherits everything except table-specific bits (cell editing, column-header sort, footer totals, batch actions, fullscreen, `<table>` markup).
+- `src/core/css/list-view.css` (new) — show-more row + `.clickable` hover.
+- `src/index.js` — imports list-view.css.
+- `examples/portal/examples/components/ListView/ListViewToolbarExample.js` (new), `ListViewPaginatedExample.js` (new), `example.json` (registered), `examples/portal/scripts/build-registry.js` (taxonomy entries).
+- `test/unit/ListView.test.js` (new, 39 cases), `test/unit/Collection.test.js` (extended with 7 fetchMore cases + reset-bug regression).
+- `test/utils/simple-module-loader.js` — registered ListView + DjangoLookups.
+- Docs: `docs/web-mojo/components/ListView.md` (major expansion), `TableView.md` (note that toolbar lives on ListView), `core/Collection.md` (fetchMore), `forms/SearchFilterForms.md` (steerage), `README.md`, `AGENT.md`, `components/SimpleSearchView.md` (cross-link updates), `CHANGELOG.md`.
+
+**Tests run:**
+- `npm run test:unit` — 881/881 passing
+- `npm run test:integration` + `npm run test:build` — passing (test-runner agent confirmation on commit `66340ba`; not re-run after later commits but no integration-relevant changes).
+- `npm run lint` on changed files — 0 errors (pre-existing console.log warnings consistent with surrounding code).
+
+**Validation:**
+- Dev preview verified: TableView users page renders with full toolbar (refresh, fullscreen, add, search, pagination), 10 rows, sortable columns, click-row-to-view modal opens with the latest model data. New `ListView — toolbar` example renders title + eyebrow + search + filter dropdown + sort + 15 visual cards. New `ListView — paginated` example renders 10 of 47 items with numbered pagination; clicking page 2 advances to items 11–20 with active pill update.
+- Security review (security-review agent on commit `66340ba`) flagged two real XSS gaps in the filter pill / filter list code paths that were pre-existing in TableView but now had wider blast radius — fixed in commit `a9f7c84` with `escapeHtml` calls and corresponding regression tests.
+
+**Out of scope (deferred):**
+- True intersection-observer infinite scroll
+- Virtualized rendering for very large lists
+- Cursor-based pagination
+- A `ListPage` page class paralleling `TablePage` (the `params-changed` event seam is preserved so this can be added later as a small follow-up)
+- Folding `SimpleSearchView` into a ListView preset

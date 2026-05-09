@@ -45,6 +45,15 @@ class Model {
     this.loading = false;
     this.rest = rest;
 
+    // Back-reference to the parent Collection (when this model was created
+    // via `collection.add(...)`). Lets Model methods find their parent —
+    // useful for in-memory mutations like `Model.destroy()` removing the
+    // instance from a preloaded collection without going through REST.
+    // Collection passes `{ collection: this }` in options when it
+    // instantiates models, so this field is auto-populated for any model
+    // that lives in a Collection.
+    this.collection = options.collection || null;
+
     // Event system via EventEmitter mixin (applied to prototype)
 
     // Configuration options

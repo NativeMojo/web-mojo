@@ -485,6 +485,11 @@ class Collection {
 
       if (modelData instanceof this.ModelClass) {
         model = modelData;
+        // Adopt the model: ensure it can find its parent collection (e.g.
+        // for in-memory `Model.destroy() → collection.remove(this)` flows).
+        // Only set if not already pointing at us, so external collections
+        // can re-parent via `add(model)` if they want.
+        if (!model.collection) model.collection = this;
       } else {
         model = new this.ModelClass(modelData, {
           endpoint: this.endpoint,
@@ -537,6 +542,9 @@ class Collection {
 
       if (index !== -1) {
         const removedModel = this.models.splice(index, 1)[0];
+        // Detach the back-reference so the orphaned instance doesn't
+        // try to talk to a collection it's no longer part of.
+        if (removedModel.collection === this) removedModel.collection = null;
         removedModels.push(removedModel);
       }
     }

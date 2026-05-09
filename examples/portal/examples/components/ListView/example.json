@@ -38,6 +38,12 @@
             "route": "components/list-view/paginated",
             "title": "ListView — paginated",
             "summary": "Numbered pagination with page-size selector for an ordered visual list."
+        },
+        {
+            "page": "ListViewLifecycleExample.js",
+            "route": "components/list-view/lifecycle",
+            "title": "ListView — lifecycle",
+            "summary": "Full Add / View / Edit / Delete flow with click-to-view and per-card buttons."
         }
     ]
 }

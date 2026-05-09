@@ -137,6 +137,7 @@ const TOPIC_TAXONOMY = [
                     'components/list-view/live-filter',
                     'components/list-view/toolbar',
                     'components/list-view/paginated',
+                    'components/list-view/lifecycle',
                     'components/table-view',
                     'components/table-view/batch-actions',
                     'components/table-view/custom-row',

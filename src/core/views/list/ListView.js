@@ -640,19 +640,24 @@ class ListView extends View {
       const safeParamKey = this.escapeHtml(paramKey);
       const icon = 'filter';
 
+      // The framework's `.badge.bg-primary` is a subtle pill (light bg
+      // + emphasis-text color) — `text-white` and `btn-close-white`
+      // would render invisible. Use plain `btn-link` which inherits the
+      // badge's own foreground color, and the default `.btn-close`
+      // (no -white modifier) which renders dark on the light pill.
       return `
         <span class="badge bg-primary me-1 mb-1 py-1 px-2 position-relative" style="font-size: 0.75rem;">
           <i class="bi bi-${icon} me-1" style="font-size: 0.65rem;"></i>
 
-          <button type="button" class="btn btn-link text-white p-0 ms-1"
-                  style="font-size: 0.65rem; line-height: 1;"
+          <button type="button" class="btn btn-link p-0 ms-1 list-filter-pill-text"
+                  style="font-size: 0.65rem; line-height: 1; text-decoration: none;"
                   data-action="edit-filter"
                   data-filter="${safeParamKey}"
                   title="Edit filter">
             ${displayText}
           </button>
 
-          <button type="button" class="btn-close btn-close-white ms-1"
+          <button type="button" class="btn-close ms-1"
                   style="font-size: 0.6rem; width: 0.5rem; height: 0.5rem;"
                   data-action="remove-filter"
                   data-filter="${safeParamKey}"
@@ -1639,14 +1644,13 @@ class ListView extends View {
     const filterKey = element.getAttribute('data-filter');
     const { field } = parseFilterKey(filterKey);
 
-    let filterConfig = this.getFilterConfig(field) || this.getFilterConfig(filterKey);
+    const filterConfig = this.getFilterConfig(field) || this.getFilterConfig(filterKey);
 
     const activeFilters = this.getActiveFilters();
     const currentValue = activeFilters[filterKey] || activeFilters[field];
 
     if (!filterConfig) {
       console.warn('No filter config found for key:', filterKey, 'or field:', field);
-      this.emit('filter:edit', { key: filterKey });
       return;
     }
 
@@ -1658,7 +1662,11 @@ class ListView extends View {
       formData[endName] = currentValue.end || '';
     }
 
-    this.emit('filter:edit', { key: filterKey });
+    // NOTE: do NOT emit `filter:edit` here. ListView owns the edit dialog
+    // flow end-to-end — emitting would also cause TablePage's legacy
+    // handleFilterEdit handler to open a SECOND modal racing this one.
+    // External listeners that want to know a filter was edited can listen
+    // for `params-changed` after applyFilters() runs.
 
     const result = await Modal.form({
       title: `Edit ${this.getFilterLabel(field)} Filter`,
