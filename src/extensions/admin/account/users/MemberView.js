@@ -1,305 +1,495 @@
 /**
- * MemberView - Modern membership detail view
+ * MemberView - Group-membership detail view built on the DetailView primitive.
  *
- * Features:
- * - Header with avatar, user name, group name, role badge, active toggle
- * - SideNavView: Details (with clickable user/group), Permissions, Logs
- * - Context menu: Edit, View User, View Group, Remove
- * - Click user → opens UserView, click group → opens GroupView
+ * Sections:
+ *   Overview                — KPIs + "This membership" flat rows + recent activity timeline
+ *   Permissions             — autosave switch grid (Member.PERMISSION_FIELDS)
+ *   ──── Activity ────
+ *   Audit                   — TableView scoped to this membership
+ *
+ * Header title doubles as cross-record navigation: "{user} in {group}".
+ * "View user" / "View group" actions open UserView / GroupView via Modal.detail.
  */
 
 import View from '@core/View.js';
-import SideNavView from '@core/views/navigation/SideNavView.js';
+import DetailView from '@core/views/data/DetailView.js';
 import TableView from '@core/views/table/TableView.js';
 import FormView from '@core/forms/FormView.js';
-import ContextMenu from '@core/views/feedback/ContextMenu.js';
+import MetricCard from '@core/views/data/MetricCard.js';
+import Timeline from '@core/views/data/Timeline.js';
+import Modal from '@core/views/feedback/Modal.js';
+import dataFormatter from '@core/utils/DataFormatter.js';
 import { Member, MemberForms } from '@core/models/Member.js';
 import { User } from '@core/models/User.js';
 import { Group } from '@core/models/Group.js';
 import { LogList } from '@core/models/Log.js';
-import Modal from '@core/views/feedback/Modal.js';
 
-class MemberView extends View {
+
+// ── Helpers ────────────────────────────────────────────────
+
+function countTruthy(obj) {
+    if (!obj || typeof obj !== 'object') return 0;
+    return Object.values(obj).filter(v => v === true).length;
+}
+
+const LOG_LEVEL_TONE = {
+    error:    'danger',
+    critical: 'danger',
+    warning:  'warning',
+    warn:     'warning',
+    info:     'info'
+};
+
+
+// ── Overview section ───────────────────────────────────────
+
+class MemberOverviewSection extends View {
     constructor(options = {}) {
         super({
-            className: 'member-view',
+            className: 'member-overview-section',
+            template: `
+                <div class="detail-kpi-grid">
+                    <div data-container="member-kpi-role"></div>
+                    <div data-container="member-kpi-status"></div>
+                    <div data-container="member-kpi-joined"></div>
+                    <div data-container="member-kpi-perms"></div>
+                </div>
+
+                <div class="detail-section-eyebrow">This membership</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">User</div>
+                    <div class="detail-flat-row-value">
+                        {{#userDisplayName}}<a href="#" data-action="view-user">{{userDisplayName}}</a>{{/userDisplayName}}
+                        {{^userDisplayName}}<span class="text-secondary fst-italic">Not set</span>{{/userDisplayName}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Email</div>
+                    <div class="detail-flat-row-value">
+                        {{#userEmail}}{{userEmail}}{{/userEmail}}
+                        {{^userEmail}}<span class="text-secondary fst-italic">Not set</span>{{/userEmail}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Group</div>
+                    <div class="detail-flat-row-value">
+                        {{#groupName}}<a href="#" data-action="view-group">{{groupName}}</a>{{/groupName}}
+                        {{^groupName}}<span class="text-secondary fst-italic">Not set</span>{{/groupName}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Role</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasRole|bool}}<span class="badge text-bg-primary">{{roleLabel}}</span>{{/hasRole|bool}}
+                        {{^hasRole|bool}}<span class="text-secondary fst-italic">Not set</span>{{/hasRole|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Joined</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasCreated|bool}}{{model.created|epoch|datetime}} &middot; {{model.created|epoch|relative}}{{/hasCreated|bool}}
+                        {{^hasCreated|bool}}<span class="text-secondary fst-italic">—</span>{{/hasCreated|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Invited by</div>
+                    <div class="detail-flat-row-value">
+                        {{#invitedBy}}{{invitedBy}}{{/invitedBy}}
+                        {{^invitedBy}}<span class="text-secondary fst-italic">—</span>{{/invitedBy}}
+                    </div>
+                </div>
+
+                <div class="detail-section-eyebrow">Recent activity in this group</div>
+                <div data-container="member-overview-activity"></div>
+            `,
             ...options
         });
+        this.logsCollection = options.logsCollection || null;
+    }
 
-        this.model = options.model || new Member(options.data || {});
+    // ── Computed properties bound by the Mustache template ─────
 
-        this.template = `
-            <div class="member-view-container">
-                <!-- Header + Context Menu -->
-                <div class="d-flex justify-content-between align-items-start mb-4">
-                    <div data-container="member-header" style="flex: 1;"></div>
-                    <div data-container="member-context-menu" class="ms-3 flex-shrink-0"></div>
-                </div>
-                <!-- Side Nav -->
-                <div data-container="member-sidenav" style="min-height: 300px;"></div>
-            </div>
-        `;
+    get userDisplayName() { return this.model.get('user')?.display_name || ''; }
+    get userEmail()       { return this.model.get('user')?.email || ''; }
+    get groupName()       { return this.model.get('group')?.name || ''; }
+    get roleLabel()       { return this.model.get('metadata')?.role || ''; }
+    get hasRole()         { return !!this.roleLabel; }
+    get hasCreated()      { return this.model.get('created') != null; }
+    get invitedBy() {
+        const md = this.model.get('metadata') || {};
+        return md.invited_by_name || md.invited_by || '';
+    }
+    get permsCount()      { return countTruthy(this.model.get('permissions')); }
+    get isActive()        { return !!this.model.get('is_active'); }
+
+    async onInit() {
+        const m = this.model;
+
+        // Four KPI cards (small / default size — no metric-card-lg)
+        this.kpiRole = new MetricCard({
+            containerId: 'member-kpi-role',
+            label: 'Role',
+            value: this.roleLabel || '—'
+        });
+        this.kpiStatus = new MetricCard({
+            containerId: 'member-kpi-status',
+            label: 'Status',
+            value: this.isActive ? 'Active' : 'Inactive',
+            tone:  this.isActive ? 'success' : 'warning'
+        });
+        const created = m.get('created');
+        const joinedRel = created != null
+            ? dataFormatter.apply(created, ['epoch', 'relative'])
+            : '—';
+        this.kpiJoined = new MetricCard({
+            containerId: 'member-kpi-joined',
+            label: 'Joined',
+            value: joinedRel || '—'
+        });
+        this.kpiPerms = new MetricCard({
+            containerId: 'member-kpi-perms',
+            label: 'Perms granted',
+            value: String(this.permsCount)
+        });
+        [this.kpiRole, this.kpiStatus, this.kpiJoined, this.kpiPerms]
+            .forEach(c => this.addChild(c));
+
+        // Recent-activity timeline — fed by the shared logs collection.
+        // `items` is a function so the Timeline re-resolves on render() and
+        // picks up rows added after the first fetch:success event.
+        this.activityTimeline = new Timeline({
+            containerId: 'member-overview-activity',
+            limit: 5,
+            emptyText: 'No recorded activity for this membership yet.',
+            items: () => this._buildActivityItems()
+        });
+        this.addChild(this.activityTimeline);
+    }
+
+    async onAfterRender() {
+        await super.onAfterRender();
+        // Refresh the activity timeline whenever the shared logs collection updates
+        if (this.logsCollection && !this._wired) {
+            this.logsCollection.on('fetch:success', () => {
+                if (this.activityTimeline?.isMounted()) {
+                    this.activityTimeline.setItems(() => this._buildActivityItems());
+                }
+            }, this);
+            this._wired = true;
+        }
+    }
+
+    _buildActivityItems() {
+        const logs = this.logsCollection?.models || [];
+        return logs.map(log => {
+            const level = String(log.get('level') || '').toLowerCase();
+            const tone  = LOG_LEVEL_TONE[level] || 'default';
+            const headline = log.get('kind') || log.get('level') || 'event';
+            // Timeline `detail` is trusted HTML — escape user-controlled values.
+            const detailRaw = log.get('log');
+            const detail = detailRaw ? this.escapeHtml(String(detailRaw)) : '';
+            const when = dataFormatter.apply(log.get('created'), ['epoch', 'relative']);
+            return { tone, headline: String(headline), detail, when };
+        });
+    }
+
+    async onActionViewUser(event) {
+        event?.preventDefault?.();
+        this.emit('action:view-user');
+    }
+
+    async onActionViewGroup(event) {
+        event?.preventDefault?.();
+        this.emit('action:view-group');
+    }
+}
+
+
+// ── Permissions section ────────────────────────────────────
+
+class MemberPermissionsSection extends View {
+    constructor(options = {}) {
+        super({
+            className: 'member-permissions-section',
+            template: `
+                <div class="detail-section-eyebrow">Permissions</div>
+                <p class="text-secondary small mb-3">Toggles autosave as soon as you flip them.</p>
+                <div data-container="member-permissions-form"></div>
+            `,
+            ...options
+        });
     }
 
     async onInit() {
-        // ── Header ──────────────────────────────────
-        this.header = new View({
-            containerId: 'member-header',
-            template: `
-            <div class="d-flex justify-content-between align-items-start">
-                <!-- Left: Avatar + Identity -->
-                <div class="d-flex align-items-center gap-3">
-                    {{{model.user.avatar|avatar('md','rounded-circle')}}}
-                    <div>
-                        <h4 class="mb-0">
-                            <a href="#" data-action="view-user" class="text-decoration-none text-body">{{model.user.display_name}}</a>
-                        </h4>
-                        <div class="text-muted small mt-1">
-                            <i class="bi bi-people me-1"></i>
-                            <a href="#" data-action="view-group" class="text-decoration-none">{{model.group.name}}</a>
-                            {{#model.group.kind}}
-                                <span class="badge bg-light text-muted border ms-1" style="font-size: 0.65rem;">{{model.group.kind|capitalize}}</span>
-                            {{/model.group.kind}}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right: Status -->
-                <div class="text-end">
-                    <div class="d-flex align-items-center gap-2">
-                        {{#model.metadata.role}}
-                            <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size: 0.72rem;">{{model.metadata.role}}</span>
-                        {{/model.metadata.role}}
-                        <span class="d-inline-flex align-items-center gap-1" style="cursor: pointer;"
-                              data-action="toggle-active"
-                              title="{{model.is_active|boolean('Click to deactivate','Click to activate')}}">
-                            <i class="bi {{model.is_active|boolean('bi-toggle-on text-success','bi-toggle-off text-secondary')}}" style="font-size: 1.1rem;"></i>
-                            <span class="small">{{model.is_active|boolean('Active','Inactive')}}</span>
-                        </span>
-                    </div>
-                    {{#model.created}}
-                        <div class="text-muted small mt-1">Joined {{model.created|date}}</div>
-                    {{/model.created}}
-                </div>
-            </div>`
-        });
-        this.header.setModel(this.model);
-        this.addChild(this.header);
-
-        // ── Details section ─────────────────────────
-        const detailsView = new View({
-            model: this.model,
-            template: `
-                <style>
-                    .mv-section-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #adb5bd; margin-bottom: 0.5rem; margin-top: 1.5rem; }
-                    .mv-section-label:first-child { margin-top: 0; }
-                    .mv-field-row { display: flex; align-items: baseline; padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0; }
-                    .mv-field-row:last-child { border-bottom: none; }
-                    .mv-field-label { width: 130px; font-size: 0.78rem; color: #6c757d; flex-shrink: 0; }
-                    .mv-field-value { flex: 1; font-size: 0.88rem; color: #212529; }
-                    .mv-field-action { color: #6c757d; cursor: pointer; font-size: 0.8rem; margin-left: auto; padding: 0.15rem 0.4rem; border-radius: 4px; background: none; border: none; }
-                    .mv-field-action:hover { background: #f0f0f0; color: #0d6efd; }
-                </style>
-
-                <div class="mv-section-label">User</div>
-                <div class="mv-field-row">
-                    <div class="mv-field-label">Name</div>
-                    <div class="mv-field-value">
-                        <a href="#" data-action="view-user" class="text-decoration-none">{{model.user.display_name}}</a>
-                    </div>
-                </div>
-                <div class="mv-field-row">
-                    <div class="mv-field-label">Email</div>
-                    <div class="mv-field-value">{{model.user.email}}</div>
-                </div>
-
-                <div class="mv-section-label">Group</div>
-                <div class="mv-field-row">
-                    <div class="mv-field-label">Name</div>
-                    <div class="mv-field-value">
-                        <a href="#" data-action="view-group" class="text-decoration-none">{{model.group.name}}</a>
-                    </div>
-                </div>
-                {{#model.group.kind}}
-                <div class="mv-field-row">
-                    <div class="mv-field-label">Kind</div>
-                    <div class="mv-field-value"><span class="badge bg-primary bg-opacity-10 text-primary">{{model.group.kind|capitalize}}</span></div>
-                </div>
-                {{/model.group.kind}}
-
-                <div class="mv-section-label">Membership</div>
-                <div class="mv-field-row">
-                    <div class="mv-field-label">Role</div>
-                    <div class="mv-field-value">{{model.metadata.role|default('—')}}</div>
-                    <button type="button" class="mv-field-action" data-action="edit-membership" title="Edit"><i class="bi bi-pencil"></i></button>
-                </div>
-                <div class="mv-field-row">
-                    <div class="mv-field-label">Status</div>
-                    <div class="mv-field-value">
-                        {{#model.is_active|bool}}<span style="font-size:0.65rem; padding:0.15em 0.45em; background:#d1e7dd; color:#0f5132; border-radius:3px;">Active</span>{{/model.is_active|bool}}
-                        {{^model.is_active|bool}}<span style="font-size:0.65rem; padding:0.15em 0.45em; background:#fff3cd; color:#856404; border-radius:3px;">Inactive</span>{{/model.is_active|bool}}
-                    </div>
-                </div>
-                <div class="mv-field-row">
-                    <div class="mv-field-label">Member ID</div>
-                    <div class="mv-field-value" style="font-family: ui-monospace, monospace; font-size: 0.82rem;">{{model.id}}</div>
-                </div>
-                <div class="mv-field-row">
-                    <div class="mv-field-label">Joined</div>
-                    <div class="mv-field-value">{{model.created|datetime|default('—')}}</div>
-                </div>
-            `
-        });
-
-        // ── Permissions section — editable switches ──
-        const permissionsView = new FormView({
+        this.formView = new FormView({
+            containerId: 'member-permissions-form',
             fields: Member.PERMISSION_FIELDS,
             model: this.model,
             autosaveModelField: true
         });
+        this.addChild(this.formView);
+    }
+}
 
-        // ── Logs section ────────────────────────────
-        const logsView = new TableView({
-            collection: new LogList({
-                params: { size: 10, model_name: 'account.Member', model_id: this.model.get('id') }
-            }),
-            permissions: 'view_logs',
-            hideActivePillNames: ['model_name', 'model_id'],
-            columns: [
-                {
-                    key: 'created', label: 'Timestamp', sortable: true, formatter: 'epoch|datetime',
-                    filter: { name: 'created', type: 'daterange', startName: 'dr_start', endName: 'dr_end', fieldName: 'dr_field', label: 'Date Range', format: 'YYYY-MM-DD', displayFormat: 'MMM DD, YYYY', separator: ' to ' }
-                },
-                { key: 'level', label: 'Level', sortable: true },
-                { key: 'kind', label: 'Kind' },
-                { name: 'log', label: 'Log' }
-            ]
-        });
 
-        // ── SideNavView ─────────────────────────────
-        this.sideNavView = new SideNavView({
-            containerId: 'member-sidenav',
-            activeSection: 'details',
-            navWidth: 160,
-            contentPadding: '1rem 1.5rem',
-            enableResponsive: true,
-            minWidth: 450,
-            sections: [
-                { key: 'details', label: 'Details', icon: 'bi-info-circle', view: detailsView },
-                { key: 'permissions', label: 'Permissions', icon: 'bi-shield-check', view: permissionsView },
-                { type: 'divider', label: 'Activity' },
-                { key: 'logs', label: 'Logs', icon: 'bi-journal-text', view: logsView, permissions: 'view_logs' }
-            ]
-        });
-        this.addChild(this.sideNavView);
+// ── MemberView (assembly) ──────────────────────────────────
 
-        // ── Context Menu ────────────────────────────
-        const memberMenu = new ContextMenu({
-            containerId: 'member-context-menu',
-            className: 'context-menu-view header-menu-absolute',
-            context: this.model,
-            config: {
-                icon: 'bi-three-dots-vertical',
-                items: [
-                    { label: 'Edit Membership', action: 'edit-membership', icon: 'bi-pencil' },
-                    { type: 'divider' },
-                    { label: 'View User', action: 'view-user', icon: 'bi-person' },
-                    { label: 'View Group', action: 'view-group', icon: 'bi-people' },
-                    { type: 'divider' },
-                    this.model.get('is_active')
-                        ? { label: 'Deactivate Member', action: 'deactivate-member', icon: 'bi-toggle-off' }
-                        : { label: 'Activate Member', action: 'activate-member', icon: 'bi-toggle-on' },
-                    { label: 'Remove From Group', action: 'remove-member', icon: 'bi-person-dash', danger: true }
-                ]
+class MemberView extends DetailView {
+    constructor(options = {}) {
+        const model = options.model || new Member(options.data || {});
+        const memberId = model.get('id');
+
+        // Shared collection — Audit table + Overview "recent activity" both read from it.
+        const logsCollection = new LogList({
+            params: {
+                size: 25,
+                model_name: 'account.Member',
+                model_id: memberId,
+                sort: '-created'
             }
         });
-        this.addChild(memberMenu);
+
+        // Section views
+        const overviewSection = new MemberOverviewSection({ model, logsCollection });
+        const permissionsSection = new MemberPermissionsSection({ model });
+
+        const auditSection = new TableView({
+            collection: logsCollection,
+            title: 'Audit',
+            eyebrow: 'Section · Audit',
+            showFullscreen: false,
+            searchable: false,
+            hideActivePillNames: ['model_name', 'model_id'],
+            permissions: 'view_logs',
+            tableOptions: { striped: false, hover: true },
+            columns: [
+                {
+                    key: 'created', label: 'Timestamp', sortable: true,
+                    formatter: 'epoch|datetime', width: '180px',
+                    filter: {
+                        name: 'created', type: 'daterange',
+                        startName: 'dr_start', endName: 'dr_end',
+                        fieldName: 'dr_field', label: 'Date Range',
+                        format: 'YYYY-MM-DD', displayFormat: 'MMM DD, YYYY',
+                        separator: ' to '
+                    }
+                },
+                { key: 'level', label: 'Level', sortable: true, formatter: 'badge', width: '110px' },
+                { key: 'kind',  label: 'Kind' },
+                { key: 'log',   label: 'Log' }
+            ]
+        });
+
+        const sections = [
+            { key: 'Overview',    label: 'Overview',    icon: 'bi-grid-1x2',     view: overviewSection },
+            { key: 'Permissions', label: 'Permissions', icon: 'bi-shield-lock',  view: permissionsSection },
+            { type: 'divider', label: 'Activity' },
+            { key: 'Audit', label: 'Audit', icon: 'bi-clock-history', view: auditSection, permissions: 'view_logs' }
+        ];
+
+        // Header chips — only render when value exists (the DetailHeaderView
+        // automatically filters chips with `when:` callbacks)
+        const chips = [
+            {
+                icon: 'bi-envelope',
+                text: m => m.get('user')?.email || null,
+                variant: 'light',
+                when: m => !!m.get('user')?.email
+            },
+            {
+                icon: 'bi-people',
+                text: m => m.get('group')?.kind || null,
+                variant: 'info',
+                when: m => !!m.get('group')?.kind
+            },
+            {
+                icon: 'bi-person-badge',
+                text: m => m.get('metadata')?.role || null,
+                variant: 'primary',
+                when: m => !!m.get('metadata')?.role
+            },
+            {
+                text: m => {
+                    const n = countTruthy(m.get('permissions'));
+                    return n > 0 ? `${n} ${n === 1 ? 'perm' : 'perms'} granted` : null;
+                },
+                variant: 'light',
+                when: m => countTruthy(m.get('permissions')) > 0
+            }
+        ];
+
+        super({
+            className: 'member-view',
+            ...options,
+            model,
+            header: {
+                icon: 'bi-person-badge',
+                titleFn: m => {
+                    const userName = m.get('user')?.display_name || 'User';
+                    const groupName = m.get('group')?.name || 'Group';
+                    return `${userName} in ${groupName}`;
+                },
+                subtitlePath: '_subtitle',
+                chips,
+                activeField: 'is_active',
+                actions: [
+                    { label: 'Edit role', icon: 'bi-pencil', action: 'edit-role',
+                      title: 'Edit role and membership details' },
+                    { label: 'Remove', icon: 'bi-person-dash', action: 'remove-from-group',
+                      title: 'Remove from group' }
+                ],
+                contextMenu: {
+                    items: [
+                        { label: 'View user',  action: 'view-user',  icon: 'bi-person' },
+                        { label: 'View group', action: 'view-group', icon: 'bi-people' },
+                        { label: 'Audit log',  action: 'view-audit', icon: 'bi-clock-history' },
+                        { type: 'divider' },
+                        { label: 'Remove from group', action: 'remove-from-group',
+                          icon: 'bi-person-dash', danger: true }
+                    ]
+                }
+            },
+            sections,
+            activeSection: 'Overview'
+        });
+
+        // Stash references for action handlers + cross-section wiring
+        this.logsCollection = logsCollection;
+        this.overviewSection = overviewSection;
+        this.permissionsSection = permissionsSection;
+        this.auditSection = auditSection;
+
+        this._refreshComputedFields();
     }
 
-    // ── Actions ─────────────────────────────────
+    async onAfterBuild() {
+        // Cross-section navigation requests from Overview's clickable user/group
+        this.overviewSection.on('action:view-user',  () => this.onActionViewUser());
+        this.overviewSection.on('action:view-group', () => this.onActionViewGroup());
 
-    async onActionEditMembership() {
-        await Modal.modelForm({
-            title: 'Edit Membership',
+        // Live sidebar badge update from the shared logs collection
+        const updateAuditBadge = () => {
+            const n = this.logsCollection.totalCount
+                ?? this.logsCollection.models?.length
+                ?? 0;
+            this.setBadge('Audit', n > 0 ? { text: String(n), variant: 'muted' } : null);
+        };
+        this.logsCollection.on('fetch:success', updateAuditBadge, this);
+        if (this.logsCollection.models?.length) updateAuditBadge();
+
+        // Fire-and-forget initial fetch so Overview's activity timeline + the
+        // sidebar badge populate before the user navigates to the Audit tab.
+        this.logsCollection.fetch().catch(() => { /* fail silent */ });
+    }
+
+    /**
+     * Compute the synthetic `_subtitle` field the header binds to.
+     * Format: "{role} · joined {created|relative}"
+     */
+    _refreshComputedFields() {
+        const m = this.model;
+        const role = m.get('metadata')?.role || 'Member';
+        const created = m.get('created');
+        const parts = [role];
+        if (created != null) {
+            const rel = dataFormatter.apply(created, ['epoch', 'relative']);
+            if (rel) parts.push(`joined ${rel}`);
+        }
+        m.attributes._subtitle = parts.join(' · ');
+    }
+
+    // ── Actions ────────────────────────────────────────────
+
+    /** Header pencil — focused mini-form for the editable membership fields. */
+    async onActionEditRole() {
+        const resp = await Modal.modelForm({
+            title: 'Edit membership',
             model: this.model,
-            formConfig: MemberForms.edit,
+            size: 'md',
+            formConfig: MemberForms.edit
         });
+        if (resp) {
+            this._refreshComputedFields();
+            if (this.headerView?.isMounted()) await this.headerView.render();
+            if (this.overviewSection?.isMounted()) await this.overviewSection.render();
+        }
     }
 
     async onActionViewUser() {
         const userId = this.model.get('user')?.id;
         if (!userId) return true;
-        await Modal.showModelById(User, userId);
+        const ViewClass = User.VIEW_CLASS;
+        if (ViewClass) {
+            const user = new User({ id: userId });
+            await user.fetch();
+            if (!user.id) {
+                Modal.alert({
+                    message: `Could not find User with ID: ${userId}`,
+                    type: 'warning'
+                });
+                return true;
+            }
+            const view = new ViewClass({ model: user });
+            await Modal.detail(view);
+        } else {
+            // Fall back to the legacy showModelById path if no VIEW_CLASS is set.
+            await Modal.showModelById(User, userId);
+        }
         return true;
     }
 
     async onActionViewGroup() {
         const groupId = this.model.get('group')?.id;
         if (!groupId) return true;
-
-        await Modal.showModelById(Group, groupId);
+        const ViewClass = Group.VIEW_CLASS;
+        if (ViewClass) {
+            const group = new Group({ id: groupId });
+            await group.fetch();
+            if (!group.id) {
+                Modal.alert({
+                    message: `Could not find Group with ID: ${groupId}`,
+                    type: 'warning'
+                });
+                return true;
+            }
+            const view = new ViewClass({ model: group });
+            await Modal.detail(view);
+        } else {
+            await Modal.showModelById(Group, groupId);
+        }
         return true;
     }
 
-    async onActionToggleActive() {
-        if (this.model.get('is_active')) {
-            return this.onActionDeactivateMember();
-        } else {
-            return this.onActionActivateMember();
-        }
+    async onActionViewAudit() {
+        await this.showSection('Audit');
     }
 
-    async onActionDeactivateMember() {
+    async onActionRemoveFromGroup() {
+        const userName = this.model.get('user')?.display_name || 'this user';
+        const groupName = this.model.get('group')?.name || 'this group';
         const confirmed = await Modal.confirm(
-            `Deactivate <strong>${this.model.get('user.display_name')}</strong>'s membership in <strong>${this.model.get('group.name')}</strong>?`,
-            'Deactivate Member'
+            `Remove <strong>${this.escapeHtml(userName)}</strong> from <strong>${this.escapeHtml(groupName)}</strong>? This cannot be undone.`,
+            'Remove from group'
         );
         if (!confirmed) return true;
 
-        const resp = await this.model.save({ is_active: false });
-        if (resp.status === 200) {
-            this.getApp()?.toast?.success('Member deactivated');
-        } else {
-            this.getApp()?.toast?.error('Failed to deactivate member');
+        try {
+            const resp = await this.model.destroy();
+            if (resp && resp.success) {
+                this.getApp()?.toast?.success('Member removed');
+                this.emit('member:removed', { model: this.model });
+                const dialog = this.element?.closest('.modal');
+                if (dialog) {
+                    const bsModal = window.bootstrap?.Modal?.getInstance(dialog);
+                    if (bsModal) bsModal.hide();
+                }
+            } else {
+                this.getApp()?.toast?.error('Failed to remove member');
+            }
+        } catch (err) {
+            this.getApp()?.toast?.error(`Failed to remove member: ${err.message}`);
         }
         return true;
-    }
-
-    async onActionActivateMember() {
-        const confirmed = await Modal.confirm(
-            `Activate <strong>${this.model.get('user.display_name')}</strong>'s membership in <strong>${this.model.get('group.name')}</strong>?`,
-            'Activate Member'
-        );
-        if (!confirmed) return true;
-
-        const resp = await this.model.save({ is_active: true });
-        if (resp.status === 200) {
-            this.getApp()?.toast?.success('Member activated');
-        } else {
-            this.getApp()?.toast?.error('Failed to activate member');
-        }
-        return true;
-    }
-
-    async onActionRemoveMember() {
-        const confirmed = await Modal.confirm(
-            `Remove <strong>${this.model.get('user.display_name')}</strong> from <strong>${this.model.get('group.name')}</strong>? This cannot be undone.`,
-            'Remove Member'
-        );
-        if (!confirmed) return true;
-
-        const resp = await this.model.destroy();
-        if (resp.success) {
-            this.getApp()?.toast?.success('Member removed');
-            this.emit('member:removed', { model: this.model });
-        } else {
-            this.getApp()?.toast?.error('Failed to remove member');
-        }
-        return true;
-    }
-
-    _onModelChange() {
-        // Prevent full re-render on model changes
     }
 
     static create(options = {}) {
@@ -307,6 +497,7 @@ class MemberView extends View {
     }
 }
 
+MemberView.VIEW_CLASS = MemberView;
 Member.VIEW_CLASS = MemberView;
 Member.MODEL_REF = 'account.Member';
 

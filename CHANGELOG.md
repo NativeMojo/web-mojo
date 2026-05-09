@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Wave 3 C7 — MemberView sweep — flat sections + Mustache + DataFormatter
+
+- **`src/extensions/admin/account/users/MemberView.js`** — applied the Wave 3 design language:
+  - **MemberOverviewSection** rewritten as a Mustache string template against `this.model` and a small set of getter properties (`userDisplayName`, `userEmail`, `groupName`, `roleLabel`, `hasRole`, `hasCreated`, `invitedBy`, `permsCount`, `isActive`). Replaces `template = () => this._buildTemplate()` plus its `escapeHtml()` string concatenation. DataFormatter pipes (`epoch|datetime`, `epoch|relative`) handle every date/relative read-out.
+  - **Flat-row layout** — dropped the two `.card` wrappers in Overview ("This membership" + "Recent activity"). Both sub-sections now use `.detail-section-eyebrow` + `.detail-flat-row` family. Vertical rhythm (2rem gap above subsection eyebrows after content) is owned by the framework CSS.
+  - **MetricCard children** — the four KPI cards (Role / Status / Joined / Perms granted) are now `MetricCard` instances added via `addChild()`, not hand-built `metric-card` divs. Default size (no `metric-card-lg`).
+  - **Recent-activity timeline** — `_renderActivity()` and its hand-rolled `<ol class="detail-timeline">` markup deleted. Replaced with the `@core` `Timeline` primitive (Wave 1 A3) configured with `items` as a function of the shared `LogList`, `limit: 5`, and a tone-mapped log-level lookup. Trusted-HTML `detail` slot is escaped via `MOJOUtils.escapeHtml(...)` per Timeline's security note.
+  - **MemberPermissionsSection** — eyebrow markup switched from the legacy `.section-eyebrow` / `.section-title` pair to the standard `.detail-section-eyebrow`. The inner `FormView` is unchanged.
+  - **Audit section** — already a `TableView`; verified `clickAction` is omitted (Log rows don't have a meaningful detail view) and no `viewDialogOptions` with `size: 'xl'` is passed. Stays as is.
+  - **Helpers** — `epochToMs`, `formatRelative`, `formatDate` deleted. `countTruthy` retained (used by header chip and Overview KPI). `_refreshComputedFields` switched to `dataFormatter.apply(value, ['epoch', 'relative'])` for the subtitle's "joined …" segment.
+- No public API changes. All 667 unit tests still pass; lint clean.
+
 ### TableView — `fetchOnView` auto-refreshes model before detail dialog
 
 - **Added:** `fetchOnView` option (default `true`). When enabled, TableView calls `model.fetch()` before opening the view dialog, ensuring the detail view always has the latest server data. Set to `false` to use the row data as-is. Skipped when a custom `onItemView` handler is provided.
