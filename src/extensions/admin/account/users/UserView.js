@@ -137,7 +137,7 @@ function countTruthy(obj) {
 class UserOverviewSection extends View {
     constructor(options = {}) {
         super({
-            className: 'user-overview-section p-3',
+            className: 'user-overview-section',
             ...options
         });
 
@@ -414,7 +414,7 @@ class UserOverviewActivityCard extends View {
 class UserProfileSection extends View {
     constructor(options = {}) {
         super({
-            className: 'user-profile-section p-3',
+            className: 'user-profile-section',
             ...options
         });
         this.connections = [];
@@ -566,7 +566,7 @@ class UserProfileSection extends View {
 class UserPermissionsSection extends View {
     constructor(options = {}) {
         super({
-            className: 'user-permissions-section p-3',
+            className: 'user-permissions-section',
             ...options
         });
         this.mode = 'common';   // common | advanced | effective
@@ -754,7 +754,7 @@ class UserPermissionsSection extends View {
 class UserDevicesSection extends View {
     constructor(options = {}) {
         super({
-            className: 'user-devices-section p-3',
+            className: 'user-devices-section',
             ...options
         });
         this.devicesCollection     = options.devicesCollection;
@@ -895,7 +895,7 @@ class UserDevicesSection extends View {
 class UserAuditSection extends View {
     constructor(options = {}) {
         super({
-            className: 'user-audit-section p-3',
+            className: 'user-audit-section',
             ...options
         });
         this.eventsCollection     = options.eventsCollection;
@@ -1108,7 +1108,7 @@ class UserAuditSection extends View {
 class UserApiKeysSection extends View {
     constructor(options = {}) {
         super({
-            className: 'user-api-keys-section p-3',
+            className: 'user-api-keys-section',
             ...options
         });
         this.apiKeys = [];

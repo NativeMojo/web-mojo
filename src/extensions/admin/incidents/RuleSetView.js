@@ -97,7 +97,7 @@ function matchByLabel(value) {
 class RuleSetOverviewSection extends View {
     constructor(options = {}) {
         super({
-            className: 'ruleset-overview-section p-3',
+            className: 'ruleset-overview-section',
             template: `
                 <div class="ruleset-kpi-grid mb-2">
                     <div data-container="kpi-status"></div>
@@ -254,7 +254,7 @@ class RuleSetOverviewSection extends View {
 class RuleSetConditionsSection extends View {
     constructor(options = {}) {
         super({
-            className: 'ruleset-conditions-section p-3',
+            className: 'ruleset-conditions-section',
             template: `<div data-container="conditions-table"></div>`,
             ...options
         });
@@ -321,7 +321,7 @@ class RuleSetConditionsSection extends View {
 class RuleSetTriggeringSection extends View {
     constructor(options = {}) {
         super({
-            className: 'ruleset-triggering-section p-3',
+            className: 'ruleset-triggering-section',
             ...options
         });
 
@@ -420,7 +420,7 @@ class RuleSetTriggeringSection extends View {
 class RuleSetHandlerChainSection extends View {
     constructor(options = {}) {
         super({
-            className: 'ruleset-handler-section p-3',
+            className: 'ruleset-handler-section',
             ...options
         });
 
@@ -477,7 +477,7 @@ class RuleSetHandlerChainSection extends View {
 class RuleSetAgentPromptSection extends View {
     constructor(options = {}) {
         super({
-            className: 'ruleset-agent-section p-3',
+            className: 'ruleset-agent-section',
             ...options
         });
 
@@ -577,7 +577,7 @@ class RuleSetAgentPromptSection extends View {
 class RuleSetIncidentsSection extends View {
     constructor(options = {}) {
         super({
-            className: 'ruleset-incidents-section p-3',
+            className: 'ruleset-incidents-section',
             template: `<div data-container="incidents-table"></div>`,
             ...options
         });
@@ -679,7 +679,7 @@ function _priorityPillHtml(value) {
 class RuleSetMetadataSection extends View {
     constructor(options = {}) {
         super({
-            className: 'ruleset-metadata-section p-3',
+            className: 'ruleset-metadata-section',
             ...options
         });
 

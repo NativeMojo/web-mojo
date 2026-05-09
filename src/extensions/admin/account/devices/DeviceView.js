@@ -160,7 +160,7 @@ class DeviceLocationRow extends TableRow {
 class DeviceOverviewSection extends View {
     constructor(options = {}) {
         super({
-            className: 'device-overview-section p-3',
+            className: 'device-overview-section',
             ...options
         });
 
@@ -396,7 +396,7 @@ class DeviceThreatSignalsCard extends View {
 class DeviceHardwareSection extends View {
     constructor(options = {}) {
         super({
-            className: 'device-hardware-section p-3',
+            className: 'device-hardware-section',
             ...options
         });
         this.template = () => this._buildTemplate();
@@ -501,7 +501,7 @@ class DeviceHardwareSection extends View {
 class DeviceSessionsSection extends View {
     constructor(options = {}) {
         super({
-            className: 'device-sessions-section p-3',
+            className: 'device-sessions-section',
             ...options
         });
         this.template = () => this._buildTemplate();
@@ -527,7 +527,7 @@ class DeviceSessionsSection extends View {
 class DeviceMetadataSection extends View {
     constructor(options = {}) {
         super({
-            className: 'device-metadata-section p-3',
+            className: 'device-metadata-section',
             ...options
         });
         this.template = () => this._buildTemplate();

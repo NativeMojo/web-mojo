@@ -107,7 +107,7 @@ function formatRelative(value) {
 class JobOverviewSection extends View {
     constructor(options = {}) {
         super({
-            className: 'job-overview-section p-3',
+            className: 'job-overview-section',
             ...options
         });
         this.template = () => this._buildTemplate();
@@ -409,7 +409,7 @@ class JobLifecycleCard extends View {
 class JobPayloadSection extends View {
     constructor(options = {}) {
         super({
-            className: 'job-payload-section p-3',
+            className: 'job-payload-section',
             template: `
                 <div class="section-eyebrow">Section · Payload</div>
                 <h3 class="section-title">Job payload</h3>

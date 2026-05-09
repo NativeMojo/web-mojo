@@ -472,7 +472,7 @@ class LLMAnalysisResultsView extends View {
 class IncidentOverviewSection extends View {
     constructor(options = {}) {
         super({
-            className: 'incident-overview-section p-3',
+            className: 'incident-overview-section',
             ...options
         });
 
@@ -582,7 +582,7 @@ class IncidentOverviewSection extends View {
 class IncidentSourceSection extends View {
     constructor(options = {}) {
         super({
-            className: 'incident-source-section p-3',
+            className: 'incident-source-section',
             ...options
         });
 
@@ -900,7 +900,7 @@ class IncidentSourceSection extends View {
 class IncidentRequestSection extends View {
     constructor(options = {}) {
         super({
-            className: 'incident-request-section p-3',
+            className: 'incident-request-section',
             ...options
         });
         this.metadata = options.metadata || {};
@@ -964,7 +964,7 @@ class IncidentRequestSection extends View {
 class IncidentStackTraceSection extends View {
     constructor(options = {}) {
         super({
-            className: 'incident-stack-trace-section p-3',
+            className: 'incident-stack-trace-section',
             ...options
         });
 
@@ -997,7 +997,7 @@ class IncidentStackTraceSection extends View {
 class RuleEngineSection extends View {
     constructor(options = {}) {
         super({
-            className: 'rule-engine-section p-3',
+            className: 'rule-engine-section',
             ...options
         });
 
@@ -1257,7 +1257,7 @@ class RuleEngineSection extends View {
 class IncidentTicketsSection extends View {
     constructor(options = {}) {
         super({
-            className: 'incident-tickets-section p-3',
+            className: 'incident-tickets-section',
             ...options
         });
 
@@ -1310,7 +1310,7 @@ class IncidentTicketsSection extends View {
 class RelatedIncidentsSection extends View {
     constructor(options = {}) {
         super({
-            className: 'related-incidents-section p-3',
+            className: 'related-incidents-section',
             ...options
         });
 
@@ -1356,7 +1356,7 @@ class RelatedIncidentsSection extends View {
 class IncidentDetailSection extends View {
     constructor(options = {}) {
         super({
-            className: 'incident-detail-section p-3',
+            className: 'incident-detail-section',
             ...options
         });
 

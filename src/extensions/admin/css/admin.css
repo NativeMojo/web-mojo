@@ -2750,7 +2750,10 @@
     letter-spacing: -0.005em;
     color: var(--bs-emphasis-color, var(--bs-body-color));
 }
-.detail-view .snv-content > .snv-section { padding: 1rem 1.25rem 1.5rem; }
+/* Uniform p-4 (1.5rem) section padding inside DetailView — gives every
+   section the same generous breathing room on all sides. Section views
+   no longer need their own `p-3` / `p-4` className; the layout owns it. */
+.detail-view .snv-content > .snv-section { padding: 1.5rem; }
 
 /* Tighter MetricCard inside DetailView Overview sections — the default
    is the small / quiet treatment; `metric-card-lg` is opt-in for
@@ -2774,14 +2777,19 @@
    classes generalize the ruleset-* equivalents so any DetailView
    subclass (Job / User / Group / etc.) can drop them in.
 */
-/* KPI strip — auto-fits to whatever room it has. At lg-modal width
-   (~600px content area) this lays out as 3-up; at lg+much-narrower
-   nested containers it falls to 2-up then 1-up without crunching. */
+/* KPI strip — 4-up by default (the canonical Overview row).
+   Container query (not viewport) drops to 2-up when the strip's own
+   container is genuinely narrow, so it works correctly inside an `lg`
+   modal where auto-fit was producing awkward 3+1 layouts. */
 .detail-kpi-grid {
+    container-type: inline-size;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    gap: 0.6rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem;
     margin-bottom: 0.85rem;
+}
+@container (max-width: 480px) {
+    .detail-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* Card-pair — stacks by default; only goes side-by-side when its own

@@ -88,7 +88,7 @@ function escapeHtml(value) {
 class ShortLinkOverviewSection extends View {
     constructor(options = {}) {
         super({
-            className: 'shortlink-overview-section p-3',
+            className: 'shortlink-overview-section',
             ...options,
         });
         this.clicksCollection = options.clicksCollection || null;
@@ -302,7 +302,7 @@ class ShortLinkOverviewSection extends View {
 class ShortLinkConfigurationSection extends View {
     constructor(options = {}) {
         super({
-            className: 'shortlink-configuration-section p-3',
+            className: 'shortlink-configuration-section',
             ...options,
         });
         this.template = () => this._buildTemplate();
@@ -415,7 +415,7 @@ class ShortLinkConfigurationSection extends View {
 class ShortLinkMetricsSection extends View {
     constructor(options = {}) {
         super({
-            className: 'shortlink-metrics-section p-3',
+            className: 'shortlink-metrics-section',
             ...options,
         });
 
@@ -463,7 +463,7 @@ class ShortLinkMetricsSection extends View {
 class ShortLinkOgSection extends View {
     constructor(options = {}) {
         super({
-            className: 'shortlink-og-section p-3',
+            className: 'shortlink-og-section',
             ...options,
         });
         this.template = () => this._buildTemplate();
@@ -542,7 +542,7 @@ class ShortLinkOgSection extends View {
 class ShortLinkMetadataSection extends View {
     constructor(options = {}) {
         super({
-            className: 'shortlink-metadata-section p-3',
+            className: 'shortlink-metadata-section',
             ...options,
         });
         this.template = () => this._buildTemplate();

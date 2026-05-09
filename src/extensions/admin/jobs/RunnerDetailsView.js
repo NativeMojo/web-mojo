@@ -97,7 +97,7 @@ function runnerHealth(runner) {
 class RunnerOverviewSection extends View {
     constructor(options = {}) {
         super({
-            className: 'runner-overview-section p-3',
+            className: 'runner-overview-section',
             ...options
         });
         this.template = () => this._buildTemplate();
@@ -507,7 +507,7 @@ class RunnerActiveJobsCard extends View {
 class RunnerSystemSection extends View {
     constructor(options = {}) {
         super({
-            className: 'runner-system-section p-3',
+            className: 'runner-system-section',
             ...options
         });
         this.sysinfoFn = options.sysinfo || (() => null);
@@ -747,7 +747,7 @@ class RunnerSystemSection extends View {
 class RunnerChannelsSection extends View {
     constructor(options = {}) {
         super({
-            className: 'runner-channels-section p-3',
+            className: 'runner-channels-section',
             ...options
         });
         this.activeJobsFn = options.activeJobs || (() => []);
@@ -813,7 +813,7 @@ class RunnerChannelsSection extends View {
 class RunnerActiveJobsSection extends View {
     constructor(options = {}) {
         super({
-            className: 'runner-active-jobs-section p-3',
+            className: 'runner-active-jobs-section',
             ...options
         });
         this.jobs = [];
@@ -972,7 +972,7 @@ class RunnerActiveJobsSection extends View {
 class RunnerLogsSection extends View {
     constructor(options = {}) {
         super({
-            className: 'runner-logs-section p-3',
+            className: 'runner-logs-section',
             ...options
         });
         this.logs = [];
@@ -1112,7 +1112,7 @@ class RunnerLogsSection extends View {
 class RunnerActionsSection extends View {
     constructor(options = {}) {
         super({
-            className: 'runner-actions-section p-3',
+            className: 'runner-actions-section',
             ...options
         });
         this.pingResult = null;

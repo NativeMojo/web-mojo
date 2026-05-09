@@ -80,7 +80,7 @@ function yesNo(v) {
 class GeoIPOverviewSection extends View {
     constructor(options = {}) {
         super({
-            className: 'geoip-overview-section p-3',
+            className: 'geoip-overview-section',
             ...options
         });
         this.template = () => this._buildTemplate();
@@ -438,7 +438,7 @@ class GeoIPSignalsCard extends View {
 class GeoIPNetworkSection extends View {
     constructor(options = {}) {
         super({
-            className: 'geoip-network-section p-3',
+            className: 'geoip-network-section',
             ...options
         });
         this.template = () => this._buildTemplate();
@@ -504,7 +504,7 @@ class GeoIPNetworkSection extends View {
 class GeoIPRiskSection extends View {
     constructor(options = {}) {
         super({
-            className: 'geoip-risk-section p-3',
+            className: 'geoip-risk-section',
             ...options
         });
         this.template = () => this._buildTemplate();
@@ -590,7 +590,7 @@ class GeoIPRiskSection extends View {
 class GeoIPBlockSection extends View {
     constructor(options = {}) {
         super({
-            className: 'geoip-block-section p-3',
+            className: 'geoip-block-section',
             ...options
         });
         this.template = () => this._buildTemplate();
@@ -666,7 +666,7 @@ class GeoIPBlockSection extends View {
 class GeoIPMetadataSection extends View {
     constructor(options = {}) {
         super({
-            className: 'geoip-metadata-section p-3',
+            className: 'geoip-metadata-section',
             ...options
         });
         this.template = () => this._buildTemplate();

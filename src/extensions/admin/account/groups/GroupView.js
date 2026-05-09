@@ -97,7 +97,7 @@ function escapeHtml(str) {
 class GroupOverviewSection extends View {
     constructor(options = {}) {
         super({
-            className: 'group-overview-section p-3',
+            className: 'group-overview-section',
             ...options
         });
 
@@ -305,7 +305,7 @@ class GroupHierarchyCard extends View {
 class GroupIdentitySection extends View {
     constructor(options = {}) {
         super({
-            className: 'group-identity-section p-3',
+            className: 'group-identity-section',
             ...options
         });
         this.template = () => this._buildTemplate();
@@ -382,7 +382,7 @@ class GroupIdentitySection extends View {
 class GroupPermissionsSection extends View {
     constructor(options = {}) {
         super({
-            className: 'group-permissions-section p-3',
+            className: 'group-permissions-section',
             ...options
         });
         this.template = () => this._buildTemplate();

@@ -58,7 +58,7 @@ function countTruthy(obj) {
 class MemberOverviewSection extends View {
     constructor(options = {}) {
         super({
-            className: 'member-overview-section p-3',
+            className: 'member-overview-section',
             ...options
         });
         this.logsCollection = options.logsCollection || null;
@@ -207,7 +207,7 @@ class MemberOverviewSection extends View {
 class MemberPermissionsSection extends View {
     constructor(options = {}) {
         super({
-            className: 'member-permissions-section p-3',
+            className: 'member-permissions-section',
             template: `
                 <div class="section-eyebrow">Section · Permissions</div>
                 <h3 class="section-title">Permissions</h3>
