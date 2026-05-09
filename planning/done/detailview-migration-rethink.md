@@ -1,9 +1,11 @@
 ---
-status: in-progress
+status: done
 type: request
 scope: src/extensions/admin
 created: 2026-05-08
+resolved: 2026-05-09
 parent: detailview-migration.md
+followup: detailview-audit-followups.md
 ---
 
 # DetailView migration — rethink
