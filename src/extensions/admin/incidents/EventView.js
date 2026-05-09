@@ -1,11 +1,16 @@
 /**
- * EventView - Detailed view for an IncidentEvent record
+ * EventView - Detailed view for an IncidentEvent record.
+ *
+ * Mustache-templated; uses DataFormatter pipes for every date/badge field.
+ * The Overview tab is a `DataView`; conditional Stack Trace + Metadata tabs
+ * appear when the event metadata supports them. No hand-rolled lists.
  */
 
 import View from '@core/View.js';
 import TabView from '@core/views/navigation/TabView.js';
 import DataView from '@core/views/data/DataView.js';
 import StackTraceView from '@core/views/data/StackTraceView.js';
+import KnownFieldsCard from '@core/views/data/KnownFieldsCard.js';
 import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import Modal from '@core/views/feedback/Modal.js';
 import { Incident, IncidentEvent } from '@ext/admin/models/Incident.js';
@@ -36,55 +41,52 @@ const MODEL_REGISTRY = {
     apikey: ApiKey,
 };
 
+/** Map a numeric log level to a Bootstrap-icon + tone class for the header */
+function _iconForLevel(level) {
+    const n = Number(level) || 0;
+    if (n >= 40) return { icon: 'bi-exclamation-octagon-fill', color: 'text-danger' };
+    if (n >= 30) return { icon: 'bi-exclamation-triangle-fill', color: 'text-warning' };
+    if (n >= 20) return { icon: 'bi-info-circle-fill',         color: 'text-info' };
+    return         { icon: 'bi-bell-fill',                     color: 'text-secondary' };
+}
+
 class EventView extends View {
     constructor(options = {}) {
         super({
             className: 'event-view',
+            template: `
+                <div class="event-view-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="fs-1 {{eventIcon.color}}">
+                                <i class="bi {{eventIcon.icon}}"></i>
+                            </div>
+                            <div>
+                                <h3 class="mb-1">{{model.title|default('System Event')}}</h3>
+                                <div class="text-secondary small">
+                                    Category: {{model.category|capitalize|default('—')}}
+                                </div>
+                                <div class="text-secondary small mt-1">
+                                    {{{model.created|epoch|datetime}}} from {{model.source_ip|default('Unknown IP')}}
+                                </div>
+                            </div>
+                        </div>
+                        <div data-container="event-context-menu"></div>
+                    </div>
+                    <div data-container="event-tabs"></div>
+                </div>
+            `,
             ...options
         });
 
         this.model = options.model || new IncidentEvent(options.data || {});
-        this.eventIcon = this.getIconForEvent(this.model.get('level'));
-
-        this.template = `
-            <div class="event-view-container">
-                <!-- Header -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="fs-1 {{eventIcon.color}}">
-                            <i class="bi {{eventIcon.icon}}"></i>
-                        </div>
-                        <div>
-                            <h3 class="mb-1">{{model.title|default('System Event')}}</h3>
-                            <div class="text-muted small">
-                                Category: {{model.category|capitalize}}
-                            </div>
-                            <div class="text-muted small mt-1">
-                                {{model.created|datetime}} from {{model.source_ip|default('Unknown IP')}}
-                            </div>
-                        </div>
-                    </div>
-                    <div data-container="event-context-menu"></div>
-                </div>
-
-                <!-- Body -->
-                <div data-container="event-tabs"></div>
-            </div>
-        `;
-    }
-
-    getIconForEvent(level) {
-        if (level >= 40) return { icon: 'bi-exclamation-octagon-fill', color: 'text-danger' }; // Error
-        if (level >= 30) return { icon: 'bi-exclamation-triangle-fill', color: 'text-warning' }; // Warning
-        if (level >= 20) return { icon: 'bi-info-circle-fill', color: 'text-info' }; // Info
-        return { icon: 'bi-bell-fill', color: 'text-secondary' }; // Debug/Default
+        this.eventIcon = _iconForLevel(this.model.get('level'));
     }
 
     async onInit() {
-        // Overview Tab
+        // Overview Tab — DataView with framework formatters; no inline style.
         this.overviewView = new DataView({
             model: this.model,
-            className: "p-3",
             columns: 2,
             fields: [
                 { name: 'id', label: 'Event ID' },
@@ -93,27 +95,40 @@ class EventView extends View {
                 { name: 'incident', label: 'Incident ID' },
                 { name: 'model_name', label: 'Related Model' },
                 { name: 'model_id', label: 'Related Model ID' },
-                { name: 'details', label: 'Details', columns: 12 },
+                { name: 'created', label: 'Created', formatter: 'epoch|datetime' },
+                { name: 'details', label: 'Details', columns: 12 }
             ]
         });
 
         const tabs = { 'Overview': this.overviewView };
-        
         const metadata = this.model.get('metadata') || {};
-        
-        // Add Stack Trace tab if present
+
         if (metadata.stack_trace) {
             this.stackTraceView = new StackTraceView({
                 stackTrace: metadata.stack_trace
             });
             tabs['Stack Trace'] = this.stackTraceView;
         }
-        
-        // Add Metadata tab if there's metadata
+
         if (Object.keys(metadata).length > 0) {
-            this.metadataView = new View({
+            // Metadata uses KnownFieldsCard so the tab matches the
+            // IncidentView Metadata pattern and dark theme works without
+            // hardcoded surface colors.
+            this.metadataView = new KnownFieldsCard({
                 model: this.model,
-                template: `<pre class="bg-light p-3 border rounded"><code>{{{model.metadata|json}}}</code></pre>`
+                data: (m) => m.get('metadata') || {},
+                knownKeys: [
+                    { key: 'source_ip',     label: 'Source IP' },
+                    { key: 'hostname',      label: 'Hostname' },
+                    { key: 'user_agent',    label: 'User agent' },
+                    { key: 'http_url',      label: 'URL' },
+                    { key: 'http_method',   label: 'HTTP method' },
+                    { key: 'http_status',   label: 'HTTP status' },
+                    { key: 'request_path',  label: 'Request path' },
+                    { key: 'error_class',   label: 'Error class' },
+                    { key: 'error_message', label: 'Error message' }
+                ],
+                rawLabel: 'Raw metadata'
             });
             tabs['Metadata'] = this.metadataView;
         }
@@ -125,7 +140,6 @@ class EventView extends View {
         });
         this.addChild(this.tabView);
 
-        // ContextMenu
         const menuItems = [
             { label: 'View Incident', action: 'view-incident', icon: 'bi-shield-exclamation', disabled: !this.model.get('incident') },
             { label: 'View Related Model', action: 'view-model', icon: 'bi-box-arrow-up-right', disabled: !this.model.get('model_id') },
@@ -135,7 +149,7 @@ class EventView extends View {
 
         const eventMenu = new ContextMenu({
             containerId: 'event-context-menu',
-            className: "context-menu-view header-menu-absolute",
+            className: 'context-menu-view header-menu-absolute',
             context: this.model,
             config: {
                 icon: 'bi-three-dots-vertical',
@@ -153,14 +167,7 @@ class EventView extends View {
         }
         const incident = new Incident({ id: incidentId });
         const view = new IncidentView({ model: incident });
-        await Modal.dialog({
-            title: 'Incident Details',
-            body: view,
-            size: 'xl',
-            scrollable: true,
-            header: false,
-            buttons: [{ text: 'Close', class: 'btn-secondary', dismiss: true }]
-        });
+        await Modal.detail(view);
     }
 
     async onActionViewModel() {
@@ -189,7 +196,7 @@ class EventView extends View {
 
     async onActionDeleteEvent() {
         const confirmed = await Modal.confirm(
-            `Are you sure you want to delete this event? This action cannot be undone.`,
+            'Are you sure you want to delete this event? This action cannot be undone.',
             'Confirm Deletion',
             { confirmClass: 'btn-danger', confirmText: 'Delete' }
         );

@@ -3343,3 +3343,16 @@
 .user-api-keys-section .alert code {
     word-break: break-all;
 }
+
+
+/* ========================================================================
+   IncidentView — source-section action row
+   ========================================================================
+   The Source section ends with a row of contextual buttons (Block /
+   Whitelist / Open GeoIP / View on map). Sits below the flat-row stack
+   with predictable rhythm, then yields to the inner DataView blocks.
+*/
+.incident-source-actions {
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
+}

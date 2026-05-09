@@ -1,14 +1,20 @@
 /**
- * IncidentView - Rich security operations view for an Incident record
+ * IncidentView - Security operations view for an Incident record.
  *
- * Built on the DetailView primitive. SideNavView layout:
- *   Overview · Events
- *   Investigation → Source · Request · Stack Trace
- *   Response      → Rule Engine · Tickets · History
- *   Related       → Related Incidents · Detail
+ * Built on the DetailView primitive with @core/views/data/* primitives:
+ *   - Overview leads with `StatusPanel` (state/headline/meta/actions)
+ *   - 4 KPIs (Events / Sources / Last fired / Related) via `MetricCard`
+ *   - "What triggered this" + "What happened next" pair cards (the second
+ *     uses `Timeline` from @core for the handler-chain feed)
+ *   - Source / Request / Stack Trace investigation sections
+ *   - Rule Engine, Tickets, History (ChatView wrapper) response sections
+ *   - Related incidents (`TableView` from `RelatedIncidentsList`)
+ *   - Metadata (`KnownFieldsCard`) for the JSON blob
  *
- * Conditional sections (Request, Stack Trace) appear only when the incident
- * metadata supports them.
+ * Open via `Modal.detail(new IncidentView({ model }))`. Inherits the
+ * `'lg'` size default from `Modal.detail()`. EventView (sibling file) is
+ * the per-row inspector for IncidentEvent records and follows the same
+ * Mustache + DataFormatter conventions.
  */
 
 import View from '@core/View.js';
@@ -16,12 +22,18 @@ import DetailView from '@core/views/data/DetailView.js';
 import DataView from '@core/views/data/DataView.js';
 import TableView from '@core/views/table/TableView.js';
 import StackTraceView from '@core/views/data/StackTraceView.js';
+import StatusPanel from '@core/views/data/StatusPanel.js';
+import Timeline from '@core/views/data/Timeline.js';
+import KnownFieldsCard from '@core/views/data/KnownFieldsCard.js';
+import MetricCard from '@core/views/data/MetricCard.js';
 import ChatView from '@core/views/chat/ChatView.js';
 import Modal from '@core/views/feedback/Modal.js';
+import MOJOUtils from '@core/utils/MOJOUtils.js';
 import {
-    Incident, IncidentForms, IncidentList, IncidentEventList,
+    Incident, IncidentForms, IncidentEventList,
     RuleSet, RuleSetForms, Rule, RuleList,
-    BundleByOptions, MatchByOptions
+    BundleByOptions, MatchByOptions,
+    RelatedIncidentsList
 } from '@ext/admin/models/Incident.js';
 import { GeoLocatedIP } from '@core/models/System.js';
 import { Ticket, TicketList, TicketForms } from '@ext/admin/models/Tickets.js';
@@ -30,20 +42,18 @@ import RuleSetView from './RuleSetView.js';
 import IncidentHistoryAdapter from './adapters/IncidentHistoryAdapter.js';
 import { openAssistantChat } from '../assistant/AssistantContextChat.js';
 
+const escapeHtml = MOJOUtils.escapeHtml;
+
 
 // ── Module Helpers ──────────────────────────────────────────
 
-/** Infer Rule value_type from a JS value */
+/** Infer Rule value_type from a JS value (used by RuleEngineSection picker) */
 function _inferValueType(val) {
     if (typeof val === 'boolean') return 'bool';
     if (typeof val === 'number') return Number.isInteger(val) ? 'int' : 'float';
     const num = Number(val);
     if (val !== '' && !isNaN(num)) return Number.isInteger(num) ? 'int' : 'float';
     return 'str';
-}
-
-function _escapeHtml(str) {
-    return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function _truncate(str, max) {
@@ -59,7 +69,7 @@ async function _renderMarkdown(view, markdown) {
         const html = resp?.data?.data?.html || resp?.data?.html;
         if (html) return html;
     } catch (_e) { /* API unavailable — fall through */ }
-    return `<pre style="white-space: pre-wrap;">${_escapeHtml(markdown)}</pre>`;
+    return `<pre class="detail-error-block">${escapeHtml(markdown)}</pre>`;
 }
 
 function _formatRelative(epochSeconds) {
@@ -106,11 +116,12 @@ const STATUS_CONFIG = {
     pending:       { tone: 'warning', icon: 'bi-hourglass-split',    label: 'Pending',       help: 'Below trigger threshold — accumulating events' }
 };
 
+const ACTIVE_STATUSES = new Set(['new', 'open', 'investigating', 'pending']);
+
 function getStatusConfig(status) {
     return STATUS_CONFIG[(status || '').toLowerCase()] || STATUS_CONFIG.new;
 }
 
-/** Returns a chip variant + display label for a priority value */
 function getPriorityChip(priority) {
     const p = parseInt(priority, 10) || 5;
     if (p >= 8) return { variant: 'danger',    label: 'Critical' };
@@ -120,7 +131,6 @@ function getPriorityChip(priority) {
     return { variant: 'secondary', label: 'Info' };
 }
 
-/** Returns the right glyph + tone for the header icon based on status */
 function getHeaderIconStyle(status) {
     const s = (status || '').toLowerCase();
     if (s === 'resolved' || s === 'closed') {
@@ -132,338 +142,17 @@ function getHeaderIconStyle(status) {
     if (s === 'investigating') {
         return { icon: 'bi-shield-exclamation', tone: 'warning' };
     }
-    // new / open / pending / unknown — active incident
     return { icon: 'bi-shield-exclamation', tone: 'danger' };
 }
 
-const ACTIVE_STATUSES = new Set(['new', 'open', 'investigating', 'pending']);
-
-
-// ── Status Panel (Overview hero) ────────────────────────────
-
-class IncidentStatusPanel extends View {
-    constructor(options = {}) {
-        super({ ...options });
-        this.template = () => this._buildTemplate();
-    }
-
-    _buildTemplate() {
-        const m = this.model;
-        const status = (m.get('status') || '').toLowerCase();
-        const priority = parseInt(m.get('priority'), 10) || 5;
-        const cfg = getStatusConfig(status);
-
-        // Tone selection: active high-pri = danger, in-progress = warning,
-        // resolved = success, paused/ignored = info, default = primary.
-        let tone;
-        if (ACTIVE_STATUSES.has(status)) {
-            tone = priority >= 6 ? 'danger' : 'warning';
-        } else if (status === 'resolved' || status === 'closed') {
-            tone = 'success';
-        } else if (status === 'paused' || status === 'ignored') {
-            tone = 'info';
-        } else {
-            tone = 'primary';
-        }
-
-        const created = Number(m.get('created')) || 0;
-        const modified = Number(m.get('modified')) || 0;
-        const duration = created
-            ? _formatDuration(Math.max(0, Math.floor(Date.now() / 1000) - created))
-            : '';
-
-        const stateLabel = `${cfg.label}${ACTIVE_STATUSES.has(status) && duration ? ` · ${duration}` : ''}`;
-
-        // Headline + meta
-        const eventCount = m.get('event_count') ?? 0;
-        const sourceIp = _resolveSourceIPSync(m);
-        const sourceCount = m.get('source_count') ?? (sourceIp ? 1 : 0);
-        const lastEventAgo = modified ? _formatRelative(modified) : '';
-
-        const headline = ACTIVE_STATUSES.has(status)
-            ? (duration ? `In flight for ${duration}` : 'In flight')
-            : (status === 'resolved' || status === 'closed'
-                ? `Resolved ${_formatRelative(modified)}`
-                : (cfg.help || cfg.label));
-
-        const metaBits = [];
-        if (lastEventAgo) metaBits.push(`Last event <strong>${_escapeHtml(lastEventAgo)}</strong>`);
-        if (eventCount)   metaBits.push(`${_escapeHtml(String(eventCount))} ${eventCount === 1 ? 'event' : 'events'}${sourceCount ? ` from ${sourceCount} ${sourceCount === 1 ? 'source' : 'sources'}` : ''}`);
-        if (!metaBits.length) metaBits.push(_escapeHtml(cfg.help || ''));
-
-        const actions = [];
-        if (ACTIVE_STATUSES.has(status)) {
-            actions.push(`<button class="btn btn-success btn-sm" data-action="resolve"><i class="bi bi-check2-circle me-1"></i>Resolve</button>`);
-            actions.push(`<button class="btn btn-outline-secondary btn-sm" data-action="assign"><i class="bi bi-person me-1"></i>Assign</button>`);
-        } else if (status === 'resolved' || status === 'closed') {
-            actions.push(`<button class="btn btn-outline-primary btn-sm" data-action="reopen"><i class="bi bi-arrow-counterclockwise me-1"></i>Re-open</button>`);
-        } else {
-            actions.push(`<button class="btn btn-success btn-sm" data-action="resolve"><i class="bi bi-check2-circle me-1"></i>Resolve</button>`);
-        }
-
-        return `
-            <div class="detail-status-panel tone-${tone}">
-                <div class="detail-status-headline">
-                    <div class="detail-status-state"><span class="detail-status-dot"></span>${_escapeHtml(stateLabel)}</div>
-                    <div class="detail-status-line">${_escapeHtml(headline)}</div>
-                    <div class="detail-status-meta">${metaBits.join(' · ')}</div>
-                </div>
-                ${actions.length ? `<div class="detail-status-actions">${actions.join('')}</div>` : ''}
-            </div>
-        `;
-    }
-
-    async onActionResolve() { this.emit('action:resolve'); }
-    async onActionAssign()  { this.emit('action:assign'); }
-    async onActionReopen()  { this.emit('action:reopen'); }
-}
-
-
-// ── "What triggered this" card ─────────────────────────────
-
-class IncidentTriggerCard extends View {
-    constructor(options = {}) {
-        super({ ...options });
-        this.template = () => this._buildTemplate();
-    }
-
-    _buildTemplate() {
-        const m = this.model;
-        const ruleSet = m.get('rule_set');
-        const ruleName = (ruleSet && typeof ruleSet === 'object') ? ruleSet.name : null;
-        const ruleId = (ruleSet && typeof ruleSet === 'object') ? ruleSet.id : ruleSet;
-
-        const metadata = m.get('metadata') || {};
-        const sourceIP = _resolveSourceIPSync(m);
-        const targetUser = metadata.user || metadata.email || metadata.username;
-
-        const rows = [];
-        if (ruleName || ruleId) {
-            const label = ruleName
-                ? `<a href="#" data-action="view-ruleset">${_escapeHtml(ruleName)}</a>`
-                : (ruleId ? `<a href="#" data-action="view-ruleset">RuleSet #${_escapeHtml(String(ruleId))}</a>` : '');
-            rows.push(['Rule', label]);
-        }
-        if (m.get('category'))    rows.push(['Category', `<code>${_escapeHtml(m.get('category'))}</code>`]);
-        if (m.get('scope'))       rows.push(['Scope',    `<code>${_escapeHtml(m.get('scope'))}</code>`]);
-        if (sourceIP) {
-            rows.push(['Source IP', `<a href="#" data-action="view-source-ip"><code>${_escapeHtml(sourceIP)}</code></a>`]);
-        }
-        if (targetUser) {
-            const userVal = String(targetUser);
-            rows.push(['Targeted user', `<a href="#" data-action="view-user" data-user="${_escapeHtml(userVal)}">${_escapeHtml(userVal)}</a>`]);
-        }
-        if (m.get('hostname'))    rows.push(['Hostname', `<code>${_escapeHtml(m.get('hostname'))}</code>`]);
-        if (m.get('event_count') != null) {
-            rows.push(['Events', `<strong>${_escapeHtml(String(m.get('event_count')))}</strong>`]);
-        }
-
-        const rowsHtml = rows.length
-            ? rows.map(([k, v], i) => {
-                const last = i === rows.length - 1;
-                return `<li class="d-flex justify-content-between ${last ? '' : 'border-bottom border-opacity-25'} py-1"><span class="text-secondary">${_escapeHtml(k)}</span><span>${v}</span></li>`;
-              }).join('')
-            : `<li class="text-secondary py-1">No trigger context recorded.</li>`;
-
-        return `
-            <div class="card">
-                <div class="card-body">
-                    <div class="card-title"><i class="bi bi-funnel"></i>What triggered this</div>
-                    <ul class="list-unstyled mb-0 small">${rowsHtml}</ul>
-                </div>
-            </div>
-        `;
-    }
-
-    async onActionViewRuleset() { this.emit('action:view-ruleset'); }
-    async onActionViewSourceIp() { this.emit('action:view-source-ip'); }
-    async onActionViewUser(event, element) {
-        const user = element?.dataset?.user;
-        this.emit('action:view-user', user);
-    }
-}
-
-
-// ── "What happened next" card (timeline of handler chain) ──
-
-class IncidentResponseCard extends View {
-    constructor(options = {}) {
-        super({ ...options });
-        this.template = () => this._buildTemplate();
-    }
-
-    _buildTemplate() {
-        const m = this.model;
-        const metadata = m.get('metadata') || {};
-        const items = [];
-
-        // Handler chain fired
-        const handler = metadata.handler_chain || metadata.handler || (m.get('rule_set')?.handler);
-        if (handler) {
-            const chainHtml = String(handler).split(',').map(h => `<code>${_escapeHtml(h.trim())}</code>`).join(' → ');
-            items.push({
-                tone: 'danger',
-                headline: 'Handler chain fired',
-                detail: chainHtml,
-                when: _formatRelative(m.get('created'))
-            });
-        }
-
-        // Source IP blocked
-        if (metadata.blocked_ip || metadata.ip_blocked) {
-            const ip = metadata.blocked_ip || _resolveSourceIPSync(m);
-            const ttl = metadata.block_ttl ? ` · expires in ${_formatDuration(metadata.block_ttl)}` : '';
-            items.push({
-                tone: 'warning',
-                headline: 'Source IP blocked',
-                detail: `<code>${_escapeHtml(ip || '')}</code>${ttl}`,
-                when: _formatRelative(metadata.blocked_at || m.get('created'))
-            });
-        }
-
-        // Ticket created
-        const ticketId = metadata.ticket_id || metadata.ticket;
-        if (ticketId) {
-            items.push({
-                tone: 'warning',
-                headline: 'Ticket created',
-                detail: `<a href="#" data-action="view-ticket" data-ticket="${_escapeHtml(String(ticketId))}">#${_escapeHtml(String(ticketId))}</a>`,
-                when: _formatRelative(metadata.ticket_created_at || m.get('created'))
-            });
-        }
-
-        // LLM analysis
-        const llm = metadata.llm_analysis;
-        if (llm) {
-            const verdict = llm.verdict || llm.classification || '';
-            const conf = llm.confidence != null ? ` · confidence ${llm.confidence}` : '';
-            items.push({
-                tone: 'info',
-                headline: 'LLM triage completed',
-                detail: verdict ? `Verdict: <strong>${_escapeHtml(verdict)}</strong>${conf}` : 'Analysis complete',
-                when: _formatRelative(metadata.llm_analyzed_at || m.get('modified'))
-            });
-        } else if (metadata.analysis_in_progress) {
-            items.push({
-                tone: 'info',
-                headline: 'LLM triage in progress',
-                detail: 'Polling for results…',
-                when: 'just now'
-            });
-        }
-
-        if (!items.length) {
-            return `
-                <div class="card">
-                    <div class="card-body">
-                        <div class="card-title"><i class="bi bi-tools"></i>What happened next</div>
-                        <div class="text-secondary small">No handler activity recorded yet.</div>
-                    </div>
-                </div>
-            `;
-        }
-
-        const itemsHtml = items.map(item => `
-            <li class="detail-timeline-item tone-${item.tone}">
-                <div>
-                    <div class="detail-timeline-headline">${_escapeHtml(item.headline)}</div>
-                    ${item.detail ? `<div class="detail-timeline-detail">${item.detail}</div>` : ''}
-                </div>
-                <span class="detail-timeline-when">${_escapeHtml(item.when || '')}</span>
-            </li>
-        `).join('');
-
-        return `
-            <div class="card">
-                <div class="card-body">
-                    <div class="card-title"><i class="bi bi-tools"></i>What happened next</div>
-                    <ol class="detail-timeline">${itemsHtml}</ol>
-                </div>
-            </div>
-        `;
-    }
-
-    async onActionViewTicket(event, element) {
-        event.preventDefault();
-        const id = element?.dataset?.ticket;
-        if (id) this.emit('action:view-ticket', id);
-    }
-}
-
-
-// ── LLM Analysis Results (kept; bubbles parent actions) ────
-
-class LLMAnalysisResultsView extends View {
-    constructor(options = {}) {
-        super({
-            className: 'llm-analysis-results mb-3',
-            ...options
-        });
-
-        this.analysis = options.analysis || {};
-        this.summary = this.analysis.summary || '';
-        this.summaryHtml = '';
-        this.hasProposedRule = !!(this.analysis.proposed_ruleset_id);
-        this.proposedRulesetId = this.analysis.proposed_ruleset_id;
-        this.mergedCount = (this.analysis.merged_incidents || []).length;
-        this.mergedIds = (this.analysis.merged_incidents || []).join(', ');
-
-        this.template = `
-            <div class="card border-info shadow-sm">
-                <div class="card-header bg-info bg-opacity-10 d-flex align-items-center justify-content-between">
-                    <div>
-                        <i class="bi bi-robot me-2 text-info"></i>
-                        <strong>LLM Analysis</strong>
-                        <span class="text-secondary small ms-2">AI-generated triage</span>
-                    </div>
-                    <button class="btn btn-outline-info btn-sm" data-action="re-analyze">
-                        <i class="bi bi-arrow-clockwise me-1"></i>Re-analyze
-                    </button>
-                </div>
-                <div class="card-body">
-                    {{#summary}}
-                    <div class="mb-3">
-                        <h6 class="text-secondary mb-2"><i class="bi bi-chat-left-text me-1"></i>Summary</h6>
-                        <div class="bg-body-tertiary rounded p-3 small llm-summary-content">{{{summaryHtml}}}</div>
-                    </div>
-                    {{/summary}}
-                    {{#mergedCount}}
-                    <div class="mb-3">
-                        <span class="badge bg-primary"><i class="bi bi-union me-1"></i>{{mergedCount}} incident(s) merged</span>
-                        <span class="text-secondary small ms-2">IDs: {{mergedIds}}</span>
-                    </div>
-                    {{/mergedCount}}
-                    {{#hasProposedRule|bool}}
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="badge bg-success"><i class="bi bi-gear me-1"></i>Proposed Rule</span>
-                        <button class="btn btn-outline-primary btn-sm" data-action="view-proposed-rule">
-                            <i class="bi bi-box-arrow-up-right me-1"></i>View Proposed RuleSet #{{proposedRulesetId}}
-                        </button>
-                    </div>
-                    {{/hasProposedRule|bool}}
-                </div>
-            </div>
-        `;
-    }
-
-    async onBeforeRender() {
-        if (this.summary && !this.summaryHtml) {
-            this.summaryHtml = await _renderMarkdown(this, this.summary);
-        }
-    }
-
-    async onActionReAnalyze() { this.emit('analyze-llm'); }
-
-    async onActionViewProposedRule() {
-        if (!this.proposedRulesetId) return;
-        try {
-            const ruleset = new RuleSet({ id: this.proposedRulesetId });
-            await ruleset.fetch();
-            await Modal.detail(new RuleSetView({ model: ruleset }));
-        } catch (e) {
-            this.getApp()?.toast?.error('Could not load proposed RuleSet');
-        }
-    }
+/** StatusPanel tone selection driven by status + priority */
+function _resolvePanelTone(model) {
+    const status = (model.get('status') || '').toLowerCase();
+    const priority = parseInt(model.get('priority'), 10) || 5;
+    if (ACTIVE_STATUSES.has(status)) return priority >= 6 ? 'danger' : 'warning';
+    if (status === 'resolved' || status === 'closed') return 'success';
+    if (status === 'paused' || status === 'ignored') return 'info';
+    return 'primary';
 }
 
 
@@ -473,56 +162,71 @@ class IncidentOverviewSection extends View {
     constructor(options = {}) {
         super({
             className: 'incident-overview-section',
+            template: `
+                <div data-container="ov-status"></div>
+                <div data-container="ov-llm-analysis"></div>
+                <div class="detail-kpi-grid">
+                    <div data-container="ov-kpi-events"></div>
+                    <div data-container="ov-kpi-sources"></div>
+                    <div data-container="ov-kpi-last"></div>
+                    <div data-container="ov-kpi-related"></div>
+                </div>
+                <div class="detail-pair">
+                    <div data-container="ov-trigger"></div>
+                    <div data-container="ov-response"></div>
+                </div>
+            `,
             ...options
         });
-
-        this.template = `
-            <div data-container="ov-status" class="mb-3"></div>
-            <div data-container="ov-llm-analysis"></div>
-            <div class="detail-kpi-grid">
-                <div data-container="ov-kpi-events"></div>
-                <div data-container="ov-kpi-sources"></div>
-                <div data-container="ov-kpi-last"></div>
-                <div data-container="ov-kpi-related"></div>
-            </div>
-            <div class="detail-pair">
-                <div data-container="ov-trigger"></div>
-                <div data-container="ov-response"></div>
-            </div>
-        `;
     }
 
     async onInit() {
         const m = this.model;
 
-        // Status panel
-        this.statusPanel = new IncidentStatusPanel({
+        // StatusPanel hero — function-valued options re-resolve against the
+        // current model on each render.
+        this.statusPanel = new StatusPanel({
             containerId: 'ov-status',
-            model: m
+            model: m,
+            tone:     mm => _resolvePanelTone(mm),
+            state:    mm => this._panelState(mm),
+            headline: mm => this._panelHeadline(mm),
+            meta:     mm => this._panelMeta(mm),
+            actions:  mm => this._panelActions(mm)
         });
-        this.statusPanel.on('action:resolve', () => this.emit('action:resolve'));
-        this.statusPanel.on('action:assign',  () => this.emit('action:assign'));
-        this.statusPanel.on('action:reopen',  () => this.emit('action:reopen'));
         this.addChild(this.statusPanel);
 
-        // LLM analysis (if available)
-        this._showLlmAnalysisIfAvailable();
+        // LLM analysis (if available) — keyed under its own container
+        this._mountLlmAnalysis();
 
-        // KPI cards
+        // KPI cards (default size; no metric-card-lg)
         const eventCount = m.get('event_count') ?? 0;
         const sourceCount = m.get('source_count') ?? (_resolveSourceIPSync(m) ? 1 : 0);
-        const lastFired = _formatRelative(m.get('modified') || m.get('created'));
         const relatedCount = m.get('related_count');
+        const lastFired = _formatRelative(m.get('modified') || m.get('created')) || '—';
 
-        this.kpiEvents = this._kpi('ov-kpi-events', 'Events', String(eventCount),
-            eventCount > 10 ? 'danger' : (eventCount > 0 ? 'warning' : null));
-        this.kpiSources = this._kpi('ov-kpi-sources', 'Sources', String(sourceCount));
-        this.kpiLast    = this._kpi('ov-kpi-last',    'Last fired', lastFired || '—');
-        this.kpiRelated = this._kpi('ov-kpi-related', 'Related',    relatedCount != null ? String(relatedCount) : '—');
-        this.addChild(this.kpiEvents);
-        this.addChild(this.kpiSources);
-        this.addChild(this.kpiLast);
-        this.addChild(this.kpiRelated);
+        this.kpiEvents = new MetricCard({
+            containerId: 'ov-kpi-events',
+            label: 'Events',
+            value: String(eventCount),
+            tone: eventCount > 10 ? 'danger' : (eventCount > 0 ? 'warning' : 'default')
+        });
+        this.kpiSources = new MetricCard({
+            containerId: 'ov-kpi-sources',
+            label: 'Sources',
+            value: String(sourceCount)
+        });
+        this.kpiLast = new MetricCard({
+            containerId: 'ov-kpi-last',
+            label: 'Last fired',
+            value: lastFired
+        });
+        this.kpiRelated = new MetricCard({
+            containerId: 'ov-kpi-related',
+            label: 'Related',
+            value: relatedCount != null ? String(relatedCount) : '—'
+        });
+        [this.kpiEvents, this.kpiSources, this.kpiLast, this.kpiRelated].forEach(c => this.addChild(c));
 
         // Trigger + response cards
         this.triggerCard = new IncidentTriggerCard({
@@ -542,18 +246,7 @@ class IncidentOverviewSection extends View {
         this.addChild(this.responseCard);
     }
 
-    _kpi(containerId, label, value, tone = null) {
-        return new View({
-            containerId,
-            className: `metric-card${tone ? ` metric-card-tone-${tone}` : ''}`,
-            template: `
-                <div class="metric-card-label">${_escapeHtml(label)}</div>
-                <div class="metric-card-value">${_escapeHtml(value)}</div>
-            `
-        });
-    }
-
-    _showLlmAnalysisIfAvailable() {
+    _mountLlmAnalysis() {
         const metadata = this.model.get('metadata') || {};
         const llmAnalysis = metadata.llm_analysis;
         if (llmAnalysis && !this.llmResultsView) {
@@ -566,7 +259,7 @@ class IncidentOverviewSection extends View {
         }
     }
 
-    /** Called after analysis polling completes */
+    /** Re-mount LLM block after async analysis returns */
     async refreshAnalysis() {
         if (this.llmResultsView) {
             this.removeChild(this.llmResultsView);
@@ -574,20 +267,456 @@ class IncidentOverviewSection extends View {
         }
         if (this.isMounted()) await this.render();
     }
+
+    // ── StatusPanel narrative resolvers ─────────────────────
+
+    _panelState(model) {
+        const status = (model.get('status') || '').toLowerCase();
+        const cfg = getStatusConfig(status);
+        const created = Number(model.get('created')) || 0;
+        const duration = (created && ACTIVE_STATUSES.has(status))
+            ? _formatDuration(Math.max(0, Math.floor(Date.now() / 1000) - created))
+            : '';
+        return duration ? `${cfg.label} · ${duration}` : cfg.label;
+    }
+
+    _panelHeadline(model) {
+        const status = (model.get('status') || '').toLowerCase();
+        const cfg = getStatusConfig(status);
+        const created = Number(model.get('created')) || 0;
+        const modified = Number(model.get('modified')) || 0;
+
+        if (ACTIVE_STATUSES.has(status)) {
+            const duration = created
+                ? _formatDuration(Math.max(0, Math.floor(Date.now() / 1000) - created))
+                : '';
+            return duration ? `In flight for ${duration}` : 'In flight';
+        }
+        if (status === 'resolved' || status === 'closed') {
+            return `Resolved ${_formatRelative(modified)}`;
+        }
+        return cfg.help || cfg.label;
+    }
+
+    /**
+     * StatusPanel `meta` is trusted HTML — the framework hands callers a
+     * trusted-HTML slot for `<strong>` / `<code>` interpolation. Every
+     * model field reaching the slot is escaped via `MOJOUtils.escapeHtml`.
+     */
+    _panelMeta(model) {
+        const cfg = getStatusConfig(model.get('status'));
+        const eventCount = model.get('event_count') ?? 0;
+        const sourceIp = _resolveSourceIPSync(model);
+        const sourceCount = model.get('source_count') ?? (sourceIp ? 1 : 0);
+        const modified = Number(model.get('modified')) || 0;
+        const lastEventAgo = modified ? _formatRelative(modified) : '';
+
+        const bits = [];
+        if (lastEventAgo) bits.push(`Last event <strong>${escapeHtml(lastEventAgo)}</strong>`);
+        if (eventCount) {
+            const eventLabel = eventCount === 1 ? 'event' : 'events';
+            const sourceLabel = sourceCount === 1 ? 'source' : 'sources';
+            const tail = sourceCount ? ` from ${escapeHtml(String(sourceCount))} ${sourceLabel}` : '';
+            bits.push(`${escapeHtml(String(eventCount))} ${eventLabel}${tail}`);
+        }
+        if (!bits.length) bits.push(escapeHtml(cfg.help || ''));
+        return bits.join(' · ');
+    }
+
+    _panelActions(model) {
+        const status = (model.get('status') || '').toLowerCase();
+        const out = [];
+        if (ACTIVE_STATUSES.has(status)) {
+            out.push({ label: 'Resolve', action: 'resolve', icon: 'bi-check2-circle', variant: 'success' });
+            out.push({ label: 'Assign',  action: 'assign',  icon: 'bi-person',        variant: 'outline-secondary' });
+        } else if (status === 'resolved' || status === 'closed') {
+            out.push({ label: 'Re-open', action: 'reopen',  icon: 'bi-arrow-counterclockwise', variant: 'outline-primary' });
+        } else {
+            out.push({ label: 'Resolve', action: 'resolve', icon: 'bi-check2-circle', variant: 'success' });
+        }
+        return out;
+    }
+
+    // StatusPanel actions bubble via standard MOJO action pipeline
+    async onActionResolve() { this.emit('action:resolve'); }
+    async onActionAssign()  { this.emit('action:assign'); }
+    async onActionReopen()  { this.emit('action:reopen'); }
+}
+
+
+// ── "What triggered this" card ─────────────────────────────
+
+/**
+ * Card with the rule / category / source / target rows that explain why
+ * this incident fired. Mustache template with getter properties; each
+ * row is a labelled flat row.
+ */
+class IncidentTriggerCard extends View {
+    constructor(options = {}) {
+        super({
+            template: `
+                <div class="card">
+                    <div class="card-body">
+                        <div class="card-title"><i class="bi bi-funnel"></i>What triggered this</div>
+                        {{#hasRows|bool}}
+                        <div class="trigger-rows">
+                            {{#hasRule|bool}}
+                            <div class="detail-flat-row">
+                                <div class="detail-flat-row-label">Rule</div>
+                                <div class="detail-flat-row-value">
+                                    <a href="#" data-action="view-ruleset">{{ruleLabel}}</a>
+                                </div>
+                            </div>
+                            {{/hasRule|bool}}
+                            {{#hasCategory|bool}}
+                            <div class="detail-flat-row">
+                                <div class="detail-flat-row-label">Category</div>
+                                <div class="detail-flat-row-value"><code>{{model.category}}</code></div>
+                            </div>
+                            {{/hasCategory|bool}}
+                            {{#hasScope|bool}}
+                            <div class="detail-flat-row">
+                                <div class="detail-flat-row-label">Scope</div>
+                                <div class="detail-flat-row-value"><code>{{model.scope}}</code></div>
+                            </div>
+                            {{/hasScope|bool}}
+                            {{#hasSourceIp|bool}}
+                            <div class="detail-flat-row">
+                                <div class="detail-flat-row-label">Source IP</div>
+                                <div class="detail-flat-row-value">
+                                    <a href="#" data-action="view-source-ip"><code>{{sourceIp}}</code></a>
+                                </div>
+                            </div>
+                            {{/hasSourceIp|bool}}
+                            {{#hasTargetUser|bool}}
+                            <div class="detail-flat-row">
+                                <div class="detail-flat-row-label">Targeted user</div>
+                                <div class="detail-flat-row-value">
+                                    <a href="#" data-action="view-user" data-user="{{targetUser}}">{{targetUser}}</a>
+                                </div>
+                            </div>
+                            {{/hasTargetUser|bool}}
+                            {{#hasHostname|bool}}
+                            <div class="detail-flat-row">
+                                <div class="detail-flat-row-label">Hostname</div>
+                                <div class="detail-flat-row-value"><code>{{model.hostname}}</code></div>
+                            </div>
+                            {{/hasHostname|bool}}
+                            {{#hasEventCount|bool}}
+                            <div class="detail-flat-row">
+                                <div class="detail-flat-row-label">Events</div>
+                                <div class="detail-flat-row-value"><strong>{{model.event_count}}</strong></div>
+                            </div>
+                            {{/hasEventCount|bool}}
+                        </div>
+                        {{/hasRows|bool}}
+                        {{^hasRows|bool}}
+                        <div class="text-secondary small">No trigger context recorded.</div>
+                        {{/hasRows|bool}}
+                    </div>
+                </div>
+            `,
+            ...options
+        });
+    }
+
+    // ── Computed properties (Mustache reads them off `this`) ──
+
+    get _ruleSet() { return this.model?.get?.('rule_set'); }
+    get hasRule() {
+        const rs = this._ruleSet;
+        return !!(rs && (typeof rs === 'object' ? (rs.id || rs.name) : rs));
+    }
+    get ruleLabel() {
+        const rs = this._ruleSet;
+        if (!rs) return '';
+        if (typeof rs === 'object' && rs.name) return rs.name;
+        const id = typeof rs === 'object' ? rs.id : rs;
+        return id ? `RuleSet #${id}` : '';
+    }
+    get hasCategory() { return !!this.model?.get?.('category'); }
+    get hasScope()    { return !!this.model?.get?.('scope'); }
+    get hasHostname() { return !!this.model?.get?.('hostname'); }
+    get hasEventCount() {
+        const c = this.model?.get?.('event_count');
+        return c != null;
+    }
+    get sourceIp()    { return _resolveSourceIPSync(this.model) || ''; }
+    get hasSourceIp() { return !!this.sourceIp; }
+    get targetUser() {
+        const md = this.model?.get?.('metadata') || {};
+        return md.user || md.email || md.username || '';
+    }
+    get hasTargetUser() { return !!this.targetUser; }
+    get hasRows() {
+        return this.hasRule || this.hasCategory || this.hasScope ||
+               this.hasSourceIp || this.hasTargetUser || this.hasHostname ||
+               this.hasEventCount;
+    }
+
+    async onActionViewRuleset()   { this.emit('action:view-ruleset'); }
+    async onActionViewSourceIp()  { this.emit('action:view-source-ip'); }
+    async onActionViewUser(event, element) {
+        const user = element?.dataset?.user;
+        this.emit('action:view-user', user);
+    }
+}
+
+
+// ── "What happened next" card (handler-chain Timeline) ─────
+
+/**
+ * Card wrapping a `Timeline` of handler-chain events. The Timeline
+ * primitive renders the list; this card supplies the title shell.
+ */
+class IncidentResponseCard extends View {
+    constructor(options = {}) {
+        super({
+            template: `
+                <div class="card">
+                    <div class="card-body">
+                        <div class="card-title"><i class="bi bi-tools"></i>What happened next</div>
+                        <div data-container="response-timeline"></div>
+                    </div>
+                </div>
+            `,
+            ...options
+        });
+    }
+
+    async onInit() {
+        this.timeline = new Timeline({
+            containerId: 'response-timeline',
+            model: this.model,
+            emptyText: 'No handler activity recorded yet.',
+            items: (m) => this._buildItems(m)
+        });
+        this.addChild(this.timeline);
+    }
+
+    /**
+     * Build the timeline-item list from the incident's `metadata` block.
+     * `detail` is trusted HTML — every model-controlled field is escaped
+     * here before interpolation (per Timeline's security note).
+     */
+    _buildItems(model) {
+        const m = model || this.model;
+        const metadata = m.get('metadata') || {};
+        const items = [];
+
+        const handler = metadata.handler_chain || metadata.handler ||
+            (m.get('rule_set') && typeof m.get('rule_set') === 'object' ? m.get('rule_set').handler : null);
+        if (handler) {
+            const chainHtml = String(handler).split(',')
+                .map(h => `<code>${escapeHtml(h.trim())}</code>`)
+                .join(' → ');
+            items.push({
+                tone: 'danger',
+                headline: 'Handler chain fired',
+                detail: chainHtml,
+                when: _formatRelative(m.get('created'))
+            });
+        }
+
+        if (metadata.blocked_ip || metadata.ip_blocked) {
+            const ip = metadata.blocked_ip || _resolveSourceIPSync(m);
+            const ttl = metadata.block_ttl ? ` · expires in ${escapeHtml(_formatDuration(metadata.block_ttl))}` : '';
+            items.push({
+                tone: 'warning',
+                headline: 'Source IP blocked',
+                detail: `<code>${escapeHtml(String(ip || ''))}</code>${ttl}`,
+                when: _formatRelative(metadata.blocked_at || m.get('created'))
+            });
+        }
+
+        const ticketId = metadata.ticket_id || metadata.ticket;
+        if (ticketId) {
+            items.push({
+                tone: 'warning',
+                headline: 'Ticket created',
+                detail: `<a href="#" data-action="view-ticket" data-ticket="${escapeHtml(String(ticketId))}">#${escapeHtml(String(ticketId))}</a>`,
+                when: _formatRelative(metadata.ticket_created_at || m.get('created'))
+            });
+        }
+
+        const llm = metadata.llm_analysis;
+        if (llm) {
+            const verdict = llm.verdict || llm.classification || '';
+            const conf = llm.confidence != null ? ` · confidence ${escapeHtml(String(llm.confidence))}` : '';
+            items.push({
+                tone: 'info',
+                headline: 'LLM triage completed',
+                detail: verdict ? `Verdict: <strong>${escapeHtml(String(verdict))}</strong>${conf}` : 'Analysis complete',
+                when: _formatRelative(metadata.llm_analyzed_at || m.get('modified'))
+            });
+        } else if (metadata.analysis_in_progress) {
+            items.push({
+                tone: 'info',
+                headline: 'LLM triage in progress',
+                detail: 'Polling for results…',
+                when: 'just now'
+            });
+        }
+
+        return items;
+    }
+
+    async onActionViewTicket(event, element) {
+        event.preventDefault();
+        const id = element?.dataset?.ticket;
+        if (id) this.emit('action:view-ticket', id);
+    }
+}
+
+
+// ── LLM Analysis Results (Mustache; bubbles parent actions) ─
+
+class LLMAnalysisResultsView extends View {
+    constructor(options = {}) {
+        const { analysis = {}, ...rest } = options;
+        super({
+            className: 'llm-analysis-results mb-3',
+            template: `
+                <div class="card border-info shadow-sm">
+                    <div class="card-header bg-info bg-opacity-10 d-flex align-items-center justify-content-between">
+                        <div>
+                            <i class="bi bi-robot me-2 text-info"></i>
+                            <strong>LLM Analysis</strong>
+                            <span class="text-secondary small ms-2">AI-generated triage</span>
+                        </div>
+                        <button class="btn btn-outline-info btn-sm" data-action="re-analyze">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Re-analyze
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        {{#summary}}
+                        <div class="mb-3">
+                            <h6 class="text-secondary mb-2"><i class="bi bi-chat-left-text me-1"></i>Summary</h6>
+                            <div class="bg-body-tertiary rounded llm-summary-content">{{{summaryHtml}}}</div>
+                        </div>
+                        {{/summary}}
+                        {{#mergedCount}}
+                        <div class="mb-3">
+                            <span class="badge bg-primary"><i class="bi bi-union me-1"></i>{{mergedCount}} incident(s) merged</span>
+                            <span class="text-secondary small ms-2">IDs: {{mergedIds}}</span>
+                        </div>
+                        {{/mergedCount}}
+                        {{#hasProposedRule|bool}}
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-success"><i class="bi bi-gear me-1"></i>Proposed Rule</span>
+                            <button class="btn btn-outline-primary btn-sm" data-action="view-proposed-rule">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>View Proposed RuleSet #{{proposedRulesetId}}
+                            </button>
+                        </div>
+                        {{/hasProposedRule|bool}}
+                    </div>
+                </div>
+            `,
+            ...rest
+        });
+
+        this.analysis = analysis;
+        this.summary = analysis.summary || '';
+        this.summaryHtml = '';
+        this.hasProposedRule = !!(analysis.proposed_ruleset_id);
+        this.proposedRulesetId = analysis.proposed_ruleset_id;
+        this.mergedCount = (analysis.merged_incidents || []).length;
+        this.mergedIds = (analysis.merged_incidents || []).join(', ');
+    }
+
+    async onBeforeRender() {
+        if (this.summary && !this.summaryHtml) {
+            this.summaryHtml = await _renderMarkdown(this, this.summary);
+        }
+    }
+
+    async onActionReAnalyze() { this.emit('analyze-llm'); }
+
+    async onActionViewProposedRule() {
+        if (!this.proposedRulesetId) return;
+        try {
+            const ruleset = new RuleSet({ id: this.proposedRulesetId });
+            await ruleset.fetch();
+            await Modal.detail(new RuleSetView({ model: ruleset }));
+        } catch (_e) {
+            this.getApp()?.toast?.error('Could not load proposed RuleSet');
+        }
+    }
 }
 
 
 // ── Source Section (IP intel + GeoIP summary) ──────────────
 
+/**
+ * Source IP / GeoIP summary section. Mustache template against view-
+ * level getter properties; subviews mount via `data-container` slots.
+ */
 class IncidentSourceSection extends View {
     constructor(options = {}) {
+        const { sourceIP, ipInfo, ...rest } = options;
         super({
             className: 'incident-source-section',
-            ...options
+            template: `
+                {{^hasSourceIp|bool}}
+                <div class="text-center text-secondary py-5">
+                    <i class="bi bi-globe fs-1 d-block mb-2"></i>
+                    <p class="mb-0">No source IP available for this incident.</p>
+                </div>
+                {{/hasSourceIp|bool}}
+                {{#hasSourceIp|bool}}
+                {{^hasGeoData|bool}}
+                <div class="text-secondary py-3">
+                    <i class="bi bi-globe me-2"></i>No GeoIP data available for {{sourceIP}}
+                </div>
+                {{/hasGeoData|bool}}
+                {{#hasGeoData|bool}}
+                <div class="detail-section-eyebrow">
+                    Source IP
+                    <span class="ms-auto">
+                        {{{badgesHtml}}}
+                    </span>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Address</div>
+                    <div class="detail-flat-row-value">
+                        <a role="button" class="font-monospace fw-semibold text-decoration-none" data-action="view-geoip">{{sourceIP}}</a>
+                    </div>
+                </div>
+                {{#hasGeoLine|bool}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Location</div>
+                    <div class="detail-flat-row-value">{{geoLine}}</div>
+                </div>
+                {{/hasGeoLine|bool}}
+                {{#hasIspLine|bool}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">ISP</div>
+                    <div class="detail-flat-row-value">{{ispLine}}</div>
+                </div>
+                {{/hasIspLine|bool}}
+                {{#hasRiskScore|bool}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Risk score</div>
+                    <div class="detail-flat-row-value"><code>{{riskScore}}</code></div>
+                </div>
+                {{/hasRiskScore|bool}}
+
+                <div class="incident-source-actions d-flex flex-wrap gap-2">
+                    {{{actionsHtml}}}
+                </div>
+
+                <div data-container="src-network"></div>
+                <div data-container="src-threat"></div>
+                <div data-container="src-flags"></div>
+                <div data-container="src-block"></div>
+                {{/hasGeoData|bool}}
+                {{/hasSourceIp|bool}}
+            `,
+            ...rest
         });
 
-        this.sourceIP = options.sourceIP;
-        this.ipInfo = options.ipInfo || null;
+        this.sourceIP = sourceIP;
+        this.ipInfo = ipInfo || null;
         this.geoData = null;
         this.threatLevel = 'Unknown';
         this.threatBadgeClass = 'bg-secondary';
@@ -595,97 +724,67 @@ class IncidentSourceSection extends View {
         this.isWhitelisted = false;
         this.blockedReason = '';
         this.geoModel = null;
-
-        this.template = () => this._buildTemplate();
     }
 
-    _buildTemplate() {
-        if (!this.sourceIP) {
-            return `
-                <div class="text-center text-secondary py-5">
-                    <i class="bi bi-globe fs-1 d-block mb-2"></i>
-                    <p class="mb-0">No source IP available for this incident.</p>
-                </div>
-            `;
-        }
+    // ── Computed properties (Mustache reads them off `this`) ──
 
-        if (!this.geoData) {
-            return `
-                <div class="card">
-                    <div class="card-body text-secondary text-center py-3">
-                        <i class="bi bi-globe me-2"></i>No GeoIP data available for ${_escapeHtml(this.sourceIP)}
-                    </div>
-                </div>
-            `;
-        }
-
+    get hasSourceIp() { return !!this.sourceIP; }
+    get hasGeoData()  { return !!this.geoData; }
+    get geoLine() {
+        if (!this.geoData) return '';
         const g = this.geoData;
-        const flagsHtml = [
-            g.is_tor      ? `<span class="badge bg-danger-subtle text-danger" title="TOR Exit Node">TOR</span>` : '',
-            g.is_vpn      ? `<span class="badge bg-warning-subtle text-warning" title="VPN Detected">VPN</span>` : '',
-            g.is_proxy    ? `<span class="badge bg-info-subtle text-info" title="Proxy">Proxy</span>` : '',
-            g.is_datacenter ? `<span class="badge bg-secondary-subtle text-secondary" title="Datacenter">DC</span>` : '',
-            g.is_known_attacker ? `<span class="badge bg-danger" title="Known Attacker">Attacker</span>` : '',
-            g.is_known_abuser   ? `<span class="badge bg-danger-subtle text-danger" title="Known Abuser">Abuser</span>` : ''
+        return [g.city, g.country_name, g.country_code ? `(${g.country_code})` : null]
+            .filter(Boolean).join(' · ');
+    }
+    get hasGeoLine() { return !!this.geoLine; }
+    get ispLine() {
+        if (!this.geoData) return '';
+        const g = this.geoData;
+        return [g.isp, g.asn, g.connection_type].filter(Boolean).join(' · ');
+    }
+    get hasIspLine() { return !!this.ispLine; }
+    get riskScore() { return this.geoData?.risk_score != null ? String(this.geoData.risk_score) : ''; }
+    get hasRiskScore() { return this.geoData?.risk_score != null; }
+    get badgesHtml() {
+        // Trusted-HTML slot — flag badges + threat-level + block/whitelist.
+        // Only `threatLevel` (uppercased status text) and the boolean flags
+        // come from external data; both sides are escaped before output.
+        const g = this.geoData || {};
+        const flags = [
+            g.is_tor          && `<span class="badge bg-danger-subtle text-danger" title="TOR Exit Node">TOR</span>`,
+            g.is_vpn          && `<span class="badge bg-warning-subtle text-warning" title="VPN Detected">VPN</span>`,
+            g.is_proxy        && `<span class="badge bg-info-subtle text-info" title="Proxy">Proxy</span>`,
+            g.is_datacenter   && `<span class="badge bg-secondary-subtle text-secondary" title="Datacenter">DC</span>`,
+            g.is_known_attacker && `<span class="badge bg-danger" title="Known Attacker">Attacker</span>`,
+            g.is_known_abuser   && `<span class="badge bg-danger-subtle text-danger" title="Known Abuser">Abuser</span>`
         ].filter(Boolean).join(' ');
-
-        const geoLine = [
-            g.city, g.country_name, g.country_code ? `(${g.country_code})` : null
-        ].filter(Boolean).join(' · ');
-
-        const ispLine = [
-            g.isp, g.asn, g.connection_type
-        ].filter(Boolean).join(' · ');
-
-        const blockedBadge = this.isBlocked
-            ? `<span class="badge bg-danger ms-2" title="${_escapeHtml(this.blockedReason)}"><i class="bi bi-slash-circle me-1"></i>Blocked</span>` : '';
-        const whitelistBadge = this.isWhitelisted
-            ? `<span class="badge bg-success ms-2"><i class="bi bi-check-circle me-1"></i>Whitelisted</span>` : '';
-
-        const actions = [];
-        if (!this.isBlocked) {
-            actions.push(`<button class="btn btn-outline-danger btn-sm" data-action="block-ip"><i class="bi bi-slash-circle me-1"></i>Block IP</button>`);
+        const threat = `<span class="badge ${this.threatBadgeClass}">${escapeHtml(this.threatLevel)}</span>`;
+        const blocked = this.isBlocked
+            ? `<span class="badge bg-danger ms-1" title="${escapeHtml(this.blockedReason)}"><i class="bi bi-slash-circle me-1"></i>Blocked</span>` : '';
+        const wl = this.isWhitelisted
+            ? `<span class="badge bg-success ms-1"><i class="bi bi-check-circle me-1"></i>Whitelisted</span>` : '';
+        return `${flags} ${threat}${blocked}${wl}`.trim();
+    }
+    get actionsHtml() {
+        // Trusted-HTML slot — every interpolated value is a fixed literal
+        // or a normalized number/coordinate (no user-typed strings here).
+        const g = this.geoData || {};
+        const out = [];
+        if (this.isBlocked) {
+            out.push(`<button class="btn btn-outline-success btn-sm" data-action="unblock-ip"><i class="bi bi-unlock me-1"></i>Unblock IP</button>`);
         } else {
-            actions.push(`<button class="btn btn-outline-success btn-sm" data-action="unblock-ip"><i class="bi bi-unlock me-1"></i>Unblock IP</button>`);
+            out.push(`<button class="btn btn-outline-danger btn-sm" data-action="block-ip"><i class="bi bi-slash-circle me-1"></i>Block IP</button>`);
         }
         if (!this.isWhitelisted) {
-            actions.push(`<button class="btn btn-outline-primary btn-sm" data-action="whitelist-ip"><i class="bi bi-check-circle me-1"></i>Whitelist</button>`);
+            out.push(`<button class="btn btn-outline-primary btn-sm" data-action="whitelist-ip"><i class="bi bi-check-circle me-1"></i>Whitelist</button>`);
         }
-        actions.push(`<button class="btn btn-outline-secondary btn-sm" data-action="view-geoip"><i class="bi bi-box-arrow-up-right me-1"></i>Open full GeoIP details</button>`);
+        out.push(`<button class="btn btn-outline-secondary btn-sm" data-action="view-geoip"><i class="bi bi-box-arrow-up-right me-1"></i>Open GeoIP details</button>`);
         if (g.latitude != null && g.longitude != null) {
-            actions.push(`<a class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${encodeURIComponent(g.latitude)}&mlon=${encodeURIComponent(g.longitude)}#map=10/${encodeURIComponent(g.latitude)}/${encodeURIComponent(g.longitude)}"><i class="bi bi-geo-alt me-1"></i>View on map</a>`);
+            const lat = encodeURIComponent(g.latitude);
+            const lon = encodeURIComponent(g.longitude);
+            out.push(`<a class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=10/${lat}/${lon}"><i class="bi bi-geo-alt me-1"></i>View on map</a>`);
         }
-
-        return `
-            <div class="card mb-3">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="text-primary"><i class="bi bi-globe-americas fs-3"></i></div>
-                            <div>
-                                <div class="mb-1">
-                                    <a role="button" class="fw-semibold font-monospace text-decoration-none" data-action="view-geoip">${_escapeHtml(this.sourceIP)}</a>
-                                    ${blockedBadge}${whitelistBadge}
-                                </div>
-                                <div class="text-secondary small">${_escapeHtml(geoLine || 'Unknown location')}</div>
-                                <div class="text-secondary small">${_escapeHtml(ispLine || 'Unknown ISP')}</div>
-                            </div>
-                        </div>
-                        <div class="text-end">
-                            <span class="badge ${this.threatBadgeClass}">${_escapeHtml(this.threatLevel)}</span>
-                            ${g.risk_score != null ? `<div class="text-secondary small mt-1">Risk Score: ${_escapeHtml(String(g.risk_score))}</div>` : ''}
-                            <div class="d-flex gap-1 mt-1 justify-content-end">${flagsHtml}</div>
-                        </div>
-                    </div>
-                    <div class="mt-3 pt-2 border-top d-flex flex-wrap gap-2">${actions.join('')}</div>
-                </div>
-            </div>
-
-            <div data-container="src-network" class="mb-3"></div>
-            <div data-container="src-threat" class="mb-3"></div>
-            <div data-container="src-flags"  class="mb-3"></div>
-            <div data-container="src-block"></div>
-        `;
+        return out.join('');
     }
 
     async onInit() {
@@ -897,64 +996,118 @@ class IncidentSourceSection extends View {
 
 // ── Request Section (HTTP capture, conditional) ────────────
 
+/**
+ * HTTP request capture. Flat-row layout via Mustache + getter properties;
+ * Headers and Body blocks live below the metadata rows.
+ */
 class IncidentRequestSection extends View {
     constructor(options = {}) {
+        const { metadata = {}, ...rest } = options;
         super({
             className: 'incident-request-section',
-            ...options
+            template: `
+                <div class="detail-section-eyebrow">Request</div>
+                {{#hasAnyField|bool}}
+                {{#hasMethod|bool}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Method</div>
+                    <div class="detail-flat-row-value"><span class="badge bg-info text-dark">{{httpMethod}}</span></div>
+                </div>
+                {{/hasMethod|bool}}
+                {{#hasStatus|bool}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Status</div>
+                    <div class="detail-flat-row-value"><code>{{httpStatus}}</code></div>
+                </div>
+                {{/hasStatus|bool}}
+                {{#hasHost|bool}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Host</div>
+                    <div class="detail-flat-row-value"><code>{{httpHost}}</code></div>
+                </div>
+                {{/hasHost|bool}}
+                {{#hasPath|bool}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Path</div>
+                    <div class="detail-flat-row-value"><code>{{httpPath}}</code></div>
+                </div>
+                {{/hasPath|bool}}
+                {{#hasUrl|bool}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">URL</div>
+                    <div class="detail-flat-row-value"><code>{{httpUrl}}</code></div>
+                </div>
+                {{/hasUrl|bool}}
+                {{#hasProtocol|bool}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Protocol</div>
+                    <div class="detail-flat-row-value"><code>{{httpProtocol}}</code></div>
+                </div>
+                {{/hasProtocol|bool}}
+                {{#hasQueryString|bool}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Query string</div>
+                    <div class="detail-flat-row-value"><code>{{httpQueryString}}</code></div>
+                </div>
+                {{/hasQueryString|bool}}
+                {{#hasUserAgent|bool}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">User agent</div>
+                    <div class="detail-flat-row-value"><code>{{httpUserAgent}}</code></div>
+                </div>
+                {{/hasUserAgent|bool}}
+                {{/hasAnyField|bool}}
+                {{^hasAnyField|bool}}
+                <div class="text-secondary small">No HTTP request fields recorded.</div>
+                {{/hasAnyField|bool}}
+
+                {{#hasHeaders|bool}}
+                <div class="detail-section-eyebrow">Headers</div>
+                <pre class="detail-payload-block"><code>{{headersText}}</code></pre>
+                {{/hasHeaders|bool}}
+
+                {{#hasBody|bool}}
+                <div class="detail-section-eyebrow">Body</div>
+                <pre class="detail-payload-block"><code>{{bodyText}}</code></pre>
+                {{/hasBody|bool}}
+            `,
+            ...rest
         });
-        this.metadata = options.metadata || {};
-        this.template = () => this._buildTemplate();
+
+        this.metadata = metadata;
     }
 
-    _buildTemplate() {
-        const m = this.metadata;
-        const fields = [
-            ['Method',       m.http_method ? `<span class="badge bg-info text-dark">${_escapeHtml(m.http_method)}</span>` : null],
-            ['Status',       m.http_status != null ? `<code>${_escapeHtml(String(m.http_status))}</code>` : null],
-            ['Host',         m.http_host ? `<code>${_escapeHtml(m.http_host)}</code>` : null],
-            ['Path',         m.http_path ? `<code>${_escapeHtml(m.http_path)}</code>` : null],
-            ['URL',          m.http_url ? `<code>${_escapeHtml(m.http_url)}</code>` : null],
-            ['Protocol',     m.http_protocol ? `<code>${_escapeHtml(m.http_protocol)}</code>` : null],
-            ['Query string', m.http_query_string ? `<code>${_escapeHtml(m.http_query_string)}</code>` : null],
-            ['User agent',   m.http_user_agent ? `<code>${_escapeHtml(m.http_user_agent)}</code>` : null]
-        ].filter(([, v]) => v != null);
+    // ── Computed properties ────────────────────────────────
 
-        const fieldsHtml = fields.map(([k, v]) => `
-            <div class="detail-field-row">
-                <div class="detail-field-label">${_escapeHtml(k)}</div>
-                <div class="detail-field-value">${v}</div>
-            </div>
-        `).join('');
-
-        const headersBlock = m.http_headers ? `
-            <div class="detail-field-card">
-                <div class="detail-field-card-header"><h4>Headers</h4></div>
-                <div class="detail-field-card-body">
-                    <pre class="bg-body-tertiary border rounded p-3 small mb-0" style="white-space: pre-wrap; word-break: break-word;"><code>${_escapeHtml(typeof m.http_headers === 'string' ? m.http_headers : JSON.stringify(m.http_headers, null, 2))}</code></pre>
-                </div>
-            </div>
-        ` : '';
-
-        const bodyBlock = m.http_body ? `
-            <div class="detail-field-card">
-                <div class="detail-field-card-header"><h4>Body</h4></div>
-                <div class="detail-field-card-body">
-                    <pre class="bg-body-tertiary border rounded p-3 small mb-0" style="white-space: pre-wrap; word-break: break-word;"><code>${_escapeHtml(typeof m.http_body === 'string' ? m.http_body : JSON.stringify(m.http_body, null, 2))}</code></pre>
-                </div>
-            </div>
-        ` : '';
-
-        return `
-            <div class="detail-field-card">
-                <div class="detail-field-card-header"><h4>Request</h4></div>
-                <div class="detail-field-card-body">
-                    ${fieldsHtml || '<div class="text-secondary small">No HTTP request fields recorded.</div>'}
-                </div>
-            </div>
-            ${headersBlock}
-            ${bodyBlock}
-        `;
+    get httpMethod()       { return this.metadata.http_method || ''; }
+    get httpStatus()       { return this.metadata.http_status != null ? String(this.metadata.http_status) : ''; }
+    get httpHost()         { return this.metadata.http_host || ''; }
+    get httpPath()         { return this.metadata.http_path || ''; }
+    get httpUrl()          { return this.metadata.http_url || ''; }
+    get httpProtocol()     { return this.metadata.http_protocol || ''; }
+    get httpQueryString()  { return this.metadata.http_query_string || ''; }
+    get httpUserAgent()    { return this.metadata.http_user_agent || ''; }
+    get hasMethod()        { return !!this.httpMethod; }
+    get hasStatus()        { return this.metadata.http_status != null; }
+    get hasHost()          { return !!this.httpHost; }
+    get hasPath()          { return !!this.httpPath; }
+    get hasUrl()           { return !!this.httpUrl; }
+    get hasProtocol()      { return !!this.httpProtocol; }
+    get hasQueryString()   { return !!this.httpQueryString; }
+    get hasUserAgent()     { return !!this.httpUserAgent; }
+    get hasAnyField() {
+        return this.hasMethod || this.hasStatus || this.hasHost || this.hasPath ||
+               this.hasUrl || this.hasProtocol || this.hasQueryString || this.hasUserAgent;
+    }
+    get hasHeaders()  { return !!this.metadata.http_headers; }
+    get headersText() {
+        const h = this.metadata.http_headers;
+        return typeof h === 'string' ? h : JSON.stringify(h, null, 2);
+    }
+    get hasBody()     { return !!this.metadata.http_body; }
+    get bodyText() {
+        const b = this.metadata.http_body;
+        return typeof b === 'string' ? b : JSON.stringify(b, null, 2);
     }
 }
 
@@ -963,17 +1116,19 @@ class IncidentRequestSection extends View {
 
 class IncidentStackTraceSection extends View {
     constructor(options = {}) {
+        const { stackTrace = '', ...rest } = options;
         super({
             className: 'incident-stack-trace-section',
-            ...options
+            template: `
+                <div class="detail-section-eyebrow">Stack Trace</div>
+                <div data-container="stack-trace-body"></div>
+            `,
+            ...rest
         });
-
-        this.stackTrace = options.stackTrace || '';
-        this.template = `<div data-container="stack-trace-body"></div>`;
+        this.stackTrace = stackTrace;
     }
 
     async onInit() {
-        // Prefer the dedicated StackTraceView (richer formatting)
         try {
             this.body = new StackTraceView({
                 containerId: 'stack-trace-body',
@@ -981,86 +1136,86 @@ class IncidentStackTraceSection extends View {
             });
             this.addChild(this.body);
         } catch (_e) {
-            // Fallback — plain pre block
             this.body = new View({
                 containerId: 'stack-trace-body',
-                template: `<pre class="detail-error-block">${_escapeHtml(this.stackTrace)}</pre>`
+                template: `<pre class="detail-error-block">{{stackTrace}}</pre>`
             });
+            this.body.stackTrace = this.stackTrace;
             this.addChild(this.body);
         }
     }
 }
 
 
-// ── Rule Engine Section (kept; minor cleanup) ──────────────
+// ── Rule Engine Section ────────────────────────────────────
 
+/**
+ * Linked-RuleSet inspector. Already idiomatic Mustache; tightens the
+ * eyebrow + button-group layout to match the Wave 3 design language.
+ */
 class RuleEngineSection extends View {
     constructor(options = {}) {
+        const { incident, ...rest } = options;
         super({
             className: 'rule-engine-section',
-            ...options
+            template: `
+                {{#hasRuleset|bool}}
+                    {{#autoDeleteEnabled|bool}}
+                        {{^incidentProtected|bool}}
+                            <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <div>This incident will be <strong>permanently deleted</strong> when resolved or closed.</div>
+                            </div>
+                        {{/incidentProtected|bool}}
+                        {{#incidentProtected|bool}}
+                            <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+                                <i class="bi bi-shield-fill-check me-2"></i>
+                                <div>Auto-delete is enabled on this rule, but this incident is <strong>protected</strong> from deletion.</div>
+                            </div>
+                        {{/incidentProtected|bool}}
+                    {{/autoDeleteEnabled|bool}}
+                    <div class="detail-section-eyebrow">
+                        Linked RuleSet
+                        <span class="ms-auto d-flex gap-2">
+                            <button class="btn btn-outline-primary btn-sm" data-action="edit-linked-ruleset">
+                                <i class="bi bi-pencil me-1"></i>Edit
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" data-action="view-linked-ruleset">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>Open
+                            </button>
+                            <button class="btn btn-outline-success btn-sm" data-action="create-rule-from-incident">
+                                <i class="bi bi-plus-circle me-1"></i>New rule
+                            </button>
+                        </span>
+                    </div>
+                    <div data-container="ruleset-data"></div>
+                    <div class="detail-section-eyebrow">Rule Conditions</div>
+                    <div data-container="ruleset-rules"></div>
+                {{/hasRuleset|bool}}
+                {{^hasRuleset|bool}}
+                    <div class="text-center py-5">
+                        <div class="text-secondary mb-3"><i class="bi bi-gear fs-1"></i></div>
+                        <h6 class="text-secondary">No RuleSet Linked</h6>
+                        <p class="text-secondary small mb-3">
+                            This incident was not created by a rule engine match.<br>
+                            Create a new rule to catch similar events automatically.
+                        </p>
+                        <button class="btn btn-primary" data-action="create-rule-from-incident">
+                            <i class="bi bi-plus-circle me-1"></i>Create Rule from Incident
+                        </button>
+                    </div>
+                {{/hasRuleset|bool}}
+            `,
+            ...rest
         });
 
-        this.incident = options.incident;
+        this.incident = incident;
         const ruleSet = this.incident.get('rule_set');
         this.rulesetId = ruleSet && typeof ruleSet === 'object' ? ruleSet.id : ruleSet;
         this.rulesetModel = null;
         this.hasRuleset = false;
         this.autoDeleteEnabled = false;
         this.incidentProtected = !!(this.incident.get('metadata')?.do_not_delete);
-
-        this.template = `
-            {{#hasRuleset|bool}}
-                {{#autoDeleteEnabled|bool}}
-                    {{^incidentProtected|bool}}
-                        <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            <div>This incident will be <strong>permanently deleted</strong> when resolved or closed.</div>
-                        </div>
-                    {{/incidentProtected|bool}}
-                    {{#incidentProtected|bool}}
-                        <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
-                            <i class="bi bi-shield-fill-check me-2"></i>
-                            <div>Auto-delete is enabled on this rule, but this incident is <strong>protected</strong> from deletion.</div>
-                        </div>
-                    {{/incidentProtected|bool}}
-                {{/autoDeleteEnabled|bool}}
-                <div class="mb-3">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <h6 class="mb-0"><i class="bi bi-gear-wide-connected me-2"></i>Linked RuleSet</h6>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-outline-primary btn-sm" data-action="edit-linked-ruleset">
-                                <i class="bi bi-pencil me-1"></i>Edit RuleSet
-                            </button>
-                            <button class="btn btn-outline-secondary btn-sm" data-action="view-linked-ruleset">
-                                <i class="bi bi-box-arrow-up-right me-1"></i>View Full Details
-                            </button>
-                            <button class="btn btn-outline-success btn-sm" data-action="create-rule-from-incident">
-                                <i class="bi bi-plus-circle me-1"></i>Create New Rule
-                            </button>
-                        </div>
-                    </div>
-                    <div data-container="ruleset-data"></div>
-                    <div class="mt-3">
-                        <h6 class="mb-2"><i class="bi bi-funnel me-2"></i>Rule Conditions</h6>
-                        <div data-container="ruleset-rules"></div>
-                    </div>
-                </div>
-            {{/hasRuleset|bool}}
-            {{^hasRuleset|bool}}
-                <div class="text-center py-5">
-                    <div class="text-secondary mb-3"><i class="bi bi-gear fs-1"></i></div>
-                    <h6 class="text-secondary">No RuleSet Linked</h6>
-                    <p class="text-secondary small mb-3">
-                        This incident was not created by a rule engine match.<br>
-                        Create a new rule to catch similar events automatically.
-                    </p>
-                    <button class="btn btn-primary" data-action="create-rule-from-incident">
-                        <i class="bi bi-plus-circle me-1"></i>Create Rule from Incident
-                    </button>
-                </div>
-            {{/hasRuleset|bool}}
-        `;
     }
 
     async onInit() {
@@ -1082,7 +1237,6 @@ class RuleEngineSection extends View {
         this.rulesetDataView = new DataView({
             containerId: 'ruleset-data',
             model: this.rulesetModel,
-            className: 'border rounded p-3 bg-body-tertiary',
             columns: 2,
             fields: [
                 { name: 'name', label: 'Name', cols: 6 },
@@ -1196,7 +1350,6 @@ class RuleEngineSection extends View {
         const entries = Object.entries(metadata)
             .filter(([key, val]) => !EXCLUDE_FIELDS.has(key) && val !== null && val !== '' && typeof val !== 'object')
             .map(([key, val]) => ({ key, value: val, type: _inferValueType(val) }));
-
         if (!entries.length) return 0;
 
         const fields = [
@@ -1252,29 +1405,31 @@ class RuleEngineSection extends View {
 }
 
 
-// ── Tickets Section (kept) ─────────────────────────────────
+// ── Tickets Section ─────────────────────────────────────────
 
 class IncidentTicketsSection extends View {
     constructor(options = {}) {
+        const { incident, collection, ...rest } = options;
         super({
             className: 'incident-tickets-section',
-            ...options
+            template: `
+                <div class="detail-section-eyebrow">
+                    Related Tickets
+                    <span class="ms-auto">
+                        <button class="btn btn-primary btn-sm" data-action="create-ticket">
+                            <i class="bi bi-plus-circle me-1"></i>Create Ticket
+                        </button>
+                    </span>
+                </div>
+                <div data-container="tickets-table"></div>
+            `,
+            ...rest
         });
 
-        this.incident = options.incident;
-        this.collection = options.collection || new TicketList({
+        this.incident = incident;
+        this.collection = collection || new TicketList({
             params: { incident: this.incident.get('id'), sort: '-created' }
         });
-
-        this.template = `
-            <div class="d-flex align-items-center justify-content-between mb-3">
-                <h6 class="mb-0"><i class="bi bi-ticket-perforated me-2"></i>Related Tickets</h6>
-                <button class="btn btn-primary btn-sm" data-action="create-ticket">
-                    <i class="bi bi-plus-circle me-1"></i>Create Ticket
-                </button>
-            </div>
-            <div data-container="tickets-table"></div>
-        `;
     }
 
     async onInit() {
@@ -1305,33 +1460,32 @@ class IncidentTicketsSection extends View {
 }
 
 
-// ── Related Incidents Section (kept) ───────────────────────
+// ── Related Incidents Section (RelatedIncidentsList) ───────
 
 class RelatedIncidentsSection extends View {
     constructor(options = {}) {
+        const { collection, ...rest } = options;
         super({
             className: 'related-incidents-section',
-            ...options
+            template: `
+                <div class="detail-section-eyebrow">Related Incidents</div>
+                <div class="text-secondary small mb-2">Incidents sharing the same source IP, rule, host, or category.</div>
+                <div data-container="related-table"></div>
+            `,
+            ...rest
         });
 
-        this.incident = options.incident;
-        this.sourceIP = options.sourceIP;
-        this.collection = options.collection;
-
-        this.template = `
-            <div class="mb-3">
-                <h6 class="mb-1"><i class="bi bi-diagram-2 me-2"></i>Related Incidents</h6>
-                <p class="text-secondary small mb-0">Incidents sharing the same source IP or category</p>
-            </div>
-            <div data-container="related-table"></div>
-        `;
+        this.collection = collection;
     }
 
     async onInit() {
         this.relatedTable = new TableView({
             containerId: 'related-table',
             collection: this.collection,
-            hideActivePillNames: ['id__not', 'source_ip', 'category'],
+            hideActivePillNames: [
+                'id__not', 'source_ip', 'rule_set', 'group',
+                'hostname', 'category', 'status'
+            ],
             columns: [
                 { key: 'id', label: 'ID', width: '60px', sortable: true },
                 { key: 'created', label: 'Created', formatter: 'epoch|datetime', sortable: true, width: '160px' },
@@ -1351,89 +1505,108 @@ class RelatedIncidentsSection extends View {
 }
 
 
-// ── Detail Section (metadata key fields + raw JSON) ────────
+// ── History Section (ChatView wrapper) ─────────────────────
 
-class IncidentDetailSection extends View {
+/**
+ * History section — wraps the existing `ChatView` adapter for the
+ * incident audit / comments / status-change feed. Adds a labelled
+ * eyebrow above the chat surface to match the section pattern.
+ */
+class IncidentHistorySection extends View {
     constructor(options = {}) {
+        const { incidentId, ...rest } = options;
         super({
-            className: 'incident-detail-section',
-            ...options
+            className: 'incident-history-section',
+            template: `
+                <div class="detail-section-eyebrow">History</div>
+                <div data-container="history-chat"></div>
+            `,
+            ...rest
         });
-
-        this.template = () => this._buildTemplate();
-    }
-
-    _buildTemplate() {
-        const metadata = this.model.get('metadata') || {};
-        const isEmpty = Object.keys(metadata).length === 0;
-
-        const knownKeys = ['source_ip', 'hostname', 'user_agent', 'http_url', 'http_method',
-            'http_status', 'country_code', 'region', 'city', 'request_path', 'user',
-            'component', 'component_id', 'error_class', 'error_message', 'rule_id',
-            'risk_score', 'action', 'trigger'];
-        const hasKnown = knownKeys.some(k => metadata[k] !== undefined && metadata[k] !== null && metadata[k] !== '');
-
-        return `
-            <div class="d-flex justify-content-between align-items-baseline mb-3">
-                <div>
-                    <div class="text-body-secondary text-uppercase small fw-semibold" style="letter-spacing: 0.05em;">${isEmpty ? 'No metadata yet' : 'Metadata + raw fields'}</div>
-                    <h5 class="mb-0">Detail</h5>
-                </div>
-                <button class="btn btn-primary btn-sm" data-action="edit-metadata">
-                    <i class="bi bi-pencil me-1"></i>${isEmpty ? 'Add metadata' : 'Edit JSON'}
-                </button>
-            </div>
-            ${isEmpty ? `
-                <div class="text-center text-secondary py-4 border rounded">
-                    <i class="bi bi-braces fs-1 d-block mb-2"></i>
-                    <p class="mb-0 small">No metadata is set on this incident.</p>
-                </div>
-            ` : `
-                ${hasKnown ? `
-                    <h6 class="text-body-secondary small text-uppercase mt-2 mb-2" style="letter-spacing: 0.06em;">Known fields</h6>
-                    <div data-container="detail-known" class="mb-3"></div>
-                ` : ''}
-                <h6 class="text-body-secondary small text-uppercase mt-3 mb-2" style="letter-spacing: 0.06em;">Raw JSON</h6>
-                <pre class="bg-body-tertiary border rounded p-3 small mb-0" style="white-space: pre-wrap; word-break: break-word;"><code>{{model.metadata|json}}</code></pre>
-            `}
-        `;
+        this.incidentId = incidentId;
     }
 
     async onInit() {
-        await this._buildKnown();
-    }
-
-    async _buildKnown() {
-        const metadata = this.model.get('metadata') || {};
-        const knownKeys = ['source_ip', 'hostname', 'user_agent', 'http_url', 'http_method',
-            'http_status', 'country_code', 'region', 'city', 'request_path', 'user',
-            'component', 'component_id', 'error_class', 'error_message', 'rule_id',
-            'risk_score', 'action', 'trigger'];
-
-        const fields = [];
-        for (const key of knownKeys) {
-            if (metadata[key] !== undefined && metadata[key] !== null && metadata[key] !== '') {
-                fields.push({
-                    name: key,
-                    label: key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-                    cols: 6
-                });
-            }
-        }
-        if (!fields.length) return;
-
-        const metaModel = { get: (k) => metadata[k], attributes: metadata, on() {}, off() {} };
-        this.knownView = new DataView({
-            containerId: 'detail-known',
-            model: metaModel,
-            columns: 2,
-            showEmptyValues: false,
-            fields
+        this.adapter = new IncidentHistoryAdapter(this.incidentId);
+        this.chatView = new ChatView({
+            containerId: 'history-chat',
+            adapter: this.adapter
         });
-        this.addChild(this.knownView);
+        this.addChild(this.chatView);
+    }
+}
+
+
+// ── Metadata Section (KnownFieldsCard) ─────────────────────
+
+/**
+ * Metadata section — promotes well-known JSON keys via the framework's
+ * `KnownFieldsCard` primitive. The card handles the labelled-row grid
+ * + collapsible raw `<details>` block; this section just wraps it with
+ * an eyebrow and the edit affordance.
+ */
+class IncidentMetadataSection extends View {
+    constructor(options = {}) {
+        super({
+            className: 'incident-metadata-section',
+            template: `
+                <div class="detail-section-eyebrow">
+                    Metadata
+                    <button class="detail-section-action" data-action="edit-metadata" title="{{#hasMetadata|bool}}Edit JSON{{/hasMetadata|bool}}{{^hasMetadata|bool}}Add metadata{{/hasMetadata|bool}}">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                </div>
+                {{^hasMetadata|bool}}
+                <div class="text-secondary small">No metadata is set on this incident.</div>
+                {{/hasMetadata|bool}}
+                {{#hasMetadata|bool}}
+                <div data-container="metadata-card"></div>
+                {{/hasMetadata|bool}}
+            `,
+            ...options
+        });
     }
 
-    /** Bubble edit-metadata up to IncidentView */
+    get hasMetadata() {
+        const md = this.model?.get?.('metadata') || {};
+        return Object.keys(md).length > 0;
+    }
+
+    async onInit() {
+        // KnownFieldsCard handles the labelled grid + collapsible raw blob.
+        // `data` is function-valued so it re-resolves against the latest
+        // metadata when the parent re-renders this section after an edit.
+        this.metadataCard = new KnownFieldsCard({
+            containerId: 'metadata-card',
+            model: this.model,
+            data: (m) => m.get('metadata') || {},
+            knownKeys: [
+                { key: 'source_ip',     label: 'Source IP',     formatter: (v) => `<code>${escapeHtml(String(v))}</code>` },
+                { key: 'hostname',      label: 'Hostname',      formatter: (v) => `<code>${escapeHtml(String(v))}</code>` },
+                { key: 'user_agent',    label: 'User agent' },
+                { key: 'http_url',      label: 'URL',           formatter: (v) => `<code>${escapeHtml(String(v))}</code>` },
+                { key: 'http_method',   label: 'HTTP method',   formatter: (v) => `<span class="badge bg-info text-dark">${escapeHtml(String(v))}</span>` },
+                { key: 'http_status',   label: 'HTTP status',   formatter: (v) => `<code>${escapeHtml(String(v))}</code>` },
+                { key: 'country_code',  label: 'Country' },
+                { key: 'region',        label: 'Region' },
+                { key: 'city',          label: 'City' },
+                { key: 'request_path',  label: 'Request path',  formatter: (v) => `<code>${escapeHtml(String(v))}</code>` },
+                { key: 'user',          label: 'User' },
+                { key: 'component',     label: 'Component' },
+                { key: 'component_id',  label: 'Component ID' },
+                { key: 'error_class',   label: 'Error class',   formatter: (v) => `<code>${escapeHtml(String(v))}</code>` },
+                { key: 'error_message', label: 'Error message' },
+                { key: 'rule_id',       label: 'Rule ID' },
+                { key: 'risk_score',    label: 'Risk score' },
+                { key: 'action',        label: 'Action' },
+                { key: 'trigger',       label: 'Trigger' },
+                { key: 'do_not_delete', label: 'Protected',     formatter: 'yesnoicon', hideEmpty: true }
+            ],
+            rawLabel: 'Raw metadata'
+        });
+        this.addChild(this.metadataCard);
+    }
+
     async onActionEditMetadata() {
         this.emit('action:edit-metadata');
     }
@@ -1446,22 +1619,26 @@ class IncidentView extends DetailView {
     constructor(options = {}) {
         const model = options.model || new Incident(options.data || {});
         const incidentId = model.get('id');
+        const sourceIP = _resolveSourceIPSync(model);
+        const metadata = model.get('metadata') || {};
 
-        // Pre-create shared collections for sections that need them
+        // Pre-create shared collections
         const eventsCollection = new IncidentEventList({ params: { incident: incidentId } });
         const ticketsCollection = new TicketList({
             params: { incident: incidentId, sort: '-created' }
         });
-        const relatedParams = { id__not: incidentId, sort: '-created', size: 10 };
-        const sourceIP = _resolveSourceIPSync(model);
-        if (sourceIP) {
-            relatedParams.source_ip = sourceIP;
-        } else if (model.get('category')) {
-            relatedParams.category = model.get('category');
-        }
-        const relatedCollection = new IncidentList({ params: relatedParams });
+        const relatedCollection = new RelatedIncidentsList({
+            sourceIp: sourceIP || undefined,
+            ruleSet:  (model.get('rule_set') && typeof model.get('rule_set') === 'object'
+                ? model.get('rule_set').id
+                : model.get('rule_set')) || undefined,
+            group:    model.get('group') || undefined,
+            hostname: model.get('hostname') || undefined,
+            category: !sourceIP ? (model.get('category') || undefined) : undefined,
+            params: { id__not: incidentId, size: 10 }
+        });
 
-        // Build section view instances
+        // ── Section views ─────────────────────────────────
         const overviewSection = new IncidentOverviewSection({ model });
 
         const eventsSection = new TableView({
@@ -1491,7 +1668,6 @@ class IncidentView extends DetailView {
             ? new IncidentSourceSection({ sourceIP, ipInfo: model.get('ip_info') })
             : null;
 
-        const metadata = model.get('metadata') || {};
         const hasHttp = !!(metadata.http_method || metadata.http_path || metadata.http_url);
         const requestSection = hasHttp ? new IncidentRequestSection({ metadata }) : null;
 
@@ -1500,27 +1676,15 @@ class IncidentView extends DetailView {
 
         const ruleEngineSection = new RuleEngineSection({ incident: model });
         const ticketsSection = new IncidentTicketsSection({ incident: model, collection: ticketsCollection });
+        const historySection = new IncidentHistorySection({ incidentId });
+        const relatedSection = new RelatedIncidentsSection({ collection: relatedCollection });
+        const metadataSection = new IncidentMetadataSection({ model });
 
-        const historyAdapter = new IncidentHistoryAdapter(incidentId);
-        const historySection = new ChatView({ adapter: historyAdapter });
-
-        const relatedSection = new RelatedIncidentsSection({
-            incident: model,
-            sourceIP,
-            collection: relatedCollection
-        });
-
-        const detailSection = new IncidentDetailSection({ model });
-
-        // Build sections list — Investigation / Response / Related dividers
+        // ── Sections list ─────────────────────────────────
         const sections = [
-            { key: 'Overview', label: 'Overview', icon: 'bi-grid-1x2',          view: overviewSection },
-            { key: 'Events',   label: 'Events',   icon: 'bi-list-ul',           view: eventsSection }
+            { key: 'Overview', label: 'Overview', icon: 'bi-grid-1x2', view: overviewSection },
+            { key: 'Events',   label: 'Events',   icon: 'bi-list-ul',  view: eventsSection }
         ];
-
-        // Investigation dividers/sections: only add divider if at least one
-        // investigation section will appear. Source always appears when an IP
-        // exists; Request/Stack Trace are conditional.
         if (sourceSection || requestSection || stackTraceSection) {
             sections.push({ type: 'divider', label: 'Investigation' });
             if (sourceSection) {
@@ -1530,27 +1694,25 @@ class IncidentView extends DetailView {
                 sections.push({ key: 'Request', label: 'Request', icon: 'bi-funnel', view: requestSection });
             }
             if (stackTraceSection) {
-                sections.push({ key: 'Stack Trace', label: 'Stack Trace', icon: 'bi-code-square', view: stackTraceSection });
+                sections.push({ key: 'StackTrace', label: 'Stack Trace', icon: 'bi-code-square', view: stackTraceSection });
             }
         }
 
         sections.push({ type: 'divider', label: 'Response' });
-        sections.push({ key: 'Rule Engine', label: 'Rule Engine', icon: 'bi-tools',              view: ruleEngineSection });
-        sections.push({ key: 'Tickets',     label: 'Tickets',     icon: 'bi-ticket-detailed',    view: ticketsSection });
-        sections.push({ key: 'History',     label: 'History',     icon: 'bi-chat-left-text',     view: historySection });
+        sections.push({ key: 'RuleEngine', label: 'Rule Engine', icon: 'bi-tools',           view: ruleEngineSection });
+        sections.push({ key: 'Tickets',    label: 'Tickets',     icon: 'bi-ticket-detailed', view: ticketsSection });
+        sections.push({ key: 'History',    label: 'History',     icon: 'bi-chat-left-text',  view: historySection });
 
         sections.push({ type: 'divider', label: 'Related' });
-        sections.push({ key: 'Related', label: 'Related',  icon: 'bi-diagram-2', view: relatedSection });
-        sections.push({ key: 'Detail',  label: 'Detail',   icon: 'bi-braces',    view: detailSection });
+        sections.push({ key: 'Related',  label: 'Related',  icon: 'bi-diagram-2', view: relatedSection });
+        sections.push({ key: 'Metadata', label: 'Metadata', icon: 'bi-braces',    view: metadataSection });
 
-        // Header config — icon glyph and tone are status-driven via iconToneFn
-
+        // ── Header config ────────────────────────────────
         const chips = [
             { icon: 'bi-flag-fill', text: m => {
                 const p = parseInt(m.get('priority'), 10);
                 if (!p) return null;
-                const cfg = getPriorityChip(p);
-                return `P${p} · ${cfg.label}`;
+                return `P${p} · ${getPriorityChip(p).label}`;
               }, variant: m => getPriorityChip(parseInt(m.get('priority'), 10) || 5).variant },
             { icon: 'bi-circle-fill', text: m => getStatusConfig(m.get('status')).label,
               variant: m => {
@@ -1571,23 +1733,7 @@ class IncidentView extends DetailView {
               when: m => !!(m.get('metadata')?.do_not_delete) }
         ];
 
-        // Note: header.chips schema (DetailHeaderView) supports `text` as a
-        // function returning a string and `variant` as a static string. We
-        // need dynamic variants for the priority/status chips, so we
-        // pre-resolve them via a small adapter below.
-
-        // Header actions — primary status transitions
-        const status = (model.get('status') || '').toLowerCase();
-        const isActive = ACTIVE_STATUSES.has(status);
-        const headerActions = [];
-        if (isActive) {
-            headerActions.push({ label: 'Resolve', icon: 'bi-check2-circle', action: 'resolve', class: 'btn-success', title: 'Mark as resolved' });
-            headerActions.push({ label: 'Assign',  icon: 'bi-person',        action: 'assign', title: 'Assign to a user' });
-        } else if (status === 'resolved' || status === 'closed') {
-            headerActions.push({ label: 'Re-open', icon: 'bi-arrow-counterclockwise', action: 'reopen', title: 'Re-open this incident' });
-        }
-
-        // Context menu
+        // Context menu — long-tail; primary actions live on the StatusPanel.
         const cmItems = [];
         cmItems.push({ label: 'Re-run handler chain', action: 'rerun-handler', icon: 'bi-arrow-clockwise' });
         if (sourceIP) {
@@ -1632,9 +1778,12 @@ class IncidentView extends DetailView {
                 icon: getHeaderIconStyle(model.get('status')).icon,
                 iconToneFn: m => getHeaderIconStyle(m.get('status')).tone,
                 titleFn: m => m.get('title') || m.get('category') || `Incident #${m.get('id') || ''}`.trim(),
-                subtitlePath: '_subtitle',
+                subtitleFn: m => _buildSubtitle(m),
                 chips: IncidentView._adaptChips(chips),
-                actions: headerActions,
+                // auxFn — state-aware right-gutter readout. Trusted HTML;
+                // model fields escaped before interpolation.
+                auxFn: m => _buildHeaderAux(m),
+                actions: [], // Primary actions live on the StatusPanel; header keeps overflow + close
                 contextMenu: { items: cmItems }
             },
             sections,
@@ -1656,28 +1805,22 @@ class IncidentView extends DetailView {
         this.ticketsSection = ticketsSection;
         this.historySection = historySection;
         this.relatedSection = relatedSection;
-        this.detailSection = detailSection;
+        this.metadataSection = metadataSection;
         this._sourceIP = sourceIP;
-        this._refreshComputedFields();
     }
 
     /**
-     * The DetailHeaderView chip schema supports a function for `text` (great)
-     * but expects `variant` to be a static string. We pre-resolve dynamic
-     * variants by snapshotting them at render time via a wrapping function.
-     * Each chip becomes `{ text: fn, variant: 'snapshot', when: outerWhen }`.
+     * `DetailHeaderView` chip schema accepts a function for `text` but
+     * expects `variant` to be a static string. Pre-resolve dynamic
+     * variants by snapshotting the model in `text` and exposing the
+     * variant via a getter.
      */
     static _adaptChips(chips) {
         return chips.map(chip => {
             if (typeof chip.variant !== 'function') return chip;
-            // Replace the dynamic variant with a closure that resolves on each
-            // header render via the chip's `text` function side-effect.
-            // DetailHeaderView reads `chip.variant` literally, so we expose a
-            // getter via Object.defineProperty.
             const adapted = { ...chip };
             const variantFn = chip.variant;
             let _model;
-            // Hook into `text` so we capture the current model
             const origText = chip.text;
             adapted.text = (m) => { _model = m; return typeof origText === 'function' ? origText(m) : origText; };
             Object.defineProperty(adapted, 'variant', {
@@ -1700,7 +1843,7 @@ class IncidentView extends DetailView {
         this.overviewSection.on('action:analyze-llm',   () => this.onActionAnalyzeLlm());
 
         this.ticketsSection.on('action:create-ticket', () => this._handleCreateTicket());
-        this.detailSection.on('action:edit-metadata',  () => this.onActionEditMetadata());
+        this.metadataSection.on('action:edit-metadata',  () => this.onActionEditMetadata());
 
         // Sidebar badges
         this._updateBadges();
@@ -1708,11 +1851,10 @@ class IncidentView extends DetailView {
         this.ticketsCollection.on('fetch:success', () => this._updateBadges(), this);
         this.relatedCollection.on('fetch:success', () => this._updateBadges(), this);
 
-        // Fetch detailed graph + activity tables
+        // Fetch the detailed graph + activity tables
         try {
             this.getApp()?.showLoading?.();
             await this.model.fetch({ params: { graph: 'detailed' } });
-            this._refreshComputedFields();
         } catch (_e) { /* fail silent */ }
         finally { this.getApp()?.hideLoading?.(); }
 
@@ -1723,19 +1865,6 @@ class IncidentView extends DetailView {
 
         // Header may need to re-render with detailed-graph fields
         if (this.headerView?.isMounted()) await this.headerView.render();
-    }
-
-    _refreshComputedFields() {
-        const m = this.model;
-        const ruleSet = m.get('rule_set');
-        const ruleName = (ruleSet && typeof ruleSet === 'object') ? ruleSet.name : null;
-        const category = m.get('category');
-        const subtitleParts = [];
-        if (ruleName) subtitleParts.push(`Triggered by rule ${ruleName}`);
-        else if (ruleSet) subtitleParts.push(`Rule #${typeof ruleSet === 'object' ? ruleSet.id : ruleSet}`);
-        if (category)  subtitleParts.push(`scope ${category}`);
-        if (m.get('id')) subtitleParts.push(`#${m.get('id')}`);
-        m.attributes._subtitle = subtitleParts.join(' · ');
     }
 
     _updateBadges() {
@@ -1759,20 +1888,6 @@ class IncidentView extends DetailView {
         // Refresh the header icon glyph for the new status (tone is handled
         // by iconToneFn automatically on header re-render).
         this.headerView.icon = getHeaderIconStyle(this.model.get('status')).icon;
-
-        // Recompute header actions — they shift between resolve/assign and reopen
-        const status = (this.model.get('status') || '').toLowerCase();
-        const isActive = ACTIVE_STATUSES.has(status);
-        const newActions = [];
-        if (isActive) {
-            newActions.push({ label: 'Resolve', icon: 'bi-check2-circle', action: 'resolve', class: 'btn-success' });
-            newActions.push({ label: 'Assign',  icon: 'bi-person',        action: 'assign' });
-        } else if (status === 'resolved' || status === 'closed') {
-            newActions.push({ label: 'Re-open', icon: 'bi-arrow-counterclockwise', action: 'reopen' });
-        }
-        this.headerView.actions = newActions;
-
-        this._refreshComputedFields();
         if (this.headerView?.isMounted()) await this.headerView.render();
         if (this.overviewSection?.isMounted()) await this.overviewSection.render();
     }
@@ -1784,7 +1899,6 @@ class IncidentView extends DetailView {
     }
 
     async onActionAssign() {
-        // Lightweight assignment dialog — mirrors existing surface shape
         const data = await Modal.form({
             title: `Assign Incident #${this.model.get('id')}`,
             icon: 'bi-person',
@@ -1847,14 +1961,12 @@ class IncidentView extends DetailView {
             return;
         }
         try {
-            // Lazy-load to avoid circular imports
             const { default: UserView } = await import('../account/users/UserView.js');
             const { User } = await import('@core/models/User.js');
             const userModel = new User({ email: user });
             try { await userModel.fetch({ params: { email: user } }); } catch (_) {}
             await Modal.detail(new UserView({ model: userModel }));
-        } catch (e) {
-            // Fallback to a toast — user view may not exist for this account
+        } catch (_e) {
             this.getApp()?.toast?.info(`User: ${user}`);
         }
     }
@@ -2157,7 +2269,7 @@ class IncidentView extends DetailView {
             this.model.set('metadata', parsed);
             this.getApp()?.toast?.success('Metadata updated');
             await this._refreshFromModel();
-            if (this.detailSection?.isMounted()) await this.detailSection.render();
+            if (this.metadataSection?.isMounted()) await this.metadataSection.render();
         } catch (err) {
             this.getApp()?.toast?.error(`Failed to save metadata: ${err.message}`);
         }
@@ -2190,7 +2302,76 @@ class IncidentView extends DetailView {
     }
 }
 
+
+// ── Header subtitle / aux helpers ──────────────────────────
+
+/**
+ * Compose the header subtitle line — "Triggered by rule X · scope Y · #ID".
+ * Plain text only; the framework escapes the result before output.
+ */
+function _buildSubtitle(model) {
+    const parts = [];
+    const ruleSet = model.get('rule_set');
+    const ruleName = (ruleSet && typeof ruleSet === 'object') ? ruleSet.name : null;
+    const category = model.get('category');
+    if (ruleName) parts.push(`Triggered by rule ${ruleName}`);
+    else if (ruleSet) parts.push(`Rule #${typeof ruleSet === 'object' ? ruleSet.id : ruleSet}`);
+    if (category)  parts.push(`scope ${category}`);
+    if (model.get('id')) parts.push(`#${model.get('id')}`);
+    return parts.join(' · ');
+}
+
+/**
+ * Trusted-HTML aux block — presence-style dot + main label + muted relative
+ * line. Every model field is escaped before composition (per the auxFn
+ * security note in DetailView).
+ */
+function _buildHeaderAux(model) {
+    const status = (model.get('status') || '').toLowerCase();
+    const cfg = getStatusConfig(status);
+    const headerStyle = getHeaderIconStyle(status);
+    const tone = headerStyle.tone || 'secondary';
+
+    const created = Number(model.get('created')) || 0;
+    const modified = Number(model.get('modified')) || 0;
+
+    let main = cfg.label;
+    let sub = '';
+
+    if (ACTIVE_STATUSES.has(status)) {
+        const duration = created
+            ? _formatDuration(Math.max(0, Math.floor(Date.now() / 1000) - created))
+            : '';
+        sub = duration ? `in flight ${duration}` : '';
+    } else if (status === 'resolved' || status === 'closed') {
+        sub = modified ? `${_formatRelative(modified)}` : '';
+    } else if (modified) {
+        sub = `updated ${_formatRelative(modified)}`;
+    }
+
+    if (!main) return '';
+    const dotCls = tone && tone !== 'default' ? ` dh-aux-dot-${tone}` : '';
+    return `
+        <span class="dh-aux-dot${dotCls}"></span>
+        <span class="dh-aux-meta"><span>${escapeHtml(main)}</span>${sub ? `<span class="text-secondary small">${escapeHtml(sub)}</span>` : ''}</span>
+    `;
+}
+
 Incident.VIEW_CLASS = IncidentView;
 Incident.MODEL_REF = 'incident.Incident';
 
 export default IncidentView;
+export {
+    IncidentView,
+    IncidentOverviewSection,
+    IncidentTriggerCard,
+    IncidentResponseCard,
+    IncidentSourceSection,
+    IncidentRequestSection,
+    IncidentStackTraceSection,
+    RuleEngineSection,
+    IncidentTicketsSection,
+    RelatedIncidentsSection,
+    IncidentHistorySection,
+    IncidentMetadataSection
+};

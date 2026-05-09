@@ -308,6 +308,36 @@ class SimpleModuleLoader {
                 // Tests stub `global.TableView` before calling loadModule.
                 path: path.join(this.sourceRoot, 'extensions/admin/jobs/JobDetailsView.js'),
                 dependencies: ['View', 'DetailView', 'Modal', 'StatusPanel', 'Timeline', 'MOJOUtils']
+            },
+            'ShortLinkView': {
+                // Same TableView caveat as JobDetailsView. Tests must stub
+                // `global.TableView`, `global.MetricsChart`, and the model
+                // imports (`global.ShortLinkModelsStub`) before loadModule.
+                path: path.join(this.sourceRoot, 'extensions/admin/shortlinks/ShortLinkView.js'),
+                dependencies: ['View', 'DetailView', 'Modal', 'MetricCard', 'KnownFieldsCard', 'MOJOUtils', 'dataFormatter']
+            },
+            'RunnerDetailsView': {
+                // Same TableView caveat as JobDetailsView — tests stub
+                // `global.TableView` plus the model-import stubs
+                // (`global.JobModelsStub`, `global.JobRunnerModelsStub`)
+                // before loadModule.
+                path: path.join(this.sourceRoot, 'extensions/admin/jobs/RunnerDetailsView.js'),
+                dependencies: ['View', 'DetailView', 'Modal', 'StatusPanel', 'KnownFieldsCard', 'MOJOUtils']
+            },
+            'IncidentView': {
+                // Same TableView caveat as JobDetailsView. Tests must stub
+                // `global.TableView`, the model-import stubs
+                // (`global.IncidentModelsStub`, `global.TicketsModelsStub`,
+                // `global.SystemModelsStub`), the sibling-view stubs
+                // (`global.GeoIPViewStub`, `global.RuleSetViewStub`,
+                // `global.IncidentHistoryAdapterStub`), and the assistant
+                // helper (`global.AssistantContextChatStub`) before
+                // loadModule.
+                path: path.join(this.sourceRoot, 'extensions/admin/incidents/IncidentView.js'),
+                dependencies: [
+                    'View', 'DetailView', 'Modal', 'StatusPanel', 'Timeline',
+                    'KnownFieldsCard', 'MetricCard', 'MOJOUtils'
+                ]
             }
         };
 
@@ -500,7 +530,20 @@ class SimpleModuleLoader {
             { test: /\/FlowStrip(\.js)?$/, name: 'FlowStrip' },
             { test: /\/KnownFieldsCard(\.js)?$/, name: 'KnownFieldsCard' },
             { test: /\/DetailView(\.js)?$/, name: 'DetailView' },
-            { test: /admin\/models\/Job(\.js)?$/, name: 'JobModelsStub' }
+            { test: /admin\/models\/JobRunner(\.js)?$/, name: 'JobRunnerModelsStub' },
+            { test: /admin\/models\/Job(\.js)?$/, name: 'JobModelsStub' },
+            { test: /core\/models\/ShortLink(\.js)?$/, name: 'ShortLinkModelsStub' },
+            { test: /admin\/models\/Incident(\.js)?$/, name: 'IncidentModelsStub' },
+            { test: /admin\/models\/Tickets(\.js)?$/, name: 'TicketsModelsStub' },
+            { test: /core\/models\/System(\.js)?$/, name: 'SystemModelsStub' },
+            { test: /devices\/GeoIPView(\.js)?$/, name: 'GeoIPViewStub' },
+            { test: /\/RuleSetView(\.js)?$/, name: 'RuleSetViewStub' },
+            { test: /adapters\/IncidentHistoryAdapter(\.js)?$/, name: 'IncidentHistoryAdapterStub' },
+            { test: /assistant\/AssistantContextChat(\.js)?$/, name: 'AssistantContextChatStub' },
+            { test: /\/ChatView(\.js)?$/, name: 'ChatViewStub' },
+            { test: /\/StackTraceView(\.js)?$/, name: 'StackTraceViewStub' },
+            { test: /\/DataView(\.js)?$/, name: 'DataViewStub' },
+            { test: /charts\/index(\.js)?$/, name: 'ChartsStub' }
         ];
         for (const rule of rules) {
             if (rule.test.test(importPath)) return rule.name;
