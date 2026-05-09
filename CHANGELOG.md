@@ -54,7 +54,7 @@
 - **Note:** `IncidentEventList` (already at `/api/incident/event`), `IncidentHistoryList` (already at `/api/incident/incident/history`), and `ShortLinkClickList` (already at `/api/shortlink/history`) already cover the remaining new-section data needs. No new collection classes for those — consumer views just call `fetch({ incident: id })` etc. on the existing collections.
 - **No backend HTTP API changes.** Every endpoint and filter referenced is verified to exist.
 
-### KnownFieldsCard — new `@core` primitive
+
 
 - **Added:** `src/core/views/data/KnownFieldsCard.js` — "promote known JSON keys, keep the raw blob accessible" pattern. Promotes selected keys to a 2-column label/value grid (using the `.detail-flat-row` family) with the raw JSON in a collapsible `<details>` block underneath. Constructor: `data` (object OR `(model) => object`), `knownKeys` (array OR `(model) => array`), `rawCollapsed`, `rawLabel`, `showRaw`, `emptyText`. Each known-key spec is `{ key, label, formatter?, hideEmpty? }`. `formatter` may be a `DataFormatter` pipe name (string) or a `(value, key, data) => htmlString` function — both treat output as trusted HTML. Dotted-path keys (`os.family`, `user_agent.major`) work for nested objects. Missing values render the muted "—" placeholder unless `hideEmpty: true` is set.
 - **Moved:** the `.detail-section`, `.detail-section-eyebrow`, `.detail-section-action`, `.detail-flat-row*` rules from `admin.css` into `core.css`. They're framework-wide primitives — `KnownFieldsCard` uses them, and Wave 3's per-view sweeps will use them across admin views.

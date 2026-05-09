@@ -2,10 +2,10 @@
  * MemberView - Group-membership detail view built on the DetailView primitive.
  *
  * Sections:
- *   Overview                — KPIs + "This membership" card + recent activity
+ *   Overview                — KPIs + "This membership" flat rows + recent activity timeline
  *   Permissions             — autosave switch grid (Member.PERMISSION_FIELDS)
  *   ──── Activity ────
- *   Audit                   — logs scoped to this membership
+ *   Audit                   — TableView scoped to this membership
  *
  * Header title doubles as cross-record navigation: "{user} in {group}".
  * "View user" / "View group" actions open UserView / GroupView via Modal.detail.
@@ -15,7 +15,10 @@ import View from '@core/View.js';
 import DetailView from '@core/views/data/DetailView.js';
 import TableView from '@core/views/table/TableView.js';
 import FormView from '@core/forms/FormView.js';
+import MetricCard from '@core/views/data/MetricCard.js';
+import Timeline from '@core/views/data/Timeline.js';
 import Modal from '@core/views/feedback/Modal.js';
+import dataFormatter from '@core/utils/DataFormatter.js';
 import { Member, MemberForms } from '@core/models/Member.js';
 import { User } from '@core/models/User.js';
 import { Group } from '@core/models/Group.js';
@@ -24,33 +27,18 @@ import { LogList } from '@core/models/Log.js';
 
 // ── Helpers ────────────────────────────────────────────────
 
-function epochToMs(value) {
-    if (value == null) return null;
-    if (typeof value === 'number') return value < 1e11 ? value * 1000 : value;
-    const ms = new Date(value).getTime();
-    return Number.isFinite(ms) ? ms : null;
-}
-
-function formatRelative(value) {
-    const ms = epochToMs(value);
-    if (ms == null) return '';
-    const diffSec = Math.round((Date.now() - ms) / 1000);
-    if (diffSec < 60)    return 'just now';
-    if (diffSec < 3600)  return `${Math.floor(diffSec / 60)}m ago`;
-    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
-    return `${Math.floor(diffSec / 86400)}d ago`;
-}
-
-function formatDate(value) {
-    const ms = epochToMs(value);
-    if (ms == null) return '—';
-    return new Date(ms).toLocaleDateString();
-}
-
 function countTruthy(obj) {
     if (!obj || typeof obj !== 'object') return 0;
     return Object.values(obj).filter(v => v === true).length;
 }
+
+const LOG_LEVEL_TONE = {
+    error:    'danger',
+    critical: 'danger',
+    warning:  'warning',
+    warn:     'warning',
+    info:     'info'
+};
 
 
 // ── Overview section ───────────────────────────────────────
@@ -59,135 +47,150 @@ class MemberOverviewSection extends View {
     constructor(options = {}) {
         super({
             className: 'member-overview-section',
+            template: `
+                <div class="detail-kpi-grid">
+                    <div data-container="member-kpi-role"></div>
+                    <div data-container="member-kpi-status"></div>
+                    <div data-container="member-kpi-joined"></div>
+                    <div data-container="member-kpi-perms"></div>
+                </div>
+
+                <div class="detail-section-eyebrow">This membership</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">User</div>
+                    <div class="detail-flat-row-value">
+                        {{#userDisplayName}}<a href="#" data-action="view-user">{{userDisplayName}}</a>{{/userDisplayName}}
+                        {{^userDisplayName}}<span class="text-secondary fst-italic">Not set</span>{{/userDisplayName}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Email</div>
+                    <div class="detail-flat-row-value">
+                        {{#userEmail}}{{userEmail}}{{/userEmail}}
+                        {{^userEmail}}<span class="text-secondary fst-italic">Not set</span>{{/userEmail}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Group</div>
+                    <div class="detail-flat-row-value">
+                        {{#groupName}}<a href="#" data-action="view-group">{{groupName}}</a>{{/groupName}}
+                        {{^groupName}}<span class="text-secondary fst-italic">Not set</span>{{/groupName}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Role</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasRole|bool}}<span class="badge text-bg-primary">{{roleLabel}}</span>{{/hasRole|bool}}
+                        {{^hasRole|bool}}<span class="text-secondary fst-italic">Not set</span>{{/hasRole|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Joined</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasCreated|bool}}{{model.created|epoch|datetime}} &middot; {{model.created|epoch|relative}}{{/hasCreated|bool}}
+                        {{^hasCreated|bool}}<span class="text-secondary fst-italic">—</span>{{/hasCreated|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Invited by</div>
+                    <div class="detail-flat-row-value">
+                        {{#invitedBy}}{{invitedBy}}{{/invitedBy}}
+                        {{^invitedBy}}<span class="text-secondary fst-italic">—</span>{{/invitedBy}}
+                    </div>
+                </div>
+
+                <div class="detail-section-eyebrow">Recent activity in this group</div>
+                <div data-container="member-overview-activity"></div>
+            `,
             ...options
         });
         this.logsCollection = options.logsCollection || null;
-        this.template = () => this._buildTemplate();
     }
 
-    _buildTemplate() {
+    // ── Computed properties bound by the Mustache template ─────
+
+    get userDisplayName() { return this.model.get('user')?.display_name || ''; }
+    get userEmail()       { return this.model.get('user')?.email || ''; }
+    get groupName()       { return this.model.get('group')?.name || ''; }
+    get roleLabel()       { return this.model.get('metadata')?.role || ''; }
+    get hasRole()         { return !!this.roleLabel; }
+    get hasCreated()      { return this.model.get('created') != null; }
+    get invitedBy() {
+        const md = this.model.get('metadata') || {};
+        return md.invited_by_name || md.invited_by || '';
+    }
+    get permsCount()      { return countTruthy(this.model.get('permissions')); }
+    get isActive()        { return !!this.model.get('is_active'); }
+
+    async onInit() {
         const m = this.model;
-        const user = m.get('user') || {};
-        const group = m.get('group') || {};
-        const role = m.get('metadata')?.role || '—';
-        const isActive = !!m.get('is_active');
+
+        // Four KPI cards (small / default size — no metric-card-lg)
+        this.kpiRole = new MetricCard({
+            containerId: 'member-kpi-role',
+            label: 'Role',
+            value: this.roleLabel || '—'
+        });
+        this.kpiStatus = new MetricCard({
+            containerId: 'member-kpi-status',
+            label: 'Status',
+            value: this.isActive ? 'Active' : 'Inactive',
+            tone:  this.isActive ? 'success' : 'warning'
+        });
         const created = m.get('created');
-        const permsCount = countTruthy(m.get('permissions'));
-        const invitedBy = m.get('metadata')?.invited_by_name
-            || m.get('metadata')?.invited_by
-            || null;
+        const joinedRel = created != null
+            ? dataFormatter.apply(created, ['epoch', 'relative'])
+            : '—';
+        this.kpiJoined = new MetricCard({
+            containerId: 'member-kpi-joined',
+            label: 'Joined',
+            value: joinedRel || '—'
+        });
+        this.kpiPerms = new MetricCard({
+            containerId: 'member-kpi-perms',
+            label: 'Perms granted',
+            value: String(this.permsCount)
+        });
+        [this.kpiRole, this.kpiStatus, this.kpiJoined, this.kpiPerms]
+            .forEach(c => this.addChild(c));
 
-        const joinedRel = created ? formatRelative(created) : '—';
-        const joinedAbs = created ? formatDate(created) : '—';
-
-        const statusTone = isActive ? 'success' : 'warning';
-        const statusValue = isActive ? 'Active' : 'Inactive';
-
-        return `
-            <div class="detail-kpi-grid">
-                <div class="metric-card">
-                    <div class="metric-card-label">Role</div>
-                    <div class="metric-card-value">${this.escapeHtml(role)}</div>
-                </div>
-                <div class="metric-card metric-card-tone-${statusTone}">
-                    <div class="metric-card-label">Status</div>
-                    <div class="metric-card-value">${this.escapeHtml(statusValue)}</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-card-label">Joined</div>
-                    <div class="metric-card-value">${this.escapeHtml(joinedRel)}</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-card-label">Perms granted</div>
-                    <div class="metric-card-value">${permsCount}</div>
-                </div>
-            </div>
-            <div class="detail-pair">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="card-title"><i class="bi bi-link-45deg"></i>This membership</div>
-                        <ul class="list-unstyled mb-0 small">
-                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1">
-                                <span class="text-secondary">User</span>
-                                <a href="#" data-action="view-user">${this.escapeHtml(user.display_name || '—')}</a>
-                            </li>
-                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1">
-                                <span class="text-secondary">Email</span>
-                                <span>${this.escapeHtml(user.email || '—')}</span>
-                            </li>
-                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1">
-                                <span class="text-secondary">Group</span>
-                                <a href="#" data-action="view-group">${this.escapeHtml(group.name || '—')}</a>
-                            </li>
-                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1">
-                                <span class="text-secondary">Role</span>
-                                <span class="badge text-bg-primary">${this.escapeHtml(role)}</span>
-                            </li>
-                            <li class="d-flex justify-content-between border-bottom border-opacity-25 py-1">
-                                <span class="text-secondary">Joined</span>
-                                <code>${this.escapeHtml(joinedAbs)}${created ? ` · ${this.escapeHtml(joinedRel)}` : ''}</code>
-                            </li>
-                            <li class="d-flex justify-content-between py-1">
-                                <span class="text-secondary">Invited by</span>
-                                <span>${invitedBy ? this.escapeHtml(invitedBy) : '<span class="text-secondary">—</span>'}</span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-body">
-                        <div class="card-title"><i class="bi bi-list-ul"></i>Recent activity in this group</div>
-                        <div data-container="member-overview-activity"></div>
-                    </div>
-                </div>
-            </div>
-        `;
+        // Recent-activity timeline — fed by the shared logs collection.
+        // `items` is a function so the Timeline re-resolves on render() and
+        // picks up rows added after the first fetch:success event.
+        this.activityTimeline = new Timeline({
+            containerId: 'member-overview-activity',
+            limit: 5,
+            emptyText: 'No recorded activity for this membership yet.',
+            items: () => this._buildActivityItems()
+        });
+        this.addChild(this.activityTimeline);
     }
 
     async onAfterRender() {
         await super.onAfterRender();
-        await this._renderActivity();
-        // Refresh the activity card whenever the shared logs collection updates
+        // Refresh the activity timeline whenever the shared logs collection updates
         if (this.logsCollection && !this._wired) {
-            this.logsCollection.on('fetch:success', () => this._renderActivity(), this);
+            this.logsCollection.on('fetch:success', () => {
+                if (this.activityTimeline?.isMounted()) {
+                    this.activityTimeline.setItems(() => this._buildActivityItems());
+                }
+            }, this);
             this._wired = true;
         }
     }
 
-    _renderActivity() {
-        const host = this.element?.querySelector('[data-container="member-overview-activity"]');
-        if (!host) return;
-
-        const logs = this.logsCollection?.models?.slice(0, 5) || [];
-        if (!logs.length) {
-            host.innerHTML = `<div class="text-secondary small">No recorded activity for this membership yet.</div>`;
-            return;
-        }
-
-        const items = logs.map(log => {
-            const level = (log.get('level') || '').toLowerCase();
-            let tone = '';
-            if (level === 'error' || level === 'critical') tone = 'danger';
-            else if (level === 'warning' || level === 'warn') tone = 'warning';
-            else if (level === 'info') tone = 'info';
-            else if (level === 'debug') tone = '';
-
+    _buildActivityItems() {
+        const logs = this.logsCollection?.models || [];
+        return logs.map(log => {
+            const level = String(log.get('level') || '').toLowerCase();
+            const tone  = LOG_LEVEL_TONE[level] || 'default';
             const headline = log.get('kind') || log.get('level') || 'event';
-            const detail = log.get('log') || '';
-            const when = formatRelative(log.get('created'));
-
-            return `
-                <li class="detail-timeline-item${tone ? ` tone-${tone}` : ''}">
-                    <div>
-                        <div class="detail-timeline-headline">${this.escapeHtml(String(headline))}</div>
-                        ${detail ? `<div class="detail-timeline-detail">${this.escapeHtml(String(detail))}</div>` : ''}
-                    </div>
-                    <span class="detail-timeline-when">${this.escapeHtml(when)}</span>
-                </li>
-            `;
-        }).join('');
-
-        host.innerHTML = `<ol class="detail-timeline">${items}</ol>`;
+            // Timeline `detail` is trusted HTML — escape user-controlled values.
+            const detailRaw = log.get('log');
+            const detail = detailRaw ? this.escapeHtml(String(detailRaw)) : '';
+            const when = dataFormatter.apply(log.get('created'), ['epoch', 'relative']);
+            return { tone, headline: String(headline), detail, when };
+        });
     }
 
     async onActionViewUser(event) {
@@ -209,8 +212,7 @@ class MemberPermissionsSection extends View {
         super({
             className: 'member-permissions-section',
             template: `
-                <div class="section-eyebrow">Section · Permissions</div>
-                <h3 class="section-title">Permissions</h3>
+                <div class="detail-section-eyebrow">Permissions</div>
                 <p class="text-secondary small mb-3">Toggles autosave as soon as you flip them.</p>
                 <div data-container="member-permissions-form"></div>
             `,
@@ -237,7 +239,7 @@ class MemberView extends DetailView {
         const model = options.model || new Member(options.data || {});
         const memberId = model.get('id');
 
-        // Shared collection — Audit table + Overview "recent activity" card both read from it.
+        // Shared collection — Audit table + Overview "recent activity" both read from it.
         const logsCollection = new LogList({
             params: {
                 size: 25,
@@ -389,7 +391,10 @@ class MemberView extends DetailView {
         const role = m.get('metadata')?.role || 'Member';
         const created = m.get('created');
         const parts = [role];
-        if (created) parts.push(`joined ${formatRelative(created)}`);
+        if (created != null) {
+            const rel = dataFormatter.apply(created, ['epoch', 'relative']);
+            if (rel) parts.push(`joined ${rel}`);
+        }
         m.attributes._subtitle = parts.join(' · ');
     }
 
