@@ -272,6 +272,10 @@ class SimpleModuleLoader {
                 path: path.join(this.sourceRoot, 'core/views/navigation/SegmentControl.js'),
                 dependencies: ['View']
             },
+            'TabView': {
+                path: path.join(this.sourceRoot, 'core/views/navigation/TabView.js'),
+                dependencies: ['View']
+            },
             'MetricCard': {
                 path: path.join(this.sourceRoot, 'core/views/data/MetricCard.js'),
                 dependencies: ['View']

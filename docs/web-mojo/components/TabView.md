@@ -53,7 +53,7 @@ TabView is a responsive tabbed interface component that automatically adapts to 
 - **Smooth fade transitions** - Professional fade-in/fade-out animations between tabs
 - **Automatic responsive adaptation** - Switches between tabs and dropdown based on available space
 - **Child view management** - Properly mounts/unmounts views with lifecycle support
-- **Bootstrap 5 integration** - Uses native Bootstrap nav-tabs and dropdown components
+- **Eight visual variants** - `minimal` (default), `traditional`, `underline`, `underline-all`, `pills`, `pills-solid`, `segmented`, `btn-group`; all theme-aware
 - **Keyboard navigation** - Full keyboard accessibility support
 - **Event-driven** - Emits events for tab changes and mode switches
 - **Lazy mounting** - Tab content only renders when activated
@@ -179,7 +179,8 @@ new TabView(options)
 |--------|------|---------|-------------|
 | `tabs` | Object | `{}` | Map of tab labels to View instances |
 | `activeTab` | String | First tab | Initially active tab label |
-| `tabsClass` | String | `'nav nav-tabs mb-3'` | CSS classes for tab navigation |
+| `variant` | String | `'minimal'` | Visual style. One of `'minimal'`, `'traditional'`, `'underline'`, `'underline-all'`, `'pills'`, `'pills-solid'`, `'segmented'`, `'btn-group'` (aliases: `'buttongroup'`, `'btngroup'`). See [Variants](#variants). |
+| `tabsClass` | String | resolved from `variant` | Escape hatch — when explicitly set, overrides `variant` and is applied verbatim to the `<ul>`. |
 | `contentClass` | String | `'tab-content'` | CSS classes for tab content container |
 | `enableTransitions` | Boolean | `true` | Enable fade transitions between tabs |
 | `transitionDuration` | Number | `150` | Transition duration in milliseconds |
@@ -187,6 +188,8 @@ new TabView(options)
 | `enableResponsive` | Boolean | `true` | Enable automatic responsive behavior |
 | `tabPadding` | Number | `80` | Estimated padding per tab (px) for width calculation |
 | `dropdownStyle` | String | `'select'` | Dropdown style: `'select'` or `'button'` |
+
+> **Default behavior changed.** The default style is `variant: 'minimal'` — a clean text-only bar. Older code relied on the underline-style `nav-tabs` look; pass `variant: 'traditional'` to keep that previous appearance. **Note:** `'underline'` is now a *new* clean-underline style, not the old nav-tabs look — use `'traditional'` for the legacy classes.
 
 **Example with options:**
 
@@ -198,9 +201,9 @@ const tabView = new TabView({
     'Reports': reportsView
   },
   activeTab: 'Dashboard',
-  tabsClass: 'nav nav-tabs nav-fill mb-4',
-  enableTransitions: true,    // Enable smooth fade transitions (default)
-  transitionDuration: 200,    // Custom 200ms transition
+  variant: 'traditional',      // classic Bootstrap nav-tabs look
+  enableTransitions: true,     // Enable smooth fade transitions (default)
+  transitionDuration: 200,     // Custom 200ms transition
   minWidth: 400,
   dropdownStyle: 'button',
   enableResponsive: true
@@ -900,9 +903,9 @@ await settingsView.render();
 
 ### CSS Classes
 
-TabView uses Bootstrap 5 classes by default:
+The rendered HTML depends on which `variant` is active. The default (`minimal`) produces a plain nav list with `tab-view-variant-minimal`; `traditional` produces the classic Bootstrap `nav nav-tabs mb-3`. Example for `traditional`:
 
-**Tab Navigation (tabs mode):**
+**Tab Navigation (tabs mode, `variant: 'traditional'`):**
 ```html
 <ul class="nav nav-tabs mb-3" role="tablist">
   <li class="nav-item" role="presentation">
@@ -939,24 +942,54 @@ TabView uses Bootstrap 5 classes by default:
 </div>
 ```
 
+### Variants
+
+TabView ships eight named visual variants. Pick one with `variant`:
+
+```javascript
+new TabView({ tabs, variant: 'minimal' });        // default
+new TabView({ tabs, variant: 'traditional' });    // classic Bootstrap nav-tabs
+new TabView({ tabs, variant: 'underline' });      // primary underline under active label
+new TabView({ tabs, variant: 'underline-all' });  // continuous bottom line, primary on active
+new TabView({ tabs, variant: 'pills' });          // soft pill on active, no border
+new TabView({ tabs, variant: 'pills-solid' });    // solid primary pill on active
+new TabView({ tabs, variant: 'segmented' });      // connected, neutral container, primary active
+new TabView({ tabs, variant: 'btn-group' });      // Bootstrap btn-group, bordered, primary active
+```
+
+| Variant | Look |
+|---|---|
+| `minimal` | Text only. Active label paints in `--bs-primary`. No border, no underline. |
+| `traditional` | Classic Bootstrap `nav-tabs` — hairline bottom border on the bar with a primary underline + side borders on the active tab. The pre-`variant` default. |
+| `underline` | Plain text row; a 2px primary underline appears beneath the active label only. No bar bottom-border. |
+| `underline-all` | A continuous 2px line runs across the bottom of the whole bar (`--bs-border-color`); the active tab's segment paints in primary, overlaying the bar's underline so it reads as one underline with the active section highlighted. |
+| `pills` | Inactive tabs are plain text. Active tab gets a `--bs-primary-bg-subtle` rounded pill with primary text — no border. |
+| `pills-solid` | Same shape as `pills`, but the active pill is solid `bg-primary` with white text. |
+| `segmented` | All tabs sit inside a `--bs-secondary-bg` rounded container, no separators. Active tab is `bg-primary` with white text and pops over the neutral container. |
+| `btn-group` | Bootstrap btn-group look. Connected outlined buttons with shared hairline borders; active button is `bg-primary` with white text. Aliases: `'buttongroup'`, `'btngroup'`. |
+
+When the bar collapses to dropdown mode (narrow viewport), the wrapper carries the same `tab-view-variant-*` class so the trigger stays in family — solid-fill variants (`pills-solid`, `segmented`, `btn-group`) get a primary-tinted trigger; the rest stay neutral.
+
+All eight variants render correctly under both `data-bs-theme="light"` and `data-bs-theme="dark"`. See [`SegmentControl`](./SegmentControl.md) for the value-picker case (one-of-N values, no view swapping) — `btn-group` is the visually-equivalent variant when you want view-swapping with the same look.
+
 ### Custom Tab Styles
 
-Override default Bootstrap classes:
+For full control, override `tabsClass` directly. **`tabsClass` always wins over `variant`** — useful for hiding the bar (`d-none`) or layering Bootstrap utilities like `nav-fill` / `nav-justified`:
 
 ```javascript
 const tabView = new TabView({
   tabs: myTabs,
-  tabsClass: 'nav nav-pills nav-fill mb-4',  // Use pills instead
+  tabsClass: 'nav nav-pills nav-fill mb-4',  // Bypasses variant entirely
   contentClass: 'tab-content p-3 border'     // Add padding and border
 });
 ```
 
-**Available Bootstrap nav styles:**
-- `nav-tabs` - Standard tabs (default)
+**Useful Bootstrap nav utilities to layer via `tabsClass`:**
+- `nav-tabs` - Underline tabs (equivalent to `variant: 'traditional'`)
 - `nav-pills` - Pill-shaped tabs
 - `nav-underline` - Underlined tabs
-- `nav-fill` - Equal width tabs
-- `nav-justified` - Full width tabs
+- `nav-fill` - Equal-width tabs
+- `nav-justified` - Full-width tabs
 
 **Custom CSS:**
 
@@ -1655,5 +1688,6 @@ Runnable, copy-paste references in the examples portal:
 
 - [`examples/portal/examples/components/TabView/TabViewExample.js`](../../../examples/portal/examples/components/TabView/TabViewExample.js) — Tab navigation with static tabs and lazy mounting.
 - [`examples/portal/examples/components/TabView/TabViewDynamicExample.js`](../../../examples/portal/examples/components/TabView/TabViewDynamicExample.js) — Tabs added and removed at runtime.
+- [`examples/portal/examples/components/TabView/TabViewVariantsExample.js`](../../../examples/portal/examples/components/TabView/TabViewVariantsExample.js) — Flip through the eight visual variants live.
 
 <!-- examples:cross-link end -->
