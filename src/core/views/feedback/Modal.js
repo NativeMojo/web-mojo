@@ -337,7 +337,10 @@ class Modal {
      * Show a `DetailView` (or similarly-shaped record view) in a modal.
      *
      * Defaults are tuned for the standard "record viewer" layout:
-     *   - `size: 'xl'`          — gives the SideNavView room to breathe
+     *   - `size: 'lg'`          — balanced width for record viewers; pass
+     *                             `size: 'xl'` (or `'xxl'`) for unusually
+     *                             wide content (dense charts, multi-column
+     *                             dashboards, etc.)
      *   - `header: false`       — the view supplies its own header
      *   - `noBodyPadding: true` — view content sits flush against the modal edges
      *   - `buttons: []`         — no footer; dismiss via the view's X /
@@ -351,7 +354,7 @@ class Modal {
      */
     static async detail(view, options = {}) {
         return Modal.show(view, {
-            size: 'xl',
+            size: 'lg',
             header: false,
             noBodyPadding: true,
             buttons: [],

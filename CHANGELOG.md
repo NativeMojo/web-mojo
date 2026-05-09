@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+### DetailView — `auxFn` right-gutter slot + flat-row primitives
+
+- **Added — `header.auxFn(model) -> htmlString`:** new optional slot on `DetailHeaderView` for inline state read-outs that don't fit the chip / badge model — presence dots, "Last seen 4m ago" lines, attempt counters, etc. Renders left of the active switch in the right-side action cluster. Returning falsy omits the wrapper. The output is **trusted HTML** (caller is in source code, not user input). Re-renders along with the rest of the header on `model.set(...)`. Framework ships `.dh-aux-presence`, `.dh-aux-dot` (`.is-online` modifier), and `.dh-aux-meta` defaults in `core.css`.
+- **Added — flat-row primitives in `admin.css`:** `.detail-section`, `.detail-section-eyebrow`, `.detail-section-action`, `.detail-flat-row`, `.detail-flat-row-label`, `.detail-flat-row-value`, `.detail-flat-row-action`. The minimalist "labeled section eyebrow + flat field rows" pattern that section views in admin DetailView subclasses should default to going forward. Replaces stacked `.detail-field-card` blocks.
+- **Deprecated:** `.detail-field-card`, `.detail-field-card-header`, `.detail-field-card-body`. Existing call-sites will be migrated off as part of the DetailView migration rethink (see `planning/requests/detailview-migration-rethink.md`). Don't add new uses.
+- **Tests:** `test/unit/DetailView.test.js` adds three `auxFn` cases — wrapper present when truthy, omitted when falsy, re-rendered after `model.set`.
+
+### Modal.detail() — default size flipped from `'xl'` to `'lg'`
+
+- **Behavior change:** `Modal.detail(view)` now defaults to `size: 'lg'` instead of `size: 'xl'`. The previous width was too generous for typical record-detail content and ran wide of the reference layout. Pass `Modal.detail(view, { size: 'xl' })` (or `'xxl'`) when content genuinely needs more room — dense charts, multi-column dashboards, etc. RuleSetView and other in-tree DetailView callers fit comfortably at `'lg'`.
+
+### EventDelegate — fix async double-dispatch across nested Views
+
+- **Fixed:** when a click landed on a `[data-action]` element inside a nested View hierarchy, ancestor delegates could double-dispatch the same action — the inner delegate's post-`await` `event.stopPropagation()` was a no-op because the browser had already finished bubbling. Now each delegate publishes its in-flight dispatch on `event._mojoDispatch` synchronously at handler entry; ancestor delegates await it before their own `shouldHandle` check, so an inner truthy `onAction*` / `handleAction*` reliably stops the parent. Sync handlers benefit from the same fix (they raced too, just over a shorter window).
+- **Contract preserved:** `onAction*` returning falsy still delegates the event up to ancestor Views; `onPassThruAction*` still never consumes; `handleAction*` still always consumes. No public API changes — the documented behavior just now works for async handlers as it always claimed to.
+- **Tests:** `test/unit/EventDelegate.test.js` adds a `nested delegate isolation` block covering sync/async truthy consume, falsy delegate-up, `handleAction*`, `onPassThruAction*`, parent-only, and three-level nesting.
+
 ### RuleSetView — full redesign + supporting framework primitives
 
 - **Redesigned:** `src/extensions/admin/incidents/RuleSetView.js` replaces the 2-tab `TabView` (Configuration / Rules) with a header card + `SideNavView`. Sections in operator-priority order: **Overview** (4 KPI cards + summary panels), **Conditions** (rule conditions table), **Triggering** (Match → Bundle → Threshold → Re-trigger as a 4-step visual flow with friendly empty-state copy in place of `—`), **Handler** (parsed handler chain rendered as icon cards with tone accents), **Agent Prompt** (new, see below), **Incidents** (`IncidentList` filtered by `rule_set` with a 7d/30d/90d range picker), **Metadata** (known fields + raw JSON, hidden when empty).

@@ -61,18 +61,31 @@ import MOJOUtils from '@core/utils/MOJOUtils.js';
  * The flat record-header card used at the top of `DetailView`.
  * Exported separately for cases where you want this header without the
  * full DetailView (e.g. on a Page rather than a Modal).
+ *
+ * The right-side action cluster reads, left-to-right:
+ *   [auxFn output] · [active switch] · [actions[]] · | · [⋮ context] · [✕]
+ *
+ * `auxFn(model) -> htmlString` is the slot for inline state read-outs
+ * that don't fit the chip/badge model — presence dots, "Last seen 4m
+ * ago" lines, attempt counters, etc. The string is rendered as TRUSTED
+ * HTML (it comes from source code, not user input). Returning falsy
+ * omits the wrapper entirely.
  */
 class DetailHeaderView extends View {
     constructor(options = {}) {
         const {
             icon,
+            iconTone,               // optional: primary | success | warning | danger | info — toned dh-icon
+            iconToneFn,             // optional: (model) => tone, for state-driven icons
             titleField,
             titleFn,
             subtitlePath,
+            subtitleFn,             // optional: (model) => string, takes precedence over subtitlePath
             subtitlePlaceholder,    // optional muted text shown when subtitle is empty
             subtitleEditAction,     // action name for click-to-edit on the empty placeholder
             chips = [],
             activeField,
+            auxFn,                  // optional: (model) => htmlString — right-gutter aux block (presence, last-seen, etc.)
             actions = [],
             closable = true,
             contextMenu,            // { items: [...] } | null
@@ -86,13 +99,17 @@ class DetailHeaderView extends View {
         });
 
         this.icon = icon || 'bi-file-earmark';
+        this.iconTone = iconTone || null;
+        this.iconToneFn = iconToneFn || null;
         this.titleField = titleField || null;
         this.titleFn = titleFn || null;
         this.subtitlePath = subtitlePath || null;
+        this.subtitleFn = subtitleFn || null;
         this.subtitlePlaceholder = subtitlePlaceholder || null;
         this.subtitleEditAction = subtitleEditAction || null;
         this.chips = chips;
         this.activeField = activeField || null;
+        this.auxFn = typeof auxFn === 'function' ? auxFn : null;
         this.actions = actions;
         this.closable = closable;
         this.contextMenuConfig = contextMenu || null;
@@ -107,8 +124,14 @@ class DetailHeaderView extends View {
     }
 
     _resolveSubtitle() {
+        if (this.subtitleFn) return this.subtitleFn(this.model) || '';
         if (!this.subtitlePath) return '';
         return MOJOUtils.getNestedValue(this.model?.attributes || {}, this.subtitlePath) || '';
+    }
+
+    _resolveIconTone() {
+        if (this.iconToneFn) return this.iconToneFn(this.model) || null;
+        return this.iconTone;
     }
 
     _resolveChips() {
@@ -140,6 +163,10 @@ class DetailHeaderView extends View {
             return `<span class="badge bg-${this.escapeHtml(c.variant)}">${iconHtml}${this.escapeHtml(c.text)}</span>`;
         }).join('');
 
+        // Right-gutter aux slot — trusted HTML. Falsy result omits the wrapper.
+        const auxResult = this.auxFn ? (this.auxFn(this.model) || '') : '';
+        const auxHtml = auxResult ? `<div class="dh-aux">${auxResult}</div>` : '';
+
         const switchHtml = this.activeField ? `
             <label class="dh-active-switch me-1" data-bs-toggle="tooltip" title="Toggle ${this.escapeHtml(this.activeField)}">
                 <input type="checkbox" data-action="toggle-active" ${isActive ? 'checked' : ''}>
@@ -164,10 +191,13 @@ class DetailHeaderView extends View {
         // Group 2 (overflow + close) renders only when at least one of those is present.
         const hasGroup2 = !!this.contextMenuConfig || this.closable;
 
+        const tone = this._resolveIconTone();
+        const iconClass = tone ? `dh-icon dh-icon-tone-${this.escapeHtml(tone)}` : 'dh-icon';
+
         // Stylesheet lives in src/core/css/core.css under "DetailHeaderView".
         return `
             <div class="d-flex align-items-start gap-3">
-                <div class="dh-icon"><i class="bi ${this.escapeHtml(this.icon)}"></i></div>
+                <div class="${iconClass}"><i class="bi ${this.escapeHtml(this.icon)}"></i></div>
                 <div class="dh-meta" style="min-width: 0; flex: 1;">
                     <h2 class="dh-name">${this.escapeHtml(title)}</h2>
                     ${subtitle
@@ -180,6 +210,8 @@ class DetailHeaderView extends View {
                 </div>
             </div>
             <div class="dh-actions d-flex align-items-center gap-1">
+                <!-- Group 0 — aux slot (presence, last-seen, attempt counter, …) -->
+                ${auxHtml}
                 <!-- Group 1 — record actions (state + primary edits) -->
                 ${switchHtml}
                 ${actionsHtml}
@@ -212,16 +244,29 @@ class DetailHeaderView extends View {
     }
 
     /**
-     * ContextMenu dispatches actions to its immediate parent (this header).
-     * Re-dispatch any unhandled action up to the DetailView so subclasses
-     * (RuleSetView, IncidentView, …) can keep their action handlers in one place.
+     * ContextMenu dispatches actions to its immediate parent (this header)
+     * via `parent.events.dispatch(...)`. The dropdown portals its `.dropdown-menu`
+     * to `document.body`, so the click does NOT bubble through the header's
+     * own DOM tree — the parent DetailView's listener never sees it.
+     *
+     * In that case, re-dispatch the action up to the DetailView so subclasses
+     * can keep their handlers in one place. But when the click comes from an
+     * in-tree element (a regular `dh-actions` button), the DOM event will
+     * bubble to the parent's listener naturally — re-dispatching would cause
+     * a second fire.
      */
     async onActionDefault(action, event, el) {
         const dest = this.parent;
-        if (dest && dest.events && typeof dest.events.dispatch === 'function') {
-            return await dest.events.dispatch(action, event, el);
+        if (!dest || !dest.events || typeof dest.events.dispatch !== 'function') {
+            return false;
         }
-        return false;
+        // If the event will bubble to the parent's element naturally, skip
+        // the programmatic re-dispatch — the parent's own listener catches it.
+        const target = event?.target || el;
+        if (target && dest.element?.contains(target)) {
+            return false;
+        }
+        return await dest.events.dispatch(action, event, el);
     }
 
     /**
@@ -267,9 +312,17 @@ class DetailView extends View {
             ...viewOptions
         } = options;
 
+        // Always include `detail-view` as one of the classes so the framework's
+        // DetailView-scoped CSS applies, even when subclasses pass their own
+        // className (e.g. `user-view`, `runner-details-view`).
+        const subclassClassName = viewOptions.className || '';
+        const mergedClassName = subclassClassName.includes('detail-view')
+            ? subclassClassName
+            : (subclassClassName ? `detail-view ${subclassClassName}` : 'detail-view');
+
         super({
-            className: 'detail-view',
-            ...viewOptions
+            ...viewOptions,
+            className: mergedClassName
         });
 
         if (!this.model && options.model) {

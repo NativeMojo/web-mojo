@@ -158,7 +158,7 @@ await Modal.show(new GeoIPView({ model: geo }), {
 
 Show a [`DetailView`](DetailView.md)-style record viewer in a modal. Defaults are tuned for the record-detail pattern:
 
-- `size: 'xl'` — gives the SideNavView room
+- `size: 'lg'` — balanced width for record viewers; pass `size: 'xl'` (or `'xxl'`) for unusually wide content. Default was previously `'xl'` and was tightened to `'lg'` to match the reference layout.
 - `header: false` — the view supplies its own header
 - `noBodyPadding: true` — the view content sits flush against the modal edges
 - `buttons: []` — no footer; dismiss via the view's X close / Esc / backdrop click
@@ -173,7 +173,7 @@ await Modal.detail(new RuleSetView({ model }));
 Override any default by passing it through:
 
 ```js
-await Modal.detail(new MyDetailView({ model }), { size: 'lg' });
+await Modal.detail(new MyDetailView({ model }), { size: 'xl' });
 ```
 
 **Parameters:**

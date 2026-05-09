@@ -90,6 +90,7 @@ new DetailView({
 | `subtitlePath` | `string` | Dotted path on `model.attributes` (e.g. `'metadata.reasoning'`); falsy for no subtitle |
 | `chips` | `Array` | See [Chips](#chips) below |
 | `activeField` | `string` | Model field that drives the active/inactive toggle. `null` (default) hides the toggle |
+| `auxFn` | `(model) => string` | Optional. Returns trusted HTML for the right-gutter aux slot — see [Aux slot](#aux-slot) below |
 | `actions` | `Array<{label, icon, action, title?}>` | Ghost-style buttons inline with the close X. `action` becomes `data-action`, dispatched on the parent `DetailView` subclass via the standard `onAction<KebabCase>` pipeline |
 | `closable` | `boolean` | Default `true`. Renders an X with `data-bs-dismiss="modal"`. Set false for non-modal hosts |
 | `contextMenu` | `{ items: [...] }` | Optional [`ContextMenu`](ContextMenu.md) config — items are dispatched on the parent view via `data-action` |
@@ -110,6 +111,38 @@ Each chip resolves text and is filtered by an optional predicate:
 ```
 
 Variants pick up the global soft-badge styling (`primary`, `secondary`, `success`, `warning`, `danger`, `info`, `light`).
+
+### Aux slot
+
+The right-side action cluster reads, left-to-right:
+
+```
+[ auxFn output ] · [ active switch ] · [ actions[] ] · | · [ ⋮ context ] · [ ✕ ]
+```
+
+`auxFn(model) -> htmlString` is the slot for inline state read-outs that don't fit the chip / badge model — presence dots, "Last seen 4m ago" lines, attempt counters, etc. The string is rendered as **trusted HTML** (it comes from source code, not user input). Returning falsy omits the wrapper entirely.
+
+Re-renders along with the rest of the header on `model.set(...)` (the parent `DetailView`'s `_onModelChange` re-renders the header view), so reading `model.get('last_activity')` etc. inside `auxFn` is safe.
+
+```js
+header: {
+    titleField: 'display_name',
+    activeField: 'is_active',
+    auxFn: (m) => {
+        const last = m.get('last_activity');
+        const online = last && (Date.now() - new Date(last).getTime()) < 5 * 60 * 1000;
+        return `
+            <div class="dh-aux-presence">
+                <span class="dh-aux-dot ${online ? 'is-online' : ''}"></span>
+                ${online ? 'Online' : 'Offline'}
+            </div>
+            <div class="dh-aux-meta">Last active ${last ? new Date(last).toLocaleString() : '—'}</div>
+        `;
+    }
+}
+```
+
+The framework ships `.dh-aux-presence`, `.dh-aux-dot` (`.is-online` modifier), and `.dh-aux-meta` styles — see [`core.css`](../../src/core/css/core.css) under "DetailHeaderView". Component-specific aux markup is fine too — wrap your own classes inside the `.dh-aux` div emitted by the header.
 
 ---
 
@@ -185,7 +218,7 @@ For non-modal hosts (e.g. embedding the view inside a Page), pass `closable: fal
 
 `Modal.detail(view)` is the canonical helper for opening a `DetailView` in a modal. Defaults:
 
-- `size: 'xl'` — gives the SideNav rail room
+- `size: 'lg'` — balanced width for record viewers; pass `size: 'xl'` (or `'xxl'`) for unusually wide content (dense charts, multi-column dashboards). Width was previously `'xl'` by default and was tightened to `'lg'` to match the reference layout.
 - `header: false` — the view supplies its own header
 - `noBodyPadding: true` — the view content sits flush against the modal edges
 - `buttons: []` — no footer; dismiss via X / Esc / backdrop
@@ -197,7 +230,7 @@ await Modal.detail(new RuleSetView({ model }));
 Override any default by passing it through:
 
 ```js
-await Modal.detail(new RuleSetView({ model }), { size: 'lg' });
+await Modal.detail(new RuleSetView({ model }), { size: 'xl' });
 ```
 
 ---

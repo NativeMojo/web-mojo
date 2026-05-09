@@ -144,5 +144,81 @@ module.exports = async function (testContext) {
             const link = dv.element.querySelector('[data-section="one"]');
             expect(link.querySelector('.snv-badge')?.textContent).toBe('5');
         });
+
+        // ── auxFn — right-gutter aux slot ────────────────────────
+
+        it('renders the aux block when auxFn returns a non-empty string', async () => {
+            const view = new DetailView({
+                model: makeModel({ last_activity: 1700000000000 }),
+                header: {
+                    icon: 'bi-person',
+                    titleField: 'name',
+                    auxFn: (m) => `<span class="my-aux">last=${m.get('last_activity')}</span>`
+                },
+                sections: [{ key: 'a', label: 'A', view: makeSection('a') }]
+            });
+            await view.render(false);
+            const aux = view.headerView.element.querySelector('.dh-aux');
+            expect(aux).toBeTruthy();
+            expect(aux.querySelector('.my-aux')).toBeTruthy();
+            expect(aux.innerHTML).toContain('last=1700000000000');
+        });
+
+        it('omits the aux wrapper when auxFn is missing or returns falsy', async () => {
+            // No auxFn at all
+            const a = new DetailView({
+                model: makeModel(),
+                header: { icon: 'bi-x', titleField: 'name' },
+                sections: [{ key: 'a', label: 'A', view: makeSection('a') }]
+            });
+            await a.render(false);
+            expect(a.headerView.element.querySelector('.dh-aux')).toBeNull();
+
+            // auxFn returns empty string
+            const b = new DetailView({
+                model: makeModel(),
+                header: {
+                    icon: 'bi-x',
+                    titleField: 'name',
+                    auxFn: () => ''
+                },
+                sections: [{ key: 'a', label: 'A', view: makeSection('a') }]
+            });
+            await b.render(false);
+            expect(b.headerView.element.querySelector('.dh-aux')).toBeNull();
+
+            // auxFn returns null
+            const c = new DetailView({
+                model: makeModel(),
+                header: {
+                    icon: 'bi-x',
+                    titleField: 'name',
+                    auxFn: () => null
+                },
+                sections: [{ key: 'a', label: 'A', view: makeSection('a') }]
+            });
+            await c.render(false);
+            expect(c.headerView.element.querySelector('.dh-aux')).toBeNull();
+        });
+
+        it('aux output reflects model state on re-render', async () => {
+            const m = makeModel({ counter: 1 });
+            const view = new DetailView({
+                model: m,
+                header: {
+                    icon: 'bi-person',
+                    titleField: 'name',
+                    auxFn: (model) => `<span class="counter">${model.get('counter')}</span>`
+                },
+                sections: [{ key: 'a', label: 'A', view: makeSection('a') }]
+            });
+            await view.render(false);
+            expect(view.headerView.element.querySelector('.counter').textContent).toBe('1');
+
+            // Mutate and re-render the header
+            m.set('counter', 7);
+            await view.headerView.render();
+            expect(view.headerView.element.querySelector('.counter').textContent).toBe('7');
+        });
     });
 };
