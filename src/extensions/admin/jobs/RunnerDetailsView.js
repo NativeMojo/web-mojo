@@ -1159,11 +1159,11 @@ function _buildHeaderAux(m) {
 
     const dotCls = health.tone && health.tone !== 'default' ? ` dh-aux-dot-${health.tone}` : '';
     return `
-        <span class="dh-aux-dot${dotCls}"></span>
-        <span class="dh-aux-meta">
+        <span class="dh-aux-presence">
+            <span class="dh-aux-dot${dotCls}"></span>
             <span>${escapeHtml(main)}</span>
-            ${sub ? `<span class="text-secondary small">${escapeHtml(sub)}</span>` : ''}
         </span>
+        ${sub ? `<span class="dh-aux-meta">${escapeHtml(sub)}</span>` : ''}
     `;
 }
 

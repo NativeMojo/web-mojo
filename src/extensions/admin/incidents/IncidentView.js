@@ -2352,8 +2352,11 @@ function _buildHeaderAux(model) {
     if (!main) return '';
     const dotCls = tone && tone !== 'default' ? ` dh-aux-dot-${tone}` : '';
     return `
-        <span class="dh-aux-dot${dotCls}"></span>
-        <span class="dh-aux-meta"><span>${escapeHtml(main)}</span>${sub ? `<span class="text-secondary small">${escapeHtml(sub)}</span>` : ''}</span>
+        <span class="dh-aux-presence">
+            <span class="dh-aux-dot${dotCls}"></span>
+            <span>${escapeHtml(main)}</span>
+        </span>
+        ${sub ? `<span class="dh-aux-meta">${escapeHtml(sub)}</span>` : ''}
     `;
 }
 

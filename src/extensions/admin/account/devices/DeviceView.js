@@ -940,8 +940,11 @@ function _buildHeaderAux(m) {
     const sub = lastSeen ? `Last seen ${escapeHtml(formatRelative(lastSeen))}` : '';
 
     return `
-        <span class="dh-aux-dot${dotCls}"></span>
-        <span class="dh-aux-meta"><span>${escapeHtml(main)}</span>${sub ? `<span class="text-secondary small">${sub}</span>` : ''}</span>
+        <span class="dh-aux-presence">
+            <span class="dh-aux-dot${dotCls}"></span>
+            <span>${escapeHtml(main)}</span>
+        </span>
+        ${sub ? `<span class="dh-aux-meta">${sub}</span>` : ''}
     `;
 }
 

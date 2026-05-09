@@ -631,7 +631,6 @@ class GroupView extends DetailView {
         const membersSection = new TableView({
             collection: membersCollection,
             title: 'Members',
-            eyebrow: 'Section · Members',
             showFullscreen: false,
             searchable: false,
             hideActivePillNames: ['group'],
@@ -651,7 +650,6 @@ class GroupView extends DetailView {
         const subGroupsSection = new TableView({
             collection: subGroupsCollection,
             title: 'Sub-Groups',
-            eyebrow: 'Section · Sub-Groups',
             showFullscreen: false,
             searchable: false,
             hideActivePillNames: ['parent'],
@@ -676,7 +674,6 @@ class GroupView extends DetailView {
         const apiKeysSection = new TableView({
             collection: apiKeysCollection,
             title: 'API Keys',
-            eyebrow: 'Section · API Keys',
             showFullscreen: false,
             searchable: false,
             hideActivePillNames: ['group'],
@@ -706,7 +703,6 @@ class GroupView extends DetailView {
         const eventsSection = new TableView({
             collection: eventsCollection,
             title: 'Events',
-            eyebrow: 'Section · Events',
             showFullscreen: false,
             searchable: false,
             hideActivePillNames: ['model_name', 'model_id'],
@@ -1070,7 +1066,10 @@ function _buildHeaderAux(m, membersCollection) {
     }
 
     return `
-        <span class="dh-aux-meta"><span>${escapeHtml(main)}</span>${sub ? `<span class="text-secondary small">${sub}</span>` : ''}</span>
+        <span class="dh-aux-presence">
+            <span>${escapeHtml(main)}</span>
+        </span>
+        ${sub ? `<span class="dh-aux-meta">${sub}</span>` : ''}
     `;
 }
 
