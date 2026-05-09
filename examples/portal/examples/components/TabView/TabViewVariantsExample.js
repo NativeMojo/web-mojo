@@ -36,11 +36,14 @@ class TabViewVariantsExample extends Page {
             containerId: 'variant-picker',
             ariaLabel: 'TabView variant',
             options: [
-                { value: 'minimal',         label: 'minimal' },
-                { value: 'underline',       label: 'underline' },
-                { value: 'pills',           label: 'pills' },
-                { value: 'segmented',       label: 'segmented' },
-                { value: 'segmented-solid', label: 'segmented-solid' }
+                { value: 'minimal',       label: 'minimal' },
+                { value: 'traditional',   label: 'traditional' },
+                { value: 'underline',     label: 'underline' },
+                { value: 'underline-all', label: 'underline-all' },
+                { value: 'pills',         label: 'pills' },
+                { value: 'pills-solid',   label: 'pills-solid' },
+                { value: 'segmented',     label: 'segmented' },
+                { value: 'btn-group',     label: 'btn-group' }
             ],
             value: this.variant
         });

@@ -33,15 +33,28 @@ import View from '@core/View.js';
 class TabView extends View {
   /**
    * Map of `variant` name → default `tabsClass`. Resolved when the caller
-   * doesn't pass an explicit `tabsClass`. `'underline'` keeps today's exact
-   * Bootstrap classes for bit-for-bit back-compat with pre-variant code.
+   * doesn't pass an explicit `tabsClass`. `'traditional'` keeps the legacy
+   * Bootstrap `nav-tabs` classes (for callers that want the classic look).
    */
   static VARIANT_CLASSES = {
-    minimal:           'nav tab-view-variant-minimal mb-3',
-    underline:         'nav nav-tabs mb-3',
-    pills:             'nav tab-view-variant-pills mb-3',
-    segmented:         'nav tab-view-variant-segmented mb-3',
-    'segmented-solid': 'nav tab-view-variant-segmented-solid mb-3'
+    minimal:         'nav tab-view-variant-minimal mb-3',
+    traditional:     'nav nav-tabs mb-3',
+    underline:       'nav tab-view-variant-underline mb-3',
+    'underline-all': 'nav tab-view-variant-underline-all mb-3',
+    pills:           'nav tab-view-variant-pills mb-3',
+    'pills-solid':   'nav tab-view-variant-pills-solid mb-3',
+    segmented:       'nav tab-view-variant-segmented mb-3',
+    'btn-group':     'nav tab-view-variant-btn-group mb-3'
+  };
+
+  /**
+   * Map of common alias → canonical variant name. Lets callers write
+   * `'buttongroup'` / `'btngroup'` and get `'btn-group'`. Resolved before
+   * the VARIANT_CLASSES lookup; the canonical name lands on `this.variant`.
+   */
+  static VARIANT_ALIASES = {
+    buttongroup: 'btn-group',
+    btngroup:    'btn-group'
   };
 
   static DEFAULT_VARIANT = 'minimal';
@@ -73,12 +86,19 @@ class TabView extends View {
     this.tabLabels = Object.keys(this.tabs);
     this.activeTab = activeTab || this.tabLabels[0] || null;
 
-    // Resolve variant — fall back to default with a warning on unknown.
-    if (variant != null && !Object.prototype.hasOwnProperty.call(TabView.VARIANT_CLASSES, variant)) {
-      console.warn(`TabView: unknown variant "${variant}". Falling back to "${TabView.DEFAULT_VARIANT}". Valid: ${Object.keys(TabView.VARIANT_CLASSES).join(', ')}.`);
+    // Resolve variant — apply alias map first, then validate against the
+    // canonical VARIANT_CLASSES set. Fall back to default with a warning on
+    // unknown.
+    const resolved = variant != null
+      ? (Object.prototype.hasOwnProperty.call(TabView.VARIANT_ALIASES, variant)
+          ? TabView.VARIANT_ALIASES[variant]
+          : variant)
+      : null;
+    if (resolved != null && !Object.prototype.hasOwnProperty.call(TabView.VARIANT_CLASSES, resolved)) {
+      console.warn(`TabView: unknown variant "${variant}". Falling back to "${TabView.DEFAULT_VARIANT}". Valid: ${Object.keys(TabView.VARIANT_CLASSES).join(', ')} (aliases: ${Object.keys(TabView.VARIANT_ALIASES).join(', ')}).`);
       this.variant = TabView.DEFAULT_VARIANT;
     } else {
-      this.variant = variant || TabView.DEFAULT_VARIANT;
+      this.variant = resolved || TabView.DEFAULT_VARIANT;
     }
 
     // CSS classes
