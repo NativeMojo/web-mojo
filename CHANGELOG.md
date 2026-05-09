@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### ListView / TableView fixes following the toolbar refactor
+
+- **Boolean filters render as a True/False select.** `type: 'boolean'` (and `'switch'` / `'toggle'`) used to fall through to a text input in the edit dialog because FormBuilder doesn't have a `boolean` field type. Now mapped to a select with explicit `{ value: 'true', text: 'True' }` / `{ value: 'false', text: 'False' }` options. Caller can override labels via `trueLabel` / `falseLabel` and pre-select with `defaultValue`. Wire format is the string `'true'` / `'false'` so URL round-trip works.
+- **Filter pill text is readable.** A previous commit changed `.badge.bg-primary` to a subtle (light) background, which made the pill's `text-white` link button and `btn-close-white` invisible. Replaced with a `.list-filter-pill-text` class + plain `.btn-close`; CSS makes the link button inherit the pill's `--bs-primary-text-emphasis` foreground in both themes.
+- **Filter pill click no longer opens two modals.** ListView's `onActionEditFilter` runs the full edit-modal flow itself AND emit'd `filter:edit`, which TablePage was listening for and handling by opening another `Modal.form`. Removed the redundant emit from ListView and the corresponding listener from TablePage.
+- **`Model.collection` back-reference.** Model never stored the `collection` ref that Collection.add was already passing in. Added `this.collection = options.collection || null` in the Model constructor, plus matching adoption in `Collection.add` (existing instances now get `model.collection = this`) and detachment in `Collection.remove` (`removedModel.collection = null`). Unblocks the in-memory CRUD pattern: `class FooModel extends Model { async destroy() { if (this.collection) this.collection.remove(this); ... } }`.
+- **New `ListViewLifecycleExample`.** Exercises the full Add / View / Edit / Delete flow on a plain ListView using `BookModel.ADD_FORM` / `EDIT_FORM` / `DELETE_TEMPLATE` statics, with click-to-view via `clickAction: 'view'` and inline action buttons via `data-action="edit"|"delete"` in the item template. Mocks `save()` / `destroy()` locally so the example runs without a backend.
+
 ### ListView model lifecycle (view / edit / delete / add) hoisted from TableView
 
 - **Full model lifecycle is now on `ListView`.** `clickAction` (`'view' | 'edit' | 'select' | 'none' | function`), `onItemView` / `onItemEdit` / `onItemDelete` / `onAdd` / `onRowClick` callback overrides, `itemView`, `addForm`, `editForm`, `deleteTemplate`, `formDialogConfig`, `viewDialogOptions`, `fetchOnView`, `showAdd`, `showExport`, `exportOptions`, `exportSource` — all the model-dialog scaffolding TableView has, on plain ListView. ListView defaults `clickAction: 'none'` so existing usage is unchanged; opt in by setting `clickAction` plus the appropriate form/itemView config.

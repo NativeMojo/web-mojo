@@ -823,10 +823,11 @@ const table = new TableView({
 |------|-------------|
 | `'text'` | Free text input |
 | `'select'` | Dropdown select with predefined options |
+| `'multiselect'` | Multi-value dropdown — emits `field__in=a,b,c` (or plain `field=a` for a single value) |
 | `'date'` | Date picker |
 | `'daterange'` | Date range picker (start and end) |
 | `'number'` | Numeric input |
-| `'boolean'` | True/false toggle |
+| `'boolean'` *(also `'switch'`, `'toggle'`)* | Two-option select rendered as `True` / `False`. Caller can override the labels with `trueLabel` / `falseLabel` (e.g. `{ trueLabel: 'Active', falseLabel: 'Disabled' }`). Honors `defaultValue` when opening the Add Filter dialog fresh — `{ defaultValue: true }` pre-selects True. The wire format is the string `'true'` / `'false'` so it round-trips cleanly through `?is_active=true` URL params. |
 
 ---
 
