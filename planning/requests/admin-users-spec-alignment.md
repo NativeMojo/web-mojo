@@ -1,9 +1,25 @@
 ---
-status: open
+status: in-progress (paused — waiting on listview-search-filters-pagination)
 type: request
 scope: src/extensions/admin/account/{users,groups} · UserView · GroupView · MemberView
 created: 2026-05-09
 parent: detailview-audit-followups.md
+blocked_by: listview-search-filters-pagination.md
+---
+
+## Status — 2026-05-09
+
+**Phase 1 + Phase 2 shipped. Paused on Phase 3+ pending ListView toolbar/pagination work.**
+
+Landed:
+- `52c4712` — Phase 1 (I1 double-fire, I2 force-verify removal, I3 Change Avatar, I4 TOTP/SMS/Passkey rows) + this spec file.
+- `7f37b68` — bonus: badges + KPI counts use `collection.meta.count` instead of fetched-page length.
+- `d6dde92` — Phase 2 (disable lifecycle): reason-keyed status badge, optional reason+note form on toggle-off, silent reactivate on toggle-on, anonymized hides toggle, inactivity-warning row + Reset link, disable-history accordion, mock-backend POST_SAVE_ACTIONS support, seed users get is_active + populated disable blocks.
+
+**Why paused:** the remaining table-heavy sections in UserView (Audit's three tabs, Devices, Locations, Groups membership) feel cramped inside the Modal.detail width. The right fix isn't more table columns — it's swapping those TableViews for ListView with toolbar + show-more pagination. That work is captured in [`listview-search-filters-pagination.md`](./listview-search-filters-pagination.md) and is already fully planned.
+
+Resuming this request after ListView lands will likely look like: replace the table-shaped sections with toolbar-equipped ListViews, then continue with **Phase 3** (throttle badge + clear-rate-limit), **Phase 4** (identity-change cards), **Phase 5** (field-write protection gating + "Include disabled" toggle on TablePages), **Phase 6** (Group/Member spec quirks), **Phase 7** (security-events feed).
+
 ---
 
 # Admin UserView/GroupView/MemberView — spec alignment
