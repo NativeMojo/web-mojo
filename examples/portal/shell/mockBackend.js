@@ -102,12 +102,45 @@ const ROUTES = [
         },
     },
     {
-        // User detail (must come before the list match below).
+        // User detail GET (must come before the list match below).
+        method: 'GET',
         match: /\/api\/(?:account\/)?user\/(\d+)(?:\/?)$/,
         handler: (url) => {
             const id = Number(url.match(/\/user\/(\d+)/)[1]);
             const user = SEED_USERS.find(u => u.id === id);
             return user ? jsonOk({ status: true, data: user }) : jsonStatus(404, { status: false, error: 'not found' });
+        },
+    },
+    {
+        // User detail PUT/PATCH — merge the request body into the in-memory
+        // seed so toggles, edits, and other autosaves persist for the
+        // lifetime of the page. Mirrors the Django JSONField merge
+        // convention: dotted keys like `permissions.view_admin` are split
+        // and merged into the nested object rather than written verbatim.
+        match: /\/api\/(?:account\/)?user\/(\d+)(?:\/?)$/,
+        handler: (url, init) => {
+            const id = Number(url.match(/\/user\/(\d+)/)[1]);
+            const user = SEED_USERS.find(u => u.id === id);
+            if (!user) return jsonStatus(404, { status: false, error: 'not found' });
+            let body = {};
+            try {
+                body = init?.body ? (typeof init.body === 'string' ? JSON.parse(init.body) : init.body) : {};
+            } catch { /* ignore malformed bodies */ }
+            for (const [key, value] of Object.entries(body || {})) {
+                if (key.includes('.')) {
+                    const [head, ...rest] = key.split('.');
+                    if (!user[head] || typeof user[head] !== 'object') user[head] = {};
+                    let cursor = user[head];
+                    for (let i = 0; i < rest.length - 1; i++) {
+                        if (!cursor[rest[i]] || typeof cursor[rest[i]] !== 'object') cursor[rest[i]] = {};
+                        cursor = cursor[rest[i]];
+                    }
+                    cursor[rest[rest.length - 1]] = value;
+                } else {
+                    user[key] = value;
+                }
+            }
+            return jsonOk({ status: true, data: user });
         },
     },
     {
