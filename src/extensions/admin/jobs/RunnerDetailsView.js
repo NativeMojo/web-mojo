@@ -190,7 +190,7 @@ class RunnerOverviewSection extends View {
         const valueHtml = html ? value : escape(String(value));
         return new View({
             containerId,
-            className: `metric-card metric-card-lg${tone ? ` metric-card-tone-${tone}` : ''}`,
+            className: `metric-card${tone ? ` metric-card-tone-${tone}` : ''}`,
             template: `
                 <div class="metric-card-label">${escape(label)}</div>
                 <div class="metric-card-value">${valueHtml}</div>

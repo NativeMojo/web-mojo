@@ -2752,11 +2752,13 @@
 }
 .detail-view .snv-content > .snv-section { padding: 1rem 1.25rem 1.5rem; }
 
-/* Tighter MetricCard inside DetailView Overview sections */
+/* Tighter MetricCard inside DetailView Overview sections — the default
+   is the small / quiet treatment; `metric-card-lg` is opt-in for
+   emphasis only (rarely used). */
 .detail-view .metric-card { padding: 0.5rem 0.7rem; gap: 0.15rem; }
-.detail-view .metric-card-label { font-size: 0.6rem; letter-spacing: 0.08em; opacity: 0.85; }
-.detail-view .metric-card-value { font-size: 0.85rem; }
-.detail-view .metric-card.metric-card-lg .metric-card-value { font-size: 1.05rem; letter-spacing: -0.01em; }
+.detail-view .metric-card-label { font-size: 0.58rem; letter-spacing: 0.1em; opacity: 0.85; }
+.detail-view .metric-card-value { font-size: 0.82rem; line-height: 1.3; }
+.detail-view .metric-card.metric-card-lg .metric-card-value { font-size: 0.95rem; letter-spacing: -0.005em; }
 
 /* Side rail tightening */
 .detail-view .snv-nav a { padding: 0.35rem 1.15rem; font-size: 0.78rem; }

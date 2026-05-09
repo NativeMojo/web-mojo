@@ -226,7 +226,7 @@ class DeviceOverviewSection extends View {
     _kpi(containerId, label, value, tone = null) {
         return new View({
             containerId,
-            className: `metric-card metric-card-lg${tone ? ` metric-card-tone-${tone}` : ''}`,
+            className: `metric-card${tone ? ` metric-card-tone-${tone}` : ''}`,
             template: `
                 <div class="metric-card-label">${this.escapeHtml(label)}</div>
                 <div class="metric-card-value">${this.escapeHtml(value)}</div>
