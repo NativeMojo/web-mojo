@@ -27,6 +27,7 @@ import View from '@core/View.js';
 import DetailView from '@core/views/data/DetailView.js';
 import TabView from '@core/views/navigation/TabView.js';
 import TableView from '@core/views/table/TableView.js';
+import ListView from '@core/views/list/ListView.js';
 import FormView from '@core/forms/FormView.js';
 import MetricCard from '@core/views/data/MetricCard.js';
 import Timeline from '@core/views/data/Timeline.js';
@@ -126,6 +127,16 @@ const LOG_LEVEL_TONE = {
     warn:     'warning',
     info:     'info'
 };
+
+// Pipe formatter for log-level → Bootstrap badge tone. Used by the
+// audit feed templates (`{{model.level|levelTone}}` → `secondary`/`info`/
+// `warning`/`danger`). Registered idempotently so dev hot-reloads don't
+// double-register.
+if (!dataFormatter.formatters?.has?.('leveltone')) {
+    dataFormatter.register('levelTone', (level) => {
+        return LOG_LEVEL_TONE[String(level || '').toLowerCase()] || 'secondary';
+    });
+}
 
 function _deviceLabel(deviceInfo) {
     const dev = deviceInfo?.device || {};
@@ -630,60 +641,38 @@ class UserDevicesSection extends View {
     }
 
     async onInit() {
-        // Local-only TableView — the collection is a synthetic array we rebuild
-        // every time the source collections change. Kind filter is a plain
-        // select tied to the local re-render.
-        this.tableView = new TableView({
+        // Local-only ListView — synthetic-array collection rebuilt
+        // whenever the source collections fetch. Kind filter lives in the
+        // toolbar (All / Browser / Push). Each row is a device card:
+        // icon · label · last-seen · kind badge.
+        this.tableView = new ListView({
             containerId: 'user-devices-table',
             collection: this._buildSyntheticArray(),
-            showAdd: false,
-            showExport: false,
-            showFullscreen: false,
-            searchable: false,
             paginated: false,
-            sortable: true,
-            filterable: false,   // we drive the filter ourselves via the toolbar button
-            // Synthetic rows aren't Model instances — `clickAction: 'view'`
-            // can't resolve a VIEW_CLASS through `getModelClass()`. So we
-            // hand-dispatch by `kind`: split the synthetic id, look up the
-            // real model from the source collection, open the right detail.
-            onRowClick: (rowModel) => this._openDeviceRow(rowModel),
-            columns: [
-                {
-                    key: 'kind',
-                    label: 'Kind',
-                    width: '110px',
-                    template: `
-                        {{#isPush|bool}}<span class="badge text-bg-primary"><i class="bi bi-bell me-1"></i>Push</span>{{/isPush|bool}}
-                        {{^isPush|bool}}<span class="badge text-bg-info"><i class="bi {{deviceIcon}} me-1"></i>Browser</span>{{/isPush|bool}}
-                    `
-                },
-                { key: 'label',      label: 'Device' },
-                { key: 'last_seen',  label: 'Last seen', formatter: 'relative', sortable: true, width: '140px' },
-                { key: 'identifier', label: 'Identifier', formatter: 'truncate_middle(20)', width: '200px' },
-                { key: 'signals',    label: 'Signals',   formatter: 'badge', width: '120px' }
-            ],
+            // Synthetic rows aren't Model instances; route clicks through
+            // a hand-dispatch that looks the real model up from the source
+            // collection and opens DeviceView / PushDeviceView accordingly.
+            onItemClick: (rowModel) => this._openDeviceRow(rowModel),
+            itemTemplate: `
+                <div class="user-device-row" role="button">
+                    <div class="user-device-icon"><i class="bi {{model.deviceIcon}}"></i></div>
+                    <div class="user-device-info">
+                        <div class="user-device-label">{{model.label}}</div>
+                        <div class="user-device-meta">
+                            {{model.last_seen|relative|default:'never'}}
+                            {{#model.identifier}} · <code>{{model.identifier|truncate_middle(20)}}</code>{{/model.identifier}}
+                        </div>
+                    </div>
+                    {{#model.isPush|bool}}<span class="badge text-bg-primary"><i class="bi bi-bell me-1"></i>Push</span>{{/model.isPush|bool}}
+                    {{^model.isPush|bool}}<span class="badge text-bg-info">Browser</span>{{/model.isPush|bool}}
+                </div>
+            `,
+            emptyMessage: 'No devices on file for this user.',
             toolbarButtons: [
-                {
-                    label: 'All',
-                    icon: 'bi bi-list-ul',
-                    handler: () => this._setKind('all')
-                },
-                {
-                    label: 'Browser',
-                    icon: 'bi bi-laptop',
-                    handler: () => this._setKind('browser')
-                },
-                {
-                    label: 'Push',
-                    icon: 'bi bi-bell',
-                    handler: () => this._setKind('push')
-                },
-                {
-                    label: 'Refresh',
-                    icon: 'bi bi-arrow-clockwise',
-                    handler: () => this._refresh()
-                }
+                { label: 'All',     icon: 'bi bi-list-ul',         handler: () => this._setKind('all') },
+                { label: 'Browser', icon: 'bi bi-laptop',          handler: () => this._setKind('browser') },
+                { label: 'Push',    icon: 'bi bi-bell',            handler: () => this._setKind('push') },
+                { label: 'Refresh', icon: 'bi bi-arrow-clockwise', handler: () => this._refresh() }
             ]
         });
         this.addChild(this.tableView);
@@ -872,66 +861,80 @@ class UserAuditSection extends View {
     }
 
     async onInit() {
+        // Tables → ListViews per the Modal.detail width constraint. Each
+        // tab is a chronological feed (timestamp + level/category badge +
+        // kind/title + message). Show-more pagination so the dataset can
+        // grow without forcing numbered pages into 500px.
+
         // Activity (LogList scoped to user) — most common entry first
-        this.activityTable = new TableView({
+        this.activityTable = new ListView({
             collection: this.activityCollection,
-            showAdd: false,
-            showExport: false,
-            showFullscreen: false,
             searchable: true,
             searchPlaceholder: 'Search activity…',
             paginated: true,
+            paginationMode: 'more',
             hideActivePillNames: ['uid'],
-            columns: [
-                { key: 'created', label: 'Date', formatter: 'datetime', sortable: true, width: '160px' },
-                { key: 'level|badge', label: 'Level', width: '90px' },
-                { key: 'kind', label: 'Kind', width: '120px' },
-                { key: 'log',  label: 'Message' },
-                { key: 'path', label: 'Path' }
-            ]
+            emptyMessage: 'No activity recorded yet.',
+            itemTemplate: `
+                <div class="user-feed-row">
+                    <div class="user-feed-meta">
+                        <span class="text-secondary small">{{model.created|datetime}}</span>
+                        <span class="badge text-bg-{{model.level|levelTone}}">{{model.level|default:'info'}}</span>
+                        {{#model.kind}}<span class="text-body small fw-semibold">{{model.kind}}</span>{{/model.kind}}
+                    </div>
+                    <div class="user-feed-body small">{{model.log|default:'(no message)'}}</div>
+                    {{#model.path}}<div class="user-feed-path text-secondary small font-monospace">{{model.path}}</div>{{/model.path}}
+                </div>
+            `
         });
         this.activityTable.onTabActivated = async () => {
             await this.activityCollection?.fetch?.().catch(() => {});
         };
 
-        // Incidents (IncidentEventList scoped to this user)
-        this.incidentsTable = new TableView({
+        // Events (IncidentEventList scoped to this user) — incident-pipeline emits.
+        this.incidentsTable = new ListView({
             collection: this.eventsCollection,
-            showAdd: false,
-            showExport: false,
-            showFullscreen: false,
             searchable: true,
-            searchPlaceholder: 'Search incidents…',
+            searchPlaceholder: 'Search events…',
             paginated: true,
+            paginationMode: 'more',
             hideActivePillNames: ['model_id', 'model_name'],
-            columns: [
-                { key: 'created',  label: 'Date',     formatter: 'datetime', sortable: true, width: '160px' },
-                { key: 'category|badge', label: 'Category' },
-                { key: 'title',    label: 'Title' },
-                { key: 'description', label: 'Description' }
-            ]
+            emptyMessage: 'No events for this user.',
+            itemTemplate: `
+                <div class="user-feed-row">
+                    <div class="user-feed-meta">
+                        <span class="text-secondary small">{{model.created|datetime}}</span>
+                        {{#model.category}}<span class="badge text-bg-secondary">{{model.category}}</span>{{/model.category}}
+                        {{#model.title}}<span class="text-body small fw-semibold">{{model.title}}</span>{{/model.title}}
+                    </div>
+                    {{#model.description}}<div class="user-feed-body small">{{model.description}}</div>{{/model.description}}
+                </div>
+            `
         });
         this.incidentsTable.onTabActivated = async () => {
             await this.eventsCollection?.fetch?.().catch(() => {});
         };
 
-        // Object changes (LogList filtered to this user-as-record)
-        this.objectTable = new TableView({
+        // Audit Log (LogList filtered to this user-as-record).
+        this.objectTable = new ListView({
             collection: this.objectLogsCollection,
-            showAdd: false,
-            showExport: false,
-            showFullscreen: false,
             searchable: true,
-            searchPlaceholder: 'Search object changes…',
+            searchPlaceholder: 'Search audit log…',
             paginated: true,
+            paginationMode: 'more',
             permissions: 'view_logs',
             hideActivePillNames: ['model_id', 'model_name'],
-            columns: [
-                { key: 'created', label: 'Date', formatter: 'datetime', sortable: true, width: '160px' },
-                { key: 'level|badge', label: 'Level', width: '90px' },
-                { key: 'kind', label: 'Kind', width: '120px' },
-                { key: 'log',  label: 'Message' }
-            ]
+            emptyMessage: 'No record changes logged.',
+            itemTemplate: `
+                <div class="user-feed-row">
+                    <div class="user-feed-meta">
+                        <span class="text-secondary small">{{model.created|datetime}}</span>
+                        <span class="badge text-bg-{{model.level|levelTone}}">{{model.level|default:'info'}}</span>
+                        {{#model.kind}}<span class="text-body small fw-semibold">{{model.kind}}</span>{{/model.kind}}
+                    </div>
+                    <div class="user-feed-body small">{{model.log|default:'(no message)'}}</div>
+                </div>
+            `
         });
         this.objectTable.onTabActivated = async () => {
             await this.objectLogsCollection?.fetch?.().catch(() => {});
@@ -1216,21 +1219,34 @@ class UserView extends DetailView {
         const permissionsSection = new UserPermissionsSection({ model });
         const apiKeysSection     = new UserApiKeysSection({ model });
 
-        // Groups — TableView of MemberList scoped to this user
-        const groupsSection = new TableView({
+        // Groups — ListView of MemberList scoped to this user. Each row
+        // is a group-membership card: name + kind badge + joined-date,
+        // with the per-group permission keys listed below.
+        const groupsSection = new ListView({
             collection: membersCollection,
             title: 'Groups',
-            showFullscreen: false,
-            searchable: false,
+            searchable: true,
+            searchPlaceholder: 'Search groups…',
+            paginated: true,
+            paginationMode: 'more',
             hideActivePillNames: ['user'],
             clickAction: 'view',
             viewDialogOptions: { header: false, noBodyPadding: true, buttons: [] },
-            columns: [
-                { key: 'group.name', label: 'Group', sortable: true },
-                { key: 'group.kind', label: 'Kind', formatter: 'badge' },
-                { key: 'permissions|keys|badge', label: 'Permissions' },
-                { key: 'created', label: 'Joined', formatter: 'date', sortable: true }
-            ]
+            emptyMessage: 'This user has no group memberships.',
+            itemTemplate: `
+                <div class="user-feed-row" role="button">
+                    <div class="user-feed-meta">
+                        <strong>{{model.group.name|default:'—'}}</strong>
+                        {{#model.group.kind}}<span class="badge text-bg-secondary">{{model.group.kind}}</span>{{/model.group.kind}}
+                        <span class="ms-auto text-secondary small">Joined {{model.created|date|default:'—'}}</span>
+                    </div>
+                    {{#model.permissions|keys}}
+                        <div class="user-feed-body small text-secondary">
+                            {{#model.permissions|keys}}<span class="badge text-bg-light border me-1">{{.}}</span>{{/model.permissions|keys}}
+                        </div>
+                    {{/model.permissions|keys}}
+                </div>
+            `
         });
 
         const devicesSection = new UserDevicesSection({
@@ -1245,17 +1261,26 @@ class UserView extends DetailView {
             height: 300,
             mapStyle: 'dark'
         });
-        const loginEventsTable = new TableView({
+        const loginEventsTable = new ListView({
             collection: loginsCollection,
+            searchable: true,
+            searchPlaceholder: 'Search logins…',
+            paginated: true,
+            paginationMode: 'more',
             hideActivePillNames: ['user'],
-            columns: [
-                { key: 'created', label: 'Date', formatter: 'datetime', sortable: true, width: '160px' },
-                { key: 'ip_address', label: 'IP Address' },
-                { key: 'city', label: 'City', formatter: "default('—')" },
-                { key: 'region', label: 'Region', formatter: "default('—')" },
-                { key: 'country_code', label: 'Country', sortable: true },
-                { key: 'source', label: 'Source', sortable: true }
-            ]
+            emptyMessage: 'No login events on file.',
+            itemTemplate: `
+                <div class="user-feed-row">
+                    <div class="user-feed-meta">
+                        <span class="text-secondary small">{{model.created|datetime}}</span>
+                        <span class="badge text-bg-light border"><code>{{model.ip_address}}</code></span>
+                        {{#model.source}}<span class="badge text-bg-secondary">{{model.source}}</span>{{/model.source}}
+                    </div>
+                    <div class="user-feed-body small text-secondary">
+                        {{model.city|default:'—'}}{{#model.region}}, {{model.region}}{{/model.region}}{{#model.country_code}} · {{model.country_code}}{{/model.country_code}}
+                    </div>
+                </div>
+            `
         });
         loginEventsTable.onTabActivated = async () => {
             await loginEventsTable.collection?.fetch();
