@@ -70,9 +70,9 @@ The widget renders the subtitle as raw HTML in its header template, allowing Mus
 Available values in subtitle:
 - **total**: sum of all visible data points (e.g., last 24h)
 - **total_label**: dynamic label based on granularity (e.g., "Total (24h)", "Total (Period)")
-- **now_value**: value of the "current" bucket (respects trendOffset)
+- **now_value**: value of the **latest** bucket. Independent of `trendOffset` — always the rightmost / most recent data point so subtitle templates that hard-code labels like `Today` / `This Hour` render the matching value. If you want a value that follows `trendOffset` (e.g. the offset-shifted windowed sum used for trending), use `{{lastValue}}` instead.
 - **now_label**: dynamic label based on granularity (e.g., "Today", "This Hour", "This Week")
-- **lastValue**: sum of the "last" window used for trending
+- **lastValue**: sum of the "last" window used for trending (windowed by `trendRange`, shifted by `trendOffset`)
 - **prevValue**: sum of the "previous" window used for trending
 - **trendingPercent, trendingLabel, trendingUp**: computed when showTrending is enabled
 
@@ -170,7 +170,7 @@ How it's computed:
   - prev window: [endIndex - 2k + 1 .. endIndex - k]
   - trendingPercent = ((lastSum - prevSum) / |prevSum|) * 100 (with zero-safe behavior)
   - If not enough data, it falls back to single-point (last vs prev).
-- trendOffset: Shifts the "current" endIndex back by N buckets. Use this to skip an incomplete bucket (e.g., the current day/hour).
+- trendOffset: Shifts the trending comparison window's anchor (`endIndex`) back by N buckets. Use this to skip an incomplete bucket (e.g., the current day/hour) in trending math. Does **not** affect `{{now_value}}`, which is always the latest bucket.
 - prevTrendOffset: Shifts the previous window/index back by N buckets to align comparisons to a prior period (e.g., 7 for days, 24 for hours).
 
 Examples:
@@ -258,7 +258,7 @@ Card/Header
   - If set (>= 2): compares last vs previous windows (sums, windowed)
   - k = floor(trendRange/2)
 - trendOffset: number (default 0)
-  - Shift comparison back by N buckets (skip incomplete bucket)
+  - Shift the trending comparison window back by N buckets (skip an incomplete current bucket). Does not affect `{{now_value}}`, which always reads the latest bucket.
 - prevTrendOffset: number (default 0)
   - Shift the previous window/index back by N buckets to align to a prior period (e.g., 7 for days = same day last week; 24 for hours = same hour yesterday)
 
@@ -268,6 +268,8 @@ Chart (forwarded to MetricsMiniChart)
 - granularity: 'hours' | 'days' | ...
 - slugs: string | string[]
 - category: string | null
+- childKind: string | null — group fan-out kind. When set with `account: 'group-<id>'`, the backend sums the metric across all active descendants of that kind (Mode 2 of `/api/metrics/fetch`). Mode 3 (`breakdown=true`) is intentionally not supported on the mini variant — sparklines are single-series. See [Charts → Group fan-out](./Charts.md#group-fan-out-rollup--per-child-breakdown).
+- apiParams: object — forward-compatible passthrough for arbitrary `/api/metrics/fetch` query params. Hardcoded options (`account`, `slugs`, `granularity`, `childKind`, …) always win over keys in `apiParams`. See [Charts → Forward-compatible params](./Charts.md#forward-compatible-params-apiparams) for the full precedence rule and trust-boundary note.
 - dateStart, dateEnd: Date | null
 - defaultDateRange: string (e.g., '24h', '7d', '30d')
 - refreshInterval: number (ms) for auto-refresh

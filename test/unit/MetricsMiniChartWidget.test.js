@@ -104,6 +104,135 @@ module.exports = async function (testContext) {
         });
     });
 
+    describe('MetricsMiniChart — group fan-out', () => {
+        it('omits child_kind when childKind is unset', () => {
+            const chart = new MetricsMiniChart({ slugs: ['x'], account: 'group-1' });
+            const params = chart.buildApiParams();
+            expect(params.child_kind).toBeUndefined();
+        });
+
+        it('emits child_kind when childKind is set', () => {
+            const chart = new MetricsMiniChart({
+                slugs: ['visits'],
+                account: 'group-42',
+                childKind: 'location'
+            });
+            const params = chart.buildApiParams();
+            expect(params.child_kind).toBe('location');
+        });
+
+        it('setChildKind updates the field and triggers fetchData', () => {
+            const chart = new MetricsMiniChart({});
+            let called = 0;
+            chart.fetchData = () => { called++; return 'ok'; };
+            chart.setChildKind('location');
+            expect(chart.childKind).toBe('location');
+            expect(called).toBe(1);
+        });
+    });
+
+    describe('MetricsMiniChartWidget — childKind pass-through', () => {
+        it('forwards childKind from widget options into chartOptions', () => {
+            const widget = Object.create(MetricsMiniChartWidget.prototype);
+            // Re-run the constructor body's chartOptions assembly by invoking
+            // it manually. The widget's constructor calls super(...), which
+            // we don't want here — bypass with Object.create + a direct
+            // constructor invocation on a fresh stand-in.
+            const W = MetricsMiniChartWidget;
+            const ctorCalled = new W({ childKind: 'location', slugs: ['x'] });
+            expect(ctorCalled.chartOptions.childKind).toBe('location');
+        });
+    });
+
+    describe('MetricsMiniChart — apiParams passthrough', () => {
+        it('omitting apiParams produces no extra params', () => {
+            const chart = new MetricsMiniChart({ slugs: ['x'], account: 'group-1' });
+            const params = chart.buildApiParams();
+            const expectedKeys = new Set([
+                'granularity', 'account', 'with_labels', 'slugs[]', '_'
+            ]);
+            for (const key of Object.keys(params)) {
+                expect(expectedKeys.has(key)).toBe(true);
+            }
+        });
+
+        it('hardcoded options win over apiParams', () => {
+            const chart = new MetricsMiniChart({
+                slugs: ['x'],
+                granularity: 'days',
+                account: 'group-1',
+                apiParams: { granularity: 'minutes', account: 'public', region: 'us-east' }
+            });
+            const params = chart.buildApiParams();
+            expect(params.granularity).toBe('days');
+            expect(params.account).toBe('group-1');
+            expect(params.region).toBe('us-east');
+        });
+
+        it('setApiParams replaces and triggers fetchData', () => {
+            const chart = new MetricsMiniChart({ apiParams: { a: 1 } });
+            let called = 0;
+            chart.fetchData = () => { called++; return 'ok'; };
+            chart.setApiParams({ b: 2 });
+            expect(chart.apiParams).toEqual({ b: 2 });
+            expect(called).toBe(1);
+        });
+    });
+
+    describe('MetricsMiniChartWidget — apiParams pass-through', () => {
+        it('forwards apiParams from widget options into chartOptions', () => {
+            const widget = new MetricsMiniChartWidget({
+                apiParams: { region: 'us-east', experiment: 'b' },
+                slugs: ['x']
+            });
+            expect(widget.chartOptions.apiParams).toEqual({ region: 'us-east', experiment: 'b' });
+        });
+    });
+
+    // Regression for: now_value respects trendOffset, so a widget configured
+    // with `trendOffset: 1` (per the docs example to skip an incomplete bucket)
+    // displays yesterday's value while the static "Today" label in the
+    // subtitle template still says "Today" — label/value mismatch.
+    // See planning/issues/metrics-mini-widget-now-value-trendoffset.md
+    describe('MetricsMiniChartWidget — now_value should be the latest bucket', () => {
+        it('now_value is the last bucket regardless of trendOffset', () => {
+            const widget = new MetricsMiniChartWidget({
+                slugs: ['x'],
+                trendOffset: 1,
+                trendRange: 4,
+                showTrending: true
+            });
+            // Set up just enough state for updateFromChartData to run.
+            widget.chart = { data: [100, 110, 120, 130, 140] }; // today = 140
+            widget.header = {};
+            widget.updateFromChartData({ render: false });
+            // BUG: currently this is 130 (yesterday) because trendOffset=1
+            // shifts endIndex back by 1. Expected: 140 (today, the latest
+            // bucket) so the "Today" subtitle label reads correctly.
+            expect(widget.header.now_value).toBe(140);
+        });
+
+        it('trendOffset still shifts the trending comparison window', () => {
+            // trendOffset must remain useful for skipping the incomplete
+            // current bucket in the trending math — only `now_value` is
+            // decoupled.
+            const widget = new MetricsMiniChartWidget({
+                slugs: ['x'],
+                trendOffset: 1,
+                trendRange: 4,
+                showTrending: true
+            });
+            widget.chart = { data: [10, 10, 100, 100, 999] }; // today's spike
+            widget.header = {};
+            widget.updateFromChartData({ render: false });
+            // With trendOffset=1, k=2: lastSum = nums[2]+nums[3] = 100+100 = 200,
+            // prevSum = nums[0]+nums[1] = 10+10 = 20. Today's 999 must NOT
+            // contaminate the trending sums.
+            expect(widget.header.lastValue).toBe(200);
+            expect(widget.header.prevValue).toBe(20);
+        });
+    });
+
     describe('MetricsMiniChartWidget.setAccount', () => {
         let widget;
 

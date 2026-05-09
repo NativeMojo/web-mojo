@@ -267,6 +267,42 @@ class SimpleModuleLoader {
                 // even though imports like ListView resolve to undefined.
                 path: path.join(this.sourceRoot, 'core/views/table/TableView.js'),
                 dependencies: ['View']
+            },
+            'SegmentControl': {
+                path: path.join(this.sourceRoot, 'core/views/navigation/SegmentControl.js'),
+                dependencies: ['View']
+            },
+            'TabView': {
+                path: path.join(this.sourceRoot, 'core/views/navigation/TabView.js'),
+                dependencies: ['View']
+            },
+            'MetricCard': {
+                path: path.join(this.sourceRoot, 'core/views/data/MetricCard.js'),
+                dependencies: ['View']
+            },
+            'StatusPanel': {
+                path: path.join(this.sourceRoot, 'core/views/data/StatusPanel.js'),
+                dependencies: ['View']
+            },
+            'Timeline': {
+                path: path.join(this.sourceRoot, 'core/views/data/Timeline.js'),
+                dependencies: ['View']
+            },
+            'FlowStrip': {
+                path: path.join(this.sourceRoot, 'core/views/data/FlowStrip.js'),
+                dependencies: ['View']
+            },
+            'KnownFieldsCard': {
+                path: path.join(this.sourceRoot, 'core/views/data/KnownFieldsCard.js'),
+                dependencies: ['View', 'dataFormatter']
+            },
+            'SideNavView': {
+                path: path.join(this.sourceRoot, 'core/views/navigation/SideNavView.js'),
+                dependencies: ['View']
+            },
+            'DetailView': {
+                path: path.join(this.sourceRoot, 'core/views/data/DetailView.js'),
+                dependencies: ['View', 'SideNavView']
             }
         };
 
@@ -449,7 +485,16 @@ class SimpleModuleLoader {
             { test: /TimezoneSelect(\.js)?$/, name: 'TimezoneSelect' },
             { test: /\/TimePicker(\.js)?$/, name: 'TimePicker' },
             { test: /\/DateTimePicker(\.js)?$/, name: 'DateTimePicker' },
-            { test: /\/TableView(\.js)?$/, name: 'TableView' }
+            { test: /\/TableView(\.js)?$/, name: 'TableView' },
+            { test: /\/SideNavView(\.js)?$/, name: 'SideNavView' },
+            { test: /\/ContextMenu(\.js)?$/, name: 'ContextMenu' },
+            { test: /\/SegmentControl(\.js)?$/, name: 'SegmentControl' },
+            { test: /\/MetricCard(\.js)?$/, name: 'MetricCard' },
+            { test: /\/StatusPanel(\.js)?$/, name: 'StatusPanel' },
+            { test: /\/Timeline(\.js)?$/, name: 'Timeline' },
+            { test: /\/FlowStrip(\.js)?$/, name: 'FlowStrip' },
+            { test: /\/KnownFieldsCard(\.js)?$/, name: 'KnownFieldsCard' },
+            { test: /\/DetailView(\.js)?$/, name: 'DetailView' }
         ];
         for (const rule of rules) {
             if (rule.test.test(importPath)) return rule.name;

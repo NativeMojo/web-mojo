@@ -160,6 +160,7 @@ const TOPIC_TAXONOMY = [
                     'components/side-nav-view',
                     'components/tab-view',
                     'components/tab-view/dynamic',
+                    'components/tab-view/variants',
                     'components/context-menu',
                     'components/context-menu/row',
                 ],

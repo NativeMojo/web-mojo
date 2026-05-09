@@ -422,7 +422,59 @@ class JobsEngineStats extends Model {
     }
 }
 
+/**
+ * SimilarJobsList - Recent runs of the same `func`.
+ *
+ * Backs JobDetailsView's "Similar Jobs" section. Consumers pass the
+ * function name (or a Job model from which to read `func`) and an
+ * optional row limit; the collection's `params` apply on every fetch.
+ *
+ * @example
+ *   const sj = new SimilarJobsList({ func: model.get('func') });
+ *   await sj.fetch();
+ *   // → GET /api/jobs/job?func=<name>&ordering=-created
+ */
+class SimilarJobsList extends JobList {
+    constructor(options = {}) {
+        const { func, params = {}, ...rest } = options;
+        super({
+            params: {
+                ordering: '-created',
+                ...(func ? { func } : {}),
+                ...params
+            },
+            ...rest
+        });
+    }
+}
+
+/**
+ * ActiveJobsList - Jobs currently running on a runner.
+ *
+ * Backs RunnerDetailsView's "Active Jobs" section. Pass the runner id
+ * via `runnerId` (preferred) or as a custom param.
+ *
+ * @example
+ *   const aj = new ActiveJobsList({ runnerId: runner.get('runner_id') });
+ *   await aj.fetch();
+ *   // → GET /api/jobs/job?runner_id=<id>&status=running
+ */
+class ActiveJobsList extends JobList {
+    constructor(options = {}) {
+        const { runnerId, params = {}, ...rest } = options;
+        super({
+            params: {
+                status: 'running',
+                ...(runnerId != null ? { runner_id: runnerId } : {}),
+                ...params
+            },
+            ...rest
+        });
+    }
+}
+
 export {
     Job, JobList, JobForms,
     JobLog, JobLogList, JobEvent,
-    JobEventList, JobsEngineStats };
+    JobEventList, JobsEngineStats,
+    SimilarJobsList, ActiveJobsList };

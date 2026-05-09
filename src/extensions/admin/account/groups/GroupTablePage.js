@@ -21,7 +21,9 @@ class GroupTablePage extends TablePage {
             itemViewClass: GroupView,
 
             viewDialogOptions: {
-                header: false
+                header: false,
+                noBodyPadding: true,
+                buttons: []
             },
 
             defaultQuery: {

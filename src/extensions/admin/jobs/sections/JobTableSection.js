@@ -265,9 +265,9 @@ export default class JobTableSection extends View {
             itemView: JobDetailsView,
             hideActivePills: this.status ? ['status'] : [],
             viewDialogOptions: {
-                title: 'Job Details',
-                size: 'xl',
-                scrollable: true
+                header: false,
+                noBodyPadding: true,
+                buttons: []
             },
             tableOptions: {
                 striped: false,

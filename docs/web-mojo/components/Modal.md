@@ -154,6 +154,38 @@ await Modal.show(new GeoIPView({ model: geo }), {
 
 ---
 
+### Modal.detail(view, options?)
+
+Show a [`DetailView`](DetailView.md)-style record viewer in a modal. Defaults are tuned for the record-detail pattern:
+
+- `size: 'lg'` — balanced width for record viewers; pass `size: 'xl'` (or `'xxl'`) for unusually wide content. Default was previously `'xl'` and was tightened to `'lg'` to match the reference layout.
+- `header: false` — the view supplies its own header
+- `noBodyPadding: true` — the view content sits flush against the modal edges
+- `buttons: []` — no footer; dismiss via the view's X close / Esc / backdrop click
+
+```js
+import Modal from 'web-mojo/Modal';
+import RuleSetView from '@ext/admin/incidents/RuleSetView.js';
+
+await Modal.detail(new RuleSetView({ model }));
+```
+
+Override any default by passing it through:
+
+```js
+await Modal.detail(new MyDetailView({ model }), { size: 'xl' });
+```
+
+**Parameters:**
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `view` | `View` | required | A `DetailView` (or similarly shaped record view) instance |
+| `options.*` | `any` | — | Any [Modal.show option](Dialog.md#constructor-options) — overrides the defaults above |
+
+**Returns:** `Promise<*>` — resolves when the modal is dismissed.
+
+---
+
 ### Modal.drawer(options)
 
 Show a standardized drill-down drawer with a structured header: an optional small eyebrow tag, a large title, and an optional row of meta items (icon + text pairs). The body is a `View` instance or a raw HTML string.

@@ -74,6 +74,13 @@ UI Components for displaying and interacting with data:
 - **[TableView](./components/TableView.md)** - Advanced data table with sorting, filtering, pagination
 - **[TabView](./components/TabView.md)** - Tab navigation component
 - **[DataView](./components/DataView.md)** - Structured data display component
+- **[DetailView](./components/DetailView.md)** - Standard record-viewer layout: flat header (icon, title, subtitle, chips, active toggle, actions, X close) + SideNavView. Pair with `Modal.detail()`
+- **[MetricCard](./components/MetricCard.md)** - At-a-glance KPI card (label / value / hint / tone) for Overview rows
+- **[SegmentControl](./components/SegmentControl.md)** - Compact pill-button group for one-of-N filters (range pickers, view modes)
+- **[StatusPanel](./components/StatusPanel.md)** - Compact status/health summary panel with icon, label, tone, and optional metadata rows
+- **[Timeline](./components/Timeline.md)** - Chronological activity feed: icon, title, timestamp, body, and tone per entry
+- **[FlowStrip](./components/FlowStrip.md)** - Horizontal pipeline visualizer showing named stages with state, icon, and connector arrows
+- **[KnownFieldsCard](./components/KnownFieldsCard.md)** - Collapsible card listing structured key/value fields with type-aware rendering
 - **[FileView](./components/FileView.md)** - Canonical viewer for File records (preview, details, renditions, metadata)
 - **[ImageFields](./components/ImageFields.md)** - Image field components
 
@@ -318,7 +325,13 @@ web-mojo/
 │   ├── FileView.md              # File display and management
 │   ├── ImageFields.md           # Image field components
 │   ├── ProgressView.md          # File-upload progress UI
-│   └── SimpleSearchView.md      # Searchable list bound to a Collection
+│   ├── SimpleSearchView.md      # Searchable list bound to a Collection
+│   ├── MetricCard.md            # At-a-glance KPI card (label / value / hint / tone)
+│   ├── SegmentControl.md        # Compact pill-button group for one-of-N selection
+│   ├── StatusPanel.md           # Compact status/health summary panel
+│   ├── Timeline.md              # Chronological activity feed
+│   ├── FlowStrip.md             # Horizontal pipeline stage visualizer
+│   └── KnownFieldsCard.md       # Collapsible structured key/value fields card
 │
 ├── extensions/                  # Optional framework extensions
 │   ├── Admin.md                 # Pre-built admin pages and views

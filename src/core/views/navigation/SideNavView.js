@@ -122,93 +122,58 @@ class SideNavView extends View {
     // ───────────────────────────────────────────────
 
     async renderTemplate() {
+        // Stylesheet lives in src/core/css/core.css under "SideNavView".
+        // Two instance-specific values (`navWidth`, `contentPadding`) are
+        // applied as inline `style="..."` attributes below.
         const nav = this.currentMode === 'dropdown'
             ? this._buildDropdownNav()
             : this._buildSidebarNav();
 
+        const navWidthStyle = `width: ${this.navWidth}px`;
+        const contentPaddingStyle = `padding: ${this.contentPadding}`;
+
         return `
-            <style>
-                .snv-layout { display: flex; height: 100%; min-height: 0; }
-                .snv-nav {
-                    width: ${this.navWidth}px;
-                    background: #f8f9fc;
-                    border-right: 1px solid #e9ecef;
-                    padding: 0.75rem 0;
-                    flex-shrink: 0;
-                    overflow-y: auto;
-                }
-                .snv-nav a {
-                    color: #495057;
-                    padding: 0.45rem 1.25rem;
-                    font-size: 0.85rem;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                    text-decoration: none;
-                    cursor: pointer;
-                }
-                .snv-nav a:hover { background: #e9ecef; }
-                .snv-nav a.active {
-                    background: #e7f1ff;
-                    color: #0d6efd;
-                    font-weight: 600;
-                    border-right: 2px solid #0d6efd;
-                }
-                .snv-nav a i { width: 18px; text-align: center; font-size: 0.9rem; }
-                .snv-nav-label {
-                    font-size: 0.65rem;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 0.06em;
-                    color: #adb5bd;
-                    padding: 0.75rem 1.25rem 0.25rem;
-                }
-                .snv-content {
-                    flex: 1;
-                    overflow-y: auto;
-                    padding: ${this.contentPadding};
-                    min-width: 0;
-                }
-                .snv-content > .snv-section { display: none; }
-                .snv-content > .snv-section.snv-active { display: block; }
-                .snv-dropdown { margin-bottom: 0.75rem; }
-                .snv-select-btn {
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                    width: 100%;
-                    padding: 0.5rem 1rem;
-                    background: #f8f9fc;
-                    border: 1px solid #dee2e6;
-                    border-radius: 0.375rem;
-                    font-size: 0.85rem;
-                    color: #495057;
-                    cursor: pointer;
-                }
-                .snv-select-btn:hover { background: #e9ecef; }
-                .snv-select-btn::after {
-                    content: '';
-                    display: inline-block;
-                    margin-left: auto;
-                    border-top: 0.3em solid;
-                    border-right: 0.3em solid transparent;
-                    border-left: 0.3em solid transparent;
-                }
-                @media (max-width: 576px) {
-                    .snv-nav { display: none; }
-                    .snv-content { padding: 1.25rem; }
-                }
-            </style>
             ${this.currentMode === 'dropdown' ? `
                 <div class="snv-dropdown">${nav}</div>
-                <div class="snv-content" data-container="snv-content"></div>
+                <div class="snv-content" data-container="snv-content" style="${contentPaddingStyle}"></div>
             ` : `
                 <div class="snv-layout">
-                    <nav class="snv-nav">${nav}</nav>
-                    <div class="snv-content" data-container="snv-content"></div>
+                    <nav class="snv-nav" style="${navWidthStyle}">${nav}</nav>
+                    <div class="snv-content" data-container="snv-content" style="${contentPaddingStyle}"></div>
                 </div>
             `}
         `;
+    }
+
+    /**
+     * Normalize a badge config value into { text, variant } or null.
+     * Accepts: number, string, { text, variant }, or falsy → null.
+     * @param {*} badge
+     * @returns {{text: string, variant: string} | null}
+     * @private
+     */
+    _normalizeBadge(badge) {
+        if (badge === null || badge === undefined || badge === false || badge === '') return null;
+        if (typeof badge === 'number' || typeof badge === 'string') {
+            return { text: String(badge), variant: 'muted' };
+        }
+        if (typeof badge === 'object' && badge.text !== undefined && badge.text !== null && badge.text !== '') {
+            const variant = badge.variant || 'muted';
+            return { text: String(badge.text), variant };
+        }
+        return null;
+    }
+
+    /**
+     * Render a badge HTML fragment for a section config.
+     * @param {object} config
+     * @returns {string}
+     * @private
+     */
+    _renderBadge(config) {
+        const badge = this._normalizeBadge(config.badge);
+        if (!badge) return '';
+        return `<span class="snv-badge snv-badge-${this.escapeHtml(badge.variant)}">${this.escapeHtml(badge.text)}</span>`;
     }
 
     /**
@@ -222,8 +187,9 @@ class SideNavView extends View {
                 return `<div class="snv-nav-label">${this.escapeHtml(config.label)}</div>`;
             }
             const isActive = config.key === this.activeSection;
-            const icon = config.icon ? `<i class="bi ${config.icon}"></i>` : '';
-            return `<a role="button" class="${isActive ? 'active' : ''}" data-action="navigate" data-section="${config.key}">${icon} ${this.escapeHtml(config.label)}</a>`;
+            const icon = config.icon ? `<i class="bi ${this.escapeHtml(config.icon)}"></i>` : '';
+            const badge = this._renderBadge(config);
+            return `<a role="button" class="${isActive ? 'active' : ''}" data-action="navigate" data-section="${this.escapeHtml(config.key)}">${icon} ${this.escapeHtml(config.label)}${badge}</a>`;
         }).join('');
     }
 
@@ -240,14 +206,16 @@ class SideNavView extends View {
             .filter(c => c.type !== 'divider')
             .map(config => {
                 const isActive = config.key === this.activeSection;
+                const badge = this._renderBadge(config);
                 return `
                     <li>
                         <button class="dropdown-item ${isActive ? 'active' : ''}"
                                 data-action="navigate"
-                                data-section="${config.key}"
+                                data-section="${this.escapeHtml(config.key)}"
                                 type="button">
-                            ${config.icon ? `<i class="bi ${config.icon} me-2"></i>` : ''}
+                            ${config.icon ? `<i class="bi ${this.escapeHtml(config.icon)} me-2"></i>` : ''}
                             ${this.escapeHtml(config.label)}
+                            ${badge}
                             ${isActive ? '<i class="bi bi-check-lg ms-2"></i>' : ''}
                         </button>
                     </li>
@@ -609,6 +577,32 @@ class SideNavView extends View {
         }
 
         this.emit('section:removed', { key });
+        return true;
+    }
+
+    /**
+     * Update a section's badge dynamically without re-rendering the whole nav.
+     * Accepts the same shapes as the schema: number, string, { text, variant }, or falsy to clear.
+     * @param {string} key - Section key
+     * @param {*} value - Badge value
+     * @returns {boolean} true if the section exists and was updated
+     */
+    setBadge(key, value) {
+        const config = this.sectionConfigs.find(c => c.key === key);
+        if (!config) return false;
+
+        config.badge = value;
+
+        if (!this.element) return true; // not rendered yet — schema update is enough
+
+        // Update both sidebar (<a>) and dropdown-item (<button>) instances
+        const links = this.element.querySelectorAll(`[data-section="${key}"]`);
+        links.forEach(link => {
+            const existing = link.querySelector('.snv-badge');
+            const html = this._renderBadge(config);
+            if (existing) existing.remove();
+            if (html) link.insertAdjacentHTML('beforeend', html);
+        });
         return true;
     }
 

@@ -121,6 +121,206 @@ module.exports = async function (testContext) {
             expect(typeof params.dr_end).toBe('number');
             expect(params.dr_end).toBeGreaterThan(params.dr_start);
         });
+
+        // Mode 1 regression: callers that don't pass childKind/breakdown
+        // must produce identical query params to today.
+        it('Mode 1 — omits child_kind and breakdown when unset', () => {
+            const m = new MetricsChart({ slugs: ['x'], account: 'group-1' });
+            const params = m.buildApiParams();
+            expect(params.child_kind).toBeUndefined();
+            expect(params.breakdown).toBeUndefined();
+        });
+
+        it('Mode 2 — childKind emits child_kind, no breakdown', () => {
+            const m = new MetricsChart({
+                slugs: ['visits'],
+                account: 'group-42',
+                childKind: 'location'
+            });
+            const params = m.buildApiParams();
+            expect(params.child_kind).toBe('location');
+            expect(params.breakdown).toBeUndefined();
+        });
+
+        it('Mode 3 — childKind + breakdown emit both', () => {
+            const m = new MetricsChart({
+                slugs: ['visits'],
+                account: 'group-42',
+                childKind: 'location',
+                breakdown: true
+            });
+            const params = m.buildApiParams();
+            expect(params.child_kind).toBe('location');
+            expect(params.breakdown).toBe(true);
+        });
+
+        it('breakdown=false (default) does not emit the param', () => {
+            const m = new MetricsChart({
+                slugs: ['visits'],
+                account: 'group-42',
+                childKind: 'location',
+                breakdown: false
+            });
+            const params = m.buildApiParams();
+            expect(params.breakdown).toBeUndefined();
+        });
+    });
+
+    describe('MetricsChart — breakdown mode label handling', () => {
+        it('does NOT recase keys when breakdown=true', () => {
+            const m = new MetricsChart({
+                slugs: ['visits'],
+                account: 'group-42',
+                childKind: 'location',
+                breakdown: true
+            });
+            const out = m.processMetricsData({
+                labels: ['t1', 't2'],
+                data: {
+                    'Downtown':    [10, 20],
+                    'Downtown#15': [5, 15],
+                    'uptown_north': [3, 7]
+                }
+            });
+            const labels = out.datasets.map(d => d.label);
+            // Verbatim keys — no `_`/`:` splitting, no title-casing.
+            expect(labels).toContain('Downtown');
+            expect(labels).toContain('Downtown#15');
+            expect(labels).toContain('uptown_north');
+        });
+
+        it('still recases keys when breakdown=false (Mode 1/2)', () => {
+            const m = new MetricsChart({ slugs: ['x'] });
+            const out = m.processMetricsData({
+                labels: ['t1', 't2'],
+                data: { user_activity_day: [1, 2] }
+            });
+            expect(out.datasets[0].label).toBe('User Activity Day');
+        });
+    });
+
+    describe('MetricsChart — setChildKind / setBreakdown', () => {
+        it('setChildKind updates the field and triggers fetchData', () => {
+            const m = new MetricsChart({});
+            let called = 0;
+            m.fetchData = () => { called++; return 'ok'; };
+            const result = m.setChildKind('location');
+            expect(m.childKind).toBe('location');
+            expect(called).toBe(1);
+            expect(result).toBe('ok');
+        });
+
+        it('setChildKind(null) clears the field', () => {
+            const m = new MetricsChart({ childKind: 'location' });
+            m.fetchData = () => 'ok';
+            m.setChildKind(null);
+            expect(m.childKind).toBeNull();
+        });
+
+        it('setBreakdown updates the field and triggers fetchData', () => {
+            const m = new MetricsChart({});
+            let called = 0;
+            m.fetchData = () => { called++; return 'ok'; };
+            m.setBreakdown(true);
+            expect(m.breakdown).toBe(true);
+            expect(called).toBe(1);
+            m.setBreakdown(false);
+            expect(m.breakdown).toBe(false);
+            expect(called).toBe(2);
+        });
+
+        it('getStats includes childKind and breakdown', () => {
+            const m = new MetricsChart({ childKind: 'location', breakdown: true });
+            const stats = m.getStats();
+            expect(stats.childKind).toBe('location');
+            expect(stats.breakdown).toBe(true);
+        });
+    });
+
+    describe('MetricsChart — apiParams passthrough', () => {
+        // Most important: prove every existing caller is byte-identical to today.
+        it('omitting apiParams produces no extra params', () => {
+            const m = new MetricsChart({
+                slugs: ['x'],
+                granularity: 'hours',
+                account: 'group-1'
+            });
+            const params = m.buildApiParams();
+            // Today's keys: granularity, account, with_labels, slugs, dr_start, dr_end, _
+            const expectedKeys = new Set([
+                'granularity', 'account', 'with_labels', 'slugs', 'dr_start', 'dr_end', '_'
+            ]);
+            for (const key of Object.keys(params)) {
+                expect(expectedKeys.has(key)).toBe(true);
+            }
+        });
+
+        it('passes through arbitrary keys', () => {
+            const m = new MetricsChart({
+                slugs: ['x'],
+                apiParams: { region: 'us-east', experiment: 'b' }
+            });
+            const params = m.buildApiParams();
+            expect(params.region).toBe('us-east');
+            expect(params.experiment).toBe('b');
+        });
+
+        it('hardcoded options win over apiParams', () => {
+            const m = new MetricsChart({
+                slugs: ['x'],
+                granularity: 'days',
+                account: 'group-1',
+                apiParams: { granularity: 'minutes', account: 'public' }
+            });
+            const params = m.buildApiParams();
+            expect(params.granularity).toBe('days');
+            expect(params.account).toBe('group-1');
+        });
+
+        it('cache-buster `_` always wins', () => {
+            const m = new MetricsChart({
+                apiParams: { _: 'forever' }
+            });
+            const params = m.buildApiParams();
+            expect(typeof params._).toBe('number');
+        });
+
+        it('setApiParams replaces (not merges) and triggers fetchData', () => {
+            const m = new MetricsChart({ apiParams: { a: 1 } });
+            let called = 0;
+            m.fetchData = () => { called++; return 'ok'; };
+            const result = m.setApiParams({ b: 2 });
+            expect(m.apiParams).toEqual({ b: 2 }); // `a` gone, `b` present
+            expect(called).toBe(1);
+            expect(result).toBe('ok');
+        });
+
+        it('setApiParams(null) clears the map', () => {
+            const m = new MetricsChart({ apiParams: { a: 1 } });
+            m.fetchData = () => 'ok';
+            m.setApiParams(null);
+            expect(m.apiParams).toEqual({});
+        });
+
+        it('getStats exposes apiParams as a defensive copy', () => {
+            const m = new MetricsChart({ apiParams: { region: 'us-east' } });
+            const stats = m.getStats();
+            expect(stats.apiParams).toEqual({ region: 'us-east' });
+            // Mutating the returned object must not leak back.
+            stats.apiParams.region = 'mutated';
+            expect(m.apiParams.region).toBe('us-east');
+        });
+
+        // Regression: shallow `{...this.apiParams}` would share array
+        // references. buildQueryString accepts array values, so callers
+        // can pass them — and mutating them via getStats must not leak.
+        it('getStats clones array values inside apiParams', () => {
+            const m = new MetricsChart({ apiParams: { tags: ['a', 'b'] } });
+            const stats = m.getStats();
+            expect(stats.apiParams.tags).toEqual(['a', 'b']);
+            stats.apiParams.tags.push('c');
+            expect(m.apiParams.tags).toEqual(['a', 'b']);
+        });
     });
 
     describe('MetricsChart — granularity → xLabelFormat default', () => {

@@ -415,11 +415,89 @@
     border-color: none;
 }
 
-/* Badges that use bg-primary */
-.badge.bg-primary {
-    --bs-badge-color: #fff;
-    --bs-badge-bg: var(--bs-primary);
+/* ========================================================================
+   Soft badges by default
+   ========================================================================
+   web-mojo softens Bootstrap's default loud badges to a tinted-pill look
+   that matches modern design systems (Linear / Stripe / Vercel). The
+   variant CSS variables are remapped to use Bootstrap's `*-bg-subtle` +
+   `*-text-emphasis` tokens, so any consumer writing `<span class="badge
+   bg-primary">` or `<span class="badge text-bg-success">` automatically
+   picks up the soft look — no markup change required.
+
+   For the rare attention case (notification dots, critical alerts,
+   call-to-action chips) opt into the loud variant with `.badge-loud`.
+*/
+.badge {
+    border-radius: 999px;          /* pill shape */
+    font-weight: 600;
+    padding: 0.3em 0.7em;
+    border: 1px solid transparent; /* keeps height stable when a caller adds `border` */
 }
+
+.badge.bg-primary,
+.badge.text-bg-primary {
+    --bs-badge-color: var(--bs-primary-text-emphasis);
+    --bs-badge-bg:    var(--bs-primary-bg-subtle);
+    background-color: var(--bs-primary-bg-subtle) !important;
+    color:            var(--bs-primary-text-emphasis) !important;
+    border-color:     transparent;
+}
+.badge.bg-secondary,
+.badge.text-bg-secondary {
+    background-color: var(--bs-secondary-bg-subtle) !important;
+    color:            var(--bs-secondary-text-emphasis) !important;
+    border-color:     transparent;
+}
+.badge.bg-success,
+.badge.text-bg-success {
+    background-color: var(--bs-success-bg-subtle) !important;
+    color:            var(--bs-success-text-emphasis) !important;
+    border-color:     transparent;
+}
+.badge.bg-danger,
+.badge.text-bg-danger {
+    background-color: var(--bs-danger-bg-subtle) !important;
+    color:            var(--bs-danger-text-emphasis) !important;
+    border-color:     transparent;
+}
+.badge.bg-warning,
+.badge.text-bg-warning {
+    background-color: var(--bs-warning-bg-subtle) !important;
+    color:            var(--bs-warning-text-emphasis) !important;
+    border-color:     transparent;
+}
+.badge.bg-info,
+.badge.text-bg-info {
+    background-color: var(--bs-info-bg-subtle) !important;
+    color:            var(--bs-info-text-emphasis) !important;
+    border-color:     transparent;
+}
+.badge.bg-light,
+.badge.text-bg-light {
+    background-color: var(--bs-tertiary-bg) !important;
+    color:            var(--bs-body-color) !important;
+    border-color:     transparent;
+}
+.badge.bg-dark,
+.badge.text-bg-dark {
+    background-color: var(--bs-emphasis-bg, var(--bs-secondary-bg)) !important;
+    color:            var(--bs-emphasis-color, var(--bs-body-color)) !important;
+    border-color:     transparent;
+}
+
+/*
+ * Loud opt-in: restore Bootstrap's solid-color attention treatment for cases
+ * where you really do want a punchy badge (notification dots, critical alerts).
+ * Apply alongside any `bg-*` / `text-bg-*` class — the loud rule wins on
+ * specificity.
+ */
+.badge.badge-loud.bg-primary,   .badge.badge-loud.text-bg-primary   { background-color: var(--bs-primary)   !important; color: #fff !important; border-color: transparent; }
+.badge.badge-loud.bg-secondary, .badge.badge-loud.text-bg-secondary { background-color: var(--bs-secondary) !important; color: #fff !important; border-color: transparent; }
+.badge.badge-loud.bg-success,   .badge.badge-loud.text-bg-success   { background-color: var(--bs-success)   !important; color: #fff !important; border-color: transparent; }
+.badge.badge-loud.bg-danger,    .badge.badge-loud.text-bg-danger    { background-color: var(--bs-danger)    !important; color: #fff !important; border-color: transparent; }
+.badge.badge-loud.bg-warning,   .badge.badge-loud.text-bg-warning   { background-color: var(--bs-warning)   !important; color: #000 !important; border-color: transparent; }
+.badge.badge-loud.bg-info,      .badge.badge-loud.text-bg-info      { background-color: var(--bs-info)      !important; color: #000 !important; border-color: transparent; }
 
 /* Nav pills & tabs */
 .nav-pills {
@@ -505,6 +583,170 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* ========================================================================
+   TabView Variants — modern visual treatments
+   ========================================================================
+   Hook classes emitted by `TabView.VARIANT_CLASSES` (see TabView.js).
+   `'underline'` is the legacy `nav nav-tabs` look and inherits the existing
+   .nav-tabs rules above — no rules in this section.
+   All `[data-bs-theme="dark"]` overrides cluster at the bottom of the
+   section, per `.claude/rules/theming.md`.
+*/
+
+/* Shared neutral baseline — every variant starts from the same nav-link
+   reset so none of Bootstrap's nav-tabs side-effects leak in. */
+.tab-view-variant-minimal,
+.tab-view-variant-pills,
+.tab-view-variant-segmented,
+.tab-view-variant-segmented-solid {
+    border-bottom: 0;
+    gap: 0.25rem;
+}
+
+.tab-view-variant-minimal .nav-link,
+.tab-view-variant-pills .nav-link,
+.tab-view-variant-segmented .nav-link,
+.tab-view-variant-segmented-solid .nav-link {
+    border: 0;
+    background: transparent;
+    color: var(--bs-secondary-color);
+    padding: 0.4rem 0.85rem;
+    font-weight: 500;
+    border-radius: var(--bs-border-radius);
+    transition: color 0.12s ease, background-color 0.12s ease;
+}
+
+.tab-view-variant-minimal .nav-link:focus-visible,
+.tab-view-variant-pills .nav-link:focus-visible,
+.tab-view-variant-segmented .nav-link:focus-visible,
+.tab-view-variant-segmented-solid .nav-link:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+    z-index: 1;
+}
+
+.tab-view-variant-minimal .nav-link.disabled,
+.tab-view-variant-pills .nav-link.disabled,
+.tab-view-variant-segmented .nav-link.disabled,
+.tab-view-variant-segmented-solid .nav-link.disabled,
+.tab-view-variant-minimal .nav-link:disabled,
+.tab-view-variant-pills .nav-link:disabled,
+.tab-view-variant-segmented .nav-link:disabled,
+.tab-view-variant-segmented-solid .nav-link:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* --- minimal: text-only, primary on active, no border or underline ----- */
+.tab-view-variant-minimal .nav-link:hover {
+    color: var(--bs-primary);
+    background: rgba(0, 0, 0, 0.04);
+}
+.tab-view-variant-minimal .nav-link.active {
+    color: var(--bs-primary);
+    background: transparent;
+    font-weight: 600;
+}
+
+/* --- pills: outlined-pill on the active tab only ------------------------ */
+.tab-view-variant-pills .nav-link:hover {
+    color: var(--bs-primary);
+    background: rgba(0, 0, 0, 0.04);
+}
+.tab-view-variant-pills .nav-link.active {
+    color: var(--bs-primary);
+    background: var(--bs-primary-bg-subtle);
+    border: 1px solid var(--bs-primary);
+    /* keep height stable when border appears */
+    padding: calc(0.4rem - 1px) calc(0.85rem - 1px);
+    font-weight: 600;
+}
+
+/* --- segmented: connected btn-group look, neutral active fill ----------- */
+.tab-view-variant-segmented {
+    display: inline-flex;
+    gap: 0;
+    padding: 0.2rem;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+}
+.tab-view-variant-segmented .nav-item + .nav-item {
+    margin-left: 0.15rem;
+}
+.tab-view-variant-segmented .nav-link {
+    color: var(--bs-secondary-color);
+    border-radius: calc(var(--bs-border-radius) - 0.15rem);
+}
+.tab-view-variant-segmented .nav-link:hover {
+    color: var(--bs-emphasis-color);
+    background: rgba(0, 0, 0, 0.04);
+}
+.tab-view-variant-segmented .nav-link.active {
+    color: var(--bs-emphasis-color);
+    background: var(--bs-body-bg);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    font-weight: 600;
+    z-index: 1;
+}
+
+/* --- segmented-solid: primary-tinted group, primary active -------------- */
+.tab-view-variant-segmented-solid {
+    display: inline-flex;
+    gap: 0;
+    padding: 0.2rem;
+    background: var(--bs-primary-bg-subtle);
+    border: 1px solid color-mix(in srgb, var(--bs-primary) 25%, transparent);
+    border-radius: var(--bs-border-radius);
+}
+.tab-view-variant-segmented-solid .nav-item + .nav-item {
+    margin-left: 0.15rem;
+}
+.tab-view-variant-segmented-solid .nav-link {
+    color: var(--bs-primary-text-emphasis, var(--bs-primary));
+    border-radius: calc(var(--bs-border-radius) - 0.15rem);
+}
+.tab-view-variant-segmented-solid .nav-link:hover {
+    color: var(--bs-primary);
+    background: rgba(var(--bs-primary-rgb), 0.08);
+}
+.tab-view-variant-segmented-solid .nav-link.active {
+    color: #fff;
+    background: var(--bs-primary);
+    font-weight: 600;
+    z-index: 1;
+}
+
+/* --- responsive collapse trigger: variant-tinted -----------------------
+   When a TabView collapses to dropdown mode, the trigger button should
+   still read as part of the same family. The wrapper div carries the
+   variant class so we can tint just `segmented-solid`'s trigger.
+*/
+.tab-view-variant-segmented-solid > .tab-view-select-style {
+    color: #fff;
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+.tab-view-variant-segmented-solid > .tab-view-select-style:hover {
+    background-color: color-mix(in srgb, var(--bs-primary) 90%, #000 10%);
+    border-color: color-mix(in srgb, var(--bs-primary) 90%, #000 10%);
+}
+
+/* ---- Dark theme refinements (clustered per .claude/rules/theming.md) -- */
+[data-bs-theme="dark"] .tab-view-variant-minimal .nav-link:hover,
+[data-bs-theme="dark"] .tab-view-variant-pills .nav-link:hover,
+[data-bs-theme="dark"] .tab-view-variant-segmented .nav-link:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+[data-bs-theme="dark"] .tab-view-variant-segmented .nav-link.active {
+    background: var(--bs-secondary-bg);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+[data-bs-theme="dark"] .tab-view-variant-segmented-solid .nav-link:hover {
+    background: rgba(var(--bs-primary-rgb), 0.18);
 }
 
 /* Alerts (optional, stays tied to primary) */
@@ -2282,3 +2524,796 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
 .group-search-view .simple-search-item:hover {
     background-color: var(--bs-light);
 }
+
+/* ========================================================================
+   MetricCard
+   ========================================================================
+   Compact KPI card — label / value / hint with an optional left-border
+   tone accent. Used in record-detail Overview rows and dashboard panels.
+*/
+/* Borderless flat surface; the bg tint is the only visual separation.
+   Tone variants get a thin left-edge accent so the tone signal still
+   reads without the surrounding box. */
+.metric-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.7rem 0.9rem;
+    background: var(--bs-tertiary-bg);
+    border: 0;
+    border-left: 3px solid transparent;
+    border-radius: 0.6rem;
+    color: var(--bs-body-color);
+    font: inherit;
+    text-align: left;
+    min-width: 0;
+    width: 100%;
+}
+button.metric-card { cursor: pointer; }
+button.metric-card:hover { background: var(--bs-secondary-bg); }
+button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline-offset: -1px; }
+
+.metric-card-tone-success { border-left-color: var(--bs-success); }
+.metric-card-tone-warning { border-left-color: var(--bs-warning); }
+.metric-card-tone-danger  { border-left-color: var(--bs-danger);  }
+.metric-card-tone-info    { border-left-color: var(--bs-info);    }
+.metric-card-tone-primary { border-left-color: var(--bs-primary); }
+
+.metric-card-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.metric-card-icon { font-size: 0.85rem; opacity: 0.75; }
+
+.metric-card-value {
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.25;
+    font-variant-numeric: tabular-nums;
+    color: var(--bs-emphasis-color, var(--bs-body-color));
+    word-break: break-word;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.metric-card-value-icon { font-size: 0.9rem; flex-shrink: 0; }
+.metric-card-tone-success .metric-card-value-icon { color: var(--bs-success); }
+.metric-card-tone-warning .metric-card-value-icon { color: var(--bs-warning); }
+.metric-card-tone-danger  .metric-card-value-icon { color: var(--bs-danger);  }
+.metric-card-tone-info    .metric-card-value-icon { color: var(--bs-info);    }
+.metric-card-tone-primary .metric-card-value-icon { color: var(--bs-primary); }
+
+.metric-card-hint {
+    font-size: 0.75rem;
+    color: var(--bs-secondary-color);
+}
+
+/* ========================================================================
+   StatusPanel
+   ========================================================================
+   Hero state banner used in the Overview section of state-driven records
+   (incident status, job lifecycle, runner alive/dead). The tone variants
+   tint the background + border with the matching Bootstrap semantic color
+   so the panel reads as the dominant signal in the section.
+
+   JS: src/core/views/data/StatusPanel.js
+*/
+/* Borderless flat surface; the tone-tinted bg + colored state eyebrow
+   carry the entire visual signal. The container queries further down
+   stack the actions below the headline when the panel is narrower
+   than ~480px (typical inside an `lg` modal). */
+.detail-status-panel {
+    container-type: inline-size;
+    border: 0;
+    border-radius: 0.75rem;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+    background: var(--bs-tertiary-bg);
+}
+@container (max-width: 480px) {
+    .detail-status-panel {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.85rem;
+    }
+    .detail-status-panel .detail-status-actions { flex-wrap: wrap; }
+}
+.detail-status-panel .detail-status-headline { min-width: 0; flex: 1; }
+.detail-status-panel .detail-status-state {
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+    color: var(--bs-secondary-color);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.detail-status-panel .detail-status-state .detail-status-dot {
+    width: 0.5rem; height: 0.5rem;
+    border-radius: 999px;
+    background: currentColor;
+    box-shadow: 0 0 0.5rem currentColor;
+}
+.detail-status-panel .detail-status-state .detail-status-icon {
+    font-size: 0.95rem;
+    line-height: 1;
+}
+.detail-status-panel .detail-status-line {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.2rem;
+    line-height: 1.25;
+    color: var(--bs-emphasis-color, var(--bs-body-color));
+    letter-spacing: -0.005em;
+}
+.detail-status-panel .detail-status-meta {
+    color: var(--bs-secondary-color);
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+.detail-status-panel .detail-status-actions {
+    display: flex; gap: 0.4rem; flex-shrink: 0;
+}
+/* Tones bump the tinted bg slightly (0.08 → 0.10) so the surface still
+   reads cleanly without the border. */
+.detail-status-panel.tone-danger    { background: rgba(var(--bs-danger-rgb),    0.10); }
+.detail-status-panel.tone-warning   { background: rgba(var(--bs-warning-rgb),   0.10); }
+.detail-status-panel.tone-success   { background: rgba(var(--bs-success-rgb),   0.10); }
+.detail-status-panel.tone-info      { background: rgba(var(--bs-info-rgb),      0.10); }
+.detail-status-panel.tone-primary   { background: rgba(var(--bs-primary-rgb),   0.10); }
+.detail-status-panel.tone-secondary { background: rgba(var(--bs-secondary-rgb), 0.07); }
+.detail-status-panel.tone-danger    .detail-status-state { color: var(--bs-danger);    }
+.detail-status-panel.tone-warning   .detail-status-state { color: var(--bs-warning);   }
+.detail-status-panel.tone-success   .detail-status-state { color: var(--bs-success);   }
+.detail-status-panel.tone-info      .detail-status-state { color: var(--bs-info);      }
+.detail-status-panel.tone-primary   .detail-status-state { color: var(--bs-primary);   }
+.detail-status-panel.tone-secondary .detail-status-state { color: var(--bs-secondary); }
+
+
+/* ========================================================================
+   Timeline (vertical event feed)
+   ========================================================================
+   Vertical list with a hairline connector and tone-colored dots. Used for
+   incident history, job lifecycle events, recent activity in user/group
+   overviews, audit trails. Renders as an `<ol>` with `.detail-timeline`
+   on the root and `.detail-timeline-item.tone-*` on each entry.
+
+   JS: src/core/views/data/Timeline.js
+*/
+.detail-timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 1.1rem;
+    position: relative;
+}
+.detail-timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.35rem; top: 0.5rem; bottom: 0.5rem;
+    width: 1px;
+    background: linear-gradient(180deg, var(--bs-border-color), transparent);
+}
+.detail-timeline-item {
+    position: relative;
+    padding: 0.4rem 0 0.85rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+}
+.detail-timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -1.1rem; top: 0.75rem;
+    width: 0.55rem; height: 0.55rem;
+    border-radius: 999px;
+    background: var(--bs-tertiary-bg);
+    border: 1.5px solid var(--bs-secondary-color);
+}
+.detail-timeline-item.tone-danger::before    { border-color: var(--bs-danger);    }
+.detail-timeline-item.tone-warning::before   { border-color: var(--bs-warning);   }
+.detail-timeline-item.tone-success::before   { border-color: var(--bs-success);   }
+.detail-timeline-item.tone-info::before      { border-color: var(--bs-info);      }
+.detail-timeline-item.tone-primary::before   { border-color: var(--bs-primary);   }
+.detail-timeline-item.tone-secondary::before { border-color: var(--bs-secondary); }
+.detail-timeline-headline {
+    font-size: 0.85rem;
+    color: var(--bs-body-color);
+    font-weight: 500;
+}
+.detail-timeline-detail {
+    font-size: 0.8rem;
+    color: var(--bs-secondary-color);
+}
+.detail-timeline-when {
+    font-family: var(--bs-font-monospace);
+    font-size: 0.72rem;
+    color: var(--bs-secondary-color);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    align-self: start;
+}
+.detail-timeline-empty {
+    list-style: none;
+    padding: 0.5rem 0;
+}
+
+
+/* ========================================================================
+   DetailView — Flat labeled-section primitives
+   ========================================================================
+   The minimalist "labeled section eyebrow + flat field rows" pattern
+   that section views in DetailView subclasses default to.
+
+   Use:
+     <div class="detail-section">
+       <div class="detail-section-eyebrow">
+         CONTACT & VERIFICATION
+         <button class="detail-section-action" data-action="edit-contact">
+           <i class="bi bi-pencil"></i>
+         </button>
+       </div>
+       <div class="detail-flat-row">
+         <div class="detail-flat-row-label">Email</div>
+         <div class="detail-flat-row-value">…</div>
+         <div class="detail-flat-row-action">
+           <button class="detail-section-action" data-action="…">…</button>
+         </div>
+       </div>
+       …
+     </div>
+*/
+.detail-section { margin-bottom: 2.5rem; }
+.detail-section:last-child { margin-bottom: 0; }
+.detail-section-eyebrow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin: 0 0 0.5rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--bs-secondary-color);
+}
+/* Subsection eyebrows (a second `Account` eyebrow after a stack of rows
+   or items inside the same section) get automatic breathing room above
+   when they're not the first child of their parent. No inline `mt-3` /
+   `mt-4` needed in templates. */
+.detail-section-eyebrow:not(:first-child) {
+    margin-top: 2rem;
+}
+.detail-section-action {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--bs-tertiary-color, var(--bs-secondary-color));
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.78rem;
+    border-radius: 0.3rem;
+    line-height: 1;
+    opacity: 0.7;
+    transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+.detail-section-action:hover {
+    background: var(--bs-secondary-bg);
+    color: var(--bs-primary);
+    opacity: 1;
+}
+.detail-flat-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 0.875rem;
+    line-height: 1.45;
+}
+.detail-flat-row:last-child { border-bottom: none; }
+[data-bs-theme="dark"] .detail-flat-row {
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+.detail-flat-row-label {
+    width: 110px;
+    flex-shrink: 0;
+    font-size: 0.8rem;
+    color: var(--bs-secondary-color);
+}
+.detail-flat-row-value {
+    flex: 1;
+    min-width: 0;
+    color: var(--bs-body-color);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+.detail-flat-row-action {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+
+/* ========================================================================
+   KnownFieldsCard
+   ========================================================================
+   Promotes known JSON keys to a 2-column label/value grid with the raw
+   blob accessible but visually subordinated below. Reuses the flat-row
+   primitives above for the known-keys grid.
+
+   JS: src/core/views/data/KnownFieldsCard.js
+*/
+.detail-known-fields-card {
+    display: block;
+    margin-bottom: 1.5rem;
+}
+.detail-known-fields-grid {
+    margin-bottom: 0.85rem;
+}
+.detail-known-fields-raw {
+    margin-top: 1rem;
+    border: 0;
+    border-radius: 0.6rem;
+    background: var(--bs-tertiary-bg);
+    overflow: hidden;
+}
+.detail-known-fields-raw-summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.78rem;
+    color: var(--bs-secondary-color);
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.detail-known-fields-raw-summary::-webkit-details-marker { display: none; }
+.detail-known-fields-raw-summary::before {
+    content: '\25B6'; /* ▶ */
+    display: inline-block;
+    font-size: 0.65rem;
+    transition: transform 0.15s;
+    color: var(--bs-tertiary-color, var(--bs-secondary-color));
+}
+.detail-known-fields-raw[open] > .detail-known-fields-raw-summary::before {
+    transform: rotate(90deg);
+}
+.detail-known-fields-raw-summary:hover { color: var(--bs-body-color); }
+.detail-known-fields-raw-body {
+    margin: 0;
+    padding: 0.75rem 0.85rem 0.85rem;
+    border-top: 1px solid var(--bs-border-color-translucent);
+    font-family: var(--bs-font-monospace);
+    font-size: 0.78rem;
+    color: var(--bs-body-color);
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 28rem;
+    overflow: auto;
+    background: rgba(0, 0, 0, 0.02);
+}
+[data-bs-theme="dark"] .detail-known-fields-raw-body {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+
+/* ========================================================================
+   FlowStrip (horizontal STEP 1 → STEP 2 → … flow)
+   ========================================================================
+   Used for records that describe a process — RuleSet triggering
+   (Match → Bundle → Threshold → Re-trigger), incident triage, anywhere
+   a sequence of stages reads better as a left-to-right strip than a
+   flat field list. Chevron arrows separate steps; the strip wraps to
+   2 columns on tablet and 1 on mobile.
+
+   JS: src/core/views/data/FlowStrip.js
+*/
+/* Borderless tinted surface; thin translucent hairlines between
+   steps replace the bordered + chevroned 2025 treatment. The strip
+   uses container queries so it stacks before the steps get crunched
+   inside an `lg` modal. */
+.detail-flow-strip {
+    container-type: inline-size;
+    display: grid;
+    grid-template-columns: repeat(var(--flow-strip-cols, 4), 1fr);
+    background: var(--bs-tertiary-bg);
+    border: 0;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+.detail-flow-strip .flow-strip-step {
+    padding: 1rem 1.1rem;
+    background: transparent;
+    position: relative;
+    min-width: 0;
+}
+.detail-flow-strip .flow-strip-step + .flow-strip-step {
+    border-left: 1px solid var(--bs-border-color-translucent);
+}
+.detail-flow-strip .flow-strip-num {
+    font-family: var(--bs-font-monospace);
+    font-size: 0.62rem;
+    color: var(--bs-tertiary-color, var(--bs-secondary-color));
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+.detail-flow-strip .flow-strip-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin: 0.15rem 0 0.35rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+    color: var(--bs-emphasis-color, var(--bs-body-color));
+}
+.detail-flow-strip .flow-strip-title .flow-strip-action {
+    padding: 0.1rem 0.35rem;
+    font-size: 0.7rem;
+}
+.detail-flow-strip .flow-strip-value {
+    font-size: 0.82rem;
+    color: var(--bs-body-color);
+    font-weight: 500;
+    line-height: 1.35;
+}
+.detail-flow-strip .flow-strip-empty {
+    color: var(--bs-secondary-color);
+    font-style: italic;
+    font-weight: 400;
+}
+.detail-flow-strip .flow-strip-hint {
+    font-size: 0.72rem;
+    color: var(--bs-secondary-color);
+    margin-top: 0.25rem;
+    line-height: 1.4;
+}
+/* Container-query stacking: based on the strip's own width (not the
+   viewport) so it stacks correctly when nested inside narrow modals. */
+@container (max-width: 760px) {
+    .detail-flow-strip { grid-template-columns: 1fr 1fr; }
+}
+@container (max-width: 460px) {
+    .detail-flow-strip { grid-template-columns: 1fr; }
+    .detail-flow-strip .flow-strip-step + .flow-strip-step {
+        border-left: 0;
+        border-top: 1px solid var(--bs-border-color-translucent);
+    }
+}
+
+
+/* ========================================================================
+   DetailView / DetailHeaderView
+   ========================================================================
+   Standard record-detail layout: flat header (icon, title, subtitle, chips,
+   active toggle, actions, X close) + SideNavView. The shell flexes to fill
+   the modal body so the rail extends to the bottom edge.
+*/
+.detail-view, .detail-view-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    height: 100%;
+}
+.detail-view-body { flex: 1 1 auto; min-height: 0; display: flex; }
+.detail-view-body > .side-nav-view { flex: 1 1 auto; min-height: 0; }
+
+.detail-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--bs-border-color);
+    position: relative;
+}
+/* Right-side action cluster floats out of flex flow so the title block
+   (subtitle + chips) can use the full row width below it. The cluster only
+   occupies the top row vertically, so chips never collide with it. */
+.detail-header .dh-actions {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.5rem;
+    z-index: 1;
+}
+/* Reserve space on the right of the title row so a long name doesn't run
+   under the absolute-positioned actions. */
+.detail-header .dh-meta { padding-right: 200px; }
+@media (max-width: 540px) {
+    .detail-header .dh-actions { position: static; margin-top: 0.5rem; }
+    .detail-header .dh-meta { padding-right: 0; }
+}
+
+.detail-header .dh-icon {
+    width: 44px; height: 44px;
+    border-radius: 0.5rem;
+    background: rgba(13, 110, 253, 0.10);
+    color: var(--bs-primary);
+    border: 1px solid transparent;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+/* Toned icon variants — opt-in via header `iconTone: 'danger'|'warning'|'success'|'info'|'primary'` */
+.detail-header .dh-icon.dh-icon-tone-danger {
+    color: var(--bs-danger);
+    background: rgba(var(--bs-danger-rgb), 0.10);
+    border-color: rgba(var(--bs-danger-rgb), 0.25);
+}
+.detail-header .dh-icon.dh-icon-tone-warning {
+    color: var(--bs-warning);
+    background: rgba(var(--bs-warning-rgb), 0.10);
+    border-color: rgba(var(--bs-warning-rgb), 0.25);
+}
+.detail-header .dh-icon.dh-icon-tone-success {
+    color: var(--bs-success);
+    background: rgba(var(--bs-success-rgb), 0.10);
+    border-color: rgba(var(--bs-success-rgb), 0.25);
+}
+.detail-header .dh-icon.dh-icon-tone-info {
+    color: var(--bs-info);
+    background: rgba(var(--bs-info-rgb), 0.10);
+    border-color: rgba(var(--bs-info-rgb), 0.25);
+}
+.detail-header .dh-icon.dh-icon-tone-primary {
+    color: var(--bs-primary);
+    background: rgba(var(--bs-primary-rgb), 0.10);
+    border-color: rgba(var(--bs-primary-rgb), 0.25);
+}
+.detail-header .dh-name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 0.15rem;
+    color: var(--bs-emphasis-color, var(--bs-body-color));
+}
+.detail-header .dh-subtitle {
+    color: var(--bs-secondary-color);
+    font-size: 0.875rem;
+    margin: 0 0 0.5rem;
+    max-width: 720px;
+    line-height: 1.45;
+}
+.detail-header .dh-subtitle-empty {
+    font-style: italic;
+    color: var(--bs-tertiary-color, var(--bs-secondary-color));
+    opacity: 0.85;
+}
+.detail-header .dh-subtitle-empty[role="button"] { cursor: pointer; }
+.detail-header .dh-subtitle-empty[role="button"]:hover {
+    color: var(--bs-primary);
+    opacity: 1;
+}
+.detail-header .dh-chips {
+    display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;
+}
+
+/* Ghost-style action — quieter than Bootstrap's default outline buttons */
+.detail-header .dh-action {
+    background: transparent;
+    color: var(--bs-secondary-color);
+    border: 1px solid transparent;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.85rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    line-height: 1.2;
+    display: inline-flex; align-items: center; gap: 0.25rem;
+}
+.detail-header .dh-action:hover {
+    background: var(--bs-tertiary-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+.detail-header .dh-close {
+    padding: 0.25rem 0.45rem;
+    color: var(--bs-tertiary-color, var(--bs-secondary-color));
+    margin-left: 0.15rem;
+}
+
+/* Vertical hairline between Group 1 (record actions) and Group 2 (modal chrome) */
+.detail-header .dh-group-sep {
+    display: inline-block;
+    width: 1px;
+    height: 18px;
+    background: var(--bs-border-color);
+    margin: 0 0.45rem 0 0.35rem;
+    opacity: 0.6;
+}
+
+/* Active toggle — small, subtle, secondary-text label. Tuned to read as
+   a hint, not a primary control: the green-when-checked track is the
+   only color signal; the label stays muted in both states. */
+.dh-active-switch {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    cursor: pointer; user-select: none;
+    font-size: 0.72rem;
+    color: var(--bs-secondary-color);
+    line-height: 1;
+}
+.dh-active-switch input { display: none; }
+.dh-active-switch .dh-track {
+    width: 24px; height: 13px;
+    background: var(--bs-secondary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 999px;
+    position: relative;
+    transition: background 0.15s, border-color 0.15s;
+}
+.dh-active-switch .dh-track::after {
+    content: '';
+    position: absolute; top: 1px; left: 1px;
+    width: 9px; height: 9px;
+    background: var(--bs-body-bg);
+    border-radius: 999px;
+    transition: transform 0.15s;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+.dh-active-switch input:checked + .dh-track {
+    background: var(--bs-success);
+    border-color: var(--bs-success);
+}
+.dh-active-switch input:checked + .dh-track::after { transform: translateX(11px); }
+/* Don't bump label weight on checked — keep the toggle subtle. The dot
+   color carries the state signal; the label just identifies what's
+   being toggled. */
+.dh-active-switch .dh-track-label { font-weight: 400; }
+
+/* Aux slot — right-gutter inline state read-out (presence, last-seen,
+   attempt counter, etc.). Trusted HTML emitted by `auxFn(model)`. */
+.detail-header .dh-aux {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.1rem;
+    margin-right: 0.25rem;
+    font-size: 0.78rem;
+    line-height: 1.3;
+    color: var(--bs-secondary-color);
+    text-align: right;
+    user-select: none;
+}
+.detail-header .dh-aux .dh-aux-presence {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--bs-body-color);
+    font-weight: 500;
+}
+.detail-header .dh-aux .dh-aux-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 999px;
+    background: var(--bs-secondary);
+    box-shadow: 0 0 0 2px rgba(var(--bs-secondary-rgb), 0.18);
+}
+.detail-header .dh-aux .dh-aux-dot.is-online {
+    background: var(--bs-success);
+    box-shadow: 0 0 0 2px rgba(var(--bs-success-rgb), 0.18);
+}
+.detail-header .dh-aux .dh-aux-meta {
+    color: var(--bs-secondary-color);
+    font-size: 0.72rem;
+}
+
+[data-bs-theme="dark"] .detail-header .dh-icon {
+    background: rgba(77, 139, 255, 0.16);
+}
+
+/* ========================================================================
+   SideNavView
+   ========================================================================
+   Sectioned detail layout — left rail of nav links beside a content panel
+   that mounts one child view at a time. Width and content padding are
+   applied per-instance via inline `style="..."` attributes from the JS
+   template (the only two values that vary per consumer).
+*/
+.snv-layout { display: flex; height: 100%; min-height: 0; }
+.snv-nav {
+    background: var(--bs-tertiary-bg);
+    border-right: 1px solid var(--bs-border-color);
+    padding: 0.75rem 0;
+    flex-shrink: 0;
+    overflow-y: auto;
+}
+.snv-nav a {
+    color: var(--bs-secondary-color);
+    padding: 0.45rem 1.25rem;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    cursor: pointer;
+}
+.snv-nav a:hover {
+    background: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
+}
+.snv-nav a.active {
+    background: rgba(13, 110, 253, 0.10);
+    color: var(--bs-primary);
+    font-weight: 600;
+    border-right: 2px solid var(--bs-primary);
+}
+.snv-nav a i { width: 18px; text-align: center; font-size: 0.9rem; }
+.snv-nav-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bs-tertiary-color, var(--bs-secondary-color));
+    padding: 0.75rem 1.25rem 0.25rem;
+}
+
+/* Section badges — right-aligned pills inside nav links */
+.snv-badge {
+    margin-left: auto;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.05rem 0.45rem;
+    border-radius: 999px;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+}
+.snv-badge-muted   { background: var(--bs-secondary-bg); color: var(--bs-secondary-color); }
+.snv-badge-primary { background: var(--bs-primary); color: #fff; }
+.snv-badge-success { background: var(--bs-success); color: #fff; }
+.snv-badge-warning { background: var(--bs-warning); color: #000; }
+.snv-badge-danger  { background: var(--bs-danger);  color: #fff; }
+.snv-nav a.active .snv-badge-muted {
+    background: var(--bs-primary);
+    color: #fff;
+}
+
+.snv-content {
+    flex: 1;
+    overflow-y: auto;
+    min-width: 0;
+}
+.snv-content > .snv-section { display: none; }
+.snv-content > .snv-section.snv-active { display: block; }
+
+.snv-dropdown { margin-bottom: 0.75rem; }
+.snv-select-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 1rem;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.375rem;
+    font-size: 0.85rem;
+    color: var(--bs-body-color);
+    cursor: pointer;
+}
+.snv-select-btn:hover { background: var(--bs-secondary-bg); }
+.snv-select-btn::after {
+    content: '';
+    display: inline-block;
+    margin-left: auto;
+    border-top: 0.3em solid;
+    border-right: 0.3em solid transparent;
+    border-left: 0.3em solid transparent;
+}
+
+@media (max-width: 576px) {
+    .snv-nav { display: none; }
+    .snv-content { padding: 1.25rem !important; }
+}
+
+[data-bs-theme="dark"] .snv-nav a.active {
+    background: rgba(77, 139, 255, 0.16);
+}
+[data-bs-theme="dark"] .snv-badge-warning { color: #000; }

@@ -2,6 +2,138 @@
 
 ## Unreleased
 
+### TabView — `variant` option, default flipped to `minimal`
+
+- **Added:** `variant` constructor option on `TabView` (`src/core/views/navigation/TabView.js`). Five values — `'minimal'` (new default), `'underline'`, `'pills'`, `'segmented'`, `'segmented-solid'`. Each maps to a `tab-view-variant-*` hook class on the rendered `<ul>` (and the dropdown wrapper when the bar collapses); all visual differences live in `core.css`. Unknown values warn and fall back to `'minimal'`.
+- **Behavior change:** the default tab style changed from `nav nav-tabs mb-3` (Bootstrap nav-tabs underline) to `'minimal'` (text-only, primary on active, no border). The previous look is one line away — pass `variant: 'underline'` to restore it. `'underline'` resolves to the literal `'nav nav-tabs mb-3'` class string for bit-for-bit back-compat with pre-variant code.
+- **`tabsClass` precedence preserved:** when `tabsClass` is passed explicitly, it wins and the `variant` lookup is skipped. `SectionedFormView`'s `d-none` mode and any extension override keep working unchanged.
+- **CSS:** new variants section in `src/core/css/core.css` (after the existing TabView block). Uses Bootstrap surface tokens (`--bs-body-color`, `--bs-secondary-color`, `--bs-primary`, `--bs-tertiary-bg`, `--bs-primary-bg-subtle`, etc.) with all `[data-bs-theme="dark"]` refinements clustered at the bottom of the section per `.claude/rules/theming.md`.
+- **Tests:** new `test/unit/TabView.test.js` covers default variant, each named variant's resolved `tabsClass`, unknown-variant warn-and-fallback, and `tabsClass` precedence over `variant`.
+- **Docs:** `docs/web-mojo/components/TabView.md` adds a Variants section with the five-row table, notes the default change, and updates the constructor options table.
+- **Example portal:** new `components/tab-view/variants` route (`TabViewVariantsExample.js`) — pick a variant via `SegmentControl`, the same TabView re-renders with the new look. Useful for eyeballing each variant under both light and dark themes.
+
+### Admin user sections — drop inline `<style>` blocks, switch to framework primitives
+
+- **AdminPersonalSection** / **AdminProfileSection** / **AdminConnectedSection** / **AdminSecuritySection** — deleted the inline `<style>` blocks (every block had hardcoded light-theme hex literals: `#adb5bd`, `#f0f0f0`, `#6c757d`, `#212529`, `#0d6efd`, `#d1e7dd`, etc., with **no** `[data-bs-theme="dark"]` overrides). Templates now use the framework's `.detail-section-eyebrow` + `.detail-flat-row*` primitives (Wave 1 A5) for the labeled-row layout, and Bootstrap utility classes (`text-bg-success`, `text-bg-warning`, `text-bg-light border`, `text-secondary fst-italic`) for badges and "not set" placeholders.
+- **AdminConnectedSection / AdminSecuritySection structural CSS** moved to `admin.css` under `AdminConnectedSection`, `AdminSecuritySection`, "passkey list", and "recovery codes" headers. All values use Bootstrap tokens (`--bs-tertiary-bg`, `--bs-border-color`, `--bs-body-color`, `--bs-secondary-color`, `--bs-primary`, etc.) so dark theme works automatically per `.claude/rules/theming.md`.
+- The two inner `Modal.dialog` views in `AdminSecuritySection` (passkey list, recovery codes) likewise drop their inline `<style>` blocks — moved to `admin.css` under namespaced `.admin-passkey-*` and `.admin-recovery-*` classes.
+- Per-section bespoke classes (`.aps-*`, `.ap-*`, `.ac-*`, `.as-*`, `.pk-*`, `.rc-*`) are now retired in favor of either framework primitives or short namespaced classes in admin.css. No new component-specific dark overrides needed — every value resolves through Bootstrap tokens.
+
+### Admin models — new section-driven Collections
+
+- **Added** `SimilarJobsList` (`@ext/admin/models/Job.js`) — thin `JobList` subclass with default `params: { ordering: '-created' }` plus optional `func` constructor arg. Backs JobDetailsView's "Similar Jobs" section. Endpoint: `GET /api/jobs/job?func=<name>&ordering=-created`.
+- **Added** `ActiveJobsList` (`@ext/admin/models/Job.js`) — thin `JobList` subclass defaulting to `?status=running`, with optional `runnerId` constructor arg. Backs RunnerDetailsView's "Active Jobs" section. Endpoint: `GET /api/jobs/job?runner_id=<id>&status=running`.
+- **Added** `RelatedIncidentsList` (`@ext/admin/models/Incident.js`) — thin `IncidentList` subclass accepting any subset of `sourceIp`, `ruleSet`, `group`, `hostname`, `category`, `status` constructor args; emits the matching `?source_ip=`, `?rule_set=`, etc. filters. Backs IncidentView's "Related Incidents" section. Note: Incident has no `user` FK — only `group` — and the constructor reflects that.
+- **Note:** `IncidentEventList` (already at `/api/incident/event`), `IncidentHistoryList` (already at `/api/incident/incident/history`), and `ShortLinkClickList` (already at `/api/shortlink/history`) already cover the remaining new-section data needs. No new collection classes for those — consumer views just call `fetch({ incident: id })` etc. on the existing collections.
+- **No backend HTTP API changes.** Every endpoint and filter referenced is verified to exist.
+
+### KnownFieldsCard — new `@core` primitive
+
+- **Added:** `src/core/views/data/KnownFieldsCard.js` — "promote known JSON keys, keep the raw blob accessible" pattern. Promotes selected keys to a 2-column label/value grid (using the `.detail-flat-row` family) with the raw JSON in a collapsible `<details>` block underneath. Constructor: `data` (object OR `(model) => object`), `knownKeys` (array OR `(model) => array`), `rawCollapsed`, `rawLabel`, `showRaw`, `emptyText`. Each known-key spec is `{ key, label, formatter?, hideEmpty? }`. `formatter` may be a `DataFormatter` pipe name (string) or a `(value, key, data) => htmlString` function — both treat output as trusted HTML. Dotted-path keys (`os.family`, `user_agent.major`) work for nested objects. Missing values render the muted "—" placeholder unless `hideEmpty: true` is set.
+- **Moved:** the `.detail-section`, `.detail-section-eyebrow`, `.detail-section-action`, `.detail-flat-row*` rules from `admin.css` into `core.css`. They're framework-wide primitives — `KnownFieldsCard` uses them, and Wave 3's per-view sweeps will use them across admin views.
+- **Added** `KnownFieldsCard` CSS (`.detail-known-fields-card`, `.detail-known-fields-grid`, `.detail-known-fields-raw*`) to core.css. Raw block uses native `<details>` for accessibility — no JS, no listeners.
+- **Tests:** `test/unit/KnownFieldsCard.test.js` adds twelve cases — known-key rendering, missing "—" placeholder, `hideEmpty`, function formatter, dotted-path lookup, raw block default-collapsed and explicit-open, `showRaw: false`, empty-data fallback, function-valued data + knownKeys re-resolving, nested-object JSON fragment, escape policy.
+- **Docs:** new `docs/web-mojo/components/KnownFieldsCard.md` covers quick-start, full options, the spec shape, and three common patterns (incident metadata, device info, IP intel).
+
+### FlowStrip — new `@core` primitive
+
+- **Added:** `src/core/views/data/FlowStrip.js` — horizontal "STEP 1 → STEP 2 → STEP 3" flow primitive (extracted from `RuleSetTriggeringSection`'s Match → Bundle → Threshold → Re-trigger layout). Each step is `{ num, title, value, hint, empty?, action?, actionIcon?, actionData? }`. `value` and `hint` are trusted HTML (for `<code>` / `<strong>` interpolation); `num` and `title` are escaped. `empty: true` renders the muted-italic `.flow-strip-empty` style for "Fires immediately" / "No bundling" sentinels. Optional pencil action with arbitrary `data-*` attributes for routing edit forms to a specific tab. Steps may be a static array OR `(model) => array`. `setSteps(steps)` replaces the source and re-renders. CSS variable `--flow-strip-cols` overrides the default 4-column layout per instance.
+- **Tests:** `test/unit/FlowStrip.test.js` adds nine smoke cases — render shape, missing-hint omission, num fallback, empty modifier, action button + `data-*` attrs, function-valued steps re-resolving, escape policy, empty-array no-op, `setSteps`.
+- **Docs:** new `docs/web-mojo/components/FlowStrip.md` covers quick-start, state-driven flows, full step shape, the RuleSet triggering example, and column-count overrides.
+- **Migration note:** the legacy `.rs-flow*` CSS in `admin.css` still backs `RuleSetView`'s current implementation. `RuleSetView` will switch to `FlowStrip` in a later wave; the old CSS will be removed at that point. New code should use `FlowStrip` directly.
+
+### Timeline — new `@core` primitive
+
+- **Added:** `src/core/views/data/Timeline.js` — vertical event-feed primitive (the `<ol>` with hairline connector and tone-colored dots used for incident history, job lifecycle events, recent-activity overviews, audit trails). Constructor: `items` (array OR `(model) => array`), `emptyText`, `limit`, `model`. Each item is `{ headline, detail?, when?, tone? }`. Falsy entries are filtered. Function-valued `items` re-resolve on every `render()` so the feed reflects the latest model state. Empty list renders a single `.detail-timeline-empty` placeholder so the rail still draws. `setItems(items)` replaces the source and re-renders.
+- **Moved:** the `.detail-timeline*` and `.tone-*::before` CSS rules from `src/extensions/admin/css/admin.css` into `src/core/css/core.css`. Added a `tone-secondary` variant matching StatusPanel's palette and a `.detail-timeline-empty` rule for the empty-state fallback.
+- **Tests:** `test/unit/Timeline.test.js` adds eight smoke cases — `<ol>` root, per-item tone class, optional detail/when omission, empty-state fallback, function-valued items resolving and re-resolving, the `limit` option, HTML-escaping of headline/when, and `setItems`.
+- **Docs:** new `docs/web-mojo/components/Timeline.md` covers quick-start, options, item shape, common patterns (Job Lifecycle card, Recent activity), and the trusted-HTML rules for `detail`.
+
+### StatusPanel — new `@core` primitive
+
+- **Added:** `src/core/views/data/StatusPanel.js` — hero "current state" panel for record-detail views (the dot+state read-out / headline / meta line / action buttons that opens the Overview section in JobDetailsView, IncidentView, RunnerDetailsView, etc.). Constructor options `tone`, `state`, `headline`, `meta`, `icon`, `actions[]` each accept either a static value **or** `(model) => value` so the panel re-resolves on model state changes. Action buttons render with `data-action="<action>"` and dispatch via the standard MOJO action pipeline — handlers live on whichever ancestor reacts. Tones (`primary`, `success`, `info`, `warning`, `danger`, `secondary`) tint background + border via Bootstrap CSS variables; dark theme works automatically.
+- **Moved:** the `.detail-status-panel` / `.detail-status-headline` / `.detail-status-state` / `.detail-status-line` / `.detail-status-meta` / `.detail-status-actions` / `.tone-*` CSS rules from `src/extensions/admin/css/admin.css` into `src/core/css/core.css` (the JS class is `@core`-level, so the styles must travel with it). Added `.detail-status-icon` for the optional Bootstrap-Icons-driven state icon, and a `tone-secondary` variant for inactive/cancelled records.
+- **Tests:** `test/unit/StatusPanel.test.js` adds six smoke cases — render shape, dot vs icon, action row, function-valued options re-resolving, empty actions omission, HTML escaping of state / headline / labels.
+- **Docs:** new `docs/web-mojo/components/StatusPanel.md` covering quick start, function-valued options, all constructor options, tones, and common patterns.
+
+### DetailView — `auxFn` right-gutter slot + flat-row primitives
+
+- **Added — `header.auxFn(model) -> htmlString`:** new optional slot on `DetailHeaderView` for inline state read-outs that don't fit the chip / badge model — presence dots, "Last seen 4m ago" lines, attempt counters, etc. Renders left of the active switch in the right-side action cluster. Returning falsy omits the wrapper. The output is **trusted HTML** (caller is in source code, not user input). Re-renders along with the rest of the header on `model.set(...)`. Framework ships `.dh-aux-presence`, `.dh-aux-dot` (`.is-online` modifier), and `.dh-aux-meta` defaults in `core.css`.
+- **Added — flat-row primitives in `admin.css`:** `.detail-section`, `.detail-section-eyebrow`, `.detail-section-action`, `.detail-flat-row`, `.detail-flat-row-label`, `.detail-flat-row-value`, `.detail-flat-row-action`. The minimalist "labeled section eyebrow + flat field rows" pattern that section views in admin DetailView subclasses should default to going forward. Replaces stacked `.detail-field-card` blocks.
+- **Deprecated:** `.detail-field-card`, `.detail-field-card-header`, `.detail-field-card-body`. Existing call-sites will be migrated off as part of the DetailView migration rethink (see `planning/requests/detailview-migration-rethink.md`). Don't add new uses.
+- **Tests:** `test/unit/DetailView.test.js` adds three `auxFn` cases — wrapper present when truthy, omitted when falsy, re-rendered after `model.set`.
+
+### Modal.detail() — default size flipped from `'xl'` to `'lg'`
+
+- **Behavior change:** `Modal.detail(view)` now defaults to `size: 'lg'` instead of `size: 'xl'`. The previous width was too generous for typical record-detail content and ran wide of the reference layout. Pass `Modal.detail(view, { size: 'xl' })` (or `'xxl'`) when content genuinely needs more room — dense charts, multi-column dashboards, etc. RuleSetView and other in-tree DetailView callers fit comfortably at `'lg'`.
+
+### EventDelegate — fix async double-dispatch across nested Views
+
+- **Fixed:** when a click landed on a `[data-action]` element inside a nested View hierarchy, ancestor delegates could double-dispatch the same action — the inner delegate's post-`await` `event.stopPropagation()` was a no-op because the browser had already finished bubbling. Now each delegate publishes its in-flight dispatch on `event._mojoDispatch` synchronously at handler entry; ancestor delegates await it before their own `shouldHandle` check, so an inner truthy `onAction*` / `handleAction*` reliably stops the parent. Sync handlers benefit from the same fix (they raced too, just over a shorter window).
+- **Contract preserved:** `onAction*` returning falsy still delegates the event up to ancestor Views; `onPassThruAction*` still never consumes; `handleAction*` still always consumes. No public API changes — the documented behavior just now works for async handlers as it always claimed to.
+- **Tests:** `test/unit/EventDelegate.test.js` adds a `nested delegate isolation` block covering sync/async truthy consume, falsy delegate-up, `handleAction*`, `onPassThruAction*`, parent-only, and three-level nesting.
+
+### RuleSetView — full redesign + supporting framework primitives
+
+- **Redesigned:** `src/extensions/admin/incidents/RuleSetView.js` replaces the 2-tab `TabView` (Configuration / Rules) with a header card + `SideNavView`. Sections in operator-priority order: **Overview** (4 KPI cards + summary panels), **Conditions** (rule conditions table), **Triggering** (Match → Bundle → Threshold → Re-trigger as a 4-step visual flow with friendly empty-state copy in place of `—`), **Handler** (parsed handler chain rendered as icon cards with tone accents), **Agent Prompt** (new, see below), **Incidents** (`IncidentList` filtered by `rule_set` with a 7d/30d/90d range picker), **Metadata** (known fields + raw JSON, hidden when empty).
+- **Added — `metadata.agent_prompt`:** new editable LLM agent prompt persisted on the RuleSet's metadata. The Agent Prompt section in `RuleSetView` shows a contextual hint based on whether `llm://` is in the handler chain. Saved via partial dotted-path `model.save({ 'metadata.agent_prompt': value })` (backend auto-merges JSONFields).
+- **Form updates** in `src/extensions/admin/models/Incident.js`: `RuleSetForms.create` and `RuleSetForms.edit` gain an "Agent" tab with a `metadata.agent_prompt` textarea. The Thresholds tab is restructured from a cramped 3-across `columns: 4` row into a numbered step layout — each threshold field is full-width with its own inline label.
+- **Header card** surfaces `metadata.reasoning` as the subtitle, an `assistant_proposed` indicator, an inline Active toggle (saves immediately, reverts on error), and a context menu including new actions `edit-agent-prompt` and `view-incidents`.
+
+### SideNavView — badge support + dark-theme migration
+
+- **Added:** Section configs accept an optional `badge` field — `number`, `string`, or `{ text, variant }`. Variants: `'muted'` (default), `'primary'`, `'success'`, `'warning'`, `'danger'`. The active section's `muted` badge automatically inverts to white-on-primary so it stays readable. Falsy values render no badge.
+- **Added:** new instance method `sideNav.setBadge(key, value)` updates a section's badge dynamically without re-rendering the whole nav. Critical for live counts (Incidents, Conditions) populated after the section fetches.
+- **Fixed (long-standing):** the inline `<style>` block was hardcoded light-theme hex literals (`#f8f9fc`, `#0d6efd`, etc.) with zero `[data-bs-theme="dark"]` overrides — the doc had claimed dark support that didn't exist. Migrated to Bootstrap tokens (`var(--bs-tertiary-bg)`, `var(--bs-body-color)`, `var(--bs-secondary-bg)`, `var(--bs-border-color)`, `var(--bs-primary)`) and added the missing dark-mode rules clustered at the bottom of the style block per `.claude/rules/theming.md`. Existing callers see no behavior change in light mode; dark-mode rendering now matches the documented behavior.
+
+### SegmentControl — new component
+
+- **Added:** `src/core/views/navigation/SegmentControl.js` — a small horizontal pill-button group bound to a single value. Constructor accepts `options: [{ value, label, icon? }, …]`, `value`, `size: 'sm'|'md'`, `ariaLabel`. Emits `change` with `{ value, previous }` on selection. Public API: `getValue()`, `setValue(value, { silent })`. Themed via Bootstrap `btn-primary` + `btn-outline-secondary` so dark-mode is automatic. Smoke tests in `test/unit/SegmentControl.test.js`.
+
+### MetricCard — new component
+
+- **Added:** `src/core/views/data/MetricCard.js` — at-a-glance KPI card (label / big value / optional icon / optional hint / optional tone left-border accent). Constructor accepts `label`, `value`, `icon`, `tone: 'default'|'success'|'warning'|'danger'|'info'|'primary'`, `hint`, `action`. When `action` is set the root renders as a `<button data-action="…">` so clicks flow through the standard MOJO action pipeline. Public API: `setValue(value)`, `setHint(hint)`. Themed via `var(--bs-tertiary-bg)`, `var(--bs-border-color)`, and `var(--bs-{tone})` so dark-mode is automatic. Smoke tests in `test/unit/MetricCard.test.js`.
+
+### MOJOUtils — security: harden dot-path lookup against prototype-chain keys
+
+- **Hardened:** `MOJOUtils.getNestedValue` and `DataWrapper.getContextValue` now return `undefined` for any path segment matching `__proto__`, `constructor`, or `prototype` (at every depth). The no-dot fast path no longer auto-invokes `Object.prototype` builtins (`toString`, `valueOf`, `hasOwnProperty`, `propertyIsEnumerable`, `isPrototypeOf`, `toLocaleString`) — calls are skipped when the function is reference-equal to the inherited builtin. The depth-≥1 inherited-method invocation branch was removed; nested inherited functions (e.g. `{{a.b.toString}}`) now resolve to `undefined` instead of auto-calling.
+- **Robustness:** the walker uses `Object.prototype.hasOwnProperty.call(...)` so payloads with a shadowed `hasOwnProperty` field (e.g. `{ hasOwnProperty: 1, name: 'A' }` from an API) no longer break.
+- **Custom methods unaffected:** view methods like `getStatus()` defined on a class subclass — own functions on a context literal — and user-overridden `toString` (different function reference than the builtin) all continue to auto-invoke at the top level. Existing `MOJOUtils.test.js` and `View-get.test.js` cases pass unchanged.
+- **Follow-up landed:** the residual surface in `Mustache.Context.lookup` is now also closed (see entry below).
+
+### Mustache — security: close residual prototype surface in `Context.lookup`
+
+- **Hardened:** `Context.lookup` now blocks `__proto__` / `constructor` / `prototype` segments at the entry of the function (covering both the dot-prefix and non-prefix branches in one check). The dot-prefix single-segment fallback and the post-loop function-invocation now skip `Object.prototype` builtins via reference equality (`value === Object.prototype[lastSegment]`), so `{{toString}}` / `{{valueOf}}` / `{{hasOwnProperty}}` no longer auto-invoke and leak `"[object Object]"`-style data. The post-loop wraps the function call in `try`/`catch` that swallows **only** `TypeError: Class constructor X cannot be invoked without 'new'` — legitimate view-method exceptions still propagate to the caller (matches the `View-get.test.js:181` contract).
+- **Before / after:** `Mustache.render('|{{__proto__}}|{{toString}}|', { name: 'A' })` was `'|[object Object]|[object Object]|'`, is now `'|||'`. `Mustache.render('|{{constructor}}|', { name: 'A' })` previously crashed with `TypeError: Class constructor DataWrapper cannot be invoked without 'new'`, now resolves to `'||'`. Pipes and pipe-stripped paths handled: `{{constructor|upper}}` is rejected the same as `{{constructor}}`.
+- **Custom methods unaffected:** user-overridden `toString` (different function reference than `Object.prototype.toString`), class-defined view methods like `getStatus()`, and own functions on a context literal continue to auto-invoke. Eleven new test cases in `test/unit/MOJOUtils.getNestedValue.test.js` and `test/unit/Mustache-dot-prefix.test.js` lock in the safe behavior.
+
+### Mustache — fix: dot-prefixed multi-segment paths inside iteration
+
+- **Fixed:** `{{.foo.bar}}` (dot-prefix with two or more dotted segments) inside `{{#items}} ... {{/items}}` now resolves to the current iteration item's nested property. Previously the dot-prefix lookup branch did a single-key access on the joined name (`view['foo.bar']`), which always returned `undefined` for plain-object iteration items, so templates like `{{#merchants}}{{.group.name}}{{/merchants}}` rendered empty cells. The single-segment form `{{.rank}}` and the bare form `{{group.name}}` were already correct; only the dot-prefixed multi-segment form was broken. The fix delegates nested walks in the dot-prefix branch to the existing `MOJOUtils.getNestedValue` helper while keeping the walk scoped strictly to the current view (no parent-chain climb), so the leading-dot semantic is preserved.
+
+### MetricsMiniChartWidget — fix: `{{now_value}}` showed yesterday's value when `trendOffset > 0`
+
+- **Fixed:** `{{now_value}}` in the subtitle template now always reads from the latest bucket, independent of `trendOffset`. Previously it was shifted back by `trendOffset` buckets — so a widget with `trendOffset: 1` and a subtitle like `'{{now_value}} Today'` rendered yesterday's value next to the static "Today" label. The chart's tooltip on the rightmost bar showed the correct (today's) value, exposing the mismatch.
+- **Behavior change for callers using `trendOffset > 0`:** `{{now_value}}` now jumps from "N back" to the latest bucket. Migration: callers who genuinely want the offset-shifted windowed sum should switch to `{{lastValue}}` (already documented; already respects `trendOffset` and `trendRange`). Callers using the default `trendOffset: 0` see no change.
+- **Unchanged:** `trendOffset` still shifts the trending comparison window (`lastValue`, `prevValue`, `trendingPercent`) — that's its remaining purpose, and the original use case (skip an incomplete current bucket in trending math) still works.
+
+### Charts — `apiParams` passthrough on metrics-aware components
+
+- **Added:** `MetricsChart` and `MetricsMiniChart` accept an `apiParams: object` constructor option — a passthrough map for arbitrary `/api/metrics/fetch` query params the framework doesn't yet promote to first-class options. `MetricsMiniChartWidget` forwards the option through `chartOptions` to its inner mini chart.
+- **Added:** `MetricsChart.setApiParams(next)` and `MetricsMiniChart.setApiParams(next)` runtime setters that replace (not merge) the map and refetch. Callers wanting a merge do `chart.setApiParams({ ...chart.apiParams, key: value })` explicitly.
+- **Added:** `MetricsChart.getStats()` now reports `apiParams` (defensive copy).
+- **Precedence:** `apiParams` is spread *first* into `buildApiParams`; hardcoded options (`granularity`, `account`, `slugs`, `category`, `dateStart`/`End`, `withDelta`, `childKind`, `breakdown`) overwrite anything that overlaps. The `_` cache-buster always wins. Empty / omitted `apiParams` produces query strings byte-identical to today — no impact on existing callers. Use `apiParams` as a base layer for forward-compatible / experimental keys, not as an override surface.
+- **Note:** `apiParams` is purely a query-string mechanic. Constructor options with non-URL side effects (e.g. `withDelta: true` switches the default endpoint to `/api/metrics/series`) require the first-class option.
+- **Trust boundary:** `apiParams` values land directly in the URL — treat as developer-controlled (same convention as `title:`). Never pipe user input through it without sanitizing at the call site.
+
+### Charts — group fan-out (parent rollup + per-child breakdown)
+
+- **Added:** `MetricsChart` accepts `childKind: string` and `breakdown: boolean` constructor options that drive Modes 2 and 3 of `/api/metrics/fetch`. With `childKind` set on a `account: 'group-<id>'` chart, the backend sums the metric across all active descendants of that kind (Mode 2 — same response shape as Mode 1). Add `breakdown: true` and the backend returns one series per child group plus a `groups` map (name → child id) for drill-in (Mode 3 — single slug only).
+- **Added:** `MetricsChart.setChildKind(kind)` and `setBreakdown(flag)` runtime setters that refetch (mirroring `setGranularity` / `setMetrics`). `getStats()` now reports `childKind` and `breakdown`.
+- **Added:** the `metrics:data-loaded` event payload now includes a `groups` field — `null` in Modes 1 and 2, populated in Mode 3. The map is also cached as `this._lastGroups`. In breakdown mode the chart uses raw response keys (e.g. `Downtown` / `Downtown#15` for collisions) verbatim — no slug-style title-casing.
+- **Added:** `MetricsMiniChart` and `MetricsMiniChartWidget` accept the same `childKind` option for Mode 2 rollups. Mode 3 (`breakdown`) is intentionally not supported on the mini variant — sparklines are single-series; for a per-child breakdown use a row of mini charts or a `KPIStrip`.
+- **Docs:** new "Group fan-out" subsection in `docs/web-mojo/extensions/Charts.md`; option entry added to `docs/web-mojo/extensions/MetricsMiniChartWidget.md`. The `MetricsChartExample` portal page now demonstrates Mode 2 and Mode 3 with stubbed data so the patterns are interactive without a backend.
+
 ### TableView — `fetchOnView` auto-refreshes model before detail dialog
 
 - **Added:** `fetchOnView` option (default `true`). When enabled, TableView calls `model.fetch()` before opening the view dialog, ensuring the detail view always has the latest server data. Set to `false` to use the row data as-is. Skipped when a custom `onItemView` handler is provided.

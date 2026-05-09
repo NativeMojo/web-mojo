@@ -2507,3 +2507,824 @@
     padding: 3px 0;
 }
 .actions-collapse-btn:hover { text-decoration: underline; }
+
+/* ========================================================================
+   RuleSetView — Overview section cards
+   ========================================================================
+   The KPI row uses a CSS grid that's container-aware (auto-fit + minmax),
+   not viewport-aware Bootstrap columns. That way 4 cards fit side-by-side
+   any time the section is at least ~660px wide — including in a modal at
+   sub-md viewport widths where Bootstrap's `col-md-3` would have wrapped.
+*/
+.ruleset-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+@media (max-width: 575px) {
+    .ruleset-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+.ruleset-overview-pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+@media (max-width: 575px) {
+    .ruleset-overview-pair { grid-template-columns: 1fr; }
+}
+.ruleset-overview-card { padding: 0.6rem 0.75rem; }
+.ruleset-overview-card h6 {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+    margin: 0 0 0.4rem;
+}
+.ruleset-overview-card ul {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    padding-left: 0.9rem;
+    margin: 0;
+    color: var(--bs-body-color);
+}
+.ruleset-overview-card ul li { margin-bottom: 0.1rem; }
+.ruleset-overview-card ul li:last-child { margin-bottom: 0; }
+.ruleset-overview-card code {
+    font-size: 0.72rem;
+    word-break: break-word;
+}
+
+/* ========================================================================
+   RuleSetView — Triggering section flow
+   ========================================================================
+   Match → Bundle → Threshold → Re-trigger as a 4-column visual flow with
+   chevron arrows between cards.
+*/
+.rs-flow {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+.rs-flow-step {
+    padding: 1rem 1.05rem;
+    background: var(--bs-body-bg);
+    position: relative;
+    min-width: 0;
+}
+.rs-flow-step + .rs-flow-step { border-left: 1px solid var(--bs-border-color); }
+.rs-flow-step::after {
+    content: '';
+    position: absolute;
+    right: -8px; top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+    width: 14px; height: 14px;
+    background: var(--bs-body-bg);
+    border-top: 1px solid var(--bs-border-color);
+    border-right: 1px solid var(--bs-border-color);
+    z-index: 1;
+}
+.rs-flow-step:last-child::after { display: none; }
+.rs-flow-num {
+    font-family: var(--bs-font-monospace);
+    font-size: 0.7rem;
+    color: var(--bs-tertiary-color, var(--bs-secondary-color));
+    font-weight: 600;
+}
+.rs-flow-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0.15rem 0 0.4rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+    color: var(--bs-emphasis-color, var(--bs-body-color));
+}
+.rs-flow-title .btn { padding: 0.1rem 0.4rem; font-size: 0.75rem; }
+.rs-flow-value { font-size: 0.95rem; color: var(--bs-body-color); font-weight: 500; }
+.rs-flow-empty { color: var(--bs-secondary-color); font-style: italic; font-weight: 400; }
+.rs-flow-hint  { font-size: 0.78rem; color: var(--bs-secondary-color); margin-top: 0.3rem; }
+@media (max-width: 768px) {
+    .rs-flow { grid-template-columns: 1fr 1fr; }
+    .rs-flow-step:nth-child(2)::after { display: none; }
+}
+@media (max-width: 480px) {
+    .rs-flow { grid-template-columns: 1fr; }
+    .rs-flow-step + .rs-flow-step { border-left: none; border-top: 1px solid var(--bs-border-color); }
+    .rs-flow-step::after { display: none; }
+}
+
+/* ========================================================================
+   RuleSetView — Handler chain cards
+   ======================================================================== */
+.rs-chain {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    align-items: stretch;
+    margin-bottom: 0.75rem;
+}
+.rs-chain-step {
+    flex: 1 1 200px;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-left-width: 3px;
+    border-radius: 0.5rem;
+    padding: 0.85rem 0.95rem;
+    display: flex;
+    gap: 0.7rem;
+    align-items: flex-start;
+    position: relative;
+}
+.rs-chain-step.tone-info    { border-left-color: var(--bs-info); }
+.rs-chain-step.tone-warning { border-left-color: var(--bs-warning); }
+.rs-chain-step.tone-danger  { border-left-color: var(--bs-danger); }
+.rs-chain-step.tone-primary { border-left-color: var(--bs-primary); }
+.rs-chain-icon {
+    width: 32px; height: 32px;
+    border-radius: 0.375rem;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 1rem;
+    background: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
+}
+.rs-chain-step.tone-info    .rs-chain-icon { background: rgba(13, 110, 253, 0.12); color: var(--bs-info); }
+.rs-chain-step.tone-warning .rs-chain-icon { background: rgba(255, 193, 7, 0.16);  color: var(--bs-warning); }
+.rs-chain-step.tone-danger  .rs-chain-icon { background: rgba(220, 53, 69, 0.16);  color: var(--bs-danger); }
+.rs-chain-step.tone-primary .rs-chain-icon { background: rgba(13, 110, 253, 0.12); color: var(--bs-primary); }
+.rs-chain-label  { font-weight: 600; font-size: 0.9rem; color: var(--bs-emphasis-color, var(--bs-body-color)); }
+.rs-chain-detail { font-size: 0.8rem; color: var(--bs-secondary-color); word-break: break-all; }
+.rs-chain-raw {
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--bs-secondary-bg);
+    border-radius: 0.375rem;
+    font-family: var(--bs-font-monospace);
+    font-size: 0.78rem;
+    color: var(--bs-secondary-color);
+    word-break: break-all;
+}
+
+/* ========================================================================
+   RuleSetView — Agent Prompt textarea
+   ======================================================================== */
+.rs-prompt {
+    width: 100%;
+    min-height: 220px;
+    background: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    padding: 0.85rem 1rem;
+    font-family: var(--bs-font-monospace);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    resize: vertical;
+}
+.rs-prompt:focus { outline: 2px solid var(--bs-primary); outline-offset: -1px; border-color: transparent; }
+
+/* ========================================================================
+   RuleSetView — Incidents table title ellipsis
+   ========================================================================
+   max-width:0 + width:100% on the cell tricks the table layout into letting
+   the title respect text-overflow without making the row grow.
+*/
+.ruleset-incidents-section td.rs-incident-title {
+    max-width: 0;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+/* ========================================================================
+   DetailView — minimalist typography (small, clean, drill-down feel)
+
+   Applied via the `.detail-view` wrapper so only DetailView subclasses pick
+   up the tightened sizes. The page-level Bootstrap defaults are unchanged
+   for everything else.
+*/
+.detail-view {
+    font-size: 0.85rem;
+    line-height: 1.45;
+}
+.detail-view .detail-header .dh-name {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.005em;
+    margin: 0 0 0.15rem;
+}
+.detail-view .detail-header .dh-subtitle {
+    font-size: 0.78rem;
+    margin: 0 0 0.4rem;
+}
+.detail-view .detail-header .dh-icon {
+    width: 38px; height: 38px;
+    border-radius: 0.5rem;
+    font-size: 1.05rem;
+}
+.detail-view .detail-header .dh-chips .badge {
+    font-size: 0.68rem;
+    padding: 0.2em 0.6em;
+}
+.detail-view .section-eyebrow {
+    color: var(--bs-secondary-color);
+    font-size: 0.58rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+    opacity: 0.7;
+}
+.detail-view .section-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin: 0 0 1rem;
+    letter-spacing: -0.005em;
+    color: var(--bs-emphasis-color, var(--bs-body-color));
+}
+/* Section padding is owned by `DetailView.contentPadding` (default
+   `'1.5rem'`, applied as inline style on `.snv-content` by SideNavView).
+   Section views no longer need their own `p-3` / `p-4` utility class —
+   the layout handles uniform breathing room. */
+
+/* Tighter MetricCard inside DetailView Overview sections — the default
+   is the small / quiet treatment; `metric-card-lg` is opt-in for
+   emphasis only (rarely used). */
+.detail-view .metric-card { padding: 0.5rem 0.7rem; gap: 0.15rem; }
+.detail-view .metric-card-label { font-size: 0.58rem; letter-spacing: 0.1em; opacity: 0.85; }
+.detail-view .metric-card-value { font-size: 0.82rem; line-height: 1.3; }
+.detail-view .metric-card.metric-card-lg .metric-card-value { font-size: 0.95rem; letter-spacing: -0.005em; }
+
+/* Tiny, subtle button groups inside DetailView. The Common/Advanced/
+   Effective and similar segment toggles don't need to be touch-sized;
+   they're secondary controls in a viewer surface. Override Bootstrap's
+   default btn-* sizes inside .detail-view scope so we don't have to
+   sprinkle .btn-sm on every consumer. */
+.detail-view .btn-group .btn,
+.detail-view .btn-group-sm .btn {
+    font-size: 0.72rem;
+    padding: 0.2rem 0.55rem;
+    line-height: 1.4;
+    font-weight: 500;
+    border-radius: 0.3rem;
+}
+.detail-view .btn-group .btn-outline-secondary {
+    border-color: rgba(0, 0, 0, 0.1);
+    color: var(--bs-secondary-color);
+}
+.detail-view .btn-group .btn-outline-secondary:hover {
+    background: var(--bs-secondary-bg);
+    border-color: rgba(0, 0, 0, 0.15);
+    color: var(--bs-body-color);
+}
+[data-bs-theme="dark"] .detail-view .btn-group .btn-outline-secondary {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+[data-bs-theme="dark"] .detail-view .btn-group .btn-outline-secondary:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+/* Side rail tightening */
+.detail-view .snv-nav a { padding: 0.35rem 1.15rem; font-size: 0.78rem; }
+.detail-view .snv-nav-label { font-size: 0.6rem; letter-spacing: 0.08em; padding: 0.7rem 1.15rem 0.2rem; opacity: 0.6; }
+.detail-view .snv-badge { font-size: 0.62rem; font-weight: 500; padding: 0.05rem 0.4rem; }
+
+
+/* ========================================================================
+   DetailView — generic Overview-section layout helpers
+
+   The Overview section of every DetailView leans on the same shape: a
+   4-up KPI strip and a 2-up card row for the at-a-glance pair. These
+   classes generalize the ruleset-* equivalents so any DetailView
+   subclass (Job / User / Group / etc.) can drop them in.
+*/
+/* KPI strip — 4-up by default (the canonical Overview row).
+   Container query (not viewport) drops to 2-up when the strip's own
+   container is genuinely narrow, so it works correctly inside an `lg`
+   modal where auto-fit was producing awkward 3+1 layouts. */
+.detail-kpi-grid {
+    container-type: inline-size;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
+}
+@container (max-width: 480px) {
+    .detail-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Card-pair — stacks by default; only goes side-by-side when its own
+   container is wide enough to give each card real breathing room.
+   Container query (not viewport) so it works correctly inside an `lg`
+   modal regardless of the page width. */
+.detail-pair {
+    container-type: inline-size;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+@container (min-width: 720px) {
+    .detail-pair { grid-template-columns: 1fr 1fr; }
+}
+.detail-pair .card-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin: 0 0 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--bs-emphasis-color, var(--bs-body-color));
+    letter-spacing: -0.005em;
+}
+.detail-pair .card-title i { color: var(--bs-secondary-color); font-size: 0.85rem; }
+/* The card titles ("What triggered this", "Recent activity") are
+   self-evident headings — no surrounding box needed. Pair cells sit
+   transparently on the section background; the title alone separates
+   them visually. */
+.detail-pair .card {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+.detail-pair .card .card-body { padding: 0; }
+
+
+/* StatusPanel — moved to src/core/css/core.css; the JS class lives at
+   @core/views/data/StatusPanel.js. Kept this header so grep still
+   finds the migration history. */
+
+
+/* Timeline — moved to src/core/css/core.css; the JS class lives at
+   @core/views/data/Timeline.js. */
+
+
+/* Flat labeled-section primitives — moved to src/core/css/core.css.
+   See `.detail-section`, `.detail-section-eyebrow`,
+   `.detail-section-action`, `.detail-flat-row*`, and `KnownFieldsCard`
+   blocks there. The classes are framework-wide @core primitives now. */
+
+
+/* ========================================================================
+   AdminConnectedSection — OAuth provider rows
+   ========================================================================
+   Stacked rows of linked providers, each with icon · name · email · meta ·
+   unlink button. Theme-aware via Bootstrap tokens (no hardcoded hex).
+*/
+.admin-connected-row {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1rem;
+    border: 0;
+    border-radius: 0.6rem;
+    margin-bottom: 0.4rem;
+    background: var(--bs-tertiary-bg);
+}
+.admin-connected-icon {
+    width: 36px; height: 36px;
+    border-radius: 0.5rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+    background: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
+}
+.admin-connected-info { flex: 1; min-width: 0; }
+.admin-connected-provider {
+    font-weight: 600;
+    font-size: 0.88rem;
+    text-transform: capitalize;
+    color: var(--bs-body-color);
+}
+.admin-connected-meta {
+    font-size: 0.78rem;
+}
+.admin-connected-empty {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+.admin-connected-empty i {
+    font-size: 2rem;
+    color: var(--bs-tertiary-color, var(--bs-secondary-color));
+    display: block;
+    margin-bottom: 0.5rem;
+    opacity: 0.7;
+}
+
+
+/* ========================================================================
+   AdminSecuritySection — clickable security action rows
+   ========================================================================
+   Each row is an interactive item: icon + title/description + badge or
+   chevron. Hover lifts the border + bg slightly. Theme-aware via tokens.
+*/
+.admin-security-item {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1rem;
+    border: 0;
+    border-radius: 0.6rem;
+    margin-bottom: 0.4rem;
+    cursor: pointer;
+    background: var(--bs-tertiary-bg);
+    transition: background 0.15s;
+}
+.admin-security-item:hover {
+    background: var(--bs-secondary-bg);
+}
+.admin-security-icon {
+    width: 36px; height: 36px;
+    border-radius: 0.5rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+.admin-security-info { flex: 1; min-width: 0; }
+.admin-security-title {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--bs-body-color);
+}
+.admin-security-desc {
+    font-size: 0.78rem;
+    color: var(--bs-secondary-color);
+}
+.admin-security-chevron {
+    color: var(--bs-tertiary-color, var(--bs-secondary-color));
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+
+/* ========================================================================
+   AdminSecuritySection — passkey list (Modal.dialog body)
+   ======================================================================== */
+.admin-passkey-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    border: 0;
+    border-radius: 0.6rem;
+    margin-bottom: 0.35rem;
+    background: var(--bs-tertiary-bg);
+}
+.admin-passkey-icon {
+    width: 32px; height: 32px;
+    background: rgba(var(--bs-primary-rgb), 0.1);
+    color: var(--bs-primary);
+    border-radius: 0.4rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+.admin-passkey-info { flex: 1; min-width: 0; }
+.admin-passkey-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--bs-body-color);
+}
+.admin-passkey-meta {
+    font-size: 0.73rem;
+}
+.admin-passkey-empty {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+.admin-passkey-empty i {
+    font-size: 2rem;
+    color: var(--bs-tertiary-color, var(--bs-secondary-color));
+    display: block;
+    margin-bottom: 0.5rem;
+    opacity: 0.7;
+}
+
+
+/* ========================================================================
+   AdminSecuritySection — recovery codes (Modal.dialog body)
+   ======================================================================== */
+.admin-recovery-info {
+    font-size: 0.82rem;
+    margin-bottom: 1rem;
+}
+.admin-recovery-remaining {
+    font-weight: 600;
+    color: var(--bs-emphasis-color, var(--bs-body-color));
+}
+.admin-recovery-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.3rem;
+}
+.admin-recovery-code {
+    font-family: var(--bs-font-monospace);
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+    background: var(--bs-tertiary-bg);
+    border: 0;
+    border-radius: 0.4rem;
+    text-align: center;
+    color: var(--bs-body-color);
+}
+
+
+/* ========================================================================
+   DetailView — Field-card (DEPRECATED — prefer flat labeled sections)
+   ========================================================================
+   Bordered card containing a header row (group name + edit pencil) and a
+   stack of label/value rows. Replaced by the flat
+   `.detail-section-eyebrow` + `.detail-flat-row` family above. Existing
+   call-sites in UserView / DeviceView / etc. will be migrated off as
+   part of the DetailView migration rethink (see
+   planning/requests/detailview-migration-rethink.md). Do NOT add new
+   uses of `.detail-field-card*`.
+*/
+.detail-field-card {
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    margin-bottom: 0.6rem;
+}
+.detail-field-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.6rem 0.9rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+.detail-field-card-header h4 {
+    margin: 0;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--bs-body-color);
+    display: flex; align-items: center; gap: 0.4rem;
+}
+.detail-field-card-header h4 i { color: var(--bs-secondary-color); }
+.detail-field-card-body {
+    padding: 0.2rem 0.9rem 0.6rem;
+}
+.detail-field-row {
+    display: grid;
+    grid-template-columns: 10rem 1fr;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-top: 1px dashed var(--bs-border-color);
+    align-items: center;
+    font-size: 0.85rem;
+}
+.detail-field-row:first-child { border-top: none; }
+.detail-field-row .detail-field-label {
+    color: var(--bs-secondary-color);
+    font-size: 0.78rem;
+}
+.detail-field-row .detail-field-value {
+    color: var(--bs-body-color);
+    font-weight: 500;
+}
+
+
+/* ========================================================================
+   DetailView — Permissions grouping
+   ========================================================================
+   Stacked permission groups, each with a header (area + granted-count meta)
+   and rows of permission name/key + Bootstrap form-switch. Pairs with the
+   .form-check.form-switch markup from Bootstrap for the actual toggle.
+*/
+/* Borderless flat groups — same minimal treatment as flat-row family.
+   No box, no header bar; the small uppercase eyebrow is the only
+   subsection signal. */
+.detail-perm-group {
+    background: transparent;
+    border: 0;
+    margin-bottom: 1.5rem;
+    overflow: visible;
+}
+.detail-perm-group:not(:first-child) { margin-top: 2rem; }
+.detail-perm-group-header {
+    padding: 0 0 0.5rem;
+    border-bottom: 0;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.detail-perm-group-header h5 {
+    margin: 0;
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--bs-secondary-color);
+    font-weight: 700;
+}
+.detail-perm-group-meta {
+    color: var(--bs-secondary-color);
+    font-size: 0.7rem;
+    font-family: var(--bs-font-monospace);
+    opacity: 0.7;
+}
+.detail-perm-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    padding: 0.7rem 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    align-items: center;
+}
+.detail-perm-row:first-of-type { border-top: none; }
+[data-bs-theme="dark"] .detail-perm-row {
+    border-top-color: rgba(255, 255, 255, 0.06);
+}
+.detail-perm-name {
+    font-size: 0.85rem;
+    color: var(--bs-body-color);
+    font-weight: 500;
+}
+.detail-perm-key {
+    display: block;
+    font-family: var(--bs-font-monospace);
+    font-size: 0.72rem;
+    color: var(--bs-secondary-color);
+    font-weight: 400;
+    margin-top: 0.1rem;
+}
+.detail-perm-help {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--bs-secondary-color);
+    font-weight: 400;
+    line-height: 1.45;
+    margin-top: 0.15rem;
+}
+
+
+/* ========================================================================
+   DetailView — Audit list
+   ========================================================================
+   Compact log entries with an icon, source label, descriptive text, and
+   relative timestamp. Designed to merge today's separate Events / Activity
+   Log / Object Log tabs into a single feed with a source filter.
+*/
+.detail-audit-list {
+    list-style: none; margin: 0; padding: 0;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+.detail-audit-entry {
+    display: grid;
+    grid-template-columns: 1.5rem 4.5rem minmax(0, 1fr) 5.5rem;
+    gap: 0.75rem;
+    padding: 0.45rem 0.85rem;
+    border-top: 1px dashed var(--bs-border-color);
+    align-items: center;
+    font-size: 0.78rem;
+}
+.detail-audit-entry:first-child { border-top: none; }
+.detail-audit-entry > div { min-width: 0; }
+.detail-audit-icon {
+    width: 1.75rem; height: 1.75rem;
+    border-radius: 0.4rem;
+    display: grid; place-items: center;
+    font-size: 0.85rem;
+    background: var(--bs-secondary-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--bs-secondary-color);
+}
+.detail-audit-icon.tone-danger  { color: var(--bs-danger);  background: rgba(var(--bs-danger-rgb),  0.1); border-color: rgba(var(--bs-danger-rgb),  0.25); }
+.detail-audit-icon.tone-warning { color: var(--bs-warning); background: rgba(var(--bs-warning-rgb), 0.1); border-color: rgba(var(--bs-warning-rgb), 0.25); }
+.detail-audit-icon.tone-success { color: var(--bs-success); background: rgba(var(--bs-success-rgb), 0.1); border-color: rgba(var(--bs-success-rgb), 0.25); }
+.detail-audit-icon.tone-info    { color: var(--bs-info);    background: rgba(var(--bs-info-rgb),    0.1); border-color: rgba(var(--bs-info-rgb),    0.25); }
+.detail-audit-source {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+    font-family: var(--bs-font-monospace);
+    opacity: 0.85;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.detail-audit-when {
+    font-family: var(--bs-font-monospace);
+    font-size: 0.75rem;
+    color: var(--bs-secondary-color);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   DetailView redesign primitives — dark theme overrides
+
+   The base styles above use Bootstrap surface tokens (bs-tertiary-bg,
+   bs-border-color, etc.) which auto-adapt under data-bs-theme="dark".
+   The toned background tints (rgba(var(--bs-danger-rgb), 0.08))
+   already work in both themes. Only the timeline connector and audit
+   row hover feedback need a subtle dark adjustment.
+   ════════════════════════════════════════════════════════════════ */
+
+[data-bs-theme="dark"] .detail-timeline::before {
+    background: linear-gradient(180deg, var(--bs-border-color-translucent, var(--bs-border-color)), transparent);
+}
+[data-bs-theme="dark"] .detail-audit-entry:hover {
+    background: rgba(255, 255, 255, 0.025);
+}
+[data-bs-theme="dark"] .detail-perm-row:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+[data-bs-theme="dark"] .detail-status-panel {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+
+/* ========================================================================
+   DetailView — Avatar (used by UserView header, MemberView header)
+   ========================================================================
+   Gradient initials block. Render in place of the dh-icon when the record
+   is a user/person — uses Bootstrap success→info gradient by default.
+*/
+.detail-avatar {
+    width: 38px; height: 38px;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, var(--bs-success), var(--bs-info));
+    display: grid; place-items: center;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--bs-body-bg);
+    flex: 0 0 auto;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+.detail-avatar.detail-avatar-lg {
+    width: 56px; height: 56px;
+    border-radius: 0.75rem;
+    font-size: 1.4rem;
+}
+.detail-avatar.detail-avatar-sm {
+    width: 28px; height: 28px;
+    border-radius: 0.4rem;
+    font-size: 0.7rem;
+}
+
+
+/* ========================================================================
+   DetailView — Kind pill (used in UserView Devices, FileView shares, etc.)
+   ========================================================================
+   Compact rounded chip used to distinguish row types in unified tables
+   (Browser vs Push device, file kind, etc.). Pair with `.text-info`,
+   `.text-primary`, `.text-warning` etc. on the element to color the
+   icon + text.
+*/
+.detail-kind-pill {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    background: var(--bs-secondary-bg);
+    border: 1px solid var(--bs-border-color);
+    font-size: 0.65rem;
+    color: var(--bs-secondary-color);
+    font-weight: 500;
+    line-height: 1.6;
+}
+.detail-kind-pill i { font-size: 0.7rem; }
+
+
+/* ========================================================================
+   DetailView — Error block (used by JobDetailsView execution card,
+   IncidentView stack-trace summary, etc.)
+   ======================================================================== */
+.detail-error-block {
+    background: rgba(var(--bs-danger-rgb), 0.06);
+    border: 1px solid rgba(var(--bs-danger-rgb), 0.25);
+    border-radius: 0.35rem;
+    padding: 1rem 0.75rem 0.55rem;
+    margin-top: 0.6rem;
+    font-family: var(--bs-font-monospace);
+    font-size: 0.7rem;
+    color: var(--bs-danger);
+    white-space: pre-wrap;
+    line-height: 1.5;
+    position: relative;
+    word-break: break-word;
+}
+.detail-error-block::before {
+    content: 'ERROR';
+    position: absolute;
+    top: 0.35rem; right: 0.65rem;
+    font-size: 0.58rem;
+    letter-spacing: 0.16em;
+    color: var(--bs-danger);
+    opacity: 0.7;
+    font-family: var(--bs-font-sans-serif);
+    font-weight: 600;
+}

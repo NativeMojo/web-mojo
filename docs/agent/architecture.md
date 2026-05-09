@@ -58,7 +58,8 @@ The non-optional heart of the framework. Every app depends on these.
 | `Rest.js` | HTTP client with interceptors and file support |
 | `DataFormatter.js` | 80+ pipe formatters used in Mustache templates |
 | `forms/` | FormView, FormBuilder, and all input components |
-| `views/navigation/` | Sidebar, TopNav, SideNavView, **TabView** |
+| `views/navigation/` | Sidebar, TopNav, SideNavView, **TabView**, **SegmentControl** |
+| `views/data/` | MetricCard, DataView, FileView, DetailView, StatusPanel, Timeline, FlowStrip, KnownFieldsCard |
 | `views/table/` | TableView, column/filter system |
 | `views/list/` | ListView component |
 | `pages/` | TablePage, NotFound/Denied/Error pages |

@@ -22,7 +22,8 @@ class IncidentTablePage extends TablePage {
 
             viewDialogOptions: {
                 header: false,
-                size: 'xl'
+                noBodyPadding: true,
+                buttons: []
             },
 
             defaultQuery: {

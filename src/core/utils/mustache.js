@@ -6,6 +6,11 @@
 
 import MOJOUtils from './MOJOUtils.js';
 
+// Match MOJOUtils.js — keys that must never be reachable via dot-notation
+// template lookups. Duplicated rather than imported to keep mustache.js
+// self-contained.
+const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
 // Utility functions
 const objectToString = Object.prototype.toString;
 const isArray = Array.isArray || function(obj) {
@@ -124,6 +129,17 @@ class Context {
       return this.view;
     }
 
+    // Block prototype-chain keys at every depth, on every branch. Strips
+    // an optional leading dot (dot-prefix syntax) and pipes before
+    // segmenting; pipes don't affect the path-segment check, but a name
+    // like `{{constructor|upper}}` must still be rejected.
+    if (name) {
+      const pathOnly = (name.startsWith('.') ? name.slice(1) : name).split('|')[0];
+      if (pathOnly.split('.').some(seg => FORBIDDEN_KEYS.has(seg))) {
+        return undefined;
+      }
+    }
+
     // Handle dot-prefix to prevent context chain walking
     // If name starts with '.', only look in current context
     if (name && name.startsWith('.')) {
@@ -165,11 +181,25 @@ class Context {
           }
         }
 
-        // Direct property access if get didn't work
-        if (value === undefined && actualName in this.view) {
-          value = this.view[actualName];
-          if (isFunction(value)) {
-            value = value.call(this.view);
+        // Direct property access if get didn't work — supports nested dot
+        // paths (e.g. ".group.name") by walking against the current view
+        // only. The leading-dot semantic ("do not climb the parent context
+        // chain") is preserved because the walk is scoped to this.view; the
+        // parent walk only happens in the non-prefix branch below.
+        if (value === undefined) {
+          if (actualName.indexOf('.') > 0) {
+            value = MOJOUtils.getNestedValue(this.view, actualName);
+          } else if (actualName in this.view) {
+            value = this.view[actualName];
+            if (isFunction(value)) {
+              // Skip Object.prototype builtins (toString, valueOf, etc.) so
+              // they don't auto-invoke and leak "[object Object]"-style data.
+              if (value === Object.prototype[actualName]) {
+                value = undefined;
+              } else {
+                value = value.call(this.view);
+              }
+            }
           }
         }
 
@@ -298,7 +328,30 @@ class Context {
       cache[name] = value;
     }
 
-    if (isFunction(value)) value = value.call(this.view);
+    if (isFunction(value)) {
+      // Skip Object.prototype builtins (toString, valueOf, hasOwnProperty,
+      // etc.) — auto-invoking them leaks "[object Object]"-style data.
+      // Use the last path segment so {{toString}} and {{a.b.toString}} are
+      // both caught.
+      const lastSegment = name.split('|')[0].split('.').pop();
+      if (value === Object.prototype[lastSegment]) {
+        value = undefined;
+      } else {
+        try {
+          value = value.call(this.view);
+        } catch (e) {
+          // Class constructors throw TypeError "Class constructor X cannot
+          // be invoked without 'new'". Swallow only that specific case so
+          // legitimate view methods that throw still propagate the error
+          // (matches the View-get.test.js error-propagation contract).
+          if (e instanceof TypeError && /^Class constructor /.test(e.message)) {
+            value = undefined;
+          } else {
+            throw e;
+          }
+        }
+      }
+    }
 
     // Store in render-level cache after function evaluation
     if (this.renderCache && this.view?._cacheId) {

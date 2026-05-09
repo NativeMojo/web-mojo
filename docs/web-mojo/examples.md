@@ -96,6 +96,7 @@ Single canonical example per documented component. Pages are organized by topic 
 | [SideNavView](../../examples/portal/examples/components/SideNavView/SideNavViewExample.js) | Section-based detail layout used inside Modal record viewers (FileView, IPSetView, …). | [components/SideNavView.md](../../docs/web-mojo/components/SideNavView.md) |
 | [TabView](../../examples/portal/examples/components/TabView/TabViewExample.js) | Tab navigation with static tabs and lazy mounting. | [components/TabView.md](../../docs/web-mojo/components/TabView.md) |
 | [TabView — dynamic](../../examples/portal/examples/components/TabView/TabViewDynamicExample.js) | Tabs added and removed at runtime. | [components/TabView.md](../../docs/web-mojo/components/TabView.md) |
+| [TabView — variants](../../examples/portal/examples/components/TabView/TabViewVariantsExample.js) | Flip through the five visual variants live. | [components/TabView.md](../../docs/web-mojo/components/TabView.md) |
 | [ContextMenu](../../examples/portal/examples/components/ContextMenu/ContextMenuExample.js) | Three-dots row menu — items dispatch data-action handlers on the row View. | [components/ContextMenu.md](../../docs/web-mojo/components/ContextMenu.md) |
 | [ContextMenu — right-click row](../../examples/portal/examples/components/ContextMenu/ContextMenuRowExample.js) | Right-click variant — the menu attaches to the row, not a trigger button. | [components/ContextMenu.md](../../docs/web-mojo/components/ContextMenu.md) |
 

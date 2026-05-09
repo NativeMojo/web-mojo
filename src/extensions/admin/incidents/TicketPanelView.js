@@ -167,6 +167,7 @@ class TicketPanelView extends View {
                     </div>
                     <div class="tp-btns">
                         <div data-container="panel-menu"></div>
+                        <button class="tp-btn" data-action="close" title="Close panel"><i class="bi bi-x-lg"></i></button>
                     </div>
                 </div>
                 <div class="tp-sub">

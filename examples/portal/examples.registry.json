@@ -1,6 +1,6 @@
 {
   "generatedAt": "static",
-  "pageCount": 84,
+  "pageCount": 85,
   "pages": [
     {
       "name": "ActiveGroup",
@@ -502,6 +502,27 @@
       "section": "Components",
       "icon": "bi-ui-checks-grid",
       "order": 101,
+      "topic": "components",
+      "group": "Navigation"
+    },
+    {
+      "name": "TabView",
+      "area": "components",
+      "route": "components/tab-view/variants",
+      "title": "TabView — variants",
+      "summary": "Flip through the five visual variants live.",
+      "docs": "docs/web-mojo/components/TabView.md",
+      "tags": [
+        "tabs",
+        "navigation",
+        "responsive"
+      ],
+      "page": "TabViewVariantsExample.js",
+      "modulePath": "./examples/components/TabView/TabViewVariantsExample.js",
+      "sourcePath": "examples/portal/examples/components/TabView/TabViewVariantsExample.js",
+      "section": "Components",
+      "icon": "bi-ui-checks-grid",
+      "order": 102,
       "topic": "components",
       "group": "Navigation"
     },
@@ -2307,6 +2328,13 @@
               "docs": "docs/web-mojo/components/TabView.md"
             },
             {
+              "route": "components/tab-view/variants",
+              "title": "TabView — variants",
+              "summary": "Flip through the five visual variants live.",
+              "icon": "bi-ui-checks-grid",
+              "docs": "docs/web-mojo/components/TabView.md"
+            },
+            {
               "route": "components/context-menu",
               "title": "ContextMenu",
               "summary": "Three-dots row menu — items dispatch data-action handlers on the row View.",
@@ -3005,6 +3033,13 @@
           "route": "components/tab-view/dynamic",
           "title": "TabView — dynamic",
           "summary": "Tabs added and removed at runtime.",
+          "icon": "bi-ui-checks-grid",
+          "docs": "docs/web-mojo/components/TabView.md"
+        },
+        {
+          "route": "components/tab-view/variants",
+          "title": "TabView — variants",
+          "summary": "Flip through the five visual variants live.",
           "icon": "bi-ui-checks-grid",
           "docs": "docs/web-mojo/components/TabView.md"
         }

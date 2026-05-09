@@ -88,6 +88,25 @@ class TableView extends ListView {
     // Custom toolbar buttons
     this.toolbarButtons = options.toolbarButtons || [];
 
+    // Optional right-aligned toolbar slot — accepts any View instance
+    // (range picker, view-mode toggle, custom filter widget). Rendered via
+    // addChild() in onAfterRender. The toolbar shell auto-renders even when
+    // search and filters are disabled if a toolbarRight view is provided.
+    this.toolbarRight = options.toolbarRight || null;
+
+    // Optional title block on the toolbar's left side. When `title` is set,
+    // an `<h5>` (and optional uppercase eyebrow above it) renders at the
+    // start of the toolbar with `me-auto`, pushing every other toolbar
+    // element (refresh / search / filter / toolbarRight) to the right edge.
+    // Lets a section host put its heading inline with the toolbar to save
+    // vertical space.
+    this.title    = options.title    || null;
+    this.eyebrow  = options.eyebrow  || null;
+
+    // Toolbar chrome gates — defaults preserve existing behavior.
+    this.showRefresh    = options.showRefresh    !== false;
+    this.showFullscreen = options.showFullscreen !== false;
+
     // Table display options
     this.tableOptions = {
       striped: true,
@@ -399,21 +418,53 @@ class TableView extends ListView {
    * Build toolbar template
    */
   buildToolbarTemplate() {
-    if (!this.searchable && !this.filterable) {
+    // Render the toolbar shell when ANY of: title/eyebrow, search, filter,
+    // custom buttons, or a right-side slot view is configured.
+    if (!this.title && !this.eyebrow && !this.searchable && !this.filterable && !this.toolbarRight && (!this.toolbarButtons || this.toolbarButtons.length === 0)) {
       return '';
     }
 
+    const titleBlock = this._buildTitleBlockTemplate();
+    const rightSlot = this.toolbarRight
+        ? `<div data-container="toolbar-right"></div>`
+        : '';
+    // When a title is present we want every toolbar element pushed to the
+    // right. The simplest way is to wrap the right-side group in its own
+    // flex container that auto-grows.
+    const rightGroup = `
+      <div class="d-flex align-items-center gap-2 flex-wrap ${titleBlock ? 'ms-auto' : ''}">
+        ${this.buildActionButtonsTemplate()}
+        ${this.filterable ? this.buildFilterDropdownTemplate() : ''}
+        ${this.searchable && this.searchPlacement === 'toolbar' ? this.buildSearchTemplate() : ''}
+        ${rightSlot}
+      </div>
+    `;
+
     return `
       <div class="table-action-buttons mb-3">
-        <div class="d-flex align-items-center gap-2">
-          ${this.buildActionButtonsTemplate()}
-          ${this.filterable ? this.buildFilterDropdownTemplate() : ''}
-          ${this.searchable && this.searchPlacement === 'toolbar' ? this.buildSearchTemplate() : ''}
-
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+          ${titleBlock}
+          ${rightGroup}
         </div>
         <div data-container="filter-pills"></div>
       </div>
     `;
+  }
+
+  /**
+   * Build the optional left-side title block (eyebrow + title).
+   * @returns {string}
+   * @private
+   */
+  _buildTitleBlockTemplate() {
+    if (!this.title && !this.eyebrow) return '';
+    const eyebrow = this.eyebrow
+        ? `<div class="text-body-secondary text-uppercase small fw-semibold rs-table-eyebrow" style="letter-spacing: 0.05em; line-height: 1.2;">${this.escapeHtml(this.eyebrow)}</div>`
+        : '';
+    const title = this.title
+        ? `<h5 class="mb-0 rs-table-title">${this.escapeHtml(this.title)}</h5>`
+        : '';
+    return `<div class="rs-table-title-block">${eyebrow}${title}</div>`;
   }
 
   /**
@@ -422,17 +473,19 @@ class TableView extends ListView {
   buildActionButtonsTemplate() {
     let buttons = [];
 
-    // Refresh button
-    buttons.push(`
-      <button class="btn btn-sm btn-outline-secondary btn-refresh"
-              data-action="refresh"
-              title="Refresh">
-        <i class="bi bi-arrow-clockwise"></i>
-      </button>
-    `);
+    // Refresh button (gated by showRefresh, default true)
+    if (this.showRefresh) {
+      buttons.push(`
+        <button class="btn btn-sm btn-outline-secondary btn-refresh"
+                data-action="refresh"
+                title="Refresh">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+      `);
+    }
 
-    // Fullscreen button (only if browser supports it)
-    if (this.isFullscreenSupported()) {
+    // Fullscreen button (gated by showFullscreen, only if browser supports it)
+    if (this.showFullscreen && this.isFullscreenSupported()) {
       buttons.push(`
         <button class="btn btn-sm btn-outline-secondary btn-fullscreen"
                 data-action="toggle-fullscreen"
@@ -1816,6 +1869,20 @@ class TableView extends ListView {
   async onAfterRender() {
     await super.onAfterRender();
 
+    // Mount the optional right-side toolbar slot (range picker, view-mode toggle, etc.)
+    if (this.toolbarRight && !this._toolbarRightMounted) {
+      this.toolbarRight.containerId = 'toolbar-right';
+      this.addChild(this.toolbarRight);
+      await this.toolbarRight.render();
+      this._toolbarRightMounted = true;
+    }
+
+    // A render() may have replaced the toolbar markup — clear the mounted
+    // flag if the previous slot element is gone, so the next render re-mounts.
+    if (this._toolbarRightMounted && this.toolbarRight && !this.element?.contains(this.toolbarRight.element)) {
+      this._toolbarRightMounted = false;
+    }
+
     // Update footer totals in case collection loaded after initial render
     if (this.hasFooterTotals) {
       this.updateFooterTotals();
@@ -2595,6 +2662,27 @@ class TableView extends ListView {
     if (button && typeof button.handler === 'function') {
       await button.handler.call(this, event, element);
     }
+  }
+
+  /**
+   * Update the toolbar's title text without a full re-render.
+   * @param {string|null} value
+   */
+  setTitle(value) {
+    this.title = value || null;
+    const el = this.element?.querySelector('.rs-table-title');
+    if (el) el.textContent = this.title || '';
+  }
+
+  /**
+   * Update the toolbar's eyebrow text (small uppercase line above title)
+   * without a full re-render.
+   * @param {string|null} value
+   */
+  setEyebrow(value) {
+    this.eyebrow = value || null;
+    const el = this.element?.querySelector('.rs-table-eyebrow');
+    if (el) el.textContent = this.eyebrow || '';
   }
 }
 

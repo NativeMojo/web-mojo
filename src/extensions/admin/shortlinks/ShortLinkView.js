@@ -1,21 +1,24 @@
 /**
- * ShortLinkView - Detail view for a ShortLink record
+ * ShortLinkView - Detail view for a ShortLink record, built on the
+ * DetailView primitive (header + side-nav layout).
  *
- * Modal-hosted SideNavView with five sections:
- *   Details | Preview | Metadata | Click History | Metrics
+ * Sections:
+ *   Overview · Configuration ·
+ *   ── Activity ──  Click History · Metrics
+ *   ── Detail ──    OG / Social · Metadata
  *
- * The header surfaces the short URL with copy and open buttons. The
- * context menu offers Copy Short URL, Open Destination, Enable/Disable,
- * Edit, Delete. Mirrors the FileView / IPSetView shape.
+ * Open via `Modal.detail(new ShortLinkView({ model }))` — pair with
+ * `viewDialogOptions: { header: false, noBodyPadding: true,
+ * buttons: [] }` when wired through TableView/TablePage. Inherits
+ * `size: 'lg'` from `Modal.detail()`'s default.
  */
 
 import View from '@core/View.js';
-import SideNavView from '@core/views/navigation/SideNavView.js';
+import DetailView from '@core/views/data/DetailView.js';
 import DataView from '@core/views/data/DataView.js';
+import MetricCard from '@core/views/data/MetricCard.js';
 import TableView from '@core/views/table/TableView.js';
-import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import Modal from '@core/views/feedback/Modal.js';
-import FormView from '@core/forms/FormView.js';
 import { MetricsChart } from '@ext/charts/index.js';
 import {
     ShortLink,
@@ -55,71 +58,366 @@ function getDomain(url) {
     }
 }
 
-function isShortLinkExpired(model) {
+function expiresInDays(model) {
     const raw = model?.get?.('expires_at');
-    if (!raw) return false;
+    if (!raw) return null;
     const t = new Date(raw).getTime();
-    return Number.isFinite(t) && t < Date.now();
+    if (!Number.isFinite(t)) return null;
+    const days = Math.round((t - Date.now()) / 86400000);
+    return days;
 }
 
-// ──────────────────────────────────────────────────────────────────────────
-// PreviewSection — visual mock of the Slack/iMessage card built from
-// `metadata.og:*`. Re-renderable from the parent after edits land.
-// ──────────────────────────────────────────────────────────────────────────
+function sourceLabel(value) {
+    if (!value) return '';
+    const opt = SHORTLINK_SOURCE_OPTIONS.find((o) => o.value === value);
+    return opt ? opt.label : String(value);
+}
 
-class ShortLinkPreviewSection extends View {
+function escapeHtml(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+
+// ── Overview section ───────────────────────────────────────
+
+class ShortLinkOverviewSection extends View {
     constructor(options = {}) {
-        super({ className: 'shortlink-preview-section p-3', ...options });
-        this._syncFromModel();
-        this.template = `
-            <p class="text-muted small mb-3">
-                Preview of how this link appears when shared in Slack, iMessage, WhatsApp, and other platforms that render OpenGraph metadata.
-            </p>
-            {{#hasOg|bool}}
-            <div class="card shadow-sm" style="max-width: 540px; border-left: 4px solid #0d6efd;">
-                {{#ogImage}}<img src="{{ogImage}}" class="card-img-top" alt="OG image" style="max-height: 260px; object-fit: cover;">{{/ogImage}}
-                <div class="card-body">
-                    <div class="text-muted small mb-1">{{domain}}</div>
-                    {{#ogTitle}}<h5 class="card-title mb-1">{{ogTitle}}</h5>{{/ogTitle}}
-                    {{#ogDescription}}<p class="card-text small text-muted mb-0">{{ogDescription}}</p>{{/ogDescription}}
+        super({
+            className: 'shortlink-overview-section',
+            ...options,
+        });
+        this.clicksCollection = options.clicksCollection || null;
+        this.template = () => this._buildTemplate();
+    }
+
+    _buildTemplate() {
+        const m = this.model;
+        const flat = flattenShortLinkMetadata(m.get('metadata'));
+        const ogTitle = flat.og_title || '';
+        const ogDescription = flat.og_description || '';
+        const ogImage = flat.og_image || '';
+        const hasOg = !!(ogTitle || ogDescription || ogImage);
+        const domain = getDomain(m.get('url'));
+
+        const totalHits = m.get('hit_count') || 0;
+        const expiresAt = m.get('expires_at');
+        const expiresLabel = expiresAt ? new Date(expiresAt).toISOString().slice(0, 10) : 'Never';
+
+        const stats = this._summarizeClicks();
+
+        // Inline preview card — recreates the "Slack/iMessage" mock from the
+        // migration mockup. No new CSS — styled with existing Bootstrap card +
+        // inline structural styling that mirrors the mockup's compact layout.
+        const previewCardHtml = hasOg ? `
+            <div class="border rounded p-2" style="background: var(--bs-secondary-bg);">
+                <div class="d-flex gap-2">
+                    ${ogImage
+                        ? `<img src="${escapeHtml(ogImage)}" alt="" style="flex: 0 0 80px; height: 80px; border-radius: 0.4rem; object-fit: cover;">`
+                        : `<div style="flex: 0 0 80px; height: 80px; border-radius: 0.4rem; background: linear-gradient(135deg, var(--bs-primary), var(--bs-info)); display: grid; place-items: center; color: white;"><i class="bi bi-link-45deg" style="font-size: 1.6rem;"></i></div>`
+                    }
+                    <div style="min-width: 0; flex: 1;">
+                        <div class="text-secondary" style="font-size: 0.65rem;">${escapeHtml(domain)}</div>
+                        ${ogTitle ? `<div class="fw-semibold" style="font-size: 0.82rem; line-height: 1.3;">${escapeHtml(ogTitle)}</div>` : ''}
+                        ${ogDescription ? `<div class="text-secondary text-truncate" style="font-size: 0.72rem;">${escapeHtml(ogDescription)}</div>` : ''}
+                    </div>
                 </div>
             </div>
-            {{/hasOg|bool}}
-            {{^hasOg|bool}}
+            <div class="text-secondary small mt-2">
+                <i class="bi bi-info-circle me-1"></i>
+                Pulled from <code>og:title</code>, <code>og:description</code>, <code>og:image</code> on the destination page.
+            </div>
+        ` : `
             <div class="alert alert-info mb-0 small d-flex align-items-start gap-2">
                 <i class="bi bi-info-circle flex-shrink-0 mt-1"></i>
                 <div>
                     No OG metadata set on this link. The server auto-scrapes the destination URL in the background —
-                    custom values entered in the <strong>Metadata</strong> section take priority over scraped values.
+                    custom values entered in <strong>OG / Social</strong> override scraped values.
                 </div>
             </div>
-            {{/hasOg|bool}}
+        `;
+
+        return `
+            <div class="detail-kpi-grid">
+                <div data-container="sl-kpi-30d"></div>
+                <div data-container="sl-kpi-7d"></div>
+                <div data-container="sl-kpi-today"></div>
+                <div data-container="sl-kpi-bots"></div>
+            </div>
+            <div class="detail-pair">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="card-title"><i class="bi bi-chat-square-text"></i>Slack / iMessage preview</div>
+                        ${previewCardHtml}
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="card-title"><i class="bi bi-graph-up"></i>Hits · last 30 days</div>
+                        ${this._sparklineSvg(stats.byDay)}
+                        <ul class="list-unstyled mb-0 small mt-2">
+                            <li class="d-flex justify-content-between border-top border-opacity-25 py-1"><span class="text-secondary">Total hits</span><span>${escapeHtml(String(totalHits))}</span></li>
+                            <li class="d-flex justify-content-between border-top border-opacity-25 py-1"><span class="text-secondary">Top referer</span><span>${stats.topReferer ? escapeHtml(stats.topReferer) : '<span class="text-tertiary">—</span>'}</span></li>
+                            <li class="d-flex justify-content-between border-top border-opacity-25 py-1"><span class="text-secondary">Bot traffic</span><span>${stats.botPct == null ? '<span class="text-tertiary">—</span>' : `${stats.botPct}%`}</span></li>
+                            <li class="d-flex justify-content-between border-top border-opacity-25 py-1"><span class="text-secondary">Avg / day (30d)</span><span>${stats.avgPerDay == null ? '<span class="text-tertiary">—</span>' : escapeHtml(String(stats.avgPerDay))}</span></li>
+                            <li class="d-flex justify-content-between py-1"><span class="text-secondary">Expires</span><code>${escapeHtml(expiresLabel)}</code></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         `;
     }
 
-    _syncFromModel() {
-        const flat = flattenShortLinkMetadata(this.model?.get('metadata'));
-        this.ogTitle = flat.og_title || '';
-        this.ogDescription = flat.og_description || '';
-        this.ogImage = flat.og_image || '';
-        this.hasOg = !!(this.ogTitle || this.ogDescription || this.ogImage);
-        this.domain = getDomain(this.model?.get('url'));
+    /**
+     * Roll up the shared clicks collection into the numbers we need.
+     * The collection is fetched with `created__gte = now - 30d` so its
+     * models represent the 30-day window.
+     */
+    _summarizeClicks() {
+        const models = this.clicksCollection?.models || [];
+        const now = Date.now();
+        const dayMs = 86400000;
+        const start30 = now - 30 * dayMs;
+        const start7 = now - 7 * dayMs;
+        const startToday = new Date();
+        startToday.setHours(0, 0, 0, 0);
+        const startTodayMs = startToday.getTime();
+
+        let count30 = 0, count7 = 0, countToday = 0, bots = 0;
+        const byDay = new Array(30).fill(0);
+        const refererCounts = new Map();
+
+        for (const click of models) {
+            const created = click.get?.('created');
+            const t = created != null ? new Date(typeof created === 'number' ? (created < 1e11 ? created * 1000 : created) : created).getTime() : NaN;
+            if (!Number.isFinite(t)) continue;
+            if (t < start30) continue;
+            count30++;
+            const bucket = Math.min(29, Math.max(0, Math.floor((t - start30) / dayMs)));
+            byDay[bucket]++;
+            if (t >= start7) count7++;
+            if (t >= startTodayMs) countToday++;
+            if (click.get?.('is_bot')) bots++;
+            const ref = click.get?.('referer');
+            if (ref) {
+                const host = getDomain(ref);
+                if (host) refererCounts.set(host, (refererCounts.get(host) || 0) + 1);
+            }
+        }
+
+        let topReferer = null;
+        let topRefererCount = 0;
+        for (const [host, n] of refererCounts) {
+            if (n > topRefererCount) { topReferer = host; topRefererCount = n; }
+        }
+
+        return {
+            count30, count7, countToday,
+            botPct: count30 > 0 ? Math.round((bots / count30) * 1000) / 10 : null,
+            avgPerDay: count30 > 0 ? Math.round((count30 / 30) * 10) / 10 : null,
+            topReferer,
+            byDay,
+        };
+    }
+
+    _sparklineSvg(byDay) {
+        const max = Math.max(1, ...byDay);
+        const w = 320, h = 80;
+        const stepX = w / Math.max(1, byDay.length - 1);
+        const points = byDay.map((v, i) => {
+            const x = i * stepX;
+            const y = h - 4 - ((v / max) * (h - 8));
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(' ');
+        const polyPoints = `${points} ${w},${h} 0,${h}`;
+        const gid = `sl-grad-${Math.random().toString(36).slice(2, 8)}`;
+        return `
+            <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width: 100%; height: 80px;">
+                <defs>
+                    <linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0" stop-color="var(--bs-success)" stop-opacity="0.3"/>
+                        <stop offset="1" stop-color="var(--bs-success)" stop-opacity="0"/>
+                    </linearGradient>
+                </defs>
+                <polygon fill="url(#${gid})" points="${polyPoints}"/>
+                <polyline fill="none" stroke="var(--bs-success)" stroke-width="1.5" points="${points}"/>
+            </svg>
+        `;
+    }
+
+    async onInit() {
+        const stats = this._summarizeClicks();
+        const totalHits = this.model.get('hit_count') || 0;
+
+        // KPI cards — use core MetricCard primitive
+        this.kpi30 = new MetricCard({
+            containerId: 'sl-kpi-30d',
+            label: 'Hits · 30d',
+            value: stats.count30 || (totalHits > 0 ? '—' : 0),
+            tone: stats.count30 > 0 ? 'success' : 'default',
+        });
+        this.kpi7 = new MetricCard({
+            containerId: 'sl-kpi-7d',
+            label: 'Hits · 7d',
+            value: stats.count7,
+        });
+        this.kpiToday = new MetricCard({
+            containerId: 'sl-kpi-today',
+            label: 'Today',
+            value: stats.countToday,
+        });
+        this.kpiBots = new MetricCard({
+            containerId: 'sl-kpi-bots',
+            label: 'Bot traffic',
+            value: stats.botPct == null ? '—' : `${stats.botPct}%`,
+            tone: stats.botPct != null && stats.botPct > 25 ? 'warning' : 'default',
+        });
+        [this.kpi30, this.kpi7, this.kpiToday, this.kpiBots].forEach((c) => this.addChild(c));
+
+        if (this.clicksCollection) {
+            this.clicksCollection.on('fetch:success', () => this._refreshKpis(), this);
+        }
+    }
+
+    _refreshKpis() {
+        const stats = this._summarizeClicks();
+        this.kpi30?.setValue(stats.count30);
+        this.kpi7?.setValue(stats.count7);
+        this.kpiToday?.setValue(stats.countToday);
+        this.kpiBots?.setValue(stats.botPct == null ? '—' : `${stats.botPct}%`);
     }
 
     async refreshFromModel() {
-        this._syncFromModel();
         if (this.isMounted?.()) await this.render();
     }
 }
 
-// ──────────────────────────────────────────────────────────────────────────
-// MetricsSection — wraps MetricsChart, or renders an info panel when the
-// link has no metrics stream (track_clicks=false or no owning user).
-// ──────────────────────────────────────────────────────────────────────────
+
+// ── Configuration section ──────────────────────────────────
+
+class ShortLinkConfigurationSection extends View {
+    constructor(options = {}) {
+        super({
+            className: 'shortlink-configuration-section',
+            ...options,
+        });
+        this.template = () => this._buildTemplate();
+    }
+
+    _buildTemplate() {
+        const m = this.model;
+        const url = m.get('url') || '';
+        const code = m.get('code') || '';
+        const source = sourceLabel(m.get('source')) || '<span class="text-tertiary">—</span>';
+        const trackClicks = !!m.get('track_clicks');
+        const botPassthrough = !!m.get('bot_passthrough');
+        const isProtected = !!m.get('is_protected');
+        const expiresAt = m.get('expires_at');
+        const expiresStr = expiresAt
+            ? `<code>${escapeHtml(new Date(expiresAt).toLocaleString())}</code>`
+            : '<span class="text-tertiary">Never</span>';
+        const isActive = !!m.get('is_active');
+
+        const yesNo = (v) => v
+            ? '<span class="badge text-bg-success"><i class="bi bi-check2 me-1"></i>Enabled</span>'
+            : '<span class="badge text-bg-secondary">Disabled</span>';
+
+        const visibility = isProtected
+            ? '<span class="badge text-bg-warning"><i class="bi bi-shield-lock me-1"></i>Protected</span>'
+            : '<span class="badge text-bg-secondary">Unprotected</span>';
+
+        return `
+            <div class="detail-field-card">
+                <div class="detail-field-card-header">
+                    <h4><i class="bi bi-link-45deg"></i>Destination</h4>
+                    <button class="btn btn-sm btn-link p-0" data-action="edit-shortlink" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                </div>
+                <div class="detail-field-card-body">
+                    <div class="detail-field-row">
+                        <div class="detail-field-label">Original URL</div>
+                        <div class="detail-field-value text-truncate" title="${escapeHtml(url)}">
+                            ${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>` : '—'}
+                        </div>
+                    </div>
+                    <div class="detail-field-row">
+                        <div class="detail-field-label">Code</div>
+                        <div class="detail-field-value"><code>${escapeHtml(code)}</code></div>
+                    </div>
+                    <div class="detail-field-row">
+                        <div class="detail-field-label">Source</div>
+                        <div class="detail-field-value">${source}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-field-card">
+                <div class="detail-field-card-header">
+                    <h4><i class="bi bi-graph-up"></i>Tracking</h4>
+                    <button class="btn btn-sm btn-link p-0" data-action="edit-shortlink" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                </div>
+                <div class="detail-field-card-body">
+                    <div class="detail-field-row">
+                        <div class="detail-field-label">Track clicks</div>
+                        <div class="detail-field-value">${yesNo(trackClicks)}</div>
+                    </div>
+                    <div class="detail-field-row">
+                        <div class="detail-field-label">Bot passthrough</div>
+                        <div class="detail-field-value">
+                            ${botPassthrough
+                                ? '<span class="badge text-bg-info"><i class="bi bi-robot me-1"></i>Bypassed</span>'
+                                : '<span class="badge text-bg-secondary">Bots see preview</span>'}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-field-card">
+                <div class="detail-field-card-header">
+                    <h4><i class="bi bi-clock-history"></i>Lifecycle</h4>
+                    <button class="btn btn-sm btn-link p-0" data-action="edit-shortlink" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                </div>
+                <div class="detail-field-card-body">
+                    <div class="detail-field-row">
+                        <div class="detail-field-label">Active</div>
+                        <div class="detail-field-value">
+                            ${isActive
+                                ? '<span class="badge text-bg-success">Active</span>'
+                                : '<span class="badge text-bg-secondary">Disabled</span>'}
+                        </div>
+                    </div>
+                    <div class="detail-field-row">
+                        <div class="detail-field-label">Expires</div>
+                        <div class="detail-field-value">${expiresStr}</div>
+                    </div>
+                    <div class="detail-field-row">
+                        <div class="detail-field-label">Protected</div>
+                        <div class="detail-field-value">${visibility}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+
+// ── Metrics section ────────────────────────────────────────
 
 class ShortLinkMetricsSection extends View {
     constructor(options = {}) {
-        super({ className: 'shortlink-metrics-section p-3', ...options });
+        super({
+            className: 'shortlink-metrics-section',
+            ...options,
+        });
 
         const trackClicks = !!this.model.get('track_clicks');
         const user = this.model.get('user');
@@ -128,15 +426,15 @@ class ShortLinkMetricsSection extends View {
         this.canShowMetrics = trackClicks && this.userId && this.code;
 
         if (this.canShowMetrics) {
-            this.template = `<div data-container="shortlink-metrics-chart"></div>`;
+            this.template = `<div data-container="sl-metrics-chart"></div>`;
         } else {
             const reason = !trackClicks
-                ? 'Click tracking is disabled — enable “Track clicks” on this shortlink to collect time-series data.'
+                ? 'Click tracking is disabled — enable "Track clicks" on this shortlink to collect time-series data.'
                 : 'No owning user on this shortlink — per-link metrics are recorded per user account.';
             this.template = `
                 <div class="alert alert-info mb-0 d-flex align-items-start gap-2">
                     <i class="bi bi-info-circle flex-shrink-0 mt-1"></i>
-                    <div>${reason}</div>
+                    <div>${escapeHtml(reason)}</div>
                 </div>
             `;
         }
@@ -145,7 +443,7 @@ class ShortLinkMetricsSection extends View {
     async onInit() {
         if (!this.canShowMetrics) return;
         this.metricsChart = new MetricsChart({
-            containerId: 'shortlink-metrics-chart',
+            containerId: 'sl-metrics-chart',
             title: 'Clicks',
             slugs: [`sl:click:${this.code}`],
             account: `user-${this.userId}`,
@@ -159,175 +457,176 @@ class ShortLinkMetricsSection extends View {
     }
 }
 
-// ──────────────────────────────────────────────────────────────────────────
-// MetadataSection — editable og_*/twitter_* form. Submit is intercepted
-// so the model.save() body is the nested `metadata` map (not raw fields).
-// ──────────────────────────────────────────────────────────────────────────
 
-class ShortLinkMetadataSection extends FormView {
-    constructor(options = {}) {
-        const seed = flattenShortLinkMetadata(options.model?.get('metadata'));
-        super({
-            className: 'p-3',
-            // NOTE: deliberately NOT passing `model` — FormView would otherwise
-            // call model.save(rawFormData) which would persist og_title/etc as
-            // model attributes. We handle save ourselves in onSubmit.
-            data: seed,
-            submitButtonText: 'Save Metadata',
-            submitButtonClass: 'btn btn-primary',
-            formConfig: {
-                fields: [
-                    { name: 'og_title', type: 'text', label: 'og:title', cols: 12 },
-                    { name: 'og_description', type: 'textarea', label: 'og:description', rows: 3, cols: 12 },
-                    { name: 'og_image', type: 'url', label: 'og:image', placeholder: 'https://…', cols: 12 },
-                    { name: 'twitter_card', type: 'select', label: 'twitter:card', options: TWITTER_CARD_OPTIONS, cols: 6 },
-                    { name: 'twitter_title', type: 'text', label: 'twitter:title', cols: 6 },
-                    { name: 'twitter_description', type: 'textarea', label: 'twitter:description', rows: 2, cols: 12 },
-                    { name: 'twitter_image', type: 'url', label: 'twitter:image', cols: 12 },
-                ],
-                onSubmit: (formData) => this._saveMetadata(formData),
-            },
-            ...options,
-        });
-        this._targetModel = options.model;
-    }
+// ── OG / Social section ────────────────────────────────────
 
-    async _saveMetadata(formData) {
-        const metadata = buildShortLinkMetadata(formData);
-        try {
-            await this._targetModel.save({ metadata });
-            this.getApp()?.toast?.success?.('Metadata saved');
-            this.emit('metadata:saved', { model: this._targetModel, metadata });
-        } catch (err) {
-            Modal.showError(err?.data?.error || err?.message || 'Failed to save metadata');
-        }
-    }
-}
-
-// ──────────────────────────────────────────────────────────────────────────
-// ShortLinkView (main component)
-// ──────────────────────────────────────────────────────────────────────────
-
-class ShortLinkView extends View {
+class ShortLinkOgSection extends View {
     constructor(options = {}) {
         super({
-            className: 'shortlink-view',
+            className: 'shortlink-og-section',
             ...options,
         });
+        this.template = () => this._buildTemplate();
+    }
 
-        this.model = options.model || new ShortLink(options.data || {});
-        this.sideNavView = null;
-        this.contextMenu = null;
-        this.previewSection = null;
-        this.metadataSection = null;
+    _buildTemplate() {
+        const flat = flattenShortLinkMetadata(this.model.get('metadata'));
+        const hasAny = !!(flat.og_title || flat.og_description || flat.og_image
+            || flat.twitter_card || flat.twitter_title || flat.twitter_description || flat.twitter_image);
 
-        this._refreshHeader();
-
-        // SideNavView (like FileView) needs a bounded container height to
-        // scroll its content panel properly inside a modal.
-        this.template = `
-            <div class="shortlink-view-container d-flex flex-column" style="min-height: 0;">
-                <div class="d-flex justify-content-between align-items-start mb-3 flex-shrink-0">
-                    <div class="d-flex align-items-start gap-3 flex-grow-1" style="min-width: 0;">
-                        <div class="fs-1 text-primary"><i class="bi bi-link-45deg"></i></div>
-                        <div class="flex-grow-1" style="min-width: 0;">
-                            <div class="input-group input-group-lg mb-2" style="max-width: 620px;">
-                                <input type="text" class="form-control font-monospace" readonly value="{{shortUrl}}">
-                                <button class="btn btn-outline-primary" data-action="copy-short-url" title="Copy short URL">
-                                    <i class="bi bi-clipboard"></i>
-                                </button>
-                                <a class="btn btn-outline-secondary" href="{{shortUrl}}" target="_blank" rel="noopener noreferrer" title="Open short URL in a new tab">
-                                    <i class="bi bi-box-arrow-up-right"></i>
-                                </a>
-                            </div>
-                            <div class="text-muted small text-truncate" style="max-width: 620px;" title="{{model.url}}">
-                                <i class="bi bi-arrow-right"></i> {{model.url}}
-                            </div>
-                            <div class="d-flex align-items-center gap-2 mt-2 flex-wrap">
-                                <span class="badge {{activeBadge}}">{{activeLabel}}</span>
-                                {{#model.source}}<span class="badge bg-secondary">{{model.source}}</span>{{/model.source}}
-                                {{#hasHits|bool}}<span class="badge bg-light text-dark border">{{model.hit_count}} hits</span>{{/hasHits|bool}}
-                                {{#isExpired|bool}}<span class="badge bg-danger">Expired</span>{{/isExpired|bool}}
-                                {{#model.track_clicks}}<span class="badge bg-info text-dark">Tracked</span>{{/model.track_clicks}}
-                            </div>
-                        </div>
-                    </div>
-                    <div data-container="shortlink-context-menu" class="ms-3 flex-shrink-0"></div>
+        return `
+            <div class="d-flex justify-content-between align-items-baseline mb-3">
+                <div>
+                    <div class="text-body-secondary text-uppercase small fw-semibold" style="letter-spacing: 0.05em;">metadata · og:* · twitter:*</div>
+                    <h5 class="mb-0">OG / Social</h5>
                 </div>
-                <div data-container="shortlink-sidenav" class="flex-grow-1" style="min-height: 400px; max-height: 70vh;"></div>
+                <button class="btn btn-primary btn-sm" data-action="edit-og">
+                    <i class="bi bi-pencil me-1"></i>${hasAny ? 'Edit OG metadata' : 'Add OG metadata'}
+                </button>
             </div>
+            ${hasAny
+                ? `<div data-container="sl-og-fields"></div>`
+                : `
+                    <div class="text-center text-body-secondary py-4 border rounded">
+                        <i class="bi bi-share fs-1 d-block mb-2"></i>
+                        <p class="mb-3 small">No custom OG / Twitter metadata. The server scrapes the destination URL in the background — set values here to override what gets scraped.</p>
+                        <button class="btn btn-primary btn-sm" data-action="edit-og">
+                            <i class="bi bi-plus-lg me-1"></i>Add OG metadata
+                        </button>
+                    </div>
+                `}
         `;
     }
 
-    _refreshHeader() {
-        const app = this.getApp?.();
-        this.shortUrl = getShortUrl(this.model, app);
-        this.isActive = !!this.model.get('is_active');
-        this.activeLabel = this.isActive ? 'Active' : 'Disabled';
-        this.activeBadge = this.isActive ? 'bg-success' : 'bg-secondary';
-        this.isExpired = isShortLinkExpired(this.model);
-        this.hasHits = (this.model.get('hit_count') || 0) > 0;
-    }
-
     async onInit() {
-        await this._buildSideNav();
-        await this._buildContextMenu();
+        await this._buildFieldsView();
     }
 
-    async _buildSideNav() {
-        // ── Details ──
-        const sourceVal = this.model.get('source') || '';
-        const sourceOpt = SHORTLINK_SOURCE_OPTIONS.find((o) => o.value === sourceVal);
-        const sourceLabel = sourceOpt ? sourceOpt.label : (sourceVal || '—');
+    async _buildFieldsView() {
+        const flat = flattenShortLinkMetadata(this.model.get('metadata'));
+        const fields = [];
+        if (flat.og_title)            fields.push({ name: 'og_title',            label: 'og:title',            cols: 12 });
+        if (flat.og_description)      fields.push({ name: 'og_description',      label: 'og:description',      cols: 12 });
+        if (flat.og_image)            fields.push({ name: 'og_image',            label: 'og:image', type: 'url', cols: 12 });
+        if (flat.twitter_card)        fields.push({ name: 'twitter_card',        label: 'twitter:card',        cols: 6 });
+        if (flat.twitter_title)       fields.push({ name: 'twitter_title',       label: 'twitter:title',       cols: 6 });
+        if (flat.twitter_description) fields.push({ name: 'twitter_description', label: 'twitter:description', cols: 12 });
+        if (flat.twitter_image)       fields.push({ name: 'twitter_image',       label: 'twitter:image', type: 'url', cols: 12 });
 
-        const detailsView = new DataView({
-            model: this.model,
-            className: 'p-3',
+        if (!fields.length) return;
+
+        const ogModel = {
+            get: (k) => flat[k],
+            attributes: flat,
+            on() {}, off() {},
+        };
+
+        this.fieldsView = new DataView({
+            containerId: 'sl-og-fields',
+            model: ogModel,
             columns: 2,
-            showEmptyValues: true,
-            emptyValueText: '—',
-            fields: [
-                { name: 'code', label: 'Code', template: `<code>${this.model.get('code') || '—'}</code>`, colSize: 4 },
-                { name: 'source', label: 'Source', template: sourceLabel, colSize: 4 },
-                { name: 'is_active', label: 'Active', type: 'boolean', colSize: 4 },
-                { name: 'url', label: 'Destination', type: 'url', colSize: 12 },
-                { name: 'hit_count', label: 'Hits', colSize: 3 },
-                { name: 'track_clicks', label: 'Track clicks', type: 'boolean', colSize: 3 },
-                { name: 'bot_passthrough', label: 'Bot passthrough', type: 'boolean', colSize: 3 },
-                { name: 'is_protected', label: 'Protected', type: 'boolean', colSize: 3 },
-                { name: 'expires_at', label: 'Expires', format: 'datetime', colSize: 6 },
-                { name: 'created', label: 'Created', format: 'datetime', colSize: 6 },
-                { name: 'modified', label: 'Modified', format: 'datetime', colSize: 6 },
-                { name: 'user.username', label: 'Owner', colSize: 6 },
-                { name: 'group.name', label: 'Group', colSize: 12 },
-            ],
+            showEmptyValues: false,
+            fields,
+        });
+        this.addChild(this.fieldsView);
+    }
+
+    async refresh() {
+        if (this.isMounted()) await this.render();
+    }
+}
+
+
+// ── Metadata section (raw JSON) ────────────────────────────
+
+class ShortLinkMetadataSection extends View {
+    constructor(options = {}) {
+        super({
+            className: 'shortlink-metadata-section',
+            ...options,
+        });
+        this.template = () => this._buildTemplate();
+    }
+
+    _buildTemplate() {
+        const meta = this.model.get('metadata') || {};
+        const isEmpty = Object.keys(meta).length === 0;
+
+        return `
+            <div class="d-flex justify-content-between align-items-baseline mb-3">
+                <div>
+                    <div class="text-body-secondary text-uppercase small fw-semibold" style="letter-spacing: 0.05em;">${isEmpty ? 'No metadata yet' : 'Every key on shortlink.metadata'}</div>
+                    <h5 class="mb-0">Metadata</h5>
+                </div>
+                <button class="btn btn-primary btn-sm" data-action="edit-metadata">
+                    <i class="bi bi-pencil me-1"></i>${isEmpty ? 'Add metadata' : 'Edit JSON'}
+                </button>
+            </div>
+            ${isEmpty
+                ? `
+                    <div class="text-center text-body-secondary py-4 border rounded">
+                        <i class="bi bi-braces fs-1 d-block mb-2"></i>
+                        <p class="mb-3 small">No metadata is set on this shortlink. Use this for arbitrary configuration the framework doesn't know about.</p>
+                        <button class="btn btn-primary btn-sm" data-action="edit-metadata">
+                            <i class="bi bi-plus-lg me-1"></i>Add metadata
+                        </button>
+                    </div>
+                `
+                : `
+                    <pre class="bg-body-tertiary border rounded p-3 small mb-0" style="white-space: pre-wrap; word-break: break-word;"><code>${escapeHtml(JSON.stringify(meta, null, 2))}</code></pre>
+                `}
+        `;
+    }
+}
+
+
+// ── ShortLinkView (assembly) ───────────────────────────────
+
+class ShortLinkView extends DetailView {
+    constructor(options = {}) {
+        const model = options.model || new ShortLink(options.data || {});
+
+        // Shared collection: Click History table + Overview KPI roll-up.
+        // 30-day window — Overview's per-day sparkline buckets reads this.
+        const since = Math.floor(Date.now() / 1000) - 30 * 86400;
+        const clicksCollection = new ShortLinkClickList({
+            params: {
+                shortlink: model.get('id'),
+                created__gte: since,
+                sort: '-created',
+                size: 200,
+            },
         });
 
-        // ── Preview ──
-        this.previewSection = new ShortLinkPreviewSection({ model: this.model });
+        // Section view instances (must be created before super() so they can
+        // be passed via the sections config to the SideNavView).
+        const overviewSection = new ShortLinkOverviewSection({ model, clicksCollection });
+        const configurationSection = new ShortLinkConfigurationSection({ model });
 
-        // ── Metadata (intercepts submit, saves only `metadata` map) ──
-        this.metadataSection = new ShortLinkMetadataSection({ model: this.model });
-        this.metadataSection.on('metadata:saved', () => {
-            this.previewSection?.refreshFromModel?.();
-        });
-
-        // ── Click History ──
-        const clickCollection = new ShortLinkClickList({
-            params: { shortlink: this.model.get('id'), sort: '-created', size: 25 },
-        });
-        const clicksTable = new TableView({
-            collection: clickCollection,
-            className: 'p-2',
-            hideActivePillNames: ['shortlink'],
+        const clickHistorySection = new TableView({
+            collection: clicksCollection,
+            title: 'Click History',
+            eyebrow: 'Section · Click History',
+            showFullscreen: false,
+            searchable: false,
+            sortable: true,
+            filterable: true,
+            paginated: true,
+            hideActivePillNames: ['shortlink', 'created__gte'],
+            tableOptions: {
+                hover: true,
+                size: 'sm',
+                emptyMessage: model.get('track_clicks')
+                    ? 'No clicks recorded yet.'
+                    : 'Click tracking is disabled for this shortlink.',
+                emptyIcon: 'bi-cursor',
+                actions: [],
+            },
             columns: [
                 { key: 'created', label: 'Time', width: '180px', formatter: 'datetime', sortable: true },
                 { key: 'ip', label: 'IP', width: '140px', template: '<code>{{model.ip}}</code>' },
                 {
-                    key: 'is_bot',
-                    label: 'Bot',
-                    width: '80px',
-                    formatter: 'yesnoicon',
+                    key: 'is_bot', label: 'Bot', width: '80px', formatter: 'yesnoicon',
                     filter: {
                         type: 'select',
                         options: [
@@ -339,80 +638,134 @@ class ShortLinkView extends View {
                 { key: 'user_agent', label: 'User-Agent', formatter: 'truncate(60)' },
                 { key: 'referer', label: 'Referer', formatter: "truncate(40)|default('—')" },
             ],
-            searchable: false,
-            sortable: true,
-            filterable: true,
-            paginated: true,
-            tableOptions: {
-                hover: true,
-                size: 'sm',
-                emptyMessage: this.model.get('track_clicks')
-                    ? 'No clicks recorded yet.'
-                    : 'Click tracking is disabled for this shortlink.',
-                emptyIcon: 'bi-cursor',
-                actions: [],
-            },
         });
 
-        // ── Metrics ──
-        const metricsSection = new ShortLinkMetricsSection({ model: this.model });
+        const metricsSection = new ShortLinkMetricsSection({ model });
+        const ogSection = new ShortLinkOgSection({ model });
+        const metadataSection = new ShortLinkMetadataSection({ model });
 
-        // ── Assemble SideNavView ──
-        this.sideNavView = new SideNavView({
-            containerId: 'shortlink-sidenav',
-            activeSection: 'details',
-            navWidth: 200,
-            contentPadding: '1.25rem 1.5rem',
-            enableResponsive: true,
-            minWidth: 600,
-            sections: [
-                { key: 'details',  label: 'Details',       icon: 'bi-info-circle',   view: detailsView },
-                { key: 'preview',  label: 'Preview',       icon: 'bi-card-image',    view: this.previewSection },
-                { key: 'metadata', label: 'Metadata',      icon: 'bi-braces',        view: this.metadataSection },
-                { key: 'clicks',   label: 'Click History', icon: 'bi-cursor',        view: clicksTable },
-                { key: 'metrics',  label: 'Metrics',       icon: 'bi-bar-chart-line', view: metricsSection },
-            ],
-        });
-        this.addChild(this.sideNavView);
-    }
+        const sections = [
+            { key: 'Overview',      label: 'Overview',      icon: 'bi-grid-1x2', view: overviewSection },
+            { key: 'Configuration', label: 'Configuration', icon: 'bi-sliders',  view: configurationSection },
+            { type: 'divider', label: 'Activity' },
+            { key: 'ClickHistory',  label: 'Click History', icon: 'bi-cursor',   view: clickHistorySection },
+            { key: 'Metrics',       label: 'Metrics',       icon: 'bi-graph-up', view: metricsSection },
+            { type: 'divider', label: 'Detail' },
+            { key: 'OgSocial',      label: 'OG / Social',   icon: 'bi-share',    view: ogSection },
+            { key: 'Metadata',      label: 'Metadata',      icon: 'bi-braces',   view: metadataSection },
+        ];
 
-    async _buildContextMenu() {
-        this.contextMenu = new ContextMenu({
-            containerId: 'shortlink-context-menu',
-            context: this.model,
-            config: {
-                icon: 'bi-three-dots-vertical',
-                items: [
-                    { label: 'Copy Short URL', action: 'copy-short-url', icon: 'bi-clipboard' },
-                    { label: 'Open Destination', action: 'open-destination', icon: 'bi-box-arrow-up-right' },
-                    { type: 'divider' },
-                    this.isActive
-                        ? { label: 'Disable', action: 'disable-shortlink', icon: 'bi-toggle-off' }
-                        : { label: 'Enable', action: 'enable-shortlink', icon: 'bi-toggle-on' },
-                    { label: 'Edit Shortlink', action: 'edit-shortlink', icon: 'bi-pencil' },
-                    { type: 'divider' },
-                    { label: 'Delete Shortlink', action: 'delete-shortlink', icon: 'bi-trash', danger: true },
+        // Header config — chips + actions per migration plan
+        const chips = [
+            { icon: 'bi-tag-fill', text: m => sourceLabel(m.get('source')) || null, variant: 'primary',
+              when: m => !!m.get('source') },
+            { icon: 'bi-cursor',   text: m => `${m.get('hit_count') || 0} hits`, variant: 'success',
+              when: m => (m.get('hit_count') || 0) > 0 },
+            { icon: 'bi-graph-up', text: 'Tracked', variant: 'info',
+              when: m => !!m.get('track_clicks') },
+            { icon: 'bi-eye-slash', text: 'Untracked', variant: 'secondary',
+              when: m => !m.get('track_clicks') },
+            { icon: 'bi-clock', text: m => {
+                  const d = expiresInDays(m);
+                  if (d == null) return null;
+                  if (d < 0) return 'Expired';
+                  return `expires in ${d}d`;
+              }, variant: 'warning',
+              when: m => {
+                  const d = expiresInDays(m);
+                  return d != null && d <= 14;
+              } },
+            { icon: 'bi-shield-lock', text: 'Protected', variant: 'warning',
+              when: m => !!m.get('is_protected') },
+        ];
+
+        super({
+            className: 'shortlink-view',
+            ...options,
+            model,
+            header: {
+                icon: 'bi-link-45deg',
+                titleFn: m => m.get('short_link') || getShortUrl(m, options.app) || m.get('code') || 'Short link',
+                subtitlePath: '_subtitle',
+                chips,
+                activeField: 'is_active',
+                actions: [
+                    { label: 'Copy', icon: 'bi-clipboard', action: 'copy-link', title: 'Copy short URL' },
+                    { label: 'Open', icon: 'bi-box-arrow-up-right', action: 'open-destination', title: 'Open destination URL' },
+                    { label: 'Edit', icon: 'bi-pencil', action: 'edit-shortlink', title: 'Edit shortlink' },
                 ],
+                contextMenu: {
+                    items: [
+                        { label: 'Copy short URL',     action: 'copy-link',         icon: 'bi-clipboard' },
+                        { label: 'Open destination',   action: 'open-destination',  icon: 'bi-box-arrow-up-right' },
+                        { type: 'divider' },
+                        { label: 'Edit shortlink',     action: 'edit-shortlink',    icon: 'bi-pencil' },
+                        { label: 'Refresh OG metadata', action: 'refresh-og',       icon: 'bi-arrow-clockwise' },
+                        { type: 'divider' },
+                        { label: 'Delete shortlink',   action: 'delete-shortlink',  icon: 'bi-trash', danger: true },
+                    ],
+                },
             },
+            sections,
+            activeSection: 'Overview',
         });
-        this.addChild(this.contextMenu);
+
+        // Stash references for action handlers + cross-section wiring
+        this.clicksCollection = clicksCollection;
+        this.overviewSection = overviewSection;
+        this.configurationSection = configurationSection;
+        this.clickHistorySection = clickHistorySection;
+        this.metricsSection = metricsSection;
+        this.ogSection = ogSection;
+        this.metadataSection = metadataSection;
+
+        // Pre-compute synthetic subtitle so the header reads "→ {url}"
+        this._refreshComputedFields();
     }
 
-    // Section views are mounted under SideNavView, so model `change` events
-    // re-rendering the parent would unmount/remount everything. Sections
-    // manage their own reactivity (DataView listens to model directly,
-    // PreviewSection has refreshFromModel). Same pattern as FileView.
-    _onModelChange() {
-        // no-op
+    async onAfterBuild() {
+        // Live sidebar badge: total hits on Click History
+        const updateClicksBadge = () => {
+            const hits = this.model.get('hit_count') || 0;
+            this.setBadge('ClickHistory', hits > 0
+                ? { text: hits >= 1000 ? `${(hits / 1000).toFixed(1)}k` : String(hits), variant: 'muted' }
+                : null);
+        };
+        updateClicksBadge();
+        this.clicksCollection.on('fetch:success', updateClicksBadge, this);
+
+        // Fire-and-forget initial fetch (drives KPIs, sparkline, table)
+        this.clicksCollection.fetch().catch(() => {});
     }
 
-    // ── Actions ────────────────────────────────────
+    /**
+     * Synthetic subtitle field — DetailHeaderView reads `_subtitle` via
+     * `subtitlePath`. Format: "→ {url}". Stashed on `model.attributes`
+     * so a header re-render picks it up.
+     */
+    _refreshComputedFields() {
+        const url = this.model.get('url') || '';
+        this.model.attributes._subtitle = url ? `→ ${url}` : '';
+    }
 
-    async onActionCopyShortUrl() {
-        if (!this.shortUrl) return;
+    /** Re-render the sections that read directly from the model. */
+    async _refreshFromModel() {
+        this._refreshComputedFields();
+        if (this.headerView?.isMounted()) await this.headerView.render();
+        if (this.overviewSection?.isMounted()) await this.overviewSection.refreshFromModel();
+        if (this.configurationSection?.isMounted()) await this.configurationSection.render();
+        if (this.ogSection?.isMounted()) await this.ogSection.refresh();
+        if (this.metadataSection?.isMounted()) await this.metadataSection.render();
+    }
+
+    // ── Actions ────────────────────────────────────────────
+
+    async onActionCopyLink() {
+        const url = getShortUrl(this.model, this.getApp?.());
+        if (!url) return;
         try {
-            await navigator.clipboard.writeText(this.shortUrl);
-            this.getApp()?.toast?.success(`Copied: ${this.shortUrl}`);
+            await navigator.clipboard.writeText(url);
+            this.getApp()?.toast?.success(`Copied: ${url}`);
         } catch (_e) {
             this.getApp()?.toast?.warning('Copy failed — select the URL manually.');
         }
@@ -422,33 +775,6 @@ class ShortLinkView extends View {
         const url = this.model.get('url');
         if (!url || !/^https?:\/\//i.test(url)) return;
         window.open(url, '_blank', 'noopener,noreferrer');
-    }
-
-    async onActionEnableShortlink() {
-        try {
-            await this.model.save({ is_active: true });
-            this.getApp()?.toast?.success('Shortlink enabled');
-            this._refreshHeader();
-            await this.render();
-        } catch (err) {
-            Modal.showError(err?.data?.error || err?.message || 'Failed to enable');
-        }
-    }
-
-    async onActionDisableShortlink() {
-        const confirmed = await Modal.confirm(
-            'Disable this shortlink? Visitors will be redirected to the fallback URL.',
-            'Disable Shortlink',
-        );
-        if (!confirmed) return;
-        try {
-            await this.model.save({ is_active: false });
-            this.getApp()?.toast?.success('Shortlink disabled');
-            this._refreshHeader();
-            await this.render();
-        } catch (err) {
-            Modal.showError(err?.data?.error || err?.message || 'Failed to disable');
-        }
     }
 
     async onActionEditShortlink() {
@@ -465,11 +791,114 @@ class ShortLinkView extends View {
         try {
             await this.model.save(payload);
             this.getApp()?.toast?.success('Shortlink updated');
-            this._refreshHeader();
-            await this.render();
-            await this.previewSection?.refreshFromModel?.();
+            await this._refreshFromModel();
+            this.emit('detail:updated');
         } catch (err) {
             Modal.showError(err?.data?.error || err?.message || 'Failed to update');
+        }
+    }
+
+    /**
+     * Edit just the OG / Twitter fields. Submits a metadata-only patch so
+     * we don't trample other shortlink fields.
+     */
+    async onActionEditOg() {
+        const flat = flattenShortLinkMetadata(this.model.get('metadata'));
+        const result = await Modal.form({
+            title: 'Edit OG / Social metadata',
+            size: 'md',
+            fields: [
+                { name: 'og_title',            type: 'text',     label: 'og:title', cols: 12 },
+                { name: 'og_description',      type: 'textarea', label: 'og:description', rows: 3, cols: 12 },
+                { name: 'og_image',            type: 'url',      label: 'og:image', placeholder: 'https://…', cols: 12 },
+                { name: 'twitter_card',        type: 'select',   label: 'twitter:card', options: TWITTER_CARD_OPTIONS, cols: 6 },
+                { name: 'twitter_title',       type: 'text',     label: 'twitter:title', cols: 6 },
+                { name: 'twitter_description', type: 'textarea', label: 'twitter:description', rows: 2, cols: 12 },
+                { name: 'twitter_image',       type: 'url',      label: 'twitter:image', cols: 12 },
+            ],
+            data: flat,
+            submitText: 'Save',
+            cancelText: 'Cancel',
+        });
+        if (!result) return;
+        const metadata = buildShortLinkMetadata(result);
+        try {
+            await this.model.save({ metadata });
+            this.model.set('metadata', metadata);
+            this.getApp()?.toast?.success('OG metadata saved');
+            await this._refreshFromModel();
+            this.emit('detail:updated');
+        } catch (err) {
+            Modal.showError(err?.data?.error || err?.message || 'Failed to save metadata');
+        }
+    }
+
+    /**
+     * Power-user escape hatch — edit the entire metadata blob as JSON.
+     */
+    async onActionEditMetadata() {
+        const current = this.model.get('metadata') || {};
+        const initial = JSON.stringify(current, null, 2);
+
+        const result = await Modal.form({
+            title: 'Edit metadata (JSON)',
+            icon: 'bi-braces',
+            size: 'lg',
+            fields: [
+                {
+                    type: 'html', columns: 12,
+                    html: `<div class="alert alert-info small mb-3">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Free-form JSON object. OG / Twitter keys are also editable from the OG / Social section.
+                    </div>`,
+                },
+                {
+                    name: 'metadata_json', type: 'textarea', label: 'Metadata',
+                    rows: 16, columns: 12,
+                    value: initial,
+                    placeholder: '{ "key": "value" }',
+                    tooltip: 'Must be a valid JSON object',
+                },
+            ],
+            submitText: 'Save',
+            cancelText: 'Cancel',
+        });
+        if (!result) return;
+
+        let parsed;
+        try {
+            parsed = JSON.parse(result.metadata_json);
+            if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+                throw new Error('Metadata must be a JSON object (e.g. `{}`), not an array or scalar.');
+            }
+        } catch (err) {
+            this.getApp()?.toast?.error(`Invalid JSON: ${err.message}`);
+            return;
+        }
+
+        try {
+            await this.model.save({ metadata: parsed });
+            this.model.set('metadata', parsed);
+            this.getApp()?.toast?.success('Metadata updated');
+            await this._refreshFromModel();
+            this.emit('detail:updated');
+        } catch (err) {
+            Modal.showError(err?.data?.error || err?.message || 'Failed to save metadata');
+        }
+    }
+
+    /**
+     * Re-fetch the model so freshly-scraped OG metadata appears.
+     * The backend asynchronously scrapes destination URLs in the background;
+     * this lets the user pull in the latest scraped values.
+     */
+    async onActionRefreshOg() {
+        try {
+            await this.model.fetch();
+            await this._refreshFromModel();
+            this.getApp()?.toast?.success('OG metadata refreshed');
+        } catch (err) {
+            this.getApp()?.toast?.error(err?.message || 'Failed to refresh metadata');
         }
     }
 
@@ -480,12 +909,10 @@ class ShortLinkView extends View {
             { confirmText: 'Delete', confirmClass: 'btn-danger' },
         );
         if (!confirmed) return;
-
         try {
             await this.model.destroy();
             this.getApp()?.toast?.success('Shortlink deleted');
             this.emit('shortlink:deleted', { model: this.model });
-
             const dialog = this.element?.closest?.('.modal');
             if (dialog) {
                 const bsModal = window.bootstrap?.Modal?.getInstance?.(dialog);
@@ -495,18 +922,9 @@ class ShortLinkView extends View {
             Modal.showError(err?.data?.error || err?.message || 'Failed to delete');
         }
     }
-
-    async showSection(name) {
-        if (this.sideNavView) {
-            await this.sideNavView.showSection(name);
-        }
-    }
-
-    getActiveSection() {
-        return this.sideNavView ? this.sideNavView.getActiveSection() : null;
-    }
 }
 
+ShortLinkView.VIEW_CLASS = ShortLinkView;
 ShortLink.VIEW_CLASS = ShortLinkView;
 ShortLink.MODEL_REF = 'shortlink.ShortLink';
 

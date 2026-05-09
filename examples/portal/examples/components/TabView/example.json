@@ -19,6 +19,12 @@
             "route": "components/tab-view/dynamic",
             "title": "TabView — dynamic",
             "summary": "Tabs added and removed at runtime."
+        },
+        {
+            "page": "TabViewVariantsExample.js",
+            "route": "components/tab-view/variants",
+            "title": "TabView — variants",
+            "summary": "Flip through the five visual variants live."
         }
     ]
 }

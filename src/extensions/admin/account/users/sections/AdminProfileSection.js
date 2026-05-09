@@ -13,108 +13,89 @@ export default class AdminProfileSection extends View {
         super({
             className: 'admin-profile-section',
             template: `
-                <style>
-                    .ap-section-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #adb5bd; margin-bottom: 0.5rem; margin-top: 1.75rem; }
-                    .ap-section-label:first-child { margin-top: 0; }
-                    .ap-field-row { display: flex; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid #f0f0f0; }
-                    .ap-field-row:last-child { border-bottom: none; }
-                    .ap-field-label { width: 140px; font-size: 0.8rem; color: #6c757d; flex-shrink: 0; }
-                    .ap-field-value { flex: 1; font-size: 0.88rem; color: #212529; display: flex; align-items: center; gap: 0.4rem; }
-                    .ap-field-action { color: #6c757d; cursor: pointer; font-size: 0.8rem; margin-left: auto; padding: 0.15rem 0.4rem; border-radius: 4px; background: none; border: none; }
-                    .ap-field-action:hover { background: #f0f0f0; color: #0d6efd; }
-                    .ap-badge-ok { font-size: 0.65rem; padding: 0.15em 0.45em; background: #d1e7dd; color: #0f5132; border-radius: 3px; }
-                    .ap-badge-warn { font-size: 0.65rem; padding: 0.15em 0.45em; background: #fff3cd; color: #856404; border-radius: 3px; }
-                    .ap-badge-muted { font-size: 0.65rem; padding: 0.15em 0.45em; background: #f0f0f0; color: #6c757d; border-radius: 3px; }
-                    .ap-not-set { color: #adb5bd; font-style: italic; font-size: 0.85rem; }
-                </style>
-
                 <!-- Contact & Verification -->
-                <div class="ap-section-label">Contact & Verification</div>
-                <div class="ap-field-row">
-                    <div class="ap-field-label">Email</div>
-                    <div class="ap-field-value">
+                <div class="detail-section-eyebrow">Contact & Verification</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Email</div>
+                    <div class="detail-flat-row-value">
                         {{model.email}}
+                        {{#model.is_email_verified|bool}}<span class="badge text-bg-success">Verified</span>{{/model.is_email_verified|bool}}
+                        {{^model.is_email_verified|bool}}<span class="badge text-bg-warning">Unverified</span>{{/model.is_email_verified|bool}}
+                    </div>
+                    <div class="detail-flat-row-action">
                         {{#model.is_email_verified|bool}}
-                            <span class="ap-badge-ok">Verified</span>
+                            <button type="button" class="detail-section-action" data-action="unverify-email" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
                         {{/model.is_email_verified|bool}}
                         {{^model.is_email_verified|bool}}
-                            <span class="ap-badge-warn">Unverified</span>
+                            <button type="button" class="detail-section-action" data-action="force-verify-email" title="Force verify"><i class="bi bi-patch-check"></i></button>
                         {{/model.is_email_verified|bool}}
+                        <button type="button" class="detail-section-action" data-action="change-email" title="Change email"><i class="bi bi-pencil"></i></button>
                     </div>
-                    {{#model.is_email_verified|bool}}
-                        <button type="button" class="ap-field-action" data-action="unverify-email" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
-                    {{/model.is_email_verified|bool}}
-                    {{^model.is_email_verified|bool}}
-                        <button type="button" class="ap-field-action" data-action="force-verify-email" title="Force verify"><i class="bi bi-patch-check"></i></button>
-                    {{/model.is_email_verified|bool}}
-                    <button type="button" class="ap-field-action" data-action="change-email" title="Change email"><i class="bi bi-pencil"></i></button>
                 </div>
-                <div class="ap-field-row">
-                    <div class="ap-field-label">Phone</div>
-                    <div class="ap-field-value">
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Phone</div>
+                    <div class="detail-flat-row-value">
                         {{#hasPhone|bool}}
                             {{model.phone_number}}
+                            {{#model.is_phone_verified|bool}}<span class="badge text-bg-success">Verified</span>{{/model.is_phone_verified|bool}}
+                            {{^model.is_phone_verified|bool}}<span class="badge text-bg-warning">Unverified</span>{{/model.is_phone_verified|bool}}
+                        {{/hasPhone|bool}}
+                        {{^hasPhone|bool}}<span class="text-secondary fst-italic">Not set</span>{{/hasPhone|bool}}
+                    </div>
+                    <div class="detail-flat-row-action">
+                        {{#hasPhone|bool}}
                             {{#model.is_phone_verified|bool}}
-                                <span class="ap-badge-ok">Verified</span>
+                                <button type="button" class="detail-section-action" data-action="unverify-phone" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
                             {{/model.is_phone_verified|bool}}
                             {{^model.is_phone_verified|bool}}
-                                <span class="ap-badge-warn">Unverified</span>
+                                <button type="button" class="detail-section-action" data-action="force-verify-phone" title="Force verify"><i class="bi bi-patch-check"></i></button>
                             {{/model.is_phone_verified|bool}}
+                            <button type="button" class="detail-section-action" data-action="change-phone" title="Change phone"><i class="bi bi-pencil"></i></button>
+                            <button type="button" class="detail-section-action" data-action="remove-phone" title="Remove phone"><i class="bi bi-x-lg"></i></button>
                         {{/hasPhone|bool}}
                         {{^hasPhone|bool}}
-                            <span class="ap-not-set">Not set</span>
+                            <button type="button" class="detail-section-action" data-action="set-phone" title="Set phone number"><i class="bi bi-plus"></i></button>
                         {{/hasPhone|bool}}
                     </div>
-                    {{#hasPhone|bool}}
-                        {{#model.is_phone_verified|bool}}
-                            <button type="button" class="ap-field-action" data-action="unverify-phone" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
-                        {{/model.is_phone_verified|bool}}
-                        {{^model.is_phone_verified|bool}}
-                            <button type="button" class="ap-field-action" data-action="force-verify-phone" title="Force verify"><i class="bi bi-patch-check"></i></button>
-                        {{/model.is_phone_verified|bool}}
-                        <button type="button" class="ap-field-action" data-action="change-phone" title="Change phone"><i class="bi bi-pencil"></i></button>
-                        <button type="button" class="ap-field-action" data-action="remove-phone" title="Remove phone"><i class="bi bi-x-lg"></i></button>
-                    {{/hasPhone|bool}}
-                    {{^hasPhone|bool}}
-                        <button type="button" class="ap-field-action" data-action="set-phone" title="Set phone number"><i class="bi bi-plus"></i></button>
-                    {{/hasPhone|bool}}
                 </div>
 
                 <!-- Account -->
-                <div class="ap-section-label">Account</div>
-                <div class="ap-field-row">
-                    <div class="ap-field-label">Username</div>
-                    <div class="ap-field-value">{{model.username}}</div>
-                    <button type="button" class="ap-field-action" data-action="edit-username" title="Edit"><i class="bi bi-pencil"></i></button>
-                </div>
-                <div class="ap-field-row">
-                    <div class="ap-field-label">Status</div>
-                    <div class="ap-field-value">
-                        {{#model.is_active|bool}}<span class="ap-badge-ok">Active</span>{{/model.is_active|bool}}
-                        {{^model.is_active|bool}}<span class="ap-badge-warn">Inactive</span>{{/model.is_active|bool}}
+                <div class="detail-section-eyebrow">Account</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Username</div>
+                    <div class="detail-flat-row-value">{{model.username}}</div>
+                    <div class="detail-flat-row-action">
+                        <button type="button" class="detail-section-action" data-action="edit-username" title="Edit"><i class="bi bi-pencil"></i></button>
                     </div>
                 </div>
-                <div class="ap-field-row">
-                    <div class="ap-field-label">Role</div>
-                    <div class="ap-field-value">
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Status</div>
+                    <div class="detail-flat-row-value">
+                        {{#model.is_active|bool}}<span class="badge text-bg-success">Active</span>{{/model.is_active|bool}}
+                        {{^model.is_active|bool}}<span class="badge text-bg-warning">Inactive</span>{{/model.is_active|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Role</div>
+                    <div class="detail-flat-row-value">
                         {{roleLabel}}
-                        {{#model.is_staff|bool}}<span class="ap-badge-muted">Staff</span>{{/model.is_staff|bool}}
+                        {{#model.is_staff|bool}}<span class="badge text-bg-secondary">Staff</span>{{/model.is_staff|bool}}
                     </div>
                 </div>
-                <div class="ap-field-row">
-                    <div class="ap-field-label">MFA</div>
-                    <div class="ap-field-value">
-                        {{#model.requires_mfa|bool}}<span class="ap-badge-ok">Required</span>{{/model.requires_mfa|bool}}
-                        {{^model.requires_mfa|bool}}<span class="ap-badge-muted">Not required</span>{{/model.requires_mfa|bool}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">MFA</div>
+                    <div class="detail-flat-row-value">
+                        {{#model.requires_mfa|bool}}<span class="badge text-bg-success">Required</span>{{/model.requires_mfa|bool}}
+                        {{^model.requires_mfa|bool}}<span class="badge text-bg-secondary">Not required</span>{{/model.requires_mfa|bool}}
                     </div>
                 </div>
-                <div class="ap-field-row">
-                    <div class="ap-field-label">Member Since</div>
-                    <div class="ap-field-value">{{model.date_joined|date}}</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Member Since</div>
+                    <div class="detail-flat-row-value">{{model.date_joined|date}}</div>
                 </div>
-                <div class="ap-field-row">
-                    <div class="ap-field-label">Last Login</div>
-                    <div class="ap-field-value">{{model.last_login|relative}}</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Last Login</div>
+                    <div class="detail-flat-row-value">{{model.last_login|relative}}</div>
                 </div>
             `,
             ...options

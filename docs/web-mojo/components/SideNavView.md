@@ -90,6 +90,7 @@ Each entry in the `sections` array is either a **navigable section** or a **divi
     icon:        'bi-info-circle',   // optional Bootstrap Icons class
     view:        viewInstance,        // any View instance — mounted into the content panel
     permissions: 'manage_users',     // optional permission string — section hidden if user lacks it
+    badge:       42,                  // optional count/string pill shown right of the label
 }
 ```
 
@@ -100,6 +101,41 @@ Each entry in the `sections` array is either a **navigable section** or a **divi
 | `icon` | `string` | — | Bootstrap Icons class (e.g. `bi-shield-lock`) |
 | `view` | `View` | ✅ | View instance — mounted on first activation |
 | `permissions` | `string` | — | Permission name — section is omitted if `app.activeUser.hasPerm()` returns false |
+| `badge` | `number\|string\|object\|falsy` | — | Optional pill rendered right of the label. See [Badges](#badges) |
+
+### Badges
+
+A section can show a small right-aligned pill with a count or a short string. Useful for live counts (incidents, conditions, unread items).
+
+```js
+// Simple count
+{ key: 'incidents', label: 'Incidents', badge: 42 }
+
+// String
+{ key: 'agent', label: 'Agent', badge: 'NEW' }
+
+// Variant
+{ key: 'errors', label: 'Errors', badge: { text: 5, variant: 'danger' } }
+```
+
+Variants: `'muted'` (default), `'primary'`, `'success'`, `'warning'`, `'danger'`. The active section's `muted` badge automatically inverts (white-on-primary) so it stays readable.
+
+#### `setBadge(key, value)`
+
+Update a badge dynamically without re-rendering the whole nav. Accepts the same shapes as the schema; pass `null`/`false`/`''` to clear.
+
+```js
+const sideNav = new SideNavView({ sections: [ { key: 'incidents', label: 'Incidents', view: incidentsView } ] });
+this.addChild(sideNav);
+
+// After incidentsView fetches its collection
+incidentsView.collection.on('fetch:success', () => {
+    const n = incidentsView.collection.totalCount ?? 0;
+    sideNav.setBadge('incidents', n > 0 ? n : null);
+});
+```
+
+Returns `true` when the section exists, `false` otherwise.
 
 ### Divider
 

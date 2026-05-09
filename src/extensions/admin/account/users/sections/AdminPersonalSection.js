@@ -12,84 +12,82 @@ export default class AdminPersonalSection extends View {
         super({
             className: 'admin-personal-section',
             template: `
-                <style>
-                    .aps-section-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #adb5bd; margin-bottom: 0.5rem; margin-top: 1.75rem; }
-                    .aps-section-label:first-child { margin-top: 0; }
-                    .aps-field-row { display: flex; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid #f0f0f0; }
-                    .aps-field-row:last-child { border-bottom: none; }
-                    .aps-field-label { width: 140px; font-size: 0.8rem; color: #6c757d; flex-shrink: 0; }
-                    .aps-field-value { flex: 1; font-size: 0.88rem; color: #212529; display: flex; align-items: center; gap: 0.4rem; }
-                    .aps-field-action { color: #6c757d; cursor: pointer; font-size: 0.8rem; margin-left: auto; padding: 0.15rem 0.4rem; border-radius: 4px; background: none; border: none; }
-                    .aps-field-action:hover { background: #f0f0f0; color: #0d6efd; }
-                    .aps-badge-ok { font-size: 0.65rem; padding: 0.15em 0.45em; background: #d1e7dd; color: #0f5132; border-radius: 3px; }
-                    .aps-badge-warn { font-size: 0.65rem; padding: 0.15em 0.45em; background: #fff3cd; color: #856404; border-radius: 3px; }
-                    .aps-not-set { color: #adb5bd; font-style: italic; font-size: 0.85rem; }
-                </style>
-
                 <!-- Name -->
-                <div class="aps-section-label">Name</div>
-                <div class="aps-field-row">
-                    <div class="aps-field-label">Display Name</div>
-                    <div class="aps-field-value">
+                <div class="detail-section-eyebrow">Name</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Display Name</div>
+                    <div class="detail-flat-row-value">
                         {{#model.display_name}}{{model.display_name}}{{/model.display_name}}
-                        {{^model.display_name}}<span class="aps-not-set">Not set</span>{{/model.display_name}}
+                        {{^model.display_name}}<span class="text-secondary fst-italic">Not set</span>{{/model.display_name}}
                     </div>
-                    <button type="button" class="aps-field-action" data-action="edit-display-name" title="Edit"><i class="bi bi-pencil"></i></button>
+                    <div class="detail-flat-row-action">
+                        <button type="button" class="detail-section-action" data-action="edit-display-name" title="Edit"><i class="bi bi-pencil"></i></button>
+                    </div>
                 </div>
-                <div class="aps-field-row">
-                    <div class="aps-field-label">First Name</div>
-                    <div class="aps-field-value">
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">First Name</div>
+                    <div class="detail-flat-row-value">
                         {{#model.first_name}}{{model.first_name}}{{/model.first_name}}
-                        {{^model.first_name}}<span class="aps-not-set">Not set</span>{{/model.first_name}}
+                        {{^model.first_name}}<span class="text-secondary fst-italic">Not set</span>{{/model.first_name}}
                     </div>
-                    <button type="button" class="aps-field-action" data-action="edit-first-name" title="Edit"><i class="bi bi-pencil"></i></button>
+                    <div class="detail-flat-row-action">
+                        <button type="button" class="detail-section-action" data-action="edit-first-name" title="Edit"><i class="bi bi-pencil"></i></button>
+                    </div>
                 </div>
-                <div class="aps-field-row">
-                    <div class="aps-field-label">Last Name</div>
-                    <div class="aps-field-value">
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Last Name</div>
+                    <div class="detail-flat-row-value">
                         {{#model.last_name}}{{model.last_name}}{{/model.last_name}}
-                        {{^model.last_name}}<span class="aps-not-set">Not set</span>{{/model.last_name}}
+                        {{^model.last_name}}<span class="text-secondary fst-italic">Not set</span>{{/model.last_name}}
                     </div>
-                    <button type="button" class="aps-field-action" data-action="edit-last-name" title="Edit"><i class="bi bi-pencil"></i></button>
+                    <div class="detail-flat-row-action">
+                        <button type="button" class="detail-section-action" data-action="edit-last-name" title="Edit"><i class="bi bi-pencil"></i></button>
+                    </div>
                 </div>
 
                 <!-- Details -->
-                <div class="aps-section-label">Details</div>
-                <div class="aps-field-row">
-                    <div class="aps-field-label">Date of Birth</div>
-                    <div class="aps-field-value">
+                <div class="detail-section-eyebrow">Details</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Date of Birth</div>
+                    <div class="detail-flat-row-value">
                         {{#hasDob|bool}}
                             {{dobFormatted}}
-                            {{#model.is_dob_verified|bool}}<span class="aps-badge-ok">Verified</span>{{/model.is_dob_verified|bool}}
-                            {{^model.is_dob_verified|bool}}<span class="aps-badge-warn">Unverified</span>{{/model.is_dob_verified|bool}}
+                            {{#model.is_dob_verified|bool}}<span class="badge text-bg-success">Verified</span>{{/model.is_dob_verified|bool}}
+                            {{^model.is_dob_verified|bool}}<span class="badge text-bg-warning">Unverified</span>{{/model.is_dob_verified|bool}}
                         {{/hasDob|bool}}
-                        {{^hasDob|bool}}<span class="aps-not-set">Not set</span>{{/hasDob|bool}}
+                        {{^hasDob|bool}}<span class="text-secondary fst-italic">Not set</span>{{/hasDob|bool}}
                     </div>
-                    {{#hasDob|bool}}
-                        {{#model.is_dob_verified|bool}}
-                            <button type="button" class="aps-field-action" data-action="unverify-dob" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
-                        {{/model.is_dob_verified|bool}}
-                        {{^model.is_dob_verified|bool}}
-                            <button type="button" class="aps-field-action" data-action="force-verify-dob" title="Force verify"><i class="bi bi-patch-check"></i></button>
-                        {{/model.is_dob_verified|bool}}
-                    {{/hasDob|bool}}
-                    <button type="button" class="aps-field-action" data-action="edit-dob" title="Edit"><i class="bi bi-pencil"></i></button>
+                    <div class="detail-flat-row-action">
+                        {{#hasDob|bool}}
+                            {{#model.is_dob_verified|bool}}
+                                <button type="button" class="detail-section-action" data-action="unverify-dob" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
+                            {{/model.is_dob_verified|bool}}
+                            {{^model.is_dob_verified|bool}}
+                                <button type="button" class="detail-section-action" data-action="force-verify-dob" title="Force verify"><i class="bi bi-patch-check"></i></button>
+                            {{/model.is_dob_verified|bool}}
+                        {{/hasDob|bool}}
+                        <button type="button" class="detail-section-action" data-action="edit-dob" title="Edit"><i class="bi bi-pencil"></i></button>
+                    </div>
                 </div>
-                <div class="aps-field-row">
-                    <div class="aps-field-label">Timezone</div>
-                    <div class="aps-field-value">{{timezoneDisplay}}</div>
-                    <button type="button" class="aps-field-action" data-action="edit-timezone" title="Edit"><i class="bi bi-pencil"></i></button>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Timezone</div>
+                    <div class="detail-flat-row-value">{{timezoneDisplay}}</div>
+                    <div class="detail-flat-row-action">
+                        <button type="button" class="detail-section-action" data-action="edit-timezone" title="Edit"><i class="bi bi-pencil"></i></button>
+                    </div>
                 </div>
 
                 <!-- Address -->
-                <div class="aps-section-label">Address</div>
-                <div class="aps-field-row">
-                    <div class="aps-field-label">Address</div>
-                    <div class="aps-field-value">
+                <div class="detail-section-eyebrow">Address</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Address</div>
+                    <div class="detail-flat-row-value">
                         {{#hasAddress|bool}}{{addressSummary}}{{/hasAddress|bool}}
-                        {{^hasAddress|bool}}<span class="aps-not-set">Not set</span>{{/hasAddress|bool}}
+                        {{^hasAddress|bool}}<span class="text-secondary fst-italic">Not set</span>{{/hasAddress|bool}}
                     </div>
-                    <button type="button" class="aps-field-action" data-action="edit-address" title="Edit"><i class="bi bi-pencil"></i></button>
+                    <div class="detail-flat-row-action">
+                        <button type="button" class="detail-section-action" data-action="edit-address" title="Edit"><i class="bi bi-pencil"></i></button>
+                    </div>
                 </div>
             `,
             ...options

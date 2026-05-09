@@ -8,6 +8,42 @@
  */
 
 /* ========================================================================
+   TableView density defaults
+   ========================================================================
+   Bootstrap's `.table` defaults to body-size (16 px) — too loose for
+   modern data tables. web-mojo TableView reduces body and header text
+   to a denser, more readable scale and tightens cell padding so more
+   rows fit above the fold. Scoped to `.table-view-component` so a
+   consumer's hand-rolled `<table>` markup is untouched.
+
+   For an even denser variant, opt into Bootstrap's existing `table-sm`
+   modifier via `tableOptions: { size: 'sm' }`.
+*/
+.table-view-component .table {
+    font-size: 0.875rem;          /* 14 px */
+    --bs-table-cell-padding-y: 0.55rem;
+    --bs-table-cell-padding-x: 0.75rem;
+}
+
+.table-view-component .table > thead > tr > th {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+    border-bottom: 1px solid var(--bs-border-color);
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    white-space: nowrap;
+}
+
+/* Number-like cells inherit tabular figures for clean column alignment */
+.table-view-component .table .font-monospace,
+.table-view-component .table code {
+    font-variant-numeric: tabular-nums;
+}
+
+/* ========================================================================
    MOJO Custom Selection Components
    ======================================================================== */
 

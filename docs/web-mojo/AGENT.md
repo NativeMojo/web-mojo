@@ -50,6 +50,8 @@ WEB-MOJO is a component-based JavaScript framework for building data-driven web 
 | ListView | `docs/web-mojo/components/ListView.md` |
 | TableView | `docs/web-mojo/components/TableView.md` |
 | TabView | `docs/web-mojo/components/TabView.md` |
+| SegmentControl | `docs/web-mojo/components/SegmentControl.md` |
+| MetricCard | `docs/web-mojo/components/MetricCard.md` |
 | ProgressView | `docs/web-mojo/components/ProgressView.md` |
 | SimpleSearchView | `docs/web-mojo/components/SimpleSearchView.md` |
 | TablePage | `docs/web-mojo/pages/TablePage.md` |

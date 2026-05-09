@@ -344,6 +344,7 @@ all format tokens.
 |---|---|---|---|
 | `withDelta` | `boolean` | `false` | Appends `with_delta=true` to the fetch call. Switches the default endpoint to `/api/metrics/series` (point-in-time + deltas) instead of `/api/metrics/fetch` (full time-series). Only set this when the caller needs delta values; most chart use-cases want `fetch`. |
 | `compactHeader` | `boolean` | `false` | Hides the gear menu and the chart-type switch. Leaves a minimal quick-range toggle. Useful for sub-charts inside dashboard cards where the surrounding card already carries a title and controls. |
+| `apiParams` | `object` | `{}` | Forward-compatible passthrough for arbitrary `/api/metrics/fetch` query params the framework doesn't promote to first-class options. Hardcoded constructor options always win — see the [Forward-compatible params](#forward-compatible-params-apiparams) subsection below. |
 
 ```js
 // Inside a dashboard card that pins bar+7d — no gear needed
@@ -363,6 +364,99 @@ new MetricsChart({
 
 - Bar charts default to stacked (because `MetricsChart` delegates to `SeriesChart`).
 - `MetricsChart.export()` was removed — use `exportChartPng(this.metrics.chart)` instead.
+
+### Group fan-out (rollup / per-child breakdown)
+
+`/api/metrics/fetch` supports three modes; `MetricsChart` exposes Modes 2 and 3 via two constructor options:
+
+| You want to render | `account` | `childKind` | `breakdown` |
+|---|---|---|---|
+| Single group (Mode 1) | `group-<id>` | — | — |
+| Whole-org rollup, summed (Mode 2) | `group-<root>` | `'location'` (or relevant kind) | — |
+| Per-child breakdown — one series per child group (Mode 3) | `group-<root>` | `'location'` | `true` |
+
+```js
+// Mode 2 — sum visits across every active descendant of group-42
+new MetricsChart({
+    containerId: 'rollup',
+    title: 'Visits — All Locations',
+    slugs: ['visits'],
+    account: 'group-42',
+    childKind: 'location',
+    granularity: 'days'
+});
+
+// Mode 3 — one series per child group; SINGLE SLUG ONLY
+new MetricsChart({
+    containerId: 'breakdown',
+    title: 'Visits by Location',
+    slugs: ['visits'],
+    account: 'group-42',
+    childKind: 'location',
+    breakdown: true,
+    granularity: 'days',
+    chartType: 'bar'   // each child becomes a stack layer
+});
+```
+
+Runtime setters:
+
+```js
+chart.setChildKind('region');   // refetch as Mode 2
+chart.setBreakdown(true);       // refetch as Mode 3
+chart.setChildKind(null);       // back to Mode 1 (also call setBreakdown(false) if breakdown was set)
+```
+
+**Mode 3 response carries a `groups` map** (`{ "Downtown": 12, "Uptown": 13 }`) keying child-group name → child id. The map is surfaced on the existing `metrics:data-loaded` event and cached on the instance as `this._lastGroups` for drill-in:
+
+```js
+chart.on('metrics:data-loaded', ({ groups }) => {
+    // groups is null in Modes 1 and 2; populated in Mode 3.
+    if (groups) {
+        // e.g. wire chart:click → /api/account/group/<id>
+    }
+});
+```
+
+**Name-collision rule:** if two children share a name, BOTH keys become `name#<id>` (e.g. `Downtown#12`, `Downtown#15`). The chart uses the raw response key verbatim — no slug-style title-casing in breakdown mode — so the legend label IS the lookup key into the `groups` map.
+
+**Backend validation surfaces in the existing error overlay.** Common 400 reasons:
+
+- `child_kind requires account=group-<parent_id>` — `account` was `public` / `global` / `user-*`.
+- `group-<id> not found` — bad parent id.
+- `fan-out resolved N children, exceeds METRICS_FANOUT_MAX_CHILDREN` — too many descendants; filter to a deeper subtree or stricter kind.
+- `breakdown=true requires a single slug` — drop the extra slug, or remove `breakdown`.
+- `403` — caller is not a member of the parent group or any ancestor with `view_metrics` / `metrics`.
+
+`MetricsMiniChart` and `MetricsMiniChartWidget` accept the same `childKind` option (Mode 2 only). Mode 3 is not supported on the mini variant — sparklines are single-series; for a per-child breakdown use a row of mini charts or a `KPIStrip`.
+
+### Forward-compatible params (`apiParams`)
+
+`apiParams` is a passthrough map for arbitrary query params the framework doesn't yet promote to first-class options. Use it when the backend grows a new knob (a feature flag, a region filter, an experiment bucket, future pagination, …) and you don't want to wait for a framework release to wire it up.
+
+```js
+new MetricsChart({
+    slugs: ['visits'],
+    account: 'group-42',
+    apiParams: { region: 'us-east', experiment: 'b' }
+});
+
+chart.setApiParams({ region: 'eu-west' });   // replaces the whole map; refetches
+```
+
+**Precedence rule.** `apiParams` is spread *first* into the request; hardcoded constructor options (`granularity`, `account`, `slugs`, `category`, `dateStart` / `dateEnd`, `withDelta`, `childKind`, `breakdown`) overwrite anything that overlaps. The `_` cache-buster always wins. So `apiParams: { granularity: 'minutes' }` will lose to a constructor `granularity: 'days'` — that's by design. `apiParams` is a base layer, not an override surface.
+
+**`apiParams` is purely a query-string mechanic.** Some constructor options have side effects beyond URL params — e.g. `withDelta: true` *also* switches the default endpoint to `/api/metrics/series`. Passing `apiParams: { with_delta: true }` will emit the param but will **not** switch the endpoint. If you need the side effect, use the first-class option.
+
+**`setApiParams(next)` replaces the map** rather than merging. Callers wanting a merge do it explicitly:
+
+```js
+chart.setApiParams({ ...chart.apiParams, region: 'eu-west' });
+```
+
+**Trust boundary**: values land directly in the URL. Treat `apiParams` as developer-controlled (same convention as `title:` — see the trust note at the top of the constructor). Do **not** pipe user input through it without sanitizing at the call site.
+
+`MetricsMiniChart` and `MetricsMiniChartWidget` accept the same `apiParams` option with identical precedence semantics.
 
 ---
 

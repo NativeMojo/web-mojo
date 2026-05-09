@@ -19,7 +19,7 @@ class UserTablePage extends TablePage {
             router: "admin/users",
             Collection: UserList,
 
-            viewDialogOptions: { header: false },
+            viewDialogOptions: { header: false, noBodyPadding: true, buttons: [] },
 
             defaultQuery: {
                 sort: '-last_activity',

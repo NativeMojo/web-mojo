@@ -569,7 +569,11 @@ export class View {
       templateContent = await this.template(this.data, this.state);
     }
 
-    if (this.cacheTemplate && templateContent) {
+    // Cache only string templates. Function templates are meant to be
+    // re-evaluated against current view state on every render — caching
+    // their first result would freeze them and break reactivity (e.g.
+    // a value computed from `this.value` would never update).
+    if (this.cacheTemplate && templateContent && typeof template !== 'function') {
       this._templateCache = templateContent;
     }
 
