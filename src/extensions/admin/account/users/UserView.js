@@ -1,39 +1,39 @@
 /**
  * UserView - User detail inspector built on the DetailView primitive.
  *
- * Sections (9, collapsing the legacy 12):
- *   Overview                — KPIs (Devices / Sessions / Last login / Groups)
- *                             + Identity card + Recent-activity timeline
- *   Profile                 — Personal / Account / Linked accounts field-cards
- *                             (collapses old Profile + Personal + OAuth)
+ * Sections (collapses the legacy 12 down):
+ *   Overview      — KPIs (Devices · Last login · Active sessions · Groups)
+ *                   + flat-row identity card + Recent-activity Timeline
+ *   Profile       — Personal / Account / Linked accounts flat-row sections
  *   ──── Access ────
- *   Groups                  — MemberList scoped to user (badge: count)
- *   Permissions             — grouped switches with Common/Advanced/Effective
- *                             segment toggle (collapses old Permissions + Adv)
- *   API Keys                — list + create / revoke (badge: count)
+ *   Groups        — TableView of MemberList scoped to user (badge: count)
+ *   Permissions   — TabView (Common / Advanced / Effective)
+ *   API Keys      — TableView with Generate Key toolbar button (badge: count)
  *   ──── Activity ────
- *   Devices                 — unified browser + push table with kind column
- *                             (collapses old Devices + Push Devices)
- *   Locations               — login map + table (TabView)
- *   Audit                   — unified incidents / activity / object-changes
- *                             feed with source segment filter (badge: count)
+ *   Devices       — Unified TableView (browser + push) with `kind` column filter
+ *   Locations     — Existing TabView (Map · Logins)
+ *   Audit         — TabView of three TableViews (Activity · Incidents · Object changes)
  *   ──── Settings ────
- *   Notifications           — channel preference grid
- *   Detail                  — metadata JSON
+ *   Notifications — channel preference grid
+ *   Metadata      — JSON dump
  *
- * Cross-record nav: clicking a Group row opens GroupView in a nested modal
- * (TableView clickAction='view' wires to the registered VIEW_CLASS).
+ * Open via `Modal.detail(new UserView({ model }))` — pair with
+ * `viewDialogOptions: { header: false, noBodyPadding: true,
+ * buttons: [] }` when wired through TableView. Inherits `size: 'lg'`
+ * from `Modal.detail()`'s default.
  */
 
 import View from '@core/View.js';
 import DetailView from '@core/views/data/DetailView.js';
 import TabView from '@core/views/navigation/TabView.js';
 import TableView from '@core/views/table/TableView.js';
-import TableRow from '@core/views/table/TableRow.js';
-import FormView from '@core/forms/FormView.js';
+import MetricCard from '@core/views/data/MetricCard.js';
+import Timeline from '@core/views/data/Timeline.js';
 import Modal from '@core/views/feedback/Modal.js';
+import MOJOUtils from '@core/utils/MOJOUtils.js';
+import dataFormatter from '@core/utils/DataFormatter.js';
 import rest from '@core/Rest.js';
-import { User, UserForms, UserDeviceList } from '@core/models/User.js';
+import { User, UserDeviceList } from '@core/models/User.js';
 import { LoginEventList } from '@ext/admin/models/LoginEvent.js';
 import { LogList } from '@core/models/Log.js';
 import { IncidentEventList } from '@ext/admin/models/Incident.js';
@@ -47,88 +47,60 @@ import AdminSecuritySection from './sections/AdminSecuritySection.js';
 import AdminConnectedSection from './sections/AdminConnectedSection.js';
 import AdminMetadataSection from '../../shared/AdminMetadataSection.js';
 
+const escapeHtml = MOJOUtils.escapeHtml;
 
-// ── Helpers ────────────────────────────────────────────────
 
-function epochToMs(value) {
-    if (value == null) return null;
-    if (typeof value === 'number') return value < 1e11 ? value * 1000 : value;
-    const ms = new Date(value).getTime();
-    return Number.isFinite(ms) ? ms : null;
-}
+// ── Helpers (kept minimal — DataFormatter pipes do the rest) ───────
 
-function formatRelative(value) {
-    const ms = epochToMs(value);
-    if (ms == null) return '—';
-    const diffSec = Math.round((Date.now() - ms) / 1000);
-    if (diffSec < 0)     return 'just now';
-    if (diffSec < 60)    return 'just now';
-    if (diffSec < 3600)  return `${Math.floor(diffSec / 60)}m ago`;
-    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
-    return `${Math.floor(diffSec / 86400)}d ago`;
-}
-
-function formatDate(value) {
-    const ms = epochToMs(value);
-    if (ms == null) return '—';
-    return new Date(ms).toLocaleDateString();
-}
-
-function formatDateTime(value) {
-    const ms = epochToMs(value);
-    if (ms == null) return '—';
-    return new Date(ms).toLocaleString();
-}
-
-function escapeHtml(str) {
-    if (str == null) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
-
+/**
+ * Online if `last_activity` is within 5 minutes. Used by header chips
+ * and the auxFn presence dot.
+ */
 function isOnline(model) {
-    const last = epochToMs(model?.get?.('last_activity'));
+    const last = model?.get?.('last_activity');
     if (last == null) return false;
-    // "Online" if active within the last 5 minutes.
-    return (Date.now() - last) < 5 * 60 * 1000;
+    const ms = (typeof last === 'number' && last < 1e11)
+        ? last * 1000
+        : new Date(last).getTime();
+    if (!Number.isFinite(ms)) return false;
+    return (Date.now() - ms) < 5 * 60 * 1000;
 }
 
-function deviceIcon(deviceInfo) {
-    const dev = deviceInfo?.device || {};
-    const os = deviceInfo?.os || {};
-    const isMobile = ['iPhone', 'Android'].some(m =>
-        (dev.family || '').includes(m) || (os.family || '').includes(m)
-    );
-    return isMobile ? 'bi-phone' : 'bi-laptop';
-}
+const PROVIDER_ICONS = {
+    google:    'bi-google',
+    github:    'bi-github',
+    microsoft: 'bi-microsoft',
+    apple:     'bi-apple',
+    facebook:  'bi-facebook',
+    twitter:   'bi-twitter-x',
+    linkedin:  'bi-linkedin'
+};
 
-function deviceLabel(deviceInfo) {
+const LOG_LEVEL_TONE = {
+    error:    'danger',
+    critical: 'danger',
+    warning:  'warning',
+    warn:     'warning',
+    info:     'info'
+};
+
+function _deviceLabel(deviceInfo) {
     const dev = deviceInfo?.device || {};
-    const ua = deviceInfo?.user_agent || {};
-    const os = deviceInfo?.os || {};
+    const ua  = deviceInfo?.user_agent || {};
+    const os  = deviceInfo?.os || {};
     const browser = ua.family ? `${ua.family} ${ua.major || ''}`.trim() : '';
-    const osName = os.family ? `${os.family} ${os.major || ''}`.trim() : '';
+    const osName  = os.family ? `${os.family} ${os.major || ''}`.trim() : '';
     const devName = `${dev.brand || ''} ${dev.family || ''}`.trim();
     return [browser || devName, osName].filter(Boolean).join(' · ') || '—';
 }
 
-const PROVIDER_ICONS = {
-    google: 'bi-google',
-    github: 'bi-github',
-    microsoft: 'bi-microsoft',
-    apple: 'bi-apple',
-    facebook: 'bi-facebook',
-    twitter: 'bi-twitter-x',
-    linkedin: 'bi-linkedin'
-};
-
-function countTruthy(obj) {
-    if (!obj || typeof obj !== 'object') return 0;
-    return Object.values(obj).filter(v => v === true).length;
+function _deviceIcon(deviceInfo) {
+    const dev = deviceInfo?.device || {};
+    const os  = deviceInfo?.os || {};
+    const isMobile = ['iPhone', 'Android'].some(m =>
+        (dev.family || '').includes(m) || (os.family || '').includes(m)
+    );
+    return isMobile ? 'bi-phone' : 'bi-laptop';
 }
 
 
@@ -136,82 +108,142 @@ function countTruthy(obj) {
 
 class UserOverviewSection extends View {
     constructor(options = {}) {
+        const {
+            devicesCollection,
+            pushDevicesCollection,
+            membersCollection,
+            loginsCollection,
+            activityCollection,
+            eventsCollection,
+            objectLogsCollection,
+            ...rest
+        } = options;
+
         super({
             className: 'user-overview-section',
-            ...options
+            template: `
+                <div class="detail-section-eyebrow">Account snapshot</div>
+                <div class="detail-kpi-grid">
+                    <div data-container="user-kpi-devices"></div>
+                    <div data-container="user-kpi-last-login"></div>
+                    <div data-container="user-kpi-sessions"></div>
+                    <div data-container="user-kpi-groups"></div>
+                </div>
+
+                <div class="detail-section-eyebrow">Identity</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Display name</div>
+                    <div class="detail-flat-row-value">{{model.display_name|default:'—'}}</div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Email</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasEmail|bool}}<a href="mailto:{{model.email}}">{{model.email}}</a>{{/hasEmail|bool}}
+                        {{^hasEmail|bool}}<span class="text-secondary">—</span>{{/hasEmail|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Phone</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasPhone|bool}}<code>{{model.phone_number}}</code>{{/hasPhone|bool}}
+                        {{^hasPhone|bool}}<span class="text-secondary">—</span>{{/hasPhone|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Account type</div>
+                    <div class="detail-flat-row-value">{{accountType}}</div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Joined</div>
+                    <div class="detail-flat-row-value"><code>{{model.date_joined|date}}</code></div>
+                </div>
+
+                <div class="detail-section-eyebrow">Recent activity</div>
+                <div data-container="user-overview-activity"></div>
+            `,
+            ...rest
         });
 
-        this.devicesCollection      = options.devicesCollection;
-        this.pushDevicesCollection  = options.pushDevicesCollection;
-        this.membersCollection      = options.membersCollection;
-        this.loginsCollection       = options.loginsCollection;
-        this.activityCollection     = options.activityCollection;
-        this.eventsCollection       = options.eventsCollection;
-        this.objectLogsCollection   = options.objectLogsCollection;
-
-        this.template = () => this._buildTemplate();
+        this.devicesCollection      = devicesCollection;
+        this.pushDevicesCollection  = pushDevicesCollection;
+        this.membersCollection      = membersCollection;
+        this.loginsCollection       = loginsCollection;
+        this.activityCollection     = activityCollection;
+        this.eventsCollection       = eventsCollection;
+        this.objectLogsCollection   = objectLogsCollection;
     }
 
-    _buildTemplate() {
-        return `
-            <div class="section-eyebrow">Section · Overview</div>
-            <h3 class="section-title">Account snapshot</h3>
-            <div class="detail-kpi-grid">
-                <div data-container="user-kpi-devices"></div>
-                <div data-container="user-kpi-sessions"></div>
-                <div data-container="user-kpi-last-login"></div>
-                <div data-container="user-kpi-groups"></div>
-            </div>
-            <div class="detail-pair">
-                <div data-container="user-overview-identity"></div>
-                <div data-container="user-overview-activity"></div>
-            </div>
-        `;
+    // ── Computed properties bound by the Mustache template ────
+
+    get hasEmail() { return !!this.model?.get?.('email'); }
+    get hasPhone() { return !!this.model?.get?.('phone_number'); }
+
+    get accountType() {
+        const m = this.model;
+        if (m.get('is_superuser')) return 'Superuser';
+        if (m.get('is_staff'))     return 'Staff';
+        return 'User';
     }
 
     async onInit() {
-        // KPI cards
-        this.kpiDevices  = this._kpi('user-kpi-devices',  'Devices',         this._deviceCount());
-        this.kpiSessions = this._kpi('user-kpi-sessions', 'Active sessions', this._sessionCount(), 'success');
-        this.kpiLastLogin = this._kpi('user-kpi-last-login', 'Last login',   this._lastLoginLabel());
-        this.kpiGroups   = this._kpi('user-kpi-groups',   'Groups',          this._groupCount());
-        [this.kpiDevices, this.kpiSessions, this.kpiLastLogin, this.kpiGroups]
+        // KPI cards — default size, tone-stripe driven by current state
+        this.kpiDevices = new MetricCard({
+            containerId: 'user-kpi-devices',
+            label: 'Devices',
+            value: () => String(this._deviceCount())
+        });
+        this.kpiLastLogin = new MetricCard({
+            containerId: 'user-kpi-last-login',
+            label: 'Last login',
+            value: () => this._lastLoginLabel()
+        });
+        this.kpiSessions = new MetricCard({
+            containerId: 'user-kpi-sessions',
+            label: 'Active sessions',
+            value: () => String(this._sessionCount()),
+            tone: () => this._sessionCount() > 0 ? 'success' : 'default'
+        });
+        this.kpiGroups = new MetricCard({
+            containerId: 'user-kpi-groups',
+            label: 'Groups',
+            value: () => String(this._groupCount())
+        });
+        [this.kpiDevices, this.kpiLastLogin, this.kpiSessions, this.kpiGroups]
             .forEach(c => this.addChild(c));
 
-        this.identityCard = new UserIdentityCard({
-            containerId: 'user-overview-identity',
-            model: this.model
-        });
-        this.addChild(this.identityCard);
-
-        this.activityCard = new UserOverviewActivityCard({
+        // Recent-activity timeline — function-valued items resolve on every render()
+        this.activityTimeline = new Timeline({
             containerId: 'user-overview-activity',
-            model: this.model,
-            loginsCollection: this.loginsCollection,
-            activityCollection: this.activityCollection,
-            eventsCollection: this.eventsCollection,
-            objectLogsCollection: this.objectLogsCollection
+            limit: 5,
+            emptyText: 'No recent activity yet.',
+            items: () => this._buildActivityItems()
         });
-        this.addChild(this.activityCard);
+        this.addChild(this.activityTimeline);
+    }
 
-        // Live updates from shared collections
+    async onAfterRender() {
+        await super.onAfterRender();
+        // Re-render the KPI cards + timeline whenever a shared collection refreshes
         const wireRefresh = (col) => {
-            if (col) col.on('fetch:success', () => this._refresh(), this);
+            if (col && !col._userOverviewWired) {
+                col.on('fetch:success', () => {
+                    if (this.kpiDevices?.isMounted())   this.kpiDevices.render().catch(() => {});
+                    if (this.kpiLastLogin?.isMounted()) this.kpiLastLogin.render().catch(() => {});
+                    if (this.kpiSessions?.isMounted())  this.kpiSessions.render().catch(() => {});
+                    if (this.kpiGroups?.isMounted())    this.kpiGroups.render().catch(() => {});
+                    if (this.activityTimeline?.isMounted()) {
+                        this.activityTimeline.setItems(() => this._buildActivityItems());
+                    }
+                }, this);
+                col._userOverviewWired = true;
+            }
         };
-        [this.devicesCollection, this.pushDevicesCollection,
-         this.membersCollection, this.loginsCollection].forEach(wireRefresh);
+        [this.devicesCollection, this.pushDevicesCollection, this.membersCollection,
+         this.loginsCollection, this.activityCollection, this.eventsCollection,
+         this.objectLogsCollection].forEach(wireRefresh);
     }
 
-    _kpi(containerId, label, value, tone = null) {
-        return new View({
-            containerId,
-            className: `metric-card${tone ? ` metric-card-tone-${tone}` : ''}`,
-            template: `
-                <div class="metric-card-label">${escapeHtml(label)}</div>
-                <div class="metric-card-value" data-kpi-value>${escapeHtml(String(value))}</div>
-            `
-        });
-    }
+    // ── KPI value helpers ─────────────────────────────────
 
     _deviceCount() {
         const browser = this.devicesCollection?.models?.length ?? 0;
@@ -219,191 +251,84 @@ class UserOverviewSection extends View {
         return browser + push;
     }
     _sessionCount() {
-        // Active sessions ≈ browser devices currently. The framework doesn't
-        // expose a session list here; admins use Devices section for detail.
         return this.devicesCollection?.models?.length ?? 0;
     }
     _lastLoginLabel() {
         const last = this.loginsCollection?.models?.[0]?.get?.('created')
-            ?? this.model.get('last_login');
-        return last ? formatRelative(last) : '—';
+            ?? this.model?.get?.('last_login');
+        if (!last) return '—';
+        return dataFormatter.apply(last, ['relative']) || '—';
     }
     _groupCount() {
         return this.membersCollection?.models?.length ?? 0;
     }
 
-    _refresh() {
-        this._setKpi(this.kpiDevices,  this._deviceCount());
-        this._setKpi(this.kpiSessions, this._sessionCount());
-        this._setKpi(this.kpiLastLogin, this._lastLoginLabel());
-        this._setKpi(this.kpiGroups,   this._groupCount());
-        if (this.activityCard?.isMounted()) this.activityCard.render().catch(() => {});
-    }
-
-    _setKpi(card, value) {
-        const el = card?.element?.querySelector('[data-kpi-value]');
-        if (el) el.textContent = String(value);
-    }
-}
-
-
-// ── Identity card (Overview) ───────────────────────────────
-
-class UserIdentityCard extends View {
-    constructor(options = {}) {
-        super({ ...options });
-        this.template = () => this._buildTemplate();
-    }
-
-    _buildTemplate() {
-        const m = this.model;
-        const isStaff = !!m.get('is_staff');
-        const isSuper = !!m.get('is_superuser');
-        const accountType = isSuper ? 'Superuser' : (isStaff ? 'Staff' : 'User');
-        const linked = this._linkedProvidersText();
-
-        const rows = [
-            ['Display name', escapeHtml(m.get('display_name') || '—')],
-            ['Email', m.get('email')
-                ? `<a href="mailto:${escapeHtml(m.get('email'))}">${escapeHtml(m.get('email'))}</a>`
-                : '<span class="text-secondary">—</span>'],
-            ['Phone', m.get('phone_number')
-                ? `<code>${escapeHtml(m.get('phone_number'))}</code>`
-                : '<span class="text-secondary">—</span>'],
-            ['Account type', escapeHtml(accountType)],
-            ['Joined', `<code>${escapeHtml(formatDate(m.get('date_joined')))}</code>`],
-            ['Linked accounts', linked]
-        ];
-
-        const rowsHtml = rows.map(([k, v], idx) => {
-            const last = idx === rows.length - 1;
-            const cls = last
-                ? 'd-flex justify-content-between py-1'
-                : 'd-flex justify-content-between border-bottom border-opacity-25 py-1';
-            return `<li class="${cls}"><span class="text-secondary">${escapeHtml(k)}</span><span>${v}</span></li>`;
-        }).join('');
-
-        return `
-            <div class="card">
-                <div class="card-body">
-                    <div class="card-title"><i class="bi bi-person"></i>Identity</div>
-                    <ul class="list-unstyled mb-0 small">${rowsHtml}</ul>
-                </div>
-            </div>
-        `;
-    }
-
-    _linkedProvidersText() {
-        // OAuth connections aren't on the User model directly; the Profile
-        // section fetches them on demand. Show a placeholder here.
-        return '<span class="text-secondary">—</span>';
-    }
-}
-
-
-// ── Recent-activity timeline (Overview) ────────────────────
-
-class UserOverviewActivityCard extends View {
-    constructor(options = {}) {
-        super({ ...options });
-        this.loginsCollection     = options.loginsCollection;
-        this.activityCollection   = options.activityCollection;
-        this.eventsCollection     = options.eventsCollection;
-        this.objectLogsCollection = options.objectLogsCollection;
-        this.template = () => this._buildTemplate();
-    }
-
-    _buildTemplate() {
-        const items = this._collectItems();
-
-        if (!items.length) {
-            return `
-                <div class="card">
-                    <div class="card-body">
-                        <div class="card-title"><i class="bi bi-list-ul"></i>Recent activity</div>
-                        <div class="text-secondary small">No recent activity yet.</div>
-                    </div>
-                </div>
-            `;
-        }
-
-        const itemsHtml = items.map(item => `
-            <li class="detail-timeline-item${item.tone ? ` tone-${item.tone}` : ''}">
-                <div>
-                    <div class="detail-timeline-headline">${escapeHtml(item.headline)}</div>
-                    ${item.detail ? `<div class="detail-timeline-detail">${item.detail}</div>` : ''}
-                </div>
-                <span class="detail-timeline-when">${escapeHtml(item.when)}</span>
-            </li>
-        `).join('');
-
-        return `
-            <div class="card">
-                <div class="card-body">
-                    <div class="card-title"><i class="bi bi-list-ul"></i>Recent activity</div>
-                    <ol class="detail-timeline">${itemsHtml}</ol>
-                </div>
-            </div>
-        `;
-    }
-
-    /** Pull up to 5 items from the most-recent of each shared collection. */
-    _collectItems() {
+    /**
+     * Pull up to 5 items from the most-recent of each shared collection.
+     * Timeline `detail` is trusted HTML — every model-controlled value is
+     * escaped via MOJOUtils.escapeHtml() before composition.
+     */
+    _buildActivityItems() {
         const out = [];
 
         const logins = this.loginsCollection?.models?.slice(0, 2) || [];
         for (const l of logins) {
-            const ip = l.get('ip_address');
-            const city = l.get('city');
+            const ip      = l.get('ip_address');
+            const city    = l.get('city');
             const country = l.get('country_code');
-            const where = [city, country].filter(Boolean).join(', ');
+            const where   = [city, country].filter(Boolean).join(', ');
+            const detail  = [
+                ip ? `<code>${escapeHtml(String(ip))}</code>` : '',
+                where ? `<span class="text-secondary">${escapeHtml(where)}</span>` : ''
+            ].filter(Boolean).join(' · ');
             out.push({
-                ts: epochToMs(l.get('created')),
+                _ts:      _toMs(l.get('created')),
+                tone:     'info',
                 headline: 'Logged in',
-                detail: [ip ? `<code>${escapeHtml(ip)}</code>` : '', where ? `<span class="text-secondary">${escapeHtml(where)}</span>` : '']
-                    .filter(Boolean).join(' · '),
-                when: formatRelative(l.get('created')),
-                tone: 'info'
+                detail,
+                when:     dataFormatter.apply(l.get('created'), ['relative'])
             });
         }
 
         const events = this.eventsCollection?.models?.slice(0, 2) || [];
         for (const e of events) {
+            const cat = e.get('category');
             out.push({
-                ts: epochToMs(e.get('created')),
-                headline: e.get('title') || e.get('category') || 'Event',
-                detail: e.get('category') ? `<span class="text-secondary">${escapeHtml(e.get('category'))}</span>` : '',
-                when: formatRelative(e.get('created')),
-                tone: 'danger'
+                _ts:      _toMs(e.get('created')),
+                tone:     'danger',
+                headline: e.get('title') || cat || 'Incident event',
+                detail:   cat ? `<span class="text-secondary">${escapeHtml(String(cat))}</span>` : '',
+                when:     dataFormatter.apply(e.get('created'), ['relative'])
             });
         }
 
         const logs = this.objectLogsCollection?.models?.slice(0, 2) || [];
         for (const log of logs) {
+            const msg = log.get('log');
             out.push({
-                ts: epochToMs(log.get('created')),
+                _ts:      _toMs(log.get('created')),
+                tone:     LOG_LEVEL_TONE[(log.get('level') || '').toLowerCase()] || null,
                 headline: log.get('kind') || 'Change',
-                detail: log.get('log') ? `<span class="text-secondary">${escapeHtml(String(log.get('log')).slice(0, 80))}</span>` : '',
-                when: formatRelative(log.get('created')),
-                tone: null
+                detail:   msg ? `<span class="text-secondary">${escapeHtml(String(msg).slice(0, 80))}</span>` : '',
+                when:     dataFormatter.apply(log.get('created'), ['relative'])
             });
         }
 
         const activity = this.activityCollection?.models?.slice(0, 1) || [];
         for (const a of activity) {
+            const path = a.get('path');
             out.push({
-                ts: epochToMs(a.get('created')),
+                _ts:      _toMs(a.get('created')),
+                tone:     LOG_LEVEL_TONE[(a.get('level') || '').toLowerCase()] || null,
                 headline: a.get('kind') || 'Activity',
-                detail: a.get('path') ? `<code class="small">${escapeHtml(a.get('path'))}</code>` : '',
-                when: formatRelative(a.get('created')),
-                tone: null
+                detail:   path ? `<code class="small">${escapeHtml(String(path))}</code>` : '',
+                when:     dataFormatter.apply(a.get('created'), ['relative'])
             });
         }
 
-        // Sort newest first, take 5
         return out
-            .filter(i => i.ts != null)
-            .sort((a, b) => b.ts - a.ts)
+            .filter(i => i._ts != null)
+            .sort((a, b) => b._ts - a._ts)
             .slice(0, 5);
     }
 }
@@ -415,145 +340,170 @@ class UserProfileSection extends View {
     constructor(options = {}) {
         super({
             className: 'user-profile-section',
+            template: `
+                <div class="detail-section-eyebrow">
+                    Personal
+                    <button type="button" class="detail-section-action" data-action="edit-personal" title="Edit personal info"><i class="bi bi-pencil"></i></button>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Display name</div>
+                    <div class="detail-flat-row-value">{{model.display_name|default:'—'}}</div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Username</div>
+                    <div class="detail-flat-row-value"><code>{{model.username|default:'—'}}</code></div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Email</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasEmail|bool}}{{model.email}}{{/hasEmail|bool}}
+                        {{^hasEmail|bool}}<span class="text-secondary">—</span>{{/hasEmail|bool}}
+                        {{#model.is_email_verified|bool}}<span class="badge text-bg-success ms-1"><i class="bi bi-shield-check me-1"></i>verified</span>{{/model.is_email_verified|bool}}
+                        {{^model.is_email_verified|bool}}{{#hasEmail|bool}}<span class="badge text-bg-warning ms-1">unverified</span>{{/hasEmail|bool}}{{/model.is_email_verified|bool}}
+                    </div>
+                    <div class="detail-flat-row-action">
+                        {{#hasEmail|bool}}
+                            {{#model.is_email_verified|bool}}
+                                <button type="button" class="detail-section-action" data-action="unverify-email" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
+                            {{/model.is_email_verified|bool}}
+                            {{^model.is_email_verified|bool}}
+                                <button type="button" class="detail-section-action" data-action="force-verify-email" title="Force verify"><i class="bi bi-patch-check"></i></button>
+                            {{/model.is_email_verified|bool}}
+                        {{/hasEmail|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Phone</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasPhone|bool}}
+                            <code>{{model.phone_number}}</code>
+                            {{#model.is_phone_verified|bool}}<span class="badge text-bg-success ms-1"><i class="bi bi-shield-check me-1"></i>verified</span>{{/model.is_phone_verified|bool}}
+                            {{^model.is_phone_verified|bool}}<span class="badge text-bg-warning ms-1">unverified</span>{{/model.is_phone_verified|bool}}
+                        {{/hasPhone|bool}}
+                        {{^hasPhone|bool}}<span class="text-secondary fst-italic">Not set</span>{{/hasPhone|bool}}
+                    </div>
+                    <div class="detail-flat-row-action">
+                        {{#hasPhone|bool}}
+                            {{#model.is_phone_verified|bool}}
+                                <button type="button" class="detail-section-action" data-action="unverify-phone" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
+                            {{/model.is_phone_verified|bool}}
+                            {{^model.is_phone_verified|bool}}
+                                <button type="button" class="detail-section-action" data-action="force-verify-phone" title="Force verify"><i class="bi bi-patch-check"></i></button>
+                            {{/model.is_phone_verified|bool}}
+                        {{/hasPhone|bool}}
+                    </div>
+                </div>
+
+                <div class="detail-section-eyebrow">
+                    Account
+                    <button type="button" class="detail-section-action" data-action="edit-account" title="Edit account"><i class="bi bi-pencil"></i></button>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Account type</div>
+                    <div class="detail-flat-row-value">{{accountType}}</div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Status</div>
+                    <div class="detail-flat-row-value">
+                        {{#model.is_active|bool}}<span class="badge text-bg-success">Active</span>{{/model.is_active|bool}}
+                        {{^model.is_active|bool}}<span class="badge text-bg-secondary">Inactive</span>{{/model.is_active|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">MFA</div>
+                    <div class="detail-flat-row-value">
+                        {{#model.requires_mfa|bool}}<span class="badge text-bg-success">Required</span>{{/model.requires_mfa|bool}}
+                        {{^model.requires_mfa|bool}}<span class="badge text-bg-secondary">Not required</span>{{/model.requires_mfa|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Joined</div>
+                    <div class="detail-flat-row-value"><code>{{model.date_joined|date}}</code></div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Last login</div>
+                    <div class="detail-flat-row-value">{{model.last_login|relative|default:'—'}}</div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Last seen</div>
+                    <div class="detail-flat-row-value">{{model.last_activity|relative|default:'—'}}</div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Timezone</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasTimezone|bool}}{{timezone}}{{/hasTimezone|bool}}
+                        {{^hasTimezone|bool}}<span class="text-secondary">—</span>{{/hasTimezone|bool}}
+                    </div>
+                </div>
+
+                <div class="detail-section-eyebrow">
+                    Linked accounts
+                    <button type="button" class="detail-section-action" data-action="manage-linked" title="Manage linked accounts"><i class="bi bi-pencil"></i></button>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">SSO providers</div>
+                    <div class="detail-flat-row-value">{{{linkedProvidersHtml}}}</div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">2-factor</div>
+                    <div class="detail-flat-row-value">
+                        {{#model.requires_mfa|bool}}<span class="badge text-bg-success">Required</span>{{/model.requires_mfa|bool}}
+                        {{^model.requires_mfa|bool}}<span class="badge text-bg-secondary">Not required</span>{{/model.requires_mfa|bool}}
+                        <a href="#" class="small ms-2" data-action="manage-passkeys">Manage passkeys</a>
+                    </div>
+                </div>
+            `,
             ...options
         });
         this.connections = [];
-        this.template = () => this._buildTemplate();
     }
 
     async onBeforeRender() {
         try {
             const resp = await rest.GET('/api/account/oauth_connection', { user: this.model.id });
             const results = resp?.data?.results || resp?.data || [];
-            this.connections = (Array.isArray(results) ? results : []).map(c => ({
-                ...c,
-                icon: PROVIDER_ICONS[c.provider] || 'bi-link-45deg'
-            }));
+            this.connections = Array.isArray(results) ? results : [];
         } catch (e) {
             this.connections = [];
         }
     }
 
-    _buildTemplate() {
+    // ── Computed properties ─────────────────────────
+
+    get accountType() {
         const m = this.model;
-        const isStaff = !!m.get('is_staff');
-        const isSuper = !!m.get('is_superuser');
-        const accountType = isSuper ? 'Superuser' : (isStaff ? 'Staff' : 'User');
-        const status = m.get('is_active')
-            ? '<span class="badge text-bg-success">Active</span>'
-            : '<span class="badge text-bg-secondary">Inactive</span>';
+        if (m.get('is_superuser')) return 'Superuser';
+        if (m.get('is_staff'))     return 'Staff';
+        return 'User';
+    }
+    get hasEmail()     { return !!this.model?.get?.('email'); }
+    get hasPhone()     { return !!this.model?.get?.('phone_number'); }
+    get hasTimezone()  { return !!this.model?.get?.('metadata')?.timezone; }
+    get timezone()     { return this.model?.get?.('metadata')?.timezone || ''; }
 
-        const verifiedEmail = !!m.get('is_email_verified');
-        const verifiedPhone = !!m.get('is_phone_verified');
-        const requiresMfa = !!m.get('requires_mfa');
-
-        // Force-verify / unverify affordances inline on the email/phone rows.
-        // Click flips `is_email_verified` / `is_phone_verified` (admin-only).
-        const emailVerifyBtn = verifiedEmail
-            ? '<button class="btn btn-sm btn-link link-secondary p-0 ms-1" data-action="unverify-email" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>'
-            : '<button class="btn btn-sm btn-link link-success p-0 ms-1" data-action="force-verify-email" title="Force verify"><i class="bi bi-patch-check"></i></button>';
-        const phoneVerifyBtn = verifiedPhone
-            ? '<button class="btn btn-sm btn-link link-secondary p-0 ms-1" data-action="unverify-phone" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>'
-            : '<button class="btn btn-sm btn-link link-success p-0 ms-1" data-action="force-verify-phone" title="Force verify"><i class="bi bi-patch-check"></i></button>';
-
-        // Personal subsection
-        const personalRows = [
-            ['Display name', escapeHtml(m.get('display_name') || m.get('username') || '—')],
-            ['Username', `<code>${escapeHtml(m.get('username') || '—')}</code>`],
-            ['Email', `${escapeHtml(m.get('email') || '—')}${
-                verifiedEmail
-                    ? ' <span class="badge text-bg-success ms-1"><i class="bi bi-shield-check me-1"></i>verified</span>'
-                    : ' <span class="badge text-bg-warning ms-1">unverified</span>'
-            }${m.get('email') ? emailVerifyBtn : ''}`],
-            ['Phone', m.get('phone_number')
-                ? `<code>${escapeHtml(m.get('phone_number'))}</code>${
-                    verifiedPhone
-                        ? ' <span class="badge text-bg-success ms-1"><i class="bi bi-shield-check me-1"></i>verified</span>'
-                        : ' <span class="badge text-bg-warning ms-1">unverified</span>'
-                }${phoneVerifyBtn}`
-                : '<span class="text-secondary fst-italic">Not set</span>'],
-        ];
-
-        // Account subsection
-        const accountRows = [
-            ['Account type', escapeHtml(accountType)],
-            ['Status', status],
-            ['Joined', escapeHtml(formatDate(m.get('date_joined')))],
-            ['Last login', escapeHtml(formatRelative(m.get('last_login')))],
-            ['Last seen', escapeHtml(formatRelative(m.get('last_activity')))],
-        ];
-        const meta = m.get('metadata') || {};
-        if (meta.timezone) accountRows.push(['Timezone', escapeHtml(meta.timezone)]);
-
-        // Linked accounts subsection
-        let linkedHtml;
-        if (this.connections.length) {
-            linkedHtml = this.connections.map(c =>
-                `<span class="badge text-bg-light border me-1"><i class="bi ${escapeHtml(c.icon)} me-1"></i>${escapeHtml(c.provider)}${c.email ? ` · ${escapeHtml(c.email)}` : ''}</span>`
-            ).join('');
-        } else {
-            linkedHtml = '<span class="text-secondary fst-italic">No linked accounts</span>';
+    /** Trusted HTML — providers list rendered as small inline badges. */
+    get linkedProvidersHtml() {
+        if (!this.connections.length) {
+            return '<span class="text-secondary fst-italic">No linked accounts</span>';
         }
-
-        const mfaHtml = requiresMfa
-            ? '<span class="badge text-bg-success">Required</span>'
-            : '<span class="badge text-bg-secondary">Not required</span>';
-
-        const linkedRows = [
-            ['SSO providers', linkedHtml],
-            ['2-factor', `${mfaHtml} <a href="#" class="small ms-2" data-action="manage-passkeys">Manage passkeys</a>`]
-        ];
-
-        return `
-            ${this._buildSubsection('Personal',         'edit-personal',  personalRows)}
-            ${this._buildSubsection('Account',          'edit-account',   accountRows)}
-            ${this._buildSubsection('Linked accounts',  'manage-linked',  linkedRows)}
-        `;
+        return this.connections.map(c => {
+            const icon = PROVIDER_ICONS[c.provider] || 'bi-link-45deg';
+            const safeProvider = escapeHtml(String(c.provider || ''));
+            const emailPart = c.email ? ` · ${escapeHtml(String(c.email))}` : '';
+            return `<span class="badge text-bg-light border me-1"><i class="bi ${escapeHtml(icon)} me-1"></i>${safeProvider}${emailPart}</span>`;
+        }).join('');
     }
 
-    /**
-     * Render one subsection: a `.detail-section-eyebrow` (uppercase
-     * label + edit pencil right-aligned) followed by a stack of
-     * `.detail-flat-row`s. Auto-spaces above when not the first
-     * subsection in the section (per the framework `:not(:first-child)`
-     * margin rule in core.css).
-     */
-    _buildSubsection(title, editAction, rows) {
-        const rowsHtml = rows.map(([k, v]) => `
-            <div class="detail-flat-row">
-                <div class="detail-flat-row-label">${escapeHtml(k)}</div>
-                <div class="detail-flat-row-value">${v}</div>
-            </div>
-        `).join('');
+    // ── Edit pencils — bubble to UserView for the real handlers ──
 
-        return `
-            <div class="detail-section-eyebrow">
-                ${escapeHtml(title)}
-                <button type="button" class="detail-section-action" data-action="${escapeHtml(editAction)}" title="Edit ${escapeHtml(title.toLowerCase())}"><i class="bi bi-pencil"></i></button>
-            </div>
-            ${rowsHtml}
-        `;
-    }
-
-    // ── Card edit actions — bubble to UserView for the real handlers ──
-
-    async onActionEditPersonal() {
-        this.emit('action:edit-personal');
-    }
-    async onActionEditAccount() {
-        this.emit('action:edit-account');
-    }
-    async onActionManageLinked() {
-        this.emit('action:manage-linked');
-    }
+    async onActionEditPersonal()   { this.emit('action:edit-personal'); }
+    async onActionEditAccount()    { this.emit('action:edit-account'); }
+    async onActionManageLinked()   { this.emit('action:manage-linked'); }
     async onActionManagePasskeys(event) {
         event?.preventDefault?.();
         this.emit('action:manage-passkeys');
     }
 
-    // ── Inline force-verify (admin override) ─────────────────────────
-    // Bubbles to UserView so the same handlers can also be triggered
-    // from the context menu.
     async onActionForceVerifyEmail()  { this.emit('action:force-verify-email');  return true; }
     async onActionUnverifyEmail()     { this.emit('action:unverify-email');      return true; }
     async onActionForceVerifyPhone()  { this.emit('action:force-verify-phone');  return true; }
@@ -561,66 +511,53 @@ class UserProfileSection extends View {
 }
 
 
-// ── Permissions section ────────────────────────────────────
+// ── Permissions section (TabView of three views) ────────────
 
-class UserPermissionsSection extends View {
+/**
+ * One tab body — renders permission rows grouped by tab. `mode` controls
+ * which set is rendered (common categories vs granular tabs vs effective
+ * read-only view).
+ */
+class PermissionsTabBody extends View {
     constructor(options = {}) {
+        const { mode, ...rest } = options;
         super({
-            className: 'user-permissions-section',
-            ...options
-        });
-        this.mode = 'common';   // common | advanced | effective
-        this.filterText = '';
-        this.template = () => this._buildTemplate();
-    }
-
-    _buildTemplate() {
-        const groups = this._buildGroups();
-        const groupsHtml = groups.map(g => this._renderGroup(g)).join('');
-
-        return `
-            <div class="section-eyebrow">Section · Permissions</div>
-            <h3 class="section-title">What this user can do</h3>
-
-            <div class="detail-toolbar d-flex justify-content-between align-items-center mb-3">
-                <input class="form-control form-control-sm"
-                       style="max-width: 280px;"
+            className: 'user-permissions-tab',
+            template: `
+                <input class="form-control form-control-sm mb-3"
                        placeholder="Filter permissions…"
-                       value="${escapeHtml(this.filterText)}"
+                       value="{{filterText}}"
                        data-action="filter-perms"
                        data-action-debounce="200">
-                <div class="btn-group" role="group" aria-label="Permission view">
-                    <button type="button" class="btn btn-sm ${this.mode === 'common' ? 'btn-secondary' : 'btn-outline-secondary'}" data-action="set-mode" data-mode="common">Common</button>
-                    <button type="button" class="btn btn-sm ${this.mode === 'advanced' ? 'btn-secondary' : 'btn-outline-secondary'}" data-action="set-mode" data-mode="advanced">Advanced</button>
-                    <button type="button" class="btn btn-sm ${this.mode === 'effective' ? 'btn-secondary' : 'btn-outline-secondary'}" data-action="set-mode" data-mode="effective">Effective</button>
-                </div>
-            </div>
-
-            ${groupsHtml || '<div class="text-secondary small">No permissions match.</div>'}
-        `;
+                {{{groupsHtml}}}
+            `,
+            ...rest
+        });
+        this.mode = mode || 'common';   // common | advanced | effective
+        this.filterText = '';
     }
 
-    /**
-     * Build the groups of permissions to display based on the current mode.
-     *
-     * common    — User.CATEGORY_PERMISSIONS (curated category-level toggles)
-     * advanced  — User.GRANULAR_PERMISSION_TABS (every fine-grained perm)
-     * effective — like advanced, but each granular row is checked when
-     *             either it OR its parent category permission is granted.
-     */
+    /** Trusted HTML — every interpolated value is escaped before composition. */
+    get groupsHtml() {
+        const groups = this._buildGroups();
+        if (!groups.length) {
+            return '<div class="text-secondary small">No permissions match.</div>';
+        }
+        return groups.map(g => this._renderGroup(g)).join('');
+    }
+
     _buildGroups() {
         const m = this.model;
         const granted = m.get('permissions') || {};
         const filter = this.filterText.toLowerCase();
-
-        const matchesFilter = (label, key) => {
+        const matches = (label, key) => {
             if (!filter) return true;
             return (label || '').toLowerCase().includes(filter)
                 || (key || '').toLowerCase().includes(filter);
         };
 
         if (this.mode === 'common') {
-            const perms = (User.CATEGORY_PERMISSIONS || []).filter(p => matchesFilter(p.label, p.name));
+            const perms = (User.CATEGORY_PERMISSIONS || []).filter(p => matches(p.label, p.name));
             if (!perms.length) return [];
             return [{
                 title: 'Categories',
@@ -631,7 +568,8 @@ class UserPermissionsSection extends View {
                     permName: p.name,
                     tooltip: p.tooltip,
                     checked: !!granted[p.name],
-                    disabled: false
+                    disabled: false,
+                    inheritedFrom: null
                 }))
             }];
         }
@@ -639,7 +577,7 @@ class UserPermissionsSection extends View {
         const tabs = User.GRANULAR_PERMISSION_TABS || [];
         const groups = [];
         for (const tab of tabs) {
-            const perms = (tab.permissions || []).filter(p => matchesFilter(p.label, p.name));
+            const perms = (tab.permissions || []).filter(p => matches(p.label, p.name));
             if (!perms.length) continue;
 
             const rows = perms.map(p => {
@@ -684,8 +622,12 @@ class UserPermissionsSection extends View {
             <div class="detail-perm-row">
                 <div class="detail-perm-name">
                     ${escapeHtml(r.label)}
-                    ${r.tooltip ? `<span class="detail-perm-help">${escapeHtml(r.tooltip)}</span>` : `<span class="detail-perm-key">${escapeHtml(r.key)}</span>`}
-                    ${r.inheritedFrom ? `<span class="text-secondary small ms-1">· inherited from <code>${escapeHtml(r.inheritedFrom)}</code></span>` : ''}
+                    ${r.tooltip
+                        ? `<span class="detail-perm-help">${escapeHtml(r.tooltip)}</span>`
+                        : `<span class="detail-perm-key">${escapeHtml(r.key)}</span>`}
+                    ${r.inheritedFrom
+                        ? `<span class="text-secondary small ms-1">· inherited from <code>${escapeHtml(r.inheritedFrom)}</code></span>`
+                        : ''}
                 </div>
                 <div class="form-check form-switch m-0">
                     <input class="form-check-input"
@@ -709,15 +651,6 @@ class UserPermissionsSection extends View {
                 ${rowsHtml}
             </div>
         `;
-    }
-
-    // ── Action handlers ────────────────────────────────────
-
-    async onActionSetMode(event, element) {
-        const mode = element?.dataset?.mode;
-        if (!mode || mode === this.mode) return;
-        this.mode = mode;
-        await this.render();
     }
 
     async onActionFilterPerms(event, element) {
@@ -749,453 +682,450 @@ class UserPermissionsSection extends View {
 }
 
 
-// ── Devices section (browser + push unified) ──────────────
-
-class UserDevicesSection extends View {
+/**
+ * Permissions section — wraps a TabView of three PermissionsTabBody
+ * children (Common / Advanced / Effective).
+ */
+class UserPermissionsSection extends View {
     constructor(options = {}) {
         super({
-            className: 'user-devices-section',
+            className: 'user-permissions-section',
+            template: `
+                <div class="detail-section-eyebrow">Permissions</div>
+                <div data-container="user-permissions-tabs"></div>
+            `,
             ...options
         });
-        this.devicesCollection     = options.devicesCollection;
-        this.pushDevicesCollection = options.pushDevicesCollection;
-        this.kindFilter = 'all'; // all | browser | push
-        this.template = () => this._buildTemplate();
+    }
+
+    async onInit() {
+        const m = this.model;
+        this.commonTab    = new PermissionsTabBody({ model: m, mode: 'common' });
+        this.advancedTab  = new PermissionsTabBody({ model: m, mode: 'advanced' });
+        this.effectiveTab = new PermissionsTabBody({ model: m, mode: 'effective' });
+
+        this.tabView = new TabView({
+            containerId: 'user-permissions-tabs',
+            tabs: {
+                'Common':    this.commonTab,
+                'Advanced':  this.advancedTab,
+                'Effective': this.effectiveTab
+            },
+            activeTab: 'Common'
+        });
+        this.addChild(this.tabView);
+    }
+}
+
+
+// ── Devices section (single TableView, browser + push merged) ──
+
+/**
+ * Backed by a synthetic in-memory list rebuilt from the two shared
+ * collections. `_kindFilter` (column filter) trims rows in place; the
+ * "All / Browser / Push" UI lives in TableView's column-filter dropdown.
+ */
+class UserDevicesSection extends View {
+    constructor(options = {}) {
+        const { devicesCollection, pushDevicesCollection, ...rest } = options;
+        super({
+            className: 'user-devices-section',
+            template: `
+                <div class="detail-section-eyebrow">Devices &amp; sessions</div>
+                <div data-container="user-devices-table"></div>
+            `,
+            ...rest
+        });
+        this.devicesCollection     = devicesCollection;
+        this.pushDevicesCollection = pushDevicesCollection;
+        this.kindFilter = 'all';   // all | browser | push
+    }
+
+    async onInit() {
+        // Local-only TableView — the collection is a synthetic array we rebuild
+        // every time the source collections change. Kind filter is a plain
+        // select tied to the local re-render.
+        this.tableView = new TableView({
+            containerId: 'user-devices-table',
+            collection: this._buildSyntheticArray(),
+            showAdd: false,
+            showExport: false,
+            showFullscreen: false,
+            searchable: false,
+            paginated: false,
+            sortable: true,
+            filterable: false,   // we drive the filter ourselves via the toolbar button
+            columns: [
+                {
+                    key: 'kind',
+                    label: 'Kind',
+                    width: '110px',
+                    template: `
+                        {{#isPush|bool}}<span class="badge text-bg-primary"><i class="bi bi-bell me-1"></i>Push</span>{{/isPush|bool}}
+                        {{^isPush|bool}}<span class="badge text-bg-info"><i class="bi {{deviceIcon}} me-1"></i>Browser</span>{{/isPush|bool}}
+                    `
+                },
+                { key: 'label',      label: 'Device' },
+                { key: 'last_seen',  label: 'Last seen', formatter: 'relative', sortable: true, width: '140px' },
+                { key: 'identifier', label: 'Identifier', formatter: 'truncate_middle(20)', width: '200px' },
+                { key: 'signals',    label: 'Signals',   formatter: 'badge', width: '120px' }
+            ],
+            toolbarButtons: [
+                {
+                    label: 'All',
+                    icon: 'bi bi-list-ul',
+                    handler: () => this._setKind('all')
+                },
+                {
+                    label: 'Browser',
+                    icon: 'bi bi-laptop',
+                    handler: () => this._setKind('browser')
+                },
+                {
+                    label: 'Push',
+                    icon: 'bi bi-bell',
+                    handler: () => this._setKind('push')
+                },
+                {
+                    label: 'Refresh',
+                    icon: 'bi bi-arrow-clockwise',
+                    handler: () => this._refresh()
+                }
+            ]
+        });
+        this.addChild(this.tableView);
     }
 
     async onAfterRender() {
         await super.onAfterRender();
-        // Refresh on collection updates
         const wire = (col) => {
-            if (col && !col._userViewWired) {
-                col.on('fetch:success', () => {
-                    if (this.isMounted()) this.render().catch(() => {});
-                }, this);
-                col._userViewWired = true;
+            if (col && !col._userDevicesWired) {
+                col.on('fetch:success', () => this._rebuildTable(), this);
+                col._userDevicesWired = true;
             }
         };
         wire(this.devicesCollection);
         wire(this.pushDevicesCollection);
     }
 
-    _buildTemplate() {
-        const rows = this._collectRows();
-        const browserCount = (this.devicesCollection?.models?.length) || 0;
-        const pushCount = (this.pushDevicesCollection?.models?.length) || 0;
-
-        const tableRows = rows.length
-            ? rows.map(r => this._renderRow(r)).join('')
-            : `<tr><td colspan="6" class="text-center text-secondary py-3">No devices found.</td></tr>`;
-
-        return `
-            <div class="section-eyebrow">Section · Devices · ${browserCount + pushCount} total</div>
-            <h3 class="section-title">Devices &amp; sessions</h3>
-
-            <div class="detail-toolbar d-flex justify-content-between align-items-center mb-3">
-                <div class="d-flex gap-2 align-items-center">
-                    <div class="btn-group" role="group" aria-label="Device kind filter">
-                        <button type="button" class="btn btn-sm ${this.kindFilter === 'all' ? 'btn-secondary' : 'btn-outline-secondary'}" data-action="set-kind" data-kind="all">All</button>
-                        <button type="button" class="btn btn-sm ${this.kindFilter === 'browser' ? 'btn-secondary' : 'btn-outline-secondary'}" data-action="set-kind" data-kind="browser">Browser</button>
-                        <button type="button" class="btn btn-sm ${this.kindFilter === 'push' ? 'btn-secondary' : 'btn-outline-secondary'}" data-action="set-kind" data-kind="push">Push</button>
-                    </div>
-                    <span class="text-secondary small">${browserCount} browser · ${pushCount} push</span>
-                </div>
-                <div class="d-flex gap-1">
-                    <button class="btn btn-sm btn-outline-secondary" data-action="refresh-devices"><i class="bi bi-arrow-clockwise me-1"></i>Refresh</button>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="table-responsive">
-                    <table class="table table-hover m-0 align-middle small">
-                        <thead>
-                            <tr>
-                                <th class="text-secondary text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.08em; width: 100px;">Kind</th>
-                                <th class="text-secondary text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.08em;">Device</th>
-                                <th class="text-secondary text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.08em; width: 140px;">Last seen</th>
-                                <th class="text-secondary text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.08em; width: 200px;">Identifier</th>
-                                <th class="text-secondary text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.08em; width: 140px;">Signals</th>
-                            </tr>
-                        </thead>
-                        <tbody>${tableRows}</tbody>
-                    </table>
-                </div>
-            </div>
-        `;
+    _setKind(kind) {
+        if (kind === this.kindFilter) return;
+        this.kindFilter = kind;
+        this._rebuildTable();
     }
 
-    _collectRows() {
+    async _refresh() {
+        await Promise.all([
+            this.devicesCollection?.fetch?.().catch(() => {}),
+            this.pushDevicesCollection?.fetch?.().catch(() => {})
+        ]);
+        this._rebuildTable();
+    }
+
+    _rebuildTable() {
+        if (!this.tableView) return;
+        const rows = this._buildSyntheticArray();
+        this.tableView.collection = rows;
+        if (this.tableView.isMounted()) this.tableView.render().catch(() => {});
+    }
+
+    _buildSyntheticArray() {
         const out = [];
         if (this.kindFilter === 'all' || this.kindFilter === 'browser') {
             for (const d of this.devicesCollection?.models || []) {
+                const info = d.get('device_info');
                 out.push({
+                    id: `b:${d.get('id') || d.get('duid') || d.cid}`,
                     kind: 'browser',
-                    icon: deviceIcon(d.get('device_info')),
-                    label: deviceLabel(d.get('device_info')),
+                    isPush: false,
+                    deviceIcon: _deviceIcon(info),
+                    label: _deviceLabel(info),
                     identifier: d.get('duid') || '',
-                    lastSeen: d.get('last_seen'),
+                    last_seen: d.get('last_seen'),
                     signals: 'trusted'
                 });
             }
         }
         if (this.kindFilter === 'all' || this.kindFilter === 'push') {
             for (const d of this.pushDevicesCollection?.models || []) {
+                const info = d.get('device_info');
                 out.push({
+                    id: `p:${d.get('id') || d.get('duid') || d.cid}`,
                     kind: 'push',
-                    icon: 'bi-bell',
-                    label: deviceLabel(d.get('device_info')),
+                    isPush: true,
+                    deviceIcon: 'bi-bell',
+                    label: _deviceLabel(info),
                     identifier: d.get('duid') || '',
-                    lastSeen: d.get('last_seen'),
+                    last_seen: d.get('last_seen'),
                     signals: 'trusted'
                 });
             }
         }
-        // Sort newest-last-seen first
-        out.sort((a, b) => (epochToMs(b.lastSeen) || 0) - (epochToMs(a.lastSeen) || 0));
         return out;
-    }
-
-    _renderRow(r) {
-        const kindBadge = r.kind === 'push'
-            ? `<span class="badge text-bg-primary"><i class="bi ${escapeHtml(r.icon)} me-1"></i>Push</span>`
-            : `<span class="badge text-bg-info"><i class="bi ${escapeHtml(r.icon)} me-1"></i>Browser</span>`;
-        const idShort = r.identifier
-            ? (r.identifier.length > 24 ? `${r.identifier.slice(0, 8)}…${r.identifier.slice(-6)}` : r.identifier)
-            : '—';
-        return `
-            <tr>
-                <td>${kindBadge}</td>
-                <td><div>${escapeHtml(r.label)}</div></td>
-                <td><code>${escapeHtml(formatRelative(r.lastSeen))}</code></td>
-                <td><code class="text-secondary small">${escapeHtml(idShort)}</code></td>
-                <td><span class="badge text-bg-light">${escapeHtml(r.signals)}</span></td>
-            </tr>
-        `;
-    }
-
-    async onActionSetKind(event, element) {
-        const kind = element?.dataset?.kind;
-        if (!kind || kind === this.kindFilter) return;
-        this.kindFilter = kind;
-        await this.render();
-    }
-
-    async onActionRefreshDevices() {
-        await Promise.all([
-            this.devicesCollection?.fetch?.().catch(() => {}),
-            this.pushDevicesCollection?.fetch?.().catch(() => {})
-        ]);
-        await this.render();
     }
 }
 
 
-// ── Audit section (incidents + activity + object logs unified) ──
+// ── Audit section (TabView of three TableViews) ──────────────
 
 class UserAuditSection extends View {
     constructor(options = {}) {
+        const {
+            eventsCollection,
+            activityCollection,
+            objectLogsCollection,
+            ...rest
+        } = options;
+
         super({
             className: 'user-audit-section',
-            ...options
+            template: `
+                <div class="detail-section-eyebrow">Audit</div>
+                <div data-container="user-audit-tabs"></div>
+            `,
+            ...rest
         });
-        this.eventsCollection     = options.eventsCollection;
-        this.activityCollection   = options.activityCollection;
-        this.objectLogsCollection = options.objectLogsCollection;
-        this.sourceFilter = 'activity';   // activity | incident | object (no "all")
-        this.searchText   = '';
-        this.pageSize     = 25;
-        this.visibleCount = 25;            // grows on "Load more"
-        this._refreshing  = false;
-        this.template = () => this._buildTemplate();
+
+        this.eventsCollection     = eventsCollection;
+        this.activityCollection   = activityCollection;
+        this.objectLogsCollection = objectLogsCollection;
     }
 
-    async onAfterRender() {
-        await super.onAfterRender();
-        // Re-render on any source collection update
-        const wire = (col) => {
-            if (col && !col._userAuditWired) {
-                col.on('fetch:success', () => {
-                    if (this.isMounted()) this.render().catch(() => {});
-                }, this);
-                col._userAuditWired = true;
-            }
-        };
-        wire(this.eventsCollection);
-        wire(this.activityCollection);
-        wire(this.objectLogsCollection);
-    }
-
-    _buildTemplate() {
-        const allItems = this._collectItems();
-        const total = allItems.length;
-        const items = allItems.slice(0, this.visibleCount);
-        const hasMore = total > this.visibleCount;
-
-        const itemsHtml = items.length
-            ? items.map(i => this._renderItem(i)).join('')
-            : '<li class="detail-audit-entry"><div class="text-secondary small">No audit entries match.</div></li>';
-
-        const sourceColl = this._currentCollection();
-        const totalKnown = sourceColl?.totalCount ?? sourceColl?.models?.length ?? 0;
-        const eyebrow = `Section · Audit · showing ${items.length} of ${total}${totalKnown > total ? ` (${totalKnown} total)` : ''}`;
-
-        return `
-            <div class="section-eyebrow">${escapeHtml(eyebrow)}</div>
-            <h3 class="section-title">What this account did</h3>
-
-            <div class="detail-toolbar d-flex justify-content-between align-items-center mb-3">
-                <div class="btn-group" role="group" aria-label="Audit source filter">
-                    <button type="button" class="btn btn-sm ${this.sourceFilter === 'incident' ? 'btn-secondary' : 'btn-outline-secondary'}" data-action="set-source" data-source="incident">Incidents</button>
-                    <button type="button" class="btn btn-sm ${this.sourceFilter === 'activity' ? 'btn-secondary' : 'btn-outline-secondary'}" data-action="set-source" data-source="activity">Activity</button>
-                    <button type="button" class="btn btn-sm ${this.sourceFilter === 'object' ? 'btn-secondary' : 'btn-outline-secondary'}" data-action="set-source" data-source="object">Object changes</button>
-                </div>
-                <div class="d-flex gap-2 align-items-center">
-                    <input class="form-control form-control-sm"
-                           style="max-width: 220px;"
-                           placeholder="Filter visible entries…"
-                           value="${escapeHtml(this.searchText)}"
-                           data-action="filter-audit"
-                           data-action-debounce="200">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" data-action="refresh-audit" title="Refresh">
-                        <i class="bi bi-arrow-clockwise${this._refreshing ? ' bi-spin' : ''}"></i>
-                    </button>
-                </div>
-            </div>
-
-            <ul class="detail-audit-list">${itemsHtml}</ul>
-
-            ${hasMore ? `
-                <div class="text-center mt-2">
-                    <button type="button" class="btn btn-sm btn-link link-secondary" data-action="load-more">
-                        Show ${Math.min(this.pageSize, total - this.visibleCount)} more <i class="bi bi-chevron-down ms-1"></i>
-                    </button>
-                </div>
-            ` : ''}
-        `;
-    }
-
-    _currentCollection() {
-        if (this.sourceFilter === 'incident') return this.eventsCollection;
-        if (this.sourceFilter === 'object')   return this.objectLogsCollection;
-        return this.activityCollection;
-    }
-
-    _collectItems() {
-        const out = [];
-        const want = this.sourceFilter;
-
-        // Tone helper for log entries
-        const toneFor = (level) => {
-            const l = (level || '').toLowerCase();
-            if (l === 'error' || l === 'critical') return 'danger';
-            if (l === 'warning' || l === 'warn')   return 'warning';
-            return 'info';
+    async onInit() {
+        // Activity (LogList scoped to user) — most common entry first
+        this.activityTable = new TableView({
+            collection: this.activityCollection,
+            showAdd: false,
+            showExport: false,
+            showFullscreen: false,
+            searchable: true,
+            searchPlaceholder: 'Search activity…',
+            paginated: true,
+            hideActivePillNames: ['uid'],
+            columns: [
+                { key: 'created', label: 'Date', formatter: 'datetime', sortable: true, width: '160px' },
+                { key: 'level|badge', label: 'Level', width: '90px' },
+                { key: 'kind', label: 'Kind', width: '120px' },
+                { key: 'log',  label: 'Message' },
+                { key: 'path', label: 'Path' }
+            ]
+        });
+        this.activityTable.onTabActivated = async () => {
+            await this.activityCollection?.fetch?.().catch(() => {});
         };
 
-        if (want === 'incident') {
-            for (const e of this.eventsCollection?.models || []) {
-                const cat = e.get('category');
-                out.push({
-                    ts: epochToMs(e.get('created')),
-                    sourceLabel: 'incident',
-                    icon: 'bi-shield-exclamation',
-                    tone: 'danger',
-                    headline: e.get('title') || cat || 'Incident event',
-                    detail: cat ? `<code class="small">${escapeHtml(cat)}</code>` : '',
-                    when: formatRelative(e.get('created'))
-                });
-            }
-        } else if (want === 'activity') {
-            for (const a of this.activityCollection?.models || []) {
-                const kind = a.get('kind') || 'activity';
-                const log  = a.get('log');
-                const path = a.get('path');
-                const headline = log
-                    ? String(log).slice(0, 140)
-                    : (path ? path : kind);
-                const detail = log && path ? `<code class="small">${escapeHtml(path)}</code>` : '';
-                out.push({
-                    ts: epochToMs(a.get('created')),
-                    sourceLabel: 'activity',
-                    icon: 'bi-clock-history',
-                    tone: toneFor(a.get('level')),
-                    headline,
-                    detail,
-                    when: formatRelative(a.get('created'))
-                });
-            }
-        } else if (want === 'object') {
-            for (const log of this.objectLogsCollection?.models || []) {
-                const kind = log.get('kind') || 'change';
-                const msg  = log.get('log');
-                const headline = msg
-                    ? String(msg).slice(0, 140)
-                    : kind;
-                out.push({
-                    ts: epochToMs(log.get('created')),
-                    sourceLabel: 'object',
-                    icon: 'bi-pencil',
-                    tone: toneFor(log.get('level')),
-                    headline,
-                    detail: msg ? `<code class="small">${escapeHtml(kind)}</code>` : '',
-                    when: formatRelative(log.get('created'))
-                });
-            }
-        }
+        // Incidents (IncidentEventList scoped to this user)
+        this.incidentsTable = new TableView({
+            collection: this.eventsCollection,
+            showAdd: false,
+            showExport: false,
+            showFullscreen: false,
+            searchable: true,
+            searchPlaceholder: 'Search incidents…',
+            paginated: true,
+            hideActivePillNames: ['model_id', 'model_name'],
+            columns: [
+                { key: 'created',  label: 'Date',     formatter: 'datetime', sortable: true, width: '160px' },
+                { key: 'category|badge', label: 'Category' },
+                { key: 'title',    label: 'Title' },
+                { key: 'description', label: 'Description' }
+            ]
+        });
+        this.incidentsTable.onTabActivated = async () => {
+            await this.eventsCollection?.fetch?.().catch(() => {});
+        };
 
-        // Client-side search across headline + detail
-        const q = this.searchText.trim().toLowerCase();
-        const filtered = q
-            ? out.filter(i =>
-                (i.headline || '').toLowerCase().includes(q) ||
-                (i.detail   || '').toLowerCase().includes(q) ||
-                (i.sourceLabel || '').toLowerCase().includes(q))
-            : out;
+        // Object changes (LogList filtered to this user-as-record)
+        this.objectTable = new TableView({
+            collection: this.objectLogsCollection,
+            showAdd: false,
+            showExport: false,
+            showFullscreen: false,
+            searchable: true,
+            searchPlaceholder: 'Search object changes…',
+            paginated: true,
+            permissions: 'view_logs',
+            hideActivePillNames: ['model_id', 'model_name'],
+            columns: [
+                { key: 'created', label: 'Date', formatter: 'datetime', sortable: true, width: '160px' },
+                { key: 'level|badge', label: 'Level', width: '90px' },
+                { key: 'kind', label: 'Kind', width: '120px' },
+                { key: 'log',  label: 'Message' }
+            ]
+        });
+        this.objectTable.onTabActivated = async () => {
+            await this.objectLogsCollection?.fetch?.().catch(() => {});
+        };
 
-        filtered.sort((a, b) => (b.ts || 0) - (a.ts || 0));
-        return filtered;
-    }
-
-    _renderItem(item) {
-        const toneCls = item.tone ? ` tone-${item.tone}` : '';
-        return `
-            <li class="detail-audit-entry">
-                <div class="detail-audit-icon${toneCls}"><i class="bi ${escapeHtml(item.icon)}"></i></div>
-                <div class="detail-audit-source">${escapeHtml(item.sourceLabel)}</div>
-                <div class="text-truncate">${escapeHtml(item.headline)}${item.detail ? ` <span class="text-secondary">· ${item.detail}</span>` : ''}</div>
-                <div class="detail-audit-when">${escapeHtml(item.when)}</div>
-            </li>
-        `;
-    }
-
-    async onActionSetSource(event, element) {
-        const source = element?.dataset?.source;
-        if (!source || source === this.sourceFilter) return;
-        this.sourceFilter = source;
-        this.visibleCount = this.pageSize;   // reset pagination
-        await this.render();
-    }
-
-    async onActionFilterAudit(event, element) {
-        this.searchText = element?.value || '';
-        this.visibleCount = this.pageSize;
-        await this.render();
-    }
-
-    async onActionLoadMore() {
-        this.visibleCount += this.pageSize;
-        await this.render();
-    }
-
-    async onActionRefreshAudit() {
-        if (this._refreshing) return;
-        this._refreshing = true;
-        try {
-            const col = this._currentCollection();
-            if (col) await col.fetch();
-        } catch (err) {
-            this.getApp()?.toast?.error('Failed to refresh: ' + (err.message || ''));
-        } finally {
-            this._refreshing = false;
-            await this.render();
-        }
+        this.tabView = new TabView({
+            containerId: 'user-audit-tabs',
+            tabs: {
+                'Activity':       this.activityTable,
+                'Incidents':      this.incidentsTable,
+                'Object changes': this.objectTable
+            },
+            activeTab: 'Activity'
+        });
+        this.addChild(this.tabView);
     }
 }
 
 
-// ── API Keys section ───────────────────────────────────────
+// ── API Keys section (TableView) ────────────────────────────
 
+/**
+ * Synthesized-collection-backed TableView. The /api/account/api_keys
+ * endpoint returns a flat list (not a Collection-shaped paginated
+ * response), so we manage our own array + re-render the table on
+ * mutation.
+ */
 class UserApiKeysSection extends View {
     constructor(options = {}) {
         super({
             className: 'user-api-keys-section',
+            template: `
+                <div class="detail-section-eyebrow">API Keys</div>
+                <div data-container="user-api-keys-token"></div>
+                <div data-container="user-api-keys-table"></div>
+            `,
             ...options
         });
         this.apiKeys = [];
         this.generatedToken = null;
-        this.template = () => this._buildTemplate();
     }
 
-    async onBeforeRender() {
-        await this._loadKeys();
+    async onInit() {
+        // Generated-token banner (only rendered when present)
+        this.tokenView = new View({
+            containerId: 'user-api-keys-token',
+            template: `
+                {{#hasToken|bool}}
+                <div class="alert alert-success">
+                    <div class="fw-semibold mb-2">Generated API Key</div>
+                    <div class="d-flex gap-2 align-items-center">
+                        <code class="flex-grow-1">{{token}}</code>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-action="copy-token"><i class="bi bi-clipboard"></i></button>
+                    </div>
+                    <div class="small mt-2 text-danger fw-semibold"><i class="bi bi-exclamation-circle me-1"></i>This token will not be shown again. Copy it now.</div>
+                </div>
+                {{/hasToken|bool}}
+            `
+        });
+        Object.defineProperty(this.tokenView, 'token',    { get: () => this.generatedToken || '' });
+        Object.defineProperty(this.tokenView, 'hasToken', { get: () => !!this.generatedToken });
+        this.tokenView.onActionCopyToken = async () => this.onActionCopyToken();
+        this.addChild(this.tokenView);
+
+        this.tableView = new TableView({
+            containerId: 'user-api-keys-table',
+            collection: this.apiKeys,
+            showAdd: false,
+            showExport: false,
+            showFullscreen: false,
+            searchable: false,
+            paginated: false,
+            sortable: true,
+            emptyMessage: 'No API keys for this user.',
+            columns: [
+                {
+                    key: 'name', label: 'Key', sortable: true,
+                    template: `
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-key text-secondary"></i>
+                            <div class="min-w-0">
+                                <div class="fw-semibold small">{{model.name|default:'API Key'}}</div>
+                                <div class="text-secondary small"><code>{{tokenPreview}}</code></div>
+                            </div>
+                        </div>
+                    `
+                },
+                {
+                    key: 'is_active', label: 'Status', width: '100px',
+                    template: `
+                        {{#model.is_active|bool}}<span class="badge text-bg-success">Active</span>{{/model.is_active|bool}}
+                        {{^model.is_active|bool}}<span class="badge text-bg-secondary">Inactive</span>{{/model.is_active|bool}}
+                    `
+                },
+                { key: 'created', label: 'Created', formatter: 'date', sortable: true, width: '120px' },
+                { key: 'expires', label: 'Expires', formatter: "default('Never')", width: '120px' },
+                { key: 'last_used', label: 'Last used', formatter: 'relative', width: '140px' },
+                {
+                    key: 'allowed_ips', label: 'Allowed IPs',
+                    template: `{{#hasIps|bool}}{{ipsLabel}}{{/hasIps|bool}}{{^hasIps|bool}}<span class="text-secondary">Any</span>{{/hasIps|bool}}`
+                }
+            ],
+            actions: ['delete'],
+            onItemDelete: async (model) => this._revokeKey(model),
+            toolbarButtons: [
+                {
+                    label: 'Generate Key',
+                    icon: 'bi bi-plus-lg',
+                    variant: 'primary',
+                    handler: () => this.onActionGenerateKey()
+                }
+            ]
+        });
+        this.addChild(this.tableView);
+    }
+
+    async onAfterRender() {
+        await super.onAfterRender();
+        if (!this._loadedOnce) {
+            this._loadedOnce = true;
+            this._loadKeys().catch(() => {});
+        }
     }
 
     async _loadKeys() {
         try {
-            const resp = await rest.GET('/api/account/api_keys', { user: this.model.id }, {}, { dataOnly: true });
-            this.apiKeys = resp.success && Array.isArray(resp.data) ? resp.data : [];
-            // Bubble count up so the parent can update the sidebar badge
+            const resp = await rest.GET(
+                '/api/account/api_keys',
+                { user: this.model.id },
+                {},
+                { dataOnly: true }
+            );
+            const list = resp.success && Array.isArray(resp.data) ? resp.data : [];
+            // Augment each row with computed display fields the row template binds to
+            this.apiKeys = list.map(k => this._decorate(k));
             this.emit('count:changed', this.apiKeys.length);
+            if (this.tableView) {
+                this.tableView.collection = this.apiKeys;
+                if (this.tableView.isMounted()) this.tableView.render().catch(() => {});
+            }
         } catch (e) {
             this.apiKeys = [];
+            this.emit('count:changed', 0);
         }
     }
 
-    _buildTemplate() {
-        const rows = this.apiKeys.length
-            ? this.apiKeys.map(k => this._renderKeyRow(k)).join('')
-            : '<div class="text-center text-secondary py-4">No API keys for this user.</div>';
-
-        const tokenBlock = this.generatedToken ? `
-            <div class="alert alert-success">
-                <div class="fw-semibold mb-2">Generated API Key</div>
-                <div class="d-flex gap-2 align-items-center">
-                    <code class="flex-grow-1" style="word-break: break-all;">${escapeHtml(this.generatedToken)}</code>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" data-action="copy-token"><i class="bi bi-clipboard"></i></button>
-                </div>
-                <div class="small mt-2 text-danger fw-semibold"><i class="bi bi-exclamation-circle me-1"></i>This token will not be shown again. Copy it now.</div>
-            </div>
-        ` : '';
-
-        return `
-            <div class="section-eyebrow">Section · API Keys</div>
-            <h3 class="section-title">API Keys</h3>
-
-            ${tokenBlock}
-
-            <div class="detail-toolbar d-flex justify-content-between align-items-center mb-3">
-                <span class="text-secondary small">${this.apiKeys.length} key${this.apiKeys.length === 1 ? '' : 's'}</span>
-                <button class="btn btn-primary btn-sm" data-action="generate-key">
-                    <i class="bi bi-plus-lg me-1"></i>Generate Key
-                </button>
-            </div>
-
-            <div>${rows}</div>
-        `;
+    _decorate(key) {
+        const ips = Array.isArray(key.allowed_ips) ? key.allowed_ips : [];
+        return {
+            ...key,
+            tokenPreview: key.token_prefix ? `${key.token_prefix}…` : '••••••••',
+            hasIps: ips.length > 0,
+            ipsLabel: ips.length ? ips.join(', ') : ''
+        };
     }
 
-    _renderKeyRow(key) {
-        const name = key.name || 'API Key';
-        const created = key.created ? formatDate(key.created) : '—';
-        const expires = key.expires ? formatDate(key.expires) : 'Never';
-        const lastUsed = key.last_used ? formatRelative(key.last_used) : 'Never';
-        const ips = key.allowed_ips?.length ? key.allowed_ips.join(', ') : 'Any';
-        const isActive = key.is_active !== false;
-        const statusBadge = isActive
-            ? '<span class="badge text-bg-success">Active</span>'
-            : '<span class="badge text-bg-secondary">Inactive</span>';
-        const tokenPreview = key.token_prefix ? `${escapeHtml(key.token_prefix)}…` : '••••••••';
-
-        return `
-            <div class="card mb-2">
-                <div class="card-body py-2 px-3 d-flex align-items-center gap-3">
-                    <i class="bi bi-key text-secondary fs-5"></i>
-                    <div class="flex-grow-1 min-w-0">
-                        <div class="fw-semibold small">${escapeHtml(name)} ${statusBadge}</div>
-                        <div class="text-secondary small d-flex flex-wrap gap-2 mt-1">
-                            <span><code>${tokenPreview}</code></span>
-                            <span><i class="bi bi-calendar me-1"></i>Created ${escapeHtml(created)}</span>
-                            <span><i class="bi bi-clock me-1"></i>Expires ${escapeHtml(expires)}</span>
-                            <span><i class="bi bi-activity me-1"></i>Last used ${escapeHtml(lastUsed)}</span>
-                            <span><i class="bi bi-globe me-1"></i>IPs: ${escapeHtml(ips)}</span>
-                        </div>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-danger" data-action="revoke-key" data-id="${escapeHtml(key.id)}" title="Revoke">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            </div>
-        `;
+    async _revokeKey(rowModel) {
+        // TableView passes us a `Model` wrapper; pull the underlying id out of either shape
+        const id = rowModel?.get?.('id') ?? rowModel?.id;
+        if (!id) return;
+        const confirmed = await Modal.confirm(
+            'Revoke this API key? Any applications using it will lose access immediately.',
+            'Revoke API Key'
+        );
+        if (!confirmed) return;
+        const resp = await rest.DELETE(`/api/account/api_keys/${id}`, {}, {}, { dataOnly: true });
+        if (resp.success) {
+            this.getApp()?.toast?.success('API key revoked');
+            this.generatedToken = null;
+            await this._refreshTokenView();
+            await this._loadKeys();
+        } else {
+            this.getApp()?.toast?.error(resp.message || 'Failed to revoke API key');
+        }
     }
 
     async onActionGenerateKey() {
@@ -1235,32 +1165,10 @@ class UserApiKeysSection extends View {
         if (resp.success && resp.data?.token) {
             this.generatedToken = resp.data.token;
             this.getApp()?.toast?.success('API key generated');
+            await this._refreshTokenView();
             await this._loadKeys();
-            await this.render();
         } else {
             this.getApp()?.toast?.error(resp.message || 'Failed to generate API key');
-        }
-        return true;
-    }
-
-    async onActionRevokeKey(event, el) {
-        const id = el?.dataset?.id;
-        if (!id) return true;
-
-        const confirmed = await Modal.confirm(
-            'Revoke this API key? Any applications using it will lose access immediately.',
-            'Revoke API Key'
-        );
-        if (!confirmed) return true;
-
-        const resp = await rest.DELETE(`/api/account/api_keys/${id}`, {}, {}, { dataOnly: true });
-        if (resp.success) {
-            this.getApp()?.toast?.success('API key revoked');
-            this.generatedToken = null;
-            await this._loadKeys();
-            await this.render();
-        } else {
-            this.getApp()?.toast?.error(resp.message || 'Failed to revoke API key');
         }
         return true;
     }
@@ -1274,6 +1182,10 @@ class UserApiKeysSection extends View {
             this.getApp()?.toast?.error('Failed to copy token');
         }
         return true;
+    }
+
+    async _refreshTokenView() {
+        if (this.tokenView?.isMounted()) await this.tokenView.render();
     }
 }
 
@@ -1308,7 +1220,7 @@ class UserView extends DetailView {
             params: { size: 25, model_name: 'account.User', model_id: userId, sort: '-created' }
         });
 
-        // Section view instances
+        // Section views
         const overviewSection = new UserOverviewSection({
             model,
             devicesCollection,
@@ -1320,15 +1232,14 @@ class UserView extends DetailView {
             objectLogsCollection
         });
 
-        const profileSection = new UserProfileSection({ model });
+        const profileSection     = new UserProfileSection({ model });
         const permissionsSection = new UserPermissionsSection({ model });
-        const apiKeysSection = new UserApiKeysSection({ model });
+        const apiKeysSection     = new UserApiKeysSection({ model });
 
         // Groups — TableView of MemberList scoped to this user
         const groupsSection = new TableView({
             collection: membersCollection,
             title: 'Groups',
-            eyebrow: 'Section · Groups',
             showFullscreen: false,
             searchable: false,
             hideActivePillNames: ['user'],
@@ -1371,7 +1282,7 @@ class UserView extends DetailView {
         };
         const locationsSection = new TabView({
             tabs: {
-                'Map': loginMapView,
+                'Map':    loginMapView,
                 'Logins': loginEventsTable
             },
             activeTab: 'Map'
@@ -1385,10 +1296,10 @@ class UserView extends DetailView {
         });
 
         const notificationsSection = new AdminNotificationsSection({ model });
-        const personalSection = new AdminPersonalSection({ model });
-        const securitySection = new AdminSecuritySection({ model });
-        const connectedSection = new AdminConnectedSection({ model });
-        const metadataSection = new AdminMetadataSection({ model });
+        const personalSection      = new AdminPersonalSection({ model });
+        const securitySection      = new AdminSecuritySection({ model });
+        const connectedSection     = new AdminConnectedSection({ model });
+        const metadataSection      = new AdminMetadataSection({ model });
 
         // Sidebar layout — Identity / Access / Activity / Settings / Metadata
         const sections = [
@@ -1414,11 +1325,11 @@ class UserView extends DetailView {
         // Header chips — only render when value exists (DetailHeaderView
         // automatically filters chips with `when:` callbacks)
         const chips = [
-            { text: m => isOnline(m) ? 'Online' : null, variant: 'success',
+            { text: 'Online', variant: 'success',
               when: m => isOnline(m) },
             { text: m => {
                 if (m.get('is_superuser')) return 'Superuser';
-                if (m.get('is_staff')) return 'Staff';
+                if (m.get('is_staff'))     return 'Staff';
                 return null;
               }, variant: 'info',
               when: m => m.get('is_staff') || m.get('is_superuser') },
@@ -1457,23 +1368,22 @@ class UserView extends DetailView {
             header: {
                 icon: 'bi-person-circle',
                 iconToneFn: m => {
-                    if (!m.get('is_active')) return null;
+                    if (!m.get('is_active'))   return null;
                     if (m.get('is_superuser')) return 'danger';
-                    if (m.get('is_staff')) return 'info';
+                    if (m.get('is_staff'))     return 'info';
                     return 'primary';
                 },
                 titleField: 'display_name',
-                titleFn: m => {
-                    return m.get('display_name')
-                        || m.get('username')
-                        || m.get('email')
-                        || (m.get('id') != null ? `User #${m.get('id')}` : 'Loading user…');
-                },
+                titleFn: m => m.get('display_name')
+                    || m.get('username')
+                    || m.get('email')
+                    || (m.get('id') != null ? `User #${m.get('id')}` : 'Loading user…'),
                 subtitlePath: '_subtitle',
                 subtitlePlaceholder: 'No contact info on file',
                 chips,
                 activeField: 'is_active',
                 actions: [],   // Magic link / reset password live in the context menu
+                auxFn: m => _buildHeaderAux(m),
                 contextMenu: { items: contextItems }
             },
             sections,
@@ -1507,17 +1417,15 @@ class UserView extends DetailView {
     }
 
     async onAfterBuild() {
-        // Profile section bubbles its inline edits up to action handlers here
-        this.profileSection.on('action:edit-personal', () => this.onActionEditPersonal());
-        this.profileSection.on('action:edit-account',  () => this.onActionEditAccount());
-        this.profileSection.on('action:manage-linked', () => this.onActionManageLinked());
-        this.profileSection.on('action:manage-passkeys', () => this.onActionManagePasskeys());
-
-        // Inline force-verify / unverify on the email & phone rows
-        this.profileSection.on('action:force-verify-email', () => this._setVerification('is_email_verified', true,  'Email'));
-        this.profileSection.on('action:unverify-email',     () => this._setVerification('is_email_verified', false, 'Email'));
-        this.profileSection.on('action:force-verify-phone', () => this._setVerification('is_phone_verified', true,  'Phone'));
-        this.profileSection.on('action:unverify-phone',     () => this._setVerification('is_phone_verified', false, 'Phone'));
+        // Profile section bubbles inline edits up to action handlers here
+        this.profileSection.on('action:edit-personal',     () => this.onActionEditPersonal());
+        this.profileSection.on('action:edit-account',      () => this.onActionEditAccount());
+        this.profileSection.on('action:manage-linked',     () => this.onActionManageLinked());
+        this.profileSection.on('action:manage-passkeys',   () => this.onActionManagePasskeys());
+        this.profileSection.on('action:force-verify-email',() => this._setVerification('is_email_verified', true,  'Email'));
+        this.profileSection.on('action:unverify-email',    () => this._setVerification('is_email_verified', false, 'Email'));
+        this.profileSection.on('action:force-verify-phone',() => this._setVerification('is_phone_verified', true,  'Phone'));
+        this.profileSection.on('action:unverify-phone',    () => this._setVerification('is_phone_verified', false, 'Phone'));
 
         // API keys count -> sidebar badge
         this.apiKeysSection.on('count:changed', (n) => {
@@ -1531,8 +1439,8 @@ class UserView extends DetailView {
         };
         const updateDevicesBadge = () => {
             const browser = this.devicesCollection.models?.length ?? 0;
-            const push = this.pushDevicesCollection.models?.length ?? 0;
-            const total = browser + push;
+            const push    = this.pushDevicesCollection.models?.length ?? 0;
+            const total   = browser + push;
             this.setBadge('Devices', total > 0 ? { text: String(total), variant: 'muted' } : null);
         };
         const updateAuditBadge = () => {
@@ -1579,9 +1487,8 @@ class UserView extends DetailView {
             if (resp?.status >= 400) throw new Error('Save failed');
             this.model.set(field, value);
             this.getApp()?.toast?.success(`${label} ${value ? 'marked verified' : 'marked unverified'}`);
-            // Re-render the Profile section + header
             if (this.profileSection?.isMounted()) this.profileSection.render().catch(() => {});
-            if (this.headerView?.isMounted()) this.headerView.render().catch(() => {});
+            if (this.headerView?.isMounted())     this.headerView.render().catch(() => {});
         } catch (err) {
             this.getApp()?.toast?.error(`Failed to update: ${err.message}`);
         }
@@ -1597,10 +1504,13 @@ class UserView extends DetailView {
         if (m.get('email')) parts.push(m.get('email'));
         if (m.get('phone_number')) parts.push(m.get('phone_number'));
         const last = m.get('last_activity');
-        if (last) parts.push(`last seen ${formatRelative(last)}`);
+        if (last) {
+            const rel = dataFormatter.apply(last, ['relative']) || '';
+            if (rel) parts.push(`last seen ${rel}`);
+        }
         const lastLogin = this.loginsCollection?.models?.[0];
         const city = lastLogin?.get?.('city');
-        if (city) parts[parts.length - 1] = `${parts[parts.length - 1]} from ${city}`;
+        if (city && parts.length) parts[parts.length - 1] = `${parts[parts.length - 1]} from ${city}`;
         m.attributes._subtitle = parts.join(' · ');
     }
 
@@ -1675,10 +1585,10 @@ class UserView extends DetailView {
             size: 'md',
             formConfig: {
                 fields: [
-                    { name: 'is_active',  type: 'switch', label: 'Active',        columns: 6 },
-                    { name: 'is_staff',   type: 'switch', label: 'Staff',         columns: 6 },
-                    { name: 'requires_mfa', type: 'switch', label: 'Requires MFA', columns: 6 },
-                    { name: 'metadata.timezone', type: 'text', label: 'Timezone', columns: 12,
+                    { name: 'is_active',      type: 'switch', label: 'Active',        columns: 6 },
+                    { name: 'is_staff',       type: 'switch', label: 'Staff',         columns: 6 },
+                    { name: 'requires_mfa',   type: 'switch', label: 'Requires MFA',  columns: 6 },
+                    { name: 'metadata.timezone', type: 'text', label: 'Timezone',     columns: 12,
                       tooltip: 'IANA timezone, e.g. America/Los_Angeles' }
                 ]
             }
@@ -1688,7 +1598,6 @@ class UserView extends DetailView {
     }
 
     async onActionManageLinked() {
-        // Lazy-load the connection list so the user can unlink from a focused dialog.
         let resp;
         try {
             resp = await rest.GET('/api/account/oauth_connection', { user: this.model.id });
@@ -1705,15 +1614,20 @@ class UserView extends DetailView {
                 }
                 return connections.map(c => {
                     const icon = PROVIDER_ICONS[c.provider] || 'bi-link-45deg';
+                    const created = c.created
+                        ? dataFormatter.apply(c.created, ['relative']) || ''
+                        : '';
                     return `
-                        <div class="card mb-2"><div class="card-body py-2 px-3 d-flex align-items-center gap-3">
-                            <i class="bi ${escapeHtml(icon)} fs-5"></i>
-                            <div class="flex-grow-1 min-w-0">
-                                <div class="fw-semibold small text-capitalize">${escapeHtml(c.provider)}</div>
-                                <div class="text-secondary small">${escapeHtml(c.email || '')} · Connected ${escapeHtml(formatRelative(c.created))}</div>
+                        <div class="detail-flat-row">
+                            <div class="detail-flat-row-label"><i class="bi ${escapeHtml(icon)} fs-5"></i></div>
+                            <div class="detail-flat-row-value">
+                                <div class="fw-semibold small text-capitalize">${escapeHtml(c.provider || '')}</div>
+                                <div class="text-secondary small">${escapeHtml(c.email || '')}${created ? ` · Connected ${escapeHtml(created)}` : ''}</div>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-danger" data-action="unlink" data-id="${escapeHtml(c.id)}"><i class="bi bi-x-lg me-1"></i>Unlink</button>
-                        </div></div>
+                            <div class="detail-flat-row-action">
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-action="unlink" data-id="${escapeHtml(c.id)}"><i class="bi bi-x-lg me-1"></i>Unlink</button>
+                            </div>
+                        </div>
                     `;
                 }).join('');
             }
@@ -1755,16 +1669,24 @@ class UserView extends DetailView {
                 }
                 return items.map(p => {
                     const data = p.toJSON ? p.toJSON() : p;
+                    const created = data.created
+                        ? dataFormatter.apply(data.created, ['date']) || '—'
+                        : '—';
+                    const lastUsed = data.last_used
+                        ? dataFormatter.apply(data.last_used, ['relative']) || 'never'
+                        : 'never';
                     return `
-                        <div class="card mb-2"><div class="card-body py-2 px-3 d-flex align-items-center gap-3">
-                            <i class="bi bi-fingerprint fs-5 text-primary"></i>
-                            <div class="flex-grow-1 min-w-0">
+                        <div class="detail-flat-row">
+                            <div class="detail-flat-row-label"><i class="bi bi-fingerprint fs-5 text-primary"></i></div>
+                            <div class="detail-flat-row-value">
                                 <div class="fw-semibold small">${escapeHtml(data.friendly_name || 'Unnamed Passkey')}</div>
-                                <div class="text-secondary small">Created ${escapeHtml(formatDate(data.created))} · Last used ${escapeHtml(data.last_used ? formatRelative(data.last_used) : 'never')} · ${escapeHtml(String(data.sign_count || 0))} uses</div>
+                                <div class="text-secondary small">Created ${escapeHtml(created)} · Last used ${escapeHtml(lastUsed)} · ${escapeHtml(String(data.sign_count || 0))} uses</div>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" data-action="edit-passkey" data-id="${escapeHtml(data.id)}"><i class="bi bi-pencil"></i></button>
-                            <button type="button" class="btn btn-sm btn-outline-danger" data-action="delete-passkey" data-id="${escapeHtml(data.id)}"><i class="bi bi-trash"></i></button>
-                        </div></div>
+                            <div class="detail-flat-row-action">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-action="edit-passkey" data-id="${escapeHtml(data.id)}"><i class="bi bi-pencil"></i></button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-action="delete-passkey" data-id="${escapeHtml(data.id)}"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </div>
                     `;
                 }).join('');
             }
@@ -1861,7 +1783,6 @@ class UserView extends DetailView {
         const resp = await rest.POST('/api/auth/impersonate', { user: this.model.id });
         if (resp.success) {
             this.getApp()?.toast?.success('Impersonation started');
-            // Reload so the new session takes effect.
             window.location.reload();
         } else {
             this.getApp()?.toast?.error(resp.message || 'Failed to impersonate');
@@ -1926,8 +1847,55 @@ class UserView extends DetailView {
     }
 }
 
+
+// ── Header aux helper ──────────────────────────────────────
+
+/**
+ * Right-gutter readout for the DetailHeader. Trusted HTML — model fields
+ * escaped before interpolation. Returns presence dot + main label + a
+ * muted "last active …" line.
+ */
+function _buildHeaderAux(m) {
+    const online = isOnline(m);
+    const last = m.get('last_activity') || m.get('last_login');
+    const rel = last
+        ? dataFormatter.apply(last, ['relative']) || ''
+        : '';
+
+    const main = online ? 'Online' : (rel ? 'Offline' : 'No activity');
+    const sub = rel
+        ? (online ? `active ${rel}` : `last active ${rel}`)
+        : '';
+
+    const dotCls = online ? ' dh-aux-dot-success' : ' dh-aux-dot-secondary';
+    return `
+        <span class="dh-aux-dot${dotCls}"></span>
+        <span class="dh-aux-meta"><span>${escapeHtml(main)}</span>${sub ? `<span class="text-secondary small">${escapeHtml(sub)}</span>` : ''}</span>
+    `;
+}
+
+
+// ── Internal time conversion (only used for Timeline sort key) ──
+
+function _toMs(value) {
+    if (value == null) return null;
+    if (typeof value === 'number') return value < 1e11 ? value * 1000 : value;
+    const ms = new Date(value).getTime();
+    return Number.isFinite(ms) ? ms : null;
+}
+
 UserView.VIEW_CLASS = UserView;
 User.VIEW_CLASS = UserView;
 User.MODEL_REF = 'account.User';
 
 export default UserView;
+export {
+    UserView,
+    UserOverviewSection,
+    UserProfileSection,
+    UserPermissionsSection,
+    UserDevicesSection,
+    UserAuditSection,
+    UserApiKeysSection,
+    PermissionsTabBody
+};
