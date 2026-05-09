@@ -1,17 +1,23 @@
 /**
  * TableView - Advanced data table component extending ListView
  *
- * Leverages ListView's view management system for efficient row rendering.
- * Each row is a separate TableRow view that only re-renders when its model changes.
+ * Renders a Collection as a `<table>` with sortable headers, per-column
+ * filters, footer totals, batch actions, fullscreen mode, and Add/Export
+ * toolbar buttons. The toolbar shell, search input, filter dropdown +
+ * active-pill bar, numbered pagination, page-size selector, refresh
+ * button, custom toolbar buttons, title/eyebrow, and right-slot view
+ * are all inherited from ListView — TableView only adds table-specific
+ * machinery (columns, sortable headers, footer totals, batch panel,
+ * fullscreen, Add/Export buttons).
  *
  * @example
  * const table = new TableView({
  *   collection: userCollection,
  *   columns: [
  *     { key: 'name', label: 'Name', sortable: true },
- *     { key: 'email', label: 'Email', visibility: 'md' },  // Hidden on xs/sm, visible md+
- *     { key: 'phone', label: 'Phone', visibility: 'lg' },  // Visible only on lg+
- *     { key: 'created', label: 'Created', formatter: 'date', visibility: 'xl' }  // Visible only on xl+
+ *     { key: 'email', label: 'Email', visibility: 'md' },
+ *     { key: 'phone', label: 'Phone', visibility: 'lg' },
+ *     { key: 'created', label: 'Created', formatter: 'date', visibility: 'xl' }
  *   ],
  *   actions: ['view', 'edit', 'delete'],
  *   selectionMode: 'multiple'
@@ -22,11 +28,9 @@ import ListView from '../list/ListView.js';
 import TableRow from './TableRow.js';
 import Mustache from '@core/utils/mustache.js';
 import Modal from '@core/views/feedback/Modal.js';
-// Note: Modal wraps Dialog's static helpers. Use Modal.dialog() for generic,
-// Modal.show(view) for views, Modal.confirm/form/modelForm for helpers.
 import FormView from '@core/forms/FormView.js';
 import dataFormatter from '@core/utils/DataFormatter.js';
-import { parseFilterKey, formatFilterDisplay } from '@core/utils/DjangoLookups.js';
+import { parseFilterKey } from '@core/utils/DjangoLookups.js';
 
 class TableView extends ListView {
   constructor(options = {}) {
@@ -50,11 +54,25 @@ class TableView extends ListView {
     this.actions = options.actions || null;
     this.contextMenu = options.contextMenu || null;
     this.batchActions = options.batchActions || null;
+
+    // Restore TableView's "default true" semantics for these toolbar flags.
+    // ListView treats them as opt-in (default false). TableView preserves its
+    // historical defaults so existing usage is unchanged.
     this.searchable = options.searchable !== false;
     this.sortable = options.sortable !== false;
     this.filterable = options.filterable !== false;
     this.paginated = options.paginated !== false;
-    this.clickAction = options.clickAction || "view";
+
+    // Numbered pagination is the convention for tables; "Show more" wouldn't
+    // make sense with row-per-record column layouts. Override ListView's
+    // default of 'more' (set when only `paginated: true` was passed).
+    this.paginationMode = options.paginationMode || 'pages';
+
+    // TableView clears selection on page change unless the caller opts in.
+    // This preserves prior behavior where rows are torn down per page.
+    this.persistSelection = options.persistSelection === true;
+
+    this.clickAction = options.clickAction || 'view';
     this.fetchOnView = options.fetchOnView !== false;
 
     // Model operation configurations
@@ -75,36 +93,27 @@ class TableView extends ListView {
     }
     this.exportSource = options.exportSource || 'remote';
 
-    // Filter configuration
+    // Filter configuration — TableView populates `this.filters` from columns
+    // (see extractColumnFilters); ListView's filter API consumes that map.
     this.filters = {};
     this.additionalFilters = options.filters || [];
     this.hideActivePills = options.hideActivePills === true;
     this.hideActivePillNames = options.hideActivePillNames || [];
-    this.rowAction = options.rowAction || "row-click";
-    this.batchBarLocation = options.batchBarLocation || "bottom"; // "top" or "bottom"
+    this.rowAction = options.rowAction || 'row-click';
+    this.batchBarLocation = options.batchBarLocation || 'bottom';
 
     this.options.addButtonLabel = options.addButtonLabel || 'Add';
 
     // Custom toolbar buttons
     this.toolbarButtons = options.toolbarButtons || [];
-
-    // Optional right-aligned toolbar slot — accepts any View instance
-    // (range picker, view-mode toggle, custom filter widget). Rendered via
-    // addChild() in onAfterRender. The toolbar shell auto-renders even when
-    // search and filters are disabled if a toolbarRight view is provided.
     this.toolbarRight = options.toolbarRight || null;
 
-    // Optional title block on the toolbar's left side. When `title` is set,
-    // an `<h5>` (and optional uppercase eyebrow above it) renders at the
-    // start of the toolbar with `me-auto`, pushing every other toolbar
-    // element (refresh / search / filter / toolbarRight) to the right edge.
-    // Lets a section host put its heading inline with the toolbar to save
-    // vertical space.
-    this.title    = options.title    || null;
-    this.eyebrow  = options.eyebrow  || null;
+    // Title block on the toolbar's left side.
+    this.title = options.title || null;
+    this.eyebrow = options.eyebrow || null;
 
     // Toolbar chrome gates — defaults preserve existing behavior.
-    this.showRefresh    = options.showRefresh    !== false;
+    this.showRefresh = options.showRefresh !== false;
     this.showFullscreen = options.showFullscreen !== false;
 
     // Table display options
@@ -113,12 +122,12 @@ class TableView extends ListView {
       bordered: false,
       hover: true,
       responsive: false,
-      size: null, // null, 'sm', 'lg'
+      size: null,
       ...options.tableOptions
     };
 
     // Search configuration
-    this.searchPlacement = options.searchPlacement || 'toolbar'; // 'toolbar' or 'dropdown'
+    this.searchPlacement = options.searchPlacement || 'toolbar';
     this.searchPlaceholder = options.searchPlaceholder || 'Search...';
 
     // Initialize column configuration BEFORE building template
@@ -128,7 +137,7 @@ class TableView extends ListView {
     this.extractColumnFilters();
 
     // Detect columns that need footer totals
-    this.footerTotalColumns = this.columns.filter(col => col.footer_total === true);
+    this.footerTotalColumns = this.columns.filter((col) => col.footer_total === true);
     this.hasFooterTotals = this.footerTotalColumns.length > 0;
 
     // Build template with Mustache variables
@@ -143,7 +152,6 @@ class TableView extends ListView {
    */
   setupCollectionListeners() {
     if (this.hasFooterTotals && this.collection) {
-      // Re-render totals when collection data changes
       this.collection.on('reset add remove change', () => {
         this.updateFooterTotals();
       });
@@ -154,13 +162,8 @@ class TableView extends ListView {
    * Initialize column configuration
    */
   initializeColumns() {
-    this.columns.forEach(column => {
-      // Ensure each column has a key
-      if (!column.key && column.name) {
-        column.key = column.name;
-      }
-
-      // Set default label if not provided
+    this.columns.forEach((column) => {
+      if (!column.key && column.name) column.key = column.name;
       if (!column.label && !column.title) {
         column.label = column.key.charAt(0).toUpperCase() + column.key.slice(1);
       }
@@ -176,11 +179,9 @@ class TableView extends ListView {
    * @returns {string} Bootstrap responsive display classes
    */
   getResponsiveClasses(visibility) {
-    if (!visibility) return ''; // Always visible if no visibility specified
-
+    if (!visibility) return '';
     const validBreakpoints = ['sm', 'md', 'lg', 'xl', 'xxl'];
 
-    // Legacy string format: show at breakpoint and up
     if (typeof visibility === 'string') {
       if (!validBreakpoints.includes(visibility)) {
         console.warn(`Invalid visibility breakpoint: ${visibility}. Valid options are: ${validBreakpoints.join(', ')}`);
@@ -189,11 +190,8 @@ class TableView extends ListView {
       return `d-none d-${visibility}-table-cell`;
     }
 
-    // Object format for more control
     if (typeof visibility === 'object') {
       const classes = [];
-
-      // Hide at breakpoint and up
       if (visibility.hide) {
         if (!validBreakpoints.includes(visibility.hide)) {
           console.warn(`Invalid hide breakpoint: ${visibility.hide}. Valid options are: ${validBreakpoints.join(', ')}`);
@@ -201,8 +199,6 @@ class TableView extends ListView {
         }
         classes.push(`d-table-cell d-${visibility.hide}-none`);
       }
-
-      // Show at breakpoint and up (optionally combined with hide)
       if (visibility.show) {
         if (!validBreakpoints.includes(visibility.show)) {
           console.warn(`Invalid show breakpoint: ${visibility.show}. Valid options are: ${validBreakpoints.join(', ')}`);
@@ -214,17 +210,13 @@ class TableView extends ListView {
           classes.push(`d-${visibility.show}-table-cell`);
         }
       }
-
       return classes.join(' ');
     }
-
     return '';
   }
 
   /**
    * Get Bootstrap text-alignment class for a column.
-   * Accepts 'left', 'center', 'right' (and 'start'/'end' aliases).
-   * Returns '' when no align is set.
    */
   getAlignClass(align) {
     if (!align) return '';
@@ -261,9 +253,7 @@ class TableView extends ListView {
     if (!this.hasFooterTotals || !this.element) return;
 
     const totals = this.calculateFooterTotals();
-    console.log('Updating footer totals in DOM:', totals);
 
-    // Update each total cell in the footer
     let totalColumnIndex = 0;
     this.columns.forEach((column) => {
       if (column.footer_total) {
@@ -275,12 +265,10 @@ class TableView extends ListView {
           let displayValue;
 
           if (formatter && typeof formatter === 'string') {
-            // Use DataFormatter if available
             displayValue = this.formatValue(totals[safeKey].value, formatter);
           } else {
             displayValue = totals[safeKey].value;
           }
-
           cell.textContent = displayValue;
         }
         totalColumnIndex++;
@@ -314,20 +302,13 @@ class TableView extends ListView {
       const { fieldKey, formatter } = this.parseColumnKey(column.key);
       let sum = 0;
 
-      // Sum values from all items in collection
-      this.collection.forEach(model => {
+      this.collection.forEach((model) => {
         const value = model.get ? model.get(fieldKey) : model[fieldKey];
         const numValue = parseFloat(value) || 0;
         sum += numValue;
       });
 
-      // Debug logging
-      console.log(`Footer total for ${column.key}: ${sum} (from ${this.collection.length} items)`);
-
-      // Use safe key for Mustache (avoid special characters)
       const safeKey = `col_${totalColumnIndex}`;
-
-      // Store total with formatter info
       totals[safeKey] = {
         value: sum,
         formatter: formatter || column.formatter,
@@ -340,20 +321,26 @@ class TableView extends ListView {
   }
 
   /**
-   * Extract filters from column configuration
+   * Extract filters from column configuration. Folds the column's `label`
+   * into the filter config as a fallback so ListView's getFilterLabel()
+   * (which only reads from `this.filters[key].label`) preserves the
+   * historical "filter label → column label → fieldKey" fallback chain.
    */
   extractColumnFilters() {
     this.filters = {};
-    this.columns.forEach(column => {
+    this.columns.forEach((column) => {
       if (column.filter) {
         const { fieldKey } = this.parseColumnKey(column.key);
-        this.filters[fieldKey] = column.filter;
+        this.filters[fieldKey] = {
+          ...column.filter,
+          label: column.filter.label || column.label || fieldKey
+        };
       }
     });
   }
 
   isSelectable() {
-      return this.batchActions && this.batchActions.length > 0 && this.selectionMode == 'multiple';
+    return this.batchActions && this.batchActions.length > 0 && this.selectionMode === 'multiple';
   }
 
   /**
@@ -363,11 +350,19 @@ class TableView extends ListView {
     const batchPanelTop = this.batchBarLocation === 'top' ? this.buildBatchActionsPanel() : '';
     const batchPanelBottom = this.batchBarLocation === 'bottom' ? this.buildBatchActionsPanel() : '';
 
+    const fontSize = (() => {
+      const __fs = (this.tableOptions && this.tableOptions.fontSize != null)
+        ? this.tableOptions.fontSize
+        : (this.options && this.options.fontSize);
+      const __val = __fs === 'sm' ? '0.9rem' : (__fs === 'xs' ? '0.8rem' : (__fs ? String(__fs) : null));
+      return __val ? ` style="font-size: ${__val};"` : '';
+    })();
+
     return `
       <div class="mojo-table-wrapper">
         ${this.buildToolbarTemplate()}
         ${batchPanelTop}
-        <div class="table-container"${(() => { const __fs = (this.tableOptions && this.tableOptions.fontSize != null) ? this.tableOptions.fontSize : (this.options && this.options.fontSize); const __val = __fs === 'sm' ? '0.9rem' : (__fs === 'xs' ? '0.8rem' : (__fs ? String(__fs) : null)); return __val ? ` style="font-size: ${__val};"` : ''; })()}>
+        <div class="table-container"${fontSize}>
           {{#loading}}
             <div class="mojo-table-loading d-flex justify-content-center align-items-center py-5">
               <div class="spinner-border" role="status">
@@ -392,7 +387,7 @@ class TableView extends ListView {
           {{/loading}}
         </div>
         ${batchPanelBottom}
-        ${this.buildPaginationTemplate()}
+        ${this.paginated ? this.buildPaginationTemplate() : ''}
       </div>
     `;
   }
@@ -415,65 +410,14 @@ class TableView extends ListView {
   }
 
   /**
-   * Build toolbar template
-   */
-  buildToolbarTemplate() {
-    // Render the toolbar shell when ANY of: title/eyebrow, search, filter,
-    // custom buttons, or a right-side slot view is configured.
-    if (!this.title && !this.eyebrow && !this.searchable && !this.filterable && !this.toolbarRight && (!this.toolbarButtons || this.toolbarButtons.length === 0)) {
-      return '';
-    }
-
-    const titleBlock = this._buildTitleBlockTemplate();
-    const rightSlot = this.toolbarRight
-        ? `<div data-container="toolbar-right"></div>`
-        : '';
-    // When a title is present we want every toolbar element pushed to the
-    // right. The simplest way is to wrap the right-side group in its own
-    // flex container that auto-grows.
-    const rightGroup = `
-      <div class="d-flex align-items-center gap-2 flex-wrap ${titleBlock ? 'ms-auto' : ''}">
-        ${this.buildActionButtonsTemplate()}
-        ${this.filterable ? this.buildFilterDropdownTemplate() : ''}
-        ${this.searchable && this.searchPlacement === 'toolbar' ? this.buildSearchTemplate() : ''}
-        ${rightSlot}
-      </div>
-    `;
-
-    return `
-      <div class="table-action-buttons mb-3">
-        <div class="d-flex align-items-center gap-3 flex-wrap">
-          ${titleBlock}
-          ${rightGroup}
-        </div>
-        <div data-container="filter-pills"></div>
-      </div>
-    `;
-  }
-
-  /**
-   * Build the optional left-side title block (eyebrow + title).
-   * @returns {string}
-   * @private
-   */
-  _buildTitleBlockTemplate() {
-    if (!this.title && !this.eyebrow) return '';
-    const eyebrow = this.eyebrow
-        ? `<div class="text-body-secondary text-uppercase small fw-semibold rs-table-eyebrow" style="letter-spacing: 0.05em; line-height: 1.2;">${this.escapeHtml(this.eyebrow)}</div>`
-        : '';
-    const title = this.title
-        ? `<h5 class="mb-0 rs-table-title">${this.escapeHtml(this.title)}</h5>`
-        : '';
-    return `<div class="rs-table-title-block">${eyebrow}${title}</div>`;
-  }
-
-  /**
-   * Build action buttons template
+   * Override buildActionButtonsTemplate to inject Add / Export / Fullscreen
+   * buttons that depend on TableView-specific config (formConfig, exportSource).
+   * Refresh + custom toolbarButtons + permissions checks come from the parent.
    */
   buildActionButtonsTemplate() {
-    let buttons = [];
+    const buttons = [];
 
-    // Refresh button (gated by showRefresh, default true)
+    // Refresh
     if (this.showRefresh) {
       buttons.push(`
         <button class="btn btn-sm btn-outline-secondary btn-refresh"
@@ -484,7 +428,7 @@ class TableView extends ListView {
       `);
     }
 
-    // Fullscreen button (gated by showFullscreen, only if browser supports it)
+    // Fullscreen
     if (this.showFullscreen && this.isFullscreenSupported()) {
       buttons.push(`
         <button class="btn btn-sm btn-outline-secondary btn-fullscreen"
@@ -495,7 +439,7 @@ class TableView extends ListView {
       `);
     }
 
-    // Custom action buttons from options
+    // Add
     if (this.options.showAdd) {
       buttons.push(`
         <button class="btn btn-sm btn-success btn-add"
@@ -507,10 +451,10 @@ class TableView extends ListView {
       `);
     }
 
+    // Export
     if (this.options.showExport) {
       if (this.exportOptions && this.exportOptions.length > 1) {
-        // Dropdown for multiple export options
-        const dropdownItems = this.exportOptions.map(opt => `
+        const dropdownItems = this.exportOptions.map((opt) => `
           <li>
             <a class="dropdown-item" href="#" data-action="export" data-format="${opt.format}">
               <i class="${opt.icon || 'bi bi-file-earmark-arrow-down'} me-2"></i>${opt.label}
@@ -531,8 +475,9 @@ class TableView extends ListView {
           </div>
         `);
       } else {
-        // Single export button
-        const format = this.exportOptions && this.exportOptions.length === 1 ? this.exportOptions[0].format : 'json';
+        const format = this.exportOptions && this.exportOptions.length === 1
+          ? this.exportOptions[0].format
+          : 'json';
         buttons.push(`
           <button class="btn btn-sm btn-outline-secondary btn-export"
                   data-action="export"
@@ -545,11 +490,7 @@ class TableView extends ListView {
       }
     }
 
-    // if (buttons.length > 0) {
-    //   buttons.push(`<div class="vr mx-2"></div>`);
-    // }
-
-    // Render custom toolbar buttons
+    // Custom toolbar buttons
     if (this.toolbarButtons && this.toolbarButtons.length > 0) {
       this.toolbarButtons.forEach((button, index) => {
         const {
@@ -563,15 +504,11 @@ class TableView extends ListView {
           permissions = null
         } = button;
 
-        // Check permissions if specified
-        if (permissions && !this.checkPermissions(permissions)) {
-          return;
-        }
+        if (permissions && !this.checkPermissions(permissions)) return;
 
         const iconHtml = icon ? `<i class="${icon} me-1"></i>` : '';
         const labelHtml = `<span class="d-none d-lg-inline">${label}</span>`;
 
-        // Use handler if provided, otherwise use action for data-action attribute
         let dataAttrs = '';
         if (handler) {
           dataAttrs = `data-action="custom-toolbar-button" data-button-index="${index}"`;
@@ -582,9 +519,7 @@ class TableView extends ListView {
         const btnClass = `btn btn-sm btn-${variant} ${className}`.trim();
 
         buttons.push(`
-          <button class="${btnClass}"
-                  ${dataAttrs}
-                  title="${title}">
+          <button class="${btnClass}" ${dataAttrs} title="${title}">
             ${iconHtml}${labelHtml}
           </button>
         `);
@@ -592,200 +527,6 @@ class TableView extends ListView {
     }
 
     return buttons.join('');
-  }
-
-  /**
-   * Build search template
-   */
-  buildSearchTemplate() {
-    return `
-      <div class="flex-grow-1" style="max-width: 400px;">
-        <div class="input-group input-group-sm">
-          <span class="input-group-text">
-            <i class="bi bi-search"></i>
-          </span>
-          <input type="search"
-                 class="form-control"
-                 placeholder="{{searchPlaceholder}}"
-                 data-filter="search"
-                 data-change-action="apply-search"
-                 value="{{collection.params.search}}"
-                 aria-label="Search">
-          {{#searchValue}}
-            <button class="btn btn-outline-secondary" type="button"
-                    data-action="clear-search"
-                    title="Clear search">
-              <i class="bi bi-x"></i>
-            </button>
-          {{/searchValue}}
-        </div>
-      </div>
-    `;
-  }
-
-  /**
-   * Build filter dropdown template
-   */
-  buildFilterDropdownTemplate() {
-    const hasFilters = (this.filters && Object.keys(this.filters).length > 0) ||
-                      (this.additionalFilters && this.additionalFilters.length > 0);
-
-    if (!hasFilters) {
-      return '';
-    }
-
-    return `
-      <div class="dropdown">
-        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                data-bs-toggle="dropdown" aria-expanded="false">
-          <i class="bi bi-filter me-1"></i>
-          <span class="d-none d-lg-inline">Add Filter</span>
-        </button>
-        <div class="dropdown-menu" style="min-width: 250px;">
-          ${this.buildFilterList()}
-        </div>
-      </div>
-    `;
-  }
-
-  /**
-   * Build simple filter selection list
-   */
-  buildFilterList() {
-    const allFilters = this.getAllAvailableFilters();
-    const activeFilters = this.getActiveFilters();
-
-    if (allFilters.length === 0) {
-      return '<div class="dropdown-item-text text-muted">No filters available</div>';
-    }
-
-    const filterItems = allFilters.map(filter => {
-      const isActive = activeFilters.hasOwnProperty(filter.key);
-      const activeClass = isActive ? 'active' : '';
-      const icon = this.getFilterIcon(filter.type || filter.config?.type);
-
-      return `
-        <button class="dropdown-item ${activeClass}"
-                data-action="add-filter"
-                data-filter-key="${filter.key}">
-          <i class="bi bi-${icon} me-2"></i>
-          ${filter.label}
-          ${isActive ? '<i class="bi bi-check-circle ms-auto"></i>' : ''}
-        </button>
-      `;
-    }).join('');
-
-    return `
-      ${filterItems}
-      ${Object.keys(activeFilters).length > 0 ? `
-        <div class="dropdown-divider"></div>
-        <button class="dropdown-item text-danger" data-action="clear-all-filters">
-          <i class="bi bi-x-circle me-2"></i>Clear All Filters
-        </button>
-      ` : ''}
-    `;
-  }
-
-  /**
-   * Update filter pills in the DOM
-   */
-  updateFilterPills() {
-    const container = this.element?.querySelector('[data-container="filter-pills"]');
-
-    if (!container) {
-      return;
-    }
-
-    const activeFilters = this.getActiveFilters();
-
-    const pillsHTML = this.buildActivePills();
-    container.innerHTML = pillsHTML;
-  }
-
-  /**
-   * Update search input value across all search inputs
-   */
-  updateSearchInputs(value) {
-    const searchInputs = this.element?.querySelectorAll('[data-filter="search"]');
-    if (searchInputs) {
-      searchInputs.forEach(input => {
-        input.value = value || '';
-      });
-    }
-  }
-
-  /**
-   * Build active filter pills display
-   */
-  buildActivePills() {
-    if (this.hideActivePills) {
-      return '';
-    }
-
-    const activeFilters = this.getActiveFilters();
-    const hasSearch = activeFilters.search && activeFilters.search.toString().trim() !== '';
-    let filterEntries = Object.entries(activeFilters).filter(([key, value]) =>
-      value && value.toString().trim() !== '' && key !== 'search'
-    );
-
-    // Hide specific pills based on configuration
-    if (this.hideActivePillNames && this.hideActivePillNames.length > 0) {
-      filterEntries = filterEntries.filter(([key]) =>
-        !this.hideActivePillNames.includes(key)
-      );
-    }
-
-    if (filterEntries.length === 0 && !hasSearch) {
-      return '';
-    }
-
-    const pills = filterEntries.map(([paramKey, value]) => {
-      const { field } = parseFilterKey(paramKey);
-      const label = this.getFilterLabel(field);
-      const displayText = formatFilterDisplay(paramKey, value, label);
-      const icon = 'filter'; // search won't appear as pill anymore
-
-      return `
-        <span class="badge bg-primary me-1 mb-1 py-1 px-2 position-relative" style="font-size: 0.75rem;">
-          <i class="bi bi-${icon} me-1" style="font-size: 0.65rem;"></i>
-
-          <button type="button" class="btn btn-link text-white p-0 ms-1"
-                  style="font-size: 0.65rem; line-height: 1;"
-                  data-action="edit-filter"
-                  data-filter="${paramKey}"
-                  title="Edit filter">
-            ${displayText}
-          </button>
-
-          <button type="button" class="btn-close btn-close-white ms-1"
-                  style="font-size: 0.6rem; width: 0.5rem; height: 0.5rem;"
-                  data-action="remove-filter"
-                  data-filter="${paramKey}"
-                  title="Remove filter">
-          </button>
-        </span>
-      `;
-    }).join('');
-
-    // Show Clear All if there are multiple filters, or any filter + search
-    const showClearAll = filterEntries.length > 1 || (filterEntries.length > 0 && hasSearch) || (filterEntries.length === 0 && hasSearch);
-    const clearAllButton = showClearAll ? `
-      <button class="btn btn-sm btn-outline-secondary mb-1 py-0 px-2" style="font-size: 0.75rem;" data-action="clear-all-filters">
-        <i class="bi bi-x-circle me-1" style="font-size: 0.7rem;"></i>
-        <small>Clear All</small>
-      </button>
-    ` : '';
-
-    return `
-      <div class="row mt-2">
-        <div class="col-12">
-          <div class="d-flex flex-wrap align-items-center">
-            ${pills}
-            ${clearAllButton}
-          </div>
-        </div>
-      </div>
-    `;
   }
 
   /**
@@ -808,8 +549,7 @@ class TableView extends ListView {
     }
 
     // Column headers
-    this.columns.forEach(column => {
-      // Parse column key to get field name without pipes/formatters
+    this.columns.forEach((column) => {
       const { fieldKey } = this.parseColumnKey(column.key);
 
       const sortable = this.sortable && column.sortable !== false;
@@ -859,7 +599,6 @@ class TableView extends ListView {
       `;
     });
 
-    // Actions header
     if (this.actions) {
       headerCells += '<th>Actions</th>';
     } else if (this.contextMenu) {
@@ -881,22 +620,18 @@ class TableView extends ListView {
   buildTableFooterTemplate() {
     let footerCells = '';
 
-    // Selection checkbox footer (empty)
     if (this.isSelectable()) {
       footerCells += '<td></td>';
     }
 
-    // Column footers
     let totalColumnIndex = 0;
     this.columns.forEach((column, index) => {
       const responsiveClasses = this.getResponsiveClasses(column.visibility);
       const alignClass = this.getAlignClass(column.align);
 
       if (column.footer_total) {
-        // Use safe key for Mustache template
         const safeKey = `col_${totalColumnIndex}`;
         const formatter = this.parseColumnKey(column.key).formatter || column.formatter;
-
         let cellContent;
         if (formatter && typeof formatter === 'string') {
           cellContent = `{{{footerTotals.${safeKey}.value|${formatter}}}}`;
@@ -907,15 +642,12 @@ class TableView extends ListView {
         footerCells += `<td class="table-footer-total ${responsiveClasses} ${alignClass}" data-total-column="${safeKey}">${cellContent}</td>`;
         totalColumnIndex++;
       } else if (index === 0) {
-        // First column shows "Totals" label
         footerCells += `<td class="table-footer-label ${responsiveClasses} ${alignClass}"><strong>Totals</strong></td>`;
       } else {
-        // Empty cell for non-total columns
         footerCells += `<td class="${responsiveClasses} ${alignClass}"></td>`;
       }
     });
 
-    // Actions footer (empty)
     if (this.actions) {
       footerCells += '<td></td>';
     } else if (this.contextMenu) {
@@ -935,14 +667,11 @@ class TableView extends ListView {
    * Build batch actions panel
    */
   buildBatchActionsPanel() {
-    if (!this.batchActions || this.batchActions.length === 0) {
-      return '';
-    }
+    if (!this.batchActions || this.batchActions.length === 0) return '';
 
     if (this.batchBarLocation === 'top') {
-      // Toolbar-style batch actions for top placement
       let actionsHTML = '';
-      this.batchActions.forEach(action => {
+      this.batchActions.forEach((action) => {
         actionsHTML += `
           <button class="btn btn-sm btn-outline-secondary" data-action="batch-${action.action}" title="${action.label}">
             <i class="${action.icon} me-1"></i>
@@ -970,9 +699,8 @@ class TableView extends ListView {
         </div>
       `;
     } else {
-      // Original bottom panel style
       let actionsHTML = '';
-      this.batchActions.forEach(action => {
+      this.batchActions.forEach((action) => {
         actionsHTML += `
           <div class="batch-select-action text-center px-2" data-action="batch-${action.action}">
             <div class="batch-action-icon fs-3">
@@ -1009,51 +737,16 @@ class TableView extends ListView {
   }
 
   /**
-   * Build pagination template
-   */
-  buildPaginationTemplate() {
-    if (!this.paginated) {
-      return '';
-    }
-
-    return `
-      <div class="table-status-bar mt-3">
-        <div class="d-flex flex-column flex-lg-row justify-content-center justify-content-lg-between align-items-center gap-3">
-          <div class="d-flex flex-column flex-sm-row align-items-center gap-2 gap-sm-3 text-center text-lg-start">
-            <span class="text-muted">
-              Showing <span data-value="start">0</span> to <span data-value="end">0</span>
-              of <span data-value="total">0</span> entries
-            </span>
-            <div class="d-flex align-items-center">
-              <label class="form-label me-2 mb-0">Show:</label>
-              <select class="form-select form-select-sm" style="width: auto;" data-change-action="page-size">
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-              </select>
-            </div>
-          </div>
-          <nav aria-label="Table pagination">
-            <ul class="pagination pagination-sm mb-0 justify-content-center" data-container="pagination">
-              <!-- Pagination will be rendered here -->
-            </ul>
-          </nav>
-        </div>
-      </div>
-    `;
-  }
-
-  /**
    * Override _createItemView to pass table-specific options
    */
   _createItemView(model, index) {
+    if (this.itemViews.has(model.id)) return this.itemViews.get(model.id);
+
     const itemView = new this.itemClass({
       model: model,
       index: index,
       listView: this,
-      tableView: this, // Also pass as tableView for clarity
+      tableView: this,
       template: this.itemTemplate,
       columns: this.columns,
       actions: this.actions,
@@ -1062,10 +755,8 @@ class TableView extends ListView {
       containerId: 'items'
     });
 
-    // Store the item view
     this.itemViews.set(model.id, itemView);
 
-    // Set up item event listeners
     itemView.on('item:select', (event) => {
       this._onItemSelect(event);
       this.updateBatchActionsPanel();
@@ -1075,7 +766,6 @@ class TableView extends ListView {
       this.updateBatchActionsPanel();
     });
 
-    // Table-specific row events
     itemView.on('row:click', this._onRowClick.bind(this));
     itemView.on('row:view', this._onRowView.bind(this));
     itemView.on('row:edit', this._onRowEdit.bind(this));
@@ -1088,37 +778,23 @@ class TableView extends ListView {
   }
 
   /**
-   * Override onMounted to ensure filter pills are shown on initial load
+   * Override onBeforeRender to surface footerTotals into the template context
+   * (still calls super for searchValue + hasMore).
    */
-  async onMounted() {
-    await super.onMounted();
-    const activeFilters = this.getActiveFilters();
-
-    // Ensure filter pills are displayed if there are active filters from URL
-    if (this.collection && Object.keys(activeFilters).length > 0) {
-      this.updateFilterPills();
-    }
-
-    // Add listener for native search clear button
-    this.setupSearchClearListener();
+  async onBeforeRender() {
+    await super.onBeforeRender();
+    this.footerTotals = this.calculateFooterTotals();
   }
 
   /**
-   * Setup listener for native search clear (X) button
+   * Override onAfterRender to also update footer totals + sort icons after
+   * the inherited toolbar / pagination / pills update.
    */
-  setupSearchClearListener() {
-    if (!this.element) return;
+  async onAfterRender() {
+    await super.onAfterRender();
 
-    const searchInputs = this.element.querySelectorAll('input[type="search"][data-filter="search"]');
-    searchInputs.forEach(input => {
-      // Listen for input event to detect native clear
-      input.addEventListener('input', (event) => {
-        // If value is empty and we had a search before, it was cleared
-        if (event.target.value === '' && this.getActiveFilters().search) {
-          this.onActionClearSearch(event, event.target);
-        }
-      });
-    });
+    if (this.hasFooterTotals) this.updateFooterTotals();
+    this.updateSortIcons();
   }
 
   /**
@@ -1127,7 +803,6 @@ class TableView extends ListView {
   _onRowClick(event) {
     this.emit('row:click', event);
 
-    // Default behavior - show item details if configured
     if (this.options.onRowClick) {
       return this.options.onRowClick(event.model, event.event);
     }
@@ -1143,14 +818,9 @@ class TableView extends ListView {
    * Get the Model class from collection or instance
    */
   getModelClass(model) {
-    // Try to get from collection first
     if (this.collection?.ModelClass) return this.collection.ModelClass;
     if (this.collection?.model) return this.collection.model;
-
-    // Try to get from a model instance
     if (model?.constructor) return model.constructor;
-
-    // Return null if we can't determine
     return null;
   }
 
@@ -1160,7 +830,6 @@ class TableView extends ListView {
   getModelName(model) {
     const ModelClass = this.getModelClass(model);
     if (!ModelClass) return 'Item';
-
     return ModelClass.MODEL_NAME ||
            ModelClass.name.replace(/Model$/, '') ||
            'Item';
@@ -1170,14 +839,10 @@ class TableView extends ListView {
    * Resolve item view class with fallbacks
    */
   getItemViewClass(model) {
-    // Check instance options first
     if (this.itemView) return this.itemView;
-
-    // Check Model class static property
     const ModelClass = this.getModelClass(model);
     if (ModelClass?.VIEW_CLASS) return ModelClass.VIEW_CLASS;
-
-    return null; // Will use data view as fallback
+    return null;
   }
 
   /**
@@ -1215,8 +880,6 @@ class TableView extends ListView {
    */
   renderTemplateString(template, model) {
     if (!template) return '';
-
-    // Use Mustache to render the template with the model as context
     return Mustache.render(template, model);
   }
 
@@ -1226,7 +889,6 @@ class TableView extends ListView {
   async _onRowView(event) {
     this.emit('row:view', event);
 
-    // Check for custom handler first
     if (this.options.onItemView) {
       await this.options.onItemView(event.model, event.event);
       return;
@@ -1271,7 +933,6 @@ class TableView extends ListView {
   async _onRowEdit(event) {
     this.emit('row:edit', event);
 
-    // Check for custom handler first
     if (this.options.onItemEdit) {
       await this.options.onItemEdit(event.model, event.event);
       return;
@@ -1281,9 +942,9 @@ class TableView extends ListView {
     let formConfig = this.getEditFormConfig(ModelClass);
 
     if (formConfig) {
-        if (!formConfig.fields) {
-            formConfig = { title: `Edit ${this.getModelName(event.model)}`, fields: formConfig };
-        }
+      if (!formConfig.fields) {
+        formConfig = { title: `Edit ${this.getModelName(event.model)}`, fields: formConfig };
+      }
 
       const result = await Modal.modelForm({
         model: event.model,
@@ -1291,16 +952,13 @@ class TableView extends ListView {
         ...this.getFormDialogConfig(ModelClass)
       });
 
-      if (!result) return;  // Cancelled
+      if (!result) return;
 
       if (!result.success || !result?.result?.data.status) {
-        Modal.showError(result?.result?.data?.error || result?.result?.message || "An error occurred");
+        Modal.showError(result?.result?.data?.error || result?.result?.message || 'An error occurred');
         return;
       }
-
     } else {
-      // Fallback to basic form if no config provided
-      // Using statically imported FormView
       const result = await Modal.dialog({
         title: `Edit ${this.getModelName(event.model)} #${event.model.id}`,
         body: new FormView({
@@ -1312,8 +970,8 @@ class TableView extends ListView {
       if (result) {
         const resp = await event.model.save(result);
         if (!resp.data?.status) {
-            Modal.showError(resp.data.error || 'An error occurred');
-            return;
+          Modal.showError(resp.data.error || 'An error occurred');
+          return;
         }
         await this.refresh();
       }
@@ -1326,20 +984,16 @@ class TableView extends ListView {
   async _onRowDelete(event) {
     this.emit('row:delete', event);
 
-    // Check for custom handler first
     if (this.options.onItemDelete) {
       await this.options.onItemDelete(event.model, event.event);
       return;
     }
 
     const ModelClass = this.getModelClass(event.model);
-
-    // Get delete template from options, Model class, or use default
     const template = this.deleteTemplate ||
                     ModelClass?.DELETE_TEMPLATE ||
                     'Are you sure you want to delete this {{name||"item"}}?';
 
-    // Render template with model context
     const message = this.renderTemplateString(template, event.model);
 
     const confirmed = await Modal.confirm({
@@ -1355,31 +1009,14 @@ class TableView extends ListView {
     }
   }
 
-  /**
-   * Handle cell edit event
-   */
-  _onCellEdit(event) {
-    this.emit('cell:edit', event);
-  }
+  _onCellEdit(event) { this.emit('cell:edit', event); }
+  async _onCellSave(event) { this.emit('cell:save', event); }
+  _onCellCancel(event) { this.emit('cell:cancel', event); }
 
-  /**
-   * Handle cell save event
-   */
-  async _onCellSave(event) {
-    this.emit('cell:save', event);
-    // Model save is now handled directly in TableRow.saveCellEdit()
-  }
+  // ============================================================
+  // Fullscreen
+  // ============================================================
 
-  /**
-   * Handle cell cancel event
-   */
-  _onCellCancel(event) {
-    this.emit('cell:cancel', event);
-  }
-
-  /**
-   * Check if fullscreen is supported by the browser
-   */
   isFullscreenSupported() {
     return !!(
       document.fullscreenEnabled ||
@@ -1389,10 +1026,7 @@ class TableView extends ListView {
     );
   }
 
-  /**
-   * Handle toggle fullscreen action
-   */
-  async onActionToggleFullscreen(event, element) {
+  async onActionToggleFullscreen(_event, _element) {
     if (this.isFullscreen) {
       await this.exitFullscreen();
     } else {
@@ -1400,12 +1034,8 @@ class TableView extends ListView {
     }
   }
 
-  /**
-   * Enter fullscreen mode
-   */
   async enterFullscreen() {
     try {
-      // Use browser's native fullscreen API
       if (this.element.requestFullscreen) {
         await this.element.requestFullscreen();
       } else if (this.element.mozRequestFullScreen) {
@@ -1420,19 +1050,13 @@ class TableView extends ListView {
       this.element.classList.add('table-fullscreen');
       this.updateFullscreenButton();
 
-      // Listen for fullscreen change events
       this.setupFullscreenListeners();
-
       this.emit('table:fullscreen:enter');
-
     } catch (error) {
       console.warn('Could not enter fullscreen:', error);
     }
   }
 
-  /**
-   * Exit fullscreen mode
-   */
   async exitFullscreen() {
     try {
       if (document.exitFullscreen) {
@@ -1450,15 +1074,11 @@ class TableView extends ListView {
       this.updateFullscreenButton();
 
       this.emit('table:fullscreen:exit');
-
     } catch (error) {
       console.warn('Could not exit fullscreen:', error);
     }
   }
 
-  /**
-   * Update fullscreen button icon and title
-   */
   updateFullscreenButton() {
     const button = this.element?.querySelector('.btn-fullscreen');
     const icon = button?.querySelector('i');
@@ -1474,11 +1094,7 @@ class TableView extends ListView {
     }
   }
 
-  /**
-   * Setup fullscreen event listeners
-   */
   setupFullscreenListeners() {
-    // Don't add listeners multiple times
     if (this._fullscreenHandler) return;
 
     const handleFullscreenChange = () => {
@@ -1490,7 +1106,6 @@ class TableView extends ListView {
       );
 
       if (!isCurrentlyFullscreen && this.isFullscreen) {
-        // User exited fullscreen via ESC or browser controls
         this.isFullscreen = false;
         this.element.classList.remove('table-fullscreen');
         this.updateFullscreenButton();
@@ -1498,19 +1113,14 @@ class TableView extends ListView {
       }
     };
 
-    // Add listeners for all browser prefixes
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('mozfullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
     document.addEventListener('msfullscreenchange', handleFullscreenChange);
 
-    // Store handler for cleanup
     this._fullscreenHandler = handleFullscreenChange;
   }
 
-  /**
-   * Cleanup fullscreen listeners
-   */
   cleanupFullscreenListeners() {
     if (this._fullscreenHandler) {
       document.removeEventListener('fullscreenchange', this._fullscreenHandler);
@@ -1529,25 +1139,17 @@ class TableView extends ListView {
     super.destroy();
   }
 
-  /**
-   * Handle refresh action
-   */
-  async onActionRefresh(event, element) {
-    await this.refresh();
-  }
+  // ============================================================
+  // Add / Export
+  // ============================================================
 
-  /**
-   * Handle add action
-   */
-  async onActionAdd(event, element) {
-    // Check for custom handler first - if provided, just emit event and let handler deal with it
+  async onActionAdd(event, _element) {
     if (this.options.onAdd) {
       this.emit('table:add', { event });
       await this.options.onAdd(event);
       return;
     }
 
-    // Emit event for external listeners
     this.emit('table:add', { event });
 
     const ModelClass = this.getModelClass();
@@ -1561,7 +1163,7 @@ class TableView extends ListView {
     if (formConfig) {
       const model = new ModelClass();
       if (!formConfig.fields) {
-          formConfig = { title: `Add ${this.getModelName()}`, fields: formConfig };
+        formConfig = { title: `Add ${this.getModelName()}`, fields: formConfig };
       }
 
       const result = await Modal.form({
@@ -1572,29 +1174,24 @@ class TableView extends ListView {
 
       if (result) {
         if (this.options.addRequiresActiveGroup) {
-            result.group = this.getApp().activeGroup.id;
+          result.group = this.getApp().activeGroup.id;
         }
         if (this.options.addRequiresActiveUser) {
-            result.user = this.getApp().activeUser.id;
+          result.user = this.getApp().activeUser.id;
         }
         if (this.options.addFormDefaults) {
-            Object.assign(result, this.options.addFormDefaults);
+          Object.assign(result, this.options.addFormDefaults);
         }
         const resp = await model.save(result);
         if (!resp?.data.status) {
-            Modal.showError(resp?.data.error || 'An error occurred');
-            return;
+          Modal.showError(resp?.data.error || 'An error occurred');
+          return;
         }
-        if (this.collection) {
-          this.collection.add(model);
-        }
+        if (this.collection) this.collection.add(model);
         await this.refresh();
       }
     } else {
-      // Fallback to basic form if no config provided
-      // Using statically imported FormView
       const model = new ModelClass();
-
       const result = await Modal.dialog({
         title: `Add ${this.getModelName()}`,
         body: new FormView({
@@ -1606,20 +1203,15 @@ class TableView extends ListView {
       if (result) {
         const resp = await model.save(result);
         if (!resp?.data.status) {
-            Modal.showError(resp.data.error || 'An error occurred');
-            return;
+          Modal.showError(resp.data.error || 'An error occurred');
+          return;
         }
-        if (this.collection) {
-          this.collection.add(model);
-        }
+        if (this.collection) this.collection.add(model);
         await this.refresh();
       }
     }
   }
 
-  /**
-   * Handle export action
-   */
   async onActionExport(event, element) {
     const format = element.getAttribute('data-format') || 'json';
 
@@ -1636,7 +1228,6 @@ class TableView extends ListView {
         console.warn('TableView: Cannot export from remote without a collection.');
       }
     } else {
-      // Handle local export (future enhancement)
       if (this.options.onExport) {
         await this.options.onExport(this.collection?.toJSON() || [], format);
       } else {
@@ -1645,91 +1236,32 @@ class TableView extends ListView {
     }
   }
 
-  /**
-   * Handle search action (Enter key triggers this via EventDelegate)
-   */
-  async onActionApplySearch(event, element) {
-    const searchTerm = element.value.trim();
+  // ============================================================
+  // Column-header sort (TableView-specific; ListView has its own
+  // toolbar `sortOptions` dropdown via `onActionSortOption`)
+  // ============================================================
 
-    if (this.collection) {
-      this.setFilter('search', searchTerm);
-
-      // Reset to first page when searching
-      this.collection.params.start = 0;
-
-      if (this.collection.restEnabled) {
-        await this.collection.fetch();
-      } else {
-        // Client-side filtering
-        await this.render();
-      }
-    }
-
-    // Update filter pills when search changes
-    this.updateFilterPills();
-
-    this.emit('table:search', { searchTerm, event });
-    this.emit('params-changed');
-  }
-
-  /**
-   * Handle clear search button
-   */
-  async onActionClearSearch(event, element) {
-    // Clear the search filter
-    this.setFilter('search', null);
-
-    // Reset to first page
-    if (this.collection) {
-      this.collection.params.start = 0;
-
-      if (this.collection.restEnabled) {
-        await this.collection.fetch();
-      }
-    }
-
-    // Render will rebuild the search input with empty value
-    await this.render();
-    this.updateFilterPills();
-
-    this.emit('table:search', { searchTerm: '', event });
-    this.emit('params-changed');
-  }
-
-  /**
-   * Get current sort field
-   */
   getSortBy() {
     const sort = this.collection?.params?.sort;
     if (!sort) return null;
     return sort.startsWith('-') ? sort.slice(1) : sort;
   }
 
-  /**
-   * Get current sort direction
-   */
   getSortDirection() {
     const sort = this.collection?.params?.sort;
     if (!sort) return 'asc';
     return sort.startsWith('-') ? 'desc' : 'asc';
   }
 
-  /**
-   * Get sort icon based on current sort direction
-   */
   getSortIcon(direction) {
     if (direction === 'asc') {
       return '<i class="bi bi-sort-alpha-down text-primary"></i>';
     } else if (direction === 'desc') {
       return '<i class="bi bi-sort-alpha-down-alt text-primary"></i>';
-    } else {
-      return '<i class="bi bi-three-dots-vertical text-muted"></i>';
     }
+    return '<i class="bi bi-three-dots-vertical text-muted"></i>';
   }
 
-  /**
-   * Handle sort action
-   */
   async onActionSort(event, element) {
     event.preventDefault();
     const field = element.getAttribute('data-field');
@@ -1739,23 +1271,22 @@ class TableView extends ListView {
       let newSort;
 
       if (direction === 'none') {
-        newSort = undefined; // Remove sort
+        newSort = undefined;
       } else if (direction === 'desc') {
-        newSort = `-${field}`; // Descending sort
+        newSort = `-${field}`;
       } else {
-        newSort = field; // Ascending sort
+        newSort = field;
       }
 
       this.collection.setParams({
         ...this.collection.params,
         sort: newSort,
-        start: 0 // Reset to first page when sorting changes
+        start: 0
       });
 
       if (this.collection.restEnabled) {
         await this.collection.fetch();
       } else {
-        // Client-side sorting
         if (newSort) {
           const desc = newSort.startsWith('-');
           const sortField = desc ? newSort.slice(1) : newSort;
@@ -1763,37 +1294,28 @@ class TableView extends ListView {
           this.collection.sort((a, b) => {
             const aVal = a.get(sortField);
             const bVal = b.get(sortField);
-
             if (aVal < bVal) return desc ? 1 : -1;
             if (aVal > bVal) return desc ? -1 : 1;
             return 0;
           });
         }
-
         this.render();
       }
     }
 
-    // Update sort icons in the DOM
     this.updateSortIcons();
-
     this.emit('table:sort', { field, event });
     this.emit('params-changed');
   }
 
-  /**
-   * Update sort icons in all column headers
-   */
   updateSortIcons() {
     if (!this.element) return;
 
     const currentSortField = this.getSortBy();
     const currentSortDir = this.getSortDirection();
 
-    // Update all sort dropdown buttons
-    this.columns.forEach(column => {
+    this.columns.forEach((column) => {
       if (this.sortable && column.sortable !== false) {
-        // Parse the column key to get just the field name (without pipes/formatters)
         const { fieldKey } = this.parseColumnKey(column.key);
 
         const dropdown = this.element.querySelector(`[data-bs-toggle="dropdown"][data-column="${fieldKey}"]`);
@@ -1802,799 +1324,55 @@ class TableView extends ListView {
           const sortIcon = this.getSortIcon(isSorted ? currentSortDir : null);
           dropdown.innerHTML = sortIcon;
 
-          // Update dropdown menu items
           const dropdownMenu = dropdown.nextElementSibling;
           if (dropdownMenu) {
             const ascItem = dropdownMenu.querySelector(`[data-field="${fieldKey}"][data-direction="asc"]`);
             const descItem = dropdownMenu.querySelector(`[data-field="${fieldKey}"][data-direction="desc"]`);
             const noneItem = dropdownMenu.querySelector(`[data-field="${fieldKey}"][data-direction="none"]`);
 
-            if (ascItem) {
-              ascItem.classList.toggle('active', isSorted && currentSortDir === 'asc');
-            }
-            if (descItem) {
-              descItem.classList.toggle('active', isSorted && currentSortDir === 'desc');
-            }
-            if (noneItem) {
-              noneItem.classList.toggle('active', !isSorted || currentSortField !== fieldKey);
-            }
+            if (ascItem) ascItem.classList.toggle('active', isSorted && currentSortDir === 'asc');
+            if (descItem) descItem.classList.toggle('active', isSorted && currentSortDir === 'desc');
+            if (noneItem) noneItem.classList.toggle('active', !isSorted || currentSortField !== fieldKey);
           }
         }
       }
     });
   }
 
-  /**
-   * Handle select all action
-   */
-  async onActionSelectAll(event, element) {
+  // ============================================================
+  // Batch actions / select-all
+  // ============================================================
+
+  async onActionSelectAll(event, _element) {
     event.stopPropagation();
     const isCurrentlyAllSelected = this.itemViews.size > 0 &&
-      Array.from(this.itemViews.values()).every(item => item.selected);
+      Array.from(this.itemViews.values()).every((item) => item.selected);
 
     if (!isCurrentlyAllSelected) {
-      // Select all visible items
-      this.forEachItem(itemView => {
-        if (!itemView.selected) {
-          itemView.select();
-        }
+      this.forEachItem((itemView) => {
+        if (!itemView.selected) itemView.select();
       });
     } else {
-      // Deselect all
       this.clearSelection();
     }
 
-    // Update select all checkbox visual state
     const selectAllCell = this.element?.querySelector('.mojo-select-all-cell');
-    if (selectAllCell) {
-      selectAllCell.classList.toggle('selected', !isCurrentlyAllSelected);
-    }
+    if (selectAllCell) selectAllCell.classList.toggle('selected', !isCurrentlyAllSelected);
 
-    // Update batch actions panel
     this.updateBatchActionsPanel();
   }
 
-  /**
-   * Override onBeforeRender to set data properties before rendering
-   */
-  async onBeforeRender() {
-    // Set properties that Mustache needs
-    this.searchValue = this.getActiveFilters().search || '';
-    this.footerTotals = this.calculateFooterTotals();
-  }
-
-  /**
-   * Override onAfterRender to update pagination info
-   */
-  async onAfterRender() {
-    await super.onAfterRender();
-
-    // Mount the optional right-side toolbar slot (range picker, view-mode toggle, etc.)
-    if (this.toolbarRight && !this._toolbarRightMounted) {
-      this.toolbarRight.containerId = 'toolbar-right';
-      this.addChild(this.toolbarRight);
-      await this.toolbarRight.render();
-      this._toolbarRightMounted = true;
-    }
-
-    // A render() may have replaced the toolbar markup — clear the mounted
-    // flag if the previous slot element is gone, so the next render re-mounts.
-    if (this._toolbarRightMounted && this.toolbarRight && !this.element?.contains(this.toolbarRight.element)) {
-      this._toolbarRightMounted = false;
-    }
-
-    // Update footer totals in case collection loaded after initial render
-    if (this.hasFooterTotals) {
-      this.updateFooterTotals();
-    }
-
-    // Update pagination info
-    if (this.paginated && this.collection) {
-      const total = this.collection.meta?.count || this.collection.length();
-      const start = this.collection.params?.start || 0;
-      const size = this.collection.params?.size || 10;
-      const end = Math.min(start + size, total);
-
-      const startEl = this.element.querySelector('[data-value="start"]');
-      const endEl = this.element.querySelector('[data-value="end"]');
-      const totalEl = this.element.querySelector('[data-value="total"]');
-
-      if (startEl) startEl.textContent = start + 1;
-      if (endEl) endEl.textContent = end;
-      if (totalEl) totalEl.textContent = total;
-
-      // Update page size selector
-      const pageSizeSelect = this.element.querySelector('[data-change-action="page-size"]');
-      if (pageSizeSelect) {
-        pageSizeSelect.value = size;
-      }
-
-      // Render pagination controls
-      this.renderPagination();
-    }
-
-    // Update sort icons after render
-    this.updateSortIcons();
-
-    // Update filter pills after render - this is crucial for showing pills on page load
-    this.updateFilterPills();
-
-    // Re-setup search clear listener after render
-    this.setupSearchClearListener();
-  }
-
-  /**
-   * Render pagination controls
-   * - Prev/Next wrap around (never disabled)
-   * - Truncated page list with first/last and ellipses
-   */
-  renderPagination() {
-    const paginationContainer = this.element.querySelector('[data-container="pagination"]');
-    if (!paginationContainer || !this.collection) return;
-
-    const total = this.collection.meta?.count || this.collection.length();
-    const size = this.collection.params?.size || 10;
-    const start = this.collection.params?.start || 0;
-    const currentPage = Math.floor(start / size) + 1;
-    const totalPages = Math.ceil(total / size);
-
-    if (totalPages <= 1) {
-      paginationContainer.innerHTML = '';
-      return;
-    }
-
-    const prevPage = currentPage > 1 ? currentPage - 1 : totalPages;
-    const nextPage = currentPage < totalPages ? currentPage + 1 : 1;
-
-    const pages = [];
-
-    // Previous (wraps)
-    pages.push(`
-      <li class="page-item">
-        <a class="page-link" href="#" data-action="page" data-page="${prevPage}">
-          <i class="bi bi-chevron-left"></i>
-        </a>
-      </li>
-    `);
-
-    // Build truncated page list: always show 1 and totalPages, with neighbors around current
-    const neighbors = 1; // how many pages to show on each side of current
-    const visibleSet = new Set([1, totalPages]);
-    for (let i = currentPage - neighbors; i <= currentPage + neighbors; i++) {
-      if (i >= 1 && i <= totalPages) visibleSet.add(i);
-    }
-    const visible = Array.from(visibleSet).sort((a, b) => a - b);
-
-    // Render pages with ellipses where there are gaps
-    let last = 0;
-    for (const p of visible) {
-      if (last && p - last > 1) {
-        // gap -> ellipsis
-        pages.push(`
-          <li class="page-item disabled"><span class="page-link">…</span></li>
-        `);
-      }
-      pages.push(`
-        <li class="page-item ${p === currentPage ? 'active' : ''}">
-          <a class="page-link" href="#" data-action="page" data-page="${p}">${p}</a>
-        </li>
-      `);
-      last = p;
-    }
-
-    // Next (wraps)
-    pages.push(`
-      <li class="page-item">
-        <a class="page-link" href="#" data-action="page" data-page="${nextPage}">
-          <i class="bi bi-chevron-right"></i>
-        </a>
-      </li>
-    `);
-
-    paginationContainer.innerHTML = pages.join('');
-  }
-
-  /**
-   * Handle page change
-   * - Normalizes and wraps page number (1..totalPages)
-   */
-  async onActionPage(event, element) {
-    event.preventDefault();
-
-    const rawPage = parseInt(element.getAttribute('data-page'), 10);
-    const size = this.collection.params?.size || 10;
-    const total = this.collection.meta?.count || this.collection.length();
-    const totalPages = Math.max(1, Math.ceil(total / size));
-
-    let page = isNaN(rawPage) ? 1 : rawPage;
-    if (page < 1) page = totalPages;
-    if (page > totalPages) page = 1;
-
-    this.collection.setParams({
-      ...this.collection.params,
-      start: (page - 1) * size
-    });
-
-    if (this.collection.restEnabled) {
-      await this.collection.fetch();
-    } else {
-      this.render();
-    }
-
-    this.emit('table:page', { page, event });
-    this.emit('params-changed');
-  }
-
-  /**
-   * Handle page size change
-   */
-  async onChangePageSize(event, element) {
-    const newSize = parseInt(element.value);
-
-    if (this.collection) {
-      // Reset to first page when changing page size
-      this.collection.setParams({
-        ...this.collection.params,
-        start: 0,
-        size: newSize
-      });
-
-      if (this.collection.restEnabled) {
-        await this.collection.fetch();
-      }
-      this.render();
-    }
-
-    this.emit('table:pagesize', { size: newSize, event });
-    this.emit('params-changed');
-  }
-
-  /**
-   * Get active filters from collection params
-   */
-  getActiveFilters() {
-    if (!this.collection?.params) {
-      return {};
-    }
-    const { start, size, sort, ...allParams } = this.collection.params;
-    const filters = {};
-
-    // Reconstruct daterange filters from their component parts
-    const processedKeys = new Set();
-
-    // First pass: identify and process daterange filters
-    const allFilterConfigs = this.getAllAvailableFilters();
-    allFilterConfigs.forEach(filterDef => {
-      if (filterDef.config.type === 'daterange') {
-        const key = filterDef.key;
-        const startName = filterDef.config.startName || 'dr_start';
-        const endName = filterDef.config.endName || 'dr_end';
-        const fieldName = filterDef.config.fieldName || 'dr_field';
-
-        // Check if this daterange filter is active for this specific key
-        if (allParams[fieldName] === key && (allParams[startName] || allParams[endName])) {
-          filters[key] = {
-            start: allParams[startName] || '',
-            end: allParams[endName] || ''
-          };
-
-          processedKeys.add(startName);
-          processedKeys.add(endName);
-          processedKeys.add(fieldName);
-        }
-      }
-    });
-
-    // Second pass: add remaining filters
-    Object.keys(allParams).forEach(paramKey => {
-      if (!processedKeys.has(paramKey)) {
-        filters[paramKey] = allParams[paramKey];
-      }
-    });
-
-    // Normalize single-value vs multi-value filters where both exist (e.g., field and field__in)
-    Object.keys(filters).forEach(key => {
-      if (filters.hasOwnProperty(key)) {
-        const inKey = `${key}__in`;
-        if (filters.hasOwnProperty(inKey)) {
-          // Prefer __in when explicitly provided; remove the base key to avoid duplicate pills
-          delete filters[key];
-          filters[inKey] = filters[inKey];
-        }
-      }
-    });
-
-    return filters;
-  }
-
-  /**
-   * Set a filter value
-   */
-  setFilter(key, value) {
-    if (!this.collection) return;
-
-    const filterConfig = this.getFilterConfig(key);
-
-    // Handle daterange filters specially
-    if (filterConfig && filterConfig.type === 'daterange') {
-      const startName = filterConfig.startName || 'dr_start';
-      const endName = filterConfig.endName || 'dr_end';
-      const fieldName = filterConfig.fieldName || 'dr_field';
-
-      // Always remove old values first
-      delete this.collection.params[startName];
-      delete this.collection.params[endName];
-      delete this.collection.params[fieldName];
-
-      // Set new values if provided and not empty
-      if (value && typeof value === 'object' && (value.start || value.end)) {
-        if (value.start) this.collection.params[startName] = value.start;
-        if (value.end) this.collection.params[endName] = value.end;
-        this.collection.params[fieldName] = key;
-      }
-    } else {
-      // Parse key to get field and lookup
-      const { field, lookup } = parseFilterKey(key);
-
-      // Clear old values - remove both base field and variants
-      delete this.collection.params[key];
-      delete this.collection.params[field];
-      delete this.collection.params[`${field}__in`];
-
-      if (!value || (Array.isArray(value) && value.length === 0)) {
-        return; // Cleared
-      }
-
-      // Smart param generation for multiselect fields
-      if (Array.isArray(value)) {
-        if (value.length === 1) {
-          // Single value from array - use simple key (no __in)
-          this.collection.params[field] = value[0];
-        } else {
-          // Multiple values - use __in lookup
-          this.collection.params[`${field}__in`] = value.join(',');
-        }
-      } else {
-        // Single value - use key as-is (may include lookup like __gte)
-        this.collection.params[key] = value;
-      }
-    }
-  }
-
-  /**
-   * Get all available filters
-   */
-  getAllAvailableFilters() {
-    const filters = [];
-
-    // Add column-based filters
-    this.columns.forEach(column => {
-      if (column.filter) {
-        const { fieldKey } = this.parseColumnKey(column.key);
-        filters.push({
-          key: fieldKey,
-          label: column.filter.label || column.label || fieldKey,
-          type: column.filter.type,
-          config: column.filter
-        });
-      }
-    });
-
-    // Add additional filters
-    if (this.additionalFilters && Array.isArray(this.additionalFilters)) {
-      this.additionalFilters.forEach(filter => {
-        filters.push({
-          key: filter.name || filter.key,
-          label: filter.label,
-          type: filter.type,
-          config: filter
-        });
-      });
-    }
-
-    return filters;
-  }
-
-  /**
-   * Get filter configuration for a key
-   */
-  getFilterConfig(filterKey) {
-    // Check column filters first
-    const column = this.columns.find(col => {
-      const { fieldKey } = this.parseColumnKey(col.key);
-      return fieldKey === filterKey;
-    });
-    if (column && column.filter) {
-      return column.filter;
-    }
-
-    // Check additional filters
-    if (this.additionalFilters && Array.isArray(this.additionalFilters)) {
-      const filter = this.additionalFilters.find(f => (f.name || f.key) === filterKey);
-      if (filter) {
-        return filter;
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * Get filter label
-   */
-  getFilterLabel(key) {
-    if (key === 'search') return 'Search';
-
-    const filter = this.filters[key];
-    if (filter && filter.label) return filter.label;
-
-    const additionalFilter = this.additionalFilters.find(f =>
-      (f.name || f.key) === key
-    );
-    if (additionalFilter && additionalFilter.label) return additionalFilter.label;
-
-    return key.charAt(0).toUpperCase() + key.slice(1);
-  }
-
-  /**
-   * Get filter display value
-   */
-  getFilterDisplayValue(key, value) {
-    if (key === 'search') return `"${value}"`;
-
-    const filter = this.filters[key] ||
-                  this.additionalFilters.find(f => (f.name || f.key) === key);
-
-    if (filter && filter.type === 'daterange' && typeof value === 'object') {
-      const start = value.start || '';
-      const end = value.end || '';
-      return `${start} to ${end}`;
-    }
-
-    if (filter && filter.type === 'select' && filter.options) {
-      if (typeof filter.options[0] === 'object') {
-        const option = filter.options.find(opt => opt.value === value);
-        return option ? option.label : value;
-      }
-      return value;
-    }
-
-    return value;
-  }
-
-  /**
-   * Get icon for filter type
-   */
-  getFilterIcon(type) {
-    const icons = {
-      'text': 'search',
-      'select': 'funnel',
-      'date': 'calendar',
-      'daterange': 'calendar-range',
-      'number': '123',
-      'boolean': 'toggle-on'
-    };
-    return icons[type] || 'filter';
-  }
-
-  /**
-   * Handle add filter action
-   */
-  async onActionAddFilter(event, element) {
-    const filterKey = element.getAttribute('data-filter-key');
-    const filterConfig = this.getFilterConfig(filterKey);
-    const currentValue = this.getActiveFilters()[filterKey];
-
-    if (!filterConfig) {
-      console.warn('No filter config found for key:', filterKey);
-      return;
-    }
-
-
-
-    // Show dialog for this specific filter
-    const result = await Modal.form({
-      title: `${currentValue !== undefined && currentValue !== '' ? 'Edit' : 'Add'} ${this.getFilterLabel(filterKey)} Filter`,
-      size: 'md',
-      fields: [this.buildFilterDialogField(filterConfig, currentValue, filterKey)]
-    });
-
-    if (result) {
-      // Extract the new filter value
-      const newFilterValue = this.extractFilterValue(filterConfig, result);
-      // Use the filter key for setFilter (it will handle the lookup internally)
-      this.setFilter(filterKey, newFilterValue);
-      await this.applyFilters();
-    }
-  }
-
-  /**
-   * Build filter dialog field configuration
-   */
-  buildFilterDialogField(filterConfig, currentValue, filterKey) {
-    // Strip `name` and `value` from the filter config before spreading —
-    // they are routing concerns that belong to the filter registration
-    // (resolved via `f.name || f.key` in getAllAvailableFilters), not to
-    // the dialog field. If they leak through, the form field's `name`
-    // gets clobbered and `extractFilterValue` reads `undefined` from
-    // `formResult.filter_value`. (See planning/issues for the
-    // additionalFilters regression that surfaced this.)
-    const { name: _filterName, value: _filterValue, ...rest } = filterConfig;
-    const field = {
-      ...rest,
-      name: 'filter_value',
-      label: rest.label,
-      value: currentValue,
-      placeholder: rest.placeholder || rest.placeHolder
-    };
-
-    // Set current value appropriately based on filter type
-    if (filterConfig.type === 'daterange') {
-      // Apply defaults for daterange
-      field.startName = field.startName || 'dr_start';
-      field.endName = field.endName || 'dr_end';
-      field.fieldName = field.fieldName || 'dr_field';
-      field.format = field.format || 'YYYY-MM-DD';
-      field.displayFormat = field.displayFormat || 'MMM DD, YYYY';
-      field.separator = field.separator || ' to ';
-      field.label = field.label || 'Date Range';
-
-      // Handle daterange current values
-      if (currentValue && typeof currentValue === 'object') {
-        const normalizeDateValue = (val) => {
-          if (!val && val !== 0) return '';
-          if (val instanceof Date && !isNaN(val)) {
-            return val.toISOString().slice(0, 10);
-          }
-
-          const str = String(val).trim();
-          if (!str) return '';
-
-          // Numeric timestamps (seconds or milliseconds)
-          if (/^-?\d+$/.test(str)) {
-            const num = Number(str);
-            const ms = str.length <= 10 ? num * 1000 : num;
-            const date = new Date(ms);
-            if (!isNaN(date)) {
-              return date.toISOString().slice(0, 10);
-            }
-          }
-
-          // ISO or other parseable formats
-          const date = new Date(str);
-          if (!isNaN(date)) {
-            return date.toISOString().slice(0, 10);
-          }
-
-          // Fallback: return original string
-          return str;
-        };
-
-        field.startDate = normalizeDateValue(currentValue.start || currentValue.from || currentValue.begin || '');
-        field.endDate = normalizeDateValue(currentValue.end || currentValue.to || currentValue.finish || '');
-      }
-    } else if (filterConfig.type === 'multiselect') {
-      // Convert comma-separated string to array for multiselect
-      let valueArray = [];
-      if (currentValue) {
-        if (Array.isArray(currentValue)) {
-          valueArray = currentValue;
-        } else if (typeof currentValue === 'string') {
-          // Split by comma and trim whitespace
-          valueArray = currentValue.split(',').map(v => v.trim()).filter(v => v);
-        }
-      }
-
-      field.value = valueArray;
-
-      // Ensure placeholder is set (support both casings)
-      if (!field.placeholder && !field.placeHolder) {
-        if (filterConfig.placeholder || filterConfig.placeHolder) {
-          field.placeholder = filterConfig.placeholder || filterConfig.placeHolder;
-        } else if (filterConfig.label) {
-          field.placeholder = `Select ${filterConfig.label}...`;
-        }
-      }
-    }
-
-    return field;
-  }
-
-  /**
-   * Extract filter value from form result
-   */
-  extractFilterValue(filterConfig, formResult) {
-    if (filterConfig.type === 'daterange') {
-      // Extract start/end values based on naming convention
-      const startName = filterConfig.startName || 'dr_start';
-      const endName = filterConfig.endName || 'dr_end';
-
-      const result = {
-        start: formResult[startName],
-        end: formResult[endName]
-      };
-
-      return result;
-    }
-
-    if (filterConfig.type === 'multiselect') {
-      // Return array as-is for multiselect
-      return formResult.filter_value;
-    }
-
-    return formResult.filter_value;
-  }
-
-  /**
-   * Apply filters to collection and refresh
-   */
-  async applyFilters() {
-    // Reset to first page when filters change
-    if (this.collection) {
-      this.collection.params.start = 0;
-    }
-
-    // For REST collections, fetch data with new filters
-    if (this.collection?.restEnabled) {
-      try {
-        await this.collection.fetch();
-        await this.render();
-      } catch (error) {
-        console.error('Failed to fetch filtered data:', error);
-        await this.render();
-      }
-    } else {
-      await this.render();
-    }
-
-    // Update filter pills display (onAfterRender also calls this,
-    // but we call again to ensure pills are current after render completes)
-    this.updateFilterPills();
-
-    // Emit params changed event for URL synchronization
-    this.emit('params-changed');
-  }
-
-  /**
-   * Handle edit filter action from pill
-   */
-  async onActionEditFilter(event, element) {
-    const filterKey = element.getAttribute('data-filter');
-
-    // Parse the key to get the base field (handles lookup keys like status__in)
-    const { field } = parseFilterKey(filterKey);
-
-    // Try to get filter config using the parsed field name first, then original key
-    let filterConfig = this.getFilterConfig(field) || this.getFilterConfig(filterKey);
-
-    // Get current value - could be under filterKey or field
-    const activeFilters = this.getActiveFilters();
-    const currentValue = activeFilters[filterKey] || activeFilters[field];
-
-    if (!filterConfig) {
-      console.warn('No filter config found for key:', filterKey, 'or field:', field);
-      return;
-    }
-
-    // Prepare initial form data
-    const formData = { filter_value: currentValue };
-    if (filterConfig.type === 'daterange' && currentValue && typeof currentValue === 'object') {
-      const startName = filterConfig.startName || 'dr_start';
-      const endName = filterConfig.endName || 'dr_end';
-      formData[startName] = currentValue.start || '';
-      formData[endName] = currentValue.end || '';
-    }
-
-    // Show mini dialog for this specific filter
-    const result = await Modal.form({
-      title: `Edit ${this.getFilterLabel(field)} Filter`,
-      size: 'md',
-      data: formData,
-      fields: [this.buildFilterDialogField(filterConfig, currentValue, field)]
-    });
-
-    if (result) {
-      // Extract the new filter value
-      const newFilterValue = this.extractFilterValue(filterConfig, result);
-      this.setFilter(filterKey, newFilterValue);
-      await this.applyFilters();
-    }
-  }
-
-  /**
-   * Handle remove filter action
-   */
-  async onActionRemoveFilter(event, element) {
-    const filterKey = element.getAttribute('data-filter');
-
-    // Parse to get the base field (handles lookup keys like status__in)
-    const { field } = parseFilterKey(filterKey);
-
-    // Clear the filter using the original key
-    this.setFilter(filterKey, null);
-
-    // If removing search filter, clear search inputs
-    if (filterKey === 'search') {
-      this.updateSearchInputs('');
-    }
-
-    if (this.collection.restEnabled) {
-      await this.collection.fetch();
-    }
-    this.render();
-
-    // Update filter pills after removing
-    this.updateFilterPills();
-
-    this.emit('filter:remove', { key: filterKey, field });
-    this.emit('params-changed');
-  }
-
-  /**
-   * Handle clear all filters action
-   */
-  async onActionClearAllFilters(event, element) {
-    if (!this.collection) return;
-
-    // Preserve pagination/sorting and any params hidden via
-    // `hideActivePillNames` (those are not user-removable filters — e.g.
-    // tenant scope, account context, always-on permission filters).
-    const { start, size, sort } = this.collection.params;
-    const preserved = { start, size };
-    if (sort) preserved.sort = sort;
-
-    if (Array.isArray(this.hideActivePillNames) && this.hideActivePillNames.length > 0) {
-      this.hideActivePillNames.forEach((key) => {
-        if (this.collection.params[key] !== undefined) {
-          preserved[key] = this.collection.params[key];
-        }
-        // For hidden daterange filters, keep the dr_* trio together.
-        const filterConfig = this.getFilterConfig(key);
-        if (filterConfig && filterConfig.type === 'daterange') {
-          const startName = filterConfig.startName || 'dr_start';
-          const endName = filterConfig.endName || 'dr_end';
-          const fieldName = filterConfig.fieldName || 'dr_field';
-          if (this.collection.params[startName] !== undefined) preserved[startName] = this.collection.params[startName];
-          if (this.collection.params[endName] !== undefined) preserved[endName] = this.collection.params[endName];
-          if (this.collection.params[fieldName] !== undefined) preserved[fieldName] = this.collection.params[fieldName];
-        }
-      });
-    }
-
-    this.collection.params = preserved;
-
-    // Clear all search inputs
-    this.updateSearchInputs('');
-
-    if (this.collection.restEnabled) {
-      await this.collection.fetch();
-    }
-    this.render();
-
-    // Update filter pills after clearing
-    this.updateFilterPills();
-
-    this.emit('filters:clear');
-    this.emit('params-changed');
-  }
-
-  /**
-   * Update batch actions panel visibility and count
-   */
   updateBatchActionsPanel() {
     if (!this.batchActions || this.batchActions.length === 0) return;
 
     const selectedCount = this.getSelectedItems().length;
 
     if (this.batchBarLocation === 'top') {
-      // Handle top panel style
       const panel = this.element?.querySelector('.batch-actions-panel-top');
       const countEl = this.element?.querySelector('.batch-select-count');
 
       if (panel && countEl) {
         countEl.textContent = selectedCount;
-
-        // Use Bootstrap's d-none class for cleaner show/hide
         if (selectedCount > 0) {
           panel.classList.remove('d-none');
         } else {
@@ -2602,7 +1380,6 @@ class TableView extends ListView {
         }
       }
     } else {
-      // Handle bottom panel style (original)
       const panel = this.element?.querySelector('.batch-actions-panel');
       const countEl = this.element?.querySelector('.batch-select-count');
 
@@ -2612,27 +1389,20 @@ class TableView extends ListView {
       }
     }
 
-    // Update select all checkbox state
     const selectAllCell = this.element?.querySelector('.mojo-select-all-cell');
     if (selectAllCell) {
       const allSelected = this.itemViews.size > 0 &&
-        Array.from(this.itemViews.values()).every(item => item.selected);
-      const someSelected = Array.from(this.itemViews.values()).some(item => item.selected);
+        Array.from(this.itemViews.values()).every((item) => item.selected);
+      const someSelected = Array.from(this.itemViews.values()).some((item) => item.selected);
 
       selectAllCell.classList.toggle('selected', allSelected);
       selectAllCell.classList.toggle('indeterminate', !allSelected && someSelected);
 
-      // Update icon for indeterminate state
       const icon = selectAllCell.querySelector('i');
-      if (icon) {
-        icon.className = !allSelected && someSelected ? 'bi bi-dash' : 'bi bi-check';
-      }
+      if (icon) icon.className = !allSelected && someSelected ? 'bi bi-dash' : 'bi bi-check';
     }
   }
 
-  /**
-   * Handle batch action clicks
-   */
   async onActionBatch(event, element) {
     const batchAction = element.getAttribute('data-action').replace('batch-', '');
     const selectedItems = this.getSelectedItems();
@@ -2644,46 +1414,47 @@ class TableView extends ListView {
     });
   }
 
-  /**
-   * Handle clear selection action (for top batch bar)
-   */
-  async onActionClearSelection(event, element) {
+  async onActionClearSelection(_event, _element) {
     this.clearSelection();
     this.updateBatchActionsPanel();
   }
 
-  /**
-   * Handle custom toolbar button with handler function
-   */
-  async onActionCustomToolbarButton(event, element) {
-    const buttonIndex = parseInt(element.getAttribute('data-button-index'), 10);
-    const button = this.toolbarButtons[buttonIndex];
+  // ============================================================
+  // Lookup / parse helpers (kept for any external consumers that
+  // imported them from TableView's namespace)
+  // ============================================================
 
-    if (button && typeof button.handler === 'function') {
-      await button.handler.call(this, event, element);
+  /**
+   * Re-export for callers that called this on a TableView instance.
+   * (ListView's getActiveFilters reads `this.collection.params` and is fully
+   * equivalent — we re-resolve via super.)
+   */
+  getFilterDisplayValue(key, value) {
+    if (key === 'search') return `"${value}"`;
+
+    const filter = this.filters[key] ||
+                  this.additionalFilters.find((f) => (f.name || f.key) === key);
+
+    if (filter && filter.type === 'daterange' && typeof value === 'object') {
+      const start = value.start || '';
+      const end = value.end || '';
+      return `${start} to ${end}`;
     }
-  }
 
-  /**
-   * Update the toolbar's title text without a full re-render.
-   * @param {string|null} value
-   */
-  setTitle(value) {
-    this.title = value || null;
-    const el = this.element?.querySelector('.rs-table-title');
-    if (el) el.textContent = this.title || '';
-  }
+    if (filter && filter.type === 'select' && filter.options) {
+      if (typeof filter.options[0] === 'object') {
+        const option = filter.options.find((opt) => opt.value === value);
+        return option ? option.label : value;
+      }
+      return value;
+    }
 
-  /**
-   * Update the toolbar's eyebrow text (small uppercase line above title)
-   * without a full re-render.
-   * @param {string|null} value
-   */
-  setEyebrow(value) {
-    this.eyebrow = value || null;
-    const el = this.element?.querySelector('.rs-table-eyebrow');
-    if (el) el.textContent = this.eyebrow || '';
+    return value;
   }
 }
+
+// Re-export parseFilterKey so any module that imported it from this file
+// (legacy import path) continues to work.
+export { parseFilterKey };
 
 export default TableView;

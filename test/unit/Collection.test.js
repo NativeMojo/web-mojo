@@ -179,6 +179,119 @@ module.exports = async function(testContext) {
                 await collection.fetch();
                 expect(collection.loading).toBe(false);
             });
+
+            // Regression: prior _performFetch always called this.reset() when
+            // this.options.reset was true (default), so the per-call
+            // `reset: false` opt-out was dead code. fetchMore() relies on it
+            // working — verify directly.
+            it('should honor per-call reset:false even when options.reset is true', async () => {
+                mockRest.GET.mockResolvedValue(successResponse([
+                    { id: 3, name: 'Charlie' }
+                ]));
+
+                // Prime the collection with two existing models.
+                collection.add([
+                    { id: 1, name: 'Alice' },
+                    { id: 2, name: 'Bob' }
+                ]);
+                expect(collection.length()).toBe(2);
+                expect(collection.options.reset).toBe(true);
+
+                await collection.fetch({ reset: false });
+
+                // Existing models should still be present; the new model
+                // should be appended.
+                expect(collection.length()).toBe(3);
+                expect(collection.models.map((m) => m.id).sort())
+                    .toEqual([1, 2, 3]);
+            });
+        });
+
+        describe('fetchMore()', () => {
+            const successResponse = (models, extra = {}) => ({
+                success: true,
+                data: {
+                    data: models,
+                    status: 'ok',
+                    size: 10,
+                    start: 0,
+                    count: models.length,
+                    ...extra
+                }
+            });
+
+            it('should advance start by size and append new models', async () => {
+                // First page primes the collection + meta.count
+                mockRest.GET.mockResolvedValueOnce(successResponse(
+                    [{ id: 1, name: 'A' }, { id: 2, name: 'B' }],
+                    { count: 5, size: 2, start: 0 }
+                ));
+                await collection.fetch();
+                expect(collection.length()).toBe(2);
+                expect(collection.params.start).toBe(0);
+
+                // Next page returns models 3 + 4
+                mockRest.GET.mockResolvedValueOnce(successResponse(
+                    [{ id: 3, name: 'C' }, { id: 4, name: 'D' }],
+                    { count: 5, size: 2, start: 2 }
+                ));
+
+                // fetchMore should advance start by params.size and APPEND.
+                collection.params.size = 2;
+                await collection.fetchMore();
+
+                expect(collection.params.start).toBe(2);
+                expect(collection.length()).toBe(4);
+                expect(collection.models.map((m) => m.id)).toEqual([1, 2, 3, 4]);
+            });
+
+            it('should emit fetch:more event with new start', async () => {
+                mockRest.GET.mockResolvedValue(successResponse([], { count: 100 }));
+                collection.meta = { count: 100 };
+                collection.params = { start: 0, size: 10 };
+
+                let payload = null;
+                collection.on('fetch:more', (data) => { payload = data; });
+
+                await collection.fetchMore();
+
+                expect(payload).not.toBeNull();
+                expect(payload.start).toBe(10);
+                expect(payload.pageDelta).toBe(1);
+            });
+
+            it('should return early when start would exceed meta.count', async () => {
+                collection.meta = { count: 10 };
+                collection.params = { start: 10, size: 10 };
+
+                const result = await collection.fetchMore();
+
+                expect(result.success).toBe(true);
+                expect(result.message).toBe('No more results');
+                expect(mockRest.GET).not.toHaveBeenCalled();
+            });
+
+            it('should return early when REST is disabled', async () => {
+                collection.restEnabled = false;
+
+                const result = await collection.fetchMore();
+
+                expect(result.success).toBe(false);
+                expect(mockRest.GET).not.toHaveBeenCalled();
+            });
+
+            it('should accept pageDelta to skip multiple pages', async () => {
+                mockRest.GET.mockResolvedValue(successResponse(
+                    [{ id: 21, name: 'U' }],
+                    { count: 100, size: 10, start: 20 }
+                ));
+                collection.meta = { count: 100 };
+                collection.params = { start: 0, size: 10 };
+
+                await collection.fetchMore({ pageDelta: 2 });
+
+                expect(collection.params.start).toBe(20);
+            });
         });
 
         describe('Model Management', () => {

@@ -25,6 +25,7 @@ class SimpleModuleLoader {
             'dataFormatter',
             'MOJOUtils',
             'MojoMustache',
+            'DjangoLookups',
             'Model',
             'RestModel',
             'Collection',
@@ -194,6 +195,14 @@ class SimpleModuleLoader {
                 path: path.join(this.sourceRoot, 'core/views/list/ListViewItem.js'),
                 dependencies: ['View']
             },
+            'DjangoLookups': {
+                path: path.join(this.sourceRoot, 'core/utils/DjangoLookups.js'),
+                dependencies: []
+            },
+            'ListView': {
+                path: path.join(this.sourceRoot, 'core/views/list/ListView.js'),
+                dependencies: ['View', 'Collection', 'Modal', 'DjangoLookups', 'ListViewItem']
+            },
             'TableRow': {
                 path: path.join(this.sourceRoot, 'core/views/table/TableRow.js'),
                 dependencies: ['ListViewItem', 'dataFormatter']
@@ -262,11 +271,12 @@ class SimpleModuleLoader {
                 dependencies: ['View', 'Calendar', 'CalendarPopover', 'TimePicker', 'TimezoneSelect', 'dateFns']
             },
             'TableView': {
-                // We only test pure helper methods that don't touch DOM /
-                // dependencies — register with no deps so the class loads
-                // even though imports like ListView resolve to undefined.
+                // TableView now genuinely extends ListView (toolbar / filter /
+                // pagination machinery moved up into the parent). Load ListView
+                // first so the inheritance chain is real and prototype lookups
+                // for inherited methods (e.g. buildFilterDialogField) resolve.
                 path: path.join(this.sourceRoot, 'core/views/table/TableView.js'),
-                dependencies: ['View']
+                dependencies: ['View', 'ListView', 'TableRow', 'dataFormatter', 'DjangoLookups']
             },
             'SegmentControl': {
                 path: path.join(this.sourceRoot, 'core/views/navigation/SegmentControl.js'),
@@ -512,7 +522,9 @@ class SimpleModuleLoader {
             { test: /DataFormatter/, name: 'dataFormatter' },
             { test: /MOJOUtils/, name: 'MOJOUtils' },
             { test: /ListViewItem/, name: 'ListViewItem' },
+            { test: /\/ListView(\.js)?$/, name: 'ListView' },
             { test: /TableRow/, name: 'TableRow' },
+            { test: /DjangoLookups/, name: 'DjangoLookups' },
             { test: /\/Dialog(\.js)?$/, name: 'Dialog' },
             { test: /\/Modal(\.js)?$/, name: 'Modal' },
             { test: /\/View(\.js)?$/, name: 'View' },

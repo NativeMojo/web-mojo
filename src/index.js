@@ -6,6 +6,7 @@
 import '@core/css/core.css';
 import '@core/css/portal.css';
 import '@core/css/table.css';
+import '@core/css/list-view.css';
 import '@core/css/toast.css';
 import '@core/css/chat.css';
 import '@core/forms/inputs/calendar/calendar.css';

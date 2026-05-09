@@ -199,7 +199,16 @@ class Collection {
       if (response.success && response.data.status) {
         const data = this.options.parse ? this.parse(response) : response.data;
 
-        if (this.options.reset || additionalParams.reset !== false) {
+        // Per-call reset override wins over the collection's default.
+        // Previously `if (this.options.reset || additionalParams.reset !== false)`
+        // short-circuited to true whenever `this.options.reset` was true (the
+        // default), making the per-call `reset: false` opt-out dead code. Now
+        // an explicit `reset: false` always suppresses the reset, falling
+        // back to `this.options.reset` only when the caller hasn't decided.
+        const shouldReset = additionalParams.reset === false
+          ? false
+          : this.options.reset;
+        if (shouldReset) {
           this.reset();
         }
 
@@ -278,6 +287,44 @@ class Collection {
     }
 
     return Promise.resolve(this);
+  }
+
+  /**
+   * Fetch the next page and APPEND it to the existing models.
+   *
+   * Designed for "Show more" / load-more list UIs. Advances `start` by
+   * `pageDelta * size` and calls `fetch({ reset: false })` so the new rows
+   * are appended (not replaced). Uses `add()`'s built-in dedupe to skip any
+   * server-returned model that's already in the collection.
+   *
+   * @param {object} options
+   * @param {number} [options.pageDelta=1] - Number of pages to advance.
+   * @returns {Promise} Same shape as `fetch()`. Returns a no-op success
+   *   response when REST is disabled or `start` is already at/past
+   *   `meta.count`.
+   */
+  async fetchMore({ pageDelta = 1 } = {}) {
+    if (!this.restEnabled) {
+      return { success: false, message: 'REST disabled, cannot fetchMore' };
+    }
+
+    const size = this.params.size || 10;
+    const currentStart = this.params.start || 0;
+    const newStart = currentStart + pageDelta * size;
+
+    // Guard against fetching past the end when meta.count is known.
+    if (this.meta && typeof this.meta.count === 'number' && newStart >= this.meta.count) {
+      return {
+        success: true,
+        message: 'No more results',
+        data: { data: [], status: 'ok', count: this.meta.count, start: currentStart, size }
+      };
+    }
+
+    this.params = { ...this.params, start: newStart };
+    this.emit('fetch:more', { start: newStart, pageDelta, collection: this });
+
+    return this.fetch({ reset: false });
   }
 
   /**

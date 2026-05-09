@@ -419,6 +419,29 @@ await users.fetch({ reset: false });
 
 ---
 
+### fetchMore(options)
+
+Fetch the next page and **append** the new models to the collection (rather than replacing them, the way `fetch()` does). Designed for "Show more" / load-more list UIs — see [`ListView` Pagination & Show More](../components/ListView.md#pagination--show-more).
+
+```javascript
+// Advance one page (start += size) and append.
+await collection.fetchMore();
+
+// Skip ahead two pages.
+await collection.fetchMore({ pageDelta: 2 });
+```
+
+**Parameters:**
+- `options.pageDelta` (number, default `1`) — Number of pages to advance.
+
+**Returns:** Same response shape as `fetch()`. Returns a no-op success response when REST is disabled or `start` would exceed `meta.count`.
+
+**Events:** Emits `fetch:more` with `{ start, pageDelta, collection }` in addition to the standard `fetch:start` / `fetch:end` lifecycle.
+
+**Internals:** Internally calls `fetch({ reset: false })` so the new rows are appended via `add()` (which already deduplicates by `id`). Note: previously the per-call `reset: false` opt-out on `fetch()` was masked by `this.options.reset` defaulting to `true` — that was fixed alongside `fetchMore()`'s introduction.
+
+---
+
 ### fetchOne(id, options)
 
 Fetch a single model by ID.

@@ -1,6 +1,6 @@
 {
   "generatedAt": "static",
-  "pageCount": 85,
+  "pageCount": 87,
   "pages": [
     {
       "name": "ActiveGroup",
@@ -347,6 +347,50 @@
       "section": "Components",
       "icon": "bi-list-ul",
       "order": 22,
+      "topic": "components",
+      "group": "Lists & Tables"
+    },
+    {
+      "name": "ListView",
+      "area": "components",
+      "route": "components/list-view/paginated",
+      "title": "ListView — paginated",
+      "summary": "Numbered pagination with page-size selector for an ordered visual list.",
+      "docs": "docs/web-mojo/components/ListView.md",
+      "tags": [
+        "list",
+        "collection",
+        "selection",
+        "search"
+      ],
+      "page": "ListViewPaginatedExample.js",
+      "modulePath": "./examples/components/ListView/ListViewPaginatedExample.js",
+      "sourcePath": "examples/portal/examples/components/ListView/ListViewPaginatedExample.js",
+      "section": "Components",
+      "icon": "bi-list-ul",
+      "order": 24,
+      "topic": "components",
+      "group": "Lists & Tables"
+    },
+    {
+      "name": "ListView",
+      "area": "components",
+      "route": "components/list-view/toolbar",
+      "title": "ListView — toolbar",
+      "summary": "Search, filter pills, sort, and refresh wrapped around a visual list.",
+      "docs": "docs/web-mojo/components/ListView.md",
+      "tags": [
+        "list",
+        "collection",
+        "selection",
+        "search"
+      ],
+      "page": "ListViewToolbarExample.js",
+      "modulePath": "./examples/components/ListView/ListViewToolbarExample.js",
+      "sourcePath": "examples/portal/examples/components/ListView/ListViewToolbarExample.js",
+      "section": "Components",
+      "icon": "bi-list-ul",
+      "order": 23,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -2225,6 +2269,20 @@
               "docs": "docs/web-mojo/components/ListView.md"
             },
             {
+              "route": "components/list-view/toolbar",
+              "title": "ListView — toolbar",
+              "summary": "Search, filter pills, sort, and refresh wrapped around a visual list.",
+              "icon": "bi-list-ul",
+              "docs": "docs/web-mojo/components/ListView.md"
+            },
+            {
+              "route": "components/list-view/paginated",
+              "title": "ListView — paginated",
+              "summary": "Numbered pagination with page-size selector for an ordered visual list.",
+              "icon": "bi-list-ul",
+              "docs": "docs/web-mojo/components/ListView.md"
+            },
+            {
               "route": "components/table-view",
               "title": "TableView",
               "summary": "Sortable, filterable, paginated table over ~25 seeded user rows.",
@@ -2921,6 +2979,20 @@
           "route": "components/list-view/live-filter",
           "title": "ListView — live search filter",
           "summary": "Search input above the list, debounced via MOJOUtils.debounce + collection.where().",
+          "icon": "bi-list-ul",
+          "docs": "docs/web-mojo/components/ListView.md"
+        },
+        {
+          "route": "components/list-view/toolbar",
+          "title": "ListView — toolbar",
+          "summary": "Search, filter pills, sort, and refresh wrapped around a visual list.",
+          "icon": "bi-list-ul",
+          "docs": "docs/web-mojo/components/ListView.md"
+        },
+        {
+          "route": "components/list-view/paginated",
+          "title": "ListView — paginated",
+          "summary": "Numbered pagination with page-size selector for an ordered visual list.",
           "icon": "bi-list-ul",
           "docs": "docs/web-mojo/components/ListView.md"
         },

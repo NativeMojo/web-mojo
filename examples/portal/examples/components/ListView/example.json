@@ -26,6 +26,18 @@
             "route": "components/list-view/live-filter",
             "title": "ListView — live search filter",
             "summary": "Search input above the list, debounced via MOJOUtils.debounce + collection.where()."
+        },
+        {
+            "page": "ListViewToolbarExample.js",
+            "route": "components/list-view/toolbar",
+            "title": "ListView — toolbar",
+            "summary": "Search, filter pills, sort, and refresh wrapped around a visual list."
+        },
+        {
+            "page": "ListViewPaginatedExample.js",
+            "route": "components/list-view/paginated",
+            "title": "ListView — paginated",
+            "summary": "Numbered pagination with page-size selector for an ordered visual list."
         }
     ]
 }

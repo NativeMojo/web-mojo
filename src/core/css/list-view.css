@@ -1,0 +1,54 @@
+/**
+ * MOJO Framework List Styles
+ *
+ * Layout for the toolbar / show-more row / list body in ListView. The
+ * toolbar reuses TableView's `.table-action-buttons` shell — no duplicate
+ * styles needed. This file only contains list-specific bits (the
+ * "Show more" row and a mild empty-state nicety).
+ *
+ * Theme: tokens-based, so dark theme is automatic via Bootstrap's
+ * `[data-bs-theme="dark"]` cascade.
+ */
+
+/* ========================================================================
+   Wrapper
+   ======================================================================== */
+
+.list-view-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.list-view-wrapper .list-items {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ========================================================================
+   Show more row (paginationMode: 'more')
+   ======================================================================== */
+
+.list-show-more-row {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}
+
+.list-show-more-row .btn {
+    min-width: 10rem;
+}
+
+.list-show-more-row .btn[disabled] {
+    cursor: progress;
+}
+
+/* ========================================================================
+   Loading / empty states
+   ======================================================================== */
+
+.list-view-wrapper .list-loading {
+    color: var(--bs-secondary-color);
+}
+
+.list-view-wrapper .list-empty {
+    color: var(--bs-secondary-color);
+}

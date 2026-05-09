@@ -4,6 +4,8 @@
 
 TableView extends [ListView](./ListView.md) to render collections as full-featured data tables. Each row is a separate `TableRow` view backed by its own model, providing efficient per-row re-rendering. It includes a toolbar with search, filters, export, and add buttons; column sorting; server-side pagination; row and batch actions; responsive column visibility; inline editing; fullscreen mode; and footer totals.
 
+> **Note on the toolbar / filter / pagination machinery.** As of the ListView toolbar refactor, the toolbar shell, search input, filter dropdown + active-pill bar, numbered pagination, page-size selector, refresh button, custom toolbar buttons, title/eyebrow, and `toolbarRight` slot all live on `ListView`. TableView inherits them and adds the table-specific bits (columns, sortable column-header dropdowns, footer totals, batch actions, fullscreen, Add/Export). All of TableView's options behave identically to before — `searchable: true`, `filterable: true`, `paginated: true`, and numbered pagination remain the defaults.
+
 ---
 
 ## Table of Contents

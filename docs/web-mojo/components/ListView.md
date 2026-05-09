@@ -91,7 +91,86 @@ Use ListView when you need to:
 - **React to collection changes** (items added, removed, refreshed)
 - **Build a base for more complex list-based components** (TableView extends ListView)
 
-For tabular data with sorting, filtering, pagination, and actions, use [TableView](./TableView.md) instead.
+For tabular data where rows are columns of fields with sortable headers and footer totals, use [TableView](./TableView.md) instead. ListView and TableView now share the same toolbar machinery — search input, filter dropdown + active pills, refresh, custom toolbar buttons, title/eyebrow, sort dropdown, and pagination footer all live on ListView. TableView extends ListView and adds the `<table>` markup, sortable column headers, footer totals, batch actions, fullscreen, and Add/Export buttons on top.
+
+---
+
+## Toolbar, Search, Filters
+
+ListView's toolbar is opt-in via flags on the constructor:
+
+```js
+const list = new ListView({
+  collection: new ArticleCollection(),
+  itemTemplate: '<div class="card">{{model.title}} — {{model.author}}</div>',
+
+  title: 'Articles',
+  eyebrow: 'Browse',
+
+  searchable: true,
+  searchPlaceholder: 'Search title, author…',
+
+  filterable: true,
+  filters: [
+    { name: 'topic', label: 'Topic', type: 'select', options: ['ops', 'patterns', 'general'] },
+    { name: 'created', label: 'Created', type: 'daterange',
+      startName: 'dr_start', endName: 'dr_end', fieldName: 'dr_field' }
+  ],
+
+  sortOptions: [
+    { key: 'created', label: 'Newest', dir: 'desc' },
+    { key: 'title', label: 'Title (A–Z)', dir: 'asc' }
+  ]
+});
+```
+
+The search input updates `collection.params.search`, filter pills update `collection.params[<filter>]`, and the sort dropdown updates `collection.params.sort` — then the collection refetches (or the list re-renders for non-REST collections). Same semantics as TableView.
+
+`data-action="kebab-case"` on toolbar buttons routes through the standard `onActionKebabCase` handler convention, so wiring `toolbarButtons: [{ action: 'import', label: 'Import' }]` and defining `onActionImport(event, element)` on a ListView subclass works exactly like TableView.
+
+---
+
+## Pagination & Show More
+
+Two modes — pick the right one for the list shape.
+
+### `paginationMode: 'more'` (default for ListView)
+
+Renders a single "Show more" button below the list. Clicking it calls `collection.fetchMore()` which advances `start` by one page and **appends** the new rows in place. The button auto-hides when `collection.length() >= collection.meta.count`.
+
+```js
+const list = new ListView({
+  collection: new FeedCollection(),
+  itemTemplate: '<div class="post">{{model.body}}</div>',
+  paginated: true,
+  paginationMode: 'more',
+  pageSize: 20
+});
+```
+
+This is the conventional UX for visual cards / chronological feeds / activity lists — page numbers would break the skim flow and re-shuffle order on insert.
+
+### `paginationMode: 'pages'` (default for TableView)
+
+Renders the same numbered pagination + page-size selector that TableView uses. Use this when users need to jump to specific pages — typically reference data or hunt-by-page lists.
+
+```js
+const list = new ListView({
+  collection: new ItemCollection(),
+  itemTemplate: '<div>{{model.title}}</div>',
+  paginated: true,
+  paginationMode: 'pages',
+  pageSize: 25
+});
+```
+
+### Selection across pages
+
+`persistSelection` defaults to `true` in `'more'` mode and `false` in `'pages'` mode. In `'more'` mode the rows aren't torn down on append — selection naturally persists. In `'pages'` mode the rows ARE torn down per page; opt in with `persistSelection: true` to keep selected IDs alive across page navigation (the View re-applies the `selected` class to any item whose model.id is still in `selectedItems`).
+
+### What if `meta.count` isn't set?
+
+ListView only renders the Show More button when `collection.meta.count > collection.length()`. Preloaded array Collections don't set `meta.count` — set it explicitly on the collection if you want the button to appear, or use a REST-backed Collection that returns `count` from the server.
 
 ---
 
@@ -171,6 +250,8 @@ The `data-action="select"` attribute on the template makes that element clickabl
 
 ## Constructor Options
 
+### Core
+
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `collection` | `Collection` or `Class` or `Array` | `null` | The data source. Can be a Collection instance, a Collection class (will be instantiated), or a raw array of data |
@@ -184,6 +265,35 @@ The `data-action="select"` attribute on the template makes that element clickabl
 | `collectionParams` | `object` | `undefined` | Parameters to merge into the collection's params |
 | `className` | `string` | `'list-view'` | CSS class for the root element |
 | `template` | `string` | *(built-in)* | Override the outer list template (loading/empty/items container) |
+
+### Toolbar — search, filters, sort
+
+ListView ships an opt-in toolbar that mirrors what `TableView` has. Every flag below defaults to off, so a `new ListView({ collection, itemTemplate })` with no toolbar options renders exactly as it did before.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `searchable` | `boolean` | `false` | Render a search input that drives `collection.params.search`. |
+| `searchPlaceholder` | `string` | `'Search...'` | Placeholder text for the search input. |
+| `searchPlacement` | `string` | `'toolbar'` | `'toolbar'` or `'dropdown'`. |
+| `filterable` | `boolean` | `false` | Render the "Add Filter" dropdown + active-pill bar. Requires `filters: [...]` (or column filters when subclassed). |
+| `filters` | `Array<object>` | `[]` | Filter definitions: `{ name, label, type, options? }`. Same shape as TableView's `filters` (a.k.a. additional filters). |
+| `hideActivePills` | `boolean` | `false` | Hide the active-filter pills bar. |
+| `hideActivePillNames` | `Array<string>` | `[]` | Pill names to suppress (e.g. tenant scope, always-on filters). |
+| `sortOptions` | `Array<object>` | `[]` | List-style "Sort by" dropdown options: `{ key, label, dir }`. Sets `collection.params.sort`. |
+| `title` | `string` | `null` | Toolbar heading (renders as `<h5>` on the left). |
+| `eyebrow` | `string` | `null` | Small uppercase line above the title. |
+| `showRefresh` | `boolean` | `true` | Render the refresh button. Has no effect unless the toolbar shell is rendered. |
+| `toolbarButtons` | `Array<object>` | `[]` | Custom buttons: `{ label, icon, action?, handler?, variant?, title?, className?, permissions? }`. |
+| `toolbarRight` | `View` | `null` | Optional View mounted into a right-aligned slot (range pickers, view-mode toggles, etc.). |
+
+### Pagination
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `paginated` | `boolean` | `false` | Render the pagination footer. |
+| `paginationMode` | `string` | `'more'` when `paginated` is true | `'pages'` (numbered + page-size selector), `'more'` (load-more button), or `'none'` (disabled). Default for ListView is `'more'` — the convention for visual lists. TableView overrides this default to `'pages'`. |
+| `pageSize` | `number` | `undefined` | Convenience that seeds `collection.params.size` if not already set. |
+| `persistSelection` | `boolean` | `paginationMode === 'more'` | Whether `selectedItems` survives a page rebuild. Defaults to `true` in `'more'` mode (rows aren't torn down anyway), `false` otherwise (preserves TableView's historical "selection clears on page change" behavior unless caller opts in). |
 
 **Note:** If neither `fetchOnMount` is `true` nor the collection has been previously fetched (`lastFetchTime` is null), the collection will be fetched automatically on mount.
 

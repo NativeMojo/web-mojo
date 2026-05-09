@@ -55,10 +55,11 @@ The form **never submits**. Submission is replaced by the `change` / `form:chang
 | Situation | Use |
 |-----------|-----|
 | You already have a `TableView` and just need column filters and search | **TableView's built-in toolbar** — `searchable: true`, `filterable: true`, and per-column `filter: { ... }`. See [TableView.md](../components/TableView.md). |
+| You have a `ListView` (visual cards / feed / picker) and need search, a few filter pills, and pagination | **ListView's built-in toolbar** — `searchable: true`, `filterable: true`, `filters: [...]`, `paginated: true` with `paginationMode: 'more'`. See [ListView.md](../components/ListView.md#toolbar-search-filters). Don't roll your own. |
 | You need a sidebar of filters with sliders, switches, and grouped sections, driving any kind of list | **This pattern** — a sibling `FormView` + your own `applyFilters()`. |
 | The dataset is small and lives entirely on the client | **This pattern**, filtering a plain array. |
 | The dataset is large and lives on the server | **This pattern** with `Collection.setParams(..., autoFetch=true, debounceMs=300)`. |
-| You only have one search box and no other filters | **TableView's built-in search** is enough — don't build a form. |
+| You only have one search box and no other filters | **ListView's or TableView's built-in search** is enough — don't build a form. |
 | You want a single fire-once "Apply" button | This is **not** a live filter — use `form.on('submit', ...)` and the standard form-submission flow. |
 
 > ✅ Reach for this pattern when filters are **rich** (multiple types, grouped) and **live** (no Apply button). Otherwise, prefer a `TableView` or a plain submit form.
