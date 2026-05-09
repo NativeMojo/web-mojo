@@ -1,7 +1,7 @@
 # EventDelegate: async action handlers can't reliably stop event propagation
 
 **Type**: bug
-**Status**: open
+**Status**: Resolved — 2026-05-08
 **Date**: 2026-05-08
 
 ## Description
@@ -83,11 +83,34 @@ Option (2) is likely the smallest, lowest-risk fix. The behavior change is subtl
 
 ---
 
-<!-- Filled in on resolution -->
 ## Resolution
 
-**Status**: Resolved — YYYY-MM-DD
-**Root cause**: ...
-**Files changed**: ...
-**Tests added/updated**: ...
-**Validation**: ...
+**Status**: Resolved — 2026-05-08
+
+**Root cause**: `EventDelegate`'s click/change/keydown handlers called `event.stopPropagation()` only after `await dispatch(...)`. The await yielded to the microtask queue, so by the time the inner delegate stopped propagation, the browser had already bubbled the click into ancestor delegates and they had started their own dispatches. The same race existed for sync handlers (sync return values still go through `await`), just over a shorter window.
+
+**Fix**: each delegate now claims a slot in a per-event dispatch chain *synchronously* at handler entry (before any await). The slot is a pending Promise stored on `event._mojoDispatch`. Ancestor delegates — whose listeners run synchronously after the inner one — see the in-flight Promise, capture it, publish their own slot, then `await` the inner's Promise before checking `shouldHandle`. The inner's existing `event.handledByChild = true` (set after dispatch returns truthy) is now visible to ancestors at exactly the right moment, so they correctly skip dispatch.
+
+The documented contract is unchanged: `onAction*` returning truthy consumes the event, returning falsy delegates up; `handleAction*` always consumes; `onPassThruAction*` never consumes. The bug was purely an implementation race — not a contract change.
+
+**Files changed**:
+- `src/core/mixins/EventDelegate.js` — added `_enterDispatchChain(event)` helper; updated `onClick`, `onChange`, `onKeyDown` to use it. `onSubmit` and `onInput` left as-is (`onSubmit`: forms don't legally nest; `onInput`: debounced paths fire long after the original event has propagated, so the chain mechanism doesn't naturally apply — race is theoretical there and out of scope for this fix).
+- `test/unit/EventDelegate.test.js` — new `EventDelegate — nested delegate isolation` describe block with 7 cases.
+- `CHANGELOG.md` — bug-fix entry.
+
+**Tests added/updated**: 7 new regression tests in `test/unit/EventDelegate.test.js`:
+- inner truthy `onAction*` (sync) → only inner fires
+- inner truthy `onAction*` (async) → only inner fires (the original failing case)
+- inner falsy `onAction*` → both fire (preserves delegate-up semantics)
+- inner `handleAction*` → only inner fires
+- inner `onPassThruAction*` → both fire
+- only parent has the handler → parent fires once
+- three-level nesting → deepest truthy consume stops both ancestors
+
+**Validation**:
+- `npm run test:unit` → 763/763 pass.
+- `npm run lint` → no new issues in touched files.
+- Live-browser smoke test via the running dev server: built parent + child Views with overlapping `onActionEditMeta` in real DOM, exercised three scenarios:
+  - truthy consume: `{ child: 1, parent: 0 }` ✓
+  - falsy delegate: `{ child: 1, parent: 1 }` ✓
+  - only parent: `{ child: 0, parent: 1 }` ✓
