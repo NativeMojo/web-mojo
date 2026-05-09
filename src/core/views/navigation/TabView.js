@@ -57,7 +57,7 @@ class TabView extends View {
     btngroup:    'btn-group'
   };
 
-  static DEFAULT_VARIANT = 'minimal';
+  static DEFAULT_VARIANT = 'underline-all';
 
   constructor(options = {}) {
     const {

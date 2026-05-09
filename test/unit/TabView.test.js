@@ -32,11 +32,11 @@ module.exports = async function(testContext) {
             console.warn = originalWarn;
         });
 
-        it('defaults variant to "minimal" and emits the matching tabsClass', () => {
+        it('defaults variant to "underline-all" and emits the matching tabsClass', () => {
             const view = new TabView({ tabs: {} });
 
-            expect(view.variant).toBe('minimal');
-            expect(view.tabsClass).toBe('nav tab-view-variant-minimal mb-3');
+            expect(view.variant).toBe('underline-all');
+            expect(view.tabsClass).toBe('nav tab-view-variant-underline-all mb-3');
             expect(warnSpy.calls).toHaveLength(0);
         });
 
@@ -76,14 +76,14 @@ module.exports = async function(testContext) {
             expect(warnSpy.calls).toHaveLength(0);
         });
 
-        it('warns and falls back to "minimal" on an unknown variant', () => {
+        it('warns and falls back to default on an unknown variant', () => {
             const view = new TabView({ tabs: {}, variant: 'sparkles' });
 
-            expect(view.variant).toBe('minimal');
-            expect(view.tabsClass).toBe('nav tab-view-variant-minimal mb-3');
+            expect(view.variant).toBe('underline-all');
+            expect(view.tabsClass).toBe('nav tab-view-variant-underline-all mb-3');
             expect(warnSpy.calls).toHaveLength(1);
             expect(warnSpy.calls[0][0]).toContain('sparkles');
-            expect(warnSpy.calls[0][0]).toContain('minimal');
+            expect(warnSpy.calls[0][0]).toContain('underline-all');
         });
 
         it('explicit tabsClass overrides variant — variant lookup is skipped', () => {

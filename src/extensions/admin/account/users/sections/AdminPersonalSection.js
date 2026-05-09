@@ -11,6 +11,7 @@ export default class AdminPersonalSection extends View {
     constructor(options = {}) {
         super({
             className: 'admin-personal-section',
+            enableTooltips: true,
             template: `
                 <!-- Name -->
                 <div class="detail-section-eyebrow">Name</div>
@@ -21,7 +22,7 @@ export default class AdminPersonalSection extends View {
                         {{^model.display_name}}<span class="text-secondary fst-italic">Not set</span>{{/model.display_name}}
                     </div>
                     <div class="detail-flat-row-action">
-                        <button type="button" class="detail-section-action" data-action="edit-display-name" title="Edit"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-display-name" title="Edit"><i class="bi bi-pencil"></i></button>
                     </div>
                 </div>
                 <div class="detail-flat-row">
@@ -31,7 +32,7 @@ export default class AdminPersonalSection extends View {
                         {{^model.first_name}}<span class="text-secondary fst-italic">Not set</span>{{/model.first_name}}
                     </div>
                     <div class="detail-flat-row-action">
-                        <button type="button" class="detail-section-action" data-action="edit-first-name" title="Edit"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-first-name" title="Edit"><i class="bi bi-pencil"></i></button>
                     </div>
                 </div>
                 <div class="detail-flat-row">
@@ -41,7 +42,7 @@ export default class AdminPersonalSection extends View {
                         {{^model.last_name}}<span class="text-secondary fst-italic">Not set</span>{{/model.last_name}}
                     </div>
                     <div class="detail-flat-row-action">
-                        <button type="button" class="detail-section-action" data-action="edit-last-name" title="Edit"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-last-name" title="Edit"><i class="bi bi-pencil"></i></button>
                     </div>
                 </div>
 
@@ -60,20 +61,20 @@ export default class AdminPersonalSection extends View {
                     <div class="detail-flat-row-action">
                         {{#hasDob|bool}}
                             {{#model.is_dob_verified|bool}}
-                                <button type="button" class="detail-section-action" data-action="unverify-dob" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
+                                <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="unverify-dob" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
                             {{/model.is_dob_verified|bool}}
                             {{^model.is_dob_verified|bool}}
-                                <button type="button" class="detail-section-action" data-action="force-verify-dob" title="Force verify"><i class="bi bi-patch-check"></i></button>
+                                <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="force-verify-dob" title="Force verify"><i class="bi bi-patch-check"></i></button>
                             {{/model.is_dob_verified|bool}}
                         {{/hasDob|bool}}
-                        <button type="button" class="detail-section-action" data-action="edit-dob" title="Edit"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-dob" title="Edit"><i class="bi bi-pencil"></i></button>
                     </div>
                 </div>
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Timezone</div>
                     <div class="detail-flat-row-value">{{timezoneDisplay}}</div>
                     <div class="detail-flat-row-action">
-                        <button type="button" class="detail-section-action" data-action="edit-timezone" title="Edit"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-timezone" title="Edit"><i class="bi bi-pencil"></i></button>
                     </div>
                 </div>
 
@@ -86,7 +87,7 @@ export default class AdminPersonalSection extends View {
                         {{^hasAddress|bool}}<span class="text-secondary fst-italic">Not set</span>{{/hasAddress|bool}}
                     </div>
                     <div class="detail-flat-row-action">
-                        <button type="button" class="detail-section-action" data-action="edit-address" title="Edit"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-address" title="Edit"><i class="bi bi-pencil"></i></button>
                     </div>
                 </div>
             `,
@@ -156,7 +157,7 @@ export default class AdminPersonalSection extends View {
             'Edit Display Name',
             { defaultValue: this.model.get('display_name') || '' }
         );
-        if (name !== null && name.trim()) {
+        if (typeof name === 'string' && name.trim()) {
             await this._saveField({ display_name: name.trim() }, 'Display name');
         }
         return true;
@@ -168,7 +169,7 @@ export default class AdminPersonalSection extends View {
             'Edit First Name',
             { defaultValue: this.model.get('first_name') || '' }
         );
-        if (name !== null) {
+        if (typeof name === 'string' && name.trim()) {
             await this._saveField({ first_name: name.trim() }, 'First name');
         }
         return true;
@@ -180,7 +181,7 @@ export default class AdminPersonalSection extends View {
             'Edit Last Name',
             { defaultValue: this.model.get('last_name') || '' }
         );
-        if (name !== null) {
+        if (typeof name === 'string' && name.trim()) {
             await this._saveField({ last_name: name.trim() }, 'Last name');
         }
         return true;

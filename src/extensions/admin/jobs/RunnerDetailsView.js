@@ -266,7 +266,7 @@ class RunnerSystemSection extends View {
             template: `
                 <div class="detail-section-eyebrow">
                     <span>{{eyebrowText}}</span>
-                    <button class="detail-section-action" data-action="refresh-sysinfo" type="button" title="Refresh sysinfo">
+                    <button class="detail-section-action" data-action="refresh-sysinfo" type="button" data-bs-toggle="tooltip" title="Refresh sysinfo">
                         <i class="bi bi-arrow-clockwise"></i>
                     </button>
                 </div>

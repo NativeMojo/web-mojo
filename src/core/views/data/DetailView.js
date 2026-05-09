@@ -100,6 +100,9 @@ class DetailHeaderView extends View {
         super({
             tagName: 'div',
             className: 'detail-header',
+            // The header emits several `data-bs-toggle="tooltip"` triggers
+            // (active toggle, action buttons, close button). Auto-init them.
+            enableTooltips: true,
             ...viewOptions
         });
 
@@ -182,11 +185,11 @@ class DetailHeaderView extends View {
 
         const actionsHtml = (this.actions || []).map(a => {
             const iconHtml = a.icon ? `<i class="bi ${this.escapeHtml(a.icon)}"></i>` : '';
-            return `<button class="dh-action" data-action="${this.escapeHtml(a.action)}" title="${this.escapeHtml(a.title || a.label)}">${iconHtml} ${this.escapeHtml(a.label)}</button>`;
+            return `<button class="dh-action" data-action="${this.escapeHtml(a.action)}" data-bs-toggle="tooltip" title="${this.escapeHtml(a.title || a.label)}">${iconHtml} ${this.escapeHtml(a.label)}</button>`;
         }).join('');
 
         const closeHtml = this.closable ? `
-            <button class="dh-action dh-close" data-bs-dismiss="modal" aria-label="Close" title="Close">
+            <button class="dh-action dh-close" data-bs-dismiss="modal" aria-label="Close" data-bs-toggle="tooltip" title="Close">
                 <i class="bi bi-x-lg"></i>
             </button>
         ` : '';
@@ -249,26 +252,23 @@ class DetailHeaderView extends View {
     }
 
     /**
-     * ContextMenu dispatches actions to its immediate parent (this header)
-     * via `parent.events.dispatch(...)`. The dropdown portals its `.dropdown-menu`
-     * to `document.body`, so the click does NOT bubble through the header's
-     * own DOM tree — the parent DetailView's listener never sees it.
+     * Re-dispatch unhandled actions to the parent DetailView so subclasses
+     * can keep their handlers in one place.
      *
-     * In that case, re-dispatch the action up to the DetailView so subclasses
-     * can keep their handlers in one place. But when the click comes from an
-     * in-tree element (a regular `dh-actions` button), the DOM event will
-     * bubble to the parent's listener naturally — re-dispatching would cause
-     * a second fire.
+     * Always re-dispatches programmatically. A previous "skip when target
+     * is contained in the parent" optimization was wrong for ContextMenu
+     * items: the natural DOM bubble carries `data-action="menu-item-click"`,
+     * NOT the menu item's action (e.g. `edit-user`). The item action only
+     * travels via the programmatic dispatch from `ContextMenu.onActionMenuItemClick`,
+     * so short-circuiting based on bubble path dropped it on the floor.
+     *
+     * Re-dispatching unconditionally is safe: when the parent handles the
+     * action and returns truthy, EventDelegate calls `stopPropagation`, so
+     * the natural DOM bubble can't fire it a second time.
      */
     async onActionDefault(action, event, el) {
         const dest = this.parent;
         if (!dest || !dest.events || typeof dest.events.dispatch !== 'function') {
-            return false;
-        }
-        // If the event will bubble to the parent's element naturally, skip
-        // the programmatic re-dispatch — the parent's own listener catches it.
-        const target = event?.target || el;
-        if (target && dest.element?.contains(target)) {
             return false;
         }
         return await dest.events.dispatch(action, event, el);

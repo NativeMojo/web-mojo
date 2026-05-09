@@ -106,7 +106,7 @@ class GeoIPOverviewSection extends View {
                 <div data-container="geoip-overview-map"></div>
                 {{#hasCoords|bool}}
                     <div class="detail-flat-row-action">
-                        <button type="button" class="detail-section-action" data-action="open-on-map" title="Open on map">
+                        <button type="button" class="detail-section-action" data-action="open-on-map" data-bs-toggle="tooltip" title="Open on map">
                             <i class="bi bi-box-arrow-up-right"></i>
                         </button>
                     </div>
@@ -550,10 +550,10 @@ class GeoIPBlockSection extends View {
                     Block
                     <div class="detail-flat-row-action">
                         {{#model.is_blocked|bool}}
-                            <button type="button" class="detail-section-action" data-action="unblock" title="Unblock"><i class="bi bi-unlock"></i></button>
+                            <button type="button" class="detail-section-action" data-action="unblock" data-bs-toggle="tooltip" title="Unblock"><i class="bi bi-unlock"></i></button>
                         {{/model.is_blocked|bool}}
                         {{^model.is_blocked|bool}}
-                            <button type="button" class="detail-section-action" data-action="block" title="Block IP"><i class="bi bi-slash-circle"></i></button>
+                            <button type="button" class="detail-section-action" data-action="block" data-bs-toggle="tooltip" title="Block IP"><i class="bi bi-slash-circle"></i></button>
                         {{/model.is_blocked|bool}}
                     </div>
                 </div>
@@ -591,10 +591,10 @@ class GeoIPBlockSection extends View {
                     Whitelist
                     <div class="detail-flat-row-action">
                         {{#model.is_whitelisted|bool}}
-                            <button type="button" class="detail-section-action" data-action="unwhitelist" title="Remove whitelist"><i class="bi bi-x-circle"></i></button>
+                            <button type="button" class="detail-section-action" data-action="unwhitelist" data-bs-toggle="tooltip" title="Remove whitelist"><i class="bi bi-x-circle"></i></button>
                         {{/model.is_whitelisted|bool}}
                         {{^model.is_whitelisted|bool}}
-                            <button type="button" class="detail-section-action" data-action="whitelist" title="Whitelist"><i class="bi bi-shield-check"></i></button>
+                            <button type="button" class="detail-section-action" data-action="whitelist" data-bs-toggle="tooltip" title="Whitelist"><i class="bi bi-shield-check"></i></button>
                         {{/model.is_whitelisted|bool}}
                     </div>
                 </div>

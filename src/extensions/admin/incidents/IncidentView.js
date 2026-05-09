@@ -1552,7 +1552,7 @@ class IncidentMetadataSection extends View {
             template: `
                 <div class="detail-section-eyebrow">
                     Metadata
-                    <button class="detail-section-action" data-action="edit-metadata" title="{{#hasMetadata|bool}}Edit JSON{{/hasMetadata|bool}}{{^hasMetadata|bool}}Add metadata{{/hasMetadata|bool}}">
+                    <button class="detail-section-action" data-action="edit-metadata" data-bs-toggle="tooltip" title="{{#hasMetadata|bool}}Edit JSON{{/hasMetadata|bool}}{{^hasMetadata|bool}}Add metadata{{/hasMetadata|bool}}">
                         <i class="bi bi-pencil"></i>
                     </button>
                 </div>

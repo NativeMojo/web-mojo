@@ -22,7 +22,9 @@ export default class AdminConnectedSection extends View {
     constructor(options = {}) {
         super({
             className: 'admin-connected-section',
+            enableTooltips: true,
             template: `
+                <div class="detail-section-eyebrow">Linked accounts</div>
                 {{#connections}}
                     <div class="admin-connected-row">
                         <div class="admin-connected-icon"><i class="bi {{.icon}}"></i></div>

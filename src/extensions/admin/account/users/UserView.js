@@ -27,6 +27,7 @@ import View from '@core/View.js';
 import DetailView from '@core/views/data/DetailView.js';
 import TabView from '@core/views/navigation/TabView.js';
 import TableView from '@core/views/table/TableView.js';
+import FormView from '@core/forms/FormView.js';
 import MetricCard from '@core/views/data/MetricCard.js';
 import Timeline from '@core/views/data/Timeline.js';
 import Modal from '@core/views/feedback/Modal.js';
@@ -41,6 +42,8 @@ import { MemberList } from '@core/models/Member.js';
 import { PushDeviceList } from '@ext/admin/models/Push.js';
 import { PasskeyList, PasskeyForms } from '@core/models/Passkeys.js';
 import LoginLocationMapView from '../devices/LoginLocationMapView.js';
+import DeviceView from '../devices/DeviceView.js';
+import PushDeviceView from '../../messaging/push/PushDeviceView.js';
 import AdminNotificationsSection from './sections/AdminNotificationsSection.js';
 import AdminPersonalSection from './sections/AdminPersonalSection.js';
 import AdminSecuritySection from './sections/AdminSecuritySection.js';
@@ -121,6 +124,9 @@ class UserOverviewSection extends View {
 
         super({
             className: 'user-overview-section',
+            // The Email row uses the `clipboard` formatter which emits a
+            // [data-bs-toggle="tooltip"] copy button.
+            enableTooltips: true,
             template: `
                 <div class="detail-section-eyebrow">Account snapshot</div>
                 <div class="detail-kpi-grid">
@@ -138,7 +144,7 @@ class UserOverviewSection extends View {
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Email</div>
                     <div class="detail-flat-row-value">
-                        {{#hasEmail|bool}}<a href="mailto:{{model.email}}">{{model.email}}</a>{{/hasEmail|bool}}
+                        {{#hasEmail|bool}}{{{model.email|clipboard}}}{{/hasEmail|bool}}
                         {{^hasEmail|bool}}<span class="text-secondary">—</span>{{/hasEmail|bool}}
                     </div>
                 </div>
@@ -155,7 +161,7 @@ class UserOverviewSection extends View {
                 </div>
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Joined</div>
-                    <div class="detail-flat-row-value"><code>{{model.date_joined|date}}</code></div>
+                    <div class="detail-flat-row-value"><code>{{model.date_joined|date|default:'—'}}</code></div>
                 </div>
 
                 <div class="detail-section-eyebrow">Recent activity</div>
@@ -257,7 +263,7 @@ class UserOverviewSection extends View {
         const last = this.loginsCollection?.models?.[0]?.get?.('created')
             ?? this.model?.get?.('last_login');
         if (!last) return '—';
-        return dataFormatter.apply(last, ['relative']) || '—';
+        return dataFormatter.apply('relative', last) || '—';
     }
     _groupCount() {
         return this.membersCollection?.models?.length ?? 0;
@@ -286,7 +292,7 @@ class UserOverviewSection extends View {
                 tone:     'info',
                 headline: 'Logged in',
                 detail,
-                when:     dataFormatter.apply(l.get('created'), ['relative'])
+                when:     dataFormatter.apply('relative', l.get('created'))
             });
         }
 
@@ -298,7 +304,7 @@ class UserOverviewSection extends View {
                 tone:     'danger',
                 headline: e.get('title') || cat || 'Incident event',
                 detail:   cat ? `<span class="text-secondary">${escapeHtml(String(cat))}</span>` : '',
-                when:     dataFormatter.apply(e.get('created'), ['relative'])
+                when:     dataFormatter.apply('relative', e.get('created'))
             });
         }
 
@@ -310,7 +316,7 @@ class UserOverviewSection extends View {
                 tone:     LOG_LEVEL_TONE[(log.get('level') || '').toLowerCase()] || null,
                 headline: log.get('kind') || 'Change',
                 detail:   msg ? `<span class="text-secondary">${escapeHtml(String(msg).slice(0, 80))}</span>` : '',
-                when:     dataFormatter.apply(log.get('created'), ['relative'])
+                when:     dataFormatter.apply('relative', log.get('created'))
             });
         }
 
@@ -322,7 +328,7 @@ class UserOverviewSection extends View {
                 tone:     LOG_LEVEL_TONE[(a.get('level') || '').toLowerCase()] || null,
                 headline: a.get('kind') || 'Activity',
                 detail:   path ? `<code class="small">${escapeHtml(String(path))}</code>` : '',
-                when:     dataFormatter.apply(a.get('created'), ['relative'])
+                when:     dataFormatter.apply('relative', a.get('created'))
             });
         }
 
@@ -340,10 +346,11 @@ class UserProfileSection extends View {
     constructor(options = {}) {
         super({
             className: 'user-profile-section',
+            enableTooltips: true,
             template: `
                 <div class="detail-section-eyebrow">
                     Personal
-                    <button type="button" class="detail-section-action" data-action="edit-personal" title="Edit personal info"><i class="bi bi-pencil"></i></button>
+                    <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-personal" title="Edit personal info"><i class="bi bi-pencil"></i></button>
                 </div>
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Display name</div>
@@ -356,7 +363,7 @@ class UserProfileSection extends View {
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Email</div>
                     <div class="detail-flat-row-value">
-                        {{#hasEmail|bool}}{{model.email}}{{/hasEmail|bool}}
+                        {{#hasEmail|bool}}{{{model.email|clipboard}}}{{/hasEmail|bool}}
                         {{^hasEmail|bool}}<span class="text-secondary">—</span>{{/hasEmail|bool}}
                         {{#model.is_email_verified|bool}}<span class="badge text-bg-success ms-1"><i class="bi bi-shield-check me-1"></i>verified</span>{{/model.is_email_verified|bool}}
                         {{^model.is_email_verified|bool}}{{#hasEmail|bool}}<span class="badge text-bg-warning ms-1">unverified</span>{{/hasEmail|bool}}{{/model.is_email_verified|bool}}
@@ -364,10 +371,10 @@ class UserProfileSection extends View {
                     <div class="detail-flat-row-action">
                         {{#hasEmail|bool}}
                             {{#model.is_email_verified|bool}}
-                                <button type="button" class="detail-section-action" data-action="unverify-email" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
+                                <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="unverify-email" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
                             {{/model.is_email_verified|bool}}
                             {{^model.is_email_verified|bool}}
-                                <button type="button" class="detail-section-action" data-action="force-verify-email" title="Force verify"><i class="bi bi-patch-check"></i></button>
+                                <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="force-verify-email" title="Force verify"><i class="bi bi-patch-check"></i></button>
                             {{/model.is_email_verified|bool}}
                         {{/hasEmail|bool}}
                     </div>
@@ -385,10 +392,10 @@ class UserProfileSection extends View {
                     <div class="detail-flat-row-action">
                         {{#hasPhone|bool}}
                             {{#model.is_phone_verified|bool}}
-                                <button type="button" class="detail-section-action" data-action="unverify-phone" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
+                                <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="unverify-phone" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
                             {{/model.is_phone_verified|bool}}
                             {{^model.is_phone_verified|bool}}
-                                <button type="button" class="detail-section-action" data-action="force-verify-phone" title="Force verify"><i class="bi bi-patch-check"></i></button>
+                                <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="force-verify-phone" title="Force verify"><i class="bi bi-patch-check"></i></button>
                             {{/model.is_phone_verified|bool}}
                         {{/hasPhone|bool}}
                     </div>
@@ -396,7 +403,7 @@ class UserProfileSection extends View {
 
                 <div class="detail-section-eyebrow">
                     Account
-                    <button type="button" class="detail-section-action" data-action="edit-account" title="Edit account"><i class="bi bi-pencil"></i></button>
+                    <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-account" title="Edit account"><i class="bi bi-pencil"></i></button>
                 </div>
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Account type</div>
@@ -418,7 +425,7 @@ class UserProfileSection extends View {
                 </div>
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Joined</div>
-                    <div class="detail-flat-row-value"><code>{{model.date_joined|date}}</code></div>
+                    <div class="detail-flat-row-value"><code>{{model.date_joined|date|default:'—'}}</code></div>
                 </div>
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Last login</div>
@@ -438,7 +445,7 @@ class UserProfileSection extends View {
 
                 <div class="detail-section-eyebrow">
                     Linked accounts
-                    <button type="button" class="detail-section-action" data-action="manage-linked" title="Manage linked accounts"><i class="bi bi-pencil"></i></button>
+                    <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="manage-linked" title="Manage linked accounts"><i class="bi bi-pencil"></i></button>
                 </div>
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">SSO providers</div>
@@ -511,209 +518,51 @@ class UserProfileSection extends View {
 }
 
 
-// ── Permissions section (TabView of three views) ────────────
+// ── Permissions section ────────────────────────────────────
+//
+// Backed by a single FormView with `autosaveModelField: true`. Toggle a
+// switch and FormView batches the change into `model.save({ "permissions.<name>": true })`
+// — the backend merges the dotted key into the `permissions` JSONField.
+// Same pattern as MemberPermissionsSection in MemberView.
+//
+// The fields are pre-built on the User model:
+//   User.CATEGORY_PERMISSIONS         — broad domain-level grants (Common)
+//   User.GRANULAR_PERMISSION_TABS[].permissions — fine-grained per-domain (Advanced)
+//   User._permSwitch(p)               — produces { name: 'permissions.<p>', type: 'switch', columns: 6, ... }
+//
+// We compose them into a single tabset so the user gets the `Categories` tab
+// plus one tab per granular domain, all in one FormView.
 
-/**
- * One tab body — renders permission rows grouped by tab. `mode` controls
- * which set is rendered (common categories vs granular tabs vs effective
- * read-only view).
- */
-class PermissionsTabBody extends View {
-    constructor(options = {}) {
-        const { mode, ...rest } = options;
-        super({
-            className: 'user-permissions-tab',
-            template: `
-                <input class="form-control form-control-sm mb-3"
-                       placeholder="Filter permissions…"
-                       value="{{filterText}}"
-                       data-action="filter-perms"
-                       data-action-debounce="200">
-                {{{groupsHtml}}}
-            `,
-            ...rest
-        });
-        this.mode = mode || 'common';   // common | advanced | effective
-        this.filterText = '';
-    }
-
-    /** Trusted HTML — every interpolated value is escaped before composition. */
-    get groupsHtml() {
-        const groups = this._buildGroups();
-        if (!groups.length) {
-            return '<div class="text-secondary small">No permissions match.</div>';
-        }
-        return groups.map(g => this._renderGroup(g)).join('');
-    }
-
-    _buildGroups() {
-        const m = this.model;
-        const granted = m.get('permissions') || {};
-        const filter = this.filterText.toLowerCase();
-        const matches = (label, key) => {
-            if (!filter) return true;
-            return (label || '').toLowerCase().includes(filter)
-                || (key || '').toLowerCase().includes(filter);
-        };
-
-        if (this.mode === 'common') {
-            const perms = (User.CATEGORY_PERMISSIONS || []).filter(p => matches(p.label, p.name));
-            if (!perms.length) return [];
-            return [{
-                title: 'Categories',
-                meta: this._grantedMeta(perms, granted),
-                rows: perms.map(p => ({
-                    label: p.label,
-                    key: `permissions.${p.name}`,
-                    permName: p.name,
-                    tooltip: p.tooltip,
-                    checked: !!granted[p.name],
-                    disabled: false,
-                    inheritedFrom: null
-                }))
-            }];
-        }
-
-        const tabs = User.GRANULAR_PERMISSION_TABS || [];
-        const groups = [];
-        for (const tab of tabs) {
-            const perms = (tab.permissions || []).filter(p => matches(p.label, p.name));
-            if (!perms.length) continue;
-
-            const rows = perms.map(p => {
-                const directly = !!granted[p.name];
-                let checked = directly;
-                let inheritedFrom = null;
-                if (this.mode === 'effective') {
-                    const cat = User.GRANULAR_TO_CATEGORY?.[p.name];
-                    if (!directly && cat && granted[cat]) {
-                        checked = true;
-                        inheritedFrom = cat;
-                    }
-                }
-                return {
-                    label: p.label,
-                    key: `permissions.${p.name}`,
-                    permName: p.name,
-                    tooltip: p.tooltip,
-                    checked,
-                    disabled: this.mode === 'effective',
-                    inheritedFrom
-                };
-            });
-
-            groups.push({
-                title: tab.label,
-                meta: this._grantedMeta(perms, granted),
-                rows
-            });
-        }
-        return groups;
-    }
-
-    _grantedMeta(perms, granted) {
-        const total = perms.length;
-        const on = perms.filter(p => !!granted[p.name]).length;
-        return `${on} / ${total} granted`;
-    }
-
-    _renderGroup(g) {
-        const rowsHtml = g.rows.map(r => `
-            <div class="detail-perm-row">
-                <div class="detail-perm-name">
-                    ${escapeHtml(r.label)}
-                    ${r.tooltip
-                        ? `<span class="detail-perm-help">${escapeHtml(r.tooltip)}</span>`
-                        : `<span class="detail-perm-key">${escapeHtml(r.key)}</span>`}
-                    ${r.inheritedFrom
-                        ? `<span class="text-secondary small ms-1">· inherited from <code>${escapeHtml(r.inheritedFrom)}</code></span>`
-                        : ''}
-                </div>
-                <div class="form-check form-switch m-0">
-                    <input class="form-check-input"
-                           type="checkbox"
-                           role="switch"
-                           data-change-action="toggle-perm"
-                           data-perm="${escapeHtml(r.permName)}"
-                           ${r.checked ? 'checked' : ''}
-                           ${r.disabled ? 'disabled' : ''}
-                           aria-label="${escapeHtml(r.label)}">
-                </div>
-            </div>
-        `).join('');
-
-        return `
-            <div class="detail-perm-group">
-                <div class="detail-perm-group-header">
-                    <h5>${escapeHtml(g.title)}</h5>
-                    <span class="detail-perm-group-meta">${escapeHtml(g.meta)}</span>
-                </div>
-                ${rowsHtml}
-            </div>
-        `;
-    }
-
-    async onActionFilterPerms(event, element) {
-        this.filterText = element?.value || '';
-        await this.render();
-    }
-
-    async onActionTogglePerm(event, element) {
-        if (this.mode === 'effective') return; // disabled visually
-        const permName = element?.dataset?.perm;
-        if (!permName) return;
-        const checked = !!element.checked;
-        element.disabled = true;
-        try {
-            const current = { ...(this.model.get('permissions') || {}) };
-            current[permName] = checked;
-            const resp = await this.model.save({ permissions: current });
-            if (resp && resp.status && resp.status >= 400) throw new Error('Save failed');
-            this.model.set('permissions', current);
-            this.getApp()?.toast?.success(`${permName} ${checked ? 'granted' : 'revoked'}`);
-            await this.render();
-        } catch (err) {
-            element.checked = !checked;
-            this.getApp()?.toast?.error(`Failed to update permission: ${err.message}`);
-        } finally {
-            element.disabled = false;
-        }
-    }
-}
-
-
-/**
- * Permissions section — wraps a TabView of three PermissionsTabBody
- * children (Common / Advanced / Effective).
- */
 class UserPermissionsSection extends View {
     constructor(options = {}) {
         super({
             className: 'user-permissions-section',
             template: `
                 <div class="detail-section-eyebrow">Permissions</div>
-                <div data-container="user-permissions-tabs"></div>
+                <p class="text-secondary small mb-3">Toggles autosave as soon as you flip them.</p>
+                <div data-container="user-permissions-form"></div>
             `,
             ...options
         });
     }
 
     async onInit() {
-        const m = this.model;
-        this.commonTab    = new PermissionsTabBody({ model: m, mode: 'common' });
-        this.advancedTab  = new PermissionsTabBody({ model: m, mode: 'advanced' });
-        this.effectiveTab = new PermissionsTabBody({ model: m, mode: 'effective' });
+        const _ps = User._permSwitch;
+        const tabs = [
+            { label: 'Categories', fields: (User.CATEGORY_PERMISSIONS || []).map(_ps) },
+            ...(User.GRANULAR_PERMISSION_TABS || []).map(tab => ({
+                label: tab.label,
+                fields: (tab.permissions || []).map(_ps)
+            }))
+        ];
 
-        this.tabView = new TabView({
-            containerId: 'user-permissions-tabs',
-            tabs: {
-                'Common':    this.commonTab,
-                'Advanced':  this.advancedTab,
-                'Effective': this.effectiveTab
-            },
-            activeTab: 'Common'
+        this.formView = new FormView({
+            containerId: 'user-permissions-form',
+            fields: [{ type: 'tabset', tabs }],
+            model: this.model,
+            autosaveModelField: true
         });
-        this.addChild(this.tabView);
+        this.addChild(this.formView);
     }
 }
 
@@ -755,6 +604,11 @@ class UserDevicesSection extends View {
             paginated: false,
             sortable: true,
             filterable: false,   // we drive the filter ourselves via the toolbar button
+            // Synthetic rows aren't Model instances — `clickAction: 'view'`
+            // can't resolve a VIEW_CLASS through `getModelClass()`. So we
+            // hand-dispatch by `kind`: split the synthetic id, look up the
+            // real model from the source collection, open the right detail.
+            onRowClick: (rowModel) => this._openDeviceRow(rowModel),
             columns: [
                 {
                     key: 'kind',
@@ -812,6 +666,34 @@ class UserDevicesSection extends View {
         if (kind === this.kindFilter) return;
         this.kindFilter = kind;
         this._rebuildTable();
+    }
+
+    /**
+     * Open the proper detail view for a synthetic row.
+     * `row.id` is `b:<id>` for browser devices and `p:<id>` for push devices.
+     * Look the real model up from the source collection — synthetic rows
+     * aren't Model instances so TableView's clickAction: 'view' can't
+     * resolve them on its own.
+     */
+    async _openDeviceRow(rowModel) {
+        const rawId = rowModel?.id ?? rowModel?.get?.('id');
+        if (!rawId || typeof rawId !== 'string') return;
+        const colon = rawId.indexOf(':');
+        if (colon < 0) return;
+        const kind = rawId.slice(0, colon);
+        const realId = rawId.slice(colon + 1);
+
+        if (kind === 'b') {
+            const model = this.devicesCollection?.models?.find(d =>
+                String(d.get('id') ?? d.get('duid') ?? d.cid) === String(realId)
+            );
+            if (model) await Modal.detail(new DeviceView({ model }));
+        } else if (kind === 'p') {
+            const model = this.pushDevicesCollection?.models?.find(d =>
+                String(d.get('id') ?? d.get('duid') ?? d.cid) === String(realId)
+            );
+            if (model) await Modal.detail(new PushDeviceView({ model }));
+        }
     }
 
     async _refresh() {
@@ -960,9 +842,9 @@ class UserAuditSection extends View {
         this.tabView = new TabView({
             containerId: 'user-audit-tabs',
             tabs: {
-                'Activity':       this.activityTable,
-                'Incidents':      this.incidentsTable,
-                'Object changes': this.objectTable
+                'Activity':  this.activityTable,
+                'Events':    this.incidentsTable,
+                'Audit Log': this.objectTable
             },
             activeTab: 'Activity'
         });
@@ -1381,7 +1263,8 @@ class UserView extends DetailView {
                 subtitlePath: '_subtitle',
                 subtitlePlaceholder: 'No contact info on file',
                 chips,
-                activeField: 'is_active',
+                // active toggle is emitted from auxFn so the right gutter can
+                // be a 2-row block (presence + toggle on top, "last active" below)
                 actions: [],   // Magic link / reset password live in the context menu
                 auxFn: m => _buildHeaderAux(m),
                 contextMenu: { items: contextItems }
@@ -1505,7 +1388,7 @@ class UserView extends DetailView {
         if (m.get('phone_number')) parts.push(m.get('phone_number'));
         const last = m.get('last_activity');
         if (last) {
-            const rel = dataFormatter.apply(last, ['relative']) || '';
+            const rel = dataFormatter.apply('relative', last) || '';
             if (rel) parts.push(`last seen ${rel}`);
         }
         const lastLogin = this.loginsCollection?.models?.[0];
@@ -1615,7 +1498,7 @@ class UserView extends DetailView {
                 return connections.map(c => {
                     const icon = PROVIDER_ICONS[c.provider] || 'bi-link-45deg';
                     const created = c.created
-                        ? dataFormatter.apply(c.created, ['relative']) || ''
+                        ? dataFormatter.apply('relative', c.created) || ''
                         : '';
                     return `
                         <div class="detail-flat-row">
@@ -1670,10 +1553,10 @@ class UserView extends DetailView {
                 return items.map(p => {
                     const data = p.toJSON ? p.toJSON() : p;
                     const created = data.created
-                        ? dataFormatter.apply(data.created, ['date']) || '—'
+                        ? dataFormatter.apply('date', data.created) || '—'
                         : '—';
                     const lastUsed = data.last_used
-                        ? dataFormatter.apply(data.last_used, ['relative']) || 'never'
+                        ? dataFormatter.apply('relative', data.last_used) || 'never'
                         : 'never';
                     return `
                         <div class="detail-flat-row">
@@ -1722,6 +1605,60 @@ class UserView extends DetailView {
     }
 
     // ── Context menu actions ───────────────────────────────
+
+    async onActionEditUser() {
+        const resp = await Modal.modelForm({
+            title: 'Edit User',
+            model: this.model,
+            size: 'md',
+            formConfig: User.EDIT_FORM
+        });
+        if (resp) await this._fullRefresh();
+        return true;
+    }
+
+    async onActionSendEmailVerification() {
+        const email = this.model.get('email');
+        if (!email) {
+            this.getApp()?.toast?.error('User has no email on file');
+            return true;
+        }
+        const confirmed = await Modal.confirm(
+            `Send a verification email to <strong>${escapeHtml(email)}</strong>?`,
+            'Send Email Verification'
+        );
+        if (!confirmed) return true;
+
+        const resp = await rest.POST('/api/auth/email/verify', { email });
+        if (resp.success) {
+            this.getApp()?.toast?.success('Verification email sent');
+        } else {
+            this.getApp()?.toast?.error(resp.message || 'Failed to send verification email');
+        }
+        return true;
+    }
+
+    /**
+     * Active toggle in the header right-gutter (emitted from `_buildHeaderAux`).
+     * Mirrors `DetailHeaderView.onActionToggleActive` — optimistic update +
+     * silent revert on failure (the bounce IS the feedback).
+     */
+    async onActionToggleActive(event, element) {
+        const checked = !!element.checked;
+        element.disabled = true;
+        try {
+            this.model.set('is_active', checked);
+            const resp = await this.model.save({ is_active: checked });
+            if (resp && resp.status && resp.status >= 400) {
+                throw new Error('Save failed');
+            }
+        } catch (err) {
+            this.model.set('is_active', !checked);
+        } finally {
+            if (element && element.isConnected) element.disabled = false;
+        }
+        return true;
+    }
 
     async onActionForceVerifyEmail() {
         const confirmed = await Modal.confirm(
@@ -1852,14 +1789,18 @@ class UserView extends DetailView {
 
 /**
  * Right-gutter readout for the DetailHeader. Trusted HTML — model fields
- * escaped before interpolation. Returns presence dot + main label + a
- * muted "last active …" line.
+ * escaped before interpolation. Two-row layout:
+ *   row 1: [presence dot · Online/Offline]   [Active/Inactive toggle]
+ *   row 2: muted "last active 4m ago"
+ *
+ * The active toggle lives in here (not as the framework's `activeField`)
+ * so we can keep presence and toggle on the same horizontal line.
  */
 function _buildHeaderAux(m) {
     const online = isOnline(m);
     const last = m.get('last_activity') || m.get('last_login');
     const rel = last
-        ? dataFormatter.apply(last, ['relative']) || ''
+        ? dataFormatter.apply('relative', last) || ''
         : '';
 
     const main = online ? 'Online' : (rel ? 'Offline' : 'No activity');
@@ -1868,11 +1809,22 @@ function _buildHeaderAux(m) {
         : '';
 
     const dotIsOnline = online ? ' is-online' : '';
+    const isActive = !!m.get('is_active');
+    const switchHtml = `
+        <label class="dh-active-switch" data-bs-toggle="tooltip" title="Toggle active">
+            <input type="checkbox" data-action="toggle-active" ${isActive ? 'checked' : ''}>
+            <span class="dh-track"></span>
+            <span class="dh-track-label">${isActive ? 'Active' : 'Inactive'}</span>
+        </label>
+    `;
     return `
-        <span class="dh-aux-presence">
-            <span class="dh-aux-dot${dotIsOnline}"></span>
-            <span>${escapeHtml(main)}</span>
-        </span>
+        <div class="dh-aux-top">
+            <span class="dh-aux-presence">
+                <span class="dh-aux-dot${dotIsOnline}"></span>
+                <span>${escapeHtml(main)}</span>
+            </span>
+            ${switchHtml}
+        </div>
         ${sub ? `<span class="dh-aux-meta">${escapeHtml(sub)}</span>` : ''}
     `;
 }
@@ -1899,6 +1851,5 @@ export {
     UserPermissionsSection,
     UserDevicesSection,
     UserAuditSection,
-    UserApiKeysSection,
-    PermissionsTabBody
+    UserApiKeysSection
 };

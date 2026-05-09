@@ -12,6 +12,7 @@ export default class AdminProfileSection extends View {
     constructor(options = {}) {
         super({
             className: 'admin-profile-section',
+            enableTooltips: true,
             template: `
                 <!-- Contact & Verification -->
                 <div class="detail-section-eyebrow">Contact & Verification</div>
@@ -24,12 +25,12 @@ export default class AdminProfileSection extends View {
                     </div>
                     <div class="detail-flat-row-action">
                         {{#model.is_email_verified|bool}}
-                            <button type="button" class="detail-section-action" data-action="unverify-email" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
+                            <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="unverify-email" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
                         {{/model.is_email_verified|bool}}
                         {{^model.is_email_verified|bool}}
-                            <button type="button" class="detail-section-action" data-action="force-verify-email" title="Force verify"><i class="bi bi-patch-check"></i></button>
+                            <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="force-verify-email" title="Force verify"><i class="bi bi-patch-check"></i></button>
                         {{/model.is_email_verified|bool}}
-                        <button type="button" class="detail-section-action" data-action="change-email" title="Change email"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="change-email" title="Change email"><i class="bi bi-pencil"></i></button>
                     </div>
                 </div>
                 <div class="detail-flat-row">
@@ -45,16 +46,16 @@ export default class AdminProfileSection extends View {
                     <div class="detail-flat-row-action">
                         {{#hasPhone|bool}}
                             {{#model.is_phone_verified|bool}}
-                                <button type="button" class="detail-section-action" data-action="unverify-phone" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
+                                <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="unverify-phone" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>
                             {{/model.is_phone_verified|bool}}
                             {{^model.is_phone_verified|bool}}
-                                <button type="button" class="detail-section-action" data-action="force-verify-phone" title="Force verify"><i class="bi bi-patch-check"></i></button>
+                                <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="force-verify-phone" title="Force verify"><i class="bi bi-patch-check"></i></button>
                             {{/model.is_phone_verified|bool}}
-                            <button type="button" class="detail-section-action" data-action="change-phone" title="Change phone"><i class="bi bi-pencil"></i></button>
-                            <button type="button" class="detail-section-action" data-action="remove-phone" title="Remove phone"><i class="bi bi-x-lg"></i></button>
+                            <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="change-phone" title="Change phone"><i class="bi bi-pencil"></i></button>
+                            <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="remove-phone" title="Remove phone"><i class="bi bi-x-lg"></i></button>
                         {{/hasPhone|bool}}
                         {{^hasPhone|bool}}
-                            <button type="button" class="detail-section-action" data-action="set-phone" title="Set phone number"><i class="bi bi-plus"></i></button>
+                            <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="set-phone" title="Set phone number"><i class="bi bi-plus"></i></button>
                         {{/hasPhone|bool}}
                     </div>
                 </div>
@@ -65,7 +66,7 @@ export default class AdminProfileSection extends View {
                     <div class="detail-flat-row-label">Username</div>
                     <div class="detail-flat-row-value">{{model.username}}</div>
                     <div class="detail-flat-row-action">
-                        <button type="button" class="detail-section-action" data-action="edit-username" title="Edit"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="detail-section-action" data-bs-toggle="tooltip" data-action="edit-username" title="Edit"><i class="bi bi-pencil"></i></button>
                     </div>
                 </div>
                 <div class="detail-flat-row">
@@ -164,7 +165,7 @@ export default class AdminProfileSection extends View {
             'Change Email',
             { defaultValue: this.model.get('email') || '' }
         );
-        if (email === null || !email.trim()) return true;
+        if (typeof email !== 'string' || !email.trim()) return true;
         await this._saveField({ email: email.trim() }, 'Email updated');
         return true;
     }
@@ -175,7 +176,7 @@ export default class AdminProfileSection extends View {
             'Change Phone',
             { defaultValue: this.model.get('phone_number') || '' }
         );
-        if (phone === null || !phone.trim()) return true;
+        if (typeof phone !== 'string' || !phone.trim()) return true;
         await this._saveField({ phone_number: phone.trim() }, 'Phone number updated');
         return true;
     }
@@ -186,7 +187,7 @@ export default class AdminProfileSection extends View {
             'Set Phone Number',
             { placeholder: '(415) 555-0123' }
         );
-        if (!phone || !phone.trim()) return true;
+        if (typeof phone !== 'string' || !phone.trim()) return true;
         await this._saveField({ phone_number: phone.trim() }, 'Phone number added');
         return true;
     }
@@ -215,7 +216,7 @@ export default class AdminProfileSection extends View {
             'Edit Username',
             { defaultValue: this.model.get('username') || '' }
         );
-        if (username !== null && username.trim()) {
+        if (typeof username === 'string' && username.trim()) {
             await this._saveField({ username: username.trim() }, 'Username updated');
         }
         return true;

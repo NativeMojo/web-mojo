@@ -265,7 +265,7 @@ class ShortLinkConfigurationSection extends View {
             template: `
                 <div class="detail-section-eyebrow">
                     Destination
-                    <button class="detail-section-action" data-action="edit-shortlink" title="Edit shortlink">
+                    <button class="detail-section-action" data-action="edit-shortlink" data-bs-toggle="tooltip" title="Edit shortlink">
                         <i class="bi bi-pencil"></i>
                     </button>
                 </div>
@@ -293,7 +293,7 @@ class ShortLinkConfigurationSection extends View {
 
                 <div class="detail-section-eyebrow">
                     Tracking
-                    <button class="detail-section-action" data-action="edit-shortlink" title="Edit tracking">
+                    <button class="detail-section-action" data-action="edit-shortlink" data-bs-toggle="tooltip" title="Edit tracking">
                         <i class="bi bi-pencil"></i>
                     </button>
                 </div>
@@ -314,7 +314,7 @@ class ShortLinkConfigurationSection extends View {
 
                 <div class="detail-section-eyebrow">
                     Lifecycle
-                    <button class="detail-section-action" data-action="edit-shortlink" title="Edit lifecycle">
+                    <button class="detail-section-action" data-action="edit-shortlink" data-bs-toggle="tooltip" title="Edit lifecycle">
                         <i class="bi bi-pencil"></i>
                     </button>
                 </div>
@@ -422,7 +422,7 @@ class ShortLinkOgSection extends View {
             template: `
                 <div class="detail-section-eyebrow">
                     OG / Social
-                    <button class="detail-section-action" data-action="edit-og" title="{{#hasAny|bool}}Edit OG metadata{{/hasAny|bool}}{{^hasAny|bool}}Add OG metadata{{/hasAny|bool}}">
+                    <button class="detail-section-action" data-action="edit-og" data-bs-toggle="tooltip" title="{{#hasAny|bool}}Edit OG metadata{{/hasAny|bool}}{{^hasAny|bool}}Add OG metadata{{/hasAny|bool}}">
                         <i class="bi bi-pencil"></i>
                     </button>
                 </div>
@@ -526,7 +526,7 @@ class ShortLinkMetadataSection extends View {
             template: `
                 <div class="detail-section-eyebrow">
                     Metadata
-                    <button class="detail-section-action" data-action="edit-metadata" title="Edit metadata JSON">
+                    <button class="detail-section-action" data-action="edit-metadata" data-bs-toggle="tooltip" title="Edit metadata JSON">
                         <i class="bi bi-pencil"></i>
                     </button>
                 </div>

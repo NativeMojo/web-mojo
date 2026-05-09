@@ -1,6 +1,7 @@
 import Collection from '@core/Collection.js';
 import Model from '@core/Model.js';
 import { GroupList } from '@core/models/Group.js';
+import PushDeviceView from '@ext/admin/messaging/push/PushDeviceView.js';
 
 // =========================
 // PushDevice
@@ -112,6 +113,10 @@ const PushTemplateForms = {
 
 PushConfigForms.create = PushConfigForms.edit;
 PushTemplateForms.create = PushTemplateForms.edit;
+
+// Wire view dispatch — TableView uses ModelClass.VIEW_CLASS to resolve the
+// detail view when clickAction: 'view' fires.
+PushDevice.VIEW_CLASS = PushDeviceView;
 
 
 export {

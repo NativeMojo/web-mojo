@@ -609,6 +609,273 @@
 }
 
 /* ========================================================================
+   TabView Variants — modern visual treatments
+   ========================================================================
+   Hook classes emitted by `TabView.VARIANT_CLASSES` (see TabView.js).
+   `'traditional'` reuses the existing `.nav-tabs` rules above — no block
+   in this section. All `[data-bs-theme="dark"]` overrides cluster at the
+   bottom of the section, per `.claude/rules/theming.md`.
+*/
+
+/* Shared neutral baseline — every variant starts from the same nav-link
+   reset so none of Bootstrap's nav-tabs side-effects leak in. */
+.tab-view-variant-minimal,
+.tab-view-variant-underline,
+.tab-view-variant-underline-all,
+.tab-view-variant-pills,
+.tab-view-variant-pills-solid,
+.tab-view-variant-segmented,
+.tab-view-variant-btn-group {
+    border-bottom: 0;
+    gap: 0.25rem;
+}
+
+.tab-view-variant-minimal .nav-link,
+.tab-view-variant-underline .nav-link,
+.tab-view-variant-underline-all .nav-link,
+.tab-view-variant-pills .nav-link,
+.tab-view-variant-pills-solid .nav-link,
+.tab-view-variant-segmented .nav-link,
+.tab-view-variant-btn-group .nav-link {
+    border: 0;
+    background: transparent;
+    color: var(--bs-secondary-color);
+    padding: 0.4rem 0.85rem;
+    font-weight: 500;
+    border-radius: var(--bs-border-radius);
+    transition: color 0.12s ease, background-color 0.12s ease;
+}
+
+.tab-view-variant-minimal .nav-link:focus-visible,
+.tab-view-variant-underline .nav-link:focus-visible,
+.tab-view-variant-underline-all .nav-link:focus-visible,
+.tab-view-variant-pills .nav-link:focus-visible,
+.tab-view-variant-pills-solid .nav-link:focus-visible,
+.tab-view-variant-segmented .nav-link:focus-visible,
+.tab-view-variant-btn-group .nav-link:focus-visible {
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+    z-index: 1;
+}
+
+.tab-view-variant-minimal .nav-link.disabled,
+.tab-view-variant-underline .nav-link.disabled,
+.tab-view-variant-underline-all .nav-link.disabled,
+.tab-view-variant-pills .nav-link.disabled,
+.tab-view-variant-pills-solid .nav-link.disabled,
+.tab-view-variant-segmented .nav-link.disabled,
+.tab-view-variant-btn-group .nav-link.disabled,
+.tab-view-variant-minimal .nav-link:disabled,
+.tab-view-variant-underline .nav-link:disabled,
+.tab-view-variant-underline-all .nav-link:disabled,
+.tab-view-variant-pills .nav-link:disabled,
+.tab-view-variant-pills-solid .nav-link:disabled,
+.tab-view-variant-segmented .nav-link:disabled,
+.tab-view-variant-btn-group .nav-link:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* --- minimal: text-only, primary on active, no border or underline ----- */
+.tab-view-variant-minimal .nav-link:hover {
+    color: var(--bs-primary);
+    background: rgba(0, 0, 0, 0.04);
+}
+.tab-view-variant-minimal .nav-link.active {
+    color: var(--bs-primary);
+    background: transparent;
+    font-weight: 600;
+}
+
+/* --- underline: clean primary underline under active label only -------- */
+.tab-view-variant-underline .nav-link {
+    /* reserve space for the underline so hover/active don't shift layout */
+    padding-bottom: calc(0.4rem + 2px);
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+}
+.tab-view-variant-underline .nav-link:hover {
+    color: var(--bs-primary);
+}
+.tab-view-variant-underline .nav-link.active {
+    color: var(--bs-primary);
+    border-bottom-color: var(--bs-primary);
+    font-weight: 600;
+}
+
+/* --- underline-all: continuous 2px line across the whole bar; the active
+       tab's segment paints in primary by overlaying the bar's bottom
+       border at the same y-position (Bootstrap nav-tabs-style overlap).
+*/
+.tab-view-variant-underline-all {
+    border-bottom: 2px solid var(--bs-border-color);
+}
+.tab-view-variant-underline-all .nav-link {
+    /* extend the link 2px past its parent so its own border-bottom sits
+       directly on top of the bar's border-bottom — no double line */
+    margin-bottom: -2px;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+}
+.tab-view-variant-underline-all .nav-link:hover {
+    color: var(--bs-primary);
+}
+.tab-view-variant-underline-all .nav-link.active {
+    color: var(--bs-primary);
+    border-bottom-color: var(--bs-primary);
+    font-weight: 600;
+}
+
+/* --- pills: soft pill on active, no border ----------------------------- */
+.tab-view-variant-pills .nav-link:hover {
+    color: var(--bs-primary);
+    background: rgba(0, 0, 0, 0.04);
+}
+.tab-view-variant-pills .nav-link.active {
+    color: var(--bs-primary);
+    background: var(--bs-primary-bg-subtle);
+    font-weight: 600;
+}
+
+/* --- pills-solid: solid primary pill on active, no border -------------- */
+.tab-view-variant-pills-solid .nav-link:hover {
+    color: var(--bs-primary);
+    background: rgba(0, 0, 0, 0.04);
+}
+.tab-view-variant-pills-solid .nav-link.active {
+    color: #fff;
+    background: var(--bs-primary);
+    font-weight: 600;
+}
+.tab-view-variant-pills-solid .nav-link.active:hover {
+    /* keep the solid fill visible on hover */
+    color: #fff;
+    background: color-mix(in srgb, var(--bs-primary) 90%, #000 10%);
+}
+
+/* --- segmented: connected, neutral container, solid primary active -----
+   No padding inside the container — the active tab fills its slot edge
+   to edge. First/last buttons inherit the container's outer rounding so
+   the curve reads as one shape. (Bootstrap btn-group corner pattern.)
+*/
+.tab-view-variant-segmented {
+    display: inline-flex;
+    gap: 0;
+    background: var(--bs-secondary-bg);
+    border-radius: var(--bs-border-radius);
+    overflow: hidden; /* belt-and-suspenders for the rounded corners */
+}
+.tab-view-variant-segmented .nav-link {
+    color: var(--bs-secondary-color);
+    border-radius: 0;
+}
+.tab-view-variant-segmented .nav-item:first-child .nav-link {
+    border-top-left-radius: var(--bs-border-radius);
+    border-bottom-left-radius: var(--bs-border-radius);
+}
+.tab-view-variant-segmented .nav-item:last-child .nav-link {
+    border-top-right-radius: var(--bs-border-radius);
+    border-bottom-right-radius: var(--bs-border-radius);
+}
+.tab-view-variant-segmented .nav-link:hover {
+    color: var(--bs-primary);
+    background: rgba(var(--bs-primary-rgb), 0.06);
+}
+.tab-view-variant-segmented .nav-link.active {
+    color: #fff;
+    background: var(--bs-primary);
+    font-weight: 600;
+    z-index: 1;
+}
+.tab-view-variant-segmented .nav-link.active:hover {
+    color: #fff;
+    background: color-mix(in srgb, var(--bs-primary) 90%, #000 10%);
+}
+
+/* --- btn-group: Bootstrap btn-group look, hairline borders between ----- */
+.tab-view-variant-btn-group {
+    display: inline-flex;
+    gap: 0;
+    border-radius: var(--bs-border-radius);
+}
+.tab-view-variant-btn-group .nav-item {
+    /* let the outer rounded corners come from the first/last button */
+    margin: 0;
+}
+.tab-view-variant-btn-group .nav-link {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0;
+    background: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    /* compensate for the border so the button height matches other variants */
+    padding: calc(0.4rem - 1px) calc(0.85rem - 1px);
+}
+.tab-view-variant-btn-group .nav-item + .nav-item .nav-link {
+    /* shared border between adjacent buttons */
+    border-left-width: 0;
+}
+.tab-view-variant-btn-group .nav-item:first-child .nav-link {
+    border-top-left-radius: var(--bs-border-radius);
+    border-bottom-left-radius: var(--bs-border-radius);
+}
+.tab-view-variant-btn-group .nav-item:last-child .nav-link {
+    border-top-right-radius: var(--bs-border-radius);
+    border-bottom-right-radius: var(--bs-border-radius);
+}
+.tab-view-variant-btn-group .nav-link:hover {
+    color: var(--bs-primary);
+    background: var(--bs-tertiary-bg);
+}
+.tab-view-variant-btn-group .nav-link.active {
+    color: #fff;
+    background: var(--bs-primary);
+    border-color: var(--bs-primary);
+    font-weight: 600;
+    z-index: 1;
+}
+.tab-view-variant-btn-group .nav-link.active:hover {
+    color: #fff;
+    background: color-mix(in srgb, var(--bs-primary) 90%, #000 10%);
+    border-color: color-mix(in srgb, var(--bs-primary) 90%, #000 10%);
+}
+
+/* --- responsive collapse trigger: variant-tinted ----------------------
+   Wrapper div carries the variant class so the dropdown trigger reads as
+   part of the same family. Solid-fill variants get a primary-tinted
+   trigger; the rest use the neutral default `.tab-view-select-style`.
+*/
+.tab-view-variant-pills-solid > .tab-view-select-style,
+.tab-view-variant-segmented > .tab-view-select-style,
+.tab-view-variant-btn-group > .tab-view-select-style {
+    color: #fff;
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+.tab-view-variant-pills-solid > .tab-view-select-style:hover,
+.tab-view-variant-segmented > .tab-view-select-style:hover,
+.tab-view-variant-btn-group > .tab-view-select-style:hover {
+    background-color: color-mix(in srgb, var(--bs-primary) 90%, #000 10%);
+    border-color: color-mix(in srgb, var(--bs-primary) 90%, #000 10%);
+}
+
+/* ---- Dark theme refinements (clustered per .claude/rules/theming.md) -- */
+[data-bs-theme="dark"] .tab-view-variant-minimal .nav-link:hover,
+[data-bs-theme="dark"] .tab-view-variant-pills .nav-link:hover,
+[data-bs-theme="dark"] .tab-view-variant-pills-solid .nav-link:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+[data-bs-theme="dark"] .tab-view-variant-segmented .nav-link:hover {
+    background: rgba(var(--bs-primary-rgb), 0.18);
+}
+[data-bs-theme="dark"] .tab-view-variant-btn-group .nav-link {
+    background: var(--bs-tertiary-bg);
+}
+[data-bs-theme="dark"] .tab-view-variant-btn-group .nav-link:hover {
+    background: var(--bs-secondary-bg);
+}
+
+/* ========================================================================
    MOJO Core Animations
    ======================================================================== */
 
@@ -2617,7 +2884,7 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    margin: 0 0 0.5rem;
+    margin: 0 0 0.4rem;
     font-size: 0.68rem;
     font-weight: 700;
     letter-spacing: 0.14em;
@@ -2629,7 +2896,7 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
    when they're not the first child of their parent. No inline `mt-3` /
    `mt-4` needed in templates. */
 .detail-section-eyebrow:not(:first-child) {
-    margin-top: 2rem;
+    margin-top: 1.25rem;
 }
 .detail-section-action {
     background: transparent;
@@ -2652,7 +2919,7 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.85rem 0;
+    padding: 0.55rem 0;
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     font-size: 0.875rem;
     line-height: 1.45;
@@ -3041,6 +3308,15 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
     color: var(--bs-secondary-color);
     font-size: 0.72rem;
 }
+/* Two-row aux block: top row holds inline controls (presence + active
+   toggle, attempt counter + retry, etc); bottom row is a muted meta line.
+   Used by views that emit their own active toggle from auxFn. */
+.detail-header .dh-aux .dh-aux-top {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.detail-header .dh-aux .dh-aux-top + .dh-aux-meta { margin-top: 0.15rem; }
 
 [data-bs-theme="dark"] .detail-header .dh-icon {
     background: rgba(77, 139, 255, 0.16);
