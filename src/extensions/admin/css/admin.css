@@ -2804,14 +2804,16 @@
     gap: 0.4rem;
 }
 .detail-pair .card-title i { color: var(--bs-secondary-color); font-size: 0.85rem; }
-/* Borderless card surfaces inside the pair — bg tint is the only
-   separation, matching the framework primitives. */
+/* The card titles ("What triggered this", "Recent activity") are
+   self-evident headings — no surrounding box needed. Pair cells sit
+   transparently on the section background; the title alone separates
+   them visually. */
 .detail-pair .card {
     border: 0;
-    border-radius: 0.75rem;
-    background: var(--bs-tertiary-bg);
+    border-radius: 0;
+    background: transparent;
 }
-.detail-pair .card .card-body { padding: 0.9rem 1rem; }
+.detail-pair .card .card-body { padding: 0; }
 
 
 /* StatusPanel — moved to src/core/css/core.css; the JS class lives at
