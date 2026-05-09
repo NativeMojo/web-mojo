@@ -2763,6 +2763,35 @@
 .detail-view .metric-card-value { font-size: 0.82rem; line-height: 1.3; }
 .detail-view .metric-card.metric-card-lg .metric-card-value { font-size: 0.95rem; letter-spacing: -0.005em; }
 
+/* Tiny, subtle button groups inside DetailView. The Common/Advanced/
+   Effective and similar segment toggles don't need to be touch-sized;
+   they're secondary controls in a viewer surface. Override Bootstrap's
+   default btn-* sizes inside .detail-view scope so we don't have to
+   sprinkle .btn-sm on every consumer. */
+.detail-view .btn-group .btn,
+.detail-view .btn-group-sm .btn {
+    font-size: 0.72rem;
+    padding: 0.2rem 0.55rem;
+    line-height: 1.4;
+    font-weight: 500;
+    border-radius: 0.3rem;
+}
+.detail-view .btn-group .btn-outline-secondary {
+    border-color: rgba(0, 0, 0, 0.1);
+    color: var(--bs-secondary-color);
+}
+.detail-view .btn-group .btn-outline-secondary:hover {
+    background: var(--bs-secondary-bg);
+    border-color: rgba(0, 0, 0, 0.15);
+    color: var(--bs-body-color);
+}
+[data-bs-theme="dark"] .detail-view .btn-group .btn-outline-secondary {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+[data-bs-theme="dark"] .detail-view .btn-group .btn-outline-secondary:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
 /* Side rail tightening */
 .detail-view .snv-nav a { padding: 0.35rem 1.15rem; font-size: 0.78rem; }
 .detail-view .snv-nav-label { font-size: 0.6rem; letter-spacing: 0.08em; padding: 0.7rem 1.15rem 0.2rem; opacity: 0.6; }
@@ -3071,40 +3100,47 @@
    and rows of permission name/key + Bootstrap form-switch. Pairs with the
    .form-check.form-switch markup from Bootstrap for the actual toggle.
 */
+/* Borderless flat groups — same minimal treatment as flat-row family.
+   No box, no header bar; the small uppercase eyebrow is the only
+   subsection signal. */
 .detail-perm-group {
-    background: var(--bs-tertiary-bg);
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.5rem;
-    margin-bottom: 0.6rem;
-    overflow: hidden;
+    background: transparent;
+    border: 0;
+    margin-bottom: 1.5rem;
+    overflow: visible;
 }
+.detail-perm-group:not(:first-child) { margin-top: 2rem; }
 .detail-perm-group-header {
-    padding: 0.5rem 0.9rem;
-    border-bottom: 1px solid var(--bs-border-color);
+    padding: 0 0 0.5rem;
+    border-bottom: 0;
     display: flex; justify-content: space-between; align-items: center;
 }
 .detail-perm-group-header h5 {
     margin: 0;
-    font-size: 0.7rem;
-    letter-spacing: 0.08em;
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--bs-secondary-color);
-    font-weight: 600;
+    font-weight: 700;
 }
 .detail-perm-group-meta {
     color: var(--bs-secondary-color);
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-family: var(--bs-font-monospace);
+    opacity: 0.7;
 }
 .detail-perm-row {
     display: grid;
     grid-template-columns: 1fr auto;
     gap: 1rem;
-    padding: 0.6rem 0.9rem;
-    border-top: 1px dashed var(--bs-border-color);
+    padding: 0.7rem 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
     align-items: center;
 }
 .detail-perm-row:first-of-type { border-top: none; }
+[data-bs-theme="dark"] .detail-perm-row {
+    border-top-color: rgba(255, 255, 255, 0.06);
+}
 .detail-perm-name {
     font-size: 0.85rem;
     color: var(--bs-body-color);

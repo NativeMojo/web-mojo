@@ -2617,13 +2617,12 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    margin: 0 0 1rem;
-    font-size: 0.65rem;
-    font-weight: 600;
+    margin: 0 0 0.5rem;
+    font-size: 0.68rem;
+    font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--bs-secondary-color);
-    opacity: 0.7;
 }
 /* Subsection eyebrows (a second `Account` eyebrow after a stack of rows
    or items inside the same section) get automatic breathing room above
@@ -2654,11 +2653,14 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
     align-items: center;
     gap: 0.5rem;
     padding: 0.85rem 0;
-    border-bottom: 1px solid var(--bs-border-color-translucent);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     font-size: 0.875rem;
     line-height: 1.45;
 }
 .detail-flat-row:last-child { border-bottom: none; }
+[data-bs-theme="dark"] .detail-flat-row {
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+}
 .detail-flat-row-label {
     width: 110px;
     flex-shrink: 0;
