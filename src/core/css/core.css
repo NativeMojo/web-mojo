@@ -2500,6 +2500,74 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
 
 
 /* ========================================================================
+   Timeline (vertical event feed)
+   ========================================================================
+   Vertical list with a hairline connector and tone-colored dots. Used for
+   incident history, job lifecycle events, recent activity in user/group
+   overviews, audit trails. Renders as an `<ol>` with `.detail-timeline`
+   on the root and `.detail-timeline-item.tone-*` on each entry.
+
+   JS: src/core/views/data/Timeline.js
+*/
+.detail-timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 1.1rem;
+    position: relative;
+}
+.detail-timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.35rem; top: 0.5rem; bottom: 0.5rem;
+    width: 1px;
+    background: linear-gradient(180deg, var(--bs-border-color), transparent);
+}
+.detail-timeline-item {
+    position: relative;
+    padding: 0.4rem 0 0.85rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+}
+.detail-timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -1.1rem; top: 0.75rem;
+    width: 0.55rem; height: 0.55rem;
+    border-radius: 999px;
+    background: var(--bs-tertiary-bg);
+    border: 1.5px solid var(--bs-secondary-color);
+}
+.detail-timeline-item.tone-danger::before    { border-color: var(--bs-danger);    }
+.detail-timeline-item.tone-warning::before   { border-color: var(--bs-warning);   }
+.detail-timeline-item.tone-success::before   { border-color: var(--bs-success);   }
+.detail-timeline-item.tone-info::before      { border-color: var(--bs-info);      }
+.detail-timeline-item.tone-primary::before   { border-color: var(--bs-primary);   }
+.detail-timeline-item.tone-secondary::before { border-color: var(--bs-secondary); }
+.detail-timeline-headline {
+    font-size: 0.85rem;
+    color: var(--bs-body-color);
+    font-weight: 500;
+}
+.detail-timeline-detail {
+    font-size: 0.8rem;
+    color: var(--bs-secondary-color);
+}
+.detail-timeline-when {
+    font-family: var(--bs-font-monospace);
+    font-size: 0.72rem;
+    color: var(--bs-secondary-color);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    align-self: start;
+}
+.detail-timeline-empty {
+    list-style: none;
+    padding: 0.5rem 0;
+}
+
+
+/* ========================================================================
    DetailView / DetailHeaderView
    ========================================================================
    Standard record-detail layout: flat header (icon, title, subtitle, chips,

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Timeline — new `@core` primitive
+
+- **Added:** `src/core/views/data/Timeline.js` — vertical event-feed primitive (the `<ol>` with hairline connector and tone-colored dots used for incident history, job lifecycle events, recent-activity overviews, audit trails). Constructor: `items` (array OR `(model) => array`), `emptyText`, `limit`, `model`. Each item is `{ headline, detail?, when?, tone? }`. Falsy entries are filtered. Function-valued `items` re-resolve on every `render()` so the feed reflects the latest model state. Empty list renders a single `.detail-timeline-empty` placeholder so the rail still draws. `setItems(items)` replaces the source and re-renders.
+- **Moved:** the `.detail-timeline*` and `.tone-*::before` CSS rules from `src/extensions/admin/css/admin.css` into `src/core/css/core.css`. Added a `tone-secondary` variant matching StatusPanel's palette and a `.detail-timeline-empty` rule for the empty-state fallback.
+- **Tests:** `test/unit/Timeline.test.js` adds eight smoke cases — `<ol>` root, per-item tone class, optional detail/when omission, empty-state fallback, function-valued items resolving and re-resolving, the `limit` option, HTML-escaping of headline/when, and `setItems`.
+- **Docs:** new `docs/web-mojo/components/Timeline.md` covers quick-start, options, item shape, common patterns (Job Lifecycle card, Recent activity), and the trusted-HTML rules for `detail`.
+
 ### StatusPanel — new `@core` primitive
 
 - **Added:** `src/core/views/data/StatusPanel.js` — hero "current state" panel for record-detail views (the dot+state read-out / headline / meta line / action buttons that opens the Overview section in JobDetailsView, IncidentView, RunnerDetailsView, etc.). Constructor options `tone`, `state`, `headline`, `meta`, `icon`, `actions[]` each accept either a static value **or** `(model) => value` so the panel re-resolves on model state changes. Action buttons render with `data-action="<action>"` and dispatch via the standard MOJO action pipeline — handlers live on whichever ancestor reacts. Tones (`primary`, `success`, `info`, `warning`, `danger`, `secondary`) tint background + border via Bootstrap CSS variables; dark theme works automatically.
