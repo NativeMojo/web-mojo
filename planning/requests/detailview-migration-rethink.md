@@ -358,6 +358,67 @@ adds in the same pass:
 - **Tests**: unit test per new `@core` primitive; one regression test per
   Wave 3 PR.
 
+### Design language (NON-NEGOTIABLE for every Wave 2/3 agent)
+
+The Wave 1 styling pass settled on a 2026 minimal aesthetic. Every
+section view, primitive, and admin consumer must follow these rules:
+
+1. **No card borders. No card backgrounds.** Section content sits flat
+   on the page surface. The `.detail-section-eyebrow` (UPPERCASE label,
+   tracked, muted) is the only visual subsection separator. Drop
+   `.card`, `.detail-field-card`, bordered `.detail-perm-group`-style
+   wrappers. Bg-tint is acceptable ONLY for tone-state primitives
+   (StatusPanel hero, KPI tone left-stripe, info alerts) — never as
+   "this is a section" decoration.
+2. **Subtle dividers.** Hairlines between flat rows are
+   `rgba(0,0,0,0.06)` light / `rgba(255,255,255,0.06)` dark — barely
+   visible, not Bootstrap's default `--bs-border-color-translucent`
+   which is too dark. Use the framework `.detail-flat-row` family;
+   it has the right divider already.
+3. **Generous, predictable vertical rhythm.** Every block sits on a
+   1.5rem minimum gap from the next. Sections separate at 2.5rem.
+   Subsection eyebrows after content auto-space at 2rem
+   (`.detail-section-eyebrow:not(:first-child)`). Don't add inline
+   `mt-3` / `mt-4` / `pt-*` utility classes to templates — the layout
+   owns spacing.
+4. **Tight, quiet typography hierarchy.**
+   - Section eyebrow: 0.68rem, weight 700, letter-spacing 0.14em,
+     `var(--bs-secondary-color)`, no opacity dim.
+   - Section title (when used): 0.78rem, weight 600.
+   - Flat-row label: 0.8rem, secondary color, 110px column.
+   - Flat-row value: 0.875rem, body color, regular weight.
+   - StatusPanel headline: 1rem (was 1.4rem — now restrained).
+   - MetricCard value: 0.82rem (no `metric-card-lg` by default).
+5. **Tiny buttons inside DetailView.** Scoped CSS at
+   `.detail-view .btn-group .btn` reduces every button-group inside a
+   DetailView to 0.72rem font / 0.2rem 0.55rem padding. Never use
+   default-size Bootstrap btn-groups for segment toggles (Common /
+   Advanced / Effective, All / Browser / Push, etc.). Even better:
+   prefer `TabView` for inner segmentation (per the rethink spec).
+6. **Section content padding is owned by the layout.**
+   `DetailView.contentPadding` defaults to `'1.5rem'` (Bootstrap p-4)
+   on `.snv-content`. Section view classNames must NOT include
+   `p-3` / `p-4` — that compounds with the layout padding.
+7. **Edit affordances recede until interacted with.**
+   `.detail-section-action` (the eyebrow pencil) defaults to opacity
+   0.7, brightens to 1.0 on hover. No solid-color buttons for edit;
+   just a small outline pencil icon.
+8. **`Modal.detail()` opens at `'lg'`.** Per-view `viewDialogOptions`
+   must NOT include `size: 'xl'`. Stack content vertically when an
+   `lg` modal isn't wide enough — never rely on extra horizontal
+   room. Use container queries (not viewport media queries) so
+   nested elements stack based on their actual container width.
+9. **Trusted-HTML slots stay trusted.** When wiring `auxFn`,
+   `meta`, `headline`, `Timeline.items[].detail`, `FlowStrip.value`,
+   `KnownFieldsCard.formatter` — the framework does NOT escape these.
+   Caller must escape any model field / user data before
+   interpolating. Use `MOJOUtils.escapeHtml()` defensively.
+10. **Mustache-first templates.** Section views use Mustache string
+    templates with DataFormatter pipes. Compute extras as `getter`
+    properties on the view, not inline `_buildTemplate()` string
+    concatenation. The view IS the Mustache context — `{{model.foo}}`
+    reads model data; `{{computedGetter}}` reads getter.
+
 ### Parallelization
 
 ```
