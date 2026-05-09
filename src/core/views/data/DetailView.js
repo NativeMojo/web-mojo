@@ -346,7 +346,11 @@ class DetailView extends View {
         this.initialActiveSection = activeSection;
         this.navWidth = navWidth ?? 200;
         this.minWidth = minWidth ?? 600;
-        this.contentPadding = contentPadding ?? '0';
+        // Bootstrap p-4 (1.5rem) breathing room around every section by default.
+        // The padding is on the SideNavView's snv-content wrapper, so each
+        // section gets uniform inset on all four sides without needing its
+        // own padding utility class. Pass `contentPadding: '0'` to opt out.
+        this.contentPadding = contentPadding ?? '1.5rem';
 
         this.template = `
             <div class="detail-view-shell">

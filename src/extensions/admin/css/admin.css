@@ -2750,10 +2750,10 @@
     letter-spacing: -0.005em;
     color: var(--bs-emphasis-color, var(--bs-body-color));
 }
-/* Uniform p-4 (1.5rem) section padding inside DetailView — gives every
-   section the same generous breathing room on all sides. Section views
-   no longer need their own `p-3` / `p-4` className; the layout owns it. */
-.detail-view .snv-content > .snv-section { padding: 1.5rem; }
+/* Section padding is owned by `DetailView.contentPadding` (default
+   `'1.5rem'`, applied as inline style on `.snv-content` by SideNavView).
+   Section views no longer need their own `p-3` / `p-4` utility class —
+   the layout handles uniform breathing room. */
 
 /* Tighter MetricCard inside DetailView Overview sections — the default
    is the small / quiet treatment; `metric-card-lg` is opt-in for
