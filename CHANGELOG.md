@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### StatusPanel — new `@core` primitive
+
+- **Added:** `src/core/views/data/StatusPanel.js` — hero "current state" panel for record-detail views (the dot+state read-out / headline / meta line / action buttons that opens the Overview section in JobDetailsView, IncidentView, RunnerDetailsView, etc.). Constructor options `tone`, `state`, `headline`, `meta`, `icon`, `actions[]` each accept either a static value **or** `(model) => value` so the panel re-resolves on model state changes. Action buttons render with `data-action="<action>"` and dispatch via the standard MOJO action pipeline — handlers live on whichever ancestor reacts. Tones (`primary`, `success`, `info`, `warning`, `danger`, `secondary`) tint background + border via Bootstrap CSS variables; dark theme works automatically.
+- **Moved:** the `.detail-status-panel` / `.detail-status-headline` / `.detail-status-state` / `.detail-status-line` / `.detail-status-meta` / `.detail-status-actions` / `.tone-*` CSS rules from `src/extensions/admin/css/admin.css` into `src/core/css/core.css` (the JS class is `@core`-level, so the styles must travel with it). Added `.detail-status-icon` for the optional Bootstrap-Icons-driven state icon, and a `tone-secondary` variant for inactive/cancelled records.
+- **Tests:** `test/unit/StatusPanel.test.js` adds six smoke cases — render shape, dot vs icon, action row, function-valued options re-resolving, empty actions omission, HTML escaping of state / headline / labels.
+- **Docs:** new `docs/web-mojo/components/StatusPanel.md` covering quick start, function-valued options, all constructor options, tones, and common patterns.
+
 ### DetailView — `auxFn` right-gutter slot + flat-row primitives
 
 - **Added — `header.auxFn(model) -> htmlString`:** new optional slot on `DetailHeaderView` for inline state read-outs that don't fit the chip / badge model — presence dots, "Last seen 4m ago" lines, attempt counters, etc. Renders left of the active switch in the right-side action cluster. Returning falsy omits the wrapper. The output is **trusted HTML** (caller is in source code, not user input). Re-renders along with the rest of the header on `model.set(...)`. Framework ships `.dh-aux-presence`, `.dh-aux-dot` (`.is-online` modifier), and `.dh-aux-meta` defaults in `core.css`.

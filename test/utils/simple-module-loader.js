@@ -276,6 +276,10 @@ class SimpleModuleLoader {
                 path: path.join(this.sourceRoot, 'core/views/data/MetricCard.js'),
                 dependencies: ['View']
             },
+            'StatusPanel': {
+                path: path.join(this.sourceRoot, 'core/views/data/StatusPanel.js'),
+                dependencies: ['View']
+            },
             'SideNavView': {
                 path: path.join(this.sourceRoot, 'core/views/navigation/SideNavView.js'),
                 dependencies: ['View']
@@ -470,6 +474,7 @@ class SimpleModuleLoader {
             { test: /\/ContextMenu(\.js)?$/, name: 'ContextMenu' },
             { test: /\/SegmentControl(\.js)?$/, name: 'SegmentControl' },
             { test: /\/MetricCard(\.js)?$/, name: 'MetricCard' },
+            { test: /\/StatusPanel(\.js)?$/, name: 'StatusPanel' },
             { test: /\/DetailView(\.js)?$/, name: 'DetailView' }
         ];
         for (const rule of rules) {

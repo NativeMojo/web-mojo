@@ -2429,6 +2429,77 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
 }
 
 /* ========================================================================
+   StatusPanel
+   ========================================================================
+   Hero state banner used in the Overview section of state-driven records
+   (incident status, job lifecycle, runner alive/dead). The tone variants
+   tint the background + border with the matching Bootstrap semantic color
+   so the panel reads as the dominant signal in the section.
+
+   JS: src/core/views/data/StatusPanel.js
+*/
+.detail-status-panel {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.6rem;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    margin-bottom: 1rem;
+    background: var(--bs-tertiary-bg);
+}
+.detail-status-panel .detail-status-headline { min-width: 0; flex: 1; }
+.detail-status-panel .detail-status-state {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: var(--bs-secondary-color);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.detail-status-panel .detail-status-state .detail-status-dot {
+    width: 0.5rem; height: 0.5rem;
+    border-radius: 999px;
+    background: currentColor;
+    box-shadow: 0 0 0.5rem currentColor;
+}
+.detail-status-panel .detail-status-state .detail-status-icon {
+    font-size: 0.95rem;
+    line-height: 1;
+}
+.detail-status-panel .detail-status-line {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem;
+    line-height: 1.15;
+    color: var(--bs-emphasis-color, var(--bs-body-color));
+}
+.detail-status-panel .detail-status-meta {
+    color: var(--bs-secondary-color);
+    font-size: 0.85rem;
+}
+.detail-status-panel .detail-status-actions {
+    display: flex; gap: 0.4rem; flex-shrink: 0;
+}
+.detail-status-panel.tone-danger    { background: rgba(var(--bs-danger-rgb),    0.08); border-color: rgba(var(--bs-danger-rgb),    0.3); }
+.detail-status-panel.tone-warning   { background: rgba(var(--bs-warning-rgb),   0.08); border-color: rgba(var(--bs-warning-rgb),   0.3); }
+.detail-status-panel.tone-success   { background: rgba(var(--bs-success-rgb),   0.08); border-color: rgba(var(--bs-success-rgb),   0.3); }
+.detail-status-panel.tone-info      { background: rgba(var(--bs-info-rgb),      0.08); border-color: rgba(var(--bs-info-rgb),      0.3); }
+.detail-status-panel.tone-primary   { background: rgba(var(--bs-primary-rgb),   0.08); border-color: rgba(var(--bs-primary-rgb),   0.3); }
+.detail-status-panel.tone-secondary { background: rgba(var(--bs-secondary-rgb), 0.06); border-color: rgba(var(--bs-secondary-rgb), 0.25); }
+.detail-status-panel.tone-danger    .detail-status-state { color: var(--bs-danger);    }
+.detail-status-panel.tone-warning   .detail-status-state { color: var(--bs-warning);   }
+.detail-status-panel.tone-success   .detail-status-state { color: var(--bs-success);   }
+.detail-status-panel.tone-info      .detail-status-state { color: var(--bs-info);      }
+.detail-status-panel.tone-primary   .detail-status-state { color: var(--bs-primary);   }
+.detail-status-panel.tone-secondary .detail-status-state { color: var(--bs-secondary); }
+
+
+/* ========================================================================
    DetailView / DetailHeaderView
    ========================================================================
    Standard record-detail layout: flat header (icon, title, subtitle, chips,
