@@ -456,7 +456,7 @@ class UserProfileSection extends View {
             ? '<button class="btn btn-sm btn-link link-secondary p-0 ms-1" data-action="unverify-phone" title="Mark as unverified"><i class="bi bi-x-circle"></i></button>'
             : '<button class="btn btn-sm btn-link link-success p-0 ms-1" data-action="force-verify-phone" title="Force verify"><i class="bi bi-patch-check"></i></button>';
 
-        // Personal card rows
+        // Personal subsection
         const personalRows = [
             ['Display name', escapeHtml(m.get('display_name') || m.get('username') || '—')],
             ['Username', `<code>${escapeHtml(m.get('username') || '—')}</code>`],
@@ -471,28 +471,28 @@ class UserProfileSection extends View {
                         ? ' <span class="badge text-bg-success ms-1"><i class="bi bi-shield-check me-1"></i>verified</span>'
                         : ' <span class="badge text-bg-warning ms-1">unverified</span>'
                 }${phoneVerifyBtn}`
-                : '<span class="text-secondary">Not set</span>'],
+                : '<span class="text-secondary fst-italic">Not set</span>'],
         ];
 
+        // Account subsection
         const accountRows = [
             ['Account type', escapeHtml(accountType)],
             ['Status', status],
-            ['Joined', `<code>${escapeHtml(formatDate(m.get('date_joined')))}</code>`],
+            ['Joined', escapeHtml(formatDate(m.get('date_joined')))],
             ['Last login', escapeHtml(formatRelative(m.get('last_login')))],
             ['Last seen', escapeHtml(formatRelative(m.get('last_activity')))],
         ];
         const meta = m.get('metadata') || {};
-        if (meta.timezone) accountRows.push(['Timezone', `<code>${escapeHtml(meta.timezone)}</code>`]);
+        if (meta.timezone) accountRows.push(['Timezone', escapeHtml(meta.timezone)]);
 
-        // Linked accounts
+        // Linked accounts subsection
         let linkedHtml;
         if (this.connections.length) {
-            const provs = this.connections.map(c =>
-                `<span class="badge text-bg-primary me-1"><i class="bi ${escapeHtml(c.icon)} me-1"></i>${escapeHtml(c.provider)}${c.email ? ` · ${escapeHtml(c.email)}` : ''}</span>`
+            linkedHtml = this.connections.map(c =>
+                `<span class="badge text-bg-light border me-1"><i class="bi ${escapeHtml(c.icon)} me-1"></i>${escapeHtml(c.provider)}${c.email ? ` · ${escapeHtml(c.email)}` : ''}</span>`
             ).join('');
-            linkedHtml = provs;
         } else {
-            linkedHtml = '<span class="text-secondary">No linked accounts</span>';
+            linkedHtml = '<span class="text-secondary fst-italic">No linked accounts</span>';
         }
 
         const mfaHtml = requiresMfa
@@ -505,33 +505,33 @@ class UserProfileSection extends View {
         ];
 
         return `
-            <div class="section-eyebrow">Section · Profile</div>
-            <h3 class="section-title">Identity &amp; account</h3>
-
-            ${this._buildFieldCard('bi-person', 'Personal', 'edit-personal', personalRows)}
-            ${this._buildFieldCard('bi-grid-1x2', 'Account', 'edit-account', accountRows)}
-            ${this._buildFieldCard('bi-key', 'Linked accounts', 'manage-linked', linkedRows)}
+            ${this._buildSubsection('Personal',         'edit-personal',  personalRows)}
+            ${this._buildSubsection('Account',          'edit-account',   accountRows)}
+            ${this._buildSubsection('Linked accounts',  'manage-linked',  linkedRows)}
         `;
     }
 
-    _buildFieldCard(icon, title, editAction, rows) {
+    /**
+     * Render one subsection: a `.detail-section-eyebrow` (uppercase
+     * label + edit pencil right-aligned) followed by a stack of
+     * `.detail-flat-row`s. Auto-spaces above when not the first
+     * subsection in the section (per the framework `:not(:first-child)`
+     * margin rule in core.css).
+     */
+    _buildSubsection(title, editAction, rows) {
         const rowsHtml = rows.map(([k, v]) => `
-            <div class="detail-field-row">
-                <div class="detail-field-label">${escapeHtml(k)}</div>
-                <div class="detail-field-value">${v}</div>
+            <div class="detail-flat-row">
+                <div class="detail-flat-row-label">${escapeHtml(k)}</div>
+                <div class="detail-flat-row-value">${v}</div>
             </div>
         `).join('');
 
         return `
-            <div class="detail-field-card">
-                <div class="detail-field-card-header">
-                    <h4><i class="bi ${escapeHtml(icon)} me-2"></i>${escapeHtml(title)}</h4>
-                    <button class="btn btn-sm btn-link link-secondary" data-action="${escapeHtml(editAction)}">
-                        <i class="bi bi-pencil me-1"></i>Edit
-                    </button>
-                </div>
-                <div class="detail-field-card-body">${rowsHtml}</div>
+            <div class="detail-section-eyebrow">
+                ${escapeHtml(title)}
+                <button type="button" class="detail-section-action" data-action="${escapeHtml(editAction)}" title="Edit ${escapeHtml(title.toLowerCase())}"><i class="bi bi-pencil"></i></button>
             </div>
+            ${rowsHtml}
         `;
     }
 
