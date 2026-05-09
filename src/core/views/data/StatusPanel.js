@@ -8,6 +8,14 @@
  * and any other record where the operator's first question is
  * "what state is this in and what do I do next."
  *
+ * Security note: `meta` is rendered as TRUSTED HTML so callers can
+ * compose `<code>`, `<strong>`, etc. inline. The trust contract is
+ * "the string was assembled in source code, not pulled from user
+ * input." If you interpolate model fields or other user-controlled
+ * data into `meta`, you MUST escape them yourself (e.g. via
+ * `MOJOUtils.escapeHtml(...)`). `state`, `headline`, and action
+ * `label` are escaped automatically.
+ *
  * ┌───────────────────────────────────────────────────────────┐
  * │  ● State label                       [ primary ] [ alt ]  │
  * │  Headline line                                            │

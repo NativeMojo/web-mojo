@@ -375,7 +375,7 @@ class RuleSetTriggeringSection extends View {
                 <div class="rs-flow-step">
                     <div class="rs-flow-num">STEP 1</div>
                     <div class="rs-flow-title">Match <button class="btn btn-link p-0 text-body-secondary" data-action="edit-step" data-tab="general"><i class="bi bi-pencil"></i></button></div>
-                    <div class="rs-flow-value">${matchValue}</div>
+                    <div class="rs-flow-value">${this.escapeHtml(matchValue)}</div>
                     <div class="rs-flow-hint">Each condition under "Conditions" must match the event for the rule to apply.</div>
                 </div>
                 <div class="rs-flow-step">

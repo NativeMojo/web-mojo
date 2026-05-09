@@ -6,6 +6,15 @@
  * job lifecycle, anywhere a sequence of stages reads better as a
  * left-to-right strip than a flat field list.
  *
+ * Security note: each step's `value` and `hint` fields are rendered
+ * as TRUSTED HTML so callers can interpolate `<code>`, `<strong>`,
+ * etc. The trust contract is "the string was assembled in source
+ * code, not pulled from user input." If you interpolate model fields
+ * or any other user-controlled data into `value` / `hint`, you MUST
+ * escape them yourself (e.g. via `MOJOUtils.escapeHtml(...)`).
+ * `num`, `title`, `action`, `actionIcon`, and `actionData` keys/values
+ * are escaped automatically.
+ *
  * ┌──────────┬──────────┬──────────┬──────────┐
  * │ STEP 1   │ STEP 2   │ STEP 3   │ STEP 4   │
  * │ Match    │ Bundle   │ Threshold│ Re-trigger│

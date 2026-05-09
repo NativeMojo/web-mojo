@@ -70,6 +70,11 @@ import MOJOUtils from '@core/utils/MOJOUtils.js';
  * ago" lines, attempt counters, etc. The string is rendered as TRUSTED
  * HTML (it comes from source code, not user input). Returning falsy
  * omits the wrapper entirely.
+ *
+ * Security note: if your `auxFn` interpolates model fields, free-text
+ * user data, or any other untrusted value, you MUST escape it
+ * yourself (e.g. via `MOJOUtils.escapeHtml(...)`) before composing
+ * the returned string. The framework does not escape the result.
  */
 class DetailHeaderView extends View {
     constructor(options = {}) {

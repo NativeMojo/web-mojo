@@ -6,6 +6,14 @@
  * activity in user / group overviews, audit trails — anywhere the
  * record's story is "this happened, then this, then this."
  *
+ * Security note: each item's `detail` field is rendered as TRUSTED
+ * HTML so callers can interpolate `<code>`, `<a>`, `<strong>`, etc.
+ * The trust contract is "the string was assembled in source code, not
+ * pulled from user input." If you build `detail` from event payloads,
+ * user IDs, free-text fields, or any other user-controlled data, you
+ * MUST escape them yourself (e.g. via `MOJOUtils.escapeHtml(...)`).
+ * `headline`, `when`, and `emptyText` are escaped automatically.
+ *
  * ┌──────────────────────────────────────────────────┐
  * │ ●  Headline line                       4m ago    │
  * │ │  Optional supporting detail                    │
