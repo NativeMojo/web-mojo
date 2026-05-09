@@ -1948,6 +1948,42 @@ class ListView extends View {
           field.placeholder = `Select ${filterConfig.label}...`;
         }
       }
+    } else if (
+      filterConfig.type === 'boolean' ||
+      filterConfig.type === 'switch' ||
+      filterConfig.type === 'toggle'
+    ) {
+      // Boolean filters render as a True / False select in the edit dialog.
+      // FormBuilder doesn't have a `boolean` field type, and a switch/toggle
+      // is awkward in a one-field filter dialog (no clear "submit" affordance
+      // and ambiguous off-state). Select with two options is URL-friendly,
+      // explicit, and easy to read in the active-pill bar.
+      field.type = 'select';
+      // Stringify the (current OR default) value so the <option value="...">
+      // match works. Filter params are strings on the wire —
+      // Collection.params['foo'] = 'true'. When the dialog is opened fresh
+      // (Add Filter) and the config has `defaultValue`, honor it as the
+      // pre-selected option.
+      const initial = currentValue !== undefined && currentValue !== null && currentValue !== ''
+        ? currentValue
+        : filterConfig.defaultValue;
+      const stringValue = initial === true ? 'true'
+        : initial === false ? 'false'
+          : initial == null ? '' : String(initial);
+      field.value = stringValue;
+      // Allow caller to override the labels (e.g. `trueLabel: 'Active'`,
+      // `falseLabel: 'Inactive'`); fall back to plain True / False.
+      const trueLabel = filterConfig.trueLabel || 'True';
+      const falseLabel = filterConfig.falseLabel || 'False';
+      field.options = [
+        { value: 'true', text: trueLabel },
+        { value: 'false', text: falseLabel }
+      ];
+      if (!field.placeholder && !field.placeHolder) {
+        field.placeholder = filterConfig.label
+          ? `Filter by ${filterConfig.label}…`
+          : 'Select…';
+      }
     }
 
     return field;
