@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Wave 3 C8: ShortLinkView sweep — flat sections + Mustache + DataFormatter + KnownFieldsCard
+
+- **`src/extensions/admin/shortlinks/ShortLinkView.js`** rewritten end-to-end against the Wave 1 framework primitives and Wave 3 design language:
+  - **Mustache + DataFormatter throughout.** Every section view (`ShortLinkOverviewSection`, `ShortLinkConfigurationSection`, `ShortLinkOgSection`, `ShortLinkMetadataSection`) now uses Mustache string templates with `{{model.field}}`, `{{model.expires_at|datetime}}`, `{{#flag|bool}}…{{/}}` blocks plus view-level getters for derived values. The hand-rolled `_buildTemplate()` methods and local `escapeHtml()` helper are gone.
+  - **Overview KPIs** are four `MetricCard`s at default size (no `metric-card-lg`): Hits · 30d, Hits · 7d, Today, Top country. The `summarizeClicks(...)` helper rolls up the shared 30-day clicks collection.
+  - **Slack/iMessage preview** is now a borderless tinted region (`.sl-preview` family in `admin.css`) inside Overview — NOT wrapped in `.card`. Falls back to gradient placeholder + Bootstrap-Icons link glyph when og:* fields unset.
+  - **Hand-rolled SVG sparkline + 30-day stats card removed** — replaced by the four MetricCards + the dedicated Metrics section's `MetricsChart`.
+  - **Configuration / OG / Social sections** drop `.detail-field-card` wrappers in favor of `.detail-section-eyebrow` + `.detail-flat-row` family.
+  - **Metadata section** wraps `KnownFieldsCard` — raw JSON dump replaced with promoted-keys grid + collapsible raw `<details>`.
+  - **Header `auxFn`** replaces synthetic `_subtitle` with state-aware right-gutter readout. **No `viewDialogOptions` size override** (inherits `Modal.detail()`'s default `'lg'`).
+- **`src/extensions/admin/css/admin.css`** — appended `ShortLinkView · Slack / iMessage preview tile` block with `.sl-preview*` rules using Bootstrap tokens (theme-neutral).
+- **Tests:** `test/unit/ShortLinkView.test.js` adds 7 regression cases — KPIs at default size, no `.card` wrapper on preview, KnownFieldsCard mount on Metadata, sectionsConfig shape, no `size: 'xl'`, auxFn renders, `track_clicks`-aware empty message.
+- **Loader:** registers `ShortLinkView` + `@core/models/ShortLink` and `@ext/charts/index` import paths for stubbing.
+
 ### Wave 3 C4: DeviceView sweep — grow 2→5 sections, threat chips, KnownFieldsCard
 
 - **`src/extensions/admin/account/devices/DeviceView.js`** rewritten end-to-end against the Wave 1 framework primitives and the JobDetailsView/GeoIPView canonical pattern:

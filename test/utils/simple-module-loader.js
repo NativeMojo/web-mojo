@@ -311,8 +311,9 @@ class SimpleModuleLoader {
             },
             'ShortLinkView': {
                 // Same TableView caveat as JobDetailsView. Tests must stub
-                // `global.TableView`, `global.MetricsChart`, and the model
-                // imports (`global.ShortLinkModelsStub`) before loadModule.
+                // `global.TableView`, `global.MetricsChart` (or
+                // `global.ChartsStub.MetricsChart`), and the model imports
+                // (`global.ShortLinkModelsStub`) before loadModule.
                 path: path.join(this.sourceRoot, 'extensions/admin/shortlinks/ShortLinkView.js'),
                 dependencies: ['View', 'DetailView', 'Modal', 'MetricCard', 'KnownFieldsCard', 'MOJOUtils', 'dataFormatter']
             },
