@@ -308,6 +308,14 @@ class SimpleModuleLoader {
                 // Tests stub `global.TableView` before calling loadModule.
                 path: path.join(this.sourceRoot, 'extensions/admin/jobs/JobDetailsView.js'),
                 dependencies: ['View', 'DetailView', 'Modal', 'StatusPanel', 'Timeline', 'MOJOUtils']
+            },
+            'ShortLinkView': {
+                // Same TableView caveat as JobDetailsView. Tests must stub
+                // `global.TableView`, `global.ChartsStub.MetricsChart`, and the
+                // model imports (`global.ShortLinkModelsStub`) before
+                // `loadModule('ShortLinkView')`.
+                path: path.join(this.sourceRoot, 'extensions/admin/shortlinks/ShortLinkView.js'),
+                dependencies: ['View', 'DetailView', 'Modal', 'MetricCard', 'KnownFieldsCard', 'MOJOUtils', 'dataFormatter']
             }
         };
 
@@ -500,7 +508,9 @@ class SimpleModuleLoader {
             { test: /\/FlowStrip(\.js)?$/, name: 'FlowStrip' },
             { test: /\/KnownFieldsCard(\.js)?$/, name: 'KnownFieldsCard' },
             { test: /\/DetailView(\.js)?$/, name: 'DetailView' },
-            { test: /admin\/models\/Job(\.js)?$/, name: 'JobModelsStub' }
+            { test: /admin\/models\/Job(\.js)?$/, name: 'JobModelsStub' },
+            { test: /core\/models\/ShortLink(\.js)?$/, name: 'ShortLinkModelsStub' },
+            { test: /charts\/index(\.js)?$/, name: 'ChartsStub' }
         ];
         for (const rule of rules) {
             if (rule.test.test(importPath)) return rule.name;
