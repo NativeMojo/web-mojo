@@ -680,17 +680,19 @@
     font-weight: 600;
 }
 
-/* --- underline-all: underline + thin vertical dividers ----------------- */
+/* --- underline-all: continuous 2px line across the whole bar; the active
+       tab's segment paints in primary by overlaying the bar's bottom
+       border at the same y-position (Bootstrap nav-tabs-style overlap).
+*/
 .tab-view-variant-underline-all {
-    gap: 0;
+    border-bottom: 2px solid var(--bs-border-color);
 }
 .tab-view-variant-underline-all .nav-link {
-    padding-bottom: calc(0.4rem + 2px);
+    /* extend the link 2px past its parent so its own border-bottom sits
+       directly on top of the bar's border-bottom — no double line */
+    margin-bottom: -2px;
     border-bottom: 2px solid transparent;
     border-radius: 0;
-}
-.tab-view-variant-underline-all .nav-item + .nav-item .nav-link {
-    border-left: 1px solid var(--bs-border-color-translucent);
 }
 .tab-view-variant-underline-all .nav-link:hover {
     color: var(--bs-primary);
@@ -728,20 +730,29 @@
     background: color-mix(in srgb, var(--bs-primary) 90%, #000 10%);
 }
 
-/* --- segmented: connected, neutral container, solid primary active ----- */
+/* --- segmented: connected, neutral container, solid primary active -----
+   No padding inside the container — the active tab fills its slot edge
+   to edge. First/last buttons inherit the container's outer rounding so
+   the curve reads as one shape. (Bootstrap btn-group corner pattern.)
+*/
 .tab-view-variant-segmented {
     display: inline-flex;
     gap: 0;
-    padding: 0.2rem;
     background: var(--bs-secondary-bg);
     border-radius: var(--bs-border-radius);
-}
-.tab-view-variant-segmented .nav-item + .nav-item {
-    margin-left: 0.15rem;
+    overflow: hidden; /* belt-and-suspenders for the rounded corners */
 }
 .tab-view-variant-segmented .nav-link {
     color: var(--bs-secondary-color);
-    border-radius: calc(var(--bs-border-radius) - 0.15rem);
+    border-radius: 0;
+}
+.tab-view-variant-segmented .nav-item:first-child .nav-link {
+    border-top-left-radius: var(--bs-border-radius);
+    border-bottom-left-radius: var(--bs-border-radius);
+}
+.tab-view-variant-segmented .nav-item:last-child .nav-link {
+    border-top-right-radius: var(--bs-border-radius);
+    border-bottom-right-radius: var(--bs-border-radius);
 }
 .tab-view-variant-segmented .nav-link:hover {
     color: var(--bs-primary);

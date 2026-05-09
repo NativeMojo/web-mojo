@@ -950,7 +950,7 @@ TabView ships eight named visual variants. Pick one with `variant`:
 new TabView({ tabs, variant: 'minimal' });        // default
 new TabView({ tabs, variant: 'traditional' });    // classic Bootstrap nav-tabs
 new TabView({ tabs, variant: 'underline' });      // primary underline under active label
-new TabView({ tabs, variant: 'underline-all' });  // underline + dividers between tabs
+new TabView({ tabs, variant: 'underline-all' });  // continuous bottom line, primary on active
 new TabView({ tabs, variant: 'pills' });          // soft pill on active, no border
 new TabView({ tabs, variant: 'pills-solid' });    // solid primary pill on active
 new TabView({ tabs, variant: 'segmented' });      // connected, neutral container, primary active
@@ -962,7 +962,7 @@ new TabView({ tabs, variant: 'btn-group' });      // Bootstrap btn-group, border
 | `minimal` | Text only. Active label paints in `--bs-primary`. No border, no underline. |
 | `traditional` | Classic Bootstrap `nav-tabs` — hairline bottom border on the bar with a primary underline + side borders on the active tab. The pre-`variant` default. |
 | `underline` | Plain text row; a 2px primary underline appears beneath the active label only. No bar bottom-border. |
-| `underline-all` | Like `underline`, but with thin 1px vertical dividers between every tab. |
+| `underline-all` | A continuous 2px line runs across the bottom of the whole bar (`--bs-border-color`); the active tab's segment paints in primary, overlaying the bar's underline so it reads as one underline with the active section highlighted. |
 | `pills` | Inactive tabs are plain text. Active tab gets a `--bs-primary-bg-subtle` rounded pill with primary text — no border. |
 | `pills-solid` | Same shape as `pills`, but the active pill is solid `bg-primary` with white text. |
 | `segmented` | All tabs sit inside a `--bs-secondary-bg` rounded container, no separators. Active tab is `bg-primary` with white text and pops over the neutral container. |
