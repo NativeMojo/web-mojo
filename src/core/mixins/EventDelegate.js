@@ -6,76 +6,102 @@ export class EventDelegate {
     this.debounceTimers = new Map();
   }
 
+  // Synchronously claim a slot in the per-event dispatch chain. MUST be
+  // called at the top of each event listener — before any `await` — so
+  // ancestor delegates whose listeners run synchronously after us see our
+  // promise and wait for our work to finish before checking
+  // `event.handledByChild`. Returns `{ prior, done }`: caller awaits `prior`
+  // (if set) before its own work, and MUST call `done()` in a `finally` so
+  // ancestors never deadlock.
+  _enterDispatchChain(event) {
+    const prior = event._mojoDispatch;
+    let resolve;
+    event._mojoDispatch = new Promise(r => { resolve = r; });
+    return { prior, done: resolve };
+  }
+
   bind(rootEl) {
     this.unbind();
     if (!rootEl) return;
 
     const onClick = async (event) => {
-      const actionEl = event.target.closest('[data-action]');
-      if (actionEl && this.shouldHandle(actionEl, event)) {
-        const action = actionEl.getAttribute('data-action');
+      const { prior, done } = this._enterDispatchChain(event);
+      try {
+        if (prior) await prior;
 
-        // Prevent default immediately for anchor tags to avoid navigation
-        // before async dispatch completes (e.g. <a href="#" data-action="...">)
-        if (actionEl.tagName === 'A') {
-          event.preventDefault();
+        const actionEl = event.target.closest('[data-action]');
+        if (actionEl && this.shouldHandle(actionEl, event)) {
+          const action = actionEl.getAttribute('data-action');
+
+          // Prevent default immediately for anchor tags to avoid navigation
+          // before async dispatch completes (e.g. <a href="#" data-action="...">)
+          if (actionEl.tagName === 'A') {
+            event.preventDefault();
+          }
+
+          // Hide any tooltips on the clicked element
+          this.hideTooltip(actionEl);
+
+          const handled = await this.dispatch(action, event, actionEl);
+          if (handled) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.handledByChild = true;
+            return;
+          }
         }
+        const navEl = event.target.closest('a[href], [data-page]');
+        if (navEl && !navEl.hasAttribute('data-action') && this.shouldHandle(navEl, event)) {
+          if (event.ctrlKey || event.metaKey || event.shiftKey || event.button === 1) return;
+          if (navEl.tagName === 'A') {
+            const href = navEl.getAttribute('href');
+            if (href && href !== '#' && !href.startsWith('#') &&
+                (this.view.isExternalLink(href) || navEl.hasAttribute('data-external'))) return;
+          }
 
-        // Hide any tooltips on the clicked element
-        this.hideTooltip(actionEl);
+          // Hide any tooltips on the clicked element before navigation
+          this.hideTooltip(navEl);
 
-        const handled = await this.dispatch(action, event, actionEl);
-        if (handled) {
           event.preventDefault();
           event.stopPropagation();
           event.handledByChild = true;
-          return;
+          if (navEl.hasAttribute('data-page')) await this.view.handlePageNavigation(navEl);
+          else await this.view.handleHrefNavigation(navEl);
         }
-      }
-      const navEl = event.target.closest('a[href], [data-page]');
-      if (navEl && !navEl.hasAttribute('data-action') && this.shouldHandle(navEl, event)) {
-        if (event.ctrlKey || event.metaKey || event.shiftKey || event.button === 1) return;
-        if (navEl.tagName === 'A') {
-          const href = navEl.getAttribute('href');
-          if (href && href !== '#' && !href.startsWith('#') &&
-              (this.view.isExternalLink(href) || navEl.hasAttribute('data-external'))) return;
-        }
-
-        // Hide any tooltips on the clicked element before navigation
-        this.hideTooltip(navEl);
-
-        event.preventDefault();
-        event.stopPropagation();
-        event.handledByChild = true;
-        if (navEl.hasAttribute('data-page')) await this.view.handlePageNavigation(navEl);
-        else await this.view.handleHrefNavigation(navEl);
+      } finally {
+        done();
       }
     };
 
-    const onChange = (event) => {
-      // `data-change-action` always wins for change events (existing behavior).
-      const changeEl = event.target.closest('[data-change-action]');
-      if (changeEl && this.shouldHandle(changeEl, event)) {
-        const action = changeEl.getAttribute('data-change-action');
-        this.dispatchChange(action, event, changeEl).then((handled) => {
-          if (handled) {
-            event.stopPropagation();
-            event.handledByChild = true;
-          }
-        });
-        return;
-      }
+    const onChange = async (event) => {
+      const { prior, done } = this._enterDispatchChain(event);
+      try {
+        if (prior) await prior;
 
-      // Fallback: `data-action` on a form control fires onAction* on change.
-      const actionEl = event.target.closest('[data-action]');
-      if (actionEl && this.isFormControl(actionEl) && this.shouldHandle(actionEl, event)) {
-        const action = actionEl.getAttribute('data-action');
-        this.dispatch(action, event, actionEl).then((handled) => {
+        // `data-change-action` always wins for change events (existing behavior).
+        const changeEl = event.target.closest('[data-change-action]');
+        if (changeEl && this.shouldHandle(changeEl, event)) {
+          const action = changeEl.getAttribute('data-change-action');
+          const handled = await this.dispatchChange(action, event, changeEl);
           if (handled) {
             event.stopPropagation();
             event.handledByChild = true;
           }
-        });
+          return;
+        }
+
+        // Fallback: `data-action` on a form control fires onAction* on change.
+        const actionEl = event.target.closest('[data-action]');
+        if (actionEl && this.isFormControl(actionEl) && this.shouldHandle(actionEl, event)) {
+          const action = actionEl.getAttribute('data-action');
+          const handled = await this.dispatch(action, event, actionEl);
+          if (handled) {
+            event.stopPropagation();
+            event.handledByChild = true;
+          }
+        }
+      } finally {
+        done();
       }
     };
 
@@ -145,23 +171,31 @@ export class EventDelegate {
       });
     };
 
-    const onKeyDown = (event) => {
+    const onKeyDown = async (event) => {
       if (event.target.matches('[data-filter="search"]')) return;
       const el = event.target.closest('[data-keydown-action]') || event.target.closest('[data-change-action]');
-      if (!el || !this.shouldHandle(el, event)) return;
-      let changeKeys = ["Enter"];
-      if (el.getAttribute('data-change-keys')) {
-          changeKeys = el.getAttribute('data-change-keys').split(',').map(key => key.trim());
-      }
-      if (changeKeys.includes('*') || changeKeys.includes(event.key)) {
-        const action = el.getAttribute('data-keydown-action') || el.getAttribute('data-change-action');
-        this.dispatch(action, event, el).then((handled) => {
+      if (!el) return;
+
+      const { prior, done } = this._enterDispatchChain(event);
+      try {
+        if (prior) await prior;
+        if (!this.shouldHandle(el, event)) return;
+
+        let changeKeys = ["Enter"];
+        if (el.getAttribute('data-change-keys')) {
+            changeKeys = el.getAttribute('data-change-keys').split(',').map(key => key.trim());
+        }
+        if (changeKeys.includes('*') || changeKeys.includes(event.key)) {
+          const action = el.getAttribute('data-keydown-action') || el.getAttribute('data-change-action');
+          const handled = await this.dispatch(action, event, el);
           if (handled) {
             event.preventDefault();
             event.stopPropagation();
             event.handledByChild = true;
           }
-        });
+        }
+      } finally {
+        done();
       }
     };
 

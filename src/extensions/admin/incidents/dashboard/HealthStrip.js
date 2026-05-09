@@ -149,7 +149,7 @@ class HealthStrip extends View {
         await model.fetch();
         if (!model.id) return;
         const view = new IncidentView({ model });
-        await Modal.show(view, { size: 'xl', header: false });
+        await Modal.detail(view);
     }
 }
 

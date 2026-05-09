@@ -37,6 +37,190 @@ module.exports = async function(testContext) {
         return ev;
     }
 
+    /**
+     * Build a parent View with a child View nested inside it. The parent's
+     * template must include a `<div data-slot></div>` where the child's
+     * element is inserted. Both Views get their delegates bound, and the
+     * child is registered via `addChild` so EventDelegate.shouldHandle's
+     * `owns` / `contains` distinction works correctly.
+     */
+    async function mountNested({ parentTemplate, childTemplate, parentProps = {}, childProps = {} }) {
+        const container = testHelpers.createTestContainer();
+
+        const child = new View({ tagName: 'div', template: childTemplate, ...childProps });
+        await child.render();
+
+        const parent = new View({ tagName: 'div', template: parentTemplate, ...parentProps });
+        await parent.render();
+
+        const slot = parent.element.querySelector('[data-slot]');
+        slot.appendChild(child.element);
+
+        container.appendChild(parent.element);
+
+        parent.addChild(child);
+
+        parent.bindEvents();
+        child.bindEvents();
+        parent.mounted = true;
+        child.mounted = true;
+
+        return { parent, child };
+    }
+
+    describe('EventDelegate — nested delegate isolation', () => {
+        let parent, child;
+
+        afterEach(() => {
+            if (child) { child.unbindEvents(); child = null; }
+            if (parent) {
+                parent.unbindEvents();
+                if (parent.element && parent.element.parentNode) {
+                    parent.element.parentNode.removeChild(parent.element);
+                }
+                parent = null;
+            }
+            testHelpers.cleanupTestContainer();
+        });
+
+        async function settle() {
+            for (let i = 0; i < 5; i++) await Promise.resolve();
+        }
+
+        it('inner truthy onAction* (sync) stops parent dispatch', async () => {
+            ({ parent, child } = await mountNested({
+                parentTemplate: '<div><div data-slot></div></div>',
+                childTemplate: '<button data-action="edit-meta">Edit</button>',
+            }));
+            const calls = { parent: 0, child: 0 };
+            parent.onActionEditMeta = function() { calls.parent++; return true; };
+            child.onActionEditMeta = function() { calls.child++; return true; };
+
+            child.element.querySelector('button').click();
+            await settle();
+
+            expect(calls.child).toBe(1);
+            expect(calls.parent).toBe(0);
+        });
+
+        it('inner truthy onAction* (async) stops parent dispatch — regression for async race', async () => {
+            ({ parent, child } = await mountNested({
+                parentTemplate: '<div><div data-slot></div></div>',
+                childTemplate: '<button data-action="edit-meta">Edit</button>',
+            }));
+            const calls = { parent: 0, child: 0 };
+            parent.onActionEditMeta = async function() { calls.parent++; return true; };
+            child.onActionEditMeta = async function() {
+                await Promise.resolve();
+                await Promise.resolve();
+                calls.child++;
+                return true;
+            };
+
+            child.element.querySelector('button').click();
+            await settle();
+
+            expect(calls.child).toBe(1);
+            expect(calls.parent).toBe(0);
+        });
+
+        it('inner falsy onAction* lets parent dispatch (preserves existing delegate-up contract)', async () => {
+            ({ parent, child } = await mountNested({
+                parentTemplate: '<div><div data-slot></div></div>',
+                childTemplate: '<button data-action="edit-meta">Edit</button>',
+            }));
+            const order = [];
+            parent.onActionEditMeta = async function() { order.push('parent'); return true; };
+            child.onActionEditMeta = async function() { order.push('child'); return false; };
+
+            child.element.querySelector('button').click();
+            await settle();
+
+            expect(order).toEqual(['child', 'parent']);
+        });
+
+        it('inner handleAction* (always-consume) stops parent dispatch', async () => {
+            ({ parent, child } = await mountNested({
+                parentTemplate: '<div><div data-slot></div></div>',
+                childTemplate: '<button data-action="save">Save</button>',
+            }));
+            const calls = { parent: 0, child: 0 };
+            parent.onActionSave = async function() { calls.parent++; return true; };
+            child.handleActionSave = async function() { calls.child++; };
+
+            child.element.querySelector('button').click();
+            await settle();
+
+            expect(calls.child).toBe(1);
+            expect(calls.parent).toBe(0);
+        });
+
+        it('inner onPassThruAction* never consumes — parent still fires', async () => {
+            ({ parent, child } = await mountNested({
+                parentTemplate: '<div><div data-slot></div></div>',
+                childTemplate: '<button data-action="track">Track</button>',
+            }));
+            const order = [];
+            parent.onActionTrack = async function() { order.push('parent'); return true; };
+            child.onPassThruActionTrack = async function() { order.push('child'); };
+
+            child.element.querySelector('button').click();
+            await settle();
+
+            expect(order).toEqual(['child', 'parent']);
+        });
+
+        it('only parent has the handler — parent fires once', async () => {
+            ({ parent, child } = await mountNested({
+                parentTemplate: '<div><div data-slot></div></div>',
+                childTemplate: '<button data-action="edit-meta">Edit</button>',
+            }));
+            const calls = { parent: 0 };
+            parent.onActionEditMeta = async function() { calls.parent++; return true; };
+
+            child.element.querySelector('button').click();
+            await settle();
+
+            expect(calls.parent).toBe(1);
+        });
+
+        it('three-level nesting: deepest truthy consume stops both ancestors', async () => {
+            const container = testHelpers.createTestContainer();
+            const leaf = new View({ tagName: 'div', template: '<button data-action="edit-meta">x</button>' });
+            await leaf.render();
+            const mid = new View({ tagName: 'div', template: '<div><div data-slot></div></div>' });
+            await mid.render();
+            const grand = new View({ tagName: 'div', template: '<div><div data-slot></div></div>' });
+            await grand.render();
+
+            mid.element.querySelector('[data-slot]').appendChild(leaf.element);
+            grand.element.querySelector('[data-slot]').appendChild(mid.element);
+            container.appendChild(grand.element);
+
+            mid.addChild(leaf);
+            grand.addChild(mid);
+
+            grand.bindEvents(); mid.bindEvents(); leaf.bindEvents();
+            grand.mounted = mid.mounted = leaf.mounted = true;
+
+            const calls = { grand: 0, mid: 0, leaf: 0 };
+            grand.onActionEditMeta = async function() { calls.grand++; return true; };
+            mid.onActionEditMeta   = async function() { calls.mid++;   return true; };
+            leaf.onActionEditMeta  = async function() { calls.leaf++;  return true; };
+
+            try {
+                leaf.element.querySelector('button').click();
+                await settle();
+                expect(calls.leaf).toBe(1);
+                expect(calls.mid).toBe(0);
+                expect(calls.grand).toBe(0);
+            } finally {
+                leaf.unbindEvents(); mid.unbindEvents(); grand.unbindEvents();
+                if (grand.element.parentNode) grand.element.parentNode.removeChild(grand.element);
+            }
+        });
+    });
+
     describe('EventDelegate — data-action on form controls', () => {
         let view;
 

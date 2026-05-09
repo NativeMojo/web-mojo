@@ -3,8 +3,6 @@ import ContextMenu from '@core/views/feedback/ContextMenu.js';
 import { Ticket, TicketForms } from '@ext/admin/models/Tickets.js';
 import { Incident } from '@ext/admin/models/Incident.js';
 import { UserList } from '@core/models/User.js';
-import ChatView from '@core/views/chat/ChatView.js';
-import TicketNoteAdapter from './adapters/TicketNoteAdapter.js';
 import Modal from '@core/views/feedback/Modal.js';
 import IncidentView from './IncidentView.js';
 import rest from '@core/Rest.js';
@@ -42,32 +40,6 @@ async function renderMarkdown(markdown) {
 }
 
 
-// ── Ticket Description Section ──────────────────────────
-
-class TicketDescriptionSection extends View {
-    constructor(options = {}) {
-        super({
-            className: 'ticket-description-section',
-            ...options
-        });
-
-        this.descriptionHtml = '';
-        this.template = `
-            <div class="card mb-3">
-                <div class="card-body">
-                    <div class="ticket-description-content">{{{descriptionHtml}}}</div>
-                </div>
-            </div>
-        `;
-    }
-
-    async onBeforeRender() {
-        const description = this.model.get('description') || '';
-        this.descriptionHtml = await renderMarkdown(description);
-    }
-}
-
-
 // ── Linked Incident Card ────────────────────────────────
 
 class LinkedIncidentCard extends View {
@@ -83,7 +55,6 @@ class LinkedIncidentCard extends View {
         this.incidentStatus = this.incident.status || 'unknown';
         this.incidentPriority = this.incident.priority;
         this.incidentCategory = this.incident.category || '';
-        this.incidentScope = this.incident.scope || '';
 
         this.template = `
             <div class="card border-start border-3 border-warning mb-3">
@@ -121,7 +92,7 @@ class LinkedIncidentCard extends View {
             const incident = new Incident({ id: this.incidentId });
             await incident.fetch({ params: { graph: 'detailed' } });
             const view = new IncidentView({ model: incident });
-            await Modal.show(view, { size: 'xl', header: false });
+            await Modal.detail(view);
         } catch (e) {
             this.getApp()?.toast?.error('Failed to load incident');
         }
@@ -129,7 +100,12 @@ class LinkedIncidentCard extends View {
 }
 
 
-// ── TicketView ──────────────────────────────────────────
+// ── TicketView (Light) ─────────────────────────────────
+//
+// Quick-glance view shown in a dialog when clicking a ticket row.
+// Focused on description and key metadata.
+// "Open Ticket Panel" button at the bottom opens the full
+// slide-over conversation panel.
 
 class TicketView extends View {
     constructor(options = {}) {
@@ -139,11 +115,48 @@ class TicketView extends View {
         });
 
         this.model = options.model || new Ticket(options.data || {});
+    }
+
+    async onBeforeRender() {
+        this.statusBadge = getStatusBadge(this.model.get('status'));
+        const assignee = this.model.get('assignee');
+        this.assigneeName = assignee?.display_name || (typeof assignee === 'string' ? assignee : null);
+        this.hasDescription = !!this.model.get('description');
+        this.descriptionHtml = await renderMarkdown(this.model.get('description') || '');
+        this.noteCount = this.model.get('note_count') || 0;
+        this.hasPanelSupport = !!this.getApp()?.openTicketPanel;
+
+        const pri = this.model.get('priority') || 5;
+        this.priorityClass = pri >= 8 ? 'text-danger' : pri >= 5 ? 'text-warning' : 'text-secondary';
 
         this.template = `
-            <div class="ticket-view-container d-flex flex-column h-100">
-                <!-- Header -->
-                <div class="d-flex justify-content-between align-items-start mb-3 flex-shrink-0">
+            <style>
+                .tv-header { margin-bottom: 16px; }
+                .tv-title { font-size: 1.1rem; font-weight: 600; color: var(--bs-emphasis-color); margin-bottom: 6px; line-height: 1.3; }
+                .tv-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.78rem; color: var(--bs-secondary-color); }
+                .tv-meta i { font-size: 0.72rem; }
+
+                .tv-desc { margin-bottom: 16px; }
+                .tv-desc-label { font-size: 0.72rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; color: var(--bs-secondary-color); margin-bottom: 8px; }
+                .tv-desc-body { font-size: 0.85rem; line-height: 1.65; color: var(--bs-body-color); }
+                .tv-desc-body p { margin-bottom: 8px; }
+                .tv-desc-body p:last-child { margin-bottom: 0; }
+                .tv-desc-body pre { background: var(--bs-tertiary-bg); border-radius: 6px; padding: 10px 14px; font-size: 0.8rem; overflow-x: auto; }
+                .tv-desc-body code { font-size: 0.85em; padding: 1px 5px; background: var(--bs-tertiary-bg); border-radius: 4px; }
+                .tv-desc-body pre code { padding: 0; background: none; }
+                .tv-desc-body ul, .tv-desc-body ol { padding-left: 20px; margin-bottom: 8px; }
+                .tv-desc-body blockquote { margin: 6px 0; padding: 4px 12px; border-left: 3px solid var(--bs-border-color); color: var(--bs-secondary-color); }
+                .tv-desc-body table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin: 8px 0; }
+                .tv-desc-body th, .tv-desc-body td { padding: 5px 8px; border: 1px solid var(--bs-border-color); text-align: left; }
+                .tv-desc-body th { background: var(--bs-tertiary-bg); font-weight: 600; }
+                .tv-desc-empty { font-size: 0.82rem; color: var(--bs-secondary-color); font-style: italic; }
+
+                .tv-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px solid var(--bs-border-color-translucent); }
+                .tv-footer-meta { font-size: 0.75rem; color: var(--bs-secondary-color); display: flex; align-items: center; gap: 4px; }
+            </style>
+
+            <div class="tv-header">
+                <div class="d-flex justify-content-between align-items-start">
                     <div class="flex-grow-1" style="min-width: 0;">
                         <div class="d-flex align-items-center gap-2 mb-1">
                             {{{statusBadge}}}
@@ -152,61 +165,66 @@ class TicketView extends View {
                             {{/model.category}}
                             <span class="text-muted small">Ticket #{{model.id}}</span>
                         </div>
-                        <h4 class="mb-1">{{model.title}}</h4>
-                        <div class="text-muted small d-flex align-items-center gap-3 flex-wrap">
-                            <span><i class="bi bi-flag-fill me-1"></i>Priority {{model.priority}}</span>
+                        <div class="tv-title">{{model.title}}</div>
+                        <div class="tv-meta">
+                            <span><i class="bi bi-flag-fill {{priorityClass}} me-1"></i>P{{model.priority}}</span>
                             {{#assigneeName}}
+                                <span>&middot;</span>
                                 <span><i class="bi bi-person-fill me-1"></i>{{assigneeName}}</span>
                             {{/assigneeName}}
+                            {{#model.group.name}}
+                                <span>&middot;</span>
+                                <span><i class="bi bi-people me-1"></i>{{model.group.name}}</span>
+                            {{/model.group.name}}
                             {{#model.created}}
+                                <span>&middot;</span>
                                 <span><i class="bi bi-clock me-1"></i>{{model.created|relative}}</span>
                             {{/model.created}}
-                            {{#model.modified}}
-                                <span><i class="bi bi-pencil me-1"></i>{{model.modified|relative}}</span>
-                            {{/model.modified}}
                         </div>
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                        <button class="btn btn-outline-primary btn-sm" data-action="ask-ai" data-bs-toggle="tooltip" title="Chat with AI about this ticket">
-                            <i class="bi bi-robot me-1"></i>Ask AI
-                        </button>
                         <div data-container="ticket-context-menu"></div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Linked Incident -->
-                <div data-container="linked-incident"></div>
+            <!-- Linked Incident -->
+            <div data-container="linked-incident"></div>
 
-                <!-- Description (collapsible) -->
-                {{#hasDescription|bool}}
-                <div class="mb-3">
-                    <a class="text-muted small d-inline-flex align-items-center gap-1" data-bs-toggle="collapse" href="#ticket-desc-{{model.id}}" role="button" aria-expanded="false">
-                        <i class="bi bi-chevron-right"></i>
-                        <i class="bi bi-file-text me-1"></i>Description
-                    </a>
-                    <div class="collapse" id="ticket-desc-{{model.id}}">
-                        <div data-container="ticket-description" class="mt-2"></div>
-                    </div>
-                </div>
-                {{/hasDescription|bool}}
-
-                <!-- Chat / Notes -->
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <h6 class="mb-0 text-muted"><i class="bi bi-chat-left-text me-1"></i>Notes</h6>
-                    <button class="btn btn-outline-secondary btn-sm" data-action="refresh-notes">
-                        <i class="bi bi-arrow-clockwise"></i>
+            <!-- Description -->
+            <div class="tv-desc">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <div class="tv-desc-label mb-0"><i class="bi bi-file-text me-1"></i>Description</div>
+                    <button class="btn btn-link btn-sm text-muted p-0" data-action="edit-description" title="Edit description" style="font-size: 0.75rem;">
+                        <i class="bi bi-pencil me-1"></i>Edit
                     </button>
                 </div>
-                <div class="flex-grow-1" style="min-height: 0;" data-container="chat-view"></div>
+                {{#hasDescription|bool}}
+                    <div class="tv-desc-body">{{{descriptionHtml}}}</div>
+                {{/hasDescription|bool}}
+                {{^hasDescription|bool}}
+                    <div class="tv-desc-empty">No description provided.</div>
+                {{/hasDescription|bool}}
+            </div>
+
+            <!-- Footer -->
+            <div class="tv-footer">
+                <div class="tv-footer-meta">
+                    <i class="bi bi-chat-left-text"></i>
+                    {{noteCount}} note{{#noteCount}}{{/noteCount}}s
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" data-action="ask-ai">
+                        <i class="bi bi-robot me-1"></i>Ask AI
+                    </button>
+                    {{#hasPanelSupport|bool}}
+                    <button class="btn btn-primary btn-sm" data-action="open-panel">
+                        <i class="bi bi-layout-sidebar-reverse me-1"></i>Open Ticket Panel
+                    </button>
+                    {{/hasPanelSupport|bool}}
+                </div>
             </div>
         `;
-    }
-
-    async onBeforeRender() {
-        this.statusBadge = getStatusBadge(this.model.get('status'));
-        const assignee = this.model.get('assignee');
-        this.assigneeName = assignee?.display_name || (typeof assignee === 'string' ? assignee : null);
-        this.hasDescription = !!this.model.get('description');
     }
 
     async onInit() {
@@ -219,27 +237,6 @@ class TicketView extends View {
             });
             this.addChild(this.linkedIncident);
         }
-
-        // Description
-        if (this.model.get('description')) {
-            this.descriptionView = new TicketDescriptionSection({
-                containerId: 'ticket-description',
-                model: this.model
-            });
-            this.addChild(this.descriptionView);
-        }
-
-        // Chat View
-        this.adapter = new TicketNoteAdapter(this.model.get('id'));
-        this.chatView = new ChatView({
-            containerId: 'chat-view',
-            adapter: this.adapter,
-            theme: 'compact',
-            currentUserId: this.getCurrentUserId(),
-            inputPlaceholder: 'Add a note...',
-            inputButtonText: 'Add Note'
-        });
-        this.addChild(this.chatView);
 
         // Context Menu
         const ticketMenu = new ContextMenu({
@@ -262,21 +259,53 @@ class TicketView extends View {
         this.addChild(ticketMenu);
     }
 
-    getCurrentUserId() {
-        const currentUser = window.app?.state?.user;
-        return currentUser?.id || null;
+    // ── Actions ──
+
+    async onActionEditDescription() {
+        const current = this.model.get('description') || '';
+        const escaped = current
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const body = `
+            <textarea data-ref="desc-textarea" rows="14" placeholder="Description (markdown supported)..."
+                style="width:100%; font-family: var(--bs-font-monospace); font-size: 0.85rem; padding: 10px 12px; border: 1px solid var(--bs-border-color); border-radius: 8px; background: var(--bs-body-bg); color: var(--bs-body-color); resize: vertical; outline: none;">${escaped}</textarea>
+            <div class="text-muted small mt-1">Markdown supported</div>
+        `;
+        const choice = await Modal.dialog({
+            title: `Ticket #${this.model.get('id')} — Edit Description`,
+            body,
+            size: 'lg',
+            buttons: [
+                { text: 'Cancel', class: 'btn-secondary', value: null },
+                {
+                    text: 'Save', class: 'btn-primary',
+                    handler: () => {
+                        const ta = document.querySelector('.modal.show [data-ref="desc-textarea"]');
+                        return ta ? ta.value : null;
+                    }
+                }
+            ]
+        });
+        if (choice === null || choice === undefined) return;
+        await this.model.save({ description: choice });
+        this.render();
     }
 
-    async onActionRefreshNotes() {
-        await this.chatView.refresh();
-        this.getApp()?.toast?.success('Notes refreshed');
+    async onActionOpenPanel() {
+        const app = this.getApp();
+        if (!app?.openTicketPanel) return;
+
+        // Close the dialog, then open the panel
+        const dialog = this.element?.closest('.modal');
+        if (dialog) {
+            const bsModal = window.bootstrap?.Modal?.getInstance(dialog);
+            if (bsModal) bsModal.hide();
+        }
+        app.openTicketPanel(this.model);
     }
 
     async onActionAskAi() {
         await openAssistantChat(this, 'incident.Ticket');
     }
-
-    // ── Context Menu Actions ──
 
     async onActionEditTicket() {
         const resp = await Modal.modelForm({

@@ -132,14 +132,6 @@ class TicketTablePage extends TablePage {
                 responsive: false
             },
 
-            onItemView: (model) => {
-                const app = this.getApp();
-                if (app?.openTicketPanel) {
-                    // Pass the model instance so the panel and table share state
-                    app.openTicketPanel(model);
-                }
-            },
-
             ...options
         });
     }

@@ -21,7 +21,9 @@ export default class BlockedIPsTablePage extends TablePage {
 
             viewDialogOptions: {
                 header: false,
-                size: 'xl'
+                size: 'xl',
+                noBodyPadding: true,
+                buttons: []
             },
 
             defaultQuery: {
