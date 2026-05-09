@@ -53,7 +53,7 @@ TabView is a responsive tabbed interface component that automatically adapts to 
 - **Smooth fade transitions** - Professional fade-in/fade-out animations between tabs
 - **Automatic responsive adaptation** - Switches between tabs and dropdown based on available space
 - **Child view management** - Properly mounts/unmounts views with lifecycle support
-- **Bootstrap 5 integration** - Uses native Bootstrap nav-tabs and dropdown components
+- **Five visual variants** - `minimal` (default), `underline`, `pills`, `segmented`, `segmented-solid`; all theme-aware
 - **Keyboard navigation** - Full keyboard accessibility support
 - **Event-driven** - Emits events for tab changes and mode switches
 - **Lazy mounting** - Tab content only renders when activated
@@ -201,9 +201,9 @@ const tabView = new TabView({
     'Reports': reportsView
   },
   activeTab: 'Dashboard',
-  tabsClass: 'nav nav-tabs nav-fill mb-4',
-  enableTransitions: true,    // Enable smooth fade transitions (default)
-  transitionDuration: 200,    // Custom 200ms transition
+  variant: 'underline',        // underline = classic nav-tabs look
+  enableTransitions: true,     // Enable smooth fade transitions (default)
+  transitionDuration: 200,     // Custom 200ms transition
   minWidth: 400,
   dropdownStyle: 'button',
   enableResponsive: true
@@ -903,9 +903,9 @@ await settingsView.render();
 
 ### CSS Classes
 
-TabView uses Bootstrap 5 classes by default:
+The rendered HTML depends on which `variant` is active. The default (`minimal`) produces a plain nav list with `tab-view-variant-minimal`; `underline` produces the classic Bootstrap `nav nav-tabs mb-3`. Example for `underline`:
 
-**Tab Navigation (tabs mode):**
+**Tab Navigation (tabs mode, `variant: 'underline'`):**
 ```html
 <ul class="nav nav-tabs mb-3" role="tablist">
   <li class="nav-item" role="presentation">
@@ -978,12 +978,12 @@ const tabView = new TabView({
 });
 ```
 
-**Available Bootstrap nav styles:**
-- `nav-tabs` - Standard tabs (default)
+**Useful Bootstrap nav utilities to layer via `tabsClass`:**
+- `nav-tabs` - Underline tabs (equivalent to `variant: 'underline'`)
 - `nav-pills` - Pill-shaped tabs
 - `nav-underline` - Underlined tabs
-- `nav-fill` - Equal width tabs
-- `nav-justified` - Full width tabs
+- `nav-fill` - Equal-width tabs
+- `nav-justified` - Full-width tabs
 
 **Custom CSS:**
 
