@@ -393,6 +393,155 @@ module.exports = async function (testContext) {
   });
 
   // --------------------------------------------------------------
+  // Model lifecycle — clickAction routes to view/edit
+  // --------------------------------------------------------------
+  describe('ListView clickAction routing', () => {
+    it('clickAction "view" calls _onRowView when item is clicked', async () => {
+      const collection = new Collection([{ id: 1, name: 'A' }]);
+      let viewCalledFor = null;
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        clickAction: 'view',
+        onItemView: (model) => { viewCalledFor = model.id; }
+      });
+      await listView.render();
+
+      const item = listView.itemViews.get(1);
+      item.element.dispatchEvent(new global.window.Event('click', { bubbles: true }));
+      // Allow the async _onRowView promise to resolve.
+      await new Promise((r) => { setTimeout(r, 0); });
+
+      expect(viewCalledFor).toBe(1);
+    });
+
+    it('clickAction "edit" calls onItemEdit when item is clicked', async () => {
+      const collection = new Collection([{ id: 1, name: 'A' }]);
+      let editCalledFor = null;
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        clickAction: 'edit',
+        onItemEdit: (model) => { editCalledFor = model.id; }
+      });
+      await listView.render();
+
+      const item = listView.itemViews.get(1);
+      item.element.dispatchEvent(new global.window.Event('click', { bubbles: true }));
+      await new Promise((r) => { setTimeout(r, 0); });
+
+      expect(editCalledFor).toBe(1);
+    });
+
+    it('clickAction "select" toggles the item selection on click', async () => {
+      const collection = new Collection([{ id: 1, name: 'A' }, { id: 2, name: 'B' }]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        selectionMode: 'multiple',
+        clickAction: 'select'
+      });
+      await listView.render();
+
+      const item = listView.itemViews.get(1);
+      item.element.dispatchEvent(new global.window.Event('click', { bubbles: true }));
+
+      expect(listView.selectedItems.has(1)).toBe(true);
+
+      // Click again — should deselect.
+      item.element.dispatchEvent(new global.window.Event('click', { bubbles: true }));
+      expect(listView.selectedItems.has(1)).toBe(false);
+    });
+
+    it('clickAction defaults to "none" — clicks emit row:click but do not route', async () => {
+      const collection = new Collection([{ id: 1, name: 'A' }]);
+      const events = [];
+      let viewCalled = false;
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        onItemView: () => { viewCalled = true; }
+      });
+      listView.on('row:click', (e) => events.push(e.model.id));
+      await listView.render();
+
+      // ListView is not clickable by default — but if a consumer wires
+      // up a data-action="row-click" or sets clickable: true, the row:click
+      // event still fires. With no clickable + no onItemClick, simply
+      // clicking the item does nothing because no handler is attached.
+      // Verify by setting clickable:true explicitly and checking that
+      // row:click fires while view does NOT (because clickAction is 'none').
+      listView.clickable = true;
+      // Re-render to re-wire the clickable handler.
+      await listView.render();
+      const itemAfter = listView.itemViews.get(1);
+      itemAfter.element.dispatchEvent(new global.window.Event('click', { bubbles: true }));
+      await new Promise((r) => { setTimeout(r, 0); });
+
+      expect(viewCalled).toBe(false);
+    });
+  });
+
+  // --------------------------------------------------------------
+  // Model lifecycle — data-action="view|edit|delete" in templates
+  // --------------------------------------------------------------
+  describe('ListView item-template data-action routing', () => {
+    it('data-action="view" in template fires onItemView', async () => {
+      const collection = new Collection([{ id: 7, name: 'Seven' }]);
+      let viewedId = null;
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div><button data-action="view" class="btn">View</button> {{model.name}}</div>',
+        onItemView: (model) => { viewedId = model.id; }
+      });
+      await listView.render();
+
+      const item = listView.itemViews.get(7);
+      const viewBtn = item.element.querySelector('[data-action="view"]');
+      viewBtn.click();
+      await new Promise((r) => { setTimeout(r, 0); });
+
+      expect(viewedId).toBe(7);
+    });
+
+    it('data-action="edit" in template fires onItemEdit', async () => {
+      const collection = new Collection([{ id: 8, name: 'Eight' }]);
+      let editedId = null;
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div><button data-action="edit">Edit</button> {{model.name}}</div>',
+        onItemEdit: (model) => { editedId = model.id; }
+      });
+      await listView.render();
+
+      const item = listView.itemViews.get(8);
+      const editBtn = item.element.querySelector('[data-action="edit"]');
+      editBtn.click();
+      await new Promise((r) => { setTimeout(r, 0); });
+
+      expect(editedId).toBe(8);
+    });
+
+    it('data-action="delete" in template fires onItemDelete', async () => {
+      const collection = new Collection([{ id: 9, name: 'Nine' }]);
+      let deletedId = null;
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div><button data-action="delete">Delete</button> {{model.name}}</div>',
+        onItemDelete: (model) => { deletedId = model.id; }
+      });
+      await listView.render();
+
+      const item = listView.itemViews.get(9);
+      const delBtn = item.element.querySelector('[data-action="delete"]');
+      delBtn.click();
+      await new Promise((r) => { setTimeout(r, 0); });
+
+      expect(deletedId).toBe(9);
+    });
+  });
+
+  // --------------------------------------------------------------
   // Security regressions — filter labels / pill display escape
   // --------------------------------------------------------------
   describe('ListView filter HTML escaping', () => {

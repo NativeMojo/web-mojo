@@ -26,9 +26,6 @@
 
 import ListView from '../list/ListView.js';
 import TableRow from './TableRow.js';
-import Mustache from '@core/utils/mustache.js';
-import Modal from '@core/views/feedback/Modal.js';
-import FormView from '@core/forms/FormView.js';
 import dataFormatter from '@core/utils/DataFormatter.js';
 import { parseFilterKey } from '@core/utils/DjangoLookups.js';
 
@@ -410,130 +407,36 @@ class TableView extends ListView {
   }
 
   /**
-   * Override buildActionButtonsTemplate to inject Add / Export / Fullscreen
-   * buttons that depend on TableView-specific config (formConfig, exportSource).
-   * Refresh + custom toolbarButtons + permissions checks come from the parent.
+   * Override buildActionButtonsTemplate to inject the Fullscreen button.
+   * Refresh / Add / Export / custom toolbarButtons all come from the
+   * inherited ListView implementation. Fullscreen is table-only because
+   * full-screening a list of cards isn't a meaningful UX (it would
+   * already use the full viewport).
    */
   buildActionButtonsTemplate() {
-    const buttons = [];
+    let baseButtons = super.buildActionButtonsTemplate();
 
-    // Refresh
-    if (this.showRefresh) {
-      buttons.push(`
-        <button class="btn btn-sm btn-outline-secondary btn-refresh"
-                data-action="refresh"
-                title="Refresh">
-          <i class="bi bi-arrow-clockwise"></i>
-        </button>
-      `);
-    }
-
-    // Fullscreen
     if (this.showFullscreen && this.isFullscreenSupported()) {
-      buttons.push(`
+      const fullscreenBtn = `
         <button class="btn btn-sm btn-outline-secondary btn-fullscreen"
                 data-action="toggle-fullscreen"
                 title="Toggle Fullscreen">
           <i class="bi bi-fullscreen"></i>
         </button>
-      `);
-    }
-
-    // Add
-    if (this.options.showAdd) {
-      buttons.push(`
-        <button class="btn btn-sm btn-success btn-add"
-                data-action="add"
-                title="${this.options.addButtonLabel}">
-          <i class="${this.options.addButtonIcon} me-1"></i>
-          <span class="d-none d-lg-inline">${this.options.addButtonLabel}</span>
-        </button>
-      `);
-    }
-
-    // Export
-    if (this.options.showExport) {
-      if (this.exportOptions && this.exportOptions.length > 1) {
-        const dropdownItems = this.exportOptions.map((opt) => `
-          <li>
-            <a class="dropdown-item" href="#" data-action="export" data-format="${opt.format}">
-              <i class="${opt.icon || 'bi bi-file-earmark-arrow-down'} me-2"></i>${opt.label}
-            </a>
-          </li>
-        `).join('');
-
-        buttons.push(`
-          <div class="dropdown">
-            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                    data-bs-toggle="dropdown" aria-expanded="false" title="Export">
-              <i class="bi bi-download me-1"></i>
-              <span class="d-none d-lg-inline">Export</span>
-            </button>
-            <ul class="dropdown-menu">
-              ${dropdownItems}
-            </ul>
-          </div>
-        `);
+      `;
+      // Insert after the refresh button (if present) so the visual order
+      // matches the historical TableView layout: refresh, fullscreen, add,
+      // export, custom.
+      const refreshIdx = baseButtons.indexOf('data-action="refresh"');
+      if (refreshIdx !== -1) {
+        const closingTagEnd = baseButtons.indexOf('</button>', refreshIdx) + '</button>'.length;
+        baseButtons = baseButtons.slice(0, closingTagEnd) + fullscreenBtn + baseButtons.slice(closingTagEnd);
       } else {
-        const format = this.exportOptions && this.exportOptions.length === 1
-          ? this.exportOptions[0].format
-          : 'json';
-        buttons.push(`
-          <button class="btn btn-sm btn-outline-secondary btn-export"
-                  data-action="export"
-                  data-format="${format}"
-                  title="Export">
-            <i class="bi bi-download me-1"></i>
-            <span class="d-none d-lg-inline">Export</span>
-          </button>
-        `);
+        baseButtons = fullscreenBtn + baseButtons;
       }
     }
 
-    // Custom toolbar buttons — defense-in-depth escaping on dev-supplied fields.
-    if (this.toolbarButtons && this.toolbarButtons.length > 0) {
-      this.toolbarButtons.forEach((button, index) => {
-        const {
-          label = 'Button',
-          icon = '',
-          action = '',
-          handler = null,
-          variant = 'outline-secondary',
-          title = label,
-          className = '',
-          permissions = null
-        } = button;
-
-        if (permissions && !this.checkPermissions(permissions)) return;
-
-        const safeIcon = this.escapeHtml(icon);
-        const safeLabel = this.escapeHtml(label);
-        const safeTitle = this.escapeHtml(title);
-        const safeVariant = this.escapeHtml(variant);
-        const safeClassName = this.escapeHtml(className);
-        const safeAction = this.escapeHtml(action);
-
-        const iconHtml = icon ? `<i class="${safeIcon} me-1"></i>` : '';
-        const labelHtml = `<span class="d-none d-lg-inline">${safeLabel}</span>`;
-
-        let dataAttrs = '';
-        if (handler) {
-          dataAttrs = `data-action="custom-toolbar-button" data-button-index="${index}"`;
-        } else if (action) {
-          dataAttrs = `data-action="${safeAction}"`;
-        }
-
-        const btnClass = `btn btn-sm btn-${safeVariant} ${safeClassName}`.trim();
-
-        buttons.push(`
-          <button class="${btnClass}" ${dataAttrs} title="${safeTitle}">
-            ${iconHtml}${labelHtml}
-          </button>
-        `);
-      });
-    }
-
-    return buttons.join('');
+    return baseButtons;
   }
 
   /**
@@ -744,7 +647,11 @@ class TableView extends ListView {
   }
 
   /**
-   * Override _createItemView to pass table-specific options
+   * Override _createItemView to pass table-specific options (columns,
+   * actions, contextMenu, batchActions). Routes through the inherited
+   * `_wireItemViewListeners` for the standard select / click / view /
+   * edit / delete event wiring, then layers on the table-only events
+   * (cell:edit/save/cancel) and the batch-actions select hook.
    */
   _createItemView(model, index) {
     if (this.itemViews.has(model.id)) return this.itemViews.get(model.id);
@@ -764,19 +671,16 @@ class TableView extends ListView {
 
     this.itemViews.set(model.id, itemView);
 
-    itemView.on('item:select', (event) => {
-      this._onItemSelect(event);
-      this.updateBatchActionsPanel();
-    });
-    itemView.on('item:deselect', (event) => {
-      this._onItemDeselect(event);
-      this.updateBatchActionsPanel();
-    });
+    // Standard select / click / row:view/edit/delete listeners.
+    this._wireItemViewListeners(itemView);
 
-    itemView.on('row:click', this._onRowClick.bind(this));
-    itemView.on('row:view', this._onRowView.bind(this));
-    itemView.on('row:edit', this._onRowEdit.bind(this));
-    itemView.on('row:delete', this._onRowDelete.bind(this));
+    // Batch-actions panel must update on every selection toggle —
+    // augment the base select handlers (the parent already wired its
+    // own _onItemSelect / _onItemDeselect; we add the panel update on top).
+    itemView.on('item:select', () => this.updateBatchActionsPanel());
+    itemView.on('item:deselect', () => this.updateBatchActionsPanel());
+
+    // Table-only inline cell editing events.
     itemView.on('cell:edit', this._onCellEdit.bind(this));
     itemView.on('cell:save', this._onCellSave.bind(this));
     itemView.on('cell:cancel', this._onCellCancel.bind(this));
@@ -804,218 +708,7 @@ class TableView extends ListView {
     this.updateSortIcons();
   }
 
-  /**
-   * Handle row click event
-   */
-  _onRowClick(event) {
-    this.emit('row:click', event);
-
-    if (this.options.onRowClick) {
-      return this.options.onRowClick(event.model, event.event);
-    }
-
-    if (this.clickAction === 'view') {
-      this._onRowView(event);
-    } else if (this.clickAction === 'edit') {
-      this._onRowEdit(event);
-    }
-  }
-
-  /**
-   * Get the Model class from collection or instance
-   */
-  getModelClass(model) {
-    if (this.collection?.ModelClass) return this.collection.ModelClass;
-    if (this.collection?.model) return this.collection.model;
-    if (model?.constructor) return model.constructor;
-    return null;
-  }
-
-  /**
-   * Get model name for display
-   */
-  getModelName(model) {
-    const ModelClass = this.getModelClass(model);
-    if (!ModelClass) return 'Item';
-    return ModelClass.MODEL_NAME ||
-           ModelClass.name.replace(/Model$/, '') ||
-           'Item';
-  }
-
-  /**
-   * Resolve item view class with fallbacks
-   */
-  getItemViewClass(model) {
-    if (this.itemView) return this.itemView;
-    const ModelClass = this.getModelClass(model);
-    if (ModelClass?.VIEW_CLASS) return ModelClass.VIEW_CLASS;
-    return null;
-  }
-
-  /**
-   * Resolve add form configuration with fallbacks
-   */
-  getAddFormConfig(ModelClass) {
-    return this.addForm ||
-           ModelClass?.ADD_FORM ||
-           this.editForm ||
-           ModelClass?.EDIT_FORM;
-  }
-
-  /**
-   * Resolve edit form configuration with fallbacks
-   */
-  getEditFormConfig(ModelClass) {
-    return this.editForm ||
-           ModelClass?.EDIT_FORM ||
-           this.addForm ||
-           ModelClass?.ADD_FORM;
-  }
-
-  /**
-   * Get form dialog configuration
-   */
-  getFormDialogConfig(ModelClass) {
-    return {
-      ...ModelClass?.FORM_DIALOG_CONFIG,
-      ...this.formDialogConfig
-    };
-  }
-
-  /**
-   * Render a template string with model context
-   */
-  renderTemplateString(template, model) {
-    if (!template) return '';
-    return Mustache.render(template, model);
-  }
-
-  /**
-   * Handle row view action
-   */
-  async _onRowView(event) {
-    this.emit('row:view', event);
-
-    if (this.options.onItemView) {
-      await this.options.onItemView(event.model, event.event);
-      return;
-    }
-
-    if (this.fetchOnView) {
-      try {
-        Modal.loading();
-        await event.model.fetch();
-      } catch (error) {
-        Modal.hideLoading(true);
-        Modal.showError(error?.data?.error || error?.message || 'Failed to load item details');
-        return;
-      } finally {
-        Modal.hideLoading(true);
-      }
-    }
-
-    const ViewClass = this.getItemViewClass(event.model);
-
-    if (ViewClass) {
-      const viewInstance = new ViewClass({ model: event.model, collection: this.collection });
-      await Modal.dialog({
-        header: false,
-        body: viewInstance,
-        size: 'lg',
-        centered: false,
-        ...this.getFormDialogConfig(this.getModelClass(event.model)),
-        ...this.viewDialogOptions
-      });
-    } else {
-      await Modal.data({
-        title: `View ${this.getModelName(event.model)} #${event.model.id}`,
-        model: event.model
-      });
-    }
-  }
-
-  /**
-   * Handle row edit action
-   */
-  async _onRowEdit(event) {
-    this.emit('row:edit', event);
-
-    if (this.options.onItemEdit) {
-      await this.options.onItemEdit(event.model, event.event);
-      return;
-    }
-
-    const ModelClass = this.getModelClass(event.model);
-    let formConfig = this.getEditFormConfig(ModelClass);
-
-    if (formConfig) {
-      if (!formConfig.fields) {
-        formConfig = { title: `Edit ${this.getModelName(event.model)}`, fields: formConfig };
-      }
-
-      const result = await Modal.modelForm({
-        model: event.model,
-        ...formConfig,
-        ...this.getFormDialogConfig(ModelClass)
-      });
-
-      if (!result) return;
-
-      if (!result.success || !result?.result?.data.status) {
-        Modal.showError(result?.result?.data?.error || result?.result?.message || 'An error occurred');
-        return;
-      }
-    } else {
-      const result = await Modal.dialog({
-        title: `Edit ${this.getModelName(event.model)} #${event.model.id}`,
-        body: new FormView({
-          model: event.model,
-          fields: this.options.formFields || []
-        })
-      });
-
-      if (result) {
-        const resp = await event.model.save(result);
-        if (!resp.data?.status) {
-          Modal.showError(resp.data.error || 'An error occurred');
-          return;
-        }
-        await this.refresh();
-      }
-    }
-  }
-
-  /**
-   * Handle row delete action
-   */
-  async _onRowDelete(event) {
-    this.emit('row:delete', event);
-
-    if (this.options.onItemDelete) {
-      await this.options.onItemDelete(event.model, event.event);
-      return;
-    }
-
-    const ModelClass = this.getModelClass(event.model);
-    const template = this.deleteTemplate ||
-                    ModelClass?.DELETE_TEMPLATE ||
-                    'Are you sure you want to delete this {{name||"item"}}?';
-
-    const message = this.renderTemplateString(template, event.model);
-
-    const confirmed = await Modal.confirm({
-      message: message || 'Are you sure you want to delete this item?',
-      title: 'Confirm Delete',
-      confirmText: 'Delete',
-      confirmClass: 'btn-danger'
-    });
-
-    if (confirmed) {
-      await event.model.destroy();
-      this.collection.fetch();
-    }
-  }
-
+  // -------- Cell-editing events (table-only) --------
   _onCellEdit(event) { this.emit('cell:edit', event); }
   async _onCellSave(event) { this.emit('cell:save', event); }
   _onCellCancel(event) { this.emit('cell:cancel', event); }
@@ -1147,100 +840,23 @@ class TableView extends ListView {
   }
 
   // ============================================================
-  // Add / Export
+  // Add / Export — backwards-compat event names
+  //
+  // The model lifecycle (Add dialog, Export download) lives on ListView
+  // now. TableView keeps thin overrides solely to preserve the
+  // historical `table:add` / `table:export` event names that
+  // TablePage and other consumers listen for.
   // ============================================================
 
-  async onActionAdd(event, _element) {
-    if (this.options.onAdd) {
-      this.emit('table:add', { event });
-      await this.options.onAdd(event);
-      return;
-    }
-
+  async onActionAdd(event, element) {
     this.emit('table:add', { event });
-
-    const ModelClass = this.getModelClass();
-    if (!ModelClass) {
-      console.warn('Cannot determine Model class for add operation');
-      return;
-    }
-
-    let formConfig = this.getAddFormConfig(ModelClass);
-
-    if (formConfig) {
-      const model = new ModelClass();
-      if (!formConfig.fields) {
-        formConfig = { title: `Add ${this.getModelName()}`, fields: formConfig };
-      }
-
-      const result = await Modal.form({
-        model: model,
-        ...formConfig,
-        ...this.getFormDialogConfig(ModelClass)
-      });
-
-      if (result) {
-        if (this.options.addRequiresActiveGroup) {
-          result.group = this.getApp().activeGroup.id;
-        }
-        if (this.options.addRequiresActiveUser) {
-          result.user = this.getApp().activeUser.id;
-        }
-        if (this.options.addFormDefaults) {
-          Object.assign(result, this.options.addFormDefaults);
-        }
-        const resp = await model.save(result);
-        if (!resp?.data.status) {
-          Modal.showError(resp?.data.error || 'An error occurred');
-          return;
-        }
-        if (this.collection) this.collection.add(model);
-        await this.refresh();
-      }
-    } else {
-      const model = new ModelClass();
-      const result = await Modal.dialog({
-        title: `Add ${this.getModelName()}`,
-        body: new FormView({
-          model: model,
-          fields: this.options.formFields || []
-        })
-      });
-
-      if (result) {
-        const resp = await model.save(result);
-        if (!resp?.data.status) {
-          Modal.showError(resp.data.error || 'An error occurred');
-          return;
-        }
-        if (this.collection) this.collection.add(model);
-        await this.refresh();
-      }
-    }
+    return super.onActionAdd(event, element);
   }
 
   async onActionExport(event, element) {
     const format = element.getAttribute('data-format') || 'json';
-
-    this.emit('table:export', {
-      format: format,
-      source: this.exportSource,
-      event
-    });
-
-    if (this.exportSource === 'remote') {
-      if (this.collection) {
-        await this.collection.download(format);
-      } else {
-        console.warn('TableView: Cannot export from remote without a collection.');
-      }
-    } else {
-      if (this.options.onExport) {
-        await this.options.onExport(this.collection?.toJSON() || [], format);
-      } else {
-        console.warn('TableView: onExport handler not implemented for local export.');
-      }
-    }
+    this.emit('table:export', { format, source: this.exportSource, event });
+    return super.onActionExport(event, element);
   }
 
   // ============================================================

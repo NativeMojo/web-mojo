@@ -67,6 +67,41 @@ class ListViewItem extends View {
   }
 
   /**
+   * Handle the standard View / Edit / Delete actions when the item
+   * template includes `data-action="view"` / `"edit"` / `"delete"` buttons.
+   * Each emits a `row:view` / `row:edit` / `row:delete` event with the
+   * model and event payload — ListView listens for these and runs the
+   * standard Modal dialog flow (or a custom override).
+   */
+  async onActionView(event, _element) {
+    event.stopPropagation();
+    this._emitRowEvent('row:view', event);
+  }
+
+  async onActionEdit(event, _element) {
+    event.stopPropagation();
+    this._emitRowEvent('row:edit', event);
+  }
+
+  async onActionDelete(event, _element) {
+    event.stopPropagation();
+    this._emitRowEvent('row:delete', event);
+  }
+
+  /** @private */
+  _emitRowEvent(name, event) {
+    const payload = {
+      item: this,
+      model: this.model,
+      index: this.index,
+      event,
+      data: this.model?.toJSON ? this.model.toJSON() : this.model
+    };
+    this.emit(name, payload);
+    if (this.listView) this.listView.emit(name, payload);
+  }
+
+  /**
    * Select this item
    */
   select() {

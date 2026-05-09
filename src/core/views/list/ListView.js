@@ -55,6 +55,8 @@
 import View from '@core/View.js';
 import Collection from '@core/Collection.js';
 import Modal from '@core/views/feedback/Modal.js';
+import Mustache from '@core/utils/mustache.js';
+import FormView from '@core/forms/FormView.js';
 import { parseFilterKey, formatFilterDisplay } from '@core/utils/DjangoLookups.js';
 import ListViewItem from './ListViewItem.js';
 
@@ -113,6 +115,13 @@ class ListView extends View {
     this.toolbarRight = options.toolbarRight || null;
     this._toolbarRightMounted = false;
 
+    // Export configuration (gated by `showAdd` / `showExport` toolbar
+    // options, which default to off on ListView). exportSource is 'remote'
+    // (download from server via collection.download) or 'local' (pass
+    // current data to options.onExport).
+    this.exportOptions = options.exportOptions || null;
+    this.exportSource = options.exportSource || 'remote';
+
     // Selection persistence across rebuilds (page change / fetchMore append).
     // Default: persist when in 'more' mode (rows aren't torn down anyway, and
     // users expect their selection to stay), clear when in 'pages' mode
@@ -126,11 +135,26 @@ class ListView extends View {
     //   clicked anywhere not handled by an inner `data-action` element.
     // - `clickable` — applies `.clickable` to each item (cursor: pointer +
     //   hover treatment). Implied true when `onItemClick` is set OR when
-    //   selection is enabled but the user template has no `data-action`
-    //   (lets `selectionMode: 'single'` / `'multiple'` work without the
-    //   user remembering to add `data-action="select"`).
+    //   `clickAction` is set to a non-'none' / non-'select' value.
     this.onItemClick = typeof options.onItemClick === 'function' ? options.onItemClick : null;
-    this.clickable = options.clickable === true || !!this.onItemClick;
+
+    // Model lifecycle (view / edit / delete / add) — same options
+    // TableView ships. ListView defaults `clickAction: 'none'` (no
+    // automatic dialog on row click) so existing usage is unchanged;
+    // users opt in by setting clickAction + providing itemView / editForm
+    // / etc. Subclasses override the default — TableView sets 'view'.
+    this.clickAction = options.clickAction || 'none';
+    this.itemView = options.itemView;
+    this.addForm = options.addForm;
+    this.editForm = options.editForm;
+    this.deleteTemplate = options.deleteTemplate;
+    this.formDialogConfig = options.formDialogConfig || {};
+    this.viewDialogOptions = options.viewDialogOptions || {};
+    this.fetchOnView = options.fetchOnView !== false;
+
+    this.clickable = options.clickable === true
+      || !!this.onItemClick
+      || (this.clickAction && this.clickAction !== 'none');
 
     // "Show more" state
     this.loadingMore = false;
@@ -357,8 +381,12 @@ class ListView extends View {
   }
 
   /**
-   * Default action buttons: refresh + custom toolbarButtons.
-   * Subclasses (TableView) override to inject Add/Export.
+   * Default action buttons: refresh + Add + Export + custom toolbarButtons.
+   * Subclasses (TableView) override to inject Fullscreen.
+   *
+   * Add/Export are gated by `showAdd` / `showExport` and the Add button
+   * uses `addForm` / Model.ADD_FORM via `onActionAdd`. Export calls
+   * `collection.download(format)` which works on any REST-backed Collection.
    */
   buildActionButtonsTemplate() {
     const buttons = [];
@@ -371,6 +399,58 @@ class ListView extends View {
           <i class="bi bi-arrow-clockwise"></i>
         </button>
       `);
+    }
+
+    if (this.options.showAdd) {
+      const addLabel = this.escapeHtml(this.options.addButtonLabel || 'Add');
+      const addIcon = this.escapeHtml(this.options.addButtonIcon || 'bi bi-plus-circle');
+      buttons.push(`
+        <button class="btn btn-sm btn-success btn-add"
+                data-action="add"
+                title="${addLabel}">
+          <i class="${addIcon} me-1"></i>
+          <span class="d-none d-lg-inline">${addLabel}</span>
+        </button>
+      `);
+    }
+
+    if (this.options.showExport) {
+      const exportOptions = this.exportOptions || [
+        { format: 'csv', label: 'Export as CSV', icon: 'bi bi-file-earmark-spreadsheet' },
+        { format: 'json', label: 'Export as JSON', icon: 'bi bi-file-earmark-code' }
+      ];
+      if (exportOptions.length > 1) {
+        const dropdownItems = exportOptions.map((opt) => `
+          <li>
+            <a class="dropdown-item" href="#" data-action="export"
+               data-format="${this.escapeHtml(opt.format)}">
+              <i class="${this.escapeHtml(opt.icon || 'bi bi-file-earmark-arrow-down')} me-2"></i>
+              ${this.escapeHtml(opt.label)}
+            </a>
+          </li>
+        `).join('');
+        buttons.push(`
+          <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                    data-bs-toggle="dropdown" aria-expanded="false" title="Export">
+              <i class="bi bi-download me-1"></i>
+              <span class="d-none d-lg-inline">Export</span>
+            </button>
+            <ul class="dropdown-menu">${dropdownItems}</ul>
+          </div>
+        `);
+      } else {
+        const format = exportOptions.length === 1 ? exportOptions[0].format : 'json';
+        buttons.push(`
+          <button class="btn btn-sm btn-outline-secondary btn-export"
+                  data-action="export"
+                  data-format="${this.escapeHtml(format)}"
+                  title="Export">
+            <i class="bi bi-download me-1"></i>
+            <span class="d-none d-lg-inline">Export</span>
+          </button>
+        `);
+      }
     }
 
     if (this.toolbarButtons && this.toolbarButtons.length > 0) {
@@ -759,29 +839,89 @@ class ListView extends View {
     });
 
     this.itemViews.set(model.id, itemView);
-
-    itemView.on('item:select', this._onItemSelect.bind(this));
-    itemView.on('item:deselect', this._onItemDeselect.bind(this));
-    // Whole-row click (anywhere not handled by an inner data-action).
-    itemView.on('item:click', this._onItemClickEvent.bind(this));
+    this._wireItemViewListeners(itemView);
 
     return itemView;
   }
 
   /**
-   * Handle a whole-row click bubbled up from a ListViewItem. Only the
-   * NEW whole-row click (action === 'row-click') fires `onItemClick` —
-   * ListViewItem.onActionDefault also emits `item:click` for any
-   * unhandled `data-action`, and we don't want clicking an inner
-   * `data-action="favorite"` to also fire the row-click callback.
+   * Wire the standard event listeners (select, click, view/edit/delete)
+   * on a freshly-created item view. Factored out so subclasses (TableView)
+   * can call this from their own _createItemView override.
+   *
+   * Two event names funnel into the same routing logic:
+   *   - `item:click` with action 'row-click' (from ListViewItem's
+   *     whole-row click handler) — re-emitted as `row:click` on the
+   *     parent ListView.
+   *   - `row:click` (from TableRow's `data-action="row-click"` handler,
+   *     which already emits the event on `this` directly) — NOT
+   *     re-emitted here, just routed.
+   *
+   * @protected
+   */
+  _wireItemViewListeners(itemView) {
+    itemView.on('item:select', this._onItemSelect.bind(this));
+    itemView.on('item:deselect', this._onItemDeselect.bind(this));
+
+    itemView.on('item:click', (event) => {
+      // ListViewItem.onActionDefault also emits `item:click` for any
+      // unhandled `data-action`. Ignore those — only the whole-row click
+      // flagged with action 'row-click' should route to the click flow.
+      if (event.action !== 'row-click') return;
+      this.emit('row:click', event);
+      this._dispatchRowClick(event);
+    });
+
+    itemView.on('row:click', (event) => {
+      // TableRow already emits row:click on `this` (the listView/tableView)
+      // directly — don't double-emit, just route.
+      this._dispatchRowClick(event);
+    });
+
+    // Model-lifecycle row events fired from data-action="view|edit|delete"
+    // buttons inside the item template (and TableRow's own action buttons).
+    itemView.on('row:view', this._onRowView.bind(this));
+    itemView.on('row:edit', this._onRowEdit.bind(this));
+    itemView.on('row:delete', this._onRowDelete.bind(this));
+  }
+
+  /**
+   * Routing logic for a whole-row click. Order:
+   *   1. options.onRowClick(model, event) — full override
+   *   2. clickAction is a function — call it
+   *   3. onItemClick(model, event) — callback shorthand
+   *   4. clickAction === 'view' — open view dialog
+   *   5. clickAction === 'edit' — open edit dialog
+   *   6. clickAction === 'select' — toggle selection
+   *   7. 'none' (default) — no-op (event was already emitted by caller)
    * @private
    */
-  _onItemClickEvent(event) {
-    if (event.action !== 'row-click') return;
-    if (this.onItemClick) {
-      this.onItemClick(event.model, event.event);
+  _dispatchRowClick(event) {
+    if (typeof this.options.onRowClick === 'function') {
+      return this.options.onRowClick(event.model, event.event);
     }
-    this.emit('row:click', event);
+
+    if (typeof this.clickAction === 'function') {
+      return this.clickAction(event.model, event.event);
+    }
+
+    if (this.onItemClick) {
+      return this.onItemClick(event.model, event.event);
+    }
+
+    if (this.clickAction === 'view') {
+      return this._onRowView(event);
+    }
+    if (this.clickAction === 'edit') {
+      return this._onRowEdit(event);
+    }
+    if (this.clickAction === 'select') {
+      if (this.selectedItems.has(event.model.id)) {
+        this.deselectItem(event.model.id);
+      } else {
+        this.selectItem(event.model.id);
+      }
+    }
   }
 
   /**
@@ -956,6 +1096,302 @@ class ListView extends View {
       return await this.collection.fetch();
     }
     this._buildItems();
+  }
+
+  // ============================================================
+  // Model lifecycle (view / edit / delete / add)
+  //
+  // Inherited by TableView. Generic across list and table — none of
+  // these methods touch columns, cells, or rows. They open the
+  // standard MOJO Modal dialogs based on the model class's static
+  // VIEW_CLASS / ADD_FORM / EDIT_FORM / DELETE_TEMPLATE / FORM_DIALOG_CONFIG
+  // (with per-instance overrides via this.itemView / this.addForm /
+  // this.editForm / this.deleteTemplate / this.formDialogConfig).
+  // ============================================================
+
+  /**
+   * Handle the view action for a row/item.
+   * Fires `row:view` event then opens the view dialog (or runs a custom
+   * `onItemView(model, event)` override). Wired automatically when
+   * clickAction: 'view' or when the item template has data-action="view".
+   */
+  async _onRowView(event) {
+    this.emit('row:view', event);
+
+    if (this.options.onItemView) {
+      await this.options.onItemView(event.model, event.event);
+      return;
+    }
+
+    if (this.fetchOnView) {
+      try {
+        Modal.loading();
+        await event.model.fetch();
+      } catch (error) {
+        Modal.hideLoading(true);
+        Modal.showError(error?.data?.error || error?.message || 'Failed to load item details');
+        return;
+      } finally {
+        Modal.hideLoading(true);
+      }
+    }
+
+    const ViewClass = this.getItemViewClass(event.model);
+
+    if (ViewClass) {
+      const viewInstance = new ViewClass({ model: event.model, collection: this.collection });
+      await Modal.dialog({
+        header: false,
+        body: viewInstance,
+        size: 'lg',
+        centered: false,
+        ...this.getFormDialogConfig(this.getModelClass(event.model)),
+        ...this.viewDialogOptions
+      });
+    } else {
+      await Modal.data({
+        title: `View ${this.getModelName(event.model)} #${event.model.id}`,
+        model: event.model
+      });
+    }
+  }
+
+  /**
+   * Handle the edit action for a row/item.
+   */
+  async _onRowEdit(event) {
+    this.emit('row:edit', event);
+
+    if (this.options.onItemEdit) {
+      await this.options.onItemEdit(event.model, event.event);
+      return;
+    }
+
+    const ModelClass = this.getModelClass(event.model);
+    let formConfig = this.getEditFormConfig(ModelClass);
+
+    if (formConfig) {
+      if (!formConfig.fields) {
+        formConfig = { title: `Edit ${this.getModelName(event.model)}`, fields: formConfig };
+      }
+
+      const result = await Modal.modelForm({
+        model: event.model,
+        ...formConfig,
+        ...this.getFormDialogConfig(ModelClass)
+      });
+
+      if (!result) return;
+
+      if (!result.success || !result?.result?.data.status) {
+        Modal.showError(result?.result?.data?.error || result?.result?.message || 'An error occurred');
+        return;
+      }
+    } else {
+      const result = await Modal.dialog({
+        title: `Edit ${this.getModelName(event.model)} #${event.model.id}`,
+        body: new FormView({
+          model: event.model,
+          fields: this.options.formFields || []
+        })
+      });
+
+      if (result) {
+        const resp = await event.model.save(result);
+        if (!resp.data?.status) {
+          Modal.showError(resp.data.error || 'An error occurred');
+          return;
+        }
+        await this.refresh();
+      }
+    }
+  }
+
+  /**
+   * Handle the delete action for a row/item.
+   */
+  async _onRowDelete(event) {
+    this.emit('row:delete', event);
+
+    if (this.options.onItemDelete) {
+      await this.options.onItemDelete(event.model, event.event);
+      return;
+    }
+
+    const ModelClass = this.getModelClass(event.model);
+    const template = this.deleteTemplate ||
+                    ModelClass?.DELETE_TEMPLATE ||
+                    'Are you sure you want to delete this {{name||"item"}}?';
+
+    const message = this.renderTemplateString(template, event.model);
+
+    const confirmed = await Modal.confirm({
+      message: message || 'Are you sure you want to delete this item?',
+      title: 'Confirm Delete',
+      confirmText: 'Delete',
+      confirmClass: 'btn-danger'
+    });
+
+    if (confirmed) {
+      await event.model.destroy();
+      if (this.collection?.restEnabled) {
+        this.collection.fetch();
+      } else {
+        this._buildItems();
+      }
+    }
+  }
+
+  /**
+   * Handle the Add toolbar action — opens an Add dialog using addForm /
+   * Model.ADD_FORM and saves the new model into the collection.
+   */
+  async onActionAdd(event, _element) {
+    if (this.options.onAdd) {
+      this.emit('list:add', { event });
+      await this.options.onAdd(event);
+      return;
+    }
+
+    this.emit('list:add', { event });
+
+    const ModelClass = this.getModelClass();
+    if (!ModelClass) {
+      console.warn('Cannot determine Model class for add operation');
+      return;
+    }
+
+    let formConfig = this.getAddFormConfig(ModelClass);
+
+    if (formConfig) {
+      const model = new ModelClass();
+      if (!formConfig.fields) {
+        formConfig = { title: `Add ${this.getModelName()}`, fields: formConfig };
+      }
+
+      const result = await Modal.form({
+        model: model,
+        ...formConfig,
+        ...this.getFormDialogConfig(ModelClass)
+      });
+
+      if (result) {
+        if (this.options.addRequiresActiveGroup) {
+          result.group = this.getApp().activeGroup.id;
+        }
+        if (this.options.addRequiresActiveUser) {
+          result.user = this.getApp().activeUser.id;
+        }
+        if (this.options.addFormDefaults) {
+          Object.assign(result, this.options.addFormDefaults);
+        }
+        const resp = await model.save(result);
+        if (!resp?.data.status) {
+          Modal.showError(resp?.data.error || 'An error occurred');
+          return;
+        }
+        if (this.collection) this.collection.add(model);
+        await this.refresh();
+      }
+    } else {
+      const model = new ModelClass();
+      const result = await Modal.dialog({
+        title: `Add ${this.getModelName()}`,
+        body: new FormView({
+          model: model,
+          fields: this.options.formFields || []
+        })
+      });
+
+      if (result) {
+        const resp = await model.save(result);
+        if (!resp?.data.status) {
+          Modal.showError(resp.data.error || 'An error occurred');
+          return;
+        }
+        if (this.collection) this.collection.add(model);
+        await this.refresh();
+      }
+    }
+  }
+
+  /**
+   * Handle Export — emits `list:export` and either downloads from the
+   * server (`exportSource: 'remote'`) or passes the current data to
+   * `options.onExport(data, format)` (`exportSource: 'local'`).
+   */
+  async onActionExport(event, element) {
+    const format = element.getAttribute('data-format') || 'json';
+
+    this.emit('list:export', {
+      format,
+      source: this.exportSource,
+      event
+    });
+
+    if (this.exportSource === 'remote') {
+      if (this.collection) {
+        await this.collection.download(format);
+      } else {
+        console.warn('ListView: Cannot export from remote without a collection.');
+      }
+    } else {
+      if (this.options.onExport) {
+        await this.options.onExport(this.collection?.toJSON() || [], format);
+      } else {
+        console.warn('ListView: onExport handler not implemented for local export.');
+      }
+    }
+  }
+
+  // -------- Model-resolution helpers --------
+
+  getModelClass(model) {
+    if (this.collection?.ModelClass) return this.collection.ModelClass;
+    if (this.collection?.model) return this.collection.model;
+    if (model?.constructor) return model.constructor;
+    return null;
+  }
+
+  getModelName(model) {
+    const ModelClass = this.getModelClass(model);
+    if (!ModelClass) return 'Item';
+    return ModelClass.MODEL_NAME ||
+           ModelClass.name.replace(/Model$/, '') ||
+           'Item';
+  }
+
+  getItemViewClass(model) {
+    if (this.itemView) return this.itemView;
+    const ModelClass = this.getModelClass(model);
+    if (ModelClass?.VIEW_CLASS) return ModelClass.VIEW_CLASS;
+    return null;
+  }
+
+  getAddFormConfig(ModelClass) {
+    return this.addForm ||
+           ModelClass?.ADD_FORM ||
+           this.editForm ||
+           ModelClass?.EDIT_FORM;
+  }
+
+  getEditFormConfig(ModelClass) {
+    return this.editForm ||
+           ModelClass?.EDIT_FORM ||
+           this.addForm ||
+           ModelClass?.ADD_FORM;
+  }
+
+  getFormDialogConfig(ModelClass) {
+    return {
+      ...ModelClass?.FORM_DIALOG_CONFIG,
+      ...this.formDialogConfig
+    };
+  }
+
+  renderTemplateString(template, model) {
+    if (!template) return '';
+    return Mustache.render(template, model);
   }
 
   // ============================================================

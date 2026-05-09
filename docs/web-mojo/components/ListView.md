@@ -295,12 +295,74 @@ ListView ships an opt-in toolbar that mirrors what `TableView` has. Every flag b
 | `pageSize` | `number` | `undefined` | Convenience that seeds `collection.params.size` if not already set. |
 | `persistSelection` | `boolean` | `paginationMode === 'more'` | Whether `selectedItems` survives a page rebuild. Defaults to `true` in `'more'` mode (rows aren't torn down anyway), `false` otherwise (preserves TableView's historical "selection clears on page change" behavior unless caller opts in). |
 
-### Click-anywhere-on-the-row
+### Click-anywhere-on-the-row + Model lifecycle
+
+ListView ships the same model lifecycle that TableView does — view dialogs, edit forms, delete confirms, an Add button, and an Export download — all parameterized by the same options. ListView defaults `clickAction: 'none'` (no surprise behavior on plain lists) while TableView defaults `clickAction: 'view'` (existing behavior). Both share the implementation.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `onItemClick` | `function` | `null` | `(model, event) => {}` — fired when the row's outer element is clicked anywhere not handled by an inner `data-action`. Adds the `clickable` styling automatically. The natural fit for navigation, opening detail dialogs, or running custom click handlers without forcing the user to add `data-action="select"` to the item template. |
-| `clickable` | `boolean` | `!!onItemClick` | Adds the `clickable` class to each item (`cursor: pointer` + hover treatment). Implied true when `onItemClick` is set. Useful when you want the visual affordance and the `row:click` event but no callback. |
+| `clickAction` | `'view' \| 'edit' \| 'select' \| 'none' \| function` | `'none'` | What clicking the item's outer element does. `'view'` opens the view dialog (`itemView` / `Model.VIEW_CLASS`). `'edit'` opens the edit form (`editForm` / `Model.EDIT_FORM`). `'select'` toggles selection. A function is called with `(model, event)`. `'none'` does nothing — but the `row:click` event still fires so external listeners can react. |
+| `onItemClick` | `function` | `null` | Shorthand callback. Fired when the row's outer element is clicked anywhere not handled by an inner `data-action`. Implies `clickable: true`. Same payload as TableView's `onRowClick`. |
+| `clickable` | `boolean` | true when `onItemClick` is set or `clickAction !== 'none'` | Adds the `.clickable` class to each item (`cursor: pointer` + hover treatment). |
+| `itemView` | `Class` | `null` | View class to instantiate inside the view dialog. Falls back to `Model.VIEW_CLASS`, then to a generic `Modal.data` dialog. |
+| `addForm` | `Array` or `object` | `null` | Form-field config (or `{ title, fields }`) used by the Add button + dialog. Falls back to `Model.ADD_FORM`. |
+| `editForm` | `Array` or `object` | `null` | Form-field config used by the Edit dialog (and by row-click when `clickAction: 'edit'`). Falls back to `Model.EDIT_FORM`, then to `addForm`. |
+| `deleteTemplate` | `string` | `null` | Mustache template for the delete confirmation message. Falls back to `Model.DELETE_TEMPLATE`. |
+| `formDialogConfig` | `object` | `{}` | Extra options merged into every form dialog (e.g. `{ size: 'lg', centered: true }`). Merged after `Model.FORM_DIALOG_CONFIG`. |
+| `viewDialogOptions` | `object` | `{}` | Extra options merged into the view dialog. |
+| `fetchOnView` | `boolean` | `true` | Re-fetch the model from the server before opening the view dialog. Set `false` to skip and use the model already in the row. |
+| `onItemView`, `onItemEdit`, `onItemDelete`, `onAdd` | `function` | `null` | Per-action callback overrides — `(model, event)` for the row actions, `(event)` for Add. When set, the default Modal flow is bypassed. |
+| `onRowClick` | `function` | `null` | Full row-click override — beats `clickAction` and `onItemClick`. |
+| `showAdd` | `boolean` | `false` | Render the green Add button in the toolbar. (TableView defaults this to `true`.) |
+| `showExport` | `boolean` | `false` | Render the Export button. CSV/JSON by default. (TableView defaults this to `true`.) |
+| `exportOptions` | `Array<object>` | auto | Override the export menu: `[{ format, label, icon }, ...]`. |
+| `exportSource` | `'remote' \| 'local'` | `'remote'` | `'remote'` calls `collection.download(format)`. `'local'` invokes `options.onExport(data, format)` with the in-memory data. |
+
+**Inner `data-action` clicks always win.** Clicking a button/link inside the card with its own `data-action="<name>"` does NOT also fire `onItemClick` or the `clickAction` flow — the inner action handler runs and the row-click is suppressed.
+
+**Form-control clicks are also suppressed.** Clicks on `<input>`, `<textarea>`, `<select>` inside the row don't trigger row-click — typing in a search input inside a card shouldn't open the card detail.
+
+#### Item-template action buttons
+
+Drop `data-action="view"`, `data-action="edit"`, or `data-action="delete"` buttons into the item template and they fire the same dialog flow without any extra wiring:
+
+```js
+const list = new ListView({
+  collection: postCollection,
+  itemView: PostDetailView,
+  editForm: [
+    { name: 'title', label: 'Title', type: 'text', required: true },
+    { name: 'body',  label: 'Body',  type: 'textarea' }
+  ],
+  deleteTemplate: 'Delete <strong>{{title}}</strong>?',
+  itemTemplate: `
+    <div class="card p-3">
+      <h5>{{model.title}}</h5>
+      <p>{{model.body}}</p>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-primary"   data-action="view">View</button>
+        <button class="btn btn-sm btn-secondary" data-action="edit">Edit</button>
+        <button class="btn btn-sm btn-danger"    data-action="delete">Delete</button>
+      </div>
+    </div>
+  `
+});
+```
+
+#### Click-the-card to view
+
+Setting `clickAction: 'view'` plus an `itemView` or `Model.VIEW_CLASS` lets users click anywhere on the card to open the detail dialog — the same affordance TableView gives clickable rows.
+
+```js
+const list = new ListView({
+  collection: postCollection,
+  clickAction: 'view',
+  itemView: PostDetailView,        // or PostModel.VIEW_CLASS
+  itemTemplate: `<div class="card p-3"><h5>{{model.title}}</h5></div>`
+});
+```
+
+The same payload is also emitted as a `row:click` event for parity with TableView, so external listeners can react via `list.on('row:click', ...)` instead of (or in addition to) the callback.
 
 **Inner `data-action` clicks always win.** Clicking a button or link inside the card with its own `data-action="<name>"` does NOT also fire `onItemClick` — the inner action handler runs and the row-click is suppressed. So you can safely put a `<button data-action="favorite">` inside a clickable card without double-firing.
 

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### ListView model lifecycle (view / edit / delete / add) hoisted from TableView
+
+- **Full model lifecycle is now on `ListView`.** `clickAction` (`'view' | 'edit' | 'select' | 'none' | function`), `onItemView` / `onItemEdit` / `onItemDelete` / `onAdd` / `onRowClick` callback overrides, `itemView`, `addForm`, `editForm`, `deleteTemplate`, `formDialogConfig`, `viewDialogOptions`, `fetchOnView`, `showAdd`, `showExport`, `exportOptions`, `exportSource` — all the model-dialog scaffolding TableView has, on plain ListView. ListView defaults `clickAction: 'none'` so existing usage is unchanged; opt in by setting `clickAction` plus the appropriate form/itemView config.
+- **`data-action="view" | "edit" | "delete"` in item templates** now route to the standard view / edit / delete dialog flow — drop the buttons into a card template and they work without per-page wiring. Same vocabulary TableView's TableRow uses.
+- **Add and Export buttons** render in the ListView toolbar when `showAdd` / `showExport` are set (gated off by default; TableView keeps its default-on behavior).
+- **TableView is leaner** — its `_createItemView` now calls `super._wireItemViewListeners()` for the standard select/click/view/edit/delete event wiring, and only adds the table-specific cell:edit/save/cancel + batch panel binding. Its `buildActionButtonsTemplate` override calls super and inserts only the Fullscreen button. `getModelClass`, `getModelName`, `getItemViewClass`, `getAddFormConfig`, `getEditFormConfig`, `getFormDialogConfig`, `renderTemplateString`, `_onRowView`, `_onRowEdit`, `_onRowDelete`, `_onRowClick`, `onActionAdd` (full implementation), `onActionExport` (full implementation) all moved up to ListView. `Mustache`, `Modal`, `FormView` imports dropped from TableView.
+- **`table:add` / `table:export` events preserved** for backwards compat — TableView keeps thin `onActionAdd` / `onActionExport` overrides that emit the event before delegating to super.
+
 ### ListView toolbar / filters / pagination upgrade
 
 - **`ListView` now hosts the toolbar / filter / pagination machinery** that previously lived only on `TableView`. New opt-in options: `searchable`, `filterable`, `filters`, `hideActivePills`, `hideActivePillNames`, `paginated`, `paginationMode` (`'pages' | 'more' | 'none'`), `pageSize`, `sortOptions`, `title`, `eyebrow`, `showRefresh`, `toolbarButtons`, `toolbarRight`, `persistSelection`. All flags default to off — a `new ListView({ collection, itemTemplate })` with no toolbar options renders exactly as before.
