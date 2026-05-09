@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+### Wave 3 C5: GeoIPView sweep — flat sections, embedded map, threat chips
+
+- **`src/extensions/admin/account/devices/GeoIPView.js`** rewritten end-to-end against the Wave 1 framework primitives:
+  - **8 → 7 sections.** The standalone Map section is gone; the map now embeds inline inside Overview (lazy-mounted via `MapView` in `onAfterMount` once the section is in the DOM). Events + Logs collapse into a single **Activity** section that wraps a `TabView` of two `TableView`s (per Phase E briefing).
+  - **Mustache + DataFormatter throughout.** Every section view now uses Mustache string templates with `{{model.field}}`, `{{field|default:'—'}}`, `{{field|datetime}}`, `{{{model.is_*|yesnoicon}}}`, `{{#flag|bool}}…{{/flag|bool}}`. Module-local `formatRelative` / `formatDateTime` / `yesNo` helpers and every per-section `_buildTemplate()` have been deleted (the Overview section keeps two trusted-HTML helpers stashed on the model for the StatusPanel `meta` slot, where the framework hands callers a trusted-HTML slot for `<strong>`/`<code>` interpolation).
+  - **`@core` primitives in use.** Overview hero is `StatusPanel` (function-valued `tone` / `state` / `headline` / `meta` / `actions` resolvers driven off the model). Overview KPIs are four `MetricCard`s at the default size (no `metric-card-lg`). Metadata section uses `KnownFieldsCard` — the per-section raw `<pre>` JSON dump is gone; raw record JSON now lives in the framework's collapsible `<details>` block.
+  - **Risk & Reputation flat-row redesign.** The card-with-header summary block + bordered audit list collapse into a single labeled-section + `.detail-flat-row` family. Only flags that actually fired render rows (with tone-coded badges); the empty state shows "No reputation flags fired." instead of a wall of "no signal" rows.
+  - **Threat flags promoted to header chips.** `is_vpn`, `is_tor`, `is_proxy`, `is_cloud`, `is_datacenter`, `is_blocked`, `is_whitelisted` plus `risk_score` and the threat-level severity now render as `when:`-gated header chips so the body of the Risk section can shrink. The header chip variants tone-code by severity (danger for Tor, warning for VPN/proxy/datacenter, info for cloud, success for whitelisted).
+  - **Network section** drops the three nested `.detail-field-card` blocks for three labeled `.detail-section-eyebrow` subsections (Identity / Carrier · ASN · ISP / Hosting flags) of flat rows.
+  - **Block & Whitelist section** drops both card wrappers and the duplicated header buttons — the eyebrow now exposes a single `.detail-section-action` pencil that flips between Block/Unblock and Whitelist/Unwhitelist based on the current state.
+  - **Activity** section badges combine event + log counts into a single sidebar count (replacing the two previous per-section counts that competed for sidebar space).
+  - **No `p-3` / `p-4` utility classes** on section className strings; layout owns padding. **No `viewDialogOptions` size override** (inherits `Modal.detail()`'s default `'lg'`).
+
+### Wave 3 C7 — MemberView sweep — flat sections + Mustache + DataFormatter
+
+- **`src/extensions/admin/account/users/MemberView.js`** — applied the Wave 3 design language:
+  - **MemberOverviewSection** rewritten as a Mustache string template against `this.model` and a small set of getter properties (`userDisplayName`, `userEmail`, `groupName`, `roleLabel`, `hasRole`, `hasCreated`, `invitedBy`, `permsCount`, `isActive`). Replaces `template = () => this._buildTemplate()` plus its `escapeHtml()` string concatenation. DataFormatter pipes (`epoch|datetime`, `epoch|relative`) handle every date/relative read-out.
+  - **Flat-row layout** — dropped the two `.card` wrappers in Overview ("This membership" + "Recent activity"). Both sub-sections now use `.detail-section-eyebrow` + `.detail-flat-row` family. Vertical rhythm (2rem gap above subsection eyebrows after content) is owned by the framework CSS.
+  - **MetricCard children** — the four KPI cards (Role / Status / Joined / Perms granted) are now `MetricCard` instances added via `addChild()`, not hand-built `metric-card` divs. Default size (no `metric-card-lg`).
+  - **Recent-activity timeline** — `_renderActivity()` and its hand-rolled `<ol class="detail-timeline">` markup deleted. Replaced with the `@core` `Timeline` primitive (Wave 1 A3) configured with `items` as a function of the shared `LogList`, `limit: 5`, and a tone-mapped log-level lookup. Trusted-HTML `detail` slot is escaped via `MOJOUtils.escapeHtml(...)` per Timeline's security note.
+  - **MemberPermissionsSection** — eyebrow markup switched from the legacy `.section-eyebrow` / `.section-title` pair to the standard `.detail-section-eyebrow`. The inner `FormView` is unchanged.
+  - **Audit section** — already a `TableView`; verified `clickAction` is omitted (Log rows don't have a meaningful detail view) and no `viewDialogOptions` with `size: 'xl'` is passed. Stays as is.
+  - **Helpers** — `epochToMs`, `formatRelative`, `formatDate` deleted. `countTruthy` retained (used by header chip and Overview KPI). `_refreshComputedFields` switched to `dataFormatter.apply(value, ['epoch', 'relative'])` for the subtitle's "joined …" segment.
+- No public API changes. All 667 unit tests still pass; lint clean.
+
 ### Admin user sections — drop inline `<style>` blocks, switch to framework primitives
 
 - **AdminPersonalSection** / **AdminProfileSection** / **AdminConnectedSection** / **AdminSecuritySection** — deleted the inline `<style>` blocks (every block had hardcoded light-theme hex literals: `#adb5bd`, `#f0f0f0`, `#6c757d`, `#212529`, `#0d6efd`, `#d1e7dd`, etc., with **no** `[data-bs-theme="dark"]` overrides). Templates now use the framework's `.detail-section-eyebrow` + `.detail-flat-row*` primitives (Wave 1 A5) for the labeled-row layout, and Bootstrap utility classes (`text-bg-success`, `text-bg-warning`, `text-bg-light border`, `text-secondary fst-italic`) for badges and "not set" placeholders.
