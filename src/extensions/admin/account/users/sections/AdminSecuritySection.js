@@ -55,7 +55,7 @@ export default class AdminSecuritySection extends View {
                     <span class="badge text-bg-light border">Set</span>
                 </div>
 
-                <div class="detail-section-eyebrow mt-3">Multi-Factor Authentication</div>
+                <div class="detail-section-eyebrow">Multi-Factor Authentication</div>
 
                 <div class="admin-security-item" data-action="toggle-mfa">
                     <div class="admin-security-icon" style="background: rgba(var(--bs-purple-rgb,111,66,193),0.1); color: var(--bs-purple, #6f42c1);"><i class="bi bi-shield-lock"></i></div>
@@ -98,7 +98,7 @@ export default class AdminSecuritySection extends View {
                 </div>
                 {{/model.requires_mfa|bool}}
 
-                <div class="detail-section-eyebrow mt-3">Sessions</div>
+                <div class="detail-section-eyebrow">Sessions</div>
 
                 <div class="admin-security-item" data-action="revoke-all-sessions">
                     <div class="admin-security-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-box-arrow-right"></i></div>

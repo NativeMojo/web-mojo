@@ -2453,7 +2453,7 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
     align-items: center;
     justify-content: space-between;
     gap: 1.25rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
     background: var(--bs-tertiary-bg);
 }
 @container (max-width: 480px) {
@@ -2610,19 +2610,26 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
        …
      </div>
 */
-.detail-section { margin-bottom: 1.5rem; }
+.detail-section { margin-bottom: 2rem; }
 .detail-section:last-child { margin-bottom: 0; }
 .detail-section-eyebrow {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    margin: 0 0 0.5rem;
+    margin: 0 0 0.75rem;
     font-size: 0.62rem;
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--bs-secondary-color);
+}
+/* Subsection eyebrows (a second `Account` eyebrow after a stack of rows
+   or items inside the same section) get automatic breathing room above
+   when they're not the first child of their parent. No inline `mt-3` /
+   `mt-4` needed in templates. */
+.detail-section-eyebrow:not(:first-child) {
+    margin-top: 1.5rem;
 }
 .detail-section-action {
     background: transparent;
@@ -2642,7 +2649,7 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.55rem 0;
+    padding: 0.7rem 0;
     border-bottom: 1px solid var(--bs-border-color-translucent);
     font-size: 0.875rem;
 }
@@ -2682,13 +2689,13 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
 */
 .detail-known-fields-card {
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
 }
 .detail-known-fields-grid {
-    margin-bottom: 0.6rem;
+    margin-bottom: 0.85rem;
 }
 .detail-known-fields-raw {
-    margin-top: 0.75rem;
+    margin-top: 1rem;
     border: 0;
     border-radius: 0.6rem;
     background: var(--bs-tertiary-bg);
@@ -2758,7 +2765,7 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
     border: 0;
     border-radius: 0.75rem;
     overflow: hidden;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
 }
 .detail-flow-strip .flow-strip-step {
     padding: 1rem 1.1rem;

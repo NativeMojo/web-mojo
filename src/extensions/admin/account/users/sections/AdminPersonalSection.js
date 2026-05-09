@@ -46,7 +46,7 @@ export default class AdminPersonalSection extends View {
                 </div>
 
                 <!-- Details -->
-                <div class="detail-section-eyebrow mt-3">Details</div>
+                <div class="detail-section-eyebrow">Details</div>
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Date of Birth</div>
                     <div class="detail-flat-row-value">
@@ -78,7 +78,7 @@ export default class AdminPersonalSection extends View {
                 </div>
 
                 <!-- Address -->
-                <div class="detail-section-eyebrow mt-3">Address</div>
+                <div class="detail-section-eyebrow">Address</div>
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Address</div>
                     <div class="detail-flat-row-value">

@@ -60,7 +60,7 @@ export default class AdminProfileSection extends View {
                 </div>
 
                 <!-- Account -->
-                <div class="detail-section-eyebrow mt-3">Account</div>
+                <div class="detail-section-eyebrow">Account</div>
                 <div class="detail-flat-row">
                     <div class="detail-flat-row-label">Username</div>
                     <div class="detail-flat-row-value">{{model.username}}</div>
