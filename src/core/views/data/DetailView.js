@@ -276,28 +276,35 @@ class DetailHeaderView extends View {
 
     /**
      * Default implementation of the active toggle. Overridable by subclasses.
-     * Round-trips `model.save({ [activeField]: checked })`, reverts on error.
+     *
+     * Round-trips `model.save({ [activeField]: checked })`. The visual
+     * feedback is the switch itself — no toasts:
+     *   - Optimistic update: `model.set` fires a change event; the
+     *     parent DetailView's `_onModelChange` re-renders the header
+     *     and the switch reflects the new state.
+     *   - On success: the switch stays in the new position.
+     *   - On failure: the revert `model.set` fires another change
+     *     event, the header re-renders, and the switch bounces back.
+     *     The bounce IS the feedback — no shouting at the user.
      */
     async onActionToggleActive(event, element) {
         if (!this.activeField) return;
         const checked = !!element.checked;
         element.disabled = true;
-        const labelEl = this.element?.querySelector('.dh-track-label');
         try {
             this.model.set(this.activeField, checked);
             const resp = await this.model.save({ [this.activeField]: checked });
             if (resp && resp.status && resp.status >= 400) {
                 throw new Error('Save failed');
             }
-            if (labelEl) labelEl.textContent = checked ? 'Active' : 'Inactive';
-            this.getApp()?.toast?.success(`${checked ? 'Enabled' : 'Disabled'}`);
             this.emit('detail:updated');
         } catch (err) {
+            // Revert silently — the bounce IS the feedback.
             this.model.set(this.activeField, !checked);
-            element.checked = !checked;
-            this.getApp()?.toast?.error(`Failed to update: ${err.message}`);
         } finally {
-            element.disabled = false;
+            // The element may have been replaced by a re-render between
+            // the optimistic `model.set` and here; this is best-effort.
+            if (element && element.isConnected) element.disabled = false;
         }
     }
 }
