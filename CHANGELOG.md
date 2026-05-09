@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Wave 3 C4: DeviceView sweep — grow 2→5 sections, threat chips, KnownFieldsCard
+
+- **`src/extensions/admin/account/devices/DeviceView.js`** rewritten end-to-end against the Wave 1 framework primitives and the JobDetailsView/GeoIPView canonical pattern:
+  - **2 → 5 sections.** Overview now leads with four `MetricCard` KPIs (Sessions / Locations / Days active / Last login) followed by a `Timeline` of threat-signal events (trust / VPN / Tor / proxy / geo / DUID) so the operator's first question — "is this device safe?" — has a single answer block. Hardware (full `device_info` dump), Locations (existing `TableView`), Sessions (NEW — placeholder until the backend records sessions), and Metadata (uses `KnownFieldsCard`) round out the section list.
+  - **Mustache + DataFormatter throughout.** Every section view is now a Mustache string template binding `{{model.field}}`, `{{model.field|datetime}}`, `{{model.field|relative}}`, `{{#flag|bool}}…{{/flag|bool}}`, with view-level getters for derived flags. The previous `template = () => this._buildTemplate()` string concatenation, the per-section `_fieldCard()` factory, and the per-section `escapeHtml()` calls along the template path are gone.
+  - **`@core` primitives in use.** Overview KPIs are four `MetricCard`s at the default size (no `metric-card-lg`); the Overview's threat-signals feed is a `Timeline`. Metadata section uses `KnownFieldsCard` — the raw `metadata` blob plus a small set of audit fields are promoted to the 2-col grid, with the raw record JSON in the framework's collapsible `<details>` block.
+  - **Hardware section flat-row redesign.** The five `.detail-field-card` blocks (Browser / OS / Hardware / Display & environment / Identification) collapse into five `.detail-section-eyebrow` subsections of `.detail-flat-row`s.
+  - **Header chips: Trusted / Blocked / VPN / Tor / Proxy / Cloud** with `when:` callbacks — only render when truthy.
+  - **Header `auxFn`** replaces the synthetic-`_subtitle` round-trip with a structured presence-dot + main-state + muted-relative readout. Trusted HTML; every model field is escaped via `MOJOUtils.escapeHtml(...)` before composition.
+  - **No `p-3` / `p-4`** utility classes on section className strings; layout owns padding. **No `viewDialogOptions` size override** (inherits `Modal.detail()`'s default `'lg'`).
+- No public API changes. Lint clean on the touched file.
+
 ### Wave 3 C2: IncidentView sweep — StatusPanel + Timeline + KnownFieldsCard, RelatedIncidentsList table
 
 - **`src/extensions/admin/incidents/IncidentView.js`** rewritten end-to-end against the Wave 1 framework primitives. Eight section classes that previously declared `template = () => this._buildTemplate()` and concatenated `<li>` / `<div>` strings via the local `_escapeHtml` helper are now Mustache string templates with DataFormatter pipes plus getter properties for derived values. The local `_escapeHtml` shim is gone — every trusted-HTML slot (StatusPanel `meta`, Timeline `detail`, header `auxFn`, action-button bars, ruleset-data DataView field templates) escapes via `MOJOUtils.escapeHtml`.

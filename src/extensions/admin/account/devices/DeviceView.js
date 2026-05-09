@@ -1,15 +1,20 @@
 /**
  * DeviceView - User device inspector built on the DetailView primitive.
  *
- * Header + side-nav layout matching RuleSetView / JobDetailsView. Sections:
+ * Header + side-nav layout matching JobDetailsView / GeoIPView (the
+ * Wave 2/3 canonical examples). Sections (5):
  *   Overview · Hardware · ──Activity── Locations · Sessions ·
  *   ──Detail── Metadata
  *
- * Overview leads with four KPIs (Sessions / Locations / Days active /
- * Last login), then a Hardware-summary card and a Threat-signals audit
- * list. Hardware section dumps the full `device_info` blob in
- * field-card format. Locations is a TableView on UserDeviceLocationList
- * scoped to this device.
+ * Overview leads with four `MetricCard` KPIs (Sessions / Locations /
+ * Days active / Last login), then a `Timeline` of threat-signal events
+ * (trust / VPN / Tor / proxy / geo / DUID) so the operator's first
+ * question — "is this device safe?" — has a single answer block.
+ * Hardware uses `.detail-section-eyebrow` + `.detail-flat-row` (no
+ * `.detail-field-card` wrappers); Locations is a `TableView` on
+ * `UserDeviceLocationList`; Sessions is a placeholder (no collection
+ * lands until the backend records sessions); Metadata uses
+ * `KnownFieldsCard` from `@core`.
  *
  * Open via `Modal.detail(new DeviceView({ model }))` — pair with
  * `viewDialogOptions: { header: false, noBodyPadding: true,
@@ -22,10 +27,20 @@ import View from '@core/View.js';
 import TableView from '@core/views/table/TableView.js';
 import TableRow from '@core/views/table/TableRow.js';
 import Modal from '@core/views/feedback/Modal.js';
+import MetricCard from '@core/views/data/MetricCard.js';
+import Timeline from '@core/views/data/Timeline.js';
+import KnownFieldsCard from '@core/views/data/KnownFieldsCard.js';
+import MOJOUtils from '@core/utils/MOJOUtils.js';
 import { User, UserDevice, UserDeviceLocationList } from '@core/models/User.js';
 
+const escapeHtml = MOJOUtils.escapeHtml;
 
-// ── Helpers ────────────────────────────────────────────────
+
+// ── Module-local helpers ───────────────────────────────────
+//
+// Used outside Mustache pipe paths — auxFn / Timeline `detail` slot /
+// header `titleFn`. Inside templates, prefer DataFormatter pipes
+// (`|datetime`, `|relative`, `|truncate_middle(12)`).
 
 function epochToMs(value) {
     if (value == null) return null;
@@ -45,12 +60,6 @@ function formatRelative(value) {
     return `${Math.floor(diffSec / 86400)}d ago`;
 }
 
-function formatDateTime(value) {
-    const ms = epochToMs(value);
-    if (ms == null) return '—';
-    return new Date(ms).toLocaleString();
-}
-
 /** Extract a "Chrome 122" / "Firefox 117" style browser label */
 function browserLabel(deviceInfo) {
     const ua = deviceInfo?.user_agent || {};
@@ -63,15 +72,6 @@ function osLabel(deviceInfo) {
     const os = deviceInfo?.os || {};
     const ver = [os.major, os.minor].filter(Boolean).join('.');
     return os.family ? `${os.family} ${ver}`.trim() : 'Unknown OS';
-}
-
-/** Best-effort device descriptor — falls back to "" when generic */
-function deviceLabel(deviceInfo) {
-    const dev = deviceInfo?.device || {};
-    const parts = [dev.brand, dev.family].filter(Boolean);
-    if (!parts.length) return '';
-    const name = parts.join(' ');
-    return dev.model ? `${name} (${dev.model})` : name;
 }
 
 /** Choose a header icon based on the browser/OS family */
@@ -93,10 +93,15 @@ function pickIcon(deviceInfo) {
     return 'bi-laptop';
 }
 
+/** Read the geo-side flags from any of the locations the model exposes them on. */
+function _geoFor(model) {
+    const di = model.get('device_info') || {};
+    return di.last_geo || di.geolocation || model.get('last_geo') || {};
+}
+
 /** Detect any threat signals on the device or its last-known geo */
 function collectThreatFlags(model) {
-    const di = model.get('device_info') || {};
-    const geo = di.last_geo || di.geolocation || model.get('last_geo') || {};
+    const geo = _geoFor(model);
     const flags = [];
     if (geo.is_vpn)    flags.push({ key: 'vpn',   label: 'VPN'   });
     if (geo.is_tor)    flags.push({ key: 'tor',   label: 'Tor'   });
@@ -105,23 +110,16 @@ function collectThreatFlags(model) {
     return flags;
 }
 
+function hasFlag(model, key) {
+    return collectThreatFlags(model).some(f => f.key === key);
+}
+
 /** Approximate days-active from first_seen → last_seen. */
 function daysActive(model) {
     const firstMs = epochToMs(model.get('first_seen'));
     const lastMs  = epochToMs(model.get('last_seen'));
     if (firstMs == null || lastMs == null) return null;
-    const days = Math.max(0, Math.floor((lastMs - firstMs) / 86400000));
-    return days;
-}
-
-/** Truncate long DUIDs while keeping head + tail for recognizability. */
-function truncateMiddle(value, max = 12) {
-    if (value == null) return '';
-    const s = String(value);
-    if (s.length <= max) return s;
-    const head = Math.ceil(max / 2);
-    const tail = Math.floor(max / 2);
-    return `${s.slice(0, head)}…${s.slice(-tail)}`;
+    return Math.max(0, Math.floor((lastMs - firstMs) / 86400000));
 }
 
 
@@ -156,82 +154,88 @@ class DeviceLocationRow extends TableRow {
 
 
 // ── Overview section ───────────────────────────────────────
+//
+// Mustache template binds to `this` (the section view). KPIs are
+// `MetricCard` children mounted in `onInit()`; the threat-signal feed
+// is a `Timeline` instance driven by the model.
 
 class DeviceOverviewSection extends View {
     constructor(options = {}) {
+        const { locationsCollection, ...viewOptions } = options;
         super({
             className: 'device-overview-section',
-            ...options
-        });
+            template: `
+                <div class="detail-section-eyebrow">Overview</div>
+                <div class="detail-kpi-grid">
+                    <div data-container="dv-kpi-sessions"></div>
+                    <div data-container="dv-kpi-locations"></div>
+                    <div data-container="dv-kpi-days"></div>
+                    <div data-container="dv-kpi-last-login"></div>
+                </div>
 
-        this.locationsCollection = options.locationsCollection || null;
-        this.template = () => this._buildTemplate();
-    }
-
-    _buildTemplate() {
-        return `
-            <div class="detail-kpi-grid">
-                <div data-container="dv-kpi-sessions"></div>
-                <div data-container="dv-kpi-locations"></div>
-                <div data-container="dv-kpi-days"></div>
-                <div data-container="dv-kpi-last-login"></div>
-            </div>
-            <div class="detail-pair">
-                <div data-container="dv-overview-hardware"></div>
+                <div class="detail-section-eyebrow">Threat signals</div>
                 <div data-container="dv-overview-threats"></div>
-            </div>
-        `;
+            `,
+            ...viewOptions
+        });
+        this.locationsCollection = locationsCollection || null;
     }
 
     async onInit() {
         const m = this.model;
 
-        // KPIs
-        const sessionsCount = m.get('session_count') ?? m.get('sessions') ?? null;
-        const locationsCount = this._readLocationsCount();
-        const days = daysActive(m);
-        const lastSeen = m.get('last_seen');
-
-        this.kpiSessions  = this._kpi('dv-kpi-sessions',  'Sessions',  sessionsCount == null ? '—' : String(sessionsCount));
-        this.kpiLocations = this._kpi('dv-kpi-locations', 'Locations', locationsCount == null ? '—' : String(locationsCount));
-        this.kpiDays      = this._kpi('dv-kpi-days',      'Days active', days == null ? '—' : String(days));
-        this.kpiLastLogin = this._kpi(
-            'dv-kpi-last-login',
-            'Last login',
-            lastSeen ? formatRelative(lastSeen) : 'Never',
-            lastSeen ? 'success' : null
-        );
-        [this.kpiSessions, this.kpiLocations, this.kpiDays, this.kpiLastLogin].forEach(c => this.addChild(c));
-
-        // Hardware summary card
-        this.hardwareCard = new DeviceHardwareSummaryCard({
-            containerId: 'dv-overview-hardware',
-            model: m
+        this.kpiSessions = new MetricCard({
+            containerId: 'dv-kpi-sessions',
+            label: 'Sessions',
+            value: () => {
+                const n = m.get('session_count') ?? m.get('sessions');
+                return n == null ? '—' : String(n);
+            }
         });
-        this.addChild(this.hardwareCard);
+        this.kpiLocations = new MetricCard({
+            containerId: 'dv-kpi-locations',
+            label: 'Locations',
+            value: () => {
+                const n = this._readLocationsCount();
+                return n == null ? '—' : String(n);
+            }
+        });
+        this.kpiDays = new MetricCard({
+            containerId: 'dv-kpi-days',
+            label: 'Days active',
+            value: () => {
+                const d = daysActive(m);
+                return d == null ? '—' : String(d);
+            }
+        });
+        this.kpiLastLogin = new MetricCard({
+            containerId: 'dv-kpi-last-login',
+            label: 'Last login',
+            value: () => m.get('last_seen') ? formatRelative(m.get('last_seen')) : 'Never',
+            tone: m.get('last_seen') ? 'success' : 'default'
+        });
+        [this.kpiSessions, this.kpiLocations, this.kpiDays, this.kpiLastLogin]
+            .forEach(c => this.addChild(c));
 
-        // Threat-signals card (audit list)
-        this.threatsCard = new DeviceThreatSignalsCard({
+        // Threat-signal feed — a vertical timeline that captures the
+        // audit-list shape (icon + source + line + relative-time gutter)
+        // using the `@core` Timeline primitive.
+        this.threatTimeline = new Timeline({
             containerId: 'dv-overview-threats',
-            model: m
+            model: m,
+            emptyText: 'No threat signals recorded.',
+            items: mm => this._threatItems(mm)
         });
-        this.addChild(this.threatsCard);
+        this.addChild(this.threatTimeline);
 
         // React to locations collection — keep the KPI live
         if (this.locationsCollection) {
-            this.locationsCollection.on('fetch:success', () => this._refreshLocationsKpi(), this);
+            this.locationsCollection.on('fetch:success', () => {
+                if (this.kpiLocations?.isMounted?.()) {
+                    this.kpiLocations.render();
+                }
+            }, this);
         }
-    }
-
-    _kpi(containerId, label, value, tone = null) {
-        return new View({
-            containerId,
-            className: `metric-card${tone ? ` metric-card-tone-${tone}` : ''}`,
-            template: `
-                <div class="metric-card-label">${this.escapeHtml(label)}</div>
-                <div class="metric-card-value">${this.escapeHtml(value)}</div>
-            `
-        });
     }
 
     _readLocationsCount() {
@@ -241,321 +245,381 @@ class DeviceOverviewSection extends View {
             ?? null;
     }
 
-    _refreshLocationsKpi() {
-        const count = this._readLocationsCount();
-        if (this.kpiLocations?.element) {
-            const span = this.kpiLocations.element.querySelector('.metric-card-value');
-            if (span) span.textContent = count == null ? '—' : String(count);
-        }
-    }
-}
-
-
-// ── Hardware summary card (Overview right-column) ──────────
-
-class DeviceHardwareSummaryCard extends View {
-    constructor(options = {}) {
-        super({ ...options });
-        this.template = () => this._buildTemplate();
-    }
-
-    _buildTemplate() {
-        const m = this.model;
-        const di = m.get('device_info') || {};
-        const ua = di.user_agent || {};
-        const os = di.os || {};
-        const screen = di.screen || {};
-        const screenText = (screen.width && screen.height)
-            ? `${screen.width} × ${screen.height}${screen.pixel_ratio ? ` · ${screen.pixel_ratio}×` : ''}`
-            : '—';
-
-        const rows = [
-            ['Browser',  ua.family ? `${this.escapeHtml(browserLabel(di))}${ua.minor ? ` <span class="text-secondary">·</span> ${this.escapeHtml(String(ua.minor))}` : ''}` : '<span class="text-secondary">—</span>'],
-            ['OS',       os.family ? this.escapeHtml(osLabel(di)) : '<span class="text-secondary">—</span>'],
-            ['Screen',   screenText !== '—' ? this.escapeHtml(screenText) : '<span class="text-secondary">—</span>'],
-            ['Locale',   di.locale   ? `<code>${this.escapeHtml(String(di.locale))}</code>`   : '<span class="text-secondary">—</span>'],
-            ['Timezone', di.timezone ? `<code>${this.escapeHtml(String(di.timezone))}</code>` : '<span class="text-secondary">—</span>'],
-            ['First seen', m.get('first_seen')
-                ? `<code>${this.escapeHtml(formatDateTime(m.get('first_seen')))}</code> <span class="text-secondary">· ${this.escapeHtml(formatRelative(m.get('first_seen')))}</span>`
-                : '<span class="text-secondary">—</span>']
-        ];
-
-        const rowsHtml = rows.map(([k, v]) =>
-            `<li class="d-flex justify-content-between border-bottom border-opacity-25 py-1"><span class="text-secondary">${this.escapeHtml(k)}</span><span>${v}</span></li>`
-        ).join('');
-
-        return `
-            <div class="card">
-                <div class="card-body">
-                    <div class="card-title"><i class="bi bi-cpu"></i>Hardware &amp; environment</div>
-                    <ul class="list-unstyled mb-0 small">${rowsHtml}</ul>
-                </div>
-            </div>
-        `;
-    }
-}
-
-
-// ── Threat signals card (audit-list) ───────────────────────
-
-class DeviceThreatSignalsCard extends View {
-    constructor(options = {}) {
-        super({ ...options });
-        this.template = () => this._buildTemplate();
-    }
-
-    _buildTemplate() {
-        const m = this.model;
-        const di = m.get('device_info') || {};
-        const geo = di.last_geo || di.geolocation || m.get('last_geo') || {};
+    /**
+     * Build the threat-signal Timeline items. `detail` is trusted HTML —
+     * model-controlled fields are escaped with MOJOUtils.escapeHtml.
+     */
+    _threatItems(model) {
+        const m = model || this.model;
+        const geo = _geoFor(m);
         const isTrusted = !!m.get('is_trusted');
-        const flags = collectThreatFlags(m);
         const lastSeenRel = m.get('last_seen') ? formatRelative(m.get('last_seen')) : 'unknown';
 
-        const entries = [];
+        const items = [];
 
         // TRUST
-        entries.push({
-            tone: isTrusted ? 'success' : null,
-            icon: isTrusted ? 'bi-shield-check' : 'bi-shield',
-            source: 'trust',
-            text: isTrusted
-                ? `Marked <strong>trusted</strong>`
-                : `Not marked trusted`,
+        items.push({
+            tone: isTrusted ? 'success' : 'default',
+            headline: isTrusted ? 'Marked trusted' : 'Not marked trusted',
+            detail: isTrusted
+                ? 'Operator has flagged this device as safe.'
+                : 'No trust override set.',
             when: lastSeenRel
         });
 
         // VPN
-        const vpnHit = flags.find(f => f.key === 'vpn');
-        entries.push({
+        const vpnHit = hasFlag(m, 'vpn');
+        items.push({
             tone: vpnHit ? 'warning' : 'success',
-            icon: vpnHit ? 'bi-shield-exclamation' : 'bi-shield-check',
-            source: 'vpn',
-            text: vpnHit ? 'VPN detected on last session' : 'No VPN detected on last session',
+            headline: vpnHit ? 'VPN detected' : 'No VPN signal',
+            detail: vpnHit ? 'Last session originated from a VPN exit.' : '',
             when: 'live'
         });
 
         // TOR
-        const torHit = flags.find(f => f.key === 'tor');
-        entries.push({
+        const torHit = hasFlag(m, 'tor');
+        items.push({
             tone: torHit ? 'danger' : 'success',
-            icon: torHit ? 'bi-shield-x' : 'bi-shield-check',
-            source: 'tor',
-            text: torHit ? 'Seen from a Tor exit' : 'Never seen from a Tor exit',
+            headline: torHit ? 'Seen from a Tor exit' : 'No Tor signal',
+            detail: torHit ? 'Recent activity routed through the Tor network.' : '',
             when: 'live'
         });
+
+        // PROXY (only render row when fired — keep the timeline tight when it isn't)
+        if (hasFlag(m, 'proxy')) {
+            items.push({
+                tone: 'warning',
+                headline: 'Open proxy detected',
+                detail: 'Last session went through an open proxy.',
+                when: 'live'
+            });
+        }
 
         // GEO — locations seen
         const locCount = m.get('location_count') ?? null;
         const geoText = locCount != null
             ? `${locCount} distinct location${locCount === 1 ? '' : 's'}`
-            : (geo.country_name ? `Last from ${this.escapeHtml(geo.country_name)}` : 'Location unknown');
-        entries.push({
+            : (geo.country_name ? `Last from ${escapeHtml(geo.country_name)}` : 'Location unknown');
+        items.push({
             tone: 'info',
-            icon: 'bi-geo-alt',
-            source: 'geo',
-            text: geoText,
+            headline: 'Geo footprint',
+            detail: geoText,
             when: 'live'
         });
 
         // DUID
         const duid = m.get('duid');
-        entries.push({
-            tone: null,
-            icon: 'bi-fingerprint',
-            source: 'duid',
-            text: duid
-                ? `<code>${this.escapeHtml(truncateMiddle(duid, 12))}</code>`
-                : '<span class="text-secondary">No device id</span>',
-            when: m.get('first_seen') ? formatRelative(m.get('first_seen')) : ''
-        });
+        if (duid) {
+            items.push({
+                tone: 'default',
+                headline: 'Device fingerprint',
+                detail: `<code>${escapeHtml(String(duid))}</code>`,
+                when: m.get('first_seen') ? formatRelative(m.get('first_seen')) : ''
+            });
+        }
 
-        const itemsHtml = entries.map(e => `
-            <li class="detail-audit-entry">
-                <div class="detail-audit-icon${e.tone ? ` tone-${e.tone}` : ''}"><i class="bi ${this.escapeHtml(e.icon)}"></i></div>
-                <div class="detail-audit-source">${this.escapeHtml(e.source)}</div>
-                <div>${e.text}</div>
-                <div class="detail-audit-when">${this.escapeHtml(e.when || '')}</div>
-            </li>
-        `).join('');
-
-        return `
-            <div class="card">
-                <div class="card-body">
-                    <div class="card-title"><i class="bi bi-shield-check"></i>Threat signals</div>
-                    <ul class="detail-audit-list">${itemsHtml}</ul>
-                </div>
-            </div>
-        `;
+        return items;
     }
 }
 
 
-// ── Hardware section (full device_info dump) ───────────────
+// ── Hardware section (full device_info dump as flat rows) ──
+//
+// Three labeled sub-sections (Browser / Operating system / Hardware /
+// Display & environment / Identification) of `.detail-flat-row`s plus
+// an optional User-agent string block. No `.detail-field-card`
+// wrappers per Wave 3 design language.
 
 class DeviceHardwareSection extends View {
     constructor(options = {}) {
         super({
             className: 'device-hardware-section',
+            template: `
+                <div class="detail-section-eyebrow">Browser</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Family</div>
+                    <div class="detail-flat-row-value">{{model.device_info.user_agent.family|default:'—'}}</div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Version</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasBrowserVersion|bool}}{{browserVersion}}{{/hasBrowserVersion|bool}}
+                        {{^hasBrowserVersion|bool}}<span class="text-secondary fst-italic">—</span>{{/hasBrowserVersion|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Engine</div>
+                    <div class="detail-flat-row-value">{{model.device_info.user_agent.engine|default:'—'}}</div>
+                </div>
+
+                <div class="detail-section-eyebrow">Operating system</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Family</div>
+                    <div class="detail-flat-row-value">{{model.device_info.os.family|default:'—'}}</div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Version</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasOsVersion|bool}}{{osVersion}}{{/hasOsVersion|bool}}
+                        {{^hasOsVersion|bool}}<span class="text-secondary fst-italic">—</span>{{/hasOsVersion|bool}}
+                    </div>
+                </div>
+
+                <div class="detail-section-eyebrow">Hardware</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Brand</div>
+                    <div class="detail-flat-row-value">{{model.device_info.device.brand|default:'—'}}</div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Family</div>
+                    <div class="detail-flat-row-value">{{model.device_info.device.family|default:'—'}}</div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Model</div>
+                    <div class="detail-flat-row-value">{{model.device_info.device.model|default:'—'}}</div>
+                </div>
+
+                <div class="detail-section-eyebrow">Display &amp; environment</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Resolution</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasResolution|bool}}{{resolutionDisplay}}{{/hasResolution|bool}}
+                        {{^hasResolution|bool}}<span class="text-secondary fst-italic">—</span>{{/hasResolution|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Pixel ratio</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasPixelRatio|bool}}{{pixelRatioDisplay}}{{/hasPixelRatio|bool}}
+                        {{^hasPixelRatio|bool}}<span class="text-secondary fst-italic">—</span>{{/hasPixelRatio|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Color depth</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasColorDepth|bool}}{{colorDepthDisplay}}{{/hasColorDepth|bool}}
+                        {{^hasColorDepth|bool}}<span class="text-secondary fst-italic">—</span>{{/hasColorDepth|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Locale</div>
+                    <div class="detail-flat-row-value">
+                        {{#model.device_info.locale}}<code>{{model.device_info.locale}}</code>{{/model.device_info.locale}}
+                        {{^model.device_info.locale}}<span class="text-secondary fst-italic">—</span>{{/model.device_info.locale}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Timezone</div>
+                    <div class="detail-flat-row-value">
+                        {{#model.device_info.timezone}}<code>{{model.device_info.timezone}}</code>{{/model.device_info.timezone}}
+                        {{^model.device_info.timezone}}<span class="text-secondary fst-italic">—</span>{{/model.device_info.timezone}}
+                    </div>
+                </div>
+
+                <div class="detail-section-eyebrow">Identification</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Device ID</div>
+                    <div class="detail-flat-row-value">
+                        {{#model.duid}}<code>{{model.duid}}</code>{{/model.duid}}
+                        {{^model.duid}}<span class="text-secondary fst-italic">—</span>{{/model.duid}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Last IP</div>
+                    <div class="detail-flat-row-value">
+                        {{#model.last_ip}}<code>{{model.last_ip}}</code>{{/model.last_ip}}
+                        {{^model.last_ip}}<span class="text-secondary fst-italic">—</span>{{/model.last_ip}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">First seen</div>
+                    <div class="detail-flat-row-value">
+                        {{#model.first_seen}}<code>{{model.first_seen|datetime}}</code>{{/model.first_seen}}
+                        {{^model.first_seen}}<span class="text-secondary fst-italic">—</span>{{/model.first_seen}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Last seen</div>
+                    <div class="detail-flat-row-value">
+                        {{#model.last_seen}}<code>{{model.last_seen|datetime}}</code>{{/model.last_seen}}
+                        {{^model.last_seen}}<span class="text-secondary fst-italic">—</span>{{/model.last_seen}}
+                    </div>
+                </div>
+
+                {{#hasUaString|bool}}
+                <div class="detail-section-eyebrow">User agent</div>
+                <pre class="detail-error-block">{{model.device_info.string}}</pre>
+                {{/hasUaString|bool}}
+            `,
             ...options
         });
-        this.template = () => this._buildTemplate();
     }
 
-    _buildTemplate() {
-        const m = this.model;
-        const di = m.get('device_info') || {};
-        const ua = di.user_agent || {};
-        const os = di.os || {};
-        const dev = di.device || {};
-        const screen = di.screen || {};
+    // ── Computed properties for the template ────────────
 
-        const browserCard = this._fieldCard('Browser', 'bi-window', [
-            ['Family',  ua.family ? this.escapeHtml(String(ua.family)) : '<span class="text-secondary">—</span>'],
-            ['Version', [ua.major, ua.minor, ua.patch].filter(v => v != null && v !== '').map(v => this.escapeHtml(String(v))).join('.') || '<span class="text-secondary">—</span>'],
-            ['Engine',  ua.engine ? this.escapeHtml(String(ua.engine)) : '<span class="text-secondary">—</span>']
-        ]);
-
-        const osCard = this._fieldCard('Operating system', 'bi-display', [
-            ['Family',  os.family ? this.escapeHtml(String(os.family)) : '<span class="text-secondary">—</span>'],
-            ['Version', [os.major, os.minor, os.patch].filter(v => v != null && v !== '').map(v => this.escapeHtml(String(v))).join('.') || '<span class="text-secondary">—</span>']
-        ]);
-
-        const hardwareCard = this._fieldCard('Hardware', 'bi-cpu', [
-            ['Brand',  dev.brand  ? this.escapeHtml(String(dev.brand))  : '<span class="text-secondary">—</span>'],
-            ['Family', dev.family ? this.escapeHtml(String(dev.family)) : '<span class="text-secondary">—</span>'],
-            ['Model',  dev.model  ? this.escapeHtml(String(dev.model))  : '<span class="text-secondary">—</span>']
-        ]);
-
-        const screenRows = [];
-        if (screen.width && screen.height) {
-            screenRows.push(['Resolution', `${screen.width} × ${screen.height}`]);
-        }
-        if (screen.pixel_ratio != null) {
-            screenRows.push(['Pixel ratio', `${this.escapeHtml(String(screen.pixel_ratio))}×`]);
-        }
-        if (screen.color_depth != null) {
-            screenRows.push(['Color depth', `${this.escapeHtml(String(screen.color_depth))}-bit`]);
-        }
-        if (di.locale)   screenRows.push(['Locale',   `<code>${this.escapeHtml(String(di.locale))}</code>`]);
-        if (di.timezone) screenRows.push(['Timezone', `<code>${this.escapeHtml(String(di.timezone))}</code>`]);
-        const envCard = screenRows.length
-            ? this._fieldCard('Display & environment', 'bi-aspect-ratio', screenRows)
-            : '';
-
-        const idRows = [
-            ['Device ID', m.get('duid')   ? `<code>${this.escapeHtml(String(m.get('duid')))}</code>` : '<span class="text-secondary">—</span>'],
-            ['Last IP',   m.get('last_ip') ? `<code>${this.escapeHtml(String(m.get('last_ip')))}</code>` : '<span class="text-secondary">—</span>'],
-            ['First seen', m.get('first_seen') ? `<code>${this.escapeHtml(formatDateTime(m.get('first_seen')))}</code>` : '<span class="text-secondary">—</span>'],
-            ['Last seen',  m.get('last_seen')  ? `<code>${this.escapeHtml(formatDateTime(m.get('last_seen')))}</code>`  : '<span class="text-secondary">—</span>']
-        ];
-        const idCard = this._fieldCard('Identification', 'bi-fingerprint', idRows);
-
-        const uaString = di.string ? `
-            <div class="detail-field-card">
-                <div class="detail-field-card-header">
-                    <h4><i class="bi bi-code-slash"></i>User agent string</h4>
-                </div>
-                <div class="detail-field-card-body">
-                    <pre class="detail-error-block" style="color: var(--bs-secondary-color);">${this.escapeHtml(String(di.string))}</pre>
-                </div>
-            </div>
-        ` : '';
-
-        return `
-            ${browserCard}
-            ${osCard}
-            ${hardwareCard}
-            ${envCard}
-            ${idCard}
-            ${uaString}
-        `;
+    get hasBrowserVersion() {
+        const ua = this.model?.get('device_info')?.user_agent || {};
+        return [ua.major, ua.minor, ua.patch].some(v => v != null && v !== '');
     }
 
-    _fieldCard(title, icon, rows) {
-        const rowsHtml = rows.map(([label, value]) => `
-            <div class="detail-field-row">
-                <div class="detail-field-label">${this.escapeHtml(label)}</div>
-                <div class="detail-field-value">${value}</div>
-            </div>
-        `).join('');
+    get browserVersion() {
+        const ua = this.model?.get('device_info')?.user_agent || {};
+        return [ua.major, ua.minor, ua.patch].filter(v => v != null && v !== '').join('.');
+    }
 
-        return `
-            <div class="detail-field-card">
-                <div class="detail-field-card-header">
-                    <h4><i class="bi ${this.escapeHtml(icon)}"></i>${this.escapeHtml(title)}</h4>
-                </div>
-                <div class="detail-field-card-body">${rowsHtml}</div>
-            </div>
-        `;
+    get hasOsVersion() {
+        const os = this.model?.get('device_info')?.os || {};
+        return [os.major, os.minor, os.patch].some(v => v != null && v !== '');
+    }
+
+    get osVersion() {
+        const os = this.model?.get('device_info')?.os || {};
+        return [os.major, os.minor, os.patch].filter(v => v != null && v !== '').join('.');
+    }
+
+    get hasResolution() {
+        const screen = this.model?.get('device_info')?.screen || {};
+        return !!(screen.width && screen.height);
+    }
+
+    get resolutionDisplay() {
+        const screen = this.model?.get('device_info')?.screen || {};
+        return `${screen.width} × ${screen.height}`;
+    }
+
+    get hasPixelRatio() {
+        const screen = this.model?.get('device_info')?.screen || {};
+        return screen.pixel_ratio != null;
+    }
+
+    get pixelRatioDisplay() {
+        const screen = this.model?.get('device_info')?.screen || {};
+        return `${screen.pixel_ratio}×`;
+    }
+
+    get hasColorDepth() {
+        const screen = this.model?.get('device_info')?.screen || {};
+        return screen.color_depth != null;
+    }
+
+    get colorDepthDisplay() {
+        const screen = this.model?.get('device_info')?.screen || {};
+        return `${screen.color_depth}-bit`;
+    }
+
+    get hasUaString() {
+        return !!this.model?.get('device_info')?.string;
     }
 }
 
 
-// ── Sessions section (no collection wired yet) ─────────────
+// ── Sessions section ────────────────────────────────────────
 //
-// There is no UserDeviceSession collection in the framework today, so this
-// section renders an informational placeholder. Once a session model is
-// added, swap this out for a TableView the same way Locations does.
+// There is no `UserDeviceSession` collection in the framework today,
+// so this section renders an empty-state via the standard flat-row
+// layout. Once a session model + endpoint land, swap this out for a
+// `TableView` the same way Locations does.
 
 class DeviceSessionsSection extends View {
     constructor(options = {}) {
         super({
             className: 'device-sessions-section',
+            template: `
+                <div class="detail-section-eyebrow">Sessions</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Status</div>
+                    <div class="detail-flat-row-value text-secondary fst-italic">
+                        Session history is not yet recorded server-side. Once a
+                        UserDeviceSession collection lands, this section will
+                        list every login / token-grant for this device.
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Sessions seen</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasSessionCount|bool}}<strong>{{sessionCount}}</strong>{{/hasSessionCount|bool}}
+                        {{^hasSessionCount|bool}}<span class="text-secondary fst-italic">—</span>{{/hasSessionCount|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Last login</div>
+                    <div class="detail-flat-row-value">
+                        {{#model.last_seen}}<code>{{model.last_seen|datetime}}</code> <span class="text-secondary">· {{model.last_seen|relative}}</span>{{/model.last_seen}}
+                        {{^model.last_seen}}<span class="text-secondary fst-italic">Never</span>{{/model.last_seen}}
+                    </div>
+                </div>
+            `,
             ...options
         });
-        this.template = () => this._buildTemplate();
     }
 
-    _buildTemplate() {
-        return `
-            <div class="card">
-                <div class="card-body text-center text-secondary py-4">
-                    <i class="bi bi-clock-history fs-1 d-block mb-2"></i>
-                    <p class="mb-0 small">Session history is not yet recorded server-side.
-                    Once a UserDeviceSession collection lands, this section
-                    will list every login/token-grant for this device.</p>
-                </div>
-            </div>
-        `;
+    get hasSessionCount() {
+        const n = this.model?.get('session_count') ?? this.model?.get('sessions');
+        return n != null;
+    }
+
+    get sessionCount() {
+        const n = this.model?.get('session_count') ?? this.model?.get('sessions');
+        return n == null ? '' : String(n);
     }
 }
 
 
 // ── Metadata section ───────────────────────────────────────
+//
+// Promotes a few known device-record fields and keeps the raw blob
+// available via `<details>`. Uses the `KnownFieldsCard` primitive.
 
 class DeviceMetadataSection extends View {
     constructor(options = {}) {
         super({
             className: 'device-metadata-section',
+            template: `
+                <div class="detail-section-eyebrow">Metadata</div>
+                <div data-container="dv-metadata-card"></div>
+            `,
             ...options
         });
-        this.template = () => this._buildTemplate();
     }
 
-    _buildTemplate() {
-        const meta = this.model.get('metadata') || {};
-        const isEmpty = Object.keys(meta).length === 0;
-
-        if (isEmpty) {
-            return `
-                <div class="card">
-                    <div class="card-body text-center text-secondary py-4">
-                        <i class="bi bi-braces fs-1 d-block mb-2"></i>
-                        <p class="mb-0 small">No metadata recorded for this device.</p>
-                    </div>
-                </div>
-            `;
-        }
-
-        return `
-            <div class="card">
-                <div class="card-body">
-                    <div class="card-title"><i class="bi bi-braces"></i>Metadata</div>
-                    <pre class="bg-body-tertiary border rounded p-3 small mb-0" style="white-space: pre-wrap; word-break: break-word; max-height: 60vh; overflow: auto;"><code>{{model.metadata|json}}</code></pre>
-                </div>
-            </div>
-        `;
+    async onInit() {
+        this.knownFields = new KnownFieldsCard({
+            containerId: 'dv-metadata-card',
+            model: this.model,
+            // Combined view: any explicit `metadata` blob plus a small set
+            // of audit-style fields off the record itself. KnownFieldsCard
+            // does dotted-path lookups so we can promote nested keys.
+            data: m => {
+                const meta = m.get('metadata') || {};
+                return {
+                    ...meta,
+                    _record_id: m.get('id'),
+                    _user: m.get('user'),
+                    _duid: m.get('duid'),
+                    _first_seen: m.get('first_seen'),
+                    _last_seen: m.get('last_seen'),
+                    _is_trusted: m.get('is_trusted')
+                };
+            },
+            knownKeys: [
+                { key: '_record_id', label: 'Record ID',
+                  formatter: (v) => v != null
+                      ? `<code>${escapeHtml(String(v))}</code>`
+                      : '<span class="text-secondary fst-italic">—</span>' },
+                { key: '_duid', label: 'DUID',
+                  formatter: (v) => v
+                      ? `<code>${escapeHtml(String(v))}</code>`
+                      : '<span class="text-secondary fst-italic">—</span>' },
+                { key: '_user.display_name', label: 'Owner', hideEmpty: true },
+                { key: '_first_seen', label: 'First seen', formatter: 'datetime' },
+                { key: '_last_seen',  label: 'Last seen',  formatter: 'datetime' },
+                { key: '_is_trusted', label: 'Trusted', formatter: 'yesnoicon' }
+            ],
+            rawLabel: 'Raw metadata',
+            rawCollapsed: true,
+            emptyText: 'No metadata recorded for this device.'
+        });
+        this.addChild(this.knownFields);
     }
 }
 
@@ -611,7 +675,7 @@ class DeviceView extends DetailView {
         const sessionsSection = new DeviceSessionsSection({ model });
         const metadataSection = new DeviceMetadataSection({ model });
 
-        // Section list
+        // Section list (5 sections + 2 dividers)
         const sections = [
             { key: 'Overview',  label: 'Overview',  icon: 'bi-grid-1x2', view: overviewSection },
             { key: 'Hardware',  label: 'Hardware',  icon: 'bi-cpu',      view: hardwareSection },
@@ -634,10 +698,6 @@ class DeviceView extends DetailView {
         const chips = [
             { icon: 'bi-window', text: m => browserLabel(m.get('device_info') || {}), variant: 'info',
               when: m => !!(m.get('device_info')?.user_agent?.family) },
-            { icon: 'bi-fingerprint',
-              text: m => m.get('duid') ? `duid · ${truncateMiddle(m.get('duid'), 12)}` : null,
-              variant: 'light',
-              when: m => !!m.get('duid') },
             { text: m => {
                 const n = m.get('session_count') ?? m.get('sessions');
                 return (n != null) ? `${n} ${n === 1 ? 'session' : 'sessions'}` : null;
@@ -646,41 +706,21 @@ class DeviceView extends DetailView {
                 const n = m.get('location_count');
                 return (n != null) ? `${n} ${n === 1 ? 'location' : 'locations'}` : null;
               }, variant: 'light' },
-            { icon: 'bi-shield-check', text: 'Trusted', variant: 'success',
+            // State chips — only render when truthy (per spec)
+            { icon: 'bi-shield-check',       text: 'Trusted', variant: 'success',
               when: m => !!m.get('is_trusted') },
-            // Threat-flag chips render only when present
+            { icon: 'bi-slash-circle',       text: 'Blocked', variant: 'danger',
+              when: m => !!m.get('is_blocked') },
+            // Threat-flag chips — only render when present
             { icon: 'bi-shield-exclamation', text: 'VPN',   variant: 'warning',
-              when: m => collectThreatFlags(m).some(f => f.key === 'vpn') },
+              when: m => hasFlag(m, 'vpn') },
             { icon: 'bi-shield-x',           text: 'Tor',   variant: 'danger',
-              when: m => collectThreatFlags(m).some(f => f.key === 'tor') },
+              when: m => hasFlag(m, 'tor') },
             { icon: 'bi-shield-exclamation', text: 'Proxy', variant: 'warning',
-              when: m => collectThreatFlags(m).some(f => f.key === 'proxy') },
+              when: m => hasFlag(m, 'proxy') },
             { icon: 'bi-cloud',              text: 'Cloud', variant: 'info',
-              when: m => collectThreatFlags(m).some(f => f.key === 'cloud') }
+              when: m => hasFlag(m, 'cloud') }
         ];
-
-        // Pre-compute the synthetic subtitle the header reads via subtitlePath.
-        // Stashed onto attributes._subtitle so a header re-render picks it up.
-        const _refreshSubtitle = (m) => {
-            const lastSeen = m.get('last_seen');
-            const ip = m.get('last_ip');
-            const _di = m.get('device_info') || {};
-            const geo = _di.last_geo || _di.geolocation || m.get('last_geo') || {};
-            const user = m.get('user');
-
-            const parts = [];
-            if (lastSeen) {
-                parts.push(`Last seen ${formatRelative(lastSeen)}`);
-            } else {
-                parts.push('Never seen');
-            }
-            if (ip) parts.push(`from ${ip}`);
-            const place = [geo.city, geo.country_name].filter(Boolean).join(', ');
-            if (place) parts.push(`· ${place}`);
-            if (user?.display_name) parts.push(`· owner ${user.display_name}`);
-            m.attributes._subtitle = parts.join(' ');
-        };
-        _refreshSubtitle(model);
 
         // Active toggle — only show if the model has an `is_trusted` field
         // surfaced (any non-undefined value, including false).
@@ -704,14 +744,19 @@ class DeviceView extends DetailView {
             header: {
                 icon: headerIcon,
                 iconToneFn: m => {
-                    const info = m.get('device_info') || {};
-                    if (info.is_tor || info.is_proxy) return 'danger';
-                    if (info.is_vpn || info.is_cloud) return 'warning';
+                    if (hasFlag(m, 'tor') || hasFlag(m, 'proxy')) return 'danger';
+                    if (hasFlag(m, 'vpn') || hasFlag(m, 'cloud')) return 'warning';
+                    if (m.get('is_blocked')) return 'danger';
+                    if (m.get('is_trusted')) return 'success';
                     return 'info';
                 },
                 titleFn,
-                subtitlePath: '_subtitle',
+                subtitleFn: m => _buildSubtitle(m),
                 chips,
+                // Right-gutter aux block — presence dot + "Last seen 4m ago"
+                // line, replacing the prior `_subtitle` synthetic-field
+                // round-trip. Trusted HTML; model fields escaped.
+                auxFn: m => _buildHeaderAux(m),
                 activeField: hasTrustField ? 'is_trusted' : null,
                 actions: [
                     { label: 'View user', icon: 'bi-person', action: 'view-user', title: 'Open the user that owns this device' },
@@ -730,7 +775,6 @@ class DeviceView extends DetailView {
         this.locationsSection = locationsSection;
         this.sessionsSection  = sessionsSection;
         this.metadataSection  = metadataSection;
-        this._refreshSubtitle = _refreshSubtitle;
     }
 
     async onAfterBuild() {
@@ -796,9 +840,9 @@ class DeviceView extends DetailView {
             if (this.headerView?.isMounted()) {
                 await this.headerView.render();
             }
-            // Refresh the Overview's threat-signals card
-            if (this.overviewSection?.threatsCard?.isMounted()) {
-                await this.overviewSection.threatsCard.render();
+            // Refresh the Overview's threat-signals timeline
+            if (this.overviewSection?.threatTimeline?.isMounted()) {
+                await this.overviewSection.threatTimeline.render();
             }
             this.emit('detail:updated');
         } catch (err) {
@@ -847,7 +891,68 @@ class DeviceView extends DetailView {
     }
 }
 
+
+// ── Header subtitle / aux helpers ──────────────────────────
+
+function _buildSubtitle(m) {
+    const lastSeen = m.get('last_seen');
+    const ip = m.get('last_ip');
+    const geo = _geoFor(m);
+    const user = m.get('user');
+
+    const parts = [];
+    parts.push(lastSeen ? `Last seen ${formatRelative(lastSeen)}` : 'Never seen');
+    if (ip) parts.push(`from ${ip}`);
+    const place = [geo.city, geo.country_name].filter(Boolean).join(', ');
+    if (place) parts.push(`· ${place}`);
+    if (user?.display_name) parts.push(`· owner ${user.display_name}`);
+    return parts.join(' ');
+}
+
+/**
+ * Trusted-HTML right-gutter aux block. Caller is in source code; every
+ * model field is escaped via MOJOUtils.escapeHtml before composition.
+ */
+function _buildHeaderAux(m) {
+    const lastSeen = m.get('last_seen');
+    const isOnline = (() => {
+        const ms = epochToMs(lastSeen);
+        if (ms == null) return false;
+        return (Date.now() - ms) < 5 * 60 * 1000;
+    })();
+
+    let dotCls = '';
+    let main = '';
+    if (m.get('is_blocked')) {
+        dotCls = ' dh-aux-dot-danger';
+        main = 'Blocked';
+    } else if (isOnline) {
+        dotCls = ' dh-aux-dot-success';
+        main = 'Online';
+    } else if (lastSeen) {
+        dotCls = ' dh-aux-dot-secondary';
+        main = 'Offline';
+    } else {
+        dotCls = ' dh-aux-dot-secondary';
+        main = 'Never seen';
+    }
+
+    const sub = lastSeen ? `Last seen ${escapeHtml(formatRelative(lastSeen))}` : '';
+
+    return `
+        <span class="dh-aux-dot${dotCls}"></span>
+        <span class="dh-aux-meta"><span>${escapeHtml(main)}</span>${sub ? `<span class="text-secondary small">${sub}</span>` : ''}</span>
+    `;
+}
+
 DeviceView.VIEW_CLASS = DeviceView;
 UserDevice.VIEW_CLASS = DeviceView;
 
 export default DeviceView;
+export {
+    DeviceView,
+    DeviceOverviewSection,
+    DeviceHardwareSection,
+    DeviceSessionsSection,
+    DeviceMetadataSection
+};
