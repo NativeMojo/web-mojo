@@ -31,11 +31,27 @@
 import View from '@core/View.js';
 
 class TabView extends View {
+  /**
+   * Map of `variant` name → default `tabsClass`. Resolved when the caller
+   * doesn't pass an explicit `tabsClass`. `'underline'` keeps today's exact
+   * Bootstrap classes for bit-for-bit back-compat with pre-variant code.
+   */
+  static VARIANT_CLASSES = {
+    minimal:           'nav tab-view-variant-minimal mb-3',
+    underline:         'nav nav-tabs mb-3',
+    pills:             'nav tab-view-variant-pills mb-3',
+    segmented:         'nav tab-view-variant-segmented mb-3',
+    'segmented-solid': 'nav tab-view-variant-segmented-solid mb-3'
+  };
+
+  static DEFAULT_VARIANT = 'minimal';
+
   constructor(options = {}) {
     const {
       tabs,
       activeTab,
       tabsClass,
+      variant,
       contentClass,
       minWidth,
       enableResponsive,
@@ -57,8 +73,19 @@ class TabView extends View {
     this.tabLabels = Object.keys(this.tabs);
     this.activeTab = activeTab || this.tabLabels[0] || null;
 
+    // Resolve variant — fall back to default with a warning on unknown.
+    if (variant != null && !Object.prototype.hasOwnProperty.call(TabView.VARIANT_CLASSES, variant)) {
+      console.warn(`TabView: unknown variant "${variant}". Falling back to "${TabView.DEFAULT_VARIANT}". Valid: ${Object.keys(TabView.VARIANT_CLASSES).join(', ')}.`);
+      this.variant = TabView.DEFAULT_VARIANT;
+    } else {
+      this.variant = variant || TabView.DEFAULT_VARIANT;
+    }
+
     // CSS classes
-    this.tabsClass = tabsClass || 'nav nav-tabs mb-3';
+    // tabsClass precedence: explicit option > variant lookup. SectionedFormView
+    // and other call sites pass tabsClass to override styling (e.g. `d-none`),
+    // so an explicit value must always win.
+    this.tabsClass = tabsClass || TabView.VARIANT_CLASSES[this.variant];
     this.contentClass = contentClass || 'tab-content';
 
     // Transition configuration
@@ -205,7 +232,7 @@ class TabView extends View {
     }
 
     return `
-      <div class="dropdown mb-3" data-tab-mode="dropdown">
+      <div class="dropdown mb-3 tab-view-variant-${this.variant}" data-tab-mode="dropdown">
         ${buttonHtml}
         <ul class="dropdown-menu" aria-labelledby="tab-dropdown-${this.id}">
           ${dropdownItems}
@@ -236,7 +263,7 @@ class TabView extends View {
     }).join('');
 
     return `
-      <div class="dropdown mb-3" data-tab-navigation="mobile">
+      <div class="dropdown mb-3 tab-view-variant-${this.variant}" data-tab-navigation="mobile">
         <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start"
                 type="button"
                 data-bs-toggle="dropdown"

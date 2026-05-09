@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### TabView — `variant` option, default flipped to `minimal`
+
+- **Added:** `variant` constructor option on `TabView` (`src/core/views/navigation/TabView.js`). Five values — `'minimal'` (new default), `'underline'`, `'pills'`, `'segmented'`, `'segmented-solid'`. Each maps to a `tab-view-variant-*` hook class on the rendered `<ul>` (and the dropdown wrapper when the bar collapses); all visual differences live in `core.css`. Unknown values warn and fall back to `'minimal'`.
+- **Behavior change:** the default tab style changed from `nav nav-tabs mb-3` (Bootstrap nav-tabs underline) to `'minimal'` (text-only, primary on active, no border). The previous look is one line away — pass `variant: 'underline'` to restore it. `'underline'` resolves to the literal `'nav nav-tabs mb-3'` class string for bit-for-bit back-compat with pre-variant code.
+- **`tabsClass` precedence preserved:** when `tabsClass` is passed explicitly, it wins and the `variant` lookup is skipped. `SectionedFormView`'s `d-none` mode and any extension override keep working unchanged.
+- **CSS:** new variants section in `src/core/css/core.css` (after the existing TabView block). Uses Bootstrap surface tokens (`--bs-body-color`, `--bs-secondary-color`, `--bs-primary`, `--bs-tertiary-bg`, `--bs-primary-bg-subtle`, etc.) with all `[data-bs-theme="dark"]` refinements clustered at the bottom of the section per `.claude/rules/theming.md`.
+- **Tests:** new `test/unit/TabView.test.js` covers default variant, each named variant's resolved `tabsClass`, unknown-variant warn-and-fallback, and `tabsClass` precedence over `variant`.
+- **Docs:** `docs/web-mojo/components/TabView.md` adds a Variants section with the five-row table, notes the default change, and updates the constructor options table.
+- **Example portal:** new `components/tab-view/variants` route (`TabViewVariantsExample.js`) — pick a variant via `SegmentControl`, the same TabView re-renders with the new look. Useful for eyeballing each variant under both light and dark themes.
+
 ### Admin user sections — drop inline `<style>` blocks, switch to framework primitives
 
 - **AdminPersonalSection** / **AdminProfileSection** / **AdminConnectedSection** / **AdminSecuritySection** — deleted the inline `<style>` blocks (every block had hardcoded light-theme hex literals: `#adb5bd`, `#f0f0f0`, `#6c757d`, `#212529`, `#0d6efd`, `#d1e7dd`, etc., with **no** `[data-bs-theme="dark"]` overrides). Templates now use the framework's `.detail-section-eyebrow` + `.detail-flat-row*` primitives (Wave 1 A5) for the labeled-row layout, and Bootstrap utility classes (`text-bg-success`, `text-bg-warning`, `text-bg-light border`, `text-secondary fst-italic`) for badges and "not set" placeholders.
