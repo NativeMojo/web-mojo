@@ -2610,54 +2610,59 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
        …
      </div>
 */
-.detail-section { margin-bottom: 2rem; }
+.detail-section { margin-bottom: 2.5rem; }
 .detail-section:last-child { margin-bottom: 0; }
 .detail-section-eyebrow {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    margin: 0 0 0.75rem;
-    font-size: 0.62rem;
+    margin: 0 0 1rem;
+    font-size: 0.65rem;
     font-weight: 600;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--bs-secondary-color);
+    opacity: 0.7;
 }
 /* Subsection eyebrows (a second `Account` eyebrow after a stack of rows
    or items inside the same section) get automatic breathing room above
    when they're not the first child of their parent. No inline `mt-3` /
    `mt-4` needed in templates. */
 .detail-section-eyebrow:not(:first-child) {
-    margin-top: 1.5rem;
+    margin-top: 2rem;
 }
 .detail-section-action {
     background: transparent;
     border: 1px solid transparent;
-    color: var(--bs-secondary-color);
+    color: var(--bs-tertiary-color, var(--bs-secondary-color));
     cursor: pointer;
-    padding: 0.15rem 0.4rem;
-    font-size: 0.85rem;
-    border-radius: 0.25rem;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.78rem;
+    border-radius: 0.3rem;
     line-height: 1;
+    opacity: 0.7;
+    transition: opacity 0.15s, background 0.15s, color 0.15s;
 }
 .detail-section-action:hover {
     background: var(--bs-secondary-bg);
     color: var(--bs-primary);
+    opacity: 1;
 }
 .detail-flat-row {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.7rem 0;
+    padding: 0.85rem 0;
     border-bottom: 1px solid var(--bs-border-color-translucent);
     font-size: 0.875rem;
+    line-height: 1.45;
 }
 .detail-flat-row:last-child { border-bottom: none; }
 .detail-flat-row-label {
-    width: 140px;
+    width: 110px;
     flex-shrink: 0;
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     color: var(--bs-secondary-color);
 }
 .detail-flat-row-value {
