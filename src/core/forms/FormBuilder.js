@@ -7,6 +7,7 @@
 import Mustache from '@core/utils/mustache.js';
 import MOJOUtils from '@core/utils/MOJOUtils.js';
 import { FormPlugins } from '@core/forms/FormPlugins.js';
+import TabView from '@core/views/navigation/TabView.js';
 
 class FormBuilder {
     constructor(config = {}) {
@@ -2650,13 +2651,22 @@ class FormBuilder {
   }
 
   /**
-   * Render a tabset field consisting of Bootstrap nav tabs and tab panes.
+   * Render a tabset field consisting of nav tabs and tab panes.
    * Each pane's fields are rendered using existing field rendering,
    * wrapped in a row so column layouts work as expected.
+   *
+   * The nav uses the same variant system as `TabView` so the look matches
+   * standalone TabView components elsewhere in the app. By default the
+   * tabset renders with `TabView.DEFAULT_VARIANT` (`'underline-all'`).
+   *
    * @param {Object} field - Tabset configuration
    * @param {Array} field.tabs - Array of tabs: [{ label, fields }]
    * @param {string} [field.name] - Optional name used to generate stable IDs
-   * @param {string} [field.navClass] - CSS classes for the tabs nav
+   * @param {string} [field.variant] - TabView variant name (e.g. `'minimal'`,
+   *   `'pills'`, `'segmented'`). Resolves through `TabView.VARIANT_CLASSES`.
+   *   Defaults to `TabView.DEFAULT_VARIANT`.
+   * @param {string} [field.navClass] - Direct CSS classes for the tabs nav.
+   *   Wins over `variant` when set.
    * @param {string} [field.contentClass] - CSS classes for the tab content container
    * @returns {string} HTML
    */
@@ -2664,9 +2674,18 @@ class FormBuilder {
     const {
       tabs = [],
       name = `tabset-${Date.now()}`,
-      navClass = 'nav nav-tabs mb-3',
+      variant,
+      navClass,
       contentClass = 'tab-content'
     } = field;
+
+    // Resolve nav classes: explicit `navClass` wins; otherwise look up
+    // the variant in TabView's table. Unknown variants fall back to the
+    // default — match TabView's own resolution behavior.
+    const resolvedVariant = variant && Object.prototype.hasOwnProperty.call(TabView.VARIANT_CLASSES, variant)
+      ? variant
+      : TabView.DEFAULT_VARIANT;
+    const resolvedNavClass = navClass || TabView.VARIANT_CLASSES[resolvedVariant];
 
     const safe = String(name).toLowerCase().replace(/[^a-z0-9]/g, '-');
 
@@ -2716,7 +2735,7 @@ class FormBuilder {
 
     return `
       <div class="mojo-form-tabset">
-        <ul class="${navClass}" role="tablist">
+        <ul class="${resolvedNavClass}" role="tablist">
           ${nav}
         </ul>
         <div class="${contentClass}">
