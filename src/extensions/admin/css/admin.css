@@ -2772,22 +2772,28 @@
    classes generalize the ruleset-* equivalents so any DetailView
    subclass (Job / User / Group / etc.) can drop them in.
 */
+/* KPI strip — auto-fits to whatever room it has. At lg-modal width
+   (~600px content area) this lays out as 3-up; at lg+much-narrower
+   nested containers it falls to 2-up then 1-up without crunching. */
 .detail-kpi-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
     gap: 0.6rem;
     margin-bottom: 0.85rem;
 }
-@media (max-width: 767px) {
-    .detail-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
+
+/* Card-pair — stacks by default; only goes side-by-side when its own
+   container is wide enough to give each card real breathing room.
+   Container query (not viewport) so it works correctly inside an `lg`
+   modal regardless of the page width. */
 .detail-pair {
+    container-type: inline-size;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 0.85rem;
 }
-@media (max-width: 991px) {
-    .detail-pair { grid-template-columns: 1fr; }
+@container (min-width: 720px) {
+    .detail-pair { grid-template-columns: 1fr 1fr; }
 }
 .detail-pair .card-title {
     font-size: 0.8rem;
@@ -2798,6 +2804,14 @@
     gap: 0.4rem;
 }
 .detail-pair .card-title i { color: var(--bs-secondary-color); font-size: 0.85rem; }
+/* Borderless card surfaces inside the pair — bg tint is the only
+   separation, matching the framework primitives. */
+.detail-pair .card {
+    border: 0;
+    border-radius: 0.75rem;
+    background: var(--bs-tertiary-bg);
+}
+.detail-pair .card .card-body { padding: 0.9rem 1rem; }
 
 
 /* StatusPanel — moved to src/core/css/core.css; the JS class lives at
@@ -2826,9 +2840,9 @@
     align-items: center;
     gap: 0.85rem;
     padding: 0.85rem 1rem;
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.5rem;
-    margin-bottom: 0.5rem;
+    border: 0;
+    border-radius: 0.6rem;
+    margin-bottom: 0.4rem;
     background: var(--bs-tertiary-bg);
 }
 .admin-connected-icon {
@@ -2874,15 +2888,14 @@
     align-items: center;
     gap: 0.85rem;
     padding: 0.85rem 1rem;
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.5rem;
-    margin-bottom: 0.5rem;
+    border: 0;
+    border-radius: 0.6rem;
+    margin-bottom: 0.4rem;
     cursor: pointer;
     background: var(--bs-tertiary-bg);
-    transition: border-color 0.15s, background 0.15s;
+    transition: background 0.15s;
 }
 .admin-security-item:hover {
-    border-color: var(--bs-border-color);
     background: var(--bs-secondary-bg);
 }
 .admin-security-icon {
@@ -2918,9 +2931,9 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.65rem 0.75rem;
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.5rem;
-    margin-bottom: 0.4rem;
+    border: 0;
+    border-radius: 0.6rem;
+    margin-bottom: 0.35rem;
     background: var(--bs-tertiary-bg);
 }
 .admin-passkey-icon {
@@ -2973,10 +2986,10 @@
 .admin-recovery-code {
     font-family: var(--bs-font-monospace);
     font-size: 0.85rem;
-    padding: 0.35rem 0.6rem;
-    background: var(--bs-secondary-bg);
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.25rem;
+    padding: 0.4rem 0.6rem;
+    background: var(--bs-tertiary-bg);
+    border: 0;
+    border-radius: 0.4rem;
     text-align: center;
     color: var(--bs-body-color);
 }

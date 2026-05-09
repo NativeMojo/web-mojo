@@ -2367,16 +2367,18 @@ button.dropdown-toggle:has(.multiselect-button-text)::after {
    Compact KPI card — label / value / hint with an optional left-border
    tone accent. Used in record-detail Overview rows and dashboard panels.
 */
+/* Borderless flat surface; the bg tint is the only visual separation.
+   Tone variants get a thin left-edge accent so the tone signal still
+   reads without the surrounding box. */
 .metric-card {
     display: flex;
     flex-direction: column;
     gap: 0.2rem;
-    padding: 0.6rem 0.8rem;
+    padding: 0.7rem 0.9rem;
     background: var(--bs-tertiary-bg);
-    border: 1px solid var(--bs-border-color);
-    border-left-width: 3px;
-    border-left-color: var(--bs-border-color);
-    border-radius: 0.5rem;
+    border: 0;
+    border-left: 3px solid transparent;
+    border-radius: 0.6rem;
     color: var(--bs-body-color);
     font: inherit;
     text-align: left;
@@ -2438,9 +2440,14 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
 
    JS: src/core/views/data/StatusPanel.js
 */
+/* Borderless flat surface; the tone-tinted bg + colored state eyebrow
+   carry the entire visual signal. The container queries further down
+   stack the actions below the headline when the panel is narrower
+   than ~480px (typical inside an `lg` modal). */
 .detail-status-panel {
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.6rem;
+    container-type: inline-size;
+    border: 0;
+    border-radius: 0.75rem;
     padding: 1rem 1.25rem;
     display: flex;
     align-items: center;
@@ -2448,6 +2455,14 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
     gap: 1.25rem;
     margin-bottom: 1rem;
     background: var(--bs-tertiary-bg);
+}
+@container (max-width: 480px) {
+    .detail-status-panel {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.85rem;
+    }
+    .detail-status-panel .detail-status-actions { flex-wrap: wrap; }
 }
 .detail-status-panel .detail-status-headline { min-width: 0; flex: 1; }
 .detail-status-panel .detail-status-state {
@@ -2485,12 +2500,14 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
 .detail-status-panel .detail-status-actions {
     display: flex; gap: 0.4rem; flex-shrink: 0;
 }
-.detail-status-panel.tone-danger    { background: rgba(var(--bs-danger-rgb),    0.08); border-color: rgba(var(--bs-danger-rgb),    0.3); }
-.detail-status-panel.tone-warning   { background: rgba(var(--bs-warning-rgb),   0.08); border-color: rgba(var(--bs-warning-rgb),   0.3); }
-.detail-status-panel.tone-success   { background: rgba(var(--bs-success-rgb),   0.08); border-color: rgba(var(--bs-success-rgb),   0.3); }
-.detail-status-panel.tone-info      { background: rgba(var(--bs-info-rgb),      0.08); border-color: rgba(var(--bs-info-rgb),      0.3); }
-.detail-status-panel.tone-primary   { background: rgba(var(--bs-primary-rgb),   0.08); border-color: rgba(var(--bs-primary-rgb),   0.3); }
-.detail-status-panel.tone-secondary { background: rgba(var(--bs-secondary-rgb), 0.06); border-color: rgba(var(--bs-secondary-rgb), 0.25); }
+/* Tones bump the tinted bg slightly (0.08 → 0.10) so the surface still
+   reads cleanly without the border. */
+.detail-status-panel.tone-danger    { background: rgba(var(--bs-danger-rgb),    0.10); }
+.detail-status-panel.tone-warning   { background: rgba(var(--bs-warning-rgb),   0.10); }
+.detail-status-panel.tone-success   { background: rgba(var(--bs-success-rgb),   0.10); }
+.detail-status-panel.tone-info      { background: rgba(var(--bs-info-rgb),      0.10); }
+.detail-status-panel.tone-primary   { background: rgba(var(--bs-primary-rgb),   0.10); }
+.detail-status-panel.tone-secondary { background: rgba(var(--bs-secondary-rgb), 0.07); }
 .detail-status-panel.tone-danger    .detail-status-state { color: var(--bs-danger);    }
 .detail-status-panel.tone-warning   .detail-status-state { color: var(--bs-warning);   }
 .detail-status-panel.tone-success   .detail-status-state { color: var(--bs-success);   }
@@ -2669,15 +2686,16 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
     margin-bottom: 0.6rem;
 }
 .detail-known-fields-raw {
-    margin-top: 0.6rem;
-    border: 1px solid var(--bs-border-color-translucent);
-    border-radius: 0.4rem;
+    margin-top: 0.75rem;
+    border: 0;
+    border-radius: 0.6rem;
     background: var(--bs-tertiary-bg);
+    overflow: hidden;
 }
 .detail-known-fields-raw-summary {
     cursor: pointer;
     list-style: none;
-    padding: 0.45rem 0.75rem;
+    padding: 0.5rem 0.85rem;
     font-size: 0.78rem;
     color: var(--bs-secondary-color);
     user-select: none;
@@ -2699,7 +2717,7 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
 .detail-known-fields-raw-summary:hover { color: var(--bs-body-color); }
 .detail-known-fields-raw-body {
     margin: 0;
-    padding: 0.75rem;
+    padding: 0.75rem 0.85rem 0.85rem;
     border-top: 1px solid var(--bs-border-color-translucent);
     font-family: var(--bs-font-monospace);
     font-size: 0.78rem;
@@ -2708,6 +2726,10 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
     word-break: break-word;
     max-height: 28rem;
     overflow: auto;
+    background: rgba(0, 0, 0, 0.02);
+}
+[data-bs-theme="dark"] .detail-known-fields-raw-body {
+    background: rgba(255, 255, 255, 0.02);
 }
 
 
@@ -2722,36 +2744,29 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
 
    JS: src/core/views/data/FlowStrip.js
 */
+/* Borderless tinted surface; thin translucent hairlines between
+   steps replace the bordered + chevroned 2025 treatment. The strip
+   uses container queries so it stacks before the steps get crunched
+   inside an `lg` modal. */
 .detail-flow-strip {
+    container-type: inline-size;
     display: grid;
     grid-template-columns: repeat(var(--flow-strip-cols, 4), 1fr);
     background: var(--bs-tertiary-bg);
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.5rem;
+    border: 0;
+    border-radius: 0.75rem;
     overflow: hidden;
     margin-bottom: 1rem;
 }
 .detail-flow-strip .flow-strip-step {
-    padding: 1rem 1.05rem;
-    background: var(--bs-body-bg);
+    padding: 1rem 1.1rem;
+    background: transparent;
     position: relative;
     min-width: 0;
 }
 .detail-flow-strip .flow-strip-step + .flow-strip-step {
-    border-left: 1px solid var(--bs-border-color);
+    border-left: 1px solid var(--bs-border-color-translucent);
 }
-.detail-flow-strip .flow-strip-step::after {
-    content: '';
-    position: absolute;
-    right: -8px; top: 50%;
-    transform: translateY(-50%) rotate(45deg);
-    width: 14px; height: 14px;
-    background: var(--bs-body-bg);
-    border-top: 1px solid var(--bs-border-color);
-    border-right: 1px solid var(--bs-border-color);
-    z-index: 1;
-}
-.detail-flow-strip .flow-strip-step:last-child::after { display: none; }
 .detail-flow-strip .flow-strip-num {
     font-family: var(--bs-font-monospace);
     font-size: 0.7rem;
@@ -2784,17 +2799,17 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
     color: var(--bs-secondary-color);
     margin-top: 0.3rem;
 }
-@media (max-width: 768px) {
+/* Container-query stacking: based on the strip's own width (not the
+   viewport) so it stacks correctly when nested inside narrow modals. */
+@container (max-width: 760px) {
     .detail-flow-strip { grid-template-columns: 1fr 1fr; }
-    .detail-flow-strip .flow-strip-step:nth-child(2)::after { display: none; }
 }
-@media (max-width: 480px) {
+@container (max-width: 460px) {
     .detail-flow-strip { grid-template-columns: 1fr; }
     .detail-flow-strip .flow-strip-step + .flow-strip-step {
-        border-left: none;
-        border-top: 1px solid var(--bs-border-color);
+        border-left: 0;
+        border-top: 1px solid var(--bs-border-color-translucent);
     }
-    .detail-flow-strip .flow-strip-step::after { display: none; }
 }
 
 
