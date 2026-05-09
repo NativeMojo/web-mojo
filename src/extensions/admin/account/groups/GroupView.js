@@ -1,15 +1,21 @@
 /**
  * GroupView - Access-group inspector built on the DetailView primitive.
  *
- * Header + side-nav layout matching RuleSetView / JobDetailsView. Sections:
+ * Header + side-nav layout matching JobDetailsView (Wave 2 canonical).
+ * Sections:
  *   Overview · Identity · ──Membership── Members · Sub-Groups
  *   ──Access── API Keys · Permissions · ──Activity── Events · Audit
  *   ──Detail── Metadata
  *
+ * Overview leads with 4 KPIs (Members / Sub-Groups / API Keys / Last
+ * activity), then "This group" flat-rows, a small DOM-only Hierarchy
+ * mini-tree, and a Timeline of recent group activity.
+ *
  * Cross-record nav:
- *   - "View Parent" / parent link → opens GroupView for parent (Modal.detail)
- *   - Sub-Groups row click          → opens nested GroupView (Modal.detail)
- *   - Members row click             → opens MemberView via Modal.detail
+ *   - Hierarchy parent / sub-group link → opens GroupView for target
+ *     (Modal.detail)
+ *   - Members row click   → opens MemberView via Modal.detail
+ *   - Sub-Groups row click → opens nested GroupView (Modal.detail)
  *
  * Open via `Modal.detail(new GroupView({ model }))` — pair with
  * `viewDialogOptions: { header: false, noBodyPadding: true,
@@ -20,7 +26,11 @@
 import View from '@core/View.js';
 import DetailView from '@core/views/data/DetailView.js';
 import TableView from '@core/views/table/TableView.js';
+import MetricCard from '@core/views/data/MetricCard.js';
+import Timeline from '@core/views/data/Timeline.js';
 import Modal from '@core/views/feedback/Modal.js';
+import MOJOUtils from '@core/utils/MOJOUtils.js';
+import dataFormatter from '@core/utils/DataFormatter.js';
 import { Group, GroupList, GroupForms } from '@core/models/Group.js';
 import { MemberList } from '@core/models/Member.js';
 import { ApiKeyList, ApiKeyForms } from '@core/models/ApiKey.js';
@@ -28,13 +38,13 @@ import { LogList } from '@core/models/Log.js';
 import { IncidentEventList } from '@ext/admin/models/Incident.js';
 import AdminMetadataSection from '../../shared/AdminMetadataSection.js';
 
+const escapeHtml = MOJOUtils.escapeHtml;
+
 
 // ── Helpers ────────────────────────────────────────────────
 
 /**
  * Map a Group `kind` to a Bootstrap icon. Falls back to bi-people-fill.
- * Org/department/division get a building icon; team gets people; project
- * gets a kanban; etc.
  */
 function iconForKind(kind) {
     const k = String(kind || '').toLowerCase();
@@ -59,37 +69,14 @@ function kindLabel(kind) {
     return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-function formatRelative(epoch) {
-    if (!epoch) return '';
-    let secs = Number(epoch);
-    if (!Number.isFinite(secs)) return '';
-    if (secs > 1e11) secs = Math.floor(secs / 1000); // ms → s
-    const now = Math.floor(Date.now() / 1000);
-    const delta = now - secs;
-    if (delta < 0)       return 'just now';
-    if (delta < 60)      return 'just now';
-    if (delta < 3600)    return `${Math.floor(delta / 60)} min ago`;
-    if (delta < 86400)   return `${Math.floor(delta / 3600)}h ago`;
-    return `${Math.floor(delta / 86400)}d ago`;
-}
-
-function formatDate(epoch) {
-    if (!epoch) return '—';
-    let secs = Number(epoch);
-    if (!Number.isFinite(secs)) return '—';
-    if (secs > 1e11) secs = Math.floor(secs / 1000);
-    return new Date(secs * 1000).toLocaleDateString();
-}
-
-function escapeHtml(str) {
-    if (str == null) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
+// Audit log → Timeline tone mapping (mirrors MemberView).
+const LOG_LEVEL_TONE = {
+    error:    'danger',
+    critical: 'danger',
+    warning:  'warning',
+    warn:     'warning',
+    info:     'info'
+};
 
 
 // ── Overview section ───────────────────────────────────────
@@ -98,72 +85,124 @@ class GroupOverviewSection extends View {
     constructor(options = {}) {
         super({
             className: 'group-overview-section',
+            template: `
+                <div class="detail-kpi-grid">
+                    <div data-container="group-kpi-members"></div>
+                    <div data-container="group-kpi-subgroups"></div>
+                    <div data-container="group-kpi-apikeys"></div>
+                    <div data-container="group-kpi-activity"></div>
+                </div>
+
+                <div class="detail-section-eyebrow">This group</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Name</div>
+                    <div class="detail-flat-row-value">{{model.name|default:'—'}}</div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Kind</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasKind|bool}}<span class="badge text-bg-primary">{{kindLabel}}</span>{{/hasKind|bool}}
+                        {{^hasKind|bool}}<span class="text-secondary fst-italic">—</span>{{/hasKind|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Status</div>
+                    <div class="detail-flat-row-value">
+                        {{#model.is_active|bool}}<span class="badge text-bg-success">Active</span>{{/model.is_active|bool}}
+                        {{^model.is_active|bool}}<span class="badge text-bg-secondary">Inactive</span>{{/model.is_active|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Parent</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasParent|bool}}<a href="#" data-action="view-parent">{{parentName}}</a>{{/hasParent|bool}}
+                        {{^hasParent|bool}}<span class="text-secondary fst-italic">None — top-level group</span>{{/hasParent|bool}}
+                    </div>
+                </div>
+
+                <div class="detail-section-eyebrow">Hierarchy</div>
+                <div data-container="group-overview-hierarchy"></div>
+
+                <div class="detail-section-eyebrow">Recent activity</div>
+                <div data-container="group-overview-activity"></div>
+            `,
             ...options
         });
 
-        this.membersCollection   = options.membersCollection;
-        this.subGroupsCollection = options.subGroupsCollection;
-        this.apiKeysCollection   = options.apiKeysCollection;
-
-        this.template = () => this._buildTemplate();
+        this.membersCollection   = options.membersCollection || null;
+        this.subGroupsCollection = options.subGroupsCollection || null;
+        this.apiKeysCollection   = options.apiKeysCollection || null;
+        this.auditCollection     = options.auditCollection || null;
     }
 
-    _buildTemplate() {
-        return `
-            <div class="detail-kpi-grid">
-                <div data-container="group-kpi-members"></div>
-                <div data-container="group-kpi-subgroups"></div>
-                <div data-container="group-kpi-apikeys"></div>
-                <div data-container="group-kpi-activity"></div>
-            </div>
-            <div class="detail-pair">
-                <div data-container="group-overview-identity"></div>
-                <div data-container="group-overview-hierarchy"></div>
-            </div>
-        `;
+    // ── Computed properties bound by Mustache ─────────
+
+    get hasKind()     { return !!this.model?.get?.('kind'); }
+    get kindLabel()   { return kindLabel(this.model?.get?.('kind')); }
+    get hasParent()   { return !!this.model?.get?.('parent')?.id; }
+    get parentName()  {
+        const parent = this.model?.get?.('parent');
+        if (!parent?.id) return '';
+        return parent.name || `#${parent.id}`;
     }
 
     async onInit() {
-        // KPI cards — minimal MetricCard-shaped Views (mirrors JobDetailsView)
-        this.kpiMembers   = this._kpi('group-kpi-members',   'Members',     this._memberCount(),    'primary');
-        this.kpiSubGroups = this._kpi('group-kpi-subgroups', 'Sub-groups',  this._subGroupCount());
-        this.kpiApiKeys   = this._kpi('group-kpi-apikeys',   'API Keys',    this._apiKeyCount());
-        this.kpiActivity  = this._kpi('group-kpi-activity',  'Last activity', this._lastActivityLabel());
-        [this.kpiMembers, this.kpiSubGroups, this.kpiApiKeys, this.kpiActivity].forEach(c => this.addChild(c));
+        const m = this.model;
 
-        // Identity + Hierarchy cards
-        this.identityCard  = new GroupIdentityCard({ containerId: 'group-overview-identity', model: this.model });
-        this.hierarchyCard = new GroupHierarchyCard({
+        // Four KPI cards (default size — no metric-card-lg).
+        this.kpiMembers = new MetricCard({
+            containerId: 'group-kpi-members',
+            label: 'Members',
+            value: this._memberCount()
+        });
+        this.kpiSubGroups = new MetricCard({
+            containerId: 'group-kpi-subgroups',
+            label: 'Sub-Groups',
+            value: this._subGroupCount()
+        });
+        this.kpiApiKeys = new MetricCard({
+            containerId: 'group-kpi-apikeys',
+            label: 'API Keys',
+            value: this._apiKeyCount()
+        });
+        this.kpiActivity = new MetricCard({
+            containerId: 'group-kpi-activity',
+            label: 'Last activity',
+            value: this._lastActivityLabel()
+        });
+        [this.kpiMembers, this.kpiSubGroups, this.kpiApiKeys, this.kpiActivity]
+            .forEach(c => this.addChild(c));
+
+        // Hierarchy mini-tree — small DOM-only render, refreshes on collection updates.
+        this.hierarchyTree = new GroupHierarchyTree({
             containerId: 'group-overview-hierarchy',
-            model: this.model,
+            model: m,
             subGroupsCollection: this.subGroupsCollection,
             membersCollection: this.membersCollection
         });
-        this.addChild(this.identityCard);
-        this.addChild(this.hierarchyCard);
+        this.addChild(this.hierarchyTree);
 
-        // Live updates from shared collections
-        if (this.membersCollection) {
-            this.membersCollection.on('fetch:success', () => this._refreshKpis(), this);
-        }
-        if (this.subGroupsCollection) {
-            this.subGroupsCollection.on('fetch:success', () => this._refreshKpis(), this);
-        }
-        if (this.apiKeysCollection) {
-            this.apiKeysCollection.on('fetch:success', () => this._refreshKpis(), this);
-        }
+        // Recent activity timeline — fed by the shared audit collection.
+        this.activityTimeline = new Timeline({
+            containerId: 'group-overview-activity',
+            limit: 5,
+            emptyText: 'No recorded activity for this group yet.',
+            items: () => this._buildActivityItems()
+        });
+        this.addChild(this.activityTimeline);
+
+        // Live updates from shared collections — refresh KPIs / hierarchy / timeline
+        // without rebuilding the whole section.
+        this._wireCollection(this.membersCollection,   () => this._refreshAfterFetch());
+        this._wireCollection(this.subGroupsCollection, () => this._refreshAfterFetch());
+        this._wireCollection(this.apiKeysCollection,   () => this._refreshAfterFetch());
+        this._wireCollection(this.auditCollection,     () => this._refreshActivity());
     }
 
-    _kpi(containerId, label, value, tone = null) {
-        const v = new View({
-            containerId,
-            className: `metric-card${tone ? ` metric-card-tone-${tone}` : ''}`,
-            template: `
-                <div class="metric-card-label">${escapeHtml(label)}</div>
-                <div class="metric-card-value" data-kpi-value>${escapeHtml(String(value))}</div>
-            `
-        });
-        return v;
+    _wireCollection(collection, handler) {
+        if (!collection || collection._groupOverviewWired) return;
+        collection.on('fetch:success', handler, this);
+        collection._groupOverviewWired = true;
     }
 
     _memberCount()   { return this.membersCollection?.models?.length ?? 0; }
@@ -173,119 +212,122 @@ class GroupOverviewSection extends View {
     _lastActivityLabel() {
         const last = this.model.get('last_activity');
         if (!last) return '—';
-        return formatRelative(last);
+        const rel = dataFormatter.apply(last, ['epoch', 'relative']);
+        return rel || '—';
     }
 
-    _refreshKpis() {
-        this._setKpi(this.kpiMembers,   this._memberCount());
-        this._setKpi(this.kpiSubGroups, this._subGroupCount());
-        this._setKpi(this.kpiApiKeys,   this._apiKeyCount());
-        this._setKpi(this.kpiActivity,  this._lastActivityLabel());
-        // Hierarchy mini-tree pulls from sub-groups + members; re-render it
-        if (this.hierarchyCard?.isMounted()) this.hierarchyCard.render().catch(() => {});
+    _refreshAfterFetch() {
+        this.kpiMembers?.setValue(this._memberCount());
+        this.kpiSubGroups?.setValue(this._subGroupCount());
+        this.kpiApiKeys?.setValue(this._apiKeyCount());
+        this.kpiActivity?.setValue(this._lastActivityLabel());
+        if (this.hierarchyTree?.isMounted()) this.hierarchyTree.render().catch(() => {});
     }
 
-    _setKpi(card, value) {
-        const el = card?.element?.querySelector('[data-kpi-value]');
-        if (el) el.textContent = String(value);
-    }
-}
-
-
-// ── Identity card (Overview) ───────────────────────────────
-
-class GroupIdentityCard extends View {
-    constructor(options = {}) {
-        super({ ...options });
-        this.template = () => this._buildTemplate();
+    _refreshActivity() {
+        if (this.activityTimeline?.isMounted()) {
+            this.activityTimeline.setItems(() => this._buildActivityItems());
+        }
     }
 
-    _buildTemplate() {
-        const m = this.model;
-        const meta = m.get('metadata') || {};
-        const parent = m.get('parent');
-        const eod = meta.eod_hour;
-        const eodLabel = eod === undefined || eod === null || eod === ''
-            ? null
-            : `${String(eod).padStart(2, '0')}:00`;
+    /**
+     * Build Timeline items from the shared audit (`LogList`) collection.
+     * `detail` is trusted HTML — escape user-controlled values.
+     */
+    _buildActivityItems() {
+        const logs = this.auditCollection?.models || [];
+        return logs.map(log => {
+            const level = String(log.get('level') || '').toLowerCase();
+            const tone  = LOG_LEVEL_TONE[level] || 'default';
+            const headline = log.get('kind') || log.get('level') || 'event';
+            const detailRaw = log.get('log');
+            const detail = detailRaw ? escapeHtml(String(detailRaw)) : '';
+            const when = dataFormatter.apply(log.get('created'), ['epoch', 'relative']) || '';
+            return { tone, headline: String(headline), detail, when };
+        });
+    }
 
-        const rows = [
-            ['Name', escapeHtml(m.get('name') || '—')],
-            ['Kind', `<span class="badge text-bg-primary">${escapeHtml(kindLabel(m.get('kind')))}</span>`],
-            ['Parent', parent && parent.id
-                ? `<a href="#" data-action="view-parent" data-id="${escapeHtml(parent.id)}">${escapeHtml(parent.name || `#${parent.id}`)}</a>`
-                : '<span class="text-secondary">None — top-level</span>'],
-        ];
-        if (meta.timezone) rows.push(['Timezone', `<code>${escapeHtml(meta.timezone)}</code>`]);
-        if (eodLabel)      rows.push(['EOD hour', escapeHtml(eodLabel)]);
-        if (meta.domain)   rows.push(['Domain',  `<code>${escapeHtml(meta.domain)}</code>`]);
-        if (meta.portal)   rows.push(['Portal',  `<a href="${escapeHtml(meta.portal)}" target="_blank" rel="noopener">${escapeHtml(meta.portal)}</a>`]);
-        rows.push(['Created', `<code>${escapeHtml(formatDate(m.get('created')))}</code>`]);
-
-        const rowsHtml = rows.map(([k, v], idx) => {
-            const last = idx === rows.length - 1;
-            const cls = last
-                ? 'd-flex justify-content-between py-1'
-                : 'd-flex justify-content-between border-bottom border-opacity-25 py-1';
-            return `<li class="${cls}"><span class="text-secondary">${escapeHtml(k)}</span><span>${v}</span></li>`;
-        }).join('');
-
-        return `
-            <div class="card">
-                <div class="card-body">
-                    <div class="card-title"><i class="bi bi-card-text"></i>Identity</div>
-                    <ul class="list-unstyled mb-0 small">${rowsHtml}</ul>
-                </div>
-            </div>
-        `;
+    // Bubble parent-link click on the "This group" row up to GroupView.
+    async onActionViewParent(event) {
+        event?.preventDefault?.();
+        this.emit('navigate:parent');
     }
 }
 
 
-// ── Hierarchy mini-tree card (Overview) ────────────────────
+// ── Hierarchy mini-tree (Overview) ─────────────────────────
 
-class GroupHierarchyCard extends View {
+/**
+ * Small DOM-only hierarchy renderer. No card wrapper — sits flat under
+ * the "Hierarchy" eyebrow. Emits `navigate:parent` / `navigate:subgroup`
+ * with the target id so the parent GroupView opens a nested Modal.detail.
+ *
+ * Mustache template binds parent + self + child rows. The trusted-HTML
+ * `selfLine` / `childLines` getters escape every caller-controlled
+ * field (sub-group names / ids) before interpolation; the decorative
+ * └─ / ├─ ASCII chars survive auto-escape via `{{{ }}}`.
+ */
+class GroupHierarchyTree extends View {
     constructor(options = {}) {
-        super({ ...options });
-        this.subGroupsCollection = options.subGroupsCollection;
-        this.membersCollection   = options.membersCollection;
-        this.template = () => this._buildTemplate();
+        super({
+            className: 'group-hierarchy-tree small font-monospace',
+            template: `
+                <div class="group-hierarchy-tree-rows">
+                    {{#hasParent|bool}}
+                    <a href="#" data-action="view-parent" data-id="{{parentId}}" class="link-secondary">{{parentName}}</a><br>
+                    {{/hasParent|bool}}
+                    {{^hasParent|bool}}
+                    <span class="text-secondary">Top-level group</span><br>
+                    {{/hasParent|bool}}
+                    {{{selfLine}}}
+                    {{#hasSubGroups|bool}}
+                    <div class="ms-4 mt-1">{{{childLines}}}</div>
+                    {{/hasSubGroups|bool}}
+                </div>
+            `,
+            ...options
+        });
+        this.subGroupsCollection = options.subGroupsCollection || null;
+        this.membersCollection   = options.membersCollection || null;
     }
 
-    _buildTemplate() {
+    // ── Computed properties bound by Mustache ─────────
+
+    get _parent() { return this.model?.get?.('parent') || null; }
+    get hasParent() { return !!this._parent?.id; }
+    get parentId() { return this._parent?.id ? String(this._parent.id) : ''; }
+    get parentName() {
+        if (!this._parent?.id) return '';
+        return this._parent.name || `#${this._parent.id}`;
+    }
+    get _subGroups() { return this.subGroupsCollection?.models || []; }
+    get hasSubGroups() { return this._subGroups.length > 0; }
+    get _memberCount() { return this.membersCollection?.models?.length ?? 0; }
+
+    /**
+     * Trusted HTML — emitted via `{{{selfLine}}}` so the decorative ASCII
+     * rule chars survive. Caller-controlled fields escaped here.
+     */
+    get selfLine() {
         const m = this.model;
-        const parent = m.get('parent');
-        const subGroups = this.subGroupsCollection?.models || [];
-        const memberCount = this.membersCollection?.models?.length ?? 0;
+        const subs = this._subGroups.length;
+        const members = this._memberCount;
+        const memberWord = members === 1 ? 'member' : 'members';
+        const subWord    = subs === 1 ? 'sub-group' : 'sub-groups';
+        return `└─ <strong class="text-body">${escapeHtml(m.get('name') || '—')}</strong> · ${members} ${memberWord} · ${subs} ${subWord}`;
+    }
 
-        const parentLine = parent && parent.id
-            ? `<a href="#" data-action="view-parent" data-id="${escapeHtml(parent.id)}" class="link-secondary">${escapeHtml(parent.name || `#${parent.id}`)}</a>`
-            : `<span class="text-secondary">Top-level group</span>`;
-
-        const thisLine = `└─ <strong class="text-body">${escapeHtml(m.get('name') || '—')}</strong> · ${memberCount} ${memberCount === 1 ? 'member' : 'members'} · ${subGroups.length} ${subGroups.length === 1 ? 'sub-group' : 'sub-groups'}`;
-
-        const childLines = subGroups.length
-            ? `<div class="ms-4 mt-1">${
-                subGroups.map((g, i) => {
-                    const branch = i === subGroups.length - 1 ? '└─' : '├─';
-                    const id = g.get('id');
-                    return `${branch} <a href="#" data-action="view-subgroup" data-id="${escapeHtml(id)}">${escapeHtml(g.get('name') || `#${id}`)}</a>`;
-                }).join('<br>')
-            }</div>`
-            : '';
-
-        return `
-            <div class="card">
-                <div class="card-body">
-                    <div class="card-title"><i class="bi bi-diagram-3"></i>Hierarchy</div>
-                    <div class="small font-monospace text-secondary mb-0" style="line-height: 1.7;">
-                        ${parentLine}<br>
-                        ${thisLine}
-                        ${childLines}
-                    </div>
-                </div>
-            </div>
-        `;
+    /**
+     * Trusted HTML — emitted via `{{{childLines}}}`. Each sub-group name
+     * and id is escaped before interpolation.
+     */
+    get childLines() {
+        const subs = this._subGroups;
+        return subs.map((g, i) => {
+            const branch = i === subs.length - 1 ? '└─' : '├─';
+            const id = g.get('id');
+            return `${branch} <a href="#" data-action="view-subgroup" data-id="${escapeHtml(String(id))}">${escapeHtml(g.get('name') || `#${id}`)}</a>`;
+        }).join('<br>');
     }
 
     /** Bubble cross-record clicks up to GroupView */
@@ -300,79 +342,143 @@ class GroupHierarchyCard extends View {
 }
 
 
-// ── Identity section (full field-cards) ────────────────────
+// ── Identity section (full flat-row layout) ────────────────
 
 class GroupIdentitySection extends View {
     constructor(options = {}) {
         super({
             className: 'group-identity-section',
+            template: `
+                <div class="detail-section-eyebrow">Profile</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Name</div>
+                    <div class="detail-flat-row-value">{{model.name|default:'—'}}</div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Kind</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasKind|bool}}<span class="badge text-bg-primary">{{kindLabel}}</span>{{/hasKind|bool}}
+                        {{^hasKind|bool}}<span class="text-secondary fst-italic">—</span>{{/hasKind|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Status</div>
+                    <div class="detail-flat-row-value">
+                        {{#model.is_active|bool}}<span class="badge text-bg-success">Active</span>{{/model.is_active|bool}}
+                        {{^model.is_active|bool}}<span class="badge text-bg-secondary">Inactive</span>{{/model.is_active|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">ID</div>
+                    <div class="detail-flat-row-value"><code>{{model.id}}</code></div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Parent</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasParent|bool}}<a href="#" data-action="view-parent">{{parentName}}</a>{{/hasParent|bool}}
+                        {{^hasParent|bool}}<span class="text-secondary fst-italic">None — top-level group</span>{{/hasParent|bool}}
+                    </div>
+                </div>
+
+                <div class="detail-section-eyebrow">Settings</div>
+                {{#hasTimezone|bool}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Timezone</div>
+                    <div class="detail-flat-row-value"><code>{{timezone}}</code></div>
+                </div>
+                {{/hasTimezone|bool}}
+                {{#hasEodHour|bool}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">EOD hour</div>
+                    <div class="detail-flat-row-value">{{eodHourLabel}}</div>
+                </div>
+                {{/hasEodHour|bool}}
+                {{#hasDomain|bool}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Domain</div>
+                    <div class="detail-flat-row-value"><code>{{domain}}</code></div>
+                </div>
+                {{/hasDomain|bool}}
+                {{#hasPortal|bool}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Portal</div>
+                    <div class="detail-flat-row-value">
+                        <a href="{{portal}}" target="_blank" rel="noopener">{{portal}}</a>
+                    </div>
+                </div>
+                {{/hasPortal|bool}}
+                {{#hasEmailTemplate|bool}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Email template</div>
+                    <div class="detail-flat-row-value"><code>{{emailTemplate}}</code></div>
+                </div>
+                {{/hasEmailTemplate|bool}}
+                {{^hasAnySettings|bool}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Settings</div>
+                    <div class="detail-flat-row-value text-secondary fst-italic">No settings configured</div>
+                </div>
+                {{/hasAnySettings|bool}}
+
+                <div class="detail-section-eyebrow">Dates</div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Created</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasCreated|bool}}<code>{{model.created|epoch|datetime}}</code>{{/hasCreated|bool}}
+                        {{^hasCreated|bool}}<span class="text-secondary fst-italic">—</span>{{/hasCreated|bool}}
+                    </div>
+                </div>
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label">Modified</div>
+                    <div class="detail-flat-row-value">
+                        {{#hasModified|bool}}<code>{{model.modified|epoch|datetime}}</code>{{/hasModified|bool}}
+                        {{^hasModified|bool}}<span class="text-secondary fst-italic">—</span>{{/hasModified|bool}}
+                    </div>
+                </div>
+            `,
             ...options
         });
-        this.template = () => this._buildTemplate();
     }
 
-    _buildTemplate() {
-        const m = this.model;
-        const meta = m.get('metadata') || {};
-        const parent = m.get('parent');
+    // ── Computed properties bound by Mustache ─────────
 
-        const profileRows = [
-            ['Name', escapeHtml(m.get('name') || '—')],
-            ['Kind', `<span class="badge text-bg-primary">${escapeHtml(kindLabel(m.get('kind')))}</span>`],
-            ['Status', m.get('is_active')
-                ? '<span class="badge text-bg-success">Active</span>'
-                : '<span class="badge text-bg-secondary">Inactive</span>'],
-            ['ID', `<code>${escapeHtml(m.get('id'))}</code>`],
-            ['Parent', parent && parent.id
-                ? `<a href="#" data-action="view-parent" data-id="${escapeHtml(parent.id)}">${escapeHtml(parent.name || `#${parent.id}`)}</a>`
-                : '<span class="text-secondary">None — top-level group</span>'],
-        ];
+    get hasKind()      { return !!this.model?.get?.('kind'); }
+    get kindLabel()    { return kindLabel(this.model?.get?.('kind')); }
+    get hasParent()    { return !!this.model?.get?.('parent')?.id; }
+    get parentName() {
+        const parent = this.model?.get?.('parent');
+        if (!parent?.id) return '';
+        return parent.name || `#${parent.id}`;
+    }
+    get _meta()           { return this.model?.get?.('metadata') || {}; }
+    get hasTimezone()     { return !!this._meta.timezone; }
+    get timezone()        { return this._meta.timezone || ''; }
+    get hasEodHour() {
+        const eod = this._meta.eod_hour;
+        return eod !== undefined && eod !== null && eod !== '';
+    }
+    get eodHourLabel() {
+        const eod = this._meta.eod_hour;
+        if (!this.hasEodHour) return '';
+        return `${String(eod).padStart(2, '0')}:00`;
+    }
+    get hasDomain()        { return !!this._meta.domain; }
+    get domain()           { return this._meta.domain || ''; }
+    get hasPortal()        { return !!this._meta.portal; }
+    get portal()           { return this._meta.portal || ''; }
+    get hasEmailTemplate() { return !!this._meta.email_template; }
+    get emailTemplate()    { return this._meta.email_template || ''; }
+    get hasAnySettings() {
+        return this.hasTimezone || this.hasEodHour || this.hasDomain
+            || this.hasPortal || this.hasEmailTemplate;
+    }
+    get hasCreated()  { return this.model?.get?.('created')  != null; }
+    get hasModified() { return this.model?.get?.('modified') != null; }
 
-        const settingsRows = [];
-        if (meta.timezone)      settingsRows.push(['Timezone',     `<code>${escapeHtml(meta.timezone)}</code>`]);
-        if (meta.eod_hour !== undefined && meta.eod_hour !== null && meta.eod_hour !== '') {
-            settingsRows.push(['EOD hour', `${escapeHtml(String(meta.eod_hour).padStart(2, '0'))}:00`]);
-        }
-        if (meta.domain)        settingsRows.push(['Domain',       `<code>${escapeHtml(meta.domain)}</code>`]);
-        if (meta.portal)        settingsRows.push(['Portal',       `<a href="${escapeHtml(meta.portal)}" target="_blank" rel="noopener">${escapeHtml(meta.portal)}</a>`]);
-        if (meta.email_template) settingsRows.push(['Email template', `<code>${escapeHtml(meta.email_template)}</code>`]);
-        if (!settingsRows.length) {
-            settingsRows.push(['Settings', '<span class="text-secondary">No settings configured</span>']);
-        }
-
-        const datesRows = [
-            ['Created',  `<code>${escapeHtml(formatDate(m.get('created')))}</code>`],
-            ['Modified', `<code>${escapeHtml(formatDate(m.get('modified')))}</code>`]
-        ];
-
-        return `
-            <div class="detail-field-card">
-                <div class="detail-field-card-header"><h4><i class="bi bi-card-text me-2"></i>Profile</h4></div>
-                <div class="detail-field-card-body">
-                    ${profileRows.map(([k, v]) =>
-                        `<div class="detail-field-row"><div class="detail-field-label">${escapeHtml(k)}</div><div class="detail-field-value">${v}</div></div>`
-                    ).join('')}
-                </div>
-            </div>
-
-            <div class="detail-field-card">
-                <div class="detail-field-card-header"><h4><i class="bi bi-sliders me-2"></i>Settings</h4></div>
-                <div class="detail-field-card-body">
-                    ${settingsRows.map(([k, v]) =>
-                        `<div class="detail-field-row"><div class="detail-field-label">${escapeHtml(k)}</div><div class="detail-field-value">${v}</div></div>`
-                    ).join('')}
-                </div>
-            </div>
-
-            <div class="detail-field-card">
-                <div class="detail-field-card-header"><h4><i class="bi bi-calendar3 me-2"></i>Dates</h4></div>
-                <div class="detail-field-card-body">
-                    ${datesRows.map(([k, v]) =>
-                        `<div class="detail-field-row"><div class="detail-field-label">${escapeHtml(k)}</div><div class="detail-field-value">${v}</div></div>`
-                    ).join('')}
-                </div>
-            </div>
-        `;
+    /** Bubble parent-link click up to GroupView. */
+    async onActionViewParent(event) {
+        event?.preventDefault?.();
+        this.emit('navigate:parent');
     }
 }
 
@@ -383,49 +489,104 @@ class GroupPermissionsSection extends View {
     constructor(options = {}) {
         super({
             className: 'group-permissions-section',
-            ...options
-        });
-        this.template = () => this._buildTemplate();
-    }
-
-    _buildTemplate() {
-        // Group-scoped permissions are stored on the Group's metadata in
-        // some deployments and on the model directly in others. Render a
-        // simple list when present; otherwise show a clear placeholder.
-        const meta = this.model.get('metadata') || {};
-        const perms = meta.permissions || this.model.get('permissions') || null;
-
-        if (!perms || (typeof perms === 'object' && !Object.keys(perms).length)) {
-            return `
-                <div class="text-center text-body-secondary py-4 border rounded">
+            template: `
+                <div class="detail-section-eyebrow">Group permissions</div>
+                {{#hasPermissions|bool}}
+                {{#permissionRows}}
+                <div class="detail-flat-row">
+                    <div class="detail-flat-row-label"><code>{{key}}</code></div>
+                    <div class="detail-flat-row-value">
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" disabled {{#enabled|bool}}checked{{/enabled|bool}} aria-label="{{key}}">
+                        </div>
+                    </div>
+                </div>
+                {{/permissionRows}}
+                {{/hasPermissions|bool}}
+                {{^hasPermissions|bool}}
+                <div class="text-center text-body-secondary py-4">
                     <i class="bi bi-shield-lock fs-1 d-block mb-2"></i>
                     <p class="mb-0 small">No group-scoped permissions defined. Permissions on members and API keys
                     are managed from their own records.</p>
                 </div>
-            `;
+                {{/hasPermissions|bool}}
+            `,
+            ...options
+        });
+    }
+
+    // ── Computed properties bound by Mustache ─────────
+
+    get _perms() {
+        const meta = this.model?.get?.('metadata') || {};
+        return meta.permissions || this.model?.get?.('permissions') || null;
+    }
+    get hasPermissions() {
+        const p = this._perms;
+        return !!(p && typeof p === 'object' && Object.keys(p).length);
+    }
+    get permissionRows() {
+        const p = this._perms;
+        if (!p || typeof p !== 'object') return [];
+        return Object.keys(p).sort().map(key => ({ key, enabled: !!p[key] }));
+    }
+}
+
+
+// ── Audit Timeline section ─────────────────────────────────
+
+/**
+ * Audit log timeline driven by the shared LogList. Re-resolves items
+ * from `auditCollection.models` on every render so it stays in sync
+ * with the Audit badge and the Overview "recent activity" feed.
+ */
+class GroupAuditTimelineSection extends View {
+    constructor(options = {}) {
+        const { auditCollection, ...rest } = options;
+        super({
+            className: 'group-audit-section',
+            template: `
+                <div class="detail-section-eyebrow">Audit</div>
+                <div data-container="group-audit-timeline"></div>
+            `,
+            ...rest
+        });
+        this.auditCollection = auditCollection || null;
+    }
+
+    async onInit() {
+        this.timeline = new Timeline({
+            containerId: 'group-audit-timeline',
+            emptyText: 'No audit entries recorded for this group yet.',
+            items: () => this._buildItems()
+        });
+        this.addChild(this.timeline);
+    }
+
+    async onAfterRender() {
+        await super.onAfterRender();
+        if (this.auditCollection && !this._wired) {
+            this.auditCollection.on('fetch:success', () => {
+                if (this.timeline?.isMounted()) {
+                    this.timeline.setItems(() => this._buildItems());
+                }
+            }, this);
+            this._wired = true;
         }
+    }
 
-        const keys = Object.keys(perms).sort();
-        const rows = keys.map(k => {
-            const enabled = !!perms[k];
-            return `
-                <div class="detail-perm-row">
-                    <div class="detail-perm-name">
-                        <span class="detail-perm-key">${escapeHtml(k)}</span>
-                    </div>
-                    <div class="form-check form-switch m-0">
-                        <input class="form-check-input" type="checkbox" disabled ${enabled ? 'checked' : ''} aria-label="${escapeHtml(k)}">
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        return `
-            <div class="detail-perm-group">
-                <div class="detail-perm-group-header"><h5><i class="bi bi-shield-lock me-2"></i>Group permissions</h5></div>
-                ${rows}
-            </div>
-        `;
+    _buildItems() {
+        const logs = this.auditCollection?.models || [];
+        return logs.map(log => {
+            const level = String(log.get('level') || '').toLowerCase();
+            const tone  = LOG_LEVEL_TONE[level] || 'default';
+            const headline = log.get('kind') || log.get('level') || 'event';
+            // Timeline `detail` is trusted HTML — escape user-controlled values.
+            const detailRaw = log.get('log');
+            const detail = detailRaw ? escapeHtml(String(detailRaw)) : '';
+            const when = dataFormatter.apply(log.get('created'), ['epoch', 'relative']) || '';
+            return { tone, headline: String(headline), detail, when };
+        });
     }
 }
 
@@ -453,17 +614,18 @@ class GroupView extends DetailView {
             params: { size: 10, model_name: 'account.Group', model_id: groupId, sort: '-created' }
         });
         const auditCollection = new LogList({
-            params: { size: 10, model_name: 'account.Group', model_id: groupId, sort: '-created' }
+            params: { size: 25, model_name: 'account.Group', model_id: groupId, sort: '-created' }
         });
 
         // ── Section view instances ─────────────────────────
-        const overviewSection   = new GroupOverviewSection({
+        const overviewSection = new GroupOverviewSection({
             model,
             membersCollection,
             subGroupsCollection,
-            apiKeysCollection
+            apiKeysCollection,
+            auditCollection
         });
-        const identitySection   = new GroupIdentitySection({ model });
+        const identitySection = new GroupIdentitySection({ model });
 
         // Members table — click opens MemberView via the registered VIEW_CLASS
         const membersSection = new TableView({
@@ -555,27 +717,11 @@ class GroupView extends DetailView {
             ]
         });
 
-        const auditSection = new TableView({
-            collection: auditCollection,
-            title: 'Audit',
-            eyebrow: 'Section · Audit',
-            showFullscreen: false,
-            searchable: false,
-            hideActivePillNames: ['model_name', 'model_id'],
-            permissions: 'view_logs',
-            columns: [
-                { key: 'created', label: 'Timestamp', sortable: true, formatter: 'epoch|datetime', width: '180px' },
-                {
-                    key: 'level', label: 'Level', width: '100px',
-                    filter: { type: 'select', options: [
-                        { value: 'info', label: 'Info' },
-                        { value: 'warning', label: 'Warning' },
-                        { value: 'error', label: 'Error' }
-                    ] }
-                },
-                { key: 'kind', label: 'Kind' },
-                { key: 'log', label: 'Log' }
-            ]
+        // Audit section — Timeline driven by the shared audit (LogList) collection,
+        // per the Wave 3 C6 spec ("Audit section uses Timeline from @core").
+        const auditSection = new GroupAuditTimelineSection({
+            model,
+            auditCollection
         });
 
         const metadataSection = new AdminMetadataSection({ model });
@@ -605,14 +751,14 @@ class GroupView extends DetailView {
             { text: m => kindLabel(m.get('kind')) || null, variant: 'primary',
               when: m => !!m.get('kind') },
             { icon: 'bi-people',
-              text: m => {
+              text: () => {
                   const n = membersCollection.models?.length ?? 0;
                   return n ? `${n} ${n === 1 ? 'member' : 'members'}` : null;
               },
               variant: 'light',
               when: () => (membersCollection.models?.length ?? 0) > 0 },
             { icon: 'bi-diagram-3',
-              text: m => {
+              text: () => {
                   const n = subGroupsCollection.models?.length ?? 0;
                   return n ? `${n} ${n === 1 ? 'sub-group' : 'sub-groups'}` : null;
               },
@@ -658,6 +804,9 @@ class GroupView extends DetailView {
                     { label: 'Invite', icon: 'bi-person-plus', action: 'invite-member', title: 'Invite member' },
                     { label: 'Edit',   icon: 'bi-pencil',      action: 'edit-group',    title: 'Edit group' }
                 ],
+                // auxFn — small right-gutter readout (last activity / member count).
+                // Trusted HTML; model fields escaped before interpolation.
+                auxFn: m => _buildHeaderAux(m, membersCollection),
                 contextMenu: { items: contextItems }
             },
             sections,
@@ -685,9 +834,10 @@ class GroupView extends DetailView {
     }
 
     async onAfterBuild() {
-        // Cross-section navigation from Overview's Hierarchy card
-        this.overviewSection.on('navigate:parent',   (id) => this._openGroupById(id));
+        // Cross-section navigation from Overview's Hierarchy mini-tree + Identity rows
+        this.overviewSection.on('navigate:parent',   (id) => this._openGroupById(id ?? this.model.get('parent')?.id));
         this.overviewSection.on('navigate:subgroup', (id) => this._openGroupById(id));
+        this.identitySection.on('navigate:parent',   ()   => this._openGroupById(this.model.get('parent')?.id));
 
         // Sidebar badges populated from shared collections
         const updateMembersBadge = () => {
@@ -712,7 +862,7 @@ class GroupView extends DetailView {
         this.apiKeysCollection.on('fetch:success',   updateApiKeysBadge,   this);
         this.auditCollection.on('fetch:success',     updateAuditBadge,     this);
 
-        // Re-render the header so chips reflect populated collections
+        // Re-render the header so chips + auxFn reflect populated collections
         const refreshHeader = () => {
             if (this.headerView?.isMounted()) this.headerView.render().catch(() => {});
             this._refreshComputedFields();
@@ -820,24 +970,6 @@ class GroupView extends DetailView {
         return true;
     }
 
-    /** Hierarchy card link on Identity card / Overview */
-    async onActionViewParent(event, element) {
-        event?.preventDefault?.();
-        const id = element?.dataset?.id;
-        if (!id) return true;
-        await this._openGroupById(id);
-        return true;
-    }
-
-    /** Sub-group link in the Hierarchy card (Overview) */
-    async onActionViewSubgroup(event, element) {
-        event?.preventDefault?.();
-        const id = element?.dataset?.id;
-        if (!id) return true;
-        await this._openGroupById(id);
-        return true;
-    }
-
     async _openGroupById(id) {
         if (!id) return;
         const target = new Group({ id });
@@ -859,7 +991,7 @@ class GroupView extends DetailView {
         const verb = toActive ? 'activate' : 'deactivate';
         const Verb = toActive ? 'Activate' : 'Deactivate';
         const confirmed = await Modal.confirm(
-            `Are you sure you want to ${verb} <strong>${this.escapeHtml(this.model.get('name') || '')}</strong>?`,
+            `Are you sure you want to ${verb} <strong>${escapeHtml(this.model.get('name') || '')}</strong>?`,
             `${Verb} Group`
         );
         if (!confirmed) return true;
@@ -878,7 +1010,7 @@ class GroupView extends DetailView {
     async onActionDeleteGroup() {
         const confirmed = await Modal.confirm({
             title: 'Delete Group',
-            message: `Are you sure you want to delete <strong>${this.escapeHtml(this.model.get('name') || '')}</strong>? This cannot be undone.`,
+            message: `Are you sure you want to delete <strong>${escapeHtml(this.model.get('name') || '')}</strong>? This cannot be undone.`,
             confirmText: 'Delete',
             confirmClass: 'btn-danger'
         });
@@ -901,18 +1033,58 @@ class GroupView extends DetailView {
 
     /**
      * Re-render the parts of the view that depend on model fields after a
-     * save (header chips, identity card, identity section, overview).
+     * save (header chips, identity, overview, permissions).
      */
     async _fullRefresh() {
         this._refreshComputedFields();
-        if (this.headerView?.isMounted())       await this.headerView.render();
-        if (this.overviewSection?.isMounted())  await this.overviewSection.render();
-        if (this.identitySection?.isMounted())  await this.identitySection.render();
+        if (this.headerView?.isMounted())         await this.headerView.render();
+        if (this.overviewSection?.isMounted())    await this.overviewSection.render();
+        if (this.identitySection?.isMounted())    await this.identitySection.render();
+        if (this.permissionsSection?.isMounted()) await this.permissionsSection.render();
     }
 }
+
+
+// ── Header aux helper ──────────────────────────────────────
+
+/**
+ * Build the header right-gutter "aux" block — small "last activity" /
+ * member count read-out beside the Active toggle. Trusted HTML; model
+ * fields are escaped before interpolation.
+ */
+function _buildHeaderAux(m, membersCollection) {
+    const lastActivity = m.get('last_activity');
+    const memberCount = membersCollection?.models?.length ?? 0;
+    const memberWord = memberCount === 1 ? 'member' : 'members';
+
+    let main, sub;
+    if (lastActivity) {
+        const rel = dataFormatter.apply(lastActivity, ['epoch', 'relative']);
+        main = 'Last activity';
+        sub = rel ? escapeHtml(String(rel)) : '';
+    } else if (memberCount > 0) {
+        main = `${memberCount} ${memberWord}`;
+        sub = '';
+    } else {
+        return '';
+    }
+
+    return `
+        <span class="dh-aux-meta"><span>${escapeHtml(main)}</span>${sub ? `<span class="text-secondary small">${sub}</span>` : ''}</span>
+    `;
+}
+
 
 GroupView.VIEW_CLASS = GroupView;
 Group.VIEW_CLASS = GroupView;
 Group.MODEL_REF = 'account.Group';
 
 export default GroupView;
+export {
+    GroupView,
+    GroupOverviewSection,
+    GroupIdentitySection,
+    GroupPermissionsSection,
+    GroupHierarchyTree,
+    GroupAuditTimelineSection
+};
