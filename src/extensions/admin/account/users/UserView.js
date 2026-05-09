@@ -501,20 +501,9 @@ class UserProfileSection extends View {
         }).join('');
     }
 
-    // ── Edit pencils — bubble to UserView for the real handlers ──
-
-    async onActionEditPersonal()   { this.emit('action:edit-personal'); }
-    async onActionEditAccount()    { this.emit('action:edit-account'); }
-    async onActionManageLinked()   { this.emit('action:manage-linked'); }
-    async onActionManagePasskeys(event) {
-        event?.preventDefault?.();
-        this.emit('action:manage-passkeys');
-    }
-
-    async onActionForceVerifyEmail()  { this.emit('action:force-verify-email');  return true; }
-    async onActionUnverifyEmail()     { this.emit('action:unverify-email');      return true; }
-    async onActionForceVerifyPhone()  { this.emit('action:force-verify-phone');  return true; }
-    async onActionUnverifyPhone()     { this.emit('action:unverify-phone');      return true; }
+    // No section-local action handlers. Edit pencils dispatch
+    // `data-action="edit-..."` which bubbles up to UserView's real
+    // handlers via EventDelegate's normal child→parent flow.
 }
 
 
@@ -1226,21 +1215,17 @@ class UserView extends DetailView {
         ];
 
         // Context menu — supported admin actions only.
-        // Groups separated by dividers: identity / auth / verification / state.
+        // Groups separated by dividers: identity / auth / state.
+        // Email/phone verification flips are SUPERUSER_ONLY_FIELDS — surfaced
+        // through the dedicated identity-change cards (Phase 3), not here.
         const contextItems = [
             { label: 'Edit User',              action: 'edit-user',              icon: 'bi-pencil' },
+            { label: 'Change Avatar',          action: 'change-avatar',          icon: 'bi-image' },
             { label: 'Clear Avatar',           action: 'clear-avatar',           icon: 'bi-person-x' },
             { type: 'divider' },
             { label: 'Send Password Reset',    action: 'reset-password',         icon: 'bi-envelope' },
             { label: 'Send Magic Login Link',  action: 'send-magic-link',        icon: 'bi-link-45deg' },
-            { label: 'Revoke All Sessions',    action: 'revoke-all-sessions',    icon: 'bi-box-arrow-right' },
-            { type: 'divider' },
-            { label: 'Send Email Verification', action: 'send-email-verification', icon: 'bi-envelope-check',
-              when: m => !m.get('is_email_verified') },
-            { label: 'Force Verify Email',      action: 'force-verify-email',      icon: 'bi-patch-check',
-              when: m => !m.get('is_email_verified') },
-            { label: 'Force Verify Phone',      action: 'force-verify-phone',      icon: 'bi-patch-check',
-              when: m => !!m.get('phone_number') && !m.get('is_phone_verified') }
+            { label: 'Revoke All Sessions',    action: 'revoke-all-sessions',    icon: 'bi-box-arrow-right' }
         ];
 
         super({
@@ -1300,16 +1285,6 @@ class UserView extends DetailView {
     }
 
     async onAfterBuild() {
-        // Profile section bubbles inline edits up to action handlers here
-        this.profileSection.on('action:edit-personal',     () => this.onActionEditPersonal());
-        this.profileSection.on('action:edit-account',      () => this.onActionEditAccount());
-        this.profileSection.on('action:manage-linked',     () => this.onActionManageLinked());
-        this.profileSection.on('action:manage-passkeys',   () => this.onActionManagePasskeys());
-        this.profileSection.on('action:force-verify-email',() => this._setVerification('is_email_verified', true,  'Email'));
-        this.profileSection.on('action:unverify-email',    () => this._setVerification('is_email_verified', false, 'Email'));
-        this.profileSection.on('action:force-verify-phone',() => this._setVerification('is_phone_verified', true,  'Phone'));
-        this.profileSection.on('action:unverify-phone',    () => this._setVerification('is_phone_verified', false, 'Phone'));
-
         // API keys count -> sidebar badge
         this.apiKeysSection.on('count:changed', (n) => {
             this.setBadge('ApiKeys', n > 0 ? { text: String(n), variant: 'muted' } : null);
@@ -1617,27 +1592,6 @@ class UserView extends DetailView {
         return true;
     }
 
-    async onActionSendEmailVerification() {
-        const email = this.model.get('email');
-        if (!email) {
-            this.getApp()?.toast?.error('User has no email on file');
-            return true;
-        }
-        const confirmed = await Modal.confirm(
-            `Send a verification email to <strong>${escapeHtml(email)}</strong>?`,
-            'Send Email Verification'
-        );
-        if (!confirmed) return true;
-
-        const resp = await rest.POST('/api/auth/email/verify', { email });
-        if (resp.success) {
-            this.getApp()?.toast?.success('Verification email sent');
-        } else {
-            this.getApp()?.toast?.error(resp.message || 'Failed to send verification email');
-        }
-        return true;
-    }
-
     /**
      * Active toggle in the header right-gutter (emitted from `_buildHeaderAux`).
      * Mirrors `DetailHeaderView.onActionToggleActive` — optimistic update +
@@ -1696,6 +1650,14 @@ class UserView extends DetailView {
         return true;
     }
 
+    async onActionUnverifyEmail() {
+        return this._setVerification('is_email_verified', false, 'Email');
+    }
+
+    async onActionUnverifyPhone() {
+        return this._setVerification('is_phone_verified', false, 'Phone');
+    }
+
     async onActionRevokeAllSessions() {
         const confirmed = await Modal.confirm(
             'Revoke all sessions? The user will be signed out of all devices immediately.',
@@ -1727,6 +1689,28 @@ class UserView extends DetailView {
         return true;
     }
 
+    async onActionChangeAvatar() {
+        // Mirror UserProfileView.onActionChangeAvatar — Modal.updateModelImage
+        // posts the file to the model's endpoint and writes back the new
+        // avatar URL on success.
+        const resp = await Modal.updateModelImage({
+            model: this.model,
+            field: 'avatar',
+            title: 'Change Avatar',
+            upload: true
+        }, {
+            name: 'avatar',
+            size: 'lg',
+            imageSize: { width: 200, height: 200 },
+            placeholder: 'Upload an avatar image'
+        });
+        if (resp && resp.status === 200) {
+            this.getApp()?.toast?.success('Avatar updated');
+            await this._fullRefresh();
+        }
+        return true;
+    }
+
     async onActionClearAvatar() {
         const confirmed = await Modal.confirm(
             "Remove this user's avatar? They will see the default placeholder.",
@@ -1736,6 +1720,7 @@ class UserView extends DetailView {
         const resp = await this.model.save({ avatar: null });
         if (resp.status === 200) {
             this.getApp()?.toast?.success('Avatar cleared');
+            await this._fullRefresh();
         } else {
             this.getApp()?.toast?.error('Failed to clear avatar');
         }

@@ -66,21 +66,48 @@ export default class AdminSecuritySection extends View {
                             {{^model.requires_mfa|bool}}MFA is not required for this user{{/model.requires_mfa|bool}}
                         </div>
                     </div>
-                    {{#model.requires_mfa|bool}}<span class="badge text-bg-success">Enabled</span>{{/model.requires_mfa|bool}}
-                    {{^model.requires_mfa|bool}}<span class="badge text-bg-light border">Disabled</span>{{/model.requires_mfa|bool}}
+                    {{#model.requires_mfa|bool}}<span class="badge text-bg-success">Required</span>{{/model.requires_mfa|bool}}
+                    {{^model.requires_mfa|bool}}<span class="badge text-bg-light border">Not required</span>{{/model.requires_mfa|bool}}
                 </div>
 
-                <div class="admin-security-item" data-action="manage-passkeys">
+                <div class="admin-security-item{{#totpEnabled|bool}} admin-security-item-clickable{{/totpEnabled|bool}}"{{#totpEnabled|bool}} data-action="disable-totp"{{/totpEnabled|bool}}>
+                    <div class="admin-security-icon" style="background: rgba(var(--bs-purple-rgb,111,66,193),0.1); color: var(--bs-purple, #6f42c1);"><i class="bi bi-key"></i></div>
+                    <div class="admin-security-info">
+                        <div class="admin-security-title">Authenticator (TOTP)</div>
+                        <div class="admin-security-desc">
+                            {{#totpEnabled|bool}}User has an authenticator app enrolled — click to disable{{/totpEnabled|bool}}
+                            {{^totpEnabled|bool}}User has not enrolled an authenticator app{{/totpEnabled|bool}}
+                        </div>
+                    </div>
+                    {{#totpEnabled|bool}}<span class="badge text-bg-success">Enrolled</span>{{/totpEnabled|bool}}
+                    {{^totpEnabled|bool}}<span class="badge text-bg-light border">Not enrolled</span>{{/totpEnabled|bool}}
+                </div>
+
+                <div class="admin-security-item">
+                    <div class="admin-security-icon bg-info bg-opacity-10 text-info"><i class="bi bi-phone"></i></div>
+                    <div class="admin-security-info">
+                        <div class="admin-security-title">SMS Verification</div>
+                        <div class="admin-security-desc">
+                            {{#smsEligible|bool}}Verified phone available — SMS-based MFA can be used{{/smsEligible|bool}}
+                            {{^smsEligible|bool}}No verified phone on file — SMS-based MFA unavailable{{/smsEligible|bool}}
+                        </div>
+                    </div>
+                    {{#smsEligible|bool}}<span class="badge text-bg-success">Eligible</span>{{/smsEligible|bool}}
+                    {{^smsEligible|bool}}<span class="badge text-bg-light border">Unavailable</span>{{/smsEligible|bool}}
+                </div>
+
+                <div class="admin-security-item admin-security-item-clickable" data-action="manage-passkeys">
                     <div class="admin-security-icon bg-success bg-opacity-10 text-success"><i class="bi bi-fingerprint"></i></div>
                     <div class="admin-security-info">
                         <div class="admin-security-title">Passkeys</div>
                         <div class="admin-security-desc">View and manage registered passkeys</div>
                     </div>
+                    {{#hasPasskey|bool}}<span class="badge text-bg-success me-2">Registered</span>{{/hasPasskey|bool}}
                     <i class="bi bi-chevron-right admin-security-chevron"></i>
                 </div>
 
-                {{#model.requires_mfa|bool}}
-                <div class="admin-security-item" data-action="view-recovery-codes">
+                {{#totpEnabled|bool}}
+                <div class="admin-security-item admin-security-item-clickable" data-action="view-recovery-codes">
                     <div class="admin-security-icon" style="background: rgba(var(--bs-purple-rgb,111,66,193),0.1); color: var(--bs-purple, #6f42c1);"><i class="bi bi-file-earmark-lock"></i></div>
                     <div class="admin-security-info">
                         <div class="admin-security-title">Recovery Codes</div>
@@ -88,15 +115,7 @@ export default class AdminSecuritySection extends View {
                     </div>
                     <i class="bi bi-chevron-right admin-security-chevron"></i>
                 </div>
-
-                <div class="admin-security-item" data-action="disable-totp">
-                    <div class="admin-security-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-shield-x"></i></div>
-                    <div class="admin-security-info">
-                        <div class="admin-security-title">Disable Authenticator</div>
-                        <div class="admin-security-desc">Remove TOTP requirement for this user</div>
-                    </div>
-                </div>
-                {{/model.requires_mfa|bool}}
+                {{/totpEnabled|bool}}
 
                 <div class="detail-section-eyebrow">Sessions</div>
 
@@ -110,6 +129,34 @@ export default class AdminSecuritySection extends View {
             `,
             ...options
         });
+    }
+
+    // ── Computed properties (Mustache reads them off `this`) ────
+
+    /**
+     * True if the user has an enrolled authenticator app. Defensive
+     * against several possible field shapes — backend may expose this
+     * as `has_totp` (User extra in `full` graph), `totp_enabled`, or
+     * via a nested `totp.is_enabled` block.
+     */
+    get totpEnabled() {
+        const m = this.model;
+        return !!(
+            m?.get?.('has_totp') ||
+            m?.get?.('totp_enabled') ||
+            m?.get?.('totp')?.is_enabled
+        );
+    }
+
+    /** True if the user has a verified phone number — SMS-MFA prerequisite. */
+    get smsEligible() {
+        const m = this.model;
+        return !!(m?.get?.('phone_number') && m?.get?.('is_phone_verified'));
+    }
+
+    /** True if any passkey is registered (`has_passkey` is a User extra in the `full` graph). */
+    get hasPasskey() {
+        return !!this.model?.get?.('has_passkey');
     }
 
     // ── Password actions ────────────────────────────
@@ -223,14 +270,18 @@ export default class AdminSecuritySection extends View {
     async onActionDisableTotp() {
         const app = this.getApp();
         const confirmed = await Modal.confirm(
-            'Disable the authenticator app for this user? They will no longer need a TOTP code to sign in.',
+            'Disable the authenticator app for this user? Their existing TOTP enrollment will be removed and they will need to re-enroll if they want to use one again.',
             'Disable Authenticator'
         );
         if (!confirmed) return true;
 
         const resp = await rest.DELETE(`/api/user/${this.model.id}/totp`);
         if (resp.success) {
-            this.model.set('requires_mfa', false);
+            // Clear the local flags the template binds to so the row updates
+            // without a full model refetch. Defensive — the field name varies
+            // across User-graph variants (see the totpEnabled getter).
+            this.model.set('has_totp', false);
+            this.model.set('totp_enabled', false);
             app?.toast?.success('Authenticator disabled');
             await this.render();
         } else {
