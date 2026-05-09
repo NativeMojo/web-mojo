@@ -288,6 +288,10 @@ class SimpleModuleLoader {
                 path: path.join(this.sourceRoot, 'core/views/data/FlowStrip.js'),
                 dependencies: ['View']
             },
+            'KnownFieldsCard': {
+                path: path.join(this.sourceRoot, 'core/views/data/KnownFieldsCard.js'),
+                dependencies: ['View', 'dataFormatter']
+            },
             'SideNavView': {
                 path: path.join(this.sourceRoot, 'core/views/navigation/SideNavView.js'),
                 dependencies: ['View']
@@ -485,6 +489,7 @@ class SimpleModuleLoader {
             { test: /\/StatusPanel(\.js)?$/, name: 'StatusPanel' },
             { test: /\/Timeline(\.js)?$/, name: 'Timeline' },
             { test: /\/FlowStrip(\.js)?$/, name: 'FlowStrip' },
+            { test: /\/KnownFieldsCard(\.js)?$/, name: 'KnownFieldsCard' },
             { test: /\/DetailView(\.js)?$/, name: 'DetailView' }
         ];
         for (const rule of rules) {

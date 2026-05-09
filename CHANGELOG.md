@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### KnownFieldsCard — new `@core` primitive
+
+- **Added:** `src/core/views/data/KnownFieldsCard.js` — "promote known JSON keys, keep the raw blob accessible" pattern. Promotes selected keys to a 2-column label/value grid (using the `.detail-flat-row` family) with the raw JSON in a collapsible `<details>` block underneath. Constructor: `data` (object OR `(model) => object`), `knownKeys` (array OR `(model) => array`), `rawCollapsed`, `rawLabel`, `showRaw`, `emptyText`. Each known-key spec is `{ key, label, formatter?, hideEmpty? }`. `formatter` may be a `DataFormatter` pipe name (string) or a `(value, key, data) => htmlString` function — both treat output as trusted HTML. Dotted-path keys (`os.family`, `user_agent.major`) work for nested objects. Missing values render the muted "—" placeholder unless `hideEmpty: true` is set.
+- **Moved:** the `.detail-section`, `.detail-section-eyebrow`, `.detail-section-action`, `.detail-flat-row*` rules from `admin.css` into `core.css`. They're framework-wide primitives — `KnownFieldsCard` uses them, and Wave 3's per-view sweeps will use them across admin views.
+- **Added** `KnownFieldsCard` CSS (`.detail-known-fields-card`, `.detail-known-fields-grid`, `.detail-known-fields-raw*`) to core.css. Raw block uses native `<details>` for accessibility — no JS, no listeners.
+- **Tests:** `test/unit/KnownFieldsCard.test.js` adds twelve cases — known-key rendering, missing "—" placeholder, `hideEmpty`, function formatter, dotted-path lookup, raw block default-collapsed and explicit-open, `showRaw: false`, empty-data fallback, function-valued data + knownKeys re-resolving, nested-object JSON fragment, escape policy.
+- **Docs:** new `docs/web-mojo/components/KnownFieldsCard.md` covers quick-start, full options, the spec shape, and three common patterns (incident metadata, device info, IP intel).
+
 ### FlowStrip — new `@core` primitive
 
 - **Added:** `src/core/views/data/FlowStrip.js` — horizontal "STEP 1 → STEP 2 → STEP 3" flow primitive (extracted from `RuleSetTriggeringSection`'s Match → Bundle → Threshold → Re-trigger layout). Each step is `{ num, title, value, hint, empty?, action?, actionIcon?, actionData? }`. `value` and `hint` are trusted HTML (for `<code>` / `<strong>` interpolation); `num` and `title` are escaped. `empty: true` renders the muted-italic `.flow-strip-empty` style for "Fires immediately" / "No bundling" sentinels. Optional pencil action with arbitrary `data-*` attributes for routing edit forms to a specific tab. Steps may be a static array OR `(model) => array`. `setSteps(steps)` replaces the source and re-renders. CSS variable `--flow-strip-cols` overrides the default 4-column layout per instance.
