@@ -2616,9 +2616,9 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
     justify-content: space-between;
     gap: 0.5rem;
     margin: 0 0 0.5rem;
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--bs-secondary-color);
 }
