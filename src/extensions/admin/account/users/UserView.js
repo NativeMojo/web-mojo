@@ -250,14 +250,23 @@ class UserOverviewSection extends View {
     }
 
     // ── KPI value helpers ─────────────────────────────────
+    //
+    // KPIs reflect TOTAL row counts from the API, not just what's been
+    // fetched into the local Collection. Read `collection.meta.count` —
+    // that's set by `Collection.parse` from `response.data.count`. Fall
+    // back to `models.length` when meta hasn't populated yet (e.g. before
+    // the first fetch or when the response shape doesn't carry a count).
 
     _deviceCount() {
-        const browser = this.devicesCollection?.models?.length ?? 0;
-        const push = this.pushDevicesCollection?.models?.length ?? 0;
+        const browser = this.devicesCollection?.meta?.count
+            ?? this.devicesCollection?.models?.length ?? 0;
+        const push = this.pushDevicesCollection?.meta?.count
+            ?? this.pushDevicesCollection?.models?.length ?? 0;
         return browser + push;
     }
     _sessionCount() {
-        return this.devicesCollection?.models?.length ?? 0;
+        return this.devicesCollection?.meta?.count
+            ?? this.devicesCollection?.models?.length ?? 0;
     }
     _lastLoginLabel() {
         const last = this.loginsCollection?.models?.[0]?.get?.('created')
@@ -266,7 +275,8 @@ class UserOverviewSection extends View {
         return dataFormatter.apply('relative', last) || '—';
     }
     _groupCount() {
-        return this.membersCollection?.models?.length ?? 0;
+        return this.membersCollection?.meta?.count
+            ?? this.membersCollection?.models?.length ?? 0;
     }
 
     /**
@@ -1290,22 +1300,24 @@ class UserView extends DetailView {
             this.setBadge('ApiKeys', n > 0 ? { text: String(n), variant: 'muted' } : null);
         });
 
-        // Sidebar badges from shared collections
+        // Sidebar badges from shared collections — read TOTAL row counts
+        // from `collection.meta.count` (set by Collection.parse from the
+        // API response), not just the locally-fetched page length.
+        const totalOf = (col) => col?.meta?.count ?? col?.models?.length ?? 0;
+
         const updateGroupsBadge = () => {
-            const n = this.membersCollection.models?.length ?? 0;
+            const n = totalOf(this.membersCollection);
             this.setBadge('Groups', n > 0 ? { text: String(n), variant: 'muted' } : null);
         };
         const updateDevicesBadge = () => {
-            const browser = this.devicesCollection.models?.length ?? 0;
-            const push    = this.pushDevicesCollection.models?.length ?? 0;
-            const total   = browser + push;
+            const total = totalOf(this.devicesCollection) + totalOf(this.pushDevicesCollection);
             this.setBadge('Devices', total > 0 ? { text: String(total), variant: 'muted' } : null);
         };
         const updateAuditBadge = () => {
             const total =
-                (this.eventsCollection.models?.length ?? 0) +
-                (this.activityCollection.models?.length ?? 0) +
-                (this.objectLogsCollection.models?.length ?? 0);
+                totalOf(this.eventsCollection) +
+                totalOf(this.activityCollection) +
+                totalOf(this.objectLogsCollection);
             this.setBadge('Audit', total > 0 ? { text: String(total), variant: 'muted' } : null);
         };
         const refreshHeader = () => {
