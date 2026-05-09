@@ -284,6 +284,10 @@ class SimpleModuleLoader {
                 path: path.join(this.sourceRoot, 'core/views/data/Timeline.js'),
                 dependencies: ['View']
             },
+            'FlowStrip': {
+                path: path.join(this.sourceRoot, 'core/views/data/FlowStrip.js'),
+                dependencies: ['View']
+            },
             'SideNavView': {
                 path: path.join(this.sourceRoot, 'core/views/navigation/SideNavView.js'),
                 dependencies: ['View']
@@ -480,6 +484,7 @@ class SimpleModuleLoader {
             { test: /\/MetricCard(\.js)?$/, name: 'MetricCard' },
             { test: /\/StatusPanel(\.js)?$/, name: 'StatusPanel' },
             { test: /\/Timeline(\.js)?$/, name: 'Timeline' },
+            { test: /\/FlowStrip(\.js)?$/, name: 'FlowStrip' },
             { test: /\/DetailView(\.js)?$/, name: 'DetailView' }
         ];
         for (const rule of rules) {

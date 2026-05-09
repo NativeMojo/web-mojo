@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### FlowStrip — new `@core` primitive
+
+- **Added:** `src/core/views/data/FlowStrip.js` — horizontal "STEP 1 → STEP 2 → STEP 3" flow primitive (extracted from `RuleSetTriggeringSection`'s Match → Bundle → Threshold → Re-trigger layout). Each step is `{ num, title, value, hint, empty?, action?, actionIcon?, actionData? }`. `value` and `hint` are trusted HTML (for `<code>` / `<strong>` interpolation); `num` and `title` are escaped. `empty: true` renders the muted-italic `.flow-strip-empty` style for "Fires immediately" / "No bundling" sentinels. Optional pencil action with arbitrary `data-*` attributes for routing edit forms to a specific tab. Steps may be a static array OR `(model) => array`. `setSteps(steps)` replaces the source and re-renders. CSS variable `--flow-strip-cols` overrides the default 4-column layout per instance.
+- **Tests:** `test/unit/FlowStrip.test.js` adds nine smoke cases — render shape, missing-hint omission, num fallback, empty modifier, action button + `data-*` attrs, function-valued steps re-resolving, escape policy, empty-array no-op, `setSteps`.
+- **Docs:** new `docs/web-mojo/components/FlowStrip.md` covers quick-start, state-driven flows, full step shape, the RuleSet triggering example, and column-count overrides.
+- **Migration note:** the legacy `.rs-flow*` CSS in `admin.css` still backs `RuleSetView`'s current implementation. `RuleSetView` will switch to `FlowStrip` in a later wave; the old CSS will be removed at that point. New code should use `FlowStrip` directly.
+
 ### Timeline — new `@core` primitive
 
 - **Added:** `src/core/views/data/Timeline.js` — vertical event-feed primitive (the `<ol>` with hairline connector and tone-colored dots used for incident history, job lifecycle events, recent-activity overviews, audit trails). Constructor: `items` (array OR `(model) => array`), `emptyText`, `limit`, `model`. Each item is `{ headline, detail?, when?, tone? }`. Falsy entries are filtered. Function-valued `items` re-resolve on every `render()` so the feed reflects the latest model state. Empty list renders a single `.detail-timeline-empty` placeholder so the rail still draws. `setItems(items)` replaces the source and re-renders.

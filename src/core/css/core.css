@@ -2568,6 +2568,93 @@ button.metric-card:focus-visible { outline: 2px solid var(--bs-primary); outline
 
 
 /* ========================================================================
+   FlowStrip (horizontal STEP 1 → STEP 2 → … flow)
+   ========================================================================
+   Used for records that describe a process — RuleSet triggering
+   (Match → Bundle → Threshold → Re-trigger), incident triage, anywhere
+   a sequence of stages reads better as a left-to-right strip than a
+   flat field list. Chevron arrows separate steps; the strip wraps to
+   2 columns on tablet and 1 on mobile.
+
+   JS: src/core/views/data/FlowStrip.js
+*/
+.detail-flow-strip {
+    display: grid;
+    grid-template-columns: repeat(var(--flow-strip-cols, 4), 1fr);
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+.detail-flow-strip .flow-strip-step {
+    padding: 1rem 1.05rem;
+    background: var(--bs-body-bg);
+    position: relative;
+    min-width: 0;
+}
+.detail-flow-strip .flow-strip-step + .flow-strip-step {
+    border-left: 1px solid var(--bs-border-color);
+}
+.detail-flow-strip .flow-strip-step::after {
+    content: '';
+    position: absolute;
+    right: -8px; top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+    width: 14px; height: 14px;
+    background: var(--bs-body-bg);
+    border-top: 1px solid var(--bs-border-color);
+    border-right: 1px solid var(--bs-border-color);
+    z-index: 1;
+}
+.detail-flow-strip .flow-strip-step:last-child::after { display: none; }
+.detail-flow-strip .flow-strip-num {
+    font-family: var(--bs-font-monospace);
+    font-size: 0.7rem;
+    color: var(--bs-tertiary-color, var(--bs-secondary-color));
+    font-weight: 600;
+}
+.detail-flow-strip .flow-strip-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0.15rem 0 0.4rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+    color: var(--bs-emphasis-color, var(--bs-body-color));
+}
+.detail-flow-strip .flow-strip-title .flow-strip-action {
+    padding: 0.1rem 0.4rem;
+    font-size: 0.75rem;
+}
+.detail-flow-strip .flow-strip-value {
+    font-size: 0.95rem;
+    color: var(--bs-body-color);
+    font-weight: 500;
+}
+.detail-flow-strip .flow-strip-empty {
+    color: var(--bs-secondary-color);
+    font-style: italic;
+    font-weight: 400;
+}
+.detail-flow-strip .flow-strip-hint {
+    font-size: 0.78rem;
+    color: var(--bs-secondary-color);
+    margin-top: 0.3rem;
+}
+@media (max-width: 768px) {
+    .detail-flow-strip { grid-template-columns: 1fr 1fr; }
+    .detail-flow-strip .flow-strip-step:nth-child(2)::after { display: none; }
+}
+@media (max-width: 480px) {
+    .detail-flow-strip { grid-template-columns: 1fr; }
+    .detail-flow-strip .flow-strip-step + .flow-strip-step {
+        border-left: none;
+        border-top: 1px solid var(--bs-border-color);
+    }
+    .detail-flow-strip .flow-strip-step::after { display: none; }
+}
+
+
+/* ========================================================================
    DetailView / DetailHeaderView
    ========================================================================
    Standard record-detail layout: flat header (icon, title, subtitle, chips,
