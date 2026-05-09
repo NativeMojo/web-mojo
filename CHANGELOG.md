@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### RunnerDetailsView (Wave 3 C3) — StatusPanel hero, ActiveJobsList, flat sections
+
+- **`@core/StatusPanel` hero in Overview** — replaces the local `RunnerStatusPanel` class. Tone tracks runner health (`alive` + `last_heartbeat`): healthy runs `success`, slow / stale heartbeat (≥30s / ≥120s) runs `warning`, no heartbeat or `alive: false` runs `danger`. Headline reads "Up 3d 14h · heartbeat 4s ago" / "Stale heartbeat · last heartbeat 12m ago" / "Down". Meta line shows the runner's served channels and lifetime processed / failed counts. Actions (Ping / Drain / Shutdown) are conditional on health and bubble through the standard MOJO action pipeline.
+- **Four flat KPIs** — Uptime / Jobs processed / Failure rate / Active jobs. The heartbeat sparkline and the System Resources / Active Jobs preview cards from the previous Overview are dropped per the rethink plan: `/api/jobs/runners` already answers "is this runner alive" and the inline cards duplicated content from the dedicated System and Active Jobs sections.
+- **NEW Channels section** — Mustache template + flat-row layout, one row per channel with a per-channel "active" badge driven by the live `ActiveJobsList`. No card wrappers.
+- **Active Jobs section** — replaced the hand-built `<table>` + ad-hoc `/api/jobs/job?runner_id=…` fetch with a `TableView` over the new `ActiveJobsList` (`@ext/admin/models/Job`, Wave 2 B2). Columns: Job (id + func), Channel, Started, Attempt. Click-to-view opens the JobDetailsView modal.
+- **Job History section** — already a `TableView`; columns updated to use `formatter: 'relative'` / `formatter: 'duration'` instead of hand-rolled cells.
+- **Logs section** — replaced the per-job multi-fetch + hand-built lines with a single `TableView` over `JobLogList` filtered by `?runner_id=`. Standard CRUD per `.claude/rules/api.md` — no special admin endpoints.
+- **NEW Actions section** — flat-row layout (Ping / Drain / Restart / Shutdown / Export + Broadcast form). No card stacking. Drain and Restart wire the UX surface for now and toast "backend integration pending" when invoked, matching how Drain was already gated.
+- **System section** — converted from `_buildTemplate()` string concat to Mustache + getter properties. OS / CPU / Memory / Disk / Network blocks render as flat-row groups; the raw sysinfo blob lives inside a `KnownFieldsCard` (`@core/views/data/KnownFieldsCard`) for the collapsible raw view. No `.detail-field-card` wrappers.
+- **Header** — `auxFn` produces a state-aware right-gutter readout (`Up 3d · 0.40% failure` / `Stale heartbeat 12m` / `Down`). Header `actions[]` is empty — Ping / Drain / Shutdown live on the StatusPanel; Ping / Broadcast / Drain / Restart / Shutdown / Export populate the context menu. The legacy `runner-pulse-dot` DOM patching is dropped (the StatusPanel + auxFn carry the alive signal).
+- **Tests:** `test/unit/RunnerDetailsView.test.js` adds twelve regression cases — StatusPanel mounts as instance, tone flips for healthy / down / stale heartbeats, the three TableView sections + ActiveJobsList wiring, the 9-section side-nav config, auxFn readouts for healthy and down runners, header `actions: []`, Channels / System section structural getters.
+- **Loader:** `test/utils/simple-module-loader.js` registers `RunnerDetailsView` and adds the `JobRunnerModelsStub` import-rewrite rule (mirroring the existing `JobModelsStub`).
+
 ### Wave 3 C8: ShortLinkView sweep — flat sections + Mustache + DataFormatter + KnownFieldsCard
 
 - **`src/extensions/admin/shortlinks/ShortLinkView.js`** rewritten end-to-end against the Wave 1 framework primitives and Wave 3 design language:
