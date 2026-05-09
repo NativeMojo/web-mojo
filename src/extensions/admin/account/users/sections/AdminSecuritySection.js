@@ -15,113 +15,96 @@ export default class AdminSecuritySection extends View {
         super({
             className: 'admin-security-section',
             template: `
-                <style>
-                    .as-section-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #adb5bd; margin-bottom: 0.5rem; margin-top: 1.75rem; }
-                    .as-section-label:first-child { margin-top: 0; }
-                    .as-item { display: flex; align-items: center; gap: 0.85rem; padding: 0.85rem 1rem; border: 1px solid #f0f0f0; border-radius: 8px; margin-bottom: 0.5rem; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
-                    .as-item:hover { border-color: #dee2e6; background: #fafbfd; }
-                    .as-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
-                    .as-info { flex: 1; min-width: 0; }
-                    .as-title { font-weight: 600; font-size: 0.88rem; }
-                    .as-desc { font-size: 0.78rem; color: #6c757d; }
-                    .as-badge { font-size: 0.72rem; padding: 0.15em 0.5em; border-radius: 3px; flex-shrink: 0; }
-                    .as-chevron { color: #ced4da; font-size: 0.8rem; flex-shrink: 0; }
-                </style>
+                <div class="detail-section-eyebrow">Authentication</div>
 
-                <div class="as-section-label">Authentication</div>
-
-                <div class="as-item" data-action="send-password-reset">
-                    <div class="as-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-envelope"></i></div>
-                    <div class="as-info">
-                        <div class="as-title">Send Password Reset</div>
-                        <div class="as-desc">Send a password reset email to {{model.email}}</div>
+                <div class="admin-security-item" data-action="send-password-reset">
+                    <div class="admin-security-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-envelope"></i></div>
+                    <div class="admin-security-info">
+                        <div class="admin-security-title">Send Password Reset</div>
+                        <div class="admin-security-desc">Send a password reset email to {{model.email}}</div>
                     </div>
-                    <span class="as-badge bg-light text-muted border">Send</span>
+                    <span class="badge text-bg-light border">Send</span>
                 </div>
 
-                <div class="as-item" data-action="send-magic-link">
-                    <div class="as-icon" style="background: rgba(13,110,253,0.1); color: #0d6efd;"><i class="bi bi-link-45deg"></i></div>
-                    <div class="as-info">
-                        <div class="as-title">Send Magic Login Link</div>
-                        <div class="as-desc">Send a one-click login link to {{model.email}}</div>
+                <div class="admin-security-item" data-action="send-magic-link">
+                    <div class="admin-security-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-link-45deg"></i></div>
+                    <div class="admin-security-info">
+                        <div class="admin-security-title">Send Magic Login Link</div>
+                        <div class="admin-security-desc">Send a one-click login link to {{model.email}}</div>
                     </div>
-                    <span class="as-badge bg-light text-muted border">Send</span>
+                    <span class="badge text-bg-light border">Send</span>
                 </div>
 
                 {{^model.is_email_verified|bool}}
-                <div class="as-item" data-action="send-email-verification">
-                    <div class="as-icon" style="background: rgba(25,135,84,0.1); color: #198754;"><i class="bi bi-envelope-check"></i></div>
-                    <div class="as-info">
-                        <div class="as-title">Send Email Verification</div>
-                        <div class="as-desc">Send a verification email to {{model.email}}</div>
+                <div class="admin-security-item" data-action="send-email-verification">
+                    <div class="admin-security-icon bg-success bg-opacity-10 text-success"><i class="bi bi-envelope-check"></i></div>
+                    <div class="admin-security-info">
+                        <div class="admin-security-title">Send Email Verification</div>
+                        <div class="admin-security-desc">Send a verification email to {{model.email}}</div>
                     </div>
-                    <span class="as-badge bg-light text-muted border">Send</span>
+                    <span class="badge text-bg-light border">Send</span>
                 </div>
                 {{/model.is_email_verified|bool}}
 
-                <div class="as-item" data-action="set-password">
-                    <div class="as-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-key"></i></div>
-                    <div class="as-info">
-                        <div class="as-title">Set Password</div>
-                        <div class="as-desc">Set a new password directly for this user</div>
+                <div class="admin-security-item" data-action="set-password">
+                    <div class="admin-security-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-key"></i></div>
+                    <div class="admin-security-info">
+                        <div class="admin-security-title">Set Password</div>
+                        <div class="admin-security-desc">Set a new password directly for this user</div>
                     </div>
-                    <span class="as-badge bg-light text-muted border">Set</span>
+                    <span class="badge text-bg-light border">Set</span>
                 </div>
 
-                <div class="as-section-label">Multi-Factor Authentication</div>
+                <div class="detail-section-eyebrow mt-3">Multi-Factor Authentication</div>
 
-                <div class="as-item" data-action="toggle-mfa">
-                    <div class="as-icon" style="background: rgba(111,66,193,0.1); color: #6f42c1;"><i class="bi bi-shield-lock"></i></div>
-                    <div class="as-info">
-                        <div class="as-title">MFA Requirement</div>
-                        <div class="as-desc">
+                <div class="admin-security-item" data-action="toggle-mfa">
+                    <div class="admin-security-icon" style="background: rgba(var(--bs-purple-rgb,111,66,193),0.1); color: var(--bs-purple, #6f42c1);"><i class="bi bi-shield-lock"></i></div>
+                    <div class="admin-security-info">
+                        <div class="admin-security-title">MFA Requirement</div>
+                        <div class="admin-security-desc">
                             {{#model.requires_mfa|bool}}User is required to use MFA{{/model.requires_mfa|bool}}
                             {{^model.requires_mfa|bool}}MFA is not required for this user{{/model.requires_mfa|bool}}
                         </div>
                     </div>
-                    {{#model.requires_mfa|bool}}
-                        <span class="as-badge bg-success bg-opacity-10 text-success border">Enabled</span>
-                    {{/model.requires_mfa|bool}}
-                    {{^model.requires_mfa|bool}}
-                        <span class="as-badge bg-light text-muted border">Disabled</span>
-                    {{/model.requires_mfa|bool}}
+                    {{#model.requires_mfa|bool}}<span class="badge text-bg-success">Enabled</span>{{/model.requires_mfa|bool}}
+                    {{^model.requires_mfa|bool}}<span class="badge text-bg-light border">Disabled</span>{{/model.requires_mfa|bool}}
                 </div>
 
-                <div class="as-item" data-action="manage-passkeys">
-                    <div class="as-icon bg-success bg-opacity-10 text-success"><i class="bi bi-fingerprint"></i></div>
-                    <div class="as-info">
-                        <div class="as-title">Passkeys</div>
-                        <div class="as-desc">View and manage registered passkeys</div>
+                <div class="admin-security-item" data-action="manage-passkeys">
+                    <div class="admin-security-icon bg-success bg-opacity-10 text-success"><i class="bi bi-fingerprint"></i></div>
+                    <div class="admin-security-info">
+                        <div class="admin-security-title">Passkeys</div>
+                        <div class="admin-security-desc">View and manage registered passkeys</div>
                     </div>
-                    <i class="bi bi-chevron-right as-chevron"></i>
+                    <i class="bi bi-chevron-right admin-security-chevron"></i>
                 </div>
 
                 {{#model.requires_mfa|bool}}
-                <div class="as-item" data-action="view-recovery-codes">
-                    <div class="as-icon" style="background: rgba(111,66,193,0.1); color: #6f42c1;"><i class="bi bi-file-earmark-lock"></i></div>
-                    <div class="as-info">
-                        <div class="as-title">Recovery Codes</div>
-                        <div class="as-desc">View remaining recovery codes</div>
+                <div class="admin-security-item" data-action="view-recovery-codes">
+                    <div class="admin-security-icon" style="background: rgba(var(--bs-purple-rgb,111,66,193),0.1); color: var(--bs-purple, #6f42c1);"><i class="bi bi-file-earmark-lock"></i></div>
+                    <div class="admin-security-info">
+                        <div class="admin-security-title">Recovery Codes</div>
+                        <div class="admin-security-desc">View remaining recovery codes</div>
                     </div>
-                    <i class="bi bi-chevron-right as-chevron"></i>
+                    <i class="bi bi-chevron-right admin-security-chevron"></i>
                 </div>
 
-                <div class="as-item" data-action="disable-totp">
-                    <div class="as-icon" style="background: rgba(220,53,69,0.1); color: #dc3545;"><i class="bi bi-shield-x"></i></div>
-                    <div class="as-info">
-                        <div class="as-title">Disable Authenticator</div>
-                        <div class="as-desc">Remove TOTP requirement for this user</div>
+                <div class="admin-security-item" data-action="disable-totp">
+                    <div class="admin-security-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-shield-x"></i></div>
+                    <div class="admin-security-info">
+                        <div class="admin-security-title">Disable Authenticator</div>
+                        <div class="admin-security-desc">Remove TOTP requirement for this user</div>
                     </div>
                 </div>
                 {{/model.requires_mfa|bool}}
 
-                <div class="as-section-label">Sessions</div>
+                <div class="detail-section-eyebrow mt-3">Sessions</div>
 
-                <div class="as-item" data-action="revoke-all-sessions">
-                    <div class="as-icon" style="background: rgba(220,53,69,0.1); color: #dc3545;"><i class="bi bi-box-arrow-right"></i></div>
-                    <div class="as-info">
-                        <div class="as-title">Revoke All Sessions</div>
-                        <div class="as-desc">Force sign-out from all devices</div>
+                <div class="admin-security-item" data-action="revoke-all-sessions">
+                    <div class="admin-security-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-box-arrow-right"></i></div>
+                    <div class="admin-security-info">
+                        <div class="admin-security-title">Revoke All Sessions</div>
+                        <div class="admin-security-desc">Force sign-out from all devices</div>
                     </div>
                 </div>
             `,
@@ -267,33 +250,23 @@ export default class AdminSecuritySection extends View {
         const items = collection.models || [];
         const view = new View({
             template: `
-                <style>
-                    .pk-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.75rem; border: 1px solid #f0f0f0; border-radius: 8px; margin-bottom: 0.4rem; }
-                    .pk-icon { width: 32px; height: 32px; background: #e7f1ff; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #0d6efd; font-size: 0.9rem; flex-shrink: 0; }
-                    .pk-info { flex: 1; min-width: 0; }
-                    .pk-name { font-weight: 600; font-size: 0.85rem; }
-                    .pk-meta { font-size: 0.73rem; color: #6c757d; }
-                    .pk-actions .btn { padding: 0.2rem 0.4rem; font-size: 0.75rem; }
-                    .pk-empty { text-align: center; padding: 2rem 1rem; color: #6c757d; }
-                    .pk-empty i { font-size: 2rem; color: #ced4da; display: block; margin-bottom: 0.5rem; }
-                </style>
                 {{#passkeys}}
-                    <div class="pk-row">
-                        <div class="pk-icon"><i class="bi bi-fingerprint"></i></div>
-                        <div class="pk-info">
-                            <div class="pk-name">{{.friendly_name|default:'Unnamed Passkey'}}</div>
-                            <div class="pk-meta">Created {{.created|date}} &middot; Last used {{.last_used|relative|default:'never'}} &middot; {{.sign_count}} uses</div>
+                    <div class="admin-passkey-row">
+                        <div class="admin-passkey-icon"><i class="bi bi-fingerprint"></i></div>
+                        <div class="admin-passkey-info">
+                            <div class="admin-passkey-name">{{.friendly_name|default:'Unnamed Passkey'}}</div>
+                            <div class="admin-passkey-meta text-secondary">Created {{.created|date}} &middot; Last used {{.last_used|relative|default:'never'}} &middot; {{.sign_count}} uses</div>
                         </div>
-                        <div class="pk-actions">
-                            <button type="button" class="btn btn-outline-secondary" data-action="edit-passkey" data-id="{{.id}}" title="Edit"><i class="bi bi-pencil"></i></button>
-                            <button type="button" class="btn btn-outline-danger" data-action="delete-passkey" data-id="{{.id}}" title="Delete"><i class="bi bi-trash"></i></button>
+                        <div class="admin-passkey-actions">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-action="edit-passkey" data-id="{{.id}}" title="Edit"><i class="bi bi-pencil"></i></button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" data-action="delete-passkey" data-id="{{.id}}" title="Delete"><i class="bi bi-trash"></i></button>
                         </div>
                     </div>
                 {{/passkeys}}
                 {{^passkeys|bool}}
-                    <div class="pk-empty">
+                    <div class="admin-passkey-empty text-secondary">
                         <i class="bi bi-fingerprint"></i>
-                        No passkeys registered
+                        <div>No passkeys registered</div>
                     </div>
                 {{/passkeys|bool}}
             `
@@ -342,15 +315,9 @@ export default class AdminSecuritySection extends View {
         const { remaining, codes } = resp.data;
         const view = new View({
             template: `
-                <style>
-                    .rc-info { font-size: 0.82rem; color: #6c757d; margin-bottom: 1rem; }
-                    .rc-remaining { font-weight: 600; color: #495057; }
-                    .rc-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; }
-                    .rc-code { font-family: monospace; font-size: 0.85rem; padding: 0.35rem 0.6rem; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; text-align: center; }
-                </style>
-                <div class="rc-info"><span class="rc-remaining">{{remaining}}</span> recovery codes remaining</div>
-                <div class="rc-list">
-                    {{#codes}}<div class="rc-code">{{.}}</div>{{/codes}}
+                <div class="admin-recovery-info text-secondary"><span class="admin-recovery-remaining">{{remaining}}</span> recovery codes remaining</div>
+                <div class="admin-recovery-list">
+                    {{#codes}}<div class="admin-recovery-code">{{.}}</div>{{/codes}}
                 </div>
             `
         });

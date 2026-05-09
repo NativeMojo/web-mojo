@@ -23,33 +23,22 @@ export default class AdminConnectedSection extends View {
         super({
             className: 'admin-connected-section',
             template: `
-                <style>
-                    .ac-row { display: flex; align-items: center; gap: 0.85rem; padding: 0.85rem 1rem; border: 1px solid #f0f0f0; border-radius: 8px; margin-bottom: 0.5rem; }
-                    .ac-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; background: #f0f0f0; color: #495057; }
-                    .ac-info { flex: 1; min-width: 0; }
-                    .ac-provider { font-weight: 600; font-size: 0.88rem; text-transform: capitalize; }
-                    .ac-meta { font-size: 0.78rem; color: #6c757d; }
-                    .ac-actions .btn { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
-                    .ac-empty { text-align: center; padding: 2rem 1rem; color: #6c757d; }
-                    .ac-empty i { font-size: 2rem; color: #ced4da; display: block; margin-bottom: 0.5rem; }
-                </style>
-
                 {{#connections}}
-                    <div class="ac-row">
-                        <div class="ac-icon"><i class="bi {{.icon}}"></i></div>
-                        <div class="ac-info">
-                            <div class="ac-provider">{{.provider}}</div>
-                            <div class="ac-meta">{{.email}} &middot; Connected {{.created|relative}}</div>
+                    <div class="admin-connected-row">
+                        <div class="admin-connected-icon"><i class="bi {{.icon}}"></i></div>
+                        <div class="admin-connected-info">
+                            <div class="admin-connected-provider">{{.provider}}</div>
+                            <div class="admin-connected-meta text-secondary">{{.email}} &middot; Connected {{.created|relative}}</div>
                         </div>
-                        <div class="ac-actions">
-                            <button type="button" class="btn btn-outline-danger" data-action="unlink" data-id="{{.id}}" title="Unlink"><i class="bi bi-x-lg me-1"></i>Unlink</button>
+                        <div class="admin-connected-actions">
+                            <button type="button" class="btn btn-sm btn-outline-danger" data-action="unlink" data-id="{{.id}}" title="Unlink"><i class="bi bi-x-lg me-1"></i>Unlink</button>
                         </div>
                     </div>
                 {{/connections}}
                 {{^connections|bool}}
-                    <div class="ac-empty">
+                    <div class="admin-connected-empty text-secondary">
                         <i class="bi bi-plug"></i>
-                        No connected accounts
+                        <div>No connected accounts</div>
                     </div>
                 {{/connections|bool}}
             `,

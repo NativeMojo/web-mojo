@@ -2816,6 +2816,173 @@
 
 
 /* ========================================================================
+   AdminConnectedSection — OAuth provider rows
+   ========================================================================
+   Stacked rows of linked providers, each with icon · name · email · meta ·
+   unlink button. Theme-aware via Bootstrap tokens (no hardcoded hex).
+*/
+.admin-connected-row {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+    background: var(--bs-tertiary-bg);
+}
+.admin-connected-icon {
+    width: 36px; height: 36px;
+    border-radius: 0.5rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+    background: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
+}
+.admin-connected-info { flex: 1; min-width: 0; }
+.admin-connected-provider {
+    font-weight: 600;
+    font-size: 0.88rem;
+    text-transform: capitalize;
+    color: var(--bs-body-color);
+}
+.admin-connected-meta {
+    font-size: 0.78rem;
+}
+.admin-connected-empty {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+.admin-connected-empty i {
+    font-size: 2rem;
+    color: var(--bs-tertiary-color, var(--bs-secondary-color));
+    display: block;
+    margin-bottom: 0.5rem;
+    opacity: 0.7;
+}
+
+
+/* ========================================================================
+   AdminSecuritySection — clickable security action rows
+   ========================================================================
+   Each row is an interactive item: icon + title/description + badge or
+   chevron. Hover lifts the border + bg slightly. Theme-aware via tokens.
+*/
+.admin-security-item {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    background: var(--bs-tertiary-bg);
+    transition: border-color 0.15s, background 0.15s;
+}
+.admin-security-item:hover {
+    border-color: var(--bs-border-color);
+    background: var(--bs-secondary-bg);
+}
+.admin-security-icon {
+    width: 36px; height: 36px;
+    border-radius: 0.5rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+.admin-security-info { flex: 1; min-width: 0; }
+.admin-security-title {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--bs-body-color);
+}
+.admin-security-desc {
+    font-size: 0.78rem;
+    color: var(--bs-secondary-color);
+}
+.admin-security-chevron {
+    color: var(--bs-tertiary-color, var(--bs-secondary-color));
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+
+/* ========================================================================
+   AdminSecuritySection — passkey list (Modal.dialog body)
+   ======================================================================== */
+.admin-passkey-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    margin-bottom: 0.4rem;
+    background: var(--bs-tertiary-bg);
+}
+.admin-passkey-icon {
+    width: 32px; height: 32px;
+    background: rgba(var(--bs-primary-rgb), 0.1);
+    color: var(--bs-primary);
+    border-radius: 0.4rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+.admin-passkey-info { flex: 1; min-width: 0; }
+.admin-passkey-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--bs-body-color);
+}
+.admin-passkey-meta {
+    font-size: 0.73rem;
+}
+.admin-passkey-empty {
+    text-align: center;
+    padding: 2rem 1rem;
+}
+.admin-passkey-empty i {
+    font-size: 2rem;
+    color: var(--bs-tertiary-color, var(--bs-secondary-color));
+    display: block;
+    margin-bottom: 0.5rem;
+    opacity: 0.7;
+}
+
+
+/* ========================================================================
+   AdminSecuritySection — recovery codes (Modal.dialog body)
+   ======================================================================== */
+.admin-recovery-info {
+    font-size: 0.82rem;
+    margin-bottom: 1rem;
+}
+.admin-recovery-remaining {
+    font-weight: 600;
+    color: var(--bs-emphasis-color, var(--bs-body-color));
+}
+.admin-recovery-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.3rem;
+}
+.admin-recovery-code {
+    font-family: var(--bs-font-monospace);
+    font-size: 0.85rem;
+    padding: 0.35rem 0.6rem;
+    background: var(--bs-secondary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.25rem;
+    text-align: center;
+    color: var(--bs-body-color);
+}
+
+
+/* ========================================================================
    DetailView — Field-card (DEPRECATED — prefer flat labeled sections)
    ========================================================================
    Bordered card containing a header row (group name + edit pencil) and a

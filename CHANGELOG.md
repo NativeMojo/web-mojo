@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Admin user sections — drop inline `<style>` blocks, switch to framework primitives
+
+- **AdminPersonalSection** / **AdminProfileSection** / **AdminConnectedSection** / **AdminSecuritySection** — deleted the inline `<style>` blocks (every block had hardcoded light-theme hex literals: `#adb5bd`, `#f0f0f0`, `#6c757d`, `#212529`, `#0d6efd`, `#d1e7dd`, etc., with **no** `[data-bs-theme="dark"]` overrides). Templates now use the framework's `.detail-section-eyebrow` + `.detail-flat-row*` primitives (Wave 1 A5) for the labeled-row layout, and Bootstrap utility classes (`text-bg-success`, `text-bg-warning`, `text-bg-light border`, `text-secondary fst-italic`) for badges and "not set" placeholders.
+- **AdminConnectedSection / AdminSecuritySection structural CSS** moved to `admin.css` under `AdminConnectedSection`, `AdminSecuritySection`, "passkey list", and "recovery codes" headers. All values use Bootstrap tokens (`--bs-tertiary-bg`, `--bs-border-color`, `--bs-body-color`, `--bs-secondary-color`, `--bs-primary`, etc.) so dark theme works automatically per `.claude/rules/theming.md`.
+- The two inner `Modal.dialog` views in `AdminSecuritySection` (passkey list, recovery codes) likewise drop their inline `<style>` blocks — moved to `admin.css` under namespaced `.admin-passkey-*` and `.admin-recovery-*` classes.
+- Per-section bespoke classes (`.aps-*`, `.ap-*`, `.ac-*`, `.as-*`, `.pk-*`, `.rc-*`) are now retired in favor of either framework primitives or short namespaced classes in admin.css. No new component-specific dark overrides needed — every value resolves through Bootstrap tokens.
+
 ### Admin models — new section-driven Collections
 
 - **Added** `SimilarJobsList` (`@ext/admin/models/Job.js`) — thin `JobList` subclass with default `params: { ordering: '-created' }` plus optional `func` constructor arg. Backs JobDetailsView's "Similar Jobs" section. Endpoint: `GET /api/jobs/job?func=<name>&ordering=-created`.
