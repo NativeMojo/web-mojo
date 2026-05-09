@@ -180,3 +180,144 @@ Recommended order — start with the views that already have known design issues
 - [`detailview-migration-rethink.md`](detailview-migration-rethink.md) — the parent rethink with the locked design language.
 - [`docs/web-mojo/components/DetailView.md`](../../docs/web-mojo/components/DetailView.md), `StatusPanel.md`, `Timeline.md`, `FlowStrip.md`, `KnownFieldsCard.md`, `MetricCard.md` — primitive references.
 - [`.claude/rules/views.md`](../../.claude/rules/views.md), [`theming.md`](../../.claude/rules/theming.md), [`testing.md`](../../.claude/rules/testing.md).
+
+---
+
+## Resolution
+
+Audit completed 2026-05-09. Two audit commits landed on `wave2-b4-jobdetailsview`:
+`90a5110` (UserView) and `3a93825` (the other 5 wired views).
+
+### Summary
+
+The audit surfaced four cross-cutting framework / cross-extension bugs that
+fell into the polish budget plus several view-specific tweaks. None of the
+fixes exceeded the 50-line polish ceiling. Full unit suite stayed green
+(834/834) after each commit.
+
+### Fixes applied (per category)
+
+**Framework primitives (1 file each)**
+- `src/core/views/data/MetricCard.js` — `value`, `label`, `hint`, and `tone`
+  options now resolve function-valued args against `this.model` (same shape
+  as `StatusPanel._resolve()`). Before the fix, every Wave 3 admin view that
+  passed `value: () => this._someCount()` rendered the literal arrow-function
+  source string in the KPI card — most visibly the UserView Account Snapshot
+  ("DEVICES: () => String(this._deviceCount())").
+- `src/core/utils/DataFormatter.js` — `apply()` now also accepts the alt
+  signature `(value, [pipeNames])` that 17 admin call sites use, treating
+  the array as a chain of formatter names. Prior to the fix every "relative",
+  "datetime", and "epoch|relative" call across UserView / GroupView /
+  MemberView returned the literal pipe-name string back to the template
+  ("Last login: relative", "RECENT ACTIVITY: relative", auxFn "Onlinelast
+  active relative").
+
+**Header `auxFn` template (6 files)**
+- `UserView`, `GroupView`, `JobDetailsView`, `RunnerDetailsView`,
+  `DeviceView`, `ShortLinkView`, `IncidentView` all emitted two inline
+  `<span>`s inside a single `dh-aux-meta` wrapper. The two sub-spans (main
+  label + muted relative) ran together with no visible separator
+  ("Onlineactive 2m ago", "Last activity3 minutes ago", "Heartbeatactive
+  4m ago"). Restructured each `_buildHeaderAux` to use the existing
+  `.dh-aux-presence` (dot + main, on top) + `.dh-aux-meta` (muted
+  relative, on the line below) — the layout that `core.css` was already
+  styled for.
+
+**Card-style stripped to flat-row (1 CSS file)**
+- `src/extensions/admin/css/admin.css` — `.admin-connected-row`,
+  `.admin-security-item`, `.admin-passkey-row` were three Wave 3 hold-overs
+  with `background: var(--bs-tertiary-bg)` + `border-radius: 0.6rem`,
+  rendering as Bootstrap card panels inside DetailView. Per the locked
+  "no card backgrounds" rule, flattened to transparent / 0-radius rows
+  with the same 0.06-alpha hairline that `.detail-flat-row` uses, dark
+  override included for each.
+
+**GroupView TableView headers (1 file)**
+- `src/extensions/admin/account/groups/GroupView.js` — four TableView
+  sections (`Members`, `Sub-Groups`, `API Keys`, `Events`) set both
+  `title:` and `eyebrow: 'Section · X'`. Same word twice in two sizes —
+  no information added beyond what the side-nav label already shows.
+  Dropped the eyebrows.
+
+### Per-view audit notes
+
+| View | Status | Notes |
+|---|---|---|
+| **UserView** | ✅ Polished | Overview / Profile / Personal / Security / Permissions / Devices / Audit verified clean under both themes. **OAuth section flagged** (renders empty — no eyebrow / empty state). |
+| **GroupView** | ✅ Polished | Overview / Identity / Members / Sub-Groups / API Keys / Permissions / Events / Audit / Metadata — clean. The TableView sections lost their redundant "Section · X" eyebrows. |
+| **JobDetailsView** | ✅ Polished | StatusPanel hero, KPI strip, Execution flat-rows, Lifecycle Timeline all on-spec. AuxFn fixed. |
+| **IncidentView** | ✅ Polished | StatusPanel + 4 KPIs + What triggered / What happened next pair card. AuxFn fixed. |
+| **RuleSetView** | ✅ Already compliant (precedent — original Wave 1) |
+| **RunnerDetailsView** | (deferred) | TablePage had no runner data in fixture, couldn't open detail. AuxFn template fixed pre-emptively per the same shared bug. |
+| **DeviceView** | (partial) | Couldn't reach DeviceView via UserView Devices — that section's TableView opens a generic `View Item #b:NNN` inspector instead of `DeviceView` (`clickAction` not wired). Flagged below. AuxFn template fixed pre-emptively. |
+| **GeoIPView** | (deferred) | No fixture entrypoint reached. |
+| **ShortLinkView** | ✅ Polished | Overview clean; AuxFn fixed; chips render. |
+| **MemberView** | (deferred) | Reached only indirectly through GroupView Members; same `dataFormatter.apply` alt-signature bug auto-fixed via the framework patch. |
+
+### Structural issues flagged for follow-up
+
+These were noticed during the audit but are beyond the polish scope per
+the request's "out of scope" guard. Each warrants its own request in
+`planning/requests/` if it should be addressed.
+
+1. **UserView OAuth section renders empty** — `UserOAuthSection` (or
+   wherever the body comes from) doesn't show an eyebrow, an empty-state
+   placeholder, or any flat rows. Compare against `Personal` / `Security`
+   for the expected shape.
+2. **UserView Devices section opens generic Item inspector** — clicking a
+   device row opens the framework's default `View Item #b:NNN` modal
+   (renders raw fields incl. unformatted epoch) rather than `DeviceView`.
+   The Devices section's TableView either doesn't set `clickAction: 'view'`
+   or `BrowserDevice.VIEW_CLASS` isn't pointed at `DeviceView`.
+3. **IncidentView Source section threat-flag grid** — the bottom block of
+   "TOR / VPN / PROXY / DATACENTER / MOBILE / CLOUD / KNOWN ATTACKER /
+   BLOCKED / WHITELISTED" with red-X icons is dense and visually scattered
+   — feels like a `KnownFieldsCard` rendering raw rather than a structured
+   threat-chip strip. Worth its own structural pass.
+4. **GroupView header `Edit` / `Invite` buttons** — primary `actions:[]`
+   on the header host are full-size, slightly louder than the other views'
+   tight context-menu pattern. Consider moving to context menu (long-tail
+   only) and keeping just one primary affordance.
+5. **`Joined` row is empty in UserView Profile section** — model has
+   `created` / `created_on` but the template binds to `joined`.
+6. **17 call sites still use the alt `dataFormatter.apply(value, [...])`
+   signature** (`UserView`, `GroupView`, `MemberView`). The framework
+   patch makes this work, but it would be cleaner long-term to migrate
+   them to either `dataFormatter.pipe(value, 'relative')` or the
+   documented `.apply('relative', value)` form, then remove the
+   compatibility branch.
+
+### What I didn't fix (and why)
+
+- **RunnerDetailsView, GeoIPView, MemberView, full DeviceView** — fixture
+  data didn't expose entry points within this audit run. The
+  `dataFormatter.apply` and `dh-aux-meta` framework patches will fix the
+  same bugs there once data lands.
+- **TableView `Refresh` button outside btn-group** in UserView Devices —
+  not in scope (Bootstrap default sizing, but not a btn-group). Could
+  shrink with a single rule, but the audit budget had higher-priority items.
+
+### Test + lint state
+
+- Unit suite **834/834 passing** after each of the 2 audit commits.
+- Lint: pre-existing 16 errors / 55 warnings unchanged in the touched
+  files (dynamic-imports + console statements in UserView; CSS files
+  not lintable). No new lint errors introduced.
+- Both light and dark themes verified clean across UserView (all 7
+  reachable sections), GroupView Overview + Members, JobDetailsView
+  Overview + Payload, IncidentView Overview + Source, ShortLinkView
+  Overview.
+
+### Commits landed
+
+```
+90a5110  Design audit: UserView — MetricCard fn-resolve, dataFormatter
+         alt-API, auxFn line break, flat AdminConnected/Security/Passkey
+         rows
+3a93825  Design audit: GroupView + JobDetailsView + RunnerDetailsView
+         + DeviceView + ShortLinkView + IncidentView — auxFn line break
+         + drop redundant TableView eyebrows
+```
+
+The audit branch (`wave2-b4-jobdetailsview`) is ready to merge or rebase
+into a per-view PR fan-out as the parent rethink workflow prefers.
