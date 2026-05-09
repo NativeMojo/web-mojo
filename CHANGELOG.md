@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Wave 3 C4: DeviceView sweep — grow 2→5 sections, threat chips, KnownFieldsCard
+
+- **`src/extensions/admin/account/devices/DeviceView.js`** rewritten end-to-end against the Wave 1 framework primitives and the JobDetailsView/GeoIPView canonical pattern:
+  - **2 → 5 sections.** Overview now leads with four `MetricCard` KPIs (Sessions / Locations / Days active / Last login) followed by a `Timeline` of threat-signal events (trust / VPN / Tor / proxy / geo / DUID) so the operator's first question — "is this device safe?" — has a single answer block. Hardware (full `device_info` dump), Locations (existing `TableView`), Sessions (NEW — placeholder until the backend records sessions), and Metadata (uses `KnownFieldsCard`) round out the section list.
+  - **Mustache + DataFormatter throughout.** Every section view is now a Mustache string template binding `{{model.field}}`, `{{model.field|datetime}}`, `{{model.field|relative}}`, `{{#flag|bool}}…{{/flag|bool}}`, with view-level getters for derived flags (`hasBrowserVersion`, `hasOsVersion`, `hasResolution`, `hasPixelRatio`, `hasColorDepth`, `hasUaString`, `hasSessionCount`, `sessionCount`). The previous `template = () => this._buildTemplate()` string concatenation, the per-section `_fieldCard()` factory, and the per-section `escapeHtml()` calls along the template path are gone.
+  - **`@core` primitives in use.** Overview KPIs are four `MetricCard`s at the default size (no `metric-card-lg`); the Overview's threat-signals feed is a `Timeline` driven by a `(model) => items[]` resolver that re-resolves on every render. Metadata section uses `KnownFieldsCard` — the raw `metadata` blob plus a small set of audit fields (Record ID / DUID / Owner / First seen / Last seen / Trusted) are promoted to the 2-col grid, with the raw record JSON in the framework's collapsible `<details>` block.
+  - **Hardware section flat-row redesign.** The five `.detail-field-card` blocks (Browser / OS / Hardware / Display & environment / Identification) collapse into five `.detail-section-eyebrow` subsections of `.detail-flat-row`s. The User-agent string conditionally renders as a single `.detail-error-block` after Identification. No `.card` wrappers, no inline `<style>` attributes.
+  - **Sessions section minimalist placeholder.** Until a `UserDeviceSession` collection lands, the section renders three flat rows (Status note + Sessions seen + Last login) instead of a centered card empty-state.
+  - **Header chips: Trusted / Blocked / VPN / Tor / Proxy / Cloud** with `when:` callbacks — only render when truthy. The legacy `bi-fingerprint duid · …` chip is dropped (DUID lives in the Hardware section); the browser / sessions / locations chips remain.
+  - **Header `auxFn`** replaces the synthetic-`_subtitle` round-trip with a structured presence-dot + main-state + muted-relative readout ("● Online · Last seen 4m ago", "● Offline · Last seen 3d ago", "● Blocked · Last seen 1h ago"). The dot tone resolves through the same trust-/threat-flag logic as the header icon. Trusted HTML; every model field is escaped via `MOJOUtils.escapeHtml(...)` before composition.
+  - **`subtitleFn`** replaces `subtitlePath: '_subtitle'` — the synthetic `_refreshSubtitle()` mutation on `model.attributes` is gone. The subtitle is now a function of the current model state.
+  - Helper functions: deleted `formatDateTime`, `_kpi` factory, `_buildTemplate`, `_fieldCard`, `truncateMiddle`. Retained `epochToMs` / `formatRelative` / `browserLabel` / `osLabel` / `pickIcon` / `_geoFor` / `collectThreatFlags` / `hasFlag` / `daysActive` (all used outside the Mustache pipe path — `auxFn`, `subtitleFn`, header `iconToneFn`, Timeline `detail` slot composition).
+  - **No `p-3` / `p-4`** utility classes on section className strings; layout owns padding. **No `viewDialogOptions` size override** (inherits `Modal.detail()`'s default `'lg'`).
+- No public API changes. Lint clean on the touched file.
+
 ### TableView — `fetchOnView` auto-refreshes model before detail dialog
 
 - **Added:** `fetchOnView` option (default `true`). When enabled, TableView calls `model.fetch()` before opening the view dialog, ensuring the detail view always has the latest server data. Set to `false` to use the row data as-is. Skipped when a custom `onItemView` handler is provided.
