@@ -19,7 +19,8 @@ class GeoLocatedIPTablePage extends TablePage {
             itemView: GeoIPView,
             viewDialogOptions: {
                 header: false,
-                size: 'xl'
+                noBodyPadding: true,
+                buttons: []
             },
 
             // Column definitions

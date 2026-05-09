@@ -35,9 +35,9 @@ export default class JobRunnersSection extends View {
             paginated: true,
             itemView: RunnerDetailsView,
             viewDialogOptions: {
-                title: 'Runner Details',
-                size: 'xl',
-                scrollable: true
+                header: false,
+                noBodyPadding: true,
+                buttons: []
             },
             tableOptions: {
                 striped: false,

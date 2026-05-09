@@ -16,10 +16,11 @@ class UserDeviceTablePage extends TablePage {
             router: "admin/user/devices",
             Collection: UserDeviceList,
 
-            // itemViewClass: DeviceView,
+            itemViewClass: DeviceView,
             viewDialogOptions: {
                 header: false,
-                size: 'lg'
+                noBodyPadding: true,
+                buttons: []
             },
 
             // Column definitions

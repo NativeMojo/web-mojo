@@ -16,9 +16,8 @@ class RuleSetTablePage extends TablePage {
 
             viewDialogOptions: {
                 header: false,
-                size: 'xl',
                 noBodyPadding: true,
-                buttons: []                  // RuleSetView is a DetailView — no footer; X / Esc / backdrop dismiss
+                buttons: []                  // RuleSetView is a DetailView — no footer; X / Esc / backdrop dismiss; size inherits TablePage's `lg` default
             },
 
             defaultQuery: {

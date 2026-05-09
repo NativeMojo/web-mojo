@@ -21,7 +21,8 @@ class MemberTablePage extends TablePage {
             
             viewDialogOptions: {
                 header: false,
-                size: 'lg'
+                noBodyPadding: true,
+                buttons: []
             },
             
             // Column definitions
