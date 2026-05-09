@@ -121,6 +121,17 @@ class ListView extends View {
       ? this.paginationMode === 'more'
       : options.persistSelection === true;
 
+    // Click-anywhere-on-the-row pattern (parity with TableView's clickAction).
+    // - `onItemClick(model, event)` — fired when the item's root element is
+    //   clicked anywhere not handled by an inner `data-action` element.
+    // - `clickable` — applies `.clickable` to each item (cursor: pointer +
+    //   hover treatment). Implied true when `onItemClick` is set OR when
+    //   selection is enabled but the user template has no `data-action`
+    //   (lets `selectionMode: 'single'` / `'multiple'` work without the
+    //   user remembering to add `data-action="select"`).
+    this.onItemClick = typeof options.onItemClick === 'function' ? options.onItemClick : null;
+    this.clickable = options.clickable === true || !!this.onItemClick;
+
     // "Show more" state
     this.loadingMore = false;
 
@@ -377,20 +388,31 @@ class ListView extends View {
 
         if (permissions && !this.checkPermissions(permissions)) return;
 
-        const iconHtml = icon ? `<i class="${icon} me-1"></i>` : '';
-        const labelHtml = `<span class="d-none d-lg-inline">${label}</span>`;
+        // Escape every dev-supplied field that flows into HTML / attributes —
+        // defense in depth. `label` and `title` may legitimately contain
+        // text, but never markup; the icon/variant/className/action fields
+        // similarly should never carry an attribute-escaping vector.
+        const safeIcon = this.escapeHtml(icon);
+        const safeLabel = this.escapeHtml(label);
+        const safeTitle = this.escapeHtml(title);
+        const safeVariant = this.escapeHtml(variant);
+        const safeClassName = this.escapeHtml(className);
+        const safeAction = this.escapeHtml(action);
+
+        const iconHtml = icon ? `<i class="${safeIcon} me-1"></i>` : '';
+        const labelHtml = `<span class="d-none d-lg-inline">${safeLabel}</span>`;
 
         let dataAttrs = '';
         if (handler) {
           dataAttrs = `data-action="custom-toolbar-button" data-button-index="${index}"`;
         } else if (action) {
-          dataAttrs = `data-action="${action}"`;
+          dataAttrs = `data-action="${safeAction}"`;
         }
 
-        const btnClass = `btn btn-sm btn-${variant} ${className}`.trim();
+        const btnClass = `btn btn-sm btn-${safeVariant} ${safeClassName}`.trim();
 
         buttons.push(`
-          <button class="${btnClass}" ${dataAttrs} title="${title}">
+          <button class="${btnClass}" ${dataAttrs} title="${safeTitle}">
             ${iconHtml}${labelHtml}
           </button>
         `);
@@ -494,9 +516,9 @@ class ListView extends View {
       return `
         <button class="dropdown-item ${activeClass}"
                 data-action="add-filter"
-                data-filter-key="${filter.key}">
-          <i class="bi bi-${icon} me-2"></i>
-          ${filter.label}
+                data-filter-key="${this.escapeHtml(filter.key)}">
+          <i class="bi bi-${this.escapeHtml(icon)} me-2"></i>
+          ${this.escapeHtml(filter.label || filter.key)}
           ${isActive ? '<i class="bi bi-check-circle ms-auto"></i>' : ''}
         </button>
       `;
@@ -531,7 +553,11 @@ class ListView extends View {
     const pills = filterEntries.map(([paramKey, value]) => {
       const { field } = parseFilterKey(paramKey);
       const label = this.getFilterLabel(field);
-      const displayText = formatFilterDisplay(paramKey, value, label);
+      // formatFilterDisplay interpolates the user's raw filter value, so
+      // escape its return before injecting into innerHTML. paramKey is
+      // attribute-escaped because it ends up in `data-filter`.
+      const displayText = this.escapeHtml(formatFilterDisplay(paramKey, value, label));
+      const safeParamKey = this.escapeHtml(paramKey);
       const icon = 'filter';
 
       return `
@@ -541,7 +567,7 @@ class ListView extends View {
           <button type="button" class="btn btn-link text-white p-0 ms-1"
                   style="font-size: 0.65rem; line-height: 1;"
                   data-action="edit-filter"
-                  data-filter="${paramKey}"
+                  data-filter="${safeParamKey}"
                   title="Edit filter">
             ${displayText}
           </button>
@@ -549,7 +575,7 @@ class ListView extends View {
           <button type="button" class="btn-close btn-close-white ms-1"
                   style="font-size: 0.6rem; width: 0.5rem; height: 0.5rem;"
                   data-action="remove-filter"
-                  data-filter="${paramKey}"
+                  data-filter="${safeParamKey}"
                   title="Remove filter">
           </button>
         </span>
@@ -687,10 +713,16 @@ class ListView extends View {
     await super._renderChildren();
     const itemsContainer = this.getChildElement('items');
     if (!itemsContainer) return;
+    // Render each item synchronously so its onAfterRender (which wires
+    // the clickable handler, etc.) has fully run by the time the parent's
+    // render() resolves. Items are kept in the `itemViews` Map, not the
+    // standard child registry, so we drive their render directly.
+    const renders = [];
     this.forEachItem((item) => {
       itemsContainer.appendChild(item.element);
-      item.render(false);
+      renders.push(Promise.resolve(item.render(false)).catch(() => {}));
     });
+    await Promise.all(renders);
   }
 
   _buildItems() {
@@ -722,15 +754,34 @@ class ListView extends View {
       model: model,
       index: index,
       listView: this,
-      template: this.itemTemplate
+      template: this.itemTemplate,
+      clickable: this.clickable
     });
 
     this.itemViews.set(model.id, itemView);
 
     itemView.on('item:select', this._onItemSelect.bind(this));
     itemView.on('item:deselect', this._onItemDeselect.bind(this));
+    // Whole-row click (anywhere not handled by an inner data-action).
+    itemView.on('item:click', this._onItemClickEvent.bind(this));
 
     return itemView;
+  }
+
+  /**
+   * Handle a whole-row click bubbled up from a ListViewItem. Only the
+   * NEW whole-row click (action === 'row-click') fires `onItemClick` —
+   * ListViewItem.onActionDefault also emits `item:click` for any
+   * unhandled `data-action`, and we don't want clicking an inner
+   * `data-action="favorite"` to also fire the row-click callback.
+   * @private
+   */
+  _onItemClickEvent(event) {
+    if (event.action !== 'row-click') return;
+    if (this.onItemClick) {
+      this.onItemClick(event.model, event.event);
+    }
+    this.emit('row:click', event);
   }
 
   /**

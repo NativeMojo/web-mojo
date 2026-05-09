@@ -141,5 +141,5 @@ Standard Mustache rules apply — pipe formatters, `{{#flag|bool}}`, `{{{tripleB
 
 - [`core/View.md`](../core/View.md) — base class.
 - [`core/Collection.md`](../core/Collection.md) — the data source.
-- [`components/ListView.md`](./ListView.md) — when you want full control over rendering and don't need search/debounce/empty states.
+- [`components/ListView.md`](./ListView.md) — when you want a visual list (cards, tiles) with full rendering control; ListView's built-in `searchable: true` option covers the search-input + debounce case for collection-backed lists, so reach for it when row layout matters more than the picker UX.
 - [`components/SidebarTopNav.md`](./SidebarTopNav.md) — group switcher uses `SimpleSearchView` internally.

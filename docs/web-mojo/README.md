@@ -70,8 +70,8 @@ UI Components for displaying and interacting with data:
 - **[Dialog](./components/Dialog.md)** - Backwards-compatibility shim. `Dialog` is `ModalView` re-exported; every static routes through `Modal.*`
 - **[Sidebar & TopNav](./components/SidebarTopNav.md)** - Portal navigation: sidebar menus, topbar, homeless pages, group switching
 - **[SideNavView](./components/SideNavView.md)** - Section-based detail layout: left rail of sections, responsive collapse to dropdown
-- **[ListView](./components/ListView.md)** - Visual list component for collections
-- **[TableView](./components/TableView.md)** - Advanced data table with sorting, filtering, pagination
+- **[ListView](./components/ListView.md)** - Visual list (cards, tiles, feeds) with opt-in toolbar: search, filters, sort, pagination, and Show More mode
+- **[TableView](./components/TableView.md)** - Data table extending ListView: sortable column headers, footer totals, batch actions, fullscreen, Add/Export
 - **[TabView](./components/TabView.md)** - Tab navigation component
 - **[DataView](./components/DataView.md)** - Structured data display component
 - **[DetailView](./components/DetailView.md)** - Standard record-viewer layout: flat header (icon, title, subtitle, chips, active toggle, actions, X close) + SideNavView. Pair with `Modal.detail()`
@@ -318,8 +318,8 @@ web-mojo/
 │   ├── Modal.md                 # Canonical static API (alert, confirm, prompt, dialog, show, form, code, ...)
 │   ├── ModalView.md             # Underlying View class — subclass for custom modal types
 │   ├── Dialog.md                # Compat shim (re-exports ModalView; statics route to Modal.*)
-│   ├── ListView.md              # List component for collections
-│   ├── TableView.md             # Advanced data table
+│   ├── ListView.md              # Visual list with opt-in toolbar, search, filters, pagination, Show More
+│   ├── TableView.md             # Data table extending ListView (column sort, totals, batch actions)
 │   ├── TabView.md               # Tab navigation component
 │   ├── DataView.md              # Structured data display
 │   ├── FileView.md              # File display and management

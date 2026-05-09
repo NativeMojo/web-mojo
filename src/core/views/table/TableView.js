@@ -490,7 +490,7 @@ class TableView extends ListView {
       }
     }
 
-    // Custom toolbar buttons
+    // Custom toolbar buttons — defense-in-depth escaping on dev-supplied fields.
     if (this.toolbarButtons && this.toolbarButtons.length > 0) {
       this.toolbarButtons.forEach((button, index) => {
         const {
@@ -506,20 +506,27 @@ class TableView extends ListView {
 
         if (permissions && !this.checkPermissions(permissions)) return;
 
-        const iconHtml = icon ? `<i class="${icon} me-1"></i>` : '';
-        const labelHtml = `<span class="d-none d-lg-inline">${label}</span>`;
+        const safeIcon = this.escapeHtml(icon);
+        const safeLabel = this.escapeHtml(label);
+        const safeTitle = this.escapeHtml(title);
+        const safeVariant = this.escapeHtml(variant);
+        const safeClassName = this.escapeHtml(className);
+        const safeAction = this.escapeHtml(action);
+
+        const iconHtml = icon ? `<i class="${safeIcon} me-1"></i>` : '';
+        const labelHtml = `<span class="d-none d-lg-inline">${safeLabel}</span>`;
 
         let dataAttrs = '';
         if (handler) {
           dataAttrs = `data-action="custom-toolbar-button" data-button-index="${index}"`;
         } else if (action) {
-          dataAttrs = `data-action="${action}"`;
+          dataAttrs = `data-action="${safeAction}"`;
         }
 
-        const btnClass = `btn btn-sm btn-${variant} ${className}`.trim();
+        const btnClass = `btn btn-sm btn-${safeVariant} ${safeClassName}`.trim();
 
         buttons.push(`
-          <button class="${btnClass}" ${dataAttrs} title="${title}">
+          <button class="${btnClass}" ${dataAttrs} title="${safeTitle}">
             ${iconHtml}${labelHtml}
           </button>
         `);

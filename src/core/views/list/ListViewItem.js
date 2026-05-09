@@ -29,6 +29,10 @@ class ListViewItem extends View {
     this.selected = false;
     this.index = options.index ?? 0;
     this.listView = options.listView ?? null;
+    this.clickable = options.clickable === true;
+    if (this.clickable && this.element) {
+      this.addClass('clickable');
+    }
 
     // Default template if none provided
     if (!this.template) {
@@ -119,6 +123,54 @@ class ListViewItem extends View {
   }
 
   /**
+   * onAfterRender — wire up the whole-row click handler when `clickable` is
+   * set. Inner elements with their own `data-action` are NOT intercepted: the
+   * EventDelegate on the parent View runs first and dispatches the inner
+   * action, while this listener checks `event.defaultPrevented` and bails
+   * out so we don't double-fire. The click only registers as a "row click"
+   * when the user clicked the card body, not a button/link inside it.
+   */
+  async onAfterRender() {
+    await super.onAfterRender();
+    if (this.clickable && this.element) {
+      this.addClass('clickable');
+      this._wireClickableHandler();
+    }
+  }
+
+  _wireClickableHandler() {
+    if (this._clickableHandler || !this.element) return;
+    this._clickableHandler = (event) => {
+      // If the click landed on (or inside) an element with a `data-action`,
+      // the inner action handler owns it — don't treat it as a row click.
+      if (event.target?.closest?.('[data-action]')) return;
+      // Skip native form-control interactions (typing in an input inside the card).
+      const tag = event.target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      this.emit('item:click', {
+        item: this,
+        model: this.model,
+        index: this.index,
+        action: 'row-click',
+        event,
+        data: this.model?.toJSON ? this.model.toJSON() : this.model
+      });
+      if (this.listView) {
+        this.listView.emit('item:click', {
+          item: this,
+          model: this.model,
+          index: this.index,
+          action: 'row-click',
+          event,
+          data: this.model?.toJSON ? this.model.toJSON() : this.model
+        });
+      }
+    };
+    this.element.addEventListener('click', this._clickableHandler);
+  }
+
+  /**
    * Handle click events on the item
    */
   async onActionDefault(action, _event, _element) {
@@ -168,6 +220,11 @@ class ListViewItem extends View {
    * Override destroy to clean up references
    */
   async destroy() {
+    // Remove the row-click handler we attached imperatively.
+    if (this._clickableHandler && this.element) {
+      this.element.removeEventListener('click', this._clickableHandler);
+      this._clickableHandler = null;
+    }
     // Remove reference to parent ListView
     this.listView = null;
 

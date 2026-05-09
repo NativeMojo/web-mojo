@@ -295,6 +295,37 @@ ListView ships an opt-in toolbar that mirrors what `TableView` has. Every flag b
 | `pageSize` | `number` | `undefined` | Convenience that seeds `collection.params.size` if not already set. |
 | `persistSelection` | `boolean` | `paginationMode === 'more'` | Whether `selectedItems` survives a page rebuild. Defaults to `true` in `'more'` mode (rows aren't torn down anyway), `false` otherwise (preserves TableView's historical "selection clears on page change" behavior unless caller opts in). |
 
+### Click-anywhere-on-the-row
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `onItemClick` | `function` | `null` | `(model, event) => {}` — fired when the row's outer element is clicked anywhere not handled by an inner `data-action`. Adds the `clickable` styling automatically. The natural fit for navigation, opening detail dialogs, or running custom click handlers without forcing the user to add `data-action="select"` to the item template. |
+| `clickable` | `boolean` | `!!onItemClick` | Adds the `clickable` class to each item (`cursor: pointer` + hover treatment). Implied true when `onItemClick` is set. Useful when you want the visual affordance and the `row:click` event but no callback. |
+
+**Inner `data-action` clicks always win.** Clicking a button or link inside the card with its own `data-action="<name>"` does NOT also fire `onItemClick` — the inner action handler runs and the row-click is suppressed. So you can safely put a `<button data-action="favorite">` inside a clickable card without double-firing.
+
+**Form-control clicks are also suppressed.** Clicks on `<input>`, `<textarea>`, and `<select>` inside the row don't trigger `onItemClick` either (typing in a search input inside a card shouldn't open the card detail).
+
+```js
+const list = new ListView({
+  collection: postCollection,
+  itemTemplate: `
+    <div class="card p-3">
+      <h5>{{model.title}}</h5>
+      <p>{{model.body}}</p>
+      <button data-action="favorite" class="btn btn-sm btn-outline-warning">Favorite</button>
+    </div>
+  `,
+  onItemClick: (model, event) => {
+    // Open detail page; the favorite button still works because inner
+    // data-action wins.
+    app.router.navigate(\`/posts/\${model.id}\`);
+  }
+});
+```
+
+The same payload is also emitted as a `row:click` event for parity with TableView, so external listeners can react via `list.on('row:click', ...)` instead of (or in addition to) the callback.
+
 **Note:** If neither `fetchOnMount` is `true` nor the collection has been previously fetched (`lastFetchTime` is null), the collection will be fetched automatically on mount.
 
 ```javascript

@@ -95,7 +95,7 @@ WEB-MOJO is a component-based JavaScript framework for building data-driven web 
 | Toast notifications | `ToastService.md` |
 | Real-time / WebSocket | `WebSocketClient.md` |
 | Data tables | `components/TableView.md` + `pages/TablePage.md` |
-| List components | `ListView.md` |
+| List components (cards, tiles, feeds); opt-in search / filter / pagination / Show More | `ListView.md` |
 | Charts / data visualization | `Charts.md` |
 | Tab navigation | `TabView.md` |
 | Maps / geolocation | `MapView.md` + `Location.md` |

@@ -309,6 +309,135 @@ module.exports = async function (testContext) {
   });
 
   // --------------------------------------------------------------
+  // onItemClick (whole-row click)
+  // --------------------------------------------------------------
+  describe('ListView onItemClick / clickable', () => {
+    it('fires onItemClick when the item root is clicked', async () => {
+      const collection = new Collection([{ id: 1, name: 'A' }]);
+      const calls = [];
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div class="card">{{model.name}}</div>',
+        onItemClick: (model, event) => calls.push({ id: model.id, hasEvent: !!event })
+      });
+      await listView.render();
+
+      const item = listView.itemViews.get(1);
+      // Simulate a click on the item's root element.
+      item.element.dispatchEvent(new global.window.Event('click', { bubbles: true }));
+
+      expect(calls).toHaveLength(1);
+      expect(calls[0].id).toBe(1);
+      expect(calls[0].hasEvent).toBe(true);
+    });
+
+    it('emits row:click event in addition to calling onItemClick', async () => {
+      const collection = new Collection([{ id: 1, name: 'A' }]);
+      const events = [];
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div class="card">{{model.name}}</div>',
+        onItemClick: () => {}
+      });
+      listView.on('row:click', (e) => events.push(e));
+      await listView.render();
+
+      const item = listView.itemViews.get(1);
+      item.element.dispatchEvent(new global.window.Event('click', { bubbles: true }));
+
+      expect(events).toHaveLength(1);
+      expect(events[0].model.id).toBe(1);
+    });
+
+    it('does NOT fire onItemClick when the click target has data-action', async () => {
+      const collection = new Collection([{ id: 1, name: 'A' }]);
+      const calls = [];
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div class="card"><button data-action="favorite">★</button>{{model.name}}</div>',
+        onItemClick: (model) => calls.push(model.id)
+      });
+      await listView.render();
+
+      const item = listView.itemViews.get(1);
+      const btn = item.element.querySelector('[data-action="favorite"]');
+      btn.dispatchEvent(new global.window.Event('click', { bubbles: true }));
+
+      expect(calls).toHaveLength(0);
+    });
+
+    it('adds .clickable class to the item element when onItemClick is set', async () => {
+      const collection = new Collection([{ id: 1, name: 'A' }]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        onItemClick: () => {}
+      });
+      await listView.render();
+
+      const item = listView.itemViews.get(1);
+      expect(item.element.classList.contains('clickable')).toBe(true);
+    });
+
+    it('does not add .clickable class without onItemClick or clickable:true', async () => {
+      const collection = new Collection([{ id: 1, name: 'A' }]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>'
+      });
+      await listView.render();
+
+      const item = listView.itemViews.get(1);
+      expect(item.element.classList.contains('clickable')).toBe(false);
+    });
+  });
+
+  // --------------------------------------------------------------
+  // Security regressions — filter labels / pill display escape
+  // --------------------------------------------------------------
+  describe('ListView filter HTML escaping', () => {
+    it('escapes filter.label in the Add Filter dropdown', async () => {
+      const collection = new Collection([{ id: 1, name: 'A' }]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        filterable: true,
+        filters: [
+          { name: 'status', label: '<img src=x onerror=alert(1)>', type: 'select', options: ['a'] }
+        ]
+      });
+      await listView.render();
+
+      const html = listView.element.innerHTML;
+      expect(html).not.toContain('<img src=x');
+      expect(html).toContain('&lt;img src=x');
+    });
+
+    it('escapes filter pill display text against injected user values', async () => {
+      const collection = new Collection([{ id: 1, name: 'A' }]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        filterable: true,
+        filters: [
+          { name: 'q', label: 'Q', type: 'text' }
+        ]
+      });
+      // Render first so this.collection is wired up.
+      await listView.render();
+      // Set a malicious filter VALUE — this would have been XSS before
+      // the security-review fix (formatFilterDisplay's return was
+      // injected into innerHTML unescaped).
+      listView.setFilter('q', '<svg onload=alert(1)>');
+      listView.updateFilterPills();
+
+      const pillsHtml = listView.element.querySelector('[data-container="filter-pills"]')?.innerHTML || '';
+      expect(pillsHtml).not.toContain('<svg onload');
+      expect(pillsHtml).toContain('&lt;svg onload');
+    });
+  });
+
+  // --------------------------------------------------------------
   // Sort dropdown
   // --------------------------------------------------------------
   describe('ListView sortOptions', () => {
@@ -328,6 +457,32 @@ module.exports = async function (testContext) {
       expect(html).toContain('data-action="sort-option"');
       expect(html).toContain('data-sort="-created"');
       expect(html).toContain('data-sort="name"');
+    });
+
+    it('onActionSortOption escapes data-sort attribute against injection', async () => {
+      // sortOptions are dev-supplied, but defense in depth: a malicious key
+      // shouldn't break out of the data-sort attribute and inject markup.
+      const collection = new Collection([{ id: 1, name: 'A' }]);
+      const listView = new ListView({
+        collection,
+        itemTemplate: '<div>{{model.name}}</div>',
+        sortOptions: [
+          { key: '"><img src=x onerror=alert(1)>', label: 'Bad', dir: 'asc' }
+        ]
+      });
+      await listView.render();
+
+      // The "<img>" must remain a string inside the attribute, not become a
+      // real element. innerHTML serializes the literal characters back, but
+      // an actual <img> child element would be a parser breakout.
+      const injectedImg = listView.element.querySelector('img');
+      expect(injectedImg).toBeNull();
+
+      // The data-sort attribute should hold the raw value (decoded by the
+      // parser); the test that escape worked is "no <img> element exists".
+      const sortLink = listView.element.querySelector('[data-action="sort-option"]');
+      expect(sortLink).not.toBeNull();
+      expect(sortLink.getAttribute('data-sort')).toBe('"><img src=x onerror=alert(1)>');
     });
 
     it('onActionSortOption sets collection.params.sort and resets start', async () => {
