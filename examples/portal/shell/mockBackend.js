@@ -43,16 +43,43 @@ const SEED_GROUPS = [
     { id: 32, name: 'Sushi Spot',         kind: 'merchant', description: 'Another merchant' },
 ];
 
-const SEED_USERS = Array.from({ length: 30 }, (_, i) => ({
-    id: i + 1,
-    username: `user${i + 1}`,
-    display_name: ['Alice Adams','Ben Bryant','Carla Cruz','Dan Dietrich','Eve Estrada','Frank Fischer','Grace Gomez','Hank Huang','Iris Ito','Jack Jensen','Kira Klein','Liam Lopez','Mia Morales','Noah Nelson','Olivia Ortiz','Paul Park','Quinn Quan','Riya Reddy','Sam Suzuki','Tara Thompson','Uma Underhill','Victor Volkov','Wren Wexler','Xavi Xiang','Yara Yamada','Zoe Zhao','Adam Acosta','Bella Bauer','Carlo Conti','Dora Dahl'][i],
-    email: `user${i + 1}@example.com`,
-    role: ['admin', 'editor', 'viewer'][i % 3],
-    status: ['active', 'invited', 'disabled'][i % 3],
-    last_login: new Date(Date.now() - (i * 3_600_000)).toISOString(),
-    created: new Date(Date.now() - (i * 86_400_000 * 7)).toISOString(),
-}));
+const SEED_USERS = Array.from({ length: 30 }, (_, i) => {
+    const status = ['active', 'invited', 'disabled'][i % 3];
+    const baseUser = {
+        id: i + 1,
+        username: `user${i + 1}`,
+        display_name: ['Alice Adams','Ben Bryant','Carla Cruz','Dan Dietrich','Eve Estrada','Frank Fischer','Grace Gomez','Hank Huang','Iris Ito','Jack Jensen','Kira Klein','Liam Lopez','Mia Morales','Noah Nelson','Olivia Ortiz','Paul Park','Quinn Quan','Riya Reddy','Sam Suzuki','Tara Thompson','Uma Underhill','Victor Volkov','Wren Wexler','Xavi Xiang','Yara Yamada','Zoe Zhao','Adam Acosta','Bella Bauer','Carlo Conti','Dora Dahl'][i],
+        email: `user${i + 1}@example.com`,
+        role: ['admin', 'editor', 'viewer'][i % 3],
+        status,
+        // `is_active` is the truth field per the disable-lifecycle spec.
+        // `disabled` status entries get a `metadata.protected.disable` block
+        // so the reason-keyed status badge has something to render against.
+        is_active: status !== 'disabled',
+        last_login: new Date(Date.now() - (i * 3_600_000)).toISOString(),
+        created: new Date(Date.now() - (i * 86_400_000 * 7)).toISOString(),
+        date_joined: new Date(Date.now() - (i * 86_400_000 * 7)).toISOString(),
+        permissions: {},
+        metadata: {}
+    };
+    if (status === 'disabled') {
+        // Cycle through the reasons so the reason-badge variants are
+        // visible in the seed data: admin / abuse / inactive / self.
+        const reasons = ['admin', 'abuse', 'inactive', 'self'];
+        const reason = reasons[Math.floor(i / 3) % reasons.length];
+        baseUser.metadata.protected = {
+            disable: {
+                active: true,
+                reason,
+                at: new Date(Date.now() - 5 * 86_400_000).toISOString(),
+                by_user_id: 1,
+                by_username: 'admin',
+                note: `Seed: disabled with reason="${reason}"`
+            }
+        };
+    }
+    return baseUser;
+});
 
 // Generate a believable time series for one metric slug + granularity.
 function generateMetricSeries(slug, granularity = 'hours', size = 24) {
@@ -112,11 +139,17 @@ const ROUTES = [
         },
     },
     {
-        // User detail PUT/PATCH — merge the request body into the in-memory
-        // seed so toggles, edits, and other autosaves persist for the
-        // lifetime of the page. Mirrors the Django JSONField merge
-        // convention: dotted keys like `permissions.view_admin` are split
-        // and merged into the nested object rather than written verbatim.
+        // User detail PUT/PATCH/POST — merge the request body into the
+        // in-memory seed so toggles, edits, and other autosaves persist
+        // for the lifetime of the page.
+        //
+        // Two shapes are recognized:
+        //  - POST_SAVE_ACTIONS: `{"disable":{...}}` / `{"reactivate":{...}}`
+        //    drive the disable lifecycle (mutates `is_active` and
+        //    `metadata.protected.disable.*` per spec).
+        //  - Field writes: anything else is merged into the user record.
+        //    Dotted keys like `permissions.view_admin` are split and
+        //    merged into the nested object (Django JSONField convention).
         match: /\/api\/(?:account\/)?user\/(\d+)(?:\/?)$/,
         handler: (url, init) => {
             const id = Number(url.match(/\/user\/(\d+)/)[1]);
@@ -126,6 +159,58 @@ const ROUTES = [
             try {
                 body = init?.body ? (typeof init.body === 'string' ? JSON.parse(init.body) : init.body) : {};
             } catch { /* ignore malformed bodies */ }
+
+            // --- POST_SAVE_ACTIONS: disable -----------------------
+            if (body && body.disable && typeof body.disable === 'object') {
+                user.metadata = user.metadata || {};
+                user.metadata.protected = user.metadata.protected || {};
+                const reason = body.disable.reason || 'admin';
+                const at = new Date().toISOString();
+                user.is_active = false;
+                user.metadata.protected.disable = {
+                    active: true,
+                    reason,
+                    at,
+                    by_user_id: 0,
+                    by_username: 'mock-admin',
+                    note: body.disable.note || ''
+                };
+                return jsonOk({ status: true, data: user });
+            }
+
+            // --- POST_SAVE_ACTIONS: reactivate --------------------
+            if (body && body.reactivate && typeof body.reactivate === 'object') {
+                user.metadata = user.metadata || {};
+                user.metadata.protected = user.metadata.protected || {};
+                const prior = user.metadata.protected.disable;
+                if (prior && typeof prior === 'object' && prior.reason) {
+                    // Push the closed-out cycle into history (cap at 20 per spec).
+                    const history = Array.isArray(prior.history) ? prior.history : [];
+                    const reactivatedAt = new Date().toISOString();
+                    const closedCycle = {
+                        ...prior,
+                        history: undefined,   // history lives at the parent, not on each entry
+                        reactivated_at: reactivatedAt,
+                        reactivated_by_username: 'mock-admin',
+                        reactivated_note: body.reactivate.note || ''
+                    };
+                    delete closedCycle.history;
+                    const newHistory = [closedCycle, ...history].slice(0, 20);
+                    user.metadata.protected.disable = {
+                        active: false,
+                        history: newHistory
+                    };
+                } else {
+                    // No prior disable block — just clear any warning.
+                    if (user.metadata.protected.disable) {
+                        delete user.metadata.protected.disable.warning;
+                    }
+                }
+                user.is_active = true;
+                return jsonOk({ status: true, data: user });
+            }
+
+            // --- Regular field-write merge ------------------------
             for (const [key, value] of Object.entries(body || {})) {
                 if (key.includes('.')) {
                     const [head, ...rest] = key.split('.');

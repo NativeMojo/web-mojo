@@ -69,6 +69,46 @@ function isOnline(model) {
     return (Date.now() - ms) < 5 * 60 * 1000;
 }
 
+// ── Disable lifecycle ─────────────────────────────────────────────
+//
+// Truth field is `is_active`. The `metadata.protected.disable.*` block
+// carries reason / by_user / note / inactivity warning / history.
+// Spec: planning/requests/admin-users-spec-alignment.md.
+//
+// Reason → badge mapping. Active state shows "Active" green.
+// Anonymized is irreversible per backend — toggle is hidden in that case.
+
+const DISABLE_REASON_BADGES = {
+    admin:      { label: 'Blocked',          variant: 'danger'    },
+    abuse:      { label: 'Banned',           variant: 'danger'    },
+    inactive:   { label: 'Auto-disabled',    variant: 'warning'   },
+    anonymized: { label: 'Anonymized',       variant: 'secondary' },
+    self:       { label: 'Self-deactivated', variant: 'secondary' }
+};
+
+function _disableBlock(m) {
+    return m?.get?.('metadata')?.protected?.disable || null;
+}
+function _disableReason(m) {
+    return _disableBlock(m)?.reason || null;
+}
+function _isAnonymized(m) {
+    return _disableReason(m) === 'anonymized';
+}
+function _statusBadge(m) {
+    if (m?.get?.('is_active')) return { label: 'Active', variant: 'success' };
+    return DISABLE_REASON_BADGES[_disableReason(m)] || { label: 'Inactive', variant: 'secondary' };
+}
+function _inactivityWarning(m) {
+    if (!m?.get?.('is_active')) return null;
+    const w = _disableBlock(m)?.warning;
+    if (!w?.sent_at) return null;
+    return {
+        sent_at: w.sent_at,
+        days: w.days_until_disable_at_send
+    };
+}
+
 const PROVIDER_ICONS = {
     google:    'bi-google',
     github:    'bi-github',
@@ -761,6 +801,36 @@ class UserAuditSection extends View {
         super({
             className: 'user-audit-section',
             template: `
+                {{#hasDisableHistory|bool}}
+                <div class="detail-section-eyebrow">Disable history</div>
+                <div class="user-disable-history accordion mb-3" id="user-disable-history">
+                    {{#disableHistory}}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#disable-history-{{.idx}}">
+                                <span class="badge text-bg-{{.tone}} me-2">{{.label}}</span>
+                                <span class="text-secondary me-2">{{.atRel}}</span>
+                                {{#.byUsername|bool}}<span class="me-2">by <code>{{.byUsername}}</code></span>{{/.byUsername|bool}}
+                                {{#.reactivated|bool}}<span class="ms-auto badge text-bg-light border">Reactivated</span>{{/.reactivated|bool}}
+                            </button>
+                        </h2>
+                        <div id="disable-history-{{.idx}}" class="accordion-collapse collapse" data-bs-parent="#user-disable-history">
+                            <div class="accordion-body small">
+                                <div><strong>Disabled:</strong> {{.atFmt}}</div>
+                                {{#.note|bool}}<div class="mt-1"><strong>Note:</strong> {{.note}}</div>{{/.note|bool}}
+                                {{#.reactivated|bool}}
+                                    <div class="mt-2 pt-2 border-top">
+                                        <div><strong>Reactivated:</strong> {{.reactivatedAtFmt}}{{#.reactivatedBy|bool}} by <code>{{.reactivatedBy}}</code>{{/.reactivatedBy|bool}}</div>
+                                        {{#.reactivatedNote|bool}}<div class="mt-1"><strong>Note:</strong> {{.reactivatedNote}}</div>{{/.reactivatedNote|bool}}
+                                    </div>
+                                {{/.reactivated|bool}}
+                            </div>
+                        </div>
+                    </div>
+                    {{/disableHistory}}
+                </div>
+                {{/hasDisableHistory|bool}}
                 <div class="detail-section-eyebrow">Audit</div>
                 <div data-container="user-audit-tabs"></div>
             `,
@@ -770,6 +840,35 @@ class UserAuditSection extends View {
         this.eventsCollection     = eventsCollection;
         this.activityCollection   = activityCollection;
         this.objectLogsCollection = objectLogsCollection;
+    }
+
+    // ── Disable history (collapsed accordion at the top) ──────────────
+
+    get hasDisableHistory() {
+        return Array.isArray(_disableBlock(this.model)?.history) && _disableBlock(this.model).history.length > 0;
+    }
+
+    /** Trusted HTML — every interpolated value is escaped via Mustache `{{ }}`. */
+    get disableHistory() {
+        const list = _disableBlock(this.model)?.history || [];
+        return list.map((entry, idx) => {
+            const reasonMap = DISABLE_REASON_BADGES[entry?.reason] || { label: 'Inactive', variant: 'secondary' };
+            const at = entry?.at;
+            const reactivatedAt = entry?.reactivated_at;
+            return {
+                idx,
+                label:            reasonMap.label,
+                tone:             reasonMap.variant,
+                atFmt:            at ? (dataFormatter.apply('datetime', at) || at) : '',
+                atRel:            at ? (dataFormatter.apply('relative', at) || '') : '',
+                byUsername:       entry?.by_username || '',
+                note:             entry?.note || '',
+                reactivated:      !!reactivatedAt,
+                reactivatedAtFmt: reactivatedAt ? (dataFormatter.apply('datetime', reactivatedAt) || reactivatedAt) : '',
+                reactivatedBy:    entry?.reactivated_by_username || '',
+                reactivatedNote:  entry?.reactivated_note || ''
+            };
+        });
     }
 
     async onInit() {
@@ -1219,9 +1318,9 @@ class UserView extends DetailView {
             { icon: 'bi-shield-check', text: 'Phone verified', variant: 'light',
               when: m => !!m.get('is_phone_verified') && !!m.get('phone_number') },
             { text: '2FA enabled', variant: 'light',
-              when: m => !!m.get('requires_mfa') },
-            { icon: 'bi-lock', text: 'Locked', variant: 'warning',
-              when: m => m.get('is_active') === false }
+              when: m => !!m.get('requires_mfa') }
+            // Locked chip removed — the header aux now renders a
+            // reason-keyed status badge driven by `disable.reason`.
         ];
 
         // Context menu — supported admin actions only.
@@ -1606,22 +1705,91 @@ class UserView extends DetailView {
 
     /**
      * Active toggle in the header right-gutter (emitted from `_buildHeaderAux`).
-     * Mirrors `DetailHeaderView.onActionToggleActive` — optimistic update +
-     * silent revert on failure (the bounce IS the feedback).
+     *
+     * Disable (active → inactive): opens a small Modal.form for optional
+     * `reason` + `note`, then POSTs the disable POST_SAVE_ACTION:
+     *   `POST /api/user/<id>` body `{"disable":{"reason":"...","note":"..."}}`
+     * Cancel reverts the toggle.
+     *
+     * Reactivate (inactive → active): no prompt. POSTs:
+     *   `POST /api/user/<id>` body `{"reactivate":{}}`
      */
     async onActionToggleActive(event, element) {
         const checked = !!element.checked;
         element.disabled = true;
+
         try {
-            this.model.set('is_active', checked);
-            const resp = await this.model.save({ is_active: checked });
-            if (resp && resp.status && resp.status >= 400) {
-                throw new Error('Save failed');
+            if (!checked) {
+                // Disabling — collect optional reason + note.
+                const data = await Modal.form({
+                    title: 'Disable User',
+                    size: 'sm',
+                    submitText: 'Disable',
+                    fields: [
+                        { name: 'reason', type: 'select', label: 'Reason', cols: 12,
+                          help: 'Optional. Defaults to "admin" (manual block) if left blank.',
+                          options: [
+                              { value: '',         text: '(let backend default)' },
+                              { value: 'admin',    text: 'Admin — block / policy violation' },
+                              { value: 'abuse',    text: 'Abuse — banned' },
+                              { value: 'inactive', text: 'Inactive — idle account' }
+                          ] },
+                        { name: 'note', type: 'textarea', label: 'Note', cols: 12, rows: 3,
+                          placeholder: 'Optional note about why this user is being disabled.' }
+                    ]
+                });
+                if (data === null || data === false || data === 0) {
+                    // Cancelled — revert the visual toggle.
+                    element.checked = true;
+                    return true;
+                }
+
+                const body = {};
+                if (data.reason) body.reason = data.reason;
+                if (data.note)   body.note   = data.note;
+
+                const resp = await rest.POST(`/api/user/${this.model.id}`, { disable: body });
+                if (!resp.success || resp.status >= 400) {
+                    throw new Error(resp.message || 'Disable failed');
+                }
+                if (resp.data?.data) this.model.set(resp.data.data);
+                else this.model.set('is_active', false);
+                this.getApp()?.toast?.success('User disabled');
+            } else {
+                // Reactivating — no prompt.
+                const resp = await rest.POST(`/api/user/${this.model.id}`, { reactivate: {} });
+                if (!resp.success || resp.status >= 400) {
+                    throw new Error(resp.message || 'Reactivate failed');
+                }
+                if (resp.data?.data) this.model.set(resp.data.data);
+                else this.model.set('is_active', true);
+                this.getApp()?.toast?.success('User reactivated');
             }
         } catch (err) {
-            this.model.set('is_active', !checked);
+            // Revert the toggle to its prior state on any failure.
+            element.checked = !checked;
+            this.getApp()?.toast?.error(err.message || 'Action failed');
         } finally {
             if (element && element.isConnected) element.disabled = false;
+        }
+        return true;
+    }
+
+    /**
+     * Inline "Reset" link inside the inactivity-warning row. Same as
+     * reactivate (clears the warning + restarts the inactivity clock).
+     */
+    async onActionResetInactivity(event) {
+        event?.preventDefault?.();
+        try {
+            const resp = await rest.POST(`/api/user/${this.model.id}`, { reactivate: { note: 'Inactivity warning reset' } });
+            if (!resp.success || resp.status >= 400) {
+                throw new Error(resp.message || 'Reset failed');
+            }
+            if (resp.data?.data) this.model.set(resp.data.data);
+            this.getApp()?.toast?.success('Inactivity warning cleared');
+        } catch (err) {
+            this.getApp()?.toast?.error(err.message || 'Failed to reset');
         }
         return true;
     }
@@ -1807,22 +1975,50 @@ function _buildHeaderAux(m) {
 
     const dotIsOnline = online ? ' is-online' : '';
     const isActive = !!m.get('is_active');
-    const switchHtml = `
-        <label class="dh-active-switch" data-bs-toggle="tooltip" title="Toggle active">
-            <input type="checkbox" data-action="toggle-active" ${isActive ? 'checked' : ''}>
+    const anonymized = _isAnonymized(m);
+
+    // Status badge (always shown). Reason-keyed when disabled; "Active"
+    // green when active.
+    const status = _statusBadge(m);
+    const statusHtml = `<span class="badge text-bg-${status.variant}">${escapeHtml(status.label)}</span>`;
+
+    // Active toggle. Hidden for anonymized users (irreversible per spec).
+    // Disable: opens optional reason+note form, POSTs {"disable":{...}}.
+    // Reactivate: no prompt, POSTs {"reactivate":{}}.
+    // `data-change-action` (not `data-action`) so the dispatch fires only
+    // once per toggle. `data-action` on a form control fires onAction* on
+    // BOTH click and change, which would open the Disable form three times
+    // for a single user click.
+    const switchHtml = anonymized ? '' : `
+        <label class="dh-active-switch">
+            <input type="checkbox" data-change-action="toggle-active" ${isActive ? 'checked' : ''}>
             <span class="dh-track"></span>
             <span class="dh-track-label">${isActive ? 'Active' : 'Inactive'}</span>
         </label>
     `;
+
+    // Inactivity-warning row — shows only when warning is in flight and the
+    // user is still active. "Reset" link clears the warning via reactivate.
+    const warning = _inactivityWarning(m);
+    const warningHtml = warning ? `
+        <div class="dh-aux-warning">
+            <i class="bi bi-exclamation-triangle"></i>
+            <span>Inactivity warning sent — ${escapeHtml(String(warning.days || '?'))} days until auto-disable</span>
+            <a href="#" data-action="reset-inactivity">Reset</a>
+        </div>
+    ` : '';
+
     return `
         <div class="dh-aux-top">
             <span class="dh-aux-presence">
                 <span class="dh-aux-dot${dotIsOnline}"></span>
                 <span>${escapeHtml(main)}</span>
             </span>
+            ${statusHtml}
             ${switchHtml}
         </div>
         ${sub ? `<span class="dh-aux-meta">${escapeHtml(sub)}</span>` : ''}
+        ${warningHtml}
     `;
 }
 
