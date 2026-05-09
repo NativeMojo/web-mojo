@@ -3422,3 +3422,18 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
 }
+
+
+/* ========================================================================
+   GroupView — Hierarchy mini-tree (Overview)
+   ========================================================================
+   Small DOM-only ASCII tree under the "Hierarchy" eyebrow in
+   GroupView's Overview section. No card wrapper — sits flat on the
+   surface. The line-height accommodates the decorative └─ / ├─ rule
+   chars without crowding adjacent rows.
+*/
+.group-hierarchy-tree {
+    color: var(--bs-secondary-color);
+    margin-bottom: 1.5rem;
+}
+.group-hierarchy-tree-rows { line-height: 1.7; }
