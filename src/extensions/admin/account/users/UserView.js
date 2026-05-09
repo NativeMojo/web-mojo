@@ -1867,10 +1867,13 @@ function _buildHeaderAux(m) {
         ? (online ? `active ${rel}` : `last active ${rel}`)
         : '';
 
-    const dotCls = online ? ' dh-aux-dot-success' : ' dh-aux-dot-secondary';
+    const dotIsOnline = online ? ' is-online' : '';
     return `
-        <span class="dh-aux-dot${dotCls}"></span>
-        <span class="dh-aux-meta"><span>${escapeHtml(main)}</span>${sub ? `<span class="text-secondary small">${escapeHtml(sub)}</span>` : ''}</span>
+        <span class="dh-aux-presence">
+            <span class="dh-aux-dot${dotIsOnline}"></span>
+            <span>${escapeHtml(main)}</span>
+        </span>
+        ${sub ? `<span class="dh-aux-meta">${escapeHtml(sub)}</span>` : ''}
     `;
 }
 

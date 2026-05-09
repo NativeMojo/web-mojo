@@ -56,6 +56,8 @@ class MetricCard extends View {
     }
 
     _buildTemplate() {
+        const label = this._resolve(this.label, '');
+        const hint  = this._resolve(this.hint, null);
         const valueText = this._renderValue();
         const iconHtml = this.icon
             ? `<i class="bi ${this.escapeHtml(this.icon)} metric-card-icon"></i>`
@@ -63,8 +65,8 @@ class MetricCard extends View {
         const valueIconHtml = this.valueIcon
             ? `<i class="bi ${this.escapeHtml(this.valueIcon)} metric-card-value-icon"></i>`
             : '';
-        const hintHtml = this.hint
-            ? `<div class="metric-card-hint">${this.escapeHtml(String(this.hint))}</div>`
+        const hintHtml = hint
+            ? `<div class="metric-card-hint">${this.escapeHtml(String(hint))}</div>`
             : '';
 
         // Outer element styling is handled by `className` + the tone class on the root.
@@ -74,14 +76,28 @@ class MetricCard extends View {
         // multiple MetricCard instances don't duplicate `<style>` blocks that
         // would fight in the cascade.
         return `
-            <div class="metric-card-label">${iconHtml}<span>${this.escapeHtml(this.label)}</span></div>
+            <div class="metric-card-label">${iconHtml}<span>${this.escapeHtml(String(label))}</span></div>
             <div class="metric-card-value">${valueIconHtml}<span>${valueText}</span></div>
             ${hintHtml}
         `.trim();
     }
 
+    _resolve(opt, fallback = '') {
+        if (typeof opt === 'function') {
+            try { return opt(this.model) ?? fallback; } catch (_) { return fallback; }
+        }
+        return opt ?? fallback;
+    }
+
     _renderValue() {
-        const v = this.value;
+        // Resolve function-valued options against the current model — same
+        // pattern as `StatusPanel._resolve()` so callers can pass
+        // `value: () => this._someCount()` and have it re-evaluate on every
+        // render() rather than rendering the function source.
+        let v = this.value;
+        if (typeof v === 'function') {
+            try { v = v(this.model); } catch (_) { v = null; }
+        }
         if (v === null || v === undefined) return '<span class="text-muted">—</span>';
         if (typeof v === 'object' && v !== null && 'text' in v) {
             return this.escapeHtml(String(v.text));
@@ -92,10 +108,13 @@ class MetricCard extends View {
     async onAfterRender() {
         await super.onAfterRender();
         if (!this.element) return;
-        // Apply the tone class
+        // Apply the tone class — resolve function-valued tone against the
+        // current model so consumers can vary tone with state.
+        const tone = this._resolve(this.tone, 'default');
+        const safeTone = VALID_TONES.has(tone) ? tone : 'default';
         VALID_TONES.forEach(t => this.element.classList.remove(`metric-card-tone-${t}`));
-        if (this.tone && this.tone !== 'default') {
-            this.element.classList.add(`metric-card-tone-${this.tone}`);
+        if (safeTone && safeTone !== 'default') {
+            this.element.classList.add(`metric-card-tone-${safeTone}`);
         }
         // Apply data-action / type="button" on the root when this is a clickable card
         if (this.action) {

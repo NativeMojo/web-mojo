@@ -230,6 +230,13 @@ class DataFormatter {
    * @returns {*} Formatted value
    */
   apply(name, value, ...args) {
+    // Support the alternate-style call shape `apply(value, [...pipeNames])`
+    // used by some callers — they pass the value first and an array of
+    // formatter names to chain. Detect by `value` being an array of strings
+    // (a registered formatter is never an array).
+    if (Array.isArray(value) && value.every(p => typeof p === 'string')) {
+      return value.reduce((v, n) => this.apply(n, v, ...args), name);
+    }
     try {
       const formatter = this.formatters.get(name.toLowerCase());
       if (!formatter) {
