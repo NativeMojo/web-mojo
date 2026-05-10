@@ -1454,7 +1454,15 @@ class ListView extends View {
       if (cls.startsWith('list-row-stripe')) classes.remove(cls);
     }
     const next = this._stripeClassFor(itemView.model);
-    if (next) classes.add(next);
+    if (next) {
+      try {
+        classes.add(next);
+      } catch (err) {
+        // DOMException for invalid class names (e.g. strings containing
+        // whitespace). Don't break the render — just skip the stripe.
+        console.warn('ListView: rowStripe returned an invalid class name, skipping', next, err);
+      }
+    }
   }
 
   /**

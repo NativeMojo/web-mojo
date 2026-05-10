@@ -112,6 +112,15 @@ class LogTablePage extends TablePage {
                 sort: '-created'
             },
 
+            // Severity stripe — surface error / warning rows in the
+            // chronological feed; info rows stay quiet.
+            rowStripe: (model) => {
+                const level = String(model.get('level') || '').toLowerCase();
+                if (level === 'error') return 'danger';
+                if (level === 'warning') return 'warning';
+                return null;
+            },
+
             // Logs are an immutable audit feed — no selection, no batch actions,
             // no row mutations. View + export only.
             searchable: true,

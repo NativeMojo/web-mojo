@@ -112,6 +112,16 @@ class IncidentTablePage extends TablePage {
                 },
             ],
 
+            // Priority stripe — same thresholds as Tickets so the call-out
+            // is consistent across the incidents/tickets pair.
+            rowStripe: (model) => {
+                const p = parseInt(model.get('priority'), 10);
+                if (!Number.isFinite(p)) return null;
+                if (p >= 8) return 'danger';
+                if (p >= 5) return 'warning';
+                return null;
+            },
+
             // Table features
             selectable: true,
             searchable: true,

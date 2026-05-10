@@ -1,6 +1,6 @@
 {
   "generatedAt": "static",
-  "pageCount": 91,
+  "pageCount": 93,
   "pages": [
     {
       "name": "ActiveGroup",
@@ -442,6 +442,28 @@
     {
       "name": "ListView",
       "area": "components",
+      "route": "components/list-view/row-stripe",
+      "title": "ListView row stripe",
+      "summary": "Severity-coded 4px left-edge stripe per row — six Bootstrap tokens + refreshStripes().",
+      "docs": "docs/web-mojo/components/ListView.md",
+      "tags": [
+        "list",
+        "collection",
+        "selection",
+        "search"
+      ],
+      "page": "ListViewRowStripeExample.js",
+      "modulePath": "./examples/components/ListView/ListViewRowStripeExample.js",
+      "sourcePath": "examples/portal/examples/components/ListView/ListViewRowStripeExample.js",
+      "section": "Components",
+      "icon": "bi-list-ul",
+      "order": 27,
+      "topic": "components",
+      "group": "Lists & Tables"
+    },
+    {
+      "name": "ListView",
+      "area": "components",
       "route": "components/list-view/toolbar",
       "title": "ListView — toolbar",
       "summary": "Search, filter pills, sort, and refresh wrapped around a visual list.",
@@ -730,6 +752,30 @@
       "section": "Components",
       "icon": "bi-table",
       "order": 34,
+      "topic": "components",
+      "group": "Lists & Tables"
+    },
+    {
+      "name": "TableView",
+      "area": "components",
+      "route": "components/table-view/row-stripe",
+      "title": "TableView row stripe",
+      "summary": "Severity-coded 4px left-edge stripe per row, inherited from ListView — same callback, same six tokens.",
+      "docs": "docs/web-mojo/components/TableView.md",
+      "tags": [
+        "table",
+        "collection",
+        "sort",
+        "filter",
+        "pagination",
+        "batch-actions"
+      ],
+      "page": "TableViewRowStripeExample.js",
+      "modulePath": "./examples/components/TableView/TableViewRowStripeExample.js",
+      "sourcePath": "examples/portal/examples/components/TableView/TableViewRowStripeExample.js",
+      "section": "Components",
+      "icon": "bi-table",
+      "order": 35,
       "topic": "components",
       "group": "Lists & Tables"
     },
@@ -2388,6 +2434,13 @@
               "docs": "docs/web-mojo/components/ListView.md"
             },
             {
+              "route": "components/list-view/row-stripe",
+              "title": "ListView row stripe",
+              "summary": "Severity-coded 4px left-edge stripe per row — six Bootstrap tokens + refreshStripes().",
+              "icon": "bi-list-ul",
+              "docs": "docs/web-mojo/components/ListView.md"
+            },
+            {
               "route": "components/table-view",
               "title": "TableView",
               "summary": "Sortable, filterable, paginated table over ~25 seeded user rows.",
@@ -2419,6 +2472,13 @@
               "route": "components/table-view/day-range-filter",
               "title": "TableView — day-range filter",
               "summary": "`dayRangeFilter: true` drops a 1d/7d/30d/90d SegmentControl into the toolbar and auto-applies `created__gte` to the collection.",
+              "icon": "bi-table",
+              "docs": "docs/web-mojo/components/TableView.md"
+            },
+            {
+              "route": "components/table-view/row-stripe",
+              "title": "TableView row stripe",
+              "summary": "Severity-coded 4px left-edge stripe per row, inherited from ListView — same callback, same six tokens.",
               "icon": "bi-table",
               "docs": "docs/web-mojo/components/TableView.md"
             },
@@ -3130,6 +3190,13 @@
           "docs": "docs/web-mojo/components/ListView.md"
         },
         {
+          "route": "components/list-view/row-stripe",
+          "title": "ListView row stripe",
+          "summary": "Severity-coded 4px left-edge stripe per row — six Bootstrap tokens + refreshStripes().",
+          "icon": "bi-list-ul",
+          "docs": "docs/web-mojo/components/ListView.md"
+        },
+        {
           "route": "components/table-view",
           "title": "TableView",
           "summary": "Sortable, filterable, paginated table over ~25 seeded user rows.",
@@ -3161,6 +3228,13 @@
           "route": "components/table-view/day-range-filter",
           "title": "TableView — day-range filter",
           "summary": "`dayRangeFilter: true` drops a 1d/7d/30d/90d SegmentControl into the toolbar and auto-applies `created__gte` to the collection.",
+          "icon": "bi-table",
+          "docs": "docs/web-mojo/components/TableView.md"
+        },
+        {
+          "route": "components/table-view/row-stripe",
+          "title": "TableView row stripe",
+          "summary": "Severity-coded 4px left-edge stripe per row, inherited from ListView — same callback, same six tokens.",
           "icon": "bi-table",
           "docs": "docs/web-mojo/components/TableView.md"
         },

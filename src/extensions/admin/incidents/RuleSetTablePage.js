@@ -105,7 +105,7 @@ class RuleSetTablePage extends TablePage {
             },
 
             // Lowest priority runs first — surface it on top.
-            defaultQuery: { sort: 'priority' },
+            defaultQuery: { sort: 'priority', size: 50},
 
             // Cluster rules by priority so the call-order bands are visually
             // obvious; with sort=priority asc, group headers appear 1, 3, 5, …

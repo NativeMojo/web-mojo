@@ -50,6 +50,12 @@
             "route": "components/list-view/grouped",
             "title": "ListView — grouped rows",
             "summary": "Synthetic group headers between items — raw groupBy + groupByDay helper."
+        },
+        {
+            "page": "ListViewRowStripeExample.js",
+            "route": "components/list-view/row-stripe",
+            "title": "ListView row stripe",
+            "summary": "Severity-coded 4px left-edge stripe per row — six Bootstrap tokens + refreshStripes()."
         }
     ]
 }

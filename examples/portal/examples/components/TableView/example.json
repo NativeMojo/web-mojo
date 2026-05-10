@@ -38,6 +38,12 @@
             "route": "components/table-view/day-range-filter",
             "title": "TableView — day-range filter",
             "summary": "`dayRangeFilter: true` drops a 1d/7d/30d/90d SegmentControl into the toolbar and auto-applies `created__gte` to the collection."
+        },
+        {
+            "page": "TableViewRowStripeExample.js",
+            "route": "components/table-view/row-stripe",
+            "title": "TableView row stripe",
+            "summary": "Severity-coded 4px left-edge stripe per row, inherited from ListView — same callback, same six tokens."
         }
     ]
 }

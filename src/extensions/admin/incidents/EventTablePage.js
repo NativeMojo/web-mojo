@@ -182,6 +182,15 @@ class EventTablePage extends TablePage {
                 },
             ],
 
+            // Severity stripe — paint critical/warning rows so they stand
+            // out in a long chronological feed. Lower levels stay quiet.
+            rowStripe: (model) => {
+                const level = Number(model.get('level'));
+                if (level >= 5) return 'danger';
+                if (level >= 4) return 'warning';
+                return null;
+            },
+
             // Events are an immutable audit feed — no selection, no batch
             // actions, no row mutations. View + export only.
             searchable: true,

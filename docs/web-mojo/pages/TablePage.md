@@ -437,6 +437,7 @@ All [TableView constructor options](./TableView.md#constructor-options) are pass
 | `searchPlaceholder` | `string` | `'Search...'` | Search input placeholder |
 | `showAdd` | `boolean` | `true` | Show Add button |
 | `showExport` | `boolean` | `true` | Show Export button |
+| `rowStripe` | `Function` | `null` | `(model) => token \| className \| null`. Per-row 4px left-edge severity stripe. See [ListView → Row stripe](../components/ListView.md#row-stripe-severity-coded-left-edge-color). |
 
 ### Custom Handler Options
 

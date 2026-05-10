@@ -112,6 +112,16 @@ class TicketTablePage extends TablePage {
                 }
             ],
 
+            // Priority stripe — same thresholds as the tt-pri pill (8, 5)
+            // so the row edge and the badge agree.
+            rowStripe: (model) => {
+                const p = parseInt(model.get('priority'), 10);
+                if (!Number.isFinite(p)) return null;
+                if (p >= 8) return 'danger';
+                if (p >= 5) return 'warning';
+                return null;
+            },
+
             selectable: true,
             searchable: true,
             sortable: true,
